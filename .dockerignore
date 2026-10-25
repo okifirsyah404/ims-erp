@@ -1,0 +1,19 @@
+# Root .dockerignore — applies to any build with this directory as context
+# that lacks its own <Dockerfile>.dockerignore.
+**/node_modules
+**/dist
+**/.turbo
+**/.tmp
+**/coverage
+**/tsconfig.build.tsbuildinfo
+.git
+.agents
+.claude
+.opencode
+.graphify
+graphify-out
+.tanstack
+.env
+.env.*
+*.md
+bunfig.toml

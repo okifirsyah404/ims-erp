@@ -1,0 +1,28 @@
+{
+	"name": "ims-erp",
+	"type": "module",
+	"private": true,
+	"packageManager": "bun@1.4.2",
+	"workspaces": [
+		"apps/*",
+		"packages/*",
+		"modules/*"
+	],
+	"scripts": {
+		"build": "turbo run build",
+		"build:libs": "bun --filter '@ims-erp/config' build && bun --filter '@ims-erp/lib-cache' build",
+		"dev": "turbo run start:dev",
+		"test": "turbo run test",
+		"lint": "turbo run lint",
+		"format": "turbo run format",
+		"prepare": "husky"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"husky": "^9.1.7",
+		"turbo": "^2.10.13"
+	},
+	"peerDependencies": {
+		"typescript": "^6.0.3"
+	}
+}

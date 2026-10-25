@@ -1,0 +1,13 @@
+{
+  "name": "nestjs-better-auth",
+  "version": "1.0.0",
+  "description": "NestJS integration patterns for the @thallesp/nestjs-better-auth package — guards, decorators, roles/permissions, hooks, and CORS.",
+  "author": "OpenAgentic",
+  "date": "2026-10",
+  "references": [
+    "https://github.com/ThallesP/nestjs-better-auth",
+    "https://www.better-auth.com/docs",
+    "https://www.better-auth.com/docs/plugins/admin/access-control",
+    "https://www.better-auth.com/docs/plugins/organization#access-control"
+  ]
+}

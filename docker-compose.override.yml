@@ -1,0 +1,20 @@
+# Docker Compose overrides for local development.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.override.yml up
+#
+# Builds images from source instead of pulling from GHCR and mounts a
+# root .env file into the backend for its config loader.
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    image: ims-erp-backend:local
+    env_file:
+      - .env
+
+  web-admin:
+    build:
+      context: .
+      dockerfile: apps/web-admin/Dockerfile
+    image: ims-erp-web-admin:local
