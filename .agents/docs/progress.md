@@ -57,6 +57,34 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 | `bunx vitest run` (apps/backend) | 7 failed / 25 passed files; 2 failed / 25 passed tests — all pre-existing; causes in `project-audit.md` |
 | `bun run test` (repo root) | fail (backend red) |
 
+## Latest checks (exact commands, 2026-10-27)
+
+| Command (cwd) | Outcome |
+|---|---|
+| `bun run lint` (apps/backend) | pass, warnings (empty files, unused vars — pre-existing set) |
+| `bunx vitest run` (apps/backend) | **no spec files found** — all `src/**/*.spec.ts` gone from tree since 2026-10-25 baseline (only `test/app.e2e-spec.ts` remains, needs e2e config). Not caused by Dockerfile work. |
+| `bunx tsc -p tsconfig.build.json` (apps/backend) | pass; grep of fresh `dist/` shows zero `@providers/@config/@modules` alias imports |
+| `docker build -f apps/backend/Dockerfile .` (repo root) | **blocked** — Docker daemon not running during session; image build unverified |
+
+### Dockerfile slice (2026-10-27)
+
+- Wrote `apps/backend/Dockerfile` (bun 1.4-alpine multi-stage: deps →
+  `nest build` → prod-only runtime, non-root `USER bun`, port 3000) +
+  `apps/backend/Dockerfile.dockerignore`.
+- Replaced 3 `@providers/...` alias imports with relative paths
+  (`bootstrap.module.ts`, `mail-queue.service.ts`, `mail.processor.ts`) so
+  compiled `dist/` resolves at runtime.
+- `config.loader.ts`: missing `.env` (ENOENT) no longer throws — compose
+  injects env vars; avoids hard dependency on a `.env` file in containers.
+- Image build + container boot **verified** (2026-10-27):
+  `docker build -f apps/backend/Dockerfile .` succeeds; running the image
+  with env-only config bootstraps all Nest modules (no `.env`, no aliases in
+  `dist/`, decorator DI works under Bun). Full compose boot against real
+  Postgres/Redis still unverified. Dockerfile gotchas fixed during build:
+  `!apps/web-admin/package.json` needed in dockerignore (lockfile lists all
+  workspaces), `--ignore-scripts` needed (root `prepare: husky` fails in
+  prod-only install), runtime must `COPY --from=build` (not host `dist/`).
+
 ## Next executable task
 
 **ERP-0002 → ERP-0003 → ERP-0004/0005**: implement
@@ -64,3 +92,7 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 the pre-written specs pass, build the `modules/auth` skeleton until the two
 auth suites pass, then start the customer slice (backend first, per backlog
 owners). Do not branch off to other domains before the slice completes.
+Note: spec files disappeared from the tree since the 2026-10-25 baseline —
+restore/clarify before resuming this task. Remaining for Dockerfile slice:
+compose boot against real Postgres/Redis; HEALTHCHECK once a health
+endpoint exists.

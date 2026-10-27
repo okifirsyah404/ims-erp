@@ -36,7 +36,7 @@ services:
       - "${REDIS_PORT:-6379}:6379"
 
   backend:
-    image: ghcr.io/okifirsyah404/ims-erp-backend:latest
+    image: ghcr.io/okifirsyah404/ims-erp-backend:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -72,7 +72,7 @@ services:
       - "${APP_PORT:-3000}:3000"
 
   web-admin:
-    image: ghcr.io/okifirsyah404/ims-erp-web-admin:latest
+    image: ghcr.io/okifirsyah404/ims-erp-web-admin:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       - backend

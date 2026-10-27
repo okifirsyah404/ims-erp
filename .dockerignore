@@ -1,19 +1,25 @@
-# Root .dockerignore — applies to any build with this directory as context
-# that lacks its own <Dockerfile>.dockerignore.
+# Root .dockerignore — applies to root-context builds
+# (docker build -f apps/<app>/Dockerfile .)
 **/node_modules
 **/dist
 **/.turbo
 **/.tmp
+**/.tanstack
 **/coverage
 **/tsconfig.build.tsbuildinfo
 .git
+.github
+.husky
 .agents
 .claude
 .opencode
 .graphify
 graphify-out
-.tanstack
+.vscode
+.idea
 .env
 .env.*
+!.env.example
+*.log
+.DS_Store
 *.md
-bunfig.toml

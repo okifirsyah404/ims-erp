@@ -6,7 +6,7 @@
 	"scripts": {
 		"lint": "oxlint",
 		"format": "prettier --write \"**/*.{ts,tsx}\"",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "bunx tsc --noEmit"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.9.0",

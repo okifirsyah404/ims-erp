@@ -23,6 +23,7 @@ values): `NODE_ENV`, `TZ`, `APP_NAME`, `APP_ID`, `APP_SECRET`, `APP_HOST`,
 | Command | Where | Status |
 |---|---|---|
 | `bun run build` | repo root | proposed (not yet run) |
+| `docker build -f apps/backend/Dockerfile .` | repo root | verified — image builds; container bootstraps Nest (modules init) with env-only config; full compose run against real Postgres/Redis not yet done |
 | `bun run dev` / `bun run start:dev` | repo root (`start:dev` for backend) | proposed |
 | `bun run start:prod` | `apps/backend` (serves `dist/main` with Node) | proposed — not for production use yet |
 
@@ -34,6 +35,29 @@ values): `NODE_ENV`, `TZ`, `APP_NAME`, `APP_ID`, `APP_SECRET`, `APP_HOST`,
 | `bunx vitest run` | `apps/backend` | verified — baseline has 7 failing spec files; see `project-audit.md` |
 | `bun run test` | repo root | verified failing until backend green |
 | `bun run build` | `apps/web-admin` | proposed (TypeScript `tsc -b` + vite) |
+
+## Backend container (apps/backend/Dockerfile)
+
+Multi-stage bun image (oven/bun:1.4-alpine), build context = repo root:
+
+```powershell
+docker build -f apps/backend/Dockerfile .          # build image
+docker compose -f docker-compose.yml -f docker-compose.override.yml up backend
+```
+
+Design notes (2026-10-27):
+- `nest build` output keeps working because `@providers/*` path-alias imports
+  were removed from source (3 files); `dist/` is now self-contained.
+- `config.loader.ts` no longer throws when no `.env` file exists (ENOENT is
+  ignored) — compose passes env vars directly.
+- Runtime stage installs production deps for the whole workspace (bun lacks
+  per-workspace production install); acceptable size cost for now.
+- Verified: `docker build` succeeds; `bun dist/main.js` in the container
+  passes dotenv (no `.env` needed), zod env validation, and initializes all
+  Nest modules (BootstrapModule → AppModule). Not yet verified: serving
+  requests against real Postgres/Redis via compose.
+- Compose env is still missing `SMTP_*` (required by the config schema) and
+  the loader does not read `REDIS_QUEUE_DB` — follow-ups.
 
 ## Database (apps/backend)
 
