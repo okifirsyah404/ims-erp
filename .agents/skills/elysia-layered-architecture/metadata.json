@@ -1,0 +1,12 @@
+{
+  "name": "elysia-layered-architecture",
+  "version": "1.0.0",
+  "description": "Layered architecture convention for Elysia backend domains — controller/service/repository boundaries, contracts-first structure, response-envelope placement, and boundary parsing rules.",
+  "author": "OpenAgentic",
+  "date": "2026-10",
+  "dependsOn": ["elysiajs"],
+  "references": [
+    "https://elysiajs.com",
+    "https://zod.dev"
+  ]
+}

@@ -13,7 +13,7 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 
 ERP for an Indonesian access-control business (hardware, software, installation,
 maintenance, projects, subscriptions). Monorepo: Bun workspaces + Turborepo,
-Elysia backend (`apps/backend-elysia`), React/TanStack web admin, Better Auth,
+Elysia backend (`apps/backend`), React/TanStack web admin, Better Auth,
 Drizzle ORM (Relational v2) on PostgreSQL.
 
 This file is short on purpose. Detailed, evidence-based answers live in
@@ -48,21 +48,21 @@ else is *proposed*: verify before claiming it works. Full list with outcomes:
 |---|---|---|
 | `bun run dev` | repo root | ⚠️ proposed — runs turbo `start:dev` across workspaces |
 | `bun install` / turbo tasks for build/dev | repo root | ⚠️ proposed — never run in this repo yet |
-| `bunx drizzle-kit generate --config ./drizzle.config.ts` | `apps/backend-elysia` | ⚠️ proposed — migration journal state unverified; see `runbook.md` |
+| `bunx drizzle-kit generate --config ./drizzle.config.ts` | `apps/backend` | ⚠️ proposed — migration journal state unverified; see `runbook.md` |
 
 > The previous NestJS backend (`apps/backend-nest`, package `backend`) was
 > deleted 2026-10-28; its verified-command history is superseded. Commands
-> above are unverified against `apps/backend-elysia` until re-run and recorded
+> above are unverified against `apps/backend` until re-run and recorded
 > in `runbook.md`.
 
 ## Hard rules
 
-- **Stack is fixed.** Bun workspaces, Elysia backend (`apps/backend-elysia`),
-  Better Auth (direct integration, no Nest adapter), Drizzle ORM with the
-  `node-postgres` driver, PostgreSQL, Keyv cache. Do not add a second
-  ORM, auth system, or package manager. Do not fall back from Relational v2
-  (drizzle-orm 1.0.0-rc.5 channel) to v1 relations.
-- **Domain boundaries.** `apps/backend-elysia/src/app/<domain>/` owns its
+- **Stack is fixed.** Bun workspaces, Elysia backend (`apps/backend`),
+  Better Auth (direct integration into the Elysia plugin chain), Drizzle ORM
+  with the `node-postgres` driver, PostgreSQL, Bun `RedisClient` cache.
+  Do not add a second ORM, auth system, or package manager. Do not fall back
+  from Relational v2 (drizzle-orm 1.0.0-rc.5 channel) to v1 relations.
+- **Domain boundaries.** `apps/backend/src/app/<domain>/` owns its
   domain. Routes/controllers do HTTP only; services own use cases;
   repositories own Drizzle queries. HTTP layer never imports Drizzle directly.
   Cross-domain access goes through exported service/contract APIs only —
@@ -82,7 +82,7 @@ else is *proposed*: verify before claiming it works. Full list with outcomes:
   custom types). Business dates are Asia/Jakarta; operational timestamps are UTC.
 - **Money.** Ledger-grade amounts are exact integer IDR minor units
   (rupiah cents) — never floats (ADR-0002).
-- **Timestamps in Better Auth options are seconds; CacheModule TTL is
+- **Timestamps in Better Auth options are seconds; Redis cache TTLs are
   milliseconds.** Do not mix units.
 - **Secrets never committed or printed.** Inspect variable *names* only;
   redact connection strings and tokens in logs, docs, and reports.

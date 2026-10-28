@@ -1,0 +1,12 @@
+{
+  "name": "elysia-module",
+  "version": "1.0.0",
+  "description": "Modular monolith boundary convention — one Postgres schema per module via drizzle/schemas/<module>.schema.ts, no cross-schema foreign keys, cross-module access restricted to schema types and public DI tokens, and the Better Auth exception for user/organization modules.",
+  "author": "OpenAgentic",
+  "date": "2026-10",
+  "dependsOn": ["elysia-layered-architecture"],
+  "references": [
+    "https://orm.drizzle.team/docs/postgresql-schema",
+    "https://www.better-auth.com"
+  ]
+}
