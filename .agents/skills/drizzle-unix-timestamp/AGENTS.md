@@ -13,7 +13,7 @@ October 2026
 
 ## Abstract
 
-Project datetime convention for Drizzle ORM with PostgreSQL. All datetimes are stored as **unix milliseconds since epoch** in a `bigint` column, using the shared custom types from `apps/backend/src/providers/drizzle/schemas/unix-timestamp.ts`: app-level TypeScript works with `Date` objects, the driver layer works with ms numbers (JS `number` is exact to ±2^53 ms — never `mode: 'bigint'`), conversion happens via luxon inside the type. The API boundary speaks ISO 8601. PostgreSQL-only; if a new dialect is ever introduced, the shared types are extended, not forked. Contains 7 rules across 3 categories, prioritized by impact from critical (column types) to incremental (indexing, extension).
+Project datetime convention for Drizzle ORM with PostgreSQL. All datetimes are stored as **unix milliseconds since epoch** in a `bigint` column, using the shared custom types from `apps/backend-elysia/drizzle/datatypes/unix-timestamp.ts`: app-level TypeScript works with `Date` objects, the driver layer works with ms numbers (JS `number` is exact to ±2^53 ms — never `mode: 'bigint'`), conversion happens via luxon inside the type. The API boundary speaks ISO 8601. PostgreSQL-only; if a new dialect is ever introduced, the shared types are extended, not forked. Contains 7 rules across 3 categories, prioritized by impact from critical (column types) to incremental (indexing, extension).
 
 ---
 

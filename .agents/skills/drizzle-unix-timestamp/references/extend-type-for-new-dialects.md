@@ -22,7 +22,7 @@ const myTimestamp = customType<{ data: Date; driverData: number }>({
 **Correct (what's right):**
 
 ```typescript
-// apps/backend/src/providers/drizzle/schemas/unix-timestamp.ts
+// apps/backend-elysia/drizzle/datatypes/unix-timestamp.ts
 // Add or extend variants there — e.g., a non-nullable update helper or a
 // dialect-specific dataType — keeping all datetime conversion in one module.
 

@@ -1,6 +1,6 @@
 /**
- * ERP permission names — must stay in sync with
- * apps/backend/src/core/authorization/permissions.ts
+ * ERP permission names — must stay in sync with the backend
+ * permission source (apps/backend-elysia)
  *
  * Format: `<resource>.<action>` (resource may contain dots).
  */

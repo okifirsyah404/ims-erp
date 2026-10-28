@@ -39,4 +39,4 @@ const isDeleted = invoice.deletedAt !== null;
 **When NOT to use this pattern:**
 - Tables that are truly immutable append-only logs may omit `deletedAt` — they don't support deletion at all.
 
-Reference: `apps/backend/src/providers/drizzle/schemas/unix-timestamp.ts`
+Reference: `apps/backend-elysia/drizzle/datatypes/unix-timestamp.ts`

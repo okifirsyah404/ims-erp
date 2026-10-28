@@ -46,11 +46,11 @@ generate the identical set):
 | permissions, audit | view |
 | customer.portal / investor.portal | view |
 
-Role definitions (`erpRoles` in the planned `permissions.ts`) and their
-coverage are specified by the pre-written specs in
-`apps/backend/test/unit/core/authorization/{roles,ownership}.spec.ts` — those
-specs are the design contract; implement to make them pass without weakening
-covered assertions.
+Role definitions (`erpRoles` in the planned `permissions.ts`) were specified
+by pre-written specs in the deleted backend-nest tree
+(`apps/backend/test/unit/core/authorization/`) — the role/ownership matrix in
+this document is the surviving design contract; port those specs to
+backend-elysia when the authorization core lands.
 
 ## Ownership (row-level) rules
 

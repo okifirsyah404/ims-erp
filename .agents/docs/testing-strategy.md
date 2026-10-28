@@ -4,12 +4,14 @@ Unit, integration, and e2e boundaries. Distinguish automated success from
 business acceptance: passing tests is evidence of correct code, not
 acceptance of a feature.
 
-## Current tooling (verified)
+## Current tooling
 
-- Vitest 4, globals on, per-workspace configs:
-  - `apps/backend/vitest.config.ts` → `test/unit/**/*.spec.ts`
-  - `apps/backend/vitest.config.e2e.ts` → e2e (separate config/script)
-- `@nestjs/testing` for DI-aware unit tests; mocks for collaborators.
+- Vitest 4, globals on, per-workspace configs.
+  - `apps/backend-elysia` currently has **no test script** — add
+    `vitest.config.ts` (unit: `test/**/*.spec.ts`) and `test:e2e` when the
+    first slice lands.
+- Plain Elysia/Bun test setup (`bun:test` or vitest) with constructor-injected
+  mocks for collaborators; no DI container to patch.
 - No Docker/testcontainers wiring exists yet — integration tests target a
   real local PostgreSQL configured by env names (`POSTGRES_HOST`, `POSTGRES_PORT`,
   `POSTGRES_USER`, `POSTGRES_DB`, disposable DB values supplied per run).
@@ -18,16 +20,15 @@ acceptance of a feature.
 
 | Layer | Location | Scope | Dependencies |
 |---|---|---|---|
-| Unit | `apps/backend/test/unit/modules/<domain>/{controllers,services}` | use cases with mocked repositories; controller validation/status/permissions with mocked services | mocks only |
-| Unit (core) | `apps/backend/test/unit/core/*` | authorization role/ownership matrix — no DB | mocks only |
-| Integration (real PG) | `apps/backend/test/integration` (to be introduced) | migrations applied, constraints (unique/23505, FK), pagination counts, soft-delete filtering, relational-v2 queries exercising real relationships | disposable PostgreSQL |
-| e2e | `apps/backend/test/{app.e2e-spec.ts,e2e}` | real HTTP against the booted app: session flow, authorization denial, write success, deactivation | disposed app + PG |
+| Unit | `apps/backend-elysia/test/unit/<domain>/{routes,services}` | use cases with mocked repositories; route validation/status/permissions with mocked services | mocks only |
+| Integration (real PG) | `apps/backend-elysia/test/integration` (to be introduced) | migrations applied, constraints (unique/23505, FK), pagination counts, soft-delete filtering, relational-v2 queries exercising real relationships | disposable PostgreSQL |
+| e2e | `apps/backend-elysia/test/e2e` (to be introduced) | real HTTP against the booted app: session flow, authorization denial, write success, deactivation | disposed app + PG |
 | Frontend | not established yet | component/query tests when slices land; route tree generated, never hand-edited | — |
 
 ## Fixture policy
 
 - Synthetic data only, seeded through the existing runner
-  (`database/seeders/run.ts`); idempotent — running twice must be safe.
+  (`database/seeders`); idempotent — running twice must be safe.
 - Never hardcode production credentials; never reuse `.env` secrets in tests.
 - Indonesian address fixtures come from `database/seeders/raw/addresses/*`
   through the seeding path, not copied into tests ad-hoc.

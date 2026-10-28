@@ -69,10 +69,10 @@ export interface IBaseRepository<T, R> {
 	 * Updates one entity by its identifier.
 	 *
 	 * @param id - The entity identifier
-	 * @param item - The updated entity data
+	 * @param item - The partial entity data to apply
 	 * @returns The updated entity, or `null` when absent or soft-deleted
 	 */
-	update(id: string | number, item: T): Promise<R | null>;
+	update(id: string | number, item: Partial<T>): Promise<R | null>;
 
 	/**
 	 * Soft-deletes one entity; recoverable via {@link restore}.

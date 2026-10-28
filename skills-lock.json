@@ -13,17 +13,17 @@
       "skillPath": "security/SKILL.md",
       "computedHash": "7a230edf3a24ce18162cb4379f59b6a19b8d24ca04db530609d0f15cede556dc"
     },
+    "elysiajs": {
+      "source": "elysiajs/skills",
+      "sourceType": "github",
+      "skillPath": "elysia/SKILL.md",
+      "computedHash": "e0bc0ecce6cecc34f14cf445c72f7df0cec278e64dfd4ea99f26c503e98624d6"
+    },
     "email-and-password-best-practices": {
       "source": "better-auth/skills",
       "sourceType": "github",
       "skillPath": "better-auth/emailAndPassword/SKILL.md",
       "computedHash": "863886759f729081e265941f4f72c503835d55a1f34f6d63cebe6571159fff4a"
-    },
-    "nestjs-best-practices": {
-      "source": "kadajett/agent-nestjs-skills",
-      "sourceType": "github",
-      "skillPath": "skills/nestjs-best-practices/SKILL.md",
-      "computedHash": "58f8a630637be3acce1f118c747d68160346ada8a43d76cb52a5b4c4edaa2d37"
     },
     "organization-best-practices": {
       "source": "better-auth/skills",

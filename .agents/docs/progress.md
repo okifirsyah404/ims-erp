@@ -85,14 +85,33 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
   workspaces), `--ignore-scripts` needed (root `prepare: husky` fails in
   prod-only install), runtime must `COPY --from=build` (not host `dist/`).
 
+## Session 2026-10-28 — backend-nest removal
+
+- Deleted `apps/backend-nest/` (package `backend`) entirely; `bun install`
+  regenerated `bun.lock` (workspace + `backend@workspace` entries gone).
+- Removed `backend` from docker matrix in `.github/workflows/build-main.yml`
+  and `deploy-main.yml`; removed the `test-backend` job from `build-main.yml`.
+- Removed `backend` service from `docker-compose.yml` and
+  `docker-compose.override.yml`; `web-admin` no longer depends on it.
+- Deleted NestJS skills (`nestjs-best-practices`, `nestjs-better-auth`,
+  `nestjs-drizzle`, `nestjs-layered-architecture`) from `.agents/skills/` +
+  `.claude/skills/`; removed lock entry from `skills-lock.json`.
+- Updated `drizzle-unix-timestamp` / `drizzle-soft-deletes` skills: canonical
+  path now `apps/backend-elysia/drizzle/datatypes/unix-timestamp.ts`.
+- Rewrote docs around `apps/backend-elysia`: `AGENTS.md`, `architecture.md`,
+  `api-conventions.md`, `stack-compatibility.md`, `runbook.md`,
+  `testing-strategy.md`, `modules/README.md`; marked ADR-0005 superseded;
+  added historical notes to `project-audit.md` and `modules/*.md`; fixed
+  `apps/web-admin/src/lib/permissions.ts` header comment.
+- Commands run: `bun install` (clean, 16 packages); no tests/typecheck run
+  (backend-elysia has no test script yet).
+- Follow-up tasks created: backend-elysia Dockerfile + compose service, CI
+  test job for elysia, authorization core port to elysia.
+
 ## Next executable task
 
-**ERP-0002 → ERP-0003 → ERP-0004/0005**: implement
-`src/core/authorization/{permissions.ts, authorization.service.ts}` to make
-the pre-written specs pass, build the `modules/auth` skeleton until the two
-auth suites pass, then start the customer slice (backend first, per backlog
-owners). Do not branch off to other domains before the slice completes.
-Note: spec files disappeared from the tree since the 2026-10-25 baseline —
-restore/clarify before resuming this task. Remaining for Dockerfile slice:
-compose boot against real Postgres/Redis; HEALTHCHECK once a health
-endpoint exists.
+**Backend-elysia bring-up**: verify `bun dev` + drizzle migrate/seed against a
+disposable DB in `apps/backend-elysia` (runbook commands), then port the
+authorization core (role/ownership matrix in `security-and-access.md`) and
+resume the customer slice (ERP-0002 → ERP-0003 → ERP-0004/0005). Also: create
+a Dockerfile for backend-elysia and restore a CI test job.

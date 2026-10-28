@@ -1,6 +1,10 @@
 # ADR-0005 — Custom Drizzle Client Coexists with @nestjs/drizzle Token
 
-- **Status:** accepted (2026-10-25)
+- **Status:** superseded (2026-10-28) — the NestJS backend
+  (`apps/backend-nest`) and `@nestjs/drizzle` were deleted. With no DI
+  container, repositories import the single Drizzle client directly from
+  `drizzle/container.ts`; the module-owned singleton and the `@InjectDrizzle()`
+  token distinction no longer exist. Kept for decision history.
 - **Context:** The repository has a custom module-owned `drizzleDB` singleton
   (`src/providers/drizzle/drizzle.ts`) wired into Better Auth's drizzle adapter
   and (scaffold-era) repositories, plus `DrizzleModule.forRootAsync({ db:

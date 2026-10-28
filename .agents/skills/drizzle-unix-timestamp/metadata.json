@@ -4,7 +4,7 @@
   "description": "Project datetime convention — unix milliseconds since epoch stored as PostgreSQL bigint via the shared unixTimestamp custom types.",
   "author": "OpenAgentic",
   "date": "2026-10",
-  "canonicalType": "apps/backend/src/providers/drizzle/schemas/unix-timestamp.ts",
+  "canonicalType": "apps/backend-elysia/drizzle/datatypes/unix-timestamp.ts",
   "references": [
     "https://orm.drizzle.team/docs/column-types/pg#timestamp",
     "https://orm.drizzle.team/docs/custom-types",

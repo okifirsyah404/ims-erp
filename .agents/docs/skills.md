@@ -6,9 +6,9 @@ were executed; no skills were installed during this docs phase.
 
 ## Lockfile
 
-`skills-lock.json` (version 1) pins 13 skills by `source@sourceType: github`,
+`skills-lock.json` (version 1) pins 12 skills by `source@sourceType: github`,
 `skillPath`, and `computedHash`. Repositories referenced there:
-`better-auth/skills`, `kadajett/agent-nestjs-skills`, `shadcn-ui/ui`,
+`better-auth/skills`, `shadcn-ui/ui`,
 `tanstack-skills/tanstack-skills`, `bm629/agent-skills`, `pproenca/dot-skills`.
 
 ## Inventory
@@ -22,12 +22,10 @@ not in lock** (local/project-specific additions), **n/a** (not installed).
 | better-auth-security-best-practices | installed | rate limiting, secrets, CSRF, cookies, audit (better-auth/skills) |
 | email-and-password-best-practices | installed | verification, reset flows, password policy (better-auth/skills) |
 | organization-best-practices | installed | Better Auth organization plugin, RBAC (better-auth/skills) |
-| nestjs-best-practices | installed (rule-based) | NestJS modules, DI, validation, errorhandling, testing (kadajett/agent-nestjs-skills) |
-| nestjs-better-auth | present, not in lock | project-specific: thallesp integration patterns, guards, decorators, Fastify CORS/raw-body |
-| nestjs-drizzle | present, not in lock | DrizzleModule, `@InjectDrizzle`, custom repos, transactions, migrations via drizzle-kit |
 | drizzle-unix-timestamp | present, not in lock | project datetime convention (bigint ms, `unix-timestamp.ts`) |
 | drizzle-soft-deletes | present, not in lock | `deleted_at` never-hard-delete convention |
-| nestjs-layered-architecture | present, not in lock | layered domain modules: contracts/controllers/dto/repositories/services, DI wiring, soft-delete + cache repo patterns, cross-feature isolation (per-feature Postgres schema, `External<X>Service` facade, no cross-feature FK/joins) (ref: `modules/user`) |
+| tsyringe | present, not in lock | project DI convention: Symbol tokens, composition root, transient default, resolution at HTTP boundary (local) |
+| elysiajs | env-provided | Elysia v2 routes/plugins/typed clients (not on disk) |
 | zod | installed | schema validation, error handling (pproenca/dot-skills) |
 | shadcn | installed | `packages/ui` component authoring (shadcn-ui/ui) |
 | tanstack-router / -query / -form / -table / -devtools | installed (5 skills) | TanStack stack patterns (tanstack-skills/tanstack-skills) |
@@ -37,8 +35,11 @@ not in lock** (local/project-specific additions), **n/a** (not installed).
 
 - Monorepo maintenance: covered by repo conventions + Turborepo bundled docs
   (`AGENTS.md` managed block); no extra skill needed.
-- NestJS, Drizzle (relations-v2, migrations), Better Auth (incl. NestJS
-  integration + organization plugin), React/TanStack, shadcn UI, zod: covered.
+- Elysia, Drizzle (relations-v2, migrations), Better Auth (incl.
+  organization plugin), React/TanStack, shadcn UI, zod: covered.
+- **Removed with backend-nest:** NestJS skills
+  (`nestjs-best-practices`, `nestjs-better-auth`, `nestjs-drizzle`,
+  `nestjs-layered-architecture`) deleted alongside `apps/backend-nest`.
 - **Intentionally omitted:** dedicated monorepo skill, dedicated
   testing-strategy skill, dedicated security-review skill. Testing/security
   rules live in `testing-strategy.md` and `security-and-access.md`; adding a
@@ -49,9 +50,8 @@ not in lock** (local/project-specific additions), **n/a** (not installed).
 
 - No skill installed for PostgreSQL/SQL review beyond the Drizzle ones;
   rely on `data-model.md` and the testing strategy for now.
-- `skills-lock.json` does not track the five project-specific skills
-  (`nestjs-better-auth`, `nestjs-drizzle`, `drizzle-unix-timestamp`,
-  `drizzle-soft-deletes`, `nestjs-layered-architecture`); they appear
+- `skills-lock.json` does not track the three project-specific skills
+  (`drizzle-unix-timestamp`, `drizzle-soft-deletes`, `tsyringe`); they are
   intentionally local. Update the lockfile
   via its supported mechanism only if their provenance should be pinned.
 

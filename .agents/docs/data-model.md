@@ -1,7 +1,12 @@
 # Data Model
 
 Schema, keys, constraints, and conventions. Current declarations:
-`apps/backend/src/providers/drizzle/schemas/{auth-schema,erp-schema,unix-timestamp}.ts`.
+`apps/backend-elysia/drizzle/schemas/*.ts` (auth + per-feature schemas) and
+`apps/backend-elysia/drizzle/datatypes/unix-timestamp.ts`.
+
+> 2026-10-28: written against the deleted backend-nest tree
+> (`apps/backend/src/providers/drizzle/...`); paths re-pointed, contents
+> re-verify against backend-elysia before acting.
 
 ## PostgreSQL schemas
 
@@ -67,8 +72,8 @@ in ADR-0001.
 
 ## Address reference tables (planned, Phase 2, ADR-0003)
 
-Source of truth: `apps/backend/database/seeders/raw/addresses/{provinces,
-regencies,districts,villages}.json` seeded idempotently through the existing
+Source of truth: `apps/backend-elysia/database/seeders/raw/location/*` seeded
+idempotently through the existing
 seeder runner into `erp` schema tables with official Indonesian codes
 (province → regency → district → village hierarchy restored via PK/FK chain —
 code-defined, never guessed). Customer address = free-text street + four

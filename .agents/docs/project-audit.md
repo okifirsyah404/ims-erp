@@ -5,6 +5,11 @@ real and were inspected; test evidence comes from actually executed commands
 (see "Baseline checks"). Do not treat folder names or pre-written specs as
 proven functionality.
 
+> 2026-10-28: `apps/backend-nest` (referred to below as `apps/backend`) was
+> deleted; `apps/backend-elysia` is the backend. Audit content below is kept as
+> the historical NestJS-era baseline; re-audit backend-elysia before using
+> these findings.
+
 ## Repository state
 
 - Single commit `d670b5c` ("Initial commit from create-turbo"). Everything after

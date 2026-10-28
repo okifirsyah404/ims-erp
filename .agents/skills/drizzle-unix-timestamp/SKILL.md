@@ -1,11 +1,11 @@
 ---
 name: drizzle-unix-timestamp
-description: Project datetime convention for Drizzle ORM with PostgreSQL — all datetimes are stored as unix milliseconds since epoch in a bigint column, using the shared unixTimestamp custom types from apps/backend/src/providers/drizzle/schemas/unix-timestamp.ts (Date at the app layer, ms at the driver layer, converted via luxon). Use when defining any Drizzle schema column that holds a date/time (createdAt, updatedAt, expiresAt, deletedAt, scheduledAt...), writing queries that filter or sort by time, setting column defaults, or exposing datetime fields through an API. Does NOT cover non-PostgreSQL dialects or Drizzle query syntax in general.
+description: Project datetime convention for Drizzle ORM with PostgreSQL — all datetimes are stored as unix milliseconds since epoch in a bigint column, using the shared unixTimestamp custom types from apps/backend-elysia/drizzle/datatypes/unix-timestamp.ts (Date at the app layer, ms at the driver layer, converted via luxon). Use when defining any Drizzle schema column that holds a date/time (createdAt, updatedAt, expiresAt, deletedAt, scheduledAt...), writing queries that filter or sort by time, setting column defaults, or exposing datetime fields through an API. Does NOT cover non-PostgreSQL dialects or Drizzle query syntax in general.
 license: MIT
 metadata:
   author: OpenAgentic
   version: "1.0.0"
-  canonicalType: apps/backend/src/providers/drizzle/schemas/unix-timestamp.ts
+  canonicalType: apps/backend-elysia/drizzle/datatypes/unix-timestamp.ts
 ---
 
 # Drizzle Unix Timestamp Convention
@@ -35,7 +35,7 @@ JS `number` holds ms exactly up to ±2^53 ms (~273,790 years) — the driver dat
 
 ## Canonical Type
 
-Defined once in `apps/backend/src/providers/drizzle/schemas/unix-timestamp.ts` — import it, do not redefine it:
+Defined once in `apps/backend-elysia/drizzle/datatypes/unix-timestamp.ts` — import it, do not redefine it:
 
 ```typescript
 import { customType } from 'drizzle-orm/pg-core';

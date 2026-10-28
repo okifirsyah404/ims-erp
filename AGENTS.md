@@ -13,8 +13,8 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 
 ERP for an Indonesian access-control business (hardware, software, installation,
 maintenance, projects, subscriptions). Monorepo: Bun workspaces + Turborepo,
-NestJS backend, React/TanStack web admin, Better Auth, Drizzle ORM (Relational
-v2) on PostgreSQL.
+Elysia backend (`apps/backend-elysia`), React/TanStack web admin, Better Auth,
+Drizzle ORM (Relational v2) on PostgreSQL.
 
 This file is short on purpose. Detailed, evidence-based answers live in
 `.agents/docs/`. Read in this order:
@@ -46,28 +46,27 @@ else is *proposed*: verify before claiming it works. Full list with outcomes:
 
 | Command | Where | Status |
 |---|---|---|
-| `bun run lint` | repo root / `apps/backend` | ✅ verified — passes (backend, 6 warnings) |
-| `bunx vitest run` | `apps/backend` | ✅ verified — 7/32 spec files failing (all pre-existing; causes in `project-audit.md`) |
-| `bun run test` | repo root | ✅ verified — fails until the backend failures are fixed |
+| `bun run dev` | repo root | ⚠️ proposed — runs turbo `start:dev` across workspaces |
 | `bun install` / turbo tasks for build/dev | repo root | ⚠️ proposed — never run in this repo yet |
-| `bunx drizzle-kit generate --config ./drizzle.config.ts` | `apps/backend` | ⚠️ proposed — migration journal state unverified; see `runbook.md` |
+| `bunx drizzle-kit generate --config ./drizzle.config.ts` | `apps/backend-elysia` | ⚠️ proposed — migration journal state unverified; see `runbook.md` |
+
+> The previous NestJS backend (`apps/backend-nest`, package `backend`) was
+> deleted 2026-10-28; its verified-command history is superseded. Commands
+> above are unverified against `apps/backend-elysia` until re-run and recorded
+> in `runbook.md`.
 
 ## Hard rules
 
-- **Stack is fixed.** Bun workspaces, NestJS on Fastify, Better Auth via
-  `@thallesp/nestjs-better-auth`, Drizzle ORM with the `node-postgres` driver,
-  PostgreSQL, `@nestjs/drizzle` DI token, Keyv/Redis cache. Do not add a second
+- **Stack is fixed.** Bun workspaces, Elysia backend (`apps/backend-elysia`),
+  Better Auth (direct integration, no Nest adapter), Drizzle ORM with the
+  `node-postgres` driver, PostgreSQL, Keyv cache. Do not add a second
   ORM, auth system, or package manager. Do not fall back from Relational v2
-  (drizzle-orm 1.0.0-rc.4 channel) to v1 relations.
-- **Domain boundaries.** `apps/backend/src/modules/<domain>/` owns its domain.
-  Controllers do HTTP only; services own use cases; repositories own Drizzle
-  queries. Controllers never import Drizzle. Cross-domain access goes through
-  exported service/contract APIs only — never another module's repository or
-  `forwardRef`.
-- Cross-feature access via exported `External<X>Service` only — never another
-  feature's service/repository directly, and no cross-feature FKs, joins, or
-  shared-schema table imports. Each feature owns a Postgres schema; Better Auth
-  tables are the explicit shared-infrastructure exception.
+  (drizzle-orm 1.0.0-rc.5 channel) to v1 relations.
+- **Domain boundaries.** `apps/backend-elysia/src/app/<domain>/` owns its
+  domain. Routes/controllers do HTTP only; services own use cases;
+  repositories own Drizzle queries. HTTP layer never imports Drizzle directly.
+  Cross-domain access goes through exported service/contract APIs only —
+  never another domain's repository.
 - **Auth and ownership are server-side facts.** Every endpoint enforces
   role permissions and record ownership, including exports. Frontend permission
   checks are UX only.

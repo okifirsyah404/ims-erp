@@ -14,27 +14,16 @@ blocked`.
 
 | Doc | Code path | Owner | Status |
 |---|---|---|---|
-| [authentication + authorization](authentication.md) | `src/providers/better-auth/*`, `src/core/authorization/*` (planned), `modules/auth` (planned) | A | partially implemented (auth config real; module + runtime unverified; authorization core absent) |
-| [infrastructure](infrastructure.md) | `src/config/*`, `src/bootstrap.module.ts`, `src/providers/{drizzle,keyv}/*` | A | mostly implemented, bootstrap verified by compilation only |
+| [authentication + authorization](authentication.md) | `src/providers/better-auth/*`, (planned) authorization core | A | partially implemented (auth config real; runtime unverified; authorization core absent) |
+| [infrastructure](infrastructure.md) | `src/providers/{better-auth,keyv,logger}/*`, `drizzle/{container,db}.ts` | A | mostly implemented, bootstrap unverified |
 
-## Existing domain modules (NestJS)
+## Existing domain modules (Elysia — `apps/backend-elysia/src/app`)
 
 | Doc | Code path | Status | Related commercial tasks |
 |---|---|---|---|
-| [user](user.md) | `modules/user` | partially implemented (reference repository pattern) | T02 (roles/audit), T03 |
-| [organization](organization.md) | `modules/organization` | scaffold only | T02, T15 |
-| [customer](customer.md) | `modules/customer` | partially implemented (schema real; code scaffold) | T03, T05; S1 slice ERP-0004..0006 |
-| [employee](employee.md) | `modules/employee` | scaffold only | T10; T19–T20 (payroll) |
-| [expense](expense.md) | `modules/expense` | scaffold only | T07 adjacent, T11 |
-| [inventory](inventory.md) | `modules/inventory` | scaffold only | T07 |
-| [notification](notification.md) | `modules/notification` | scaffold only | T15; T27–T28 (WhatsApp AI) |
-| [payment](payment.md) | `modules/payment` | scaffold only | T06; T21–T22 (gateway) |
-| [product](product.md) | `modules/product` | scaffold only | T03 (catalog) |
-| [purchasing](purchasing.md) | `modules/purchasing` | scaffold only | T07 |
-| [reporting](reporting.md) | `modules/reporting` | scaffold only | T11 (reports), T14 (dashboard) |
-| [sales](sales.md) | `modules/sales` | scaffold only | T05 (CRM/SPH/invoice) |
-| [supplier](supplier.md) | `modules/supplier` | scaffold only | T07 (procurement) |
-| [warehouse](warehouse.md) | `modules/warehouse` | scaffold only | T07 (one warehouse) |
+| [user](user.md) | `src/app/user` | partially implemented | T02 (roles/audit), T03 |
+| [organization](organization.md) | `src/app/organization` | scaffold | T02, T15 |
+| [location](location.md) | `src/app/location` | scaffold | T07 |
 
 ## Assessed / planned owners (no module directory yet)
 
@@ -48,9 +37,12 @@ blocked`.
 
 ## Cross-module rules (apply everywhere)
 
-- Repositories inject via `@InjectDrizzle()`; never import `drizzleDB`
-  (ADR-0005). Controllers never touch Drizzle.
-- Cross-module access only via exported service/contract APIs; no `forwardRef`.
+- Repositories use the Drizzle client from `drizzle/container.ts`; routes never
+  touch Drizzle.
+- Services/repositories use tsyringe constructor injection
+  (`@injectable()` + `@inject(TOKEN)`); the provider's container module
+  registers non-class dependencies.
+- Cross-module access only via exported service/contract APIs.
 - Soft deletes and unix-ms timestamps everywhere; money is integer IDR minor
   units (ADR-0002). See `../data-model.md`.
 - Routes, envelopes, and error contracts per `../api-conventions.md`;

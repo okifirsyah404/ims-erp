@@ -43,4 +43,4 @@ row.lastSeenAt?.toISOString();
 **When NOT to use this pattern:**
 - Nothing — there is no legitimate per-schema datetime column type in this project. If a case seems to need one, extend the shared type instead (see extend-type-for-new-dialects).
 
-Reference: canonical definition at `apps/backend/src/providers/drizzle/schemas/unix-timestamp.ts`
+Reference: canonical definition at `apps/backend-elysia/drizzle/datatypes/unix-timestamp.ts`

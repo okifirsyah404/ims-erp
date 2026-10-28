@@ -3,75 +3,58 @@
 Ownership boundaries, dependency rules, and integration patterns. Violations
 here should fail review even if tests pass.
 
-## Layering (backend)
+## Layering (backend — `apps/backend-elysia`)
 
 ```text
 src/
-├── main.ts                 Fastify bootstrap; bodyParser: false (auth
-│                           raw-body requirement); Swagger (currently
-│                           placeholder "Cats" metadata — replace later)
-├── bootstrap.module.ts     ConfigModule (global, zod-validated),
-│                           DrizzleModule, CacheModule (Keyv/Redis),
-│                           BullModule, AppModule
-├── config/                 env loading → zod validation → typed `config`
-├── providers/              infrastructure singletons
-│   ├── better-auth/        auth instance + options + (planned) role mapping
-│   ├── drizzle/            `drizzleDB` client; schemas are code-owned
-│   │   └── schemas/        auth-schema.ts (auth.*), erp-schema.ts (erp.*),
-│   │                       unix-timestamp.ts (bigint ms types)
-│   └── keyv/               Keyv + Redis instances
-├── core/                   (planned) cross-cutting, module-agnostic logic
-│                           — authorization (permissions.ts,
-│                             authorization.service.ts, erpRoles)
-└── modules/<domain>/       domain boundary; see table below
-    └── controllers │ services │ repositories (+ contracts/, dto/ where used)
+├── index.ts                  Elysia bootstrap (bun run --watch)
+├── contracts/                shared contracts (pagination, repositories)
+├── providers/                infrastructure singletons
+│   ├── better-auth/          auth instance + options + plugins + openapi
+│   ├── keyv/                 Keyv + Redis instance
+│   └── logger/               logger exporters
+└── app/<domain>/             domain boundary
+    ├── routes | controllers  HTTP shape only
+    ├── services              use cases, business rules, tx boundaries
+    └── repositories          Drizzle queries
+drizzle/                      Drizzle client + schemas (code-owned)
+    ├── container.ts / db.ts
+    ├── datatypes/            unix-timestamp.ts (bigint ms types)
+    └── schemas/              auth.schema.ts (auth.*), per-feature schemas
 ```
 
-## Module responsibility rules
+## Domain responsibility rules
 
-- **Controllers** — HTTP shape only: routing, `@thallesp/nestjs-better-auth`
-  auth/guard context, DTO validation enforcement, status codes, response
-  contracts. No Drizzle, no business rules.
+- **Routes/controllers** — HTTP shape only: routing, Better Auth session
+  auth/guard context, status codes, response contracts. No Drizzle, no
+  business rules.
 - **Services** — use cases and business rules; ownership/permission checks;
   transaction boundaries (services decide and pass a transaction-scoped DB
   handle into repositories so every write in one use case shares one
   transaction).
-- **Repositories** — persistence queries only, injected via `@InjectDrizzle()`
-  (`@nestjs/drizzle`). **Never import the `drizzleDB` singleton from a
-  repository**; the singleton exists for provider bootstrap (auth adapter,
-  config) only — see ADR-0005. The existing `customer.repository.ts` importing
-  `drizzleDB` directly is a scaffold-era violation to fix in Phase 2.
-- **DTOs/contracts** — follow the established pattern:
-  `contracts/<x>.repository.contract.ts` for repository interfaces,
-  `dto/<x>.dto.ts` for transport types, zod at boundaries (config schema
-  already does this).
+- **Repositories** — persistence queries only, using the Drizzle client from
+  `drizzle/container.ts`. Never construct ad-hoc DB clients inside a domain.
+- **Contracts/DTOs** — zod at boundaries; transport types derived from Elysia
+  route schemas where practical.
+- **Dependency injection (tsyringe)** — repositories/services are
+  `@injectable()` with constructor `@inject(TOKEN)`; non-class providers
+  (db client, cache, config) register under module-scoped `Symbol()` tokens
+  in their provider's `container.ts` (see `drizzle/container.ts`); routes
+  obtain services via `container.resolve(XService)`. Full rules in the
+  `tsyringe` skill (`.agents/skills/tsyringe/`).
 - **Cross-domain access** — export a narrow service/contract from the owning
-  module. Importing another domain's repository is prohibited. Avoid
-  `forwardRef` entirely.
-- **Cross-feature isolation (modular monolith)** — a feature module never
-  touches another feature's data at the DB level: no cross-feature FK
-  constraints, joins, or Drizzle relations, and no importing another feature's
-  table objects. Each feature owns a Postgres schema named after the domain;
-  cross-feature references are loose ID columns with integrity enforced in the
-  owning service. The only cross-module surface is an exported
-  `External<X>Service` facade (see `nestjs-layered-architecture` skill).
-  Exception: `auth-schema.ts` tables are Better Auth-managed shared
-  infrastructure (the existing `erp.audit_logs.actor_id → auth users.id` FK is
-  allowed).
+  domain. Importing another domain's repository is prohibited.
+- **Cross-domain data isolation (modular monolith)** — a domain never touches
+  another domain's data at the DB level: no cross-domain FK constraints, joins,
+  or Drizzle relations, and no importing another domain's table objects. Each
+  domain owns a Postgres schema named after it; cross-domain references are
+  loose ID columns with integrity enforced in the owning service.
+  Exception: `auth.schema.ts` tables are Better Auth-managed shared
+  infrastructure.
 - **Cache discipline** — cache only suitable read paths; keys must be scoped by
   the real authorization boundary (company) or primary key; evict after
   successful mutations. Authorization/financial correctness never depends on
   cached data.
-
-## Existing reference implementation
-
-`modules/user/` is the pattern to copy:
-- `contracts/user.repository.contract.ts` (interface) +
-  `dto/user.dto.ts` (transport types)
-- repository: `@InjectDrizzle()` + `@Inject(CACHE_MANAGER)`, pagination
-  envelope `TPaginationResult<T>` from `@ims-erp/common`, soft-delete-only
-  reads, cache-aside by id with revival of date-typed fields after JSON roundtrip
-- `user.module.ts` wiring
 
 ## ERP schema ownership
 
@@ -126,9 +109,9 @@ ui      → used by web-admin
 
 ## Transactions ownership decision
 
-Services own transactions. A multipurpose case writes: acquire transaction
-handle via the `@nestjs/drizzle`-injected client, pass the tx-scoped handle to
-affected repositories, commit/rollback in the service, invalidate affected cache
-keys only after commit. Side effects to external systems (webhooks, WhatsApp,
+Services own transactions. A multipurpose case writes: acquire a transaction
+handle from the Drizzle client (`drizzle/container.ts`), pass the tx-scoped
+handle to affected repositories, commit/rollback in the service, invalidate
+affected cache keys only after commit. Side effects to external systems (webhooks, WhatsApp,
 licensing) occur after local commit; outbox/wire format decisions are deferred
 until those phases.
