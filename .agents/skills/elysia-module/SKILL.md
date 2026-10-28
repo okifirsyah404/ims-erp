@@ -1,6 +1,6 @@
 ---
 name: elysia-module
-description: Modular monolith boundaries for this project's Elysia backend - each module under src/app/<module>/ owns exactly one Postgres schema via drizzle/schemas/<module>.schema.ts, no foreign keys across schemas (plain id columns instead), cross-module access only via schema types or public DI tokens and the owning module's service. Exception- user and organization modules live beside Better Auth in the auth schema because Better Auth owns those tables. Use when creating a new module, deciding where a table belongs, adding cross-module references, or reviewing schema/module coupling in apps/backend. Does NOT cover intra-module layering (use elysia-layered-architecture) or DI mechanics (use elysia-tsyringe).
+description: Modular monolith boundaries for this project's Elysia backend - each module under src/app/<module>/ owns exactly one Postgres schema via drizzle/schemas/<module>.schema.ts, no foreign keys across schemas (plain id columns instead), and cross-module communication is strictly service-to-service (AService -> B2Service via DI tokens). Exception- user and organization modules live beside Better Auth in the auth schema because Better Auth owns those tables. Use when creating a new module, deciding where a table belongs, adding cross-module references, wiring cross-module communication, or reviewing schema/module coupling in apps/backend. Does NOT cover intra-module layering (use elysia-layered-architecture) or DI mechanics (use elysia-tsyringe).
 license: MIT
 metadata:
   author: OpenAgentic
@@ -20,7 +20,9 @@ drizzle/schemas/<module>.schema.ts one Postgres schema per module: pgSchema("<mo
 ```
 
 Modules communicate only through published contracts: schema row types and
-DI tokens. Nothing else crosses a module boundary.
+DI tokens. Cross-module communication is strictly service-to-service —
+`AService` → `B2Service` via DI token injection. Nothing else crosses a
+module boundary.
 
 ## When to Apply
 
@@ -86,6 +88,10 @@ Allowed:
 - Resolving another module's service via its token from
   `<module>/constants/di.ts`.
 
+That pair — the foreign service type plus its token — **is** the
+service-to-service communication channel (rule 3.5). Nothing else crosses
+the line.
+
 Forbidden:
 - Importing another module's repositories, controllers, or container.
 - Importing anything from `src/app/<other>/` that isn't its `constants/di.ts`
@@ -93,28 +99,12 @@ Forbidden:
 - Value-importing schema types in Bun — use `import type` (Bun keeps
   type-only named imports at runtime and crashes on missing exports).
 
-### 3.5 Cross-module data access goes through the owning module — HIGH
+### 3.5 Cross-module communication is service to service — HIGH
 
-If module A needs rows owned by module B, it calls B's service (via DI
-token) or reads through B's published contract. A's repository never
-joins into B's schema tables. Compose with two queries + stitching in the
-requesting service; cache hot compositions per the owning module's
-conventions.
-
-```typescript
-// app/employee/services/employee.service.ts — the pattern
-constructor(
-	@inject(LOCATION_SERVICE_TOKEN) // from location/constants/di.ts
-	private readonly locationService: LocationService,
-) {}
-
-async getEmployeeWithVillage(id: string) {
-	const employee = await this.employeeRepository.findById(id);
-	if (!employee?.villageId) return null;
-	const village = await this.locationService.getVillage(employee.villageId);
-	return { ...employee, village };
-}
-```
+`AService` → `B2Service` via B's DI token is the only sanctioned
+cross-module call — never controller → foreign service, never
+repository → foreign repository. Direction rules, error translation, and
+cycle avoidance are detailed in rule 3.5's reference file.
 
 ### 3.6 New module checklist — MEDIUM
 

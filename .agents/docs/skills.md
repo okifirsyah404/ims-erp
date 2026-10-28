@@ -24,6 +24,7 @@ not in lock** (local/project-specific additions), **n/a** (not installed).
 | organization-best-practices | installed | Better Auth organization plugin, RBAC (better-auth/skills) |
 | drizzle-unix-timestamp | present, not in lock | project datetime convention (bigint ms, `unix-timestamp.ts`) |
 | drizzle-soft-deletes | present, not in lock | `deleted_at` never-hard-delete convention |
+| bun-test | present, not in lock | `bun test` conventions: mocked DB/Redis via constructor injection, no network (local, https://bun.com/docs/test) |
 | tsyringe | present, not in lock | project DI convention: Symbol tokens, composition root, transient default, resolution at HTTP boundary (local) |
 | elysiajs | env-provided | Elysia v2 routes/plugins/typed clients (not on disk) |
 | zod | installed | schema validation, error handling (pproenca/dot-skills) |

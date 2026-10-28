@@ -13,10 +13,10 @@ block module extraction, and create hidden deletion semantics.
 
 ## 2. Cross-Module Access — HIGH
 
-How modules may reference each other.
+How modules may reference and talk to each other.
 
 - 3.4 Cross-Module Imports: Schema Types and DI Tokens Only
-- 3.5 Cross-Module Data Access Goes Through the Owning Module
+- 3.5 Cross-Module Communication Is Service to Service
 
 ## 3. Lifecycle — MEDIUM
 

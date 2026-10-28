@@ -19,8 +19,10 @@ Modular monolith boundary convention for `apps/backend`. Each module under
 exist only within a module's own schema — cross-module references are plain
 id columns validated at the service layer. Modules import each other only
 via type-only schema row types and public DI tokens
-(`constants/di.ts`), and compose cross-module data by calling the owning
-module's service, never by joining its tables. Exception: the `user` and
+(`constants/di.ts`), and communicate cross-module strictly service-to-service —
+an `AService` constructor-injects the foreign `B2Service` and calls it;
+repositories never join another module's tables and controllers never call
+foreign services directly. Exception: the `user` and
 `organization` modules have no schema of their own — Better Auth generates
 and owns the `auth` schema's identity/tenant tables, and those modules
 project over them through their own repositories. Contains 6 rules across
@@ -37,7 +39,7 @@ policy, the auth exception) to incremental (new-module checklist).
    - 3.3 [Identity Tables Belong to Auth; User & Organization Project](references/3-auth-identity-exception.md) — CRITICAL (Shadow copies of auth tables fork the source of truth)
 2. [Cross-Module Access](references/_sections.md#2-cross-module-access) — **HIGH**
    - 3.4 [Cross-Module Imports: Schema Types and DI Tokens Only](references/4-cross-module-imports.md) — HIGH (Internal imports fork owners and crash Bun on type-only exports)
-   - 3.5 [Cross-Module Data Access Goes Through the Owning Module](references/5-access-through-owner.md) — HIGH (Cross-schema joins re-couple modules at the query level)
+   - 3.5 [Cross-Module Communication Is Service to Service](references/5-access-through-owner.md) — HIGH (Cross-schema joins re-couple modules at the query level; multiple channels fork ownership)
 3. [Lifecycle](references/_sections.md#3-lifecycle) — **MEDIUM**
    - 3.6 [New Module Checklist](references/6-new-module-checklist.md) — MEDIUM (Half-created modules and cross-module edits entangle early)
 

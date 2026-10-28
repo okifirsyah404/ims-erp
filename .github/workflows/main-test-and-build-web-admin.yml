@@ -1,0 +1,74 @@
+name: Main Test and Build Web Admin
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "apps/web-admin/**"
+      - "packages/**"
+      - "package.json"
+      - "bun.lock"
+      - "bunfig.toml"
+      - "turbo.json"
+      - ".github/workflows/main-test-and-build-web-admin.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "apps/web-admin/**"
+      - "packages/**"
+      - "package.json"
+      - "bun.lock"
+      - "bunfig.toml"
+      - "turbo.json"
+      - ".github/workflows/main-test-and-build-web-admin.yml"
+
+env:
+  HUSKY: 0
+
+jobs:
+  build:
+    name: Build Web Admin
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun 1.4.4
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint web-admin
+        run: bun run --cwd apps/web-admin lint
+
+      - name: Build web-admin
+        run: bun run --cwd apps/web-admin build
+
+  docker:
+    name: Docker Build Web Admin
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ims-erp-web-admin image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/web-admin/Dockerfile
+          push: false
+          tags: ims-erp-web-admin:ci
+          cache-from: type=gha,scope=web-admin
+          cache-to: type=gha,scope=web-admin,mode=max

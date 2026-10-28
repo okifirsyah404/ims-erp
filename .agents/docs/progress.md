@@ -3,7 +3,39 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
-## Completed (this session — docs phase only, 2026-10-25)
+## Completed (this session - backend unit tests + husky pre-commit, 2026-10-28)
+
+- New local skill `bun-test` (`.agents/skills/bun-test/`, recorded in
+  `skills.md`): bun:test conventions — mock() / mock.module(), Drizzle DB and
+  Bun RedisClient always mocked via constructor injection, never real
+  connections or connection strings. Reference: https://bun.com/docs/test.
+- `apps/backend`: `"test": "bun test"`, `"lint": "oxlint"` added;
+  `bunfig.toml` (test root `test/`, preload `test/preload.ts` importing
+  `reflect-metadata` for tsyringe under the test runtime).
+- Shared mock helpers `test/helpers/mock-db.ts`: chainable Drizzle query
+  builder mock (captures calls, resolves configured rows/count, supports
+  paginate-style count→rows alternation) and Redis mock (in-memory store,
+  TTL capture, deletion).
+- Unit tests (11, all offline, no network):
+  - `test/unit/location.service.test.ts` — pass-through delegation to the 4
+    repository interfaces, null propagation.
+  - `test/unit/province.repository.test.ts` — cache-aside (miss→DB→set with
+    300s TTL, hit skips DB), cached `null` short-circuit, soft-delete `where`
+    applied, create invalidates list+id cache keys.
+- `apps/backend` gained devDependency `reflect-metadata` + `oxlint`.
+- `.husky/pre-commit` uncommented: `bun run lint` + `bun run test` (`build`
+  stays commented — too slow for a hook). Turbo `test` task set
+  `cache: false` so cached PASS cannot mask stale state.
+- Verified (exact commands, from repo root):
+  - `bun run lint` → 3 tasks successful
+  - `bun run test` → 2 tasks successful; `apps/backend`: 11 pass / 0 fail
+  - `bun test` in `apps/backend` run twice → identical pass (idempotent)
+  - Remaining oxlint warnings are pre-existing (empty stub files, unused
+    stub params in `src/app/user`, `src/providers/better-auth`); no
+    warnings in new test files.
+- User scope decision: database and Redis are **mocked**, not real, in this
+  slice; repository integration tests against disposable Postgres remain a
+  documented future layer (see `testing-strategy.md`).
 
 - New local skill `nestjs-layered-architecture` (`.agents/skills/` +
   `.claude/skills/` mirror, recorded in `skills.md`): module layout, layer

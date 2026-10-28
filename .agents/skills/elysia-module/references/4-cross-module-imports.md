@@ -22,7 +22,10 @@ import type { LocationService } from '@modules/location/services/location.servic
 import { LOCATION_SERVICE_TOKEN } from '@modules/location/constants/di';
 ```
 
-Token-plus-type imports; internals stay private.
+Token-plus-type imports; internals stay private. That pair — the foreign
+service type plus its DI token — **is** the service-to-service
+communication channel (rule 3.5): the type is erased at runtime, the token
+carries the actual dependency.
 
 ## Why
 

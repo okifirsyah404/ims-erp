@@ -6,24 +6,31 @@ acceptance of a feature.
 
 ## Current tooling
 
-- Vitest 4, globals on, per-workspace configs.
-  - `apps/backend-elysia` currently has **no test script** — add
-    `vitest.config.ts` (unit: `test/**/*.spec.ts`) and `test:e2e` when the
-    first slice lands.
-- Plain Elysia/Bun test setup (`bun:test` or vitest) with constructor-injected
-  mocks for collaborators; no DI container to patch.
-- No Docker/testcontainers wiring exists yet — integration tests target a
-  real local PostgreSQL configured by env names (`POSTGRES_HOST`, `POSTGRES_PORT`,
-  `POSTGRES_USER`, `POSTGRES_DB`, disposable DB values supplied per run).
+- **Backend (`apps/backend`): `bun test`** (Bun built-in, zero extra runner
+  deps), config in `bunfig.toml`, tests in `test/unit/`, shared mocks in
+  `test/helpers/mock-db.ts`. Conventions: `.agents/skills/bun-test`
+  (DB + Redis always mocked via constructor injection, no network, no real
+  connection strings). `reflect-metadata` preload required for tsyringe.
+- Frontend/other workspaces: not established yet.
+- No Docker/testcontainers wiring exists yet - integration tests, when
+  introduced, target a real local PostgreSQL configured by env names
+  (`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_DB`,
+  disposable DB values supplied per run).
 
 ## Test pyramid
 
 | Layer | Location | Scope | Dependencies |
 |---|---|---|---|
-| Unit | `apps/backend-elysia/test/unit/<domain>/{routes,services}` | use cases with mocked repositories; route validation/status/permissions with mocked services | mocks only |
-| Integration (real PG) | `apps/backend-elysia/test/integration` (to be introduced) | migrations applied, constraints (unique/23505, FK), pagination counts, soft-delete filtering, relational-v2 queries exercising real relationships | disposable PostgreSQL |
-| e2e | `apps/backend-elysia/test/e2e` (to be introduced) | real HTTP against the booted app: session flow, authorization denial, write success, deactivation | disposed app + PG |
-| Frontend | not established yet | component/query tests when slices land; route tree generated, never hand-edited | — |
+| Unit | `apps/backend/test/unit/` | services with mocked repositories (pass-through, null propagation); repositories with mocked Drizzle chain + Redis client (soft-delete filter construction, cache-aside flow, TTL 300, write invalidation) | mocks only, fully offline |
+| Integration (real PG) | not yet introduced | migrations applied, constraints (unique/23505, FK), pagination counts, soft-delete filtering against real data | disposable PostgreSQL |
+| e2e | `apps/backend/test/e2e/` (empty, reserved) | real HTTP against the booted app: session flow, authorization denial, write success, deactivation | disposed app + PG |
+| Frontend | not established yet | component/query tests when slices land; route tree generated, never hand-edited | - |
+
+## Husky pre-commit
+
+`.husky/pre-commit` runs `bun run lint` + `bun run test` at repo root via
+Turborepo; the `test` task is `cache: false` so a cached PASS can never mask
+stale state. `build` stays out of the hook (too slow).
 
 ## Fixture policy
 
