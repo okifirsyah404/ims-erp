@@ -1,0 +1,1169 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "e1f30cb1-3c3b-45ee-9457-aaf335967aae",
+  "prevIds": [
+    "84bff709-31a0-4f2e-aed2-dd353e695dc6"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "location"
+      ],
+      "writes": [
+        "s|sch|location",
+        "n|sch|location",
+        "e|sch|location"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "location",
+        "districts"
+      ],
+      "writes": [
+        "s|tbl|location.districts",
+        "n|tbl|location.districts",
+        "e|tbl|location.districts",
+        "n|rel|location.districts",
+        "n|type|location.districts",
+        "n|rel|location.districts_pkey",
+        "n|rel|location.districts_code_key"
+      ],
+      "reads": [
+        "n|sch|location"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "location",
+        "provinces"
+      ],
+      "writes": [
+        "s|tbl|location.provinces",
+        "n|tbl|location.provinces",
+        "e|tbl|location.provinces",
+        "n|rel|location.provinces",
+        "n|type|location.provinces",
+        "n|rel|location.provinces_pkey",
+        "n|rel|location.provinces_code_key"
+      ],
+      "reads": [
+        "n|sch|location"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "location",
+        "regencies"
+      ],
+      "writes": [
+        "s|tbl|location.regencies",
+        "n|tbl|location.regencies",
+        "e|tbl|location.regencies",
+        "n|rel|location.regencies",
+        "n|type|location.regencies",
+        "n|rel|location.regencies_pkey",
+        "n|rel|location.regencies_code_key"
+      ],
+      "reads": [
+        "n|sch|location"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "location",
+        "villages"
+      ],
+      "writes": [
+        "s|tbl|location.villages",
+        "n|tbl|location.villages",
+        "e|tbl|location.villages",
+        "n|rel|location.villages",
+        "n|type|location.villages",
+        "n|rel|location.villages_pkey",
+        "n|rel|location.villages_code_key"
+      ],
+      "reads": [
+        "n|sch|location"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "location",
+        "districts",
+        "district_name_idx"
+      ],
+      "writes": [
+        "s|idx|location.district_name_idx",
+        "n|idx|location.district_name_idx",
+        "e|idx|location.district_name_idx",
+        "n|rel|location.district_name_idx"
+      ],
+      "reads": [
+        "n|tbl|location.districts",
+        "n|sch|location",
+        "n|col|location.districts.name"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "location",
+        "districts",
+        "district_code_idx"
+      ],
+      "writes": [
+        "s|idx|location.district_code_idx",
+        "n|idx|location.district_code_idx",
+        "e|idx|location.district_code_idx",
+        "n|rel|location.district_code_idx"
+      ],
+      "reads": [
+        "n|tbl|location.districts",
+        "n|sch|location",
+        "n|col|location.districts.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "location",
+        "provinces",
+        "province_name_idx"
+      ],
+      "writes": [
+        "s|idx|location.province_name_idx",
+        "n|idx|location.province_name_idx",
+        "e|idx|location.province_name_idx",
+        "n|rel|location.province_name_idx"
+      ],
+      "reads": [
+        "n|tbl|location.provinces",
+        "n|sch|location",
+        "n|col|location.provinces.name"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "location",
+        "provinces",
+        "province_code_idx"
+      ],
+      "writes": [
+        "s|idx|location.province_code_idx",
+        "n|idx|location.province_code_idx",
+        "e|idx|location.province_code_idx",
+        "n|rel|location.province_code_idx"
+      ],
+      "reads": [
+        "n|tbl|location.provinces",
+        "n|sch|location",
+        "n|col|location.provinces.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "location",
+        "regencies",
+        "regency_name_idx"
+      ],
+      "writes": [
+        "s|idx|location.regency_name_idx",
+        "n|idx|location.regency_name_idx",
+        "e|idx|location.regency_name_idx",
+        "n|rel|location.regency_name_idx"
+      ],
+      "reads": [
+        "n|tbl|location.regencies",
+        "n|sch|location",
+        "n|col|location.regencies.name"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "location",
+        "regencies",
+        "regency_code_idx"
+      ],
+      "writes": [
+        "s|idx|location.regency_code_idx",
+        "n|idx|location.regency_code_idx",
+        "e|idx|location.regency_code_idx",
+        "n|rel|location.regency_code_idx"
+      ],
+      "reads": [
+        "n|tbl|location.regencies",
+        "n|sch|location",
+        "n|col|location.regencies.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "location",
+        "villages",
+        "village_name_idx"
+      ],
+      "writes": [
+        "s|idx|location.village_name_idx",
+        "n|idx|location.village_name_idx",
+        "e|idx|location.village_name_idx",
+        "n|rel|location.village_name_idx"
+      ],
+      "reads": [
+        "n|tbl|location.villages",
+        "n|sch|location",
+        "n|col|location.villages.name"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "location",
+        "villages",
+        "village_code_idx"
+      ],
+      "writes": [
+        "s|idx|location.village_code_idx",
+        "n|idx|location.village_code_idx",
+        "e|idx|location.village_code_idx",
+        "n|rel|location.village_code_idx"
+      ],
+      "reads": [
+        "n|tbl|location.villages",
+        "n|sch|location",
+        "n|col|location.villages.code"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "location",
+        "districts"
+      ],
+      "writes": [
+        "s|fk|location.districts.districts_regency_id_regencies_id_fkey",
+        "n|fk|location.districts.districts_regency_id_regencies_id_fkey",
+        "e|fk|location.districts.districts_regency_id_regencies_id_fkey",
+        "n|con|location.districts.districts_regency_id_regencies_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|location.districts",
+        "n|sch|location",
+        "n|tbl|location.regencies",
+        "n|sch|location",
+        "n|col|location.districts.regency_id",
+        "n|col|location.regencies.id",
+        "e|uniqueness|location.regencies.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "location",
+        "regencies"
+      ],
+      "writes": [
+        "s|fk|location.regencies.regencies_province_id_provinces_id_fkey",
+        "n|fk|location.regencies.regencies_province_id_provinces_id_fkey",
+        "e|fk|location.regencies.regencies_province_id_provinces_id_fkey",
+        "n|con|location.regencies.regencies_province_id_provinces_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|location.regencies",
+        "n|sch|location",
+        "n|tbl|location.provinces",
+        "n|sch|location",
+        "n|col|location.regencies.province_id",
+        "n|col|location.provinces.id",
+        "e|uniqueness|location.provinces.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "location",
+        "villages"
+      ],
+      "writes": [
+        "s|fk|location.villages.villages_district_id_districts_id_fkey",
+        "n|fk|location.villages.villages_district_id_districts_id_fkey",
+        "e|fk|location.villages.villages_district_id_districts_id_fkey",
+        "n|con|location.villages.villages_district_id_districts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|location.villages",
+        "n|sch|location",
+        "n|tbl|location.districts",
+        "n|sch|location",
+        "n|col|location.villages.district_id",
+        "n|col|location.districts.id",
+        "e|uniqueness|location.districts.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "location",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "name": "districts",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "name": "provinces",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "name": "regencies",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "name": "villages",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "districts",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "districts",
+        "name": "code",
+        "type": "varchar(20)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "districts",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "districts",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "districts",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "districts",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "districts",
+        "name": "regency_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "provinces",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "provinces",
+        "name": "code",
+        "type": "varchar(20)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "provinces",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "provinces",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "provinces",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "provinces",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "regencies",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "regencies",
+        "name": "code",
+        "type": "varchar(20)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "regencies",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "regencies",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "regencies",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "regencies",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "regencies",
+        "name": "province_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "villages",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "villages",
+        "name": "code",
+        "type": "varchar(20)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "villages",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "villages",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "villages",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "villages",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "villages",
+        "name": "district_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "districts",
+        "name": "district_name_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "name",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "districts",
+        "name": "district_code_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "provinces",
+        "name": "province_name_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "name",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "provinces",
+        "name": "province_code_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "regencies",
+        "name": "regency_name_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "name",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "regencies",
+        "name": "regency_code_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "villages",
+        "name": "village_name_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "name",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "villages",
+        "name": "village_code_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "districts",
+        "name": "districts_regency_id_regencies_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "regency_id"
+        ],
+        "schemaTo": "location",
+        "tableTo": "regencies",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "regencies",
+        "name": "regencies_province_id_provinces_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "province_id"
+        ],
+        "schemaTo": "location",
+        "tableTo": "provinces",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "villages",
+        "name": "villages_district_id_districts_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "district_id"
+        ],
+        "schemaTo": "location",
+        "tableTo": "districts",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "districts",
+        "name": "districts_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "provinces",
+        "name": "provinces_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "regencies",
+        "name": "regencies_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "villages",
+        "name": "villages_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "districts",
+        "name": "districts_code_key",
+        "nameExplicit": false,
+        "columns": [
+          "code"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "provinces",
+        "name": "provinces_code_key",
+        "nameExplicit": false,
+        "columns": [
+          "code"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "regencies",
+        "name": "regencies_code_key",
+        "nameExplicit": false,
+        "columns": [
+          "code"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "location",
+        "table": "villages",
+        "name": "villages_code_key",
+        "nameExplicit": false,
+        "columns": [
+          "code"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    }
+  ]
+}
