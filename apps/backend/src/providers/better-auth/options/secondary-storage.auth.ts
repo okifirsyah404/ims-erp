@@ -16,7 +16,9 @@ import { betterAuthLogger } from '../logger.auth';
  */
 const KEY_PREFIX = 'better-auth:';
 
-export const betterAuthSecondaryStorage: BetterAuthOptions['secondaryStorage'] = {
+export const betterAuthSecondaryStorage: NonNullable<
+	BetterAuthOptions['secondaryStorage']
+> = {
 	get: async (key) => {
 		try {
 			return await redisClient.get(KEY_PREFIX + key);
