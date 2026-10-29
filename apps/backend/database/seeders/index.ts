@@ -11,28 +11,36 @@ const logger = pino({
 	},
 });
 
+/**
+ * Runs all seeders. Exported so other scripts (e.g. migrate-reset) can reuse
+ * it without spawning a child process; the caller owns closeDB/exit handling.
+ */
+export async function runSeeders(): Promise<void> {
+	const startedAt = DateTime.now();
+	logger.info({ startedAt: startedAt.toISO() }, 'Seeding started');
+
+	await seedAuth();
+	await seedLocations(drizzleDB);
+
+	const finishedAt = DateTime.now();
+	const elapsed = Duration.fromObject({
+		milliseconds: finishedAt.diff(startedAt).milliseconds,
+	})
+		.shiftTo('hours', 'minutes', 'seconds', 'milliseconds')
+		.toHuman();
+
+	logger.info(
+		{
+			finishedAt: finishedAt.toISO(),
+			duration: elapsed,
+		},
+		'Location seeding complete',
+	);
+}
+
 async function main(): Promise<void> {
 	try {
-		const startedAt = DateTime.now();
-		logger.info({ startedAt: startedAt.toISO() }, 'Seeding started');
-
-		await seedAuth();
-		await seedLocations(drizzleDB);
-
-		const finishedAt = DateTime.now();
-		const elapsed = Duration.fromObject({
-			milliseconds: finishedAt.diff(startedAt).milliseconds,
-		})
-			.shiftTo('hours', 'minutes', 'seconds', 'milliseconds')
-			.toHuman();
-
-		logger.info(
-			{
-				finishedAt: finishedAt.toISO(),
-				duration: elapsed,
-			},
-			'Location seeding complete',
-		);
+		await runSeeders();
 	} catch (error) {
 		logger.error({ err: error }, 'Location seeding failed');
 		process.exit(1);
@@ -41,7 +49,11 @@ async function main(): Promise<void> {
 	}
 }
 
-main().catch((error) => {
-	console.error('Seeding failed:', error);
-	process.exit(1);
-});
+// Only run the CLI when invoked directly; importers (migrate-reset.ts) call
+// runSeeders() themselves.
+if (import.meta.main) {
+	main().catch((error) => {
+		console.error('Seeding failed:', error);
+		process.exit(1);
+	});
+}

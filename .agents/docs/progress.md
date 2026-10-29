@@ -3,6 +3,52 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed (this session - avatar generation pipeline, 2026-10-29)
+
+**Status: implemented (unit-verified), NOT integration-verified against a
+running server + real S3.**
+
+- On user creation (email sign-up, OAuth, admin-created — anything through
+  the Better Auth instance, incl. the auth seeder), the
+  `databaseHooks.user.create.after` hook in
+  `src/providers/better-auth/auth.options.ts` enqueues an `avatar` job
+  (`src/providers/better-auth/avatar/avatar.queue.ts`). Enqueue errors are
+  logged and swallowed — sign-up never fails because of the queue.
+  Deterministic `jobId: avatar:<userId>` dedupes replays; 3 attempts,
+  exponential backoff.
+- Worker (`avatar.worker.ts`): deterministic DiceBear `initials` avatar,
+  seed = user name (falls back to userId), 72×72; SVG→PNG via
+  `@dicebear/converter` (new dep; brings sharp/resvg); PNG written to
+  `.tmp/avatars/<userId>.png` (repo-local temp dir, gitignored, always
+  removed in `finally`); uploaded to S3 key `user/<userId>/avatar.png`;
+  `auth.users.image` stores the **object key**, never a URL.
+- S3 provider `src/providers/s3/s3.ts`: Bun-native `S3Client` from existing
+  `S3_*` env (no new dependency); `avatarObjectKey()` +
+  `presignAvatarUrl()` (5-min presigned GET).
+- BullMQ runs on the existing Bun Redis client via `createBunRedisClient`
+  (`src/providers/queue/queue.connection.ts`); no ioredis. Worker started in
+  `src/index.ts`; SIGTERM closes worker then queue connection (wrapper
+  `quit()`, never raw `redisClient.close()`).
+- Show endpoint (outside Better Auth routes):
+  `GET /users/:userId/avatar` in `src/app/user/controllers/user.controller.ts`
+  — guarded by `erpGuard()` (session + org membership required, any member
+  role; no permission needed); 302 redirect to a freshly presigned S3 URL;
+  404 when the user has no avatar key yet. Fills the previously empty user
+  module (repository/service/container + DI tokens).
+- Verified commands (2026-10-29, `apps/backend`):
+  - `bun install` after adding `@dicebear/converter@10.7.0` → resolved,
+    21 packages installed.
+  - `bun run typecheck` → clean; `bun run lint` → no new warnings (only
+    pre-existing stub-file warnings).
+  - `bun test` → 67 pass / 0 fail (was 54; +6 new: `test/unit/
+    avatar.worker.test.ts` PNG magic bytes, determinism, blank-name
+    fallback, key pattern; `test/unit/user.service.test.ts` presigned URL
+    contains signature, 404 path; 67 total incl. 7 pre-existing auth tests).
+- NOT yet verified (needs live server + reachable S3/Redis): end-to-end
+  sign-up → job processed → object in bucket → endpoint 302. The presign
+  unit test runs against real local config (offline signing only; no S3
+  request made).
+
 ## Completed (this session - two-layer authorization core, 2026-10-29)
 
 - **Permission catalog (single source of truth)**:
