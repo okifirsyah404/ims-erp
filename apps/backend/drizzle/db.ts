@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/bun-sql';
 import { appConfig } from '../config/providers/config';
 import { authRelations } from './schemas/auth.schema';
 import { locationRelations } from './schemas/location.schema';
+import { salesRelations } from './schemas/sales.schema';
 
 const client = new SQL(appConfig.database.url!);
 
@@ -11,6 +12,7 @@ export const drizzleDB = drizzle({
 	relations: {
 		...locationRelations,
 		...authRelations,
+		...salesRelations,
 	},
 });
 

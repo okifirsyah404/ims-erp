@@ -11,7 +11,7 @@
 	"scripts": {
 		"build": "turbo run build",
 		"build:libs": "bun --filter '@ims-erp/config' build && bun --filter '@ims-erp/lib-cache' build",
-		"dev": "turbo run start:dev",
+		"dev": "turbo run dev",
 		"test": "turbo run test",
 		"lint": "turbo run lint",
 		"typecheck": "turbo run typecheck",

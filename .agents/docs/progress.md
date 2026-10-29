@@ -3,6 +3,146 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed (this session - two-layer authorization core, 2026-10-29)
+
+- **Permission catalog (single source of truth)**:
+  `packages/common/src/authorization/erp-permissions.ts` - full ERP
+  resource/action vocabulary, portal statements, built-in org statements,
+  18 role grants (`erpRoleGrants`), all browser-safe and typed; exported
+  from `@ims-erp/common`. `packages/common` rebuilt (`bun run build`).
+- **Backend access control** `apps/backend/src/providers/better-auth/ac/`:
+  - `organization-ac.ts` - `createAccessControl` over `defaultStatements` +
+    ERP catalog + portals; 18 `erpRoles`; `authorizeErpPermissions`
+    (multi-role union, deny-by-default).
+  - `admin-ac.ts` - global admin/user constants; admin() defaults preserved.
+  - `auth-hooks.ts` - Better Auth `hooks.before` blocking owner-role grants
+    via add-member / update-member-role / create-invitation unless actor is
+    an owner; org admins restricted to non-owner roles.
+  - `plugins/organization.auth.ts` now passes `ac` + `roles`; `teams: false`.
+- **Username plugin** added (`plugins/username.auth.ts`); `auth.users`
+  gained `username` (unique) + `display_username` in append-only migration
+  `20261029044823_dear_living_lightning` (also creates `sales` schema).
+- **Elysia guard** `src/authorization/elysia-auth.ts`: `erpGuard()` macro
+  (`erp: { permission: [...], policy }`) resolving session from real
+  request headers (401), organization context (`x-organization-id` header >
+  active org; membership validated against the SAME id via
+  `auth.api.getFullOrganization`, 403 when not a member - global admins
+  NOT exempt), permission checks (403), optional record-level policy hook.
+- **Sales vertical** (`src/app/sales/`, schema `drizzle/schemas/sales.schema.ts`):
+  quotations + payments with tenant-scoped repositories (conditional
+  `WHERE status = from` state transitions), FK-ownership validation
+  (cross-org quotation references rejected 404), self-approval blocks
+  (quotation + payment), execution-only-after-approval, explicit
+  configuration-missing denial for approvals (no invented thresholds),
+  whitelisted update fields (no mass assignment). Wired into
+  `src/index.ts` bootstrap.
+- **Auth seeder** `database/seeders/seed/auth.seeder.ts` - idempotent;
+  creates initial global admin via Better Auth instance
+  (`createUser` + `setUserPassword`), never resets existing users, no org
+  membership. Credentials from new `AuthConfigSchema` (`auth` section in
+  `config.schema.ts` + loader; `INITIAL_ADMIN_EMAIL/USERNAME/PASSWORD`,
+  dev-only defaults, never logged; `.env.example` updated). Wired into
+  `database/seeders/index.ts` (runs before location seeding).
+- **Frontend** `apps/web-admin`: `lib/erp-ac.ts` (client ac+roles from the
+  shared catalog), `organizationClient({ ac, roles })` in `auth-client.ts`,
+  `permissions.ts` types from shared vocabulary, `use-permission.tsx`
+  org-aware `usePermission`/`Can`/`useOrganizations`/`switchOrganization`,
+  sidebar nav migrated to the new permission strings. `vite build` passes.
+- **Tests** (`apps/backend/test/authorization/`, bun:test, offline):
+  - `permission-matrix.test.ts` (18): all 18 roles defined; owner full;
+    org-admin no payroll/payments/secrets; member baseline; sales
+    create-not-approve; finance no HR; hr no approve/execute; auditor
+    read-only; technician/freelancer scoping; portal-only roles; marketing
+    restrictions; multi-role union; deny-by-default.
+  - `authorization.test.ts` (24, real Elysia `app.handle()` with auth+DB
+    mocked at seams): 401s; global-admin-no-membership; owner permissions;
+    member baseline; sales create permitted + approve denied (permission);
+    technician denied; cross-org read/FK rejection (404/403); org-context
+    header mismatch; multi-role self-approval blocked in service;
+    missing-approval-config denial; payment execute-before-approval (422);
+    self-execution blocked; revoked membership denied; multi-permission
+    checks.
+- **Docs**: `security-and-access.md` rewritten (two layers, where things
+  live, route/query/how-to guides, approvals, escalation, audit, cache,
+  seeding, gaps); ADR-0006 added.
+- **Verified commands (2026-10-29, from repo root unless noted)**:
+  - `bun run lint` → 3 tasks successful (remaining warnings pre-existing)
+  - `bun run test` → 2 tasks successful; backend 54 pass / 0 fail
+  - `bun run typecheck` → 2 tasks successful
+  - `bunx tsc -b` (apps/web-admin) → pass; `bun run build` (web-admin) → pass
+  - `bunx drizzle-kit generate` (apps/backend) → append-only migration
+    generated & inspected (sales schema + username columns)
+  - `bun run build` (packages/common) → pass
+- NOT yet verified (needs disposable DB / running server): `drizzle:migrate`
+  against a real database, live login/cookie flow through the mounted auth
+  handler, seeder execution against a real DB. These remain Phase 2 exit
+  items.
+
+## Completed (follow-up - runtime verification, 2026-10-29)
+
+- **drizzle-kit driver fix**: migrate/push/generate/studio scripts in
+  `apps/backend/package.json` now run under the Bun runtime
+  (`bunx --bun drizzle-kit ...`) - the DB uses `drizzle-orm/bun-sql`, and
+  drizzle-kit otherwise resolves no DB driver and exits with "please install
+  either of 'pg', 'postgres', 'bun'...". Documented pattern; use the same
+  prefix for any new drizzle-kit script.
+- **Auth seeder corrected**: `auth.api.listUsers` requires an authenticated
+  session (admin endpoint), so the seeder now checks existence via Drizzle
+  (`drizzle/schemas/auth.schema.ts` users table) and creates via
+  `auth.api.createUser` with inline `password` (single call; no
+  `setUserPassword` follow-up needed).
+- **Verified against the real dev DB (2026-10-29)**:
+  - `bun run drizzle:migrate` → migrations applied successfully
+    (sales schema + username columns).
+  - `bun run drizzle:seed` → initial admin created
+    (`admin@example.com`, global role `admin`, username `admin`) + location
+    seeding; second run skipped the admin ("password NOT reset") →
+    idempotency confirmed by running twice.
+  - DB row verified: user has role=admin, username/displayUsername set.
+  - Live Better Auth flow via `auth.api`: `signInEmail` with seeded
+    credentials → 200 + `better-auth.session_token` cookie issued;
+    wrong password → `UNAUTHORIZED`.
+- Remaining Phase 2 exit item: boot `bun dev` and exercise cookie-based
+  requests through the HTTP-mounted handler + `erpGuard` end-to-end
+  (server-side `auth.api` verification above covers the credential/session
+  path; HTTP cookie round-trip still pending).
+
+## Completed (follow-up - login wiring + live HTTP verification, 2026-10-29)
+
+- **Trusted origins** (`options/social-providers.auth.ts` +
+  `auth.options.ts`): `trustedOrigins` now includes the app URL and
+  `http://localhost:5173` (web-admin dev server). Without it, Better Auth's
+  origin check rejects state-changing requests (`MISSING_OR_NULL_ORIGIN` /
+  `INVALID_ORIGIN`) - sign-in itself worked but `set-active` did not.
+- **Frontend login wired** (`apps/web-admin`):
+  - `components/form/login-form.tsx` - was a static placeholder; now calls
+    `authClient.signIn.email`, shows backend error messages, disables
+    submit while pending, redirects to `/` on success.
+  - `routes/_authed.tsx` - new authenticated layout route; `beforeLoad`
+    calls `getSession()` (backend-authoritative) and redirects to `/login`
+    when no session.
+  - `routes/_authed.index.tsx` - moved from `index.tsx` under the guard;
+    route tree regenerated (`routeTree.gen.ts`).
+  - web-admin `tsc -b` + `vite build` pass.
+- **Live HTTP verification (bun dev on :3000, real requests)**:
+  - `POST /api/auth/sign-in/email` (correct creds) → 200 + session cookie.
+  - `GET /sales/quotations` without cookie → **401** (guard rejects before
+    handler); with cookie but no org membership (seeded global admin) →
+    **403** ("Organization context required") - global admin ≠ ERP access
+    confirmed over real HTTP.
+  - `POST /api/auth/organization/set-active` (origin included) → 200;
+    `get-session` shows `activeOrganizationId`.
+  - `POST /sales/quotations` as org member (owner role) → **201**;
+    `GET` list → **200** (tenant-scoped row visible, `erp` context logged:
+    organizationId/member.role resolved server-side).
+  - Foreign `x-organization-id` header with valid session → **403**
+    ("Organization membership required").
+  - Submit own quotation (200) then attempt own approval → **403**
+    ("Self-approval is not allowed") - SoD enforced over live HTTP.
+  - Wrong-password sign-in → 401 rejected.
+- Dev server stopped after verification. Backend typecheck + 54 tests +
+  web-admin typecheck all pass after changes.
+
 ## Completed (this session - backend unit tests + husky pre-commit, 2026-10-28)
 
 - New local skill `bun-test` (`.agents/skills/bun-test/`, recorded in
@@ -142,8 +282,27 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 ## Next executable task
 
-**Backend-elysia bring-up**: verify `bun dev` + drizzle migrate/seed against a
-disposable DB in `apps/backend-elysia` (runbook commands), then port the
-authorization core (role/ownership matrix in `security-and-access.md`) and
-resume the customer slice (ERP-0002 → ERP-0003 → ERP-0004/0005). Also: create
-a Dockerfile for backend-elysia and restore a CI test job.
+## Next executable task
+
+**Backend-elysia HTTP bring-up**: boot `bun dev` and verify the cookie
+round-trip through the mounted auth handler + `erpGuard` (real HTTP:
+sign-in → cookie → protected /sales route), then continue the customer
+slice (ERP-0002/3/4/5) applying `erp` macro + scoping patterns from
+`security-and-access.md`. Also: backend-elysia Dockerfile + CI test job.
+
+## Completed - Better Auth secondary storage (Redis), 2026-10-29
+
+- options/secondary-storage.auth.ts: adapter implementing Better Auth's
+  full SecondaryStorage contract (get / getAndDelete / increment / set /
+  delete) over the shared Bun RedisClient. Keys prefixed etter-auth:;
+  TTLs in seconds (setex); GETDEL for atomic getAndDelete; INCR+EXPIRE on
+  first increment only (fixed-window rate-limit contract). Fail closed:
+  errors logged via betterAuthLogger and re-thrown.
+- uth.options.ts: secondaryStorage wired; session.storeSessionInDatabase:
+  false (Redis-only sessions); session.cookieCache enabled, 5-min maxAge.
+- Live verification (bun dev + real Redis on :6379): sign-in 200; Redis holds
+  etter-auth:<token> + etter-auth:active-sessions-<userId> (7d TTL);
+  NO new Postgres session rows after sign-in (DB rows pre-switch are legacy);
+  cookie cache active (etter-auth.session_data cookie; repeat get-session
+  55ms -> 12ms); sign-out 200 then get-session -> null; 7 adapter unit tests
+  pass with mocked RedisClient seam; suite 61 pass / 0 fail; typecheck clean.

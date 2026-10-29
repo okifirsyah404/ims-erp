@@ -27,6 +27,8 @@ export const users = authSchema.table("users", {
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires"),
   bio: text("bio"),
+  username: text("username").unique(),
+  displayUsername: text("display_username"),
 });
 
 export const sessions = authSchema.table(

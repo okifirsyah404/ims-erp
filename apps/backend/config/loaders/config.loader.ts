@@ -55,6 +55,9 @@ export function loadEnvConfig(
       port: Number(process.env.APP_PORT ?? 3000),
       url: process.env.APP_URL || null,
       logLevel: process.env.APP_LOG_LEVEL || null,
+      corsOrigins: process.env.CORS_ORIGINS
+        ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+        : null,
     },
 
     database: {
@@ -100,6 +103,14 @@ export function loadEnvConfig(
         process.env.SMTP_SECURE == null
           ? null
           : process.env.SMTP_SECURE.toLowerCase() === 'true',
+    },
+
+    auth: {
+      // Dev-only bootstrap credentials; override via env in any shared env.
+      seedAdminEmail:
+        process.env.INITIAL_ADMIN_EMAIL ?? 'admin@example.com',
+      seedAdminUsername: process.env.INITIAL_ADMIN_USERNAME ?? 'admin',
+      seedAdminPassword: process.env.INITIAL_ADMIN_PASSWORD ?? 'admin123456',
     },
   });
 }

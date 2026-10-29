@@ -1,5 +1,6 @@
 import { createAuthClient } from 'better-auth/react'
-import { adminClient } from 'better-auth/client/plugins'
+import { adminClient, organizationClient } from 'better-auth/client/plugins'
+import { erpAccessControl, erpRoles } from './erp-ac'
 
 export const authClient = createAuthClient({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000',
@@ -7,8 +8,16 @@ export const authClient = createAuthClient({
   fetchOptions: {
     credentials: 'include',
   },
-  plugins: [adminClient()],
+  plugins: [
+    adminClient(),
+    // organizationClient mirrors the server's organization() plugin
+    // configuration (same ac + roles from the shared catalog).
+    organizationClient({
+      ac: erpAccessControl,
+      roles: erpRoles,
+    }),
+  ],
 });
 
-export const { signIn, signOut, useSession, getSession } = authClient;
-
+export const { signIn, signOut, useSession, getSession, organization } =
+  authClient;

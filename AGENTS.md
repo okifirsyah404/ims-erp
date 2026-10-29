@@ -48,7 +48,8 @@ else is *proposed*: verify before claiming it works. Full list with outcomes:
 |---|---|---|
 | `bun run dev` | repo root | ⚠️ proposed — runs turbo `start:dev` across workspaces |
 | `bun install` / turbo tasks for build/dev | repo root | ⚠️ proposed — never run in this repo yet |
-| `bunx drizzle-kit generate --config ./drizzle.config.ts` | `apps/backend` | ⚠️ proposed — migration journal state unverified; see `runbook.md` |
+| `bunx drizzle-kit generate --config ./drizzle.config.ts` | `apps/backend` | ⚠️ proposed - migration journal state unverified; see `runbook.md` |
+| `bun run drizzle:migrate` / `drizzle:seed` (scripts use `bunx --bun drizzle-kit`) | `apps/backend` | ✅ verified 2026-10-29 - migrations applied; seed idempotent (run twice); the `--bun` flag is required because the DB driver is `drizzle-orm/bun-sql` |
 
 > The previous NestJS backend (`apps/backend-nest`, package `backend`) was
 > deleted 2026-10-28; its verified-command history is superseded. Commands
