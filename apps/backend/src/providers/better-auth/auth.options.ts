@@ -1,5 +1,6 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2';
 import type { BetterAuthOptions } from 'better-auth';
+import { avatarUserCreateHook } from './avatar/avatar.queue';
 import { appConfig } from '../../../config/providers/config.js';
 import { drizzleDB } from '../../../drizzle/db.js';
 import { betterAuthEmailAndPasswordOptions } from './options/email-and-password.auth.js';
@@ -26,6 +27,13 @@ export const betterAuthOptions = {
 	},
 	emailAndPassword: betterAuthEmailAndPasswordOptions,
 	emailVerification: betterAuthEmailVerificationOptions,
+	databaseHooks: {
+		user: {
+			// Fire-and-forget avatar generation on every user creation
+			// (sign-up, OAuth, admin-created). Never fails user creation.
+			create: { after: avatarUserCreateHook() },
+		},
+	},
 	plugins: betterAuthPlugins,
 	trustedOrigins: betterAuthTrustedOrigins,
 	// Sessions live in Redis (secondary storage); the database is NOT used for

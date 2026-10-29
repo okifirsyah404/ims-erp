@@ -39,3 +39,6 @@ graphify-out/
 # Misc
 .DS_Store
 *.pem
+
+# Avatar worker temp files
+.tmp/

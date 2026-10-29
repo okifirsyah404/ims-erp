@@ -7,14 +7,21 @@ import { pinoLogger } from '@providers/logger/logger';
 import { Elysia } from 'elysia';
 import { container } from 'tsyringe';
 import { elysiaApp } from './app/app';
+import { startAvatarWorker } from '@providers/better-auth/avatar/avatar.worker';
+import {
+	closeQueueConnection,
+} from '@providers/queue/queue.connection';
 import { registerLocation } from './app/location/container';
 import { LocationController } from './app/location/controllers/location.controller';
 import { registerSales } from './app/sales/container';
 import { SalesController } from './app/sales/controllers/sales.controller';
+import { registerUser } from './app/user/container';
+import { UserController } from './app/user/controllers/user.controller';
 
 registerProvider(container);
 registerLocation(container);
 registerSales(container);
+registerUser(container);
 
 const bootstrap = new Elysia()
 	.use(wrap(pinoLogger))
@@ -33,7 +40,21 @@ const bootstrap = new Elysia()
 	.use(elysiaApp)
 	.use(LocationController.plugin())
 	.use(SalesController.plugin())
+	.use(UserController.plugin())
 	.listen(appConfig.app.port);
+
+// Avatar generation worker: consumes the BullMQ 'avatar' queue filled by
+// Better Auth's user.create.after hook. Non-fatal at boot: a Redis outage
+// must not take the API down.
+const avatarWorker = startAvatarWorker();
+avatarWorker.on('error', (error) => {
+	pinoLogger.error({ err: error }, 'avatar worker error');
+});
+
+process.on('SIGTERM', async () => {
+	await avatarWorker.close();
+	await closeQueueConnection();
+});
 
 pinoLogger.info(
 	`🦊 Elysia is running at ${bootstrap.server?.hostname}:${bootstrap.server?.port}`,
