@@ -3,6 +3,17 @@ import type { BetterAuthOptions } from 'better-auth';
 import { avatarUserCreateHook } from './avatar/avatar.queue';
 import { appConfig } from '../../../config/providers/config.js';
 import { drizzleDB } from '../../../drizzle/db.js';
+import {
+	accounts,
+	apikeys,
+	invitations,
+	members,
+	organizations,
+	passkeys,
+	sessions,
+	users,
+	verifications,
+} from '../../../drizzle/schemas/auth.schema';
 import { betterAuthEmailAndPasswordOptions } from './options/email-and-password.auth.js';
 import { betterAuthEmailVerificationOptions } from './options/email-verification.auth.js';
 import { betterAuthSecondaryStorage } from './options/secondary-storage.auth.js';
@@ -16,6 +27,22 @@ export const betterAuthOptions = {
 		provider: 'pg',
 		schemaName: 'auth',
 		usePlural: true,
+		// Explicitly list auth tables: drizzle() is configured with relations
+		// only, so db._.fullSchema misses tables without relations (apikeys),
+		// which makes Better Auth's runtime schema check report a false
+		// "missing table" error at startup. Keys must match the expected DB
+		// table names (plural, since usePlural is set).
+		schema: {
+			users,
+			sessions,
+			accounts,
+			verifications,
+			organizations,
+			members,
+			invitations,
+			passkeys,
+			apikeys,
+		},
 	}) as BetterAuthOptions['database'],
 	user: {
 		additionalFields: {
