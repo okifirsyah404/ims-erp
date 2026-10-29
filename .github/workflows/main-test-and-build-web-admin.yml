@@ -71,4 +71,4 @@ jobs:
           push: false
           tags: ims-erp-web-admin:ci
           cache-from: type=gha,scope=web-admin
-          cache-to: type=gha,scope=web-admin,mode=max
+          cache-to: type=gha,scope=web-admin,mode=max,ignore-error=true
