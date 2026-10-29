@@ -11,8 +11,8 @@ FROM oven/bun:1.4-alpine AS deps
 WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
 COPY packages/ui/package.json packages/ui/
-# web-admin declares workspace:* on @ims-erp/common, so bun requires its
-# manifest even though only @ims-erp/ui is imported via path aliases.
+# web-admin imports @ims-erp/common (browser-safe permission catalog); bun
+# requires the workspace manifest at install time.
 COPY packages/common/package.json packages/common/
 COPY apps/web-admin/package.json apps/web-admin/
 RUN --mount=type=cache,target=/root/.bun/install/cache \
@@ -21,7 +21,15 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
 # ---- build: bundle SPA with vite ----
 FROM deps AS build
 COPY packages/ui/ packages/ui/
+# tsconfig.json is needed by both builds: packages/common/tsconfig.json
+# extends it, and web-admin's tsconfig references it.
 COPY tsconfig.json ./
+# @ims-erp/common has no tsconfig path alias; its package.json points at
+# dist/, so the package must be fully copied and compiled before the
+# web-admin build. (bun install used --ignore-scripts, so `prepare` did not
+# build it.)
+COPY packages/common/ packages/common/
+RUN bun run --cwd packages/common build
 COPY apps/web-admin/ apps/web-admin/
 # Layout /app/apps/web-admin + /app/packages/ui keeps the tsconfig path
 # aliases (@ims-erp/ui/*, @workspace/ui/* -> ../../packages/ui/src/*) valid.

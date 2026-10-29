@@ -3,93 +3,210 @@
 Auth, roles/permissions, portals, secrets, and audit. The backend is
 authoritative; every frontend check is UX only.
 
-## Session and auth stack
+> Rewritten 2026-10-29 for the Elysia backend + Better Auth 1.7.14
+> two-layer authorization architecture (ADR-0006). The prior NestJS-era
+> matrix is superseded.
 
-- Better Auth 1.7.12 via `@thallesp/nestjs-better-auth` 2.8.0 on Fastify with
-  `bodyParser: false`. Sessions: cookies with `credentials: 'include'`,
-  frontend base path `/api/auth`, `VITE_API_URL` configurable.
-- Plugins in use: `admin`, `organization`, `username`, `passkey`,
-  `emailOTP` (8-digit, rotate-on-resend, 3 attempts, 5-minute expiry,
-  rate-limited), `magicLink` (15-minute expiry), `lastLoginMethod`,
-  `multiSession`, `phoneNumber`, `i18n` (en, id).
-- Secondary storage on Keyv/Redis (`better-auth:` key prefix; `increment` uses
-  Redis client). Session `expiresIn` is in **seconds** (7 days) — do not
-  confuse with CacheModule TTL (milliseconds).
-- Runtime verification still outstanding (Phase 2 exit criteria): real login,
-  session retrieval through the guard, cookie behavior, CORS/trusted origins
-  vs `VITE_API_URL`, and webhook-style raw-body paths. Compilation success is
-  not proof.
+## Two authorization layers (ADR-0006)
 
-## Role → resource → action matrix
+| Layer | Plugin | Storage | Scope |
+|---|---|---|---|
+| Global account administration | `admin()` (defaults preserved) | `auth.users.role` (`admin` / `user` only) | Account/session administration ONLY |
+| ERP authorization | `organization()` with code-defined access control | `auth.members.role` (comma-separated ERP roles) | All business permissions, per organization |
 
-Canonical target (from `apps/web-admin/src/lib/permissions.ts`, `format
-<resource>.<action>`; backend `src/core/authorization/permissions.ts` must
-generate the identical set):
+Hard rules:
 
-| Resource | Actions |
+- A global admin WITHOUT organization membership has **no ERP access**.
+  The guard validates membership server-side on every protected request.
+- ERP roles never leak into `admin()`; global roles never grant ERP rights.
+- Multi-role members get the UNION of their roles' permissions, but
+  business separation-of-duties (self-approval, pre-approval execution)
+  is enforced in services regardless of role combinations.
+- Static, code-defined roles. Dynamic access control is NOT enabled.
+
+## Where things live
+
+| Concern | File |
 |---|---|
-| dashboard | view |
-| crm.lead | view, create, update, delete |
-| sales.quote / sales.order / sales.invoice | view, create, (approve/update per resource) |
-| license | view, create, activate, renew, suspend |
-| inventory.stock | view, receive, adjust |
-| purchasing.purchase | view, create, approve |
-| assets | view, create, update, delete |
-| projects.project | view, create, update |
-| support.ticket | view, create, update, close |
-| hr.employee / hr.attendance / payroll | view/create/update; view/create/approve; view/prepare/approve/post |
-| finance.account / finance.transaction / finance.reconciliation / finance.report / finance.period | view; view/create/update/reverse; execute; view; close |
-| tax.configuration / tax.report | view, update; view |
-| investor / investor.distribution / investor.payment | view/create/update; approve; view |
-| reports | view, export |
-| users / roles | view, create, update, (disable / delete) |
-| permissions, audit | view |
-| customer.portal / investor.portal | view |
+| Shared browser-safe catalog (`erpStatements`, `erpRoleGrants`, role names) | `packages/common/src/authorization/erp-permissions.ts` |
+| Backend access control + roles (`erpRoles`, `authorizeErpPermissions`) | `apps/backend/src/providers/better-auth/ac/organization-ac.ts` |
+| Global role constants | `apps/backend/src/providers/better-auth/ac/admin-ac.ts` |
+| Privilege-escalation hooks (member/invitation endpoints) | `apps/backend/src/providers/better-auth/ac/auth-hooks.ts` |
+| Elysia guard (`erpGuard`, `erp` macro, ErpAuthError) | `apps/backend/src/authorization/elysia-auth.ts` |
+| Client-side ac + roles (browser-safe re-composition) | `apps/web-admin/src/lib/erp-ac.ts` |
+| Frontend permission types + helpers | `apps/web-admin/src/lib/permissions.ts`, `use-permission.tsx` |
 
-Role definitions (`erpRoles` in the planned `permissions.ts`) were specified
-by pre-written specs in the deleted backend-nest tree
-(`apps/backend/test/unit/core/authorization/`) — the role/ownership matrix in
-this document is the surviving design contract; port those specs to
-backend-elysia when the authorization core lands.
+## ERP roles (organization membership)
 
-## Ownership (row-level) rules
+`owner, admin, member, operations_manager, sales_manager, sales,
+project_manager, technician, freelancer, purchasing, warehouse, finance,
+accountant, hr, customer_service, marketing, investor, customer, auditor`
 
-- Customer portal users: read/write scoped to records linked to their own
-  customer identity; no visibility into other customers.
-- Investor portal users: read-only own capital records, approved
-  distributions, payment history.
-- Internal roles: governed by the permission matrix; record-level ownership
-  applies where a employee/salesperson link exists (enforced server-side on
-  every endpoint incl. exports).
-- Data isolation boundary: one company (ADR-0001). Internal organizations do
-  not create data partitions; they gate membership/roles only.
+Key separations encoded in the matrix (full grants in
+`erpRoleGrants`, verified by `test/authorization/permission-matrix.test.ts`):
 
-## Secrets policy
+- **owner**: full ERP + organization administration; still subject to tenant
+  boundaries, valid state transitions, and no self-approval.
+- **admin** (org): membership/invitations/general settings/non-sensitive
+  master data; NO payroll, payment execution, accounting, investor-finance,
+  or integration secrets. Cannot grant the `owner` role (hook-enforced).
+- **member**: baseline only; employee self-service additionally requires an
+  actual employee relationship (record-level, when HR module lands).
+- **sales** creates/submits; cannot approve (even own submissions).
+- **finance** executes payments; no HR record access; payroll *payment*
+  access ≠ payroll *record* access.
+- **hr** prepares payroll; approval and execution stay separate.
+- **purchasing/warehouse**: preparation and stock operations; no self-approval
+  of their own requests/adjustments.
+- **auditor**: read/export only; sensitive HR/payroll scope must be assigned
+  explicitly (record-level policy, enforced when those modules land).
+- **investor / customer**: portal roles only (`investor_portal.*` /
+  `customer_portal.*`); no broad internal resource permissions.
+- **marketing**: no integration secrets, no automation execution.
 
-- Secrets live only in server env/config (`APP_SECRET`, `POSTGRES_*`,
-  `REDIS_*`, `S3_*`, gateway keys when introduced). Never in `@ims-erp/common`,
-  never in frontend bundles, never in public API responses or error payloads.
-- `.env` must stay out of commits (verify `.gitignore` before committing).
-- Never print secret values in logs, docs, or agent reports; reference variable
-  names only.
-- DB URLs: only connect to known disposable/dev endpoints; destructive
-  operations require explicit confirmation of the target DB.
+## Protecting a new Elysia route
 
-## Audit rules
+```ts
+import { erpGuard } from '@authorization/elysia-auth';
 
-- Sensitive mutations (payments, payroll, distributions, period close, license
-  state changes, user/permission changes, master-data structural changes)
-  append rows to `erp.audit_logs`: actor id + role, action, resource
-  type + id, metadata (redacted), ip, user agent.
-- Audit reads are permission-gated (`audit.view`).
-- Log hygiene: no credentials, tokens, password hashes, or full personal data
-  in any log stream.
+export class WidgetController {
+	static plugin() {
+		return new Elysia({ prefix: '/widgets' })
+			.use(erpGuard())
+			.get('/widgets', handler, {
+				// permission strings: `<resource>:<action>`; ALL listed must pass
+				erp: { permission: ['widget:read'] },
+			})
+			.post('/widgets/:id/approve', approveHandler, {
+				erp: {
+					permission: ['widget:approve'],
+					// optional record-level policy; runs after permission checks
+					policy: (ctx) => approvalPolicy(ctx.erp, ctx.params),
+				},
+			});
+	}
+}
+```
 
-## Hardening TODOs (track in backlog)
+The `erp` macro runs in the resolve phase BEFORE the handler and provides
+`ctx.erp = { session, organizationId, member }`:
 
-- Rate limiting on auth endpoints (`@nestjs/throttler` is installed but
-  unused) — Phase 2.
-- CORS/trusted-origins configuration review for the Fastify app.
-- Replace placeholder Swagger metadata before exposing docs publicly.
-- Restrict supplier/employee bank-detail reads (permission-scoped, masked in
-  list responses).
+- 401 unauthenticated (no valid session from real request headers).
+- 403 no organization context / not a member / missing permission.
+- 404 where existence must not be disclosed (use in handlers).
+
+Organization selection: explicit `x-organization-id` header takes
+precedence over the session's active organization; the SAME resolved id is
+used for membership, permissions, queries, and audit records.
+
+## Scoping a Drizzle query
+
+Every tenant-owned query filters by the validated organization id and never
+fetches unscoped collections to filter afterward:
+
+```ts
+const where = and(
+	eq(widgets.organizationId, organizationId), // from ctx.erp, not the client
+	eq(widgets.id, id),
+);
+```
+
+Rules:
+
+- Mutations are also scoped by `organizationId` + record identity.
+- Referenced foreign keys (customers, projects, employees, files) must be
+  validated to belong to the same organization (see
+  `SalesService.createPayment` for the pattern).
+- Whitelist writable fields explicitly (mass-assignment protection: never
+  accept `organizationId`, `status`, `createdBy`, approval fields from the
+  request body).
+- Ownership/assignment scoping (assigned technician, own payslip, own
+  customer/investor relationship) applies where a link exists; portal users
+  read only records tied to their verified relationship.
+- Exports, counts, search, and dashboard aggregations go through the same
+  scoping.
+
+## Business approvals
+
+Permissions are necessary but never sufficient for approvals:
+
+1. Valid document state (repository conditional update: `WHERE status = from`).
+2. No self-approval (actor ≠ creator), regardless of roles.
+3. Amount/discount limits come from configuration; **missing configuration
+   denies the action** with an explicit error (no invented thresholds).
+   Currently `SalesService` denies approvals while no `approval_rule`
+   configuration exists - see the `DEFAULT_APPROVAL_LIMIT` note.
+4. Execution only from the approved state; approve/execute are atomic
+   conditional updates (race-safe, no double execution).
+
+## Privilege-escalation protection
+
+`auth-hooks.ts` installs Better Auth `hooks.before` middleware that:
+
+- Blocks `owner` grants via `/organization/add-member`,
+  `/organization/update-member-role`, and `/organization/create-invitation`
+  unless the actor is an organization owner.
+- Blocks non-grantable roles for org admins (owner only for now).
+- Runs inside the Better Auth handler, so both the mounted auth routes and
+  server-side `auth.api.*` calls are covered.
+
+Global role changes remain exclusively within `admin()` endpoints.
+
+## Audit
+
+Sensitive actions (role changes, invitations, approvals/rejections, payment
+execution, financial posting/reversal, sensitive exports, secret rotation,
+impersonation) append to `erp.audit_logs`: actor, organization, action,
+target, timestamp, outcome, redacted metadata. Implementation lands with the
+modules that own those actions; the catalog resources (`audit_log:read`,
+`audit_log:export`) are already gated.
+
+## Cache / revocation
+
+- **Session storage**: sessions live in **Redis** via Better Auth
+  `secondaryStorage` (`options/secondary-storage.auth.ts`, adapter over the
+  shared Bun `RedisClient`). Keys are prefixed `better-auth:`; TTLs are in
+  seconds. `storeSessionInDatabase: false` — Postgres does not store sessions
+  (rows in `auth.sessions` from before the switch are legacy and unused).
+  Storage failures are logged and re-thrown (fail closed), never silently
+  treated as "no session".
+- **Cookie cache**: `session.cookieCache` enabled with a 5-minute maxAge —
+  repeated requests within the window skip the Redis round-trip (verified:
+  ~55ms cold vs ~12ms cached). Revocations/sign-outs still take effect
+  immediately for the affected session (sign-out clears both the cookie and
+  the Redis record); role/membership changes propagate within the 5-minute
+  cookie-cache window at most.
+- Role/membership checks in the guard re-resolve membership
+  via `auth.api.getFullOrganization` with the caller's headers - removed
+  membership takes effect within the cookie-cache window.
+- Frontend permission queries are cached for 60s and re-keyed by active
+  organization id; the server remains authoritative.
+
+## Bootstrap / seeding
+
+- `bun run drizzle:seed` (apps/backend) runs `auth.seeder` then
+  `location.seeder`. The auth seeder is idempotent: creates the initial
+  global admin (no org membership) via the Better Auth instance; existing
+  users are never reset.
+- Credentials: `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_USERNAME` /
+  `INITIAL_ADMIN_PASSWORD` (dev-only defaults; see `.env.example`). Values
+  are never logged. There is no auto-promotion of existing users.
+
+## Verification status
+
+- Permission matrix + Elysia guard pipeline verified by
+  `apps/backend/test/authorization/` (24 integration + 18 matrix tests,
+  2026-10-29).
+- Real-database session flow (login -> cookie -> guard) verified over live
+  HTTP 2026-10-29; sessions now Redis-only via `secondaryStorage` (verified:
+  Redis keys with 7d TTL, no new Postgres session rows, sign-out clears
+  Redis + cookie, cookie cache ~4.5x faster repeat reads).
+
+## Integration gaps (modules not yet built)
+
+The catalog registers the full ERP vocabulary, but only the `sales` vertical
+(quotation, payment) exists today. Routes for the remaining resources must
+use the `erp` macro as they are built; record-level policies that depend on
+missing modules (payslip ownership, investor report publication status,
+approval_rule storage, audit writes) are documented here and MUST be wired
+when each module lands.

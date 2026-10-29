@@ -2,6 +2,7 @@ import { DateTime, Duration } from 'luxon';
 import pino from 'pino';
 import { closeDB, drizzleDB } from '../../drizzle/db';
 import { seedLocations } from './seed/location.seeder';
+import { seedAuth } from './seed/auth.seeder';
 
 const logger = pino({
 	timestamp: false,
@@ -13,8 +14,9 @@ const logger = pino({
 async function main(): Promise<void> {
 	try {
 		const startedAt = DateTime.now();
-		logger.info({ startedAt: startedAt.toISO() }, 'Location seeding started');
+		logger.info({ startedAt: startedAt.toISO() }, 'Seeding started');
 
+		await seedAuth();
 		await seedLocations(drizzleDB);
 
 		const finishedAt = DateTime.now();

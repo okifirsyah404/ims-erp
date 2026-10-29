@@ -21,6 +21,8 @@ export const AppConfigSchema = z.object({
 	port: z.number().int().min(1).max(65535),
 	url: z.url().nullish(),
 	logLevel: z.enum(['debug', 'info', 'warn', 'error']).nullish(),
+	/** Comma-separated list of origins allowed for credentialed CORS. */
+	corsOrigins: z.array(z.string()).nullish(),
 });
 
 export const DatabaseConfigSchema = z.object({
@@ -60,6 +62,16 @@ export const SMTPConfigSchema = z.object({
 	secure: z.boolean().nullish(),
 });
 
+/**
+ * Bootstrap/auth configuration. Seed credentials are dev-only defaults
+ * overridable by env; values are never logged.
+ */
+export const AuthConfigSchema = z.object({
+	seedAdminEmail: z.string().email(),
+	seedAdminUsername: z.string().min(1),
+	seedAdminPassword: z.string().min(8),
+});
+
 export const EnvConfigSchema = z.object({
 	instance: InstanceConfigSchema,
 	app: AppConfigSchema,
@@ -67,6 +79,7 @@ export const EnvConfigSchema = z.object({
 	redis: RedisConfigSchema,
 	s3: S3ConfigSchema,
 	smtp: SMTPConfigSchema,
+	auth: AuthConfigSchema,
 });
 
 export type TInstanceConfig = z.infer<typeof InstanceConfigSchema>;
@@ -75,4 +88,5 @@ export type TDatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
 export type TRedisConfig = z.infer<typeof RedisConfigSchema>;
 export type TS3Config = z.infer<typeof S3ConfigSchema>;
 export type TSMTPConfig = z.infer<typeof SMTPConfigSchema>;
+export type TAuthConfig = z.infer<typeof AuthConfigSchema>;
 export type TEnvConfig = z.infer<typeof EnvConfigSchema>;
