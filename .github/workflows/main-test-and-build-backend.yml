@@ -92,7 +92,7 @@ jobs:
           push: false
           tags: ims-erp-backend:ci
           cache-from: type=gha,scope=backend
-          cache-to: type=gha,scope=backend,mode=max
+          cache-to: type=gha,scope=backend,mode=max,ignore-error=true
 
   report:
     name: Publish Test Results
