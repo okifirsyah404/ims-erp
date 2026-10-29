@@ -21,13 +21,15 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
 # ---- build: bundle SPA with vite ----
 FROM deps AS build
 COPY packages/ui/ packages/ui/
+# tsconfig.json is needed by both builds: packages/common/tsconfig.json
+# extends it, and web-admin's tsconfig references it.
+COPY tsconfig.json ./
 # @ims-erp/common has no tsconfig path alias; its package.json points at
 # dist/, so the package must be fully copied and compiled before the
 # web-admin build. (bun install used --ignore-scripts, so `prepare` did not
 # build it.)
 COPY packages/common/ packages/common/
 RUN bun run --cwd packages/common build
-COPY tsconfig.json ./
 COPY apps/web-admin/ apps/web-admin/
 # Layout /app/apps/web-admin + /app/packages/ui keeps the tsconfig path
 # aliases (@ims-erp/ui/*, @workspace/ui/* -> ../../packages/ui/src/*) valid.
