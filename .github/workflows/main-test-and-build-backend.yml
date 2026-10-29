@@ -112,7 +112,7 @@ jobs:
           path: test-result
 
       - name: Publish JUnit report
-        uses: mikepenz/action-junit-report@v4
+        uses: mikepenz/action-junit-report@v6
         if: (!cancelled())
         with:
           report_paths: test-result/junit.xml
