@@ -76,7 +76,9 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       BETTER_AUTH_SECRET: ${APP_SECRET:?APP_SECRET is required (used as BETTER_AUTH_SECRET)}
     ports:
-      - "${APP_PORT:-3000}:3000"
+      # Host 3001 by default: host port 3000 is commonly taken by a local dev
+      # server. Override with APP_PORT in .env.
+      - "${APP_PORT:-3001}:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -87,7 +89,9 @@ services:
     image: docker.io/okifirsyah404/ims-erp-web-admin:${IMAGE_TAG:-dev}
     restart: unless-stopped
     ports:
-      - "${WEB_ADMIN_PORT:-80}:80"
+      # Host 8080 by default: host port 80 is commonly taken by a local
+      # reverse proxy (e.g. Caddy). Override with WEB_ADMIN_PORT in .env.
+      - "${WEB_ADMIN_PORT:-8080}:80"
 
 volumes:
   postgres-data:
