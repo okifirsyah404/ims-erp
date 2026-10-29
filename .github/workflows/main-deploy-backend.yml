@@ -20,6 +20,7 @@ jobs:
   build-and-push:
     name: Build and Push Backend
     if: github.event.pull_request.merged == true
+    environment: main-deploy
     runs-on: ubuntu-latest
 
     permissions:

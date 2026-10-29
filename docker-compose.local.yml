@@ -1,0 +1,19 @@
+# Local development compose overrides: builds application images from source
+# instead of pulling from Docker Hub. Infra (postgres, redis) comes from the
+# base file.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    image: ims-erp-backend:local
+
+  web-admin:
+    build:
+      context: .
+      dockerfile: apps/web-admin/Dockerfile
+    image: ims-erp-web-admin:local

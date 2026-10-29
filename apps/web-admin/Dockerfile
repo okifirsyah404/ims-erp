@@ -29,6 +29,6 @@ RUN bun run --cwd apps/web-admin build
 
 # ---- runtime: nginx serving static files ----
 FROM nginx:1.29-alpine AS runtime
-COPY apps/web-admin/nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/web-admin/.docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/apps/web-admin/dist /usr/share/nginx/html
 EXPOSE 80
