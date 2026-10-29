@@ -1,0 +1,45 @@
+{
+	"name": "@ims-erp/backend",
+	"version": "1.0.50",
+	"type": "module",
+	"scripts": {
+		"test": "bun test",
+		"lint": "oxlint",
+		"typecheck": "bunx tsc --noEmit",
+		"dev": "bun run --watch src/index.ts",
+		"auth:generate": "bunx auth@latest generate --config ./src/providers/better-auth/auth.ts --output ./src/drizzle/schemas/auth.schema.ts",
+		"drizzle:generate": "bunx drizzle-kit generate",
+		"drizzle:migrate": "bunx drizzle-kit migrate",
+		"drizzle:push": "bunx drizzle-kit push",
+		"drizzle:pull": "bunx drizzle-kit pull",
+		"drizzle:studio": "bunx drizzle-kit studio",
+		"drizzle:seed": "bun run database/seeders/index.ts"
+	},
+	"dependencies": {
+		"@ims-erp/common": "workspace:*",
+		"@better-auth/api-key": "^1.7.14",
+		"@better-auth/drizzle-adapter": "^1.7.14",
+		"@better-auth/passkey": "^1.7.14",
+		"@bogeychan/elysia-logger": "^0.1.10",
+		"@dicebear/core": "^10.7.0",
+		"@dicebear/styles": "^10.6.0",
+		"@elysia/openapi": "^1.4.16",
+		"better-auth": "^1.7.14",
+		"dotenv": "^18.0.9",
+		"dotenv-expand": "^1000.0.0",
+		"drizzle-orm": "^1.0.0-rc.5",
+		"elysia": "1.4.30",
+		"luxon": "^3.7.2",
+		"pino": "^10.4.0",
+		"tsyringe": "^4.10.0",
+		"zod": "^4.6.7"
+	},
+	"devDependencies": {
+		"@types/bun": "^1.4.4",
+		"@types/luxon": "^3.7.6",
+		"oxlint": "^1.89.0",
+		"drizzle-kit": "^1.0.0-rc.5",
+		"reflect-metadata": "^0.2.2",
+		"typescript": "^6.0.3"
+	}
+}
