@@ -95,7 +95,9 @@ jobs:
         working-directory: apps/backend
 
       - name: Run unit tests with coverage
-        run: bun run test:cov -- --reporter=junit --reporter-outfile=./test-result/junit.xml
+        run: |
+          mkdir -p test-result coverage
+          bun run test:cov -- --reporter=junit --reporter-outfile=./test-result/junit.xml
         working-directory: apps/backend
 
       - name: Publish JUnit report
