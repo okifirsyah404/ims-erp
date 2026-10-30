@@ -118,6 +118,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           update-comment: true
           artifact-name: backend-coverage-report
+          title-prefix: Backend
           working-directory: apps/backend
 
   docker:
