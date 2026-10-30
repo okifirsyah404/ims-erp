@@ -26,6 +26,11 @@ not in lock** (local/project-specific additions), **n/a** (not installed).
 | drizzle-soft-deletes | present, not in lock | `deleted_at` never-hard-delete convention |
 | bun-test | present, not in lock | `bun test` conventions: mocked DB/Redis via constructor injection, no network (local, https://bun.com/docs/test) |
 | tsyringe | present, not in lock | project DI convention: Symbol tokens, composition root, transient default, resolution at HTTP boundary (local) |
+| dbml-database-docs | present, not in lock | DBML as canonical schema-doc format; `docs/database/docs.dbml` (local; format skill) |
+| erp-database-schema | present, not in lock | project schema reader: read protocol over `docs/database/` before any DB-touching work (local) |
+| elysia-layered-architecture | present, not in lock | controller/service/repository layering per Elysia domain (local) |
+| elysia-module | present, not in lock | modular monolith boundaries, one schema per module (local) |
+| elysia-tsyringe | present, not in lock | wiring Elysia controllers to tsyringe, plugin factories, DI tokens (local) |
 | elysiajs | env-provided | Elysia v2 routes/plugins/typed clients (not on disk) |
 | zod | installed | schema validation, error handling (pproenca/dot-skills) |
 | shadcn | installed | `packages/ui` component authoring (shadcn-ui/ui) |

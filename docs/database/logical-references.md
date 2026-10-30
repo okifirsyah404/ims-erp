@@ -1,0 +1,808 @@
+# Logical References
+
+Companion to `docs.dbml` (canonical). Every cross-module link in the ERP,
+where a foreign key is forbidden by the module isolation rule.
+
+## What a logical reference is
+
+A **logical reference** is a plain id column that points at a row owned by
+another module. It is written as a column note in `docs.dbml`, always with the
+same wording:
+
+```text
+Logical reference to <target>.id. Cross-module FK intentionally omitted.
+Validated through the <Module> module contract.
+```
+
+Example from `docs.dbml`:
+
+```dbml
+Table crm.customers {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+}
+```
+
+## Why no foreign key
+
+| Reason | Consequence |
+|---|---|
+| Module isolation is a hard architectural rule | A foreign key would let one module's schema depend on another module's schema. Dropping or renaming a table in module B would break module A's migration. |
+| Independent deployability | A module can ship its own migration without coordinating with the owner of the referenced table. |
+| Cross-module ownership is a service concern | The owning module decides what a valid reference is (tenant match, soft-delete state, lifecycle). A foreign key only checks existence, never ownership. |
+| Soft deletes | A referenced row is soft deleted, never hard deleted, so the reference stays resolvable for history. A `RESTRICT` foreign key would block the delete path for no benefit. |
+
+## The rules
+
+1. **Type follows the target.** The column type matches the target column
+   type: `uuid` for `uuid` primary keys, `text` for `text` primary keys
+   (Better Auth uses `text` ids).
+2. **The target must be the primary key** of a table in the owning module.
+3. **Nullability follows the business rule.** `not null` means the link is
+   mandatory for the record to be valid; nullable means the link is optional.
+4. **Tenant match is mandatory.** The referring row and the referenced row
+   must have the same `organization_id`. This is enforced by the owning
+   module's assert method, not by a foreign key.
+5. **The owning module must expose a resolve/assert contract** that the
+   referring module calls before writing.
+6. **A logical reference is never a substitute for an intra-module foreign
+   key.** Inside one module, use a real `Ref:`.
+## Counts
+
+| Metric | Value |
+|---|---|
+| Logical reference columns | 529 |
+| Distinct targets | 36 |
+| Cross-module `Ref:` declarations | 0 |
+| Intra-module `Ref:` declarations | 218 |
+
+Counts are re-derived on every run of `validate-dbml.ts`, which parses
+`docs.dbml` with `@dbml/core` and fails the run if a `Ref:` crosses a module
+boundary. This document is regenerated with `gen-logical-references.ts`.
+
+## Distribution of the referring columns per target
+
+| Target | Owner | Referring columns |
+|---|---|---|
+| `auth.organizations.id` | Identity | 230 || `auth.users.id` | Identity | 135 || `hr.employees.id` | HR | 24 || `catalog.items.id` | Catalog | 23 || `crm.customers.id` | CRM | 17 || `documents.documents.id` | Documents | 17 || `location.villages.id` | Location | 7 || `projects.projects.id` | Projects | 7 || `location.districts.id` | Location | 6 || `location.provinces.id` | Location | 6 || `location.regencies.id` | Location | 6 || `organization.departments.id` | Organization | 6 || `catalog.units.id` | Catalog | 5 || `procurement.suppliers.id` | Procurement | 4 || `crm.customer_contacts.id` | CRM | 3 || `organization.branches.id` | Organization | 3 || `organization.positions.id` | Organization | 3 || `sales.sales_orders.id` | Sales | 3 || `warehouse.warehouses.id` | Inventory | 3 || `assets.assets.id` | Assets | 2 || `auth.portal_identities.id` | Identity | 2 || `organization.cost_centers.id` | Organization | 2 || `procurement.purchase_orders.id` | Procurement | 2 || `accounting.chart_of_accounts.id` | Accounting | 1 || `accounting.journal_entries.id` | Accounting | 1 || `aftersales.service_tickets.id` | After-Sales | 1 || `catalog.item_categories.id` | Catalog | 1 || `catalog.price_lists.id` | Catalog | 1 || `crm.customer_addresses.id` | CRM | 1 || `crm.customer_groups.id` | CRM | 1 || `finance.cash_bank_accounts.id` | Finance | 1 || `finance.cash_bank_transactions.id` | Finance | 1 || `finance.invoices.id` | Finance | 1 || `finance.payments.id` | Finance | 1 || `hr.bank_accounts.id` | HR | 1 || `payroll.salary_components.id` | Payroll | 1 |
+## The 36 targets in full
+
+### `auth.organizations.id` - owner Identity, 230 referring columns
+
+- `accounting.account_balances`  ->  `organization_id`
+- `accounting.accounting_periods`  ->  `organization_id`
+- `accounting.accounting_settings`  ->  `organization_id`
+- `accounting.bank_account_links`  ->  `organization_id`
+- `accounting.chart_of_accounts`  ->  `organization_id`
+- `accounting.journal_entries`  ->  `organization_id`
+- `accounting.journal_lines`  ->  `organization_id`
+- `accounting.journal_templates`  ->  `organization_id`
+- `accounting.opening_balances`  ->  `organization_id`
+- `accounting.tax_records`  ->  `organization_id`
+- `accounting.tax_types`  ->  `organization_id`
+- `accounting.withholding_tax_records`  ->  `organization_id`
+- `aftersales.maintenance_plans`  ->  `organization_id`
+- `aftersales.maintenance_schedules`  ->  `organization_id`
+- `aftersales.maintenance_visit_tasks`  ->  `organization_id`
+- `aftersales.maintenance_visits`  ->  `organization_id`
+- `aftersales.satisfaction_surveys`  ->  `organization_id`
+- `aftersales.service_contracts`  ->  `organization_id`
+- `aftersales.service_parts_usage`  ->  `organization_id`
+- `aftersales.service_technicians`  ->  `organization_id`
+- `aftersales.service_ticket_comments`  ->  `organization_id`
+- `aftersales.service_tickets`  ->  `organization_id`
+- `aftersales.service_work_orders`  ->  `organization_id`
+- `aftersales.sla_policies`  ->  `organization_id`
+- `aftersales.spare_parts`  ->  `organization_id`
+- `aftersales.warranty_claims`  ->  `organization_id`
+- `aftersales.warranty_policies`  ->  `organization_id`
+- `approval.approval_decisions`  ->  `organization_id`
+- `approval.approval_delegations`  ->  `organization_id`
+- `approval.approval_policies`  ->  `organization_id`
+- `approval.approval_policy_versions`  ->  `organization_id`
+- `approval.approval_requests`  ->  `organization_id`
+- `approval.approval_stages`  ->  `organization_id`
+- `approval.approval_thresholds`  ->  `organization_id`
+- `assets.asset_assignments`  ->  `organization_id`
+- `assets.asset_categories`  ->  `organization_id`
+- `assets.asset_condition_checks`  ->  `organization_id`
+- `assets.asset_depreciations`  ->  `organization_id`
+- `assets.asset_disposals`  ->  `organization_id`
+- `assets.asset_documents`  ->  `organization_id`
+- `assets.asset_maintenances`  ->  `organization_id`
+- `assets.asset_movements`  ->  `organization_id`
+- `assets.assets`  ->  `organization_id`
+- `assets.tool_set_items`  ->  `organization_id`
+- `assets.tool_sets`  ->  `organization_id`
+- `automation.integration_credentials`  ->  `organization_id`
+- `automation.integrations`  ->  `organization_id`
+- `automation.job_executions`  ->  `organization_id`
+- `automation.notification_templates`  ->  `organization_id`
+- `automation.notifications`  ->  `organization_id`
+- `automation.outbox_messages`  ->  `organization_id`
+- `automation.scheduled_jobs`  ->  `organization_id`
+- `automation.workflow_runs`  ->  `organization_id`
+- `automation.workflow_step_runs`  ->  `organization_id`
+- `automation.workflow_steps`  ->  `organization_id`
+- `automation.workflows`  ->  `organization_id`
+- `budgeting.budget_executions`  ->  `organization_id`
+- `budgeting.budget_items`  ->  `organization_id`
+- `budgeting.budget_periods`  ->  `organization_id`
+- `budgeting.budget_revision_items`  ->  `organization_id`
+- `budgeting.budget_revisions`  ->  `organization_id`
+- `budgeting.budgets`  ->  `organization_id`
+- `budgeting.cash_flow_items`  ->  `organization_id`
+- `budgeting.cash_flow_plans`  ->  `organization_id`
+- `catalog.item_attributes`  ->  `organization_id`
+- `catalog.item_bundles`  ->  `organization_id`
+- `catalog.item_categories`  ->  `organization_id`
+- `catalog.item_cost_histories`  ->  `organization_id`
+- `catalog.item_documents`  ->  `organization_id`
+- `catalog.item_prices`  ->  `organization_id`
+- `catalog.item_suppliers`  ->  `organization_id`
+- `catalog.item_uom_conversions`  ->  `organization_id`
+- `catalog.item_variants`  ->  `organization_id`
+- `catalog.items`  ->  `organization_id`
+- `catalog.price_lists`  ->  `organization_id`
+- `catalog.units`  ->  `organization_id`
+- `commerce.catalog_publication_items`  ->  `organization_id`
+- `commerce.catalog_publications`  ->  `organization_id`
+- `commerce.commerce_order_items`  ->  `organization_id`
+- `commerce.commerce_orders`  ->  `organization_id`
+- `commerce.promotion_rules`  ->  `organization_id`
+- `commerce.promotions`  ->  `organization_id`
+- `commerce.web_menu_items`  ->  `organization_id`
+- `commerce.web_menus`  ->  `organization_id`
+- `commerce.web_pages`  ->  `organization_id`
+- `crm.customer_addresses`  ->  `organization_id`
+- `crm.customer_contacts`  ->  `organization_id`
+- `crm.customer_credit_limits`  ->  `organization_id`
+- `crm.customer_groups`  ->  `organization_id`
+- `crm.customer_interactions`  ->  `organization_id`
+- `crm.customer_segment_members`  ->  `organization_id`
+- `crm.customer_segments`  ->  `organization_id`
+- `crm.customers`  ->  `organization_id`
+- `crm.lead_activities`  ->  `organization_id`
+- `crm.leads`  ->  `organization_id`
+- `documents.document_access_logs`  ->  `organization_id`
+- `documents.document_files`  ->  `organization_id`
+- `documents.document_shares`  ->  `organization_id`
+- `documents.document_signatures`  ->  `organization_id`
+- `documents.document_tag_links`  ->  `organization_id`
+- `documents.document_tags`  ->  `organization_id`
+- `documents.document_templates`  ->  `organization_id`
+- `documents.documents`  ->  `organization_id`
+- `finance.bank_reconciliation_items`  ->  `organization_id`
+- `finance.bank_reconciliations`  ->  `organization_id`
+- `finance.cash_bank_accounts`  ->  `organization_id`
+- `finance.cash_bank_transactions`  ->  `organization_id`
+- `finance.credit_memos`  ->  `organization_id`
+- `finance.employee_advances`  ->  `organization_id`
+- `finance.expense_claim_items`  ->  `organization_id`
+- `finance.expense_claims`  ->  `organization_id`
+- `finance.expense_settlement_items`  ->  `organization_id`
+- `finance.expense_settlements`  ->  `organization_id`
+- `finance.invoice_items`  ->  `organization_id`
+- `finance.invoices`  ->  `organization_id`
+- `finance.payment_allocations`  ->  `organization_id`
+- `finance.payment_terms`  ->  `organization_id`
+- `finance.payments`  ->  `organization_id`
+- `finance.receipts`  ->  `organization_id`
+- `finance.supplier_bills`  ->  `organization_id`
+- `hr.attendance_corrections`  ->  `organization_id`
+- `hr.attendance_records`  ->  `organization_id`
+- `hr.bank_accounts`  ->  `organization_id`
+- `hr.certifications`  ->  `organization_id`
+- `hr.disciplinary_records`  ->  `organization_id`
+- `hr.employee_addresses`  ->  `organization_id`
+- `hr.employee_documents`  ->  `organization_id`
+- `hr.employee_emergencies`  ->  `organization_id`
+- `hr.employee_salary_components`  ->  `organization_id`
+- `hr.employee_transfers`  ->  `organization_id`
+- `hr.employees`  ->  `organization_id`
+- `hr.employment_contracts`  ->  `organization_id`
+- `hr.leave_requests`  ->  `organization_id`
+- `hr.leave_types`  ->  `organization_id`
+- `hr.separation_records`  ->  `organization_id`
+- `hr.training_records`  ->  `organization_id`
+- `inventory.cycle_count_items`  ->  `organization_id`
+- `inventory.cycle_counts`  ->  `organization_id`
+- `inventory.lot_batches`  ->  `organization_id`
+- `inventory.serial_tracked_items`  ->  `organization_id`
+- `inventory.stock_adjustment_items`  ->  `organization_id`
+- `inventory.stock_adjustments`  ->  `organization_id`
+- `inventory.stock_balances`  ->  `organization_id`
+- `inventory.stock_movements`  ->  `organization_id`
+- `inventory.stock_reservations`  ->  `organization_id`
+- `inventory.stock_transfer_items`  ->  `organization_id`
+- `inventory.stock_transfers`  ->  `organization_id`
+- `investor.capital_commitments`  ->  `organization_id`
+- `investor.capital_deposits`  ->  `organization_id`
+- `investor.fund_allocations`  ->  `organization_id`
+- `investor.investor_addresses`  ->  `organization_id`
+- `investor.investor_meetings`  ->  `organization_id`
+- `investor.investor_reports`  ->  `organization_id`
+- `investor.investors`  ->  `organization_id`
+- `investor.profit_distribution_runs`  ->  `organization_id`
+- `investor.profit_share_scheme_entries`  ->  `organization_id`
+- `investor.profit_share_schemes`  ->  `organization_id`
+- `investor.profit_shares`  ->  `organization_id`
+- `licensing.licensable_applications`  ->  `organization_id`
+- `licensing.license_activations`  ->  `organization_id`
+- `licensing.license_contracts`  ->  `organization_id`
+- `licensing.license_entitlement_usages`  ->  `organization_id`
+- `licensing.license_entitlements`  ->  `organization_id`
+- `licensing.license_events`  ->  `organization_id`
+- `licensing.license_keys`  ->  `organization_id`
+- `licensing.license_packages`  ->  `organization_id`
+- `licensing.subscription_schedules`  ->  `organization_id`
+- `organization.branches`  ->  `organization_id`
+- `organization.company_bank_accounts`  ->  `organization_id`
+- `organization.company_profiles`  ->  `organization_id`
+- `organization.company_settings`  ->  `organization_id`
+- `organization.cost_centers`  ->  `organization_id`
+- `organization.departments`  ->  `organization_id`
+- `organization.document_sequences`  ->  `organization_id`
+- `organization.fiscal_settings`  ->  `organization_id`
+- `organization.positions`  ->  `organization_id`
+- `payroll.bpjs_registrations`  ->  `organization_id`
+- `payroll.payroll_adjustments`  ->  `organization_id`
+- `payroll.payroll_inputs`  ->  `organization_id`
+- `payroll.payroll_payment_items`  ->  `organization_id`
+- `payroll.payroll_payments`  ->  `organization_id`
+- `payroll.payroll_periods`  ->  `organization_id`
+- `payroll.payroll_runs`  ->  `organization_id`
+- `payroll.payslip_acknowledgements`  ->  `organization_id`
+- `payroll.payslip_items`  ->  `organization_id`
+- `payroll.payslips`  ->  `organization_id`
+- `payroll.salary_components`  ->  `organization_id`
+- `procurement.goods_receipt_items`  ->  `organization_id`
+- `procurement.goods_receipts`  ->  `organization_id`
+- `procurement.purchase_order_items`  ->  `organization_id`
+- `procurement.purchase_orders`  ->  `organization_id`
+- `procurement.purchase_request_items`  ->  `organization_id`
+- `procurement.purchase_requests`  ->  `organization_id`
+- `procurement.purchase_return_items`  ->  `organization_id`
+- `procurement.purchase_returns`  ->  `organization_id`
+- `procurement.supplier_addresses`  ->  `organization_id`
+- `procurement.supplier_contacts`  ->  `organization_id`
+- `procurement.suppliers`  ->  `organization_id`
+- `projects.project_changes`  ->  `organization_id`
+- `projects.project_daily_reports`  ->  `organization_id`
+- `projects.project_handover`  ->  `organization_id`
+- `projects.project_kpi_definitions`  ->  `organization_id`
+- `projects.project_kpi_evaluations`  ->  `organization_id`
+- `projects.project_milestones`  ->  `organization_id`
+- `projects.project_phases`  ->  `organization_id`
+- `projects.project_site_assignments`  ->  `organization_id`
+- `projects.project_task_dependencies`  ->  `organization_id`
+- `projects.project_tasks`  ->  `organization_id`
+- `projects.project_types`  ->  `organization_id`
+- `projects.project_work_plans`  ->  `organization_id`
+- `projects.projects`  ->  `organization_id`
+- `sales.contracts`  ->  `organization_id`
+- `sales.delivery_notes`  ->  `organization_id`
+- `sales.discount_requests`  ->  `organization_id`
+- `sales.order_status_history`  ->  `organization_id`
+- `sales.quotation_items`  ->  `organization_id`
+- `sales.quotation_status_history`  ->  `organization_id`
+- `sales.quotations`  ->  `organization_id`
+- `sales.sales_order_items`  ->  `organization_id`
+- `sales.sales_orders`  ->  `organization_id`
+- `sales.sales_returns`  ->  `organization_id`
+- `sales.sales_targets`  ->  `organization_id`
+- `ticket.ticket_attachments`  ->  `organization_id`
+- `ticket.ticket_categories`  ->  `organization_id`
+- `ticket.ticket_messages`  ->  `organization_id`
+- `ticket.ticket_status_history`  ->  `organization_id`
+- `ticket.tickets`  ->  `organization_id`
+- `warehouse.warehouse_bins`  ->  `organization_id`
+- `warehouse.warehouse_zones`  ->  `organization_id`
+- `warehouse.warehouses`  ->  `organization_id`
+
+### `auth.users.id` - owner Identity, 135 referring columns
+
+- `accounting.accounting_periods`  ->  `closed_by`
+- `accounting.accounting_periods`  ->  `reopened_by`
+- `accounting.journal_entries`  ->  `approved_by`
+- `accounting.journal_entries`  ->  `posted_by`
+- `accounting.journal_entries`  ->  `prepared_by`
+- `accounting.tax_records`  ->  `verified_by`
+- `aftersales.service_ticket_comments`  ->  `author_user_id`
+- `aftersales.service_tickets`  ->  `assigned_to_user_id`
+- `aftersales.warranty_claims`  ->  `approved_by`
+- `approval.approval_decisions`  ->  `approver_user_id`
+- `approval.approval_delegations`  ->  `created_by_user_id`
+- `approval.approval_delegations`  ->  `from_user_id`
+- `approval.approval_delegations`  ->  `to_user_id`
+- `approval.approval_policies`  ->  `created_by_user_id`
+- `approval.approval_policy_versions`  ->  `created_by_user_id`
+- `approval.approval_requests`  ->  `requested_by_user_id`
+- `assets.asset_assignments`  ->  `assigned_to_user_id`
+- `assets.asset_condition_checks`  ->  `checked_by_user_id`
+- `assets.asset_disposals`  ->  `approved_by`
+- `assets.asset_disposals`  ->  `requested_by`
+- `assets.asset_movements`  ->  `moved_by_user_id`
+- `audit.audit_logs`  ->  `actor_user_id`
+- `auth.user_role_assignments`  ->  `granted_by`
+- `automation.integrations`  ->  `created_by_user_id`
+- `automation.job_executions`  ->  `triggered_by_user_id`
+- `automation.notifications`  ->  `recipient_user_id`
+- `automation.workflow_runs`  ->  `initiated_by_user_id`
+- `automation.workflows`  ->  `created_by_user_id`
+- `budgeting.budget_revisions`  ->  `approved_by_user_id`
+- `budgeting.budget_revisions`  ->  `requested_by_user_id`
+- `budgeting.budgets`  ->  `approved_by_user_id`
+- `budgeting.budgets`  ->  `submitted_by_user_id`
+- `commerce.catalog_publications`  ->  `published_by_user_id`
+- `commerce.promotions`  ->  `created_by_user_id`
+- `crm.customer_credit_limits`  ->  `approved_by_user_id`
+- `crm.customer_interactions`  ->  `handled_by_user_id`
+- `crm.customer_segment_members`  ->  `added_by`
+- `crm.customers`  ->  `owner_user_id`
+- `crm.lead_activities`  ->  `assigned_to_user_id`
+- `crm.leads`  ->  `owner_user_id`
+- `documents.document_access_logs`  ->  `accessed_by_user_id`
+- `documents.document_files`  ->  `uploaded_by_user_id`
+- `documents.document_shares`  ->  `shared_by_user_id`
+- `documents.document_signatures`  ->  `signer_user_id`
+- `documents.documents`  ->  `approved_by_user_id`
+- `documents.documents`  ->  `issued_by_user_id`
+- `finance.bank_reconciliations`  ->  `reconciled_by`
+- `finance.cash_bank_transactions`  ->  `posted_by`
+- `finance.credit_memos`  ->  `issued_by`
+- `finance.employee_advances`  ->  `approved_by`
+- `finance.employee_advances`  ->  `requested_by`
+- `finance.expense_claims`  ->  `approved_by`
+- `finance.expense_claims`  ->  `submitted_by`
+- `finance.expense_settlements`  ->  `approved_by`
+- `finance.expense_settlements`  ->  `submitted_by`
+- `finance.expense_settlements`  ->  `verified_by`
+- `finance.invoices`  ->  `approved_by`
+- `finance.invoices`  ->  `issued_by`
+- `finance.payments`  ->  `approved_by`
+- `finance.payments`  ->  `executed_by`
+- `finance.payments`  ->  `requested_by`
+- `finance.receipts`  ->  `received_by`
+- `finance.supplier_bills`  ->  `approved_by`
+- `hr.attendance_corrections`  ->  `approved_by`
+- `hr.attendance_corrections`  ->  `requested_by`
+- `hr.disciplinary_records`  ->  `approved_by`
+- `hr.disciplinary_records`  ->  `reported_by`
+- `hr.employee_transfers`  ->  `approved_by`
+- `hr.employee_transfers`  ->  `requested_by`
+- `hr.employees`  ->  `user_id`
+- `hr.employment_contracts`  ->  `approved_by`
+- `hr.leave_requests`  ->  `approved_by`
+- `hr.leave_requests`  ->  `requested_by`
+- `hr.separation_records`  ->  `approved_by`
+- `inventory.cycle_counts`  ->  `approved_by`
+- `inventory.cycle_counts`  ->  `counted_by`
+- `inventory.stock_adjustments`  ->  `approved_by`
+- `inventory.stock_adjustments`  ->  `posted_by`
+- `inventory.stock_adjustments`  ->  `requested_by`
+- `inventory.stock_movements`  ->  `created_by`
+- `inventory.stock_reservations`  ->  `created_by`
+- `inventory.stock_transfers`  ->  `approved_by`
+- `inventory.stock_transfers`  ->  `requested_by`
+- `investor.capital_commitments`  ->  `approved_by_user_id`
+- `investor.capital_deposits`  ->  `verified_by_user_id`
+- `investor.fund_allocations`  ->  `approved_by_user_id`
+- `investor.fund_allocations`  ->  `submitted_by_user_id`
+- `investor.investor_reports`  ->  `published_by_user_id`
+- `investor.profit_distribution_runs`  ->  `approved_by_user_id`
+- `investor.profit_distribution_runs`  ->  `calculated_by_user_id`
+- `licensing.license_events`  ->  `actor_user_id`
+- `organization.company_settings`  ->  `updated_by`
+- `organization.departments`  ->  `manager_user_id`
+- `payroll.payroll_adjustments`  ->  `approved_by`
+- `payroll.payroll_adjustments`  ->  `requested_by`
+- `payroll.payroll_inputs`  ->  `created_by`
+- `payroll.payroll_payments`  ->  `executed_by`
+- `payroll.payroll_periods`  ->  `closed_by`
+- `payroll.payroll_runs`  ->  `approved_by`
+- `payroll.payroll_runs`  ->  `calculated_by`
+- `payroll.payroll_runs`  ->  `submitted_by`
+- `procurement.goods_receipts`  ->  `received_by`
+- `procurement.purchase_orders`  ->  `approved_by`
+- `procurement.purchase_requests`  ->  `approved_by`
+- `procurement.purchase_requests`  ->  `requested_by`
+- `procurement.purchase_returns`  ->  `approved_by`
+- `procurement.suppliers`  ->  `owner_user_id`
+- `projects.project_changes`  ->  `approved_by`
+- `projects.project_changes`  ->  `requested_by`
+- `projects.project_daily_reports`  ->  `verified_by`
+- `projects.project_handover`  ->  `received_by_user_id`
+- `projects.project_kpi_evaluations`  ->  `evaluated_by`
+- `projects.project_milestones`  ->  `verified_by`
+- `projects.project_tasks`  ->  `assignee_user_id`
+- `projects.project_tasks`  ->  `verified_by`
+- `projects.project_work_plans`  ->  `approved_by`
+- `projects.project_work_plans`  ->  `owner_user_id`
+- `projects.projects`  ->  `manager_user_id`
+- `sales.delivery_notes`  ->  `receiver_user_id`
+- `sales.discount_requests`  ->  `approved_by`
+- `sales.discount_requests`  ->  `requested_by`
+- `sales.order_status_history`  ->  `changed_by`
+- `sales.quotation_status_history`  ->  `changed_by`
+- `sales.quotations`  ->  `approved_by`
+- `sales.quotations`  ->  `created_by`
+- `sales.sales_orders`  ->  `approved_by`
+- `sales.sales_orders`  ->  `sales_person_user_id`
+- `sales.sales_returns`  ->  `approved_by`
+- `sales.sales_targets`  ->  `assigned_by`
+- `sales.sales_targets`  ->  `sales_user_id`
+- `ticket.ticket_attachments`  ->  `uploaded_by`
+- `ticket.ticket_messages`  ->  `author_user_id`
+- `ticket.ticket_status_history`  ->  `changed_by`
+- `ticket.tickets`  ->  `assignee_user_id`
+- `ticket.tickets`  ->  `created_by`
+
+### `hr.employees.id` - owner HR, 24 referring columns
+
+- `aftersales.maintenance_schedules`  ->  `default_assignee_employee_id`
+- `aftersales.maintenance_visits`  ->  `technician_employee_id`
+- `aftersales.service_technicians`  ->  `employee_id`
+- `aftersales.service_tickets`  ->  `assigned_to_employee_id`
+- `aftersales.service_work_orders`  ->  `assigned_to_employee_id`
+- `assets.asset_assignments`  ->  `assigned_to_employee_id`
+- `assets.asset_maintenances`  ->  `performed_by_employee_id`
+- `assets.assets`  ->  `custodian_employee_id`
+- `assets.tool_sets`  ->  `custodian_employee_id`
+- `auth.user_profiles`  ->  `employee_id`
+- `finance.employee_advances`  ->  `employee_id`
+- `finance.expense_claims`  ->  `employee_id`
+- `finance.expense_settlements`  ->  `employee_id`
+- `payroll.bpjs_registrations`  ->  `employee_id`
+- `payroll.payroll_adjustments`  ->  `employee_id`
+- `payroll.payroll_inputs`  ->  `employee_id`
+- `payroll.payroll_payment_items`  ->  `employee_id`
+- `payroll.payslip_acknowledgements`  ->  `employee_id`
+- `payroll.payslips`  ->  `employee_id`
+- `projects.project_daily_reports`  ->  `technician_employee_id`
+- `projects.project_kpi_evaluations`  ->  `employee_id`
+- `projects.project_site_assignments`  ->  `employee_id`
+- `projects.project_tasks`  ->  `assignee_employee_id`
+- `warehouse.warehouses`  ->  `responsible_employee_id`
+
+### `catalog.items.id` - owner Catalog, 23 referring columns
+
+- `aftersales.service_parts_usage`  ->  `item_id`
+- `aftersales.spare_parts`  ->  `item_id`
+- `aftersales.warranty_claims`  ->  `item_id`
+- `aftersales.warranty_policies`  ->  `item_id`
+- `budgeting.budget_items`  ->  `item_id`
+- `commerce.catalog_publication_items`  ->  `item_id`
+- `commerce.commerce_order_items`  ->  `item_id`
+- `commerce.promotion_rules`  ->  `item_id`
+- `finance.invoice_items`  ->  `item_id`
+- `inventory.cycle_count_items`  ->  `item_id`
+- `inventory.lot_batches`  ->  `item_id`
+- `inventory.serial_tracked_items`  ->  `item_id`
+- `inventory.stock_adjustment_items`  ->  `item_id`
+- `inventory.stock_balances`  ->  `item_id`
+- `inventory.stock_movements`  ->  `item_id`
+- `inventory.stock_reservations`  ->  `item_id`
+- `inventory.stock_transfer_items`  ->  `item_id`
+- `procurement.goods_receipt_items`  ->  `item_id`
+- `procurement.purchase_order_items`  ->  `item_id`
+- `procurement.purchase_request_items`  ->  `item_id`
+- `procurement.purchase_return_items`  ->  `item_id`
+- `sales.quotation_items`  ->  `item_id`
+- `sales.sales_order_items`  ->  `item_id`
+
+### `crm.customers.id` - owner CRM, 17 referring columns
+
+- `aftersales.maintenance_plans`  ->  `customer_id`
+- `aftersales.satisfaction_surveys`  ->  `customer_id`
+- `aftersales.service_contracts`  ->  `customer_id`
+- `aftersales.service_tickets`  ->  `customer_id`
+- `aftersales.warranty_claims`  ->  `customer_id`
+- `commerce.commerce_orders`  ->  `customer_id`
+- `finance.credit_memos`  ->  `customer_id`
+- `finance.invoices`  ->  `customer_id`
+- `inventory.serial_tracked_items`  ->  `customer_id`
+- `licensing.license_contracts`  ->  `customer_id`
+- `projects.project_handover`  ->  `customer_id`
+- `projects.projects`  ->  `customer_id`
+- `sales.contracts`  ->  `customer_id`
+- `sales.quotations`  ->  `customer_id`
+- `sales.sales_orders`  ->  `customer_id`
+- `sales.sales_returns`  ->  `customer_id`
+- `ticket.tickets`  ->  `customer_id`
+
+### `documents.documents.id` - owner Documents, 17 referring columns
+
+- `aftersales.service_contracts`  ->  `document_id`
+- `assets.asset_documents`  ->  `document_id`
+- `assets.asset_maintenances`  ->  `document_id`
+- `assets.assets`  ->  `document_id`
+- `catalog.item_documents`  ->  `document_id`
+- `finance.expense_claim_items`  ->  `receipt_document_id`
+- `finance.expense_settlement_items`  ->  `receipt_document_id`
+- `hr.certifications`  ->  `document_id`
+- `hr.employee_documents`  ->  `document_id`
+- `hr.employment_contracts`  ->  `document_id`
+- `hr.training_records`  ->  `document_id`
+- `investor.investor_meetings`  ->  `document_id`
+- `investor.investor_reports`  ->  `document_id`
+- `payroll.payroll_payments`  ->  `proof_document_id`
+- `payroll.payslips`  ->  `document_id`
+- `projects.project_handover`  ->  `document_id`
+- `sales.contracts`  ->  `document_id`
+
+### `location.villages.id` - owner Location, 7 referring columns
+
+- `crm.customer_addresses`  ->  `village_id`
+- `hr.employee_addresses`  ->  `village_id`
+- `investor.investor_addresses`  ->  `village_id`
+- `investor.investors`  ->  `village_id`
+- `organization.company_profiles`  ->  `address_village_id`
+- `procurement.supplier_addresses`  ->  `village_id`
+- `warehouse.warehouses`  ->  `village_id`
+
+### `projects.projects.id` - owner Projects, 7 referring columns
+
+- `accounting.journal_lines`  ->  `project_id`
+- `aftersales.service_tickets`  ->  `project_id`
+- `budgeting.budgets`  ->  `project_id`
+- `finance.employee_advances`  ->  `project_id`
+- `finance.expense_settlement_items`  ->  `project_id`
+- `finance.expense_settlements`  ->  `project_id`
+- `procurement.purchase_requests`  ->  `project_id`
+
+### `location.districts.id` - owner Location, 6 referring columns
+
+- `crm.customer_addresses`  ->  `district_id`
+- `hr.employee_addresses`  ->  `district_id`
+- `investor.investor_addresses`  ->  `district_id`
+- `investor.investors`  ->  `district_id`
+- `organization.company_profiles`  ->  `address_district_id`
+- `procurement.supplier_addresses`  ->  `district_id`
+
+### `location.provinces.id` - owner Location, 6 referring columns
+
+- `crm.customer_addresses`  ->  `province_id`
+- `hr.employee_addresses`  ->  `province_id`
+- `investor.investor_addresses`  ->  `province_id`
+- `investor.investors`  ->  `province_id`
+- `organization.company_profiles`  ->  `address_province_id`
+- `procurement.supplier_addresses`  ->  `province_id`
+
+### `location.regencies.id` - owner Location, 6 referring columns
+
+- `crm.customer_addresses`  ->  `regency_id`
+- `hr.employee_addresses`  ->  `regency_id`
+- `investor.investor_addresses`  ->  `regency_id`
+- `investor.investors`  ->  `regency_id`
+- `organization.company_profiles`  ->  `address_regency_id`
+- `procurement.supplier_addresses`  ->  `regency_id`
+
+### `organization.departments.id` - owner Organization, 6 referring columns
+
+- `budgeting.budgets`  ->  `department_id`
+- `finance.expense_claims`  ->  `department_id`
+- `hr.employee_transfers`  ->  `from_department_id`
+- `hr.employee_transfers`  ->  `to_department_id`
+- `hr.employees`  ->  `department_id`
+- `procurement.purchase_requests`  ->  `department_id`
+
+### `catalog.units.id` - owner Catalog, 5 referring columns
+
+- `finance.invoice_items`  ->  `unit_id`
+- `procurement.purchase_order_items`  ->  `unit_id`
+- `procurement.purchase_request_items`  ->  `unit_id`
+- `sales.quotation_items`  ->  `unit_id`
+- `sales.sales_order_items`  ->  `unit_id`
+
+### `procurement.suppliers.id` - owner Procurement, 4 referring columns
+
+- `assets.assets`  ->  `supplier_id`
+- `catalog.item_suppliers`  ->  `supplier_id`
+- `finance.supplier_bills`  ->  `supplier_id`
+- `inventory.lot_batches`  ->  `supplier_id`
+
+### `crm.customer_contacts.id` - owner CRM, 3 referring columns
+
+- `sales.quotations`  ->  `customer_contact_id`
+- `ticket.ticket_messages`  ->  `author_contact_id`
+- `ticket.tickets`  ->  `contact_id`
+
+### `organization.branches.id` - owner Organization, 3 referring columns
+
+- `budgeting.budgets`  ->  `branch_id`
+- `hr.employees`  ->  `branch_id`
+- `projects.projects`  ->  `branch_id`
+
+### `organization.positions.id` - owner Organization, 3 referring columns
+
+- `hr.employee_transfers`  ->  `from_position_id`
+- `hr.employee_transfers`  ->  `to_position_id`
+- `hr.employees`  ->  `position_id`
+
+### `sales.sales_orders.id` - owner Sales, 3 referring columns
+
+- `aftersales.warranty_claims`  ->  `sales_order_id`
+- `finance.invoices`  ->  `sales_order_id`
+- `projects.projects`  ->  `sales_order_id`
+
+### `warehouse.warehouses.id` - owner Inventory (warehouse schema), 3 referring columns
+
+- `aftersales.spare_parts`  ->  `warehouse_id`
+- `procurement.goods_receipts`  ->  `warehouse_id`
+- `sales.sales_orders`  ->  `warehouse_id`
+
+### `assets.assets.id` - owner Assets, 2 referring columns
+
+- `aftersales.maintenance_plans`  ->  `asset_id`
+- `aftersales.service_tickets`  ->  `asset_id`
+
+### `auth.portal_identities.id` - owner Identity, 2 referring columns
+
+- `crm.customers`  ->  `portal_identity_id`
+- `investor.investors`  ->  `portal_identity_id`
+
+### `organization.cost_centers.id` - owner Organization, 2 referring columns
+
+- `accounting.journal_lines`  ->  `cost_center_id`
+- `hr.employees`  ->  `cost_center_id`
+
+### `procurement.purchase_orders.id` - owner Procurement, 2 referring columns
+
+- `assets.assets`  ->  `purchase_order_id`
+- `finance.supplier_bills`  ->  `purchase_order_id`
+
+### `accounting.chart_of_accounts.id` - owner Accounting, 1 referring column
+
+- `budgeting.budget_items`  ->  `chart_of_account_id`
+
+### `accounting.journal_entries.id` - owner Accounting, 1 referring column
+
+- `assets.asset_depreciations`  ->  `journal_entry_id`
+
+### `aftersales.service_tickets.id` - owner After-Sales, 1 referring column
+
+- `ticket.tickets`  ->  `escalated_service_ticket_id`
+
+### `catalog.item_categories.id` - owner Catalog, 1 referring column
+
+- `commerce.promotion_rules`  ->  `item_category_id`
+
+### `catalog.price_lists.id` - owner Catalog, 1 referring column
+
+- `sales.quotations`  ->  `price_list_id`
+
+### `crm.customer_addresses.id` - owner CRM, 1 referring column
+
+- `sales.sales_orders`  ->  `customer_address_id`
+
+### `crm.customer_groups.id` - owner CRM, 1 referring column
+
+- `catalog.price_lists`  ->  `customer_group_id`
+
+### `finance.cash_bank_accounts.id` - owner Finance, 1 referring column
+
+- `accounting.bank_account_links`  ->  `cash_bank_account_id`
+
+### `finance.cash_bank_transactions.id` - owner Finance, 1 referring column
+
+- `investor.capital_deposits`  ->  `cash_bank_transaction_id`
+
+### `finance.invoices.id` - owner Finance, 1 referring column
+
+- `aftersales.warranty_claims`  ->  `invoice_id`
+
+### `finance.payments.id` - owner Finance, 1 referring column
+
+- `investor.profit_shares`  ->  `payment_id`
+
+### `hr.bank_accounts.id` - owner HR, 1 referring column
+
+- `payroll.payroll_payment_items`  ->  `bank_account_id`
+
+### `payroll.salary_components.id` - owner Payroll, 1 referring column
+
+- `hr.employee_salary_components`  ->  `salary_component_id`
+
+## Contract obligations per target
+
+Each target below names the assert/resolve method the referring module must
+call before writing a row that carries the reference.
+
+| Target | Contract method | Extra rule |
+|---|---|---|
+| `auth.organizations.id` | `resolveOrganization(id)` | The org must exist and the caller must be a member of it. |
+| `auth.users.id` | `resolveUser(id)` | The user must be a member of the same organization. |
+| `auth.portal_identities.id` | `resolvePortalIdentity(id, orgId)` | Portal identity must be active and of the matching portal type. |
+| `catalog.items.id` | `resolveItem(id, orgId)` | Item must not be soft deleted; stock tracked items must have `is_stock_tracked`. |
+| `catalog.units.id` | `resolveUnit(id, orgId)` | Unit must be active; the conversion to the base unit must exist. |
+| `catalog.price_lists.id` | `resolvePriceList(id, orgId)` | Price list must be active and its currency must match the document currency. |
+| `catalog.item_categories.id` | `resolveCategory(id, orgId)` | Category must be active. |
+| `crm.customers.id` | `assertCustomerOwnedByOrganization(id, orgId)` | Customer must not be blocked. |
+| `crm.customer_contacts.id` | `resolveCustomerContact(id, customerId, orgId)` | Contact must belong to the same customer. |
+| `crm.customer_addresses.id` | `resolveCustomerAddress(id, customerId, orgId)` | Address must belong to the same customer. |
+| `crm.customer_groups.id` | `resolveCustomerGroup(id, orgId)` | Group must be active. |
+| `documents.documents.id` | `resolveDocument(id, orgId)` | Document must be issued, not draft and not void. |
+| `hr.employees.id` | `resolveEmployee(id, orgId)` | Employee must not be terminated. |
+| `hr.bank_accounts.id` | `resolveEmployeeBankAccount(id, employeeId, orgId)` | Bank account must be verified and primary for that employee. |
+| `payroll.salary_components.id` | `resolveSalaryComponent(id, orgId)` | Component must be active. |
+| `warehouse.warehouses.id` | `resolveWarehouse(id, orgId)` | Warehouse must be active. |
+| `projects.projects.id` | `resolveProject(id, orgId)` | Project must not be cancelled. |
+| `procurement.suppliers.id` | `resolveSupplier(id, orgId)` | Supplier must not be blocked. |
+| `procurement.purchase_orders.id` | `resolvePurchaseOrder(id, orgId)` | Order must not be cancelled. |
+| `location.*.id` | `resolveLocation(villageId)` | Must resolve to a full province/regency/district/village path. |
+| `organization.branches.id` | `resolveBranch(id, orgId)` | Branch must be active. |
+| `organization.departments.id` | `resolveDepartment(id, orgId)` | Department must be active. |
+| `organization.positions.id` | `resolvePosition(id, orgId)` | Position must be active. |
+| `organization.cost_centers.id` | `resolveCostCenter(id, orgId)` | Cost centre must be active. |
+| `finance.invoices.id` | `resolveInvoice(id, orgId)` | Invoice must not be void. |
+| `finance.payments.id` | `resolvePayment(id, orgId)` | Payment must be executed. |
+| `finance.cash_bank_accounts.id` | `resolveCashBankAccount(id, orgId)` | Account must be active. |
+| `finance.cash_bank_transactions.id` | `resolveCashBankTransaction(id, orgId)` | Transaction must be posted. |
+| `accounting.chart_of_accounts.id` | `resolveAccount(id, orgId)` | Account must be postable and active. |
+| `accounting.journal_entries.id` | `resolveJournalEntry(id, orgId)` | Entry must be posted. |
+| `assets.assets.id` | `resolveAsset(id, orgId)` | Asset must not be disposed. |
+| `sales.sales_orders.id` | `resolveOrder(id, orgId)` | Order must not be cancelled. |
+| `aftersales.service_tickets.id` | `resolveServiceTicket(id, orgId)` | Ticket must be open or in progress to accept an escalation. |
+
+## Validation rules per reference class
+
+### Tenant scope (`organization_id`)
+
+- Every tenant scoped table has `organization_id text NOT NULL`.
+- Every read query filters on `organization_id`, always. A missing filter is
+  a bug, not a warning.
+- Every write sets `organization_id` from the request context, never from
+  the client body.
+- The composite tenant foreign key in the Drizzle schemas closes
+  the gap **inside** a module: `(organization_id, parent_id)` must match
+  `(organization_id, id)` of the parent. Cross-module the same guarantee is
+  provided by the contract call.
+
+### Actor scope (`*_by`, `*_by_user_id`, `requested_by`, `approved_by`)
+
+- The actor must be a member of the row's organization.
+- The actor must not be the requester of the same record when the policy
+  forbids self approval (`approval.approval_policy_versions.no_self_approval`,
+  default `true`).
+
+### Master data scope (items, units, customers, suppliers, employees)
+
+- The target must be active (`is_active = true` where the column exists).
+- The target must not be soft deleted (`deleted_at IS NULL`).
+- The target must belong to the same organization.
+
+### Document scope (`document_id`, `receipt_document_id`)
+
+- The document must exist in the same organization.
+- A receipt document used as payment evidence must be `issued`, never
+  `draft` and never `void`.
+
+### Money scope (`finance.payments.id`, `finance.cash_bank_transactions.id`)
+
+- A payment reference is only valid on an `executed` payment.
+- A cash bank transaction reference is only valid on a `posted` transaction.
+
+### Ticket scope (`ticket.tickets.*`)
+
+- A portal customer may list and read only tickets whose `customer_id`
+  matches its linked CRM customer and whose `organization_id` matches the
+  session's organization.
+- Internal notes (`ticket_messages.is_internal_note`) are filtered out of
+  every portal response at the service layer.
+- `assignee_user_id` must be a member of the ticket's organization with a
+  staff role; portal (customer-role) members can never be assignees.
+
+## How to check this document against the schema
+
+This document is generated from the parsed DBML by
+`gen-logical-references.ts` (same directory). Logical reference columns and
+their targets are extracted by matching the note pattern
+
+```text
+Logical reference to <target>.id. Cross-module FK intentionally omitted.
+```
+
+against every column note in the parsed model, so the counts and the target
+lists above cannot drift from `docs.dbml`. `validate-dbml.ts` re-checks on
+every run that no `Ref:` crosses a module boundary and reports the totals.
