@@ -14,7 +14,6 @@ node_modules
 
 # Testing
 coverage
-coverage.txt
 test-result
 
 # Turbo

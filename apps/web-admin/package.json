@@ -8,6 +8,7 @@
 		"build": "tsc -b && vite build",
 		"lint": "oxlint",
 		"test": "bun test",
+		"test:cov": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir=./coverage",
 		"preview": "vite preview"
 	},
 	"dependencies": {

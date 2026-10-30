@@ -49,6 +49,10 @@ jobs:
     name: Unit Test Web Admin
     runs-on: ubuntu-latest
 
+    permissions:
+      checks: write
+      pull-requests: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -64,42 +68,29 @@ jobs:
       - name: Build @ims-erp/common
         run: bun run --cwd packages/common build
 
+      - name: Build @ims-erp/common
+        run: bun run --cwd packages/common build
+
       - name: Run unit tests with coverage
-        run: |
-          mkdir -p test-result coverage
-          bun test \
-            --reporter=junit --reporter-outfile=./test-result/junit.xml \
-            --coverage --coverage-reporter=text \
-            --coverage-dir=./coverage | tee coverage.txt
+        run: bun run test:cov -- --reporter=junit --reporter-outfile=./test-result/junit.xml
         working-directory: apps/web-admin
 
-      - name: Build coverage comment
-        run: |
-          {
-            echo "### Web Admin unit test coverage"
-            echo ""
-            echo '```'
-            # Strip ANSI codes and keep the coverage table (from the header line down)
-            sed -e 's/\x1b\[[0-9;]*m//g' coverage.txt | sed -n '/^ *File /,$p'
-            echo '```'
-          } > coverage-comment.md
-        working-directory: apps/web-admin
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v7
+      - name: Publish JUnit report
+        uses: mikepenz/action-junit-report@v6
         if: (!cancelled())
         with:
-          name: web-admin-test-results
-          path: apps/web-admin/test-result/junit.xml
-          retention-days: 7
+          report_paths: apps/web-admin/test-result/junit.xml
+          require_tests: true
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v7
+      - name: Report code coverage
+        uses: zgosalvez/github-actions-report-lcov@v7.2.2
         if: (!cancelled())
         with:
-          name: web-admin-coverage-report
-          path: apps/web-admin/coverage-comment.md
-          retention-days: 7
+          coverage-files: apps/web-admin/coverage/lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          update-comment: true
+          artifact-name: web-admin-coverage-report
+          working-directory: apps/web-admin
 
   docker:
     name: Docker Build Web Admin
@@ -126,39 +117,3 @@ jobs:
           cache-from: type=gha,scope=web-admin
           cache-to: type=gha,scope=web-admin,mode=max,ignore-error=true
 
-  report:
-    name: Publish Test Results and Coverage
-    needs: test
-    if: (!cancelled()) && needs.test.result != 'skipped'
-    runs-on: ubuntu-latest
-
-    permissions:
-      checks: write
-      pull-requests: write
-
-    steps:
-      - name: Download test results
-        uses: actions/download-artifact@v8
-        with:
-          name: web-admin-test-results
-          path: test-result
-
-      - name: Publish JUnit report
-        uses: mikepenz/action-junit-report@v6
-        if: (!cancelled())
-        with:
-          report_paths: test-result/junit.xml
-          require_tests: true
-
-      - name: Download coverage report
-        uses: actions/download-artifact@v8
-        with:
-          name: web-admin-coverage-report
-          path: coverage
-
-      - name: Comment coverage on PR
-        uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request' && (!cancelled())
-        with:
-          header: web-admin-coverage
-          path: coverage/coverage-comment.md

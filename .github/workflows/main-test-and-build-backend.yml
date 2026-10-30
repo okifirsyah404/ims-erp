@@ -55,6 +55,10 @@ jobs:
     name: Unit Test Backend
     runs-on: ubuntu-latest
 
+    permissions:
+      checks: write
+      pull-requests: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -90,41 +94,25 @@ jobs:
         working-directory: apps/backend
 
       - name: Run unit tests with coverage
-        run: |
-          mkdir -p test-result coverage
-          bun test ./test/unit \
-            --reporter=junit --reporter-outfile=./test-result/junit.xml \
-            --coverage --coverage-reporter=text --coverage-reporter=lcov \
-            --coverage-dir=./coverage | tee coverage.txt
+        run: bun run test:cov -- --reporter=junit --reporter-outfile=./test-result/junit.xml
         working-directory: apps/backend
 
-      - name: Build coverage comment
-        run: |
-          {
-            echo "### Backend unit test coverage"
-            echo ""
-            echo '```'
-            # Strip ANSI codes and keep the coverage table (from the header line down)
-            sed -e 's/\x1b\[[0-9;]*m//g' coverage.txt | sed -n '/^ *File /,$p'
-            echo '```'
-          } > coverage-comment.md
-        working-directory: apps/backend
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v7
+      - name: Publish JUnit report
+        uses: mikepenz/action-junit-report@v6
         if: (!cancelled())
         with:
-          name: backend-test-results
-          path: apps/backend/test-result/junit.xml
-          retention-days: 7
+          report_paths: apps/backend/test-result/junit.xml
+          require_tests: true
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v7
+      - name: Report code coverage
+        uses: zgosalvez/github-actions-report-lcov@v7.2.2
         if: (!cancelled())
         with:
-          name: backend-coverage-report
-          path: apps/backend/coverage-comment.md
-          retention-days: 7
+          coverage-files: apps/backend/coverage/lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          update-comment: true
+          artifact-name: backend-coverage-report
+          working-directory: apps/backend
 
   docker:
     name: Docker Build Backend
@@ -151,39 +139,3 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,scope=backend,mode=max,ignore-error=true
 
-  report:
-    name: Publish Test Results and Coverage
-    needs: test
-    if: (!cancelled()) && needs.test.result != 'skipped'
-    runs-on: ubuntu-latest
-
-    permissions:
-      checks: write
-      pull-requests: write
-
-    steps:
-      - name: Download test results
-        uses: actions/download-artifact@v8
-        with:
-          name: backend-test-results
-          path: test-result
-
-      - name: Publish JUnit report
-        uses: mikepenz/action-junit-report@v6
-        if: (!cancelled())
-        with:
-          report_paths: test-result/junit.xml
-          require_tests: true
-
-      - name: Download coverage report
-        uses: actions/download-artifact@v8
-        with:
-          name: backend-coverage-report
-          path: coverage
-
-      - name: Comment coverage on PR
-        uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request' && (!cancelled())
-        with:
-          header: backend-coverage
-          path: coverage/coverage-comment.md

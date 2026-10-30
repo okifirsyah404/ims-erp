@@ -4,6 +4,7 @@
 	"type": "module",
 	"scripts": {
 		"test": "bun test",
+		"test:cov": "bun test ./test/unit --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir=./coverage",
 		"lint": "oxlint",
 		"typecheck": "bunx tsc --noEmit",
 		"dev": "bun run --watch src/index.ts",
