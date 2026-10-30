@@ -26,8 +26,8 @@ env:
   HUSKY: 0
 
 jobs:
-  build:
-    name: Build Web Admin
+  lint:
+    name: Lint Web Admin
     runs-on: ubuntu-latest
 
     steps:
@@ -45,12 +45,65 @@ jobs:
       - name: Lint web-admin
         run: bun run --cwd apps/web-admin lint
 
-      - name: Build web-admin
-        run: bun run --cwd apps/web-admin build
+  test:
+    name: Unit Test Web Admin
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Bun 1.4.4
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build @ims-erp/common
+        run: bun run --cwd packages/common build
+
+      - name: Run unit tests with coverage
+        run: |
+          mkdir -p test-result coverage
+          bun test \
+            --reporter=junit --reporter-outfile=./test-result/junit.xml \
+            --coverage --coverage-reporter=text \
+            --coverage-dir=./coverage | tee coverage.txt
+        working-directory: apps/web-admin
+
+      - name: Build coverage comment
+        run: |
+          {
+            echo "### Web Admin unit test coverage"
+            echo ""
+            echo '```'
+            # Strip ANSI codes and keep the coverage table (from the header line down)
+            sed -e 's/\x1b\[[0-9;]*m//g' coverage.txt | sed -n '/^ *File /,$p'
+            echo '```'
+          } > coverage-comment.md
+        working-directory: apps/web-admin
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v7
+        if: (!cancelled())
+        with:
+          name: web-admin-test-results
+          path: apps/web-admin/test-result/junit.xml
+          retention-days: 7
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        if: (!cancelled())
+        with:
+          name: web-admin-coverage-report
+          path: apps/web-admin/coverage-comment.md
+          retention-days: 7
 
   docker:
     name: Docker Build Web Admin
-    needs: build
+    needs: [lint, test]
     runs-on: ubuntu-latest
 
     permissions:
@@ -72,3 +125,40 @@ jobs:
           tags: ims-erp-web-admin:ci
           cache-from: type=gha,scope=web-admin
           cache-to: type=gha,scope=web-admin,mode=max,ignore-error=true
+
+  report:
+    name: Publish Test Results and Coverage
+    needs: test
+    if: (!cancelled()) && needs.test.result != 'skipped'
+    runs-on: ubuntu-latest
+
+    permissions:
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Download test results
+        uses: actions/download-artifact@v8
+        with:
+          name: web-admin-test-results
+          path: test-result
+
+      - name: Publish JUnit report
+        uses: mikepenz/action-junit-report@v6
+        if: (!cancelled())
+        with:
+          report_paths: test-result/junit.xml
+          require_tests: true
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v8
+        with:
+          name: web-admin-coverage-report
+          path: coverage
+
+      - name: Comment coverage on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request' && (!cancelled())
+        with:
+          header: web-admin-coverage
+          path: coverage/coverage-comment.md

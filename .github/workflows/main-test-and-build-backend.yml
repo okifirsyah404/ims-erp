@@ -26,8 +26,8 @@ env:
   HUSKY: 0
 
 jobs:
-  build:
-    name: Build Backend
+  lint:
+    name: Lint Backend
     runs-on: ubuntu-latest
 
     steps:
@@ -51,6 +51,22 @@ jobs:
       - name: Typecheck backend
         run: bun run --cwd apps/backend typecheck
 
+  test:
+    name: Unit Test Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Bun 1.4.4
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
       - name: Create test env
         run: |
           cat > .env <<'EOF'
@@ -73,10 +89,25 @@ jobs:
           EOF
         working-directory: apps/backend
 
-      - name: Run tests
+      - name: Run unit tests with coverage
         run: |
-          mkdir -p test-result
-          bun test --reporter=junit --reporter-outfile=./test-result/junit.xml
+          mkdir -p test-result coverage
+          bun test ./test/unit \
+            --reporter=junit --reporter-outfile=./test-result/junit.xml \
+            --coverage --coverage-reporter=text --coverage-reporter=lcov \
+            --coverage-dir=./coverage | tee coverage.txt
+        working-directory: apps/backend
+
+      - name: Build coverage comment
+        run: |
+          {
+            echo "### Backend unit test coverage"
+            echo ""
+            echo '```'
+            # Strip ANSI codes and keep the coverage table (from the header line down)
+            sed -e 's/\x1b\[[0-9;]*m//g' coverage.txt | sed -n '/^ *File /,$p'
+            echo '```'
+          } > coverage-comment.md
         working-directory: apps/backend
 
       - name: Upload test results
@@ -87,13 +118,17 @@ jobs:
           path: apps/backend/test-result/junit.xml
           retention-days: 7
 
-      - name: Smoke build (Bun can bundle entry)
-        run: bun build --target=bun --outdir=./test-result/build-check src/index.ts
-        working-directory: apps/backend
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        if: (!cancelled())
+        with:
+          name: backend-coverage-report
+          path: apps/backend/coverage-comment.md
+          retention-days: 7
 
   docker:
     name: Docker Build Backend
-    needs: build
+    needs: [lint, test]
     runs-on: ubuntu-latest
 
     permissions:
@@ -117,9 +152,9 @@ jobs:
           cache-to: type=gha,scope=backend,mode=max,ignore-error=true
 
   report:
-    name: Publish Test Results
-    needs: build
-    if: (!cancelled()) && needs.build.result != 'skipped'
+    name: Publish Test Results and Coverage
+    needs: test
+    if: (!cancelled()) && needs.test.result != 'skipped'
     runs-on: ubuntu-latest
 
     permissions:
@@ -139,3 +174,16 @@ jobs:
         with:
           report_paths: test-result/junit.xml
           require_tests: true
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v8
+        with:
+          name: backend-coverage-report
+          path: coverage
+
+      - name: Comment coverage on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request' && (!cancelled())
+        with:
+          header: backend-coverage
+          path: coverage/coverage-comment.md
