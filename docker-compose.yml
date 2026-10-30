@@ -42,8 +42,8 @@ services:
     image: docker.io/okifirsyah404/ims-erp-backend:${IMAGE_TAG:-dev}
     restart: unless-stopped
     environment:
-      INSTANCE_ENV: ${INSTANCE_ENV:-development}
-      INSTANCE_TIMEZONE: ${TZ:-Asia/Jakarta}
+      NODE_ENV: ${NODE_ENV:-development}
+      TZ: ${TZ:-Asia/Jakarta}
       APP_NAME: ${APP_NAME:?APP_NAME is required}
       APP_ID: ${APP_ID:?APP_ID is required}
       APP_SECRET: ${APP_SECRET:?APP_SECRET is required}

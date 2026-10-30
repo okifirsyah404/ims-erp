@@ -1,37 +1,22 @@
 import * as dotenv from 'dotenv';
 import * as dotenvExpand from 'dotenv-expand';
-import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { EnvConfigSchema, type TEnvConfig } from '../schemas/config.schema.js';
 
-function findEnvPath(): string | undefined {
-  let dir = process.cwd();
-
-  for (let i = 0; i < 8; i++) {
-    const candidate = path.join(dir, '.env');
-
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
-
-    const parent = path.dirname(dir);
-
-    if (parent === dir) {
-      return undefined;
-    }
-
-    dir = parent;
-  }
-
-  return undefined;
+/**
+ * Resolve the workspace-local `.env`. Env files are decentralized per app,
+ * so we only look in the backend workspace itself — never above it.
+ */
+function findEnvPath(): string {
+  return path.resolve(process.cwd(), '.env');
 }
 
 export function loadEnvConfig(
   options?: dotenv.DotenvConfigOptions,
 ): TEnvConfig {
   const result = dotenv.config({
-    path: options?.path ?? findEnvPath() ?? path.resolve(process.cwd(), '.env'),
+    path: options?.path ?? findEnvPath(),
     ...options,
   });
 
@@ -43,8 +28,8 @@ export function loadEnvConfig(
 
   return EnvConfigSchema.parse({
     instance: {
-      env: process.env.INSTANCE_ENV ?? 'development',
-      timezone: process.env.INSTANCE_TIMEZONE ?? 'UTC',
+      env: process.env.NODE_ENV ?? 'development',
+      timezone: process.env.TZ ?? 'UTC',
     },
 
     app: {
