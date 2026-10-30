@@ -85,6 +85,9 @@ jobs:
           report_paths: apps/web-admin/test-result/junit.xml
           require_tests: true
 
+      - name: Setup LCOV
+        uses: hrishikesh-kadam/setup-lcov@v1
+
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v7.2.2
         if: (!cancelled())
