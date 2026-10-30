@@ -13,6 +13,12 @@
       "skillPath": "security/SKILL.md",
       "computedHash": "7a230edf3a24ce18162cb4379f59b6a19b8d24ca04db530609d0f15cede556dc"
     },
+    "dbml-database-docs": {
+      "source": "aircury/ai-framework",
+      "sourceType": "github",
+      "skillPath": "skills/dbml-database-docs/SKILL.md",
+      "computedHash": "0fe865a4a42122c73610431e3067cecbc19f9dff2ceecc156b5c6df36a228b6d"
+    },
     "elysiajs": {
       "source": "elysiajs/skills",
       "sourceType": "github",

@@ -29,6 +29,10 @@ Reference when touching the relevant areas:
 | `testing-strategy.md` | writing tests |
 | `plan.md` | goals, priorities, forecasting |
 
+Database schema documentation lives outside this folder, in
+`docs/database/` (repo root): `docs.dbml` (canonical persistence contract),
+5 companion MDs, and the validate/regenerate scripts.
+
 ## Conventions
 
 - Statuses: `planned`, `in-progress`, `implemented`, `verified`, `accepted`,

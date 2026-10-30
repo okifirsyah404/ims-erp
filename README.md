@@ -1,159 +1,181 @@
-# Turborepo starter
+# IMS ERP
 
-This Turborepo starter is maintained by the Turborepo core team.
+An inventory management / ERP system built as a **Bun + Turborepo** monorepo. It consists of a typed API backend (Elysia + PostgreSQL + Redis) and an admin web client (React + Vite), with shared packages for common code and UI components.
 
-## Using this example
+Domain modules currently include **users & auth**, **organizations**, **locations** (provinces/regencies/districts/villages), and **sales** (quotations, payments).
 
-Run the following command:
+## Tech Stack
 
-```sh
-npx create-turbo@latest
+| Layer | Technology |
+| --- | --- |
+| Runtime / package manager | [Bun](https://bun.sh) |
+| Monorepo orchestration | [Turborepo](https://turborepo.dev) |
+| Backend API | [Elysia](https://elysiajs.com) with OpenAPI, CORS, pino logging |
+| Database | [PostgreSQL](https://www.postgresql.org) + [Drizzle ORM](https://orm.drizzle.team) + drizzle-kit |
+| Cache & queues | [Redis](https://redis.io) + [BullMQ](https://bullmq.io) |
+| Auth | [Better Auth](https://www.better-auth.com) (+ api-key, passkey, Drizzle adapter plugins) |
+| DI / validation | [tsyringe](https://github.com/microsoft/tsyringe), [Zod](https://zod.dev) |
+| Admin frontend | [React 19](https://react.dev) + [Vite](https://vite.dev), [TanStack Router/Query/Form](https://tanstack.com), [Tailwind CSS 4](https://tailwindcss.com) |
+| UI library | `@ims-erp/ui` (shadcn-style components) |
+| Lint / format / hooks | oxlint, Prettier, husky |
+| CI/CD & deployment | GitHub Actions, Docker, Docker Compose |
+
+## Project Structure
+
+```
+.
+├── apps/
+│   ├── backend/             # Elysia API (@ims-erp/backend)
+│   │   ├── src/
+│   │   │   ├── app/         # Domain modules (user, organization, location, sales)
+│   │   │   │   └── <module>/
+│   │   │   │       ├── contracts/     # Repository interfaces & DTO contracts
+│   │   │   │       ├── controllers/   # Elysia route plugins
+│   │   │   │       ├── services/      # Business logic
+│   │   │   │       ├── repositories/  # Drizzle data access
+│   │   │   │       └── container.ts   # tsyringe DI registration
+│   │   │   ├── providers/   # Infra providers (better-auth, logger, queue, ...)
+│   │   │   ├── authorization/
+│   │   │   ├── contracts/
+│   │   │   ├── di/
+│   │   │   └── config/
+│   │   ├── database/        # Seeders & migration helpers
+│   │   ├── drizzle/         # Generated migrations
+│   │   └── scripts/
+│   └── web-admin/           # Admin SPA (@ims-erp/web-admin) — Vite + React + TanStack Router
+├── packages/
+│   ├── common/              # Shared code (@ims-erp/common)
+│   ├── ui/                  # Shared UI components (@ims-erp/ui)
+│   └── eslint-config/
+├── docs/
+│   └── database/            # DBML schema, data dictionary, module ownership, phases
+├── docker-compose.yml       # Deployment compose (pulls published images)
+├── docker-compose.local.yml # Local override (builds images from source)
+├── turbo.json
+└── package.json
 ```
 
-## What's inside?
+## Getting Started
 
-This Turborepo includes the following packages/apps:
+### Prerequisites
 
-### Apps and Packages
+- [Bun](https://bun.sh) 1.4+
+- [Docker](https://www.docker.com) (for local Postgres/Redis and containerized runs)
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `@next/eslint-plugin-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+### 1. Install dependencies
 
 ```sh
-cd my-turborepo
-turbo build
+bun install
 ```
 
-Without global `turbo`, use your package manager:
+### 2. Configure environment
+
+Copy the example env file and fill in the required secrets:
 
 ```sh
-cd my-turborepo
-npx turbo build
-bun exec turbo build
-bun exec turbo build
+cp .env.example .env
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+At minimum, set:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+| Variable | Purpose |
+| --- | --- |
+| `APP_SECRET` | App secret; also used as `BETTER_AUTH_SECRET` |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` | Database credentials |
+| `CORS_ORIGINS` | Browser origins allowed with credentials (defaults to `http://localhost:5173`) |
+| `S3_*` | Object storage for avatars/file uploads (optional locally) |
+| `SMTP_*` | Email sending (optional locally) |
+
+Other variables (app name/port, Redis, initial admin bootstrap, timezone) have sensible defaults — see `.env.example`.
+
+### 3. Start infrastructure
+
+Local development uses Docker for Postgres and Redis:
 
 ```sh
-turbo build --filter=docs
+docker compose -f docker-compose.yml -f docker-compose.local.yml up postgres redis
 ```
 
-Without global `turbo`:
+### 4. Run database migrations & seed
+
+From `apps/backend`:
 
 ```sh
-npx turbo build --filter=docs
-bun exec turbo build --filter=docs
-bun exec turbo build --filter=docs
+bun run drizzle:generate   # generate migrations from schema
+bun run drizzle:migrate    # apply migrations
+bun run drizzle:seed       # seed initial data (incl. admin bootstrap)
+bun run drizzle:studio     # browse the DB (optional)
 ```
 
-### Develop
+### 5. Run the apps
 
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+From the repo root:
 
 ```sh
-cd my-turborepo
-turbo dev
+bun dev                                  # backend + web-admin
+bun dev --filter=@ims-erp/backend        # backend only
+bun dev --filter=@ims-erp/web-admin      # admin frontend only
 ```
 
-Without global `turbo`, use your package manager:
+- Backend API: http://localhost:3000 (serves OpenAPI docs via `@elysia/openapi`)
+- Admin frontend: http://localhost:5173
+
+## Common Commands
+
+Run from the repo root (Turborepo fans tasks out to all apps/packages):
+
+| Command | Description |
+| --- | --- |
+| `bun build` | Build all apps & packages |
+| `bun dev` | Start all apps in dev mode |
+| `bun test` | Run tests (`bun test` in each workspace) |
+| `bun lint` | Lint (oxlint) |
+| `bun typecheck` | TypeScript check (`tsc --noEmit`) |
+| `bun format` | Format (Prettier) |
+
+Use [`--filter`](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters) to target a single workspace, e.g. `bun build --filter=@ims-erp/backend`.
+
+## Deployment
+
+### CI/CD
+
+On merges to `main`, path-filtered GitHub Actions workflows:
+
+- Run tests and builds for the backend and web-admin.
+- Build Docker images and push them to Docker Hub:
+  - `okifirsyah404/ims-erp-backend`
+  - `okifirsyah404/ims-erp-web-admin`
+
+Each image is tagged with both the short commit SHA (`sha-<sha>`) and a moving `dev` tag.
+
+### Running in production / on a server
+
+`docker-compose.yml` pulls the published images and starts the full stack: **backend**, **web-admin**, **postgres**, **redis**. Configure the required variables in `.env` (`APP_NAME`, `APP_ID`, `APP_SECRET`, `POSTGRES_PASSWORD`, optional `S3_*` / `SMTP_*`), then:
 
 ```sh
-cd my-turborepo
-npx turbo dev
-bun exec turbo dev
-bun exec turbo dev
+docker compose up -d
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Useful knobs:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+| Variable | Default | Description |
+| --- | --- | --- |
+| `IMAGE_TAG` | `dev` | Which image tag to pull (`dev` or a `sha-...` tag) |
+| `APP_PORT` | `3001` | Host port mapped to the backend (container port 3000) |
+| `WEB_ADMIN_PORT` | `8080` | Host port mapped to the web admin (container port 80) |
+| `TZ` | `Asia/Jakarta` | Timezone for services |
 
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-bun exec turbo dev --filter=web
-bun exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+To build and run the application images from source instead of pulling from Docker Hub (e.g. for a local end-to-end check):
 
 ```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-bun exec turbo login
-bun exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-bun exec turbo link
-bun exec turbo link
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 ```
 
 ## Useful Links
 
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- [Turborepo Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
+- [Turborepo Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
+- [Elysia Documentation](https://elysiajs.com)
+- [Drizzle ORM Documentation](https://orm.drizzle.team/docs/overview)
+- [Better Auth Documentation](https://www.better-auth.com/docs)
+- [TanStack Router](https://tanstack.com/router)

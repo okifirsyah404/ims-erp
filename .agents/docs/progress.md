@@ -352,3 +352,29 @@ slice (ERP-0002/3/4/5) applying `erp` macro + scoping patterns from
   cookie cache active (etter-auth.session_data cookie; repeat get-session
   55ms -> 12ms); sign-out 200 then get-session -> null; 7 adapter unit tests
   pass with mocked RedisClient seam; suite 61 pass / 0 fail; typecheck clean.
+
+## 2026-10-30 - Database documentation consolidated into docs/database/
+
+Status: implemented (design docs; no live DB touched).
+
+- DB docs moved out of apps/backend/database and .agents/docs/database into
+  docs/database/ (repo root): docs.dbml (canonical persistence contract),
+  5 companion MDs, validate-dbml.ts, gen-logical-references.ts. Only
+  migrations/, seeders/, migrate-reset.ts remain in apps/backend/database.
+- Identity module folded: 6 ERP extension tables now live in the auth schema
+  (auth.user_profiles, user_role_assignments, portal_identities,
+  user_preferences, identity_verifications, user_devices) alongside the 9
+  Better Auth core tables. No identity schema exists.
+- org schema renamed to organization (9 tables, 6 refs). Organization master
+  remains auth.organizations (Better Auth).
+- Deleted docs.generated.sql (throwaway validator export) and
+  postgresql-constraints.sql (superseded: constraints are specified for
+  direct implementation in the Drizzle schemas; see S7 in
+  docs/database/implementation-phases.md for the 85/197/45 inventory).
+- Validation (docs/database/validate-dbml.ts, bun + @dbml/core): parsed 251
+  tables, 218 refs, 0 cross-module, 0 timestamp gaps, OK. logical-references
+  regenerated: 529 logical refs, 36 targets.
+- Skills dbml-database-docs (.agents + .claude copies) updated to the new
+  docs/database/docs.dbml path.
+- Not verified: nothing applied to any database; the DBML remains a design
+  reference for hand-written Drizzle schemas.
