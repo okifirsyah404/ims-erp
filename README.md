@@ -70,13 +70,14 @@ bun install
 
 ### 2. Configure environment
 
-Copy the example env file and fill in the required secrets:
+Environment files are decentralized per workspace — each app owns its own `.env`:
 
 ```sh
-cp .env.example .env
+cp apps/backend/.env.example apps/backend/.env
+cp apps/web-admin/.env.example apps/web-admin/.env
 ```
 
-At minimum, set:
+At minimum, set in `apps/backend/.env`:
 
 | Variable | Purpose |
 | --- | --- |
@@ -86,7 +87,9 @@ At minimum, set:
 | `S3_*` | Object storage for avatars/file uploads (optional locally) |
 | `SMTP_*` | Email sending (optional locally) |
 
-Other variables (app name/port, Redis, initial admin bootstrap, timezone) have sensible defaults — see `.env.example`.
+In `apps/web-admin/.env`, set `VITE_API_URL` to the backend URL (must match the backend's `APP_PORT`).
+
+Other variables (app name/port, Redis, initial admin bootstrap, timezone) have sensible defaults — see `apps/backend/.env.example`.
 
 ### 3. Start infrastructure
 
@@ -150,7 +153,7 @@ Each image is tagged with both the short commit SHA (`sha-<sha>`) and a moving `
 
 ### Running in production / on a server
 
-`docker-compose.yml` pulls the published images and starts the full stack: **backend**, **web-admin**, **postgres**, **redis**. Configure the required variables in `.env` (`APP_NAME`, `APP_ID`, `APP_SECRET`, `POSTGRES_PASSWORD`, optional `S3_*` / `SMTP_*`), then:
+`docker-compose.yml` pulls the published images and starts the full stack: **backend**, **web-admin**, **postgres**, **redis**. Compose substitution needs a deployment `.env` next to `docker-compose.yml` (or pass `--env-file`), separate from the dev workspace env files — configure `APP_NAME`, `APP_ID`, `APP_SECRET`, `POSTGRES_PASSWORD`, optional `S3_*` / `SMTP_*`, then:
 
 ```sh
 docker compose up -d
