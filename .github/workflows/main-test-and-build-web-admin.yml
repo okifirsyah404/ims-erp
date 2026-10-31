@@ -13,21 +13,38 @@ on:
       - ".github/workflows/main-test-and-build-web-admin.yml"
   pull_request:
     branches: ["main"]
-    paths:
-      - "apps/web-admin/**"
-      - "packages/**"
-      - "package.json"
-      - "bun.lock"
-      - "bunfig.toml"
-      - "turbo.json"
-      - ".github/workflows/main-test-and-build-web-admin.yml"
 
 env:
   HUSKY: 0
 
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      web-admin: ${{ steps.filter.outputs.web-admin }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Check for web-admin-related changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web-admin:
+              - "apps/web-admin/**"
+              - "packages/**"
+              - "package.json"
+              - "bun.lock"
+              - "bunfig.toml"
+              - "turbo.json"
+              - ".github/workflows/main-test-and-build-web-admin.yml"
+
   lint:
     name: Lint Web Admin
+    needs: changes
+    if: needs.changes.outputs.web-admin == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -47,6 +64,8 @@ jobs:
 
   test:
     name: Unit Test Web Admin
+    needs: changes
+    if: needs.changes.outputs.web-admin == 'true'
     runs-on: ubuntu-latest
 
     permissions:
@@ -65,9 +84,6 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
-      - name: Build @ims-erp/common
-        run: bun run --cwd packages/common build
 
       - name: Build @ims-erp/common
         run: bun run --cwd packages/common build
