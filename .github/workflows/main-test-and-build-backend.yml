@@ -13,21 +13,41 @@ on:
       - ".github/workflows/main-test-and-build-backend.yml"
   pull_request:
     branches: ["main"]
-    paths:
-      - "apps/backend/**"
-      - "packages/**"
-      - "package.json"
-      - "bun.lock"
-      - "bunfig.toml"
-      - "turbo.json"
-      - ".github/workflows/main-test-and-build-backend.yml"
 
 env:
   HUSKY: 0
 
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Check for backend-related changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - "apps/backend/**"
+              - "packages/**"
+              - "package.json"
+              - "bun.lock"
+              - "bunfig.toml"
+              - "turbo.json"
+              - ".github/workflows/main-test-and-build-backend.yml"
+
   lint:
     name: Lint Backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -53,6 +73,8 @@ jobs:
 
   test:
     name: Unit Test Backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
 
     permissions:
