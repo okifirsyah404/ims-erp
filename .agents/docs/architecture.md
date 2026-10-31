@@ -3,7 +3,7 @@
 Ownership boundaries, dependency rules, and integration patterns. Violations
 here should fail review even if tests pass.
 
-## Layering (backend — `apps/backend-elysia`)
+## Layering (backend — `apps/backend`)
 
 ```text
 src/
@@ -58,8 +58,11 @@ drizzle/                      Drizzle client + schemas (code-owned)
 
 ## ERP schema ownership
 
-- `auth` schema: Better Auth-owned tables, regenerated only from
-  `auth:generate` (never by hand, never blindly). -
+- `auth` schema: Better Auth-owned tables. `@better-auth/cli` 1.4.x `generate`
+  regresses this file (drops `pgSchema('auth')`, pluralized tables, relations —
+  verified 2026-10-30): do not run `auth:generate`; apply hand-written,
+  append-only edits and mirror the column in Better Auth's
+  `user.additionalFields` where applicable.
 - `erp` schema: current shared domain schema (`audit_logs`, `customers`,
   `investors`). Owned by this repo. **Do not grow it further**: new feature
   tables get a per-feature Postgres schema named after the domain

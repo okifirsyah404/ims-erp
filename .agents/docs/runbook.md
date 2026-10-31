@@ -4,7 +4,7 @@ Everyday commands. **Verified** = actually executed and passed in this repo.
 Everything else is proposed until run.
 
 > 2026-10-28: the NestJS backend (`apps/backend-nest`, package `backend`) was
-> deleted; `apps/backend-elysia` is the backend. All previously verified
+> deleted; `apps/backend` is the backend. All previously verified
 > commands were tied to backend-nest and are superseded — re-verify and record
 > outcomes here as you run them.
 
@@ -14,38 +14,44 @@ Everything else is proposed until run.
 bun install          # restore workspace installs
 ```
 
-Environment is loaded per-workspace from `.env` (backend-elysia uses
+Environment is loaded per-workspace from `.env` (the backend uses
 `dotenv` + `dotenv-expand`). Variable **names** (never commit values):
-`APP_*`, `POSTGRES_*`, `REDIS_*`, `S3_*`; frontend `VITE_API_URL`. Inspect
-`apps/backend-elysia/src` for the authoritative list when touching config.
+`APP_*`, `POSTGRES_*`, `REDIS_*`, `S3_*`, `SMTP_*`; frontend `VITE_API_URL`. Inspect
+`apps/backend/src` for the authoritative list when touching config.
 
 ## Build / run
 
 | Command | Where | Status |
 |---|---|---|
-| `bun run dev` | repo root | proposed — turbo `start:dev` |
-| `bun dev` | `apps/backend-elysia` | proposed — `bun run --watch src/index.ts` |
-| `bun run build` | repo root / `apps/web-admin` | proposed (not yet re-verified) |
+| `bun run dev` | repo root | ✅ verified 2026-10-29 — `turbo run dev`; live HTTP bring-up |
+| `bun dev` | `apps/backend` | ✅ verified 2026-10-29/30 — `bun run --watch src/index.ts` |
+| `bun run build` | repo root / `apps/web-admin` | ✅ verified 2026-10-29/30 (web-admin tsc + vite) |
 
 ## Checks
 
 | Command | Where | Status |
 |---|---|---|
-| `bun run lint` | repo root | proposed — re-verify per workspace |
-| `bun run typecheck` | repo root | proposed |
-| `bun run test` | repo root | proposed — backend-elysia has no test script yet |
+| `bun run lint` | repo root | ✅ verified 2026-10-28→30 — pass; remaining warnings pre-existing |
+| `bun run typecheck` | repo root | ✅ verified 2026-10-28→30 — backend clean |
+| `bun run test` | repo root | ✅ verified 2026-10-30 — backend 78 pass / 0 fail |
 
-## Database (apps/backend-elysia)
+## Database (apps/backend)
+
+Use the package scripts — all run drizzle-kit under the Bun runtime
+(`bunx --bun drizzle-kit ...`); the `--bun` flag is required because the DB
+driver is `drizzle-orm/bun-sql`:
 
 ```powershell
-# proposed until run against your disposable DB; behaviors unverified
-bunx drizzle-kit generate   # from schema diff (config: apps/backend-elysia/drizzle.config.ts)
-bunx drizzle-kit migrate    # apply migrations
-bunx drizzle-kit push       # disposable DBs only
-bunx drizzle-kit studio     # inspect
-bun run drizzle:seed        # existing seed runner (database/seeders)
-bun run auth:generate       # regenerates auth schema — pin `auth@latest` first
+bun run drizzle:generate   # from schema diff (config: apps/backend/drizzle.config.ts) — verified 2026-10-29/30
+bun run drizzle:migrate    # apply migrations — verified 2026-10-29/30
+bun run drizzle:push       # disposable DBs only
+bun run drizzle:studio     # inspect
+bun run drizzle:seed       # seed runners (database/seeders) — verified idempotent (run twice)
 ```
+
+`auth:generate` is intentionally not listed: the `@better-auth/cli` 1.4.x
+generator regresses `drizzle/schemas/auth.schema.ts` and its script path is
+stale — hand-write auth-schema deltas instead (root `AGENTS.md` hard rule).
 
 Rules:
 - Never run `drizzle-kit push` or migrations against a database you cannot
@@ -58,12 +64,13 @@ Rules:
 
 ## Docker
 
-No backend Dockerfile exists yet for `apps/backend-elysia`. Compose currently
-provides `postgres` + `redis` + `web-admin` only; the `backend` service was
-removed with backend-nest (2026-10-28).
+Compose provides `postgres` + `redis` (local infra) plus `backend` + `web-admin`
+services pulling published Docker Hub images (`docker-compose.yml`); build
+images from source with `docker-compose.local.yml`. A source-build backend
+Dockerfile for local dev iteration is open backlog work.
 
 ```powershell
-docker compose up postgres redis    # infra for local backend dev
+docker compose -f docker-compose.yml -f docker-compose.local.yml up postgres redis    # infra for local backend dev
 ```
 
 ## Troubleshooting notes

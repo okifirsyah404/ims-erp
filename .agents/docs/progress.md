@@ -467,15 +467,31 @@ running server + real S3.**
 - Follow-up tasks created: backend-elysia Dockerfile + compose service, CI
   test job for elysia, authorization core port to elysia.
 
-## Next executable task
+## 2026-10-31 - Docs sync: AGENTS.md, runbook.md, architecture.md
+
+No code changed; docs only. Reconciled with README.md, package scripts, and
+verified history in this file.
+
+- `AGENTS.md`: Drizzle driver corrected to `drizzle-orm/bun-sql` (was
+  `node-postgres`). Command table updated to verified reality: `bun install`,
+  `bun run dev` (`turbo run dev`, not `start:dev`), lint/test/typecheck,
+  `drizzle:generate|migrate|seed` (all `bunx --bun drizzle-kit`). New hard
+  rule: never run `auth:generate` (1.4.x CLI regresses `auth.schema.ts`;
+  hand-written append-only deltas instead). Reading order now includes
+  `stack-compatibility.md` and `modules/`.
+- `runbook.md`: stale `apps/backend-elysia` paths → `apps/backend`; command
+  statuses flipped from proposed to verified with dates; `auth:generate`
+  removed with explanation; Docker section updated (compose now has
+  backend + web-admin services; source-build Dockerfile still open backlog).
+- `architecture.md`: backend path fixed; `auth` schema bullet now documents
+  the `auth:generate` regression caveat.
 
 ## Next executable task
 
-**Backend-elysia HTTP bring-up**: boot `bun dev` and verify the cookie
-round-trip through the mounted auth handler + `erpGuard` (real HTTP:
-sign-in → cookie → protected /sales route), then continue the customer
-slice (ERP-0002/3/4/5) applying `erp` macro + scoping patterns from
-`security-and-access.md`. Also: backend-elysia Dockerfile + CI test job.
+**Customer slice (ERP-0002/3/4/5)** — HTTP bring-up is done (verified
+2026-10-29); continue applying the `erp` macro + scoping patterns from
+`security-and-access.md`. Also open: backend source-build Dockerfile + CI test
+job polish.
 
 ## Completed - Better Auth secondary storage (Redis), 2026-10-29
 

@@ -21,14 +21,15 @@ This file is short on purpose. Detailed, evidence-based answers live in
 
 1. `.agents/docs/README.md` — navigation and resume reading order
 2. `.agents/docs/project-audit.md` — what actually exists and what works
-3. `.agents/docs/progress.md` — where work stopped; the next executable task
-4. `.agents/docs/architecture.md` — boundaries you must not violate
-5. `.agents/docs/runbook.md` — commands before you invent any
+3. `.agents/docs/stack-compatibility.md` — exact resolved versions and risks
+4. `.agents/docs/progress.md` — where work stopped; the next executable task
+5. `.agents/docs/architecture.md` — boundaries you must not violate
+6. `.agents/docs/runbook.md` — commands before you invent any
 
 Read by need: `domain-map.md` (business ownership), `data-model.md` (schema),
 `api-conventions.md`, `security-and-access.md`, `testing-strategy.md`,
-`backlog.md` + `phases/` (planning), `decisions/` (ADR history),
-`skills.md` (skill inventory).
+`backlog.md` + `phases/` (planning), `modules/` (per-module boundaries and
+state), `decisions/` (ADR history), `skills.md` (skill inventory).
 
 ## Starting work
 
@@ -46,21 +47,22 @@ else is *proposed*: verify before claiming it works. Full list with outcomes:
 
 | Command | Where | Status |
 |---|---|---|
-| `bun run dev` | repo root | ⚠️ proposed — runs turbo `start:dev` across workspaces |
-| `bun install` / turbo tasks for build/dev | repo root | ⚠️ proposed — never run in this repo yet |
-| `bunx drizzle-kit generate --config ./drizzle.config.ts` | `apps/backend` | ⚠️ proposed - migration journal state unverified; see `runbook.md` |
-| `bun run drizzle:migrate` / `drizzle:seed` (scripts use `bunx --bun drizzle-kit`) | `apps/backend` | ✅ verified 2026-10-29 - migrations applied; seed idempotent (run twice); the `--bun` flag is required because the DB driver is `drizzle-orm/bun-sql` |
+| `bun install` | repo root | ✅ verified 2026-10-28/29 — clean installs (nest removal, dicebear add) |
+| `bun run dev` | repo root | ✅ verified 2026-10-29 — `turbo run dev`; live HTTP bring-up (auth 200, Redis, 401 envelope) |
+| `bun run lint` / `test` / `typecheck` | repo root, fans out per workspace | ✅ verified 2026-10-28→30 — backend 78/78 tests, typecheck clean |
+| `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend` | ✅ verified 2026-10-29/30 — migrations applied; seed idempotent (run twice). All use `bunx --bun drizzle-kit`; the `--bun` flag is required because the DB driver is `drizzle-orm/bun-sql` |
 
 > The previous NestJS backend (`apps/backend-nest`, package `backend`) was
-> deleted 2026-10-28; its verified-command history is superseded. Commands
-> above are unverified against `apps/backend` until re-run and recorded
-> in `runbook.md`.
+> deleted 2026-10-28; its verified-command history is superseded. Docker
+> images/CI exist for deploy; local backend Dockerfile is still open work
+> (see `runbook.md`, `backlog.md`).
 
 ## Hard rules
 
 - **Stack is fixed.** Bun workspaces, Elysia backend (`apps/backend`),
   Better Auth (direct integration into the Elysia plugin chain), Drizzle ORM
-  with the `node-postgres` driver, PostgreSQL, Bun `RedisClient` cache.
+  with the `bun-sql` driver (`drizzle-orm/bun-sql`), PostgreSQL, Bun
+  `RedisClient` cache.
   Do not add a second ORM, auth system, or package manager. Do not fall back
   from Relational v2 (drizzle-orm 1.0.0-rc.5 channel) to v1 relations.
 - **Domain boundaries.** `apps/backend/src/app/<domain>/` owns its
@@ -76,6 +78,12 @@ else is *proposed*: verify before claiming it works. Full list with outcomes:
   disposable database (`drizzle-kit push` is for disposable DBs only). Never
   migrate a production database or run destructive operations against unknown
   `POSTGRES_URL` values.
+- **Never run `auth:generate`.** The `@better-auth/cli` 1.4.x generator
+  regresses `apps/backend/drizzle/schemas/auth.schema.ts` (drops
+  `pgSchema('auth')`, pluralized table names, and relations — verified
+  2026-10-30). The script path is stale too. Change the auth schema via
+  hand-written, append-only edits to that file instead, and keep
+  `auth.schema.ts` aligned with the Better Auth core tables it mirrors.
 - **Soft deletes.** Rows are never hard-deleted by feature code; master data
   referenced by financial transactions cannot be hard-deleted at all
   (`drizzle-soft-deletes` skill).
