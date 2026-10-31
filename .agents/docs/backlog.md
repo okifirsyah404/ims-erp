@@ -39,6 +39,7 @@ module).
 | ERP-0023 | Investor portal | commercial scope | web-admin | read-only own capital/distributions/payment history + profit-sharing distribution approval flow backend | ERP-0016 | A | 2 | planned |
 | ERP-0024 | UAT, reconciliation, backup | phase 7 | cross | full-cycle UAT scripts; subledger↔GL reconciliation checks; backup/restore drill | most items | A+B | 2 | planned |
 | ERP-0025 | Release preparation | phase 7 | cross | runbook verified end-to-end on staging; docs final | ERP-0024 | A+B | 1 | planned |
+| ERP-0026 | Organization module + member CRUD + seeders | engineering (ADR-0001 single-org) | backend `organization`, web-admin | `/organizations` CRUD with single-org invariant (422), soft delete/restore via `deletedAt`, member list/add/role/remove with last-owner 409; web-admin dedicated route pages + real-data organization switcher; Entragate org seeder + 16 internal-role accounts (dev password `<role>123456`), idempotent | ERP-0003, ERP-0007 | A | 2 | implemented (2026-10-31; live smoke verified — see progress.md; browser-side acceptance pending) |
 
 Original commercial mapping (`pending`):
 

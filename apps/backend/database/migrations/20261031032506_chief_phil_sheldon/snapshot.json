@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "aafdcb6b-355f-4d98-be06-2395b9fd3150",
+  "prevIds": [
+    "a78c7f89-9d3d-4f75-876f-3d9003548dbf"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "auth",
+        "organizations",
+        "deleted_at"
+      ],
+      "writes": [
+        "s|col|auth.organizations.deleted_at",
+        "n|col|auth.organizations.deleted_at",
+        "e|col|auth.organizations.deleted_at"
+      ],
+      "reads": [
+        "n|tbl|auth.organizations",
+        "n|sch|auth"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "organizations",
+        "name": "deleted_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import { betterAuthMagicLinkPlugin } from './plugins/magic-link.auth.js';
 import { betterAuthMultiSessionPlugin } from './plugins/multi-session.auth.js';
 import { betterAuthOpenAPIPlugin } from './plugins/open-api.auth.js';
 import { betterAuthOrganizationPlugin } from './plugins/organization.auth.js';
+
 import { betterAuthPasskeyPlugin } from './plugins/passkey.auth.js';
 import { betterAuthUsernamePlugin } from './plugins/username.auth.js';
 

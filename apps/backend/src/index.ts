@@ -13,6 +13,10 @@ import {
 } from '@providers/queue/queue.connection';
 import { registerLocation } from './app/location/container';
 import { LocationController } from './app/location/controllers/location.controller';
+import {
+	OrganizationController,
+	registerOrganization,
+} from './app/organization';
 import { registerSales } from './app/sales/container';
 import { SalesController } from './app/sales/controllers/sales.controller';
 import { registerUser } from './app/user/container';
@@ -22,6 +26,7 @@ registerProvider(container);
 registerLocation(container);
 registerSales(container);
 registerUser(container);
+registerOrganization(container);
 
 const bootstrap = new Elysia()
 	.use(wrap(pinoLogger))
@@ -41,6 +46,7 @@ const bootstrap = new Elysia()
 	.use(LocationController.plugin())
 	.use(SalesController.plugin())
 	.use(UserController.plugin())
+	.use(OrganizationController.plugin())
 	.listen(appConfig.app.port);
 
 // Avatar generation worker: consumes the BullMQ 'avatar' queue filled by

@@ -12,6 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthedIndexRouteImport } from './routes/_authed.index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
+import { Route as AuthedOrganizationsIndexRouteImport } from './routes/_authed/organizations/index'
+import { Route as AuthedOrganizationsOrganizationIdRouteImport } from './routes/_authed/organizations/$organizationId'
+import { Route as AuthedOrganizationsNewRouteImport } from './routes/_authed/organizations/new'
+import { Route as AuthedOrganizationsOrganizationIdEditRouteImport } from './routes/_authed/organizations/$organizationId.edit'
+import { Route as AuthedOrganizationsOrganizationIdMembersNewRouteImport } from './routes/_authed/organizations/$organizationId.members.new'
+import { Route as AuthedOrganizationsOrganizationIdMembersMemberIdEditRouteImport } from './routes/_authed/organizations/$organizationId.members.$memberId.edit'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -27,27 +33,106 @@ const LoginIndexRoute = LoginIndexRouteImport.update({
   path: '/login/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedOrganizationsIndexRoute =
+  AuthedOrganizationsIndexRouteImport.update({
+    id: '/organizations/',
+    path: '/organizations/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedOrganizationsOrganizationIdRoute =
+  AuthedOrganizationsOrganizationIdRouteImport.update({
+    id: '/organizations/$organizationId',
+    path: '/organizations/$organizationId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedOrganizationsNewRoute = AuthedOrganizationsNewRouteImport.update({
+  id: '/organizations/new',
+  path: '/organizations/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedOrganizationsOrganizationIdEditRoute =
+  AuthedOrganizationsOrganizationIdEditRouteImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AuthedOrganizationsOrganizationIdRoute,
+  } as any)
+const AuthedOrganizationsOrganizationIdMembersNewRoute =
+  AuthedOrganizationsOrganizationIdMembersNewRouteImport.update({
+    id: '/members/new',
+    path: '/members/new',
+    getParentRoute: () => AuthedOrganizationsOrganizationIdRoute,
+  } as any)
+const AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute =
+  AuthedOrganizationsOrganizationIdMembersMemberIdEditRouteImport.update({
+    id: '/members/$memberId/edit',
+    path: '/members/$memberId/edit',
+    getParentRoute: () => AuthedOrganizationsOrganizationIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
+  '/organizations/new': typeof AuthedOrganizationsNewRoute
+  '/organizations/': typeof AuthedOrganizationsIndexRoute
+  '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
+  '/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
+  '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthedIndexRoute
   '/login': typeof LoginIndexRoute
+  '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
+  '/organizations/new': typeof AuthedOrganizationsNewRoute
+  '/organizations': typeof AuthedOrganizationsIndexRoute
+  '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
+  '/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
+  '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/_authed/': typeof AuthedIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/_authed/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
+  '/_authed/organizations/new': typeof AuthedOrganizationsNewRoute
+  '/_authed/organizations/': typeof AuthedOrganizationsIndexRoute
+  '/_authed/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
+  '/_authed/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
+  '/_authed/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login/'
+  fullPaths:
+    | '/'
+    | '/login/'
+    | '/organizations/$organizationId'
+    | '/organizations/new'
+    | '/organizations/'
+    | '/organizations/$organizationId/edit'
+    | '/organizations/$organizationId/members/new'
+    | '/organizations/$organizationId/members/$memberId/edit'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login'
-  id: '__root__' | '/_authed' | '/_authed/' | '/login/'
+  to:
+    | '/'
+    | '/login'
+    | '/organizations/$organizationId'
+    | '/organizations/new'
+    | '/organizations'
+    | '/organizations/$organizationId/edit'
+    | '/organizations/$organizationId/members/new'
+    | '/organizations/$organizationId/members/$memberId/edit'
+  id:
+    | '__root__'
+    | '/_authed'
+    | '/_authed/'
+    | '/login/'
+    | '/_authed/organizations/$organizationId'
+    | '/_authed/organizations/new'
+    | '/_authed/organizations/'
+    | '/_authed/organizations/$organizationId/edit'
+    | '/_authed/organizations/$organizationId/members/new'
+    | '/_authed/organizations/$organizationId/members/$memberId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -78,15 +163,85 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/organizations/': {
+      id: '/_authed/organizations/'
+      path: '/organizations'
+      fullPath: '/organizations/'
+      preLoaderRoute: typeof AuthedOrganizationsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/organizations/$organizationId': {
+      id: '/_authed/organizations/$organizationId'
+      path: '/organizations/$organizationId'
+      fullPath: '/organizations/$organizationId'
+      preLoaderRoute: typeof AuthedOrganizationsOrganizationIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/organizations/new': {
+      id: '/_authed/organizations/new'
+      path: '/organizations/new'
+      fullPath: '/organizations/new'
+      preLoaderRoute: typeof AuthedOrganizationsNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/organizations/$organizationId/edit': {
+      id: '/_authed/organizations/$organizationId/edit'
+      path: '/edit'
+      fullPath: '/organizations/$organizationId/edit'
+      preLoaderRoute: typeof AuthedOrganizationsOrganizationIdEditRouteImport
+      parentRoute: typeof AuthedOrganizationsOrganizationIdRoute
+    }
+    '/_authed/organizations/$organizationId/members/new': {
+      id: '/_authed/organizations/$organizationId/members/new'
+      path: '/members/new'
+      fullPath: '/organizations/$organizationId/members/new'
+      preLoaderRoute: typeof AuthedOrganizationsOrganizationIdMembersNewRouteImport
+      parentRoute: typeof AuthedOrganizationsOrganizationIdRoute
+    }
+    '/_authed/organizations/$organizationId/members/$memberId/edit': {
+      id: '/_authed/organizations/$organizationId/members/$memberId/edit'
+      path: '/members/$memberId/edit'
+      fullPath: '/organizations/$organizationId/members/$memberId/edit'
+      preLoaderRoute: typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRouteImport
+      parentRoute: typeof AuthedOrganizationsOrganizationIdRoute
+    }
   }
 }
 
+interface AuthedOrganizationsOrganizationIdRouteChildren {
+  AuthedOrganizationsOrganizationIdEditRoute: typeof AuthedOrganizationsOrganizationIdEditRoute
+  AuthedOrganizationsOrganizationIdMembersNewRoute: typeof AuthedOrganizationsOrganizationIdMembersNewRoute
+  AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute: typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
+}
+
+const AuthedOrganizationsOrganizationIdRouteChildren: AuthedOrganizationsOrganizationIdRouteChildren =
+  {
+    AuthedOrganizationsOrganizationIdEditRoute:
+      AuthedOrganizationsOrganizationIdEditRoute,
+    AuthedOrganizationsOrganizationIdMembersNewRoute:
+      AuthedOrganizationsOrganizationIdMembersNewRoute,
+    AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute:
+      AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute,
+  }
+
+const AuthedOrganizationsOrganizationIdRouteWithChildren =
+  AuthedOrganizationsOrganizationIdRoute._addFileChildren(
+    AuthedOrganizationsOrganizationIdRouteChildren,
+  )
+
 interface AuthedRouteChildren {
   AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedOrganizationsOrganizationIdRoute: typeof AuthedOrganizationsOrganizationIdRouteWithChildren
+  AuthedOrganizationsNewRoute: typeof AuthedOrganizationsNewRoute
+  AuthedOrganizationsIndexRoute: typeof AuthedOrganizationsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedOrganizationsOrganizationIdRoute:
+    AuthedOrganizationsOrganizationIdRouteWithChildren,
+  AuthedOrganizationsNewRoute: AuthedOrganizationsNewRoute,
+  AuthedOrganizationsIndexRoute: AuthedOrganizationsIndexRoute,
 }
 
 const AuthedRouteWithChildren =

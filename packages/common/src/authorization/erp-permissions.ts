@@ -113,8 +113,11 @@ export type ErpAction<R extends ErpResource = ErpResource> =
  * `defaultStatements`), included so role grants can reference them.
  */
 export const builtInOrgStatements = {
-	organization: ['update', 'delete'],
-	member: ['create', 'update', 'delete'],
+	// `create`/`read` extend Better Auth's defaults (update/delete for
+	// organization; create/update/delete for member) so first-party admin
+	// routes and the org CRUD UI can require list/show permissions.
+	organization: ['create', 'read', 'update', 'delete'],
+	member: ['create', 'read', 'update', 'delete'],
 	invitation: ['create', 'cancel'],
 	ac: ['create', 'read', 'update', 'delete'],
 } as const satisfies Record<string, readonly string[]>;

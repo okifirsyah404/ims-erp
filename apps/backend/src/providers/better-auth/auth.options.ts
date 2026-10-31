@@ -18,6 +18,7 @@ import { betterAuthEmailAndPasswordOptions } from './options/email-and-password.
 import { betterAuthEmailVerificationOptions } from './options/email-verification.auth.js';
 import { betterAuthSecondaryStorage } from './options/secondary-storage.auth.js';
 import { betterAuthTrustedOrigins } from './options/social-providers.auth.js';
+import { sessionAutoActivateOrganizationHook } from './options/session.auth.js';
 import { betterAuthPlugins } from './plugin.auth.js';
 
 export const betterAuthOptions = {
@@ -71,6 +72,12 @@ export const betterAuthOptions = {
 			// Fire-and-forget avatar generation on every user creation
 			// (sign-up, OAuth, admin-created). Never fails user creation.
 			create: { after: avatarUserCreateHook() },
+		},
+		session: {
+			// Auto-activate the user's first organization membership on login
+			// (see the hook's docstring) so fresh sessions resolve an ERP
+			// organization context immediately.
+			create: { before: sessionAutoActivateOrganizationHook },
 		},
 	},
 	plugins: betterAuthPlugins,

@@ -156,10 +156,11 @@ Global role changes remain exclusively within `admin()` endpoints.
 
 Sensitive actions (role changes, invitations, approvals/rejections, payment
 execution, financial posting/reversal, sensitive exports, secret rotation,
-impersonation) append to `erp.audit_logs`: actor, organization, action,
-target, timestamp, outcome, redacted metadata. Implementation lands with the
-modules that own those actions; the catalog resources (`audit_log:read`,
-`audit_log:export`) are already gated.
+impersonation) append to the future `audit_logs` table (schema per
+`docs/database/`): actor, organization, action, target, timestamp, outcome,
+redacted metadata. Implementation lands with the modules that own those
+actions; the catalog resources (`audit_log:read`, `audit_log:export`) are
+already gated.
 
 ## Cache / revocation
 

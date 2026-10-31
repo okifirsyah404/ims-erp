@@ -3,6 +3,93 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed (this session - auth UX fixes: /users/me session guard + session org auto-activation + menu warnings, 2026-10-31)
+
+- **Bug**: `GET /users/me` sat behind the full `erpGuard`, which 403s when
+  neither `x-organization-id` nor `session.activeOrganizationId` is present.
+  Fresh logins have no active org → sidebar showed `…` with no name/email.
+- **Fix A** — `sessionGuard()` in `src/authorization/elysia-auth.ts`: a
+  session-only plugin (macro `erpSession`) resolving the Better Auth session
+  and 401-ing when absent; no organization/membership resolution, so
+  `ErpContext.organizationId`/`member` stay non-nullable for existing
+  consumers. `/users/me` (user.controller.ts) opts in via
+  `{ erpSession: { session: true } }` and `.use(sessionGuard())`.
+- **Fix B** — `sessionAutoActivateOrganizationHook`
+  (`src/providers/better-auth/options/session.auth.ts`, previously an empty
+  placeholder), wired as `databaseHooks.session.create.before` in
+  `auth.options.ts`: stamps the user's first `members` row as
+  `activeOrganizationId` on session creation. Existing sessions unaffected
+  (need one re-login or manual switch). See
+  `modules/organization.md` → "Session auto-activation".
+- **Elysia macro typing quirk (1.4.30)**: an EMPTY option object
+  (`{ macroKey: {} }`) drops the macro's resolved context from handler
+  types (TS2339 at the handler). Boolean `{ macroKey: true }` does NOT fix
+  it; a NON-EMPTY object (`{ macroKey: { anything: true } }`) does. This
+  mirrors the already-documented `erp: {}` vs `erp: { permission: [] }`.
+- **Frontend** — Base UI `MenuGroupContext` console warning on dropdown
+  open: `DropdownMenuLabel` renders `Menu.GroupLabel`, which requires a
+  group context; wrapped labels in `DropdownMenuGroup` in
+  `organization-switcher.tsx` and `nav-user.tsx` (unstyled
+  `div[role=group]`, no visual change).
+- **Verified live** (backend :3001): fresh login → `GET /users/me` (no
+  header) → 200 `admin / admin@example.com`; `GET /organizations` (no
+  header) → 200, Entragate (auto-activated). `bun run typecheck` clean,
+  `bun test` 78 pass / 0 fail, web-admin `bun run build` clean.
+
+## Completed (this session - organization module + member CRUD + seeders, 2026-10-31)
+
+Backlog: **ERP-0026** (implemented; live smoke verified).
+
+- **Schema** `auth.organizations.deleted_at` timestamp added via hand-written
+  delta + migration `20261031032506_chief_phil_sheldon`
+  (`ALTER TABLE "auth"."organizations" ADD COLUMN "deleted_at" timestamp;`),
+  applied with `bun run drizzle:migrate` (verified). Plugin side: Better Auth
+  org plugin `schema.organization.additionalFields.deletedAt` (date, not
+  required, `input: false`) in `plugins/organization.auth.ts`. `auth.schema.ts`
+  remains hand-maintained (never `auth:generate`).
+- **Permissions** `builtInOrgStatements` (@ims-erp/common) extended with
+  `organization.create|read`, `member.read`; `organization-ac.ts` merges them
+  into `organizationStatements` + owner/admin roles (admin keeps catalog
+  member create/update/delete, layered with read). `PermissionRequirement`
+  widened to accept `organization:*`/`member:*`/`invitation:*`/`ac:*`.
+- **Backend module** `src/app/organization/` (contracts/repo/gateway/service/
+  controller/container/di; registered in `src/index.ts`): routes per the table
+  in `modules/organization.md`; single-org invariant (422), soft delete +
+  restore, last-owner 409, member list joined with users. Org DELETE never
+  uses `auth.api.deleteOrganization`.
+- **Seeders** `organization.seeder.ts` (Entragate + initial admin as owner via
+  one `createOrganization({ userId })`) and `organization-members.seeder.ts`
+  (16 internal-role accounts, `<role>.seed@entragate.local`, per-role dev
+  password `<role>123456`).
+  Registered after `seedAuth()` in `database/seeders/index.ts`.
+- **Web-admin**: `team-switcher.tsx` → `organization-switcher.tsx` (`git mv`,
+  real org data, active-org switch, Manage/New entries); organization API
+  client (`src/lib/organization-api.ts`); dedicated route pages
+  `routes/_authed/organizations/` (index / new / $organizationId / .edit /
+  members.new / members.$memberId.edit); minimal toast bus
+  (`components/toast.tsx`, `<Toaster />` in root) — sonner not installed.
+  Create button gated `organization.create`; edit/delete/member actions
+  gated `organization.update|delete`, `member.create` (UX only).
+- **Docs** `modules/organization.md` rewritten; `security-and-access.md`
+  stale `erp.audit_logs` fixed (schema never existed; table is future
+  `audit_logs` per docs/database/). Verified no stale `erp` schema in the
+  live DB (`auth, drizzle, location, sales` only).
+- **Verified 2026-10-31** (commands + results):
+  - `bun run typecheck` (backend + web-admin via `tsc -b`) clean.
+  - `bun test` (backend) 78 pass / 0 fail (one permission-matrix assertion
+    updated to catch an admin-grants regression found during the work).
+  - `bun run build` (web-admin) clean.
+  - Migration applied; `bun run drizzle:seed` run twice — second run all
+    skip (`created: 0`), idempotent.
+  - Live smoke (dev server + seeded admin cookie + `x-organization-id`):
+    `GET /organizations` → 1 org "Entragate"; duplicate
+    `POST /organizations` → 422; `GET /members` → 17 members;
+    `PATCH .../members/:id` role change + revert → 200; `DELETE`
+    non-owner member → 200; re-add → 201; demote/remove last owner → 409.
+  - NOT yet verified in a browser: org pages end-to-end (login → switcher →
+    list → edit → members flows). Redis avatar-worker "Connection closed"
+    boot warning is pre-existing (Redis not running locally), unrelated.
+
 ## Completed (this session - dashboard session user + tanstack-router-auth skill, 2026-10-30)
 
 - **New skill** `.agents/skills/tanstack-router-auth/` (present, not in
