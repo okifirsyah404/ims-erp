@@ -1,4 +1,5 @@
 import { createFileRoute, isRedirect, redirect, Outlet } from '@tanstack/react-router';
+import MainLayout from '@/components/layout/main-layout';
 import { getSession } from '@/lib/auth-client';
 
 /**
@@ -22,5 +23,9 @@ export const Route = createFileRoute('/_authed')({
 			throw redirect({ to: '/login', search: { redirect: location.href } });
 		}
 	},
-	component: Outlet,
+	component: () => (
+		<MainLayout>
+			<Outlet />
+		</MainLayout>
+	),
 });

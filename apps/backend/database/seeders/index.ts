@@ -3,6 +3,8 @@ import pino from 'pino';
 import { closeDB, drizzleDB } from '../../drizzle/db';
 import { seedLocations } from './seed/location.seeder';
 import { seedAuth } from './seed/auth.seeder';
+import { seedOrganization } from './seed/organization.seeder';
+import { seedOrganizationMembers } from './seed/organization-members.seeder';
 
 const logger = pino({
 	timestamp: false,
@@ -21,6 +23,8 @@ export async function runSeeders(): Promise<void> {
 
 	await seedAuth();
 	await seedLocations(drizzleDB);
+	await seedOrganization();
+	await seedOrganizationMembers();
 
 	const finishedAt = DateTime.now();
 	const elapsed = Duration.fromObject({

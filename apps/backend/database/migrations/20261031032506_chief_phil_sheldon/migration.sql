@@ -1,0 +1,1 @@
+ALTER TABLE "auth"."organizations" ADD COLUMN "deleted_at" timestamp;

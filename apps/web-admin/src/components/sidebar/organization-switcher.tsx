@@ -1,0 +1,170 @@
+'use client';
+
+import { ChevronsUpDown, Building2, Plus, Settings } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
+import { toast } from '@/components/toast';
+
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '@ims-erp/ui/components/dropdown-menu';
+import {
+	SidebarMenu,
+	SidebarMenuButton,
+	SidebarMenuItem,
+	useSidebar,
+} from '@ims-erp/ui/components/sidebar';
+import { Skeleton } from '@ims-erp/ui/components/skeleton';
+import { useSession } from '@/lib/auth-client';
+import {
+	switchOrganization,
+	useOrganizations,
+} from '@/lib/use-permission';
+
+/**
+ * Organization switcher (sidebar header). Wired to the caller's real
+ * organizations via Better Auth (`organization.list`) — the single-org
+ * deployment renders exactly one entry. Switching goes through
+ * `organization.setActive` (server-side session fact) and invalidates
+ * permission queries via the `usePermission` query key. The "Manage" entry
+ * routes to `/organizations`.
+ */
+export function OrganizationSwitcher() {
+	const { isMobile } = useSidebar();
+	const navigate = useNavigate();
+	const { data: session, isPending: sessionPending } = useSession();
+	const { data: organizations, isPending: orgsPending } = useOrganizations();
+
+	const activeOrganizationId = session?.session?.activeOrganizationId;
+	const organizations_ = organizations ?? [];
+	const activeOrganization =
+		organizations_.find((org) => org.id === activeOrganizationId) ??
+		organizations_[0];
+
+	const handleSwitch = async (organizationId: string) => {
+		if (organizationId === activeOrganizationId) return;
+		try {
+			await switchOrganization(organizationId);
+			toast.success('Organization switched');
+		} catch {
+			toast.error('Failed to switch organization');
+		}
+	};
+
+	if (sessionPending || (orgsPending && !activeOrganization)) {
+		return (
+			<SidebarMenu>
+				<SidebarMenuItem>
+					<Skeleton className='h-12 w-full rounded-md' />
+				</SidebarMenuItem>
+			</SidebarMenu>
+		);
+	}
+
+	if (!activeOrganization) {
+		// No membership yet: route the user to the organizations page.
+		return (
+			<SidebarMenu>
+				<SidebarMenuItem>
+					<SidebarMenuButton
+						size='lg'
+						onClick={() => navigate({ to: '/organizations' })}
+					>
+						<div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground'>
+							<Building2 className='size-4' />
+						</div>
+						<div className='grid flex-1 text-left text-sm leading-tight'>
+							<span className='truncate font-medium'>No organization</span>
+							<span className='truncate text-xs text-muted-foreground'>
+								Set up your organization
+							</span>
+						</div>
+					</SidebarMenuButton>
+				</SidebarMenuItem>
+			</SidebarMenu>
+		);
+	}
+
+	return (
+		<SidebarMenu>
+			<SidebarMenuItem>
+				<DropdownMenu>
+					<DropdownMenuTrigger
+						render={
+							<SidebarMenuButton
+								size='lg'
+								className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
+							/>
+						}
+					>
+						<div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground'>
+							<Building2 className='size-4' />
+						</div>
+						<div className='grid flex-1 text-left text-sm leading-tight'>
+							<span className='truncate font-medium'>
+								{activeOrganization.name}
+							</span>
+							<span className='truncate text-xs'>
+								{activeOrganization.slug}
+							</span>
+						</div>
+						<ChevronsUpDown className='ml-auto' />
+					</DropdownMenuTrigger>
+					<DropdownMenuContent
+						className='w-(--anchor-width) min-w-56 rounded-lg'
+						align='start'
+						side={isMobile ? 'bottom' : 'right'}
+						sideOffset={4}
+					>
+						{/* Menu.GroupLabel requires a group context (base-ui
+						    MenuGroupContext) — without it the console warns on every
+						    open. */}
+						<DropdownMenuGroup>
+							<DropdownMenuLabel className='text-xs text-muted-foreground'>
+								Organizations
+							</DropdownMenuLabel>
+							{organizations_.map((org) => (
+								<DropdownMenuItem
+									key={org.id}
+									onClick={() => void handleSwitch(org.id)}
+									className='gap-2 p-2'
+								>
+									<div className='flex size-6 items-center justify-center rounded-md border'>
+										<Building2 className='size-3.5 shrink-0' />
+									</div>
+									{org.name}
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuGroup>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem
+							className='gap-2 p-2'
+							onClick={() => navigate({ to: '/organizations' })}
+						>
+							<div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
+								<Settings className='size-4' />
+							</div>
+							<div className='font-medium text-muted-foreground'>Manage</div>
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							className='gap-2 p-2'
+							onClick={() => navigate({ to: '/organizations/new' })}
+						>
+							<div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
+								<Plus className='size-4' />
+							</div>
+							<div className='font-medium text-muted-foreground'>
+								New organization
+							</div>
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</SidebarMenuItem>
+		</SidebarMenu>
+	);
+}

@@ -1,12 +1,9 @@
 'use client';
 
 import {
-	AudioWaveform,
 	BookOpen,
 	Bot,
-	Command,
 	Frame,
-	GalleryVerticalEnd,
 	Map,
 	PieChart,
 	Settings2,
@@ -14,6 +11,11 @@ import {
 } from 'lucide-react';
 import * as React from 'react';
 
+import { NavAdmin } from '@/components/sidebar/nav-admin';
+import { NavMain } from '@/components/sidebar/nav-main';
+import { NavProjects } from '@/components/sidebar/nav-project';
+import { NavUser } from '@/components/sidebar/nav-user';
+import { OrganizationSwitcher } from '@/components/sidebar/organization-switcher';
 import {
 	Sidebar,
 	SidebarContent,
@@ -21,33 +23,12 @@ import {
 	SidebarHeader,
 	SidebarRail,
 } from '@ims-erp/ui/components/sidebar';
-import { NavProjects } from '@/components/sidebar/nav-project';
-import { NavUser } from '@/components/sidebar/nav-user';
-import { NavMain } from '@/components/sidebar/nav-main';
-import { TeamSwitcher } from '@/components/sidebar/team-switcher';
 
-import { useQuery } from '@tanstack/react-query';
 import { selfUserQueryOptions } from '@/lib/user-api';
+import { useQuery } from '@tanstack/react-query';
 
 // Sample nav/projects data; user data comes from the backend (`/users/me`).
 const data = {
-	teams: [
-		{
-			name: 'Acme Inc',
-			logo: GalleryVerticalEnd,
-			plan: 'Enterprise',
-		},
-		{
-			name: 'Acme Corp.',
-			logo: AudioWaveform,
-			plan: 'Startup',
-		},
-		{
-			name: 'Evil Corp.',
-			logo: Command,
-			plan: 'Free',
-		},
-	],
 	navMain: [
 		{
 			title: 'Playground',
@@ -160,11 +141,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	return (
 		<Sidebar collapsible='icon' {...props}>
 			<SidebarHeader>
-				<TeamSwitcher teams={data.teams} />
+				<OrganizationSwitcher />
 			</SidebarHeader>
 			<SidebarContent>
 				<NavMain items={data.navMain} />
 				<NavProjects projects={data.projects} />
+				{user?.role === 'admin' && <NavAdmin />}
 			</SidebarContent>
 			<SidebarFooter>
 				<NavUser

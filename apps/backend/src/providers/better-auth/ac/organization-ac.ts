@@ -38,6 +38,10 @@ export const organizationStatements = {
 	...defaultStatements,
 	...erpStatements,
 	...portalStatements,
+	// `read`/`create` extend Better Auth's defaults (see builtInOrgStatements
+	// in @ims-erp/common) so first-party admin routes can require them.
+	organization: [...(defaultStatements.organization ?? []), 'create', 'read'],
+	member: [...(defaultStatements.member ?? []), 'read'],
 } as const;
 
 export type OrganizationStatements = typeof organizationStatements;
@@ -65,15 +69,36 @@ function toRole(grants: ErpPermissionRequest): Role<OrganizationStatements> {
 
 /** owner keeps full built-in organization administration + full ERP grants. */
 const ownerGrants: ErpPermissionRequest = {
-	organization: ['update', 'delete'],
-	member: ['create', 'update', 'delete'],
+	organization: ['create', 'read', 'update', 'delete'],
+	member: ['create', 'read', 'update', 'delete'],
 	invitation: ['create', 'cancel'],
 	...erpRoleGrants.owner,
 };
 
+/** Organization-read grants layered onto the admin role (catalog values in
+ * @ims-erp/common are keyed by ERP resources only; built-in org resources
+ * are layered here). */
+const adminOrgGrants: ErpPermissionRequest = {
+	organization: ['read'],
+	member: ['read'],
+};
+
 export const erpRoles: Record<ErpRoleName, Role<OrganizationStatements>> = {
 	owner: toRole(ownerGrants),
-	admin: toRole(erpRoleGrants.admin),
+	admin: toRole({
+		...erpRoleGrants.admin,
+		...adminOrgGrants,
+		// Concatenate rather than let the spread above overwrite the catalog's
+		// member administration grants.
+		organization: [
+			...(erpRoleGrants.admin.organization ?? []),
+			...(adminOrgGrants.organization ?? []),
+		],
+		member: [
+			...(erpRoleGrants.admin.member ?? []),
+			...(adminOrgGrants.member ?? []),
+		],
+	}),
 	member: toRole(erpRoleGrants.member),
 	operations_manager: toRole(erpRoleGrants.operations_manager),
 	sales_manager: toRole(erpRoleGrants.sales_manager),

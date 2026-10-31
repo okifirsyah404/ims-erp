@@ -112,9 +112,21 @@ export const organizations = authSchema.table(
     logo: text("logo"),
     createdAt: timestamp("created_at").notNull(),
     metadata: text("metadata"),
+    // Soft-delete marker owned by the organization module's repository (sets
+    // the column directly via Drizzle). Mirrors the `deletedAt`
+    // additionalField in the organization plugin options. Hand-applied
+    // append-only delta: see the matching note on `users.deletedAt` —
+    // @better-auth/cli 1.4.x regresses this file, so the generated column
+    // declaration is replicated here verbatim instead of regenerating.
+    deletedAt: timestamp("deleted_at"),
   },
   (table) => [uniqueIndex("organizations_slug_uidx").on(table.slug)],
 );
+
+/** Row shape of `auth.organizations`. */
+export type TOrganizationSelect = typeof organizations.$inferSelect;
+/** Insert shape of `auth.organizations`. */
+export type TOrganizationInsert = typeof organizations.$inferInsert;
 
 export const members = authSchema.table(
   "members",

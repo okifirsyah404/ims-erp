@@ -55,7 +55,14 @@ export type ErpContext = {
 };
 
 /** A permission requirement, e.g. `'quotation:read'` (resource:action). */
-export type PermissionRequirement = `${ErpResource}:${string}`;
+export type PermissionRequirement =
+	| `${ErpResource}:${string}`
+	// Built-in Better Auth organization statements (not part of the ERP
+	// business catalog) are granted through the same role system.
+	| `organization:${string}`
+	| `member:${string}`
+	| `invitation:${string}`
+	| `ac:${string}`;
 
 /** Sentinel error mapped to an envelope response by the guard. */
 export class ErpAuthError extends Error {
@@ -217,6 +224,37 @@ export function erpGuard() {
 				} = {},
 			) => ({
 				resolve: (context: Context) => guardResolve(context, options),
+			}),
+		});
+}
+
+/**
+ * Session-only guard for identity routes that are NOT organization-scoped
+ * (e.g. `GET /users/me`).
+ *
+ * @remarks
+ * Resolves the Better Auth session and 401s when absent — nothing more. No
+ * organization context is required: a fresh login has no
+ * `activeOrganizationId` yet, and demanding one for "who am I?" made the
+ * route 403 immediately after sign-in (the bug this fixes). The macro
+ * exposes `erp.session` only; `organizationId`/`member` remain exclusive to
+ * {@link erpGuard} so their type stays non-nullable for existing consumers.
+ * Shares the `ErpAuthError` mapping by being mounted alongside `erpGuard()`.
+ */
+export function sessionGuard() {
+	return new Elysia({ name: 'session-guard' })
+		.error({ ErpAuthError })
+		.macro({
+			erpSession: () => ({
+				resolve: async (
+					context: Context,
+				): Promise<{ erp: { session: SessionPayload } }> => {
+					const session = await resolveSession(context.request.headers);
+					if (!session) {
+						throw new ErpAuthError(401, 'Authentication required');
+					}
+					return { erp: { session } };
+				},
 			}),
 		});
 }

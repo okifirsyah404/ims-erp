@@ -1,0 +1,140 @@
+import { useQueryClient } from '@tanstack/react-query';
+import {
+	createFileRoute,
+	useNavigate,
+	useParams,
+} from '@tanstack/react-router';
+import { toast } from '@/components/toast';
+import { useState } from 'react';
+
+import { Button } from '@ims-erp/ui/components/button';
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@ims-erp/ui/components/card';
+import {
+	Field,
+	FieldGroup,
+	FieldLabel,
+} from '@ims-erp/ui/components/field';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
+import { erpRoleNames } from '@ims-erp/common';
+import { addMember, organizationMembersQueryOptions } from '@/lib/organization-api';
+
+export const Route = createFileRoute(
+	'/_authed/organizations/$organizationId/members/new',
+)({
+	component: AddMemberPage,
+});
+
+function AddMemberPage() {
+	const { organizationId } = useParams({ from: Route.id });
+	const navigate = useNavigate();
+	const queryClient = useQueryClient();
+
+	const [userId, setUserId] = useState('');
+	const [role, setRole] = useState<string>('member');
+	const [pending, setPending] = useState(false);
+
+	async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		setPending(true);
+		try {
+			await addMember(organizationId, { userId, role });
+			toast.success('Member added');
+			await queryClient.invalidateQueries({
+				queryKey: organizationMembersQueryOptions(organizationId).queryKey,
+			});
+			void navigate({
+				to: '/organizations/$organizationId',
+				params: { organizationId },
+			});
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed');
+		} finally {
+			setPending(false);
+		}
+	}
+
+	return (
+		<div className='flex flex-col gap-6 p-6'>
+			<div>
+				<h1 className='text-2xl font-bold'>Add member</h1>
+				<p className='text-sm text-muted-foreground'>
+					Adds an existing user account to the organization directly (no
+					invitation round-trip).
+				</p>
+			</div>
+			<Card className='max-w-xl'>
+				<CardHeader>
+					<CardTitle>Membership</CardTitle>
+					<CardDescription>
+						The user's Better Auth id — obtainable from the users admin page.
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<form onSubmit={handleSubmit}>
+						<FieldGroup>
+							<Field>
+								<FieldLabel htmlFor='userId'>User ID</FieldLabel>
+								<input
+									id='userId'
+									className='flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs'
+									value={userId}
+									required
+									onChange={(event) => setUserId(event.target.value)}
+								/>
+							</Field>
+							<Field>
+								<FieldLabel>Role</FieldLabel>
+								<Select
+									value={role}
+									onValueChange={(value) => {
+										if (value != null) setRole(value);
+									}}
+								>
+									<SelectTrigger className='w-full'>
+										<SelectValue placeholder='Select a role' />
+									</SelectTrigger>
+									<SelectContent>
+										{erpRoleNames.map((roleName) => (
+											<SelectItem key={roleName} value={roleName}>
+												{roleName}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</Field>
+							<div className='flex gap-2'>
+								<Button type='submit' disabled={pending || !userId}>
+									{pending ? 'Adding…' : 'Add member'}
+								</Button>
+								<Button
+									type='button'
+									variant='outline'
+									onClick={() =>
+										navigate({
+											to: '/organizations/$organizationId',
+											params: { organizationId },
+										})
+									}
+								>
+									Cancel
+								</Button>
+							</div>
+						</FieldGroup>
+					</form>
+				</CardContent>
+			</Card>
+		</div>
+	);
+}

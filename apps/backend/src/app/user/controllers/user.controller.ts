@@ -1,4 +1,8 @@
-import { erpGuard, type ErpContext } from '@authorization/elysia-auth';
+import {
+	erpGuard,
+	sessionGuard,
+	type ErpContext,
+} from '@authorization/elysia-auth';
 import { Elysia } from 'elysia';
 import { ZodError } from 'zod';
 import { container } from 'tsyringe';
@@ -119,6 +123,7 @@ export class UserController {
 
 		return new Elysia({ prefix: '/users', name: 'users', tags: ['Users'] })
 			.use(erpGuard())
+			.use(sessionGuard())
 			.onError({ as: 'local' }, ({ code, error, set }) => {
 				if (code === 'VALIDATION') {
 					set.status = 400;
@@ -170,8 +175,7 @@ export class UserController {
 				 */
 				'/me',
 				async ({ erp, status }) => {
-					const profile = await userService.getUser(erp.session.user.id);
-					if (!profile) {
+					const profile = await userService.getUser(erp.session.user.id);					if (!profile) {
 						return status(
 							404,
 							errorEnvelope(404, 'Not found', [
@@ -181,9 +185,13 @@ export class UserController {
 					}
 					return ok(profile);
 				},
-				// NOTE: non-empty option object required — Elysia drops the macro's
-				// resolved `erp` context from handler types when the option is `{}`.
-				{ erp: { permission: [] } },
+				// session-only guard: identity is not organization-scoped data.
+				// A fresh login has no activeOrganizationId yet, so the full
+				// erpGuard would 403 here (see sessionGuard's docstring).
+				// Enabled with `true` (object-form macro) — an empty option
+				// object would drop the macro's resolved `erp` context from
+				// handler types.
+				{ erpSession: { session: true } },
 			)
 			.get(
 				'/:userId',
