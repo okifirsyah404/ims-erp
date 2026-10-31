@@ -1,6 +1,6 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2';
 import type { BetterAuthOptions } from 'better-auth';
-import { avatarUserCreateHook } from './avatar/avatar.queue';
+import { avatarUserCreateHook } from '../../app/user/queues/avatar.queue';
 import { appConfig } from '../../../config/providers/config.js';
 import { drizzleDB } from '../../../drizzle/db.js';
 import {
@@ -49,6 +49,18 @@ export const betterAuthOptions = {
 			bio: {
 				type: 'string' as const,
 				required: false,
+			},
+			// Soft-delete marker owned by the user module's repository (sets the
+			// column directly via Drizzle). `input: false` keeps it out of every
+			// Better Auth API surface; ban columns remain the Better Auth-owned
+			// status mechanism. NOTE: codegen emits a `timestamp` column, not the
+			// project's unix-ms custom type - deliberate deviation, Better Auth
+			// owns this file's shape.
+			deletedAt: {
+				type: 'date' as const,
+				required: false,
+				input: false,
+				defaultValue: null,
 			},
 		},
 	},

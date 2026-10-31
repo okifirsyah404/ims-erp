@@ -1,25 +1,27 @@
 ---
 name: elysia-layered-architecture
-description: Layered backend architecture for this project's Elysia domains - controllers own HTTP only (parse, envelope, status), services orchestrate, repositories own Drizzle queries and caching, contracts and tokens live in contracts/. Use when creating a new domain module, adding endpoints, or reviewing request-flow boundaries in apps/backend. Does NOT cover Elysia plugin mechanics or tsyringe wiring (use elysia-tsyringe) or schema/DI conventions (use tsyringe, drizzle-unix-timestamp).
+description: Layered backend architecture for this project's Elysia domains - controllers own HTTP only (parse, envelope, status), services orchestrate repositories and external-system ports, repositories own Drizzle queries and caching, contracts and tokens live in contracts/. Use when creating a new domain module, adding endpoints, or reviewing request-flow boundaries in apps/backend. Does NOT cover Elysia plugin mechanics or tsyringe wiring (use elysia-tsyringe) or schema/DI conventions (use tsyringe, drizzle-unix-timestamp).
 license: MIT
 metadata:
   author: OpenAgentic
-  version: "1.0.0"
+  version: "1.1.0"
   dependsOn: elysiajs
   canonicalExample: apps/backend/src/app/location
+  secondaryExample: apps/backend/src/app/user
 ---
 
 # Elysia Layered Architecture
 
 This project structures every backend domain
-(`apps/backend/src/app/<domain>/`) in four layers:
+(`apps/backend/src/app/<domain>/`) in four layers plus optional queues:
 
 ```
-contracts/   zod schemas + TypeScript interfaces
+contracts/   zod schemas + TypeScript interfaces (+ ports for external systems)
 constants/   DI tokens (constants/di.ts)
 controllers/ Elysia routes: HTTP concerns only
-services/    orchestration over repositories; no HTTP, no Drizzle
+services/    orchestration over repositories and ports; no HTTP, no Drizzle
 repositories/ Drizzle queries + cache; implement contracts
+queues/      module-owned BullMQ queues + workers (optional; user module)
 container.ts registration of the domain's classes (see elysia-tsyringe)
 ```
 
@@ -57,6 +59,17 @@ Imports allowed in a controller: Elysia, zod contracts from `contracts/`,
 DI tokens, the service type, `@ims-erp/common` envelope types. Anything
 else is a boundary violation.
 
+Two mechanics from the user module:
+
+- **Self routes precede param routes.** `GET /me` must be declared
+  **before** `GET /:userId`, or Elysia captures `me` as an id parameter.
+  Identity comes from the guard-resolved session (`erp.session.user.id`),
+  never from client input; self-scoped reads need no permission gate.
+- **Empty macro options drop resolved context from handler types.**
+  `erp: {}` + destructuring `erp` fails typecheck (Elysia loses the
+  macro's resolve contribution). Use a non-empty option object, e.g.
+  `erp: { permission: [] }` — see `user.controller.ts`.
+
 ### 1.2 Services orchestrate, never touch HTTP or Drizzle — HIGH
 
 Services refine/combine repository results and translate domain errors.
@@ -71,6 +84,30 @@ getRegenciesByProvince(provinceId: string): Promise<TRegencySelect[]> {
 
 A pass-through service is fine. The layer exists so controllers can be
 swapped and repositories can be tested without HTTP.
+
+**External systems enter through ports.** When a module must call an
+outside system (Better Auth's `auth.api`, an email provider, a payment
+SDK), the calls live behind a contract interface in `contracts/`
+implemented in `services/` and injected via a DI token — never called
+inline from a controller or service. The service then orchestrates
+repository + gateway; domain errors are translated at the gateway edge.
+
+```typescript
+// apps/backend/src/app/user/services/user.service.ts — the pattern
+constructor(
+	@inject(USER_REPOSITORY_TOKEN)
+	private readonly userRepository: IUserRepository,
+	@inject(USER_AUTH_GATEWAY_TOKEN)
+	private readonly authGateway: IUserAuthGateway,
+) {}
+
+// Soft delete pairs both collaborators; no Better Auth import here.
+async softDeleteUser(userId: string, headers: Headers): Promise<void> {
+	await this.ensureExists(userId);
+	await this.authGateway.banUser(userId, { banReason: 'deleted' }, headers);
+	await this.userRepository.delete(userId);
+}
+```
 
 ### 1.3 Repositories own queries and caching — HIGH
 
@@ -113,6 +150,13 @@ receive parsed, typed values only — never `Record<string, unknown>`.
   `Export named 'IProvinceRepository' not found`. Use `import type`.
 - Envelope construction in a service or repository.
 - A repository returning HTTP error shapes (`{ message: 'Not found' }`).
+- Calling `auth.api` (or any external SDK) directly from a controller or
+  service without a contract port — untestable, ownership invisible.
+- Raw `drizzleDB` writes inside module queues/workers — the avatar worker
+  originally wrote `auth.users.image` directly; now resolves the module
+  repository via DI token (cache invalidation + soft-delete filtering).
+- `erp: {}` as macro options while destructuring `erp` in the handler —
+  typecheck failure, see rule 1.1.
 
 ## References
 

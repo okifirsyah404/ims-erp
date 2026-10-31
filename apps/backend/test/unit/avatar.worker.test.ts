@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
 	generateAvatarPng,
-} from '../../src/providers/better-auth/avatar/avatar.worker';
+} from '../../src/app/user/queues/avatar.worker';
 import { avatarObjectKey } from '../../src/providers/s3/s3';
 
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);

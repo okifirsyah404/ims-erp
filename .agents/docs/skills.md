@@ -28,9 +28,10 @@ not in lock** (local/project-specific additions), **n/a** (not installed).
 | tsyringe | present, not in lock | project DI convention: Symbol tokens, composition root, transient default, resolution at HTTP boundary (local) |
 | dbml-database-docs | present, not in lock | DBML as canonical schema-doc format; `docs/database/docs.dbml` (local; format skill) |
 | erp-database-schema | present, not in lock | project schema reader: read protocol over `docs/database/` before any DB-touching work (local) |
-| elysia-layered-architecture | present, not in lock | controller/service/repository layering per Elysia domain (local) |
-| elysia-module | present, not in lock | modular monolith boundaries, one schema per module (local) |
+| elysia-layered-architecture | present, not in lock | controller/service/repository layering per Elysia domain (local) — v1.1.0 (2026-10-30): external-system ports in contracts/, module-owned queues/, `/me`-before-`/:id` ordering + `erp: {}` macro typing quirk; user module as secondary example |
+| elysia-module | present, not in lock | modular monolith boundaries, one schema per module (local) — v1.1.0 (2026-10-30): write-surface invariant for auth-projecting repos (user = `deletedAt`-only, rest via Better Auth gateway), `@better-auth/cli` 1.4.x regression caveat, `queues/` in checklist; user module as secondary example |
 | elysia-tsyringe | present, not in lock | wiring Elysia controllers to tsyringe, plugin factories, DI tokens (local) |
+| tanstack-router-auth | present, not in lock | web-admin authenticated-routes pattern: `_authed` guard + redirect preservation + `/users/me` session-user flow (local; derived from tanstack.com/router authenticated-routes guide, 2026-10-30) |
 | elysiajs | env-provided | Elysia v2 routes/plugins/typed clients (not on disk) |
 | zod | installed | schema validation, error handling (pproenca/dot-skills) |
 | shadcn | installed | `packages/ui` component authoring (shadcn-ui/ui) |

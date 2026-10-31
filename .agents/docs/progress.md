@@ -3,6 +3,147 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed (this session - dashboard session user + tanstack-router-auth skill, 2026-10-30)
+
+- **New skill** `.agents/skills/tanstack-router-auth/` (present, not in
+  lock): guide-derived pattern from
+  https://tanstack.com/router/latest/docs/guide/authenticated-routes —
+  `_authed` guard with redirect preservation, `isRedirect` re-throw,
+  login-side `redirect` param consumption, TanStack Query session-user
+  flow, sidebar degradation rules.
+- **Backend** `GET /users/me`: self profile via guard-resolved session id
+  (server-side, `erp: {}` — self-scoped, no admin gate), declared before
+  `/:userId`. Elysia typing quirk found: `erp: {}` (empty option object)
+  drops the macro's resolved `erp` from handler types — `/me` uses
+  `erp: { permission: [] }` with a NOTE comment. Verified: unauth curl →
+  401 envelope; boot smoke clean.
+- **Web-admin**:
+  - `main.tsx`: `QueryClientProvider` mounted (was missing — `useQuery`
+    would have crashed anywhere).
+  - `_authed.tsx`: guard upgraded to guide spec — `search.redirect`
+    preservation + `isRedirect(error)` re-throw (backend stays
+    authoritative via `getSession()`).
+  - `login/index.tsx`: `validateSearch` (`redirect` param); `LoginForm`
+    takes `onSuccess`; login navigates `router.history.push(search.redirect ?? '/')`.
+  - `src/lib/user-api.ts`: `selfUserQueryOptions` (`['users','me']`,
+    60s stale, retry 1) unwrapping `TApiResponse<TSelfUser>`; local
+    `TSelfUser` type mirrors backend `TUserProfile`.
+  - `main-sidebar.tsx`: hardcoded sample user removed; `NavUser` fed by
+    `useSelfUser` (`useQuery(selfUserQueryOptions)`); loading → `…`
+    initials, error → degraded (no email/avatar).
+  - `nav-user.tsx`: real-name initials fallback (was hardcoded `CN`),
+    placeholder items (Upgrade to Pro / Billing) removed, Log out wired
+    to `authClient.signOut()` → `/login`.
+- Verified (2026-10-30): backend `bun run typecheck` clean, `bun test`
+  78/78, boot smoke + unauth curl 401; web-admin `bun run build`
+  (tsc + vite) clean, lint no new warnings in touched files. NOT yet
+  manually verified in a browser: login → dashboard shows real
+  name/email/avatar; deep-link round-trip through the `redirect` param.
+
+## Completed (this session - avatar queue moved into user module, 2026-10-30)
+
+- `src/providers/better-auth/avatar/` (queue + worker) moved to
+  `src/app/user/queues/` (`avatar.queue.ts`, `avatar.worker.ts`) —
+  avatar generation is user-domain logic, not provider infra; keeps the
+  module folder pattern open for future queues.
+- One behavior fix in the move: `processAvatarJob` previously wrote
+  `auth.users.image` via raw `drizzleDB.update(users)`; it now writes
+  through `IUserRepository.update()` (resolved once inside
+  `startAvatarWorker()`), gaining Redis cache invalidation and
+  soft-delete filtering (a job arriving after the user was deleted
+  no-ops instead of resurrecting an image row for a deleted user).
+- Import updates: `auth.options.ts` (create-hook), `src/index.ts`
+  (worker start/SIGTERM), `scripts/dispatch-avatar.ts` (scratch script),
+  `test/unit/avatar.worker.test.ts` (path only). `avatarObjectKey`/
+  `presignAvatarUrl` stay in `@providers/s3/s3` (S3 = infra).
+- Verified (2026-10-30): `bun run typecheck` clean; `bun run lint` no new
+  warnings; `bun test` 78 pass / 0 fail; boot smoke test OK (worker up,
+  queue connected, clean shutdown).
+
+## Completed (this session - user module ERP-0007 slice, 2026-10-30)
+
+**Status: implemented, typecheck + lint + unit suite green (78 pass), boot
+smoke-tested. NOT e2e-verified against live admin session + Better Auth
+runtime (see below).**
+
+- **User module rebuilt to the location-module layered shape** (contracts/
+  constants/ controllers/ services/ repositories/ container.ts):
+  - `contracts/user.contract.ts` — zod boundary schemas (list query,
+    create, update, ban, role, path params) + `z.infer` types.
+  - `contracts/user.repository.interface.ts` — `IUserRepository extends
+    IBaseRepository` + `paginate`; TSDoc pins the write-surface invariant:
+    the repository touches ONLY `deletedAt`.
+  - `contracts/user-auth.gateway.interface.ts` — `IUserAuthGateway` port
+    over the Better Auth admin API; all methods take the caller's
+    `Headers` because `/admin/*` endpoints run Better Auth's own
+    admin-authorization check (`requireHeaders`); only `/admin/create-user`
+    is server-facing.
+  - `services/better-auth-user.gateway.ts` — wraps `auth.api.createUser`,
+    `adminUpdateUser`, `setRole`, `banUser`, `unbanUser`; translates
+    `APIError` 422→`UserEmailTakenError`, 404→`UserNotFoundError`.
+  - `services/user.service.ts` — orchestration + avatar mapping.
+    `getUser()` returns `TUserProfile` (`image` = short-lived presigned S3
+    URL via `presignAvatarUrl`, or null; raw key never leaves the
+    service). Replaces the old `getAvatarUrl()`/`GET /users/:userId/avatar`
+    302 redirect. Invariant: soft delete = repo sets `deletedAt` AND
+    gateway bans (reason `deleted`) — Better Auth ignores `deletedAt`
+    during auth, so the ban is what blocks logins; restore = unban +
+    clear `deletedAt`.
+  - `repositories/user.repository.ts` — implements `IUserRepository`,
+    soft-delete filtering (`isNull(users.deletedAt)`) on all reads,
+    Redis cache-aside (5-min TTL, `user:all` / `user:id:<id>` keys,
+    invalidated on `deletedAt` writes), never caches `paginate`.
+  - `controllers/user.controller.ts` — envelope helpers
+    (`ok`/`okPaginated`/`errorEnvelope` per `@ims-erp/common`), plugin-local
+    `onError({ as: 'local' })` mapping VALIDATION/PARSE/ZodError→400,
+    domain errors→404/409, non-admin→403. Authorization: `erpGuard()`
+    session+membership on every route; mutations additionally gated by
+    `erp: { policy: requireGlobalAdmin }` (session-resolved role ===
+    `admin`; no `user` resource exists in the org AC catalog — user admin
+    is Better Auth's global admin domain, with a second enforcement layer
+    inside Better Auth itself).
+  - `constants/di.ts` — tokens typed `InjectionToken<T>`;
+    `container.ts` registers repository + gateway + service.
+- **Endpoints** (prefix `/users`): `GET /` (paginated list), `GET /:userId`
+  (full profile, presigned image), `POST /` (201), `PATCH /:userId`,
+  `PATCH /:userId/role`, `POST /:userId/ban`, `POST /:userId/unban`,
+  `DELETE /:userId` (soft delete), `POST /:userId/restore`.
+- **Soft delete added to `auth.users`**: `deletedAt` declared as Better
+  Auth `user.additionalFields` (`type: 'date'`, `input: false`) in
+  `auth.options.ts`; column added to `drizzle/schemas/auth.schema.ts` +
+  `TUserSelect`/`TUserInsert` exports.
+  - **Codegen caveat**: `bunx --bun @better-auth/cli generate` (resolves
+    1.4.x for this config) REGRESSES the schema file (drops
+    `pgSchema('auth')`, plural tables, relations). The column was applied
+    as a hand-written append-only delta replicating the generated
+    declaration; revisit when the CLI matches better-auth 1.7.
+  - Deviation note: generated/auth-schema `deletedAt` is a plain
+    `timestamp`, not the project's `unixTimestampNullable` — Better Auth
+    owns this file's shape.
+- **Migration**: `database/migrations/20261030230723_parched_human_cannonball/`
+  (`ALTER TABLE "auth"."users" ADD COLUMN "deleted_at" timestamp;`),
+  applied to the local dev DB via `bun run drizzle:migrate`.
+- Stale `auth:generate` script path fixed? NO — `package.json` still points
+  at `./src/drizzle/schemas/auth.schema.ts`; output was passed explicitly.
+  Left for ERP-0001 housekeeping.
+- Verified commands (2026-10-30, `apps/backend`):
+  - `bunx --bun @better-auth/cli@latest generate ... -y` → regressed (see
+    caveat); reverted, hand-applied instead.
+  - `bun run drizzle:generate` → migration emitted; inspected SQL before
+    applying; `bun run drizzle:migrate` → applied to local dev Postgres.
+  - `bun run typecheck` → clean (after fixes: `adminUpdateUser` endpoint
+    name, role-literal casts on `setRole`/`createUser` with `ponytail`
+    notes, `erp: { policy }` instead of `beforeHandle` for typed ctx).
+  - `bun run lint` → no new warnings; `bun test` → 78 pass / 0 fail (was
+    67; +13 in rewritten `test/unit/user.service.test.ts`: image mapping
+    presigned/null/absent, delete=ban+deletedAt pairing + no-write on
+    missing user, restore=unban+clear, gateway delegation, null-prop).
+  - Boot smoke test: `bun src/index.ts` → `🦊 Elysia is running at
+    localhost:3001`, clean shutdown.
+- NOT yet verified: e2e with a real admin session (create/ban/restore
+  against live Better Auth runtime; permission catalog lacks a `user`
+  resource by design — global-admin policy is the first-party gate).
+
 ## Completed (this session - avatar generation pipeline, 2026-10-29)
 
 **Status: implemented (unit-verified), NOT integration-verified against a

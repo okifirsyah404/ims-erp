@@ -1,12 +1,13 @@
 ---
 name: elysia-module
-description: Modular monolith boundaries for this project's Elysia backend - each module under src/app/<module>/ owns exactly one Postgres schema via drizzle/schemas/<module>.schema.ts, no foreign keys across schemas (plain id columns instead), and cross-module communication is strictly service-to-service (AService -> B2Service via DI tokens). Exception- user and organization modules live beside Better Auth in the auth schema because Better Auth owns those tables. Use when creating a new module, deciding where a table belongs, adding cross-module references, wiring cross-module communication, or reviewing schema/module coupling in apps/backend. Does NOT cover intra-module layering (use elysia-layered-architecture) or DI mechanics (use elysia-tsyringe).
+description: Modular monolith boundaries for this project's Elysia backend - each module under src/app/<module>/ owns exactly one Postgres schema via drizzle/schemas/<module>.schema.ts, no foreign keys across schemas (plain id columns instead), and cross-module communication is strictly service-to-service (AService -> B2Service via DI tokens). Modules calling external systems define contract ports first; module-owned BullMQ jobs live in queues/ and write through the module repository. Exception- user and organization modules live beside Better Auth in the auth schema because Better Auth owns those tables, and their repositories write a declared column subset only (user deletedAt; everything else via the Better Auth gateway). Use when creating a new module, deciding where a table belongs, adding cross-module references, wiring cross-module communication, or reviewing schema/module coupling in apps/backend. Does NOT cover intra-module layering (use elysia-layered-architecture) or DI mechanics (use elysia-tsyringe).
 license: MIT
 metadata:
   author: OpenAgentic
-  version: "1.0.0"
+  version: "1.1.0"
   dependsOn: elysia-layered-architecture
   canonicalExample: apps/backend/src/app/location
+  secondaryExample: apps/backend/src/app/user
 ---
 
 # Elysia Module Boundaries (Modular Monolith)
@@ -80,6 +81,16 @@ their own repositories, importing the row types from `auth.schema.ts`.
 They never re-declare the tables and never edit the generated file except
 to coordinate with the Better Auth codegen (`bun run auth:generate`).
 
+**Write-surface invariant:** the projection module's repository declares
+(in its contract TSDoc) the only columns it writes directly; every other
+mutation flows through the owning system's API behind a contract port.
+User module: `IUserRepository` touches `deletedAt` only — role, ban state,
+passwords, and sessions go through `IUserAuthGateway` (Better Auth admin
+API). Codegen caveat: `@better-auth/cli generate` (1.4.x) regresses the
+schema file — columns are applied as hand-written append-only deltas with
+the `additionalFields` declaration in `auth.options.ts` (see rule 3.3's
+reference).
+
 ### 3.4 Cross-module imports: schema types and DI tokens only — HIGH
 
 Allowed:
@@ -109,10 +120,15 @@ cycle avoidance are detailed in rule 3.5's reference file.
 ### 3.6 New module checklist — MEDIUM
 
 1. `src/app/<module>/{contracts,constants,controllers,services,repositories}`
+   — plus `queues/` when the module owns background jobs (BullMQ)
 2. `constants/di.ts` with the module's tokens (see `elysia-tsyringe`)
 3. `drizzle/schemas/<module>.schema.ts` with `pgSchema("<module>")`
+   — except auth-projecting modules (rule 3.3)
 4. `container.ts` exporting `register<Module>(container)`, called in `src/index.ts`
-5. No edits to other modules' code. If another module must cooperate, invert:
+5. If the module calls an external system, define the port in `contracts/`
+   first, implement in `services/` (see the layered-architecture skill,
+   rule 1.2)
+6. No edits to other modules' code. If another module must cooperate, invert:
    it exposes a token/service, or (later) a domain event.
 
 ## Anti-patterns (real observations in this repo)
@@ -127,6 +143,12 @@ cycle avoidance are detailed in rule 3.5's reference file.
   to prevent.
 - Copying `auth.users` columns into a new `app_user` table to "decouple"
   — projection modules read auth tables directly (rule 3.3).
+- A projection repository writing auth-owned columns (`role`, `banned`,
+  `password`) directly — ownership scatters; use the module's gateway
+  port (rule 3.3).
+- A module queue worker writing `drizzleDB` directly instead of through
+  the module repository — loses cache invalidation and soft-delete
+  filtering (fixed in `user/queues/avatar.worker.ts`).
 
 ## References
 
