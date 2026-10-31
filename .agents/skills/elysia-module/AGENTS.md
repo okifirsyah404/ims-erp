@@ -1,6 +1,6 @@
 # Elysia Module Boundaries (Modular Monolith)
 
-**Version 1.0.0**
+**Version 1.1.0**
 OpenAgentic
 October 2026
 
@@ -25,7 +25,13 @@ repositories never join another module's tables and controllers never call
 foreign services directly. Exception: the `user` and
 `organization` modules have no schema of their own — Better Auth generates
 and owns the `auth` schema's identity/tenant tables, and those modules
-project over them through their own repositories. Contains 6 rules across
+project over them through their own repositories under a write-surface
+invariant (the repository writes a declared column subset only; every
+other mutation flows through the owning system's API behind a contract
+port — in the user module, `deletedAt` via Drizzle, everything else via
+the Better Auth admin gateway). Modules may own `queues/` for BullMQ
+background jobs; workers write through the module repository, never raw
+`drizzleDB`. Contains 6 rules across
 3 categories, prioritized by impact from critical (schema ownership, FK
 policy, the auth exception) to incremental (new-module checklist).
 

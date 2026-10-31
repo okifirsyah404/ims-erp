@@ -1,13 +1,7 @@
 'use client';
 
-import {
-	BadgeCheck,
-	Bell,
-	ChevronsUpDown,
-	CreditCard,
-	LogOut,
-	Sparkles,
-} from 'lucide-react';
+import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from 'lucide-react';
+import { useRouter } from '@tanstack/react-router';
 
 import {
 	Avatar,
@@ -29,17 +23,39 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from '@ims-erp/ui/components/sidebar';
+import { authClient } from '@/lib/auth-client';
+
+/** Initials for the avatar fallback; falls back to `?` for blank names. */
+function initials(name: string): string {
+	const parts = name.trim().split(/\s+/).filter(Boolean);
+	if (parts.length === 0) return '?';
+	const first = parts[0]![0];
+	const second = parts[1]?.[0];
+	return (first + (second ?? '')).toUpperCase();
+}
 
 export function NavUser({
 	user,
+	loading = false,
+	errored = false,
 }: {
 	user: {
 		name: string;
 		email: string;
 		avatar: string;
 	};
+	/** Session user not loaded yet — render skeleton, never block. */
+	loading?: boolean;
+	/** `/users/me` failed — degrade to initials, keep the sidebar usable. */
+	errored?: boolean;
 }) {
 	const { isMobile } = useSidebar();
+	const router = useRouter();
+
+	async function handleSignOut() {
+		await authClient.signOut();
+		router.navigate({ to: '/login' });
+	}
 
 	return (
 		<SidebarMenu>
@@ -54,12 +70,18 @@ export function NavUser({
 						}
 					>
 						<Avatar className='h-8 w-8 rounded-lg'>
-							<AvatarImage src={user.avatar} alt={user.name} />
-							<AvatarFallback className='rounded-lg'>CN</AvatarFallback>
+							{user.avatar && !errored && (
+								<AvatarImage src={user.avatar} alt={user.name} />
+							)}
+							<AvatarFallback className='rounded-lg'>
+								{loading ? '…' : initials(user.name)}
+							</AvatarFallback>
 						</Avatar>
 						<div className='grid flex-1 text-left text-sm leading-tight'>
 							<span className='truncate font-medium'>{user.name}</span>
-							<span className='truncate text-xs'>{user.email}</span>
+							<span className='truncate text-xs'>
+								{errored ? '' : user.email}
+							</span>
 						</div>
 						<ChevronsUpDown className='ml-auto size-4' />
 					</DropdownMenuTrigger>
@@ -72,22 +94,21 @@ export function NavUser({
 						<DropdownMenuLabel className='p-0 font-normal'>
 							<div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
 								<Avatar className='h-8 w-8 rounded-lg'>
-									<AvatarImage src={user.avatar} alt={user.name} />
-									<AvatarFallback className='rounded-lg'>CN</AvatarFallback>
+									{user.avatar && !errored && (
+										<AvatarImage src={user.avatar} alt={user.name} />
+									)}
+									<AvatarFallback className='rounded-lg'>
+										{loading ? '…' : initials(user.name)}
+									</AvatarFallback>
 								</Avatar>
 								<div className='grid flex-1 text-left text-sm leading-tight'>
 									<span className='truncate font-medium'>{user.name}</span>
-									<span className='truncate text-xs'>{user.email}</span>
+									<span className='truncate text-xs'>
+										{errored ? '' : user.email}
+									</span>
 								</div>
 							</div>
 						</DropdownMenuLabel>
-						<DropdownMenuSeparator />
-						<DropdownMenuGroup>
-							<DropdownMenuItem>
-								<Sparkles />
-								Upgrade to Pro
-							</DropdownMenuItem>
-						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
 							<DropdownMenuItem>
@@ -95,16 +116,12 @@ export function NavUser({
 								Account
 							</DropdownMenuItem>
 							<DropdownMenuItem>
-								<CreditCard />
-								Billing
-							</DropdownMenuItem>
-							<DropdownMenuItem>
 								<Bell />
 								Notifications
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem>
+						<DropdownMenuItem onClick={handleSignOut}>
 							<LogOut />
 							Log out
 						</DropdownMenuItem>

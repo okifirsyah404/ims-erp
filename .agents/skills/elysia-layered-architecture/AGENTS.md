@@ -1,6 +1,6 @@
 # Elysia Layered Architecture
 
-**Version 1.0.0**
+**Version 1.1.0**
 OpenAgentic
 October 2026
 
@@ -14,16 +14,21 @@ October 2026
 ## Abstract
 
 Layered backend architecture for Elysia domains in `apps/backend/src/app/<domain>/`.
-Each domain is split into `contracts/` (zod schemas, interfaces), `constants/di.ts` (DI tokens),
-`controllers/` (HTTP-only routes), `services/` (orchestration), and
-`repositories/` (Drizzle queries + cache). Controllers parse with zod at the
-boundary and build the `TApiResponse`/`TApiPaginatedResponse` envelope from
-`@ims-erp/common`; services orchestrate repositories without HTTP or SQL;
-repositories implement contract interfaces and own soft-delete filtering and
-Redis cache-aside. DI tokens live in a standalone `constants/di.ts`
-module to prevent service↔container circular imports. Contains 6 rules across
-3 categories, prioritized by impact from critical (controller scope,
-contracts-first structure) to incremental (envelope placement, boundary parsing).
+Each domain is split into `contracts/` (zod schemas, interfaces, ports for
+external systems), `constants/di.ts` (DI tokens), `controllers/` (HTTP-only
+routes), `services/` (orchestration, including gateway implementations for
+outside systems such as Better Auth's `auth.api`), `repositories/`
+(Drizzle queries + cache), and optional `queues/` (module-owned BullMQ
+jobs). Controllers parse with zod at the boundary and build the
+`TApiResponse`/`TApiPaginatedResponse` envelope from `@ims-erp/common`;
+services orchestrate repositories and ports without HTTP or SQL;
+repositories implement contract interfaces and own soft-delete filtering
+and Redis cache-aside. DI tokens live in a standalone `constants/di.ts`
+module to prevent service↔container circular imports. Route conventions:
+literal segments (`/me`) precede `/:id` params; identity for self routes
+comes from the guard session. Contains 6 rules across 3 categories,
+prioritized by impact from critical (controller scope, contracts-first
+structure) to incremental (envelope placement, boundary parsing).
 
 ---
 

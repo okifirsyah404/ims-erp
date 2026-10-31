@@ -42,9 +42,45 @@ and envelope types from `@ims-erp/common`:
 - Controller tests cover status/envelope mapping only; service tests cover
   rules. Mixed layers make both kinds of test brittle.
 
+## Route Ordering and Macro Typing (from the user module)
+
+**Self routes precede param routes.** `GET /me` must be declared
+**before** `GET /:userId`, or the router captures `me` as the `:userId`
+parameter. Identity comes from the guard-resolved session, never client
+input:
+
+```typescript
+// apps/backend/src/app/user/controllers/user.controller.ts — the pattern
+.get(
+	'/me', // declared BEFORE '/:userId'
+	async ({ erp, status }) => {
+		const profile = await userService.getUser(erp.session.user.id);
+		// ...404 envelope when absent
+	},
+	{ erp: { permission: [] } },
+)
+.get('/:userId', /* admin-scoped read */)
+```
+
+Self-scoped reads need no permission gate; broader reads/mutations on the
+same resource use `erp: { policy: ... }` with a server-side check that
+reads the role from the guard session (`requireGlobalAdmin` in the user
+controller — never from client input; Better Auth re-checks inside its
+own admin endpoints).
+
+**Empty macro options break handler typing.** With `erp: {}`, Elysia
+drops the macro's resolved `erp` context from the handler's inferred type
+— destructuring `erp` fails typecheck. Pass a non-empty option object
+(`{ permission: [] }`) or `policy` so the macro contributes its resolve
+type.
+
 ## Anti-patterns
 
 - `import { province } from '@drizzle/schemas/location.schema'` in a
   controller — data layer leaked into HTTP.
 - Validation beyond `.parse()` (e.g. "does this province exist?" checks)
   in a controller — belongs in the service.
+- Declaring `/:id` routes before literal segments (`/me`, `/stats`) —
+  the literals are never reached.
+- `erp: {}` while the handler destructures `erp` — silent loss of the
+  resolved context in the type system.

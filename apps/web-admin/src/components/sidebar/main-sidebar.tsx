@@ -26,13 +26,11 @@ import { NavUser } from '@/components/sidebar/nav-user';
 import { NavMain } from '@/components/sidebar/nav-main';
 import { TeamSwitcher } from '@/components/sidebar/team-switcher';
 
-// This is sample data.
+import { useQuery } from '@tanstack/react-query';
+import { selfUserQueryOptions } from '@/lib/user-api';
+
+// Sample nav/projects data; user data comes from the backend (`/users/me`).
 const data = {
-	user: {
-		name: 'shadcn',
-		email: 'm@example.com',
-		avatar: '/avatars/shadcn.jpg',
-	},
 	teams: [
 		{
 			name: 'Acme Inc',
@@ -157,6 +155,8 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+	const { data: user, isPending, isError } = useQuery(selfUserQueryOptions);
+
 	return (
 		<Sidebar collapsible='icon' {...props}>
 			<SidebarHeader>
@@ -167,7 +167,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				<NavProjects projects={data.projects} />
 			</SidebarContent>
 			<SidebarFooter>
-				<NavUser user={data.user} />
+				<NavUser
+					user={{
+						name: user?.name ?? '…',
+						email: user?.email ?? '',
+						avatar: user?.image ?? '',
+					}}
+					loading={isPending && !user}
+					errored={isError && !user}
+				/>
 			</SidebarFooter>
 			<SidebarRail />
 		</Sidebar>

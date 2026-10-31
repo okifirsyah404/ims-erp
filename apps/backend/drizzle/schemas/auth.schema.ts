@@ -29,7 +29,18 @@ export const users = authSchema.table("users", {
   bio: text("bio"),
   username: text("username").unique(),
   displayUsername: text("display_username"),
+  // Soft-delete marker owned by the user module's repository (sets/clears the
+  // column directly via Drizzle). Mirrors the `deletedAt` additionalField in
+  // auth.options.ts. Hand-applied append-only delta: @better-auth/cli 1.4.x
+  // regresses this file (drops pgSchema/plural tables/relations), so the
+  // generated column declaration is replicated here verbatim instead.
+  deletedAt: timestamp("deleted_at"),
 });
+
+/** Row shape of `auth.users`. */
+export type TUserSelect = typeof users.$inferSelect;
+/** Insert shape of `auth.users`. */
+export type TUserInsert = typeof users.$inferInsert;
 
 export const sessions = authSchema.table(
   "sessions",

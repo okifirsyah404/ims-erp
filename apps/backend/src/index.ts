@@ -7,7 +7,7 @@ import { pinoLogger } from '@providers/logger/logger';
 import { Elysia } from 'elysia';
 import { container } from 'tsyringe';
 import { elysiaApp } from './app/app';
-import { startAvatarWorker } from '@providers/better-auth/avatar/avatar.worker';
+import { startAvatarWorker } from './app/user/queues/avatar.worker';
 import {
 	closeQueueConnection,
 } from '@providers/queue/queue.connection';

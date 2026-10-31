@@ -4,7 +4,7 @@
 import { eq } from 'drizzle-orm';
 import { drizzleDB } from '../drizzle/db';
 import { users } from '../drizzle/schemas/auth.schema';
-import { dispatchAvatarGeneration } from '../src/providers/better-auth/avatar/avatar.queue';
+import { dispatchAvatarGeneration } from '../src/app/user/queues/avatar.queue';
 import { closeQueueConnection } from '../src/providers/queue/queue.connection';
 
 const arg = process.argv[2];

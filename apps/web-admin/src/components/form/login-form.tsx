@@ -1,6 +1,5 @@
 import { cn } from 'cn';
 
-import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { Button } from '@ims-erp/ui/components/button';
@@ -19,9 +18,9 @@ import { Input } from '@ims-erp/ui/components/input';
  */
 export function LoginForm({
 	className,
+	onSuccess,
 	...props
-}: React.ComponentProps<'div'>) {
-	const navigate = useNavigate();
+}: React.ComponentProps<'div'> & { onSuccess?: () => void }) {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState<string | null>(null);
@@ -40,7 +39,7 @@ export function LoginForm({
 				setError(signInError.message ?? 'Invalid email or password');
 				return;
 			}
-			await navigate({ to: '/' });
+			onSuccess?.();
 		} catch {
 			setError(
 				'Cannot reach the server. Check your connection and try again.',
