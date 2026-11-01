@@ -1,7 +1,7 @@
 'use client';
 
-import { Building2, ScrollText, Settings, Users, type LucideIcon } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
+import { Building2, ScrollText, Settings, Users } from 'lucide-react';
 
 import {
 	SidebarGroup,
@@ -10,6 +10,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from '@ims-erp/ui/components/sidebar';
+import type { SidebarItem } from './sidebar-item';
 
 /**
  * Administration navigation (platform admins only).
@@ -18,11 +19,7 @@ import {
  * (`user.role === 'admin'`). UX only - the backend enforces every
  * operation behind these routes.
  */
-const items: {
-	title: string;
-	url: string;
-	icon: LucideIcon;
-}[] = [
+const items: SidebarItem[] = [
 	{
 		title: 'Organization',
 		url: '/organizations',

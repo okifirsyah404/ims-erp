@@ -26,6 +26,7 @@ import {
 
 import { selfUserQueryOptions } from '@/lib/user-api';
 import { useQuery } from '@tanstack/react-query';
+import { NavInventory } from './nav-inventory';
 
 // Sample nav/projects data; user data comes from the backend (`/users/me`).
 const data = {
@@ -146,6 +147,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			<SidebarContent>
 				<NavMain items={data.navMain} />
 				<NavProjects projects={data.projects} />
+				<NavInventory />
 				{user?.role === 'admin' && <NavAdmin />}
 			</SidebarContent>
 			<SidebarFooter>
