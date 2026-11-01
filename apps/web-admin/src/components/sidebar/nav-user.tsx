@@ -1,9 +1,11 @@
 'use client';
 
 import { useRouter } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
 import { Bell, ChevronsUpDown, LogOut, User } from 'lucide-react';
 
 import { authClient } from '@/lib/auth-client';
+import { selfUserQueryOptions, type TSelfUser } from '@/lib/user-api';
 import {
 	Avatar,
 	AvatarFallback,
@@ -14,7 +16,6 @@ import {
 	DropdownMenuContent,
 	DropdownMenuGroup,
 	DropdownMenuItem,
-	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@ims-erp/ui/components/dropdown-menu';
@@ -24,6 +25,7 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from '@ims-erp/ui/components/sidebar';
+import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import ThemeSwitcher from './theme-switcher';
 
 /** Initials for the avatar fallback; falls back to `?` for blank names. */
@@ -35,27 +37,73 @@ function initials(name: string): string {
 	return (first + (second ?? '')).toUpperCase();
 }
 
-export function NavUser({
+/**
+ * Identity block shown both in the trigger and inside the menu. Pending
+ * renders a skeleton that mirrors the real geometry (so nothing shifts when
+ * data lands); errors fall back to neutral labels instead of blanking or
+ * crashing the sidebar. Skeletons are never shown for a terminal error, or
+ * the UI would look like it is loading forever.
+ */
+function UserIdentity({
 	user,
-	loading = false,
-	errored = false,
+	isPending,
+	isError,
 }: {
-	user: {
-		name: string;
-		email: string;
-		avatar: string;
-	};
-	/** Session user not loaded yet — render skeleton, never block. */
-	loading?: boolean;
-	/** `/users/me` failed — degrade to initials, keep the sidebar usable. */
-	errored?: boolean;
+	user: TSelfUser | undefined;
+	isPending: boolean;
+	isError: boolean;
 }) {
+	if (isPending) {
+		return (
+			<div
+				className='flex flex-1 items-center gap-2'
+				aria-busy='true'
+				data-slot='user-identity-skeleton'
+			>
+				<div aria-hidden='true' className='contents'>
+					<Skeleton className='h-8 w-8 shrink-0 rounded-lg motion-reduce:animate-none' />
+					<div className='grid flex-1 gap-1 text-left leading-tight'>
+						<Skeleton className='h-3.5 w-24 rounded-sm motion-reduce:animate-none' />
+						<Skeleton className='h-3 w-32 rounded-sm motion-reduce:animate-none' />
+					</div>
+				</div>
+				<span className='sr-only'>Loading account…</span>
+			</div>
+		);
+	}
+
+	const name = user?.name ?? '';
+	const email = user?.email ?? '';
+
+	return (
+		<>
+			<Avatar className='h-8 w-8 rounded-lg'>
+				{user?.image && !isError && (
+					<AvatarImage src={user.image} alt={name} />
+				)}
+				<AvatarFallback className='rounded-lg'>
+					{initials(name)}
+				</AvatarFallback>
+			</Avatar>
+			<div className='grid flex-1 text-left text-sm leading-tight'>
+				<span className='truncate font-medium'>
+					{isError ? 'Account' : name}
+				</span>
+				<span className='truncate text-xs'>{isError ? '' : email}</span>
+			</div>
+		</>
+	);
+}
+
+export function NavUser() {
+	const { data: user, isPending, isError } = useQuery(selfUserQueryOptions);
+
 	const { isMobile } = useSidebar();
 	const router = useRouter();
 
 	async function handleSignOut() {
 		await authClient.signOut();
-		router.navigate({ to: '/login' });
+		router.navigate({ to: '/login', search: { redirect: undefined } });
 	}
 
 	return (
@@ -70,20 +118,7 @@ export function NavUser({
 							/>
 						}
 					>
-						<Avatar className='h-8 w-8 rounded-lg'>
-							{user.avatar && !errored && (
-								<AvatarImage src={user.avatar} alt={user.name} />
-							)}
-							<AvatarFallback className='rounded-lg'>
-								{loading ? '…' : initials(user.name)}
-							</AvatarFallback>
-						</Avatar>
-						<div className='grid flex-1 text-left text-sm leading-tight'>
-							<span className='truncate font-medium'>{user.name}</span>
-							<span className='truncate text-xs'>
-								{errored ? '' : user.email}
-							</span>
-						</div>
+						<UserIdentity user={user} isPending={isPending} isError={isError} />
 						<ChevronsUpDown className='ml-auto size-4' />
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
@@ -92,29 +127,18 @@ export function NavUser({
 						align='end'
 						sideOffset={4}
 					>
-						<DropdownMenuGroup>
-							<DropdownMenuLabel
-								className='p-0 font-normal select-none'
-								onClick={() => router.navigate({ to: '/profiles' })}
-							>
-								<div className='flex items-center gap-2 p-2 text-left text-sm'>
-									<Avatar className='h-8 w-8 rounded-lg'>
-										{user.avatar && !errored && (
-											<AvatarImage src={user.avatar} alt={user.name} />
-										)}
-										<AvatarFallback className='rounded-lg'>
-											{loading ? '…' : initials(user.name)}
-										</AvatarFallback>
-									</Avatar>
-									<div className='grid flex-1 text-left text-sm leading-tight'>
-										<span className='truncate font-medium'>{user.name}</span>
-										<span className='truncate text-xs'>
-											{errored ? '' : user.email}
-										</span>
-									</div>
-								</div>
-							</DropdownMenuLabel>
-						</DropdownMenuGroup>
+						{/* Profile row: a real menu item (not a label), so it is
+						    focusable and announced as an action. */}
+						<DropdownMenuItem
+							className='gap-2 p-2'
+							onClick={() => router.navigate({ to: '/profiles' })}
+						>
+							<UserIdentity
+								user={user}
+								isPending={isPending}
+								isError={isError}
+							/>
+						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
 							<ThemeSwitcher />

@@ -10,6 +10,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
+import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import {
 	Table,
 	TableBody,
@@ -18,6 +19,18 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ims-erp/ui/components/table';
+
+/** Placeholder rows shown while sessions load. */
+const SESSION_SKELETON_ROW_COUNT = 4;
+
+/** Per-column placeholder widths, matching the sessions table's shape. */
+const SESSION_SKELETON_CELLS = [
+	{ key: 'device', className: 'h-4 w-48' },
+	{ key: 'created', className: 'h-4 w-32' },
+	{ key: 'expires', className: 'h-4 w-32' },
+	{ key: 'status', className: 'h-5 w-16 rounded-full' },
+	{ key: 'actions', className: 'ml-auto h-8 w-16' },
+] as const;
 
 /**
  * Session management (`/account/sessions`). Lists the signed-in user's
@@ -91,6 +104,28 @@ export function SessionsTable() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
+							{sessionsQuery.isPending &&
+								Array.from({ length: SESSION_SKELETON_ROW_COUNT }, (_, index) => (
+									<TableRow key={index} aria-hidden='true'>
+										{SESSION_SKELETON_CELLS.map((cell) => (
+											<TableCell key={cell.key}>
+												<Skeleton
+													className={`${cell.className} motion-reduce:animate-none`}
+												/>
+											</TableCell>
+										))}
+									</TableRow>
+								))}
+							{sessionsQuery.isError && (
+								<TableRow>
+									<TableCell
+										colSpan={5}
+										className='text-destructive py-8 text-center'
+									>
+										{(sessionsQuery.error as Error).message}
+									</TableCell>
+								</TableRow>
+							)}
 							{sessions.map((session) => (
 								<TableRow key={session.token}>
 									<TableCell>
@@ -123,16 +158,18 @@ export function SessionsTable() {
 									</TableCell>
 								</TableRow>
 							))}
-							{sessions.length === 0 && (
-								<TableRow>
-									<TableCell
-										colSpan={5}
-										className='text-muted-foreground py-8 text-center'
-									>
-										No active sessions
-									</TableCell>
-								</TableRow>
-							)}
+							{!sessionsQuery.isPending &&
+								!sessionsQuery.isError &&
+								sessions.length === 0 && (
+									<TableRow>
+										<TableCell
+											colSpan={5}
+											className='text-muted-foreground py-8 text-center'
+										>
+											No active sessions
+										</TableCell>
+									</TableRow>
+								)}
 						</TableBody>
 					</Table>
 				</div>

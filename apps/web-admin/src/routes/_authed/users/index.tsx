@@ -32,6 +32,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
+import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import {
 	Table,
 	TableBody,
@@ -80,6 +81,18 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
 		pending: 'secondary',
 		deactivated: 'destructive',
 	};
+
+/** Number of placeholder rows shown while the first page loads. */
+const SKELETON_ROW_COUNT = 5;
+
+/** Per-column placeholder widths, matching the Users table's shape. */
+const SKELETON_CELLS = [
+	{ key: 'user', className: 'h-4 w-40' },
+	{ key: 'status', className: 'h-5 w-20 rounded-full' },
+	{ key: 'roles', className: 'h-4 w-28' },
+	{ key: 'created', className: 'h-4 w-24' },
+	{ key: 'actions', className: 'ml-auto h-8 w-16' },
+] as const;
 
 function UsersPage() {
 	const organizationId = useActiveOrganizationId();
@@ -253,21 +266,22 @@ function UsersPage() {
 				<CardHeader>
 					<CardTitle>Accounts</CardTitle>
 					<CardDescription>
-						{pagination ? `${pagination.total} user(s)` : 'Loading…'}
+						{pagination ? (
+							`${pagination.total} user(s)`
+						) : isPending ? (
+							<Skeleton className='h-4 w-20 motion-reduce:animate-none' />
+						) : null}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					{isPending && (
-						<p className='text-sm text-muted-foreground'>Loading users…</p>
-					)}
 					{isError && (
 						<p className='text-sm text-destructive'>{(error as Error).message}</p>
 					)}
 					{!isPending && !isError && rows.length === 0 && (
 						<p className='text-sm text-muted-foreground'>No users found.</p>
 					)}
-					{rows.length > 0 && (
-						<Table>
+					{(isPending || rows.length > 0) && (
+						<Table aria-busy={isPending || undefined}>
 							<TableHeader>
 								<TableRow>
 									<TableHead>User</TableHead>
@@ -278,6 +292,18 @@ function UsersPage() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
+								{isPending &&
+									Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
+										<TableRow key={index} aria-hidden='true'>
+											{SKELETON_CELLS.map((cell) => (
+												<TableCell key={cell.key}>
+													<Skeleton
+														className={`${cell.className} motion-reduce:animate-none`}
+													/>
+												</TableCell>
+											))}
+										</TableRow>
+									))}
 								{rows.map((user) => (
 									<UserRow
 										key={user.id}
@@ -293,6 +319,7 @@ function UsersPage() {
 							</TableBody>
 						</Table>
 					)}
+					{isPending && <span className='sr-only'>Loading users…</span>}
 
 					{pagination && pagination.totalPages > 1 && (
 						<div className='mt-4 flex items-center justify-end gap-2'>
