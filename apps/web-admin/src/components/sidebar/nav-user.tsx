@@ -128,7 +128,7 @@ export function NavUser({
 								Account
 							</DropdownMenuItem>
 							<DropdownMenuItem
-								onClick={() => router.navigate({ to: '/notifications' })}
+							// onClick={() => router.navigate({ to: '/notifications' })}
 							>
 								<Bell />
 								Notifications
