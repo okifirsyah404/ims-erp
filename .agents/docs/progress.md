@@ -3,6 +3,104 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed (this session - user-management phase 4: admin UI + admin API, 2026-11-01)
+
+Plan: `.agents/docs/plans/user-management.md`. Phase 4 of 7 complete (backend +
+admin UI; `/members` page enhancements + member role-change UI remain).
+
+Backend — new surface, all gated by the phase-3 dynamic guard:
+
+- `contracts/admin.contract.ts` — zod schemas for users/roles/audit.
+  `createRoleSchema`/`updateRoleSchema` `rank` accepts **1..100** (was
+  `max(99)`). Rationale: schema validation must not cap below a rank the
+  escalation guard is responsible for rejecting — the guard, not the schema,
+  is the authorization boundary. With `max(99)` an owner's `rank: 100` POST was
+  rejected as a 400 *validation* error and the rank guard never ran.
+- `repositories/role.repository.ts` — Drizzle role CRUD: list (with live
+  member counts), findById/findByName/findByNameIncludingDeleted, create,
+  update, softDelete, undelete, countMembers.
+- `repositories/audit.repository.ts`, `services/audit-query.service.ts` —
+  filterable audit reads (action, targetType, actor, org, from/to range;
+  `created_at` is unix-seconds so ranges convert via
+  `new Date(floor(ms/1000)*1000)`).
+- `services/role-management.service.ts` — rank/escalation guard (target rank
+  strictly below caller's), grant validation against the shared catalog
+  vocabulary, system-role and in-use delete guards, soft-deleted name revive.
+- `services/user-admin.service.ts` — deactivate (revokes sessions, keeps
+  memberships), restore, soft delete, outrank checks.
+- `controllers/user-admin.controller.ts` — `/users`, `/roles`,
+  `/roles/permissions`, `/audit`; `callerRank()` = highest live role rank in
+  the validated org, with app-admin-without-dynamic-role ceiling 80 (never
+  owner).
+- Permission mapping: user list / role list / `/roles/permissions` →
+  `member:read`; role create → `member:create`; user+role update,
+  deactivate/restore → `member:update`; delete → `member:delete`; audit list →
+  `audit_log:read`.
+
+Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
+
+- `lib/admin-api.ts` — users/roles/audit/invitations fetchers, `queryOptions`,
+  `parseBulkInviteRows` (resolves pasted role *names* to ids; unknowns fall
+  through to the backend's `member` fallback), `BULK_INVITE_LIMIT = 100`,
+  `ADMIN_PERMISSIONS`.
+- `lib/use-active-organization.ts` — resolves the active org from the session,
+  falling back to the caller's first org (matches the sidebar switcher).
+- Routes `/_authed/users`, `/_authed/roles`, `/_authed/audit`; components
+  `admin/invite-dialog.tsx` (single + bulk paste), `admin/pending-invitations-panel.tsx`
+  (expiry display, resend/cancel/delete).
+
+### Bugs found and fixed this phase
+
+1. **Double-encoded `owner` grants in the live DB.** `auth.roles.permissions`
+   for the `owner` row was a JSON **string** (a serialized object stored
+   through an extra `JSON.stringify`), i.e. `jsonb_typeof = 'string'` with 3786
+   numeric-index keys. `grantsAllow()` iterates `Object.entries(grant)`, which
+   on a string yields indices — so owner was denied **every** permission and
+   all phase-4 endpoints 403'd. Repaired by `scripts/refresh-role-grants.ts`
+   (`rolesUpdated: 1`). Hardened `sameGrants()` in
+   `organization-roles.seeder.ts` to treat non-object/array values as drift so
+   the ops script can self-heal this class of corruption.
+2. **`GET /users` route shadowing + missing guard.** Two controllers register
+   `GET /users`: the legacy `UserController` (prefix `/users`) and the new
+   `UserAdminController`. With prefix-wrapped plugins the **FIRST** registration
+   wins (verified: `new Elysia().use(prefixed).use(literal)` → prefixed handler
+   answers; reversing swaps the winner). The legacy listing was also declared
+   `erp: {}` — no permission — so **any authenticated member could enumerate
+   the entire user base**. Fixed both: legacy `/` now uses
+   `{ erp: { policy: requireGlobalAdmin } }` (matching every other route on
+   that controller), and `UserAdminController.plugin()` is mounted **before**
+   `UserController.plugin()` in `src/index.ts` so the permission-gated
+   `member:read` listing wins.
+3. **Revive path crashed with 500** (`undefined is not an object (evaluating
+   'role.id')`). `RoleRepository.update()` filtered `.where(isNull(deletedAt))`,
+   but `create()` revives a soft-deleted role by updating it *before*
+   `undelete` — the predicate matched zero rows, `.returning()` yielded
+   `undefined`, and the caller dereferenced it. Removed the `deletedAt`
+   predicate from `update`; who may edit is decided by the service (rank guard,
+   system-role rules), not by the query.
+4. **React purity warnings** in `pending-invitations-panel.tsx` from calling
+   `Date.now()` during render; moved "now" into a cached `useQuery`.
+
+### Verification (exact commands)
+
+- `apps/backend`: `bunx tsc --noEmit` → clean; `bun test` → **112 pass / 0
+  fail** (10 files; +22 phase-4 tests in `test/unit/role-management.service.test.ts`
+  and `test/unit/user-admin.service.test.ts`, all repo-DB mocked — no real DB
+  connection opened).
+- `apps/backend`: `bun run scripts/smoke-admin-api.ts` → **15 passed, 0
+  failed**, stable across consecutive runs (the second run exercises the revive
+  path the same script would otherwise mask).
+- `apps/web-admin`: `bunx tsc --noEmit -p tsconfig.app.json` → clean (plain
+  `tsc --noEmit` checks NOTHING here — root `tsconfig.json` has `"files": []`);
+  `bun run build` → clean, all three routes code-split.
+- repo root: `bun run lint` → 0 errors (5 web-admin warnings + ui/backend
+  warnings are pre-existing); `bun run docs/database/validate-dbml.ts` → OK
+  (253 tables, 0 gaps).
+
+Scripts kept: `scripts/smoke-admin-api.ts`, `scripts/cleanup-smoke-roles.ts`,
+`scripts/refresh-role-grants.ts` (+ pre-existing ops scripts). All `diag-*.ts`
+throwaways deleted.
+
 ## Completed (this session - user-management phase 3: dynamic hasPermission guard + single grant source, 2026-11-01)
 
 Plan: `.agents/docs/plans/user-management.md`. Phase 3 of 7 complete.

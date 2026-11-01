@@ -67,3 +67,54 @@ export class RoleNotFoundError extends UserManagementError {
 		super(422, `Role not found: ${roleNameOrId}`);
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Phase 4 — account lifecycle, role CRUD, escalation guard
+// ---------------------------------------------------------------------------
+
+export class UserNotFoundError extends UserManagementError {
+	constructor(userId: string) {
+		super(404, `User not found: ${userId}`);
+	}
+}
+
+/** Lifecycle transition not allowed from the user's current status. */
+export class UserStateError extends UserManagementError {
+	constructor(message: string) {
+		super(409, message);
+	}
+}
+
+/**
+ * Escalation guard (D5): a caller can never grant or touch a rank at or
+ * above their own. Enforced server-side on every role/member write.
+ */
+export class RankGuardError extends UserManagementError {
+	constructor(message = 'You cannot grant a role at or above your own rank') {
+		super(403, message);
+	}
+}
+
+/** Role exists in this organization's live master data. */
+export class RoleNameTakenError extends UserManagementError {
+	constructor(name: string) {
+		super(409, `A role named "${name}" already exists in this organization`);
+	}
+}
+
+/**
+ * Role cannot be deleted or renamed: it is a seeded system role, or live
+ * members still hold it.
+ */
+export class RoleInUseError extends UserManagementError {
+	constructor(message: string) {
+		super(409, message);
+	}
+}
+
+/** Permission grant references a resource/action outside the catalog. */
+export class InvalidPermissionGrantError extends UserManagementError {
+	constructor(message: string) {
+		super(422, message);
+	}
+}

@@ -1,10 +1,26 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, eq, ilike, isNotNull, isNull, ne } from 'drizzle-orm';
+import {
+	and,
+	count,
+	desc,
+	eq,
+	ilike,
+	inArray,
+	isNotNull,
+	isNull,
+	ne,
+	or,
+} from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
+import type { TPaginationResult } from '@ims-erp/common';
 import type { TUserSelect } from '@drizzle/schemas/auth.schema';
-import { users } from '@drizzle/schemas/auth.schema';
-import type { IUserManagementRepository } from '../contracts/repositories.interface';
+import { members, organizations, users } from '@drizzle/schemas/auth.schema';
+import type {
+	IUserManagementRepository,
+	TAdminUserRow,
+	TUserListRequest,
+} from '../contracts/repositories.interface';
 
 /**
  * Drizzle implementation of {@link IUserManagementRepository}: the
@@ -111,6 +127,104 @@ export class UserManagementRepository implements IUserManagementRepository {
 			.update(users)
 			.set({ deletedAt: null, status: 'pending' })
 			.where(and(eq(users.id, id), isNotNull(users.deletedAt)));
+	}
+
+	async findAnyById(id: string): Promise<TUserSelect | null> {
+		const [row] = await this.database
+			.select()
+			.from(users)
+			.where(eq(users.id, id))
+			.limit(1);
+		return row ?? null;
+	}
+
+	async reactivate(id: string): Promise<void> {
+		await this.database
+			.update(users)
+			.set({ status: 'active' })
+			.where(and(eq(users.id, id), isNull(users.deletedAt)));
+	}
+
+	async listMemberships(
+		userId: string,
+	): Promise<Array<{ id: string; name: string; role: string }>> {
+		const rows = await this.database
+			.select({
+				id: members.organizationId,
+				name: organizations.name,
+				role: members.role,
+			})
+			.from(members)
+			.innerJoin(organizations, eq(members.organizationId, organizations.id))
+			.where(and(eq(members.userId, userId)));
+		return rows;
+	}
+
+	async listUsers(
+		request: TUserListRequest,
+	): Promise<TPaginationResult<TAdminUserRow>> {
+		const { status, role, search, includeDeleted, page, limit } = request;
+		const filters = [
+			includeDeleted ? undefined : isNull(users.deletedAt),
+			status ? eq(users.status, status) : undefined,
+			role ? eq(users.role, role) : undefined,
+			search
+				? or(
+						ilike(users.name, `%${search}%`),
+						ilike(users.email, `%${search}%`),
+						ilike(users.username, `%${search}%`),
+					)
+				: undefined,
+		].filter(Boolean);
+		const where = filters.length > 0 ? and(...filters) : undefined;
+
+		const [{ value: total }] = await this.database
+			.select({ value: count() })
+			.from(users)
+			.where(where);
+
+		const rows = await this.database
+			.select()
+			.from(users)
+			.where(where)
+			.orderBy(desc(users.createdAt))
+			.offset((page - 1) * limit)
+			.limit(limit);
+
+		// One membership query for the page, then group in memory — avoids a
+		// per-row round trip on the admin table.
+		const ids = rows.map((row) => row.id);
+		const memberships = ids.length
+			? await this.database
+					.select({
+						userId: members.userId,
+						organizationId: members.organizationId,
+						role: members.role,
+						name: organizations.name,
+					})
+					.from(members)
+					.innerJoin(organizations, eq(members.organizationId, organizations.id))
+					.where(inArray(members.userId, ids))
+			: [];
+
+		const byUser = new Map<string, TAdminUserRow['organizations']>();
+		for (const row of memberships) {
+			const bucket = byUser.get(row.userId) ?? [];
+			bucket.push({
+				id: row.organizationId,
+				name: row.name,
+				role: row.role,
+			});
+			byUser.set(row.userId, bucket);
+		}
+
+		return {
+			data: rows.map((user) => ({
+				user,
+				organizations: byUser.get(user.id) ?? [],
+			})),
+			meta: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
+		};
 	}
 }
 

@@ -184,7 +184,11 @@ export class UserController {
 					okPaginated(
 						await userService.paginateUsers(userQuerySchema.parse(query)),
 					),
-				{ erp: {} },
+				// User directory: app-admin only. Every other route on this
+				// controller (create/patch/ban/delete) already uses the same
+				// policy; an empty `erp: {}` here let ANY authenticated member
+				// enumerate the whole user base.
+				{ erp: { policy: requireGlobalAdmin } },
 			)
 			.get(
 				/**

@@ -136,7 +136,10 @@ function sameGrants(
 	a: Record<string, readonly string[]> | null | undefined,
 	b: Record<string, readonly string[]>,
 ): boolean {
-	if (!a) return false;
+	// A double-encoded or otherwise non-object value (e.g. a JSON string
+	// stored through an extra JSON.stringify) is never "the same": treat it
+	// as drift so `refreshSystemRoleGrants` rewrites it back to an object.
+	if (!a || typeof a !== 'object' || Array.isArray(a)) return false;
 	const aKeys = Object.keys(a).sort();
 	const bKeys = Object.keys(b).sort();
 	if (aKeys.length !== bKeys.length) return false;

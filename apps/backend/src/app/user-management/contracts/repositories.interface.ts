@@ -1,6 +1,8 @@
-import type { TUserInvitationSelect } from '@drizzle/schemas/role.schema';
+import type { TUserInvitationSelect, TRoleSelect } from '@drizzle/schemas/role.schema';
 import type { TUserSelect } from '@drizzle/schemas/auth.schema';
+import type { TAuditLogSelect } from '@drizzle/schemas/audit.schema';
 import type { TPaginationResult } from '@ims-erp/common';
+import type { TPermissionGrant } from '../contracts/admin.contract';
 
 /**
  * Filters for the invitation listing. `status` is exact; `email` is a
@@ -13,6 +15,88 @@ export type TInvitationListRequest = {
 	page: number;
 	limit: number;
 };
+
+/** Filters for the admin user listing (phase 4). */
+export type TUserListRequest = {
+	status?: string;
+	/** Platform role (`admin` / `user`). */
+	role?: string;
+	/** Case-insensitive partial match on name, email or username. */
+	search?: string;
+	includeDeleted?: boolean;
+	page: number;
+	limit: number;
+};
+
+/** Admin user row with its active organization memberships. */
+export type TAdminUserRow = {
+	user: TUserSelect;
+	organizations: Array<{ id: string; name: string; role: string }>;
+};
+
+/** Filters for the admin role listing (phase 4). */
+export type TRoleListRequest = {
+	organizationId: string;
+	includeDeleted?: boolean;
+};
+
+/**
+ * Data-access contract over the per-organization role master data
+ * (`auth.roles`). Full write surface: role CRUD is an owner/app-admin
+ * operation gated by the escalation guard in the service layer.
+ */
+export interface IRoleRepository {
+	list(request: TRoleListRequest): Promise<TRoleSelect[]>;
+	findById(roleId: string): Promise<TRoleSelect | null>;
+	findByName(
+		organizationId: string,
+		name: string,
+	): Promise<TRoleSelect | null>;
+	/** Finds a soft-deleted role with the same name (delete/rename reuse). */
+	findByNameIncludingDeleted(
+		organizationId: string,
+		name: string,
+	): Promise<TRoleSelect | null>;
+	create(input: {
+		organizationId: string;
+		name: string;
+		rank: number;
+		permissions: TPermissionGrant;
+		isSystem: boolean;
+	}): Promise<TRoleSelect>;
+	update(
+		roleId: string,
+		patch: {
+			name?: string;
+			rank?: number;
+			permissions?: TPermissionGrant;
+		},
+	): Promise<TRoleSelect>;
+	softDelete(roleId: string): Promise<void>;
+	/** Revives a soft-deleted role row (name reuse on create). */
+	undelete(roleId: string): Promise<void>;
+	/** Live members in the org holding exactly this role name. */
+	countMembers(organizationId: string, roleName: string): Promise<number>;
+}
+
+/** Filters for the admin audit listing (phase 4). */
+export type TAuditListRequest = {
+	action?: string;
+	actorUserId?: string;
+	targetType?: string;
+	organizationId?: string;
+	from?: Date;
+	to?: Date;
+	page: number;
+	limit: number;
+};
+
+/** Data-access contract over the append-only `audit.audit_logs` table. */
+export interface IAuditRepository {
+	list(
+		request: TAuditListRequest,
+	): Promise<TPaginationResult<TAuditLogSelect>>;
+}
 
 /**
  * Data-access contract over `auth.user_invitations` (module-owned table,
@@ -91,4 +175,19 @@ export interface IUserManagementRepository {
 	findAnyByEmail(email: string): Promise<TUserSelect | null>;
 	/** Clears `deletedAt` and re-pends a soft-deleted user for re-invite. */
 	restore(id: string): Promise<void>;
+	/**
+	 * Admin listing (phase 4): paginated users with their active
+	 * organization memberships, filterable by status/role/search.
+	 */
+	listUsers(
+		request: TUserListRequest,
+	): Promise<TPaginationResult<TAdminUserRow>>;
+	/** Finds a user including soft-deleted rows by id (admin lifecycle). */
+	findAnyById(id: string): Promise<TUserSelect | null>;
+	/** Restores a deactivated user to `active` (lifecycle, not soft delete). */
+	reactivate(id: string): Promise<void>;
+	/** Active organization memberships of one user (rank guard). */
+	listMemberships(
+		userId: string,
+	): Promise<Array<{ id: string; name: string; role: string }>>;
 }

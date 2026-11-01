@@ -8,6 +8,8 @@
 const BASE = 'http://localhost:3001';
 const ORG = 'JPgGGmy8ILDftfleMx1JtSgAOdLIZ5cE';
 
+export {};
+
 async function login(email: string, password: string) {
 	const res = await fetch(`${BASE}/api/auth/sign-in/email`, {
 		method: 'POST',

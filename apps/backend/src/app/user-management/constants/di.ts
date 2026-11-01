@@ -1,5 +1,10 @@
 import { InjectionToken } from 'tsyringe';
-import type { IInvitationRepository, IUserManagementRepository } from '../contracts/repositories.interface';
+import type {
+	IAuditRepository,
+	IInvitationRepository,
+	IRoleRepository,
+	IUserManagementRepository,
+} from '../contracts/repositories.interface';
 import type {
 	IInvitationMailer,
 	IUserManagementAuthGateway,
@@ -7,6 +12,9 @@ import type {
 import type { InvitationService } from '../services/invitation.service';
 import type { AuditService } from '../services/audit.service';
 import type { RoleService } from '../services/role.service';
+import type { RoleManagementService } from '../services/role-management.service';
+import type { UserAdminService } from '../services/user-admin.service';
+import type { AuditQueryService } from '../services/audit-query.service';
 
 /**
  * Injection tokens for the user-management module. Standalone constants
@@ -28,3 +36,16 @@ export const AUDIT_SERVICE_TOKEN: InjectionToken<AuditService> = Symbol(
 export const ROLE_SERVICE_TOKEN: InjectionToken<RoleService> = Symbol(
 	'ROLE_SERVICE',
 );
+export const ROLE_REPOSITORY_TOKEN: InjectionToken<IRoleRepository> = Symbol(
+	'ROLE_REPOSITORY',
+);
+export const ROLE_MANAGEMENT_SERVICE_TOKEN: InjectionToken<RoleManagementService> =
+	Symbol('ROLE_MANAGEMENT_SERVICE');
+export const AUDIT_REPOSITORY_TOKEN: InjectionToken<IAuditRepository> = Symbol(
+	'AUDIT_REPOSITORY',
+);
+export const USER_ADMIN_SERVICE_TOKEN: InjectionToken<UserAdminService> = Symbol(
+	'USER_ADMIN_SERVICE',
+);
+export const AUDIT_QUERY_SERVICE_TOKEN: InjectionToken<AuditQueryService> =
+	Symbol('AUDIT_QUERY_SERVICE');
