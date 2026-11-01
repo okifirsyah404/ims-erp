@@ -3,6 +3,26 @@
 > Status: approved plan (sharpened through grilling session)
 > Scope: user lifecycle via invitation, dynamic organization roles, admin UI
 
+## Implementation Status
+
+Honest record of what actually shipped. Branch `feat/user-management-invitation`.
+
+| Phase | State | Commit | Delivered |
+|---|---|---|---|
+| 1 | ✅ done | `3c83eef` | Schema (roles, invitations, user status), migrations, seeders |
+| 2 | ✅ done | `bb28052` | Invitation module + claim flow, username availability, logger mailer |
+| 3 | ✅ done | `d436693` | Dynamic `hasPermission` guard, single grant source, resolver DI |
+| 4 | ✅ done | `8912678` | Admin API (`/users`, `/roles`, `/audit`) + admin UI (users, roles, audit) |
+| 4 fix | ✅ done | `9f7788b` | `/users` listing single-owner fix, `organizations` projection regression test |
+| **4b** | ⬜ **deferred** | — | **Members page enhancements + member role-change UI (rank-filtered dropdown). No `_authed/members/` route exists yet.** |
+| 5 | ⬜ pending | — | Login form username tab |
+| 6 | ⬜ pending | — | Deactivate/restore hardening beyond current (session revocation is in) |
+| 7 | ⬜ pending | — | Verify avatar pipeline fires on claim (reuse as-is) |
+
+Phase 4 shipped the API and the users/roles/audit UI; the **members** surface
+was scoped in phase 4 but not built, so it is tracked as 4b rather than
+claimed as complete.
+
 ## Context
 
 Closed internal application — no public self-signup. Accounts are created **only**
@@ -100,14 +120,15 @@ password, phone) → profile form (name, avatar optional, bio) → active sessio
 - **Claim page** (public route `/invite/:token`): token validation → credentials
   form (username availability check, password ≥8, phone) → profile form (name
   prefilled, avatar optional) → session.
-- **Users admin page** (new `_authed/users/`): table with status badges, invite
-  dialog (single + bulk paste `name,email` / `email,role`), pending-invitations
-  panel with resend/cancel/expiry.
-- **Roles page** (`_authed/organizations/$orgId/roles/`): role CRUD
-  (owner/app-admin), permission matrix editor, rank guard UI.
-- **Members page**: role dropdown filtered by inviter rank; direct-attach user
-  picker (app-admin/owner/admin).
-- **Audit log page** (`_authed/audit/`): filterable table.
+- **Users admin page** (new `_authed/users/`): ✅ shipped — table with status
+  badges, invite dialog (single + bulk paste `name,email` / `email,role`),
+  pending-invitations panel with resend/cancel/expiry.
+- **Roles page** (`_authed/roles/`): ✅ shipped — role CRUD, permission matrix
+  editor, rank guard UI.
+- **Members page**: ⬜ **not built (phase 4b)** — role dropdown filtered by
+  inviter rank; direct-attach user picker (app-admin/owner/admin).
+- **Audit log page** (`_authed/audit/`): ✅ shipped — filterable table.
+- **Login form username tab**: ⬜ not built (phase 5).
 - Permission UI gating via existing `use-permission.tsx`.
 
 ## Bootstrap & sequencing
