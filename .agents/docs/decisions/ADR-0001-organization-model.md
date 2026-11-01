@@ -1,6 +1,8 @@
 # ADR-0001 — Organization Model: One Company, Multiple Internal Organizations
 
-- **Status:** accepted (business decision, 2026-10-25)
+- **Status:** accepted (business decision, 2026-10-25); implementation updated
+  by **ADR-0007** (2026-11-02) — the "one company" decision stands, the
+  literal single-organization limit implemented from it was removed.
 - **Context:** Better Auth `organization` plugin is installed and generates
   `auth.organizations` / `auth.members` / `auth.invitations`. Nothing in
   committed code demonstrated whether this means one company, several

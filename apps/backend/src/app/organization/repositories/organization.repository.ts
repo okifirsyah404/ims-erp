@@ -128,15 +128,16 @@ export class OrganizationRepository implements IOrganizationRepository {
 	}
 
 	/**
-	 * Whether any organization row exists at all (soft-deleted included).
-	 * Backs the single-organization invariant.
+	 * Counts live (non-soft-deleted) organizations. Backs the
+	 * last-organization guard so an operator can never delete the final
+	 * usable organization and strand every member on a dead context.
 	 */
-	async existsAny(): Promise<boolean> {
+	async countActive(): Promise<number> {
 		const [row] = await this.db
 			.select({ value: count() })
 			.from(organizations)
-			.limit(1);
-		return Number(row?.value ?? 0) > 0;
+			.where(isNull(organizations.deletedAt));
+		return Number(row?.value ?? 0);
 	}
 
 	/**

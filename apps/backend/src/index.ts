@@ -14,6 +14,7 @@ import {
 import { registerLocation } from './app/location/container';
 import { LocationController } from './app/location/controllers/location.controller';
 import {
+	OrganizationBootstrapController,
 	OrganizationController,
 	registerOrganization,
 } from './app/organization';
@@ -60,13 +61,16 @@ const bootstrap = new Elysia()
 	.use(UserAdminController.plugin())
 	.use(UserController.plugin())
 	.use(OrganizationController.plugin())
+	// Creation mounts separately: it must accept an application admin with no
+	// organization context (ADR-0007), so it cannot ride the org-scoped guard.
+	.use(OrganizationBootstrapController.plugin())
 	.use(InvitationController.plugin())
 	.use(UsernameCheckController.plugin())
 	.listen(appConfig.app.port);
 
 // Avatar generation worker: consumes the BullMQ 'avatar' queue filled by
-// Better Auth's user.create.after hook. Non-fatal at boot: a Redis outage
-// must not take the API down.
+// Better Auth's user.create.after hook, rendering each PNG through the DiceBear
+// HTTP API. Non-fatal at boot: a Redis outage must not take the API down.
 const avatarWorker = startAvatarWorker();
 avatarWorker.on('error', (error) => {
 	pinoLogger.error({ err: error }, 'avatar worker error');

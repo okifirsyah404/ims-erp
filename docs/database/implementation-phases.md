@@ -69,7 +69,7 @@ drizzle-kit otherwise resolves no DB driver and exits with
 
 ## S1 — Foundations: audit, identity, organization
 
-**Why first.** Every other module needs the tenant key, the actor key and the
+**Why first.** Every other module needs the organization key, the actor key and the
 organization structure. `audit` is first because it is the only module with
 no dependency on anything.
 
@@ -118,8 +118,11 @@ anywhere; every other module references `auth.users.id` /
    `CHECK` constraint and every `uuidv7()` default survived.
 4. Write `audit.audit_logs` as an append-only table: no `deleted_at`, no
    `updated_at`.
-5. Seed: none yet beyond the tenant. A `organization.company_profiles` row per
-   organization is the seed of every other module.
+5. Seed: none yet beyond the organization(s). A `organization.company_profiles`
+   row per organization is the seed of every other module. Multiple
+   organizations may exist inside the one company (ADR-0007); the
+   development seeder is skipped in production, where organizations are
+   created through the API by an application admin.
 
 **Tests.** Every table in the step: `id` default is a uuidv7, `organization_id`
 is required, the `CHECK` rejects an unknown status value, a soft delete sets

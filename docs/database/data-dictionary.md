@@ -40,6 +40,12 @@ must never be edited. Any column that references `auth.users.id` or
 (except `audit.audit_logs`, which may record a global admin action outside
 any organization). It is the first filter in every query.
 
+**Scope note (ADR-0007).** These tenant-scoped ERP tables are part of the
+target data model and are **not yet built** — the shipped schema has no
+`organization_id` on master data, and master data is shared company-wide
+across the company's organizations. The column becomes meaningful only if
+ADR-0001's multi-tenancy migration path is ever executed.
+
 `location.*` tables are global reference data and carry no
 `organization_id`.
 
@@ -310,7 +316,7 @@ Used by the content tables: `commerce.web_pages`, `documents.documents`,
 
 | Term | Meaning |
 |---|---|
-| organization | one tenant. The internal structure of the company lives inside one organization (ADR-0001). |
+| organization | an internal organization of the company (e.g. HQ, a branch office). Multiple may exist inside the one company; each has its own membership and role catalog (ADR-0001, ADR-0007). Not a tenancy boundary: ERP master data is shared company-wide. |
 | member | a user inside an organization, with a role key. |
 | role | the access-control key from `packages/common/src/authorization/erp-permissions.ts`. Not a table. |
 | portal identity | a login bound to a business record (customer, investor, partner, technician) instead of to a user. |
@@ -322,13 +328,13 @@ Used by the content tables: `commerce.web_pages`, `documents.documents`,
 | Term | Meaning |
 |---|---|
 | province / regency / district / village | the Indonesian administrative hierarchy: provinsi, kabupaten/kota, kecamatan, kelurahan. |
-| global reference data | not tenant scoped, shared by every organization. |
+| global reference data | shared by the whole company and by every organization (provinces, regions). |
 
 ### Organization
 
 | Term | Meaning |
 |---|---|
-| company profile | the legal identity of the company behind one organization. |
+| company profile | the legal identity of the company. The company is deployed once; it is not per organization. |
 | branch | an office or operating site. |
 | department | an internal unit, hierarchical. |
 | position | a job definition, used by HR contracts and payroll. |

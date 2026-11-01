@@ -6,8 +6,7 @@ import type { TOrganizationMember, TMemberRole } from './organization.contract';
 
 /**
  * Pagination/filter parameters for organization listings. `includeDeleted`
- * is an admin-visibility escape hatch (single-org invariant still counts
- * soft-deleted rows regardless).
+ * is an admin-visibility escape hatch; live-only rows are the default.
  */
 export type TOrganizationPaginationRequest = TPaginationRequest & {
 	includeDeleted?: boolean;
@@ -42,7 +41,7 @@ export interface IOrganizationRepository {
 	findById(id: string): Promise<TOrganizationSelect | null>;
 
 	/** Whether any organization row exists, soft-deleted included. */
-	existsAny(): Promise<boolean>;
+	countActive(): Promise<number>;
 
 	/** Soft delete: stamps `deletedAt`. No-op when already deleted. */
 	softDelete(id: string): Promise<void>;

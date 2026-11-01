@@ -1,8 +1,6 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { toPng } from '@dicebear/converter';
-import { Avatar, Style } from '@dicebear/core';
-import initials from '@dicebear/styles/initials.json' with { type: 'json' };
+import { appConfig } from '@config/providers/config';
 import { Worker } from 'bullmq';
 import { container } from 'tsyringe';
 import { queueConnection } from '@providers/queue/queue.connection';
@@ -16,27 +14,65 @@ import {
 
 /** Rendered avatar size in pixels (square). */
 const AVATAR_SIZE = 72;
+/** DiceBear HTTP API style + major version used for every avatar. */
+const AVATAR_STYLE_PATH = '10.x/initials/png';
+/** Per-request ceiling so a hung API socket cannot pin a worker slot. */
+const AVATAR_REQUEST_TIMEOUT_MS = 10_000;
 /** ponytail: repo-local temp dir; move to OS temp / env when multi-node. */
 const TMP_DIR = path.resolve(process.cwd(), '.tmp/avatars');
 
-/** Shared DiceBear initials style used for every avatar. */
-const initialsStyle = new Style(initials);
+/**
+ * Builds the DiceBear HTTP API URL for one avatar.
+ *
+ * @remarks
+ * Pure and deterministic: the seed is the only variable, so the same seed
+ * always yields the same avatar. The background stays transparent (matching
+ * the previous locally-rendered PNGs); the API's PNG size bounds (1-256) are
+ * validated on the server side.
+ */
+export function avatarApiUrl(
+	apiBaseUrl: string,
+	seed: string,
+	size: number = AVATAR_SIZE,
+): string {
+	const base = apiBaseUrl.replace(/\/+$/, '');
+	const query = new URLSearchParams({
+		seed,
+		size: String(size),
+		backgroundColor: 'transparent',
+	});
+	return `${base}/${AVATAR_STYLE_PATH}?${query.toString()}`;
+}
+
+/** Seed used for a user's avatar: the display name, else the user id. */
+export function avatarSeed(userId: string, name: string): string {
+	return name.trim().length > 0 ? name : userId;
+}
 
 /**
- * Generates the deterministic 72x72 initials PNG for a user. Pure: no S3,
- * no DB. Falls back to the user id as seed when the name is blank.
+ * Renders the deterministic 72x72 initials PNG for a user by calling the
+ * DiceBear HTTP API. No S3, no DB. Falls back to the user id as seed when the
+ * name is blank.
+ *
+ * @throws When the API answers with a non-2xx status or times out; BullMQ
+ * retries the job with exponential backoff.
  */
 export async function generateAvatarPng(
 	userId: string,
 	name: string,
 ): Promise<Buffer> {
-	const seed = name.trim().length > 0 ? name : userId;
-	const avatar = new Avatar(initialsStyle, {
-		seed,
-		size: AVATAR_SIZE,
+	const url = avatarApiUrl(appConfig.app.avatarApiUrl, avatarSeed(userId, name));
+
+	const response = await fetch(url, {
+		signal: AbortSignal.timeout(AVATAR_REQUEST_TIMEOUT_MS),
 	});
-	const png = toPng(avatar, { size: AVATAR_SIZE });
-	return Buffer.from(await png.toArrayBuffer());
+	if (!response.ok) {
+		throw new Error(
+			`avatar API responded ${response.status} ${response.statusText} for ${url}`,
+		);
+	}
+
+	return Buffer.from(await response.arrayBuffer());
 }
 
 /**

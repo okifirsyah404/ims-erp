@@ -1,4 +1,7 @@
-import { erpGuard } from '@authorization/elysia-auth';
+import {
+	erpGuard,
+	sessionGuard,
+} from '@authorization/elysia-auth';
 import type { TApiResponse } from '@ims-erp/common';
 import { Elysia } from 'elysia';
 import { z } from 'zod';
@@ -16,9 +19,9 @@ import {
 import { ORGANIZATION_SERVICE_TOKEN } from '../constants/di';
 import { OrganizationService } from '../services/organization.service';
 import {
+	LastOrganizationError,
 	LastOwnerError,
 	MemberNotFoundError,
-	OrganizationAlreadyExistsError,
 	OrganizationNotFoundError,
 	OrganizationNotDeletedError,
 	OrganizationSlugTakenError,
@@ -54,25 +57,56 @@ function errorEnvelope(
 }
 
 /**
+ * Organization creation is reserved for application admins — the company
+ * owner role (`user.role === 'admin'`, ADR-0007).
+ *
+ * @remarks
+ * Read from the guard-resolved session, never from client input. It is
+ * deliberately membership-independent: an application admin with no
+ * organization memberships must be able to bootstrap the first organization.
+ * Better Auth re-checks the same rule inside `organization.create`
+ * (`allowUserToCreateOrganization`).
+ */
+function requireGlobalAdmin({ erp }: { erp: { session: { user: { role?: string | null } } } }): void {
+	if (erp.session.user.role !== 'admin') {
+		throw new NotGlobalAdminError();
+	}
+}
+
+/** Module-private sentinel thrown by {@link requireGlobalAdmin} (403). */
+class NotGlobalAdminError extends Error {
+	constructor() {
+		super('Application administrator role required');
+		this.name = 'NotGlobalAdminError';
+	}
+}
+
+/**
  * HTTP boundary for the organization module.
  *
  * @remarks
- * All routes require a valid session plus an organization context (via
- * `erpGuard`); `permission` entries map onto the Better Auth organization
- * statements (`organization:*`, `member:*`) granted through the ERP role
- * catalog. The single-organization invariant is enforced in the service —
- * the create route responds 422 once any organization exists. The service is
- * resolved from the tsyringe container here (the HTTP boundary), never
- * deeper.
+ * Mounted as two plugins because organization creation has different
+ * preconditions than every other route:
+ *
+ * - {@link OrganizationController.plugin} — all organization-scoped routes.
+ *   Requires a valid session plus an organization context (`erpGuard`).
+ * - {@link OrganizationBootstrapController.plugin} — creation only. Requires
+ *   a valid session and an application admin, but NO organization context, so
+ *   a membershipless admin can create the first organization.
+ *
+ * Together they serve multiple organizations inside one company (ADR-0007).
+ * The service owns the cross-organization rules (last-organization guard,
+ * per-organization role provisioning). The service is resolved from the
+ * tsyringe container here (the HTTP boundary), never deeper.
  *
  * @throws 400 When query/path/body parameters fail validation
- * @throws 401 When unauthenticated (erp guard)
- * @throws 403 When the caller lacks the requested permission (erp guard) or
- * Better Auth rejects the forwarded call (owner escalation rules)
+ * @throws 401 When unauthenticated (erp/session guard)
+ * @throws 403 When the caller lacks the requested permission (erp guard),
+ * lacks the application admin role (create), or Better Auth rejects the
+ * forwarded call (owner escalation rules)
  * @throws 404 When an id-targeted lookup finds no alive row
- * @throws 409 On slug conflicts, double delete/restore, or last-owner
- * protection
- * @throws 422 When creating an organization while one already exists
+ * @throws 409 On slug conflicts, double delete/restore, last-owner
+ * protection, or deleting the final live organization
  */
 export class OrganizationController {
 	/**
@@ -111,12 +145,6 @@ export class OrganizationController {
 						{ message: error.issues.map((i) => i.message).join('; ') },
 					]);
 				}
-				if (error instanceof OrganizationAlreadyExistsError) {
-					set.status = 422;
-					return errorEnvelope(422, error.message, [
-						{ message: error.message },
-					]);
-				}
 				if (
 					error instanceof OrganizationNotFoundError ||
 					error instanceof MemberNotFoundError
@@ -129,7 +157,8 @@ export class OrganizationController {
 				if (
 					error instanceof OrganizationSlugTakenError ||
 					error instanceof OrganizationNotDeletedError ||
-					error instanceof LastOwnerError
+					error instanceof LastOwnerError ||
+					error instanceof LastOrganizationError
 				) {
 					set.status = 409;
 					return errorEnvelope(409, error.message, [
@@ -138,28 +167,6 @@ export class OrganizationController {
 				}
 				return undefined;
 			})
-			// Create — single-organization invariant: 422 once any org exists.
-			.post(
-				'',
-				async ({ body, erp, status }) => {
-					const row = await organizationService.createOrganization({
-						...body,
-						creatorUserId: erp.session.user.id,
-					});
-					return status(
-						201,
-						{ ...buildMeta(201, 'Created'), data: row, errors: [] },
-					);
-				},
-				{
-					body: createOrganizationSchema,
-					erp: { permission: ['organization:create'] },
-					detail: {
-						description:
-							'Creates the organization. Responds 422 once an organization already exists (single-organization deployment).',
-					},
-				},
-			)
 			// List
 			.get(
 				'',
@@ -219,8 +226,11 @@ export class OrganizationController {
 			// Soft delete
 			.delete(
 				'/:organizationId',
-				async ({ params, status }) => {
-					await organizationService.deleteOrganization(params.organizationId);
+				async ({ request, params, status }) => {
+					await organizationService.deleteOrganization(
+						request.headers,
+						params.organizationId,
+					);
 					return status(200, {
 						...buildMeta(200, 'Deleted'),
 						data: null,
@@ -329,6 +339,94 @@ export class OrganizationController {
 				{
 					params: memberIdParamsSchema,
 					erp: { permission: ['member:delete'] },
+				},
+			);
+	}
+}
+
+/**
+ * Organization creation boundary.
+ *
+ * @remarks
+ * Split from {@link OrganizationController} because creation must work
+ * WITHOUT an organization context: an application admin who belongs to no
+ * organization has to be able to bootstrap the first one. `erpGuard` would
+ * reject that caller with 403 before any role check, so this plugin rides
+ * `sessionGuard` (session only) plus the {@link requireGlobalAdmin} policy.
+ *
+ * Better Auth independently enforces the same rule through
+ * `allowUserToCreateOrganization` and, because caller headers are forwarded,
+ * activates the new organization for the creating session.
+ *
+ * @throws 400 When the body fails validation
+ * @throws 401 When unauthenticated
+ * @throws 403 When the caller is not an application administrator
+ * @throws 409 When the slug is already taken
+ */
+export class OrganizationBootstrapController {
+	/**
+	 * Builds the Elysia plugin mounting `POST /organizations`.
+	 *
+	 * @returns An Elysia instance sharing the `/organizations` prefix
+	 */
+	static plugin() {
+		const organizationService = container.resolve<OrganizationService>(
+			ORGANIZATION_SERVICE_TOKEN,
+		);
+
+		return new Elysia({
+			prefix: '/organizations',
+			name: 'organizations-bootstrap',
+			tags: ['Organization'],
+		})
+			.use(sessionGuard())
+			.onError({ as: 'local' }, ({ code, error, set }) => {
+				if (error instanceof NotGlobalAdminError) {
+					set.status = 403;
+					return errorEnvelope(403, error.message, [
+						{ message: error.message },
+					]);
+				}
+				if (code === 'VALIDATION') {
+					set.status = 400;
+					return errorEnvelope(400, 'Validation failed', [
+						{ message: error.message },
+					]);
+				}
+				if (error instanceof z.ZodError) {
+					set.status = 400;
+					return errorEnvelope(400, 'Validation failed', [
+						{ message: error.issues.map((i) => i.message).join('; ') },
+					]);
+				}
+				if (error instanceof OrganizationSlugTakenError) {
+					set.status = 409;
+					return errorEnvelope(409, error.message, [
+						{ message: error.message },
+					]);
+				}
+				return undefined;
+			})
+			.post(
+				'',
+				async ({ request, body, erp, status }) => {
+					const row = await organizationService.createOrganization(
+						request.headers,
+						{ ...body, creatorUserId: erp.session.user.id },
+					);
+					return status(201, {
+						...buildMeta(201, 'Created'),
+						data: row,
+						errors: [],
+					});
+				},
+				{
+					body: createOrganizationSchema,
+					erpSession: { policy: requireGlobalAdmin },
+					detail: {
+						description:
+							'Creates an organization owned by the calling application administrator. Multiple organizations are supported.',
+					},
 				},
 			);
 	}

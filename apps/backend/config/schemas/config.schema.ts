@@ -23,6 +23,8 @@ export const AppConfigSchema = z.object({
 	logLevel: z.enum(['debug', 'info', 'warn', 'error']).nullish(),
 	/** Comma-separated list of origins allowed for credentialed CORS. */
 	corsOrigins: z.array(z.string()).nullish(),
+	/** Base URL of the DiceBear HTTP API used to render avatars. */
+	avatarApiUrl: z.url(),
 });
 
 export const DatabaseConfigSchema = z.object({

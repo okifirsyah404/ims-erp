@@ -92,8 +92,10 @@ accountant, hr, customer_service, marketing, investor, customer, auditor`
 Key separations encoded in the matrix (full grants in
 `erpRoleGrants`, verified by `test/authorization/permission-matrix.test.ts`):
 
-- **owner**: full ERP + organization administration; still subject to tenant
-  boundaries, valid state transitions, and no self-approval.
+- **owner**: full ERP + organization administration; still subject to
+  organization boundaries, valid state transitions, and no self-approval.
+  The owner grant is **per organization** — owning one organization confers
+  nothing in another.
 - **admin** (org): membership/invitations/general settings/non-sensitive
   master data; NO payroll, payment execution, accounting, investor-finance,
   or integration secrets. Cannot grant the `owner` role (hook-enforced).
@@ -146,10 +148,25 @@ Organization selection: explicit `x-organization-id` header takes
 precedence over the session's active organization; the SAME resolved id is
 used for membership, permissions, queries, and audit records.
 
+### Routes with no organization context
+
+`sessionGuard()` (`erpSession` macro) resolves the session and nothing else,
+for actions that are deliberately NOT organization-scoped — e.g.
+`GET/PATCH /users/me` and organization creation, which an application admin
+must be able to perform while belonging to no organization. It exposes
+`ctx.erp.session` only (no `organizationId`/`member`) and accepts an optional
+`policy` hook for role checks such as `requireGlobalAdmin`.
+
+Organization creation (`POST /organizations`) is the one organization route
+on this guard: the gate is the global application-admin role
+(`user.role === 'admin'`, ADR-0007), never an organization permission, so a
+membershipless admin can bootstrap the first organization. Better Auth
+re-checks the same rule via `allowUserToCreateOrganization`.
+
 ## Scoping a Drizzle query
 
-Every tenant-owned query filters by the validated organization id and never
-fetches unscoped collections to filter afterward:
+Every organization-scoped query filters by the validated organization id and
+never fetches unscoped collections to filter afterward:
 
 ```ts
 const where = and(
@@ -248,7 +265,9 @@ table as they land; the catalog resources (`audit_log:read`,
   via `auth.api.getFullOrganization` with the caller's headers - removed
   membership takes effect within the cookie-cache window.
 - Frontend permission queries are cached for 60s and re-keyed by active
-  organization id; the server remains authoritative.
+  organization id; the server remains authoritative. Switching or creating an
+  organization invalidates both the permission cache and the organization
+  list, since Better Auth changes the session's active organization.
 
 ## Bootstrap / seeding
 
@@ -256,6 +275,10 @@ table as they land; the catalog resources (`audit_log:read`,
   `location.seeder`. The auth seeder is idempotent: creates the initial
   global admin (no org membership) via the Better Auth instance; existing
   users are never reset.
+- **Organization seeding is dev-only.** The organization seeder is skipped in
+  `prod`/`production` (ADR-0007): production organizations are created through
+  the API by an application admin, and the first organization is not assumed
+  to exist. A skip is logged, never thrown, so later seeders still run.
 - **Role seeding is insert-only.** It seeds `auth.roles` rows from the shared
   catalog but never overwrites existing grants. Re-syncing `isSystem` rows after
   a catalog change is a separate, explicit operation:

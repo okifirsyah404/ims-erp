@@ -39,16 +39,25 @@ export type TGatewayFullOrganization = TGatewayOrganization & {
  * repository keeps the only direct write to `deletedAt`.
  */
 export interface IOrganizationAuthGateway {
-	/** Server-side create (also stamps the creator as a member). */
+	/** Creates an organization; the creator becomes its owner. */
 	createOrganization(input: {
 		name: string;
 		slug: string;
 		logo?: string | null;
 		metadata?: Record<string, unknown>;
-		/** Creator to add as a member; `role` applies to that membership. */
+		/** Creator to add as owner; `role` applies to that membership. */
 		userId?: string;
 		role?: TMemberRole;
+		/**
+		 * Caller headers. When present Better Auth resolves the session,
+		 * enforces `allowUserToCreateOrganization`, and activates the new
+		 * organization for that session.
+		 */
+		headers?: Headers;
 	}): Promise<TGatewayOrganization>;
+
+	/** Sets or clears (`null`) the calling session's active organization. */
+	setActive(headers: Headers, organizationId: string | null): Promise<void>;
 
 	/** Requires caller headers (Better Auth checks `organization:update`). */
 	updateOrganization(

@@ -46,9 +46,15 @@ function NewOrganizationPage() {
 			const created = await createOrganization({ name, slug });
 			if (!created) throw new Error('Create failed');
 			toast.success('Organization created');
-			await queryClient.invalidateQueries({
-				queryKey: organizationsQueryOptions.queryKey,
-			});
+			// Better Auth activates the new organization for this session, so
+			// the organization list AND the permission cache are both stale.
+			await Promise.all([
+				queryClient.invalidateQueries({
+					queryKey: organizationsQueryOptions.queryKey,
+				}),
+				queryClient.invalidateQueries({ queryKey: ['erp-organizations'] }),
+				queryClient.invalidateQueries({ queryKey: ['erp-has-permission'] }),
+			]);
 			void navigate({
 				to: '/organizations/$organizationId',
 				params: { organizationId: created.id },
@@ -65,7 +71,8 @@ function NewOrganizationPage() {
 			<div>
 				<h1 className='text-2xl font-bold'>New organization</h1>
 				<p className='text-sm text-muted-foreground'>
-					Only one organization is allowed on this deployment.
+					You become the owner of the organization you create, and it becomes
+					your active organization.
 				</p>
 			</div>
 			<Card className='max-w-xl'>

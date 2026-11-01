@@ -1,6 +1,7 @@
 import { inject, injectable } from 'tsyringe';
 import type { TOrganizationSelect } from '@drizzle/schemas/auth.schema';
 import { TPaginationResult } from '@ims-erp/common';
+import { seedRolesForOrganization } from '../../../../database/seeders/seed/organization-roles.seeder';
 import type {
 	IOrganizationAuthGateway,
 	TGatewayFullOrganization,
@@ -23,10 +24,10 @@ import {
 	ORGANIZATION_REPOSITORY_TOKEN,
 } from '../constants/di';
 import {
+	LastOrganizationError,
 	LastOwnerError,
 	MemberNotFoundError,
 	OrganizationAlreadyDeletedError,
-	OrganizationAlreadyExistsError,
 	OrganizationNotFoundError,
 	OrganizationNotDeletedError,
 	OrganizationSlugTakenError,
@@ -36,11 +37,14 @@ import {
  * Organization module service.
  *
  * @remarks
- * Enforces the deployment's single-organization invariant (at most one
- * organization row may exist, soft-deleted included), routes all
- * organization DELETEs to a soft delete (Better Auth's own hard delete is
- * never used), and guards the last-owner invariant for member mutations.
- * Membership/profile mutations flow through the Better Auth gateway.
+ * Supports multiple organizations inside one company (ADR-0007). Organization
+ * creation is restricted to application admins at the HTTP boundary and the
+ * Better Auth plugin options; this service owns the cross-organization rules:
+ * every created organization receives the per-organization role catalog, the
+ * last remaining organization cannot be deleted, and all organization DELETEs
+ * are soft deletes (Better Auth's own hard delete is never used). The
+ * last-owner invariant is guarded for member mutations, and
+ * membership/profile mutations flow through the Better Auth gateway.
  */
 @injectable()
 export class OrganizationService {
@@ -51,13 +55,26 @@ export class OrganizationService {
 		private readonly gateway: IOrganizationAuthGateway,
 	) {}
 
+	/**
+	 * Creates an organization and materializes its role catalog.
+	 *
+	 * @param headers - Caller headers; Better Auth enforces
+	 * `allowUserToCreateOrganization` (application admin) and activates the
+	 * new organization for that session
+	 * @param input - Organization profile plus the creator to register as
+	 * `owner`
+	 *
+	 * @remarks
+	 * Role seeding is best-effort: a failure there must not orphan an
+	 * organization that Better Auth has already created. Until the roles
+	 * exist the permission resolver falls back to the static shared catalog,
+	 * so the organization stays usable and `refreshSystemRoleGrants`/a seed
+	 * re-run can repair it.
+	 */
 	async createOrganization(
+		headers: Headers,
 		input: TCreateOrganization & { creatorUserId?: string },
 	): Promise<TOrganizationSelect> {
-		// Single-organization invariant: soft-deleted rows still count.
-		if (await this.repository.existsAny()) {
-			throw new OrganizationAlreadyExistsError();
-		}
 		const created = await this.gateway.createOrganization({
 			name: input.name,
 			slug: input.slug,
@@ -65,10 +82,33 @@ export class OrganizationService {
 			metadata: input.metadata ?? undefined,
 			userId: input.creatorUserId,
 			role: 'owner',
+			headers,
 		});
+		await this.provisionRoles(created.id);
 		const row = await this.repository.findById(created.id);
 		if (!row) throw new OrganizationNotFoundError();
 		return row;
+	}
+
+	/**
+	 * Materializes the per-organization role catalog for a new organization.
+	 *
+	 * @remarks
+	 * Best-effort by design: a failure here must not orphan an organization
+	 * that Better Auth has already created. Until the rows exist the
+	 * permission resolver falls back to the static shared catalog, so the
+	 * organization stays usable and a seed re-run / `refreshSystemRoleGrants`
+	 * can repair it.
+	 */
+	private async provisionRoles(organizationId: string): Promise<void> {
+		try {
+			await seedRolesForOrganization(organizationId);
+		} catch (error) {
+			console.error(
+				`[organization] role provisioning failed for ${organizationId}`,
+				error,
+			);
+		}
 	}
 
 	/**
@@ -122,10 +162,34 @@ export class OrganizationService {
 	/**
 	 * Soft delete. Never calls Better Auth's hard-delete endpoint — the row
 	 * (and its membership history) stays for audit purposes.
+	 *
+	 * @param headers - Caller headers, used to release a session pinned to
+	 * the deleted organization
+	 *
+	 * @throws LastOrganizationError when this is the final live organization
+	 *
+	 * @remarks
+	 * Because the delete is soft, Better Auth's own `deleteOrganization`
+	 * never runs — and that is the endpoint which clears a session's
+	 * `activeOrganizationId`. Members left pointing at a soft-deleted
+	 * organization would 403 on every organization-scoped route with no
+	 * recovery path, so the caller's active organization is unset here. Other
+	 * members are released on their next session creation
+	 * (`sessionAutoActivateOrganizationHook`).
 	 */
-	async deleteOrganization(organizationId: string): Promise<void> {
+	async deleteOrganization(
+		headers: Headers,
+		organizationId: string,
+	): Promise<void> {
 		const row = await this.ensureActive(organizationId);
+		if ((await this.repository.countActive()) <= 1) {
+			throw new LastOrganizationError();
+		}
 		await this.repository.softDelete(row.id);
+		// Best-effort: a failure here must not resurrect the deleted row.
+		if (headers.get('cookie')) {
+			await this.gateway.setActive(headers, null).catch(() => undefined);
+		}
 	}
 
 	/**
@@ -138,8 +202,6 @@ export class OrganizationService {
 		const row = await this.repository.findById(organizationId);
 		if (!row) throw new OrganizationNotFoundError();
 		if (!row.deletedAt) throw new OrganizationNotDeletedError();
-		// Single-organization invariant makes this unreachable in practice,
-		// but keep the guard symmetric with delete.
 		await this.repository.restore(row.id);
 	}
 
@@ -264,10 +326,10 @@ export class OrganizationService {
 
 // Re-export for controller convenience.
 export {
+	LastOrganizationError,
 	LastOwnerError,
 	MemberNotFoundError,
 	OrganizationAlreadyDeletedError,
-	OrganizationAlreadyExistsError,
 	OrganizationNotFoundError,
 	OrganizationNotDeletedError,
 	OrganizationSlugTakenError,

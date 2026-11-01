@@ -75,6 +75,9 @@ function seedRolePassword(role: ErpRoleName): string {
  *   without membership is joined; both present means skip.
  * - Passwords are deterministic dev-only values (`<role>123456`, e.g.
  *   `admin123456`); never logged. Re-runs never reset passwords.
+ * - Missing organization is a no-op, not an error: in production the
+ *   organization seeder is skipped by design (ADR-0007) and seeding must not
+ *   abort the remaining seeders.
  */
 export async function seedOrganizationMembers(): Promise<void> {
 	const [organization] = await drizzleDB
@@ -84,11 +87,35 @@ export async function seedOrganizationMembers(): Promise<void> {
 		.limit(1);
 
 	if (!organization) {
-		throw new Error(
-			'Organization "entragate" not found — run the organization seeder first',
+		logger.info(
+			'Organization "entragate" not found (organization seeding skipped); skipping role accounts',
 		);
+		return;
 	}
 
+	const created = await addSeedMembersTo(organization.id);
+
+	logger.info(
+		{ created, roles: SEED_INTERNAL_ROLES.length },
+		'Role account seeding complete',
+	);
+}
+
+/**
+ * Adds one login-capable seed account per internal role to an organization.
+ *
+ * @param organizationId - Target organization
+ * @returns number of memberships created
+ *
+ * @remarks
+ * Extracted from the seeder so seeded accounts can also be joined to
+ * additional organizations (ADR-0007). Accounts are global-unique users, so
+ * the same account may hold a membership in several organizations; the
+ * existence check is the `(organizationId, userId)` membership row.
+ */
+export async function addSeedMembersTo(
+	organizationId: string,
+): Promise<number> {
 	let created = 0;
 	for (const role of SEED_INTERNAL_ROLES) {
 		const identity = seedIdentity(role);
@@ -120,7 +147,7 @@ export async function seedOrganizationMembers(): Promise<void> {
 			.from(members)
 			.where(
 				and(
-					eq(members.organizationId, organization.id),
+					eq(members.organizationId, organizationId),
 					eq(members.userId, userId),
 				),
 			)
@@ -128,7 +155,7 @@ export async function seedOrganizationMembers(): Promise<void> {
 
 		if (existingMember) {
 			logger.info(
-				{ role, userId },
+				{ role, userId, organizationId },
 				'Role account already a member; skipping',
 			);
 			continue;
@@ -138,17 +165,14 @@ export async function seedOrganizationMembers(): Promise<void> {
 		// inferred endpoint type only knows built-in literals, hence the cast.
 		await auth.api.addMember({
 			body: {
-				organizationId: organization.id,
+				organizationId,
 				userId,
 				role: role as 'member',
 			},
 		});
 		created += 1;
-		logger.info({ role, userId }, 'Role account added to organization');
+		logger.info({ role, userId, organizationId }, 'Role account added to organization');
 	}
 
-	logger.info(
-		{ created, roles: SEED_INTERNAL_ROLES.length },
-		'Role account seeding complete',
-	);
+	return created;
 }

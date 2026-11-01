@@ -56,37 +56,59 @@ export async function seedOrganizationRoles(): Promise<void> {
 
 	let inserted = 0;
 	for (const org of orgs) {
-		for (const roleName of erpRoleNames) {
-			const [existing] = await drizzleDB
-				.select({ id: rolesTable.id })
-				.from(rolesTable)
-				.where(
-					and(
-						eq(rolesTable.organizationId, org.id),
-						eq(rolesTable.name, roleName),
-						isNull(rolesTable.deletedAt),
-					),
-				)
-				.limit(1);
-
-			if (existing) continue;
-
-			await drizzleDB.insert(rolesTable).values({
-				id: crypto.randomUUID(),
-				organizationId: org.id,
-				name: roleName,
-				rank: SYSTEM_ROLE_RANKS[roleName] ?? DEFAULT_CATALOG_RANK,
-				permissions: erpRoleGrants[roleName],
-				isSystem: true,
-			});
-			inserted += 1;
-		}
+		inserted += await seedRolesForOrganization(org.id);
 	}
 
 	logger.info(
 		{ organizations: orgs.length, rolesInserted: inserted },
 		'Organization role seeding complete',
 	);
+}
+
+/**
+ * Materializes the shared role catalog as `auth.roles` master data for ONE
+ * organization.
+ *
+ * @param organizationId - Target organization
+ * @returns number of role rows inserted (0 when the organization already has
+ * the full live catalog)
+ *
+ * @remarks
+ * Insert-only and idempotent: existing live `(orgId, name)` rows are left
+ * untouched so admin-edited permissions survive re-runs. Extracted from the
+ * seeder so organization creation can provision a new organization's roles
+ * without duplicating the catalog logic (ADR-0007).
+ */
+export async function seedRolesForOrganization(
+	organizationId: string,
+): Promise<number> {
+	let inserted = 0;
+	for (const roleName of erpRoleNames) {
+		const [existing] = await drizzleDB
+			.select({ id: rolesTable.id })
+			.from(rolesTable)
+			.where(
+				and(
+					eq(rolesTable.organizationId, organizationId),
+					eq(rolesTable.name, roleName),
+					isNull(rolesTable.deletedAt),
+				),
+			)
+			.limit(1);
+
+		if (existing) continue;
+
+		await drizzleDB.insert(rolesTable).values({
+			id: crypto.randomUUID(),
+			organizationId,
+			name: roleName,
+			rank: SYSTEM_ROLE_RANKS[roleName] ?? DEFAULT_CATALOG_RANK,
+			permissions: erpRoleGrants[roleName],
+			isSystem: true,
+		});
+		inserted += 1;
+	}
+	return inserted;
 }
 
 /**

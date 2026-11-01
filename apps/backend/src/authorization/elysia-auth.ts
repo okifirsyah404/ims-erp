@@ -262,13 +262,20 @@ export function erpGuard() {
  * route 403 immediately after sign-in (the bug this fixes). The macro
  * exposes `erp.session` only; `organizationId`/`member` remain exclusive to
  * {@link erpGuard} so their type stays non-nullable for existing consumers.
+ * Like `erpGuard`, it accepts an optional `policy` hook for record-level
+ * checks that must run before the handler.
  * Shares the `ErpAuthError` mapping by being mounted alongside `erpGuard()`.
  */
 export function sessionGuard() {
 	return new Elysia({ name: 'session-guard' })
 		.error({ ErpAuthError })
 		.macro({
-			erpSession: () => ({
+			erpSession: (options: {
+				/** Object-form macro enablement flag (no behavior of its own). */
+				session?: boolean;
+				/** Record-level hook, run after the session is resolved. */
+				policy?: (ctx: { erp: { session: SessionPayload } }) => Promise<void> | void;
+			}) => ({
 				resolve: async (
 					context: Context,
 				): Promise<{ erp: { session: SessionPayload } }> => {
@@ -276,7 +283,11 @@ export function sessionGuard() {
 					if (!session) {
 						throw new ErpAuthError(401, 'Authentication required');
 					}
-					return { erp: { session } };
+					const erp = { session };
+					// Session-only guard has no other preconditions, so the
+					// record-level hook runs here (mirrors `erpGuard`'s policy).
+					if (options.policy) await options.policy({ erp });
+					return { erp };
 				},
 			}),
 		});

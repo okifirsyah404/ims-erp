@@ -9,12 +9,12 @@ export class OrganizationNotFoundError extends Error {
 	}
 }
 
-/** Single-organization invariant: an organization already exists. */
-export class OrganizationAlreadyExistsError extends Error {
-	readonly status = 422;
+/** Last-organization guard: the final live organization cannot be deleted. */
+export class LastOrganizationError extends Error {
+	readonly status = 409;
 	constructor() {
-		super('An organization already exists; only one is allowed');
-		this.name = 'OrganizationAlreadyExistsError';
+		super('The last organization cannot be deleted');
+		this.name = 'LastOrganizationError';
 	}
 }
 
