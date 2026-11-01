@@ -41,16 +41,8 @@ function toRole(grants: ErpPermissionRequest) {
 	return erpAccessControl.newRole(statements as never);
 }
 
-/** owner keeps full built-in organization administration + full ERP grants. */
-const ownerGrants: ErpPermissionRequest = {
-	organization: ['update', 'delete'],
-	member: ['create', 'update', 'delete'],
-	invitation: ['create', 'cancel'],
-	...erpRoleGrants.owner,
-};
-
 export const erpRoles = {
-	owner: toRole(ownerGrants),
+	owner: toRole(erpRoleGrants.owner),
 	admin: toRole(erpRoleGrants.admin),
 	member: toRole(erpRoleGrants.member),
 	operations_manager: toRole(erpRoleGrants.operations_manager),

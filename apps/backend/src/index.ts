@@ -26,12 +26,14 @@ import {
 	UsernameCheckController,
 } from './app/user-management/controllers/invitation.controller';
 import { registerUserManagement } from './app/user-management/container';
+import { registerAuthorization } from './authorization/container';
 registerProvider(container);
 registerLocation(container);
 registerSales(container);
 registerUser(container);
 registerOrganization(container);
 registerUserManagement(container);
+registerAuthorization(container);
 
 const bootstrap = new Elysia()
 	.use(wrap(pinoLogger))

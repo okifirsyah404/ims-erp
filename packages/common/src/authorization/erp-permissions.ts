@@ -187,11 +187,28 @@ export const erpRoleNames = [
 export type ErpRoleName = (typeof erpRoleNames)[number];
 
 /**
+ * Every ERP statement granted to a role that holds all of them (the owner
+ * baseline). Typed as `ErpPermissionRequest` so the spread stays assignable
+ * to the catalog contract.
+ */
+const allErpStatements = Object.fromEntries(
+	Object.entries(erpStatements).map(([resource, actions]) => [resource, actions]),
+) as ErpPermissionRequest;
+
+/**
  * Role grants as plain data (browser-safe). Values are per-resource action
- * lists; unspecified resources are denied. Built-in Better Auth organization
- * resources (organization/member/invitation/ac) are granted where the role
- * policy requires them; see `organization-ac.ts` for how these are combined
- * with `defaultStatements`.
+ * lists; unspecified resources are denied.
+ *
+ * This catalog is the SINGLE grant source for the whole ERP: the server
+ * access control (`apps/backend/src/providers/better-auth/ac/organization-ac.ts`),
+ * the client access control (`apps/web-admin/src/lib/erp-ac.ts`) and the
+ * per-organization role seeder (`apps/backend/database/seeders/seed/
+ * organization-roles.seeder.ts`) all read these values - nobody layers
+ * role-specific grants on top of them.
+ *
+ * Built-in Better Auth organization resources (organization/member/
+ * invitation/ac) are part of the catalog too, so the dynamic `auth.roles`
+ * grant rows (phase 3) can express the same policy.
  *
  * Business separation-of-duties (no self-approval, execution only after
  * approval, amount limits) is enforced server-side in the Elysia
@@ -199,16 +216,19 @@ export type ErpRoleName = (typeof erpRoleNames)[number];
  */
 export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 	owner: {
-		...Object.fromEntries(
-			Object.entries(erpStatements).map(([resource, actions]) => [resource, actions]),
-		),
+		...allErpStatements,
+		// Full built-in organization administration (owner keeps the ERP
+		// owner baseline plus these organization-level statements).
+		organization: ['create', 'read', 'update', 'delete'],
+		member: ['create', 'read', 'update', 'delete'],
+		invitation: ['create', 'cancel'],
 	},
 
 	// Organization administration + non-sensitive master data. No payroll,
 	// payment execution, accounting, investor-finance, or integration secrets.
 	admin: {
-		organization: ['update'],
-		member: ['create', 'update', 'delete'],
+		organization: ['read', 'update'],
+		member: ['create', 'read', 'update', 'delete'],
 		invitation: ['create', 'cancel'],
 		ac: ['read'],
 		company_setting: ['read', 'update'],

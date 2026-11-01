@@ -29,9 +29,13 @@
  * trusted as authorization evidence.
  */
 import Elysia, { type Context } from 'elysia';
+import { container } from 'tsyringe';
 import { auth } from '@providers/better-auth/auth';
-import { authorizeErpPermissions } from '@providers/better-auth/ac/organization-ac';
 import type { ErpResource } from '@ims-erp/common';
+import {
+	PERMISSION_RESOLVER_TOKEN,
+	type IPermissionResolver,
+} from './permission-resolver';
 
 export const ORGANIZATION_HEADER = 'x-organization-id';
 
@@ -147,6 +151,7 @@ async function guardResolve(
 		permission?: readonly PermissionRequirement[];
 		policy?: (ctx: Context & { erp: ErpContext }) => Promise<void> | void;
 	},
+	permissionResolver: IPermissionResolver,
 ): Promise<{ erp: ErpContext }> {
 	const headers = context.request.headers;
 
@@ -179,15 +184,22 @@ async function guardResolve(
 
 	const requirements = options.permission ?? [];
 	if (requirements.length > 0) {
-		const roles = member.role.split(',').map((r) => r.trim());
+		const roleNames = member.role.split(',').map((r) => r.trim());
 		for (const requirement of requirements) {
 			const parsed = parseRequirement(requirement);
 			if (!parsed) {
 				throw new ErpAuthError(403, 'Invalid permission requirement');
 			}
-			const allowed = authorizeErpPermissions(roles, {
-				[parsed.resource]: parsed.actions,
-			} as never);
+			// Dynamic `auth.roles` grants first (union across the member's
+			// roles); falls back to the static shared catalog when the org
+			// has no matching live role rows (legacy/pre-seed members).
+			const allowed = await permissionResolver.hasPermission(
+				organizationId,
+				roleNames,
+				{
+					[parsed.resource]: parsed.actions,
+				} as never,
+			);
 			if (!allowed) {
 				throw new ErpAuthError(403, 'Insufficient permissions');
 			}
@@ -213,6 +225,10 @@ async function guardResolve(
  * resolve phase before protected handlers.
  */
 export function erpGuard() {
+	const permissionResolver = container.resolve<IPermissionResolver>(
+		PERMISSION_RESOLVER_TOKEN,
+	);
+
 	return new Elysia({ name: 'erp-guard' })
 		.error({ ErpAuthError })
 		.onError({ as: 'global' }, ({ code, error, set }) => {
@@ -229,7 +245,8 @@ export function erpGuard() {
 					policy?: (ctx: Context & { erp: ErpContext }) => Promise<void> | void;
 				} = {},
 			) => ({
-				resolve: (context: Context) => guardResolve(context, options),
+				resolve: (context: Context) =>
+					guardResolve(context, options, permissionResolver),
 			}),
 		});
 }

@@ -3,6 +3,66 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed (this session - user-management phase 3: dynamic hasPermission guard + single grant source, 2026-11-01)
+
+Plan: `.agents/docs/plans/user-management.md`. Phase 3 of 7 complete.
+
+- **Single grant source enforced**: `packages/common/src/authorization/
+  erp-permissions.ts` now owns the merged catalog — built-in organization
+  statements (`organization/member/invitation/ac`, via `builtInOrgStatements`)
+  are folded INTO `erpRoleGrants` (owner = all ERP statements + full built-in
+  org administration; admin = `organization:['read','update']`,
+  `member:['create','read','update','delete']`, `invitation:['create','cancel']`,
+  `ac:['read']` + prior catalog grants). Server `organization-ac.ts` and client
+  `erp-ac.ts` had their local `ownerGrants`/`adminOrgGrants` layering DELETED —
+  both build roles purely from `erpRoleGrants`; both spread the shared
+  `builtInOrgStatements` into their statement vocabulary, so server/client/db
+  seeds cannot drift. `packages/common` rebuilt.
+- **Guard DB seam**: `src/authorization/permission-resolver.ts` —
+  `IPermissionResolver` interface + `PERMISSION_RESOLVER_TOKEN` +
+  `grantsAllow()` (union-of-grants checker). No DB imports in this file.
+  `src/authorization/dynamic-permissions.ts` — `DynamicPermissionResolver`
+  (`@injectable`, `@inject(DRIZZLE_TOKEN)`) unions `auth.roles.permissions`
+  jsonb of the member's live roles for the validated org; falls back to static
+  `authorizeErpPermissions` ONLY when no live row matches the member's role
+  names. `src/authorization/container.ts` — `registerAuthorization()`
+  registered in `src/index.ts`. `elysia-auth.ts` `erpGuard()` resolves the
+  resolver from the tsyringe container once at plugin build.
+  `src/di/tokens.ts` split out of `provider.ts` (token-only, no DB client
+  imports) so importing the token never opens a connection.
+- **Tests fixed**: `test/authorization/test-app.ts` registers an in-memory
+  `IPermissionResolver` mock (`installPermissionResolverMock`, seeded with
+  catalog grants; `setRoleGrants` overrides per test; `resetFixture` resets).
+  No test opens a DB connection. New `test/unit/permission-resolver.test.ts`
+  (9 tests, `mockDb` helper): live-row grant/deny, multi-role union,
+  live-rows-authoritative (no fallback when a row exists), static fallback,
+  `grantsAllow` semantics. `authorization.test.ts` gained 3 integration tests
+  proving live rows decide access in the real Elysia pipeline.
+  `bun test` = **90 pass / 0 fail** (was 61/17).
+- **Seeder refresh path**: `organization-roles.seeder.ts` stays insert-only
+  for re-runs (never overwrites admin-edited rows) but gained
+  `refreshSystemRoleGrants()` — re-syncs existing `isSystem=true` rows whose
+  permissions differ from the catalog (order-insensitive comparison), so a
+  catalog change reaches already-seeded orgs on demand. Ops script
+  `scripts/refresh-role-grants.ts` runs it. Custom roles are never touched.
+- **Live verification** (dev server :3001):
+  - `scripts/refresh-role-grants.ts` → 2 rows updated (owner/admin now carry
+    the built-in org grants in `auth.roles.permissions`).
+  - owner `GET /organizations/:id/members` → **200** (dynamic; was 403 before
+    the catalog merge — root cause fixed).
+  - member `GET /sales/quotations` → **403** (dynamic deny).
+  - `scripts/smoke-dynamic-authoritative.ts`: owner row narrowed to
+    `{dashboard:['read']}` → quotation read **403** even though the static
+    catalog grants it (dynamic set is authoritative); row restored.
+  - `scripts/smoke-fallback.ts`: owner row soft-deleted → quotation read
+    **200** via static catalog fallback; row restored.
+- `bunx tsc --noEmit` clean (backend); root `bun run typecheck` clean;
+  `bun run lint` warnings pre-existing only; web-admin `bun run build` clean
+  (consumes rebuilt common).
+- **Not done (next)**: phase 4 admin UI (users → invitations → roles →
+  members → audit), 5 username login tab, 6 deactivate/restore, 7 avatar
+  claim hook check.
+
 ## Completed (this session - user-management phase 2: invitation module + claim flow, 2026-11-01)
 
 Plan: `.agents/docs/plans/user-management.md`. Phase 2 of 7 complete.

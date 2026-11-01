@@ -88,3 +88,65 @@ export async function seedOrganizationRoles(): Promise<void> {
 		'Organization role seeding complete',
 	);
 }
+
+/**
+ * Re-syncs EXISTING catalog (system) role rows with the shared catalog
+ * grants. Used when the catalog itself changed (e.g. the built-in
+ * organization statements were merged into it) and already-seeded
+ * organizations must pick the new grants up.
+ *
+ * Deliberately separate from the seeder: the seeder never overwrites
+ * existing rows, because system-role permissions stay admin-editable.
+ * Custom roles (names outside the catalog) are never touched.
+ *
+ * @returns number of rows updated
+ */
+export async function refreshSystemRoleGrants(): Promise<number> {
+	let updated = 0;
+
+	for (const roleName of erpRoleNames) {
+		const grants = erpRoleGrants[roleName];
+		const rows = await drizzleDB
+			.select({ id: rolesTable.id, permissions: rolesTable.permissions })
+			.from(rolesTable)
+			.where(
+				and(
+					eq(rolesTable.name, roleName),
+					eq(rolesTable.isSystem, true),
+					isNull(rolesTable.deletedAt),
+				),
+			);
+
+		for (const row of rows) {
+			if (sameGrants(row.permissions, grants)) continue;
+			await drizzleDB
+				.update(rolesTable)
+				.set({ permissions: grants })
+				.where(eq(rolesTable.id, row.id));
+			updated += 1;
+		}
+	}
+
+	logger.info({ rolesUpdated: updated }, 'System role grants refreshed');
+	return updated;
+}
+
+/** Compares two grant maps ignoring action order. */
+function sameGrants(
+	a: Record<string, readonly string[]> | null | undefined,
+	b: Record<string, readonly string[]>,
+): boolean {
+	if (!a) return false;
+	const aKeys = Object.keys(a).sort();
+	const bKeys = Object.keys(b).sort();
+	if (aKeys.length !== bKeys.length) return false;
+	if (aKeys.some((key, index) => key !== bKeys[index])) return false;
+	return aKeys.every((key) => {
+		const left = [...(a[key] ?? [])].sort();
+		const right = [...(b[key] ?? [])].sort();
+		return (
+			left.length === right.length &&
+			left.every((action, index) => action === right[index])
+		);
+	});
+}
