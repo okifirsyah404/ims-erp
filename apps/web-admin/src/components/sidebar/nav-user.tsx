@@ -1,8 +1,9 @@
 'use client';
 
-import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from 'lucide-react';
 import { useRouter } from '@tanstack/react-router';
+import { Bell, ChevronsUpDown, LogOut, User } from 'lucide-react';
 
+import { authClient } from '@/lib/auth-client';
 import {
 	Avatar,
 	AvatarFallback,
@@ -23,7 +24,7 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from '@ims-erp/ui/components/sidebar';
-import { authClient } from '@/lib/auth-client';
+import ThemeSwitcher from './theme-switcher';
 
 /** Initials for the avatar fallback; falls back to `?` for blank names. */
 function initials(name: string): string {
@@ -86,17 +87,17 @@ export function NavUser({
 						<ChevronsUpDown className='ml-auto size-4' />
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
-						className='w-(--anchor-width) min-w-56 rounded-lg'
+						className='w-(--anchor-width) min-w-56'
 						side={isMobile ? 'bottom' : 'right'}
 						align='end'
 						sideOffset={4}
 					>
-						{/* Menu.GroupLabel requires a group context (base-ui
-						    MenuGroupContext) — without it the console warns on every
-						    open. */}
 						<DropdownMenuGroup>
-							<DropdownMenuLabel className='p-0 font-normal'>
-								<div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
+							<DropdownMenuLabel
+								className='p-0 font-normal select-none'
+								onClick={() => router.navigate({ to: '/profiles' })}
+							>
+								<div className='flex items-center gap-2 p-2 text-left text-sm'>
 									<Avatar className='h-8 w-8 rounded-lg'>
 										{user.avatar && !errored && (
 											<AvatarImage src={user.avatar} alt={user.name} />
@@ -116,17 +117,25 @@ export function NavUser({
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
-							<DropdownMenuItem>
-								<BadgeCheck />
+							<ThemeSwitcher />
+						</DropdownMenuGroup>
+						<DropdownMenuSeparator />
+						<DropdownMenuGroup>
+							<DropdownMenuItem
+								onClick={() => router.navigate({ to: '/account' })}
+							>
+								<User />
 								Account
 							</DropdownMenuItem>
-							<DropdownMenuItem>
+							<DropdownMenuItem
+							// onClick={() => router.navigate({ to: '/notifications' })}
+							>
 								<Bell />
 								Notifications
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem onClick={handleSignOut}>
+						<DropdownMenuItem onClick={handleSignOut} className='text-red-600'>
 							<LogOut />
 							Log out
 						</DropdownMenuItem>

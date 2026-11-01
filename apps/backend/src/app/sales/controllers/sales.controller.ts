@@ -8,12 +8,14 @@ import {
 	SalesStateError,
 } from '../services/sales.service';
 
+/** Body schema for creating a quotation. */
 const createQuotationSchema = z.object({
 	code: z.string().min(1).max(50),
 	title: z.string().min(1).max(200),
 	amount: z.number().int().min(0),
 });
 
+/** Body schema for partial quotation updates; at least one field required. */
 const updateQuotationSchema = z
 	.object({
 		title: z.string().min(1).max(200).optional(),
@@ -23,18 +25,24 @@ const updateQuotationSchema = z
 		message: 'At least one field is required',
 	});
 
+/** Pagination query for list endpoints, capped at 100 per page. */
 const listQuerySchema = z.object({
 	page: z.coerce.number().int().min(1).default(1),
 	limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+/** Path parameter shared by all id-targeted routes. */
 const idParamSchema = z.object({ id: z.string().min(1) });
 
+/** Body schema for creating a payment against a quotation. */
 const createPaymentSchema = z.object({
 	quotationId: z.string().min(1),
 	amount: z.number().int().min(0),
 });
 
+/**
+ * Builds the standard success envelope (empty `errors` list).
+ */
 function envelope(status: number, message: string, data: unknown = null) {
 	return {
 		requestId: crypto.randomUUID(),
@@ -46,6 +54,9 @@ function envelope(status: number, message: string, data: unknown = null) {
 	};
 }
 
+/**
+ * Builds the standard error envelope for a failed request.
+ */
 function errorEnvelope(
 	status: number,
 	message: string,
@@ -68,8 +79,17 @@ function errorEnvelope(
  *
  * actorUserId and actorRoles always come from `ctx.erp` (server-derived),
  * never from the request body.
+ *
+ * @remarks
+ * The local `onError` hook maps validation failures to `400` and
+ * {@link SalesStateError} onto its declared `status` (403/404/409/422).
  */
 export class SalesController {
+	/**
+	 * Builds the Elysia plugin mounting all sales routes.
+	 *
+	 * @returns An Elysia instance with the `/sales` route group mounted
+	 */
 	static plugin() {
 		const salesService = container.resolve<SalesService>(SALES_SERVICE_TOKEN);
 

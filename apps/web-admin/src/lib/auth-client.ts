@@ -21,3 +21,8 @@ export const authClient = createAuthClient({
 
 export const { signIn, signOut, useSession, getSession, organization } =
   authClient;
+
+/** Requests a password-reset email; `redirectTo` is the reset page URL. */
+export const requestPasswordReset = authClient.requestPasswordReset;
+/** Sets a new password using the token from the reset link. */
+export const resetPassword = authClient.resetPassword;

@@ -1,4 +1,4 @@
-import { DRIZZLE_TOKEN } from '@di/provider';
+import { DRIZZLE_TOKEN, REDIS_TOKEN } from '@di/provider';
 import {
 	members,
 	TOrganizationSelect,
@@ -6,6 +6,7 @@ import {
 	organizations,
 } from '@drizzle/schemas/auth.schema';
 import { TPaginationResult } from '@ims-erp/common';
+import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import {
 	and,
@@ -31,14 +32,35 @@ import type { TOrganizationMember } from '../contracts/organization.contract';
  * and organization profile mutations go through the Better Auth organization
  * API (see the auth gateway). Reads here are direct SQL so the module can
  * paginate, join users, and count owners without round-tripping Better Auth.
+ *
+ * @remarks
+ * Only `findById` is cached (cache-aside, 5-minute TTL, key
+ * `organization:id:{id}`) and it includes soft-deleted rows, matching the
+ * interface contract. Member reads (`countOwners`, `findMemberById`,
+ * `paginateMembers`) are never cached: membership mutations happen through
+ * the Better Auth organization API outside this repository, so there would
+ * be no invalidation hook. `softDelete`/`restore` invalidate `findById`.
  */
 @injectable()
 export class OrganizationRepository implements IOrganizationRepository {
 	constructor(
 		@inject(DRIZZLE_TOKEN)
 		private readonly db: BunSQLDatabase<Record<string, never>>,
+		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
 	) {}
 
+	/** Redis key namespace; only the `findById` read is cached. */
+	private readonly cachePrefix = 'organization';
+
+	/** Cache-aside TTL applied to the cached `findById` read (5 minutes). */
+	private readonly cacheTtlSeconds = 300;
+
+	/**
+	 * Paginated organization listing, ordered by creation time.
+	 *
+	 * @param request - Page settings; `includeDeleted` widens the window to
+	 * soft-deleted rows (admin-visibility escape hatch)
+	 */
 	async paginate(
 		request: TOrganizationPaginationRequest,
 	): Promise<TPaginationResult<TOrganizationSelect>> {
@@ -73,15 +95,42 @@ export class OrganizationRepository implements IOrganizationRepository {
 		};
 	}
 
+	/**
+	 * Finds one organization by id, soft-deleted rows included.
+	 *
+	 * @remarks
+	 * The only cached read in this repository (cache-aside with negative
+	 * caching: an absent row is cached as the literal string `'null'`).
+	 * Because `findById` includes deleted rows, `softDelete`/`restore` must
+	 * invalidate — handled via {@link invalidate}.
+	 *
+	 * @returns The organization, or `null` when absent
+	 */
 	async findById(id: string): Promise<TOrganizationSelect | null> {
+		const cacheKey = `${this.cachePrefix}:id:${id}`;
+		const cached = await this.redisClient.get(cacheKey);
+		if (cached === 'null') return null;
+		if (cached) return JSON.parse(cached) as TOrganizationSelect;
+
 		const [row] = await this.db
 			.select()
 			.from(organizations)
 			.where(eq(organizations.id, id))
 			.limit(1);
+
+		await this.redisClient.set(
+			cacheKey,
+			JSON.stringify(row ?? null),
+			'EX',
+			this.cacheTtlSeconds,
+		);
 		return row ?? null;
 	}
 
+	/**
+	 * Whether any organization row exists at all (soft-deleted included).
+	 * Backs the single-organization invariant.
+	 */
 	async existsAny(): Promise<boolean> {
 		const [row] = await this.db
 			.select({ value: count() })
@@ -90,20 +139,47 @@ export class OrganizationRepository implements IOrganizationRepository {
 		return Number(row?.value ?? 0) > 0;
 	}
 
+	/**
+	 * Soft-deletes an organization by stamping `deletedAt`. No-op when
+	 * already deleted.
+	 */
 	async softDelete(id: string): Promise<void> {
 		await this.db
 			.update(organizations)
 			.set({ deletedAt: new Date() })
 			.where(and(eq(organizations.id, id), isNull(organizations.deletedAt)));
+		await this.invalidate(id);
 	}
 
+	/**
+	 * Restores a soft-deleted organization by clearing `deletedAt`.
+	 */
 	async restore(id: string): Promise<void> {
 		await this.db
 			.update(organizations)
 			.set({ deletedAt: null })
 			.where(eq(organizations.id, id));
+		await this.invalidate(id);
 	}
 
+	/**
+	 * Evicts the per-id cache entry used by {@link findById}.
+	 */
+	private async invalidate(id: string): Promise<void> {
+		await this.redisClient.del(`${this.cachePrefix}:id:${id}`);
+	}
+
+	/**
+	 * Paginated member list joined with user identity fields.
+	 *
+	 * @remarks
+	 * Never cached: membership mutations happen through the Better Auth
+	 * organization API outside this repository, so there is no invalidation
+	 * hook to keep a cache coherent.
+	 *
+	 * @param organizationId - The organization whose members are listed
+	 * @param request - Page settings plus an optional exact role filter
+	 */
 	async paginateMembers(
 		organizationId: string,
 		request: TMemberPaginationRequest,
@@ -161,6 +237,13 @@ export class OrganizationRepository implements IOrganizationRepository {
 		};
 	}
 
+	/**
+	 * Finds one member of an organization (for last-owner checks). Never
+	 * cached, same reasoning as {@link paginateMembers}.
+	 *
+	 * @returns The member with joined user identity, or `null` when the
+	 * member does not belong to the organization
+	 */
 	async findMemberById(
 		organizationId: string,
 		memberId: string,
@@ -196,6 +279,13 @@ export class OrganizationRepository implements IOrganizationRepository {
 		};
 	}
 
+	/**
+	 * Counts members whose role list includes `owner`.
+	 *
+	 * @remarks
+	 * Roles are compared in JS (not SQL) because Better Auth stores
+	 * multi-role members as comma-separated strings.
+	 */
 	async countOwners(organizationId: string): Promise<number> {
 		const rows = await this.db
 			.select({ role: members.role })

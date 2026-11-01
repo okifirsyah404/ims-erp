@@ -16,7 +16,9 @@ import type {
 } from '../contracts/payment.repository.interface';
 
 /**
- * Errors surfaced as typed HTTP responses by the controller.
+ * Typed HTTP-facing error for sales workflow violations. The controller's
+ * `onError` hook maps the `status` field directly onto the response, so
+ * throwing this is how the service dictates a non-200 outcome.
  */
 export class SalesStateError extends Error {
 	constructor(
@@ -47,8 +49,22 @@ export type TQuotationActionContext = {
  * whose amount exceeds `DEFAULT_APPROVAL_LIMIT` are denied and absent
  * configuration is reported as an explicit error.
  */
+/**
+ * Fallback approval limit while the approval-rule configuration module
+ * does not exist. `0` means any protected approval is denied until real
+ * limits are configured — deny-by-default, never silently allowed.
+ */
 const DEFAULT_APPROVAL_LIMIT = 0;
 
+/**
+ * Application service for the sales module (quotations + payments).
+ *
+ * @remarks
+ * Enforces separation-of-duties (self-approval/self-execution bans) and
+ * the deny-by-default approval limit; all state-transition races are
+ * pushed down into the repositories' conditional updates. This service is
+ * deliberately stateless besides its injected repositories.
+ */
 @injectable()
 export class SalesService {
 	constructor(
@@ -58,6 +74,13 @@ export class SalesService {
 		private readonly paymentRepository: TPaymentRepository,
 	) {}
 
+	/**
+	 * Creates a quotation owned by the acting user.
+	 *
+	 * @remarks
+	 * `organizationId`/`createdBy` come from the guard context, never from
+	 * the request body.
+	 */
 	async createQuotation(
 		input: Omit<TCreateQuotationInput, 'organizationId' | 'createdBy'>,
 		ctx: TQuotationActionContext,
@@ -69,6 +92,11 @@ export class SalesService {
 		});
 	}
 
+	/**
+	 * Fetches one tenant-scoped quotation.
+	 *
+	 * @returns The quotation, or `null` when absent or foreign
+	 */
 	async getQuotation(
 		organizationId: string,
 		id: string,
@@ -76,6 +104,7 @@ export class SalesService {
 		return this.quotationRepository.findById(organizationId, id);
 	}
 
+	/** Lists one page of the tenant's quotations, oldest first. */
 	async listQuotations(
 		organizationId: string,
 		pagination: { page: number; limit: number },
@@ -83,6 +112,7 @@ export class SalesService {
 		return this.quotationRepository.list(organizationId, pagination);
 	}
 
+	/** Applies a whitelisted partial update to a quotation. */
 	async updateQuotation(
 		organizationId: string,
 		id: string,
@@ -93,6 +123,8 @@ export class SalesService {
 
 	/**
 	 * Submits a quotation (draft -> submitted).
+	 *
+	 * @throws SalesStateError 422 when the quotation is not in draft state
 	 */
 	async submitQuotation(
 		organizationId: string,
@@ -119,6 +151,9 @@ export class SalesService {
 	 * Separation of duties: the creator can NEVER approve their own
 	 * quotation, regardless of permissions or combined roles. Approval also
 	 * requires valid state (submitted) and a configured amount limit.
+	 *
+	 * @throws SalesStateError 403 on self-approval or amount over the limit
+	 * @throws SalesStateError 422 when the quotation is not in submitted state
 	 */
 	async decideQuotation(
 		organizationId: string,
@@ -163,6 +198,16 @@ export class SalesService {
 		return updated;
 	}
 
+	/**
+	 * Creates a payment against a quotation.
+	 *
+	 * @remarks
+	 * Validates the referenced quotation belongs to the permitted
+	 * organization, so cross-organization FK references are rejected.
+	 *
+	 * @throws SalesStateError 404 when the quotation is not found in the
+	 * caller's organization
+	 */
 	async createPayment(
 		input: Omit<TCreatePaymentInput, 'organizationId' | 'createdBy'>,
 		ctx: TQuotationActionContext,
@@ -186,6 +231,11 @@ export class SalesService {
 		});
 	}
 
+	/**
+	 * Fetches one tenant-scoped payment.
+	 *
+	 * @returns The payment, or `null` when absent or foreign
+	 */
 	async getPayment(
 		organizationId: string,
 		id: string,
@@ -196,6 +246,12 @@ export class SalesService {
 	/**
 	 * Approves a payment (pending -> approved). Self-approval is never
 	 * allowed; the transition is atomic.
+	 */
+	/**
+	 * Approves a pending payment.
+	 *
+	 * @throws SalesStateError 403 on self-approval
+	 * @throws SalesStateError 422 when the payment is not in pending state
 	 */
 	async approvePayment(
 		organizationId: string,

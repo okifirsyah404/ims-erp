@@ -1,5 +1,10 @@
 import type { TPaymentSelect } from '@drizzle/schemas/sales.schema';
 
+/**
+ * Tenant-scoped input for creating a payment. `organizationId` and
+ * `createdBy` are supplied by the service from guard context, never by
+ * the client.
+ */
 export type TCreatePaymentInput = {
 	organizationId: string;
 	quotationId: string;
@@ -7,8 +12,24 @@ export type TCreatePaymentInput = {
 	createdBy: string;
 };
 
+/**
+ * Data-access contract for payments within one tenant.
+ *
+ * @remarks
+ * Every method takes `organizationId` explicitly — all queries are
+ * tenant-scoped and none may run unscoped. State transitions
+ * (`approve`, `execute`) are conditional updates on the expected status,
+ * making them race-safe.
+ */
 export type TPaymentRepository = {
+	/** Creates a payment in `pending` state. */
 	create(input: TCreatePaymentInput): Promise<TPaymentSelect>;
+
+	/**
+	 * Fetches one payment, scoped to the tenant.
+	 *
+	 * @returns The payment, or `null` when absent or foreign
+	 */
 	findById(
 		organizationId: string,
 		id: string,

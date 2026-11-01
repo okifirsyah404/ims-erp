@@ -22,13 +22,30 @@ export function avatarObjectKey(userId: string): string {
 	return `user/${userId}/avatar.png`;
 }
 
-/** Presigned GET URL for a user's avatar; short-lived by design. */
+/** S3 key of a user-uploaded avatar (extension from the sniffed type). */
+export function avatarCustomObjectKey(userId: string, ext: string): string {
+	return `user/${userId}/avatar-custom.${ext}`;
+}
+
+/** Presigned GET URL for an arbitrary avatar object key; short-lived. */
+export function presignObjectUrl(key: string, expiresInSeconds = 300): string {
+	return s3Client.presign(key, {
+		method: 'GET',
+		expiresIn: expiresInSeconds,
+	});
+}
+
+/**
+ * Presigned GET URL for a user's avatar; short-lived by design.
+ *
+ * @remarks
+ * Presigns the generated-avatar key; users with an uploaded avatar are
+ * presigned from their stored `image` key by the service layer instead
+ * (see `UserService.withPresignedAvatar`).
+ */
 export function presignAvatarUrl(
 	userId: string,
 	expiresInSeconds = 300,
 ): string {
-	return s3Client.presign(avatarObjectKey(userId), {
-		method: 'GET',
-		expiresIn: expiresInSeconds,
-	});
+	return presignObjectUrl(avatarObjectKey(userId), expiresInSeconds);
 }

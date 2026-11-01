@@ -30,9 +30,21 @@ export class DistrictRepository implements IDistrictRepository {
 		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
 	) {}
 
+	/** Redis key namespace for this repository's cache entries. */
 	private readonly cachePrefix = 'location:district';
+
+	/** Cache-aside TTL applied to every cached read (5 minutes). */
 	private readonly cacheTtlSeconds = 300;
 
+	/**
+	 * Fetches one filtered page of districts.
+	 *
+	 * @remarks
+	 * Never cached: filters change the result set per request, so caching
+	 * would need a per-filter key with little hit value.
+	 *
+	 * @param request - Page settings plus optional `code`/`name`/`regencyId` filters
+	 */
 	async paginate(
 		request: TDistrictPaginationRequest,
 	): Promise<TPaginationResult<TDistrictSelect>> {
@@ -65,6 +77,9 @@ export class DistrictRepository implements IDistrictRepository {
 		};
 	}
 
+	/**
+	 * Inserts one district and invalidates its own and its parent's cache.
+	 */
 	async create(item: TDistrictInsert): Promise<TDistrictSelect> {
 		const [created] = await this.database
 			.insert(district)
@@ -75,6 +90,9 @@ export class DistrictRepository implements IDistrictRepository {
 		return created;
 	}
 
+	/**
+	 * Bulk-inserts districts and invalidates their cache entries.
+	 */
 	async createMany(items: TDistrictInsert[]): Promise<TDistrictSelect[]> {
 		const created = await this.database
 			.insert(district)
@@ -88,6 +106,13 @@ export class DistrictRepository implements IDistrictRepository {
 		return created;
 	}
 
+	/**
+	 * Fetches all non-deleted districts, ordered by name.
+	 *
+	 * @remarks
+	 * Cache-aside: the full list is cached under `{prefix}:all` and treated
+	 * as immutable reference data, so any write evicts it.
+	 */
 	async findAll(): Promise<TDistrictSelect[]> {
 		const cacheKey = `${this.cachePrefix}:all`;
 		const cached = await this.redisClient.get(cacheKey);
@@ -103,10 +128,22 @@ export class DistrictRepository implements IDistrictRepository {
 		return rows;
 	}
 
+	/**
+	 * Fetches every district, soft-deleted rows included. Admin/recovery view.
+	 */
 	async findAllWithDeleted(): Promise<TDistrictSelect[]> {
 		return this.database.select().from(district).orderBy(asc(district.name));
 	}
 
+	/**
+	 * Fetches one non-deleted district by id.
+	 *
+	 * @remarks
+	 * Cache-aside with negative caching: an absent row is cached as the
+	 * literal string `'null'` so repeated misses do not hit the database.
+	 *
+	 * @returns The district, or `null` when absent or soft-deleted
+	 */
 	async findById(id: string | number): Promise<TDistrictSelect | null> {
 		const cacheKey = `${this.cachePrefix}:id:${id}`;
 		const cached = await this.redisClient.get(cacheKey);
@@ -122,6 +159,9 @@ export class DistrictRepository implements IDistrictRepository {
 		return row ?? null;
 	}
 
+	/**
+	 * Fetches non-deleted districts by ids. Never cached.
+	 */
 	async findByIds(ids: (string | number)[]): Promise<TDistrictSelect[]> {
 		return this.database
 			.select()
@@ -131,6 +171,12 @@ export class DistrictRepository implements IDistrictRepository {
 			);
 	}
 
+	/**
+	 * Fetches one soft-deleted district by id. Always a direct read.
+	 *
+	 * @returns The soft-deleted district, or `null` when it does not exist
+	 * or is not deleted
+	 */
 	async findSoftDeletedById(id: string | number): Promise<TDistrictSelect | null> {
 		const [row] = await this.database
 			.select()
@@ -139,6 +185,9 @@ export class DistrictRepository implements IDistrictRepository {
 		return row ?? null;
 	}
 
+	/**
+	 * Partially updates a non-deleted district and invalidates its cache.
+	 */
 	async update(
 		id: string | number,
 		item: Partial<TDistrictInsert>,
@@ -153,18 +202,25 @@ export class DistrictRepository implements IDistrictRepository {
 		return updated ?? null;
 	}
 
+	/** Soft-deletes one district (stamps `deletedAt`). */
 	async delete(id: string | number): Promise<void> {
 		await this.softDeleteMany([String(id)]);
 	}
 
+	/** Soft-deletes multiple districts in one update. */
 	async deleteMany(ids: (string | number)[]): Promise<void> {
 		await this.softDeleteMany(ids.map(String));
 	}
 
+	/** Permanently removes one district. Infra/purge only. */
 	async forceDelete(id: string | number): Promise<void> {
 		await this.forceDeleteMany([id]);
 	}
 
+	/**
+	 * Permanently removes districts. Infra/purge only — feature code must
+	 * use {@link delete} (soft-delete hard rule).
+	 */
 	async forceDeleteMany(ids: (string | number)[]): Promise<void> {
 		const affected = await this.database
 			.delete(district)
@@ -176,6 +232,9 @@ export class DistrictRepository implements IDistrictRepository {
 		);
 	}
 
+	/**
+	 * Restores a soft-deleted district by clearing `deletedAt`.
+	 */
 	async restore(id: string | number): Promise<TDistrictSelect | null> {
 		const [restored] = await this.database
 			.update(district)
@@ -187,6 +246,12 @@ export class DistrictRepository implements IDistrictRepository {
 		return restored ?? null;
 	}
 
+	/**
+	 * Fetches all non-deleted districts of one regency by id.
+	 *
+	 * @remarks
+	 * Cache-aside keyed per parent: `{prefix}:regency:{regencyId}`.
+	 */
 	async findByRegencyId(regencyId: string): Promise<TDistrictSelect[]> {
 		const cacheKey = `${this.cachePrefix}:regency:${regencyId}`;
 		const cached = await this.redisClient.get(cacheKey);
@@ -202,6 +267,9 @@ export class DistrictRepository implements IDistrictRepository {
 		return rows;
 	}
 
+	/**
+	 * Fetches non-deleted districts for multiple regencies by id. Never cached.
+	 */
 	async findByRegencyIds(regencyIds: string[]): Promise<TDistrictSelect[]> {
 		if (regencyIds.length === 0) return [];
 		return this.database
@@ -216,10 +284,20 @@ export class DistrictRepository implements IDistrictRepository {
 			.orderBy(asc(district.name));
 	}
 
+	/**
+	 * Fetches non-deleted districts of one regency, resolved by its code.
+	 */
 	async findByRegencyCode(regencyCode: string): Promise<TDistrictSelect[]> {
 		return this.findByRegencyCodes([regencyCode]);
 	}
 
+	/**
+	 * Fetches non-deleted districts for the given regency codes.
+	 *
+	 * @remarks
+	 * Resolves codes to regency ids first (uncached, one query), then
+	 * reuses {@link findByRegencyIds}.
+	 */
 	async findByRegencyCodes(regencyCodes: string[]): Promise<TDistrictSelect[]> {
 		if (regencyCodes.length === 0) return [];
 

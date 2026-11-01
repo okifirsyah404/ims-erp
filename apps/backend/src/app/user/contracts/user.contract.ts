@@ -53,6 +53,22 @@ export const updateUserSchema = z.object({
 
 export type TUpdateUser = z.infer<typeof updateUserSchema>;
 
+/**
+ * Body for self-service profile updates (`PATCH /users/me`).
+ *
+ * @remarks
+ * Deliberately excludes `image` — the avatar flows through the dedicated
+ * multipart upload endpoint so content can be validated — and never
+ * carries `role`, email, or ban state (Better Auth–owned, admin domain).
+ */
+export const updateSelfUserSchema = z.object({
+	name: z.string().min(1).max(120).optional(),
+	username: z.string().min(3).max(30).optional(),
+	bio: z.string().max(1000).optional(),
+});
+
+export type TUpdateSelfUser = z.infer<typeof updateSelfUserSchema>;
+
 /** Body for banning a user; Better Auth owns all ban columns. */
 export const banUserSchema = z.object({
 	banReason: z.string().min(1).max(500).optional(),

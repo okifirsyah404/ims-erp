@@ -31,9 +31,21 @@ export class ProvinceRepository implements IProvinceRepository {
 		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
 	) {}
 
+	/** Redis key namespace for this repository's cache entries. */
 	private readonly cachePrefix = 'location:province';
+
+	/** Cache-aside TTL applied to every cached read (5 minutes). */
 	private readonly cacheTtlSeconds = 300;
 
+	/**
+	 * Fetches one filtered page of provinces.
+	 *
+	 * @remarks
+	 * Never cached: filters change the result set per request, so caching
+	 * would need a per-filter key with little hit value.
+	 *
+	 * @param request - Page settings plus optional `code`/`name` filters
+	 */
 	async paginate(
 		request: TProvincePaginationRequest,
 	): Promise<TPaginationResult<TProvinceSelect>> {
@@ -75,6 +87,9 @@ export class ProvinceRepository implements IProvinceRepository {
 		return created;
 	}
 
+	/**
+	 * Bulk-inserts provinces and invalidates their cache entries.
+	 */
 	async createMany(items: TProvinceInsert[]): Promise<TProvinceSelect[]> {
 		const created = await this.database
 			.insert(province)
@@ -85,6 +100,13 @@ export class ProvinceRepository implements IProvinceRepository {
 		return created;
 	}
 
+	/**
+	 * Fetches all non-deleted provinces, ordered by name.
+	 *
+	 * @remarks
+	 * Cache-aside: the full list is cached under `{prefix}:all` and treated
+	 * as immutable reference data, so any write evicts it.
+	 */
 	async findAll(): Promise<TProvinceSelect[]> {
 		const cacheKey = `${this.cachePrefix}:all`;
 		const cached = await this.redisClient.get(cacheKey);
@@ -100,10 +122,22 @@ export class ProvinceRepository implements IProvinceRepository {
 		return rows;
 	}
 
+	/**
+	 * Fetches every province, soft-deleted rows included. Admin/recovery view.
+	 */
 	async findAllWithDeleted(): Promise<TProvinceSelect[]> {
 		return this.database.select().from(province).orderBy(asc(province.name));
 	}
 
+	/**
+	 * Fetches one non-deleted province by id.
+	 *
+	 * @remarks
+	 * Cache-aside with negative caching: an absent row is cached as the
+	 * literal string `'null'` so repeated misses do not hit the database.
+	 *
+	 * @returns The province, or `null` when absent or soft-deleted
+	 */
 	async findById(id: string | number): Promise<TProvinceSelect | null> {
 		const cacheKey = `${this.cachePrefix}:id:${id}`;
 		const cached = await this.redisClient.get(cacheKey);
@@ -119,6 +153,9 @@ export class ProvinceRepository implements IProvinceRepository {
 		return row ?? null;
 	}
 
+	/**
+	 * Fetches non-deleted provinces by ids. Never cached.
+	 */
 	async findByIds(ids: (string | number)[]): Promise<TProvinceSelect[]> {
 		return this.database
 			.select()
@@ -128,6 +165,12 @@ export class ProvinceRepository implements IProvinceRepository {
 			);
 	}
 
+	/**
+	 * Fetches one soft-deleted province by id. Always a direct read.
+	 *
+	 * @returns The soft-deleted province, or `null` when it does not exist
+	 * or is not deleted
+	 */
 	async findSoftDeletedById(id: string | number): Promise<TProvinceSelect | null> {
 		const [row] = await this.database
 			.select()
@@ -136,6 +179,9 @@ export class ProvinceRepository implements IProvinceRepository {
 		return row ?? null;
 	}
 
+	/**
+	 * Partially updates a non-deleted province and invalidates its cache.
+	 */
 	async update(
 		id: string | number,
 		item: Partial<TProvinceInsert>,
@@ -150,18 +196,25 @@ export class ProvinceRepository implements IProvinceRepository {
 		return updated ?? null;
 	}
 
+	/** Soft-deletes one province (stamps `deletedAt`). */
 	async delete(id: string | number): Promise<void> {
 		await this.softDeleteMany([String(id)]);
 	}
 
+	/** Soft-deletes multiple provinces in one update. */
 	async deleteMany(ids: (string | number)[]): Promise<void> {
 		await this.softDeleteMany(ids.map(String));
 	}
 
+	/** Permanently removes one province. Infra/purge only. */
 	async forceDelete(id: string | number): Promise<void> {
 		await this.forceDeleteMany([id]);
 	}
 
+	/**
+	 * Permanently removes provinces. Infra/purge only — feature code must
+	 * use {@link delete} (soft-delete hard rule).
+	 */
 	async forceDeleteMany(ids: (string | number)[]): Promise<void> {
 		await this.database
 			.delete(province)
@@ -169,6 +222,9 @@ export class ProvinceRepository implements IProvinceRepository {
 		await this.invalidate(ids.map(String));
 	}
 
+	/**
+	 * Restores a soft-deleted province by clearing `deletedAt`.
+	 */
 	async restore(id: string | number): Promise<TProvinceSelect | null> {
 		const [restored] = await this.database
 			.update(province)
