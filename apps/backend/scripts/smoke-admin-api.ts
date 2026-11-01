@@ -71,6 +71,18 @@ check(
 const userRows = (users.json as { data?: Array<{ email: string }> } | null)?.data;
 check('GET /users returns rows', (userRows?.length ?? 0) > 0, 'empty');
 
+// The admin UI reads `user.organizations.length`. A listing served by a
+// handler that doesn't join memberships omits the field and crashes the whole
+// users table, so assert the projection really includes it on every row.
+const missingOrgs = (userRows ?? []).filter(
+	(row) => !Array.isArray((row as { organizations?: unknown }).organizations),
+);
+check(
+	'every /users row carries an organizations array',
+	(userRows?.length ?? 0) > 0 && missingOrgs.length === 0,
+	`${missingOrgs.length} row(s) missing organizations`,
+);
+
 // ---- roles ---------------------------------------------------------------
 const roles = await call(admin, 'GET', `/roles?organizationId=${ORG}`);
 check(

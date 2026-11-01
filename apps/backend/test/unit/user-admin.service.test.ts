@@ -4,6 +4,7 @@ import type { TRoleSelect } from '../../drizzle/schemas/role.schema';
 import type {
 	IRoleRepository,
 	IUserManagementRepository,
+	TAdminUserRow,
 } from '../../src/app/user-management/contracts/repositories.interface';
 import type { IUserManagementAuthGateway } from '../../src/app/user-management/contracts/gateways.interface';
 import type { AuditService } from '../../src/app/user-management/services/audit.service';
@@ -56,6 +57,10 @@ function makeService(options: {
 	anyUser?: TUserSelect | null;
 	memberships?: Array<{ id: string; name: string; role: string }>;
 	holderRole?: TRoleSelect | null;
+	paginate?: {
+		data: Array<{ user: TUserSelect; organizations: TAdminUserRow['organizations'] }>;
+		meta: { page: number; limit: number; total: number; totalPages: number };
+	};
 } = {}) {
 	const users = {
 		findById: mock(() => Promise.resolve(options.user ?? null)),
@@ -67,7 +72,14 @@ function makeService(options: {
 		listMemberships: mock(() =>
 			Promise.resolve(options.memberships ?? []),
 		),
-	};
+		listUsers: mock(() =>
+			Promise.resolve(
+				options.paginate ?? {
+					data: [],
+					meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
+				},
+			),
+		),	};
 	const gateway = { revokeSessions: mock(() => Promise.resolve()) };
 	const roles = {
 		findByName: mock(() => Promise.resolve(options.holderRole ?? null)),
@@ -82,6 +94,41 @@ function makeService(options: {
 	);
 	return { service, users, gateway, roles, audit };
 }
+
+describe('UserAdminService.list', () => {
+	test('every projected row carries an organizations array', async () => {
+		// Regression: `GET /users` was answering from the legacy user
+		// controller, which returns bare user columns with no membership
+		// join. The admin UI reads `user.organizations.length` and crashed
+		// with "can't access property 'length', user.organizations is
+		// undefined". The admin projection must always include the field.
+		const { service } = makeService({
+			paginate: {
+				data: [
+					{
+						user: makeUser({ id: 'u-with-orgs' }),
+						organizations: [{ id: ORG, name: 'Entragate', role: 'member' }],
+					},
+					{
+						user: makeUser({ id: 'u-no-orgs', email: 'lone@example.com' }),
+						organizations: [],
+					},
+				],
+				meta: { page: 1, limit: 20, total: 2, totalPages: 1 },
+			},
+		});
+
+		const result = await service.list({ page: 1, limit: 20 });
+
+		expect(result.data).toHaveLength(2);
+		for (const row of result.data) {
+			expect(Array.isArray(row.organizations)).toBe(true);
+		}
+		expect(result.data[0]?.organizations[0]?.role).toBe('member');
+		// A user with no memberships must be an empty array, never undefined.
+		expect(result.data[1]?.organizations).toEqual([]);
+	});
+});
 
 describe('UserAdminService.deactivate', () => {
 	test('sets status, revokes sessions and audits', async () => {

@@ -384,11 +384,14 @@ function UserRow({
 				</div>
 			</TableCell>
 			<TableCell>
-				{user.organizations.length === 0 ? (
+				{/* `?? []` is defensive: a listing served by a handler that
+				    doesn't join memberships omits the field entirely, and an
+				    unguarded `.length` crashed the whole table. */}
+				{(user.organizations ?? []).length === 0 ? (
 					<span className='text-xs text-muted-foreground'>No memberships</span>
 				) : (
 					<div className='flex flex-wrap gap-1'>
-						{user.organizations.map((org) => (
+						{(user.organizations ?? []).map((org) => (
 							<Badge key={org.id} variant='secondary'>
 								{org.role}
 							</Badge>

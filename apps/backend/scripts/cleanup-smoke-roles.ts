@@ -13,5 +13,3 @@ const removed = await sql`
 console.log('removed:', removed);
 
 await sql.end();
-
-export {};

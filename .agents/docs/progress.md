@@ -80,17 +80,30 @@ Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
    system-role rules), not by the query.
 4. **React purity warnings** in `pending-invitations-panel.tsx` from calling
    `Date.now()` during render; moved "now" into a cached `useQuery`.
+5. **`user.organizations` undefined in the admin users table** (runtime crash:
+   `can't access property "length", user.organizations is undefined`).
+   `GET /users` was still being answered by the *legacy* `UserController`
+   handler, which returns bare user columns with no membership join. The two
+   handlers do not actually collide: the legacy plugin is `prefix: '/users'`
+   + `.get('/')`, so it registers the distinct path `/users/` while the admin
+   controller registers `/users` — and Elysia serves `/users/` for a bare
+   `/users` request. Reordering the mounts could never fix it (my earlier
+   "first registration wins" note was measured on prefix-less toy plugins and
+   is **wrong** for this case; the two routes simply never competed).
+   Fixed by making the admin controller the single owner of the listing:
+   the legacy `GET /users` handler (and its now-dead `okPaginated` helper and
+   `userQuerySchema` import) was deleted. The users table also uses
+   `user.organizations ?? []` defensively, and a unit test pins that the
+   admin projection always emits the field.
 
 ### Verification (exact commands)
 
-- `apps/backend`: `bunx tsc --noEmit` → clean; `bun test` → **112 pass / 0
-  fail** (10 files; +22 phase-4 tests in `test/unit/role-management.service.test.ts`
-  and `test/unit/user-admin.service.test.ts`, all repo-DB mocked — no real DB
-  connection opened).
+- `apps/backend` (follow-up fix): `bunx tsc --noEmit` → clean; `bun test` →
+  **113 pass / 0 fail**; `bun run scripts/smoke-admin-api.ts` → **16 passed, 0
+  failed** (added a check that every `/users` row carries `organizations`).
 - `apps/backend`: `bun run scripts/smoke-admin-api.ts` → **15 passed, 0
   failed**, stable across consecutive runs (the second run exercises the revive
-  path the same script would otherwise mask).
-- `apps/web-admin`: `bunx tsc --noEmit -p tsconfig.app.json` → clean (plain
+  path the same script would otherwise mask).- `apps/web-admin`: `bunx tsc --noEmit -p tsconfig.app.json` → clean (plain
   `tsc --noEmit` checks NOTHING here — root `tsconfig.json` has `"files": []`);
   `bun run build` → clean, all three routes code-split.
 - repo root: `bun run lint` → 0 errors (5 web-admin warnings + ui/backend

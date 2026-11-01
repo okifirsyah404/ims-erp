@@ -9,9 +9,7 @@ import { container } from 'tsyringe';
 import type {
 	TApiErrorMessage,
 	TApiResponse,
-	TApiPaginatedResponse,
 } from '@ims-erp/common';
-import type { TPaginationResult } from '@ims-erp/common';
 import {
 	banUserSchema,
 	createUserSchema,
@@ -19,7 +17,6 @@ import {
 	updateSelfUserSchema,
 	updateUserSchema,
 	userIdParamsSchema,
-	userQuerySchema,
 } from '../contracts/user.contract';
 import { USER_SERVICE_TOKEN } from '../constants/di';
 import { UserService, AVATAR_MAX_BYTES, sniffAvatarType } from '../services/user.service';
@@ -46,19 +43,6 @@ function buildMeta(status: number, message: string) {
  */
 function ok<T>(data: T): TApiResponse<T> {
 	return { ...buildMeta(200, 'OK'), data };
-}
-
-/**
- * Wraps a paginated result in the standard API paginated envelope.
- */
-function okPaginated<T>(
-	result: TPaginationResult<T>,
-): TApiPaginatedResponse<T> {
-	return {
-		...buildMeta(200, 'OK'),
-		pagination: result.meta,
-		data: result.data,
-	};
 }
 
 /**
@@ -178,18 +162,13 @@ export class UserController {
 				}
 				return undefined;
 			})
-			.get(
-				'/',
-				async ({ query }) =>
-					okPaginated(
-						await userService.paginateUsers(userQuerySchema.parse(query)),
-					),
-				// User directory: app-admin only. Every other route on this
-				// controller (create/patch/ban/delete) already uses the same
-				// policy; an empty `erp: {}` here let ANY authenticated member
-				// enumerate the whole user base.
-				{ erp: { policy: requireGlobalAdmin } },
-			)
+			// NOTE: the user directory (list) is NOT defined here. It lives on
+			// `UserAdminController` (`GET /users`, gated on `member:read`,
+			// returning memberships alongside each account). Keeping a second
+			// list handler here registered `/users/` — a distinct Elysia route
+			// from `/users` — which shadows the admin listing for the bare
+			// path and returns rows without `organizations`. One owner per
+			// resource avoids that whole class of routing surprise.
 			.get(
 				/**
 				 * Self profile. Declared before `/:userId` so `me` is never
