@@ -1,6 +1,6 @@
 Project "ENTRAGATE ERP" {
   database_type: 'PostgreSQL'
-  Note: "Canonical persistence contract for ENTRAGATE ERP. 24 Postgres schemas owned by 24 modules. Module isolation is a hard rule: a Ref may only connect tables owned by the same module; Warehouse and Inventory are one module spanning two schemas, so inventory tables keep real FKs into inventory.*. Cross-module links are logical id columns plus a column note, never a foreign key. Datetimes are unix milliseconds in bigint. Money is exact integer IDR minor units in bigint plus a currency_code column. Tenant scope is organization_id (text, references auth.organizations.id logically). Soft delete is deleted_at (bigint, nullable) on every business table except append-only ledgers and projections, which document their exemption in their table note. Status vocabularies are text guarded by Checks blocks, never native enums, so no enum type can leak into the public schema. Composite tenant foreign keys and partial unique indexes for soft-deleted codes are implemented directly in the Drizzle schema files, which DBML cannot express."
+  Note: "Canonical persistence contract for ENTRAGATE ERP. 24 Postgres schemas owned by 24 modules. Module isolation is a hard rule: a Ref may only connect tables owned by the same module; Warehouse and Inventory are one module spanning two schemas, so inventory tables keep real FKs into warehouse.*. Cross-module links are logical id columns plus a column note, never a foreign key. Datetimes are unix milliseconds in bigint. Money is exact integer IDR minor units in bigint plus a currency_code column. Tenant scope is organization_id (text, references auth.organizations.id logically). Soft delete is deleted_at (bigint, nullable) on every business table except append-only ledgers and projections, which document their exemption in their table note. Status vocabularies are text guarded by Checks blocks, never native enums, so no enum type can leak into the public schema. Composite tenant foreign keys and partial unique indexes for soft-deleted codes are implemented directly in the Drizzle schema files, which DBML cannot express. Better Auth owned tables (auth.users, auth.sessions, auth.accounts, auth.verifications, auth.organizations, auth.members, auth.invitations, auth.passkeys, auth.apikeys) are the exception to the soft-delete rule: only auth.users and auth.organizations carry deleted_at, the rest are hard deleted by Better Auth itself, so their tables must never gain a deleted_at column nor be queried with one."
 }
 
 TableGroup "Identity" {
@@ -19,6 +19,8 @@ TableGroup "Identity" {
   auth.user_preferences
   auth.identity_verifications
   auth.user_devices
+  auth.roles
+  auth.user_invitations
 }
 
 TableGroup "Location" {
@@ -97,10 +99,9 @@ TableGroup "Procurement" {
 }
 
 TableGroup "Inventory" {
-  inventory.warehouses
-  inventory.warehouse_addresses
-  inventory.warehouse_zones
-  inventory.warehouse_bins
+  warehouse.warehouses
+  warehouse.warehouse_zones
+  warehouse.warehouse_bins
   inventory.stock_movements
   inventory.stock_balances
   inventory.stock_adjustments
@@ -349,6 +350,7 @@ Table auth.users {
   bio text
   username text [unique]
   display_username text
+  status text [note: "User lifecycle for the invitation-only flow: pending (pre-created by invitation, no credentials) | active | deactivated (sessions revoked, memberships kept). ERP-owned extension column; default 'active'."]
   Note: "Better Auth system user. Superadmin flag for the admin plugin."
   Indexes {
     email [unique, name: 'users_email_key']
@@ -357,7 +359,6 @@ Table auth.users {
 }
 
 Table auth.sessions {
-  deleted_at bigint
   id text [pk]
   expires_at timestamp [not null]
   token text [not null, unique]
@@ -368,7 +369,7 @@ Table auth.sessions {
   user_id text [not null]
   impersonated_by text
   active_organization_id text
-  Note: "Better Auth session. Sessions are stored in Redis since the secondary storage switch; rows here are legacy."
+  Note: "Better Auth session. Sessions are stored in Redis since the secondary storage switch; rows here are legacy. Hard deleted on revoke (no deleted_at)."
   Indexes {
     user_id [name: 'sessions_userId_idx']
     token [unique, name: 'sessions_token_key']
@@ -376,7 +377,6 @@ Table auth.sessions {
 }
 
 Table auth.accounts {
-  deleted_at bigint
   id text [pk]
   account_id text [not null]
   provider_id text [not null]
@@ -397,21 +397,19 @@ Table auth.accounts {
 }
 
 Table auth.verifications {
-  updated_at bigint [not null]
-  deleted_at bigint
   id text [pk]
   identifier text [not null]
   value text [not null]
   expires_at timestamp [not null]
   created_at timestamp [not null, default: `now()`]
-  Note: "Better Auth one time verification token store."
+  updated_at timestamp [not null]
+  Note: "Better Auth one time verification token store. Consumed rows are hard deleted (no deleted_at)."
   Indexes {
     identifier [name: 'verifications_identifier_idx']
   }
 }
 
 Table auth.organizations {
-  updated_at bigint [not null]
   deleted_at bigint
   id text [pk]
   name text [not null]
@@ -426,14 +424,12 @@ Table auth.organizations {
 }
 
 Table auth.members {
-  updated_at bigint [not null]
-  deleted_at bigint
   id text [pk]
   organization_id text [not null]
   user_id text [not null]
-  role text [not null, default: 'member']
+  role text [not null, default: 'member', note: "Comma-separated ERP role keys. Resolved per validated organization against the live auth.roles rows and unioned across the listed roles; the shared catalog in packages/common/src/authorization/erp-permissions.ts is only the fallback vocabulary when no live role row matches."]
   created_at timestamp [not null]
-  Note: "Better Auth organization membership. Carries the ERP role key from packages/common/src/authorization/erp-permissions.ts."
+  Note: "Better Auth organization membership. HARD DELETED by Better Auth - there is no deleted_at column, so membership queries must never filter on one. Deactivating a user keeps these rows; removing a member deletes them."
   Indexes {
     organization_id [name: 'members_organizationId_idx']
     user_id [name: 'members_userId_idx']
@@ -441,8 +437,6 @@ Table auth.members {
 }
 
 Table auth.invitations {
-  updated_at bigint [not null]
-  deleted_at bigint
   id text [pk]
   organization_id text [not null]
   email text [not null]
@@ -459,8 +453,6 @@ Table auth.invitations {
 }
 
 Table auth.passkeys {
-  updated_at bigint [not null]
-  deleted_at bigint
   id text [pk]
   name text
   public_key text [not null]
@@ -480,7 +472,6 @@ Table auth.passkeys {
 }
 
 Table auth.apikeys {
-  deleted_at bigint
   id text [pk]
   config_id text [not null, default: 'default']
   name text
@@ -640,6 +631,58 @@ Ref: auth.portal_identities.user_id > auth.users.id [delete: cascade]
 Ref: auth.user_preferences.user_id > auth.users.id [delete: cascade]
 Ref: auth.identity_verifications.user_id > auth.users.id [delete: cascade]
 Ref: auth.user_devices.user_id > auth.users.id [delete: cascade]
+Ref: auth.roles.organization_id > auth.organizations.id [delete: cascade]
+Ref: auth.user_invitations.organization_id > auth.organizations.id [delete: cascade]
+Ref: auth.user_invitations.role_id > auth.roles.id [delete: set null]
+Ref: auth.user_invitations.invited_by > auth.users.id [delete: cascade]
+
+// ---------------------------------------------------------------------------
+// MODULE: Identity (user management extension, added 2026-11-01, migration
+// 20261101021221_ancient_luckman). ERP-owned tables in the auth schema for
+// the invitation-only user lifecycle. Reproduced from
+// drizzle/schemas/role.schema.ts. Never edit by hand.
+// ---------------------------------------------------------------------------
+
+Table auth.roles {
+  deleted_at timestamp
+  id text [pk]
+  organization_id text [not null]
+  name text [not null]
+  rank integer [not null]
+  permissions jsonb [not null, note: "Permission grant { resource: action[] } using the shared catalog vocabulary (@ims-erp/common erpStatements). Deny-by-default."]
+  is_system boolean [not null, default: false]
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  Note: "Per-organization dynamic role master data. Live grant source for ERP authorization: the guard resolves the caller's memberships against these rows per validated organization. rank drives the server-side escalation guard in the user-management module - SYSTEM_ROLE_RANKS in database/seeders/seed/organization-roles.seeder.ts sets owner=100, admin=80, hr=60, member=10, and every other seeded catalog role gets DEFAULT_CATALOG_RANK=50; custom roles must rank strictly below their creator. is_system rows are seeded from the shared ERP catalog and cannot be deleted. Partial unique (organization_id, name) WHERE deleted_at IS NULL."
+  Indexes {
+    organization_id [name: 'roles_organizationId_idx']
+  }
+}
+
+Table auth.user_invitations {
+  deleted_at timestamp
+  id text [pk]
+  type text [not null, default: 'app', note: "'app' = application-admin invite (no organization); 'org' = organization admin/HR invite (role + organization attached)."]
+  email text [not null]
+  name text [note: "App-admin path input; pre-creates the user and prefills the profile form on claim."]
+  organization_id text
+  role_id text
+  token_hash text [not null, unique, note: "SHA-256 of the emailed single-use token; raw token never stored. Replaced on resend (old token dies)."]
+  status text [not null, default: 'pending', note: "pending -> accepted on claim; cancelled by admin; expired by sweeper (3-day expiry)."]
+  invited_by text [not null]
+  expires_at timestamp [not null]
+  resent_count integer [not null, default: 0]
+  delivery_failed boolean [not null, default: false, note: "Bounce flag surfaced in the admin pending list."]
+  claimed_at timestamp
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  Note: "Unified invitation pipeline for both invite paths. Users are pre-created at invite time (users.status='pending'); deleting an unclaimed invitation soft-deletes it and its pending user. Named user_invitations because Better Auth owns auth.invitations (organization plugin, untouched)."
+  Indexes {
+    email [name: 'user_invitations_email_idx']
+    organization_id [name: 'user_invitations_organizationId_idx']
+    status [name: 'user_invitations_status_idx']
+  }
+}
 
 
 // ---------------------------------------------------------------------------
@@ -1604,7 +1647,7 @@ Table sales.sales_orders {
   grand_total bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   sales_person_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  warehouse_id uuid [note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  warehouse_id uuid [note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
   approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   approved_at bigint
   cancelled_at bigint
@@ -2032,7 +2075,7 @@ Table procurement.goods_receipts {
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
   purchase_order_id uuid [not null]
-  warehouse_id uuid [not null, note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  warehouse_id uuid [not null, note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
   status text [not null, default: 'draft']
   receipt_date date
   received_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
@@ -2154,21 +2197,21 @@ Ref: procurement.purchase_returns.supplier_id > procurement.suppliers.id [delete
 Ref: procurement.purchase_return_items.purchase_return_id > procurement.purchase_returns.id [delete: cascade]
 Ref: procurement.purchase_return_items.purchase_order_item_id > procurement.purchase_order_items.id [delete: set null]
 
-// ---------------------------------------------------------------------------
-// MODULE: Inventory  (schemas: inventory, warehouse)
-// Warehouse master lives in the warehouse schema; the authoritative stock
-// movement ledger, the stock balance projection, adjustments, transfers,
-// reservations, serial and lot tracking and cycle counts live here.
-// inventory.warehouse_id columns carry a real FK into inventory.warehouses
-// (same module) with composite tenant scoping per postgresql-constraints.sql.
+
+// MODULE: Inventory, warehouse schema  (same module as Inventory below)
+// Warehouse master: warehouses and their zones and bins. Same module as
+// Inventory; the split schema is storage grouping, not an ownership boundary,
+// so Inventory tables keep real foreign keys into warehouse.*.
 // Tenant scoped.
 // ---------------------------------------------------------------------------
 
-
-Table inventory.warehouses {
+Table warehouse.warehouses {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
+  name text [not null]
+  location_text text
+  village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
   responsible_employee_id uuid [note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
   is_default boolean [not null, default: false]
   is_active boolean [not null, default: true]
@@ -2181,25 +2224,7 @@ Table inventory.warehouses {
   }
 }
 
-Table inventory.warehouse_addresses {
-  id uuid [pk, default: `uuidv7()`]
-  is_default boolean [not null, default: false]
-  is_active boolean [not null, default: true]
-  address text
-  latitude numeric(10,7)
-  longitude numeric(10,7)
-  province_id uuid [note: "Logical reference to location.provinces.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
-  regency_id uuid [note: "Logical reference to location.regencies.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
-  district_id uuid [note: "Logical reference to location.districts.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
-  village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
-  warehouse_id uuid [not null, Note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
-  Note: "Warehouse address master. Structured Indonesian address. Same module as Inventory."
-}
-
-Table inventory.warehouse_zones {
+Table warehouse.warehouse_zones {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   warehouse_id uuid [not null]
@@ -2220,7 +2245,7 @@ Table inventory.warehouse_zones {
   }
 }
 
-Table inventory.warehouse_bins {
+Table warehouse.warehouse_bins {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   warehouse_id uuid [not null]
@@ -2233,7 +2258,7 @@ Table inventory.warehouse_bins {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Bin inside a inventory. The finest physical stock address."
+  Note: "Bin inside a warehouse. The finest physical stock address."
   Indexes {
     (organization_id, warehouse_id, code) [unique, name: 'warehouse_bins_uq']
     zone_id [name: 'warehouse_bins_zone_id_idx']
@@ -2243,6 +2268,15 @@ Table inventory.warehouse_bins {
   }
 }
 
+// ---------------------------------------------------------------------------
+// MODULE: Inventory  (schemas: inventory, warehouse)
+// Warehouse master lives in the warehouse schema; the authoritative stock
+// movement ledger, the stock balance projection, adjustments, transfers,
+// reservations, serial and lot tracking and cycle counts live here.
+// inventory.warehouse_id columns carry a real FK into warehouse.warehouses
+// (same module) with composite tenant scoping per postgresql-constraints.sql.
+// Tenant scoped.
+// ---------------------------------------------------------------------------
 
 Table inventory.stock_movements {
   updated_at bigint [not null]
@@ -2512,7 +2546,7 @@ Table inventory.cycle_counts {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Cycle count of a inventory. Variances become stock adjustments."
+  Note: "Cycle count of a warehouse. Variances become stock adjustments."
   Indexes {
     (organization_id, code) [unique, name: 'cycle_counts_org_code_uq']
     warehouse_id [name: 'cycle_counts_warehouse_id_idx']
@@ -2547,23 +2581,23 @@ Table inventory.cycle_count_items {
 }
 
 // Intra-module FKs (Warehouse + Inventory are one module).
-Ref: inventory.warehouse_zones.warehouse_id > inventory.warehouses.id [delete: cascade]
-Ref: inventory.warehouse_bins.warehouse_id > inventory.warehouses.id [delete: cascade]
-Ref: inventory.warehouse_bins.zone_id > inventory.warehouse_zones.id [delete: set null]
-Ref: inventory.stock_movements.warehouse_id > inventory.warehouses.id [delete: restrict]
-Ref: inventory.stock_movements.bin_id > inventory.warehouse_bins.id [delete: set null]
-Ref: inventory.stock_movements.target_warehouse_id > inventory.warehouses.id [delete: restrict]
-Ref: inventory.stock_balances.warehouse_id > inventory.warehouses.id [delete: cascade]
-Ref: inventory.stock_adjustments.warehouse_id > inventory.warehouses.id [delete: restrict]
+Ref: warehouse.warehouse_zones.warehouse_id > warehouse.warehouses.id [delete: cascade]
+Ref: warehouse.warehouse_bins.warehouse_id > warehouse.warehouses.id [delete: cascade]
+Ref: warehouse.warehouse_bins.zone_id > warehouse.warehouse_zones.id [delete: set null]
+Ref: inventory.stock_movements.warehouse_id > warehouse.warehouses.id [delete: restrict]
+Ref: inventory.stock_movements.bin_id > warehouse.warehouse_bins.id [delete: set null]
+Ref: inventory.stock_movements.target_warehouse_id > warehouse.warehouses.id [delete: restrict]
+Ref: inventory.stock_balances.warehouse_id > warehouse.warehouses.id [delete: cascade]
+Ref: inventory.stock_adjustments.warehouse_id > warehouse.warehouses.id [delete: restrict]
 Ref: inventory.stock_adjustment_items.stock_adjustment_id > inventory.stock_adjustments.id [delete: cascade]
-Ref: inventory.stock_transfers.from_warehouse_id > inventory.warehouses.id [delete: restrict]
-Ref: inventory.stock_transfers.to_warehouse_id > inventory.warehouses.id [delete: restrict]
+Ref: inventory.stock_transfers.from_warehouse_id > warehouse.warehouses.id [delete: restrict]
+Ref: inventory.stock_transfers.to_warehouse_id > warehouse.warehouses.id [delete: restrict]
 Ref: inventory.stock_transfer_items.stock_transfer_id > inventory.stock_transfers.id [delete: cascade]
-Ref: inventory.stock_reservations.warehouse_id > inventory.warehouses.id [delete: cascade]
-Ref: inventory.serial_tracked_items.warehouse_id > inventory.warehouses.id [delete: set null]
+Ref: inventory.stock_reservations.warehouse_id > warehouse.warehouses.id [delete: cascade]
+Ref: inventory.serial_tracked_items.warehouse_id > warehouse.warehouses.id [delete: set null]
 Ref: inventory.serial_tracked_items.stock_movement_id > inventory.stock_movements.id [delete: set null]
-Ref: inventory.lot_batches.warehouse_id > inventory.warehouses.id [delete: set null]
-Ref: inventory.cycle_counts.warehouse_id > inventory.warehouses.id [delete: restrict]
+Ref: inventory.lot_batches.warehouse_id > warehouse.warehouses.id [delete: set null]
+Ref: inventory.cycle_counts.warehouse_id > warehouse.warehouses.id [delete: restrict]
 Ref: inventory.cycle_count_items.cycle_count_id > inventory.cycle_counts.id [delete: cascade]
 
 // ---------------------------------------------------------------------------
@@ -5301,7 +5335,7 @@ Table aftersales.spare_parts {
   code varchar(32) [not null]
   name text [not null]
   item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  warehouse_id uuid [note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  warehouse_id uuid [note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
   quantity_on_hand numeric(18,3) [not null, default: 0]
   min_quantity numeric(18,3) [not null, default: 0]
   unit_cost bigint [not null, default: 0]
@@ -7260,34 +7294,32 @@ Ref: ticket.ticket_status_history.ticket_id > ticket.tickets.id [delete: cascade
 
 // ---------------------------------------------------------------------------
 // MODULE: Audit  (schema: audit)
-// One append only trail. organization_id is nullable because a global admin
-// action may happen outside any organization.
+// Reproduced from drizzle/schemas/audit.schema.ts (user-management module).
+// ERP-owned append-only trail for user-management security events.
+// Insert-only by contract: no updates, no soft delete (exempt from the
+// deleted_at rule as an append-only ledger). The actor is a logical
+// reference so a deleted user does not erase the trail.
 // ---------------------------------------------------------------------------
 
 Table audit.audit_logs {
-  updated_at bigint [not null]
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text
-  actor_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  actor_role text
-  action text [not null]
-  entity_type text
-  entity_id text
-  module text
-  before_state text
-  after_state text
+  id text [pk]
+  actor_user_id text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
+  actor_email text [note: "Denormalized actor display for readability without joins."]
+  action text [not null, note: "Vocabulary guarded by application code (AUDIT_ACTIONS): invitation.sent/resent/cancelled/deleted/claimed, user.precreated/deactivated/restored/deleted, role.created/updated/deleted, member.added/removed/roleChanged, org.created."]
+  target_type text [not null, note: "'invitation' | 'user' | 'role' | 'member' | 'organization'."]
+  target_id text [not null]
+  organization_id text [note: "Tenant scope; null for global (app-admin) actions."]
+  meta jsonb [note: "Action-specific payload (before/after, emails, role names)."]
   ip_address text
   user_agent text
-  request_id text
-  created_at bigint [not null]
-  Note: "Append only audit trail. The actor is a logical reference so a deleted user does not erase the trail."
+  created_at timestamp [not null, default: `now()`]
+  Note: "Append-only audit trail for user-management events. Insert-only ledger, exempt from soft delete."
   Indexes {
     created_at [name: 'audit_logs_created_at_idx']
     organization_id [name: 'audit_logs_organization_id_idx']
-    (entity_type, entity_id) [name: 'audit_logs_entity_idx']
     actor_user_id [name: 'audit_logs_actor_user_id_idx']
     action [name: 'audit_logs_action_idx']
+    (target_type, target_id) [name: 'audit_logs_target_idx']
   }
 }
 

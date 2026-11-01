@@ -53,6 +53,31 @@ not in lock** (local/project-specific additions), **n/a** (not installed).
   redundant package would only add index noise. Revisit if a later phase
   (e.g., payroll/financial posting) needs a specialized skill.
 
+## Phase-4 lessons (learned in the user-management build)
+
+Recorded here so they are not re-learned. The Elysia skills were left at
+v1.1.0 by decision — this section is the canonical record.
+
+- **One owner per resource.** Two handlers for the same path do not "collide"
+  and cannot be fixed by mount order. A plugin registered as
+  `prefix: '/users'` + `.get('/')` creates the route `/users/`, which is a
+  *distinct* route from `/users` — and Elysia serves `/users/` for a bare
+  `/users` request, silently shadowing the literal one. Symptom: an endpoint
+  answered by the wrong controller (the admin users table crashed on
+  `user.organizations` being `undefined`). Fix by giving each resource a single
+  owning controller, not by reordering `.use()` calls. A regression test should
+  pin the response *shape* the consumer depends on.
+- **Repository `update()` must not filter `deletedAt` when the service owns the
+  revive decision.** Adding `deleted_at IS NULL` to an update predicate made the
+  soft-delete revive path throw (`undefined is not an object ('role.id')`). Who
+  may edit is a service-layer question (rank guard, system-role rules); the
+  repository must not silently narrow the row set.
+- **Schema validation is not the authorization boundary.** `rank` deliberately
+  accepts 1–100 in the Zod schema so the escalation guard — not input
+  validation — decides who may grant owner-level ranks. Never "harden" a schema
+  by capping it below the guard, or privileged callers lose legitimate paths.
+
+
 ## Gaps
 
 - No skill installed for PostgreSQL/SQL review beyond the Drizzle ones;

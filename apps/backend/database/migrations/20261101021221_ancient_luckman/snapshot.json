@@ -1,0 +1,973 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "b3fc48b7-eef2-42e8-be27-a7fd8b476aa9",
+  "prevIds": [
+    "aafdcb6b-355f-4d98-be06-2395b9fd3150"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "auth",
+        "roles"
+      ],
+      "writes": [
+        "s|tbl|auth.roles",
+        "n|tbl|auth.roles",
+        "e|tbl|auth.roles",
+        "n|rel|auth.roles",
+        "n|type|auth.roles",
+        "n|rel|auth.roles_pkey"
+      ],
+      "reads": [
+        "n|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "auth",
+        "user_invitations"
+      ],
+      "writes": [
+        "s|tbl|auth.user_invitations",
+        "n|tbl|auth.user_invitations",
+        "e|tbl|auth.user_invitations",
+        "n|rel|auth.user_invitations",
+        "n|type|auth.user_invitations",
+        "n|rel|auth.user_invitations_pkey"
+      ],
+      "reads": [
+        "n|sch|auth"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "auth",
+        "users",
+        "status"
+      ],
+      "writes": [
+        "s|col|auth.users.status",
+        "n|col|auth.users.status",
+        "e|col|auth.users.status"
+      ],
+      "reads": [
+        "n|tbl|auth.users",
+        "n|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "auth",
+        "roles",
+        "roles_org_name_live_idx"
+      ],
+      "writes": [
+        "s|idx|auth.roles_org_name_live_idx",
+        "n|idx|auth.roles_org_name_live_idx",
+        "e|idx|auth.roles_org_name_live_idx",
+        "n|rel|auth.roles_org_name_live_idx"
+      ],
+      "reads": [
+        "n|tbl|auth.roles",
+        "n|sch|auth",
+        "n|col|auth.roles.organization_id",
+        "n|col|auth.roles.name"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "auth",
+        "roles",
+        "roles_organizationId_idx"
+      ],
+      "writes": [
+        "s|idx|auth.roles_organizationId_idx",
+        "n|idx|auth.roles_organizationId_idx",
+        "e|idx|auth.roles_organizationId_idx",
+        "n|rel|auth.roles_organizationId_idx"
+      ],
+      "reads": [
+        "n|tbl|auth.roles",
+        "n|sch|auth",
+        "n|col|auth.roles.organization_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "auth",
+        "user_invitations",
+        "user_invitations_token_hash_idx"
+      ],
+      "writes": [
+        "s|idx|auth.user_invitations_token_hash_idx",
+        "n|idx|auth.user_invitations_token_hash_idx",
+        "e|idx|auth.user_invitations_token_hash_idx",
+        "n|rel|auth.user_invitations_token_hash_idx"
+      ],
+      "reads": [
+        "n|tbl|auth.user_invitations",
+        "n|sch|auth",
+        "n|col|auth.user_invitations.token_hash"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "auth",
+        "user_invitations",
+        "user_invitations_email_idx"
+      ],
+      "writes": [
+        "s|idx|auth.user_invitations_email_idx",
+        "n|idx|auth.user_invitations_email_idx",
+        "e|idx|auth.user_invitations_email_idx",
+        "n|rel|auth.user_invitations_email_idx"
+      ],
+      "reads": [
+        "n|tbl|auth.user_invitations",
+        "n|sch|auth",
+        "n|col|auth.user_invitations.email"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "auth",
+        "user_invitations",
+        "user_invitations_organizationId_idx"
+      ],
+      "writes": [
+        "s|idx|auth.user_invitations_organizationId_idx",
+        "n|idx|auth.user_invitations_organizationId_idx",
+        "e|idx|auth.user_invitations_organizationId_idx",
+        "n|rel|auth.user_invitations_organizationId_idx"
+      ],
+      "reads": [
+        "n|tbl|auth.user_invitations",
+        "n|sch|auth",
+        "n|col|auth.user_invitations.organization_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "auth",
+        "user_invitations",
+        "user_invitations_status_idx"
+      ],
+      "writes": [
+        "s|idx|auth.user_invitations_status_idx",
+        "n|idx|auth.user_invitations_status_idx",
+        "e|idx|auth.user_invitations_status_idx",
+        "n|rel|auth.user_invitations_status_idx"
+      ],
+      "reads": [
+        "n|tbl|auth.user_invitations",
+        "n|sch|auth",
+        "n|col|auth.user_invitations.status"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "auth",
+        "roles"
+      ],
+      "writes": [
+        "s|fk|auth.roles.roles_organization_id_organizations_id_fkey",
+        "n|fk|auth.roles.roles_organization_id_organizations_id_fkey",
+        "e|fk|auth.roles.roles_organization_id_organizations_id_fkey",
+        "n|con|auth.roles.roles_organization_id_organizations_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|auth.roles",
+        "n|sch|auth",
+        "n|tbl|auth.organizations",
+        "n|sch|auth",
+        "n|col|auth.roles.organization_id",
+        "n|col|auth.organizations.id",
+        "e|uniqueness|auth.organizations.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "auth",
+        "user_invitations"
+      ],
+      "writes": [
+        "s|fk|auth.user_invitations.user_invitations_organization_id_organizations_id_fkey",
+        "n|fk|auth.user_invitations.user_invitations_organization_id_organizations_id_fkey",
+        "e|fk|auth.user_invitations.user_invitations_organization_id_organizations_id_fkey",
+        "n|con|auth.user_invitations.user_invitations_organization_id_organizations_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|auth.user_invitations",
+        "n|sch|auth",
+        "n|tbl|auth.organizations",
+        "n|sch|auth",
+        "n|col|auth.user_invitations.organization_id",
+        "n|col|auth.organizations.id",
+        "e|uniqueness|auth.organizations.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "auth",
+        "user_invitations"
+      ],
+      "writes": [
+        "s|fk|auth.user_invitations.user_invitations_role_id_roles_id_fkey",
+        "n|fk|auth.user_invitations.user_invitations_role_id_roles_id_fkey",
+        "e|fk|auth.user_invitations.user_invitations_role_id_roles_id_fkey",
+        "n|con|auth.user_invitations.user_invitations_role_id_roles_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|auth.user_invitations",
+        "n|sch|auth",
+        "n|tbl|auth.roles",
+        "n|sch|auth",
+        "n|col|auth.user_invitations.role_id",
+        "n|col|auth.roles.id",
+        "e|uniqueness|auth.roles.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "auth",
+        "user_invitations"
+      ],
+      "writes": [
+        "s|fk|auth.user_invitations.user_invitations_invited_by_users_id_fkey",
+        "n|fk|auth.user_invitations.user_invitations_invited_by_users_id_fkey",
+        "e|fk|auth.user_invitations.user_invitations_invited_by_users_id_fkey",
+        "n|con|auth.user_invitations.user_invitations_invited_by_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|auth.user_invitations",
+        "n|sch|auth",
+        "n|tbl|auth.users",
+        "n|sch|auth",
+        "n|col|auth.user_invitations.invited_by",
+        "n|col|auth.users.id",
+        "e|uniqueness|auth.users.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "name": "roles",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "name": "user_invitations",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "users",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": "'active'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "roles",
+        "name": "id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "roles",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "roles",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "roles",
+        "name": "rank",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "roles",
+        "name": "permissions",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "roles",
+        "name": "is_system",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "roles",
+        "name": "deleted_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "roles",
+        "name": "created_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "roles",
+        "name": "updated_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'app'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "email",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "role_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "token_hash",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'pending'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "invited_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "expires_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "resent_count",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "delivery_failed",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "claimed_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "deleted_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "created_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "updated_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "roles",
+        "name": "roles_org_name_live_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "name",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "roles",
+        "name": "roles_organizationId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "user_invitations_token_hash_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "token_hash",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "user_invitations_email_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "email",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "user_invitations_organizationId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "user_invitations_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "roles",
+        "name": "roles_organization_id_organizations_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "organization_id"
+        ],
+        "schemaTo": "auth",
+        "tableTo": "organizations",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "user_invitations_organization_id_organizations_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "organization_id"
+        ],
+        "schemaTo": "auth",
+        "tableTo": "organizations",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "user_invitations_role_id_roles_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "role_id"
+        ],
+        "schemaTo": "auth",
+        "tableTo": "roles",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "user_invitations_invited_by_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "invited_by"
+        ],
+        "schemaTo": "auth",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "roles",
+        "name": "roles_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "user_invitations",
+        "name": "user_invitations_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}
