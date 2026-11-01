@@ -22,7 +22,49 @@ Hard rules:
 - Multi-role members get the UNION of their roles' permissions, but
   business separation-of-duties (self-approval, pre-approval execution)
   is enforced in services regardless of role combinations.
-- Static, code-defined roles. Dynamic access control is NOT enabled.
+
+### Static catalog vs dynamic per-organization roles
+
+Two tiers — the catalog is **vocabulary**, `auth.roles` is the **grant**:
+
+| Tier | What it is | Where |
+|---|---|---|
+| Shared catalog | Resource/action vocabulary + the seed grants for system roles | `packages/common/src/authorization/erp-permissions.ts` |
+| Live role rows | Actual per-organization grants, mutable at runtime | `auth.roles` (`permissions` jsonb, deny-by-default) |
+
+- **Dynamic access control IS enabled.** `auth.members.role` holds
+  comma-separated role keys; the guard resolves them per validated
+  organization and unions their live `auth.roles.permissions`.
+- The static catalog is used **only as a fallback** when no live role row
+  matches a key. A live row always wins.
+- There is exactly **one grant source**: server access control, client access
+  control, and the role seeder all consume `erp-permissions.ts`. Never layer a
+  second local copy.
+- A global app admin with **no** live role row in the organization gets the
+  admin ceiling for mutation guards — never the owner ceiling.
+- `auth.members` is **hard-deleted** by Better Auth; it has no `deleted_at`
+  column. Membership queries must never filter on one.
+
+### Rank and escalation guard
+
+Roles carry a `rank`; mutations require the target to rank **strictly below**
+the caller (`targetRank >= callerRank` is rejected, server-side):
+
+| Role | Rank |
+|---|---|
+| owner | 100 |
+| admin | 80 |
+| hr | 60 |
+| member | 10 |
+| every other seeded catalog role | 50 (`DEFAULT_CATALOG_RANK`) |
+| custom roles | must rank strictly below their creator |
+
+Source of truth: `SYSTEM_ROLE_RANKS` + `DEFAULT_CATALOG_RANK` in
+`apps/backend/database/seeders/seed/organization-roles.seeder.ts`.
+
+Schema validation is **not** the authorization boundary: `rank` accepts 1–100
+by design so the guard, not Zod, decides who may grant what.
+
 
 ## Where things live
 
@@ -33,6 +75,11 @@ Hard rules:
 | Global role constants | `apps/backend/src/providers/better-auth/ac/admin-ac.ts` |
 | Privilege-escalation hooks (member/invitation endpoints) | `apps/backend/src/providers/better-auth/ac/auth-hooks.ts` |
 | Elysia guard (`erpGuard`, `erp` macro, ErpAuthError) | `apps/backend/src/authorization/elysia-auth.ts` |
+| Dynamic permission resolver (live `auth.roles` lookup + union) | `apps/backend/src/authorization/dynamic-permissions.ts` |
+| `IPermissionResolver` / `PERMISSION_RESOLVER_TOKEN` contract | `apps/backend/src/authorization/permission-resolver.ts` |
+| Authorization DI registration | `apps/backend/src/authorization/container.ts` |
+| DI tokens (split from the provider so importing a token never opens a DB connection) | `apps/backend/src/di/tokens.ts` |
+| Role CRUD + rank/escalation guard | `apps/backend/src/app/user-management/services/role-management.service.ts` |
 | Client-side ac + roles (browser-safe re-composition) | `apps/web-admin/src/lib/erp-ac.ts` |
 | Frontend permission types + helpers | `apps/web-admin/src/lib/permissions.ts`, `use-permission.tsx` |
 
@@ -141,26 +188,46 @@ Permissions are necessary but never sufficient for approvals:
 
 ## Privilege-escalation protection
 
-`auth-hooks.ts` installs Better Auth `hooks.before` middleware that:
+Two complementary layers:
 
-- Blocks `owner` grants via `/organization/add-member`,
-  `/organization/update-member-role`, and `/organization/create-invitation`
-  unless the actor is an organization owner.
-- Blocks non-grantable roles for org admins (owner only for now).
-- Runs inside the Better Auth handler, so both the mounted auth routes and
-  server-side `auth.api.*` calls are covered.
+1. **Better Auth hooks.** `auth-hooks.ts` installs `hooks.before` middleware that:
+
+   - Blocks `owner` grants via `/organization/add-member`,
+     `/organization/update-member-role`, and `/organization/create-invitation`
+     unless the actor is an organization owner.
+   - Blocks non-grantable roles for org admins (owner only for now).
+   - Runs inside the Better Auth handler, so both the mounted auth routes and
+     server-side `auth.api.*` calls are covered.
+
+2. **ERP rank guard.** The user-management services enforce the rank rule
+   above for every role and account mutation (`RankGuardError`). This is the
+   authority for `/roles` and `/users` routes — the hook above does not see
+   them.
 
 Global role changes remain exclusively within `admin()` endpoints.
 
 ## Audit
 
-Sensitive actions (role changes, invitations, approvals/rejections, payment
-execution, financial posting/reversal, sensitive exports, secret rotation,
-impersonation) append to the future `audit_logs` table (schema per
-`docs/database/`): actor, organization, action, target, timestamp, outcome,
-redacted metadata. Implementation lands with the modules that own those
-actions; the catalog resources (`audit_log:read`, `audit_log:export`) are
-already gated.
+User-management events are **implemented**: `audit.audit_logs` is an
+append-only ledger written by `AuditService`
+(`src/app/user-management/services/audit.service.ts`), read through
+`AuditQueryService` and the `GET /audit` route gated on `audit_log:read`.
+
+- Vocabulary: `invitation.sent|resent|cancelled|deleted|claimed`,
+  `user.precreated|deactivated|restored|deleted`,
+  `role.created|updated|deleted`, `member.added|removed|roleChanged`,
+  `org.created`.
+- Insert-only by contract: no updates, no soft delete (exempt from the
+  `deleted_at` rule as an append-only ledger).
+- The actor is a **logical** reference to `auth.users.id`, so a deleted user
+  never erases the trail.
+- `created_at` is a timestamp; range filters convert unix-ms inputs via
+  `new Date(floor(ms/1000)*1000)`.
+
+The remaining business modules (approvals, payment execution, financial
+posting, exports, secret rotation, impersonation) still append to this same
+table as they land; the catalog resources (`audit_log:read`,
+`audit_log:export`) are already gated.
 
 ## Cache / revocation
 
@@ -189,6 +256,11 @@ already gated.
   `location.seeder`. The auth seeder is idempotent: creates the initial
   global admin (no org membership) via the Better Auth instance; existing
   users are never reset.
+- **Role seeding is insert-only.** It seeds `auth.roles` rows from the shared
+  catalog but never overwrites existing grants. Re-syncing `isSystem` rows after
+  a catalog change is a separate, explicit operation:
+  `refreshSystemRoleGrants()`, run via
+  `apps/backend/scripts/refresh-role-grants.ts`.
 - Credentials: `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_USERNAME` /
   `INITIAL_ADMIN_PASSWORD` (dev-only defaults; see `.env.example`). Values
   are never logged. There is no auto-promotion of existing users.
@@ -198,6 +270,12 @@ already gated.
 - Permission matrix + Elysia guard pipeline verified by
   `apps/backend/test/authorization/` (24 integration + 18 matrix tests,
   2026-10-29).
+- Dynamic role resolution, role CRUD and the account lifecycle verified by
+  `apps/backend/test/unit/` — 113 tests, 0 failures (2026-11-01). All
+  repository/DB dependencies are mocked; guard tests never open a real
+  database connection.
+- Live admin API verified by `apps/backend/scripts/smoke-admin-api.ts`
+  (16/16 checks), including the escalation guard rejecting an owner-rank grant.
 - Real-database session flow (login -> cookie -> guard) verified over live
   HTTP 2026-10-29; sessions now Redis-only via `secondaryStorage` (verified:
   Redis keys with 7d TTL, no new Postgres session rows, sign-out clears
@@ -206,8 +284,11 @@ already gated.
 ## Integration gaps (modules not yet built)
 
 The catalog registers the full ERP vocabulary, but only the `sales` vertical
-(quotation, payment) exists today. Routes for the remaining resources must
-use the `erp` macro as they are built; record-level policies that depend on
-missing modules (payslip ownership, investor report publication status,
-approval_rule storage, audit writes) are documented here and MUST be wired
-when each module lands.
+(quotation, payment) plus user management exist today. Routes for the remaining
+resources must use the `erp` macro as they are built; record-level policies
+that depend on missing modules (payslip ownership, investor report publication
+status, approval_rule storage) are documented here and MUST be wired when each
+module lands.
+
+Audit writes are no longer a gap: `audit.audit_logs` and `AuditService` exist,
+and the user-management actions listed under **Audit** already append to it.

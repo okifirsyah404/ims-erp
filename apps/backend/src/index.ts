@@ -21,12 +21,20 @@ import { registerSales } from './app/sales/container';
 import { SalesController } from './app/sales/controllers/sales.controller';
 import { registerUser } from './app/user/container';
 import { UserController } from './app/user/controllers/user.controller';
-
+import {
+	InvitationController,
+	UsernameCheckController,
+} from './app/user-management/controllers/invitation.controller';
+import { UserAdminController } from './app/user-management/controllers/user-admin.controller';
+import { registerUserManagement } from './app/user-management/container';
+import { registerAuthorization } from './authorization/container';
 registerProvider(container);
 registerLocation(container);
 registerSales(container);
 registerUser(container);
 registerOrganization(container);
+registerUserManagement(container);
+registerAuthorization(container);
 
 const bootstrap = new Elysia()
 	.use(wrap(pinoLogger))
@@ -45,8 +53,15 @@ const bootstrap = new Elysia()
 	.use(elysiaApp)
 	.use(LocationController.plugin())
 	.use(SalesController.plugin())
+	// Admin user-management routes mount BEFORE UserController: both register
+	// `GET /users`, and with prefix-wrapped plugins the FIRST registration
+	// wins. The phase-4 listing is the permission-gated one (`member:read`),
+	// so it must not be shadowed by the legacy directory route.
+	.use(UserAdminController.plugin())
 	.use(UserController.plugin())
 	.use(OrganizationController.plugin())
+	.use(InvitationController.plugin())
+	.use(UsernameCheckController.plugin())
 	.listen(appConfig.app.port);
 
 // Avatar generation worker: consumes the BullMQ 'avatar' queue filled by

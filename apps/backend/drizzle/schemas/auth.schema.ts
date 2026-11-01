@@ -1,4 +1,4 @@
-import { defineRelationsPart } from "drizzle-orm";
+import { defineRelationsPart, sql } from "drizzle-orm";
 import {
   pgSchema,
   text,
@@ -35,7 +35,23 @@ export const users = authSchema.table("users", {
   // regresses this file (drops pgSchema/plural tables/relations), so the
   // generated column declaration is replicated here verbatim instead.
   deletedAt: timestamp("deleted_at"),
-});
+  // User lifecycle status for the invitation-only user management flow.
+  // `pending`: pre-created by an invitation, no credentials yet.
+  // `active`: claimed (credentials set) or seeded.
+  // `deactivated`: soft-disabled by an admin (sessions revoked, login
+  // blocked); memberships are kept so restore brings full context.
+  // Mirrors the `status` additionalField in auth.options.ts (same
+  // hand-applied-delta caveat as deletedAt above).
+  status: text("status").default("active"),
+  // Contact phone number, captured at invitation claim (form 1). Unique so
+  // the planned phone login can never hit a migration wall. Mirrors the
+  // `phone` additionalField in auth.options.ts (hand-applied-delta caveat).
+  phone: text("phone"),
+}, (table) => [
+  // Phone uniqueness for the planned phone login; partial so multiple
+  // NULLs (users without phone) are allowed.
+  uniqueIndex("users_phone_live_idx").on(table.phone).where(sql`phone IS NOT NULL`),
+]);
 
 /** Row shape of `auth.users`. */
 export type TUserSelect = typeof users.$inferSelect;

@@ -3,6 +3,269 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed (this session - user-management phase 4: admin UI + admin API, 2026-11-01)
+
+Plan: `.agents/docs/plans/user-management.md`. Phase 4 of 7 complete (backend +
+admin UI; `/members` page enhancements + member role-change UI remain).
+
+Backend — new surface, all gated by the phase-3 dynamic guard:
+
+- `contracts/admin.contract.ts` — zod schemas for users/roles/audit.
+  `createRoleSchema`/`updateRoleSchema` `rank` accepts **1..100** (was
+  `max(99)`). Rationale: schema validation must not cap below a rank the
+  escalation guard is responsible for rejecting — the guard, not the schema,
+  is the authorization boundary. With `max(99)` an owner's `rank: 100` POST was
+  rejected as a 400 *validation* error and the rank guard never ran.
+- `repositories/role.repository.ts` — Drizzle role CRUD: list (with live
+  member counts), findById/findByName/findByNameIncludingDeleted, create,
+  update, softDelete, undelete, countMembers.
+- `repositories/audit.repository.ts`, `services/audit-query.service.ts` —
+  filterable audit reads (action, targetType, actor, org, from/to range;
+  `created_at` is unix-seconds so ranges convert via
+  `new Date(floor(ms/1000)*1000)`).
+- `services/role-management.service.ts` — rank/escalation guard (target rank
+  strictly below caller's), grant validation against the shared catalog
+  vocabulary, system-role and in-use delete guards, soft-deleted name revive.
+- `services/user-admin.service.ts` — deactivate (revokes sessions, keeps
+  memberships), restore, soft delete, outrank checks.
+- `controllers/user-admin.controller.ts` — `/users`, `/roles`,
+  `/roles/permissions`, `/audit`; `callerRank()` = highest live role rank in
+  the validated org, with app-admin-without-dynamic-role ceiling 80 (never
+  owner).
+- Permission mapping: user list / role list / `/roles/permissions` →
+  `member:read`; role create → `member:create`; user+role update,
+  deactivate/restore → `member:update`; delete → `member:delete`; audit list →
+  `audit_log:read`.
+
+Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
+
+- `lib/admin-api.ts` — users/roles/audit/invitations fetchers, `queryOptions`,
+  `parseBulkInviteRows` (resolves pasted role *names* to ids; unknowns fall
+  through to the backend's `member` fallback), `BULK_INVITE_LIMIT = 100`,
+  `ADMIN_PERMISSIONS`.
+- `lib/use-active-organization.ts` — resolves the active org from the session,
+  falling back to the caller's first org (matches the sidebar switcher).
+- Routes `/_authed/users`, `/_authed/roles`, `/_authed/audit`; components
+  `admin/invite-dialog.tsx` (single + bulk paste), `admin/pending-invitations-panel.tsx`
+  (expiry display, resend/cancel/delete).
+
+### Bugs found and fixed this phase
+
+1. **Double-encoded `owner` grants in the live DB.** `auth.roles.permissions`
+   for the `owner` row was a JSON **string** (a serialized object stored
+   through an extra `JSON.stringify`), i.e. `jsonb_typeof = 'string'` with 3786
+   numeric-index keys. `grantsAllow()` iterates `Object.entries(grant)`, which
+   on a string yields indices — so owner was denied **every** permission and
+   all phase-4 endpoints 403'd. Repaired by `scripts/refresh-role-grants.ts`
+   (`rolesUpdated: 1`). Hardened `sameGrants()` in
+   `organization-roles.seeder.ts` to treat non-object/array values as drift so
+   the ops script can self-heal this class of corruption.
+2. **`GET /users` route shadowing + missing guard.** Two controllers register
+   `GET /users`: the legacy `UserController` (prefix `/users`) and the new
+   `UserAdminController`. With prefix-wrapped plugins the **FIRST** registration
+   wins (verified: `new Elysia().use(prefixed).use(literal)` → prefixed handler
+   answers; reversing swaps the winner). The legacy listing was also declared
+   `erp: {}` — no permission — so **any authenticated member could enumerate
+   the entire user base**. Fixed both: legacy `/` now uses
+   `{ erp: { policy: requireGlobalAdmin } }` (matching every other route on
+   that controller), and `UserAdminController.plugin()` is mounted **before**
+   `UserController.plugin()` in `src/index.ts` so the permission-gated
+   `member:read` listing wins.
+3. **Revive path crashed with 500** (`undefined is not an object (evaluating
+   'role.id')`). `RoleRepository.update()` filtered `.where(isNull(deletedAt))`,
+   but `create()` revives a soft-deleted role by updating it *before*
+   `undelete` — the predicate matched zero rows, `.returning()` yielded
+   `undefined`, and the caller dereferenced it. Removed the `deletedAt`
+   predicate from `update`; who may edit is decided by the service (rank guard,
+   system-role rules), not by the query.
+4. **React purity warnings** in `pending-invitations-panel.tsx` from calling
+   `Date.now()` during render; moved "now" into a cached `useQuery`.
+5. **`user.organizations` undefined in the admin users table** (runtime crash:
+   `can't access property "length", user.organizations is undefined`).
+   `GET /users` was still being answered by the *legacy* `UserController`
+   handler, which returns bare user columns with no membership join. The two
+   handlers do not actually collide: the legacy plugin is `prefix: '/users'`
+   + `.get('/')`, so it registers the distinct path `/users/` while the admin
+   controller registers `/users` — and Elysia serves `/users/` for a bare
+   `/users` request. Reordering the mounts could never fix it (my earlier
+   "first registration wins" note was measured on prefix-less toy plugins and
+   is **wrong** for this case; the two routes simply never competed).
+   Fixed by making the admin controller the single owner of the listing:
+   the legacy `GET /users` handler (and its now-dead `okPaginated` helper and
+   `userQuerySchema` import) was deleted. The users table also uses
+   `user.organizations ?? []` defensively, and a unit test pins that the
+   admin projection always emits the field.
+
+### Verification (exact commands)
+
+- `apps/backend` (follow-up fix): `bunx tsc --noEmit` → clean; `bun test` →
+  **113 pass / 0 fail**; `bun run scripts/smoke-admin-api.ts` → **16 passed, 0
+  failed** (added a check that every `/users` row carries `organizations`).
+- `apps/backend`: `bun run scripts/smoke-admin-api.ts` → **15 passed, 0
+  failed**, stable across consecutive runs (the second run exercises the revive
+  path the same script would otherwise mask).- `apps/web-admin`: `bunx tsc --noEmit -p tsconfig.app.json` → clean (plain
+  `tsc --noEmit` checks NOTHING here — root `tsconfig.json` has `"files": []`);
+  `bun run build` → clean, all three routes code-split.
+- repo root: `bun run lint` → 0 errors (5 web-admin warnings + ui/backend
+  warnings are pre-existing); `bun run docs/database/validate-dbml.ts` → OK
+  (253 tables, 0 gaps).
+
+Scripts kept: `scripts/smoke-admin-api.ts`, `scripts/cleanup-smoke-roles.ts`,
+`scripts/refresh-role-grants.ts` (+ pre-existing ops scripts). All `diag-*.ts`
+throwaways deleted.
+
+## Completed (this session - user-management phase 3: dynamic hasPermission guard + single grant source, 2026-11-01)
+
+Plan: `.agents/docs/plans/user-management.md`. Phase 3 of 7 complete.
+
+- **Single grant source enforced**: `packages/common/src/authorization/
+  erp-permissions.ts` now owns the merged catalog — built-in organization
+  statements (`organization/member/invitation/ac`, via `builtInOrgStatements`)
+  are folded INTO `erpRoleGrants` (owner = all ERP statements + full built-in
+  org administration; admin = `organization:['read','update']`,
+  `member:['create','read','update','delete']`, `invitation:['create','cancel']`,
+  `ac:['read']` + prior catalog grants). Server `organization-ac.ts` and client
+  `erp-ac.ts` had their local `ownerGrants`/`adminOrgGrants` layering DELETED —
+  both build roles purely from `erpRoleGrants`; both spread the shared
+  `builtInOrgStatements` into their statement vocabulary, so server/client/db
+  seeds cannot drift. `packages/common` rebuilt.
+- **Guard DB seam**: `src/authorization/permission-resolver.ts` —
+  `IPermissionResolver` interface + `PERMISSION_RESOLVER_TOKEN` +
+  `grantsAllow()` (union-of-grants checker). No DB imports in this file.
+  `src/authorization/dynamic-permissions.ts` — `DynamicPermissionResolver`
+  (`@injectable`, `@inject(DRIZZLE_TOKEN)`) unions `auth.roles.permissions`
+  jsonb of the member's live roles for the validated org; falls back to static
+  `authorizeErpPermissions` ONLY when no live row matches the member's role
+  names. `src/authorization/container.ts` — `registerAuthorization()`
+  registered in `src/index.ts`. `elysia-auth.ts` `erpGuard()` resolves the
+  resolver from the tsyringe container once at plugin build.
+  `src/di/tokens.ts` split out of `provider.ts` (token-only, no DB client
+  imports) so importing the token never opens a connection.
+- **Tests fixed**: `test/authorization/test-app.ts` registers an in-memory
+  `IPermissionResolver` mock (`installPermissionResolverMock`, seeded with
+  catalog grants; `setRoleGrants` overrides per test; `resetFixture` resets).
+  No test opens a DB connection. New `test/unit/permission-resolver.test.ts`
+  (9 tests, `mockDb` helper): live-row grant/deny, multi-role union,
+  live-rows-authoritative (no fallback when a row exists), static fallback,
+  `grantsAllow` semantics. `authorization.test.ts` gained 3 integration tests
+  proving live rows decide access in the real Elysia pipeline.
+  `bun test` = **90 pass / 0 fail** (was 61/17).
+- **Seeder refresh path**: `organization-roles.seeder.ts` stays insert-only
+  for re-runs (never overwrites admin-edited rows) but gained
+  `refreshSystemRoleGrants()` — re-syncs existing `isSystem=true` rows whose
+  permissions differ from the catalog (order-insensitive comparison), so a
+  catalog change reaches already-seeded orgs on demand. Ops script
+  `scripts/refresh-role-grants.ts` runs it. Custom roles are never touched.
+- **Live verification** (dev server :3001):
+  - `scripts/refresh-role-grants.ts` → 2 rows updated (owner/admin now carry
+    the built-in org grants in `auth.roles.permissions`).
+  - owner `GET /organizations/:id/members` → **200** (dynamic; was 403 before
+    the catalog merge — root cause fixed).
+  - member `GET /sales/quotations` → **403** (dynamic deny).
+  - `scripts/smoke-dynamic-authoritative.ts`: owner row narrowed to
+    `{dashboard:['read']}` → quotation read **403** even though the static
+    catalog grants it (dynamic set is authoritative); row restored.
+  - `scripts/smoke-fallback.ts`: owner row soft-deleted → quotation read
+    **200** via static catalog fallback; row restored.
+- `bunx tsc --noEmit` clean (backend); root `bun run typecheck` clean;
+  `bun run lint` warnings pre-existing only; web-admin `bun run build` clean
+  (consumes rebuilt common).
+- **Not done (next)**: phase 4 admin UI (users → invitations → roles →
+  members → audit), 5 username login tab, 6 deactivate/restore, 7 avatar
+  claim hook check.
+
+## Completed (this session - user-management phase 2: invitation module + claim flow, 2026-11-01)
+
+Plan: `.agents/docs/plans/user-management.md`. Phase 2 of 7 complete.
+
+- **Module** `apps/backend/src/app/user-management/`: contracts (gateways/
+  repositories/services interfaces + DI tokens), errors, token utils
+  (SHA-256 hash, `timingSafeEqual` compare), `InvitationRepository`,
+  `UserManagementRepository`, `BetterAuthUserManagementGateway`,
+  `LoggerInvitationMailer` (SMTP later), `AuditService`, `RoleService`,
+  `InvitationService`, `InvitationController` (public claim routes +
+  requireGlobalAdmin admin routes) and `UsernameCheckController`, both
+  static-`plugin()` house style; wired in `src/index.ts`.
+- **Audit schema** `drizzle/schemas/audit.schema.ts` (`audit.audit_logs`):
+  text id, actor logical ref + denormalized email, AUDIT_ACTIONS vocabulary,
+  target_type/target_id, nullable organization_id, meta jsonb, insert-only
+  ledger. DBML entry REPLACED the stale aspirational one (was uuid/entity_id
+  shaped); `bun run docs/database/validate-dbml.ts` → OK, 253 tables.
+- **Better Auth internals learned (root-caused the claim 401)**:
+  `auth.api.addMember` needs NO session when `organizationId` is in the body
+  (orgMiddleware only), but `getFullOrganization` runs `orgSessionMiddleware`
+  and 401s without a caller session. All org access moved into
+  `BetterAuthUserManagementGateway.attachMembership` — addMember inside
+  `runWithEndpointContext`, org name via internal adapter
+  `ctx.adapter.findOne({model:'organization'})`. Claim order:
+  claimCredentials → setClaimed → attachMembership → markStatus(accepted) →
+  createSession, so a failed attach leaves the invitation retryable.
+- **Invite edge cases fixed**: repository gained `findAnyByEmail` +
+  `restore` (clears deletedAt, re-pends). Re-inviting a claimed email →
+  clean 409 `InvitationPendingExistsError` (was 500 `users_email_key`);
+  soft-deleted wrong-email user is restored and re-invited.
+- **Live smoke (dev server, all via PowerShell Invoke-RestMethod)**: app-path
+  claim + auto-login (newhire@entragate.test, set-cookie present), org-path
+  claim with member role (fallback@entragate.test) and CUSTOM role
+  (tech2@entragate.test → membership row `role='technician'`), reused token
+  → 422, cancel → 200, delete claimed invitation → 409, resend kills old
+  token (old → 422, new → 200), duplicate pending overwrite (`overwritten:
+  true`, resentCount increments), bulk invite with bogus roleId → member
+  fallback. Audit rows confirmed: invitation.sent 6, user.precreated 6,
+  invitation.resent 1, invitation.cancelled 1
+  (`bun run scripts/audit-summary.ts` from apps/backend).
+- **Verification scripts** (run from apps/backend cwd): `verify-claim.ts`,
+  `audit-summary.ts`. Note: PowerShell breaks backticks in `bun -e` — always
+  write script files. Watch-mode logging can land in a different child than
+  the shell output file; when responses look stale, kill all bun processes
+  and restart clean.
+- `bunx tsc --noEmit` clean; `bun test` 78/78 pass; lint warnings only
+  pre-existing empty schema stubs.
+- **Not done (next)**: phase 3 dynamic-role `hasPermission` guard swap,
+  phase 4 admin UI, 5 username login tab, 6 deactivate/restore, 7 avatar
+  hook check. Commit pending for phases 1+2.
+
+## Completed (this session - user-management phase 1: schema + role seeding, 2026-11-01)
+
+Plan: `.agents/docs/plans/user-management.md` (grilled/approved). Phase 1 of 7:
+database shape for the invitation-only user lifecycle.
+
+- **New schema** `apps/backend/drizzle/schemas/role.schema.ts` (auth schema,
+  ERP-owned): `auth.roles` (per-org dynamic role master data: name, rank,
+  permissions jsonb, isSystem, soft-delete + partial unique
+  `(organization_id, name) WHERE deleted_at IS NULL`) and `auth.user_invitations`
+  (unified invitation pipeline: type app|org, tokenHash SHA-256 unique,
+  status pending|accepted|cancelled|expired, 3-day expiry via expiresAt,
+  resentCount, deliveryFailed, claimedAt, soft delete). Named
+  `user_invitations` because Better Auth owns `auth.invitations` (untouched).
+- **`auth.users.status`** text column added (`active` default): pending |
+  active | deactivated lifecycle. Declared in auth.schema.ts (hand-applied
+  delta, same 1.4.x codegen caveat as deletedAt) AND registered as a
+  `user.additionalFields.status` (`input: false`, default 'active') in
+  auth.options.ts so Better Auth passes it through. drizzle-kit quirk: the
+  partial-index `.where()` needs `sql` from `drizzle-orm` (not pg-core).
+- **Relations**: `roleRelations` added to `drizzle/db.ts`.
+- **Migration** `20261101021221_ancient_luckman` (generated, human-inspected,
+  applied): 2 tables, users.status column, 6 indexes, 4 FKs.
+- **Seeder** `database/seeders/seed/organization-roles.seeder.ts`:
+  materializes the shared catalog (`erpRoleNames`/`erpRoleGrants`) as
+  per-org `auth.roles` master data; ranks owner=100, admin=80, hr=60,
+  member=10, other catalog roles=50; `isSystem=true`; idempotent (live-row
+  existence check, never overwrites). Wired into `seeders/index.ts` after
+  `seedOrganizationMembers`.
+- **Verified**: migration applied to dev DB; seeder ran twice (19 inserted,
+  then 0 = idempotent); `scripts/verify-user-management-schema.ts` shows
+  owner/admin/hr ranks correct, 17 existing users `active`, 0 invitations.
+  `bun run typecheck` clean (after adding `status: 'active'` to the
+  user.service.test.ts fixture), root `bun run lint` 0 errors, backend
+  `bun test` 78 pass / 0 fail. DBML updated (roles, user_invitations,
+  users.status; now 253 tables) and `validate-dbml.ts` passes (0 cross-module).
+- **Not done (next phases)**: invitation module + claim flow (phase 2),
+  dynamic-role `hasPermission` guard (phase 3), admin UI (phase 4),
+  login username tab (5), deactivate/restore (6), avatar claim hook check (7).
+  Note: `@dbml/core` was missing from node_modules (progress line 618
+  overstated) — re-added as root devDependency to run the validator.
+
 ## Completed (this session - auth UX fixes: /users/me session guard + session org auto-activation + menu warnings, 2026-10-31)
 
 - **Bug**: `GET /users/me` sat behind the full `erpGuard`, which 403s when

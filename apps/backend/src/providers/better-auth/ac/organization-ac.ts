@@ -18,6 +18,7 @@ import { createAccessControl } from 'better-auth/plugins/access';
 import type { AccessControl, Role } from 'better-auth/plugins/access';
 import { defaultStatements } from 'better-auth/plugins/organization/access';
 import {
+	builtInOrgStatements,
 	erpRoleGrants,
 	erpRoleNames,
 	erpStatements,
@@ -30,18 +31,19 @@ import {
 
 /**
  * Full statement vocabulary: Better Auth organization defaults + the ERP
- * catalog + the restricted portal resources. The portal resources are not
- * in `erpStatements` (they are not internal back-office vocabulary) but are
- * granted through the same access control so permission checks stay uniform.
+ * catalog + the restricted portal resources + the extended built-in
+ * organization vocabulary. The portal resources are not in `erpStatements`
+ * (they are not internal back-office vocabulary) but are granted through the
+ * same access control so permission checks stay uniform.
+ *
+ * `builtInOrgStatements` is the shared source for the built-in organization
+ * resources, so the server and the client cannot drift.
  */
 export const organizationStatements = {
 	...defaultStatements,
 	...erpStatements,
 	...portalStatements,
-	// `read`/`create` extend Better Auth's defaults (see builtInOrgStatements
-	// in @ims-erp/common) so first-party admin routes can require them.
-	organization: [...(defaultStatements.organization ?? []), 'create', 'read'],
-	member: [...(defaultStatements.member ?? []), 'read'],
+	...builtInOrgStatements,
 } as const;
 
 export type OrganizationStatements = typeof organizationStatements;
@@ -67,38 +69,9 @@ function toRole(grants: ErpPermissionRequest): Role<OrganizationStatements> {
 	return erpAccessControl.newRole(statements as never) as Role<OrganizationStatements>;
 }
 
-/** owner keeps full built-in organization administration + full ERP grants. */
-const ownerGrants: ErpPermissionRequest = {
-	organization: ['create', 'read', 'update', 'delete'],
-	member: ['create', 'read', 'update', 'delete'],
-	invitation: ['create', 'cancel'],
-	...erpRoleGrants.owner,
-};
-
-/** Organization-read grants layered onto the admin role (catalog values in
- * @ims-erp/common are keyed by ERP resources only; built-in org resources
- * are layered here). */
-const adminOrgGrants: ErpPermissionRequest = {
-	organization: ['read'],
-	member: ['read'],
-};
-
 export const erpRoles: Record<ErpRoleName, Role<OrganizationStatements>> = {
-	owner: toRole(ownerGrants),
-	admin: toRole({
-		...erpRoleGrants.admin,
-		...adminOrgGrants,
-		// Concatenate rather than let the spread above overwrite the catalog's
-		// member administration grants.
-		organization: [
-			...(erpRoleGrants.admin.organization ?? []),
-			...(adminOrgGrants.organization ?? []),
-		],
-		member: [
-			...(erpRoleGrants.admin.member ?? []),
-			...(adminOrgGrants.member ?? []),
-		],
-	}),
+	owner: toRole(erpRoleGrants.owner),
+	admin: toRole(erpRoleGrants.admin),
 	member: toRole(erpRoleGrants.member),
 	operations_manager: toRole(erpRoleGrants.operations_manager),
 	sales_manager: toRole(erpRoleGrants.sales_manager),

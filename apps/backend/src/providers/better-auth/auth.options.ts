@@ -63,6 +63,26 @@ export const betterAuthOptions = {
 				input: false,
 				defaultValue: null,
 			},
+			// User lifecycle status: pending (pre-created by invitation, no
+			// credentials yet) | active | deactivated (sessions revoked,
+			// login blocked; memberships kept). Owned by the user-management
+			// module's repository/service (set directly via Drizzle);
+			// `input: false` keeps it out of every Better Auth API surface.
+			status: {
+				type: 'string' as const,
+				required: false,
+				input: false,
+				defaultValue: 'active',
+			},
+			// Contact phone captured at invitation claim; unique index lives in
+			// the Drizzle schema. Owned by the user-management module (set
+			// directly via Drizzle); `input: false` keeps it out of the Better
+			// Auth API surface.
+			phone: {
+				type: 'string' as const,
+				required: false,
+				input: false,
+			},
 		},
 	},
 	emailAndPassword: betterAuthEmailAndPasswordOptions,

@@ -13,6 +13,7 @@ import {
 	fixture,
 	installAuthMock,
 	resetFixture,
+	setRoleGrants,
 } from './test-app';
 
 let app: Elysia<any, any, any, any, any, any>; // typed loosely: macro-resolved erp context
@@ -437,5 +438,47 @@ describe('multi-permission requirements', () => {
 			jsonRequest('PATCH', '/sales/quotations/q-x', 'member', { title: 'n' }),
 		);
 		expect(response.status).toBe(403);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// 13. Dynamic role grants decide access (phase 3)
+// ---------------------------------------------------------------------------
+describe('dynamic role grants', () => {
+	test('a live role row without the grant denies access the static catalog allows', async () => {
+		// The live `auth.roles` row for `owner` no longer carries
+		// quotation:read - the dynamic grant set is authoritative.
+		setRoleGrants('owner', { dashboard: ['read'] });
+
+		const response = await app.handle(
+			jsonRequest('GET', '/sales/quotations', 'owner'),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test('a live role row granting the action allows access the static catalog denies', async () => {
+		// `member` has no quotation grants in the static catalog, but the
+		// organization's live role row grants quotation:read.
+		setRoleGrants('member', { quotation: ['read'] });
+
+		const response = await app.handle(
+			jsonRequest('GET', '/sales/quotations', 'member'),
+		);
+		expect(response.status).toBe(200);
+	});
+
+	test('grants of multiple live roles are unioned', async () => {
+		setRoleGrants('sales', { quotation: ['create'] });
+		setRoleGrants('owner', { payment: ['execute'] });
+
+		// The fixture member has the roles `sales,owner`.
+		const response = await app.handle(
+			jsonRequest('POST', '/sales/quotations', 'salesFinance', {
+				code: 'Q-DYN1',
+				title: 'Dyn',
+				amount: 100,
+			}),
+		);
+		expect(response.status).toBe(201);
 	});
 });
