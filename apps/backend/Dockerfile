@@ -3,11 +3,14 @@
 #   docker build -f apps/backend/Dockerfile .
 # The backend is compiled to a single self-contained executable with Bun's
 # `--compile` mode (the `build` script in apps/backend/package.json), so the
-# runtime image ships one binary plus the two things that cannot be embedded:
-# exiftool's perl script and libvips. @ims-erp/common is a workspace dep
-# exposing compiled dist/, so it is built inside the image first.
+# runtime image is a plain Alpine base plus the binary. @ims-erp/common is a
+# workspace dep exposing compiled dist/, so it is built inside the image first.
 
 # ---- deps: install workspace deps ----
+# No --platform pin: each stage already builds for the build target by default,
+# which is what the install needs — bun resolves the native packages (@resvg,
+# @img) from the installer's libc and the executable embeds whatever was
+# installed, so the tree must match the runtime, not the build host.
 FROM oven/bun:1.4-alpine AS deps
 WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
@@ -18,15 +21,6 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
 
 # ---- build: compile @ims-erp/common, then the backend executable ----
 FROM deps AS build
-# The executable bundles whatever the host's bun install produced, so install
-# for the RUNTIME platform, not the host architecture. @resvg/resvg-js and sharp
-# pick prebuilt natives from the target libc at install time, which here yields
-# @resvg/resvg-js-linux-x64-musl, @img/sharp-linuxmusl-x64 and
-# @img/sharp-libvips-linuxmusl-x64 — the Linux natives the executable embeds.
-# ponytail: amd64-only, matching compose and the deploy workflow `platforms`.
-# For multi-arch, move deps to `FROM --platform=$BUILDPLATFORM` and pass bun
-# `--os linux --cpu x64 --libc musl`-style flags instead.
-FROM --platform=linux/amd64 deps AS build
 COPY packages/common/ packages/common/
 COPY tsconfig.json ./
 RUN bun run --cwd packages/common build
@@ -41,21 +35,28 @@ RUN bun run --cwd apps/backend build
 RUN test -x apps/backend/dist/server
 
 # ---- runtime: run the compiled executable ----
-FROM oven/bun:1.4-alpine AS runtime
-# `--target bun` compiles against glibc (it never downloads a runtime), so the
-# musl-based Alpine image needs a glibc shim for the executable to start.
-# gcompat is a translation layer, not a full glibc: if an unimplemented symbol
-# is ever hit, switch only this stage to `oven/bun:1.4-slim`.
-RUN apk add --no-cache libstdc++ libgcc gcompat
+FROM alpine:3.22 AS runtime
+# The executable is musl-linked (Bun resolves `--target bun` to the build host's
+# libc, and the build stage is Alpine), so no glibc shim is needed — verified
+# with `ldd`: ld-musl-x86_64.so.1, libstdc++.so.6, libgcc_s.so.1.
+#   - libstdc++ / libgcc: required by the Bun runtime linked into the executable.
+#   - tzdata: the app reads process.env.TZ (see docker-compose `TZ`), and Alpine
+#     ships no zone database, so without this the app silently runs in UTC.
+#   - CA bundle: already in the base image; the avatar worker calls the DiceBear
+#     API over HTTPS.
+RUN apk add --no-cache libstdc++ libgcc tzdata
+# Non-root: the avatar worker writes to a cwd-relative `.tmp/avatars`, so the
+# whole workspace dir must belong to the runtime user.
+RUN addgroup -S app && adduser -S -G app app \
+	&& mkdir -p /app/apps/backend \
+	&& chown -R app:app /app
 WORKDIR /app
-# The executable is self-contained: the only native dependency left in the tree
-# (the DiceBear image chain: sharp / libvips / resvg / exiftool) was replaced by
-# HTTP calls to the DiceBear API, so nothing needs to ship beside the binary.
 COPY --from=build /app/apps/backend/dist/server ./server
 # Keep process.cwd() at the backend workspace: the config loader resolves
 # `.env` from cwd (config/loaders/config.loader.ts) and the avatar worker
 # writes to cwd-relative `.tmp/avatars` (src/app/user/queues/avatar.worker.ts).
 WORKDIR /app/apps/backend
-# Absolute path: the base image entrypoint resolves a relative CMD against its
-# own cwd (/app), not this WORKDIR, and would fall through to `bun run`.
+USER app
+# Absolute path: relative CMD entries resolve against the image's own WORKDIR
+# at start, not the WORKDIR above.
 CMD ["/app/server"]
