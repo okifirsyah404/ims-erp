@@ -69,8 +69,8 @@ const bootstrap = new Elysia()
 	.listen(appConfig.app.port);
 
 // Avatar generation worker: consumes the BullMQ 'avatar' queue filled by
-// Better Auth's user.create.after hook. Non-fatal at boot: a Redis outage
-// must not take the API down.
+// Better Auth's user.create.after hook, rendering each PNG through the DiceBear
+// HTTP API. Non-fatal at boot: a Redis outage must not take the API down.
 const avatarWorker = startAvatarWorker();
 avatarWorker.on('error', (error) => {
 	pinoLogger.error({ err: error }, 'avatar worker error');

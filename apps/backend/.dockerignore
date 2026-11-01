@@ -1,0 +1,16 @@
+# Scoped to the `COPY apps/backend/ apps/backend/` step of the root-context
+# build (docker build -f apps/backend/Dockerfile .). The build stage must not
+# inherit host artifacts: a stale dist/ would shadow the compile output, and a
+# host .env must never be baked into an image layer (env comes from compose).
+node_modules
+dist
+coverage
+test-result
+.tmp
+data
+test
+.turbo
+.env
+.env.*
+!.env.example
+*.log

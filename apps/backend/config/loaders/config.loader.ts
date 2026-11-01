@@ -43,6 +43,9 @@ export function loadEnvConfig(
       corsOrigins: process.env.CORS_ORIGINS
         ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
         : null,
+      // Self-hosted DiceBear API by default (docker-compose `dicebear`
+      // service). Point at https://api.dicebear.com to use the public one.
+      avatarApiUrl: process.env.AVATAR_API_URL || 'http://localhost:3000',
     },
 
     database: {

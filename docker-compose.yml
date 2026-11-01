@@ -38,6 +38,41 @@ services:
       timeout: 5s
       retries: 5
 
+  # DiceBear HTTP API rendering the generated user avatars. Internal only (no
+  # published port): the backend reaches it as http://dicebear:3000. Set
+  # AVATAR_API_URL to https://api.dicebear.com instead to use the public API.
+  dicebear:
+    image: dicebear/api:4
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      # Only the v10 style set is needed (the backend requests 10.x/initials).
+      VERSIONS: 10
+      # Avatars are deterministic per seed, so they are safe to cache hard.
+      CACHE_CONTROL_AVATARS: 31536000
+      CACHE_CONTROL_STYLES: 31536000
+      # Avatar bytes go straight to S3; EXIF tagging is pure overhead.
+      PNG_EXIF: 0
+      # Single-threaded by default; raise for avatar-heavy deployments.
+      WORKERS: ${DICEBEAR_WORKERS:-1}
+    # The image runs as a non-root user; only these mount points need to be
+    # writable.
+    tmpfs:
+      - /run
+      - /tmp
+    healthcheck:
+      # The image ships node but no curl/wget; probe the API with a one-liner.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/10.x/initials/png?seed=health&size=1').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
   backend:
     image: docker.io/okifirsyah404/ims-erp-backend:${IMAGE_TAG:-dev}
     restart: unless-stopped
@@ -51,6 +86,9 @@ services:
       APP_PORT: 3000
       APP_URL: ${APP_URL:-}
       APP_LOG_LEVEL: ${APP_LOG_LEVEL:-}
+      # Avatar rendering goes through the internal DiceBear service; override
+      # with https://api.dicebear.com to use the public API instead.
+      AVATAR_API_URL: http://dicebear:3000
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-ims_erp}
@@ -83,6 +121,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      dicebear:
         condition: service_healthy
 
   web-admin:
