@@ -1,28 +1,22 @@
 'use client';
 
-import { Building2, ScrollText, Settings, Users, type LucideIcon } from 'lucide-react';
-import { Link } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import { Building2, ScrollText, Settings, Users } from 'lucide-react';
 
-import {
-	SidebarGroup,
-	SidebarGroupLabel,
-	SidebarMenu,
-	SidebarMenuButton,
-	SidebarMenuItem,
-} from '@ims-erp/ui/components/sidebar';
+import { selfUserQueryOptions } from '@/lib/user-api';
+import type { SidebarItem } from './sidebar-item';
+import SidebarSection from './sidebar-section';
 
 /**
  * Administration navigation (platform admins only).
  *
- * Visibility is gated by `main-sidebar` on the self user's platform role
- * (`user.role === 'admin'`). UX only - the backend enforces every
- * operation behind these routes.
+ * Visibility is gated here on the self user's platform role
+ * (`user.role === 'admin'`). The gate fails closed: while the query is
+ * pending or errored nothing renders, so a non-admin never sees the
+ * section flash in. UX only - the backend enforces every operation behind
+ * these routes.
  */
-const items: {
-	title: string;
-	url: string;
-	icon: LucideIcon;
-}[] = [
+const items: SidebarItem[] = [
 	{
 		title: 'Organization',
 		url: '/organizations',
@@ -46,26 +40,8 @@ const items: {
 ];
 
 export function NavAdmin() {
-	return (
-		<SidebarGroup>
-			<SidebarGroupLabel>Administration</SidebarGroupLabel>
-			<SidebarMenu>
-				{items.map((item) => (
-					<SidebarMenuItem key={item.title}>
-						<SidebarMenuButton
-							tooltip={item.title}
-							render={
-								item.url === '#' ? undefined : (
-									<Link to={item.url} activeProps={{ 'data-active': true }} />
-								)
-							}
-						>
-							{item.icon && <item.icon />}
-							<span>{item.title}</span>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-				))}
-			</SidebarMenu>
-		</SidebarGroup>
-	);
+	const { data: user } = useQuery(selfUserQueryOptions);
+	if (user?.role !== 'admin') return null;
+
+	return <SidebarSection label='Administration' items={items} />;
 }

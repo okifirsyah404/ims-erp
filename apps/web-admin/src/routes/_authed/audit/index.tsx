@@ -20,6 +20,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
+import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import {
 	Table,
 	TableBody,
@@ -58,6 +59,18 @@ const AUDIT_ACTIONS = [
 
 /** Target types the backend vocabulary uses. */
 const TARGET_TYPES = ['invitation', 'user', 'role', 'member', 'organization'] as const;
+
+/** Number of placeholder rows shown while the first page loads. */
+const SKELETON_ROW_COUNT = 5;
+
+/** Per-column placeholder widths, matching the audit table's shape. */
+const SKELETON_CELLS = [
+	{ key: 'when', className: 'h-4 w-36' },
+	{ key: 'action', className: 'h-5 w-28 rounded-full' },
+	{ key: 'actor', className: 'h-4 w-40' },
+	{ key: 'target', className: 'h-4 w-44' },
+	{ key: 'metadata', className: 'h-4 w-full max-w-md' },
+] as const;
 
 type TAuditSearch = {
 	page?: number;
@@ -240,13 +253,14 @@ function AuditPage() {
 				<CardHeader>
 					<CardTitle>Entries</CardTitle>
 					<CardDescription>
-						{pagination ? `${pagination.total} entr(ies)` : 'Loading…'}
+						{pagination ? (
+							`${pagination.total} entr(ies)`
+						) : isPending ? (
+							<Skeleton className='h-4 w-24 motion-reduce:animate-none' />
+						) : null}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					{isPending && (
-						<p className='text-sm text-muted-foreground'>Loading audit log…</p>
-					)}
 					{isError && (
 						<p className='text-sm text-destructive'>{(error as Error).message}</p>
 					)}
@@ -255,8 +269,8 @@ function AuditPage() {
 							No audit entries for these filters.
 						</p>
 					)}
-					{rows.length > 0 && (
-						<Table>
+					{(isPending || rows.length > 0) && (
+						<Table aria-busy={isPending || undefined}>
 							<TableHeader>
 								<TableRow>
 									<TableHead>When</TableHead>
@@ -267,6 +281,18 @@ function AuditPage() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
+								{isPending &&
+									Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
+										<TableRow key={index} aria-hidden='true'>
+											{SKELETON_CELLS.map((cell) => (
+												<TableCell key={cell.key}>
+													<Skeleton
+														className={`${cell.className} motion-reduce:animate-none`}
+													/>
+												</TableCell>
+											))}
+										</TableRow>
+									))}
 								{rows.map((entry) => (
 									<TableRow key={entry.id}>
 										<TableCell className='whitespace-nowrap text-xs text-muted-foreground'>
@@ -292,6 +318,7 @@ function AuditPage() {
 							</TableBody>
 						</Table>
 					)}
+					{isPending && <span className='sr-only'>Loading audit log…</span>}
 
 					{pagination && pagination.totalPages > 1 && (
 						<div className='mt-4 flex items-center justify-end gap-2'>
