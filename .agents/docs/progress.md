@@ -3,6 +3,98 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed (this session - user-management phase 2: invitation module + claim flow, 2026-11-01)
+
+Plan: `.agents/docs/plans/user-management.md`. Phase 2 of 7 complete.
+
+- **Module** `apps/backend/src/app/user-management/`: contracts (gateways/
+  repositories/services interfaces + DI tokens), errors, token utils
+  (SHA-256 hash, `timingSafeEqual` compare), `InvitationRepository`,
+  `UserManagementRepository`, `BetterAuthUserManagementGateway`,
+  `LoggerInvitationMailer` (SMTP later), `AuditService`, `RoleService`,
+  `InvitationService`, `InvitationController` (public claim routes +
+  requireGlobalAdmin admin routes) and `UsernameCheckController`, both
+  static-`plugin()` house style; wired in `src/index.ts`.
+- **Audit schema** `drizzle/schemas/audit.schema.ts` (`audit.audit_logs`):
+  text id, actor logical ref + denormalized email, AUDIT_ACTIONS vocabulary,
+  target_type/target_id, nullable organization_id, meta jsonb, insert-only
+  ledger. DBML entry REPLACED the stale aspirational one (was uuid/entity_id
+  shaped); `bun run docs/database/validate-dbml.ts` → OK, 253 tables.
+- **Better Auth internals learned (root-caused the claim 401)**:
+  `auth.api.addMember` needs NO session when `organizationId` is in the body
+  (orgMiddleware only), but `getFullOrganization` runs `orgSessionMiddleware`
+  and 401s without a caller session. All org access moved into
+  `BetterAuthUserManagementGateway.attachMembership` — addMember inside
+  `runWithEndpointContext`, org name via internal adapter
+  `ctx.adapter.findOne({model:'organization'})`. Claim order:
+  claimCredentials → setClaimed → attachMembership → markStatus(accepted) →
+  createSession, so a failed attach leaves the invitation retryable.
+- **Invite edge cases fixed**: repository gained `findAnyByEmail` +
+  `restore` (clears deletedAt, re-pends). Re-inviting a claimed email →
+  clean 409 `InvitationPendingExistsError` (was 500 `users_email_key`);
+  soft-deleted wrong-email user is restored and re-invited.
+- **Live smoke (dev server, all via PowerShell Invoke-RestMethod)**: app-path
+  claim + auto-login (newhire@entragate.test, set-cookie present), org-path
+  claim with member role (fallback@entragate.test) and CUSTOM role
+  (tech2@entragate.test → membership row `role='technician'`), reused token
+  → 422, cancel → 200, delete claimed invitation → 409, resend kills old
+  token (old → 422, new → 200), duplicate pending overwrite (`overwritten:
+  true`, resentCount increments), bulk invite with bogus roleId → member
+  fallback. Audit rows confirmed: invitation.sent 6, user.precreated 6,
+  invitation.resent 1, invitation.cancelled 1
+  (`bun run scripts/audit-summary.ts` from apps/backend).
+- **Verification scripts** (run from apps/backend cwd): `verify-claim.ts`,
+  `audit-summary.ts`. Note: PowerShell breaks backticks in `bun -e` — always
+  write script files. Watch-mode logging can land in a different child than
+  the shell output file; when responses look stale, kill all bun processes
+  and restart clean.
+- `bunx tsc --noEmit` clean; `bun test` 78/78 pass; lint warnings only
+  pre-existing empty schema stubs.
+- **Not done (next)**: phase 3 dynamic-role `hasPermission` guard swap,
+  phase 4 admin UI, 5 username login tab, 6 deactivate/restore, 7 avatar
+  hook check. Commit pending for phases 1+2.
+
+## Completed (this session - user-management phase 1: schema + role seeding, 2026-11-01)
+
+Plan: `.agents/docs/plans/user-management.md` (grilled/approved). Phase 1 of 7:
+database shape for the invitation-only user lifecycle.
+
+- **New schema** `apps/backend/drizzle/schemas/role.schema.ts` (auth schema,
+  ERP-owned): `auth.roles` (per-org dynamic role master data: name, rank,
+  permissions jsonb, isSystem, soft-delete + partial unique
+  `(organization_id, name) WHERE deleted_at IS NULL`) and `auth.user_invitations`
+  (unified invitation pipeline: type app|org, tokenHash SHA-256 unique,
+  status pending|accepted|cancelled|expired, 3-day expiry via expiresAt,
+  resentCount, deliveryFailed, claimedAt, soft delete). Named
+  `user_invitations` because Better Auth owns `auth.invitations` (untouched).
+- **`auth.users.status`** text column added (`active` default): pending |
+  active | deactivated lifecycle. Declared in auth.schema.ts (hand-applied
+  delta, same 1.4.x codegen caveat as deletedAt) AND registered as a
+  `user.additionalFields.status` (`input: false`, default 'active') in
+  auth.options.ts so Better Auth passes it through. drizzle-kit quirk: the
+  partial-index `.where()` needs `sql` from `drizzle-orm` (not pg-core).
+- **Relations**: `roleRelations` added to `drizzle/db.ts`.
+- **Migration** `20261101021221_ancient_luckman` (generated, human-inspected,
+  applied): 2 tables, users.status column, 6 indexes, 4 FKs.
+- **Seeder** `database/seeders/seed/organization-roles.seeder.ts`:
+  materializes the shared catalog (`erpRoleNames`/`erpRoleGrants`) as
+  per-org `auth.roles` master data; ranks owner=100, admin=80, hr=60,
+  member=10, other catalog roles=50; `isSystem=true`; idempotent (live-row
+  existence check, never overwrites). Wired into `seeders/index.ts` after
+  `seedOrganizationMembers`.
+- **Verified**: migration applied to dev DB; seeder ran twice (19 inserted,
+  then 0 = idempotent); `scripts/verify-user-management-schema.ts` shows
+  owner/admin/hr ranks correct, 17 existing users `active`, 0 invitations.
+  `bun run typecheck` clean (after adding `status: 'active'` to the
+  user.service.test.ts fixture), root `bun run lint` 0 errors, backend
+  `bun test` 78 pass / 0 fail. DBML updated (roles, user_invitations,
+  users.status; now 253 tables) and `validate-dbml.ts` passes (0 cross-module).
+- **Not done (next phases)**: invitation module + claim flow (phase 2),
+  dynamic-role `hasPermission` guard (phase 3), admin UI (phase 4),
+  login username tab (5), deactivate/restore (6), avatar claim hook check (7).
+  Note: `@dbml/core` was missing from node_modules (progress line 618
+  overstated) — re-added as root devDependency to run the validator.
+
 ## Completed (this session - auth UX fixes: /users/me session guard + session org auto-activation + menu warnings, 2026-10-31)
 
 - **Bug**: `GET /users/me` sat behind the full `erpGuard`, which 403s when

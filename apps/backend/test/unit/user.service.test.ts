@@ -28,6 +28,8 @@ function makeUser(overrides: Partial<TUserSelect> = {}): TUserSelect {
 		username: 'user1',
 		displayUsername: 'user1',
 		deletedAt: null,
+		status: 'active',
+		phone: null,
 		...overrides,
 	};
 }

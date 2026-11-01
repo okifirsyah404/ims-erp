@@ -195,7 +195,13 @@ async function guardResolve(
 	}
 
 	if (options.policy) {
-		await options.policy(context as Context & { erp: ErpContext });
+		// The policy must see the resolved ERP context: merge it over the
+		// request context (the raw resolve-phase context does not yet carry
+		// `erp` — this was a latent bug never exercised by tests or the
+		// pre-existing policy routes).
+		await options.policy(
+			Object.assign(context as Context & { erp: ErpContext }, { erp }),
+		);
 	}
 
 	return { erp };

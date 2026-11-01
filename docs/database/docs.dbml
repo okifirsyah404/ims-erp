@@ -19,6 +19,8 @@ TableGroup "Identity" {
   auth.user_preferences
   auth.identity_verifications
   auth.user_devices
+  auth.roles
+  auth.user_invitations
 }
 
 TableGroup "Location" {
@@ -348,6 +350,7 @@ Table auth.users {
   bio text
   username text [unique]
   display_username text
+  status text [note: "User lifecycle for the invitation-only flow: pending (pre-created by invitation, no credentials) | active | deactivated (sessions revoked, memberships kept). ERP-owned extension column; default 'active'."]
   Note: "Better Auth system user. Superadmin flag for the admin plugin."
   Indexes {
     email [unique, name: 'users_email_key']
@@ -639,6 +642,58 @@ Ref: auth.portal_identities.user_id > auth.users.id [delete: cascade]
 Ref: auth.user_preferences.user_id > auth.users.id [delete: cascade]
 Ref: auth.identity_verifications.user_id > auth.users.id [delete: cascade]
 Ref: auth.user_devices.user_id > auth.users.id [delete: cascade]
+Ref: auth.roles.organization_id > auth.organizations.id [delete: cascade]
+Ref: auth.user_invitations.organization_id > auth.organizations.id [delete: cascade]
+Ref: auth.user_invitations.role_id > auth.roles.id [delete: set null]
+Ref: auth.user_invitations.invited_by > auth.users.id [delete: cascade]
+
+// ---------------------------------------------------------------------------
+// MODULE: Identity (user management extension, added 2026-11-01, migration
+// 20261101021221_ancient_luckman). ERP-owned tables in the auth schema for
+// the invitation-only user lifecycle. Reproduced from
+// drizzle/schemas/role.schema.ts. Never edit by hand.
+// ---------------------------------------------------------------------------
+
+Table auth.roles {
+  deleted_at timestamp
+  id text [pk]
+  organization_id text [not null]
+  name text [not null]
+  rank integer [not null]
+  permissions jsonb [not null, note: "Permission grant { resource: action[] } using the shared catalog vocabulary (@ims-erp/common erpStatements). Deny-by-default."]
+  is_system boolean [not null, default: false]
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  Note: "Per-organization dynamic role master data. owner=100, admin=80, hr=60, member=10, catalog roles=50; custom roles rank below their creator's rank (escalation guard enforced server-side in the user-management module). is_system rows are seeded from the shared ERP catalog and cannot be deleted. Partial unique (organization_id, name) WHERE deleted_at IS NULL."
+  Indexes {
+    organization_id [name: 'roles_organizationId_idx']
+  }
+}
+
+Table auth.user_invitations {
+  deleted_at timestamp
+  id text [pk]
+  type text [not null, default: 'app', note: "'app' = application-admin invite (no organization); 'org' = organization admin/HR invite (role + organization attached)."]
+  email text [not null]
+  name text [note: "App-admin path input; pre-creates the user and prefills the profile form on claim."]
+  organization_id text
+  role_id text
+  token_hash text [not null, unique, note: "SHA-256 of the emailed single-use token; raw token never stored. Replaced on resend (old token dies)."]
+  status text [not null, default: 'pending', note: "pending -> accepted on claim; cancelled by admin; expired by sweeper (3-day expiry)."]
+  invited_by text [not null]
+  expires_at timestamp [not null]
+  resent_count integer [not null, default: 0]
+  delivery_failed boolean [not null, default: false, note: "Bounce flag surfaced in the admin pending list."]
+  claimed_at timestamp
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  Note: "Unified invitation pipeline for both invite paths. Users are pre-created at invite time (users.status='pending'); deleting an unclaimed invitation soft-deletes it and its pending user. Named user_invitations because Better Auth owns auth.invitations (organization plugin, untouched)."
+  Indexes {
+    email [name: 'user_invitations_email_idx']
+    organization_id [name: 'user_invitations_organizationId_idx']
+    status [name: 'user_invitations_status_idx']
+  }
+}
 
 
 // ---------------------------------------------------------------------------
@@ -7250,34 +7305,32 @@ Ref: ticket.ticket_status_history.ticket_id > ticket.tickets.id [delete: cascade
 
 // ---------------------------------------------------------------------------
 // MODULE: Audit  (schema: audit)
-// One append only trail. organization_id is nullable because a global admin
-// action may happen outside any organization.
+// Reproduced from drizzle/schemas/audit.schema.ts (user-management module).
+// ERP-owned append-only trail for user-management security events.
+// Insert-only by contract: no updates, no soft delete (exempt from the
+// deleted_at rule as an append-only ledger). The actor is a logical
+// reference so a deleted user does not erase the trail.
 // ---------------------------------------------------------------------------
 
 Table audit.audit_logs {
-  updated_at bigint [not null]
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text
-  actor_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  actor_role text
-  action text [not null]
-  entity_type text
-  entity_id text
-  module text
-  before_state text
-  after_state text
+  id text [pk]
+  actor_user_id text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
+  actor_email text [note: "Denormalized actor display for readability without joins."]
+  action text [not null, note: "Vocabulary guarded by application code (AUDIT_ACTIONS): invitation.sent/resent/cancelled/deleted/claimed, user.precreated/deactivated/restored/deleted, role.created/updated/deleted, member.added/removed/roleChanged, org.created."]
+  target_type text [not null, note: "'invitation' | 'user' | 'role' | 'member' | 'organization'."]
+  target_id text [not null]
+  organization_id text [note: "Tenant scope; null for global (app-admin) actions."]
+  meta jsonb [note: "Action-specific payload (before/after, emails, role names)."]
   ip_address text
   user_agent text
-  request_id text
-  created_at bigint [not null]
-  Note: "Append only audit trail. The actor is a logical reference so a deleted user does not erase the trail."
+  created_at timestamp [not null, default: `now()`]
+  Note: "Append-only audit trail for user-management events. Insert-only ledger, exempt from soft delete."
   Indexes {
     created_at [name: 'audit_logs_created_at_idx']
     organization_id [name: 'audit_logs_organization_id_idx']
-    (entity_type, entity_id) [name: 'audit_logs_entity_idx']
     actor_user_id [name: 'audit_logs_actor_user_id_idx']
     action [name: 'audit_logs_action_idx']
+    (target_type, target_id) [name: 'audit_logs_target_idx']
   }
 }
 
