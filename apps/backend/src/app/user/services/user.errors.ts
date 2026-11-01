@@ -18,3 +18,11 @@ export class UserEmailTakenError extends Error {
 		this.name = 'UserEmailTakenError';
 	}
 }
+
+/** Uploaded avatar failed validation (type or size). */
+export class InvalidAvatarError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'InvalidAvatarError';
+	}
+}

@@ -2,8 +2,10 @@ import { Queue } from 'bullmq';
 import type { BetterAuthOptions } from 'better-auth';
 import { queueConnection } from '@providers/queue/queue.connection';
 
+/** BullMQ queue name shared by the avatar queue and its worker. */
 export const AVATAR_QUEUE_NAME = 'avatar';
 
+/** Payload for an avatar-generation job. */
 export type AvatarJobData = {
 	userId: string;
 	/** Display name; seed for the initials avatar. */

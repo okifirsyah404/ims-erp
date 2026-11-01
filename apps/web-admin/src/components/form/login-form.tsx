@@ -74,8 +74,14 @@ export function LoginForm({
 								/>
 							</Field>
 							<Field>
-								<div className='flex items-center'>
-									<FieldLabel htmlFor='password'>Password</FieldLabel>
+								<FieldLabel htmlFor='password'>Password</FieldLabel>
+								<div className='flex justify-end'>
+									<a
+										href='/forgot-password'
+										className='hover:text-foreground ml-auto text-sm underline-offset-4 hover:underline'
+									>
+										Forgot your password?
+									</a>
 								</div>
 								<Input
 									id='password'

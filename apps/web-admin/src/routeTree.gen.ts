@@ -11,10 +11,19 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthedIndexRouteImport } from './routes/_authed.index'
+import { Route as AuthedAccountRouteImport } from './routes/_authed.account'
+import { Route as AuthedProfilesRouteImport } from './routes/_authed.profiles'
+import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
+import { Route as ResetPasswordIndexRouteImport } from './routes/reset-password/index'
+import { Route as AuthedAccountIndexRouteImport } from './routes/_authed.account.index'
+import { Route as AuthedAccountEmailRouteImport } from './routes/_authed.account.email'
+import { Route as AuthedAccountSessionsRouteImport } from './routes/_authed.account.sessions'
 import { Route as AuthedOrganizationsIndexRouteImport } from './routes/_authed/organizations/index'
 import { Route as AuthedOrganizationsOrganizationIdRouteImport } from './routes/_authed/organizations/$organizationId'
 import { Route as AuthedOrganizationsNewRouteImport } from './routes/_authed/organizations/new'
+import { Route as AuthedProfilesIndexRouteImport } from './routes/_authed.profiles.index'
+import { Route as AuthedProfilesEditRouteImport } from './routes/_authed.profiles.edit'
 import { Route as AuthedOrganizationsOrganizationIdEditRouteImport } from './routes/_authed/organizations/$organizationId.edit'
 import { Route as AuthedOrganizationsOrganizationIdMembersNewRouteImport } from './routes/_authed/organizations/$organizationId.members.new'
 import { Route as AuthedOrganizationsOrganizationIdMembersMemberIdEditRouteImport } from './routes/_authed/organizations/$organizationId.members.$memberId.edit'
@@ -28,10 +37,45 @@ const AuthedIndexRoute = AuthedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedAccountRoute = AuthedAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedProfilesRoute = AuthedProfilesRouteImport.update({
+  id: '/profiles',
+  path: '/profiles',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const ForgotPasswordIndexRoute = ForgotPasswordIndexRouteImport.update({
+  id: '/forgot-password/',
+  path: '/forgot-password/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
   id: '/login/',
   path: '/login/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordIndexRoute = ResetPasswordIndexRouteImport.update({
+  id: '/reset-password/',
+  path: '/reset-password/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedAccountIndexRoute = AuthedAccountIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedAccountRoute,
+} as any)
+const AuthedAccountEmailRoute = AuthedAccountEmailRouteImport.update({
+  id: '/email',
+  path: '/email',
+  getParentRoute: () => AuthedAccountRoute,
+} as any)
+const AuthedAccountSessionsRoute = AuthedAccountSessionsRouteImport.update({
+  id: '/sessions',
+  path: '/sessions',
+  getParentRoute: () => AuthedAccountRoute,
 } as any)
 const AuthedOrganizationsIndexRoute =
   AuthedOrganizationsIndexRouteImport.update({
@@ -49,6 +93,16 @@ const AuthedOrganizationsNewRoute = AuthedOrganizationsNewRouteImport.update({
   id: '/organizations/new',
   path: '/organizations/new',
   getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedProfilesIndexRoute = AuthedProfilesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedProfilesRoute,
+} as any)
+const AuthedProfilesEditRoute = AuthedProfilesEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => AuthedProfilesRoute,
 } as any)
 const AuthedOrganizationsOrganizationIdEditRoute =
   AuthedOrganizationsOrganizationIdEditRouteImport.update({
@@ -71,20 +125,36 @@ const AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
+  '/account': typeof AuthedAccountRouteWithChildren
+  '/profiles': typeof AuthedProfilesRouteWithChildren
+  '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/reset-password/': typeof ResetPasswordIndexRoute
+  '/account/email': typeof AuthedAccountEmailRoute
+  '/account/sessions': typeof AuthedAccountSessionsRoute
   '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/organizations/new': typeof AuthedOrganizationsNewRoute
+  '/profiles/edit': typeof AuthedProfilesEditRoute
+  '/account/': typeof AuthedAccountIndexRoute
   '/organizations/': typeof AuthedOrganizationsIndexRoute
+  '/profiles/': typeof AuthedProfilesIndexRoute
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
   '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthedIndexRoute
+  '/forgot-password': typeof ForgotPasswordIndexRoute
   '/login': typeof LoginIndexRoute
+  '/reset-password': typeof ResetPasswordIndexRoute
+  '/account/email': typeof AuthedAccountEmailRoute
+  '/account/sessions': typeof AuthedAccountSessionsRoute
   '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/organizations/new': typeof AuthedOrganizationsNewRoute
+  '/profiles/edit': typeof AuthedProfilesEditRoute
+  '/account': typeof AuthedAccountIndexRoute
   '/organizations': typeof AuthedOrganizationsIndexRoute
+  '/profiles': typeof AuthedProfilesIndexRoute
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
   '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
@@ -92,11 +162,20 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
+  '/_authed/account': typeof AuthedAccountRouteWithChildren
+  '/_authed/profiles': typeof AuthedProfilesRouteWithChildren
   '/_authed/': typeof AuthedIndexRoute
+  '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/reset-password/': typeof ResetPasswordIndexRoute
+  '/_authed/account/email': typeof AuthedAccountEmailRoute
+  '/_authed/account/sessions': typeof AuthedAccountSessionsRoute
   '/_authed/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/_authed/organizations/new': typeof AuthedOrganizationsNewRoute
+  '/_authed/profiles/edit': typeof AuthedProfilesEditRoute
+  '/_authed/account/': typeof AuthedAccountIndexRoute
   '/_authed/organizations/': typeof AuthedOrganizationsIndexRoute
+  '/_authed/profiles/': typeof AuthedProfilesIndexRoute
   '/_authed/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/_authed/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
   '/_authed/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
@@ -105,31 +184,56 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
+    | '/profiles'
+    | '/forgot-password/'
     | '/login/'
+    | '/reset-password/'
+    | '/account/email'
+    | '/account/sessions'
     | '/organizations/$organizationId'
     | '/organizations/new'
+    | '/profiles/edit'
+    | '/account/'
     | '/organizations/'
+    | '/profiles/'
     | '/organizations/$organizationId/edit'
     | '/organizations/$organizationId/members/new'
     | '/organizations/$organizationId/members/$memberId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/forgot-password'
     | '/login'
+    | '/reset-password'
+    | '/account/email'
+    | '/account/sessions'
     | '/organizations/$organizationId'
     | '/organizations/new'
+    | '/profiles/edit'
+    | '/account'
     | '/organizations'
+    | '/profiles'
     | '/organizations/$organizationId/edit'
     | '/organizations/$organizationId/members/new'
     | '/organizations/$organizationId/members/$memberId/edit'
   id:
     | '__root__'
     | '/_authed'
+    | '/_authed/account'
+    | '/_authed/profiles'
     | '/_authed/'
+    | '/forgot-password/'
     | '/login/'
+    | '/reset-password/'
+    | '/_authed/account/email'
+    | '/_authed/account/sessions'
     | '/_authed/organizations/$organizationId'
     | '/_authed/organizations/new'
+    | '/_authed/profiles/edit'
+    | '/_authed/account/'
     | '/_authed/organizations/'
+    | '/_authed/profiles/'
     | '/_authed/organizations/$organizationId/edit'
     | '/_authed/organizations/$organizationId/members/new'
     | '/_authed/organizations/$organizationId/members/$memberId/edit'
@@ -137,7 +241,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
+  ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
+  ResetPasswordIndexRoute: typeof ResetPasswordIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -156,12 +262,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/account': {
+      id: '/_authed/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AuthedAccountRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/profiles': {
+      id: '/_authed/profiles'
+      path: '/profiles'
+      fullPath: '/profiles'
+      preLoaderRoute: typeof AuthedProfilesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/forgot-password/': {
+      id: '/forgot-password/'
+      path: '/forgot-password'
+      fullPath: '/forgot-password/'
+      preLoaderRoute: typeof ForgotPasswordIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login/': {
       id: '/login/'
       path: '/login'
       fullPath: '/login/'
       preLoaderRoute: typeof LoginIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/reset-password/': {
+      id: '/reset-password/'
+      path: '/reset-password'
+      fullPath: '/reset-password/'
+      preLoaderRoute: typeof ResetPasswordIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authed/account/': {
+      id: '/_authed/account/'
+      path: '/'
+      fullPath: '/account/'
+      preLoaderRoute: typeof AuthedAccountIndexRouteImport
+      parentRoute: typeof AuthedAccountRoute
+    }
+    '/_authed/account/email': {
+      id: '/_authed/account/email'
+      path: '/email'
+      fullPath: '/account/email'
+      preLoaderRoute: typeof AuthedAccountEmailRouteImport
+      parentRoute: typeof AuthedAccountRoute
+    }
+    '/_authed/account/sessions': {
+      id: '/_authed/account/sessions'
+      path: '/sessions'
+      fullPath: '/account/sessions'
+      preLoaderRoute: typeof AuthedAccountSessionsRouteImport
+      parentRoute: typeof AuthedAccountRoute
     }
     '/_authed/organizations/': {
       id: '/_authed/organizations/'
@@ -183,6 +338,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/organizations/new'
       preLoaderRoute: typeof AuthedOrganizationsNewRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/_authed/profiles/': {
+      id: '/_authed/profiles/'
+      path: '/'
+      fullPath: '/profiles/'
+      preLoaderRoute: typeof AuthedProfilesIndexRouteImport
+      parentRoute: typeof AuthedProfilesRoute
+    }
+    '/_authed/profiles/edit': {
+      id: '/_authed/profiles/edit'
+      path: '/edit'
+      fullPath: '/profiles/edit'
+      preLoaderRoute: typeof AuthedProfilesEditRouteImport
+      parentRoute: typeof AuthedProfilesRoute
     }
     '/_authed/organizations/$organizationId/edit': {
       id: '/_authed/organizations/$organizationId/edit'
@@ -208,6 +377,36 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthedAccountRouteChildren {
+  AuthedAccountEmailRoute: typeof AuthedAccountEmailRoute
+  AuthedAccountSessionsRoute: typeof AuthedAccountSessionsRoute
+  AuthedAccountIndexRoute: typeof AuthedAccountIndexRoute
+}
+
+const AuthedAccountRouteChildren: AuthedAccountRouteChildren = {
+  AuthedAccountEmailRoute: AuthedAccountEmailRoute,
+  AuthedAccountSessionsRoute: AuthedAccountSessionsRoute,
+  AuthedAccountIndexRoute: AuthedAccountIndexRoute,
+}
+
+const AuthedAccountRouteWithChildren = AuthedAccountRoute._addFileChildren(
+  AuthedAccountRouteChildren,
+)
+
+interface AuthedProfilesRouteChildren {
+  AuthedProfilesEditRoute: typeof AuthedProfilesEditRoute
+  AuthedProfilesIndexRoute: typeof AuthedProfilesIndexRoute
+}
+
+const AuthedProfilesRouteChildren: AuthedProfilesRouteChildren = {
+  AuthedProfilesEditRoute: AuthedProfilesEditRoute,
+  AuthedProfilesIndexRoute: AuthedProfilesIndexRoute,
+}
+
+const AuthedProfilesRouteWithChildren = AuthedProfilesRoute._addFileChildren(
+  AuthedProfilesRouteChildren,
+)
+
 interface AuthedOrganizationsOrganizationIdRouteChildren {
   AuthedOrganizationsOrganizationIdEditRoute: typeof AuthedOrganizationsOrganizationIdEditRoute
   AuthedOrganizationsOrganizationIdMembersNewRoute: typeof AuthedOrganizationsOrganizationIdMembersNewRoute
@@ -230,6 +429,8 @@ const AuthedOrganizationsOrganizationIdRouteWithChildren =
   )
 
 interface AuthedRouteChildren {
+  AuthedAccountRoute: typeof AuthedAccountRouteWithChildren
+  AuthedProfilesRoute: typeof AuthedProfilesRouteWithChildren
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedOrganizationsOrganizationIdRoute: typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   AuthedOrganizationsNewRoute: typeof AuthedOrganizationsNewRoute
@@ -237,6 +438,8 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedAccountRoute: AuthedAccountRouteWithChildren,
+  AuthedProfilesRoute: AuthedProfilesRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedOrganizationsOrganizationIdRoute:
     AuthedOrganizationsOrganizationIdRouteWithChildren,
@@ -249,7 +452,9 @@ const AuthedRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
+  ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
+  ResetPasswordIndexRoute: ResetPasswordIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

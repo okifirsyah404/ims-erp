@@ -76,9 +76,17 @@ function errorEnvelope(
  * @throws 404 When an id-targeted lookup finds no alive row
  */
 export class LocationController {
-	/**
-	 * Builds the Elysia plugin mounting all location routes.
-	 */
+/**
+ * Builds the Elysia plugin mounting all location routes.
+ *
+ * @remarks
+ * Resolves {@link LocationService} from the tsyringe container once at
+ * plugin build time. The local `onError` hook maps validation failures
+ * (Elysia `VALIDATION`/`PARSE` codes and `ZodError`) onto a 400 envelope;
+ * domain errors are not expected since lookups simply return `404`.
+ *
+ * @returns An Elysia instance with the `/locations` route group mounted
+ */
 	static plugin() {
 		const locationService = container.resolve<LocationService>(
 			LOCATION_SERVICE_TOKEN,

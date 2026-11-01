@@ -71,18 +71,35 @@ export class OrganizationService {
 		return row;
 	}
 
+	/**
+	 * Paginated organization listing (soft-deleted excluded unless asked).
+	 */
 	async listOrganizations(
 		request: TOrganizationPaginationRequest,
 	): Promise<TPaginationResult<TOrganizationSelect>> {
 		return this.repository.paginate(request);
 	}
 
+	/**
+	 * Fetches one organization by id.
+	 *
+	 * @throws OrganizationNotFoundError when absent or soft-deleted
+	 */
 	async getOrganization(id: string): Promise<TOrganizationSelect> {
 		const row = await this.repository.findById(id);
 		if (!row || row.deletedAt) throw new OrganizationNotFoundError();
 		return row;
 	}
 
+	/**
+	 * Updates profile fields through the Better Auth gateway.
+	 *
+	 * @remarks
+	 * The caller's headers are forwarded so Better Auth enforces its
+	 * organization-level permission check before mutating.
+	 *
+	 * @throws OrganizationNotFoundError when absent or soft-deleted
+	 */
 	async updateOrganization(
 		headers: Headers,
 		organizationId: string,
@@ -111,6 +128,12 @@ export class OrganizationService {
 		await this.repository.softDelete(row.id);
 	}
 
+	/**
+	 * Restores a soft-deleted organization.
+	 *
+	 * @throws OrganizationNotFoundError when the row is absent
+	 * @throws OrganizationNotDeletedError when the row is not deleted
+	 */
 	async restoreOrganization(organizationId: string): Promise<void> {
 		const row = await this.repository.findById(organizationId);
 		if (!row) throw new OrganizationNotFoundError();
@@ -120,6 +143,7 @@ export class OrganizationService {
 		await this.repository.restore(row.id);
 	}
 
+	/** Paginated member list joined with user identity fields. */
 	async listMembers(
 		organizationId: string,
 		request: TMemberPaginationRequest,
@@ -127,6 +151,12 @@ export class OrganizationService {
 		return this.repository.paginateMembers(organizationId, request);
 	}
 
+	/**
+	 * Adds a member through the Better Auth gateway.
+	 *
+	 * @throws OrganizationNotFoundError when the organization is absent or
+	 * soft-deleted
+	 */
 	async addMember(
 		headers: Headers,
 		organizationId: string,
@@ -140,6 +170,17 @@ export class OrganizationService {
 		});
 	}
 
+	/**
+	 * Changes a member's role through the Better Auth gateway.
+	 *
+	 * @remarks
+	 * Demoting an owner is pre-checked here (last-owner protection) in
+	 * addition to Better Auth's own check, so the failure surfaces as a
+	 * typed domain error.
+	 *
+	 * @throws MemberNotFoundError when the member does not exist
+	 * @throws LastOwnerError when demoting the last owner
+	 */
 	async updateMemberRole(
 		headers: Headers,
 		organizationId: string,
@@ -160,6 +201,12 @@ export class OrganizationService {
 		return { id: result.member.id, role: input.role };
 	}
 
+	/**
+	 * Removes a member through the Better Auth gateway.
+	 *
+	 * @throws MemberNotFoundError when the member does not exist
+	 * @throws LastOwnerError when removing the last owner
+	 */
 	async removeMember(
 		headers: Headers,
 		organizationId: string,
@@ -177,7 +224,11 @@ export class OrganizationService {
 		});
 	}
 
-	/** Validates the row exists and is not soft-deleted. */
+	/**
+	 * Loads the organization and asserts it exists and is not soft-deleted.
+	 *
+	 * @throws OrganizationNotFoundError otherwise
+	 */
 	private async ensureActive(
 		organizationId: string,
 	): Promise<TOrganizationSelect> {
@@ -186,6 +237,11 @@ export class OrganizationService {
 		return row;
 	}
 
+	/**
+	 * Guards the last-owner invariant before a role change or removal.
+	 *
+	 * @throws LastOwnerError when the member is the only owner
+	 */
 	private async ensureNotLastOwner(
 		organizationId: string,
 		memberId: string,
@@ -197,7 +253,10 @@ export class OrganizationService {
 		}
 	}
 
-	/** Better Auth stores multi-role members as comma-separated strings. */
+	/**
+	 * Whether the member's (possibly comma-joined) role list includes
+	 * `owner`.
+	 */
 	private isOwner(role: string): boolean {
 		return role.split(',').map((r) => r.trim()).includes('owner');
 	}

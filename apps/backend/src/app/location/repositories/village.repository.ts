@@ -30,9 +30,21 @@ export class VillageRepository implements IVillageRepository {
 		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
 	) {}
 
+	/** Redis key namespace for this repository's cache entries. */
 	private readonly cachePrefix = 'location:village';
+
+	/** Cache-aside TTL applied to every cached read (5 minutes). */
 	private readonly cacheTtlSeconds = 300;
 
+	/**
+	 * Fetches one filtered page of villages.
+	 *
+	 * @remarks
+	 * Never cached: filters change the result set per request, so caching
+	 * would need a per-filter key with little hit value.
+	 *
+	 * @param request - Page settings plus optional `code`/`name`/`districtId` filters
+	 */
 	async paginate(
 		request: TVillagePaginationRequest,
 	): Promise<TPaginationResult<TVillageSelect>> {
@@ -65,6 +77,9 @@ export class VillageRepository implements IVillageRepository {
 		};
 	}
 
+	/**
+	 * Inserts one village and invalidates its own and its parent's cache.
+	 */
 	async create(item: TVillageInsert): Promise<TVillageSelect> {
 		const [created] = await this.database
 			.insert(village)
@@ -75,6 +90,9 @@ export class VillageRepository implements IVillageRepository {
 		return created;
 	}
 
+	/**
+	 * Bulk-inserts villages and invalidates their cache entries.
+	 */
 	async createMany(items: TVillageInsert[]): Promise<TVillageSelect[]> {
 		const created = await this.database
 			.insert(village)
@@ -88,6 +106,13 @@ export class VillageRepository implements IVillageRepository {
 		return created;
 	}
 
+	/**
+	 * Fetches all non-deleted villages, ordered by name.
+	 *
+	 * @remarks
+	 * Cache-aside: the full list is cached under `{prefix}:all` and treated
+	 * as immutable reference data, so any write evicts it.
+	 */
 	async findAll(): Promise<TVillageSelect[]> {
 		const cacheKey = `${this.cachePrefix}:all`;
 		const cached = await this.redisClient.get(cacheKey);
@@ -103,10 +128,22 @@ export class VillageRepository implements IVillageRepository {
 		return rows;
 	}
 
+	/**
+	 * Fetches every village, soft-deleted rows included. Admin/recovery view.
+	 */
 	async findAllWithDeleted(): Promise<TVillageSelect[]> {
 		return this.database.select().from(village).orderBy(asc(village.name));
 	}
 
+	/**
+	 * Fetches one non-deleted village by id.
+	 *
+	 * @remarks
+	 * Cache-aside with negative caching: an absent row is cached as the
+	 * literal string `'null'` so repeated misses do not hit the database.
+	 *
+	 * @returns The village, or `null` when absent or soft-deleted
+	 */
 	async findById(id: string | number): Promise<TVillageSelect | null> {
 		const cacheKey = `${this.cachePrefix}:id:${id}`;
 		const cached = await this.redisClient.get(cacheKey);
@@ -122,6 +159,9 @@ export class VillageRepository implements IVillageRepository {
 		return row ?? null;
 	}
 
+	/**
+	 * Fetches non-deleted villages by ids. Never cached.
+	 */
 	async findByIds(ids: (string | number)[]): Promise<TVillageSelect[]> {
 		return this.database
 			.select()
@@ -131,6 +171,12 @@ export class VillageRepository implements IVillageRepository {
 			);
 	}
 
+	/**
+	 * Fetches one soft-deleted village by id. Always a direct read.
+	 *
+	 * @returns The soft-deleted village, or `null` when it does not exist
+	 * or is not deleted
+	 */
 	async findSoftDeletedById(id: string | number): Promise<TVillageSelect | null> {
 		const [row] = await this.database
 			.select()
@@ -139,6 +185,9 @@ export class VillageRepository implements IVillageRepository {
 		return row ?? null;
 	}
 
+	/**
+	 * Partially updates a non-deleted village and invalidates its cache.
+	 */
 	async update(
 		id: string | number,
 		item: Partial<TVillageInsert>,
@@ -153,18 +202,25 @@ export class VillageRepository implements IVillageRepository {
 		return updated ?? null;
 	}
 
+	/** Soft-deletes one village (stamps `deletedAt`). */
 	async delete(id: string | number): Promise<void> {
 		await this.softDeleteMany([String(id)]);
 	}
 
+	/** Soft-deletes multiple villages in one update. */
 	async deleteMany(ids: (string | number)[]): Promise<void> {
 		await this.softDeleteMany(ids.map(String));
 	}
 
+	/** Permanently removes one village. Infra/purge only. */
 	async forceDelete(id: string | number): Promise<void> {
 		await this.forceDeleteMany([id]);
 	}
 
+	/**
+	 * Permanently removes villages. Infra/purge only — feature code must
+	 * use {@link delete} (soft-delete hard rule).
+	 */
 	async forceDeleteMany(ids: (string | number)[]): Promise<void> {
 		const affected = await this.database
 			.delete(village)
@@ -176,6 +232,9 @@ export class VillageRepository implements IVillageRepository {
 		);
 	}
 
+	/**
+	 * Restores a soft-deleted village by clearing `deletedAt`.
+	 */
 	async restore(id: string | number): Promise<TVillageSelect | null> {
 		const [restored] = await this.database
 			.update(village)
@@ -187,6 +246,12 @@ export class VillageRepository implements IVillageRepository {
 		return restored ?? null;
 	}
 
+	/**
+	 * Fetches all non-deleted villages of one district by id.
+	 *
+	 * @remarks
+	 * Cache-aside keyed per parent: `{prefix}:district:{districtId}`.
+	 */
 	async findByDistrictId(districtId: string): Promise<TVillageSelect[]> {
 		const cacheKey = `${this.cachePrefix}:district:${districtId}`;
 		const cached = await this.redisClient.get(cacheKey);
@@ -202,6 +267,9 @@ export class VillageRepository implements IVillageRepository {
 		return rows;
 	}
 
+	/**
+	 * Fetches non-deleted villages for multiple districts by id. Never cached.
+	 */
 	async findByDistrictIds(districtIds: string[]): Promise<TVillageSelect[]> {
 		if (districtIds.length === 0) return [];
 		return this.database
@@ -216,10 +284,20 @@ export class VillageRepository implements IVillageRepository {
 			.orderBy(asc(village.name));
 	}
 
+	/**
+	 * Fetches non-deleted villages of one district, resolved by its code.
+	 */
 	async findByDistrictCode(districtCode: string): Promise<TVillageSelect[]> {
 		return this.findByDistrictCodes([districtCode]);
 	}
 
+	/**
+	 * Fetches non-deleted villages for the given district codes.
+	 *
+	 * @remarks
+	 * Resolves codes to district ids first (uncached, one query), then
+	 * reuses {@link findByDistrictIds}.
+	 */
 	async findByDistrictCodes(districtCodes: string[]): Promise<TVillageSelect[]> {
 		if (districtCodes.length === 0) return [];
 

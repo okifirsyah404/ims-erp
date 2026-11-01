@@ -32,9 +32,21 @@ export class RegencyRepository implements IRegencyRepository {
 		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
 	) {}
 
+	/** Redis key namespace for this repository's cache entries. */
 	private readonly cachePrefix = 'location:regency';
+
+	/** Cache-aside TTL applied to every cached read (5 minutes). */
 	private readonly cacheTtlSeconds = 300;
 
+	/**
+	 * Fetches one filtered page of regencies.
+	 *
+	 * @remarks
+	 * Never cached: filters change the result set per request, so caching
+	 * would need a per-filter key with little hit value.
+	 *
+	 * @param request - Page settings plus optional `code`/`name`/`provinceId` filters
+	 */
 	async paginate(
 		request: TRegencyPaginationRequest,
 	): Promise<TPaginationResult<TRegencySelect>> {
@@ -67,6 +79,9 @@ export class RegencyRepository implements IRegencyRepository {
 		};
 	}
 
+	/**
+	 * Inserts one regency and invalidates its own and its parent's cache.
+	 */
 	async create(item: TRegencyInsert): Promise<TRegencySelect> {
 		const [created] = await this.database
 			.insert(regency)
@@ -77,6 +92,9 @@ export class RegencyRepository implements IRegencyRepository {
 		return created;
 	}
 
+	/**
+	 * Bulk-inserts regencies and invalidates their cache entries.
+	 */
 	async createMany(items: TRegencyInsert[]): Promise<TRegencySelect[]> {
 		const created = await this.database
 			.insert(regency)
@@ -90,6 +108,13 @@ export class RegencyRepository implements IRegencyRepository {
 		return created;
 	}
 
+	/**
+	 * Fetches all non-deleted regencies, ordered by name.
+	 *
+	 * @remarks
+	 * Cache-aside: the full list is cached under `{prefix}:all` and treated
+	 * as immutable reference data, so any write evicts it.
+	 */
 	async findAll(): Promise<TRegencySelect[]> {
 		const cacheKey = `${this.cachePrefix}:all`;
 		const cached = await this.redisClient.get(cacheKey);
@@ -105,10 +130,22 @@ export class RegencyRepository implements IRegencyRepository {
 		return rows;
 	}
 
+	/**
+	 * Fetches every regency, soft-deleted rows included. Admin/recovery view.
+	 */
 	async findAllWithDeleted(): Promise<TRegencySelect[]> {
 		return this.database.select().from(regency).orderBy(asc(regency.name));
 	}
 
+	/**
+	 * Fetches one non-deleted regency by id.
+	 *
+	 * @remarks
+	 * Cache-aside with negative caching: an absent row is cached as the
+	 * literal string `'null'` so repeated misses do not hit the database.
+	 *
+	 * @returns The regency, or `null` when absent or soft-deleted
+	 */
 	async findById(id: string | number): Promise<TRegencySelect | null> {
 		const cacheKey = `${this.cachePrefix}:id:${id}`;
 		const cached = await this.redisClient.get(cacheKey);
@@ -124,6 +161,9 @@ export class RegencyRepository implements IRegencyRepository {
 		return row ?? null;
 	}
 
+	/**
+	 * Fetches non-deleted regencies by ids. Never cached.
+	 */
 	async findByIds(ids: (string | number)[]): Promise<TRegencySelect[]> {
 		return this.database
 			.select()
@@ -133,6 +173,12 @@ export class RegencyRepository implements IRegencyRepository {
 			);
 	}
 
+	/**
+	 * Fetches one soft-deleted regency by id. Always a direct read.
+	 *
+	 * @returns The soft-deleted regency, or `null` when it does not exist
+	 * or is not deleted
+	 */
 	async findSoftDeletedById(id: string | number): Promise<TRegencySelect | null> {
 		const [row] = await this.database
 			.select()
@@ -141,6 +187,9 @@ export class RegencyRepository implements IRegencyRepository {
 		return row ?? null;
 	}
 
+	/**
+	 * Partially updates a non-deleted regency and invalidates its cache.
+	 */
 	async update(
 		id: string | number,
 		item: Partial<TRegencyInsert>,
@@ -155,18 +204,25 @@ export class RegencyRepository implements IRegencyRepository {
 		return updated ?? null;
 	}
 
+	/** Soft-deletes one regency (stamps `deletedAt`). */
 	async delete(id: string | number): Promise<void> {
 		await this.softDeleteMany([String(id)]);
 	}
 
+	/** Soft-deletes multiple regencies in one update. */
 	async deleteMany(ids: (string | number)[]): Promise<void> {
 		await this.softDeleteMany(ids.map(String));
 	}
 
+	/** Permanently removes one regency. Infra/purge only. */
 	async forceDelete(id: string | number): Promise<void> {
 		await this.forceDeleteMany([id]);
 	}
 
+	/**
+	 * Permanently removes regencies. Infra/purge only — feature code must
+	 * use {@link delete} (soft-delete hard rule).
+	 */
 	async forceDeleteMany(ids: (string | number)[]): Promise<void> {
 		const affected = await this.database
 			.delete(regency)
@@ -178,6 +234,9 @@ export class RegencyRepository implements IRegencyRepository {
 		);
 	}
 
+	/**
+	 * Restores a soft-deleted regency by clearing `deletedAt`.
+	 */
 	async restore(id: string | number): Promise<TRegencySelect | null> {
 		const [restored] = await this.database
 			.update(regency)
@@ -189,6 +248,12 @@ export class RegencyRepository implements IRegencyRepository {
 		return restored ?? null;
 	}
 
+	/**
+	 * Fetches all non-deleted regencies of one province by id.
+	 *
+	 * @remarks
+	 * Cache-aside keyed per parent: `{prefix}:province:{provinceId}`.
+	 */
 	async findByProvinceId(provinceId: string): Promise<TRegencySelect[]> {
 		const cacheKey = `${this.cachePrefix}:province:${provinceId}`;
 		const cached = await this.redisClient.get(cacheKey);
@@ -206,6 +271,9 @@ export class RegencyRepository implements IRegencyRepository {
 		return rows;
 	}
 
+	/**
+	 * Fetches non-deleted regencies for multiple provinces by id. Never cached.
+	 */
 	async findByProvinceIds(provinceIds: string[]): Promise<TRegencySelect[]> {
 		if (provinceIds.length === 0) return [];
 		return this.database
@@ -220,10 +288,20 @@ export class RegencyRepository implements IRegencyRepository {
 			.orderBy(asc(regency.name));
 	}
 
+	/**
+	 * Fetches non-deleted regencies of one province, resolved by its code.
+	 */
 	async findByProvinceCode(provinceCode: string): Promise<TRegencySelect[]> {
 		return this.findByProvinceCodes([provinceCode]);
 	}
 
+	/**
+	 * Fetches non-deleted regencies for the given province codes.
+	 *
+	 * @remarks
+	 * Resolves codes to province ids first (uncached, one query), then
+	 * reuses {@link findByProvinceIds}.
+	 */
 	async findByProvinceCodes(provinceCodes: string[]): Promise<TRegencySelect[]> {
 		if (provinceCodes.length === 0) return [];
 

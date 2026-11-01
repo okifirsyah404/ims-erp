@@ -43,7 +43,10 @@ export class UserRepository implements IUserRepository {
 		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
 	) {}
 
+	/** Redis key namespace for this repository's cache entries. */
 	private readonly cachePrefix = 'user';
+
+	/** Cache-aside TTL applied to every cached read (5 minutes). */
 	private readonly cacheTtlSeconds = 300;
 
 	async paginate(
@@ -204,6 +207,11 @@ export class UserRepository implements IUserRepository {
 		return restored ?? null;
 	}
 
+	/**
+	 * Bulk soft-delete: stamps `deletedAt` on alive rows and evicts their
+	 * cache entries. Does NOT ban the users — the service must pair this
+	 * with the admin-API ban to stop new logins.
+	 */
 	private async softDeleteMany(ids: string[]): Promise<void> {
 		await this.database
 			.update(users)
@@ -212,6 +220,9 @@ export class UserRepository implements IUserRepository {
 		await this.invalidate(ids);
 	}
 
+	/**
+	 * Evicts the list cache and the per-id entries for the given users.
+	 */
 	private async invalidate(ids: string[]): Promise<void> {
 		await this.redisClient.del(
 			`${this.cachePrefix}:all`,

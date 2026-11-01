@@ -46,6 +46,21 @@ export interface IUserAuthGateway {
 	updateUser(userId: string, input: TUpdateUser, headers: Headers): Promise<void>;
 
 	/**
+	 * Self-service profile update for the calling user (no admin rights
+	 * needed).
+	 *
+	 * @remarks
+	 * Runs Better Auth's session-authenticated `/update-user` endpoint
+	 * (NOT the admin API, which requires a global-admin caller). The
+	 * username plugin validates/normalizes `username` on this endpoint and
+	 * raises a 422-style APIError when it is already taken.
+	 *
+	 * @throws UserEmailTakenError When the username/email is taken
+	 * @throws UserNotFoundError When the session user no longer exists
+	 */
+	updateSelf(userId: string, input: TUpdateUser, headers: Headers): Promise<void>;
+
+	/**
 	 * Replaces the user's global role.
 	 *
 	 * @throws UserNotFoundError When the target user does not exist

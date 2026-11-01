@@ -1,5 +1,6 @@
 /** Domain errors surfaced by the organization service. */
 
+/** Organization lookup by id or slug failed in the auth gateway. */
 export class OrganizationNotFoundError extends Error {
 	readonly status = 404;
 	constructor() {
@@ -17,6 +18,7 @@ export class OrganizationAlreadyExistsError extends Error {
 	}
 }
 
+/** Slug conflict on create/update (unique-slug constraint). */
 export class OrganizationSlugTakenError extends Error {
 	readonly status = 409;
 	constructor() {
@@ -34,6 +36,7 @@ export class OrganizationAlreadyDeletedError extends Error {
 	}
 }
 
+/** Soft-delete guard: the organization is not deleted, so restore is invalid. */
 export class OrganizationNotDeletedError extends Error {
 	readonly status = 409;
 	constructor() {
@@ -42,6 +45,7 @@ export class OrganizationNotDeletedError extends Error {
 	}
 }
 
+/** A member id/email did not resolve within the target organization. */
 export class MemberNotFoundError extends Error {
 	readonly status = 404;
 	constructor() {

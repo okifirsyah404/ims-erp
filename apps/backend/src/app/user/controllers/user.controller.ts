@@ -16,13 +16,15 @@ import {
 	banUserSchema,
 	createUserSchema,
 	setUserRoleSchema,
+	updateSelfUserSchema,
 	updateUserSchema,
 	userIdParamsSchema,
 	userQuerySchema,
 } from '../contracts/user.contract';
 import { USER_SERVICE_TOKEN } from '../constants/di';
-import { UserService } from '../services/user.service';
+import { UserService, AVATAR_MAX_BYTES, sniffAvatarType } from '../services/user.service';
 import {
+	InvalidAvatarError,
 	UserEmailTakenError,
 	UserNotFoundError,
 } from '../services/user.errors';
@@ -87,7 +89,10 @@ function requireGlobalAdmin({ erp }: { erp: ErpContext }): void {
 	}
 }
 
-/** Sentinel for the 403 mapping below. */
+/**
+ * Module-private sentinel thrown by {@link requireGlobalAdmin} and mapped
+ * to `403` by the controller's error hook.
+ */
 class NotGlobalAdminError extends Error {
 	constructor() {
 		super('Global administrator role required');
@@ -117,6 +122,15 @@ class NotGlobalAdminError extends Error {
 export class UserController {
 	/**
 	 * Builds the Elysia plugin mounting all user routes.
+	 *
+	 * @remarks
+	 * Resolves {@link UserService} from the tsyringe container once at
+	 * plugin build time. The local `onError` hook maps validation failures
+	 * to `400` and the module's domain errors onto their HTTP statuses
+	 * (404/409/403); see the class-level `@throws` list for the full
+	 * mapping.
+	 *
+	 * @returns An Elysia instance with the `/users` route group mounted
 	 */
 	static plugin() {
 		const userService = container.resolve<UserService>(USER_SERVICE_TOKEN);
@@ -150,6 +164,12 @@ export class UserController {
 					set.status = 409;
 					return errorEnvelope(409, 'Conflict', [
 						{ field: 'email', message: 'Email already in use' },
+					]);
+				}
+				if (error instanceof InvalidAvatarError) {
+					set.status = 415;
+					return errorEnvelope(415, 'Unsupported media type', [
+						{ field: 'file', message: error.message },
 					]);
 				}
 				if (error instanceof NotGlobalAdminError) {
@@ -191,6 +211,73 @@ export class UserController {
 				// Enabled with `true` (object-form macro) — an empty option
 				// object would drop the macro's resolved `erp` context from
 				// handler types.
+				{ erpSession: { session: true } },
+			)
+			.patch(
+				/**
+				 * Self-service profile update. Same session-only guard as
+				 * `/me`; the caller's id comes from the guard-resolved
+				 * session, never client input. Flows through Better Auth's
+				 * session-authenticated `/update-user` (NOT the admin API).
+				 */
+				'/me',
+				async ({ body, request, erp }) => {
+					await userService.updateSelf(
+						erp.session.user.id,
+						updateSelfUserSchema.parse(body),
+						request.headers,
+					);
+					return ok(null);
+				},
+				{ erpSession: { session: true } },
+			)
+			.post(
+				/**
+				 * Self-service avatar upload (multipart, field `file`).
+				 * Validates type by magic bytes (never the declared
+				 * Content-Type) and enforces the 2 MiB cap; writes to S3 and
+				 * points `users.image` at the uploaded key. Returns the
+				 * refreshed profile with a fresh presigned URL.
+				 */
+				'/me/avatar',
+				async ({ request, erp, status }) => {
+					const form = await request.formData();
+					const file = form.get('file');
+					if (!(file instanceof File)) {
+						return status(
+							400,
+							errorEnvelope(400, 'Validation failed', [
+								{ field: 'file', message: 'Expected a multipart file field' },
+							]),
+						);
+					}
+					if (file.size > AVATAR_MAX_BYTES) {
+						return status(
+							413,
+							errorEnvelope(413, 'Payload too large', [
+								{ field: 'file', message: 'Avatar must be 2 MiB or smaller' },
+							]),
+						);
+					}
+					const bytes = new Uint8Array(await file.arrayBuffer());
+					const sniffed = sniffAvatarType(bytes.subarray(0, 12));
+					if (!sniffed) {
+						return status(
+							415,
+							errorEnvelope(415, 'Unsupported media type', [
+								{
+									field: 'file',
+									message: 'Avatar must be a PNG, JPEG, or WebP image',
+								},
+							]),
+						);
+					}
+					const profile = await userService.setSelfAvatar(erp.session.user.id, {
+						data: bytes.buffer as ArrayBuffer,
+						type: sniffed,
+					});
+					return ok(profile);
+				},
 				{ erpSession: { session: true } },
 			)
 			.get(

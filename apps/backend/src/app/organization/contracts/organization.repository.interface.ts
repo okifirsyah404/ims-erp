@@ -13,6 +13,10 @@ export type TOrganizationPaginationRequest = TPaginationRequest & {
 	includeDeleted?: boolean;
 };
 
+/**
+ * Pagination/filter parameters for member listings. `role` is an exact
+ * match against the member's (possibly comma-joined) role list.
+ */
 export type TMemberPaginationRequest = TPaginationRequest & {
 	role?: TMemberRole;
 };

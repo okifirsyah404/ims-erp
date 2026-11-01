@@ -12,6 +12,12 @@ export * from './constants/di';
 
 /**
  * Registers the sales module's repositories and service.
+ *
+ * @remarks
+ * All three bindings are class registrations on symbol tokens; consumers
+ * depend on the repository/service contracts rather than concrete classes.
+ *
+ * @param container - The tsyringe container to populate
  */
 export function registerSales(container: DependencyContainer): void {
 	container.register(QUOTATION_REPOSITORY_TOKEN, {

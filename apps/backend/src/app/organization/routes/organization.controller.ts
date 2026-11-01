@@ -42,6 +42,9 @@ function ok<T>(data: T): TApiResponse<T> {
 	return { ...buildMeta(200, 'OK'), data, errors: [] };
 }
 
+/**
+ * Builds the standard error envelope for a failed request.
+ */
 function errorEnvelope(
 	status: number,
 	message: string,
@@ -74,6 +77,15 @@ function errorEnvelope(
 export class OrganizationController {
 	/**
 	 * Builds the Elysia plugin mounting all organization routes.
+	 *
+	 * @remarks
+	 * Resolves {@link OrganizationService} from the tsyringe container once
+	 * at plugin build time. The local `onError` hook maps validation
+	 * failures to `400` and the module's domain errors onto their declared
+	 * `status` fields (404/409/422); see the class-level `@throws` list for
+	 * the full mapping.
+	 *
+	 * @returns An Elysia instance with the `/organizations` route group mounted
 	 */
 	static plugin() {
 		const organizationService = container.resolve<OrganizationService>(

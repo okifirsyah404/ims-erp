@@ -30,6 +30,14 @@ import {
  */
 @injectable()
 export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
+	/**
+	 * Creates an organization via Better Auth (server-side call).
+	 *
+	 * @remarks
+	 * When `userId` is provided, Better Auth adds that user as the
+	 * organization's owner. No session headers are needed: creation happens
+	 * outside Better Auth's own authorization checks.
+	 */
 	async createOrganization(input: {
 		name: string;
 		slug: string;
@@ -56,6 +64,13 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 		}
 	}
 
+	/**
+	 * Updates an organization's profile fields via Better Auth.
+	 *
+	 * @remarks
+	 * Forwards the caller's headers so Better Auth runs its own
+	 * organization-authorization check (permission-based) before mutating.
+	 */
 	async updateOrganization(
 		headers: Headers,
 		input: {
@@ -82,6 +97,12 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 		}
 	}
 
+	/**
+	 * Fetches one organization with its members via Better Auth.
+	 *
+	 * @remarks
+	 * Forwards the caller's headers for Better Auth's authorization check.
+	 */
 	async getFullOrganization(
 		headers: Headers,
 		organizationId: string,
@@ -113,6 +134,14 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 		}
 	}
 
+	/**
+	 * Adds a member via Better Auth (server-side call, no headers).
+	 *
+	 * @remarks
+	 * Casting the role to `'owner'` is required because Better Auth's
+	 * inferred endpoint type only knows the built-in literals; custom ERP
+	 * roles are valid at runtime (registered via `erpRoles`).
+	 */
 	async addMember(input: {
 		organizationId: string;
 		userId: string;
@@ -135,6 +164,14 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 		}
 	}
 
+	/**
+	 * Changes a member's role via Better Auth.
+	 *
+	 * @remarks
+	 * Forwards the caller's headers so Better Auth enforces its
+	 * owner-escalation rules (cannot demote the last owner, cannot set a
+	 * role above one's own).
+	 */
 	async updateMemberRole(
 		headers: Headers,
 		input: { organizationId: string; memberId: string; role: TMemberRole },
@@ -155,6 +192,13 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 		}
 	}
 
+	/**
+	 * Removes a member via Better Auth.
+	 *
+	 * @remarks
+	 * Forwards the caller's headers so Better Auth enforces last-owner
+	 * protection.
+	 */
 	async removeMember(
 		headers: Headers,
 		input: { organizationId: string; memberIdOrEmail: string },
@@ -172,6 +216,14 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 		}
 	}
 
+	/**
+	 * Maps a raw Better Auth organization row onto the gateway contract.
+	 *
+	 * @remarks
+	 * Normalizes `logo` to `null` and narrows untyped `metadata` to a
+	 * record; `deletedAt` is surfaced read-only — all writes to it belong
+	 * to the repository, never to Better Auth.
+	 */
 	private toGatewayOrganization(organization: {
 		id: string;
 		name: string;
@@ -198,6 +250,18 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 		};
 	}
 
+	/**
+	 * Translates a thrown value from `auth.api` into a module domain error.
+	 *
+	 * @remarks
+	 * Domain errors pass through untouched (they may originate from this
+	 * class's own guard clauses). For `APIError`s the mapping is heuristic
+	 * on Better Auth's message text: a 403 mentioning "owner" becomes
+	 * {@link LastOwnerError}, any other 403 becomes
+	 * {@link MemberNotFoundError}, and a message mentioning "slug" becomes
+	 * {@link OrganizationSlugTakenError}. Everything else is rethrown
+	 * as-is so unknown Better Auth failures keep their original shape.
+	 */
 	private translate(error: unknown): Error {
 		if (error instanceof LastOwnerError) return error;
 		if (error instanceof OrganizationNotFoundError) return error;

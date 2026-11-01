@@ -14,10 +14,12 @@ import {
 	type AvatarJobData,
 } from './avatar.queue';
 
+/** Rendered avatar size in pixels (square). */
 const AVATAR_SIZE = 72;
 /** ponytail: repo-local temp dir; move to OS temp / env when multi-node. */
 const TMP_DIR = path.resolve(process.cwd(), '.tmp/avatars');
 
+/** Shared DiceBear initials style used for every avatar. */
 const initialsStyle = new Style(initials);
 
 /**
@@ -64,7 +66,14 @@ export async function processAvatarJob(
 	await userRepository.update(userId, { image: avatarObjectKey(userId) });
 }
 
-/** Starts the avatar worker. Call once at bootstrap. */
+/**
+ * Starts the avatar worker. Call once at bootstrap.
+ *
+ * @remarks
+ * The repository is resolved once at the bootstrap boundary (same spirit
+ * as controller `plugin()` factories): the worker outlives the request
+ * lifecycle. Processes up to 2 jobs concurrently.
+ */
 export function startAvatarWorker(): Worker<AvatarJobData> {
 	// Resolved once at the bootstrap boundary (same spirit as controller
 	// plugin() factories): the worker outlives the request lifecycle.
