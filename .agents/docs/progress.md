@@ -3,6 +3,63 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed (this session — multi-organization, 2026-11-02)
+
+ADR: `.agents/docs/decisions/ADR-0007-multi-organization.md` (supersedes the
+single-organization reading of ADR-0001; the "one company" decision stands).
+Root cause of the reported `422 "An organization already exists; only one is
+allowed"`: `OrganizationService.createOrganization` enforced a literal
+single-org invariant that ADR-0001 never required.
+
+- **Removed** `OrganizationAlreadyExistsError` + `existsAny()` (repository,
+  interface, service) and the controller's 422 mapping/swagger text.
+- **`organization.auth.ts`** — `allowUserToCreateOrganization: (user) =>
+  user.role === GLOBAL_ADMIN_ROLE` (defense-in-depth behind the HTTP gate;
+  skipped by Better Auth for server-side `userId` creates, so seeders work).
+- **`createOrganization`** now forwards caller headers, so Better Auth
+  enforces the admin gate AND activates the new org for that session; the
+  creator becomes `owner` (`crud-org.mjs` behavior, verified live).
+- **Role provisioning** — `seedRolesForOrganization(organizationId)` extracted
+  from `organization-roles.seeder.ts` and called on every create (best-effort,
+  logs on failure) so API-created orgs get the real `auth.roles` catalog
+  instead of silently falling back to the static catalog.
+- **Last-org guard** — `LastOrganizationError` (409) via
+  `repository.countActive()`. Because delete is a SOFT delete, Better Auth's
+  own session cleanup never runs, so `deleteOrganization(headers, id)` also
+  calls `gateway.setActive(headers, null)` to release the caller.
+- **Controller split (option a)** — `OrganizationBootstrapController.plugin()`
+  owns `POST /organizations` on `sessionGuard()` + `requireGlobalAdmin`, so a
+  membershipless app admin can bootstrap the first org; every other route
+  stays on `erpGuard`. `sessionGuard`'s `erpSession` macro gained an optional
+  `policy` hook (and kept the existing `{ session: true }` flag form used by
+  `user.controller.ts`).
+- **Seeders** — `organization.seeder.ts` skips in `prod`/`production` (new
+  `config/providers/env.ts` `isProductionEnv()`, first consumer of the
+  never-read `instance.env`), keyed by slug via `ensureOrganization()`;
+  `addSeedMembersTo(organizationId)` joins seeded accounts to any org; a
+  missing org is now a no-op instead of throwing.
+- **Frontend** — switcher lists ALL live orgs for app admins (first-party
+  endpoint) and memberships otherwise; `useActiveOrganizationId()` dropped its
+  `organizations[0]` fallback (cross-org leak) and returns `null`; create
+  gated on `user.role === 'admin'`; stale single-org copy removed; create and
+  switch invalidate `erp-organizations` + `erp-has-permission`.
+
+Verification (2026-11-02):
+
+- `bun run typecheck` clean (backend); `bunx tsc -b` clean (web-admin).
+- `bun test` — backend 113 pass / 0 fail; web-admin 20 pass / 0 fail.
+- `bun run database/seeders/index.ts` — idempotent, org-aware skip logs.
+- Live smoke (server on :3001, seeded admin):
+  - create 2nd org → **201** (was 422); new org auto-activated; 19 role rows
+    provisioned in every org including API-created ones.
+  - org owner (`admin_seed`, global role `user`) create → **403
+    "Application administrator role required"**; anonymous → **401**.
+  - **membershipless** global admin (0 `members` rows) create → **201**, own
+    membership role `owner`, 19 roles provisioned — the bootstrap case works.
+  - delete non-last org → 200 and the caller's `activeOrganizationId`
+    switched off the deleted org; delete the final live org → **409**.
+  - Test users/orgs removed afterwards; DB back to the single `entragate` org.
+
 ## Completed (this session - user-management phase 4: admin UI + admin API, 2026-11-01)
 
 Plan: `.agents/docs/plans/user-management.md`. Phase 4 of 7 complete (backend +
@@ -43,8 +100,9 @@ Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
   `parseBulkInviteRows` (resolves pasted role *names* to ids; unknowns fall
   through to the backend's `member` fallback), `BULK_INVITE_LIMIT = 100`,
   `ADMIN_PERMISSIONS`.
-- `lib/use-active-organization.ts` — resolves the active org from the session,
-  falling back to the caller's first org (matches the sidebar switcher).
+- `lib/use-active-organization.ts` — resolves the active org from the session
+  (the "first org" fallback was removed on 2026-11-02; it returns `null`
+  instead, see the ADR-0007 entry at the top).
 - Routes `/_authed/users`, `/_authed/roles`, `/_authed/audit`; components
   `admin/invite-dialog.tsx` (single + bulk paste), `admin/pending-invitations-panel.tsx`
   (expiry display, resend/cancel/delete).
@@ -317,9 +375,10 @@ Backlog: **ERP-0026** (implemented; live smoke verified).
   widened to accept `organization:*`/`member:*`/`invitation:*`/`ac:*`.
 - **Backend module** `src/app/organization/` (contracts/repo/gateway/service/
   controller/container/di; registered in `src/index.ts`): routes per the table
-  in `modules/organization.md`; single-org invariant (422), soft delete +
+  in `modules/organization.md`; soft delete +
   restore, last-owner 409, member list joined with users. Org DELETE never
-  uses `auth.api.deleteOrganization`.
+  uses `auth.api.deleteOrganization`. (The single-org invariant present at
+  the time was removed on 2026-11-02 — see the ADR-0007 entry at the top.)
 - **Seeders** `organization.seeder.ts` (Entragate + initial admin as owner via
   one `createOrganization({ userId })`) and `organization-members.seeder.ts`
   (16 internal-role accounts, `<role>.seed@entragate.local`, per-role dev
@@ -331,7 +390,8 @@ Backlog: **ERP-0026** (implemented; live smoke verified).
   `routes/_authed/organizations/` (index / new / $organizationId / .edit /
   members.new / members.$memberId.edit); minimal toast bus
   (`components/toast.tsx`, `<Toaster />` in root) — sonner not installed.
-  Create button gated `organization.create`; edit/delete/member actions
+  Create button gated `organization.create` (now the application-admin role
+  since 2026-11-02); edit/delete/member actions
   gated `organization.update|delete`, `member.create` (UX only).
 - **Docs** `modules/organization.md` rewritten; `security-and-access.md`
   stale `erp.audit_logs` fixed (schema never existed; table is future

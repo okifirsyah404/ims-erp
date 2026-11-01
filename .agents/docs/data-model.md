@@ -53,13 +53,16 @@ Schema, keys, constraints, and conventions. Current declarations:
   (`SET NULL` for audit-like actor refs; `CASCADE` only for auth-owned child
   tables; `RESTRICT` for financial-linked master data).
 
-## Organization/member semantics (ADR-0001)
+## Organization/member semantics (ADR-0001, ADR-0007)
 
 One company; `auth.organizations`/`members` model internal structure
-(departments/teams/portal identity). ERP master tables do **not** carry an
-`organization_id` tenant column. If true multi-company arrives later this is a
-data migration plus repo-layer scoping change — recorded as the migration path
-in ADR-0001.
+(departments/teams/portal identity). Multiple organizations may exist inside
+that company, each with its own membership and per-organization `auth.roles`
+catalog (created organizations are provisioned with the full catalog).
+ERP master tables do **not** carry an `organization_id` tenant column — master
+data stays company-wide. If true multi-company arrives later this is a data
+migration plus repo-layer scoping change — recorded as the migration path in
+ADR-0001 and deliberately unbuilt (ADR-0007).
 
 ## Index policy (initial)
 

@@ -1,5 +1,6 @@
 import { auth } from '../../../src/providers/better-auth/auth';
 import { appConfig } from '../../../config/providers/config';
+import { isProductionEnv } from '../../../config/providers/env';
 import { drizzleDB } from '../../../drizzle/db';
 import { organizations, users } from '../../../drizzle/schemas/auth.schema';
 import { eq } from 'drizzle-orm';
@@ -16,54 +17,89 @@ export const SEED_ORGANIZATION_NAME = 'Entragate';
 export const SEED_ORGANIZATION_SLUG = 'entragate';
 
 /**
- * Idempotent organization seeder: creates the single deployment organization
- * ("Entragate") with the initial global admin as its `owner` member.
+ * Creates an organization (idempotently) with the given user as its `owner`.
  *
- * - Single-organization invariant: skipped entirely when any organization
- *   row exists (soft-deleted included).
- * - The admin account is created by `seedAuth` first; if it is missing this
- *   seeder fails — the owner must be a real, login-capable account.
- * - Creation goes through the Better Auth API (server-side) so the creator
- *   is registered as the owner member in the same call.
+ * @param input.name - Organization display name
+ * @param input.slug - Unique kebab-case slug
+ * @param input.ownerEmail - User to register as owner; must already exist
+ * @returns the organization id, or `null` when it already existed
+ *
+ * @remarks
+ * Creation goes through the Better Auth API as a system action (explicit
+ * `userId`), so the application-admin creator gate does not apply — the owner
+ * must still be a real, login-capable account.
  */
-export async function seedOrganization(): Promise<void> {
+export async function ensureOrganization(input: {
+	name: string;
+	slug: string;
+	ownerEmail: string;
+}): Promise<string | null> {
 	const [existing] = await drizzleDB
 		.select({ id: organizations.id })
 		.from(organizations)
+		.where(eq(organizations.slug, input.slug))
 		.limit(1);
 
 	if (existing) {
 		logger.info(
-			{ organizationId: existing.id },
-			'An organization already exists; skipping organization seeding',
+			{ organizationId: existing.id, slug: input.slug },
+			'Organization already exists; skipping',
 		);
-		return;
+		return null;
 	}
 
-	const { seedAdminEmail } = appConfig.auth;
-	const [admin] = await drizzleDB
+	const [owner] = await drizzleDB
 		.select({ id: users.id })
 		.from(users)
-		.where(eq(users.email, seedAdminEmail))
+		.where(eq(users.email, input.ownerEmail))
 		.limit(1);
 
-	if (!admin) {
+	if (!owner) {
 		throw new Error(
-			`Seed admin (${seedAdminEmail}) not found — run the auth seeder first`,
+			`Seed owner (${input.ownerEmail}) not found — run the auth seeder first`,
 		);
 	}
 
 	const organization = await auth.api.createOrganization({
 		body: {
-			name: SEED_ORGANIZATION_NAME,
-			slug: SEED_ORGANIZATION_SLUG,
-			// Server-side: registers the admin as the organization owner.
-			userId: admin.id,
+			name: input.name,
+			slug: input.slug,
+			// Server-side: registers the owner as the organization owner.
+			userId: owner.id,
 		},
 	});
 
 	logger.info(
-		{ organizationId: organization.id, ownerId: admin.id },
-		'Organization "Entragate" created with the initial admin as owner',
+		{ organizationId: organization.id, ownerId: owner.id },
+		`Organization "${input.name}" created`,
 	);
+	return organization.id;
+}
+
+/**
+ * Idempotent organization seeder for the default deployment organization
+ * ("Entragate"), with the initial admin as its `owner` member.
+ *
+ * @remarks
+ * **Skipped entirely in production** (`prod`/`production`): production
+ * organizations are created through the API by an application admin, and the
+ * first organization is NOT assumed to be seeded. The skip is a no-op rather
+ * than a throw so the remaining seeders still run.
+ *
+ * The seeded organization is keyed by slug, so additional organizations can
+ * be seeded alongside it via {@link ensureOrganization}.
+ */
+export async function seedOrganization(): Promise<void> {
+	if (isProductionEnv()) {
+		logger.info(
+			'Production environment; skipping organization seeding (create organizations through the API)',
+		);
+		return;
+	}
+
+	await ensureOrganization({
+		name: SEED_ORGANIZATION_NAME,
+		slug: SEED_ORGANIZATION_SLUG,
+		ownerEmail: appConfig.auth.seedAdminEmail,
+	});
 }

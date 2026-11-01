@@ -14,6 +14,7 @@ import {
 import { registerLocation } from './app/location/container';
 import { LocationController } from './app/location/controllers/location.controller';
 import {
+	OrganizationBootstrapController,
 	OrganizationController,
 	registerOrganization,
 } from './app/organization';
@@ -60,6 +61,9 @@ const bootstrap = new Elysia()
 	.use(UserAdminController.plugin())
 	.use(UserController.plugin())
 	.use(OrganizationController.plugin())
+	// Creation mounts separately: it must accept an application admin with no
+	// organization context (ADR-0007), so it cannot ride the org-scoped guard.
+	.use(OrganizationBootstrapController.plugin())
 	.use(InvitationController.plugin())
 	.use(UsernameCheckController.plugin())
 	.listen(appConfig.app.port);

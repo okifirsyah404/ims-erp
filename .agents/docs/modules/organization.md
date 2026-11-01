@@ -1,24 +1,43 @@
 # Organization Module
 
-> Updated 2026-10-31. Reflects the Elysia backend (`apps/backend`) and
+> Updated 2026-11-02. Reflects the Elysia backend (`apps/backend`) and
 > web-admin implementation. Supersedes the historical NestJS audit below the
 > divider at the end of this file.
 
 ## Purpose and boundary
 
-The single business entity (ADR-0001) modeled through Better Auth's
-`organization` plugin: the organization row, its membership, and member role
-administration. **Not** a tenant dimension — no `organization_id` columns on
-master data (migration path recorded in ADR-0001). Invitations are out of
-scope for v1 (direct member add only); company profile/address data belongs
-to a future settings owner, not here.
+Internal organizations of one company (ADR-0001, extended by ADR-0007)
+modeled through Better Auth's `organization` plugin: the organization row, its
+membership, and member role administration. **Not** a tenant dimension — no
+`organization_id` columns on master data (migration path recorded in
+ADR-0001, deliberately unbuilt). Invitations are out of scope for v1 (direct
+member add only); company profile/address data belongs to a future settings
+owner, not here.
 
-## Single-organization invariant
+## Multiple organizations
 
-This deployment runs exactly ONE organization (seeded: "Entragate",
-slug `entragate`). Enforced in `OrganizationService.createOrganization`:
-`POST /organizations` responds **422** when any organization row exists,
-soft-deleted included. The UI hides creation once an org exists.
+Several organizations may exist inside the single company (ADR-0007). The
+former single-organization invariant is gone; there is no 422 on create.
+
+- **Who creates**: application administrators only —
+  `user.role === 'admin'` (`GLOBAL_ADMIN_ROLE`), independent of organization
+  membership so the first organization can be bootstrapped. Enforced twice:
+  the `OrganizationBootstrapController` policy and Better Auth's
+  `allowUserToCreateOrganization` plugin option.
+- **Ownership**: the creator becomes `owner`, and Better Auth activates the
+  new organization for that session.
+- **Role catalog**: every created organization is provisioned with the full
+  per-organization `auth.roles` catalog (`seedRolesForOrganization`).
+  Permissions stay per-organization data, editable by that organization's
+  owner.
+- **Last organization**: deleting the final live organization responds
+  **409** (`LastOrganizationError`). Delete is a soft delete, so the service
+  also unsets the caller's `activeOrganizationId`; other members are released
+  on their next session creation.
+- **Seeding**: the organization seeder is dev-only (`prod`/`production` skip
+  it) and keyed by slug, so extra organizations can be seeded with
+  `ensureOrganization`; `addSeedMembersTo` joins the seeded accounts to any
+  organization.
 
 ## Session auto-activation
 
@@ -30,6 +49,10 @@ user's first `members` row (by oldest `createdAt`) as
 login, every `erpGuard` route resolves an organization context with no
 `x-organization-id` header needed; users without membership keep `null`
 and correctly get 403 from org routes.
+
+This is a convenience default, not an authorization decision: with several
+organizations the active one is the server-side session fact written by
+`organization.setActive`.
 
 Caveat: the value is stamped at session creation — sessions created
 before this hook existed keep their stored value and need one re-login
@@ -43,37 +66,41 @@ Standard module layout: `contracts/` (zod + interfaces), `repositories/`,
 - **Repository** — Drizzle over Better Auth–owned `auth.organizations` /
   `auth.members`. Write surface limited to `deletedAt` (soft delete/restore);
   membership and profile mutations go through the Better Auth gateway.
+  `countActive()` backs the last-organization guard.
 - **Gateway** (`better-auth-organization.gateway.ts`) — wraps `auth.api`:
-  `createOrganization` (server-side, creator becomes owner),
-  `updateOrganization`, `getFullOrganization`, `addMember`,
-  `updateMemberRole`, `removeMember`. Caller headers forwarded where Better
-  Auth runs its own authorization. Organization DELETE intentionally does
-  NOT use `auth.api.deleteOrganization` (hard delete) — service routes it to
-  the repository's `softDelete`.
-- **Service** — single-org invariant, soft-delete/restore, last-owner
-  protection (`countOwners` before role change/removal), member listing with
-  user join.
-- **Controller** (`routes/organization.controller.ts`) — mounted at
-  `/organizations` via `OrganizationController.plugin()` in `src/index.ts`;
-  every route behind `erpGuard` with `organization:*` / `member:*`
-  permission requirements.
+  `createOrganization` (headers forwarded when session-scoped, `userId`
+  for server-side/system creates), `setActive` (set or clear the session's
+  active organization), `updateOrganization`, `getFullOrganization`,
+  `addMember`, `updateMemberRole`, `removeMember`. Caller headers forwarded
+  where Better Auth runs its own authorization. Organization DELETE
+  intentionally does NOT use `auth.api.deleteOrganization` (hard delete) —
+  service routes it to the repository's `softDelete`.
+- **Service** — organization creation with role provisioning, last
+  organization guard, soft-delete/restore, last-owner protection
+  (`countOwners` before role change/removal), member listing with user join.
+- **Controllers** (`routes/organization.controller.ts`) — two plugins:
+  - `OrganizationController.plugin()` — every organization-scoped route,
+    behind `erpGuard` with `organization:*` / `member:*` requirements.
+  - `OrganizationBootstrapController.plugin()` — `POST /organizations` only,
+    behind `sessionGuard` + application-admin policy, so it works with no
+    organization context.
 
 ### Routes
 
-| Method | Path | Permission | Notes |
+| Method | Path | Guard / Permission | Notes |
 |---|---|---|---|
-| POST | `/organizations` | `organization:create` | 422 when an org exists |
+| POST | `/organizations` | `sessionGuard` + app admin | creator becomes owner |
 | GET | `/organizations` | `organization:read` | paginated; `includeDeleted=true` |
 | GET | `/organizations/:organizationId` | `organization:read` | |
 | PATCH | `/organizations/:organizationId` | `organization:update` | name/logo/metadata |
-| DELETE | `/organizations/:organizationId` | `organization:delete` | soft delete |
+| DELETE | `/organizations/:organizationId` | `organization:delete` | soft delete; 409 when last |
 | POST | `/organizations/:organizationId/restore` | `organization:delete` | clears deletedAt |
 | GET | `/organizations/:organizationId/members` | `member:read` | paginated, joined users |
 | POST | `/organizations/:organizationId/members` | `member:create` | direct add by userId |
 | PATCH | `/organizations/:organizationId/members/:memberId` | `member:update` | role change; 409 last owner |
 | DELETE | `/organizations/:organizationId/members/:memberId` | `member:delete` | 409 last owner |
 
-Domain errors map to 404/409/422 envelopes (see
+Domain errors map to 403/404/409 envelopes (see
 `services/organization.errors.ts`).
 
 ## Soft delete
@@ -96,25 +123,40 @@ routes can require list/show permissions. `organization-ac.ts` merges these
 into `organizationStatements` and the owner/admin roles (admin keeps the
 catalog's `member: create/update/delete`, layered with `read`).
 
+`organization.create` remains a valid grant (the owner role holds it), but it
+is no longer the gate for creating an organization: that is the global
+application-admin role, because creation must work with no organization
+context (ADR-0007).
+
 ## Seeders (`database/seeders/seed/`)
 
 - `organization.seeder.ts` — creates "Entragate" with the initial global
   admin as `owner` member in one `createOrganization({ userId })` call.
-  Skipped when any org exists. Runs after `seedAuth()`.
+  **Skipped in production** (`prod`/`production`, see
+  `config/providers/env.ts`) and keyed by slug via the exported
+  `ensureOrganization({ name, slug, ownerEmail })`, so additional
+  organizations can be seeded explicitly. Runs after `seedAuth()`.
 - `organization-members.seeder.ts` — one account per internal role
   (16 accounts; excludes `owner` — the admin, and portal roles
   `investor`/`customer`). Emails `<role>.seed@entragate.local`, username
   `<role>_seed`, deterministic dev password `<role>123456`
   (per role, no env override). Idempotent: re-runs add missing roles only,
   never reset passwords or roles. Membership row existence is the skip check.
+  The exported `addSeedMembersTo(organizationId)` joins the same accounts to
+  any other organization; a missing "entragate" org is a no-op, not an error.
+- `organization-roles.seeder.ts` — inserts the catalog per organization via
+  the exported `seedRolesForOrganization(organizationId)`, which
+  organization creation also calls so API-created organizations are
+  provisioned.
 
 ## Frontend (`apps/web-admin`)
 
 - `src/components/sidebar/organization-switcher.tsx` (renamed from
-  `team-switcher.tsx`, history preserved): real org list via
-  `useOrganizations()`, switch via `switchOrganization()` (server-side
-  session fact), "Manage" → `/organizations`, "New organization" only via
-  that page's gated entry.
+  `team-switcher.tsx`, history preserved): application admins see every live
+  organization via the first-party list, everyone else sees their
+  memberships via `useOrganizations()`; switch via `switchOrganization()`
+  (server-side session fact) invalidating the permission cache, "Manage" →
+  `/organizations`, "New organization" only via that page's gated entry.
 - `src/lib/organization-api.ts` — typed fetch client + react-query options.
 - Dedicated route pages (no dialog forms; destructive confirms remain
   `AlertDialog`):
@@ -134,12 +176,22 @@ catalog's `member: create/update/delete`, layered with `read`).
 - Permission gating is UX-only (`usePermission` → Better Auth
   `hasPermission`); the backend enforces everything.
 
-## Verification (2026-10-31)
+## Verification (2026-11-02, multi-organization)
 
-- `bun run typecheck` clean (backend + web-admin); `bun test` 78 pass.
-- Live smoke: list (1 org, Entragate), duplicate create → 422, member list
-  (17), role change + revert → 200, remove non-owner → 200, re-add → 201,
-  demote/remove last owner → 409.
+- `bun run typecheck` clean (backend); `bunx tsc -b` clean (web-admin);
+  `bun test` backend 113 pass, web-admin 20 pass.
+- Live smoke after the ADR-0007 change:
+  - create a second organization → **201** (the former 422 is gone); the new
+    organization is auto-activated for the creator and gets 19 role rows.
+  - application admin with **zero memberships** creates the first
+    organization → **201**, becomes `owner`, 19 roles provisioned.
+  - organization owner without the application-admin role → **403**; anonymous
+    → **401**.
+  - delete a non-last organization → 200, caller's `activeOrganizationId`
+    released; delete the final live organization → **409**.
+- Earlier baseline (2026-10-31, single-org): member list (17), role change +
+  revert → 200, remove non-owner → 200, re-add → 201, demote/remove last
+  owner → 409.
 - Seeders idempotent (second run: all skip, 0 created).
 - No stale `erp` schema in the live DB (schemas: `auth`, `drizzle`,
   `location`, `sales`).

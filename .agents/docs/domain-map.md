@@ -69,12 +69,15 @@ contracts or public API responses.
 
 ## Isolation and tenancy
 
-**One company, multiple internal organizations** (ADR-0001). Better Auth
-`organization` plugin + `auth.members` provide internal role/membership
-structure (departments, teams, portal groups inside the one company). There is
-no cross-company tenant dimension in ERP master data for now; a later migration
-path exists if this changes. Portal users get row-scoped ownership checks
-(customer sees own invoices; investor sees own capital), not tenant scoping.
+**One company, multiple internal organizations** (ADR-0001, extended by
+ADR-0007). Better Auth `organization` plugin + `auth.members` provide internal
+role/membership structure (departments, teams, portal groups inside the one
+company). Several organizations may coexist — each with its own membership and
+per-organization role catalog — but they are **not** a tenant dimension: there
+is no cross-company tenant column in ERP master data, and master data is shared
+company-wide. A later migration path exists if true multi-tenancy is ever
+needed. Portal users get row-scoped ownership checks (customer sees own
+invoices; investor sees own capital), not tenant scoping.
 
 ## Opening data vs transactions
 

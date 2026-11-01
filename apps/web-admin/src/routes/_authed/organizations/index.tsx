@@ -13,7 +13,7 @@ import {
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import { organizationsQueryOptions, restoreOrganization } from '@/lib/organization-api';
-import { usePermission } from '@/lib/use-permission';
+import { useSession } from '@/lib/auth-client';
 
 export const Route = createFileRoute('/_authed/organizations/')({
 	component: OrganizationsPage,
@@ -22,11 +22,11 @@ export const Route = createFileRoute('/_authed/organizations/')({
 function OrganizationsPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const canCreate = usePermission('organization.create');
+	const { data: session } = useSession();
+	const canCreate = session?.user?.role === 'admin';
 	const { data, isPending } = useQuery({ ...organizationsQueryOptions });
 
 	const hasAny = (data?.rows.length ?? 0) > 0;
-	// Single-organization deployment: creation hidden once an org exists.
 
 	async function handleRestore(organizationId: string) {
 		try {
@@ -46,10 +46,11 @@ function OrganizationsPage() {
 				<div>
 					<h1 className='text-2xl font-bold'>Organizations</h1>
 					<p className='text-sm text-muted-foreground'>
-						This deployment supports a single organization.
+						Internal organizations of the company. Each has its own members
+						and roles.
 					</p>
 				</div>
-				{!hasAny && !isPending && canCreate && (
+				{!isPending && canCreate && (
 					<Button onClick={() => navigate({ to: '/organizations/new' })}>
 						New organization
 					</Button>

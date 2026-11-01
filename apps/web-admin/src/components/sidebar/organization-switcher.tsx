@@ -1,5 +1,6 @@
 'use client';
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronsUpDown, Building2, Plus, Settings } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from '@/components/toast';
@@ -21,42 +22,66 @@ import {
 } from '@ims-erp/ui/components/sidebar';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { useSession } from '@/lib/auth-client';
+import { organizationsQueryOptions } from '@/lib/organization-api';
 import {
 	switchOrganization,
 	useOrganizations,
 } from '@/lib/use-permission';
 
 /**
- * Organization switcher (sidebar header). Wired to the caller's real
- * organizations via Better Auth (`organization.list`) — the single-org
- * deployment renders exactly one entry. Switching goes through
- * `organization.setActive` (server-side session fact) and invalidates
- * permission queries via the `usePermission` query key. The "Manage" entry
- * routes to `/organizations`.
+ * Organization switcher (sidebar header).
+ *
+ * @remarks
+ * Lists the organizations the caller can switch into:
+ * - Application admins (`user.role === 'admin'`) see EVERY live organization,
+ *   because they can fully administer all of them (ADR-0007).
+ * - Everyone else sees only their memberships, via Better Auth
+ *   (`organization.list`).
+ *
+ * Switching goes through `organization.setActive` (server-side session fact)
+ * and invalidates permission queries via the `usePermission` query key. The
+ * "Manage" entry routes to `/organizations`. Soft-deleted organizations are
+ * never offered: they have no usable context.
  */
 export function OrganizationSwitcher() {
 	const { isMobile } = useSidebar();
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const { data: session, isPending: sessionPending } = useSession();
-	const { data: organizations, isPending: orgsPending } = useOrganizations();
+	const isAppAdmin = session?.user?.role === 'admin';
+
+	const { data: memberships, isPending: orgsPending } = useOrganizations();
+	const { data: allOrganizations, isPending: allOrgsPending } = useQuery({
+		...organizationsQueryOptions,
+		// Only application admins may read the full organization list.
+		enabled: isAppAdmin,
+	});
 
 	const activeOrganizationId = session?.session?.activeOrganizationId;
-	const organizations_ = organizations ?? [];
-	const activeOrganization =
-		organizations_.find((org) => org.id === activeOrganizationId) ??
-		organizations_[0];
+	const organizations_ = isAppAdmin
+		? (allOrganizations?.rows ?? []).filter((org) => !org.deletedAt)
+		: (memberships ?? []);
+	const pending = isAppAdmin ? allOrgsPending : orgsPending;
+	const activeOrganization = organizations_.find(
+		(org) => org.id === activeOrganizationId,
+	);
 
 	const handleSwitch = async (organizationId: string) => {
 		if (organizationId === activeOrganizationId) return;
 		try {
 			await switchOrganization(organizationId);
+			// Permissions are organization-scoped: refresh both caches.
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: ['erp-has-permission'] }),
+				queryClient.invalidateQueries({ queryKey: ['erp-organizations'] }),
+			]);
 			toast.success('Organization switched');
 		} catch {
 			toast.error('Failed to switch organization');
 		}
 	};
 
-	if (sessionPending || (orgsPending && !activeOrganization)) {
+	if (sessionPending || (pending && !activeOrganization)) {
 		return (
 			<SidebarMenu>
 				<SidebarMenuItem>

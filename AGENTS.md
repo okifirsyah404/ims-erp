@@ -1,14 +1,3 @@
-<!-- BEGIN:turborepo-agent-rules -->
-
-# This is NOT the Turborepo you know
-
-Turborepo configuration, task behavior, and CLI commands can vary between installed versions and may differ from your training data. Resolve the `turbo` package from this file's directory or relevant workspace; in monorepos, it may not be visible from the repository root. For example, run `node -p "require.resolve('turbo/package.json')"` from a workspace that depends on `turbo`.
-
-Read `docs/README.md` inside that installed package first, then read the relevant pages from its `docs/` directory before changing Turborepo configuration or commands. Heed deprecation notices. These bundled docs match the installed package version and are available without network access.
-
-This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": true` in the root `turbo.json` or `turbo.jsonc` to opt in; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
-<!-- END:turborepo-agent-rules -->
-
 # IMS / Entragate ERP — Agent Instructions
 
 ERP for an Indonesian access-control business (hardware, software, installation,
@@ -42,15 +31,15 @@ state), `decisions/` (ADR history), `skills.md` (skill inventory).
 ## Command status (learned the honest way)
 
 **Verified** = actually executed here and the outcome recorded. Everything
-else is *proposed*: verify before claiming it works. Full list with outcomes:
+else is _proposed_: verify before claiming it works. Full list with outcomes:
 `runbook.md`.
 
-| Command | Where | Status |
-|---|---|---|
-| `bun install` | repo root | ✅ verified 2026-10-28/29 — clean installs (nest removal, dicebear add) |
-| `bun run dev` | repo root | ✅ verified 2026-10-29 — `turbo run dev`; live HTTP bring-up (auth 200, Redis, 401 envelope) |
-| `bun run lint` / `test` / `typecheck` | repo root, fans out per workspace | ✅ verified 2026-10-28→30 — backend 78/78 tests, typecheck clean |
-| `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend` | ✅ verified 2026-10-29/30 — migrations applied; seed idempotent (run twice). All use `bunx --bun drizzle-kit`; the `--bun` flag is required because the DB driver is `drizzle-orm/bun-sql` |
+| Command                                                         | Where                             | Status                                                                                                                                                                                     |
+| --------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bun install`                                                   | repo root                         | ✅ verified 2026-10-28/29 — clean installs (nest removal, dicebear add)                                                                                                                    |
+| `bun run dev`                                                   | repo root                         | ✅ verified 2026-10-29 — `turbo run dev`; live HTTP bring-up (auth 200, Redis, 401 envelope)                                                                                               |
+| `bun run lint` / `test` / `typecheck`                           | repo root, fans out per workspace | ✅ verified 2026-10-28→30 — backend 78/78 tests, typecheck clean                                                                                                                           |
+| `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend`                    | ✅ verified 2026-10-29/30 — migrations applied; seed idempotent (run twice). All use `bunx --bun drizzle-kit`; the `--bun` flag is required because the DB driver is `drizzle-orm/bun-sql` |
 
 > The previous NestJS backend (`apps/backend-nest`, package `backend`) was
 > deleted 2026-10-28; its verified-command history is superseded. Docker
@@ -93,13 +82,13 @@ else is *proposed*: verify before claiming it works. Full list with outcomes:
   (rupiah cents) — never floats (ADR-0002).
 - **Timestamps in Better Auth options are seconds; Redis cache TTLs are
   milliseconds.** Do not mix units.
-- **Secrets never committed or printed.** Inspect variable *names* only;
+- **Secrets never committed or printed.** Inspect variable _names_ only;
   redact connection strings and tokens in logs, docs, and reports.
 - **Language.** All code comments, docs, and identifiers in English. Business
   UI copy defaults to Indonesian (preserve any established convention).
 - **Honesty.** Never mark work implemented, verified, or accepted without
   evidence. Distinguish `planned / in-progress / implemented / verified /
-  accepted / blocked`. Automated tests passing is not business acceptance.
+accepted / blocked`. Automated tests passing is not business acceptance.
 - **Statuses live in `.agents/docs/progress.md` and `backlog.md`.** Update
   them (and `progress.md`'s "next task") when you stop working.
 
@@ -130,6 +119,17 @@ recorded in `skills.md` (source, version, hash) alongside `skills-lock.json`.
 Nested `AGENTS.md` files are only added when directory-specific rules genuinely
 help; keep this root file authoritative.
 
+<!-- BEGIN:turborepo-agent-rules -->
+
+## This is NOT the Turborepo you know
+
+Turborepo configuration, task behavior, and CLI commands can vary between installed versions and may differ from your training data. Resolve the `turbo` package from this file's directory or relevant workspace; in monorepos, it may not be visible from the repository root. For example, run `node -p "require.resolve('turbo/package.json')"` from a workspace that depends on `turbo`.
+
+Read `docs/README.md` inside that installed package first, then read the relevant pages from its `docs/` directory before changing Turborepo configuration or commands. Heed deprecation notices. These bundled docs match the installed package version and are available without network access.
+
+This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": true` in the root `turbo.json` or `turbo.jsonc` to opt in; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
+<!-- END:turborepo-agent-rules -->
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
@@ -137,6 +137,7 @@ This project has a knowledge graph at graphify-out/ with god nodes, community st
 When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
 
 Rules:
+
 - For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
 - Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.

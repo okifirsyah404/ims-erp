@@ -31,12 +31,18 @@ import {
 @injectable()
 export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 	/**
-	 * Creates an organization via Better Auth (server-side call).
+	 * Creates an organization via Better Auth.
 	 *
 	 * @remarks
-	 * When `userId` is provided, Better Auth adds that user as the
-	 * organization's owner. No session headers are needed: creation happens
-	 * outside Better Auth's own authorization checks.
+	 * When `headers` are provided Better Auth resolves the calling session and
+	 * enforces `allowUserToCreateOrganization` (application admin only, see
+	 * the plugin options). It also stamps the new organization as the
+	 * session's active one unless `keepCurrentActiveOrganization` is set — so
+	 * a creator lands in the organization they just made.
+	 *
+	 * When `userId` is provided (seeder / server-side bootstrap) Better Auth
+	 * treats the call as a system action: the creator gate is skipped and
+	 * that user is registered as the organization's owner.
 	 */
 	async createOrganization(input: {
 		name: string;
@@ -45,9 +51,11 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 		metadata?: Record<string, unknown>;
 		userId?: string;
 		role?: TMemberRole;
+		headers?: Headers;
 	}): Promise<TGatewayOrganization> {
 		try {
 			const organization = await auth.api.createOrganization({
+				...(input.headers ? { headers: input.headers } : {}),
 				body: {
 					name: input.name,
 					slug: input.slug,
@@ -59,6 +67,28 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 				},
 			});
 			return this.toGatewayOrganization(organization);
+		} catch (error) {
+			throw this.translate(error);
+		}
+	}
+
+	/**
+	 * Sets (or clears) the session's active organization.
+	 *
+	 * @remarks
+	 * `null` unsets it; Better Auth no-ops when nothing was active. Used to
+	 * release callers pinned to a soft-deleted organization, which would
+	 * otherwise 403 on every organization-scoped route.
+	 */
+	async setActive(
+		headers: Headers,
+		organizationId: string | null,
+	): Promise<void> {
+		try {
+			await auth.api.setActiveOrganization({
+				headers,
+				body: { organizationId },
+			});
 		} catch (error) {
 			throw this.translate(error);
 		}

@@ -1,3 +1,4 @@
 bun run lint
 bun run test
-# bun run build
+bun run build
+graphify update .

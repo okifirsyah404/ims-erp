@@ -20,7 +20,10 @@ primitives rather than a competing role system.
 
 2. **No tenant bypass for global admins.** The Elysia guard validates
    organization membership server-side on every protected request; a global
-   admin without membership is denied like anyone else.
+   admin without membership is denied like anyone else. The single exception
+   is organization *creation* (ADR-0007), which is an application-admin action
+   that must work without an organization context — it rides `sessionGuard`
+   and only creates; it grants no access to any existing organization's data.
 
 3. **Single source of truth for the vocabulary.** The resource/action
    catalog and role grants live in `@ims-erp/common`
