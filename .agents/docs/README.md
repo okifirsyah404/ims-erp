@@ -31,7 +31,7 @@ Reference when touching the relevant areas:
 
 Database schema documentation lives outside this folder, in
 `docs/database/` (repo root): `docs.dbml` (canonical persistence contract),
-6 companion MDs (`module-ownership`, `integrity-and-consistency`,
+5 companion MDs (`module-ownership`, `integrity-and-consistency`,
 `data-dictionary`, `logical-references`, `implementation-phases`), and the
 `gen-logical-references.ts` / `validate-dbml.ts` scripts.
 

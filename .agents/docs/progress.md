@@ -23,8 +23,11 @@ Backend` and `## Internationalization`. Every backend feature work item —
   orphans).
 - **`AGENTS.md`** `## How to update these docs`: paragraph making
   `docs/database/` a same-change obligation, canonical over Drizzle.
-- **`.agents/docs/README.md`**: corrected the stale "5 companion MDs" to 6
-  (`implementation-phases.md` was uncounted) and pointed at the new gate.
+- **`.agents/docs/README.md`**: named the 5 companion MDs explicitly (the count
+  was right; the list was implicit) and pointed at the new gate.
+  **Correction:** an earlier edit in this same change bumped the count to "6"
+  on the assumption `implementation-phases.md` was uncounted. It was not —
+  `docs/database/` has exactly 5 MDs, and the "6" was wrong. Reverted.
 - **`.agents/docs/skills.md`**: `grill-me` added to the inventory as
   *present, not in lock*, with the honest caveat that its `SKILL.md` delegates
   to a `grilling` skill **that is not installed**.
@@ -44,12 +47,18 @@ bun docs/database/validate-dbml.ts                             → parsed: 253 t
 constraint, logical reference, or status vocabulary was modified. Noted here
 rather than silently skipped.
 
-Known inaccuracy left in place, flagged not fixed: the new section and
-`docs/database/validate-dbml.ts`'s header comment still describe the contract
-as **251** tables while the parser reports **253** (the previous verified count
-at line 481 above is already 253). The count is not the contract; a follow-up
-docs pass should reconcile 251 → 253 across `docs.dbml`'s companions rather
-than scatter the number further.
+Known inaccuracy left in place, flagged not fixed: the new `## Feature module
+lifecycle` section describes the contract as 253 tables, the verified parser
+count; `docs/database/module-ownership.md`, `implementation-phases.md` and the
+`validate-dbml.ts` header comment still say **251** (`progress.md` line 481 above
+already recorded 253). The count is not the contract — a follow-up docs pass
+should reconcile 251 → 253 across the companions in one place.
+
+Also verified while checking: `gen-logical-references.ts` writes
+`logical-references.md` from `docs.dbml` using **absolute** paths
+(`B:/ims/erp/...`), as does `validate-dbml.ts`. Neither script had to run in
+this change (`docs/database/` was unchanged), so this was not exercised; the
+hardcoded root is a portability defect worth fixing separately.
 
 ## Completed (this session — backend tidy-up W1–W4, 2026-11-02)
 
