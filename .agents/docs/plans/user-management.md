@@ -12,8 +12,8 @@ Honest record of what actually shipped. Branch `feat/user-management-invitation`
 | 1 | ✅ done | `3c83eef` | Schema (roles, invitations, user status), migrations, seeders |
 | 2 | ✅ done | `bb28052` | Invitation module + claim flow, username availability, logger mailer |
 | 3 | ✅ done | `d436693` | Dynamic `hasPermission` guard, single grant source, resolver DI |
-| 4 | ✅ done | `8912678` | Admin API (`/users`, `/roles`, `/audit`) + admin UI (users, roles, audit) |
-| 4 fix | ✅ done | `9f7788b` | `/users` listing single-owner fix, `organizations` projection regression test |
+| 4 | ✅ done | `8912678` | Admin API (now `/admin/users`, `/admin/roles`, `/admin/audit`) + admin UI (users, roles, audit) |
+| 4 fix | ✅ done | `9f7788b` | `/admin/users` listing single-owner fix, `organizations` projection regression test |
 | **4b** | ⬜ **deferred** | — | **Members page enhancements + member role-change UI (rank-filtered dropdown). No `_authed/members/` route exists yet.** |
 | 5 | ⬜ pending | — | Login form username tab |
 | 6 | ⬜ pending | — | Deactivate/restore hardening beyond current (session revocation is in) |
@@ -96,7 +96,9 @@ password, phone) → profile form (name, avatar optional, bio) → active sessio
 - `DELETE /invitations/:id` — only if `pending` → soft-delete unclaimed user row.
 - `POST /invitations/claim/:token` — validate token, server-side `setUserPassword`,
   set username/phone, invitation → `accepted`, create member row for org invites.
-- `GET /users/username-available?u=` — live availability check.
+- `GET /username-availability?u=` — live availability check (moved off
+  `/users/username-available`, which collided with `UserController`'s
+  `/:userId` parameter route).
 - User management: list (filterable, incl. `pending`), deactivate (revoke sessions),
   restore, soft-delete, direct-attach to org.
 - `hasPermission(memberId, "resource:action")` — custom server-side check replacing/
@@ -120,14 +122,14 @@ password, phone) → profile form (name, avatar optional, bio) → active sessio
 - **Claim page** (public route `/invite/:token`): token validation → credentials
   form (username availability check, password ≥8, phone) → profile form (name
   prefilled, avatar optional) → session.
-- **Users admin page** (new `_authed/users/`): ✅ shipped — table with status
+- **Users admin page** (`_authed/admin/users/`): ✅ shipped — table with status
   badges, invite dialog (single + bulk paste `name,email` / `email,role`),
   pending-invitations panel with resend/cancel/expiry.
-- **Roles page** (`_authed/roles/`): ✅ shipped — role CRUD, permission matrix
+- **Roles page** (`_authed/admin/roles/`): ✅ shipped — role CRUD, permission matrix
   editor, rank guard UI.
 - **Members page**: ⬜ **not built (phase 4b)** — role dropdown filtered by
   inviter rank; direct-attach user picker (app-admin/owner/admin).
-- **Audit log page** (`_authed/audit/`): ✅ shipped — filterable table.
+- **Audit log page** (`_authed/admin/audit/`): ✅ shipped — filterable table.
 - **Login form username tab**: ⬜ not built (phase 5).
 - Permission UI gating via existing `use-permission.tsx`.
 

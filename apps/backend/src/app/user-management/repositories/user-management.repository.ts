@@ -1,4 +1,5 @@
-import { DRIZZLE_TOKEN } from '@di/provider';
+import { DRIZZLE_TOKEN, REDIS_TOKEN } from '@di/provider';
+import { RedisClient } from 'bun';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import {
 	and,
@@ -21,6 +22,11 @@ import type {
 	TAdminUserRow,
 	TUserListRequest,
 } from '../contracts/repositories.interface';
+import {
+	USER_CACHE_PREFIX,
+	userCacheKey,
+	userListCacheKey,
+} from '../../user/constants/cache';
 
 /**
  * Drizzle implementation of {@link IUserManagementRepository}: the
@@ -32,8 +38,17 @@ import type {
  */
 @injectable()
 export class UserManagementRepository implements IUserManagementRepository {
+	/**
+	 * Prefix shared with {@link import('../../user/repositories/user.repository').UserRepository}.
+	 * Both repositories cache/`auth.users` reads under `user:*` keys, so a
+	 * write through this one must evict the same keys or the read side serves
+	 * a stale row for up to {@link USER_CACHE_TTL_SECONDS}.
+	 */
+	private readonly cachePrefix = USER_CACHE_PREFIX;
+
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
+		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
 	) {}
 
 	async findById(id: string): Promise<TUserSelect | null> {
@@ -86,6 +101,8 @@ export class UserManagementRepository implements IUserManagementRepository {
 				status: 'pending',
 			})
 			.returning({ id: users.id });
+		// A new row also stales the list cache.
+		await this.invalidate(row.id);
 		return { id: row.id };
 	}
 
@@ -94,6 +111,7 @@ export class UserManagementRepository implements IUserManagementRepository {
 			.update(users)
 			.set({ status })
 			.where(and(eq(users.id, id), isNull(users.deletedAt)));
+		await this.invalidate(id);
 	}
 
 	async setClaimed(
@@ -104,6 +122,7 @@ export class UserManagementRepository implements IUserManagementRepository {
 			.update(users)
 			.set({ phone: input.phone, status: 'active' })
 			.where(and(eq(users.id, id), isNull(users.deletedAt)));
+		await this.invalidate(id);
 	}
 
 	async delete(id: string): Promise<void> {
@@ -111,6 +130,7 @@ export class UserManagementRepository implements IUserManagementRepository {
 			.update(users)
 			.set({ deletedAt: new Date() })
 			.where(and(eq(users.id, id), isNull(users.deletedAt)));
+		await this.invalidate(id);
 	}
 
 	async findAnyByEmail(email: string): Promise<TUserSelect | null> {
@@ -127,6 +147,7 @@ export class UserManagementRepository implements IUserManagementRepository {
 			.update(users)
 			.set({ deletedAt: null, status: 'pending' })
 			.where(and(eq(users.id, id), isNotNull(users.deletedAt)));
+		await this.invalidate(id);
 	}
 
 	async findAnyById(id: string): Promise<TUserSelect | null> {
@@ -143,6 +164,7 @@ export class UserManagementRepository implements IUserManagementRepository {
 			.update(users)
 			.set({ status: 'active' })
 			.where(and(eq(users.id, id), isNull(users.deletedAt)));
+		await this.invalidate(id);
 	}
 
 	async listMemberships(
@@ -225,6 +247,21 @@ export class UserManagementRepository implements IUserManagementRepository {
 			})),
 			meta: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
 		};
+	}
+
+	/**
+	 * Evicts the `auth.users` list cache and the per-id entry for `id`.
+	 *
+	 * @remarks
+	 * Same key layout as
+	 * {@link import('../../user/repositories/user.repository').UserRepository#invalidate}
+	 * (both sides share {@link USER_CACHE_PREFIX}). Without this, an admin
+	 * soft-delete/restore changed `deletedAt` in Postgres but the self-service
+	 * read path kept serving the cached row for the full TTL — a deleted user
+	 * stayed visible on `/users/me` for up to 5 minutes.
+	 */
+	private async invalidate(id: string): Promise<void> {
+		await this.redisClient.del(userListCacheKey(), userCacheKey(id));
 	}
 }
 

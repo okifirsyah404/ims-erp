@@ -8,28 +8,11 @@ import { z } from 'zod';
  * Better Auth–owned identity rows (`auth.users`); mutations flow through
  * the Better Auth admin API while `deletedAt` is soft-delete state owned
  * by the user repository.
+ *
+ * The `userQuerySchema`/`TUserQuery` pair that used to live here was dead
+ * (no consumer) and is gone; the live listing query is `userQuerySchema` in
+ * `admin.contract.ts`, which is what `GET /admin/users` parses.
  */
-
-/** Pagination envelope request: 1-based page with a capped page size. */
-export const paginationQuerySchema = z.object({
-	page: z.coerce.number().int().min(1).default(1),
-	limit: z.coerce.number().int().min(1).max(100).default(20),
-});
-
-export type TPaginationQuery = z.infer<typeof paginationQuerySchema>;
-
-export const userQuerySchema = paginationQuerySchema.extend({
-	email: z.string().min(1).optional(),
-	name: z.string().min(1).optional(),
-	username: z.string().min(1).optional(),
-	role: z.string().min(1).optional(),
-	banned: z
-		.enum(['true', 'false'])
-		.transform((value) => value === 'true')
-		.optional(),
-});
-
-export type TUserQuery = z.infer<typeof userQuerySchema>;
 
 /** Body for creating a user through the Better Auth admin API. */
 export const createUserSchema = z.object({

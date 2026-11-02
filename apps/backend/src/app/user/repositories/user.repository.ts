@@ -1,4 +1,5 @@
 import { DRIZZLE_TOKEN, REDIS_TOKEN } from '@di/provider';
+import { USER_CACHE_PREFIX, USER_CACHE_TTL_SECONDS } from '../constants/cache';
 import {
 	TUserInsert,
 	TUserSelect,
@@ -43,11 +44,18 @@ export class UserRepository implements IUserRepository {
 		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
 	) {}
 
-	/** Redis key namespace for this repository's cache entries. */
-	private readonly cachePrefix = 'user';
+	/**
+	 * Redis key namespace for this repository's cache entries.
+	 *
+	 * @remarks
+	 * Imported from `../constants/cache` rather than hard-coded here: the
+	 * user-management repository writes the same `auth.users` rows and must
+	 * evict the exact same keys.
+	 */
+	private readonly cachePrefix = USER_CACHE_PREFIX;
 
 	/** Cache-aside TTL applied to every cached read (5 minutes). */
-	private readonly cacheTtlSeconds = 300;
+	private readonly cacheTtlSeconds = USER_CACHE_TTL_SECONDS;
 
 	async paginate(
 		request: TUserPaginationRequest,

@@ -8,9 +8,9 @@ import {
 	RoleInUseError,
 	RoleNameTakenError,
 	RoleNotFoundError,
-} from '../../src/app/user-management/services/invitation.errors';
-import { RoleManagementService } from '../../src/app/user-management/services/role-management.service';
-import type { TActor } from '../../src/app/user-management/services/invitation.service';
+} from '../../src/app/user/services/invitation.errors';
+import { RoleManagementService } from '../../src/app/user/services/role-management.service';
+import type { TActor } from '../../src/app/user/services/invitation.service';
 
 /**
  * Unit tests for the phase-4 role service. Every dependency is a mock — no

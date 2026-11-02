@@ -2,11 +2,11 @@ import type { DependencyContainer } from 'tsyringe';
 import { InvitationRepository } from './repositories/invitation.repository';
 import { UserManagementRepository } from './repositories/user-management.repository';
 import { RoleRepository } from './repositories/role.repository';
-import { BetterAuthUserManagementGateway } from './services/better-auth-user-management.gateway';
-import { LoggerInvitationMailer } from './services/logger-mailer';
-import { InvitationService } from './services/invitation.service';
-import { RoleManagementService } from './services/role-management.service';
-import { UserAdminService } from './services/user-admin.service';
+import { BetterAuthUserManagementGateway } from '../user/services/better-auth-user-management.gateway';
+import { LoggerInvitationMailer } from '../user/services/logger-mailer';
+import { InvitationService } from '../user/services/invitation.service';
+import { RoleManagementService } from '../user/services/role-management.service';
+import { UserAdminService } from '../user/services/user-admin.service';
 import {
 	INVITATION_MAILER_TOKEN,
 	INVITATION_REPOSITORY_TOKEN,
@@ -31,6 +31,13 @@ export * from './constants/di';
  * *writes* audit entries — its services inject `AUDIT_SERVICE_TOKEN` — which
  * is the intended direction of the dependency: modules own their events, the
  * audit module owns the ledger.
+ *
+ * W7 note: the services registered below now live in
+ * `app/user/services/` (the service half of the user-management → user
+ * merge). They stay wired here because everything they depend on —
+ * repositories, contracts and tokens — is still owned by this module. The
+ * repository merge was deliberately deferred, so this container is the seam
+ * where the two halves still meet.
  */
 export function registerUserManagement(container: DependencyContainer): void {
 	container.register(INVITATION_REPOSITORY_TOKEN, {

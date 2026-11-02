@@ -1,14 +1,14 @@
 import { inject, injectable } from 'tsyringe';
 import type { TPaginationResult } from '@ims-erp/common';
-import type { TAdminUser, TUserQuery } from '../contracts/admin.contract';
+import type { TAdminUser, TUserQuery } from '../../user-management/contracts/admin.contract';
 import {
 	ROLE_REPOSITORY_TOKEN,
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
-} from '../constants/di';
-import type { IUserManagementRepository } from '../contracts/repositories.interface';
-import type { IUserManagementAuthGateway } from '../contracts/gateways.interface';
-import type { IRoleRepository } from '../contracts/repositories.interface';
+} from '../../user-management/constants/di';
+import type { IUserManagementRepository } from '../../user-management/contracts/repositories.interface';
+import type { IUserManagementAuthGateway } from '../../user-management/contracts/gateways.interface';
+import type { IRoleRepository } from '../../user-management/contracts/repositories.interface';
 import { AUDIT_SERVICE_TOKEN } from '../../audit/constants/di';
 import type { AuditService } from '../../audit/services/audit.service';
 import type { TActor } from './invitation.service';

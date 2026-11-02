@@ -3,6 +3,182 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed (this session — backend tidy-up W1–W4, 2026-11-02)
+
+Conformance pass against the `/elysia-module`, `/elysia-tsyringe`,
+`/elysia-layered-architecture` and `/tsyringe` skills. Waves W1–W7 done;
+W8 (docs pass) in progress. **URLs changed** — backend and web-admin moved
+together, nothing pushed.
+
+Remaining known follow-up (deliberately deferred, not forgotten): the
+`user-management` **repositories/contracts/tokens** have not yet been merged
+into `user`; `user-management/container.ts` is the seam.
+
+### W1 — DI tokens have one home (`03625fc`)
+
+- `src/di/tokens.ts` is the single definition site for `DRIZZLE_TOKEN` and
+  `REDIS_TOKEN`; `provider.ts` imports and re-exports them (pure alias, never
+  a second `Symbol(...)` call), so modules needing only a token avoid pulling
+  the Drizzle/Redis clients into their import chain.
+- `organization/containers/organization.container.ts` → `organization/container.ts`
+  (matches every other module); its imports changed `../x` → `./x`.
+- Deleted 0-byte dead files: `src/contracts/repositories/repository.interface.ts`
+  (and the now-empty `src/contracts/` dir) plus five unused drizzle schemas
+  (`warehouse`, `inventory`, `employee`, `document`, `project`).
+
+### W2 — no SQL in services (`03625fc`)
+
+- Deleted `user-management/services/role.service.ts`; `findMemberRole` folded
+  into `RoleRepository` + `IRoleRepository`, and `InvitationService` now
+  injects `ROLE_REPOSITORY_TOKEN` — it was the only reason the service held a
+  Drizzle handle.
+- `TAuditEntry` moved to `contracts/repositories.interface.ts` (it is the
+  repository's write DTO); `AuditRepository.insert()` added; `AuditService`
+  now goes through `AUDIT_REPOSITORY_TOKEN` + `pinoLogger`.
+- Gate: `Select-String -Path src/app/*/services/*.ts -Pattern DRIZZLE_TOKEN`
+  → **CLEAN, no service injects the DB**.
+
+### W3 — one shared HTTP layer (`c9d8cd3`, `69f53e9`)
+
+New `src/http/` with `response.ts` (`buildMeta`/`ok`/`created`/`noContent`/
+`okPaginated`/`errorEnvelope`), `errors.ts` (`AppError`, `DomainHttpError`,
+`NotGlobalAdminError`, `toErrorResponse`) and `plugin.ts`
+(`domainPlugin({name, prefix, tags, guards})`). All six controllers migrated.
+
+- Six hand-rolled envelope copies had drifted apart: two controllers
+  hand-built the 201 body because only one had a `created()` helper, and
+  `okPaginated` had two incompatible signatures.
+- Success envelopes deliberately **omit** `errors` (matching what most
+  controllers shipped) while `errorEnvelope` always carries it; `noContent()`
+  stays **200**, not 204, so existing client parsing is unaffected.
+- `UserManagementError` now extends `AppError`; `NotGlobalAdminError` was
+  declared privately and identically in three controllers and is now one class.
+- **Bug fixed**: `createPayment` threw a bare 404 meaning "referenced
+  quotation not found", and the controller re-labelled every `SalesStateError`
+  404 as `sales.quotationNotFound` — telling the client the wrong resource was
+  missing. New `ReferencedQuotationNotFoundError` + a dedicated onError arm.
+- `QuotationRepository.list` now returns `TPaginationResult<T>` (was
+  `{data,total}`, which forced the controller to hand-compute `totalPages`).
+- `test/unit/http-response.test.ts` (7 tests) pins the wire shapes.
+
+### W4 — `/admin` URL restructure (`69f53e9`)
+
+| Surface | Before | After |
+|---|---|---|
+| Admin accounts | `/users` | `/admin/users` |
+| Roles / catalog | `/roles`, `/roles/permissions` | `/admin/roles`, `/admin/roles/permissions` |
+| Audit trail | `/audit` | `/admin/audit` |
+| Invitation admin | `/invitations` | `/admin/invitations` |
+| Self profile | `/users/me`, `/users/me/avatar` | unchanged |
+| Public claim | `/invitations/claim/:token` | unchanged |
+| Username check | `/users/username-available` | `/username-availability` |
+
+- `OrganizationController` split into
+  `organization/controllers/{organization,organization-bootstrap}.controller.ts`
+  (`routes/` dir removed, matching every other module).
+- `InvitationClaimController` extracted so the public, sessionless claim flow
+  no longer shares a plugin with the admin-gated invitation routes;
+  `UsernameCheckController` moved off `/users/username-available`, which
+  collided with `UserController`'s `/:userId` parameter route.
+- `src/index.ts`: the mount-order comment is gone — with the `/admin` prefix
+  the old `GET /users` collision cannot recur, so ordering no longer matters.
+- **SECURITY FIX (found while migrating)**: `GET /users/:userId` was declared
+  `erp: {}` — no permission at all. `auth.users` is Better Auth-owned and has
+  no organization column, so **any authenticated member could read any user's
+  profile across tenants**. Now `{ erp: { policy: requireGlobalAdmin } }`,
+  matching every other route on that controller. No web-admin consumer of the
+  id lookup existed to break.
+- web-admin: `lib/admin-api.ts` paths, both sidebars (`nav-admin.tsx` and the
+  unused `sidebar.tsx`), routes moved `_authed/{users,roles,audit}` →
+  `_authed/admin/*`, `routeTree.gen.ts` regenerated by the TanStack router
+  Vite plugin during `bun run build` (no dev server needed).
+- `scripts/smoke-admin-api.ts`: 23 endpoint references updated + 2 new checks
+  for the `/users/:userId` guard.
+
+### W5 — typed DI tokens (`94a43fc`)
+
+`sales` and `organization` were the last two modules on bare `Symbol(...)`.
+Both now declare `InjectionToken<T>`, so `container.register(TOKEN, {useClass})`
+type-checks the implementation against its contract and `resolve<T>(TOKEN)`
+infers `T` instead of `unknown`.
+
+Typing the tokens immediately caught **two real defects** in
+`test/authorization/test-app.ts`, both invisible while the tokens were `any`:
+
+1. The sales fakes were loose object literals registered via `useValue` — they
+   compiled only because nothing checked them against the repository contracts.
+2. The quotation fake's `list()` still returned the **pre-refactor**
+   `{ total, data }` shape, while `QuotationRepository.list` had moved to
+   `TPaginationResult<T>` in W3. The fake was silently stale.
+
+Both fakes are now annotated with the real contract types.
+
+### W6 — audit module extracted (`94a43fc`)
+
+New `src/app/audit/`: `container.ts`, `index.ts`,
+`contracts/{audit.repository.interface,audit.contract}.ts`, `constants/di.ts`,
+`repositories/audit.repository.ts`,
+`services/{audit,audit-query}.service.ts`, `controllers/audit.controller.ts`.
+
+- The ledger is cross-cutting — every module writes to it — while
+  `user-management` only happened to be its first writer. Moving it gives
+  future modules a module to inject instead of reaching into user-management.
+- `GET /admin/audit` moved out of `UserAdminController` into a dedicated
+  `AuditController.plugin()`.
+- Direction of dependency preserved: user-management services still inject
+  `AUDIT_SERVICE_TOKEN` (modules own their events, audit owns the ledger).
+- Audit types (`auditQuerySchema`, `TAuditQuery`, `TAdminAudit`,
+  `TAuditEntry`, `IAuditRepository`) removed from
+  `user-management/contracts/` and `constants/di.ts`.
+
+### W7 — user-management services merged into `user`
+
+The seven service files moved `user-management/services/` →
+`user/services/`: `invitation.service.ts`, `role-management.service.ts`,
+`user-admin.service.ts`, `invitation.errors.ts`,
+`better-auth-user-management.gateway.ts`, `logger-mailer.ts`, `token.ts`.
+**Repositories, contracts and tokens stay in `user-management`** — the
+repository merge was deliberately deferred, so `user-management/container.ts`
+is now the documented seam where the two halves still meet.
+
+- **Dead code removed**: `paginationQuerySchema`, `TPaginationQuery`,
+  `userQuerySchema` and `TUserQuery` in
+  `user/contracts/user.contract.ts` had **zero consumers** and collided by name
+  with the live pair in `user-management/contracts/admin.contract.ts` (which is
+  what `GET /admin/users` actually parses). The dead pair is gone, which also
+  removed the name collision the merge would otherwise have created.
+- **CACHE-INVALIDATION BUG FIXED.** `UserRepository` caches `auth.users` rows
+  in Redis for 300s (`user:id:<id>`, `user:all`), but
+  `UserManagementRepository` — the admin lifecycle path — wrote `status` and
+  `deletedAt` to the same table **without evicting anything**. Consequences
+  before the fix: a soft-deleted user kept serving from the cache on the
+  self-service read path for up to 5 minutes, and a deactivated user read back
+  as `active`.
+  - New `src/app/user/constants/cache.ts` defines the shared key layout
+    (`USER_CACHE_PREFIX`, `USER_CACHE_TTL_SECONDS`, `userListCacheKey()`,
+    `userCacheKey()`); **both** repositories import it, so the keys cannot drift.
+  - `UserManagementRepository` now injects `REDIS_TOKEN` and calls
+    `invalidate(id)` after `createPendingUser`, `setStatus`, `setClaimed`,
+    `delete`, `restore` and `reactivate`.
+  - Proven live by `scripts/smoke-cache-invalidation.ts` (9 checks):
+    deactivate → `GET /users/:id` immediately reports `deactivated`; restore →
+    immediately `active`; soft delete → immediately **404**. The script restores
+    its fixture, so it is safe to re-run.
+
+### Verification (all run this session)
+
+- `apps/backend`: `bunx tsc --noEmit` → exit 0; `bun test` → **131 pass,
+  0 fail**; `bunx oxlint` → 0 errors, 4 pre-existing warnings (no new ones).
+- `apps/web-admin`: `bun run build` (tsc -b + vite) → clean, admin routes
+  code-split; `bun test` → **21 pass, 0 fail**.
+- repo root: `bun run test` → 4/4 turbo tasks successful.
+- **Live smoke** (`bun run scripts/smoke-admin-api.ts` against backend :3001):
+  **18 passed, 0 failed**, stable across repeated runs.
+- **Live cache probe** (`bun run scripts/smoke-cache-invalidation.ts`):
+  **9 passed, 0 failed**, idempotent across repeat runs.
+- Manual probes: `/username-availability` → 200; anon `/admin/users`,
+  `/users/me` → 401; anon `/invitations/claim/<bad>` → 422.
+
 ## Completed (this session — multi-organization, 2026-11-02)
 
 ADR: `.agents/docs/decisions/ADR-0007-multi-organization.md` (supersedes the
@@ -85,11 +261,12 @@ Backend — new surface, all gated by the phase-3 dynamic guard:
   vocabulary, system-role and in-use delete guards, soft-deleted name revive.
 - `services/user-admin.service.ts` — deactivate (revokes sessions, keeps
   memberships), restore, soft delete, outrank checks.
-- `controllers/user-admin.controller.ts` — `/users`, `/roles`,
-  `/roles/permissions`, `/audit`; `callerRank()` = highest live role rank in
-  the validated org, with app-admin-without-dynamic-role ceiling 80 (never
+- `controllers/user-admin.controller.ts` — `/admin/users`, `/admin/roles`,
+  `/admin/roles/permissions`, `/admin/audit` (the `/admin` prefix arrived in
+  the W4 tidy-up; see the top entry); `callerRank()` = highest live role rank
+  in the validated org, with app-admin-without-dynamic-role ceiling 80 (never
   owner).
-- Permission mapping: user list / role list / `/roles/permissions` →
+- Permission mapping: user list / role list / `/admin/roles/permissions` →
   `member:read`; role create → `member:create`; user+role update,
   deactivate/restore → `member:update`; delete → `member:delete`; audit list →
   `audit_log:read`.
@@ -103,9 +280,10 @@ Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
 - `lib/use-active-organization.ts` — resolves the active org from the session
   (the "first org" fallback was removed on 2026-11-02; it returns `null`
   instead, see the ADR-0007 entry at the top).
-- Routes `/_authed/users`, `/_authed/roles`, `/_authed/audit`; components
-  `admin/invite-dialog.tsx` (single + bulk paste), `admin/pending-invitations-panel.tsx`
-  (expiry display, resend/cancel/delete).
+- Routes `/_authed/admin/users`, `/_authed/admin/roles`, `/_authed/admin/audit`
+  (moved under `/admin` in the W4 tidy-up — see the entry at the top);
+  components `admin/invite-dialog.tsx` (single + bulk paste),
+  `admin/pending-invitations-panel.tsx` (expiry display, resend/cancel/delete).
 
 ### Bugs found and fixed this phase
 
@@ -129,6 +307,11 @@ Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
    that controller), and `UserAdminController.plugin()` is mounted **before**
    `UserController.plugin()` in `src/index.ts` so the permission-gated
    `member:read` listing wins.
+   → **Superseded structurally** by the W4 `/admin` prefix (see the top entry):
+   the admin listing is now `GET /admin/users`, so the two modules no longer
+   register the same path and mount order is irrelevant. The legacy listing was
+   subsequently removed outright, and the same class of hole on
+   `GET /users/:userId` (bare `erp: {}`) was found and gated in W4.
 3. **Revive path crashed with 500** (`undefined is not an object (evaluating
    'role.id')`). `RoleRepository.update()` filtered `.where(isNull(deletedAt))`,
    but `create()` revives a soft-deleted role by updating it *before*
@@ -154,11 +337,20 @@ Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
    `user.organizations ?? []` defensively, and a unit test pins that the
    admin projection always emits the field.
 
+   → **Superseded structurally** by the W4 `/admin` prefix (see the top
+   entry). The admin listing is now `GET /admin/users` and the legacy
+   `UserController` no longer registers a collection route at all, so the
+   `/users` vs `/users/` ambiguity this entry describes cannot recur. The
+   accurate lesson survives: the "first registration wins" rule was measured
+   on prefix-less toy plugins and did **not** apply to prefix-wrapped ones.
+
 ### Verification (exact commands)
 
 - `apps/backend` (follow-up fix): `bunx tsc --noEmit` → clean; `bun test` →
   **113 pass / 0 fail**; `bun run scripts/smoke-admin-api.ts` → **16 passed, 0
-  failed** (added a check that every `/users` row carries `organizations`).
+  failed** (added a check that every `/users` row carries `organizations`;
+  that surface is now `/admin/users` and the same check reads
+  `every /admin/users row carries an organizations array` — see the W4 entry).
 - `apps/backend`: `bun run scripts/smoke-admin-api.ts` → **15 passed, 0
   failed**, stable across consecutive runs (the second run exercises the revive
   path the same script would otherwise mask).- `apps/web-admin`: `bunx tsc --noEmit -p tsconfig.app.json` → clean (plain
@@ -514,8 +706,10 @@ runtime (see below).**
     inside Better Auth itself).
   - `constants/di.ts` — tokens typed `InjectionToken<T>`;
     `container.ts` registers repository + gateway + service.
-- **Endpoints** (prefix `/users`): `GET /` (paginated list), `GET /:userId`
-  (full profile, presigned image), `POST /` (201), `PATCH /:userId`,
+- **Endpoints** (prefix `/users`, self-service + Better Auth admin surface;
+  the org-scoped admin lifecycle moved to `/admin/users` in the W4 tidy-up):
+  `GET /me` (self profile), `GET /:userId` (full profile, presigned image —
+  **global-admin gated** since W4), `POST /` (201), `PATCH /:userId`,
   `PATCH /:userId/role`, `POST /:userId/ban`, `POST /:userId/unban`,
   `DELETE /:userId` (soft delete), `POST /:userId/restore`.
 - **Soft delete added to `auth.users`**: `deletedAt` declared as Better

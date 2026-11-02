@@ -79,7 +79,7 @@ by design so the guard, not Zod, decides who may grant what.
 | `IPermissionResolver` / `PERMISSION_RESOLVER_TOKEN` contract | `apps/backend/src/authorization/permission-resolver.ts` |
 | Authorization DI registration | `apps/backend/src/authorization/container.ts` |
 | DI tokens (split from the provider so importing a token never opens a DB connection) | `apps/backend/src/di/tokens.ts` |
-| Role CRUD + rank/escalation guard | `apps/backend/src/app/user-management/services/role-management.service.ts` |
+| Role CRUD + rank/escalation guard | `apps/backend/src/app/user/services/role-management.service.ts` |
 | Client-side ac + roles (browser-safe re-composition) | `apps/web-admin/src/lib/erp-ac.ts` |
 | Frontend permission types + helpers | `apps/web-admin/src/lib/permissions.ts`, `use-permission.tsx` |
 
@@ -218,8 +218,8 @@ Two complementary layers:
 
 2. **ERP rank guard.** The user-management services enforce the rank rule
    above for every role and account mutation (`RankGuardError`). This is the
-   authority for `/roles` and `/users` routes — the hook above does not see
-   them.
+   authority for the `/admin/roles` and `/admin/users` routes — the hook above
+   does not see them.
 
 Global role changes remain exclusively within `admin()` endpoints.
 
@@ -227,8 +227,10 @@ Global role changes remain exclusively within `admin()` endpoints.
 
 User-management events are **implemented**: `audit.audit_logs` is an
 append-only ledger written by `AuditService`
-(`src/app/user-management/services/audit.service.ts`), read through
-`AuditQueryService` and the `GET /audit` route gated on `audit_log:read`.
+(`src/app/audit/services/audit.service.ts` — its own `audit` module since the
+W6 extraction; it was previously inside `user-management`), read through
+`AuditQueryService` and the `GET /admin/audit` route gated on
+`audit_log:read`.
 
 - Vocabulary: `invitation.sent|resent|cancelled|deleted|claimed`,
   `user.precreated|deactivated|restored|deleted`,
@@ -268,6 +270,15 @@ table as they land; the catalog resources (`audit_log:read`,
   organization id; the server remains authoritative. Switching or creating an
   organization invalidates both the permission cache and the organization
   list, since Better Auth changes the session's active organization.
+- **`auth.users` row cache** (`UserRepository`, 300s TTL, keys
+  `user:id:<id>` and `user:all`) is shared state: the admin lifecycle path
+  (`UserManagementRepository`) writes `status`/`deletedAt` to the same table,
+  so **every** such write must evict those keys. The key layout lives in
+  `src/app/user/constants/cache.ts` and both repositories import it, so they
+  cannot drift. (Fixed in W7: admin deactivate/restore/delete previously left
+  the self-service read path serving a stale row for up to 5 minutes —
+  including a soft-deleted user still readable at `GET /users/:id`.) Verified
+  live by `apps/backend/scripts/smoke-cache-invalidation.ts`.
 
 ## Bootstrap / seeding
 

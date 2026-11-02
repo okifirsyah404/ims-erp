@@ -18,11 +18,11 @@ import {
 	ROLE_REPOSITORY_TOKEN,
 	USER_ADMIN_SERVICE_TOKEN,
 } from '../constants/di';
-import type { RoleManagementService } from '../services/role-management.service';
-import type { UserAdminService } from '../services/user-admin.service';
+import type { RoleManagementService } from '../../user/services/role-management.service';
+import type { UserAdminService } from '../../user/services/user-admin.service';
 import type { IRoleRepository } from '../contracts/repositories.interface';
-import { UserManagementError } from '../services/invitation.errors';
-import type { TActor } from '../services/invitation.service';
+import { UserManagementError } from '../../user/services/invitation.errors';
+import type { TActor } from '../../user/services/invitation.service';
 
 /** Audit actor derived from the guard-resolved session, never client input. */
 function actorFrom(erp: ErpContext, request: Request): TActor {

@@ -3,7 +3,7 @@ import { APIError } from 'better-auth/api';
 import { runWithEndpointContext } from '@better-auth/core/context';
 import type { AuthEndpointContext } from '@better-auth/core/context';
 import { injectable } from 'tsyringe';
-import type { IUserManagementAuthGateway } from '../contracts/gateways.interface';
+import type { IUserManagementAuthGateway } from '../../user-management/contracts/gateways.interface';
 import {
 	ClaimConflictError,
 	ClaimStateError,

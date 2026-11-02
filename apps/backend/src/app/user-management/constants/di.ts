@@ -8,19 +8,23 @@ import type {
 	IInvitationMailer,
 	IUserManagementAuthGateway,
 } from '../contracts/gateways.interface';
-import type { InvitationService } from '../services/invitation.service';
-import type { RoleManagementService } from '../services/role-management.service';
-import type { UserAdminService } from '../services/user-admin.service';
+import type { InvitationService } from '../../user/services/invitation.service';
+import type { RoleManagementService } from '../../user/services/role-management.service';
+import type { UserAdminService } from '../../user/services/user-admin.service';
 
 /**
  * Injection tokens for the user-management module. Standalone constants
  * module so services and the composition root never form an import cycle.
  *
  * @remarks
- * Audit tokens (`AUDIT_REPOSITORY_TOKEN`, `AUDIT_SERVICE_TOKEN`,
- * `AUDIT_QUERY_SERVICE_TOKEN`) moved to the audit module in W6. This
- * module's services still inject `AUDIT_SERVICE_TOKEN` from `@app/audit` —
- * it writes ledger entries but no longer owns the ledger.
+ * W7 moved this module's *services* to `app/user/services/`, so the service
+ * type imports below now reach across modules. They stay `import type`, which
+ * is erased at compile time — the runtime graph has no cycle, and the
+ * direction is one-way: user-management's repositories/contracts are still
+ * owned here (the repository merge was deliberately deferred).
+ *
+ * Audit tokens live in `@app/audit` (W6). This module's services still inject
+ * `AUDIT_SERVICE_TOKEN` — they write ledger entries but do not own the ledger.
  */
 export const INVITATION_REPOSITORY_TOKEN: InjectionToken<IInvitationRepository> =
 	Symbol('INVITATION_REPOSITORY');

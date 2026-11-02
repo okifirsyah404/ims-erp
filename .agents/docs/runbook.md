@@ -33,7 +33,26 @@ Environment is loaded per-workspace from `.env` (the backend uses
 |---|---|---|
 | `bun run lint` | repo root | ✅ verified 2026-10-28→30 — pass; remaining warnings pre-existing |
 | `bun run typecheck` | repo root | ✅ verified 2026-10-28→30 — backend clean |
-| `bun run test` | repo root | ✅ verified 2026-10-30 — backend 78 pass / 0 fail |
+| `bun run test` | repo root | ✅ verified 2026-11-02 — 4/4 turbo tasks; backend **131 pass / 0 fail**, web-admin **21 pass / 0 fail** |
+
+### Live smoke tests (need a running backend on :3001)
+
+These hit real HTTP against seeded data; they are **not** part of `bun run
+test` and must be run deliberately. Run them from `apps/backend` (config is
+loaded per-workspace from `.env`).
+
+| Command | Proves | Status |
+|---|---|---|
+| `bun run scripts/smoke-admin-api.ts` | 18 checks over `/admin/users`, `/admin/roles`, `/admin/roles/permissions`, `/admin/audit`, `/admin/invitations`, the escalation guard, and every member denial (403) | ✅ verified 2026-11-02 — 18 passed / 0 failed |
+| `bun run scripts/smoke-cache-invalidation.ts` | the shared `auth.users` cache: an admin deactivate/restore/soft-delete is visible on the self-service read path **immediately** (no 5-minute staleness) | ✅ verified 2026-11-02 — 9 passed / 0 failed, idempotent |
+
+Both scripts sign in as the seeded admin (`admin@local.com`) and/or member
+(`member.seed@entragate.local`) and reference the seeded organization id.
+`smoke-cache-invalidation.ts` restores its fixture, so it is safe to re-run;
+`smoke-admin-api.ts` creates and deletes its own throwaway role.
+
+> The backend dev log prints full session cookies. Do not paste it into
+> issues, chats or commits.
 
 ## Database (apps/backend)
 
@@ -79,8 +98,10 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml up postgres red
 |---|---|
 | Redis connect failures | `REDIS_*` env names |
 | Cache entries "stale" for 30 s–5 min diffs | TTL is ms in Keyv, s in Better Auth secondaryStorage |
+| A user update is not visible on the read path | Every writer of `auth.users` must evict the shared `user:*` keys (`src/app/user/constants/cache.ts`) — a new write path that forgets this reintroduces 5-minute staleness |
 | Strange migration warnings | rc-channel drizzle; see `stack-compatibility.md` unresolved issues |
 | Auth route body not parsed | Elysia body parsing config; better-auth needs raw bodies for webhooks/sign-up |
+| Two modules "share" a route and the wrong handler answers | Check the actual registered paths (`prefix` + sub-path) before assuming mount order; with prefix-wrapped plugins the FIRST registration wins, but a prefix + `.get('/')` registers `/prefix/` (a *different* route) |
 
 ## Backup/restore
 
