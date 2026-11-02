@@ -1,8 +1,8 @@
 import { inject, injectable } from 'tsyringe';
 import type { TPaginationResult } from '@ims-erp/common';
-import type { TAdminAudit, TAuditQuery } from '../contracts/admin.contract';
+import type { TAdminAudit, TAuditQuery } from '../contracts/audit.contract';
 import { AUDIT_REPOSITORY_TOKEN } from '../constants/di';
-import type { IAuditRepository } from '../contracts/repositories.interface';
+import type { IAuditRepository } from '../contracts/audit.repository.interface';
 
 /**
  * Read-only view over the audit ledger (phase 4, decision D12).

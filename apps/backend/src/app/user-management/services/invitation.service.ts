@@ -22,7 +22,7 @@ import type {
 } from '../contracts/gateways.interface';
 import type { TCreateInvitationInput } from '../contracts/invitation.contract';
 import { hashToken } from './token';
-import { AuditService } from './audit.service';
+import { AuditService } from '../../audit/services/audit.service';
 import {
 	INVITATION_TTL_MS,
 	generateInvitationToken,

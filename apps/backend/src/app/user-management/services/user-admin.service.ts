@@ -2,7 +2,6 @@ import { inject, injectable } from 'tsyringe';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { TAdminUser, TUserQuery } from '../contracts/admin.contract';
 import {
-	AUDIT_SERVICE_TOKEN,
 	ROLE_REPOSITORY_TOKEN,
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
@@ -10,7 +9,8 @@ import {
 import type { IUserManagementRepository } from '../contracts/repositories.interface';
 import type { IUserManagementAuthGateway } from '../contracts/gateways.interface';
 import type { IRoleRepository } from '../contracts/repositories.interface';
-import { AuditService } from './audit.service';
+import { AUDIT_SERVICE_TOKEN } from '../../audit/constants/di';
+import type { AuditService } from '../../audit/services/audit.service';
 import type { TActor } from './invitation.service';
 import {
 	RankGuardError,

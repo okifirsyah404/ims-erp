@@ -184,80 +184,84 @@ export function installAuthMock(): void {
 	}));
 }
 
+import type { TPaginationResult } from '@ims-erp/common';
+import type { TQuotationRepository } from '../../src/app/sales/contracts/quotation.repository.interface';
+import type { TPaymentRepository } from '../../src/app/sales/contracts/payment.repository.interface';
+
 /** Registers mock repositories for the sales module (records calls). */
 export function installSalesMocks() {
 	const quotationStore = new Map<string, Record<string, unknown>>();
 	let sequence = 0;
 
-	const quotationRepository = {
-		async create(input: Record<string, unknown>) {
+	/**
+	 * Typed as the real contract so the typed DI tokens accept it: a fake that
+	 * drifts from `TQuotationRepository` is now a compile error, not a
+	 * runtime surprise when the service calls a method that isn't there.
+	 */
+	const quotationRepository: TQuotationRepository = {
+		async create(input) {
 			const id = `q-${++sequence}`;
 			const row = { id, status: 'draft', ...input };
 			quotationStore.set(id, row);
-			return row;
+			return row as never;
 		},
-		async findById(organizationId: string, id: string) {
+		async findById(organizationId, id) {
 			const row = quotationStore.get(id);
 			if (!row || row.organizationId !== organizationId) return null;
-			return row;
+			return row as never;
 		},
-		async list(organizationId: string, pagination: { page: number; limit: number }) {
+		async list(organizationId, pagination) {
 			const all = [...quotationStore.values()].filter(
 				(r) => r.organizationId === organizationId,
 			);
-			return {
-				total: all.length,
-				data: all.slice(
-					(pagination.page - 1) * pagination.limit,
-					pagination.page * pagination.limit,
-				),
+			const page = all.slice(
+				(pagination.page - 1) * pagination.limit,
+				pagination.page * pagination.limit,
+			);
+			const result: TPaginationResult<never> = {
+				data: page as never[],
+				meta: {
+					page: pagination.page,
+					limit: pagination.limit,
+					total: all.length,
+					totalPages: Math.ceil(all.length / pagination.limit) || 1,
+				},
 			};
+			return result;
 		},
-		async update(
-			organizationId: string,
-			id: string,
-			patch: Record<string, unknown>,
-		) {
+		async update(organizationId, id, patch) {
 			const row = quotationStore.get(id);
 			if (!row || row.organizationId !== organizationId) return null;
 			const updated = { ...row, ...patch };
 			quotationStore.set(id, updated);
-			return updated;
+			return updated as never;
 		},
-		async transitionStatus(
-			organizationId: string,
-			id: string,
-			from: string,
-			to: string,
-		) {
+		async transitionStatus(organizationId, id, from, to) {
 			const row = quotationStore.get(id);
 			if (!row || row.organizationId !== organizationId) return null;
 			if (row.status !== from) return null;
 			const updated = { ...row, status: to };
 			quotationStore.set(id, updated);
-			return updated;
+			return updated as never;
 		},
 	};
 
 	const payments: Record<string, Record<string, unknown>> = {};
 	let paySeq = 0;
-	const paymentRepository = {
-		async create(input: Record<string, unknown>) {
+	/** Typed as the real contract - see {@link quotationRepository}. */
+	const paymentRepository: TPaymentRepository = {
+		async create(input) {
 			const id = `p-${++paySeq}`;
 			const row = { id, ...input, status: 'pending' };
 			payments[id] = row;
-			return row;
+			return row as never;
 		},
-		async findById(organizationId: string, id: string) {
+		async findById(organizationId, id) {
 			const row = payments[id];
 			if (!row || row.organizationId !== organizationId) return null;
-			return row;
+			return row as never;
 		},
-		async approve(
-			organizationId: string,
-			id: string,
-			actorUserId: string,
-		) {
+		async approve(organizationId, id, actorUserId) {
 			const row = payments[id];
 			if (!row || row.organizationId !== organizationId) return null;
 			if (row.status !== 'pending') return null;
@@ -267,13 +271,9 @@ export function installSalesMocks() {
 				approvedBy: actorUserId,
 			};
 			payments[id] = updated;
-			return updated;
+			return updated as never;
 		},
-		async execute(
-			organizationId: string,
-			id: string,
-			actorUserId: string,
-		) {
+		async execute(organizationId, id, actorUserId) {
 			const row = payments[id];
 			if (!row || row.organizationId !== organizationId) return null;
 			if (row.status !== 'approved') return null;
@@ -283,7 +283,7 @@ export function installSalesMocks() {
 				executedBy: actorUserId,
 			};
 			payments[id] = updated;
-			return updated;
+			return updated as never;
 		},
 	};
 

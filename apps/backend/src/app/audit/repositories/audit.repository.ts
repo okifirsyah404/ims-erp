@@ -8,7 +8,7 @@ import type {
 	IAuditRepository,
 	TAuditEntry,
 	TAuditListRequest,
-} from '../contracts/repositories.interface';
+} from '../contracts/audit.repository.interface';
 
 /**
  * Append-only persistence for the audit ledger (`audit.audit_logs`).

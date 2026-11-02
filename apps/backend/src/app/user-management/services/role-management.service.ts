@@ -11,7 +11,6 @@ import type {
 	TUpdateRole,
 } from '../contracts/admin.contract';
 import {
-	AUDIT_SERVICE_TOKEN,
 	ROLE_REPOSITORY_TOKEN,
 } from '../constants/di';
 import type { IRoleRepository } from '../contracts/repositories.interface';
@@ -22,7 +21,8 @@ import {
 	RoleNameTakenError,
 	RoleNotFoundError,
 } from './invitation.errors';
-import type { AuditService } from './audit.service';
+import { AUDIT_SERVICE_TOKEN } from '../../audit/constants/di';
+import type { AuditService } from '../../audit/services/audit.service';
 import type { TActor } from './invitation.service';
 
 /** Role row joined with the live member count (delete guard display). */

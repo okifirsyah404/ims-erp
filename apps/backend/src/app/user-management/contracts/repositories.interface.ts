@@ -1,7 +1,5 @@
 import type { TUserInvitationSelect, TRoleSelect } from '@drizzle/schemas/role.schema';
 import type { TUserSelect } from '@drizzle/schemas/auth.schema';
-import type { TAuditLogSelect } from '@drizzle/schemas/audit.schema';
-import type { AuditAction } from '@drizzle/schemas/audit.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { TPermissionGrant } from '../contracts/admin.contract';
 
@@ -93,34 +91,6 @@ export type TAuditListRequest = {
 	page: number;
 	limit: number;
 };
-
-/** Data-access contract over the append-only `audit.audit_logs` table. */
-/**
- * One entry to append to the audit ledger.
- *
- * @remarks
- * Lives in `contracts/` (not the service) because it is the repository's
- * write DTO - the service fills it in, the repository persists it.
- */
-export type TAuditEntry = {
-	actorUserId: string;
-	actorEmail?: string | null;
-	action: AuditAction;
-	targetType: 'invitation' | 'user' | 'role' | 'member' | 'organization';
-	targetId: string;
-	organizationId?: string | null;
-	meta?: Record<string, unknown>;
-	/** Caller request context; extracted from the real request headers. */
-	request?: { ip?: string | null; userAgent?: string | null };
-};
-
-export interface IAuditRepository {
-	list(
-		request: TAuditListRequest,
-	): Promise<TPaginationResult<TAuditLogSelect>>;
-	/** Appends one immutable audit row. */
-	insert(entry: TAuditEntry): Promise<void>;
-}
 
 /**
  * Data-access contract over `auth.user_invitations` (module-owned table,

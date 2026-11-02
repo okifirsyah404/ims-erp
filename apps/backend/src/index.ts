@@ -16,6 +16,7 @@ import {
 } from '@providers/queue/queue.connection';
 import { registerLocation } from './app/location/container';
 import { LocationController } from './app/location/controllers/location.controller';
+import { AuditController, registerAudit } from './app/audit';
 import {
 	OrganizationBootstrapController,
 	OrganizationController,
@@ -38,6 +39,10 @@ registerLocation(container);
 registerSales(container);
 registerUser(container);
 registerOrganization(container);
+// Before user-management: its services inject AUDIT_SERVICE_TOKEN. tsyringe
+// resolves lazily so the order is not load-bearing, but reading the graph
+// top-down is easier when the ledger is registered before its writers.
+registerAudit(container);
 registerUserManagement(container);
 registerAuthorization(container);
 
@@ -102,6 +107,9 @@ const bootstrap = new Elysia()
 	// first registration silently won).
 	.use(UserAdminController.plugin())
 	.use(UserController.plugin())
+	// Cross-cutting audit read surface (`GET /admin/audit`), mounted with the
+	// other `/admin` plugins it shares a prefix with.
+	.use(AuditController.plugin())
 	.use(OrganizationController.plugin())
 	// Creation mounts separately: it must accept an application admin with no
 	// organization context (ADR-0007), so it cannot ride the org-scoped guard.

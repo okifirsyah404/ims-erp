@@ -5,7 +5,6 @@ import { translator, type ApiKey } from '@providers/i18n/translator';
 import { domainPlugin } from '@http/plugin';
 import { created, errorEnvelope, ok, okPaginated } from '@http/response';
 import {
-	auditQuerySchema,
 	createRoleSchema,
 	permissionCatalog,
 	roleIdParamsSchema,
@@ -15,14 +14,12 @@ import {
 	userQuerySchema,
 } from '../contracts/admin.contract';
 import {
-	AUDIT_QUERY_SERVICE_TOKEN,
 	ROLE_MANAGEMENT_SERVICE_TOKEN,
 	ROLE_REPOSITORY_TOKEN,
 	USER_ADMIN_SERVICE_TOKEN,
 } from '../constants/di';
 import type { RoleManagementService } from '../services/role-management.service';
 import type { UserAdminService } from '../services/user-admin.service';
-import type { AuditQueryService } from '../services/audit-query.service';
 import type { IRoleRepository } from '../contracts/repositories.interface';
 import { UserManagementError } from '../services/invitation.errors';
 import type { TActor } from '../services/invitation.service';
@@ -78,14 +75,17 @@ function mapAdminError(
 }
 
 /**
- * Phase-4 administration controller: account lifecycle (`/admin/users`),
- * dynamic role CRUD (`/admin/roles`) and the audit trail (`/admin/audit`).
+ * Phase-4 administration controller: account lifecycle (`/admin/users`) and
+ * dynamic role CRUD (`/admin/roles`).
  *
  * @remarks
  * HTTP concerns only — parsing, envelope/status mapping. Every business rule
  * (escalation guard, grant validation, session revocation) lives in the
- * services. All three surfaces ride the `erp` guard, so they require a
- * validated organization context and the matching dynamic permission.
+ * services. Both surfaces ride the `erp` guard, so they require a validated
+ * organization context and the matching dynamic permission.
+ *
+ * The audit trail moved to `AuditController` (`@app/audit`) in W6 — see
+ * `src/app/audit/controllers/audit.controller.ts`.
  *
  * The `/admin` prefix is what keeps these routes distinct from the
  * self-service `/users/*` routes on
@@ -100,9 +100,6 @@ export class UserAdminController {
 		);
 		const roleManagement = container.resolve<RoleManagementService>(
 			ROLE_MANAGEMENT_SERVICE_TOKEN,
-		);
-		const auditQuery = container.resolve<AuditQueryService>(
-			AUDIT_QUERY_SERVICE_TOKEN,
 		);
 		const roleRepository = container.resolve<IRoleRepository>(
 			ROLE_REPOSITORY_TOKEN,
@@ -240,16 +237,8 @@ export class UserAdminController {
 					return ok(null);
 				},
 				{ erp: { permission: ['member:delete'] } },
-			)
-
-			// ---------------------------------------------------------------
-			// Audit
-			// ---------------------------------------------------------------
-			.get(
-				'/audit',
-				async ({ query }) =>
-					okPaginated(await auditQuery.list(auditQuerySchema.parse(query))),
-				{ erp: { permission: ['audit_log:read'] } },
 			);
+		// `GET /admin/audit` moved to `AuditController` (@app/audit) in W6 —
+		// the ledger is a cross-cutting module, not a user-management concern.
 	}
 }

@@ -4,7 +4,7 @@ import { AUDIT_REPOSITORY_TOKEN } from '../constants/di';
 import type {
 	IAuditRepository,
 	TAuditEntry,
-} from '../contracts/repositories.interface';
+} from '../contracts/audit.repository.interface';
 
 export type { TAuditEntry };
 
