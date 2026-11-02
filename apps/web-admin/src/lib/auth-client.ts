@@ -1,5 +1,6 @@
 import { createAuthClient } from 'better-auth/react'
 import { adminClient, organizationClient } from 'better-auth/client/plugins'
+import { currentLanguage } from '@/i18n'
 import { erpAccessControl, erpRoles } from './erp-ac'
 
 export const authClient = createAuthClient({
@@ -7,6 +8,15 @@ export const authClient = createAuthClient({
   basePath: '/api/auth',
   fetchOptions: {
     credentials: 'include',
+    onRequest: (context) => {
+      /**
+       * The backend runs Better Auth's `i18n` plugin with header detection, so
+       * `Accept-Language` decides which locale its error messages come back in.
+       * Resolved per request (not once at module load) — switching language
+       * must take effect on the very next call.
+       */
+      context.headers.set('Accept-Language', currentLanguage());
+    },
   },
   plugins: [
     adminClient(),

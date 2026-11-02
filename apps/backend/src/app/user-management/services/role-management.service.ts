@@ -222,9 +222,7 @@ export class RoleManagementService {
 		this.assertBelowRank(role.rank, callerRank);
 
 		if (role.isSystem) {
-			throw new RoleInUseError(
-				`"${role.name}" is a system role and cannot be deleted`,
-			);
+			throw RoleInUseError.system(role.name);
 		}
 
 		const holders = await this.roleRepository.countMembers(
@@ -232,9 +230,7 @@ export class RoleManagementService {
 			role.name,
 		);
 		if (holders > 0) {
-			throw new RoleInUseError(
-				`${holders} member(s) still hold "${role.name}"; reassign them first`,
-			);
+			throw RoleInUseError.heldBy(role.name, holders);
 		}
 
 		await this.roleRepository.softDelete(roleId);
@@ -270,9 +266,7 @@ export class RoleManagementService {
 	 */
 	private assertBelowRank(targetRank: number, callerRank: number): void {
 		if (targetRank >= callerRank) {
-			throw new RankGuardError(
-				`Rank ${targetRank} is not below your own rank (${callerRank})`,
-			);
+			throw new RankGuardError();
 		}
 	}
 
@@ -289,15 +283,15 @@ export class RoleManagementService {
 		for (const [resource, actions] of Object.entries(grant)) {
 			const allowed = CATALOG[resource];
 			if (!allowed) {
-				throw new InvalidPermissionGrantError(
-					`${label}: unknown resource "${resource}"`,
-				);
+				throw InvalidPermissionGrantError.unknownResource(label, resource);
 			}
 			const unique = [...new Set(actions)];
 			for (const action of unique) {
 				if (!allowed.includes(action)) {
-					throw new InvalidPermissionGrantError(
-						`${label}: "${resource}" has no action "${action}"`,
+					throw InvalidPermissionGrantError.unknownAction(
+						label,
+						resource,
+						action,
 					);
 				}
 			}

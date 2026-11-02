@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ShieldCheck, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from '@/components/toast';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -64,6 +65,7 @@ const OWNER_RANK = 100;
 function RolesPage() {
 	const organizationId = useActiveOrganizationId();
 	const queryClient = useQueryClient();
+	const { t } = useTranslation(['admin', 'common', 'nav']);
 
 	const canCreate = usePermission(ADMIN_PERMISSIONS.createMembers);
 	const canUpdate = usePermission(ADMIN_PERMISSIONS.updateMembers);
@@ -84,7 +86,7 @@ function RolesPage() {
 	const remove = useMutation({
 		mutationFn: (roleId: string) => deleteRole(organizationId!, roleId),
 		onSuccess: async () => {
-			toast.success('Role deleted');
+			toast.success(t('roles.deleted'));
 			await refresh();
 		},
 		onError: (error: Error) => toast.error(error.message),
@@ -100,7 +102,7 @@ function RolesPage() {
 	if (!organizationId) {
 		return (
 			<div className='p-6 text-sm text-muted-foreground'>
-				Select an organization to manage roles.
+				{t('nav:organization.required')}
 			</div>
 		);
 	}
@@ -120,42 +122,44 @@ function RolesPage() {
 				<div>
 					<h1 className='flex items-center gap-2 text-2xl font-bold'>
 						<ShieldCheck className='size-6' />
-						Roles
+						{t('roles.title')}
 					</h1>
 					<p className='text-sm text-muted-foreground'>
-						Dynamic per-organization roles. You can only create or edit roles
-						ranked below your own.
+						{t('roles.description')}
 					</p>
 				</div>
 				{canCreate && (
-					<Button onClick={() => setEditingId('')}>New role</Button>
+					<Button onClick={() => setEditingId('')}>{t('roles.new')}</Button>
 				)}
 			</div>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Role master data</CardTitle>
+					<CardTitle>{t('roles.masterData')}</CardTitle>
 					<CardDescription>
-						{rows.length} role(s). System roles cannot be deleted; roles held by
-						members must be reassigned first.
+						{t('roles.masterDataDescription', { count: rows.length })}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					{isPending && (
-						<p className='text-sm text-muted-foreground'>Loading roles…</p>
+						<p className='text-sm text-muted-foreground'>
+							{t('roles.loading')}
+						</p>
 					)}
 					{!isPending && rows.length === 0 && (
-						<p className='text-sm text-muted-foreground'>No roles found.</p>
+						<p className='text-sm text-muted-foreground'>{t('roles.empty')}</p>
 					)}
 					{rows.length > 0 && (
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>Role</TableHead>
-									<TableHead>Rank</TableHead>
-									<TableHead>Members</TableHead>
-									<TableHead>Grants</TableHead>
-									<TableHead className='text-right'>Actions</TableHead>
+									<TableHead>{t('roles.role')}</TableHead>
+									<TableHead>{t('roles.rank')}</TableHead>
+									<TableHead>{t('roles.members')}</TableHead>
+									<TableHead>{t('roles.grants')}</TableHead>
+									<TableHead className='text-right'>
+										{t('roles.actions')}
+									</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -165,7 +169,7 @@ function RolesPage() {
 											<div className='flex items-center gap-2'>
 												<span className='font-medium'>{role.name}</span>
 												{role.isSystem && (
-													<Badge variant='outline'>system</Badge>
+													<Badge variant='outline'>{t('roles.systemBadge')}</Badge>
 												)}
 											</div>
 										</TableCell>
@@ -176,7 +180,7 @@ function RolesPage() {
 										</TableCell>
 										<TableCell>{role.memberCount}</TableCell>
 										<TableCell className='text-xs text-muted-foreground'>
-											{summarizeGrant(role.permissions)}
+											{summarizeGrant(role.permissions) ?? t('roles.noGrants')}
 										</TableCell>
 										<TableCell className='text-right'>
 											<div className='flex justify-end gap-2'>
@@ -186,7 +190,7 @@ function RolesPage() {
 														size='sm'
 														onClick={() => setEditingId(role.id)}
 													>
-														Edit
+														{t('common:action.edit')}
 													</Button>
 												)}
 												{canDelete && !role.isSystem && (
@@ -205,20 +209,24 @@ function RolesPage() {
 														<AlertDialogContent>
 															<AlertDialogHeader>
 																<AlertDialogTitle>
-																	Delete role "{role.name}"?
+																	{t('roles.deleteTitle', { name: role.name })}
 																</AlertDialogTitle>
 																<AlertDialogDescription>
 																	{role.memberCount > 0
-																		? `${role.memberCount} member(s) still hold this role — reassign them first.`
-																		: 'The role is soft-deleted and its name can be reused later.'}
+																		? t('roles.deleteBlocked', {
+																				count: role.memberCount,
+																			})
+																		: t('roles.deleteOk')}
 																</AlertDialogDescription>
 															</AlertDialogHeader>
 															<AlertDialogFooter>
-																<AlertDialogCancel>Cancel</AlertDialogCancel>
+																<AlertDialogCancel>
+																	{t('common:action.cancel')}
+																</AlertDialogCancel>
 																<AlertDialogAction
 																	onClick={() => remove.mutate(role.id)}
 																>
-																	Delete
+																	{t('common:action.delete')}
 																</AlertDialogAction>
 															</AlertDialogFooter>
 														</AlertDialogContent>
@@ -251,10 +259,10 @@ function RolesPage() {
 	);
 }
 
-/** Compact one-line grant summary for the table. */
-function summarizeGrant(grant: TPermissionGrant): string {
+/** Compact one-line grant summary for the table; `null` when empty. */
+function summarizeGrant(grant: TPermissionGrant): string | null {
 	const entries = Object.entries(grant).filter(([, actions]) => actions.length > 0);
-	if (entries.length === 0) return 'no grants';
+	if (entries.length === 0) return null;
 	return entries
 		.map(([resource, actions]) => `${resource}(${actions.length})`)
 		.join(', ');
@@ -289,6 +297,7 @@ function RoleEditor({
 	const [rank, setRank] = useState(role ? String(role.rank) : '50');
 	const [grant, setGrant] = useState<TPermissionGrant>(role?.permissions ?? {});
 	const [dirtyPermissions, setDirtyPermissions] = useState(false);
+	const { t } = useTranslation(['admin', 'common']);
 
 	function toggle(resource: string, action: string, checked: boolean) {
 		setDirtyPermissions(true);
@@ -307,7 +316,7 @@ function RoleEditor({
 		mutationFn: () => {
 			const parsedRank = Number(rank);
 			if (!Number.isInteger(parsedRank) || parsedRank < 1 || parsedRank > 100) {
-				throw new Error('Rank must be a whole number between 1 and 100');
+				throw new Error(t('roles.rankInvalid'));
 			}
 			return isNew
 				? createRole(organizationId, {
@@ -322,7 +331,7 @@ function RoleEditor({
 					});
 		},
 		onSuccess: () => {
-			toast.success(isNew ? 'Role created' : 'Role updated');
+			toast.success(isNew ? t('roles.created') : t('roles.updated'));
 			onSaved();
 		},
 		onError: (error: Error) => toast.error(error.message),
@@ -331,29 +340,31 @@ function RoleEditor({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>{isNew ? 'New role' : `Edit "${role.name}"`}</CardTitle>
+				<CardTitle>
+					{isNew ? t('roles.new') : t('roles.editNamed', { name: role.name })}
+				</CardTitle>
 				<CardDescription>
-					Rank must be strictly below your own rank. Existing custom roles rank
-					at most {maxRankHint || '—'}; owner is {OWNER_RANK}.
+					{t('roles.rankHint', {
+						maxRank: maxRankHint || '—',
+						ownerRank: OWNER_RANK,
+					})}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-6'>
 				<FieldGroup className='max-w-md'>
 					<Field>
-						<FieldLabel htmlFor='role-name'>Name</FieldLabel>
+						<FieldLabel htmlFor='role-name'>{t('roles.name')}</FieldLabel>
 						<Input
 							id='role-name'
-							placeholder='sales_lead'
+							placeholder={t('roles.namePlaceholder')}
 							value={name}
 							disabled={role?.isSystem && !isNew}
 							onChange={(event) => setName(event.target.value)}
 						/>
-						<FieldDescription>
-							Lowercase letters, numbers and underscores.
-						</FieldDescription>
+						<FieldDescription>{t('roles.nameHint')}</FieldDescription>
 					</Field>
 					<Field>
-						<FieldLabel htmlFor='role-rank'>Rank</FieldLabel>
+						<FieldLabel htmlFor='role-rank'>{t('roles.rank')}</FieldLabel>
 						<Input
 							id='role-rank'
 							type='number'
@@ -362,14 +373,12 @@ function RoleEditor({
 							value={rank}
 							onChange={(event) => setRank(event.target.value)}
 						/>
-						<FieldDescription>
-							1–100. Higher rank wins; you cannot grant at or above your own.
-						</FieldDescription>
+						<FieldDescription>{t('roles.rankDescription')}</FieldDescription>
 					</Field>
 				</FieldGroup>
 
 				<div className='flex flex-col gap-3'>
-					<h3 className='text-sm font-semibold'>Permissions</h3>
+					<h3 className='text-sm font-semibold'>{t('roles.permissions')}</h3>
 					<div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
 						{catalog.map((entry) => (
 							<div key={entry.resource} className='rounded-md border p-3'>
@@ -402,10 +411,10 @@ function RoleEditor({
 
 				<div className='flex justify-end gap-2'>
 					<Button variant='outline' onClick={onClose} disabled={save.isPending}>
-						Cancel
+						{t('common:action.cancel')}
 					</Button>
 					<Button onClick={() => save.mutate()} disabled={save.isPending}>
-						{isNew ? 'Create role' : 'Save changes'}
+						{isNew ? t('roles.createRole') : t('roles.saveChanges')}
 					</Button>
 				</div>
 			</CardContent>

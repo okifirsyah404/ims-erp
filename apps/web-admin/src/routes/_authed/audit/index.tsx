@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ScrollText } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
@@ -97,6 +98,7 @@ function AuditPage() {
 	const search = Route.useSearch();
 	const navigate = Route.useNavigate();
 	const canRead = usePermission(ADMIN_PERMISSIONS.readAudit);
+	const { t } = useTranslation(['admin', 'common']);
 
 	const [fromDraft, setFromDraft] = useState(search.from ?? '');
 	const [toDraft, setToDraft] = useState(search.to ?? '');
@@ -120,7 +122,7 @@ function AuditPage() {
 	if (!organizationId) {
 		return (
 			<div className='p-6 text-sm text-muted-foreground'>
-				Select an organization to view its audit trail.
+				{t('audit.noOrganization')}
 			</div>
 		);
 	}
@@ -128,7 +130,7 @@ function AuditPage() {
 	if (!canRead) {
 		return (
 			<div className='p-6 text-sm text-muted-foreground'>
-				You do not have permission to read the audit log.
+				{t('audit.noPermission')}
 			</div>
 		);
 	}
@@ -141,18 +143,17 @@ function AuditPage() {
 			<div>
 				<h1 className='flex items-center gap-2 text-2xl font-bold'>
 					<ScrollText className='size-6' />
-					Audit log
+					{t('audit.title')}
 				</h1>
-				<p className='text-sm text-muted-foreground'>
-					Append-only trail of invitations, account lifecycle, role and member
-					changes. Newest first.
-				</p>
+				<p className='text-sm text-muted-foreground'>{t('audit.description')}</p>
 			</div>
 
 			{/* Filters ------------------------------------------------------ */}
 			<div className='flex flex-wrap items-end gap-3'>
 				<div className='flex flex-col gap-1'>
-					<span className='text-xs text-muted-foreground'>Action</span>
+					<span className='text-xs text-muted-foreground'>
+						{t('audit.filterAction')}
+					</span>
 					<Select
 						value={search.action ?? 'all'}
 						onValueChange={(value) =>
@@ -169,7 +170,7 @@ function AuditPage() {
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value='all'>All actions</SelectItem>
+							<SelectItem value='all'>{t('audit.allActions')}</SelectItem>
 							{AUDIT_ACTIONS.map((action) => (
 								<SelectItem key={action} value={action}>
 									{action}
@@ -179,7 +180,9 @@ function AuditPage() {
 					</Select>
 				</div>
 				<div className='flex flex-col gap-1'>
-					<span className='text-xs text-muted-foreground'>Target</span>
+					<span className='text-xs text-muted-foreground'>
+						{t('audit.filterTarget')}
+					</span>
 					<Select
 						value={search.targetType ?? 'all'}
 						onValueChange={(value) =>
@@ -196,7 +199,7 @@ function AuditPage() {
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value='all'>All targets</SelectItem>
+							<SelectItem value='all'>{t('audit.allTargets')}</SelectItem>
 							{TARGET_TYPES.map((target) => (
 								<SelectItem key={target} value={target}>
 									{target}
@@ -206,7 +209,7 @@ function AuditPage() {
 					</Select>
 				</div>
 				<div className='flex flex-col gap-1'>
-					<span className='text-xs text-muted-foreground'>From</span>
+					<span className='text-xs text-muted-foreground'>{t('audit.from')}</span>
 					<Input
 						type='date'
 						className='w-40'
@@ -215,7 +218,7 @@ function AuditPage() {
 					/>
 				</div>
 				<div className='flex flex-col gap-1'>
-					<span className='text-xs text-muted-foreground'>To</span>
+					<span className='text-xs text-muted-foreground'>{t('audit.to')}</span>
 					<Input
 						type='date'
 						className='w-40'
@@ -235,7 +238,7 @@ function AuditPage() {
 						})
 					}
 				>
-					Apply
+					{t('users.apply')}
 				</Button>
 				<Button
 					variant='ghost'
@@ -245,16 +248,16 @@ function AuditPage() {
 						void navigate({ search: {} });
 					}}
 				>
-					Reset
+					{t('users.reset')}
 				</Button>
 			</div>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Entries</CardTitle>
+					<CardTitle>{t('audit.entries')}</CardTitle>
 					<CardDescription>
 						{pagination ? (
-							`${pagination.total} entr(ies)`
+							t('audit.count', { count: pagination.total })
 						) : isPending ? (
 							<Skeleton className='h-4 w-24 motion-reduce:animate-none' />
 						) : null}
@@ -265,19 +268,17 @@ function AuditPage() {
 						<p className='text-sm text-destructive'>{(error as Error).message}</p>
 					)}
 					{!isPending && !isError && rows.length === 0 && (
-						<p className='text-sm text-muted-foreground'>
-							No audit entries for these filters.
-						</p>
+						<p className='text-sm text-muted-foreground'>{t('audit.empty')}</p>
 					)}
 					{(isPending || rows.length > 0) && (
 						<Table aria-busy={isPending || undefined}>
 							<TableHeader>
 								<TableRow>
-									<TableHead>When</TableHead>
-									<TableHead>Action</TableHead>
-									<TableHead>Actor</TableHead>
-									<TableHead>Target</TableHead>
-									<TableHead>Metadata</TableHead>
+									<TableHead>{t('audit.when')}</TableHead>
+									<TableHead>{t('audit.action')}</TableHead>
+									<TableHead>{t('audit.actor')}</TableHead>
+									<TableHead>{t('audit.target')}</TableHead>
+									<TableHead>{t('audit.metadata')}</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -318,7 +319,7 @@ function AuditPage() {
 							</TableBody>
 						</Table>
 					)}
-					{isPending && <span className='sr-only'>Loading audit log…</span>}
+					{isPending && <span className='sr-only'>{t('audit.loading')}</span>}
 
 					{pagination && pagination.totalPages > 1 && (
 						<div className='mt-4 flex items-center justify-end gap-2'>
@@ -332,10 +333,13 @@ function AuditPage() {
 									})
 								}
 							>
-								Previous
+								{t('common:action.previous')}
 							</Button>
 							<span className='text-xs text-muted-foreground'>
-								Page {pagination.page} of {pagination.totalPages}
+								{t('common:pagination.summary', {
+									page: pagination.page,
+									totalPages: pagination.totalPages,
+								})}
 							</span>
 							<Button
 								variant='outline'
@@ -347,7 +351,7 @@ function AuditPage() {
 									})
 								}
 							>
-								Next
+								{t('common:action.next')}
 							</Button>
 						</div>
 					)}

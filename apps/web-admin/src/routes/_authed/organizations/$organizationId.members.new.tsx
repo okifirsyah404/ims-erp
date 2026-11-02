@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-router';
 import { toast } from '@/components/toast';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import {
@@ -40,6 +41,7 @@ function AddMemberPage() {
 	const { organizationId } = useParams({ from: Route.id });
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const { t } = useTranslation(['admin', 'common']);
 
 	const [userId, setUserId] = useState('');
 	const [role, setRole] = useState<string>('member');
@@ -50,7 +52,7 @@ function AddMemberPage() {
 		setPending(true);
 		try {
 			await addMember(organizationId, { userId, role });
-			toast.success('Member added');
+			toast.success(t('memberNew.added'));
 			await queryClient.invalidateQueries({
 				queryKey: organizationMembersQueryOptions(organizationId).queryKey,
 			});
@@ -59,7 +61,9 @@ function AddMemberPage() {
 				params: { organizationId },
 			});
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed');
+			toast.error(
+				error instanceof Error ? error.message : t('common:error.failed'),
+			);
 		} finally {
 			setPending(false);
 		}
@@ -68,24 +72,23 @@ function AddMemberPage() {
 	return (
 		<div className='flex flex-col gap-6 p-6'>
 			<div>
-				<h1 className='text-2xl font-bold'>Add member</h1>
+				<h1 className='text-2xl font-bold'>{t('memberNew.title')}</h1>
 				<p className='text-sm text-muted-foreground'>
-					Adds an existing user account to the organization directly (no
-					invitation round-trip).
+					{t('memberNew.description')}
 				</p>
 			</div>
 			<Card className='max-w-xl'>
 				<CardHeader>
-					<CardTitle>Membership</CardTitle>
+					<CardTitle>{t('memberNew.membership')}</CardTitle>
 					<CardDescription>
-						The user's Better Auth id — obtainable from the users admin page.
+						{t('memberNew.membershipDescription')}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit}>
 						<FieldGroup>
 							<Field>
-								<FieldLabel htmlFor='userId'>User ID</FieldLabel>
+								<FieldLabel htmlFor='userId'>{t('memberNew.userId')}</FieldLabel>
 								<input
 									id='userId'
 									className='flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs'
@@ -95,7 +98,7 @@ function AddMemberPage() {
 								/>
 							</Field>
 							<Field>
-								<FieldLabel>Role</FieldLabel>
+								<FieldLabel>{t('memberNew.role')}</FieldLabel>
 								<Select
 									value={role}
 									onValueChange={(value) => {
@@ -103,7 +106,7 @@ function AddMemberPage() {
 									}}
 								>
 									<SelectTrigger className='w-full'>
-										<SelectValue placeholder='Select a role' />
+										<SelectValue placeholder={t('invite.rolePlaceholder')} />
 									</SelectTrigger>
 									<SelectContent>
 										{erpRoleNames.map((roleName) => (
@@ -116,7 +119,7 @@ function AddMemberPage() {
 							</Field>
 							<div className='flex gap-2'>
 								<Button type='submit' disabled={pending || !userId}>
-									{pending ? 'Adding…' : 'Add member'}
+									{pending ? t('memberNew.adding') : t('memberNew.title')}
 								</Button>
 								<Button
 									type='button'
@@ -128,7 +131,7 @@ function AddMemberPage() {
 										})
 									}
 								>
-									Cancel
+									{t('common:action.cancel')}
 								</Button>
 							</div>
 						</FieldGroup>

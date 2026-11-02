@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from '@/components/toast';
 
 import { Button } from '@ims-erp/ui/components/button';
@@ -62,6 +63,7 @@ export function InviteDialog({
 	const [roleId, setRoleId] = useState<string | undefined>();
 	const [bulk, setBulk] = useState('');
 	const [report, setReport] = useState<string[] | null>(null);
+	const { t } = useTranslation(['admin', 'common']);
 
 	// Only live, non-system-bound roles are offered. Ordering comes from the
 	// backend (ascending rank) so the last item is the highest grantable role.
@@ -90,15 +92,20 @@ export function InviteDialog({
 				if (bulkResult.failed > 0) {
 					setReport(failures);
 					toast.error(
-						`${bulkResult.succeeded} sent, ${bulkResult.failed} failed`,
+						t('invite.sentMixed', {
+							succeeded: bulkResult.succeeded,
+							failed: bulkResult.failed,
+						}),
 					);
 				} else {
-					toast.success(`${bulkResult.succeeded} invitation(s) sent`);
+					toast.success(
+						t('invite.sentBulk', { count: bulkResult.succeeded }),
+					);
 					setReport(null);
 					reset();
 				}
 			} else {
-				toast.success('Invitation sent');
+				toast.success(t('invite.sent'));
 				setReport(null);
 				reset();
 			}
@@ -119,11 +126,11 @@ export function InviteDialog({
 
 	function submitSingle() {
 		if (!email.trim()) {
-			toast.error('Email is required');
+			toast.error(t('invite.emailRequired'));
 			return;
 		}
 		if (!roleId) {
-			toast.error('Choose a role');
+			toast.error(t('invite.roleRequired'));
 			return;
 		}
 		setReport(null);
@@ -154,50 +161,52 @@ export function InviteDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className='sm:max-w-2xl'>
 				<DialogHeader>
-					<DialogTitle>Invite users</DialogTitle>
-					<DialogDescription>
-						Invitations are single-use, expire in 3 days, and are the only way
-						to create an account.
-					</DialogDescription>
+					<DialogTitle>{t('invite.title')}</DialogTitle>
+					<DialogDescription>{t('invite.description')}</DialogDescription>
 				</DialogHeader>
 
 				<Tabs defaultValue='single'>
 					<TabsList>
-						<TabsTrigger value='single'>Single</TabsTrigger>
-						<TabsTrigger value='bulk'>Bulk paste</TabsTrigger>
+						<TabsTrigger value='single'>{t('invite.single')}</TabsTrigger>
+						<TabsTrigger value='bulk'>{t('invite.bulk')}</TabsTrigger>
 					</TabsList>
 
 					<TabsContent value='single' className='pt-4'>
 						<FieldGroup>
 							<Field>
-								<FieldLabel htmlFor='invite-email'>Email</FieldLabel>
+								<FieldLabel htmlFor='invite-email'>
+									{t('invite.email')}
+								</FieldLabel>
 								<Input
 									id='invite-email'
 									type='email'
-									placeholder='person@company.com'
+									placeholder={t('invite.emailPlaceholder')}
 									value={email}
 									onChange={(event) => setEmail(event.target.value)}
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='invite-name'>Name (optional)</FieldLabel>
+								<FieldLabel htmlFor='invite-name'>{t('invite.name')}</FieldLabel>
 								<Input
 									id='invite-name'
-									placeholder='Prefills the claim form'
+									placeholder={t('invite.namePlaceholder')}
 									value={name}
 									onChange={(event) => setName(event.target.value)}
 								/>
 							</Field>
 							<Field>
-								<FieldLabel>Role</FieldLabel>
+								<FieldLabel>{t('invite.role')}</FieldLabel>
 								<Select value={roleId ?? null} onValueChange={(value) => setRoleId(value ?? undefined)}>
 									<SelectTrigger>
-										<SelectValue placeholder='Select a role' />
+										<SelectValue placeholder={t('invite.rolePlaceholder')} />
 									</SelectTrigger>
 									<SelectContent>
 										{assignable.map((role) => (
 											<SelectItem key={role.id} value={role.id}>
-												{role.name} (rank {role.rank})
+												{t('invite.roleOption', {
+													name: role.name,
+													rank: role.rank,
+												})}
 											</SelectItem>
 										))}
 									</SelectContent>
@@ -210,10 +219,10 @@ export function InviteDialog({
 								onClick={() => onOpenChange(false)}
 								disabled={send.isPending}
 							>
-								Cancel
+								{t('common:action.cancel')}
 							</Button>
 							<Button onClick={submitSingle} disabled={send.isPending}>
-								Send invitation
+								{t('invite.send')}
 							</Button>
 						</DialogFooter>
 					</TabsContent>
@@ -222,31 +231,36 @@ export function InviteDialog({
 						<FieldGroup>
 							<Field>
 								<FieldLabel htmlFor='invite-bulk'>
-									Rows ({BULK_INVITE_LIMIT} max)
+									{t('invite.rows', { max: BULK_INVITE_LIMIT })}
 								</FieldLabel>
 								<Textarea
 									id='invite-bulk'
 									className='min-h-40 font-mono text-xs'
-									placeholder={'email@company.com, Jane Doe, member\nother@company.com'}
+									placeholder={t('invite.rowsPlaceholder')}
 									value={bulk}
 									onChange={(event) => setBulk(event.target.value)}
 								/>
 								<p className='text-xs text-muted-foreground'>
-									One per line: <code>email, name, role</code>. Name and role
-									are optional; an unrecognized role falls back to{' '}
-									<strong>member</strong>.
+									<Trans
+										t={t}
+										i18nKey='invite.rowsHint'
+										components={{ code: <code />, strong: <strong /> }}
+									/>
 								</p>
 							</Field>
 							<Field>
-								<FieldLabel>Default role (optional)</FieldLabel>
+								<FieldLabel>{t('invite.defaultRole')}</FieldLabel>
 								<Select value={roleId ?? null} onValueChange={(value) => setRoleId(value ?? undefined)}>
 									<SelectTrigger>
-										<SelectValue placeholder='Used when a row omits role' />
+										<SelectValue placeholder={t('invite.defaultRolePlaceholder')} />
 									</SelectTrigger>
 									<SelectContent>
 										{assignable.map((role) => (
 											<SelectItem key={role.id} value={role.id}>
-												{role.name} (rank {role.rank})
+												{t('invite.roleOption', {
+													name: role.name,
+													rank: role.rank,
+												})}
 											</SelectItem>
 										))}
 									</SelectContent>
@@ -259,10 +273,10 @@ export function InviteDialog({
 								onClick={() => onOpenChange(false)}
 								disabled={send.isPending}
 							>
-								Cancel
+								{t('common:action.cancel')}
 							</Button>
 							<Button onClick={submitBulk} disabled={send.isPending}>
-								Send invitations
+								{t('invite.sendBulk')}
 							</Button>
 						</DialogFooter>
 					</TabsContent>

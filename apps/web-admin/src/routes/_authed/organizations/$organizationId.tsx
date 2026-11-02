@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { toast } from '@/components/toast';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -56,6 +57,7 @@ function OrganizationDetailPage() {
 	const canUpdate = usePermission('organization.update');
 	const canDelete = usePermission('organization.delete');
 	const canManageMembers = usePermission('member.create');
+	const { t } = useTranslation(['admin', 'common']);
 
 	const { data: organization, isPending } = useQuery({
 		...organizationQueryOptions(organizationId),
@@ -72,7 +74,7 @@ function OrganizationDetailPage() {
 		setDeleting(true);
 		try {
 			await deleteOrganization(organizationId);
-			toast.success('Organization deleted (soft)');
+			toast.success(t('orgDetail.deleted'));
 			await Promise.all([
 				queryClient.invalidateQueries({
 					queryKey: organizationsQueryOptions.queryKey,
@@ -83,7 +85,9 @@ function OrganizationDetailPage() {
 			]);
 			void navigate({ to: '/organizations' });
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed');
+			toast.error(
+				error instanceof Error ? error.message : t('common:error.failed'),
+			);
 		} finally {
 			setDeleting(false);
 			setConfirmOpen(false);
@@ -91,20 +95,24 @@ function OrganizationDetailPage() {
 	}
 
 	if (isPending) {
-		return <div className='p-6 text-sm text-muted-foreground'>Loading…</div>;
+		return (
+			<div className='p-6 text-sm text-muted-foreground'>
+				{t('common:state.loading')}
+			</div>
+		);
 	}
 	if (!organization) {
 		return (
 			<div className='flex flex-col gap-4 p-6'>
 				<p className='text-sm text-muted-foreground'>
-					Organization not found (or you lack access).
+					{t('orgDetail.notFound')}
 				</p>
 				<Button
 					variant='outline'
 					className='w-fit'
 					onClick={() => navigate({ to: '/organizations' })}
 				>
-					Back to organizations
+					{t('orgDetail.backToList')}
 				</Button>
 			</div>
 		);
@@ -117,12 +125,14 @@ function OrganizationDetailPage() {
 					<div className='flex items-center gap-2'>
 						<h1 className='text-2xl font-bold'>{organization.name}</h1>
 						{organization.deletedAt && (
-							<Badge variant='destructive'>Deleted</Badge>
+							<Badge variant='destructive'>{t('orgs.deletedBadge')}</Badge>
 						)}
 					</div>
 					<p className='text-sm text-muted-foreground'>
-						{organization.slug} · created{' '}
-						{new Date(organization.createdAt).toLocaleDateString()}
+						{t('orgDetail.createdOn', {
+							slug: organization.slug,
+							date: new Date(organization.createdAt).toLocaleDateString(),
+						})}
 					</p>
 				</div>
 				{!organization.deletedAt && (
@@ -137,32 +147,34 @@ function OrganizationDetailPage() {
 									/>
 								}
 							>
-								Edit
+								{t('common:action.edit')}
 							</Button>
 						)}
 						{canDelete && (
 							<AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
 								<AlertDialogTrigger render={<Button variant='destructive' />}>
-									Delete
+									{t('common:action.delete')}
 								</AlertDialogTrigger>
 								<AlertDialogContent>
 									<AlertDialogHeader>
 										<AlertDialogTitle>
-											Delete organization “{organization.name}”?
+											{t('orgDetail.deleteTitle', { name: organization.name })}
 										</AlertDialogTitle>
 										<AlertDialogDescription>
-											This soft-deletes the organization. Its data remains
-											recoverable via restore, but the organization switcher
-											and membership access stop working until restored.
+											{t('orgDetail.deleteDescription')}
 										</AlertDialogDescription>
 									</AlertDialogHeader>
 									<AlertDialogFooter>
-										<AlertDialogCancel>Cancel</AlertDialogCancel>
+										<AlertDialogCancel>
+											{t('common:action.cancel')}
+										</AlertDialogCancel>
 										<AlertDialogAction
 											onClick={() => void handleDelete()}
 											disabled={deleting}
 										>
-											{deleting ? 'Deleting…' : 'Delete'}
+											{deleting
+												? t('orgDetail.deleting')
+												: t('common:action.delete')}
 										</AlertDialogAction>
 									</AlertDialogFooter>
 								</AlertDialogContent>
@@ -174,23 +186,31 @@ function OrganizationDetailPage() {
 
 			<Tabs defaultValue='info'>
 				<TabsList>
-					<TabsTrigger value='info'>Info</TabsTrigger>
+					<TabsTrigger value='info'>{t('orgDetail.info')}</TabsTrigger>
 					<TabsTrigger value='members'>
-						Members ({members?.rows.length ?? 0})
+						{t('orgDetail.membersCount', {
+							count: members?.rows.length ?? 0,
+						})}
 					</TabsTrigger>
 				</TabsList>
 				<TabsContent value='info'>
 					<Card>
 						<CardHeader>
-							<CardTitle>Details</CardTitle>
+							<CardTitle>{t('orgDetail.details')}</CardTitle>
 						</CardHeader>
 						<CardContent className='grid gap-2 text-sm'>
 							<div className='grid grid-cols-[140px_1fr] gap-2'>
-								<span className='text-muted-foreground'>Name</span>
+								<span className='text-muted-foreground'>
+									{t('orgDetail.name')}
+								</span>
 								<span>{organization.name}</span>
-								<span className='text-muted-foreground'>Slug</span>
+								<span className='text-muted-foreground'>
+									{t('orgDetail.slug')}
+								</span>
 								<span>{organization.slug}</span>
-								<span className='text-muted-foreground'>Created</span>
+								<span className='text-muted-foreground'>
+									{t('orgDetail.created')}
+								</span>
 								<span>{new Date(organization.createdAt).toLocaleString()}</span>
 							</div>
 						</CardContent>
@@ -200,9 +220,9 @@ function OrganizationDetailPage() {
 					<Card>
 						<CardHeader className='flex-row items-center justify-between'>
 							<div>
-								<CardTitle>Members</CardTitle>
+								<CardTitle>{t('orgDetail.members')}</CardTitle>
 								<CardDescription>
-									People with access to this organization.
+									{t('orgDetail.membersDescription')}
 								</CardDescription>
 							</div>
 							{canManageMembers && (
@@ -214,7 +234,7 @@ function OrganizationDetailPage() {
 										/>
 									}
 								>
-									Add member
+									{t('orgDetail.addMember')}
 								</Button>
 							)}
 						</CardHeader>
@@ -222,11 +242,13 @@ function OrganizationDetailPage() {
 							<Table>
 								<TableHeader>
 									<TableRow>
-										<TableHead>Name</TableHead>
-										<TableHead>Email</TableHead>
-										<TableHead>Role</TableHead>
-										<TableHead>Joined</TableHead>
-										<TableHead className='text-right'>Actions</TableHead>
+										<TableHead>{t('orgDetail.memberName')}</TableHead>
+										<TableHead>{t('orgDetail.memberEmail')}</TableHead>
+										<TableHead>{t('orgDetail.memberRole')}</TableHead>
+										<TableHead>{t('orgDetail.memberJoined')}</TableHead>
+										<TableHead className='text-right'>
+											{t('orgDetail.memberActions')}
+										</TableHead>
 									</TableRow>
 								</TableHeader>
 								<TableBody>
@@ -256,7 +278,7 @@ function OrganizationDetailPage() {
 														/>
 													}
 												>
-													Edit
+													{t('common:action.edit')}
 												</Button>
 											</TableCell>
 										</TableRow>

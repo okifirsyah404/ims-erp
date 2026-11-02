@@ -1,4 +1,6 @@
 import { Outlet, createFileRoute, useLocation, useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
+import type { AccountKey } from '@ims-erp/locales';
 import { Tabs, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
 
 /**
@@ -10,15 +12,17 @@ export const Route = createFileRoute('/_authed/account')({
 	component: AccountLayout,
 });
 
+/** `labelKey` is an `account` namespace key, resolved at render time. */
 const TABS = [
-	{ value: '/account', label: 'Security' },
-	{ value: '/account/email', label: 'Email' },
-	{ value: '/account/sessions', label: 'Sessions' },
-] as const;
+	{ value: '/account', labelKey: 'tab.security' },
+	{ value: '/account/email', labelKey: 'tab.email' },
+	{ value: '/account/sessions', labelKey: 'tab.sessions' },
+] as const satisfies ReadonlyArray<{ value: string; labelKey: AccountKey }>;
 
 function AccountLayout() {
 	const location = useLocation();
 	const navigate = useNavigate();
+	const { t } = useTranslation('account');
 	const active =
 		TABS.find((tab) =>
 			// exact match first: `/account` must not shadow `/account/email`
@@ -36,7 +40,7 @@ function AccountLayout() {
 				<TabsList>
 					{TABS.map((tab) => (
 						<TabsTrigger key={tab.value} value={tab.value}>
-							{tab.label}
+							{t(tab.labelKey)}
 						</TabsTrigger>
 					))}
 				</TabsList>

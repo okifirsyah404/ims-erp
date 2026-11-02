@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { authClient } from '@/lib/auth-client';
 import { toast } from '@/components/toast';
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -39,11 +40,12 @@ const SESSION_SKELETON_CELLS = [
  */
 export function SessionsTable() {
 	const queryClient = useQueryClient();
+	const { t } = useTranslation('account');
 	const sessionsQuery = useQuery({
 		queryKey: ['auth', 'sessions'] as const,
 		queryFn: async () => {
 			const { data, error } = await authClient.listSessions();
-			if (error) throw new Error(error.message ?? 'Failed to load sessions');
+			if (error) throw new Error(error.message ?? t('sessions.loadFailed'));
 			return data;
 		},
 	});
@@ -53,10 +55,10 @@ export function SessionsTable() {
 	const revokeMutation = useMutation({
 		mutationFn: async (token: string) => {
 			const { error } = await authClient.revokeSession({ token });
-			if (error) throw new Error(error.message ?? 'Revoke failed');
+			if (error) throw new Error(error.message ?? t('sessions.revokeFailed'));
 		},
 		onSuccess: () => {
-			toast.success('Session revoked');
+			toast.success(t('sessions.revoked'));
 			void invalidate();
 		},
 		onError: (error: Error) => toast.error(error.message),
@@ -65,10 +67,10 @@ export function SessionsTable() {
 	const revokeOthersMutation = useMutation({
 		mutationFn: async () => {
 			const { error } = await authClient.revokeOtherSessions();
-			if (error) throw new Error(error.message ?? 'Revoke failed');
+			if (error) throw new Error(error.message ?? t('sessions.revokeFailed'));
 		},
 		onSuccess: () => {
-			toast.success('Other sessions revoked');
+			toast.success(t('sessions.revokedOthers'));
 			void invalidate();
 		},
 		onError: (error: Error) => toast.error(error.message),
@@ -86,21 +88,21 @@ export function SessionsTable() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Active sessions</CardTitle>
-				<CardDescription>
-					Devices currently signed in to your account
-				</CardDescription>
+				<CardTitle>{t('sessions.title')}</CardTitle>
+				<CardDescription>{t('sessions.description')}</CardDescription>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-4'>
 				<div className='overflow-x-auto'>
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead>Device</TableHead>
-								<TableHead>Signed in</TableHead>
-								<TableHead>Expires</TableHead>
-								<TableHead>Status</TableHead>
-								<TableHead className='text-right'>Actions</TableHead>
+								<TableHead>{t('sessions.device')}</TableHead>
+								<TableHead>{t('sessions.created')}</TableHead>
+								<TableHead>{t('sessions.expires')}</TableHead>
+								<TableHead>{t('sessions.status')}</TableHead>
+								<TableHead className='text-right'>
+									{t('sessions.actions')}
+								</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -129,7 +131,7 @@ export function SessionsTable() {
 							{sessions.map((session) => (
 								<TableRow key={session.token}>
 									<TableCell>
-										{session.userAgent ?? 'Unknown device'}
+										{session.userAgent ?? t('sessions.unknownDevice')}
 									</TableCell>
 									<TableCell>
 										{new Date(session.createdAt).toLocaleString()}
@@ -139,9 +141,9 @@ export function SessionsTable() {
 									</TableCell>
 									<TableCell>
 										{session.token === currentToken ? (
-											<Badge>Current</Badge>
+											<Badge>{t('sessions.current')}</Badge>
 										) : (
-											<Badge variant='outline'>Other</Badge>
+											<Badge variant='outline'>{t('sessions.other')}</Badge>
 										)}
 									</TableCell>
 									<TableCell className='text-right'>
@@ -152,7 +154,7 @@ export function SessionsTable() {
 												disabled={revokeMutation.isPending}
 												onClick={() => revokeMutation.mutate(session.token)}
 											>
-												Revoke
+												{t('sessions.revoke')}
 											</Button>
 										)}
 									</TableCell>
@@ -166,7 +168,7 @@ export function SessionsTable() {
 											colSpan={5}
 											className='text-muted-foreground py-8 text-center'
 										>
-											No active sessions
+											{t('sessions.empty')}
 										</TableCell>
 									</TableRow>
 								)}
@@ -180,7 +182,7 @@ export function SessionsTable() {
 							disabled={revokeOthersMutation.isPending}
 							onClick={() => revokeOthersMutation.mutate()}
 						>
-							Log out all other devices ({othersCount})
+							{t('sessions.revokeAll', { count: othersCount })}
 						</Button>
 					</div>
 				)}

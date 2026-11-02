@@ -1,7 +1,9 @@
 import { cn } from 'cn';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { resetPassword } from '@/lib/auth-client';
+import LanguageSwitcher from '@/components/language-switcher';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import {
@@ -31,12 +33,13 @@ export function ResetPasswordForm({
 	const [confirm, setConfirm] = useState('');
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
+	const { t } = useTranslation(['auth', 'common']);
 
 	async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setError(null);
 		if (password !== confirm) {
-			setError('Passwords do not match');
+			setError(t('reset.mismatch'));
 			return;
 		}
 		setPending(true);
@@ -46,14 +49,12 @@ export function ResetPasswordForm({
 				token,
 			});
 			if (resetError) {
-				setError(resetError.message ?? 'Invalid or expired reset link');
+				setError(resetError.message ?? t('reset.invalidLink'));
 				return;
 			}
 			onSuccess?.();
 		} catch {
-			setError(
-				'Cannot reach the server. Check your connection and try again.',
-			);
+			setError(t('common:error.network'));
 		} finally {
 			setPending(false);
 		}
@@ -65,15 +66,17 @@ export function ResetPasswordForm({
 				<CardContent className='p-6 md:p-8'>
 					<FieldGroup>
 						<div className='flex flex-col items-center gap-2 text-center'>
-							<h1 className='text-2xl font-bold'>Reset your password</h1>
+							<h1 className='text-2xl font-bold'>{t('reset.title')}</h1>
 							<p className='text-balance text-muted-foreground'>
-								Choose a new password for your account
+								{t('reset.subtitle')}
 							</p>
 						</div>
 						<form onSubmit={handleSubmit}>
 							<FieldGroup>
 								<Field>
-									<FieldLabel htmlFor='password'>New password</FieldLabel>
+									<FieldLabel htmlFor='password'>
+										{t('reset.newPassword')}
+									</FieldLabel>
 									<Input
 										id='password'
 										type='password'
@@ -83,10 +86,12 @@ export function ResetPasswordForm({
 										onChange={(e) => setPassword(e.target.value)}
 										autoComplete='new-password'
 									/>
-									<FieldDescription>At least 8 characters.</FieldDescription>
+									<FieldDescription>{t('reset.passwordHint')}</FieldDescription>
 								</Field>
 								<Field>
-									<FieldLabel htmlFor='confirm'>Confirm password</FieldLabel>
+									<FieldLabel htmlFor='confirm'>
+										{t('reset.confirmPassword')}
+									</FieldLabel>
 									<Input
 										id='confirm'
 										type='password'
@@ -106,7 +111,7 @@ export function ResetPasswordForm({
 								)}
 								<Field>
 									<Button type='submit' className='w-full' disabled={pending}>
-										{pending ? 'Resetting…' : 'Reset password'}
+										{pending ? t('reset.submitting') : t('reset.submit')}
 									</Button>
 								</Field>
 							</FieldGroup>
@@ -116,12 +121,13 @@ export function ResetPasswordForm({
 								href='/forgot-password'
 								className='underline underline-offset-4 hover:text-foreground'
 							>
-								Request a new reset link
+								{t('reset.requestNewLink')}
 							</a>
 						</FieldDescription>
 					</FieldGroup>
 				</CardContent>
 			</Card>
+			<LanguageSwitcher className='mx-auto flex justify-center gap-1' />
 		</div>
 	);
 }

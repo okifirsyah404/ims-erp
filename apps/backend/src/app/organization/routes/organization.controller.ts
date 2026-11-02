@@ -18,6 +18,7 @@ import {
 } from '../contracts/organization.contract';
 import { ORGANIZATION_SERVICE_TOKEN } from '../constants/di';
 import { OrganizationService } from '../services/organization.service';
+import { translator } from '@providers/i18n/translator';
 import {
 	LastOrganizationError,
 	LastOwnerError,
@@ -132,16 +133,18 @@ export class OrganizationController {
 			tags: ['Organization'],
 		})
 			.use(erpGuard())
-			.onError({ as: 'local' }, ({ code, error, set }) => {
+			.onError({ as: 'local' }, (ctx) => {
+				const { code, error, set } = ctx;
+				const t = translator(ctx);
 				if (code === 'VALIDATION') {
 					set.status = 400;
-					return errorEnvelope(400, 'Validation failed', [
+					return errorEnvelope(400, t('common.validationFailed'), [
 						{ message: error.message },
 					]);
 				}
 				if (error instanceof z.ZodError) {
 					set.status = 400;
-					return errorEnvelope(400, 'Validation failed', [
+					return errorEnvelope(400, t('common.validationFailed'), [
 						{ message: error.issues.map((i) => i.message).join('; ') },
 					]);
 				}
@@ -150,8 +153,8 @@ export class OrganizationController {
 					error instanceof MemberNotFoundError
 				) {
 					set.status = 404;
-					return errorEnvelope(404, error.message, [
-						{ message: error.message },
+					return errorEnvelope(404, t('common.notFound'), [
+						{ message: t(error.key) },
 					]);
 				}
 				if (
@@ -161,8 +164,8 @@ export class OrganizationController {
 					error instanceof LastOrganizationError
 				) {
 					set.status = 409;
-					return errorEnvelope(409, error.message, [
-						{ message: error.message },
+					return errorEnvelope(409, t('common.conflict'), [
+						{ message: t(error.key) },
 					]);
 				}
 				return undefined;
@@ -380,7 +383,9 @@ export class OrganizationBootstrapController {
 			tags: ['Organization'],
 		})
 			.use(sessionGuard())
-			.onError({ as: 'local' }, ({ code, error, set }) => {
+			.onError({ as: 'local' }, (ctx) => {
+				const { code, error, set } = ctx;
+				const t = translator(ctx);
 				if (error instanceof NotGlobalAdminError) {
 					set.status = 403;
 					return errorEnvelope(403, error.message, [
@@ -389,20 +394,20 @@ export class OrganizationBootstrapController {
 				}
 				if (code === 'VALIDATION') {
 					set.status = 400;
-					return errorEnvelope(400, 'Validation failed', [
+					return errorEnvelope(400, t('common.validationFailed'), [
 						{ message: error.message },
 					]);
 				}
 				if (error instanceof z.ZodError) {
 					set.status = 400;
-					return errorEnvelope(400, 'Validation failed', [
+					return errorEnvelope(400, t('common.validationFailed'), [
 						{ message: error.issues.map((i) => i.message).join('; ') },
 					]);
 				}
 				if (error instanceof OrganizationSlugTakenError) {
 					set.status = 409;
-					return errorEnvelope(409, error.message, [
-						{ message: error.message },
+					return errorEnvelope(409, t('common.conflict'), [
+						{ message: t(error.key) },
 					]);
 				}
 				return undefined;

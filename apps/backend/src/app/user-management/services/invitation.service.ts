@@ -111,12 +111,10 @@ export class InvitationService {
 	): Promise<TInviteResult> {
 		const isOrgPath = Boolean(input.roleId || input.organizationId);
 		if (isOrgPath && (!input.organizationId || !input.roleId)) {
-			throw new InvalidInvitationError(
-				'Organization invites require both organizationId and roleId',
-			);
+			throw new InvalidInvitationError();
 		}
 		if (!isOrgPath && !input.name) {
-			throw new InvalidInvitationError('Application invites require name');
+			throw InvalidInvitationError.requiresName();
 		}
 
 		let roleName: string | null = null;
@@ -152,9 +150,7 @@ export class InvitationService {
 			// email — it is the row created by the original invite.
 			const existingUser = await this.users.findByEmail(input.email);
 			if (!existingUser) {
-				throw new ClaimStateError(
-					'Pending invitation exists but its pre-created user is missing',
-				);
+				throw ClaimStateError.invitedUserMissing();
 			}
 			await this.deliver(updated!, token, actor);
 			return {
@@ -240,7 +236,7 @@ export class InvitationService {
 		actor: TActor,
 	): Promise<TBulkInviteResult> {
 		if (inputs.length > MAX_BULK) {
-			throw new InvalidInvitationError(`Bulk limited to ${MAX_BULK} rows`);
+			throw InvalidInvitationError.bulkLimited(MAX_BULK);
 		}
 		const results: TBulkInviteResult['results'] = [];
 		for (const input of inputs) {
@@ -339,9 +335,7 @@ export class InvitationService {
 		const invitation = await this.invitations.findById(invitationId);
 		if (!invitation) throw new InvitationNotFoundError(invitationId);
 		if (invitation.status !== 'pending') {
-			throw new InvitationNotPendingError(
-				'Claimed invitations cannot be deleted; deactivate the user instead',
-			);
+			throw InvitationNotPendingError.claimed();
 		}
 		const user = await this.users.findByEmail(invitation.email);
 		await this.invitations.delete(invitation.id);
@@ -370,14 +364,12 @@ export class InvitationService {
 		);
 		if (!invitation) throw new InvalidClaimTokenError();
 		if (invitation.status !== 'pending') {
-			throw new InvalidClaimTokenError(
-				invitation.status === 'accepted'
-					? 'This invitation was already used'
-					: 'This invitation is no longer active',
-			);
+			throw invitation.status === 'accepted'
+				? InvalidClaimTokenError.alreadyUsed()
+				: InvalidClaimTokenError.inactive();
 		}
 		if (invitation.expiresAt.getTime() < Date.now()) {
-			throw new InvalidClaimTokenError('This invitation link has expired');
+			throw InvalidClaimTokenError.expired();
 		}
 		if (!verifyToken(rawToken, invitation.tokenHash)) {
 			throw new InvalidClaimTokenError();
@@ -385,9 +377,9 @@ export class InvitationService {
 		const user = await this.users.findById(
 			(await this.userIdFor(invitation)) ?? '',
 		);
-		if (!user) throw new ClaimStateError('Invited user no longer exists');
+		if (!user) throw new ClaimStateError();
 		if (user.status !== 'pending') {
-			throw new ClaimStateError('This account is already active');
+			throw ClaimStateError.alreadyActive();
 		}
 		return {
 			invitation: {
@@ -422,10 +414,10 @@ export class InvitationService {
 		const { invitation, user } = target;
 
 		if (!(await this.users.isUsernameAvailable(input.username))) {
-			throw new ClaimConflictError('Username is already taken');
+			throw new ClaimConflictError();
 		}
 		if (!(await this.users.isPhoneAvailable(input.phone))) {
-			throw new ClaimConflictError('Phone number is already in use');
+			throw ClaimConflictError.phoneInUse();
 		}
 
 		await this.authGateway.claimCredentials({

@@ -1,0 +1,77 @@
+import type account from '../en/account';
+
+/** Indonesian — mirrors `en/account` keys exactly (values are free-form). */
+const account_: Record<keyof typeof account, string> = {
+	'tab.security': 'Keamanan',
+	'tab.email': 'Email',
+	'tab.sessions': 'Sesi',
+
+	'password.title': 'Ubah kata sandi',
+	'password.description': 'Pilih kata sandi baru untuk akun Anda',
+	'password.current': 'Kata sandi saat ini',
+	'password.new': 'Kata sandi baru',
+	'password.confirm': 'Konfirmasi kata sandi baru',
+	'password.minHint': 'Minimal 8 karakter.',
+	'password.revokeOthers': 'Keluarkan semua perangkat lain',
+	'password.submit': 'Ubah kata sandi',
+	'password.submitting': 'Mengubah…',
+	'password.changed': 'Kata sandi diubah',
+	'password.mismatch': 'Kata sandi baru tidak cocok',
+	'password.failed': 'Tidak dapat mengubah kata sandi',
+
+	'email.title': 'Email',
+	'email.description':
+		'Email untuk masuk. Mengubahnya memerlukan verifikasi alamat baru.',
+	'email.current': 'Email saat ini',
+	'email.new': 'Email baru',
+	'email.verified': 'Terverifikasi',
+	'email.unverified': 'Belum terverifikasi',
+	'email.verificationHint': 'Tautan verifikasi akan dikirim ke alamat baru.',
+	'email.verificationRequested':
+		'Verifikasi diminta — periksa kotak masuk baru untuk mengonfirmasi.',
+	'email.submit': 'Ubah email',
+	'email.submitting': 'Meminta…',
+	'email.sent': 'Email verifikasi terkirim',
+	'email.failed': 'Tidak dapat mengubah email',
+
+	'sessions.title': 'Sesi aktif',
+	'sessions.description': 'Perangkat yang saat ini masuk ke akun Anda',
+	'sessions.device': 'Perangkat',
+	'sessions.created': 'Masuk pada',
+	'sessions.expires': 'Kedaluwarsa',
+	'sessions.status': 'Status',
+	'sessions.actions': 'Tindakan',
+	'sessions.unknownDevice': 'Perangkat tidak dikenal',
+	'sessions.other': 'Lainnya',
+	'sessions.current': 'Saat ini',
+	'sessions.revoke': 'Cabut',
+	'sessions.revokeAll': 'Keluarkan semua perangkat lain ({{count}})',
+	'sessions.revoked': 'Sesi dicabut',
+	'sessions.revokedOthers': 'Sesi lain dicabut',
+	'sessions.revokeFailed': 'Gagal mencabut',
+	'sessions.loadFailed': 'Gagal memuat sesi',
+	'sessions.empty': 'Tidak ada sesi aktif',
+
+	'profile.title': 'Profil',
+	'profile.description': 'Informasi akun Anda sebagaimana terlihat oleh organisasi',
+	'profile.name': 'Nama',
+	'profile.username': 'Nama pengguna',
+	'profile.email': 'Email',
+	'profile.bio': 'Bio',
+	'profile.edit': 'Ubah profil',
+	'profile.editTitle': 'Ubah profil',
+	'profile.editDescription': 'Perbarui tampilan Anda di seluruh ERP',
+	'profile.avatarInvalidType': 'Avatar harus berupa gambar PNG, JPEG, atau WebP',
+	'profile.avatarTooLarge': 'Gambar terlalu besar (maksimal 50 MiB)',
+	'profile.saveChanges': 'Simpan perubahan',
+	'profile.updated': 'Profil diperbarui',
+	'profile.avatarUpdated': 'Avatar diperbarui',
+	'profile.bioHint': 'Maksimal 1000 karakter.',
+	'profile.avatarHint': 'PNG, JPEG, atau WebP — dikompresi otomatis.',
+	'profile.changeAvatar': 'Ubah avatar',
+	'profile.uploading': 'Mengunggah…',
+
+	'form.saving': 'Menyimpan…',
+};
+
+export default account_;

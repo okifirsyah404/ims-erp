@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { UserPlus, Users as UsersIcon } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TranslationKey } from '@ims-erp/locales';
 import { toast } from '@/components/toast';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -99,6 +101,7 @@ function UsersPage() {
 	const search = Route.useSearch();
 	const navigate = Route.useNavigate();
 	const queryClient = useQueryClient();
+	const { t } = useTranslation(['admin', 'common', 'nav']);
 
 	const canUpdate = usePermission(ADMIN_PERMISSIONS.updateMembers);
 	const canDelete = usePermission(ADMIN_PERMISSIONS.deleteMembers);
@@ -132,7 +135,7 @@ function UsersPage() {
 	const deactivate = useMutation({
 		mutationFn: (userId: string) => deactivateUser(organizationId!, userId),
 		onSuccess: async () => {
-			toast.success('User deactivated; sessions revoked');
+			toast.success(t('users.deactivated'));
 			await refresh();
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
@@ -141,7 +144,7 @@ function UsersPage() {
 	const restore = useMutation({
 		mutationFn: (userId: string) => restoreUser(organizationId!, userId),
 		onSuccess: async () => {
-			toast.success('User restored');
+			toast.success(t('users.restored'));
 			await refresh();
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
@@ -150,7 +153,7 @@ function UsersPage() {
 	const remove = useMutation({
 		mutationFn: (userId: string) => deleteUser(organizationId!, userId),
 		onSuccess: async () => {
-			toast.success('User deleted (soft)');
+			toast.success(t('users.deleted'));
 			await refresh();
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
@@ -159,7 +162,7 @@ function UsersPage() {
 	if (!organizationId) {
 		return (
 			<div className='p-6 text-sm text-muted-foreground'>
-				Select an organization to manage users.
+				{t('nav:organization.required')}
 			</div>
 		);
 	}
@@ -174,17 +177,16 @@ function UsersPage() {
 				<div>
 					<h1 className='flex items-center gap-2 text-2xl font-bold'>
 						<UsersIcon className='size-6' />
-						Users
+						{t('users.title')}
 					</h1>
 					<p className='text-sm text-muted-foreground'>
-						Account lifecycle, roles and pending invitations for this
-						organization.
+						{t('users.description')}
 					</p>
 				</div>
 				{canInvite && (
 					<Button onClick={() => setInviteOpen(true)}>
 						<UserPlus className='mr-2 size-4' />
-						Invite users
+						{t('users.invite')}
 					</Button>
 				)}
 			</div>
@@ -192,10 +194,12 @@ function UsersPage() {
 			{/* Filters ------------------------------------------------------ */}
 			<div className='flex flex-wrap items-end gap-3'>
 				<div className='flex flex-col gap-1'>
-					<span className='text-xs text-muted-foreground'>Search</span>
+					<span className='text-xs text-muted-foreground'>
+						{t('users.search')}
+					</span>
 					<Input
 						className='w-64'
-						placeholder='Name, email or username'
+						placeholder={t('users.searchPlaceholder')}
 						value={searchDraft}
 						onChange={(event) => setSearchDraft(event.target.value)}
 						onKeyDown={(event) => {
@@ -212,7 +216,9 @@ function UsersPage() {
 					/>
 				</div>
 				<div className='flex flex-col gap-1'>
-					<span className='text-xs text-muted-foreground'>Status</span>
+					<span className='text-xs text-muted-foreground'>
+						{t('users.filterStatus')}
+					</span>
 					<Select
 						value={search.status ?? 'all'}
 						onValueChange={(value) =>
@@ -229,10 +235,12 @@ function UsersPage() {
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value='all'>All statuses</SelectItem>
-							<SelectItem value='pending'>Pending</SelectItem>
-							<SelectItem value='active'>Active</SelectItem>
-							<SelectItem value='deactivated'>Deactivated</SelectItem>
+							<SelectItem value='all'>{t('users.allStatuses')}</SelectItem>
+							<SelectItem value='pending'>{t('common:status.pending')}</SelectItem>
+							<SelectItem value='active'>{t('common:status.active')}</SelectItem>
+							<SelectItem value='deactivated'>
+								{t('common:status.deactivated')}
+							</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>
@@ -248,7 +256,7 @@ function UsersPage() {
 						})
 					}
 				>
-					Apply
+					{t('users.apply')}
 				</Button>
 				<Button
 					variant='ghost'
@@ -257,17 +265,17 @@ function UsersPage() {
 						void navigate({ search: {} });
 					}}
 				>
-					Reset
+					{t('users.reset')}
 				</Button>
 			</div>
 
 			{/* Table -------------------------------------------------------- */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Accounts</CardTitle>
+					<CardTitle>{t('users.accounts')}</CardTitle>
 					<CardDescription>
 						{pagination ? (
-							`${pagination.total} user(s)`
+							t('users.count', { count: pagination.total })
 						) : isPending ? (
 							<Skeleton className='h-4 w-20 motion-reduce:animate-none' />
 						) : null}
@@ -278,17 +286,19 @@ function UsersPage() {
 						<p className='text-sm text-destructive'>{(error as Error).message}</p>
 					)}
 					{!isPending && !isError && rows.length === 0 && (
-						<p className='text-sm text-muted-foreground'>No users found.</p>
+						<p className='text-sm text-muted-foreground'>{t('users.empty')}</p>
 					)}
 					{(isPending || rows.length > 0) && (
 						<Table aria-busy={isPending || undefined}>
 							<TableHeader>
 								<TableRow>
-									<TableHead>User</TableHead>
-									<TableHead>Status</TableHead>
-									<TableHead>Organization roles</TableHead>
-									<TableHead>Created</TableHead>
-									<TableHead className='text-right'>Actions</TableHead>
+									<TableHead>{t('users.user')}</TableHead>
+									<TableHead>{t('users.filterStatus')}</TableHead>
+									<TableHead>{t('users.organizationRoles')}</TableHead>
+									<TableHead>{t('users.created')}</TableHead>
+									<TableHead className='text-right'>
+										{t('users.actions')}
+									</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -319,7 +329,7 @@ function UsersPage() {
 							</TableBody>
 						</Table>
 					)}
-					{isPending && <span className='sr-only'>Loading users…</span>}
+					{isPending && <span className='sr-only'>{t('users.loading')}</span>}
 
 					{pagination && pagination.totalPages > 1 && (
 						<div className='mt-4 flex items-center justify-end gap-2'>
@@ -333,10 +343,13 @@ function UsersPage() {
 									})
 								}
 							>
-								Previous
+								{t('common:action.previous')}
 							</Button>
 							<span className='text-xs text-muted-foreground'>
-								Page {pagination.page} of {pagination.totalPages}
+								{t('common:pagination.summary', {
+									page: pagination.page,
+									totalPages: pagination.totalPages,
+								})}
 							</span>
 							<Button
 								variant='outline'
@@ -348,7 +361,7 @@ function UsersPage() {
 									})
 								}
 							>
-								Next
+								{t('common:action.next')}
 							</Button>
 						</div>
 					)}
@@ -390,6 +403,7 @@ function UserRow({
 	const status = user.deletedAt ? 'deleted' : (user.status ?? 'unknown');
 	const isActive = status === 'active';
 	const canRestore = status === 'deactivated' || status === 'deleted';
+	const { t } = useTranslation(['admin', 'common']);
 
 	return (
 		<TableRow>
@@ -406,8 +420,18 @@ function UserRow({
 			</TableCell>
 			<TableCell>
 				<div className='flex flex-wrap gap-1'>
-					<Badge variant={STATUS_VARIANT[status] ?? 'outline'}>{status}</Badge>
-					{user.role === 'admin' && <Badge variant='outline'>app admin</Badge>}
+					<Badge variant={STATUS_VARIANT[status] ?? 'outline'}>
+						{/*
+						 * The only dynamically composed key in the app: `status` comes from
+						 * the backend, so it cannot be narrowed statically. `defaultValue`
+						 * falls back to the raw status if a new one appears before the
+						 * `common:status.*` keys are updated.
+						 */}
+						{t(`common:status.${status}` as TranslationKey, { defaultValue: status })}
+					</Badge>
+					{user.role === 'admin' && (
+						<Badge variant='outline'>{t('users.appAdmin')}</Badge>
+					)}
 				</div>
 			</TableCell>
 			<TableCell>
@@ -415,7 +439,9 @@ function UserRow({
 				    doesn't join memberships omits the field entirely, and an
 				    unguarded `.length` crashed the whole table. */}
 				{(user.organizations ?? []).length === 0 ? (
-					<span className='text-xs text-muted-foreground'>No memberships</span>
+					<span className='text-xs text-muted-foreground'>
+						{t('users.noMemberships')}
+					</span>
 				) : (
 					<div className='flex flex-wrap gap-1'>
 						{(user.organizations ?? []).map((org) => (
@@ -438,12 +464,12 @@ function UserRow({
 							disabled={busy}
 							onClick={onDeactivate}
 						>
-							Deactivate
+							{t('users.deactivate')}
 						</Button>
 					)}
 					{canUpdate && canRestore && (
 						<Button variant='outline' size='sm' disabled={busy} onClick={onRestore}>
-							Restore
+							{t('common:action.restore')}
 						</Button>
 					)}
 					{canDelete && !user.deletedAt && (
@@ -451,22 +477,26 @@ function UserRow({
 							<AlertDialogTrigger
 								render={
 									<Button variant='ghost' size='sm' disabled={busy}>
-										Delete
+										{t('common:action.delete')}
 									</Button>
 								}
 							/>
 							<AlertDialogContent>
 								<AlertDialogHeader>
-									<AlertDialogTitle>Delete this user?</AlertDialogTitle>
+									<AlertDialogTitle>
+										{t('users.deleteTitle')}
+									</AlertDialogTitle>
 									<AlertDialogDescription>
-										{user.email} is soft-deleted and all sessions are revoked.
-										Memberships are kept; an admin can restore the account
-										later.
+										{t('users.deleteDescription', { email: user.email })}
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>
-									<AlertDialogCancel>Cancel</AlertDialogCancel>
-									<AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
+									<AlertDialogCancel>
+										{t('common:action.cancel')}
+									</AlertDialogCancel>
+									<AlertDialogAction onClick={onDelete}>
+										{t('common:action.delete')}
+									</AlertDialogAction>
 								</AlertDialogFooter>
 							</AlertDialogContent>
 						</AlertDialog>

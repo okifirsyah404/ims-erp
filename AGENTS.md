@@ -86,11 +86,81 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
   redact connection strings and tokens in logs, docs, and reports.
 - **Language.** All code comments, docs, and identifiers in English. Business
   UI copy defaults to Indonesian (preserve any established convention).
+- **User-facing text is translated, never hardcoded.** Every string shown in
+  `apps/web-admin` must exist in **both** English (`en`) and Indonesian (`id`).
+  See "Internationalization" below.
 - **Honesty.** Never mark work implemented, verified, or accepted without
   evidence. Distinguish `planned / in-progress / implemented / verified /
 accepted / blocked`. Automated tests passing is not business acceptance.
 - **Statuses live in `.agents/docs/progress.md` and `backlog.md`.** Update
   them (and `progress.md`'s "next task") when you stop working.
+
+## Internationalization
+
+Web admin text is translated at runtime with `react-i18next`. English and
+Indonesian are the only supported languages — a string that exists in only one
+of them is a bug, not a partial state.
+
+**Layout.** Translations live in the `@ims-erp/locales` workspace package
+(`packages/locales`), not inside the app:
+
+- `packages/locales/src/en/<ns>.ts` — English bundles, **the source of truth**.
+  Authored as flat dot-keys in an `as const` object:
+  `'notFound.title': 'Page not found'`.
+- `packages/locales/src/id/<ns>.ts` — Indonesian bundles, typed as
+  `Record<keyof typeof en, string>` so the key set must match `en` exactly.
+  **Never type an `id` bundle as `typeof en`** — that makes values literal
+  types and breaks translation.
+- Namespaces: `common`, `nav`, `auth`, `account`, `admin`.
+
+**Adding or changing a key.** Edit the `en` bundle, then the `id` bundle. Both
+are required. `packages/locales/src/locale-parity.test.ts` enforces key-set
+parity, no empty values, matching `{{placeholder}}` sets, and a
+no-untranslated-copy guard (`ALLOWED_IDENTICAL` lists keys legitimately
+identical in both languages, e.g. "Email").
+
+**Removing a key.** `packages/locales/src/locale-dead-keys.test.ts` scans
+`apps/web-admin/src` for key usage and fails on keys present in the bundles but
+never referenced. Composed keys (e.g. `` `common:status.${status}` ``) are
+declared in its `DYNAMIC_PREFIXES` list.
+
+**Type safety.** Key strings are typed, with no codegen:
+`packages/locales/src/i18next.d.ts` augments i18next's `ResourceNamespaceMap`
+with `typeof en.<ns>`, so a typo in a key, or a key used under the wrong
+namespace, is a compile error. `strictInterpolationChecks` makes a key
+containing `{{vars}}` require those options at the call site.
+
+Three things in that file are load-bearing and were learned the hard way —
+do not "fix" them without re-verifying:
+
+- `keySeparator: false` — bundles use flat dot-keys. With `'.'`, i18next walks
+  `sessions` → `revokeAll`, finds nothing, and every `t()` return type silently
+  degrades to `string`, disabling key and interpolation checks.
+- `defaultNS: Namespace` — a single literal makes `t('x')` under
+  `useTranslation('account')` resolve against that one namespace instead of the
+  hook's scope, wrongly rejecting valid keys.
+- The augmentation is delivered by a type-only import in
+  `apps/web-admin/src/i18n/index.ts`
+  (`import type {} from '@ims-erp/locales/i18next'`). A runtime side-effect
+  import breaks `bun test` — a `.d.ts` has no runtime module.
+
+**Conventions.**
+
+- Module-level constant arrays cannot call `useTranslation`; store a typed key
+  instead (`titleKey: NavKey`, `labelKey: AccountKey`) and resolve at render.
+- Namespace-qualify only when the hook scope does not already cover it
+  (`t('nav:organization.required')` from a hook scoped to
+  `['admin', 'common']`).
+- **Never** add a second `i18n.init()` — `i18n/index.ts` holds a single `ready`
+  promise.
+- Dates still use the browser default via `toLocaleString()`; they are not
+  localised by `i18n`. Known, accepted gap.
+- `apps/web-admin/src/components/sidebar.tsx` is dead code (unimported) and
+  deliberately left untranslated.
+
+**Verifying.** `bun run test` runs the locale guards (`packages/locales` has its
+own `test` script). Green means parity across `en`/`id`, no dead keys, and typed
+call sites.
 
 ## Definition of done (per slice or task)
 

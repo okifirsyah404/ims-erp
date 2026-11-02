@@ -29,6 +29,7 @@ import type { UserAdminService } from '../services/user-admin.service';
 import type { AuditQueryService } from '../services/audit-query.service';
 import type { IRoleRepository } from '../contracts/repositories.interface';
 import { UserManagementError } from '../services/invitation.errors';
+import { translator, type ApiKey } from '@providers/i18n/translator';
 import type { TActor } from '../services/invitation.service';
 
 /** Envelope metadata shared by the admin endpoints. */
@@ -109,9 +110,14 @@ async function callerRank(
 }
 
 /** Shared error mapping for the admin endpoints. */
-function mapAdminError(error: unknown) {
+function mapAdminError(
+	error: unknown,
+):
+	| { status: number; key: ApiKey; params?: Record<string, string | number> }
+	| { status: number; message: string }
+	| null {
 	if (error instanceof UserManagementError) {
-		return { status: error.status, message: error.message };
+		return { status: error.status, key: error.key, params: error.params };
 	}
 	if (error instanceof ZodError) {
 		return {
@@ -149,18 +155,22 @@ export class UserAdminController {
 
 		return new Elysia({ name: 'user-management-admin', tags: ['User Management'] })
 			.use(erpGuard())
-			.onError({ as: 'local' }, ({ code, error, set }) => {
+			.onError({ as: 'local' }, (ctx) => {
+				const { code, error, set } = ctx;
+				const t = translator(ctx);
 				if (code === 'VALIDATION') {
 					set.status = 400;
-					return errorEnvelope(400, 'Validation failed', [
+					return errorEnvelope(400, t('common.validationFailed'), [
 						{ message: error.message },
 					]);
 				}
 				const mapped = mapAdminError(error);
 				if (mapped) {
 					set.status = mapped.status;
-					return errorEnvelope(mapped.status, mapped.message, [
-						{ message: mapped.message },
+					const message =
+						'key' in mapped ? t(mapped.key, mapped.params) : mapped.message;
+					return errorEnvelope(mapped.status, message, [
+						{ message },
 					]);
 				}
 				return undefined;

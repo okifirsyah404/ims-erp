@@ -1,0 +1,36 @@
+import type auth from '../en/auth';
+
+/** Indonesian — mirrors `en/auth` keys exactly (values are free-form). */
+const auth_: Record<keyof typeof auth, string> = {
+	'login.title': 'Selamat datang kembali',
+	'login.subtitle': 'Masuk ke akun Entragate ERP Anda',
+	'login.email': 'Email',
+	'login.emailPlaceholder': 'm@example.com',
+	'login.password': 'Kata sandi',
+	'login.forgotPassword': 'Lupa kata sandi Anda?',
+	'login.submit': 'Masuk',
+	'login.submitting': 'Sedang masuk…',
+	'login.invalidCredentials': 'Email atau kata sandi salah',
+
+	'forgot.title': 'Lupa kata sandi Anda?',
+	'forgot.subtitle':
+		'Masukkan email Anda dan kami akan mengirimkan tautan reset',
+	'forgot.sent':
+		'Jika akun dengan email tersebut ada, tautan reset kata sandi telah dikirim. Periksa kotak masuk Anda.',
+	'forgot.submit': 'Kirim tautan reset',
+	'forgot.submitting': 'Mengirim…',
+	'forgot.backToLogin': 'Kembali ke halaman masuk',
+
+	'reset.title': 'Reset kata sandi Anda',
+	'reset.subtitle': 'Pilih kata sandi baru untuk akun Anda',
+	'reset.newPassword': 'Kata sandi baru',
+	'reset.confirmPassword': 'Konfirmasi kata sandi',
+	'reset.passwordHint': 'Minimal 8 karakter.',
+	'reset.submit': 'Reset kata sandi',
+	'reset.submitting': 'Mereset…',
+	'reset.requestNewLink': 'Minta tautan reset baru',
+	'reset.mismatch': 'Kata sandi tidak cocok',
+	'reset.invalidLink': 'Tautan reset tidak valid atau kedaluwarsa',
+};
+
+export default auth_;

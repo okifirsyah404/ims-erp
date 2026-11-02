@@ -1,0 +1,14 @@
+{
+  "name": "elysia-i18next",
+  "version": "1.0.0",
+  "description": "Server-side i18n for the Elysia backend via elysia-i18next - request-scoped t/i18n in context, language detection from query/cookie/path/store/accept-language, custom detectors, and i18next resource or instance configuration.",
+  "author": "OpenAgentic",
+  "date": "2026-02",
+  "dependsOn": ["elysiajs"],
+  "references": [
+    "https://github.com/eelkevdbos/elysia-i18next",
+    "https://www.i18next.com/overview/configuration-options",
+    "https://www.i18next.com/overview/api",
+    "https://elysiajs.com/essential/plugin"
+  ]
+}

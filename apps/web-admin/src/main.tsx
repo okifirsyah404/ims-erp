@@ -6,6 +6,7 @@ import './index.css';
 
 // Import the generated route tree
 import { ThemeProvider } from './components/theme-provider';
+import { setupI18n } from './i18n';
 import { queryClient } from './lib/query-client';
 import { routeTree } from './routeTree.gen';
 
@@ -23,13 +24,17 @@ declare module '@tanstack/react-router' {
 const rootElement = document.getElementById('root')!;
 if (!rootElement.innerHTML) {
 	const root = ReactDOM.createRoot(rootElement);
-	root.render(
-		<StrictMode>
-			<ThemeProvider defaultTheme='system' storageKey='ui-theme'>
-				<QueryClientProvider client={queryClient}>
-					<RouterProvider router={router} />
-				</QueryClientProvider>
-			</ThemeProvider>
-		</StrictMode>,
-	);
+	// i18next forbids `t()` before its init resolves, so mounting waits for it.
+	// Otherwise the first paint would flash raw keys or the wrong language.
+	void setupI18n().then(() => {
+		root.render(
+			<StrictMode>
+				<ThemeProvider defaultTheme='system' storageKey='ui-theme'>
+					<QueryClientProvider client={queryClient}>
+						<RouterProvider router={router} />
+					</QueryClientProvider>
+				</ThemeProvider>
+			</StrictMode>,
+		);
+	});
 }

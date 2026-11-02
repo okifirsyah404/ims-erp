@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-router';
 import { toast } from '@/components/toast';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import {
@@ -55,6 +56,7 @@ function EditMemberPage() {
 	const { organizationId, memberId } = useParams({ from: Route.id });
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const { t } = useTranslation(['admin', 'common']);
 
 	const { data: members, isPending } = useQuery({
 		...organizationMembersQueryOptions(organizationId),
@@ -71,7 +73,7 @@ function EditMemberPage() {
 		setPending(true);
 		try {
 			await updateMemberRole(organizationId, memberId, role);
-			toast.success('Member role updated');
+			toast.success(t('memberEdit.updated'));
 			await queryClient.invalidateQueries({
 				queryKey: organizationMembersQueryOptions(organizationId).queryKey,
 			});
@@ -80,7 +82,9 @@ function EditMemberPage() {
 				params: { organizationId },
 			});
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed');
+			toast.error(
+				error instanceof Error ? error.message : t('common:error.failed'),
+			);
 		} finally {
 			setPending(false);
 		}
@@ -90,7 +94,7 @@ function EditMemberPage() {
 		setRemoving(true);
 		try {
 			await removeMember(organizationId, memberId);
-			toast.success('Member removed');
+			toast.success(t('memberEdit.removed'));
 			await queryClient.invalidateQueries({
 				queryKey: organizationMembersQueryOptions(organizationId).queryKey,
 			});
@@ -99,18 +103,26 @@ function EditMemberPage() {
 				params: { organizationId },
 			});
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed');
+			toast.error(
+				error instanceof Error ? error.message : t('common:error.failed'),
+			);
 		} finally {
 			setRemoving(false);
 		}
 	}
 
 	if (isPending) {
-		return <div className='p-6 text-sm text-muted-foreground'>Loading…</div>;
+		return (
+			<div className='p-6 text-sm text-muted-foreground'>
+				{t('common:state.loading')}
+			</div>
+		);
 	}
 	if (!member) {
 		return (
-			<div className='p-6 text-sm text-muted-foreground'>Member not found.</div>
+			<div className='p-6 text-sm text-muted-foreground'>
+				{t('common:state.noResults')}
+			</div>
 		);
 	}
 
@@ -120,7 +132,7 @@ function EditMemberPage() {
 		<div className='flex flex-col gap-6 p-6'>
 			<div>
 				<h1 className='text-2xl font-bold'>
-					Edit member — {member.user?.name ?? member.userId}
+					{t('memberEdit.title')} — {member.user?.name ?? member.userId}
 				</h1>
 				<p className='text-sm text-muted-foreground'>
 					{member.user?.email ?? '—'}
@@ -128,26 +140,23 @@ function EditMemberPage() {
 			</div>
 			<Card className='max-w-xl'>
 				<CardHeader>
-					<CardTitle>Role</CardTitle>
-					<CardDescription>
-						The last owner cannot be demoted or removed; the backend rejects
-						it.
-					</CardDescription>
+					<CardTitle>{t('memberEdit.role')}</CardTitle>
+					<CardDescription>{t('memberEdit.description')}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className='flex flex-col gap-6'>
 						<form onSubmit={handleSave}>
 							<FieldGroup>
 								<Field>
-									<FieldLabel>Role</FieldLabel>
-								<Select
-									value={effectiveRole}
-									onValueChange={(value) => {
-										if (value != null) setRole(value);
-									}}
-								>
+									<FieldLabel>{t('memberEdit.role')}</FieldLabel>
+									<Select
+										value={effectiveRole}
+										onValueChange={(value) => {
+											if (value != null) setRole(value);
+										}}
+									>
 										<SelectTrigger className='w-full'>
-											<SelectValue placeholder='Select a role' />
+											<SelectValue placeholder={t('invite.rolePlaceholder')} />
 										</SelectTrigger>
 										<SelectContent>
 											{erpRoleNames.map((roleName) => (
@@ -163,7 +172,9 @@ function EditMemberPage() {
 										type='submit'
 										disabled={pending || effectiveRole === member.role}
 									>
-										{pending ? 'Saving…' : 'Save'}
+										{pending
+											? t('common:action.saving')
+											: t('common:action.save')}
 									</Button>
 									<Button
 										type='button'
@@ -175,7 +186,7 @@ function EditMemberPage() {
 											})
 										}
 									>
-										Cancel
+										{t('common:action.cancel')}
 									</Button>
 								</div>
 							</FieldGroup>
@@ -183,26 +194,30 @@ function EditMemberPage() {
 
 						<AlertDialog>
 							<AlertDialogTrigger render={<Button variant='destructive' />}>
-								Remove member
+								{t('memberEdit.remove')}
 							</AlertDialogTrigger>
 							<AlertDialogContent>
 								<AlertDialogHeader>
 									<AlertDialogTitle>
-										Remove {member.user?.name ?? member.userId} from the
-										organization?
+										{t('memberEdit.removeTitle', {
+											name: member.user?.name ?? member.userId,
+										})}
 									</AlertDialogTitle>
 									<AlertDialogDescription>
-										The user loses all organization access. Their account
-										itself is not deleted. The last owner cannot be removed.
+										{t('memberEdit.removeDescription')}
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>
-									<AlertDialogCancel>Cancel</AlertDialogCancel>
+									<AlertDialogCancel>
+										{t('common:action.cancel')}
+									</AlertDialogCancel>
 									<AlertDialogAction
 										onClick={() => void handleRemove()}
 										disabled={removing}
 									>
-										{removing ? 'Removing…' : 'Remove'}
+										{removing
+											? t('memberEdit.removing')
+											: t('memberEdit.removeConfirm')}
 									</AlertDialogAction>
 								</AlertDialogFooter>
 							</AlertDialogContent>

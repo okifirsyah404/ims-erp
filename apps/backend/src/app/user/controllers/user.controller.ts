@@ -25,6 +25,7 @@ import {
 	UserEmailTakenError,
 	UserNotFoundError,
 } from '../services/user.errors';
+import { translator } from '@providers/i18n/translator';
 
 /**
  * Builds the response envelope metadata shared by all user endpoints.
@@ -122,10 +123,12 @@ export class UserController {
 		return new Elysia({ prefix: '/users', name: 'users', tags: ['Users'] })
 			.use(erpGuard())
 			.use(sessionGuard())
-			.onError({ as: 'local' }, ({ code, error, set }) => {
+			.onError({ as: 'local' }, (ctx) => {
+				const { code, error, set } = ctx;
+				const t = translator(ctx);
 				if (code === 'VALIDATION') {
 					set.status = 400;
-					return errorEnvelope(400, 'Validation failed', [
+					return errorEnvelope(400, t('common.validationFailed'), [
 						{
 							field: error.value ? String(error.value) : null,
 							message: error.message,
@@ -134,31 +137,31 @@ export class UserController {
 				}
 				if (code === 'PARSE' || error instanceof ZodError) {
 					set.status = 400;
-					return errorEnvelope(400, 'Validation failed', [
+					return errorEnvelope(400, t('common.validationFailed'), [
 						{ field: null, message: String(error) },
 					]);
 				}
 				if (error instanceof UserNotFoundError) {
 					set.status = 404;
-					return errorEnvelope(404, 'Not found', [
-						{ message: 'User not found' },
+					return errorEnvelope(404, t('common.notFound'), [
+						{ message: t('user.notFound') },
 					]);
 				}
 				if (error instanceof UserEmailTakenError) {
 					set.status = 409;
-					return errorEnvelope(409, 'Conflict', [
-						{ field: 'email', message: 'Email already in use' },
+					return errorEnvelope(409, t('common.conflict'), [
+						{ field: 'email', message: t('user.emailInUse') },
 					]);
 				}
 				if (error instanceof InvalidAvatarError) {
 					set.status = 415;
-					return errorEnvelope(415, 'Unsupported media type', [
+					return errorEnvelope(415, t('common.unsupportedMediaType'), [
 						{ field: 'file', message: error.message },
 					]);
 				}
 				if (error instanceof NotGlobalAdminError) {
 					set.status = 403;
-					return errorEnvelope(403, error.message, []);
+					return errorEnvelope(403, t('user.globalAdminRequired'), []);
 				}
 				return undefined;
 			})
@@ -177,12 +180,15 @@ export class UserController {
 				 * any authenticated member may read their own profile.
 				 */
 				'/me',
-				async ({ erp, status }) => {
-					const profile = await userService.getUser(erp.session.user.id);					if (!profile) {
+				async (ctx) => {
+					const { erp, status } = ctx;
+					const t = translator(ctx);
+					const profile = await userService.getUser(erp.session.user.id);
+					if (!profile) {
 						return status(
 							404,
-							errorEnvelope(404, 'Not found', [
-								{ message: 'User not found' },
+							errorEnvelope(404, t('common.notFound'), [
+								{ message: t('user.notFound') },
 							]),
 						);
 					}
@@ -223,22 +229,24 @@ export class UserController {
 				 * refreshed profile with a fresh presigned URL.
 				 */
 				'/me/avatar',
-				async ({ request, erp, status }) => {
+				async (ctx) => {
+					const { request, erp, status } = ctx;
+					const t = translator(ctx);
 					const form = await request.formData();
 					const file = form.get('file');
 					if (!(file instanceof File)) {
 						return status(
 							400,
-							errorEnvelope(400, 'Validation failed', [
-								{ field: 'file', message: 'Expected a multipart file field' },
+							errorEnvelope(400, t('common.validationFailed'), [
+								{ field: 'file', message: t('user.fileFieldExpected') },
 							]),
 						);
 					}
 					if (file.size > AVATAR_MAX_BYTES) {
 						return status(
 							413,
-							errorEnvelope(413, 'Payload too large', [
-								{ field: 'file', message: 'Avatar must be 2 MiB or smaller' },
+							errorEnvelope(413, t('common.payloadTooLarge'), [
+								{ field: 'file', message: t('user.avatarTooLarge') },
 							]),
 						);
 					}
@@ -247,10 +255,10 @@ export class UserController {
 					if (!sniffed) {
 						return status(
 							415,
-							errorEnvelope(415, 'Unsupported media type', [
+							errorEnvelope(415, t('common.unsupportedMediaType'), [
 								{
 									field: 'file',
-									message: 'Avatar must be a PNG, JPEG, or WebP image',
+									message: t('user.avatarUnsupportedType'),
 								},
 							]),
 						);
@@ -265,15 +273,17 @@ export class UserController {
 			)
 			.get(
 				'/:userId',
-				async ({ params, status }) => {
+				async (ctx) => {
+					const { params, status } = ctx;
+					const t = translator(ctx);
 					const profile = await userService.getUser(
 						userIdParamsSchema.parse(params).userId,
 					);
 					if (!profile) {
 						return status(
 							404,
-							errorEnvelope(404, 'Not found', [
-								{ message: 'User not found' },
+							errorEnvelope(404, t('common.notFound'), [
+								{ message: t('user.notFound') },
 							]),
 						);
 					}

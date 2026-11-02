@@ -27,6 +27,7 @@ import type { IUserManagementRepository } from '../contracts/repositories.interf
 import {
 	UserManagementError,
 } from '../services/invitation.errors';
+import { translator } from '@providers/i18n/translator';
 
 /**
  * Builds the response envelope metadata shared by all invitation endpoints.
@@ -125,10 +126,12 @@ export class InvitationController {
 		})
 			.use(erpGuard())
 			.use(sessionGuard())
-			.onError({ as: 'local' }, ({ code, error, set }) => {
+			.onError({ as: 'local' }, (ctx) => {
+				const { code, error, set } = ctx;
+				const t = translator(ctx);
 				if (code === 'VALIDATION') {
 					set.status = 400;
-					return errorEnvelope(400, 'Validation failed', [
+					return errorEnvelope(400, t('common.validationFailed'), [
 						{
 							field: error.value ? String(error.value) : null,
 							message: error.message,
@@ -137,19 +140,20 @@ export class InvitationController {
 				}
 				if (code === 'PARSE' || error instanceof ZodError) {
 					set.status = 400;
-					return errorEnvelope(400, 'Validation failed', [
+					return errorEnvelope(400, t('common.validationFailed'), [
 						{ field: null, message: String(error) },
 					]);
 				}
 				if (error instanceof UserManagementError) {
 					set.status = error.status;
-					return errorEnvelope(error.status, error.message, [
-						{ field: null, message: error.message },
+					const message = t(error.key, error.params);
+					return errorEnvelope(error.status, message, [
+						{ field: null, message },
 					]);
 				}
 				if (error instanceof NotGlobalAdminError) {
 					set.status = 403;
-					return errorEnvelope(403, error.message, []);
+					return errorEnvelope(403, t('user.globalAdminRequired'), []);
 				}
 				return undefined;
 			})

@@ -1,6 +1,7 @@
 import { cn } from 'cn';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { authClient } from '@/lib/auth-client';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
@@ -10,6 +11,7 @@ import {
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import LanguageSwitcher from '@/components/language-switcher';
 
 /**
  * Email + password login wired to Better Auth (`authClient.signIn.email`).
@@ -25,6 +27,7 @@ export function LoginForm({
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
+	const { t } = useTranslation(['auth', 'common']);
 
 	async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -36,14 +39,14 @@ export function LoginForm({
 				password,
 			});
 			if (signInError) {
-				setError(signInError.message ?? 'Invalid email or password');
+				// Better Auth's message comes back already localized (the backend
+				// runs the i18n plugin with header detection); the fallback is ours.
+				setError(signInError.message ?? t('login.invalidCredentials'));
 				return;
 			}
 			onSuccess?.();
 		} catch {
-			setError(
-				'Cannot reach the server. Check your connection and try again.',
-			);
+			setError(t('common:error.network'));
 		} finally {
 			setPending(false);
 		}
@@ -56,17 +59,17 @@ export function LoginForm({
 					<form className='p-6 md:p-8' onSubmit={handleSubmit}>
 						<FieldGroup>
 							<div className='flex flex-col items-center gap-2 text-center'>
-								<h1 className='text-2xl font-bold'>Welcome back</h1>
+								<h1 className='text-2xl font-bold'>{t('login.title')}</h1>
 								<p className='text-balance text-muted-foreground'>
-									Login to your Entragate ERP account
+									{t('login.subtitle')}
 								</p>
 							</div>
 							<Field>
-								<FieldLabel htmlFor='email'>Email</FieldLabel>
+								<FieldLabel htmlFor='email'>{t('login.email')}</FieldLabel>
 								<Input
 									id='email'
 									type='email'
-									placeholder='m@example.com'
+									placeholder={t('login.emailPlaceholder')}
 									required
 									value={email}
 									onChange={(e) => setEmail(e.target.value)}
@@ -74,13 +77,13 @@ export function LoginForm({
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='password'>Password</FieldLabel>
+								<FieldLabel htmlFor='password'>{t('login.password')}</FieldLabel>
 								<div className='flex justify-end'>
 									<a
 										href='/forgot-password'
 										className='hover:text-foreground ml-auto text-sm underline-offset-4 hover:underline'
 									>
-										Forgot your password?
+										{t('login.forgotPassword')}
 									</a>
 								</div>
 								<Input
@@ -99,7 +102,7 @@ export function LoginForm({
 							)}
 							<Field>
 								<Button type='submit' className='w-full' disabled={pending}>
-									{pending ? 'Signing in…' : 'Login'}
+									{pending ? t('login.submitting') : t('login.submit')}
 								</Button>
 							</Field>
 						</FieldGroup>
@@ -113,6 +116,9 @@ export function LoginForm({
 					</div>
 				</CardContent>
 			</Card>
+			{/* Logged-out users never see the sidebar switcher, so the auth
+			    screens carry their own. */}
+			<LanguageSwitcher className='mx-auto flex justify-center gap-1' />
 		</div>
 	);
 }

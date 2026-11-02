@@ -1,0 +1,85 @@
+/**
+ * Indonesian API messages. Mirrors `en/api.ts` key-for-key; the parity test
+ * fails if the two drift.
+ */
+import type en from '../en/api';
+
+const api: Record<keyof typeof en, string> = {
+	'common.validationFailed': 'Validasi gagal',
+	'common.notFound': 'Tidak ditemukan',
+	'common.conflict': 'Konflik',
+	'common.unsupportedMediaType': 'Tipe media tidak didukung',
+	'common.payloadTooLarge': 'Data yang dikirim terlalu besar',
+	'common.authenticationRequired': 'Autentikasi diperlukan',
+
+	'location.provinceNotFound': 'Provinsi tidak ditemukan',
+	'location.regencyNotFound': 'Kabupaten/kota tidak ditemukan',
+	'location.districtNotFound': 'Kecamatan tidak ditemukan',
+	'location.villageNotFound': 'Kelurahan/desa tidak ditemukan',
+
+	'sales.quotationNotFound': 'Penawaran tidak ditemukan',
+	'sales.paymentNotFound': 'Pembayaran tidak ditemukan',
+
+	'user.notFound': 'Pengguna tidak ditemukan',
+	'user.emailInUse': 'Email sudah digunakan',
+	'user.globalAdminRequired': 'Peran administrator global diperlukan',
+	'user.fileFieldExpected': 'Diperlukan kolom berkas multipart',
+	'user.avatarTooLarge': 'Avatar maksimal 2 MiB',
+	'user.avatarUnsupportedType': 'Avatar harus berupa gambar PNG, JPEG, atau WebP',
+
+	'organization.lastOrganization':
+		'Ini organisasi terakhir Anda dan tidak dapat dihapus',
+	'organization.notFound': 'Organisasi tidak ditemukan',
+	'organization.slugTaken': 'Slug organisasi sudah dipakai',
+	'organization.alreadyDeleted': 'Organisasi sudah dihapus',
+	'organization.notDeleted': 'Organisasi belum dihapus',
+	'organization.memberNotFound': 'Anggota tidak ditemukan',
+	'organization.lastOwner':
+		'Tidak dapat menghapus atau menurunkan pemilik terakhir',
+
+	'invitation.notFound': 'Undangan tidak ditemukan',
+	'invitation.pendingExists': 'Sudah ada undangan tertunda untuk email ini',
+	'invitation.notPending': 'Undangan tidak dalam status tertunda',
+	'invitation.claimed':
+		'Undangan yang sudah diklaim tidak dapat dihapus; nonaktifkan penggunanya',
+	'invitation.invalidPayload':
+		'Undangan organisasi memerlukan organizationId dan roleId',
+	'invitation.requiresName': 'Undangan aplikasi memerlukan nama',
+	'invitation.invalidLink': 'Tautan undangan tidak valid atau kedaluwarsa',
+	'invitation.alreadyUsed': 'Undangan ini sudah digunakan',
+	'invitation.inactive': 'Undangan ini sudah tidak aktif',
+	'invitation.expired': 'Tautan undangan ini sudah kedaluwarsa',
+	'invitation.bulkLimited': 'Maksimal {{max}} baris',
+	'invitation.claimUserMissing': 'Pengguna yang diundang tidak lagi tersedia',
+	'invitation.claimAlreadyActive': 'Akun ini sudah aktif',
+	'invitation.claimInvalid': 'Data klaim tidak valid',
+
+	'claim.usernameTaken': 'Nama pengguna sudah dipakai',
+	'claim.phoneInUse': 'Nomor telepon sudah digunakan',
+	'claim.alreadyInUse': 'Nama pengguna atau email sudah digunakan',
+
+	'role.notFound': 'Peran tidak ditemukan',
+	'role.nameTaken': 'Peran bernama "{{name}}" sudah ada di organisasi ini',
+	'role.inUse': 'Peran ini tidak dapat dihapus: peran sistem atau masih dipakai',
+	'role.systemRole': '"{{role}}" adalah peran sistem dan tidak dapat dihapus',
+	'role.stillAssigned':
+		'{{count}} anggota masih memakai "{{role}}"; pindahkan mereka terlebih dahulu',
+	'role.invalidPermission': 'Pemberian izin di luar katalog',
+	'role.unknownResource': '{{label}}: sumber daya "{{resource}}" tidak dikenal',
+	'role.unknownAction':
+		'{{label}}: "{{resource}}" tidak memiliki aksi "{{action}}"',
+	'role.rankExceeded':
+		'Anda tidak dapat memberikan peran setara atau di atas peringkat Anda',
+	'role.targetRankExceeded':
+		'Target memegang "{{role}}" (peringkat {{rank}}) di organisasi Anda',
+
+	'userAdmin.accountAlreadyActive': 'Akun sudah aktif',
+	'userAdmin.cannotDeactivate':
+		'Tidak dapat menonaktifkan akun yang tidak berstatus aktif',
+
+	'auth.ownerGrantRequired':
+		'Hanya pemilik organisasi yang dapat memberikan peran pemilik',
+	'auth.roleNotGrantable': 'Peran tidak dapat diberikan: {{roles}}',
+};
+
+export default api;

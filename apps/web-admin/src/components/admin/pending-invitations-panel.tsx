@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Mail } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from '@/components/toast';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -47,6 +48,7 @@ export function PendingInvitationsPanel({
 	const queryClient = useQueryClient();
 	const canCreate = usePermission(ADMIN_PERMISSIONS.createMembers);
 	const canDelete = usePermission(ADMIN_PERMISSIONS.deleteMembers);
+	const { t } = useTranslation(['admin', 'common']);
 
 	const { data, isPending } = useQuery({
 		...invitationsQueryOptions(organizationId, 'pending'),
@@ -63,7 +65,7 @@ export function PendingInvitationsPanel({
 		mutationFn: (invitationId: string) =>
 			resendInvitation(organizationId, invitationId),
 		onSuccess: async () => {
-			toast.success('Invitation resent (old link invalidated)');
+			toast.success(t('invitations.resent'));
 			await refresh();
 		},
 		onError: (error: Error) => toast.error(error.message),
@@ -73,7 +75,7 @@ export function PendingInvitationsPanel({
 		mutationFn: (invitationId: string) =>
 			cancelInvitation(organizationId, invitationId),
 		onSuccess: async () => {
-			toast.success('Invitation cancelled');
+			toast.success(t('invitations.cancelled'));
 			await refresh();
 		},
 		onError: (error: Error) => toast.error(error.message),
@@ -83,7 +85,7 @@ export function PendingInvitationsPanel({
 		mutationFn: (invitationId: string) =>
 			deleteInvitation(organizationId, invitationId),
 		onSuccess: async () => {
-			toast.success('Invitation deleted');
+			toast.success(t('invitations.deleted'));
 			await refresh();
 		},
 		onError: (error: Error) => toast.error(error.message),
@@ -97,30 +99,29 @@ export function PendingInvitationsPanel({
 			<CardHeader>
 				<CardTitle className='flex items-center gap-2'>
 					<Mail className='size-4' />
-					Pending invitations
+					{t('invitations.title')}
 				</CardTitle>
-				<CardDescription>
-					Single-use links, valid for 3 days. Resending issues a new token and
-					invalidates the old one.
-				</CardDescription>
+				<CardDescription>{t('invitations.description')}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				{isPending && (
-					<p className='text-sm text-muted-foreground'>Loading…</p>
+					<p className='text-sm text-muted-foreground'>{t('common:state.loading')}</p>
 				)}
 				{!isPending && rows.length === 0 && (
 					<p className='text-sm text-muted-foreground'>
-						No pending invitations.
+						{t('invitations.empty')}
 					</p>
 				)}
 				{rows.length > 0 && (
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead>Email</TableHead>
-								<TableHead>Status</TableHead>
-								<TableHead>Expires</TableHead>
-								<TableHead className='text-right'>Actions</TableHead>
+								<TableHead>{t('invitations.email')}</TableHead>
+								<TableHead>{t('invitations.status')}</TableHead>
+								<TableHead>{t('invitations.expires')}</TableHead>
+								<TableHead className='text-right'>
+									{t('invitations.actions')}
+								</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -176,6 +177,7 @@ function InvitationRow({
 	const daysLeft = Math.ceil(
 		(expiresAt.getTime() - now) / (24 * 60 * 60 * 1000),
 	);
+	const { t } = useTranslation(['admin', 'common']);
 
 	return (
 		<TableRow>
@@ -191,30 +193,32 @@ function InvitationRow({
 			</TableCell>
 			<TableCell>
 				<Badge variant={expired ? 'destructive' : 'secondary'}>
-					{expired ? 'expired' : 'pending'}
+					{expired ? t('invitations.expired') : t('invitations.pending')}
 				</Badge>
 			</TableCell>
 			<TableCell className='text-xs text-muted-foreground'>
 				{expiresAt.toLocaleString()}
 				{!expired && daysLeft > 0 && (
-					<span className='ml-1'>({daysLeft}d left)</span>
+					<span className='ml-1'>
+						{t('invitations.daysLeft', { count: daysLeft })}
+					</span>
 				)}
 			</TableCell>
 			<TableCell className='text-right'>
 				<div className='flex justify-end gap-2'>
 					{canCreate && (
 						<Button variant='outline' size='sm' disabled={busy} onClick={onResend}>
-							Resend
+							{t('invitations.resend')}
 						</Button>
 					)}
 					{canCreate && (
 						<Button variant='ghost' size='sm' disabled={busy} onClick={onCancel}>
-							Cancel
+							{t('common:action.cancel')}
 						</Button>
 					)}
 					{canDelete && (
 						<Button variant='ghost' size='sm' disabled={busy} onClick={onDelete}>
-							Delete
+							{t('common:action.delete')}
 						</Button>
 					)}
 				</div>
