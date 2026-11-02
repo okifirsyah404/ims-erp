@@ -99,9 +99,10 @@ TableGroup "Procurement" {
 }
 
 TableGroup "Inventory" {
-  warehouse.warehouses
-  warehouse.warehouse_zones
-  warehouse.warehouse_bins
+  inventory.warehouses
+  inventory.warehouse_addresses
+  inventory.warehouse_storages
+  inventory.items
   inventory.stock_movements
   inventory.stock_balances
   inventory.stock_adjustments
@@ -110,9 +111,9 @@ TableGroup "Inventory" {
   inventory.stock_transfer_items
   inventory.stock_reservations
   inventory.serial_tracked_items
-  inventory.lot_batches
-  inventory.cycle_counts
-  inventory.cycle_count_items
+  inventory.borrowings
+  inventory.borrowing_lines
+  inventory.borrowing_events
 }
 
 TableGroup "Projects" {
@@ -1291,7 +1292,7 @@ Table catalog.items {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Unified goods and service master. The item_type discriminator replaces a separate product and service table."
+  Note: "SUPERSEDED by inventory.items (ADR-0008): one item master for the whole ERP. This table is not yet dropped and no code writes to it — do not build against it. catalog.item_categories and catalog.units are likewise unadopted; inventory.items carries free-text category and unit_label meanwhile."
   Indexes {
     (organization_id, sku) [unique, name: 'items_org_sku_uq']
     category_id [name: 'items_category_id_idx']
@@ -1647,7 +1648,7 @@ Table sales.sales_orders {
   grand_total bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   sales_person_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  warehouse_id uuid [note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  warehouse_id uuid [note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
   approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   approved_at bigint
   cancelled_at bigint
@@ -2075,7 +2076,7 @@ Table procurement.goods_receipts {
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
   purchase_order_id uuid [not null]
-  warehouse_id uuid [not null, note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  warehouse_id uuid [not null, note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
   status text [not null, default: 'draft']
   receipt_date date
   received_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
@@ -2205,143 +2206,161 @@ Ref: procurement.purchase_return_items.purchase_order_item_id > procurement.purc
 // Tenant scoped.
 // ---------------------------------------------------------------------------
 
-Table warehouse.warehouses {
+Table inventory.warehouses {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Null means global/company-wide inventory (ADR-0008). Logical reference to auth.organizations.id; cross-module FK intentionally omitted."]
   code varchar(32) [not null]
   name text [not null]
-  location_text text
-  village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
   responsible_employee_id uuid [note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
   is_default boolean [not null, default: false]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
-  updated_at bigint [not null]
+  updated_at bigint
   deleted_at bigint
-  Note: "Warehouse master. The company currently runs one operational warehouse, the model allows more. Same module as Inventory."
+  Note: "Warehouse master. Address fields live in warehouse_addresses (strict 1:1). Writes are application-admin-only; no organization role holds warehouse:*."
   Indexes {
-    (organization_id, code) [unique, name: 'warehouses_org_code_uq']
+    (organization_id, code) [unique, name: 'warehouses_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
+    (code) [unique, name: 'warehouses_global_code_uq', note: 'WHERE organization_id IS NULL']
+    is_default [name: 'warehouses_is_default_idx']
+    is_active [name: 'warehouses_is_active_idx']
   }
 }
 
-Table warehouse.warehouse_zones {
+Table inventory.warehouse_addresses {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   warehouse_id uuid [not null]
-  code varchar(32) [not null]
-  name text [not null]
-  zone_type text
-  is_active boolean [not null, default: true]
+  label text
+  street text [not null]
+  rt varchar(8)
+  rw varchar(8)
+  postal_code varchar(10)
+  village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
+  latitude numeric(10,7)
+  longitude numeric(10,7)
   created_at bigint [not null]
-  updated_at bigint [not null]
+  updated_at bigint
   deleted_at bigint
-  Note: "Zone inside a warehouse, e.g. receiving, picking, quarantine."
+  Note: "Warehouse address, strictly 1:1 with warehouses. Structured per ADR-0003: free-text street plus a village-level logical reference into location.villages."
   Indexes {
-    (organization_id, warehouse_id, code) [unique, name: 'warehouse_zones_uq']
-    warehouse_id [name: 'warehouse_zones_warehouse_id_idx']
-  }
-  Checks {
-    `zone_type IS NULL OR zone_type IN ('receiving', 'storage', 'picking', 'shipping', 'quarantine', 'staging')`
+    warehouse_id [unique, name: 'warehouse_addresses_warehouse_uq']
+    village_id [name: 'warehouse_addresses_village_id_idx']
   }
 }
 
-Table warehouse.warehouse_bins {
+Table inventory.warehouse_storages {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   warehouse_id uuid [not null]
-  zone_id uuid
   code varchar(32) [not null]
   name text
   bin_type text
   capacity numeric(18,3)
   is_active boolean [not null, default: true]
   created_at bigint [not null]
-  updated_at bigint [not null]
+  updated_at bigint
   deleted_at bigint
-  Note: "Bin inside a warehouse. The finest physical stock address."
+  Note: "Storage location (bin) inside a warehouse. Storage is one level deep: warehouse -> storage, there is no zone level (ADR-0008)."
   Indexes {
-    (organization_id, warehouse_id, code) [unique, name: 'warehouse_bins_uq']
-    zone_id [name: 'warehouse_bins_zone_id_idx']
-  }
-  Checks {
-    `capacity IS NULL OR capacity >= 0`
+    warehouse_id [name: 'warehouse_storages_warehouse_id_idx']
+    (warehouse_id, code) [unique, name: 'warehouse_storages_warehouse_code_uq', note: 'WHERE deleted_at IS NULL']
   }
 }
 
-// ---------------------------------------------------------------------------
-// MODULE: Inventory  (schemas: inventory, warehouse)
-// Warehouse master lives in the warehouse schema; the authoritative stock
-// movement ledger, the stock balance projection, adjustments, transfers,
-// reservations, serial and lot tracking and cycle counts live here.
-// inventory.warehouse_id columns carry a real FK into warehouse.warehouses
-// (same module) with composite tenant scoping per postgresql-constraints.sql.
-// Tenant scoped.
-// ---------------------------------------------------------------------------
+Table inventory.items {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Null means global/company-wide (ADR-0008). Logical reference to auth.organizations.id; cross-module FK intentionally omitted."]
+  sku varchar(64) [not null]
+  name text [not null]
+  description text
+  item_kind text [not null]
+  category text [note: "Free text until catalog.item_categories is adopted (OPEN-1)."]
+  unit_label varchar(32) [note: "Free text until catalog.units is adopted (OPEN-1)."]
+  is_serialized boolean [not null, default: false]
+  is_stock_tracked boolean [not null, default: true]
+  min_stock_qty numeric(18,3) [not null, default: 0]
+  barcode text
+  selling_price bigint [not null, default: 0, note: "Exact integer IDR minor units (ADR-0002). Never a float."]
+  purchase_price bigint [not null, default: 0]
+  currency_code varchar(3) [not null, default: 'IDR']
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Item master at SKU level. One item master for the whole ERP; catalog.items is superseded by this table (ADR-0008). Status exists only on serialized units, never here."
+  Indexes {
+    (organization_id, sku) [unique, name: 'inventory_items_org_sku_uq', note: 'WHERE organization_id IS NOT NULL']
+    (sku) [unique, name: 'inventory_items_global_sku_uq', note: 'WHERE organization_id IS NULL']
+    item_kind [name: 'inventory_items_kind_idx']
+    (organization_id, name) [name: 'inventory_items_org_name_idx']
+    barcode [name: 'inventory_items_barcode_idx']
+  }
+  Checks {
+    `item_kind IN ('product', 'component', 'material', 'tool', 'service')`
+    `selling_price >= 0 AND purchase_price >= 0`
+    `min_stock_qty >= 0`
+    `NOT (item_kind = 'service') OR (is_serialized = false AND is_stock_tracked = false)`
+  }
+}
 
 Table inventory.stock_movements {
-  updated_at bigint [not null]
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Null means global/company-wide (ADR-0008)."]
   code varchar(32) [not null]
   movement_type text [not null]
-  item_id uuid [not null, note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
+  item_id uuid [not null]
   warehouse_id uuid [not null]
   bin_id uuid
   target_warehouse_id uuid
   quantity numeric(18,3) [not null]
-  unit_cost bigint [not null, default: 0]
+  unit_cost bigint [not null, default: 0, note: "Carried but never computed by this module: valuation is out of scope (OPEN-3)."]
   currency_code varchar(3) [not null, default: 'IDR']
-  reference_type text
+  reference_type text [note: "e.g. manual_adjustment, borrowing, receipt."]
   reference_id text
   status text [not null, default: 'posted']
   occurred_at bigint [not null]
-  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
   notes text
   created_at bigint [not null]
-  Note: "Authoritative stock ledger. One row per movement, never updated after posting except for a reversal. Append-only ledger, no updated_at/deleted_at."
+  Note: "Authoritative, append-only stock ledger. One row per movement, never updated after posting; a reversal is a new row. No updated_at, no deleted_at."
   Indexes {
-    (organization_id, code) [unique, name: 'stock_movements_org_code_uq']
+    (organization_id, code) [unique, name: 'stock_movements_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
+    (code) [unique, name: 'stock_movements_global_code_uq', note: 'WHERE organization_id IS NULL']
     (organization_id, item_id, warehouse_id, occurred_at) [name: 'stock_movements_ledger_idx']
     bin_id [name: 'stock_movements_bin_id_idx']
     reference_type [name: 'stock_movements_reference_type_idx']
     reference_id [name: 'stock_movements_reference_id_idx']
   }
   Checks {
-    `movement_type IN ('receipt', 'issue', 'transfer_in', 'transfer_out', 'adjustment_in', 'adjustment_out', 'return_in', 'return_out', 'consumption')`
+    `movement_type IN ('receipt', 'issue', 'transfer_in', 'transfer_out', 'adjustment_in', 'adjustment_out', 'return_in', 'return_out', 'consumption', 'borrowing_out', 'borrowing_in')`
     `status IN ('draft', 'posted', 'reversed')`
     `quantity <> 0`
     `unit_cost >= 0`
     `(movement_type IN ('transfer_in', 'transfer_out') AND target_warehouse_id IS NOT NULL) OR (movement_type NOT IN ('transfer_in', 'transfer_out'))`
+    `(movement_type IN ('borrowing_out', 'borrowing_in') AND reference_type = 'borrowing') OR (movement_type NOT IN ('borrowing_out', 'borrowing_in'))`
   }
 }
 
 Table inventory.stock_balances {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  item_id uuid [not null, note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
+  organization_id text [note: "Null means global/company-wide (ADR-0008)."]
+  item_id uuid [not null]
   warehouse_id uuid [not null]
   bin_id uuid
   quantity_on_hand numeric(18,3) [not null, default: 0]
   quantity_reserved numeric(18,3) [not null, default: 0]
   quantity_available numeric(18,3) [not null, default: 0]
-  average_cost bigint [not null, default: 0]
+  average_cost bigint [not null, default: 0, note: "Exists for a future valuation slice; never advanced by this module (OPEN-3)."]
   total_value bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   last_movement_at bigint
   created_at bigint [not null]
-  updated_at bigint [not null]
-  Note: "Projection derived from stock_movements. Never written by another module, the Inventory service owns it. Projection table, no deleted_at."
+  updated_at bigint
+  Note: "Balance cache over stock_movements. Service-maintained inside the same transaction as the movement that caused it, never by a trigger; recomputeFromLedger is the repair operation (ADR-0008). No deleted_at."
   Indexes {
-    (organization_id, warehouse_id, item_id) [unique, name: 'stock_balances_scope_uq']
+    (organization_id, warehouse_id, item_id, bin_id) [unique, name: 'stock_balances_org_scope_uq', note: 'WHERE organization_id IS NOT NULL']
+    (warehouse_id, item_id, bin_id) [unique, name: 'stock_balances_global_scope_uq', note: 'WHERE organization_id IS NULL']
     item_id [name: 'stock_balances_item_id_idx']
   }
   Checks {
-    `quantity_on_hand >= 0`
-    `quantity_reserved >= 0`
-    `average_cost >= 0`
-    `total_value >= 0`
+    `quantity_available = quantity_on_hand - quantity_reserved`
   }
 }
 
@@ -2359,19 +2378,18 @@ Table inventory.stock_adjustments {
   approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   approved_at bigint
   posted_at bigint
-  posted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Stock adjustment header. Posting writes the stock movements, the requester may not approve."
+  Note: "Planned, NOT YET IMPLEMENTED (deferred by ADR-0008). Adjustments are expressed today as raw adjustment_in / adjustment_out stock movements."
   Indexes {
     (organization_id, code) [unique, name: 'stock_adjustments_org_code_uq']
     warehouse_id [name: 'stock_adjustments_warehouse_id_idx']
     status [name: 'stock_adjustments_status_idx']
   }
   Checks {
-    `adjustment_type IN ('increase', 'decrease', 'set')`
-    `status IN ('draft', 'submitted', 'approved', 'posted', 'rejected', 'cancelled')`
+    `status IN ('draft', 'submitted', 'approved', 'rejected', 'posted', 'cancelled')`
+    `adjustment_type IN ('increase', 'decrease', 'recount')`
   }
 }
 
@@ -2379,22 +2397,21 @@ Table inventory.stock_adjustment_items {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   stock_adjustment_id uuid [not null]
-  item_id uuid [not null, note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
+  item_id uuid [not null, note: "Logical reference to inventory.items.id."]
+  bin_id uuid
   quantity_before numeric(18,3) [not null, default: 0]
-  quantity_delta numeric(18,3) [not null, default: 0]
   quantity_after numeric(18,3) [not null, default: 0]
-  unit_cost bigint [not null, default: 0]
   note text
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Line of a stock adjustment."
+  Note: "Planned, NOT YET IMPLEMENTED (deferred by ADR-0008). Line of a stock adjustment."
   Indexes {
     stock_adjustment_id [name: 'stock_adjustment_items_adjustment_id_idx']
   }
   Checks {
-    `quantity_delta <> 0`
-    `unit_cost >= 0`
+    `quantity_before >= 0`
+    `quantity_after >= 0`
   }
 }
 
@@ -2415,7 +2432,7 @@ Table inventory.stock_transfers {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Transfer between warehouses, modelled as two stock movements."
+  Note: "Planned, NOT YET IMPLEMENTED (deferred by ADR-0008). A transfer is modelled as two stock movements (transfer_out + transfer_in)."
   Indexes {
     (organization_id, code) [unique, name: 'stock_transfers_org_code_uq']
     from_warehouse_id [name: 'stock_transfers_from_warehouse_id_idx']
@@ -2431,174 +2448,200 @@ Table inventory.stock_transfer_items {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   stock_transfer_id uuid [not null]
-  item_id uuid [not null, note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  quantity_requested numeric(18,3) [not null, default: 0]
-  quantity_shipped numeric(18,3) [not null, default: 0]
-  quantity_received numeric(18,3) [not null, default: 0]
-  note text
+  item_id uuid [not null, note: "Logical reference to inventory.items.id."]
+  quantity numeric(18,3) [not null]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Line of a stock transfer."
+  Note: "Planned, NOT YET IMPLEMENTED (deferred by ADR-0008). Line of a stock transfer."
   Indexes {
     stock_transfer_id [name: 'stock_transfer_items_transfer_id_idx']
   }
   Checks {
-    `quantity_requested > 0`
-    `quantity_shipped >= 0`
-    `quantity_received >= 0`
+    `quantity > 0`
   }
 }
 
 Table inventory.stock_reservations {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  item_id uuid [not null, note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
+  item_id uuid [not null, note: "Logical reference to inventory.items.id."]
   warehouse_id uuid [not null]
-  quantity numeric(18,3) [not null, default: 0]
+  bin_id uuid
+  quantity numeric(18,3) [not null]
   reference_type text [not null]
   reference_id text [not null]
-  status text [not null, default: 'held']
   expires_at bigint
-  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  status text [not null, default: 'active']
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Stock hold for a sales order or for a project. The reference points at the owning module record."
+  Note: "Planned, NOT YET IMPLEMENTED (deferred by ADR-0008). stock_balances.quantity_reserved stays 0 until this is built."
   Indexes {
-    (organization_id, code) [unique, name: 'stock_reservations_org_code_uq']
+    (item_id, warehouse_id) [name: 'stock_reservations_item_warehouse_idx']
     (reference_type, reference_id) [name: 'stock_reservations_reference_idx']
-    status [name: 'stock_reservations_status_idx']
   }
   Checks {
-    `status IN ('held', 'released', 'committed', 'expired')`
     `quantity > 0`
+    `status IN ('active', 'released', 'consumed', 'expired')`
   }
 }
 
 Table inventory.serial_tracked_items {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Null means global/company-wide (ADR-0008)."]
+  item_id uuid [not null]
   serial_number text [not null]
-  item_id uuid [not null, note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  warehouse_id uuid
+  is_provisional_serial boolean [not null, default: false, note: "A pre-ordered unit carries a PO-... serial until it is received. Replaced exactly once (ADR-0009)."]
+  asset_tag text
   status text [not null, default: 'in_stock']
+  warehouse_id uuid [note: "NULL while the unit is borrowed or lost: custody has moved to the borrower (ADR-0009)."]
+  bin_id uuid
   acquired_on date
   warranty_expires_on date
-  stock_movement_id uuid
-  customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
+  purchase_order_line_id text [note: "Logical reference to the procurement line this unit was ordered on. Procurement does not exist yet, so this is unvalidated."]
+  customer_id uuid [note: "Logical reference to crm.customers.id, set when sold. Cross-module FK intentionally omitted."]
+  stock_movement_id uuid [note: "Logical reference to inventory.stock_movements.id (last touch)."]
   notes text
   created_at bigint [not null]
-  updated_at bigint [not null]
+  updated_at bigint
   deleted_at bigint
-  Note: "Serial number tracking of an item. The customer link is set when the unit is sold."
+  Note: "One physical, serialized instance of an item. The table keeps its contract name (ADR-0009); current_borrowing_line_id arrives in a later migration to break the FK cycle with borrowing_lines."
   Indexes {
-    (organization_id, serial_number) [unique, name: 'serial_tracked_items_serial_uq']
+    (organization_id, serial_number) [unique, name: 'serial_tracked_items_org_serial_uq', note: 'WHERE organization_id IS NOT NULL']
+    (serial_number) [unique, name: 'serial_tracked_items_global_serial_uq', note: 'WHERE organization_id IS NULL']
     item_id [name: 'serial_tracked_items_item_id_idx']
     status [name: 'serial_tracked_items_status_idx']
+    warehouse_id [name: 'serial_tracked_items_warehouse_id_idx']
+    asset_tag [name: 'serial_tracked_items_asset_tag_idx']
   }
   Checks {
-    `status IN ('in_stock', 'installed', 'in_service', 'sold', 'disposed')`
+    `status IN ('pre_order', 'in_stock', 'borrowed', 'lost', 'sold', 'applied_warranty')`
+    `is_provisional_serial = false OR status = 'pre_order'`
+    `warranty_expires_on IS NULL OR acquired_on IS NULL OR warranty_expires_on >= acquired_on`
   }
 }
 
-Table inventory.lot_batches {
+Table inventory.borrowings {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  lot_number text [not null]
-  item_id uuid [not null, note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  warehouse_id uuid
-  supplier_id uuid [note: "Logical reference to procurement.suppliers.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
-  quantity numeric(18,3) [not null, default: 0]
-  manufactured_on date
-  expires_on date
-  received_on date
-  unit_cost bigint [not null, default: 0]
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
-  Note: "Lot or batch of an item, used for expiry and traceability."
-  Indexes {
-    (organization_id, item_id, lot_number) [unique, name: 'lot_batches_uq']
-    expires_on [name: 'lot_batches_expires_on_idx']
-  }
-  Checks {
-    `quantity >= 0`
-    `unit_cost >= 0`
-    `expires_on IS NULL OR manufactured_on IS NULL OR expires_on > manufactured_on`
-  }
-}
-
-Table inventory.cycle_counts {
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Null means global/company-wide (ADR-0008)."]
   code varchar(32) [not null]
-  warehouse_id uuid [not null]
-  status text [not null, default: 'draft']
-  scheduled_on date
-  started_at bigint
-  completed_at bigint
-  counted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  status text [not null, default: 'requested']
+  purpose text [not null, default: 'internal_use']
+  borrower_type text [not null]
+  borrower_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
+  borrower_customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted."]
+  guest_name text
+  guest_phone text
+  guest_id_type text
+  guest_id_number text [note: "Guest PII. Access-restricted and expired by the retention sweep (24 months is the working default)."]
+  guest_address_text text
+  guest_id_document_ref text [note: "Plain text until a Documents module exists."]
+  requested_by text [note: "Logical reference to auth.users.id."]
+  requested_at bigint
+  approved_by text [note: "Logical reference to auth.users.id."]
   approved_at bigint
+  issued_by text [note: "Logical reference to auth.users.id."]
+  issued_at bigint
+  due_at bigint [not null]
+  closed_by text [note: "Logical reference to auth.users.id."]
+  closed_at bigint
   notes text
   created_at bigint [not null]
-  updated_at bigint [not null]
+  updated_at bigint
   deleted_at bigint
-  Note: "Cycle count of a warehouse. Variances become stock adjustments."
+  Note: "Borrowing header. A borrower is a registered user, a registered customer, or a guest whose identity is snapshotted here because there is no row to point at (ADR-0009)."
   Indexes {
-    (organization_id, code) [unique, name: 'cycle_counts_org_code_uq']
-    warehouse_id [name: 'cycle_counts_warehouse_id_idx']
-    status [name: 'cycle_counts_status_idx']
+    (organization_id, code) [unique, name: 'borrowings_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
+    (code) [unique, name: 'borrowings_global_code_uq', note: 'WHERE organization_id IS NULL']
+    status [name: 'borrowings_status_idx']
+    borrower_user_id [name: 'borrowings_borrower_user_id_idx']
+    borrower_customer_id [name: 'borrowings_borrower_customer_id_idx']
+    due_at [name: 'borrowings_due_at_idx']
   }
   Checks {
-    `status IN ('draft', 'counting', 'counted', 'approved', 'posted', 'cancelled')`
+    `status IN ('draft', 'requested', 'approved', 'rejected', 'issued', 'partially_returned', 'returned', 'closed', 'cancelled')`
+    `purpose IN ('rental', 'internal_use', 'testing', 'warranty_service')`
+    `borrower_type IN ('user', 'customer', 'guest')`
+    `guest_id_type IS NULL OR guest_id_type IN ('ktp', 'sim', 'passport', 'other')`
+    `(borrower_type = 'user' AND borrower_user_id IS NOT NULL AND borrower_customer_id IS NULL AND guest_name IS NULL AND guest_phone IS NULL AND guest_id_number IS NULL) OR (borrower_type = 'customer' AND borrower_customer_id IS NOT NULL AND borrower_user_id IS NULL AND guest_name IS NULL AND guest_phone IS NULL AND guest_id_number IS NULL) OR (borrower_type = 'guest' AND guest_name IS NOT NULL AND guest_phone IS NOT NULL AND guest_id_number IS NOT NULL AND borrower_user_id IS NULL AND borrower_customer_id IS NULL)`
   }
 }
 
-Table inventory.cycle_count_items {
+Table inventory.borrowing_lines {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  cycle_count_id uuid [not null]
-  item_id uuid [not null, note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  system_quantity numeric(18,3) [not null, default: 0]
-  counted_quantity numeric(18,3)
-  variance_quantity numeric(18,3)
-  is_adjusted boolean [not null, default: false]
-  note text
+  borrowing_id uuid [not null]
+  serial_tracked_item_id uuid [not null]
+  origin_warehouse_id uuid [not null, note: "Snapshot of where the unit left from: the unit itself loses its warehouse while it is out (ADR-0009)."]
+  issued_at bigint
+  due_at bigint
+  returned_at bigint
+  returned_condition text
+  marked_late_at bigint
+  marked_lost_at bigint
+  lost_reported_by text [note: "Logical reference to auth.users.id."]
+  site_address_text text
+  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted."]
+  notes text
   created_at bigint [not null]
-  updated_at bigint [not null]
+  updated_at bigint
   deleted_at bigint
-  Note: "Line of a cycle count."
+  Note: "One borrowed unit. Borrowing is serialized-only: a line always names a specific unit, never a quantity (ADR-0009)."
   Indexes {
-    cycle_count_id [name: 'cycle_count_items_cycle_count_id_idx']
+    (borrowing_id, serial_tracked_item_id) [unique, name: 'borrowing_lines_borrowing_unit_uq']
+    serial_tracked_item_id [name: 'borrowing_lines_unit_id_idx']
+    due_at [name: 'borrowing_lines_open_idx', note: 'WHERE returned_at IS NULL AND marked_lost_at IS NULL']
   }
   Checks {
-    `system_quantity >= 0`
-    `counted_quantity IS NULL OR counted_quantity >= 0`
+    `returned_condition IS NULL OR returned_condition IN ('good', 'damaged', 'incomplete')`
+    `due_at IS NULL OR issued_at IS NULL OR due_at > issued_at`
+  }
+}
+
+Table inventory.borrowing_events {
+  id uuid [pk, default: `uuidv7()`]
+  borrowing_id uuid [not null]
+  borrowing_line_id uuid
+  event_type text [not null]
+  stock_movement_id uuid [note: "Logical reference to inventory.stock_movements.id. Required for the physical event types, forbidden otherwise."]
+  actor_user_id text [note: "Logical reference to auth.users.id. NULL for automated sweeps."]
+  occurred_at bigint [not null]
+  note text
+  Note: "Append-only business timeline of a borrowing. Stock movements never point back here: one direction only (ADR-0009)."
+  Indexes {
+    (borrowing_id, occurred_at) [name: 'borrowing_events_borrowing_occurred_idx']
+    borrowing_line_id [name: 'borrowing_events_line_id_idx']
+  }
+  Checks {
+    `event_type IN ('requested', 'approved', 'rejected', 'issued', 'returned', 'marked_late', 'marked_lost', 'due_date_extended', 'cancelled', 'closed')`
+    `(event_type IN ('issued', 'returned', 'marked_lost') AND stock_movement_id IS NOT NULL) OR (event_type NOT IN ('issued', 'returned', 'marked_lost') AND stock_movement_id IS NULL)`
   }
 }
 
 // Intra-module FKs (Warehouse + Inventory are one module).
-Ref: warehouse.warehouse_zones.warehouse_id > warehouse.warehouses.id [delete: cascade]
-Ref: warehouse.warehouse_bins.warehouse_id > warehouse.warehouses.id [delete: cascade]
-Ref: warehouse.warehouse_bins.zone_id > warehouse.warehouse_zones.id [delete: set null]
-Ref: inventory.stock_movements.warehouse_id > warehouse.warehouses.id [delete: restrict]
-Ref: inventory.stock_movements.bin_id > warehouse.warehouse_bins.id [delete: set null]
-Ref: inventory.stock_movements.target_warehouse_id > warehouse.warehouses.id [delete: restrict]
-Ref: inventory.stock_balances.warehouse_id > warehouse.warehouses.id [delete: cascade]
-Ref: inventory.stock_adjustments.warehouse_id > warehouse.warehouses.id [delete: restrict]
+Ref: inventory.warehouse_addresses.warehouse_id > inventory.warehouses.id [delete: cascade]
+Ref: inventory.warehouse_storages.warehouse_id > inventory.warehouses.id [delete: cascade]
+Ref: inventory.stock_movements.item_id > inventory.items.id [delete: restrict]
+Ref: inventory.stock_movements.warehouse_id > inventory.warehouses.id [delete: restrict]
+Ref: inventory.stock_movements.bin_id > inventory.warehouse_storages.id [delete: set null]
+Ref: inventory.stock_movements.target_warehouse_id > inventory.warehouses.id [delete: restrict]
+Ref: inventory.stock_balances.item_id > inventory.items.id [delete: restrict]
+Ref: inventory.stock_balances.warehouse_id > inventory.warehouses.id [delete: restrict]
+Ref: inventory.stock_balances.bin_id > inventory.warehouse_storages.id [delete: set null]
+Ref: inventory.stock_adjustments.warehouse_id > inventory.warehouses.id [delete: restrict]
 Ref: inventory.stock_adjustment_items.stock_adjustment_id > inventory.stock_adjustments.id [delete: cascade]
-Ref: inventory.stock_transfers.from_warehouse_id > warehouse.warehouses.id [delete: restrict]
-Ref: inventory.stock_transfers.to_warehouse_id > warehouse.warehouses.id [delete: restrict]
+Ref: inventory.stock_transfers.from_warehouse_id > inventory.warehouses.id [delete: restrict]
+Ref: inventory.stock_transfers.to_warehouse_id > inventory.warehouses.id [delete: restrict]
 Ref: inventory.stock_transfer_items.stock_transfer_id > inventory.stock_transfers.id [delete: cascade]
-Ref: inventory.stock_reservations.warehouse_id > warehouse.warehouses.id [delete: cascade]
-Ref: inventory.serial_tracked_items.warehouse_id > warehouse.warehouses.id [delete: set null]
-Ref: inventory.serial_tracked_items.stock_movement_id > inventory.stock_movements.id [delete: set null]
-Ref: inventory.lot_batches.warehouse_id > warehouse.warehouses.id [delete: set null]
-Ref: inventory.cycle_counts.warehouse_id > warehouse.warehouses.id [delete: restrict]
-Ref: inventory.cycle_count_items.cycle_count_id > inventory.cycle_counts.id [delete: cascade]
+Ref: inventory.stock_reservations.warehouse_id > inventory.warehouses.id [delete: cascade]
+Ref: inventory.serial_tracked_items.item_id > inventory.items.id [delete: restrict]
+Ref: inventory.serial_tracked_items.warehouse_id > inventory.warehouses.id [delete: set null]
+Ref: inventory.serial_tracked_items.bin_id > inventory.warehouse_storages.id [delete: set null]
+Ref: inventory.borrowing_lines.borrowing_id > inventory.borrowings.id [delete: cascade]
+Ref: inventory.borrowing_lines.serial_tracked_item_id > inventory.serial_tracked_items.id [delete: restrict]
+Ref: inventory.borrowing_lines.origin_warehouse_id > inventory.warehouses.id [delete: restrict]
+Ref: inventory.borrowing_events.borrowing_id > inventory.borrowings.id [delete: cascade]
+Ref: inventory.borrowing_events.borrowing_line_id > inventory.borrowing_lines.id [delete: cascade]
 
 // ---------------------------------------------------------------------------
 // MODULE: Projects  (schema: projects)
@@ -5335,7 +5378,7 @@ Table aftersales.spare_parts {
   code varchar(32) [not null]
   name text [not null]
   item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  warehouse_id uuid [note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  warehouse_id uuid [note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
   quantity_on_hand numeric(18,3) [not null, default: 0]
   min_quantity numeric(18,3) [not null, default: 0]
   unit_cost bigint [not null, default: 0]

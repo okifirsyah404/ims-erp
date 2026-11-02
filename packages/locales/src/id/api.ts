@@ -20,6 +20,14 @@ const api: Record<keyof typeof en, string> = {
 	'sales.quotationNotFound': 'Penawaran tidak ditemukan',
 	'sales.paymentNotFound': 'Pembayaran tidak ditemukan',
 
+	'inventory.itemNotFound': 'Barang tidak ditemukan',
+	'inventory.unitNotFound': 'Unit barang tidak ditemukan',
+	'inventory.skuTaken': 'Barang dengan SKU ini sudah ada',
+	'inventory.serialTaken': 'Unit barang dengan nomor seri ini sudah ada',
+	'inventory.ruleViolation': 'Aturan inventaris tidak mengizinkan: {{rule}}',
+	'inventory.itemHasUnits':
+		'Barang tidak dapat diarsipkan karena masih memiliki {{count}} unit aktif',
+
 	'user.notFound': 'Pengguna tidak ditemukan',
 	'user.emailInUse': 'Email sudah digunakan',
 	'user.globalAdminRequired': 'Peran administrator global diperlukan',

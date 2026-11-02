@@ -1,7 +1,8 @@
 # ADR-0007 — Multi-Organization Inside One Company
 
 - **Status:** accepted (2026-11-02). Supersedes the single-organization
-  reading of ADR-0001.
+  reading of ADR-0001. §2 (no `organization_id` on master tables) is amended
+  for the `inventory` module by **ADR-0008**.
 - **Context:** ADR-0001 decided this deployment serves **one company** and that
   Better Auth organizations model *internal* structure. The implemented code
   then went further and enforced a literal single-organization invariant

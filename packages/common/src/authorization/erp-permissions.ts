@@ -58,9 +58,28 @@ export const erpStatements = {
 
 	// Inventory
 	product: ['read', 'create', 'update', 'archive', 'import', 'export'],
+	// Application-admin-only in practice: warehouse routes ride
+	// `sessionGuard` + the global-admin policy, never `erpGuard`, because a
+	// global warehouse has no organization context. No organization role
+	// holds any `warehouse:*` action (ADR-0008). The statement stays in the
+	// catalog so the vocabulary is complete and typed.
 	warehouse: ['read', 'create', 'update', 'archive'],
 	stock: ['read', 'receive', 'issue', 'transfer', 'export'],
 	stock_adjustment: ['read', 'create', 'submit', 'approve', 'post'],
+	// Borrowing is request/issue separated: `issue` is the act of handing a
+	// unit over, `mark_lost` is restricted to owner/admin/operations_manager.
+	borrowing: [
+		'read',
+		'create',
+		'update',
+		'approve',
+		'issue',
+		'return',
+		'extend',
+		'mark_late',
+		'mark_lost',
+		'export',
+	],
 
 	// Finance and accounting
 	invoice: ['read', 'create', 'update', 'issue', 'void', 'export'],
@@ -217,6 +236,11 @@ const allErpStatements = Object.fromEntries(
 export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 	owner: {
 		...allErpStatements,
+		// `warehouse:*` is application-admin-only (ADR-0008): warehouse routes
+		// are gated on the global-admin policy, never on an organization
+		// permission, so the owner's blanket spread must not pretend
+		// otherwise.
+		warehouse: [],
 		// Full built-in organization administration (owner keeps the ERP
 		// owner baseline plus these organization-level statements).
 		organization: ['create', 'read', 'update', 'delete'],
@@ -238,7 +262,18 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		dashboard: ['read'],
 		employee: ['read'],
 		product: ['read'],
-		warehouse: ['read'],
+		borrowing: [
+			'read',
+			'create',
+			'update',
+			'approve',
+			'issue',
+			'return',
+			'extend',
+			'mark_late',
+			'mark_lost',
+			'export',
+		],
 		document: ['read', 'create', 'download'],
 		approval_rule: ['read'],
 		service_ticket: ['read', 'create', 'update', 'assign'],
@@ -272,12 +307,25 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		purchase_order: ['read', 'approve'],
 		employee: ['read'],
 		asset: ['read', 'create', 'update', 'assign', 'return', 'maintain', 'export'],
+		borrowing: [
+			'read',
+			'create',
+			'update',
+			'approve',
+			'issue',
+			'return',
+			'extend',
+			'mark_late',
+			'mark_lost',
+			'export',
+		],
 		document: ['read', 'download'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
 	sales_manager: {
 		ac: ['read'],
+		borrowing: ['read', 'create'],
 		dashboard: ['read'],
 		master_data: ['read'],
 		customer: ['read', 'create', 'update', 'archive', 'export'],
@@ -292,6 +340,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 
 	sales: {
 		ac: ['read'],
+		borrowing: ['read', 'create'],
 		dashboard: ['read'],
 		customer: ['read', 'create', 'update'],
 		lead: ['read', 'create', 'update'],
@@ -305,6 +354,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 
 	project_manager: {
 		ac: ['read'],
+		borrowing: ['read', 'create', 'approve'],
 		dashboard: ['read'],
 		master_data: ['read'],
 		project: ['read', 'update', 'assign', 'export'],
@@ -321,6 +371,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 
 	technician: {
 		ac: ['read'],
+		borrowing: ['read', 'create'],
 		project: ['read'],
 		task: ['read', 'update', 'submit'],
 		daily_report: ['read', 'create', 'update', 'submit'],
@@ -357,9 +408,18 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 	warehouse: {
 		ac: ['read'],
 		product: ['read'],
-		warehouse: ['read'],
 		stock: ['read', 'receive', 'issue', 'transfer', 'export'],
 		stock_adjustment: ['read', 'create', 'submit'],
+		borrowing: [
+			'read',
+			'update',
+			'issue',
+			'return',
+			'extend',
+			'mark_late',
+			'mark_lost',
+			'export',
+		],
 		document: ['read', 'download'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
@@ -424,6 +484,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 
 	customer_service: {
 		ac: ['read'],
+		borrowing: ['read', 'create'],
 		dashboard: ['read'],
 		customer: ['read'],
 		project: ['read'],
@@ -494,8 +555,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		employee: ['read', 'export'],
 		attendance: ['read', 'export'],
 		product: ['read', 'export'],
-		warehouse: ['read'],
 		stock: ['read', 'export'],
+		borrowing: ['read', 'export'],
 		invoice: ['read', 'export'],
 		receipt: ['read', 'export'],
 		payment: ['read', 'export'],

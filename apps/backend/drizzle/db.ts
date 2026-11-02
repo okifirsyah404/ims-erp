@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/bun-sql';
 import { appConfig } from '../config/providers/config';
 import { authRelations } from './schemas/auth.schema';
 import { auditLogRelations } from './schemas/audit.schema';
+import { inventoryRelations } from './schemas/inventory.schema';
 import { locationRelations } from './schemas/location.schema';
 import { roleRelations } from './schemas/role.schema';
 import { salesRelations } from './schemas/sales.schema';
@@ -17,6 +18,7 @@ export const drizzleDB = drizzle({
 		...roleRelations,
 		...auditLogRelations,
 		...salesRelations,
+		...inventoryRelations,
 	},
 });
 

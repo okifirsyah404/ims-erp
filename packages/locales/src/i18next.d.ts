@@ -19,6 +19,7 @@ declare module 'i18next' {
 		auth: typeof en.auth;
 		account: typeof en.account;
 		admin: typeof en.admin;
+		inventory: typeof en.inventory;
 		api: typeof en.api;
 	}
 

@@ -9,12 +9,16 @@ import SidebarSection from './sidebar-section';
  * Visibility is gated by `main-sidebar` on the self user's platform role
  * (`user.role === 'admin'`). UX only - the backend enforces every
  * operation behind these routes.
+ *
+ * Routes that are planned but not built yet use the `'#'` sentinel that
+ * `sidebar-section` renders as a non-link, rather than pointing at a 404:
+ * `warehouses` and `item-movements` land with slices S2 and S3.
  */
 const items: SidebarItem[] = [
 	{
 		titleKey: 'item.warehouses',
 		icon: Warehouse,
-		url: '/inventory/warehouses',
+		url: '#',
 	},
 	{
 		titleKey: 'item.items',
@@ -37,8 +41,12 @@ const items: SidebarItem[] = [
 				url: '/inventory/tools',
 			},
 			{
+				titleKey: 'item.newItem',
+				url: '/inventory/items/new',
+			},
+			{
 				titleKey: 'item.itemMovements',
-				url: '/inventory/item-movements',
+				url: '#',
 			},
 		],
 	},

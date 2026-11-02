@@ -1,0 +1,5703 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "a9043471-3286-4c8d-b89f-0091caebcb9c",
+  "prevIds": [
+    "84e1b302-335e-4cc1-8c76-6fecfe0ad72f"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "inventory"
+      ],
+      "writes": [
+        "s|sch|inventory",
+        "n|sch|inventory",
+        "e|sch|inventory"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "borrowing_events"
+      ],
+      "writes": [
+        "s|tbl|inventory.borrowing_events",
+        "n|tbl|inventory.borrowing_events",
+        "e|tbl|inventory.borrowing_events",
+        "n|rel|inventory.borrowing_events",
+        "n|type|inventory.borrowing_events",
+        "n|rel|inventory.borrowing_events_pkey"
+      ],
+      "reads": [
+        "n|sch|inventory"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "borrowing_lines"
+      ],
+      "writes": [
+        "s|tbl|inventory.borrowing_lines",
+        "n|tbl|inventory.borrowing_lines",
+        "e|tbl|inventory.borrowing_lines",
+        "n|rel|inventory.borrowing_lines",
+        "n|type|inventory.borrowing_lines",
+        "n|rel|inventory.borrowing_lines_pkey"
+      ],
+      "reads": [
+        "n|sch|inventory"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "borrowings"
+      ],
+      "writes": [
+        "s|tbl|inventory.borrowings",
+        "n|tbl|inventory.borrowings",
+        "e|tbl|inventory.borrowings",
+        "n|rel|inventory.borrowings",
+        "n|type|inventory.borrowings",
+        "n|rel|inventory.borrowings_pkey"
+      ],
+      "reads": [
+        "n|sch|inventory"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "items"
+      ],
+      "writes": [
+        "s|tbl|inventory.items",
+        "n|tbl|inventory.items",
+        "e|tbl|inventory.items",
+        "n|rel|inventory.items",
+        "n|type|inventory.items",
+        "n|rel|inventory.items_pkey"
+      ],
+      "reads": [
+        "n|sch|inventory"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "serial_tracked_items"
+      ],
+      "writes": [
+        "s|tbl|inventory.serial_tracked_items",
+        "n|tbl|inventory.serial_tracked_items",
+        "e|tbl|inventory.serial_tracked_items",
+        "n|rel|inventory.serial_tracked_items",
+        "n|type|inventory.serial_tracked_items",
+        "n|rel|inventory.serial_tracked_items_pkey"
+      ],
+      "reads": [
+        "n|sch|inventory"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "stock_balances"
+      ],
+      "writes": [
+        "s|tbl|inventory.stock_balances",
+        "n|tbl|inventory.stock_balances",
+        "e|tbl|inventory.stock_balances",
+        "n|rel|inventory.stock_balances",
+        "n|type|inventory.stock_balances",
+        "n|rel|inventory.stock_balances_pkey"
+      ],
+      "reads": [
+        "n|sch|inventory"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "stock_movements"
+      ],
+      "writes": [
+        "s|tbl|inventory.stock_movements",
+        "n|tbl|inventory.stock_movements",
+        "e|tbl|inventory.stock_movements",
+        "n|rel|inventory.stock_movements",
+        "n|type|inventory.stock_movements",
+        "n|rel|inventory.stock_movements_pkey"
+      ],
+      "reads": [
+        "n|sch|inventory"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "warehouse_addresses"
+      ],
+      "writes": [
+        "s|tbl|inventory.warehouse_addresses",
+        "n|tbl|inventory.warehouse_addresses",
+        "e|tbl|inventory.warehouse_addresses",
+        "n|rel|inventory.warehouse_addresses",
+        "n|type|inventory.warehouse_addresses",
+        "n|rel|inventory.warehouse_addresses_pkey"
+      ],
+      "reads": [
+        "n|sch|inventory"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "warehouse_storages"
+      ],
+      "writes": [
+        "s|tbl|inventory.warehouse_storages",
+        "n|tbl|inventory.warehouse_storages",
+        "e|tbl|inventory.warehouse_storages",
+        "n|rel|inventory.warehouse_storages",
+        "n|type|inventory.warehouse_storages",
+        "n|rel|inventory.warehouse_storages_pkey"
+      ],
+      "reads": [
+        "n|sch|inventory"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "warehouses"
+      ],
+      "writes": [
+        "s|tbl|inventory.warehouses",
+        "n|tbl|inventory.warehouses",
+        "e|tbl|inventory.warehouses",
+        "n|rel|inventory.warehouses",
+        "n|type|inventory.warehouses",
+        "n|rel|inventory.warehouses_pkey"
+      ],
+      "reads": [
+        "n|sch|inventory"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "borrowing_events",
+        "borrowing_events_borrowing_occurred_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.borrowing_events_borrowing_occurred_idx",
+        "n|idx|inventory.borrowing_events_borrowing_occurred_idx",
+        "e|idx|inventory.borrowing_events_borrowing_occurred_idx",
+        "n|rel|inventory.borrowing_events_borrowing_occurred_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowing_events",
+        "n|sch|inventory",
+        "n|col|inventory.borrowing_events.borrowing_id",
+        "n|col|inventory.borrowing_events.occurred_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "borrowing_events",
+        "borrowing_events_line_id_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.borrowing_events_line_id_idx",
+        "n|idx|inventory.borrowing_events_line_id_idx",
+        "e|idx|inventory.borrowing_events_line_id_idx",
+        "n|rel|inventory.borrowing_events_line_id_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowing_events",
+        "n|sch|inventory",
+        "n|col|inventory.borrowing_events.borrowing_line_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "borrowing_lines",
+        "borrowing_lines_borrowing_unit_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.borrowing_lines_borrowing_unit_uq",
+        "n|idx|inventory.borrowing_lines_borrowing_unit_uq",
+        "e|idx|inventory.borrowing_lines_borrowing_unit_uq",
+        "n|rel|inventory.borrowing_lines_borrowing_unit_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowing_lines",
+        "n|sch|inventory",
+        "n|col|inventory.borrowing_lines.borrowing_id",
+        "n|col|inventory.borrowing_lines.serial_tracked_item_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "borrowing_lines",
+        "borrowing_lines_unit_id_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.borrowing_lines_unit_id_idx",
+        "n|idx|inventory.borrowing_lines_unit_id_idx",
+        "e|idx|inventory.borrowing_lines_unit_id_idx",
+        "n|rel|inventory.borrowing_lines_unit_id_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowing_lines",
+        "n|sch|inventory",
+        "n|col|inventory.borrowing_lines.serial_tracked_item_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "borrowing_lines",
+        "borrowing_lines_open_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.borrowing_lines_open_idx",
+        "n|idx|inventory.borrowing_lines_open_idx",
+        "e|idx|inventory.borrowing_lines_open_idx",
+        "n|rel|inventory.borrowing_lines_open_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowing_lines",
+        "n|sch|inventory",
+        "n|col|inventory.borrowing_lines.due_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "borrowings",
+        "borrowings_org_code_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.borrowings_org_code_uq",
+        "n|idx|inventory.borrowings_org_code_uq",
+        "e|idx|inventory.borrowings_org_code_uq",
+        "n|rel|inventory.borrowings_org_code_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowings",
+        "n|sch|inventory",
+        "n|col|inventory.borrowings.organization_id",
+        "n|col|inventory.borrowings.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "borrowings",
+        "borrowings_global_code_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.borrowings_global_code_uq",
+        "n|idx|inventory.borrowings_global_code_uq",
+        "e|idx|inventory.borrowings_global_code_uq",
+        "n|rel|inventory.borrowings_global_code_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowings",
+        "n|sch|inventory",
+        "n|col|inventory.borrowings.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "borrowings",
+        "borrowings_status_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.borrowings_status_idx",
+        "n|idx|inventory.borrowings_status_idx",
+        "e|idx|inventory.borrowings_status_idx",
+        "n|rel|inventory.borrowings_status_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowings",
+        "n|sch|inventory",
+        "n|col|inventory.borrowings.status"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "borrowings",
+        "borrowings_borrower_user_id_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.borrowings_borrower_user_id_idx",
+        "n|idx|inventory.borrowings_borrower_user_id_idx",
+        "e|idx|inventory.borrowings_borrower_user_id_idx",
+        "n|rel|inventory.borrowings_borrower_user_id_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowings",
+        "n|sch|inventory",
+        "n|col|inventory.borrowings.borrower_user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "borrowings",
+        "borrowings_borrower_customer_id_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.borrowings_borrower_customer_id_idx",
+        "n|idx|inventory.borrowings_borrower_customer_id_idx",
+        "e|idx|inventory.borrowings_borrower_customer_id_idx",
+        "n|rel|inventory.borrowings_borrower_customer_id_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowings",
+        "n|sch|inventory",
+        "n|col|inventory.borrowings.borrower_customer_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "borrowings",
+        "borrowings_due_at_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.borrowings_due_at_idx",
+        "n|idx|inventory.borrowings_due_at_idx",
+        "e|idx|inventory.borrowings_due_at_idx",
+        "n|rel|inventory.borrowings_due_at_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowings",
+        "n|sch|inventory",
+        "n|col|inventory.borrowings.due_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "items",
+        "inventory_items_org_sku_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.inventory_items_org_sku_uq",
+        "n|idx|inventory.inventory_items_org_sku_uq",
+        "e|idx|inventory.inventory_items_org_sku_uq",
+        "n|rel|inventory.inventory_items_org_sku_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.items",
+        "n|sch|inventory",
+        "n|col|inventory.items.organization_id",
+        "n|col|inventory.items.sku"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "items",
+        "inventory_items_global_sku_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.inventory_items_global_sku_uq",
+        "n|idx|inventory.inventory_items_global_sku_uq",
+        "e|idx|inventory.inventory_items_global_sku_uq",
+        "n|rel|inventory.inventory_items_global_sku_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.items",
+        "n|sch|inventory",
+        "n|col|inventory.items.sku"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "items",
+        "inventory_items_kind_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.inventory_items_kind_idx",
+        "n|idx|inventory.inventory_items_kind_idx",
+        "e|idx|inventory.inventory_items_kind_idx",
+        "n|rel|inventory.inventory_items_kind_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.items",
+        "n|sch|inventory",
+        "n|col|inventory.items.item_kind"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "items",
+        "inventory_items_org_name_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.inventory_items_org_name_idx",
+        "n|idx|inventory.inventory_items_org_name_idx",
+        "e|idx|inventory.inventory_items_org_name_idx",
+        "n|rel|inventory.inventory_items_org_name_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.items",
+        "n|sch|inventory",
+        "n|col|inventory.items.organization_id",
+        "n|col|inventory.items.name"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "items",
+        "inventory_items_barcode_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.inventory_items_barcode_idx",
+        "n|idx|inventory.inventory_items_barcode_idx",
+        "e|idx|inventory.inventory_items_barcode_idx",
+        "n|rel|inventory.inventory_items_barcode_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.items",
+        "n|sch|inventory",
+        "n|col|inventory.items.barcode"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "serial_tracked_items",
+        "serial_tracked_items_org_serial_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.serial_tracked_items_org_serial_uq",
+        "n|idx|inventory.serial_tracked_items_org_serial_uq",
+        "e|idx|inventory.serial_tracked_items_org_serial_uq",
+        "n|rel|inventory.serial_tracked_items_org_serial_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.serial_tracked_items",
+        "n|sch|inventory",
+        "n|col|inventory.serial_tracked_items.organization_id",
+        "n|col|inventory.serial_tracked_items.serial_number"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "serial_tracked_items",
+        "serial_tracked_items_global_serial_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.serial_tracked_items_global_serial_uq",
+        "n|idx|inventory.serial_tracked_items_global_serial_uq",
+        "e|idx|inventory.serial_tracked_items_global_serial_uq",
+        "n|rel|inventory.serial_tracked_items_global_serial_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.serial_tracked_items",
+        "n|sch|inventory",
+        "n|col|inventory.serial_tracked_items.serial_number"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "serial_tracked_items",
+        "serial_tracked_items_item_id_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.serial_tracked_items_item_id_idx",
+        "n|idx|inventory.serial_tracked_items_item_id_idx",
+        "e|idx|inventory.serial_tracked_items_item_id_idx",
+        "n|rel|inventory.serial_tracked_items_item_id_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.serial_tracked_items",
+        "n|sch|inventory",
+        "n|col|inventory.serial_tracked_items.item_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "serial_tracked_items",
+        "serial_tracked_items_status_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.serial_tracked_items_status_idx",
+        "n|idx|inventory.serial_tracked_items_status_idx",
+        "e|idx|inventory.serial_tracked_items_status_idx",
+        "n|rel|inventory.serial_tracked_items_status_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.serial_tracked_items",
+        "n|sch|inventory",
+        "n|col|inventory.serial_tracked_items.status"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "serial_tracked_items",
+        "serial_tracked_items_warehouse_id_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.serial_tracked_items_warehouse_id_idx",
+        "n|idx|inventory.serial_tracked_items_warehouse_id_idx",
+        "e|idx|inventory.serial_tracked_items_warehouse_id_idx",
+        "n|rel|inventory.serial_tracked_items_warehouse_id_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.serial_tracked_items",
+        "n|sch|inventory",
+        "n|col|inventory.serial_tracked_items.warehouse_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "serial_tracked_items",
+        "serial_tracked_items_asset_tag_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.serial_tracked_items_asset_tag_idx",
+        "n|idx|inventory.serial_tracked_items_asset_tag_idx",
+        "e|idx|inventory.serial_tracked_items_asset_tag_idx",
+        "n|rel|inventory.serial_tracked_items_asset_tag_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.serial_tracked_items",
+        "n|sch|inventory",
+        "n|col|inventory.serial_tracked_items.asset_tag"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "stock_balances",
+        "stock_balances_org_scope_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.stock_balances_org_scope_uq",
+        "n|idx|inventory.stock_balances_org_scope_uq",
+        "e|idx|inventory.stock_balances_org_scope_uq",
+        "n|rel|inventory.stock_balances_org_scope_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_balances",
+        "n|sch|inventory",
+        "n|col|inventory.stock_balances.organization_id",
+        "n|col|inventory.stock_balances.warehouse_id",
+        "n|col|inventory.stock_balances.item_id",
+        "n|col|inventory.stock_balances.bin_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "stock_balances",
+        "stock_balances_global_scope_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.stock_balances_global_scope_uq",
+        "n|idx|inventory.stock_balances_global_scope_uq",
+        "e|idx|inventory.stock_balances_global_scope_uq",
+        "n|rel|inventory.stock_balances_global_scope_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_balances",
+        "n|sch|inventory",
+        "n|col|inventory.stock_balances.warehouse_id",
+        "n|col|inventory.stock_balances.item_id",
+        "n|col|inventory.stock_balances.bin_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "stock_balances",
+        "stock_balances_item_id_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.stock_balances_item_id_idx",
+        "n|idx|inventory.stock_balances_item_id_idx",
+        "e|idx|inventory.stock_balances_item_id_idx",
+        "n|rel|inventory.stock_balances_item_id_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_balances",
+        "n|sch|inventory",
+        "n|col|inventory.stock_balances.item_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "stock_movements",
+        "stock_movements_org_code_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.stock_movements_org_code_uq",
+        "n|idx|inventory.stock_movements_org_code_uq",
+        "e|idx|inventory.stock_movements_org_code_uq",
+        "n|rel|inventory.stock_movements_org_code_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_movements",
+        "n|sch|inventory",
+        "n|col|inventory.stock_movements.organization_id",
+        "n|col|inventory.stock_movements.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "stock_movements",
+        "stock_movements_global_code_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.stock_movements_global_code_uq",
+        "n|idx|inventory.stock_movements_global_code_uq",
+        "e|idx|inventory.stock_movements_global_code_uq",
+        "n|rel|inventory.stock_movements_global_code_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_movements",
+        "n|sch|inventory",
+        "n|col|inventory.stock_movements.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "stock_movements",
+        "stock_movements_ledger_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.stock_movements_ledger_idx",
+        "n|idx|inventory.stock_movements_ledger_idx",
+        "e|idx|inventory.stock_movements_ledger_idx",
+        "n|rel|inventory.stock_movements_ledger_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_movements",
+        "n|sch|inventory",
+        "n|col|inventory.stock_movements.organization_id",
+        "n|col|inventory.stock_movements.item_id",
+        "n|col|inventory.stock_movements.warehouse_id",
+        "n|col|inventory.stock_movements.occurred_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "stock_movements",
+        "stock_movements_bin_id_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.stock_movements_bin_id_idx",
+        "n|idx|inventory.stock_movements_bin_id_idx",
+        "e|idx|inventory.stock_movements_bin_id_idx",
+        "n|rel|inventory.stock_movements_bin_id_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_movements",
+        "n|sch|inventory",
+        "n|col|inventory.stock_movements.bin_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "stock_movements",
+        "stock_movements_reference_type_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.stock_movements_reference_type_idx",
+        "n|idx|inventory.stock_movements_reference_type_idx",
+        "e|idx|inventory.stock_movements_reference_type_idx",
+        "n|rel|inventory.stock_movements_reference_type_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_movements",
+        "n|sch|inventory",
+        "n|col|inventory.stock_movements.reference_type"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "stock_movements",
+        "stock_movements_reference_id_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.stock_movements_reference_id_idx",
+        "n|idx|inventory.stock_movements_reference_id_idx",
+        "e|idx|inventory.stock_movements_reference_id_idx",
+        "n|rel|inventory.stock_movements_reference_id_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_movements",
+        "n|sch|inventory",
+        "n|col|inventory.stock_movements.reference_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "warehouse_addresses",
+        "warehouse_addresses_warehouse_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.warehouse_addresses_warehouse_uq",
+        "n|idx|inventory.warehouse_addresses_warehouse_uq",
+        "e|idx|inventory.warehouse_addresses_warehouse_uq",
+        "n|rel|inventory.warehouse_addresses_warehouse_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.warehouse_addresses",
+        "n|sch|inventory",
+        "n|col|inventory.warehouse_addresses.warehouse_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "warehouse_addresses",
+        "warehouse_addresses_village_id_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.warehouse_addresses_village_id_idx",
+        "n|idx|inventory.warehouse_addresses_village_id_idx",
+        "e|idx|inventory.warehouse_addresses_village_id_idx",
+        "n|rel|inventory.warehouse_addresses_village_id_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.warehouse_addresses",
+        "n|sch|inventory",
+        "n|col|inventory.warehouse_addresses.village_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "warehouse_storages",
+        "warehouse_storages_warehouse_id_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.warehouse_storages_warehouse_id_idx",
+        "n|idx|inventory.warehouse_storages_warehouse_id_idx",
+        "e|idx|inventory.warehouse_storages_warehouse_id_idx",
+        "n|rel|inventory.warehouse_storages_warehouse_id_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.warehouse_storages",
+        "n|sch|inventory",
+        "n|col|inventory.warehouse_storages.warehouse_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "warehouse_storages",
+        "warehouse_storages_warehouse_code_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.warehouse_storages_warehouse_code_uq",
+        "n|idx|inventory.warehouse_storages_warehouse_code_uq",
+        "e|idx|inventory.warehouse_storages_warehouse_code_uq",
+        "n|rel|inventory.warehouse_storages_warehouse_code_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.warehouse_storages",
+        "n|sch|inventory",
+        "n|col|inventory.warehouse_storages.warehouse_id",
+        "n|col|inventory.warehouse_storages.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "warehouses",
+        "warehouses_org_code_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.warehouses_org_code_uq",
+        "n|idx|inventory.warehouses_org_code_uq",
+        "e|idx|inventory.warehouses_org_code_uq",
+        "n|rel|inventory.warehouses_org_code_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.warehouses",
+        "n|sch|inventory",
+        "n|col|inventory.warehouses.organization_id",
+        "n|col|inventory.warehouses.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "warehouses",
+        "warehouses_global_code_uq"
+      ],
+      "writes": [
+        "s|idx|inventory.warehouses_global_code_uq",
+        "n|idx|inventory.warehouses_global_code_uq",
+        "e|idx|inventory.warehouses_global_code_uq",
+        "n|rel|inventory.warehouses_global_code_uq"
+      ],
+      "reads": [
+        "n|tbl|inventory.warehouses",
+        "n|sch|inventory",
+        "n|col|inventory.warehouses.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "warehouses",
+        "warehouses_is_default_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.warehouses_is_default_idx",
+        "n|idx|inventory.warehouses_is_default_idx",
+        "e|idx|inventory.warehouses_is_default_idx",
+        "n|rel|inventory.warehouses_is_default_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.warehouses",
+        "n|sch|inventory",
+        "n|col|inventory.warehouses.is_default"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "inventory",
+        "warehouses",
+        "warehouses_is_active_idx"
+      ],
+      "writes": [
+        "s|idx|inventory.warehouses_is_active_idx",
+        "n|idx|inventory.warehouses_is_active_idx",
+        "e|idx|inventory.warehouses_is_active_idx",
+        "n|rel|inventory.warehouses_is_active_idx"
+      ],
+      "reads": [
+        "n|tbl|inventory.warehouses",
+        "n|sch|inventory",
+        "n|col|inventory.warehouses.is_active"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "borrowing_events"
+      ],
+      "writes": [
+        "s|fk|inventory.borrowing_events.borrowing_events_borrowing_id_borrowings_id_fkey",
+        "n|fk|inventory.borrowing_events.borrowing_events_borrowing_id_borrowings_id_fkey",
+        "e|fk|inventory.borrowing_events.borrowing_events_borrowing_id_borrowings_id_fkey",
+        "n|con|inventory.borrowing_events.borrowing_events_borrowing_id_borrowings_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowing_events",
+        "n|sch|inventory",
+        "n|tbl|inventory.borrowings",
+        "n|sch|inventory",
+        "n|col|inventory.borrowing_events.borrowing_id",
+        "n|col|inventory.borrowings.id",
+        "e|uniqueness|inventory.borrowings.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "borrowing_events"
+      ],
+      "writes": [
+        "s|fk|inventory.borrowing_events.borrowing_events_borrowing_line_id_borrowing_lines_id_fkey",
+        "n|fk|inventory.borrowing_events.borrowing_events_borrowing_line_id_borrowing_lines_id_fkey",
+        "e|fk|inventory.borrowing_events.borrowing_events_borrowing_line_id_borrowing_lines_id_fkey",
+        "n|con|inventory.borrowing_events.borrowing_events_borrowing_line_id_borrowing_lines_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowing_events",
+        "n|sch|inventory",
+        "n|tbl|inventory.borrowing_lines",
+        "n|sch|inventory",
+        "n|col|inventory.borrowing_events.borrowing_line_id",
+        "n|col|inventory.borrowing_lines.id",
+        "e|uniqueness|inventory.borrowing_lines.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "borrowing_lines"
+      ],
+      "writes": [
+        "s|fk|inventory.borrowing_lines.borrowing_lines_borrowing_id_borrowings_id_fkey",
+        "n|fk|inventory.borrowing_lines.borrowing_lines_borrowing_id_borrowings_id_fkey",
+        "e|fk|inventory.borrowing_lines.borrowing_lines_borrowing_id_borrowings_id_fkey",
+        "n|con|inventory.borrowing_lines.borrowing_lines_borrowing_id_borrowings_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowing_lines",
+        "n|sch|inventory",
+        "n|tbl|inventory.borrowings",
+        "n|sch|inventory",
+        "n|col|inventory.borrowing_lines.borrowing_id",
+        "n|col|inventory.borrowings.id",
+        "e|uniqueness|inventory.borrowings.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "borrowing_lines"
+      ],
+      "writes": [
+        "s|fk|inventory.borrowing_lines.borrowing_lines_DVDSWoOgcOys_fkey",
+        "n|fk|inventory.borrowing_lines.borrowing_lines_DVDSWoOgcOys_fkey",
+        "e|fk|inventory.borrowing_lines.borrowing_lines_DVDSWoOgcOys_fkey",
+        "n|con|inventory.borrowing_lines.borrowing_lines_DVDSWoOgcOys_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowing_lines",
+        "n|sch|inventory",
+        "n|tbl|inventory.serial_tracked_items",
+        "n|sch|inventory",
+        "n|col|inventory.borrowing_lines.serial_tracked_item_id",
+        "n|col|inventory.serial_tracked_items.id",
+        "e|uniqueness|inventory.serial_tracked_items.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "borrowing_lines"
+      ],
+      "writes": [
+        "s|fk|inventory.borrowing_lines.borrowing_lines_origin_warehouse_id_warehouses_id_fkey",
+        "n|fk|inventory.borrowing_lines.borrowing_lines_origin_warehouse_id_warehouses_id_fkey",
+        "e|fk|inventory.borrowing_lines.borrowing_lines_origin_warehouse_id_warehouses_id_fkey",
+        "n|con|inventory.borrowing_lines.borrowing_lines_origin_warehouse_id_warehouses_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.borrowing_lines",
+        "n|sch|inventory",
+        "n|tbl|inventory.warehouses",
+        "n|sch|inventory",
+        "n|col|inventory.borrowing_lines.origin_warehouse_id",
+        "n|col|inventory.warehouses.id",
+        "e|uniqueness|inventory.warehouses.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "serial_tracked_items"
+      ],
+      "writes": [
+        "s|fk|inventory.serial_tracked_items.serial_tracked_items_item_id_items_id_fkey",
+        "n|fk|inventory.serial_tracked_items.serial_tracked_items_item_id_items_id_fkey",
+        "e|fk|inventory.serial_tracked_items.serial_tracked_items_item_id_items_id_fkey",
+        "n|con|inventory.serial_tracked_items.serial_tracked_items_item_id_items_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.serial_tracked_items",
+        "n|sch|inventory",
+        "n|tbl|inventory.items",
+        "n|sch|inventory",
+        "n|col|inventory.serial_tracked_items.item_id",
+        "n|col|inventory.items.id",
+        "e|uniqueness|inventory.items.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "serial_tracked_items"
+      ],
+      "writes": [
+        "s|fk|inventory.serial_tracked_items.serial_tracked_items_warehouse_id_warehouses_id_fkey",
+        "n|fk|inventory.serial_tracked_items.serial_tracked_items_warehouse_id_warehouses_id_fkey",
+        "e|fk|inventory.serial_tracked_items.serial_tracked_items_warehouse_id_warehouses_id_fkey",
+        "n|con|inventory.serial_tracked_items.serial_tracked_items_warehouse_id_warehouses_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.serial_tracked_items",
+        "n|sch|inventory",
+        "n|tbl|inventory.warehouses",
+        "n|sch|inventory",
+        "n|col|inventory.serial_tracked_items.warehouse_id",
+        "n|col|inventory.warehouses.id",
+        "e|uniqueness|inventory.warehouses.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "serial_tracked_items"
+      ],
+      "writes": [
+        "s|fk|inventory.serial_tracked_items.serial_tracked_items_bin_id_warehouse_storages_id_fkey",
+        "n|fk|inventory.serial_tracked_items.serial_tracked_items_bin_id_warehouse_storages_id_fkey",
+        "e|fk|inventory.serial_tracked_items.serial_tracked_items_bin_id_warehouse_storages_id_fkey",
+        "n|con|inventory.serial_tracked_items.serial_tracked_items_bin_id_warehouse_storages_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.serial_tracked_items",
+        "n|sch|inventory",
+        "n|tbl|inventory.warehouse_storages",
+        "n|sch|inventory",
+        "n|col|inventory.serial_tracked_items.bin_id",
+        "n|col|inventory.warehouse_storages.id",
+        "e|uniqueness|inventory.warehouse_storages.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "stock_balances"
+      ],
+      "writes": [
+        "s|fk|inventory.stock_balances.stock_balances_item_id_items_id_fkey",
+        "n|fk|inventory.stock_balances.stock_balances_item_id_items_id_fkey",
+        "e|fk|inventory.stock_balances.stock_balances_item_id_items_id_fkey",
+        "n|con|inventory.stock_balances.stock_balances_item_id_items_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_balances",
+        "n|sch|inventory",
+        "n|tbl|inventory.items",
+        "n|sch|inventory",
+        "n|col|inventory.stock_balances.item_id",
+        "n|col|inventory.items.id",
+        "e|uniqueness|inventory.items.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "stock_balances"
+      ],
+      "writes": [
+        "s|fk|inventory.stock_balances.stock_balances_warehouse_id_warehouses_id_fkey",
+        "n|fk|inventory.stock_balances.stock_balances_warehouse_id_warehouses_id_fkey",
+        "e|fk|inventory.stock_balances.stock_balances_warehouse_id_warehouses_id_fkey",
+        "n|con|inventory.stock_balances.stock_balances_warehouse_id_warehouses_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_balances",
+        "n|sch|inventory",
+        "n|tbl|inventory.warehouses",
+        "n|sch|inventory",
+        "n|col|inventory.stock_balances.warehouse_id",
+        "n|col|inventory.warehouses.id",
+        "e|uniqueness|inventory.warehouses.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "stock_balances"
+      ],
+      "writes": [
+        "s|fk|inventory.stock_balances.stock_balances_bin_id_warehouse_storages_id_fkey",
+        "n|fk|inventory.stock_balances.stock_balances_bin_id_warehouse_storages_id_fkey",
+        "e|fk|inventory.stock_balances.stock_balances_bin_id_warehouse_storages_id_fkey",
+        "n|con|inventory.stock_balances.stock_balances_bin_id_warehouse_storages_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_balances",
+        "n|sch|inventory",
+        "n|tbl|inventory.warehouse_storages",
+        "n|sch|inventory",
+        "n|col|inventory.stock_balances.bin_id",
+        "n|col|inventory.warehouse_storages.id",
+        "e|uniqueness|inventory.warehouse_storages.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "stock_movements"
+      ],
+      "writes": [
+        "s|fk|inventory.stock_movements.stock_movements_item_id_items_id_fkey",
+        "n|fk|inventory.stock_movements.stock_movements_item_id_items_id_fkey",
+        "e|fk|inventory.stock_movements.stock_movements_item_id_items_id_fkey",
+        "n|con|inventory.stock_movements.stock_movements_item_id_items_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_movements",
+        "n|sch|inventory",
+        "n|tbl|inventory.items",
+        "n|sch|inventory",
+        "n|col|inventory.stock_movements.item_id",
+        "n|col|inventory.items.id",
+        "e|uniqueness|inventory.items.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "stock_movements"
+      ],
+      "writes": [
+        "s|fk|inventory.stock_movements.stock_movements_warehouse_id_warehouses_id_fkey",
+        "n|fk|inventory.stock_movements.stock_movements_warehouse_id_warehouses_id_fkey",
+        "e|fk|inventory.stock_movements.stock_movements_warehouse_id_warehouses_id_fkey",
+        "n|con|inventory.stock_movements.stock_movements_warehouse_id_warehouses_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_movements",
+        "n|sch|inventory",
+        "n|tbl|inventory.warehouses",
+        "n|sch|inventory",
+        "n|col|inventory.stock_movements.warehouse_id",
+        "n|col|inventory.warehouses.id",
+        "e|uniqueness|inventory.warehouses.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "stock_movements"
+      ],
+      "writes": [
+        "s|fk|inventory.stock_movements.stock_movements_bin_id_warehouse_storages_id_fkey",
+        "n|fk|inventory.stock_movements.stock_movements_bin_id_warehouse_storages_id_fkey",
+        "e|fk|inventory.stock_movements.stock_movements_bin_id_warehouse_storages_id_fkey",
+        "n|con|inventory.stock_movements.stock_movements_bin_id_warehouse_storages_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_movements",
+        "n|sch|inventory",
+        "n|tbl|inventory.warehouse_storages",
+        "n|sch|inventory",
+        "n|col|inventory.stock_movements.bin_id",
+        "n|col|inventory.warehouse_storages.id",
+        "e|uniqueness|inventory.warehouse_storages.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "stock_movements"
+      ],
+      "writes": [
+        "s|fk|inventory.stock_movements.stock_movements_target_warehouse_id_warehouses_id_fkey",
+        "n|fk|inventory.stock_movements.stock_movements_target_warehouse_id_warehouses_id_fkey",
+        "e|fk|inventory.stock_movements.stock_movements_target_warehouse_id_warehouses_id_fkey",
+        "n|con|inventory.stock_movements.stock_movements_target_warehouse_id_warehouses_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.stock_movements",
+        "n|sch|inventory",
+        "n|tbl|inventory.warehouses",
+        "n|sch|inventory",
+        "n|col|inventory.stock_movements.target_warehouse_id",
+        "n|col|inventory.warehouses.id",
+        "e|uniqueness|inventory.warehouses.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "warehouse_addresses"
+      ],
+      "writes": [
+        "s|fk|inventory.warehouse_addresses.warehouse_addresses_warehouse_id_warehouses_id_fkey",
+        "n|fk|inventory.warehouse_addresses.warehouse_addresses_warehouse_id_warehouses_id_fkey",
+        "e|fk|inventory.warehouse_addresses.warehouse_addresses_warehouse_id_warehouses_id_fkey",
+        "n|con|inventory.warehouse_addresses.warehouse_addresses_warehouse_id_warehouses_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.warehouse_addresses",
+        "n|sch|inventory",
+        "n|tbl|inventory.warehouses",
+        "n|sch|inventory",
+        "n|col|inventory.warehouse_addresses.warehouse_id",
+        "n|col|inventory.warehouses.id",
+        "e|uniqueness|inventory.warehouses.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "warehouse_storages"
+      ],
+      "writes": [
+        "s|fk|inventory.warehouse_storages.warehouse_storages_warehouse_id_warehouses_id_fkey",
+        "n|fk|inventory.warehouse_storages.warehouse_storages_warehouse_id_warehouses_id_fkey",
+        "e|fk|inventory.warehouse_storages.warehouse_storages_warehouse_id_warehouses_id_fkey",
+        "n|con|inventory.warehouse_storages.warehouse_storages_warehouse_id_warehouses_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|inventory.warehouse_storages",
+        "n|sch|inventory",
+        "n|tbl|inventory.warehouses",
+        "n|sch|inventory",
+        "n|col|inventory.warehouse_storages.warehouse_id",
+        "n|col|inventory.warehouses.id",
+        "e|uniqueness|inventory.warehouses.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "inventory",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "name": "borrowing_events",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "name": "borrowing_lines",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "name": "borrowings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "name": "items",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "name": "serial_tracked_items",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "name": "stock_balances",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "name": "stock_movements",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "name": "warehouse_addresses",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "name": "warehouse_storages",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "name": "warehouses",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "borrowing_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "borrowing_line_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "event_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "stock_movement_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "actor_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "occurred_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "note",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "borrowing_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "serial_tracked_item_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "origin_warehouse_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "issued_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "due_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "returned_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "returned_condition",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "marked_late_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "marked_lost_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "lost_reported_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "site_address_text",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "project_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'requested'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "purpose",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'internal_use'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrower_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrower_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrower_customer_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "guest_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "guest_phone",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "guest_id_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "guest_id_number",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "guest_address_text",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "guest_id_document_ref",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "requested_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "requested_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "approved_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "approved_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "issued_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "issued_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "due_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "closed_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "closed_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "sku",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "item_kind",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "category",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "unit_label",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "is_serialized",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "is_stock_tracked",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "min_stock_qty",
+        "type": "numeric(18,3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'0'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "barcode",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "selling_price",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "purchase_price",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "item_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_number",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "is_provisional_serial",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "asset_tag",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'in_stock'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "warehouse_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "bin_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "acquired_on",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "warranty_expires_on",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "purchase_order_line_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "customer_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "stock_movement_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "item_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "warehouse_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "bin_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "quantity_on_hand",
+        "type": "numeric(18,3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'0'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "quantity_reserved",
+        "type": "numeric(18,3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'0'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "quantity_available",
+        "type": "numeric(18,3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'0'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "average_cost",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "total_value",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "last_movement_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "movement_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "item_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "warehouse_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "bin_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "target_warehouse_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "quantity",
+        "type": "numeric(18,3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "unit_cost",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "reference_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "reference_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'posted'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "occurred_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "warehouse_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "label",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "street",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "rt",
+        "type": "varchar(8)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "rw",
+        "type": "varchar(8)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "postal_code",
+        "type": "varchar(10)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "village_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "latitude",
+        "type": "numeric(10,7)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "longitude",
+        "type": "numeric(10,7)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "warehouse_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "bin_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "capacity",
+        "type": "numeric(18,3)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "is_active",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "responsible_employee_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "is_default",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "is_active",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "borrowing_events_borrowing_occurred_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "borrowing_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "occurred_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "borrowing_events_line_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "borrowing_line_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "borrowing_lines_borrowing_unit_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "borrowing_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "serial_tracked_item_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "borrowing_lines_unit_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "serial_tracked_item_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "borrowing_lines_open_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "due_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "returned_at IS NULL AND marked_lost_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrowings_org_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "organization_id IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrowings_global_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "organization_id IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrowings_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrowings_borrower_user_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "borrower_user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrowings_borrower_customer_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "borrower_customer_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrowings_due_at_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "due_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "inventory_items_org_sku_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "sku",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "organization_id IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "inventory_items_global_sku_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "sku",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "organization_id IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "inventory_items_kind_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "item_kind",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "inventory_items_org_name_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "name",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "inventory_items_barcode_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "barcode",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_tracked_items_org_serial_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "serial_number",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "organization_id IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_tracked_items_global_serial_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "serial_number",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "organization_id IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_tracked_items_item_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "item_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_tracked_items_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_tracked_items_warehouse_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "warehouse_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_tracked_items_asset_tag_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "asset_tag",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "stock_balances_org_scope_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "warehouse_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "item_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "bin_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "organization_id IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "stock_balances_global_scope_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "warehouse_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "item_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "bin_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "organization_id IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "stock_balances_item_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "item_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_org_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "organization_id IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_global_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "organization_id IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_ledger_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "item_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "warehouse_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "occurred_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_bin_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "bin_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_reference_type_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "reference_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_reference_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "reference_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "warehouse_addresses_warehouse_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "warehouse_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "warehouse_addresses_village_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "village_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "warehouse_storages_warehouse_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "warehouse_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "warehouse_storages_warehouse_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "warehouse_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "warehouses_org_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "organization_id IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "warehouses_global_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "organization_id IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "warehouses_is_default_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "is_default",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "warehouses_is_active_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "is_active",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "borrowing_events_borrowing_id_borrowings_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "borrowing_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "borrowings",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "borrowing_events_borrowing_line_id_borrowing_lines_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "borrowing_line_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "borrowing_lines",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "borrowing_lines_borrowing_id_borrowings_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "borrowing_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "borrowings",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "borrowing_lines_DVDSWoOgcOys_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "serial_tracked_item_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "serial_tracked_items",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "borrowing_lines_origin_warehouse_id_warehouses_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "origin_warehouse_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "warehouses",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_tracked_items_item_id_items_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "item_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "items",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_tracked_items_warehouse_id_warehouses_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "warehouse_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "warehouses",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_tracked_items_bin_id_warehouse_storages_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "bin_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "warehouse_storages",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "stock_balances_item_id_items_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "item_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "items",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "stock_balances_warehouse_id_warehouses_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "warehouse_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "warehouses",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "stock_balances_bin_id_warehouse_storages_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "bin_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "warehouse_storages",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_item_id_items_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "item_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "items",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_warehouse_id_warehouses_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "warehouse_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "warehouses",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_bin_id_warehouse_storages_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "bin_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "warehouse_storages",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_target_warehouse_id_warehouses_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "target_warehouse_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "warehouses",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "warehouse_addresses_warehouse_id_warehouses_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "warehouse_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "warehouses",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "warehouse_storages_warehouse_id_warehouses_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "warehouse_id"
+        ],
+        "schemaTo": "inventory",
+        "tableTo": "warehouses",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "borrowing_events_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "borrowing_lines_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrowings_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "items_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_tracked_items_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "stock_balances_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_addresses",
+        "name": "warehouse_addresses_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouse_storages",
+        "name": "warehouse_storages_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "warehouses",
+        "name": "warehouses_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "borrowing_events_type_check",
+        "value": "event_type IN ('requested', 'approved', 'rejected', 'issued', 'returned', 'marked_late', 'marked_lost', 'due_date_extended', 'cancelled', 'closed')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_events",
+        "name": "borrowing_events_movement_check",
+        "value": "(event_type IN ('issued', 'returned', 'marked_lost') AND stock_movement_id IS NOT NULL)\n\t\t\t\tOR (event_type NOT IN ('issued', 'returned', 'marked_lost') AND stock_movement_id IS NULL)",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "borrowing_lines_condition_check",
+        "value": "returned_condition IS NULL OR returned_condition IN ('good', 'damaged', 'incomplete')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowing_lines",
+        "name": "borrowing_lines_due_after_issue_check",
+        "value": "due_at IS NULL OR issued_at IS NULL OR due_at > issued_at",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrowings_status_check",
+        "value": "status IN ('draft', 'requested', 'approved', 'rejected', 'issued', 'partially_returned', 'returned', 'closed', 'cancelled')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrowings_purpose_check",
+        "value": "purpose IN ('rental', 'internal_use', 'testing', 'warranty_service')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrowings_borrower_type_check",
+        "value": "borrower_type IN ('user', 'customer', 'guest')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrowings_guest_id_type_check",
+        "value": "guest_id_type IS NULL OR guest_id_type IN ('ktp', 'sim', 'passport', 'other')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "borrowings",
+        "name": "borrowings_borrower_identity_check",
+        "value": "(borrower_type = 'user' AND borrower_user_id IS NOT NULL AND borrower_customer_id IS NULL AND guest_name IS NULL AND guest_phone IS NULL AND guest_id_number IS NULL)\n\t\t\t\tOR (borrower_type = 'customer' AND borrower_customer_id IS NOT NULL AND borrower_user_id IS NULL AND guest_name IS NULL AND guest_phone IS NULL AND guest_id_number IS NULL)\n\t\t\t\tOR (borrower_type = 'guest' AND guest_name IS NOT NULL AND guest_phone IS NOT NULL AND guest_id_number IS NOT NULL AND borrower_user_id IS NULL AND borrower_customer_id IS NULL)",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "inventory_items_kind_check",
+        "value": "item_kind IN ('product', 'component', 'material', 'tool', 'service')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "inventory_items_prices_check",
+        "value": "selling_price >= 0 AND purchase_price >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "inventory_items_min_stock_check",
+        "value": "min_stock_qty >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "inventory_items_service_not_stocked_check",
+        "value": "NOT (item_kind = 'service') OR (is_serialized = false AND is_stock_tracked = false)",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_tracked_items_status_check",
+        "value": "status IN ('pre_order', 'in_stock', 'borrowed', 'lost', 'sold', 'applied_warranty')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_tracked_items_provisional_check",
+        "value": "is_provisional_serial = false OR status = 'pre_order'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "serial_tracked_items",
+        "name": "serial_tracked_items_warranty_check",
+        "value": "warranty_expires_on IS NULL OR acquired_on IS NULL OR warranty_expires_on >= acquired_on",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_balances",
+        "name": "stock_balances_available_check",
+        "value": "quantity_available = quantity_on_hand - quantity_reserved",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_type_check",
+        "value": "movement_type IN ('receipt', 'issue', 'transfer_in', 'transfer_out', 'adjustment_in', 'adjustment_out', 'return_in', 'return_out', 'consumption', 'borrowing_out', 'borrowing_in')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_status_check",
+        "value": "status IN ('draft', 'posted', 'reversed')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_quantity_check",
+        "value": "quantity <> 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_unit_cost_check",
+        "value": "unit_cost >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_transfer_target_check",
+        "value": "(movement_type IN ('transfer_in', 'transfer_out') AND target_warehouse_id IS NOT NULL) OR (movement_type NOT IN ('transfer_in', 'transfer_out'))",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "stock_movements",
+        "name": "stock_movements_borrowing_reference_check",
+        "value": "(movement_type IN ('borrowing_out', 'borrowing_in') AND reference_type = 'borrowing') OR (movement_type NOT IN ('borrowing_out', 'borrowing_in'))",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

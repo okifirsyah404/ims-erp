@@ -24,6 +24,14 @@ const api = {
 	'sales.quotationNotFound': 'Quotation not found',
 	'sales.paymentNotFound': 'Payment not found',
 
+	'inventory.itemNotFound': 'Item not found',
+	'inventory.unitNotFound': 'Item unit not found',
+	'inventory.skuTaken': 'An item with this SKU already exists',
+	'inventory.serialTaken': 'An item unit with this serial number already exists',
+	'inventory.ruleViolation': 'This inventory rule does not allow it: {{rule}}',
+	'inventory.itemHasUnits':
+		'Cannot archive an item that still has {{count}} live unit(s)',
+
 	'user.notFound': 'User not found',
 	'user.emailInUse': 'Email already in use',
 	'user.globalAdminRequired': 'Global administrator role required',

@@ -1,22 +1,20 @@
-import 'reflect-metadata';
-import { cors } from '@elysiajs/cors';
-import { wrap } from '@bogeychan/elysia-logger';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
-import { pinoLogger } from '@providers/logger/logger';
+import { cors } from '@elysiajs/cors';
 import { DEFAULT_LANGUAGE, LANGUAGE_CODES, en, id } from '@ims-erp/locales';
+import { pinoLogger } from '@providers/logger/logger';
+import { requestLogger } from '@providers/logger/request-logger';
+import { closeQueueConnection } from '@providers/queue/queue.connection';
 import { Elysia } from 'elysia';
 import { i18next } from 'elysia-i18next';
 import { createInstance } from 'i18next';
+import 'reflect-metadata';
 import { container } from 'tsyringe';
 import { elysiaApp } from './app/app';
-import { startAvatarWorker } from './app/user/queues/avatar.worker';
-import {
-	closeQueueConnection,
-} from '@providers/queue/queue.connection';
+import { AuditController, registerAudit } from './app/audit';
+import { ItemController, registerInventory } from './app/inventory';
 import { registerLocation } from './app/location/container';
 import { LocationController } from './app/location/controllers/location.controller';
-import { AuditController, registerAudit } from './app/audit';
 import {
 	OrganizationBootstrapController,
 	OrganizationController,
@@ -24,19 +22,21 @@ import {
 } from './app/organization';
 import { registerSales } from './app/sales/container';
 import { SalesController } from './app/sales/controllers/sales.controller';
-import { registerUser } from './app/user/container';
-import { UserController } from './app/user/controllers/user.controller';
+import { registerUserManagement } from './app/user-management/container';
 import {
 	InvitationClaimController,
 	InvitationController,
 	UsernameCheckController,
 } from './app/user-management/controllers/invitation.controller';
 import { UserAdminController } from './app/user-management/controllers/user-admin.controller';
-import { registerUserManagement } from './app/user-management/container';
+import { registerUser } from './app/user/container';
+import { UserController } from './app/user/controllers/user.controller';
+import { startAvatarWorker } from './app/user/queues/avatar.worker';
 import { registerAuthorization } from './authorization/container';
 registerProvider(container);
 registerLocation(container);
 registerSales(container);
+registerInventory(container);
 registerUser(container);
 registerOrganization(container);
 // Before user-management: its services inject AUDIT_SERVICE_TOKEN. tsyringe
@@ -81,7 +81,7 @@ const bootstrap = new Elysia()
 			},
 		}) as unknown as (app: Elysia) => Elysia,
 	)
-	.use(wrap(pinoLogger))
+	.use(requestLogger)
 	.use(
 		cors({
 			// Browser cross-origin requests from the web-admin dev server need
@@ -90,17 +90,14 @@ const bootstrap = new Elysia()
 				? appConfig.app.corsOrigins
 				: [appConfig.app.url ?? 'http://localhost:5173'],
 			credentials: true,
-			allowedHeaders: [
-				'Content-Type',
-				'x-organization-id',
-				'Accept-Language',
-			],
+			allowedHeaders: ['Content-Type', 'x-organization-id', 'Accept-Language'],
 			methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 		}),
 	)
 	.use(elysiaApp)
 	.use(LocationController.plugin())
 	.use(SalesController.plugin())
+	.use(ItemController.plugin())
 	// Admin surfaces share the `/admin` prefix, so their routes no longer
 	// overlap the self-service `/users/*` routes: mount order is irrelevant
 	// here (before the split, both modules registered `GET /users` and the

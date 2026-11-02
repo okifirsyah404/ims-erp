@@ -8,19 +8,19 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 
 ## The rule
 
-- Each **module** owns one or more Postgres **schemas**. One module owns two
-  schemas, a documented exception: the Inventory module owns `warehouse`
-  (physical structure) and `inventory` (stock ledger). The schema split inside
-  a module is storage grouping, not an ownership boundary, so FKs inside the
-  module span both schemas freely. The Identity module owns the single `auth`
-  schema, shared by Better Auth's 9 core tables and the 6 ERP extension
-  tables.
+- Each **module** owns exactly one Postgres **schema**. The one historical
+  two-schema exception (Inventory owning a separate `warehouse` schema) is
+  **gone**: the physical estate now lives inside `inventory` as
+  `inventory.warehouses`, `inventory.warehouse_addresses` and
+  `inventory.warehouse_storages` (ADR-0008). The Identity module owns the
+  single `auth` schema, shared by Better Auth's 9 core tables and the 6 ERP
+  extension tables.
 - A **foreign key may only connect two tables of the same module**.
-  `docs.dbml` contains 218 `Ref:` declarations and **0 cross-module refs**.
+  `docs.dbml` contains 227 `Ref:` declarations and **0 cross-module refs**.
 - A **cross-module link** is a plain id column plus a column note:
   `Logical reference to <target>.id. Cross-module FK intentionally omitted.
   Validated through the <Module> module contract.`
-- 549 such logical reference columns exist (target count re-verified on each validation run, see validate-dbml.ts).
+- 524 such logical reference columns exist (target count re-verified on each validation run, see validate-dbml.ts).
   Full list in `logical-references.md`.
 - Cross-module reads and writes go through the owning module's exported
   service contract. Another module's repository is never imported.
@@ -36,7 +36,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 | 5 | Catalog | `catalog` | 12 | 16 | 15 |
 | 6 | Sales | `sales` | 12 | 10 | 36 |
 | 7 | Procurement | `procurement` | 11 | 13 | 30 |
-| 8 | Inventory | `inventory`, `warehouse` | 14 | 18 | 33 |
+| 8 | Inventory | `inventory` | 15 | 23 | 30 |
 | 9 | Projects | `projects` | 13 | 0 | 33 |
 | 10 | HR | `hr` | 16 | 17 | 44 |
 | 11 | Payroll | `payroll` | 11 | 10 | 28 |
@@ -53,14 +53,12 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 | 22 | Licensing | `licensing` | 9 | 11 | 11 |
 | 23 | Ticketing | `ticket` | 5 | 5 | 4 |
 | 24 | Audit | `audit` | 1 | 0 | 1 |
-| | **Total** | **24 schemas** | **251** | **218** | - |
+| | **Total** | **24 schemas** | **254** | **227** | - |
 
-The inventory module owns two schemas: `warehouse` holds the physical
-structure (warehouses, zones, bins) and `inventory` holds the stock ledger
-and stock operations. The split is storage grouping, not an ownership
-boundary: inventory tables keep real foreign keys into `warehouse.warehouses`
-and `warehouse.warehouse_bins` because both schemas belong to the same
-module.
+There is no longer any two-schema module. The physical warehouse tables moved
+into `inventory` (ADR-0008): `inventory.warehouses`, `inventory.warehouse_addresses`
+and `inventory.warehouse_storages`. The previous `warehouse` schema — and its
+`warehouse_zones` / `warehouse_bins` tables — is retired from the contract.
 
 `location` is the 24th module relative to the 22 originally proposed: it
 already existed in the database (4 tables, seeded) and is a real ownership
@@ -146,19 +144,26 @@ portal.
   purchase orders, goods receipts, purchase returns.
 - Supplier bills and their payment live in Finance, not here.
 
-### 8. Inventory - `inventory`, `warehouse`
+### 8. Inventory - `inventory`
 
-- **Owns** two schemas. `warehouse`: warehouses, zones, bins. `inventory`:
-  the authoritative `stock_movements` ledger, the `stock_balances`
-  projection, stock adjustments, transfers, reservations, serial tracking,
-  lot batches, cycle counts.
-- The `warehouse`/`inventory` split is storage grouping inside one module,
-  so `inventory.*` tables carry real foreign keys into `warehouse.warehouses`
-  and `warehouse.warehouse_bins`.
-- `inventory.stock_movements` is the source of truth. `stock_balances` is a
-  projection maintained only by the Inventory service.
+- **Owns** one schema. `inventory.warehouses`,
+  `inventory.warehouse_addresses`, `inventory.warehouse_storages`,
+  `inventory.items`, the authoritative `inventory.stock_movements` ledger, the
+  `inventory.stock_balances` projection, `inventory.serial_tracked_items`, and
+  the borrowing trio `inventory.borrowings` / `borrowing_lines` /
+  `borrowing_events`.
+- `inventory.items` is the **one item master for the whole ERP**;
+  `catalog.items` is superseded (ADR-0008). The `product:*` permission name is
+  retained even though the table is `items`.
+- `organization_id` is **nullable on every inventory table**, and `NULL` means
+  "global / company-wide", not "missing" — see obligation 2 below, which has an
+  explicit inventory carve-out.
+- `inventory.stock_movements` is the source of truth and is append-only: one
+  row per movement, never updated, no `deleted_at`; a reversal is a new row.
+  `stock_balances` is a projection maintained only by the Inventory service,
+  inside the same transaction as the movement (no triggers).
 - **Contract**: `postMovement`, `reserveStock`, `releaseReservation`,
-  `assertItemTracked`.
+  `assertItemTracked`, and (planned) `issueBorrowing`, `returnBorrowingLine`.
 
 ### 8b. Ticketing - `ticket`
 
@@ -324,6 +329,14 @@ Every logical reference implies a promise by the owning module:
    referring row. This is the rule that protects against cross-tenant
    leakage, and it is enforced in the owning module's read and assert
    methods, not by a foreign key.
+   - **Inventory exception (ADR-0008).** Inventory rows may have a *null*
+     `organization_id`, meaning global/company-wide, so "same
+     `organization_id`" becomes "same scope": a global row is readable by
+     every organization, an organization-scoped row only by its own. The
+     obligation is *not* dropped for inventory — it is restated as
+     `referrow.organization_id IS NULL OR referrow.organization_id =
+     owner.organization_id`. Callers must never interpret `NULL` as
+     "any organization".
 3. **Lifecycle** — the target is soft deleted, not hard deleted, so a
    reference stays resolvable for history.
 4. **Nullability** — a nullable reference column means the link is optional
