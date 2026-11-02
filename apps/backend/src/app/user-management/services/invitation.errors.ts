@@ -8,50 +8,15 @@
  * controllers resolve the key against the request's `Accept-Language` before
  * writing the response envelope.
  *
- * The string passed to `super()` stays English and is for logs and stack
- * traces only — it is never sent to clients.
+ * The family now derives from the shared {@link AppError}, so the module's
+ * `onError` hook maps it with the same arm as every other domain error.
+ * All subclasses below are unchanged - the base is a strict superset of the
+ * old standalone class.
  */
-import type { ApiKey } from '@providers/i18n/translator';
+import { AppError } from '@http/errors';
 
 /** Base class so the controller can map the family in one arm. */
-export class UserManagementError extends Error {
-	/**
-	 * The catalogue key for this error, resolved per request by the
-	 * controller.
-	 */
-	key: ApiKey;
-
-	constructor(
-		readonly status: number,
-		key: ApiKey,
-		message: string,
-		readonly params?: Record<string, string | number>,
-	) {
-		super(message);
-		this.name = new.target.name;
-		this.key = key;
-	}
-
-	/**
-	 * Returns this error retargeted at a different catalogue key.
-	 *
-	 * @remarks
-	 * Subclasses whose single status code covers several distinct messages
-	 * (e.g. an expired vs. already-used claim token) expose static factories
-	 * built on this. Mutating in place keeps the stack trace pointing at the
-	 * original `throw`.
-	 */
-	protected withKey(
-		key: ApiKey,
-		message: string,
-		params?: Record<string, string | number>,
-	): this {
-		this.key = key;
-		this.message = message;
-		(this as { params?: Record<string, string | number> }).params = params;
-		return this;
-	}
-}
+export class UserManagementError extends AppError {}
 
 export class InvitationNotFoundError extends UserManagementError {
 	constructor(invitationId: string) {

@@ -1,12 +1,5 @@
 import { Elysia } from 'elysia';
-import { ZodError } from 'zod';
 import { container } from 'tsyringe';
-import type {
-	TApiErrorMessage,
-	TApiResponse,
-	TApiPaginatedResponse,
-} from '@ims-erp/common';
-import type { TPaginationResult } from '@ims-erp/common';
 import {
 	districtQuerySchema,
 	provinceQuerySchema,
@@ -16,56 +9,15 @@ import {
 import { LOCATION_SERVICE_TOKEN } from '../constants/di';
 import { LocationService } from '../services/location.service';
 import { translator } from '@providers/i18n/translator';
-
-/**
- * Builds the response envelope metadata shared by all location endpoints.
- */
-function buildMeta(status: number, message: string) {
-	return {
-		requestId: crypto.randomUUID(),
-		status,
-		message,
-		timestamp: Date.now(),
-	};
-}
-
-/**
- * Wraps a single row in the standard API response envelope.
- */
-function ok<T>(data: T): TApiResponse<T> {
-	return { ...buildMeta(200, 'OK'), data };
-}
-
-/**
- * Wraps a paginated result in the standard API paginated envelope.
- */
-function okPaginated<T>(
-	result: TPaginationResult<T>,
-): TApiPaginatedResponse<T> {
-	return {
-		...buildMeta(200, 'OK'),
-		pagination: result.meta,
-		data: result.data,
-	};
-}
-
-/**
- * Builds the standard error envelope for a failed request.
- */
-function errorEnvelope(
-	status: number,
-	message: string,
-	errors: TApiErrorMessage[],
-): TApiResponse<null> {
-	return { ...buildMeta(status, message), errors, data: null };
-}
+import { domainPlugin } from '@http/plugin';
+import { errorEnvelope, ok, okPaginated } from '@http/response';
 
 /**
  * REST controller exposing read-only location selection endpoints.
  *
  * @remarks
- * Layered architecture boundary: this class owns HTTP concerns only —
- * query parsing, envelope mapping, status mapping — and delegates all
+ * Layered architecture boundary: this class owns HTTP concerns only -
+ * query parsing, envelope mapping, status mapping - and delegates all
  * business logic to {@link LocationService}. The service is resolved
  * from the tsyringe container here (the HTTP boundary), never deeper.
  * These endpoints are public reference data: no authentication is
@@ -77,44 +29,27 @@ function errorEnvelope(
  * @throws 404 When an id-targeted lookup finds no alive row
  */
 export class LocationController {
-/**
- * Builds the Elysia plugin mounting all location routes.
- *
- * @remarks
- * Resolves {@link LocationService} from the tsyringe container once at
- * plugin build time. The local `onError` hook maps validation failures
- * (Elysia `VALIDATION`/`PARSE` codes and `ZodError`) onto a 400 envelope;
- * domain errors are not expected since lookups simply return `404`.
- *
- * @returns An Elysia instance with the `/locations` route group mounted
- */
+	/**
+	 * Builds the Elysia plugin mounting all location routes.
+	 *
+	 * @remarks
+	 * Resolves {@link LocationService} from the tsyringe container once at
+	 * plugin build time. Validation failures are mapped to a 400 envelope by
+	 * the shared {@link domainPlugin} error hook; domain errors are not
+	 * expected here since lookups simply return `404`.
+	 *
+	 * @returns An Elysia instance with the `/locations` route group mounted
+	 */
 	static plugin() {
 		const locationService = container.resolve<LocationService>(
 			LOCATION_SERVICE_TOKEN,
 		);
 
-		return new Elysia({
-			prefix: '/locations',
+		return domainPlugin({
 			name: 'location',
+			prefix: '/locations',
 			tags: ['Location'],
 		})
-			.onError({ as: 'local' }, (ctx) => {
-				const { code, error, set } = ctx;
-				const t = translator(ctx);
-				if (code === 'VALIDATION') {
-					set.status = 400;
-					return errorEnvelope(400, t('common.validationFailed'), [
-						{ field: error.value ? String(error.value) : null, message: error.message },
-					]);
-				}
-				if (code === 'PARSE' || error instanceof ZodError) {
-					set.status = 400;
-					return errorEnvelope(400, t('common.validationFailed'), [
-						{ field: null, message: String(error) },
-					]);
-				}
-				return undefined;
-			})
 			.get(
 				'/provinces',
 				async ({ query }) =>
@@ -126,9 +61,9 @@ export class LocationController {
 			)
 			.get('/provinces/:id', async (ctx) => {
 				const { params, status } = ctx;
-				const t = translator(ctx);
 				const row = await locationService.getProvince(params.id);
 				if (!row) {
+					const t = translator(ctx);
 					return status(
 						404,
 						errorEnvelope(404, t('common.notFound'), [
@@ -149,9 +84,9 @@ export class LocationController {
 			)
 			.get('/regencies/:id', async (ctx) => {
 				const { params, status } = ctx;
-				const t = translator(ctx);
 				const row = await locationService.getRegency(params.id);
 				if (!row) {
+					const t = translator(ctx);
 					return status(
 						404,
 						errorEnvelope(404, t('common.notFound'), [
@@ -161,11 +96,6 @@ export class LocationController {
 				}
 				return ok(row);
 			})
-			.get(
-				'/provinces/:id/regencies',
-				async ({ params }) =>
-					ok(await locationService.getRegenciesByProvince(params.id)),
-			)
 			.get(
 				'/districts',
 				async ({ query }) =>
@@ -177,9 +107,9 @@ export class LocationController {
 			)
 			.get('/districts/:id', async (ctx) => {
 				const { params, status } = ctx;
-				const t = translator(ctx);
 				const row = await locationService.getDistrict(params.id);
 				if (!row) {
+					const t = translator(ctx);
 					return status(
 						404,
 						errorEnvelope(404, t('common.notFound'), [
@@ -205,9 +135,9 @@ export class LocationController {
 			)
 			.get('/villages/:id', async (ctx) => {
 				const { params, status } = ctx;
-				const t = translator(ctx);
 				const row = await locationService.getVillage(params.id);
 				if (!row) {
+					const t = translator(ctx);
 					return status(
 						404,
 						errorEnvelope(404, t('common.notFound'), [

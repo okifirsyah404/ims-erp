@@ -6,6 +6,7 @@ import {
 	QUOTATION_STATUSES,
 } from '@drizzle/schemas/sales.schema';
 import { RedisClient } from 'bun';
+import type { TPaginationResult } from '@ims-erp/common';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, eq } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
@@ -112,7 +113,7 @@ export class QuotationRepository implements TQuotationRepository {
 	async list(
 		organizationId: string,
 		pagination: { page: number; limit: number },
-	): Promise<{ data: TQuotationSelect[]; total: number }> {
+	): Promise<TPaginationResult<TQuotationSelect>> {
 		const where = eq(quotations.organizationId, organizationId);
 		const [{ value: total }] = await this.database
 			.select({ value: count() })
@@ -125,7 +126,15 @@ export class QuotationRepository implements TQuotationRepository {
 			.orderBy(asc(quotations.createdAt))
 			.limit(pagination.limit)
 			.offset((pagination.page - 1) * pagination.limit);
-		return { data, total };
+		return {
+			data,
+			meta: {
+				page: pagination.page,
+				limit: pagination.limit,
+				total,
+				totalPages: Math.ceil(total / pagination.limit) || 1,
+			},
+		};
 	}
 
 	/**
