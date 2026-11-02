@@ -4,13 +4,16 @@ import type auth from '../en/auth';
 const auth_: Record<keyof typeof auth, string> = {
 	'login.title': 'Selamat datang kembali',
 	'login.subtitle': 'Masuk ke akun Entragate ERP Anda',
+	'login.identifier': 'Email atau username',
+	'login.identifierPlaceholder': 'm@example.com atau johndoe',
+	// Still used by the forgot-password form (email-only flow).
 	'login.email': 'Email',
 	'login.emailPlaceholder': 'm@example.com',
 	'login.password': 'Kata sandi',
 	'login.forgotPassword': 'Lupa kata sandi Anda?',
 	'login.submit': 'Masuk',
 	'login.submitting': 'Sedang masuk…',
-	'login.invalidCredentials': 'Email atau kata sandi salah',
+	'login.invalidCredentials': 'Email/username atau kata sandi salah',
 
 	'forgot.title': 'Lupa kata sandi Anda?',
 	'forgot.subtitle':

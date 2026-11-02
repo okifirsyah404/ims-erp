@@ -1,17 +1,14 @@
 import { cn } from 'cn';
 
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '@/components/language-switcher';
+import { PasswordInput } from '@/components/password-input';
 import { authClient } from '@/lib/auth-client';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
-import {
-	Field,
-	FieldGroup,
-	FieldLabel,
-} from '@ims-erp/ui/components/field';
+import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
-import LanguageSwitcher from '@/components/language-switcher';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Email + password login wired to Better Auth (`authClient.signIn.email`).
@@ -23,7 +20,7 @@ export function LoginForm({
 	onSuccess,
 	...props
 }: React.ComponentProps<'div'> & { onSuccess?: () => void }) {
-	const [email, setEmail] = useState('');
+	const [identifier, setIdentifier] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
@@ -34,8 +31,14 @@ export function LoginForm({
 		setError(null);
 		setPending(true);
 		try {
-			const { error: signInError } = await authClient.signIn.email({
-				email,
+			/**
+			 * One code path for both identifiers: the backend's
+			 * `email-identifier` hook rewrites an email to its username, so
+			 * `/sign-in/username` handles both. Unknown emails fail with the
+			 * same generic invalid-credentials error as unknown usernames.
+			 */
+			const { error: signInError } = await authClient.signIn.username({
+				username: identifier,
 				password,
 			});
 			if (signInError) {
@@ -65,19 +68,30 @@ export function LoginForm({
 								</p>
 							</div>
 							<Field>
-								<FieldLabel htmlFor='email'>{t('login.email')}</FieldLabel>
+								<FieldLabel htmlFor='identifier'>
+									{t('login.identifier')}
+								</FieldLabel>
 								<Input
-									id='email'
-									type='email'
-									placeholder={t('login.emailPlaceholder')}
+									id='identifier'
+									type='text'
+									placeholder={t('login.identifierPlaceholder')}
 									required
-									value={email}
-									onChange={(e) => setEmail(e.target.value)}
-									autoComplete='email'
+									value={identifier}
+									onChange={(e) => setIdentifier(e.target.value)}
+									autoComplete='username'
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='password'>{t('login.password')}</FieldLabel>
+								<FieldLabel htmlFor='password'>
+									{t('login.password')}
+								</FieldLabel>
+								<PasswordInput
+									id='password'
+									required
+									value={password}
+									onChange={(e) => setPassword(e.target.value)}
+									autoComplete='current-password'
+								/>
 								<div className='flex justify-end'>
 									<a
 										href='/forgot-password'
@@ -86,17 +100,12 @@ export function LoginForm({
 										{t('login.forgotPassword')}
 									</a>
 								</div>
-								<Input
-									id='password'
-									type='password'
-									required
-									value={password}
-									onChange={(e) => setPassword(e.target.value)}
-									autoComplete='current-password'
-								/>
 							</Field>
 							{error && (
-								<p className='text-destructive text-center text-sm' role='alert'>
+								<p
+									className='text-destructive text-center text-sm'
+									role='alert'
+								>
 									{error}
 								</p>
 							)}

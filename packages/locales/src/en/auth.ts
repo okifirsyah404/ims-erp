@@ -2,13 +2,16 @@
 const auth = {
 	'login.title': 'Welcome back',
 	'login.subtitle': 'Login to your Entragate ERP account',
+	'login.identifier': 'Email or username',
+	'login.identifierPlaceholder': 'm@example.com or johndoe',
+	// Still used by the forgot-password form (email-only flow).
 	'login.email': 'Email',
 	'login.emailPlaceholder': 'm@example.com',
 	'login.password': 'Password',
 	'login.forgotPassword': 'Forgot your password?',
 	'login.submit': 'Login',
 	'login.submitting': 'Signing in…',
-	'login.invalidCredentials': 'Invalid email or password',
+	'login.invalidCredentials': 'Invalid email/username or password',
 
 	'forgot.title': 'Forgot your password?',
 	'forgot.subtitle': "Enter your email and we'll send you a reset link",

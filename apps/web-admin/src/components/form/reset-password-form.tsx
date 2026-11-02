@@ -12,7 +12,7 @@ import {
 	FieldGroup,
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
-import { Input } from '@ims-erp/ui/components/input';
+import { PasswordInput } from '@/components/password-input';
 
 /**
  * Reset-password form: takes the new password (+ confirm) and the token from
@@ -77,9 +77,8 @@ export function ResetPasswordForm({
 									<FieldLabel htmlFor='password'>
 										{t('reset.newPassword')}
 									</FieldLabel>
-									<Input
+									<PasswordInput
 										id='password'
-										type='password'
 										required
 										minLength={8}
 										value={password}
@@ -92,9 +91,8 @@ export function ResetPasswordForm({
 									<FieldLabel htmlFor='confirm'>
 										{t('reset.confirmPassword')}
 									</FieldLabel>
-									<Input
+									<PasswordInput
 										id='confirm'
-										type='password'
 										required
 										value={confirm}
 										onChange={(e) => setConfirm(e.target.value)}

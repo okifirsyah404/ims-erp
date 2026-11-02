@@ -10,12 +10,14 @@ import { betterAuthOrganizationPlugin } from './plugins/organization.auth.js';
 
 import { betterAuthPasskeyPlugin } from './plugins/passkey.auth.js';
 import { betterAuthUsernamePlugin } from './plugins/username.auth.js';
+import { betterAuthEmailIdentifierPlugin } from './plugins/identifier.auth.js';
 
 export const betterAuthPlugins = [
   betterAuthOpenAPIPlugin,
   betterAuthAdminPlugin,
   betterAuthOrganizationPlugin,
   betterAuthUsernamePlugin,
+  betterAuthEmailIdentifierPlugin,
   betterAuthMultiSessionPlugin,
   betterAuthEmailOTPPlugin,
   betterAuthPasskeyPlugin,
