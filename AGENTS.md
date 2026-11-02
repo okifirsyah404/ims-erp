@@ -112,8 +112,16 @@ Boundary changes are reviewed against four skills. Read the relevant one
 `register<Module>(container)`, optional `index.ts` public entry, `contracts/`
 (interfaces + zod), `constants/di.ts`, `repositories/`, `services/`,
 `controllers/`, optional `queues/`. Controllers only — there is **no `routes/`
-directory**. `src/index.ts` calls each `register<Module>(container)` and mounts
-each `<Module>Controller.plugin()`.
+directory**.
+
+**Registration and mounting are split across two files.** `src/index.ts`
+calls each `register<Module>(container)` and applies the cross-cutting
+plugins (i18n, CORS, logger) before `.listen()`. `src/app/app.ts` owns every
+`.use(<Module>Controller.plugin())` inside a `createApp()` **factory** — not
+a module-level `const app`. Controllers resolve inside `plugin()`, so the
+container must be populated first; an eagerly-built instance would make
+correctness depend on hoisted import order between the two files. Adding an
+endpoint means registering in `index.ts`, mounting in `app/app.ts`.
 
 **Shared layers — never re-implement per module:**
 

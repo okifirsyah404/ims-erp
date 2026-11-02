@@ -4,7 +4,7 @@ description: Modular monolith boundaries for this project's Elysia backend - eac
 license: MIT
 metadata:
   author: OpenAgentic
-  version: "1.1.0"
+  version: "1.2.0"
   dependsOn: elysia-layered-architecture
   canonicalExample: apps/backend/src/app/location
   secondaryExample: apps/backend/src/app/user
@@ -124,7 +124,10 @@ cycle avoidance are detailed in rule 3.5's reference file.
 2. `constants/di.ts` with the module's tokens (see `elysia-tsyringe`)
 3. `drizzle/schemas/<module>.schema.ts` with `pgSchema("<module>")`
    — except auth-projecting modules (rule 3.3)
-4. `container.ts` exporting `register<Module>(container)`, called in `src/index.ts`
+4. `container.ts` exporting `register<Module>(container)`, called in
+   `src/index.ts`; mount its `Controller.plugin()` in `src/app/app.ts`
+   (registration and mounting live in separate files — see `elysia-tsyringe`
+   rule 2.3)
 5. If the module calls an external system, define the port in `contracts/`
    first, implement in `services/` (see the layered-architecture skill,
    rule 1.2)

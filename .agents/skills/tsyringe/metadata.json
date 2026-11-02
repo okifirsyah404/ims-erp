@@ -1,6 +1,6 @@
 {
   "name": "tsyringe",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Dependency-injection convention for this project using tsyringe — token + registration conventions, lifetime defaults, composition-root rule, and resolution placement for Elysia services and repositories.",
   "author": "OpenAgentic",
   "date": "2026-10",

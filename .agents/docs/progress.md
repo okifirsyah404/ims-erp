@@ -6,8 +6,8 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 ## Completed (this session — backend tidy-up W1–W4, 2026-11-02)
 
 Conformance pass against the `/elysia-module`, `/elysia-tsyringe`,
-`/elysia-layered-architecture` and `/tsyringe` skills. Waves W1–W7 done;
-W8 (docs pass) in progress. **URLs changed** — backend and web-admin moved
+`/elysia-layered-architecture` and `/tsyringe` skills. Waves W1–W9 done;
+W8 (docs pass) complete. **URLs changed** — backend and web-admin moved
 together, nothing pushed.
 
 Remaining known follow-up (deliberately deferred, not forgotten): the
@@ -178,6 +178,44 @@ is now the documented seam where the two halves still meet.
   **9 passed, 0 failed**, idempotent across repeat runs.
 - Manual probes: `/username-availability` → 200; anon `/admin/users`,
   `/users/me` → 401; anon `/invitations/claim/<bad>` → 422.
+
+### W9 — controller mounting moved to `src/app/app.ts`
+
+`src/index.ts` no longer mounts controllers. It keeps the `register*`
+container calls, the i18n/CORS/logger plugins, `.listen()` and the avatar
+worker; `src/app/app.ts` owns every `.use(<Module>Controller.plugin())`
+inside an exported **`createApp()` factory**. A factory, not a module-level
+`const app`, because controllers resolve inside `plugin()`: an eager
+instance would build at import time and make correctness depend on hoisted
+import order between `app.ts` and `index.ts`.
+
+`app.ts` also hoists the two `await OpenAPI.*` calls to a module-level
+`betterAuthOpenApiDocument` so `/docs` stays a static snapshot while
+`createApp()` remains synchronous.
+
+**Corrected a wrong skill rule.** The `tsyringe` skill claimed "the current
+codebase imports no `reflect-metadata` and injection works. Do not add the
+polyfill speculatively". Removing the import to follow it crashed boot:
+
+```
+error: tsyringe requires a reflect polyfill. Please add 'import "reflect-metadata"'
+to the top of your entry point.
+  at node_modules/tsyringe/dist/cjs/index.js:5:15
+```
+
+tsyringe's CJS entry asserts `Reflect.getMetadata` at load; Bun's native
+`design:paramtypes` emission does not define it, so the guard fires on Bun
+too. The import is restored with a comment, and both skills now document the
+real mechanism instead of the "Bun needs no polyfill" myth.
+
+Skill bumps: `elysia-tsyringe` 1.0.0 → **1.1.0** (mount split + rule 2.5
+correction), `elysia-module` 1.1.0 → **1.2.0** (checklist §3.6 split),
+`tsyringe` 1.0.0 → **1.1.0** (rule 2.1 correction). Recorded in `skills.md`.
+
+Verification after the change: `bunx tsc --noEmit` → exit 0; `bun test` →
+**131 pass, 0 fail**; `bunx oxlint` → 0 errors, same 4 pre-existing warnings;
+`smoke-admin-api.ts` → **18/18**; `smoke-cache-invalidation.ts` → **9/9**;
+`/docs` → 200, anon `/users/me` and `/admin/users` → 401.
 
 ## Completed (this session — multi-organization, 2026-11-02)
 

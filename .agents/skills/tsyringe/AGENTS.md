@@ -1,6 +1,6 @@
 # TSyringe
 
-**Version 1.0.0**
+**Version 1.1.0**
 OpenAgentic
 October 2026
 
