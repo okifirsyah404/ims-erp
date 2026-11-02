@@ -15,6 +15,7 @@ import {
 } from '../contracts/location.contract';
 import { LOCATION_SERVICE_TOKEN } from '../constants/di';
 import { LocationService } from '../services/location.service';
+import { translator } from '@providers/i18n/translator';
 
 /**
  * Builds the response envelope metadata shared by all location endpoints.
@@ -97,16 +98,18 @@ export class LocationController {
 			name: 'location',
 			tags: ['Location'],
 		})
-			.onError({ as: 'local' }, ({ code, error, set }) => {
+			.onError({ as: 'local' }, (ctx) => {
+				const { code, error, set } = ctx;
+				const t = translator(ctx);
 				if (code === 'VALIDATION') {
 					set.status = 400;
-					return errorEnvelope(400, 'Validation failed', [
+					return errorEnvelope(400, t('common.validationFailed'), [
 						{ field: error.value ? String(error.value) : null, message: error.message },
 					]);
 				}
 				if (code === 'PARSE' || error instanceof ZodError) {
 					set.status = 400;
-					return errorEnvelope(400, 'Validation failed', [
+					return errorEnvelope(400, t('common.validationFailed'), [
 						{ field: null, message: String(error) },
 					]);
 				}
@@ -121,13 +124,15 @@ export class LocationController {
 						),
 					),
 			)
-			.get('/provinces/:id', async ({ params, status }) => {
+			.get('/provinces/:id', async (ctx) => {
+				const { params, status } = ctx;
+				const t = translator(ctx);
 				const row = await locationService.getProvince(params.id);
 				if (!row) {
 					return status(
 						404,
-						errorEnvelope(404, 'Not found', [
-							{ message: 'Province not found' },
+						errorEnvelope(404, t('common.notFound'), [
+							{ message: t('location.provinceNotFound') },
 						]),
 					);
 				}
@@ -142,13 +147,15 @@ export class LocationController {
 						),
 					),
 			)
-			.get('/regencies/:id', async ({ params, status }) => {
+			.get('/regencies/:id', async (ctx) => {
+				const { params, status } = ctx;
+				const t = translator(ctx);
 				const row = await locationService.getRegency(params.id);
 				if (!row) {
 					return status(
 						404,
-						errorEnvelope(404, 'Not found', [
-							{ message: 'Regency not found' },
+						errorEnvelope(404, t('common.notFound'), [
+							{ message: t('location.regencyNotFound') },
 						]),
 					);
 				}
@@ -168,13 +175,15 @@ export class LocationController {
 						),
 					),
 			)
-			.get('/districts/:id', async ({ params, status }) => {
+			.get('/districts/:id', async (ctx) => {
+				const { params, status } = ctx;
+				const t = translator(ctx);
 				const row = await locationService.getDistrict(params.id);
 				if (!row) {
 					return status(
 						404,
-						errorEnvelope(404, 'Not found', [
-							{ message: 'District not found' },
+						errorEnvelope(404, t('common.notFound'), [
+							{ message: t('location.districtNotFound') },
 						]),
 					);
 				}
@@ -194,13 +203,15 @@ export class LocationController {
 						),
 					),
 			)
-			.get('/villages/:id', async ({ params, status }) => {
+			.get('/villages/:id', async (ctx) => {
+				const { params, status } = ctx;
+				const t = translator(ctx);
 				const row = await locationService.getVillage(params.id);
 				if (!row) {
 					return status(
 						404,
-						errorEnvelope(404, 'Not found', [
-							{ message: 'Village not found' },
+						errorEnvelope(404, t('common.notFound'), [
+							{ message: t('location.villageNotFound') },
 						]),
 					);
 				}

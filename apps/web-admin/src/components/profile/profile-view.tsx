@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { selfUserQueryOptions } from '@/lib/user-api';
 import { Avatar, AvatarFallback, AvatarImage } from '@ims-erp/ui/components/avatar';
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -25,14 +26,13 @@ import { Input } from '@ims-erp/ui/components/input';
  */
 export function ProfileView() {
 	const { data: user } = useSuspenseQuery(selfUserQueryOptions);
+	const { t } = useTranslation('account');
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Profile</CardTitle>
-				<CardDescription>
-					Your account information as visible to the organization
-				</CardDescription>
+				<CardTitle>{t('profile.title')}</CardTitle>
+				<CardDescription>{t('profile.description')}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<FieldGroup>
@@ -56,11 +56,13 @@ export function ProfileView() {
 						</div>
 					</div>
 					<Field>
-						<FieldLabel htmlFor='profile-name'>Name</FieldLabel>
+						<FieldLabel htmlFor='profile-name'>{t('profile.name')}</FieldLabel>
 						<Input id='profile-name' value={user.name} readOnly />
 					</Field>
 					<Field>
-						<FieldLabel htmlFor='profile-username'>Username</FieldLabel>
+						<FieldLabel htmlFor='profile-username'>
+							{t('profile.username')}
+						</FieldLabel>
 						<Input
 							id='profile-username'
 							value={user.displayUsername ?? user.username ?? ''}
@@ -68,7 +70,7 @@ export function ProfileView() {
 						/>
 					</Field>
 					<Field>
-						<FieldLabel htmlFor='profile-email'>Email</FieldLabel>
+						<FieldLabel htmlFor='profile-email'>{t('profile.email')}</FieldLabel>
 						<div className='flex items-center gap-2'>
 							<Input
 								id='profile-email'
@@ -77,17 +79,17 @@ export function ProfileView() {
 								className='flex-1'
 							/>
 							<Badge variant={user.emailVerified ? 'secondary' : 'outline'}>
-								{user.emailVerified ? 'Verified' : 'Unverified'}
+								{user.emailVerified ? t('email.verified') : t('email.unverified')}
 							</Badge>
 						</div>
 					</Field>
 					<Field>
-						<FieldLabel htmlFor='profile-bio'>Bio</FieldLabel>
+						<FieldLabel htmlFor='profile-bio'>{t('profile.bio')}</FieldLabel>
 						<Input id='profile-bio' value={user.bio ?? ''} readOnly />
 					</Field>
 					<div>
 						<Button render={<Link to='/profiles/edit' />}>
-							Edit profile
+							{t('profile.edit')}
 						</Button>
 					</div>
 				</FieldGroup>

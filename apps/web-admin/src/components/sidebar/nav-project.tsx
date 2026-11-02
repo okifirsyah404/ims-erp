@@ -7,6 +7,7 @@ import {
 	Trash2,
 	type LucideIcon,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import {
 	DropdownMenu,
@@ -35,10 +36,11 @@ export function NavProjects({
 	}[];
 }) {
 	const { isMobile } = useSidebar();
+	const { t } = useTranslation('nav');
 
 	return (
 		<SidebarGroup className='group-data-[collapsible=icon]:hidden'>
-			<SidebarGroupLabel>Projects</SidebarGroupLabel>
+			<SidebarGroupLabel>{t('project.projects')}</SidebarGroupLabel>
 			<SidebarMenu>
 				{projects.map((item) => (
 					<SidebarMenuItem key={item.name}>
@@ -49,7 +51,7 @@ export function NavProjects({
 						<DropdownMenu>
 							<DropdownMenuTrigger render={<SidebarMenuAction showOnHover />}>
 								<MoreHorizontal />
-								<span className='sr-only'>More</span>
+								<span className='sr-only'>{t('project.more')}</span>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent
 								className='w-48 rounded-lg'
@@ -58,16 +60,16 @@ export function NavProjects({
 							>
 								<DropdownMenuItem>
 									<Folder className='text-muted-foreground' />
-									<span>View Project</span>
+									<span>{t('project.view')}</span>
 								</DropdownMenuItem>
 								<DropdownMenuItem>
 									<Forward className='text-muted-foreground' />
-									<span>Share Project</span>
+									<span>{t('project.share')}</span>
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem>
 									<Trash2 className='text-muted-foreground' />
-									<span>Delete Project</span>
+									<span>{t('project.delete')}</span>
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
@@ -76,7 +78,7 @@ export function NavProjects({
 				<SidebarMenuItem>
 					<SidebarMenuButton className='text-sidebar-foreground/70'>
 						<MoreHorizontal className='text-sidebar-foreground/70' />
-						<span>More</span>
+						<span>{t('project.more')}</span>
 					</SidebarMenuButton>
 				</SidebarMenuItem>
 			</SidebarMenu>

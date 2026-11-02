@@ -18,22 +18,22 @@ import SidebarSection from './sidebar-section';
  */
 const items: SidebarItem[] = [
 	{
-		title: 'Organization',
+		titleKey: 'item.organizations',
 		url: '/organizations',
 		icon: Building2,
 	},
 	{
-		title: 'Users',
+		titleKey: 'item.users',
 		url: '/users',
 		icon: Users,
 	},
 	{
-		title: 'Audit Log',
+		titleKey: 'item.auditLog',
 		url: '/audit',
 		icon: ScrollText,
 	},
 	{
-		title: 'Settings',
+		titleKey: 'item.settings',
 		url: '#',
 		icon: Settings,
 	},
@@ -43,5 +43,5 @@ export function NavAdmin() {
 	const { data: user } = useQuery(selfUserQueryOptions);
 	if (user?.role !== 'admin') return null;
 
-	return <SidebarSection label='Administration' items={items} />;
+	return <SidebarSection labelKey='section.administration' items={items} />;
 }

@@ -19,6 +19,28 @@ import { APIError, getSessionFromCtx } from 'better-auth/api';
 import { createAuthMiddleware } from 'better-auth/api';
 import type { BetterAuthOptions, Where } from 'better-auth';
 import { erpRoleNames, type ErpRoleName } from '@ims-erp/common';
+import { translateForRequest } from '@providers/i18n/translator';
+
+/**
+ * Hook-injected messages, translated per request.
+ *
+ * @remarks
+ * Better Auth's own errors go through `@better-auth/i18n` (see
+ * `plugins/i18n.auth.ts`), but errors thrown from these `before` hooks never
+ * reach that plugin's translation step and would otherwise always be English.
+ * They are resolved here from the same `Accept-Language` header instead.
+ */
+function apiMessages(headers: Headers | undefined) {
+	return {
+		authenticationRequired: translateForRequest(
+			'common.authenticationRequired',
+			headers,
+		),
+		ownerGrantRequired: translateForRequest('auth.ownerGrantRequired', headers),
+		roleNotGrantable: (roles: string) =>
+			translateForRequest('auth.roleNotGrantable', headers, { roles }),
+	};
+}
 
 const OWNER_ROLE: ErpRoleName = 'owner';
 /** Roles an organization admin may grant without being an owner. */
@@ -91,6 +113,7 @@ export function betterAuthHooks(): NonNullable<BetterAuthOptions['hooks']> {
 			const path = ctx.path;
 			const body = (ctx.body ?? {}) as { role?: RoleInput };
 			const requested = parseRoles(body.role);
+			const messages = apiMessages(ctx.headers);
 
 			// Owner-role grants always require an acting owner.
 			if (
@@ -106,14 +129,12 @@ export function betterAuthHooks(): NonNullable<BetterAuthOptions['hooks']> {
 				const session = await getSessionFromCtx(ctx).catch(() => null);
 				if (!session) {
 					throw new APIError('UNAUTHORIZED', {
-						message: 'Authentication required',
+						message: messages.authenticationRequired,
 					});
 				}
 				const actor = await findActorMember(ctx);
 				if (!actor || !containsOwner(parseRoles(actor.role))) {
-					throw forbidden(
-						'Only organization owners can grant the owner role',
-					);
+					throw forbidden(messages.ownerGrantRequired);
 				}
 				return;
 			}
@@ -132,7 +153,7 @@ export function betterAuthHooks(): NonNullable<BetterAuthOptions['hooks']> {
 						(role) => !ADMIN_GRANTABLE_ROLES.includes(role),
 					);
 					if (illegal.length > 0) {
-						throw forbidden(`Role not grantable: ${illegal.join(', ')}`);
+						throw forbidden(messages.roleNotGrantable(illegal.join(', ')));
 					}
 				}
 			}

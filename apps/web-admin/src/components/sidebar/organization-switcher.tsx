@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronsUpDown, Building2, Plus, Settings } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { toast } from '@/components/toast';
 
 import {
@@ -47,6 +48,7 @@ export function OrganizationSwitcher() {
 	const { isMobile } = useSidebar();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const { t } = useTranslation('nav');
 	const { data: session, isPending: sessionPending } = useSession();
 	const isAppAdmin = session?.user?.role === 'admin';
 
@@ -75,9 +77,9 @@ export function OrganizationSwitcher() {
 				queryClient.invalidateQueries({ queryKey: ['erp-has-permission'] }),
 				queryClient.invalidateQueries({ queryKey: ['erp-organizations'] }),
 			]);
-			toast.success('Organization switched');
+			toast.success(t('organization.switched'));
 		} catch {
-			toast.error('Failed to switch organization');
+			toast.error(t('organization.switchFailed'));
 		}
 	};
 
@@ -104,9 +106,11 @@ export function OrganizationSwitcher() {
 							<Building2 className='size-4' />
 						</div>
 						<div className='grid flex-1 text-left text-sm leading-tight'>
-							<span className='truncate font-medium'>No organization</span>
+							<span className='truncate font-medium'>
+								{t('organization.none')}
+							</span>
 							<span className='truncate text-xs text-muted-foreground'>
-								Set up your organization
+								{t('organization.setUp')}
 							</span>
 						</div>
 					</SidebarMenuButton>
@@ -151,7 +155,7 @@ export function OrganizationSwitcher() {
 						    open. */}
 						<DropdownMenuGroup>
 							<DropdownMenuLabel className='text-xs text-muted-foreground'>
-								Organizations
+								{t('breadcrumb.organizations')}
 							</DropdownMenuLabel>
 							{organizations_.map((org) => (
 								<DropdownMenuItem
@@ -174,7 +178,9 @@ export function OrganizationSwitcher() {
 							<div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
 								<Settings className='size-4' />
 							</div>
-							<div className='font-medium text-muted-foreground'>Manage</div>
+							<div className='font-medium text-muted-foreground'>
+								{t('organization.manage')}
+							</div>
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							className='gap-2 p-2'
@@ -184,7 +190,7 @@ export function OrganizationSwitcher() {
 								<Plus className='size-4' />
 							</div>
 							<div className='font-medium text-muted-foreground'>
-								New organization
+								{t('organization.new')}
 							</div>
 						</DropdownMenuItem>
 					</DropdownMenuContent>

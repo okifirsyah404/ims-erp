@@ -4,7 +4,7 @@ import type { SidebarItem } from './sidebar-item';
 import SidebarSection from './sidebar-section';
 
 /**
- * Administration navigation (platform admins only).
+ * Inventory navigation.
  *
  * Visibility is gated by `main-sidebar` on the self user's platform role
  * (`user.role === 'admin'`). UX only - the backend enforces every
@@ -12,32 +12,32 @@ import SidebarSection from './sidebar-section';
  */
 const items: SidebarItem[] = [
 	{
-		title: 'Warehouses',
+		titleKey: 'item.warehouses',
 		icon: Warehouse,
 		url: '/inventory/warehouses',
 	},
 	{
-		title: 'Items',
+		titleKey: 'item.items',
 		icon: Package,
 		items: [
 			{
-				title: 'Products',
+				titleKey: 'item.products',
 				url: '/inventory/products',
 			},
 			{
-				title: 'Components',
+				titleKey: 'item.components',
 				url: '/inventory/components',
 			},
 			{
-				title: 'Materials',
+				titleKey: 'item.materials',
 				url: '/inventory/materials',
 			},
 			{
-				title: 'Tools',
+				titleKey: 'item.tools',
 				url: '/inventory/tools',
 			},
 			{
-				title: 'Item Movements',
+				titleKey: 'item.itemMovements',
 				url: '/inventory/item-movements',
 			},
 		],
@@ -45,5 +45,5 @@ const items: SidebarItem[] = [
 ];
 
 export function NavInventory() {
-	return <SidebarSection label='Inventory' items={items} />;
+	return <SidebarSection labelKey='section.inventory' items={items} />;
 }

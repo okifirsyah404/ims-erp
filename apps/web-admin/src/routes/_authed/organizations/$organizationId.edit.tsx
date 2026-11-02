@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-router';
 import { toast } from '@/components/toast';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import {
@@ -35,6 +36,7 @@ function EditOrganizationPage() {
 	const { organizationId } = useParams({ from: Route.id });
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const { t } = useTranslation(['admin', 'common']);
 	const { data: organization } = useQuery({
 		...organizationQueryOptions(organizationId),
 		retry: false,
@@ -54,7 +56,7 @@ function EditOrganizationPage() {
 		setPending(true);
 		try {
 			await updateOrganization(organizationId, { name });
-			toast.success('Organization updated');
+			toast.success(t('orgEdit.saved'));
 			await queryClient.invalidateQueries({
 				queryKey: organizationQueryOptions(organizationId).queryKey,
 			});
@@ -63,7 +65,9 @@ function EditOrganizationPage() {
 				params: { organizationId },
 			});
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed');
+			toast.error(
+				error instanceof Error ? error.message : t('common:error.failed'),
+			);
 		} finally {
 			setPending(false);
 		}
@@ -72,20 +76,20 @@ function EditOrganizationPage() {
 	return (
 		<div className='flex flex-col gap-6 p-6'>
 			<div>
-				<h1 className='text-2xl font-bold'>Edit organization</h1>
+				<h1 className='text-2xl font-bold'>{t('orgEdit.title')}</h1>
 				<p className='text-sm text-muted-foreground'>
-					The slug is permanent and cannot be changed.
+					{t('orgEdit.description')}
 				</p>
 			</div>
 			<Card className='max-w-xl'>
 				<CardHeader>
-					<CardTitle>Organization details</CardTitle>
+					<CardTitle>{t('orgEdit.details')}</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit}>
 						<FieldGroup>
 							<Field>
-								<FieldLabel htmlFor='name'>Name</FieldLabel>
+								<FieldLabel htmlFor='name'>{t('orgEdit.name')}</FieldLabel>
 								<Input
 									id='name'
 									value={name}
@@ -96,7 +100,9 @@ function EditOrganizationPage() {
 							</Field>
 							<div className='flex gap-2'>
 								<Button type='submit' disabled={pending || !name}>
-									{pending ? 'Saving…' : 'Save'}
+									{pending
+										? t('common:action.saving')
+										: t('common:action.save')}
 								</Button>
 								<Button
 									type='button'
@@ -108,7 +114,7 @@ function EditOrganizationPage() {
 										})
 									}
 								>
-									Cancel
+									{t('common:action.cancel')}
 								</Button>
 							</div>
 						</FieldGroup>

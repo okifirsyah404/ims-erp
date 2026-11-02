@@ -99,7 +99,7 @@ export class BetterAuthUserManagementGateway
 					} | null>;
 				},
 			)) as { email: string } | null;
-			if (!user) throw new ClaimStateError('Invited user no longer exists');
+			if (!user) throw new ClaimStateError();
 
 			const response = await auth.api.signInEmail({
 				body: { email: user.email, password: input.password },
@@ -157,12 +157,14 @@ export class BetterAuthUserManagementGateway
 function translateClaimError(error: unknown): Error {
 	if (error instanceof APIError) {
 		if (error.status === 422) {
-			return new ClaimConflictError(
+			return ClaimConflictError.reportedByAuth(
 				error.message ?? 'Username or email already in use',
 			);
 		}
 		if (error.status === 400) {
-			return new ClaimStateError(error.message ?? 'Invalid claim data');
+			return ClaimStateError.reportedByAuth(
+				error.message ?? 'Invalid claim data',
+			);
 		}
 	}
 	return error as Error;

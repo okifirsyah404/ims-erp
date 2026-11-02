@@ -1,6 +1,7 @@
 import { Link, useMatches } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Fragment } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
 	Breadcrumb,
@@ -30,6 +31,7 @@ const MAX_VISIBLE = 4;
 export function AppBreadcrumb() {
 	const matches = useMatches();
 	const queryClient = useQueryClient();
+	const { t } = useTranslation('nav');
 
 	const enrich = (fullPath: string, params: Record<string, string | undefined>) => {
 		const organizationId = params.organizationId;
@@ -54,7 +56,7 @@ export function AppBreadcrumb() {
 		return undefined;
 	};
 
-	const crumbs = collapseCrumbs(buildCrumbs(matches, enrich), MAX_VISIBLE);
+	const crumbs = collapseCrumbs(buildCrumbs(matches, t, enrich), MAX_VISIBLE);
 
 	return (
 		<Breadcrumb>

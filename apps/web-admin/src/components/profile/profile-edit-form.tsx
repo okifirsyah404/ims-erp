@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from '@/components/toast';
@@ -39,6 +40,7 @@ export function ProfileEditForm() {
 	const { data: user } = useSuspenseQuery(selfUserQueryOptions);
 	const navigate = useNavigate();
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const { t } = useTranslation(['account', 'common']);
 
 	const [name, setName] = useState(user.name);
 	const [username, setUsername] = useState(user.displayUsername ?? user.username ?? '');
@@ -50,7 +52,7 @@ export function ProfileEditForm() {
 		mutationFn: () => updateSelfUser({ name, username: username || undefined, bio: bio || undefined }),
 		onSuccess: async () => {
 			await invalidateSelfUser();
-			toast.success('Profile updated');
+			toast.success(t('profile.updated'));
 			navigate({ to: '/profiles' });
 		},
 		onError: (error: Error) => setFormError(error.message),
@@ -61,7 +63,7 @@ export function ProfileEditForm() {
 		onSuccess: async (updated) => {
 			setImageUrl(updated.image);
 			await invalidateSelfUser();
-			toast.success('Avatar updated');
+			toast.success(t('profile.avatarUpdated'));
 		},
 		onError: (error: Error) => toast.error(error.message),
 	});
@@ -71,7 +73,7 @@ export function ProfileEditForm() {
 		event.target.value = '';
 		if (!file) return;
 		if (!AVATAR_TYPES.includes(file.type)) {
-			toast.error('Avatar must be a PNG, JPEG, or WebP image');
+			toast.error(t('profile.avatarInvalidType'));
 			return;
 		}
 		if (file.size > MAX_AVATAR_BYTES) {
@@ -79,7 +81,7 @@ export function ProfileEditForm() {
 			// before upload, and the 2 MiB cap applies to the compressed blob.
 			// Only absurdly large files are rejected outright.
 			if (file.size > 25 * MAX_AVATAR_BYTES) {
-				toast.error('Image is too large (max 50 MiB)');
+				toast.error(t('profile.avatarTooLarge'));
 				return;
 			}
 		}
@@ -89,8 +91,8 @@ export function ProfileEditForm() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Edit profile</CardTitle>
-				<CardDescription>Update how you appear across the ERP</CardDescription>
+				<CardTitle>{t('profile.editTitle')}</CardTitle>
+				<CardDescription>{t('profile.editDescription')}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<FieldGroup>
@@ -120,9 +122,11 @@ export function ProfileEditForm() {
 								onClick={() => fileInputRef.current?.click()}
 								disabled={avatarMutation.isPending}
 							>
-								{avatarMutation.isPending ? 'Uploading…' : 'Change avatar'}
+								{avatarMutation.isPending
+									? t('profile.uploading')
+									: t('profile.changeAvatar')}
 							</Button>
-							<FieldDescription>PNG, JPEG, or WebP — compressed automatically.</FieldDescription>
+							<FieldDescription>{t('profile.avatarHint')}</FieldDescription>
 						</div>
 					</div>
 					<form
@@ -134,7 +138,7 @@ export function ProfileEditForm() {
 					>
 						<FieldGroup>
 							<Field>
-								<FieldLabel htmlFor='edit-name'>Name</FieldLabel>
+								<FieldLabel htmlFor='edit-name'>{t('profile.name')}</FieldLabel>
 								<Input
 									id='edit-name'
 									required
@@ -145,7 +149,9 @@ export function ProfileEditForm() {
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='edit-username'>Username</FieldLabel>
+								<FieldLabel htmlFor='edit-username'>
+									{t('profile.username')}
+								</FieldLabel>
 								<Input
 									id='edit-username'
 									minLength={3}
@@ -153,10 +159,10 @@ export function ProfileEditForm() {
 									value={username}
 									onChange={(e) => setUsername(e.target.value)}
 								/>
-								<FieldDescription>3–30 characters; must be unique.</FieldDescription>
+								<FieldDescription>{t('profile.bioHint')}</FieldDescription>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='edit-bio'>Bio</FieldLabel>
+								<FieldLabel htmlFor='edit-bio'>{t('profile.bio')}</FieldLabel>
 								<Textarea
 									id='edit-bio'
 									maxLength={1000}
@@ -164,7 +170,7 @@ export function ProfileEditForm() {
 									value={bio}
 									onChange={(e) => setBio(e.target.value)}
 								/>
-								<FieldDescription>Up to 1000 characters.</FieldDescription>
+								<FieldDescription>{t('profile.bioHint')}</FieldDescription>
 							</Field>
 							{formError && (
 								<p className='text-destructive text-sm' role='alert'>
@@ -173,14 +179,16 @@ export function ProfileEditForm() {
 							)}
 							<div className='flex gap-2'>
 								<Button type='submit' disabled={saveMutation.isPending}>
-									{saveMutation.isPending ? 'Saving…' : 'Save changes'}
+									{saveMutation.isPending
+										? t('form.saving')
+										: t('profile.saveChanges')}
 								</Button>
 								<Button
 									type='button'
 									variant='ghost'
 									render={<a href='/profiles' />}
 								>
-									Cancel
+									{t('common:action.cancel')}
 								</Button>
 							</div>
 						</FieldGroup>

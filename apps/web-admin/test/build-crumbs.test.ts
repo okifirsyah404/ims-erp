@@ -3,8 +3,17 @@ import { describe, expect, test } from 'bun:test';
 import {
 	buildCrumbs,
 	collapseCrumbs,
+	type CrumbEnricher,
 	type CrumbMatch,
 } from '../src/components/layout/build-crumbs';
+
+/**
+ * `buildCrumbs` is React-free and takes a translator, so these tests inject an
+ * identity function: labels then come back as the i18next *keys* the module
+ * resolved, which is what we actually want to assert on (the wording lives in
+ * the locale bundles and is covered by the parity test there).
+ */
+const identity = (key: string) => key;
 
 function match(
 	routeId: string,
@@ -15,37 +24,65 @@ function match(
 	return { routeId, fullPath, params, staticData };
 }
 
+/** Maps keys to human labels, mimicking what `t` does in the app. */
+const labels: Record<string, string> = {
+	'breadcrumb.home': 'Home',
+	'breadcrumb.organizations': 'Organizations',
+	'breadcrumb.organizationEdit': 'Edit',
+	'breadcrumb.memberNew': 'Add member',
+	'breadcrumb.memberEdit': 'Edit member',
+};
+const lookup = (key: string) => labels[key] ?? key;
+
 describe('buildCrumbs', () => {
 	test('dashboard renders a single Home page crumb', () => {
-		const crumbs = buildCrumbs([
-			match('__root__', '/'),
-			match('/_authed', '/'),
-			match('/_authed/', '/'),
+		const crumbs = buildCrumbs(
+			[
+				match('__root__', '/'),
+				match('/_authed', '/'),
+				match('/_authed/', '/'),
+			],
+			lookup,
+		);
+		expect(crumbs).toEqual([
+			{ key: 'home', label: 'Home', href: null, params: {} },
 		]);
-		expect(crumbs).toEqual([{ key: 'home', label: 'Home', href: null, params: {} }]);
 	});
 
 	test('skips layout-only routes and labels the organizations list', () => {
-		const crumbs = buildCrumbs([
-			match('__root__', '/'),
-			match('/_authed', '/'),
-			match('/_authed/organizations/', '/organizations/'),
+		const crumbs = buildCrumbs(
+			[
+				match('__root__', '/'),
+				match('/_authed', '/'),
+				match('/_authed/organizations/', '/organizations/'),
+			],
+			lookup,
+		);
+		expect(crumbs.map((crumb) => crumb.label)).toEqual([
+			'Home',
+			'Organizations',
 		]);
-		expect(crumbs.map((crumb) => crumb.label)).toEqual(['Home', 'Organizations']);
 		expect(crumbs.at(-1)?.href).toBeNull();
 	});
 
 	test('org detail trail: Home > Organizations > {id}', () => {
-		const crumbs = buildCrumbs([
-			match('__root__', '/'),
-			match('/_authed', '/'),
-			match(
-				'/_authed/organizations/$organizationId',
-				'/organizations/$organizationId',
-				{ organizationId: 'org-1' },
-			),
+		const crumbs = buildCrumbs(
+			[
+				match('__root__', '/'),
+				match('/_authed', '/'),
+				match(
+					'/_authed/organizations/$organizationId',
+					'/organizations/$organizationId',
+					{ organizationId: 'org-1' },
+				),
+			],
+			lookup,
+		);
+		expect(crumbs.map((crumb) => crumb.label)).toEqual([
+			'Home',
+			'Organizations',
+			'org-1',
 		]);
-		expect(crumbs.map((crumb) => crumb.label)).toEqual(['Home', 'Organizations', 'org-1']);
 		// Last crumb is the current page, earlier crumbs are links.
 		expect(crumbs.map((crumb) => crumb.href)).toEqual([
 			'/',
@@ -55,20 +92,23 @@ describe('buildCrumbs', () => {
 	});
 
 	test('edit trail synthesizes the index-route ancestor', () => {
-		const crumbs = buildCrumbs([
-			match('__root__', '/'),
-			match('/_authed', '/'),
-			match(
-				'/_authed/organizations/$organizationId',
-				'/organizations/$organizationId',
-				{ organizationId: 'org-1' },
-			),
-			match(
-				'/_authed/organizations/$organizationId/edit',
-				'/organizations/$organizationId/edit',
-				{ organizationId: 'org-1' },
-			),
-		]);
+		const crumbs = buildCrumbs(
+			[
+				match('__root__', '/'),
+				match('/_authed', '/'),
+				match(
+					'/_authed/organizations/$organizationId',
+					'/organizations/$organizationId',
+					{ organizationId: 'org-1' },
+				),
+				match(
+					'/_authed/organizations/$organizationId/edit',
+					'/organizations/$organizationId/edit',
+					{ organizationId: 'org-1' },
+				),
+			],
+			lookup,
+		);
 		expect(crumbs.map((crumb) => crumb.label)).toEqual([
 			'Home',
 			'Organizations',
@@ -78,42 +118,83 @@ describe('buildCrumbs', () => {
 	});
 
 	test('member edit falls back to the static label', () => {
-		const crumbs = buildCrumbs([
-			match(
-				'/_authed/organizations/$organizationId',
-				'/organizations/$organizationId',
-				{ organizationId: 'org-1' },
-			),
-			match(
-				'/_authed/organizations/$organizationId/members/$memberId/edit',
-				'/organizations/$organizationId/members/$memberId/edit',
-				{ organizationId: 'org-1', memberId: 'mem-1' },
-			),
-		]);
+		const crumbs = buildCrumbs(
+			[
+				match(
+					'/_authed/organizations/$organizationId',
+					'/organizations/$organizationId',
+					{ organizationId: 'org-1' },
+				),
+				match(
+					'/_authed/organizations/$organizationId/members/$memberId/edit',
+					'/organizations/$organizationId/members/$memberId/edit',
+					{ organizationId: 'org-1', memberId: 'mem-1' },
+				),
+			],
+			lookup,
+		);
 		expect(crumbs.at(-1)?.label).toBe('Edit member');
 	});
 
 	test('enricher overrides dynamic labels', () => {
+		const enrich: CrumbEnricher = (fullPath) =>
+			fullPath === '/organizations/$organizationId' ? 'Acme Inc' : undefined;
 		const crumbs = buildCrumbs(
-			[match('/_authed/organizations/$organizationId', '/organizations/$organizationId', { organizationId: 'org-1' })],
-			(fullPath) =>
-				fullPath === '/organizations/$organizationId' ? 'Acme Inc' : undefined,
+			[
+				match(
+					'/_authed/organizations/$organizationId',
+					'/organizations/$organizationId',
+					{ organizationId: 'org-1' },
+				),
+			],
+			lookup,
+			enrich,
 		);
 		expect(crumbs.at(-1)?.label).toBe('Acme Inc');
 	});
 
 	test('staticData.crumb wins over every fallback', () => {
+		// `staticData.crumb` holds an i18next key, so it goes through `t`.
 		const crumbs = buildCrumbs(
-			[match('/_authed/organizations/$organizationId/edit', '/organizations/$organizationId/edit', {}, { crumb: 'Rename' })],
+			[
+				match(
+					'/_authed/organizations/$organizationId/edit',
+					'/organizations/$organizationId/edit',
+					{},
+					{ crumb: 'breadcrumb.organizationEdit' },
+				),
+			],
+			lookup,
 		);
-		expect(crumbs.at(-1)?.label).toBe('Rename');
+		expect(crumbs.at(-1)?.label).toBe('Edit');
 	});
 
 	test('unknown routes prettify their last path segment', () => {
-		const crumbs = buildCrumbs([match('/_authed/widgets/$widgetId', '/widgets/$widgetId', { widgetId: 'w-9' })]);
+		const crumbs = buildCrumbs(
+			[
+				match('/_authed/widgets/$widgetId', '/widgets/$widgetId', {
+					widgetId: 'w-9',
+				}),
+			],
+			identity,
+		);
 		expect(crumbs.at(-1)?.label).toBe('w-9');
-		const crumbs2 = buildCrumbs([match('/_authed/widgets/', '/widgets/')]);
+		const crumbs2 = buildCrumbs(
+			[match('/_authed/widgets/', '/widgets/')],
+			identity,
+		);
 		expect(crumbs2.at(-1)?.label).toBe('Widgets');
+	});
+
+	test('static labels are emitted as keys, not English text', () => {
+		const crumbs = buildCrumbs(
+			[match('/_authed/organizations/', '/organizations/')],
+			identity,
+		);
+		expect(crumbs.map((crumb) => crumb.label)).toEqual([
+			'breadcrumb.home',
+			'breadcrumb.organizations',
+		]);
 	});
 });
 

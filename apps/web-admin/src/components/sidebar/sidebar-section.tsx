@@ -14,42 +14,48 @@ import {
 	SidebarMenuSubItem,
 } from '@ims-erp/ui/components/sidebar';
 import { ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { NavKey } from '@ims-erp/locales';
 import type { SidebarItem } from './sidebar-item';
 import { Link } from '@tanstack/react-router';
 
 export default function SidebarSection({
-	label,
+	labelKey,
 	items,
 }: {
-	label: string;
+	/** Key in the `nav` namespace for the section heading. */
+	labelKey: NavKey;
 	items: SidebarItem[];
 }) {
+	const { t } = useTranslation('nav');
+
 	return (
 		<SidebarGroup>
-			<SidebarGroupLabel>{label}</SidebarGroupLabel>
+			<SidebarGroupLabel>{t(labelKey)}</SidebarGroupLabel>
 			<SidebarMenu>
 				{items.map((item) => {
+					const title = t(item.titleKey);
 					if (item.items) {
 						return (
 							<Collapsible
-								key={item.title}
+								key={item.titleKey}
 								render={<SidebarMenuItem />}
 								defaultOpen={item.isActive}
 								className='group/collapsible'
 							>
 								<CollapsibleTrigger
-									render={<SidebarMenuButton tooltip={item.title} />}
+									render={<SidebarMenuButton tooltip={title} />}
 								>
 									{item.icon && <item.icon />}
-									<span>{item.title}</span>
+									<span>{title}</span>
 									<ChevronRight className='ml-auto transition-transform duration-200 group-data-open/collapsible:rotate-90' />
 								</CollapsibleTrigger>
 								<CollapsibleContent>
 									<SidebarMenuSub>
 										{item.items?.map((subItem) => (
-											<SidebarMenuSubItem key={subItem.title}>
+											<SidebarMenuSubItem key={subItem.titleKey}>
 												<SidebarMenuSubButton href={subItem.url}>
-													<span>{subItem.title}</span>
+													<span>{t(subItem.titleKey)}</span>
 												</SidebarMenuSubButton>
 											</SidebarMenuSubItem>
 										))}
@@ -60,9 +66,9 @@ export default function SidebarSection({
 					}
 
 					return (
-						<SidebarMenuItem key={item.title}>
+						<SidebarMenuItem key={item.titleKey}>
 							<SidebarMenuButton
-								tooltip={item.title}
+								tooltip={title}
 								render={
 									item.url === '#' ? undefined : (
 										<Link to={item.url} activeProps={{ 'data-active': true }} />
@@ -70,7 +76,7 @@ export default function SidebarSection({
 								}
 							>
 								{item.icon && <item.icon />}
-								<span>{item.title}</span>
+								<span>{title}</span>
 							</SidebarMenuButton>
 						</SidebarMenuItem>
 					);

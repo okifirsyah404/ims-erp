@@ -4,7 +4,10 @@ import { wrap } from '@bogeychan/elysia-logger';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
 import { pinoLogger } from '@providers/logger/logger';
+import { DEFAULT_LANGUAGE, LANGUAGE_CODES, en, id } from '@ims-erp/locales';
 import { Elysia } from 'elysia';
+import { i18next } from 'elysia-i18next';
+import { createInstance } from 'i18next';
 import { container } from 'tsyringe';
 import { elysiaApp } from './app/app';
 import { startAvatarWorker } from './app/user/queues/avatar.worker';
@@ -37,7 +40,41 @@ registerOrganization(container);
 registerUserManagement(container);
 registerAuthorization(container);
 
+/**
+ * Dedicated i18next instance for API messages.
+ *
+ * @remarks
+ * An explicit instance, not the module singleton: `bun:test` files and any
+ * additional Elysia app in the same process would otherwise share and mutate
+ * the same instance. `fallbackLng` + `supportedLngs` make an unsupported
+ * `Accept-Language` fall back to English instead of activating a language that
+ * has no resources.
+ */
+const apiI18n = createInstance();
+
+/**
+ * Root Elysia application instance. The i18n plugin is mounted first so every
+ * controller and guard below inherits request-scoped `t`.
+ */
 const bootstrap = new Elysia()
+	// `elysia-i18next@4` ships declarations generated against a different
+	// Elysia version; using it directly collapses every route handler's
+	// context to `any`. This cast restores Elysia's own inference. The cost is
+	// that `t` is untyped in handlers — key correctness is still guarded by
+	// the locale parity test and the dead-key scan.
+	.use(
+		i18next({
+			instance: apiI18n,
+			initOptions: {
+				fallbackLng: DEFAULT_LANGUAGE,
+				supportedLngs: [...LANGUAGE_CODES],
+				keySeparator: false,
+				nsSeparator: ':',
+				interpolation: { escapeValue: false },
+				resources: { en, id } as never,
+			},
+		}) as unknown as (app: Elysia) => Elysia,
+	)
 	.use(wrap(pinoLogger))
 	.use(
 		cors({
@@ -47,7 +84,11 @@ const bootstrap = new Elysia()
 				? appConfig.app.corsOrigins
 				: [appConfig.app.url ?? 'http://localhost:5173'],
 			credentials: true,
-			allowedHeaders: ['Content-Type', 'x-organization-id'],
+			allowedHeaders: [
+				'Content-Type',
+				'x-organization-id',
+				'Accept-Language',
+			],
 			methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 		}),
 	)

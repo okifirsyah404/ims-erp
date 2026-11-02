@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { authClient } from '@/lib/auth-client';
 import { toast } from '@/components/toast';
 import { Button } from '@ims-erp/ui/components/button';
@@ -30,12 +31,13 @@ export function ChangePasswordForm() {
 	const [revokeOthers, setRevokeOthers] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
+	const { t } = useTranslation(['account', 'common']);
 
 	async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setError(null);
 		if (newPassword !== confirm) {
-			setError('New passwords do not match');
+			setError(t('password.mismatch'));
 			return;
 		}
 		setPending(true);
@@ -46,17 +48,15 @@ export function ChangePasswordForm() {
 				revokeOtherSessions: revokeOthers,
 			});
 			if (changeError) {
-				setError(changeError.message ?? 'Could not change password');
+				setError(changeError.message ?? t('password.failed'));
 				return;
 			}
-			toast.success('Password changed');
+			toast.success(t('password.changed'));
 			setCurrentPassword('');
 			setNewPassword('');
 			setConfirm('');
 		} catch {
-			setError(
-				'Cannot reach the server. Check your connection and try again.',
-			);
+			setError(t('common:error.network'));
 		} finally {
 			setPending(false);
 		}
@@ -65,17 +65,15 @@ export function ChangePasswordForm() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Change password</CardTitle>
-				<CardDescription>
-					Choose a new password for your account
-				</CardDescription>
+				<CardTitle>{t('password.title')}</CardTitle>
+				<CardDescription>{t('password.description')}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<form onSubmit={handleSubmit}>
 					<FieldGroup>
 						<Field>
 							<FieldLabel htmlFor='current-password'>
-								Current password
+								{t('password.current')}
 							</FieldLabel>
 							<Input
 								id='current-password'
@@ -87,7 +85,9 @@ export function ChangePasswordForm() {
 							/>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='new-password'>New password</FieldLabel>
+							<FieldLabel htmlFor='new-password'>
+								{t('password.new')}
+							</FieldLabel>
 							<Input
 								id='new-password'
 								type='password'
@@ -98,11 +98,11 @@ export function ChangePasswordForm() {
 								onChange={(e) => setNewPassword(e.target.value)}
 								autoComplete='new-password'
 							/>
-							<FieldDescription>At least 8 characters.</FieldDescription>
+							<FieldDescription>{t('password.minHint')}</FieldDescription>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='confirm-password'>
-								Confirm new password
+								{t('password.confirm')}
 							</FieldLabel>
 							<Input
 								id='confirm-password'
@@ -122,7 +122,7 @@ export function ChangePasswordForm() {
 								}
 							/>
 							<FieldLabel htmlFor='revoke-others' className='font-normal'>
-								Log out all other devices
+								{t('password.revokeOthers')}
 							</FieldLabel>
 						</Field>
 						{error && (
@@ -132,7 +132,7 @@ export function ChangePasswordForm() {
 						)}
 						<div>
 							<Button type='submit' disabled={pending}>
-								{pending ? 'Changing…' : 'Change password'}
+								{pending ? t('password.submitting') : t('password.submit')}
 							</Button>
 						</div>
 					</FieldGroup>

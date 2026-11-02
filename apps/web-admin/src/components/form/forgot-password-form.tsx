@@ -1,7 +1,9 @@
 import { cn } from 'cn';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { requestPasswordReset } from '@/lib/auth-client';
+import LanguageSwitcher from '@/components/language-switcher';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import {
@@ -25,6 +27,7 @@ export function ForgotPasswordForm({
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
 	const [sent, setSent] = useState(false);
+	const { t } = useTranslation(['auth', 'common']);
 
 	async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -40,14 +43,12 @@ export function ForgotPasswordForm({
 				redirectTo: `${window.location.origin}/reset-password`,
 			});
 			if (forgetError) {
-				setError(forgetError.message ?? 'Something went wrong');
+				setError(forgetError.message ?? t('common:error.generic'));
 				return;
 			}
 			setSent(true);
 		} catch {
-			setError(
-				'Cannot reach the server. Check your connection and try again.',
-			);
+			setError(t('common:error.network'));
 		} finally {
 			setPending(false);
 		}
@@ -59,25 +60,24 @@ export function ForgotPasswordForm({
 				<CardContent className='p-6 md:p-8'>
 					<FieldGroup>
 						<div className='flex flex-col items-center gap-2 text-center'>
-							<h1 className='text-2xl font-bold'>Forgot your password?</h1>
+							<h1 className='text-2xl font-bold'>{t('forgot.title')}</h1>
 							<p className='text-balance text-muted-foreground'>
-								Enter your email and we'll send you a reset link
+								{t('forgot.subtitle')}
 							</p>
 						</div>
 						{sent ? (
 							<FieldDescription className='text-center'>
-								If an account exists for that email, a password reset link has
-								been sent. Check your inbox.
+								{t('forgot.sent')}
 							</FieldDescription>
 						) : (
 							<form onSubmit={handleSubmit}>
 								<FieldGroup>
 									<Field>
-										<FieldLabel htmlFor='email'>Email</FieldLabel>
+										<FieldLabel htmlFor='email'>{t('login.email')}</FieldLabel>
 										<Input
 											id='email'
 											type='email'
-											placeholder='m@example.com'
+											placeholder={t('login.emailPlaceholder')}
 											required
 											value={email}
 											onChange={(e) => setEmail(e.target.value)}
@@ -94,7 +94,7 @@ export function ForgotPasswordForm({
 									)}
 									<Field>
 										<Button type='submit' className='w-full' disabled={pending}>
-											{pending ? 'Sending…' : 'Send reset link'}
+											{pending ? t('forgot.submitting') : t('forgot.submit')}
 										</Button>
 									</Field>
 								</FieldGroup>
@@ -105,12 +105,13 @@ export function ForgotPasswordForm({
 								href='/login'
 								className='underline underline-offset-4 hover:text-foreground'
 							>
-								Back to login
+								{t('forgot.backToLogin')}
 							</a>
 						</FieldDescription>
 					</FieldGroup>
 				</CardContent>
 			</Card>
+			<LanguageSwitcher className='mx-auto flex justify-center gap-1' />
 		</div>
 	);
 }

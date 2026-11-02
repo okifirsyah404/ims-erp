@@ -3,6 +3,7 @@
 import { useRouter } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Bell, ChevronsUpDown, LogOut, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { authClient } from '@/lib/auth-client';
 import { selfUserQueryOptions, type TSelfUser } from '@/lib/user-api';
@@ -26,6 +27,7 @@ import {
 	useSidebar,
 } from '@ims-erp/ui/components/sidebar';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
+import LanguageSwitcher from '../language-switcher';
 import ThemeSwitcher from './theme-switcher';
 
 /** Initials for the avatar fallback; falls back to `?` for blank names. */
@@ -53,6 +55,8 @@ function UserIdentity({
 	isPending: boolean;
 	isError: boolean;
 }) {
+	const { t } = useTranslation('nav');
+
 	if (isPending) {
 		return (
 			<div
@@ -67,7 +71,7 @@ function UserIdentity({
 						<Skeleton className='h-3 w-32 rounded-sm motion-reduce:animate-none' />
 					</div>
 				</div>
-				<span className='sr-only'>Loading account…</span>
+				<span className='sr-only'>{t('user.loadingAccount')}</span>
 			</div>
 		);
 	}
@@ -87,7 +91,7 @@ function UserIdentity({
 			</Avatar>
 			<div className='grid flex-1 text-left text-sm leading-tight'>
 				<span className='truncate font-medium'>
-					{isError ? 'Account' : name}
+					{isError ? t('user.account') : name}
 				</span>
 				<span className='truncate text-xs'>{isError ? '' : email}</span>
 			</div>
@@ -100,6 +104,7 @@ export function NavUser() {
 
 	const { isMobile } = useSidebar();
 	const router = useRouter();
+	const { t } = useTranslation(['nav', 'common']);
 
 	async function handleSignOut() {
 		await authClient.signOut();
@@ -144,24 +149,30 @@ export function NavUser() {
 							<ThemeSwitcher />
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
+						{/* Language lives next to the theme control: both are
+						    preferences about how the shell is presented. */}
+						<DropdownMenuGroup>
+							<LanguageSwitcher />
+						</DropdownMenuGroup>
+						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
 							<DropdownMenuItem
 								onClick={() => router.navigate({ to: '/account' })}
 							>
 								<User />
-								Account
+								{t('user.account')}
 							</DropdownMenuItem>
 							<DropdownMenuItem
 							// onClick={() => router.navigate({ to: '/notifications' })}
 							>
 								<Bell />
-								Notifications
+								{t('user.notifications')}
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={handleSignOut} className='text-red-600'>
 							<LogOut />
-							Log out
+							{t('user.logOut')}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

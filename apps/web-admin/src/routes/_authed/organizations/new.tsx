@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { toast } from '@/components/toast';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import {
@@ -33,6 +34,7 @@ function slugify(name: string): string {
 function NewOrganizationPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const { t } = useTranslation(['admin', 'common']);
 
 	const [name, setName] = useState('');
 	const [slug, setSlug] = useState('');
@@ -44,8 +46,8 @@ function NewOrganizationPage() {
 		setPending(true);
 		try {
 			const created = await createOrganization({ name, slug });
-			if (!created) throw new Error('Create failed');
-			toast.success('Organization created');
+			if (!created) throw new Error(t('common:error.failed'));
+			toast.success(t('orgs.created'));
 			// Better Auth activates the new organization for this session, so
 			// the organization list AND the permission cache are both stale.
 			await Promise.all([
@@ -60,7 +62,9 @@ function NewOrganizationPage() {
 				params: { organizationId: created.id },
 			});
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed');
+			toast.error(
+				error instanceof Error ? error.message : t('common:error.failed'),
+			);
 		} finally {
 			setPending(false);
 		}
@@ -69,24 +73,21 @@ function NewOrganizationPage() {
 	return (
 		<div className='flex flex-col gap-6 p-6'>
 			<div>
-				<h1 className='text-2xl font-bold'>New organization</h1>
+				<h1 className='text-2xl font-bold'>{t('orgs.newTitle')}</h1>
 				<p className='text-sm text-muted-foreground'>
-					You become the owner of the organization you create, and it becomes
-					your active organization.
+					{t('orgs.newDescription')}
 				</p>
 			</div>
 			<Card className='max-w-xl'>
 				<CardHeader>
-					<CardTitle>Organization details</CardTitle>
-					<CardDescription>
-						The slug is permanent and used in URLs and API contexts.
-					</CardDescription>
+					<CardTitle>{t('orgs.details')}</CardTitle>
+					<CardDescription>{t('orgs.slugDescription')}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit}>
 						<FieldGroup>
 							<Field>
-								<FieldLabel htmlFor='name'>Name</FieldLabel>
+								<FieldLabel htmlFor='name'>{t('orgs.name')}</FieldLabel>
 								<Input
 									id='name'
 									value={name}
@@ -99,7 +100,7 @@ function NewOrganizationPage() {
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='slug'>Slug</FieldLabel>
+								<FieldLabel htmlFor='slug'>{t('orgs.slug')}</FieldLabel>
 								<Input
 									id='slug'
 									value={slug}
@@ -113,14 +114,14 @@ function NewOrganizationPage() {
 							</Field>
 							<div className='flex gap-2'>
 								<Button type='submit' disabled={pending || !name || !slug}>
-									{pending ? 'Creating…' : 'Create'}
+									{pending ? t('orgs.creating') : t('orgs.create')}
 								</Button>
 								<Button
 									type='button'
 									variant='outline'
 									onClick={() => navigate({ to: '/organizations' })}
 								>
-									Cancel
+									{t('common:action.cancel')}
 								</Button>
 							</div>
 						</FieldGroup>

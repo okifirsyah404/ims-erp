@@ -2,6 +2,7 @@ import { Elysia } from 'elysia';
 import { z } from 'zod';
 import { container } from 'tsyringe';
 import { erpGuard } from '@authorization/elysia-auth';
+import { translator } from '@providers/i18n/translator';
 import { SALES_SERVICE_TOKEN } from '../constants/di';
 import {
 	SalesService,
@@ -95,10 +96,12 @@ export class SalesController {
 
 		return new Elysia({ prefix: '/sales', name: 'sales', tags: ['Sales'] })
 			.use(erpGuard())
-			.onError({ as: 'local' }, ({ code, error, set }) => {
+			.onError({ as: 'local' }, (ctx) => {
+				const { code, error, set } = ctx;
+				const t = translator(ctx);
 				if (code === 'VALIDATION' || error instanceof z.ZodError) {
 					set.status = 400;
-					return errorEnvelope(400, 'Validation failed', [
+					return errorEnvelope(400, t('common.validationFailed'), [
 						{
 							message:
 								error instanceof z.ZodError
@@ -154,11 +157,13 @@ export class SalesController {
 			)
 			.get(
 				'/quotations/:id',
-				async ({ params, erp, status }) => {
+				async (ctx) => {
+					const { params, erp, status } = ctx;
+					const t = translator(ctx);
 					const row = await salesService.getQuotation(erp.organizationId, params.id);
 					if (!row) {
 						// 404: prevent existence disclosure across tenants.
-						return status(404, errorEnvelope(404, 'Quotation not found'));
+						return status(404, errorEnvelope(404, t('sales.quotationNotFound')));
 					}
 					return envelope(200, 'OK', row);
 				},
@@ -169,13 +174,17 @@ export class SalesController {
 			)
 			.patch(
 				'/quotations/:id',
-				async ({ params, body, erp, status }) => {
+				async (ctx) => {
+					const { params, body, erp, status } = ctx;
+					const t = translator(ctx);
 					const row = await salesService.updateQuotation(
 						erp.organizationId,
 						params.id,
 						body,
 					);
-					if (!row) return status(404, errorEnvelope(404, 'Quotation not found'));
+					if (!row) {
+						return status(404, errorEnvelope(404, t('sales.quotationNotFound')));
+					}
 					return envelope(200, 'Updated', row);
 				},
 				{
@@ -186,7 +195,9 @@ export class SalesController {
 			)
 			.post(
 				'/quotations/:id/submit',
-				async ({ params, erp, status }) => {
+				async (ctx) => {
+					const { params, erp, status } = ctx;
+					const t = translator(ctx);
 					const row = await salesService.submitQuotation(
 						erp.organizationId,
 						params.id,
@@ -196,7 +207,9 @@ export class SalesController {
 							actorRoles: erp.member.role.split(','),
 						},
 					);
-					if (!row) return status(404, errorEnvelope(404, 'Quotation not found'));
+					if (!row) {
+						return status(404, errorEnvelope(404, t('sales.quotationNotFound')));
+					}
 					return envelope(200, 'Submitted', row);
 				},
 				{
@@ -206,7 +219,9 @@ export class SalesController {
 			)
 			.post(
 				'/quotations/:id/decision',
-				async ({ params, body, erp, status }) => {
+				async (ctx) => {
+					const { params, body, erp, status } = ctx;
+					const t = translator(ctx);
 					const row = await salesService.decideQuotation(
 						erp.organizationId,
 						params.id,
@@ -217,7 +232,9 @@ export class SalesController {
 							actorRoles: erp.member.role.split(','),
 						},
 					);
-					if (!row) return status(404, errorEnvelope(404, 'Quotation not found'));
+					if (!row) {
+						return status(404, errorEnvelope(404, t('sales.quotationNotFound')));
+					}
 					return envelope(200, body.decision === 'approve' ? 'Approved' : 'Rejected', row);
 				},
 				{
@@ -231,7 +248,9 @@ export class SalesController {
 			// Payments
 			.post(
 				'/payments',
-				async ({ body, erp, status }) => {
+				async (ctx) => {
+					const { body, erp, status } = ctx;
+					const t = translator(ctx);
 					try {
 						const row = await salesService.createPayment(body, {
 							organizationId: erp.organizationId,
@@ -241,7 +260,7 @@ export class SalesController {
 						return status(201, envelope(201, 'Created', row));
 					} catch (error) {
 						if (error instanceof SalesStateError && error.status === 404) {
-							return status(404, errorEnvelope(404, error.message));
+							return status(404, errorEnvelope(404, t('sales.quotationNotFound')));
 						}
 						throw error;
 					}
@@ -253,9 +272,13 @@ export class SalesController {
 			)
 			.get(
 				'/payments/:id',
-				async ({ params, erp, status }) => {
+				async (ctx) => {
+					const { params, erp, status } = ctx;
+					const t = translator(ctx);
 					const row = await salesService.getPayment(erp.organizationId, params.id);
-					if (!row) return status(404, errorEnvelope(404, 'Payment not found'));
+					if (!row) {
+						return status(404, errorEnvelope(404, t('sales.paymentNotFound')));
+					}
 					return envelope(200, 'OK', row);
 				},
 				{
@@ -265,7 +288,9 @@ export class SalesController {
 			)
 			.post(
 				'/payments/:id/approve',
-				async ({ params, erp, status }) => {
+				async (ctx) => {
+					const { params, erp, status } = ctx;
+					const t = translator(ctx);
 					const row = await salesService.approvePayment(
 						erp.organizationId,
 						params.id,
@@ -275,7 +300,9 @@ export class SalesController {
 							actorRoles: erp.member.role.split(','),
 						},
 					);
-					if (!row) return status(404, errorEnvelope(404, 'Payment not found'));
+					if (!row) {
+						return status(404, errorEnvelope(404, t('sales.paymentNotFound')));
+					}
 					return envelope(200, 'Approved', row);
 				},
 				{
@@ -285,7 +312,9 @@ export class SalesController {
 			)
 			.post(
 				'/payments/:id/execute',
-				async ({ params, erp, status }) => {
+				async (ctx) => {
+					const { params, erp, status } = ctx;
+					const t = translator(ctx);
 					const row = await salesService.executePayment(
 						erp.organizationId,
 						params.id,
@@ -295,7 +324,9 @@ export class SalesController {
 							actorRoles: erp.member.role.split(','),
 						},
 					);
-					if (!row) return status(404, errorEnvelope(404, 'Payment not found'));
+					if (!row) {
+						return status(404, errorEnvelope(404, t('sales.paymentNotFound')));
+					}
 					return envelope(200, 'Executed', row);
 				},
 				{

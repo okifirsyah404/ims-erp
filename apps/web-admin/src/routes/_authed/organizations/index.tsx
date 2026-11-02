@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Building2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from '@/components/toast';
 
 import { Button } from '@ims-erp/ui/components/button';
@@ -25,18 +25,21 @@ function OrganizationsPage() {
 	const { data: session } = useSession();
 	const canCreate = session?.user?.role === 'admin';
 	const { data, isPending } = useQuery({ ...organizationsQueryOptions });
+	const { t } = useTranslation(['admin', 'common']);
 
 	const hasAny = (data?.rows.length ?? 0) > 0;
 
 	async function handleRestore(organizationId: string) {
 		try {
 			await restoreOrganization(organizationId);
-			toast.success('Organization restored');
+			toast.success(t('orgs.restored'));
 			await queryClient.invalidateQueries({
 				queryKey: organizationsQueryOptions.queryKey,
 			});
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed');
+			toast.error(
+				error instanceof Error ? error.message : t('common:error.failed'),
+			);
 		}
 	}
 
@@ -44,15 +47,14 @@ function OrganizationsPage() {
 		<div className='flex flex-col gap-6 p-6'>
 			<div className='flex items-center justify-between'>
 				<div>
-					<h1 className='text-2xl font-bold'>Organizations</h1>
+					<h1 className='text-2xl font-bold'>{t('orgs.title')}</h1>
 					<p className='text-sm text-muted-foreground'>
-						Internal organizations of the company. Each has its own members
-						and roles.
+						{t('orgs.description')}
 					</p>
 				</div>
 				{!isPending && canCreate && (
 					<Button onClick={() => navigate({ to: '/organizations/new' })}>
-						New organization
+						{t('orgs.new')}
 					</Button>
 				)}
 			</div>
@@ -76,7 +78,9 @@ function OrganizationsPage() {
 												className='size-full object-cover'
 											/>
 										) : (
-											<Building2 className='size-5 text-muted-foreground' />
+											<span className='text-sm font-semibold'>
+												{org.name.slice(0, 1).toUpperCase()}
+											</span>
 										)}
 									</div>
 									<CardTitle className='truncate text-base'>
@@ -88,9 +92,9 @@ function OrganizationsPage() {
 								</CardContent>
 								<CardFooter className='justify-between'>
 									{org.deletedAt ? (
-										<Badge variant='destructive'>Deleted</Badge>
+										<Badge variant='destructive'>{t('orgs.deletedBadge')}</Badge>
 									) : (
-										<Badge variant='secondary'>Active</Badge>
+										<Badge variant='secondary'>{t('orgs.activeBadge')}</Badge>
 									)}
 									{org.deletedAt && (
 										<Button
@@ -101,7 +105,7 @@ function OrganizationsPage() {
 												void handleRestore(org.id);
 											}}
 										>
-											Restore
+											{t('common:action.restore')}
 										</Button>
 									)}
 								</CardFooter>
@@ -112,7 +116,7 @@ function OrganizationsPage() {
 			) : (
 				<Card>
 					<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-						No organization exists yet. Create the first one to get started.
+						{t('orgs.empty')}
 					</CardContent>
 				</Card>
 			)}

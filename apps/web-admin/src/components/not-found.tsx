@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { FileQuestion } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Empty,
@@ -17,6 +18,8 @@ import {
  * happens before the `_authed` guard runs).
  */
 export function NotFound() {
+	const { t } = useTranslation('common');
+
 	return (
 		<Empty className='min-h-svh'>
 			<EmptyHeader>
@@ -24,15 +27,12 @@ export function NotFound() {
 					<FileQuestion />
 				</EmptyMedia>
 				<EmptyTitle className='text-2xl font-semibold'>
-					404 — Page not found
+					{t('notFound.title')}
 				</EmptyTitle>
-				<EmptyDescription>
-					The page you&rsquo;re looking for doesn&rsquo;t exist or has been
-					moved.
-				</EmptyDescription>
+				<EmptyDescription>{t('notFound.description')}</EmptyDescription>
 			</EmptyHeader>
 			<EmptyContent>
-				<Button render={<Link to='/'>Back to dashboard</Link>} />
+				<Button render={<Link to='/' />}>{t('notFound.backToDashboard')}</Button>
 			</EmptyContent>
 		</Empty>
 	);

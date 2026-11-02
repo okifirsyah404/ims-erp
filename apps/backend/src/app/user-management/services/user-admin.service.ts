@@ -90,9 +90,7 @@ export class UserAdminService {
 	): Promise<void> {
 		const user = await this.requireUser(userId);
 		if (user.status !== 'active') {
-			throw new UserStateError(
-				`Cannot deactivate an account in status "${user.status}"`,
-			);
+			throw new UserStateError();
 		}
 
 		await this.assertNotOutranking(userId, callerRank);
@@ -122,7 +120,7 @@ export class UserAdminService {
 			// Reuse the invite-path restore (clears deletedAt) then activate.
 			await this.users.restore(userId);
 		} else if (user.status === 'active') {
-			throw new UserStateError('Account is already active');
+			throw UserStateError.alreadyActive();
 		}
 
 		await this.users.reactivate(userId);
@@ -193,9 +191,7 @@ export class UserAdminService {
 				membership.role,
 			);
 			if (role && role.rank >= callerRank) {
-				throw new RankGuardError(
-					`Target holds "${role.name}" (rank ${role.rank}) in ${membership.name}`,
-				);
+				throw RankGuardError.targetTooHigh(role.name, role.rank);
 			}
 		}
 	}

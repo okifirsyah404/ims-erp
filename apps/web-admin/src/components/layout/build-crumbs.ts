@@ -2,6 +2,7 @@
  * Pure breadcrumb-crumb derivation from TanStack Router match objects.
  * Kept free of React so it can be unit-tested without a DOM.
  */
+import type { NavKey } from '@ims-erp/locales';
 
 export type CrumbMatch = {
 	/** Full route id, e.g. `/_authed/organizations/$organizationId`. */
@@ -9,8 +10,12 @@ export type CrumbMatch = {
 	/** URL path template, e.g. `/organizations/$organizationId`. */
 	fullPath: string;
 	params: Record<string, string | undefined>;
-	/** Route-level `staticData`; a `crumb` value overrides every fallback. */
-	staticData?: { crumb?: string } | undefined;
+	/**
+	 * Route-level `staticData`; a `crumb` value overrides every fallback.
+	 * The value is an i18next key in the `nav` namespace, not display text —
+	 * this module stays React-free, so it never calls `t` itself.
+	 */
+	staticData?: { crumb?: NavKey } | undefined;
 };
 
 export type Crumb = {
@@ -27,23 +32,32 @@ export type Crumb = {
  */
 const HIDDEN_ROUTE_IDS = new Set(['__root__', '/_authed']);
 
-/** Static labels keyed by fullPath template (trailing slash optional). */
-const LABELS: Record<string, string> = {
-	'/': 'Home',
-	'/organizations/': 'Organizations',
-	'/organizations/new': 'New organization',
-	'/organizations/$organizationId/edit': 'Edit',
-	'/organizations/$organizationId/members/new': 'Add member',
-	'/organizations/$organizationId/members/$memberId/edit': 'Edit member',
+/** Static labels keyed by fullPath template. Values are `nav` i18next keys. */
+const LABELS: Record<string, NavKey> = {
+	'/': 'breadcrumb.home',
+	'/organizations/': 'breadcrumb.organizations',
+	'/organizations/new': 'breadcrumb.organizationNew',
+	'/organizations/$organizationId/edit': 'breadcrumb.organizationEdit',
+	'/organizations/$organizationId/members/new': 'breadcrumb.memberNew',
+	'/organizations/$organizationId/members/$memberId/edit':
+		'breadcrumb.memberEdit',
 };
 
-/** Optional dynamic labels. Return a label, or `undefined` to fall through to LABELS/prettify. */
+/**
+ * Optional dynamic labels. Return a label, or `undefined` to fall through to LABELS/prettify.
+ */
 export type CrumbEnricher = (
 	fullPath: string,
 	params: Record<string, string | undefined>,
 ) => string | undefined;
 
-function labelFor(template: string): string | undefined {
+/**
+ * Resolves a `nav` i18next key to display text. Injected rather than imported
+ * so this module stays free of React/i18n and unit-testable without a DOM.
+ */
+export type CrumbTranslator = (key: NavKey) => string;
+
+function labelFor(template: string): NavKey | undefined {
 	return LABELS[template] ?? LABELS[`${template}/`];
 }
 function prettifySegment(template: string, params: Record<string, string | undefined>): string {
@@ -77,6 +91,7 @@ function ancestorTemplates(fullPath: string): string[] {
  */
 export function buildCrumbs(
 	matches: readonly CrumbMatch[],
+	translate: CrumbTranslator,
 	enrich?: CrumbEnricher,
 ): Crumb[] {
 	const visible = matches.filter((match) => !HIDDEN_ROUTE_IDS.has(match.routeId));
@@ -99,17 +114,23 @@ export function buildCrumbs(
 	const leafFullPath = normalizePath(visible.at(-1)!.fullPath);
 
 	if (leafFullPath === '/') {
-		return [{ key: 'home', label: LABELS['/']!, href: null, params: {} }];
+		return [
+			{ key: 'home', label: translate(LABELS['/']!), href: null, params: {} },
+		];
 	}
 
 	const crumbs: Crumb[] = [
-		{ key: 'home', label: LABELS['/']!, href: '/', params: {} },
+		{ key: 'home', label: translate(LABELS['/']!), href: '/', params: {} },
 	];
 	for (const template of templates) {
+		// Route-level `staticData.crumb` is a key; derive display text from it.
+		const staticCrumb = visible.find(
+			(match) => match.fullPath === template,
+		)?.staticData?.crumb;
 		const label =
-			visible.find((match) => match.fullPath === template)?.staticData?.crumb ??
+			(staticCrumb ? translate(staticCrumb) : undefined) ??
 			enrich?.(template, params) ??
-			labelFor(template) ??
+			(labelFor(template) ? translate(labelFor(template)!) : undefined) ??
 			prettifySegment(template, params);
 		crumbs.push({
 			key: template,

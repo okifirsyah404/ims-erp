@@ -2,6 +2,7 @@ import { BetterAuthPlugin } from 'better-auth';
 import { betterAuthAdminPlugin } from './plugins/admin.auth.js';
 import { betterAuthApiKeyPlugin } from './plugins/api-key.auth.js';
 import { betterAuthEmailOTPPlugin } from './plugins/email-otp.auth.js';
+import { betterAuthI18nPlugin } from './plugins/i18n.auth.js';
 import { betterAuthMagicLinkPlugin } from './plugins/magic-link.auth.js';
 import { betterAuthMultiSessionPlugin } from './plugins/multi-session.auth.js';
 import { betterAuthOpenAPIPlugin } from './plugins/open-api.auth.js';
@@ -20,4 +21,5 @@ export const betterAuthPlugins = [
   betterAuthPasskeyPlugin,
   betterAuthMagicLinkPlugin,
   betterAuthApiKeyPlugin,
+  betterAuthI18nPlugin,
 ] as const satisfies BetterAuthPlugin[];
