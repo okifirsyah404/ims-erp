@@ -1,4 +1,4 @@
-import { Package, Warehouse } from 'lucide-react';
+import { Layers, Package, Warehouse } from 'lucide-react';
 
 import type { SidebarItem } from './sidebar-item';
 import SidebarSection from './sidebar-section';
@@ -10,15 +10,19 @@ import SidebarSection from './sidebar-section';
  * (`user.role === 'admin'`). UX only - the backend enforces every
  * operation behind these routes.
  *
- * Routes that are planned but not built yet use the `'#'` sentinel that
- * `sidebar-section` renders as a non-link, rather than pointing at a 404:
- * `item-movements` lands with slice S3.
+ * No `'#'` sentinels remain: S3 shipped the movement ledger, so
+ * `item.itemMovements` now points at the real route instead of a non-link.
  */
 const items: SidebarItem[] = [
 	{
 		titleKey: 'item.warehouses',
 		icon: Warehouse,
 		url: '/inventory/warehouses',
+	},
+	{
+		titleKey: 'item.stock',
+		icon: Layers,
+		url: '/inventory/stock',
 	},
 	{
 		titleKey: 'item.items',
@@ -46,7 +50,7 @@ const items: SidebarItem[] = [
 			},
 			{
 				titleKey: 'item.itemMovements',
-				url: '#',
+				url: '/inventory/stock/movements',
 			},
 		],
 	},

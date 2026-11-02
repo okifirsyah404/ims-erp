@@ -118,3 +118,104 @@ export class StorageCodeTakenError extends AppError {
 		);
 	}
 }
+
+/** The requested stock movement does not exist. */
+export class MovementNotFoundError extends AppError {
+	constructor() {
+		super(404, 'inventory.movementNotFound', 'Stock movement not found');
+	}
+}
+
+/**
+ * A movement was already reversed.
+ *
+ * @remarks
+ * Reversal is one-shot: reversing twice would double-count the correction, so
+ * the second attempt is a 409 rather than a silent no-op.
+ */
+export class MovementAlreadyReversedError extends AppError {
+	constructor() {
+		super(
+			409,
+			'inventory.movementAlreadyReversed',
+			'This stock movement has already been reversed',
+		);
+	}
+}
+
+/**
+ * A movement would take the balance below zero.
+ *
+ * @remarks
+ * Negative stock is refused for **every** movement type, including
+ * adjustments. Correcting an over-stated balance therefore means reversing the
+ * offending movement and posting a new one, not writing a negative adjustment.
+ */
+export class InsufficientStockError extends AppError {
+	constructor(available: string, requested: string) {
+		super(
+			422,
+			'inventory.insufficientStock',
+			`Cannot move ${requested}: only ${available} on hand`,
+			{ available, requested },
+		);
+	}
+}
+
+/** The requested stock adjustment does not exist. */
+export class AdjustmentNotFoundError extends AppError {
+	constructor() {
+		super(404, 'inventory.adjustmentNotFound', 'Stock adjustment not found');
+	}
+}
+
+/** The adjustment code is already used by this organization. */
+export class AdjustmentCodeTakenError extends AppError {
+	constructor() {
+		super(
+			409,
+			'inventory.adjustmentCodeTaken',
+			'An adjustment with this code already exists in this organization',
+		);
+	}
+}
+
+/** An adjustment transition is not legal from its current status. */
+export class AdjustmentTransitionError extends AppError {
+	constructor(from: string, to: string) {
+		super(
+			422,
+			'inventory.adjustmentTransition',
+			`An adjustment cannot move from "${from}" to "${to}"`,
+			{ from, to },
+		);
+	}
+}
+
+/**
+ * The requester tried to approve their own adjustment.
+ *
+ * @remarks
+ * The `stock_adjustment:approve` permission is the bypass: holding it means the
+ * approval step is not a separate person's control for that user.
+ */
+export class SelfApprovalForbiddenError extends AppError {
+	constructor() {
+		super(
+			403,
+			'inventory.selfApprovalForbidden',
+			'You cannot approve your own stock adjustment',
+		);
+	}
+}
+
+/** An adjustment has no lines, so there is nothing to approve or post. */
+export class AdjustmentHasNoLinesError extends AppError {
+	constructor() {
+		super(
+			422,
+			'inventory.adjustmentHasNoLines',
+			'A stock adjustment must have at least one line',
+		);
+	}
+}

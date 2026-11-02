@@ -112,6 +112,35 @@ export type MovementType = (typeof MOVEMENT_TYPES)[number];
 export const MOVEMENT_STATUSES = ['draft', 'posted', 'reversed'] as const;
 export type MovementStatus = (typeof MOVEMENT_STATUSES)[number];
 
+/**
+ * Stock adjustment document states.
+ *
+ * @remarks
+ * The approval chain is real: `draft → submitted → approved → posted`. `draft`
+ * and `submitted` are cancellable, `approved` posts; `rejected` is terminal.
+ * Only `posted` writes movements.
+ */
+export const ADJUSTMENT_STATUSES = [
+	'draft',
+	'submitted',
+	'approved',
+	'rejected',
+	'posted',
+	'cancelled',
+] as const;
+export type AdjustmentStatus = (typeof ADJUSTMENT_STATUSES)[number];
+
+/**
+ * Why a document adjusts stock.
+ *
+ * @remarks
+ * This is a **document** type, not a movement type. The direction of each line
+ * is derived from `quantity_after - quantity_before`, so a `recount` may go
+ * either way and a `recount` with no delta posts nothing at all.
+ */
+export const ADJUSTMENT_TYPES = ['increase', 'decrease', 'recount'] as const;
+export type AdjustmentType = (typeof ADJUSTMENT_TYPES)[number];
+
 /** Borrowing document states. */
 export const BORROWING_STATUSES = [
 	'draft',
@@ -419,10 +448,6 @@ export const stockMovements = inventorySchema.table(
 			{ onDelete: 'restrict' },
 		),
 		quantity: numeric('quantity', { precision: 18, scale: 3 }).notNull(),
-		unitCost: bigint('unit_cost', { mode: 'number' }).notNull().default(0),
-		currencyCode: varchar('currency_code', { length: 3 })
-			.notNull()
-			.default('IDR'),
 		/** e.g. 'manual_adjustment' | 'borrowing' | 'receipt'. */
 		referenceType: text('reference_type'),
 		referenceId: text('reference_id'),
@@ -456,7 +481,6 @@ export const stockMovements = inventorySchema.table(
 			sql`status IN ('draft', 'posted', 'reversed')`,
 		),
 		check('stock_movements_quantity_check', sql`quantity <> 0`),
-		check('stock_movements_unit_cost_check', sql`unit_cost >= 0`),
 		// A transfer always names both ends.
 		check(
 			'stock_movements_transfer_target_check',
@@ -481,9 +505,22 @@ export const stockMovements = inventorySchema.table(
  * caused it (ADR-0008) — no database triggers. `recomputeFromLedger` is the
  * repair operation.
  *
- * `average_cost` / `total_value` exist for the future valuation slice and
- * are never advanced by this module. `quantity_reserved` stays 0 until
- * reservations are built.
+ * **No valuation.** `average_cost` / `total_value` / `currency_code` were
+ * removed: they were guaranteed to hold `0` forever and a cost field that is
+ * never written is worse than an absent one, because it invites trust.
+ * Valuation is owned by the (future) accounting module; the base price lives
+ * on `items.selling_price` / `items.purchase_price`. `quantity_reserved` stays
+ * 0 until reservations are built, so `quantity_available` equals
+ * `quantity_on_hand` throughout.
+ *
+ * **Scope rule (see {@link import('../services/stock.service')}).** A
+ * balance's `organization_id` follows the WAREHOUSE's scope, not the caller's:
+ * an organization-owned warehouse keeps per-organization balances, while a
+ * global warehouse (`warehouses.organization_id IS NULL`) has a single shared
+ * balance row with `organization_id = NULL` that every organization sees. That
+ * is deliberate — a global warehouse is one shared physical space, so its
+ * quantity is shared too. It is the one place in this codebase where isolation
+ * is intentionally NOT by caller.
  */
 export const stockBalances = inventorySchema.table(
 	'stock_balances',
@@ -516,15 +553,6 @@ export const stockBalances = inventorySchema.table(
 		})
 			.notNull()
 			.default('0'),
-		averageCost: bigint('average_cost', { mode: 'number' })
-			.notNull()
-			.default(0),
-		totalValue: bigint('total_value', { mode: 'number' })
-			.notNull()
-			.default(0),
-		currencyCode: varchar('currency_code', { length: 3 })
-			.notNull()
-			.default('IDR'),
 		lastMovementAt: unixTimestampNullable('last_movement_at'),
 		createdAt: unixTimestamp('created_at').notNull(),
 		updatedAt: unixTimestampNullable('updated_at').$onUpdate(() => new Date()),
@@ -546,6 +574,126 @@ export const stockBalances = inventorySchema.table(
 			'stock_balances_available_check',
 			sql`quantity_available = quantity_on_hand - quantity_reserved`,
 		),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * inventory.stock_adjustments
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Stock adjustment document.
+ *
+ * @remarks
+ * Adjustments are **documents, not bare movements**: they carry an approval
+ * chain (`draft → submitted → approved → posted`) so a stock-take correction is
+ * attributable and reviewable before it moves quantities.
+ *
+ * `organization_id` is **not null** here, unlike the rest of `inventory.*`: an
+ * adjustment is always raised by a specific tenant, even against a global
+ * warehouse. Which balance it moves still follows the warehouse's scope.
+ *
+ * Only `posted` documents write `stock_movements`. Posting is idempotent —
+ * `posted_at IS NOT NULL` is the guard — so a retried request cannot
+ * double-count.
+ */
+export const stockAdjustments = inventorySchema.table(
+	'stock_adjustments',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		organizationId: text('organization_id').notNull(),
+		code: varchar('code', { length: 32 }).notNull(),
+		warehouseId: uuid('warehouse_id')
+			.notNull()
+			.references(() => warehouses.id, { onDelete: 'restrict' }),
+		adjustmentType: text('adjustment_type').notNull(),
+		status: text('status').notNull().default('draft'),
+		reasonCode: text('reason_code'),
+		notes: text('notes'),
+		/** Logical reference to `auth.users.id`. */
+		requestedBy: text('requested_by'),
+		requestedAt: unixTimestamp('requested_at').notNull(),
+		approvedBy: text('approved_by'),
+		approvedAt: unixTimestampNullable('approved_at'),
+		postedAt: unixTimestampNullable('posted_at'),
+		...softDeleteTimestamps,
+	},
+	(table) => [
+		uniqueIndex('stock_adjustments_org_code_uq')
+			.on(table.organizationId, table.code)
+			.where(sql`deleted_at IS NULL`),
+		index('stock_adjustments_warehouse_id_idx').on(table.warehouseId),
+		index('stock_adjustments_status_idx').on(table.status),
+		check(
+			'stock_adjustments_status_check',
+			sql`status IN ('draft', 'submitted', 'approved', 'rejected', 'posted', 'cancelled')`,
+		),
+		check(
+			'stock_adjustments_type_check',
+			sql`adjustment_type IN ('increase', 'decrease', 'recount')`,
+		),
+		// Approval and posting are attributable: a document cannot reach those
+		// states without recording who and when.
+		check(
+			'stock_adjustments_approval_check',
+			sql`(status NOT IN ('approved', 'posted') OR (approved_by IS NOT NULL AND approved_at IS NOT NULL))`,
+		),
+		check(
+			'stock_adjustments_posted_check',
+			sql`(status <> 'posted' OR posted_at IS NOT NULL)`,
+		),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * inventory.stock_adjustment_items
+ * ------------------------------------------------------------------------ */
+
+/**
+ * One line of a stock adjustment.
+ *
+ * @remarks
+ * The line stores the **before and after quantities**, not a delta: it is the
+ * record of what the count said, which is what makes a recount auditable. The
+ * movement direction is derived from `quantity_after - quantity_before`, and a
+ * line where the two are equal writes no movement at all.
+ *
+ * Both quantities are `>= 0`. Combined with the service refusing negative
+ * balances, a decrease can never take stock below zero at either layer.
+ */
+export const stockAdjustmentItems = inventorySchema.table(
+	'stock_adjustment_items',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		organizationId: text('organization_id').notNull(),
+		stockAdjustmentId: uuid('stock_adjustment_id')
+			.notNull()
+			.references(() => stockAdjustments.id, { onDelete: 'cascade' }),
+		itemId: uuid('item_id')
+			.notNull()
+			.references(() => items.id, { onDelete: 'restrict' }),
+		binId: uuid('bin_id').references(() => warehouseStorages.id, {
+			onDelete: 'set null',
+		}),
+		quantityBefore: numeric('quantity_before', { precision: 18, scale: 3 })
+			.notNull()
+			.default('0'),
+		quantityAfter: numeric('quantity_after', { precision: 18, scale: 3 })
+			.notNull()
+			.default('0'),
+		note: text('note'),
+		...softDeleteTimestamps,
+	},
+	(table) => [
+		index('stock_adjustment_items_adjustment_id_idx').on(
+			table.stockAdjustmentId,
+		),
+		check('stock_adjustment_items_before_check', sql`quantity_before >= 0`),
+		check('stock_adjustment_items_after_check', sql`quantity_after >= 0`),
 	],
 );
 
@@ -955,6 +1103,14 @@ export type TStockMovementInsert = typeof stockMovements.$inferInsert;
 
 export type TStockBalanceSelect = typeof stockBalances.$inferSelect;
 export type TStockBalanceInsert = typeof stockBalances.$inferInsert;
+
+export type TStockAdjustmentSelect = typeof stockAdjustments.$inferSelect;
+export type TStockAdjustmentInsert = typeof stockAdjustments.$inferInsert;
+
+export type TStockAdjustmentItemSelect =
+	typeof stockAdjustmentItems.$inferSelect;
+export type TStockAdjustmentItemInsert =
+	typeof stockAdjustmentItems.$inferInsert;
 
 export type TBorrowingSelect = typeof borrowings.$inferSelect;
 export type TBorrowingInsert = typeof borrowings.$inferInsert;

@@ -2310,8 +2310,6 @@ Table inventory.stock_movements {
   bin_id uuid
   target_warehouse_id uuid
   quantity numeric(18,3) [not null]
-  unit_cost bigint [not null, default: 0, note: "Carried but never computed by this module: valuation is out of scope (OPEN-3)."]
-  currency_code varchar(3) [not null, default: 'IDR']
   reference_type text [note: "e.g. manual_adjustment, borrowing, receipt."]
   reference_id text
   status text [not null, default: 'posted']
@@ -2332,7 +2330,6 @@ Table inventory.stock_movements {
     `movement_type IN ('receipt', 'issue', 'transfer_in', 'transfer_out', 'adjustment_in', 'adjustment_out', 'return_in', 'return_out', 'consumption', 'borrowing_out', 'borrowing_in')`
     `status IN ('draft', 'posted', 'reversed')`
     `quantity <> 0`
-    `unit_cost >= 0`
     `(movement_type IN ('transfer_in', 'transfer_out') AND target_warehouse_id IS NOT NULL) OR (movement_type NOT IN ('transfer_in', 'transfer_out'))`
     `(movement_type IN ('borrowing_out', 'borrowing_in') AND reference_type = 'borrowing') OR (movement_type NOT IN ('borrowing_out', 'borrowing_in'))`
   }
@@ -2347,13 +2344,10 @@ Table inventory.stock_balances {
   quantity_on_hand numeric(18,3) [not null, default: 0]
   quantity_reserved numeric(18,3) [not null, default: 0]
   quantity_available numeric(18,3) [not null, default: 0]
-  average_cost bigint [not null, default: 0, note: "Exists for a future valuation slice; never advanced by this module (OPEN-3)."]
-  total_value bigint [not null, default: 0]
-  currency_code varchar(3) [not null, default: 'IDR']
   last_movement_at bigint
   created_at bigint [not null]
   updated_at bigint
-  Note: "Balance cache over stock_movements. Service-maintained inside the same transaction as the movement that caused it, never by a trigger; recomputeFromLedger is the repair operation (ADR-0008). No deleted_at."
+  Note: "Balance cache over stock_movements. Service-maintained inside the same transaction as the movement that caused it, never by a trigger; recomputeFromLedger is the repair operation (ADR-0008). No deleted_at. No valuation columns: average_cost/total_value were removed because they were guaranteed to hold 0 forever. Valuation is owned by the accounting module; the base price lives on items.selling_price / items.purchase_price (OPEN-3 closed). Scope rule: a balance's organization_id follows the WAREHOUSE scope, not the caller — a global warehouse (organization_id IS NULL) has ONE shared balance row visible to every organization."
   Indexes {
     (organization_id, warehouse_id, item_id, bin_id) [unique, name: 'stock_balances_org_scope_uq', note: 'WHERE organization_id IS NOT NULL']
     (warehouse_id, item_id, bin_id) [unique, name: 'stock_balances_global_scope_uq', note: 'WHERE organization_id IS NULL']
@@ -2381,7 +2375,7 @@ Table inventory.stock_adjustments {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Planned, NOT YET IMPLEMENTED (deferred by ADR-0008). Adjustments are expressed today as raw adjustment_in / adjustment_out stock movements."
+  Note: "Stock adjustment document, with an approval chain: draft -> submitted -> approved|rejected -> posted|cancelled. Only `posted` writes stock_movements; posting is idempotent (posted_at IS NOT NULL is the guard). organization_id is NOT NULL here, unlike the rest of inventory.*: an adjustment is always raised by a specific tenant, even against a global warehouse."
   Indexes {
     (organization_id, code) [unique, name: 'stock_adjustments_org_code_uq']
     warehouse_id [name: 'stock_adjustments_warehouse_id_idx']
@@ -2405,7 +2399,7 @@ Table inventory.stock_adjustment_items {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Planned, NOT YET IMPLEMENTED (deferred by ADR-0008). Line of a stock adjustment."
+  Note: "Line of a stock adjustment. Stores quantity_before/quantity_after rather than a delta, so a recount is auditable. Movement direction is derived from quantity_after - quantity_before; a line with no delta writes NO movement."
   Indexes {
     stock_adjustment_id [name: 'stock_adjustment_items_adjustment_id_idx']
   }

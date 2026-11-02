@@ -4,6 +4,8 @@ import { drizzleDB } from '../../../drizzle/db';
 import {
 	items,
 	serialTrackedItems,
+	stockBalances,
+	stockMovements,
 	warehouseAddresses,
 	warehouseStorages,
 	warehouses,
@@ -168,6 +170,7 @@ export async function seedInventory(): Promise<void> {
 	await ensureStorage(orgWarehouse, 'B1', 'Shelf B1');
 
 	await ensureItems(organizationId, orgWarehouse);
+	await seedStock({ organizationId, globalWarehouse, orgWarehouse });
 
 	logger.info(
 		{
@@ -178,6 +181,186 @@ export async function seedInventory(): Promise<void> {
 		},
 		'Inventory seeding complete',
 	);
+}
+
+/** One opening balance: how much of an item to place into a warehouse. */
+type TSeedStock = {
+	sku: string;
+	quantity: string;
+};
+
+/**
+ * Opening stock for the global warehouse.
+ *
+ * @remarks
+ * The global warehouse's balances carry `organization_id = NULL`, which means
+ * they are **shared** by every organization — so this is the seed that proves
+ * the scope rule with real data rather than only in tests.
+ */
+const SEED_GLOBAL_STOCK: readonly TSeedStock[] = [
+	{ sku: 'CMP-PSU-12V', quantity: '50.000' },
+	{ sku: 'MAT-CABLE-CAT6', quantity: '500.000' },
+];
+
+/** Opening stock for the organization-owned warehouse (per-tenant balances). */
+const SEED_ORG_STOCK: readonly TSeedStock[] = [
+	{ sku: 'CMP-PSU-12V', quantity: '20.000' },
+	{ sku: 'MAT-CABLE-CAT6', quantity: '150.000' },
+];
+
+/**
+ * Seeds opening stock as `receipt` movements plus their balances.
+ *
+ * @remarks
+ * Written through the ledger **and** the balance projection, exactly as
+ * `StockService.postMovement` would, because the two must agree: seeding a
+ * balance without a movement would make `recomputeFromLedger` erase it, and
+ * seeding a movement without a balance would make the balance list empty.
+ *
+ * Idempotent on `(organization_id, warehouse_id, item_id, reference_type =
+ * 'seed')`: a re-run finds the opening movement and does nothing, so quantities
+ * are never double-counted.
+ */
+async function seedStock(input: {
+	organizationId: string | null;
+	globalWarehouse: string;
+	orgWarehouse: string;
+}): Promise<void> {
+	const { organizationId, globalWarehouse, orgWarehouse } = input;
+
+	// Global warehouse balances are shared: organization_id = NULL.
+	for (const entry of SEED_GLOBAL_STOCK) {
+		await ensureOpeningStock({
+			scopeOrganizationId: null,
+			warehouseId: globalWarehouse,
+			sku: entry.sku,
+			quantity: entry.quantity,
+			itemOrganizationId: organizationId,
+		});
+	}
+
+	if (organizationId === null) return;
+	for (const entry of SEED_ORG_STOCK) {
+		await ensureOpeningStock({
+			scopeOrganizationId: organizationId,
+			warehouseId: orgWarehouse,
+			sku: entry.sku,
+			quantity: entry.quantity,
+			itemOrganizationId: organizationId,
+		});
+	}
+}
+
+/**
+ * Records one opening receipt and its balance when absent.
+ *
+ * @param input - Scope, warehouse, item, and quantity
+ */
+async function ensureOpeningStock(input: {
+	scopeOrganizationId: string | null;
+	warehouseId: string;
+	sku: string;
+	quantity: string;
+	itemOrganizationId: string | null;
+}): Promise<void> {
+	const {
+		scopeOrganizationId,
+		warehouseId,
+		sku,
+		quantity,
+		itemOrganizationId,
+	} = input;
+
+	const itemId = await findItemId(itemOrganizationId, sku);
+	if (!itemId) return;
+
+	// Idempotency guard. Keyed on the warehouse scope, not the caller: the
+	// opening receipt belongs to whichever scope owns the warehouse (data-model
+	// "scope rule"), so a re-run finds exactly the row it would otherwise write.
+	const [existing] = await drizzleDB
+		.select({ id: stockMovements.id })
+		.from(stockMovements)
+		.where(
+			sql`${stockMovements.organizationId} IS NOT DISTINCT FROM ${scopeOrganizationId} AND ${stockMovements.warehouseId} = ${warehouseId} AND ${stockMovements.itemId} = ${itemId} AND ${stockMovements.referenceType} = 'seed' AND ${stockMovements.referenceId} = ${sku}`,
+		)
+		.limit(1);
+	if (existing) return;
+
+	const occurredAt = new Date();
+
+	await drizzleDB.transaction(async (tx) => {
+		await tx.insert(stockMovements).values({
+			organizationId: scopeOrganizationId,
+			code: `MV-SEED-${warehouseId.slice(0, 8)}-${sku}`.slice(0, 32),
+			movementType: 'receipt',
+			itemId,
+			warehouseId,
+			quantity,
+			referenceType: 'seed',
+			referenceId: sku,
+			status: 'posted',
+			occurredAt,
+			notes: 'Opening stock seeded by database/seeders',
+			createdAt: occurredAt,
+		});
+
+		// Balances mirror the movement: same scope, same quantity. Reservations
+		// are unbuilt, so available equals on-hand.
+		//
+		// The lookup is scoped by organization as well as warehouse. Matching on
+		// warehouse alone would find the *shared* row of a global warehouse, or a
+		// sibling tenant's row, and add this quantity to it.
+		const [balance] = await tx
+			.select({ id: stockBalances.id })
+			.from(stockBalances)
+			.where(
+				sql`${stockBalances.organizationId} IS NOT DISTINCT FROM ${scopeOrganizationId} AND ${stockBalances.warehouseId} = ${warehouseId} AND ${stockBalances.itemId} = ${itemId} AND ${stockBalances.binId} IS NULL`,
+			)
+			.limit(1);
+
+		if (balance) {
+			await tx
+				.update(stockBalances)
+				.set({
+					quantityOnHand: sql`${stockBalances.quantityOnHand} + ${quantity}`,
+					quantityAvailable: sql`${stockBalances.quantityOnHand} + ${quantity} - ${stockBalances.quantityReserved}`,
+					lastMovementAt: occurredAt,
+					updatedAt: occurredAt,
+				})
+				.where(eq(stockBalances.id, balance.id));
+			return;
+		}
+
+		await tx.insert(stockBalances).values({
+			organizationId: scopeOrganizationId,
+			itemId,
+			warehouseId,
+			quantityOnHand: quantity,
+			quantityReserved: '0',
+			quantityAvailable: quantity,
+			lastMovementAt: occurredAt,
+			createdAt: occurredAt,
+		});
+	});
+
+	logger.info({ sku, warehouseId, quantity }, 'Seeded opening stock');
+}
+
+/** Finds an item id by SKU within a scope. */
+async function findItemId(
+	organizationId: string | null,
+	sku: string,
+): Promise<string | null> {
+	const [row] = await drizzleDB
+		.select({ id: items.id })
+		.from(items)
+		.where(
+			organizationId === null
+				? sql`${items.organizationId} IS NULL AND ${items.sku} = ${sku} AND ${items.deletedAt} IS NULL`
+				: sql`${items.organizationId} = ${organizationId} AND ${items.sku} = ${sku} AND ${items.deletedAt} IS NULL`,
+		)
+		.limit(1);
+	return row?.id ?? null;
 }
 
 /**

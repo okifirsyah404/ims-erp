@@ -39,7 +39,7 @@ Honest record. Nothing shipped yet.
 | S0 | ✅ shipped | `a9b2821` | Contract sync: `docs.dbml`, ADR-0008, ADR-0009, backlog ERP-0014 re-scope, `modules/inventory.md` rewrite, permission catalog |
 | S1 | ✅ shipped | `a9b2821` | `inventory.items` + `inventory.serial_tracked_items` (widened), migrations, item service/API, item UI |
 | S2 | ✅ shipped | — | `inventory.warehouses` + `warehouse_addresses` + `warehouse_storages` service/API, `requireGlobalAdmin` extraction, warehouse UI with searchable province→village cascade, inventory seeder (S1's item seeder folded in) |
-| S3 | ⬜ pending | — | `inventory.stock_movements` + `stock_balances`, movement service with balance maintenance, stock UI |
+| S3 | ✅ shipped and applied | — | `inventory.stock_movements` + `stock_balances` + `stock_adjustments`/`stock_adjustment_items`; ledger service with transactional balance maintenance, reversal, recompute repair, the adjustment approval workflow, and the stock/adjustment UI |
 | S4 | ⬜ pending | — | `inventory.borrowings` + `borrowing_lines` + `borrowing_events`, issue/return/late/lost state machine, late-return scheduled job, borrowing UI |
 
 **Notes recorded during implementation.**
@@ -104,7 +104,7 @@ has it, and what state is it in.*
 | D14 | **Storage is two levels: warehouse → storage (bin).** No zones. `warehouse_zones` is dropped from the contract. |
 | D15 | **Nullable-org uniqueness uses a partial-index pair** per coded table: `UNIQUE(organization_id, code) WHERE organization_id IS NOT NULL` plus `UNIQUE(code) WHERE organization_id IS NULL`. Postgres treats NULLs as distinct, so a plain composite index would silently stop constraining global rows. |
 | D16 | **`stock_balances` is a service-maintained cache**, written in the same transaction as the movement. No triggers. A `recomputeFromLedger` repair operation exists and is tested against the ledger. |
-| D17 | **Adjustments are movements, not documents.** `stock_adjustments` / `stock_transfers` / `stock_reservations` / `lot_batches` / `cycle_counts` are **deferred** and stay in the contract marked not-implemented. Manual correction uses `movement_type = adjustment_in\|adjustment_out` with `reference_type = 'manual_adjustment'`. |
+| D17 | **Adjustments are documents with an approval chain.** `stock_adjustments` + `stock_adjustment_items` are implemented in S3: `draft → submitted → approved\|rejected → posted\|cancelled`. Only `posted` writes movements, at most once (`posted_at IS NOT NULL` is the guard). A line stores `quantity_before`/`quantity_after` (counted totals, not deltas) so a recount is auditable; a line with no delta writes **no** movement (`stock_movements_quantity_check` also forbids `quantity = 0`). Self-approval is refused unless the actor holds `stock_adjustment:approve`. `stock_transfers` / `stock_reservations` / `lot_batches` / `cycle_counts` remain **deferred** and stay in the contract marked not-implemented. |
 | D18 | **`borrowing_events` is the business timeline; movements never point back at events.** Physical event types (`issued`, `returned`, `lost`) carry a non-null `stock_movement_id`; non-physical types (`requested`, `approved`, `marked_late`, `due_date_extended`, `cancelled`, `rejected`) carry NULL. Enforced by a check constraint plus a test. |
 | D19 | **Borrowing status machine:** `draft → requested → approved → issued → partially_returned → returned → closed`, branches `rejected` / `cancelled`. The API creates rows directly in `requested` (no draft step in the UI); `approved` is **skippable** when the issuer holds `owner \| admin \| operations_manager`. |
 | D20 | **Request/issue separation.** Issuing requires `borrowing:issue`; the issuer is expected to differ from the requester. `borrowing:mark_lost` is restricted to `owner \| admin \| operations_manager`. |
@@ -524,7 +524,7 @@ existing admin pages rather than introducing a second form idiom mid-project.
 |---|---|---|
 | S1 | `_authed/inventory/items/index.tsx`, `items/new.tsx`, `items/$itemId.edit.tsx`, `items/$itemId.units.tsx` | Kind filter chips (Produk/Komponen/Material/Alat/Jasa), serial column, "Siap"/"Dipesan"/"Dipinjam"/"Hilang"/"Terjual"/"Klaim Garansi" status labels |
 | S2 | `_authed/inventory/warehouses/index.tsx`, `new.tsx`, `$warehouseId.edit.tsx`, `$warehouseId.storages.tsx` | Cascading province→regency→district→village selects from the existing paginated lookup API (ADR-0003); hidden entirely for non-admins |
-| S3 | `_authed/inventory/stock/index.tsx`, `stock/movements.tsx`, `stock/adjust.tsx` | Balance table with `on_hand` / `available`, movement ledger with reference drill-down |
+| S3 | `_authed/inventory/stock/index.tsx`, `stock/movements.tsx`, `stock/adjust.tsx`, `stock/adjustments/index.tsx`, `stock/adjustments/$adjustmentId.tsx` | Balance table with `on_hand` / `reserved` / `available` + shared-scope badge and in-stock filter; movement ledger with reference/notes columns and confirm-gated reversal; adjustment create form (counted totals, system quantity and derived difference per line); adjustment list and detail with the per-status workflow actions. Not wrapped in `AdminOnly` — these ride `erpGuard` on `stock:*` |
 | S4 | `_authed/inventory/borrowings/index.tsx`, `new.tsx`, `$borrowingId.tsx` | Borrow form with user/customer/guest tab, guest form warns about KTP capture; detail page renders the event timeline with custody trail |
 
 Nav: `src/components/sidebar/nav-inventory.tsx` currently points at routes that
@@ -624,6 +624,16 @@ passes, `gen-logical-references.ts` output committed, ADRs 0008/0009 accepted.
 4. UI: balances, movements, adjust form.
 5. Tests: ledger/balance agreement under interleaved posts, reversal
    conservation, recompute idempotency, no negative balance where forbidden.
+
+> **Applied and verified against `ims_erp_local`.** The migration
+> (`20261102161010_purple_robin_chapel`) is applied — the two adjustment tables
+> exist and the four valuation columns are gone. The seeder was run twice: the
+> second run wrote nothing and left 4 movements / 4 balances / 720 total, and
+> ledger totals equal `quantity_on_hand` on every `(organization, warehouse,
+> item)` key. The first attempt exposed a real scope bug — opening stock was
+> written with the *caller's* organization instead of the *warehouse's* — which
+> is fixed; the balance lookup is now scoped by organization too, so it cannot
+> fold a global warehouse's shared row into a tenant's.
 
 **S4 — Borrowing.**
 1. `borrowings` / `borrowing_lines` / `borrowing_events` schema + the

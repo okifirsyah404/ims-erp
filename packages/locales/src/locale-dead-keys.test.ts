@@ -61,6 +61,12 @@ const DYNAMIC_PREFIXES = [
 	'status.',
 	// `t(`inventory:kind.${kind}`)` — an item's kind selects its own label.
 	'inventory:kind.',
+	// The ledger and the adjustment workflow label their enums the same way:
+	// the value comes from the server, so the key has to be composed.
+	'inventory:movements.type.',
+	'inventory:movements.status.',
+	'inventory:adjustments.type.',
+	'inventory:adjustments.status.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

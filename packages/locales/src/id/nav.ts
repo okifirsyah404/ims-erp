@@ -7,6 +7,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'section.platform': 'Platform',
 
 	'item.warehouses': 'Gudang',
+	'item.stock': 'Stok',
 	'item.items': 'Barang',
 	'item.products': 'Produk',
 	'item.components': 'Komponen',

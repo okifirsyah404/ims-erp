@@ -8,6 +8,7 @@ const nav = {
 	'section.platform': 'Platform',
 
 	'item.warehouses': 'Warehouses',
+	'item.stock': 'Stock',
 	'item.items': 'Items',
 	'item.products': 'Products',
 	'item.components': 'Components',

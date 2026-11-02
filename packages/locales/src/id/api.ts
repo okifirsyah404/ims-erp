@@ -35,6 +35,20 @@ const api: Record<keyof typeof en, string> = {
 	'inventory.storageNotFound': 'Penyimpanan tidak ditemukan',
 	'inventory.storageCodeTaken':
 		'Penyimpanan dengan kode ini sudah ada di gudang ini',
+	'inventory.movementNotFound': 'Pergerakan stok tidak ditemukan',
+	'inventory.movementAlreadyReversed':
+		'Pergerakan stok ini sudah dibalik sebelumnya',
+	'inventory.insufficientStock':
+		'Tidak dapat memindahkan {{requested}}: hanya tersedia {{available}}',
+	'inventory.adjustmentNotFound': 'Penyesuaian stok tidak ditemukan',
+	'inventory.adjustmentCodeTaken':
+		'Penyesuaian dengan kode ini sudah ada di organisasi ini',
+	'inventory.adjustmentTransition':
+		'Penyesuaian tidak dapat berpindah dari "{{from}}" ke "{{to}}"',
+	'inventory.selfApprovalForbidden':
+		'Anda tidak dapat menyetujui penyesuaian stok Anda sendiri',
+	'inventory.adjustmentHasNoLines':
+		'Penyesuaian stok harus memiliki minimal satu baris',
 
 	'user.notFound': 'Pengguna tidak ditemukan',
 	'user.emailInUse': 'Email sudah digunakan',

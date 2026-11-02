@@ -39,6 +39,20 @@ const api = {
 	'inventory.storageNotFound': 'Storage not found',
 	'inventory.storageCodeTaken':
 		'A storage with this code already exists in this warehouse',
+	'inventory.movementNotFound': 'Stock movement not found',
+	'inventory.movementAlreadyReversed':
+		'This stock movement has already been reversed',
+	'inventory.insufficientStock':
+		'Cannot move {{requested}}: only {{available}} on hand',
+	'inventory.adjustmentNotFound': 'Stock adjustment not found',
+	'inventory.adjustmentCodeTaken':
+		'An adjustment with this code already exists in this organization',
+	'inventory.adjustmentTransition':
+		'An adjustment cannot move from "{{from}}" to "{{to}}"',
+	'inventory.selfApprovalForbidden':
+		'You cannot approve your own stock adjustment',
+	'inventory.adjustmentHasNoLines':
+		'A stock adjustment must have at least one line',
 
 	'user.notFound': 'User not found',
 	'user.emailInUse': 'Email already in use',

@@ -87,6 +87,28 @@ export const fixture = {
 			role: 'member',
 			globalRole: 'user',
 		},
+		/**
+		 * Stock-capable roles used by the S3 tests.
+		 *
+		 * @remarks
+		 * `warehouse` holds every `stock:*` grant plus
+		 * `stock_adjustment:read|create|submit` — but **not** `approve`/`post`.
+		 * `finance` holds only `stock:read`. Those two roles are the interesting
+		 * pair for proving the stock walls; the older fixtures all lack stock
+		 * grants entirely.
+		 */
+		warehouse: {
+			id: 'user-warehouse',
+			organizationId: ORG_A,
+			role: 'warehouse',
+			globalRole: 'user',
+		},
+		finance: {
+			id: 'user-finance',
+			organizationId: ORG_A,
+			role: 'finance',
+			globalRole: 'user',
+		},
 		globalAdmin: {
 			id: 'user-global-admin',
 			organizationId: null,

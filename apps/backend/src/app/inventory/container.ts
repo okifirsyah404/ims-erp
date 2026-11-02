@@ -4,12 +4,22 @@ import { SerialUnitRepository } from './repositories/serial-unit.repository';
 import { WarehouseRepository } from './repositories/warehouse.repository';
 import { WarehouseAddressRepository } from './repositories/warehouse-address.repository';
 import { WarehouseStorageRepository } from './repositories/warehouse-storage.repository';
+import { MovementRepository } from './repositories/movement.repository';
+import { BalanceRepository } from './repositories/balance.repository';
+import { AdjustmentRepository } from './repositories/adjustment.repository';
 import { ItemService } from './services/item.service';
 import { WarehouseService } from './services/warehouse.service';
+import { StockService } from './services/stock.service';
+import { AdjustmentService } from './services/adjustment.service';
 import {
+	ADJUSTMENT_REPOSITORY_TOKEN,
+	ADJUSTMENT_SERVICE_TOKEN,
+	BALANCE_REPOSITORY_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
 	ITEM_SERVICE_TOKEN,
+	MOVEMENT_REPOSITORY_TOKEN,
 	SERIAL_UNIT_REPOSITORY_TOKEN,
+	STOCK_SERVICE_TOKEN,
 	WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
 	WAREHOUSE_SERVICE_TOKEN,
@@ -45,5 +55,22 @@ export function registerInventory(container: DependencyContainer): void {
 	});
 	container.register(WAREHOUSE_SERVICE_TOKEN, {
 		useClass: WarehouseService,
+	});
+
+	container.register(MOVEMENT_REPOSITORY_TOKEN, {
+		useClass: MovementRepository,
+	});
+	container.register(BALANCE_REPOSITORY_TOKEN, {
+		useClass: BalanceRepository,
+	});
+	container.register(ADJUSTMENT_REPOSITORY_TOKEN, {
+		useClass: AdjustmentRepository,
+	});
+	// StockService must be registered before AdjustmentService: the latter
+	// injects it, and tsyringe resolves lazily but the token must already exist
+	// for bootstrap to fail early rather than at first request.
+	container.register(STOCK_SERVICE_TOKEN, { useClass: StockService });
+	container.register(ADJUSTMENT_SERVICE_TOKEN, {
+		useClass: AdjustmentService,
 	});
 }

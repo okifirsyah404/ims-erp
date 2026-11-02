@@ -32,12 +32,17 @@ import { Route as AuthedInventoryItemsItemIdRouteImport } from './routes/_authed
 import { Route as AuthedInventoryItemsNewRouteImport } from './routes/_authed/inventory/items/new'
 import { Route as AuthedInventoryMaterialsIndexRouteImport } from './routes/_authed/inventory/materials/index'
 import { Route as AuthedInventoryProductsIndexRouteImport } from './routes/_authed/inventory/products/index'
+import { Route as AuthedInventoryStockIndexRouteImport } from './routes/_authed/inventory/stock/index'
+import { Route as AuthedInventoryStockAdjustRouteImport } from './routes/_authed/inventory/stock/adjust'
+import { Route as AuthedInventoryStockMovementsRouteImport } from './routes/_authed/inventory/stock/movements'
 import { Route as AuthedInventoryToolsIndexRouteImport } from './routes/_authed/inventory/tools/index'
 import { Route as AuthedInventoryWarehousesIndexRouteImport } from './routes/_authed/inventory/warehouses/index'
 import { Route as AuthedInventoryWarehousesWarehouseIdRouteImport } from './routes/_authed/inventory/warehouses/$warehouseId'
 import { Route as AuthedInventoryWarehousesNewRouteImport } from './routes/_authed/inventory/warehouses/new'
 import { Route as AuthedOrganizationsOrganizationIdEditRouteImport } from './routes/_authed/organizations/$organizationId.edit'
 import { Route as AuthedInventoryItemsItemIdEditRouteImport } from './routes/_authed/inventory/items/$itemId.edit'
+import { Route as AuthedInventoryStockAdjustmentsIndexRouteImport } from './routes/_authed/inventory/stock/adjustments/index'
+import { Route as AuthedInventoryStockAdjustmentsAdjustmentIdRouteImport } from './routes/_authed/inventory/stock/adjustments/$adjustmentId'
 import { Route as AuthedInventoryWarehousesWarehouseIdEditRouteImport } from './routes/_authed/inventory/warehouses/$warehouseId.edit'
 import { Route as AuthedOrganizationsOrganizationIdMembersNewRouteImport } from './routes/_authed/organizations/$organizationId.members.new'
 import { Route as AuthedOrganizationsOrganizationIdMembersMemberIdEditRouteImport } from './routes/_authed/organizations/$organizationId.members.$memberId.edit'
@@ -162,6 +167,24 @@ const AuthedInventoryProductsIndexRoute =
     path: '/inventory/products/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedInventoryStockIndexRoute =
+  AuthedInventoryStockIndexRouteImport.update({
+    id: '/inventory/stock/',
+    path: '/inventory/stock/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedInventoryStockAdjustRoute =
+  AuthedInventoryStockAdjustRouteImport.update({
+    id: '/inventory/stock/adjust',
+    path: '/inventory/stock/adjust',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedInventoryStockMovementsRoute =
+  AuthedInventoryStockMovementsRouteImport.update({
+    id: '/inventory/stock/movements',
+    path: '/inventory/stock/movements',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedInventoryToolsIndexRoute =
   AuthedInventoryToolsIndexRouteImport.update({
     id: '/inventory/tools/',
@@ -197,6 +220,18 @@ const AuthedInventoryItemsItemIdEditRoute =
     id: '/edit',
     path: '/edit',
     getParentRoute: () => AuthedInventoryItemsItemIdRoute,
+  } as any)
+const AuthedInventoryStockAdjustmentsIndexRoute =
+  AuthedInventoryStockAdjustmentsIndexRouteImport.update({
+    id: '/inventory/stock/adjustments/',
+    path: '/inventory/stock/adjustments/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedInventoryStockAdjustmentsAdjustmentIdRoute =
+  AuthedInventoryStockAdjustmentsAdjustmentIdRouteImport.update({
+    id: '/inventory/stock/adjustments/$adjustmentId',
+    path: '/inventory/stock/adjustments/$adjustmentId',
+    getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedInventoryWarehousesWarehouseIdEditRoute =
   AuthedInventoryWarehousesWarehouseIdEditRouteImport.update({
@@ -234,6 +269,8 @@ export interface FileRoutesByFullPath {
   '/profiles/': typeof AuthedProfilesIndexRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/inventory/items/new': typeof AuthedInventoryItemsNewRoute
+  '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
+  '/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
   '/inventory/warehouses/$warehouseId': typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   '/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
@@ -243,11 +280,14 @@ export interface FileRoutesByFullPath {
   '/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
   '/inventory/products/': typeof AuthedInventoryProductsIndexRoute
+  '/inventory/stock/': typeof AuthedInventoryStockIndexRoute
   '/inventory/tools/': typeof AuthedInventoryToolsIndexRoute
   '/inventory/warehouses/': typeof AuthedInventoryWarehousesIndexRoute
   '/inventory/items/$itemId/edit': typeof AuthedInventoryItemsItemIdEditRoute
+  '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/inventory/warehouses/$warehouseId/edit': typeof AuthedInventoryWarehousesWarehouseIdEditRoute
   '/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
+  '/inventory/stock/adjustments/': typeof AuthedInventoryStockAdjustmentsIndexRoute
   '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -265,6 +305,8 @@ export interface FileRoutesByTo {
   '/profiles': typeof AuthedProfilesIndexRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/inventory/items/new': typeof AuthedInventoryItemsNewRoute
+  '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
+  '/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
   '/inventory/warehouses/$warehouseId': typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   '/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
@@ -274,11 +316,14 @@ export interface FileRoutesByTo {
   '/inventory/components': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials': typeof AuthedInventoryMaterialsIndexRoute
   '/inventory/products': typeof AuthedInventoryProductsIndexRoute
+  '/inventory/stock': typeof AuthedInventoryStockIndexRoute
   '/inventory/tools': typeof AuthedInventoryToolsIndexRoute
   '/inventory/warehouses': typeof AuthedInventoryWarehousesIndexRoute
   '/inventory/items/$itemId/edit': typeof AuthedInventoryItemsItemIdEditRoute
+  '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/inventory/warehouses/$warehouseId/edit': typeof AuthedInventoryWarehousesWarehouseIdEditRoute
   '/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
+  '/inventory/stock/adjustments': typeof AuthedInventoryStockAdjustmentsIndexRoute
   '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
 }
 export interface FileRoutesById {
@@ -300,6 +345,8 @@ export interface FileRoutesById {
   '/_authed/profiles/': typeof AuthedProfilesIndexRoute
   '/_authed/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/_authed/inventory/items/new': typeof AuthedInventoryItemsNewRoute
+  '/_authed/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
+  '/_authed/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
   '/_authed/inventory/warehouses/$warehouseId': typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   '/_authed/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/_authed/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
@@ -309,11 +356,14 @@ export interface FileRoutesById {
   '/_authed/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/_authed/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
   '/_authed/inventory/products/': typeof AuthedInventoryProductsIndexRoute
+  '/_authed/inventory/stock/': typeof AuthedInventoryStockIndexRoute
   '/_authed/inventory/tools/': typeof AuthedInventoryToolsIndexRoute
   '/_authed/inventory/warehouses/': typeof AuthedInventoryWarehousesIndexRoute
   '/_authed/inventory/items/$itemId/edit': typeof AuthedInventoryItemsItemIdEditRoute
+  '/_authed/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/_authed/inventory/warehouses/$warehouseId/edit': typeof AuthedInventoryWarehousesWarehouseIdEditRoute
   '/_authed/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
+  '/_authed/inventory/stock/adjustments/': typeof AuthedInventoryStockAdjustmentsIndexRoute
   '/_authed/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
 }
 export interface FileRouteTypes {
@@ -335,6 +385,8 @@ export interface FileRouteTypes {
     | '/profiles/'
     | '/inventory/items/$itemId'
     | '/inventory/items/new'
+    | '/inventory/stock/adjust'
+    | '/inventory/stock/movements'
     | '/inventory/warehouses/$warehouseId'
     | '/inventory/warehouses/new'
     | '/organizations/$organizationId/edit'
@@ -344,11 +396,14 @@ export interface FileRouteTypes {
     | '/inventory/components/'
     | '/inventory/materials/'
     | '/inventory/products/'
+    | '/inventory/stock/'
     | '/inventory/tools/'
     | '/inventory/warehouses/'
     | '/inventory/items/$itemId/edit'
+    | '/inventory/stock/adjustments/$adjustmentId'
     | '/inventory/warehouses/$warehouseId/edit'
     | '/organizations/$organizationId/members/new'
+    | '/inventory/stock/adjustments/'
     | '/organizations/$organizationId/members/$memberId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -366,6 +421,8 @@ export interface FileRouteTypes {
     | '/profiles'
     | '/inventory/items/$itemId'
     | '/inventory/items/new'
+    | '/inventory/stock/adjust'
+    | '/inventory/stock/movements'
     | '/inventory/warehouses/$warehouseId'
     | '/inventory/warehouses/new'
     | '/organizations/$organizationId/edit'
@@ -375,11 +432,14 @@ export interface FileRouteTypes {
     | '/inventory/components'
     | '/inventory/materials'
     | '/inventory/products'
+    | '/inventory/stock'
     | '/inventory/tools'
     | '/inventory/warehouses'
     | '/inventory/items/$itemId/edit'
+    | '/inventory/stock/adjustments/$adjustmentId'
     | '/inventory/warehouses/$warehouseId/edit'
     | '/organizations/$organizationId/members/new'
+    | '/inventory/stock/adjustments'
     | '/organizations/$organizationId/members/$memberId/edit'
   id:
     | '__root__'
@@ -400,6 +460,8 @@ export interface FileRouteTypes {
     | '/_authed/profiles/'
     | '/_authed/inventory/items/$itemId'
     | '/_authed/inventory/items/new'
+    | '/_authed/inventory/stock/adjust'
+    | '/_authed/inventory/stock/movements'
     | '/_authed/inventory/warehouses/$warehouseId'
     | '/_authed/inventory/warehouses/new'
     | '/_authed/organizations/$organizationId/edit'
@@ -409,11 +471,14 @@ export interface FileRouteTypes {
     | '/_authed/inventory/components/'
     | '/_authed/inventory/materials/'
     | '/_authed/inventory/products/'
+    | '/_authed/inventory/stock/'
     | '/_authed/inventory/tools/'
     | '/_authed/inventory/warehouses/'
     | '/_authed/inventory/items/$itemId/edit'
+    | '/_authed/inventory/stock/adjustments/$adjustmentId'
     | '/_authed/inventory/warehouses/$warehouseId/edit'
     | '/_authed/organizations/$organizationId/members/new'
+    | '/_authed/inventory/stock/adjustments/'
     | '/_authed/organizations/$organizationId/members/$memberId/edit'
   fileRoutesById: FileRoutesById
 }
@@ -587,6 +652,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedInventoryProductsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/inventory/stock/': {
+      id: '/_authed/inventory/stock/'
+      path: '/inventory/stock'
+      fullPath: '/inventory/stock/'
+      preLoaderRoute: typeof AuthedInventoryStockIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/inventory/stock/adjust': {
+      id: '/_authed/inventory/stock/adjust'
+      path: '/inventory/stock/adjust'
+      fullPath: '/inventory/stock/adjust'
+      preLoaderRoute: typeof AuthedInventoryStockAdjustRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/inventory/stock/movements': {
+      id: '/_authed/inventory/stock/movements'
+      path: '/inventory/stock/movements'
+      fullPath: '/inventory/stock/movements'
+      preLoaderRoute: typeof AuthedInventoryStockMovementsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/inventory/tools/': {
       id: '/_authed/inventory/tools/'
       path: '/inventory/tools'
@@ -628,6 +714,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/inventory/items/$itemId/edit'
       preLoaderRoute: typeof AuthedInventoryItemsItemIdEditRouteImport
       parentRoute: typeof AuthedInventoryItemsItemIdRoute
+    }
+    '/_authed/inventory/stock/adjustments/': {
+      id: '/_authed/inventory/stock/adjustments/'
+      path: '/inventory/stock/adjustments'
+      fullPath: '/inventory/stock/adjustments/'
+      preLoaderRoute: typeof AuthedInventoryStockAdjustmentsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/inventory/stock/adjustments/$adjustmentId': {
+      id: '/_authed/inventory/stock/adjustments/$adjustmentId'
+      path: '/inventory/stock/adjustments/$adjustmentId'
+      fullPath: '/inventory/stock/adjustments/$adjustmentId'
+      preLoaderRoute: typeof AuthedInventoryStockAdjustmentsAdjustmentIdRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/inventory/warehouses/$warehouseId/edit': {
       id: '/_authed/inventory/warehouses/$warehouseId/edit'
@@ -742,6 +842,8 @@ interface AuthedRouteChildren {
   AuthedOrganizationsIndexRoute: typeof AuthedOrganizationsIndexRoute
   AuthedInventoryItemsItemIdRoute: typeof AuthedInventoryItemsItemIdRouteWithChildren
   AuthedInventoryItemsNewRoute: typeof AuthedInventoryItemsNewRoute
+  AuthedInventoryStockAdjustRoute: typeof AuthedInventoryStockAdjustRoute
+  AuthedInventoryStockMovementsRoute: typeof AuthedInventoryStockMovementsRoute
   AuthedInventoryWarehousesWarehouseIdRoute: typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   AuthedInventoryWarehousesNewRoute: typeof AuthedInventoryWarehousesNewRoute
   AuthedAdminAuditIndexRoute: typeof AuthedAdminAuditIndexRoute
@@ -750,8 +852,11 @@ interface AuthedRouteChildren {
   AuthedInventoryComponentsIndexRoute: typeof AuthedInventoryComponentsIndexRoute
   AuthedInventoryMaterialsIndexRoute: typeof AuthedInventoryMaterialsIndexRoute
   AuthedInventoryProductsIndexRoute: typeof AuthedInventoryProductsIndexRoute
+  AuthedInventoryStockIndexRoute: typeof AuthedInventoryStockIndexRoute
   AuthedInventoryToolsIndexRoute: typeof AuthedInventoryToolsIndexRoute
   AuthedInventoryWarehousesIndexRoute: typeof AuthedInventoryWarehousesIndexRoute
+  AuthedInventoryStockAdjustmentsAdjustmentIdRoute: typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
+  AuthedInventoryStockAdjustmentsIndexRoute: typeof AuthedInventoryStockAdjustmentsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -764,6 +869,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedOrganizationsIndexRoute: AuthedOrganizationsIndexRoute,
   AuthedInventoryItemsItemIdRoute: AuthedInventoryItemsItemIdRouteWithChildren,
   AuthedInventoryItemsNewRoute: AuthedInventoryItemsNewRoute,
+  AuthedInventoryStockAdjustRoute: AuthedInventoryStockAdjustRoute,
+  AuthedInventoryStockMovementsRoute: AuthedInventoryStockMovementsRoute,
   AuthedInventoryWarehousesWarehouseIdRoute:
     AuthedInventoryWarehousesWarehouseIdRouteWithChildren,
   AuthedInventoryWarehousesNewRoute: AuthedInventoryWarehousesNewRoute,
@@ -773,8 +880,13 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedInventoryComponentsIndexRoute: AuthedInventoryComponentsIndexRoute,
   AuthedInventoryMaterialsIndexRoute: AuthedInventoryMaterialsIndexRoute,
   AuthedInventoryProductsIndexRoute: AuthedInventoryProductsIndexRoute,
+  AuthedInventoryStockIndexRoute: AuthedInventoryStockIndexRoute,
   AuthedInventoryToolsIndexRoute: AuthedInventoryToolsIndexRoute,
   AuthedInventoryWarehousesIndexRoute: AuthedInventoryWarehousesIndexRoute,
+  AuthedInventoryStockAdjustmentsAdjustmentIdRoute:
+    AuthedInventoryStockAdjustmentsAdjustmentIdRoute,
+  AuthedInventoryStockAdjustmentsIndexRoute:
+    AuthedInventoryStockAdjustmentsIndexRoute,
 }
 
 const AuthedRouteWithChildren =

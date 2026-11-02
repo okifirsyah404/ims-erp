@@ -40,9 +40,50 @@ Schema, keys, constraints, and conventions. Current declarations:
     the province/regency/district selections are UI state, rebuilt on edit.
   - `warehouse_storages` — flat bins, no zone level (D14).
     `UNIQUE(warehouse_id, code) WHERE deleted_at IS NULL`.
-  - Not yet implemented: `stock_movements`, `stock_balances`, `borrowings`,
-    `borrowing_lines`, `borrowing_events` (S3/S4). The tables exist in the
-    schema and migration; the services do not.
+  - `stock_movements` — **authoritative, append-only ledger** (ADR-0008). One
+    row per movement, never updated after posting; a correction is a new
+    row. A reversal is a `reference_type = 'reversal'` row pointing at the
+    original, and the original flips to `status = 'reversed'` exactly once
+    (the conditional `UPDATE … WHERE status = 'posted'` is the concurrency
+    guard). **No valuation columns**: `unit_cost`/`currency_code` were removed
+    because they were guaranteed to hold `0` forever — valuation belongs to the
+    accounting module, and the base price lives on `items.selling_price` /
+    `items.purchase_price` (OPEN-3 closed).
+  - `stock_balances` — **service-maintained projection** over
+    `stock_movements`, written inside the same transaction as the movement
+    that caused it. No triggers. Only `applyDelta` writes quantity, and it is
+    an atomic upsert (`ON CONFLICT … DO UPDATE SET quantity_on_hand =
+    quantity_on_hand + excluded…`), never read-then-write. `recomputeFromLedger`
+    is the repair operation *and* the test oracle. Two partial unique indexes
+    (`…_org_scope_uq` `WHERE organization_id IS NOT NULL`, `…_global_scope_uq`
+    `WHERE organization_id IS NULL`) let the upsert name the right conflict
+    target per scope. **Scope rule:** a balance's `organization_id` follows the
+    **warehouse**, not the caller — an organization-owned warehouse keeps
+    per-organization balances, while a global warehouse has **one shared
+    balance row** (`organization_id = NULL`) that every organization contributes
+    to and sees. That is deliberate: a global warehouse is one shared physical
+    space. `quantity_reserved` stays 0 until reservations are built, so
+    `quantity_available == quantity_on_hand`.
+  - **Ledger sign rule.** A movement stores an **unsigned** quantity; direction
+    is a property of its `movement_type` (`isOutbound`). Every row counts toward
+    a balance total, **including `reversed` ones** — a reversal is a new opposing
+    movement, so the original and its reversal cancel exactly. Excluding the
+    original would leave the reversal uncancelled and drift the balance by `q`
+    on every reversal (caught by the recompute oracle).
+  - **Negative stock is refused for every movement type**, reversal included.
+  - `stock_adjustments` + `stock_adjustment_items` — adjustments are
+    **documents, not bare movements**, with a real approval chain:
+    `draft → submitted → approved|rejected → posted|cancelled`. Only `posted`
+    writes movements; posting is idempotent (`posted_at IS NOT NULL` is the
+    guard). `stock_adjustments.organization_id` is **NOT NULL**, unlike the rest
+    of `inventory.*`: an adjustment is always raised by a tenant, even against a
+    global warehouse. Self-approval is refused unless the actor holds
+    `stock_adjustment:approve`. A line stores `quantity_before`/`quantity_after`
+    (counted totals, not deltas) so a recount is auditable; a line whose delta is
+    zero writes **no** movement (a `recount` that agrees still reaches `posted`).
+  - Not yet implemented: `stock_transfers`, `stock_reservations`, `lot_batches`,
+    `cycle_counts`, `borrowings`, `borrowing_lines`, `borrowing_events`
+    (S4+). The tables exist in the schema and migration; the services do not.
   - **Every `inventory.*` table has a nullable `organization_id`**; coded
     tables use a partial-unique *pair* (`(organization_id, code) WHERE
     organization_id IS NOT NULL` plus `(code) WHERE organization_id IS NULL`)
