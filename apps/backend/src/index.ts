@@ -13,7 +13,6 @@ import { i18next } from 'elysia-i18next';
 import { createInstance } from 'i18next';
 import { container } from 'tsyringe';
 import { createApp } from './app/app';
-import { startAvatarWorker } from './app/user/queues/avatar.worker';
 import {
 	closeQueueConnection,
 } from '@providers/queue/queue.connection';
@@ -21,7 +20,7 @@ import { registerLocation } from './app/location/container';
 import { registerAudit } from './app/audit';
 import { registerOrganization } from './app/organization';
 import { registerSales } from './app/sales/container';
-import { registerUser } from './app/user/container';
+import { registerUser, startAvatarWorker } from './app/user';
 import { registerUserManagement } from './app/user-management/container';
 import { registerAuthorization } from './authorization/container';
 registerProvider(container);
@@ -48,10 +47,6 @@ registerAuthorization(container);
  */
 const apiI18n = createInstance();
 
-/**
- * Root Elysia application instance. The i18n plugin is mounted first so every
- * controller and guard below inherits request-scoped `t`.
- */
 /**
  * Root Elysia application. The i18n plugin is mounted first so every controller
  * and guard inherited from `createApp()` below receives request-scoped `t`.
@@ -105,7 +100,7 @@ const bootstrap = new Elysia()
 // Better Auth's user.create.after hook, rendering each PNG through the DiceBear
 // HTTP API. Non-fatal at boot: a Redis outage must not take the API down.
 const avatarWorker = startAvatarWorker();
-avatarWorker.on('error', (error) => {
+avatarWorker.onError((error) => {
 	pinoLogger.error({ err: error }, 'avatar worker error');
 });
 

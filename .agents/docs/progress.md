@@ -3,6 +3,54 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Doc change — feature module lifecycle gate (2026-11-02)
+
+Instructions-only change; no code, schema, migration, or seed was touched.
+Status: **implemented** (not `verified` — nobody has yet confirmed an agent
+follows the new gate end to end).
+
+- **`AGENTS.md`**: new `## Feature module lifecycle` section between `##
+Backend` and `## Internationalization`. Every backend feature work item —
+  and specifically creating / updating / deleting `apps/backend/src/app/<module>/`
+  — must (1) read `docs/database/` in the `erp-database-schema` protocol order,
+  (2) run the `.agents/skills/grill-me` design interview before writing code,
+  and (3) update `docs/database/` afterwards **when required** (table / column /
+  index / constraint change, new cross-module logical reference, or a
+  status / money / quantity / date / lifecycle rule change). Sync-back order is
+  `docs.dbml` → `gen-logical-references.ts` → `validate-dbml.ts`.
+- **`AGENTS.md`** `## Definition of done`: items 8–10 added (gates respected,
+  `docs.dbml` updated-or-recorded + validator `OK`, module deletion leaves no
+  orphans).
+- **`AGENTS.md`** `## How to update these docs`: paragraph making
+  `docs/database/` a same-change obligation, canonical over Drizzle.
+- **`.agents/docs/README.md`**: corrected the stale "5 companion MDs" to 6
+  (`implementation-phases.md` was uncounted) and pointed at the new gate.
+- **`.agents/docs/skills.md`**: `grill-me` added to the inventory as
+  *present, not in lock*, with the honest caveat that its `SKILL.md` delegates
+  to a `grilling` skill **that is not installed**.
+
+Verification actually run:
+
+```text
+Select-String docs/database/docs.dbml -Pattern '^// MODULE:'   → 26 markers
+Test-Path .agents/skills/grilling                              → False (absent, as documented)
+bun docs/database/validate-dbml.ts                             → parsed: 253 tables, 0 standalone refs
+                                                                  cross-module refs: 0
+                                                                  timestamp gaps: 0
+                                                                  OK   (exit 0)
+```
+
+`docs/database/` needed no change under the new rule: no table, column, index,
+constraint, logical reference, or status vocabulary was modified. Noted here
+rather than silently skipped.
+
+Known inaccuracy left in place, flagged not fixed: the new section and
+`docs/database/validate-dbml.ts`'s header comment still describe the contract
+as **251** tables while the parser reports **253** (the previous verified count
+at line 481 above is already 253). The count is not the contract; a follow-up
+docs pass should reconcile 251 → 253 across `docs.dbml`'s companions rather
+than scatter the number further.
+
 ## Completed (this session — backend tidy-up W1–W4, 2026-11-02)
 
 Conformance pass against the `/elysia-module`, `/elysia-tsyringe`,
@@ -216,6 +264,54 @@ Verification after the change: `bunx tsc --noEmit` → exit 0; `bun test` →
 **131 pass, 0 fail**; `bunx oxlint` → 0 errors, same 4 pre-existing warnings;
 `smoke-admin-api.ts` → **18/18**; `smoke-cache-invalidation.ts` → **9/9**;
 `/docs` → 200, anon `/users/me` and `/admin/users` → 401.
+
+### W10 — avatar worker lifecycle owned by the user module
+
+`src/index.ts` imported `./app/user/queues/avatar.worker` — the user module's
+*internals* — and owned the worker's lifecycle (`.on('error')`, `.close()`,
+SIGTERM). `app/user/` could not be lifted out without editing the composition
+root.
+
+Fixed without moving any file (the worker already lived in
+`app/user/queues/`):
+
+- `app/user/queues/avatar.worker.ts` — `startAvatarWorker()` now returns an
+  `AvatarWorkerHandle` (`onError`, `close`) instead of a raw BullMQ `Worker`.
+  The BullMQ event name, shutdown order and `Worker` type stay inside the
+  module; `index.ts` no longer depends on BullMQ at all.
+- `app/user/index.ts` (new) — public entry re-exporting `registerUser`,
+  `startAvatarWorker`, `AvatarWorkerHandle` and `avatarUserCreateHook`.
+  `index.ts` now imports `./app/user`, mirroring `./app/audit`.
+- `src/index.ts` — imports `{ registerUser, startAvatarWorker } from './app/user'`;
+  also removed a duplicated JSDoc block above `const bootstrap` left by W9.
+
+**Rejected:** a `src/app/queue-worker.ts` with a generic `startBullQueue()`
+mounted in `app/app.ts`. `app.ts` builds the HTTP app and returns an `Elysia`;
+a worker returns a process handle with deliberately **non-fatal** failure
+semantics. Merging them would repeat the mistake W9 undid, one layer up.
+
+`closeQueueConnection()` deliberately stays in `index.ts`: the queue
+connection is a shared provider, not the avatar worker's to close.
+
+**`docs/database/` reviewed, unchanged.** No table, column, index, constraint,
+cross-module reference or status vocabulary changed. The only column written is
+`auth.users.avatar_object_key` (already canonical at `docs.dbml:512`).
+`bun docs/database/validate-dbml.ts` → `parsed: 253 tables`, `cross-module
+refs: 0`, `timestamp gaps: 0`, `OK`, exit 0.
+
+`grill-me` gate: its `grilling` dependency is not installed in this repo, so the
+manual pass was run. Ownership → module owns worker lifecycle (above); tenant
+scoping / soft delete / money / datetime / status vocabulary / cross-module
+contracts → all unaffected by a lifecycle refactor.
+
+Skill: `elysia-module` 1.2.0 → **1.3.0** (§3.6 gained a worker-handle step and
+the "do not mount workers on `app/app.ts`" rule); `elysia-layered-architecture`
+1.1.0 → **1.2.0** (rule 1.2 reference now states the lifecycle contract).
+
+Verification: `bunx tsc --noEmit` → exit 0; `bun test` → **131 pass, 0 fail**;
+`bunx oxlint` → 0 errors, same 4 pre-existing warnings; `smoke-admin-api.ts` →
+**18/18**; `smoke-cache-invalidation.ts` → **9/9**; `/docs` → 200, anon
+`/users/me` → 401.
 
 ## Completed (this session — multi-organization, 2026-11-02)
 

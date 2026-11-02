@@ -4,7 +4,7 @@ description: Modular monolith boundaries for this project's Elysia backend - eac
 license: MIT
 metadata:
   author: OpenAgentic
-  version: "1.2.0"
+  version: "1.3.0"
   dependsOn: elysia-layered-architecture
   canonicalExample: apps/backend/src/app/location
   secondaryExample: apps/backend/src/app/user
@@ -128,9 +128,12 @@ cycle avoidance are detailed in rule 3.5's reference file.
    `src/index.ts`; mount its `Controller.plugin()` in `src/app/app.ts`
    (registration and mounting live in separate files — see `elysia-tsyringe`
    rule 2.3)
-5. If the module calls an external system, define the port in `contracts/`
-   first, implement in `services/` (see the layered-architecture skill,
-   rule 1.2)
+5. If the module owns background jobs, export a **worker handle** from its
+   `index.ts` (`start<X>Worker()` returning `{ onError, close }`) and let
+   `src/index.ts` only start it and stop it on `SIGTERM`. The module keeps the
+   BullMQ types, event names and shutdown order; the composition root never
+   learns them. Do not mount workers on `src/app/app.ts` — that file builds
+   the HTTP app, and a worker's failure must not be fatal to it.
 6. No edits to other modules' code. If another module must cooperate, invert:
    it exposes a token/service, or (later) a domain event.
 

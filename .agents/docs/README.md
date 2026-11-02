@@ -31,7 +31,12 @@ Reference when touching the relevant areas:
 
 Database schema documentation lives outside this folder, in
 `docs/database/` (repo root): `docs.dbml` (canonical persistence contract),
-5 companion MDs, and the validate/regenerate scripts.
+6 companion MDs (`module-ownership`, `integrity-and-consistency`,
+`data-dictionary`, `logical-references`, `implementation-phases`), and the
+`gen-logical-references.ts` / `validate-dbml.ts` scripts.
+
+Any backend feature work reads that folder first and runs the `grill-me`
+design interview; see **Feature module lifecycle** in `../AGENTS.md`.
 
 ## Conventions
 

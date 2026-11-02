@@ -89,6 +89,13 @@ its DI token at bootstrap and writes through it — never raw `drizzleDB`
 inside a queue processor, or cache invalidation and soft-delete filtering
 are lost.
 
+The worker's *lifecycle* is module-owned too. `startAvatarWorker()` returns a
+narrow handle — `{ onError, close }` — re-exported from the module's
+`index.ts`; `src/index.ts` starts it and closes it on `SIGTERM` and knows
+nothing about BullMQ event names or shutdown ordering. A worker's failure must
+stay non-fatal to the HTTP app, which is why workers are not mounted on
+`src/app/app.ts`.
+
 ## Anti-patterns
 
 - `this.database.select()` inside a service.

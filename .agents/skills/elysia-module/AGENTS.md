@@ -1,6 +1,6 @@
 # Elysia Module Boundaries (Modular Monolith)
 
-**Version 1.2.0**
+**Version 1.3.0**
 OpenAgentic
 October 2026
 

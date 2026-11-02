@@ -4,7 +4,7 @@ description: Layered backend architecture for this project's Elysia domains - co
 license: MIT
 metadata:
   author: OpenAgentic
-  version: "1.1.0"
+  version: "1.2.0"
   dependsOn: elysiajs
   canonicalExample: apps/backend/src/app/location
   secondaryExample: apps/backend/src/app/user
