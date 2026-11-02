@@ -1,15 +1,5 @@
-import {
-	erpGuard,
-	sessionGuard,
-	type ErpContext,
-} from '@authorization/elysia-auth';
-import { Elysia } from 'elysia';
-import { ZodError } from 'zod';
+import { type ErpContext } from '@authorization/elysia-auth';
 import { container } from 'tsyringe';
-import type {
-	TApiErrorMessage,
-	TApiResponse,
-} from '@ims-erp/common';
 import {
 	banUserSchema,
 	createUserSchema,
@@ -26,36 +16,9 @@ import {
 	UserNotFoundError,
 } from '../services/user.errors';
 import { translator } from '@providers/i18n/translator';
-
-/**
- * Builds the response envelope metadata shared by all user endpoints.
- */
-function buildMeta(status: number, message: string) {
-	return {
-		requestId: crypto.randomUUID(),
-		status,
-		message,
-		timestamp: Date.now(),
-	};
-}
-
-/**
- * Wraps a single row in the standard API response envelope.
- */
-function ok<T>(data: T): TApiResponse<T> {
-	return { ...buildMeta(200, 'OK'), data };
-}
-
-/**
- * Builds the standard error envelope for a failed request.
- */
-function errorEnvelope(
-	status: number,
-	message: string,
-	errors: TApiErrorMessage[],
-): TApiResponse<null> {
-	return { ...buildMeta(status, message), errors, data: null };
-}
+import { NotGlobalAdminError } from '@http/errors';
+import { domainPlugin } from '@http/plugin';
+import { created, errorEnvelope, noContent, ok } from '@http/response';
 
 /**
  * Server-side global-admin check for user administration routes.
@@ -71,17 +34,6 @@ function errorEnvelope(
 function requireGlobalAdmin({ erp }: { erp: ErpContext }): void {
 	if (erp.session.user.role !== 'admin') {
 		throw new NotGlobalAdminError();
-	}
-}
-
-/**
- * Module-private sentinel thrown by {@link requireGlobalAdmin} and mapped
- * to `403` by the controller's error hook.
- */
-class NotGlobalAdminError extends Error {
-	constructor() {
-		super('Global administrator role required');
-		this.name = 'NotGlobalAdminError';
 	}
 }
 
@@ -103,6 +55,7 @@ class NotGlobalAdminError extends Error {
  * @throws 403 When the caller is not a global admin (mutations)
  * @throws 404 When an id-targeted lookup finds no alive row
  * @throws 409 When creating a user with a taken email/username
+ * @throws 415 When an uploaded avatar is not an accepted image type
  */
 export class UserController {
 	/**
@@ -110,37 +63,25 @@ export class UserController {
 	 *
 	 * @remarks
 	 * Resolves {@link UserService} from the tsyringe container once at
-	 * plugin build time. The local `onError` hook maps validation failures
-	 * to `400` and the module's domain errors onto their HTTP statuses
-	 * (404/409/403); see the class-level `@throws` list for the full
-	 * mapping.
+	 * plugin build time. Validation failures are mapped by the shared
+	 * {@link domainPlugin} hook; the module's own domain errors
+	 * (404/409/415) and the global-admin `403` are mapped by the local
+	 * `onError` arm below.
 	 *
 	 * @returns An Elysia instance with the `/users` route group mounted
 	 */
 	static plugin() {
 		const userService = container.resolve<UserService>(USER_SERVICE_TOKEN);
 
-		return new Elysia({ prefix: '/users', name: 'users', tags: ['Users'] })
-			.use(erpGuard())
-			.use(sessionGuard())
+		return domainPlugin({
+			name: 'users',
+			prefix: '/users',
+			tags: ['Users'],
+			guards: 'erp+session',
+		})
 			.onError({ as: 'local' }, (ctx) => {
-				const { code, error, set } = ctx;
+				const { error, set } = ctx;
 				const t = translator(ctx);
-				if (code === 'VALIDATION') {
-					set.status = 400;
-					return errorEnvelope(400, t('common.validationFailed'), [
-						{
-							field: error.value ? String(error.value) : null,
-							message: error.message,
-						},
-					]);
-				}
-				if (code === 'PARSE' || error instanceof ZodError) {
-					set.status = 400;
-					return errorEnvelope(400, t('common.validationFailed'), [
-						{ field: null, message: String(error) },
-					]);
-				}
 				if (error instanceof UserNotFoundError) {
 					set.status = 404;
 					return errorEnvelope(404, t('common.notFound'), [
@@ -159,18 +100,14 @@ export class UserController {
 						{ field: 'file', message: error.message },
 					]);
 				}
-				if (error instanceof NotGlobalAdminError) {
-					set.status = 403;
-					return errorEnvelope(403, t('user.globalAdminRequired'), []);
-				}
 				return undefined;
 			})
 			// NOTE: the user directory (list) is NOT defined here. It lives on
-			// `UserAdminController` (`GET /users`, gated on `member:read`,
+			// `UserAdminController` (`GET /admin/users`, gated on `member:read`,
 			// returning memberships alongside each account). Keeping a second
 			// list handler here registered `/users/` — a distinct Elysia route
-			// from `/users` — which shadows the admin listing for the bare
-			// path and returns rows without `organizations`. One owner per
+			// from `/users` — which shadowed the admin listing for the bare
+			// path and returned rows without `organizations`. One owner per
 			// resource avoids that whole class of routing surprise.
 			.get(
 				/**
@@ -216,7 +153,7 @@ export class UserController {
 						updateSelfUserSchema.parse(body),
 						request.headers,
 					);
-					return ok(null);
+					return noContent();
 				},
 				{ erpSession: { session: true } },
 			)
@@ -272,6 +209,18 @@ export class UserController {
 				{ erpSession: { session: true } },
 			)
 			.get(
+				/**
+				 * Read one user profile by id.
+				 *
+				 * Global-admin gated: the profile row is not tenant-scoped
+				 * (`auth.users` is Better Auth-owned and carries no
+				 * organization column), so a bare `erp: {}` guard let ANY
+				 * authenticated member read ANY user's profile across
+				 * tenants. The org-scoped listing lives on
+				 * `GET /admin/users` (`member:read`); this id lookup is the
+				 * Better Auth global-admin domain, same as every other
+				 * route on this controller.
+				 */
 				'/:userId',
 				async (ctx) => {
 					const { params, status } = ctx;
@@ -289,17 +238,16 @@ export class UserController {
 					}
 					return ok(profile);
 				},
-				{ erp: {} },
+				{ erp: { policy: requireGlobalAdmin } },
 			)
 			.post(
 				'/',
-				async ({ body, request, set }) => {
-					const created = await userService.createUser(
+				async ({ body, request, status }) => {
+					const row = await userService.createUser(
 						createUserSchema.parse(body),
 						request.headers,
 					);
-					set.status = 201;
-					return ok(created);
+					return status(201, created(row));
 				},
 				{ erp: { policy: requireGlobalAdmin } },
 			)
@@ -311,7 +259,7 @@ export class UserController {
 						updateUserSchema.parse(body),
 						request.headers,
 					);
-					return ok(null);
+					return noContent();
 				},
 				{ erp: { policy: requireGlobalAdmin } },
 			)
@@ -323,7 +271,7 @@ export class UserController {
 						setUserRoleSchema.parse(body),
 						request.headers,
 					);
-					return ok(null);
+					return noContent();
 				},
 				{ erp: { policy: requireGlobalAdmin } },
 			)
@@ -335,7 +283,7 @@ export class UserController {
 						banUserSchema.parse(body),
 						request.headers,
 					);
-					return ok(null);
+					return noContent();
 				},
 				{ erp: { policy: requireGlobalAdmin } },
 			)
@@ -346,7 +294,7 @@ export class UserController {
 						userIdParamsSchema.parse(params).userId,
 						request.headers,
 					);
-					return ok(null);
+					return noContent();
 				},
 				{ erp: { policy: requireGlobalAdmin } },
 			)
@@ -357,7 +305,7 @@ export class UserController {
 						userIdParamsSchema.parse(params).userId,
 						request.headers,
 					);
-					return ok(null);
+					return noContent();
 				},
 				{ erp: { policy: requireGlobalAdmin } },
 			)
@@ -368,7 +316,7 @@ export class UserController {
 						userIdParamsSchema.parse(params).userId,
 						request.headers,
 					);
-					return ok(null);
+					return noContent();
 				},
 				{ erp: { policy: requireGlobalAdmin } },
 			);

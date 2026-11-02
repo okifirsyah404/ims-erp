@@ -1,4 +1,3 @@
-import { Elysia } from 'elysia';
 import { z } from 'zod';
 import { container } from 'tsyringe';
 import { translator } from '@providers/i18n/translator';
@@ -8,7 +7,6 @@ import { SALES_SERVICE_TOKEN } from '../constants/di';
 import {
 	ReferencedQuotationNotFoundError,
 	SalesService,
-	SalesStateError,
 } from '../services/sales.service';
 
 /** Body schema for creating a quotation. */

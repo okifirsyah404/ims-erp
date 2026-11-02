@@ -1,4 +1,3 @@
-import { Elysia } from 'elysia';
 import { container } from 'tsyringe';
 import {
 	districtQuerySchema,

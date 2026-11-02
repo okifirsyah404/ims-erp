@@ -1,13 +1,9 @@
-import { erpGuard, type ErpContext } from '@authorization/elysia-auth';
-import { Elysia } from 'elysia';
-import { ZodError } from 'zod';
+import type { ErpContext } from '@authorization/elysia-auth';
 import { container } from 'tsyringe';
-import type {
-	TApiErrorMessage,
-	TApiPaginatedResponse,
-	TApiResponse,
-} from '@ims-erp/common';
 import { builtInOrgStatements, erpStatements, portalStatements } from '@ims-erp/common';
+import { translator, type ApiKey } from '@providers/i18n/translator';
+import { domainPlugin } from '@http/plugin';
+import { created, errorEnvelope, ok, okPaginated } from '@http/response';
 import {
 	auditQuerySchema,
 	createRoleSchema,
@@ -29,48 +25,7 @@ import type { UserAdminService } from '../services/user-admin.service';
 import type { AuditQueryService } from '../services/audit-query.service';
 import type { IRoleRepository } from '../contracts/repositories.interface';
 import { UserManagementError } from '../services/invitation.errors';
-import { translator, type ApiKey } from '@providers/i18n/translator';
 import type { TActor } from '../services/invitation.service';
-
-/** Envelope metadata shared by the admin endpoints. */
-function buildMeta(status: number, message: string) {
-	return {
-		requestId: crypto.randomUUID(),
-		status,
-		message,
-		timestamp: Date.now(),
-	};
-}
-
-function ok<T>(data: T): TApiResponse<T> {
-	return { ...buildMeta(200, 'OK'), data };
-}
-
-function errorEnvelope(
-	status: number,
-	message: string,
-	errors: TApiErrorMessage[],
-): TApiResponse<null> {
-	return { ...buildMeta(status, message), errors, data: null };
-}
-
-/** Paginated envelope with the shared pagination meta. */
-function okPaginated<T>(
-	page: number,
-	limit: number,
-	result: { data: T[]; meta: { total: number; totalPages: number } },
-): TApiPaginatedResponse<T> {
-	return {
-		...buildMeta(200, 'OK'),
-		pagination: {
-			page,
-			limit,
-			total: result.meta.total,
-			totalPages: result.meta.totalPages,
-		},
-		data: result.data,
-	};
-}
 
 /** Audit actor derived from the guard-resolved session, never client input. */
 function actorFrom(erp: ErpContext, request: Request): TActor {
@@ -119,24 +74,24 @@ function mapAdminError(
 	if (error instanceof UserManagementError) {
 		return { status: error.status, key: error.key, params: error.params };
 	}
-	if (error instanceof ZodError) {
-		return {
-			status: 400,
-			message: error.issues.map((issue) => issue.message).join('; '),
-		};
-	}
 	return null;
 }
 
 /**
- * Phase-4 administration controller: account lifecycle (`/users`), dynamic
- * role CRUD (`/roles`) and the audit trail (`/audit`).
+ * Phase-4 administration controller: account lifecycle (`/admin/users`),
+ * dynamic role CRUD (`/admin/roles`) and the audit trail (`/admin/audit`).
  *
  * @remarks
  * HTTP concerns only — parsing, envelope/status mapping. Every business rule
  * (escalation guard, grant validation, session revocation) lives in the
  * services. All three surfaces ride the `erp` guard, so they require a
  * validated organization context and the matching dynamic permission.
+ *
+ * The `/admin` prefix is what keeps these routes distinct from the
+ * self-service `/users/*` routes on
+ * {@link import('../../user/controllers/user.controller').UserController}:
+ * before the split, both modules registered `GET /users` and
+ * `GET /users/:userId`, and which handler answered depended on mount order.
  */
 export class UserAdminController {
 	static plugin() {
@@ -153,25 +108,21 @@ export class UserAdminController {
 			ROLE_REPOSITORY_TOKEN,
 		);
 
-		return new Elysia({ name: 'user-management-admin', tags: ['User Management'] })
-			.use(erpGuard())
+		return domainPlugin({
+			name: 'user-management-admin',
+			prefix: '/admin',
+			tags: ['User Management'],
+			guards: 'erp',
+		})
 			.onError({ as: 'local' }, (ctx) => {
-				const { code, error, set } = ctx;
+				const { error, set } = ctx;
 				const t = translator(ctx);
-				if (code === 'VALIDATION') {
-					set.status = 400;
-					return errorEnvelope(400, t('common.validationFailed'), [
-						{ message: error.message },
-					]);
-				}
 				const mapped = mapAdminError(error);
 				if (mapped) {
 					set.status = mapped.status;
 					const message =
 						'key' in mapped ? t(mapped.key, mapped.params) : mapped.message;
-					return errorEnvelope(mapped.status, message, [
-						{ message },
-					]);
+					return errorEnvelope(mapped.status, message, [{ message }]);
 				}
 				return undefined;
 			})
@@ -181,11 +132,8 @@ export class UserAdminController {
 			// ---------------------------------------------------------------
 			.get(
 				'/users',
-				async ({ query }) => {
-					const parsed = userQuerySchema.parse(query);
-					const result = await userAdmin.list(parsed);
-					return okPaginated(parsed.page, parsed.limit, result);
-				},
+				async ({ query }) =>
+					okPaginated(await userAdmin.list(userQuerySchema.parse(query))),
 				{ erp: { permission: ['member:read'] } },
 			)
 			.post(
@@ -260,10 +208,7 @@ export class UserAdminController {
 						await callerRank(erp, roleRepository),
 						actorFrom(erp, request),
 					);
-					return status(201, {
-						...buildMeta(201, 'Role created'),
-						data: row,
-					});
+					return status(201, created(row));
 				},
 				{ erp: { permission: ['member:create'] } },
 			)
@@ -302,11 +247,8 @@ export class UserAdminController {
 			// ---------------------------------------------------------------
 			.get(
 				'/audit',
-				async ({ query }) => {
-					const parsed = auditQuerySchema.parse(query);
-					const result = await auditQuery.list(parsed);
-					return okPaginated(parsed.page, parsed.limit, result);
-				},
+				async ({ query }) =>
+					okPaginated(await auditQuery.list(auditQuerySchema.parse(query))),
 				{ erp: { permission: ['audit_log:read'] } },
 			);
 	}

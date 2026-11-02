@@ -82,7 +82,7 @@ type TAuditSearch = {
 	to?: string;
 };
 
-export const Route = createFileRoute('/_authed/audit/')({
+export const Route = createFileRoute('/_authed/admin/audit/')({
 	validateSearch: (search: Record<string, unknown>): TAuditSearch => ({
 		page: search.page ? Number(search.page) || 1 : undefined,
 		action: typeof search.action === 'string' ? search.action : undefined,

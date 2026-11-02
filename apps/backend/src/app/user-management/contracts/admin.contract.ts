@@ -7,10 +7,11 @@ import { erpStatements } from '@ims-erp/common';
  * Request/response contracts for the user-management admin API (phase 4).
  *
  * @remarks
- * Three surfaces share this file:
- * - `/users/*` — account lifecycle (list, deactivate, restore, soft-delete).
- * - `/roles/*` — per-organization role CRUD (owner/app-admin).
- * - `/audit` — read-only audit trail.
+ * Three surfaces share this file, all under the `/admin` prefix so they
+ * cannot collide with the self-service `/users/*` routes:
+ * - `/admin/users/*` — account lifecycle (list, deactivate, restore, soft-delete).
+ * - `/admin/roles/*` — per-organization role CRUD (owner/app-admin).
+ * - `/admin/audit` — read-only audit trail.
  *
  * Every schema is parsed at the controller boundary before any service call.
  */

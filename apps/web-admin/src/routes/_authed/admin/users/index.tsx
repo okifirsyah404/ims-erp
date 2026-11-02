@@ -66,7 +66,7 @@ type TUsersSearch = {
 	includeDeleted?: boolean;
 };
 
-export const Route = createFileRoute('/_authed/users/')({
+export const Route = createFileRoute('/_authed/admin/users/')({
 	validateSearch: (search: Record<string, unknown>): TUsersSearch => ({
 		page: search.page ? Number(search.page) || 1 : undefined,
 		status: (search.status as TUserStatus | undefined) || undefined,

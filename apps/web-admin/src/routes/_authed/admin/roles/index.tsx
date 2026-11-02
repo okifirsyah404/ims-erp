@@ -55,7 +55,7 @@ import {
 import { useActiveOrganizationId } from '@/lib/use-active-organization';
 import { usePermission } from '@/lib/use-permission';
 
-export const Route = createFileRoute('/_authed/roles/')({
+export const Route = createFileRoute('/_authed/admin/roles/')({
 	component: RolesPage,
 });
 

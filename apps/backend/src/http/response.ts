@@ -36,17 +36,23 @@ export function buildMeta(status: number, message: string) {
 
 /** Wraps a single row in the standard success envelope (`200`). */
 export function ok<T>(data: T): TApiResponse<T> {
-	return { ...buildMeta(200, 'OK'), data, errors: [] };
+	return { ...buildMeta(200, 'OK'), data };
 }
 
 /** Wraps a newly created row in the standard envelope (`201`). */
 export function created<T>(data: T): TApiResponse<T> {
-	return { ...buildMeta(201, 'Created'), data, errors: [] };
+	return { ...buildMeta(201, 'Created'), data };
 }
 
-/** Wraps a `200` response carrying no payload. */
+/**
+ * Wraps a `200` response carrying no payload.
+ *
+ * @remarks
+ * For mutations that return nothing. Status stays `200` (not `204`) because
+ * the existing clients parse the envelope on every success path.
+ */
 export function noContent(): TApiResponse<null> {
-	return { ...buildMeta(200, 'OK'), data: null, errors: [] };
+	return { ...buildMeta(200, 'OK'), data: null };
 }
 
 /**
@@ -63,7 +69,6 @@ export function okPaginated<T>(
 		...buildMeta(200, 'OK'),
 		pagination: result.meta,
 		data: result.data,
-		errors: [],
 	};
 }
 

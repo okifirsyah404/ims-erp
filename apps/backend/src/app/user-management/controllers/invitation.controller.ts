@@ -1,16 +1,5 @@
-import {
-	erpGuard,
-	sessionGuard,
-	type ErpContext,
-} from '@authorization/elysia-auth';
-import { Elysia } from 'elysia';
-import { ZodError } from 'zod';
+import type { ErpContext } from '@authorization/elysia-auth';
 import { container } from 'tsyringe';
-import type {
-	TApiErrorMessage,
-	TApiPaginatedResponse,
-	TApiResponse,
-} from '@ims-erp/common';
 import {
 	claimInvitationSchema,
 	createInvitationSchema,
@@ -24,48 +13,10 @@ import {
 } from '../constants/di';
 import type { InvitationService, TActor } from '../services/invitation.service';
 import type { IUserManagementRepository } from '../contracts/repositories.interface';
-import {
-	UserManagementError,
-} from '../services/invitation.errors';
-import { translator } from '@providers/i18n/translator';
-
-/**
- * Builds the response envelope metadata shared by all invitation endpoints.
- */
-function buildMeta(status: number, message: string) {
-	return {
-		requestId: crypto.randomUUID(),
-		status,
-		message,
-		timestamp: Date.now(),
-	};
-}
-
-function ok<T>(data: T): TApiResponse<T> {
-	return { ...buildMeta(200, 'OK'), data };
-}
-
-function created<T>(data: T): TApiResponse<T> {
-	return { ...buildMeta(201, 'Created'), data };
-}
-
-function okPaginated<T>(
-	result: TApiPaginatedResponse<T> extends never ? never : { meta: TApiPaginatedResponse<T>['pagination']; data: T[] },
-): TApiPaginatedResponse<T> {
-	return {
-		...buildMeta(200, 'OK'),
-		pagination: result.meta,
-		data: result.data,
-	};
-}
-
-function errorEnvelope(
-	status: number,
-	message: string,
-	errors: TApiErrorMessage[],
-): TApiResponse<null> {
-	return { ...buildMeta(status, message), errors, data: null };
-}
+import { UserManagementError } from '../services/invitation.errors';
+import { NotGlobalAdminError } from '@http/errors';
+import { domainPlugin } from '@http/plugin';
+import { created, errorEnvelope, ok, okPaginated } from '@http/response';
 
 /**
  * Extracts the audit actor from the guard-resolved context. Identity comes
@@ -84,20 +35,11 @@ function actorFrom(erp: ErpContext, request: Request): TActor {
  * Server-side global-admin check (same pattern as the user module):
  * application invitations and cross-org invitation administration are
  * Better Auth's global-admin domain, not organization-scoped ERP access
- * control. Organization invitations ride the erp guard (membership +
- * permission) in phase 3 when the org-scope endpoints land.
+ * control.
  */
-function requireGlobalAdmin({ erp }: { erp: ErpContext }): void {
+function requireGlobalAdmin({ erp }: { erp: { session: { user: { role?: string | null } } } }): void {
 	if (erp.session.user.role !== 'admin') {
 		throw new NotGlobalAdminError();
-	}
-}
-
-/** Module-private sentinel thrown by {@link requireGlobalAdmin}. */
-class NotGlobalAdminError extends Error {
-	constructor() {
-		super('Global administrator role required');
-		this.name = 'NotGlobalAdminError';
 	}
 }
 
@@ -109,96 +51,33 @@ class NotGlobalAdminError extends Error {
  * business logic lives in {@link InvitationService}. The claim flow is
  * public but token-gated (single-use hashed token; no session required);
  * admin routes require a global admin session.
+ *
+ * Admin routes live under `/admin/invitations` so every application-admin
+ * surface shares one prefix. The claim flow stays at `/invitations/claim`,
+ * mounted as its own plugin: it is public, sessionless, and must not inherit
+ * the admin guard.
  */
 export class InvitationController {
 	static plugin() {
 		const invitationService = container.resolve<InvitationService>(
 			INVITATION_SERVICE_TOKEN,
 		);
-		const userRepo = container.resolve<IUserManagementRepository>(
-			USER_MANAGEMENT_REPOSITORY_TOKEN,
-		);
 
-		return new Elysia({
-			prefix: '/invitations',
+		return domainPlugin({
 			name: 'user-management-invitations',
+			prefix: '/admin/invitations',
 			tags: ['User Management'],
+			guards: 'erp',
+		}).onError({ as: 'local' }, (ctx) => {
+			const { error, set } = ctx;
+			if (error instanceof UserManagementError) {
+				set.status = error.status;
+				return errorEnvelope(error.status, error.message, [
+					{ field: null, message: error.message },
+				]);
+			}
+			return undefined;
 		})
-			.use(erpGuard())
-			.use(sessionGuard())
-			.onError({ as: 'local' }, (ctx) => {
-				const { code, error, set } = ctx;
-				const t = translator(ctx);
-				if (code === 'VALIDATION') {
-					set.status = 400;
-					return errorEnvelope(400, t('common.validationFailed'), [
-						{
-							field: error.value ? String(error.value) : null,
-							message: error.message,
-						},
-					]);
-				}
-				if (code === 'PARSE' || error instanceof ZodError) {
-					set.status = 400;
-					return errorEnvelope(400, t('common.validationFailed'), [
-						{ field: null, message: String(error) },
-					]);
-				}
-				if (error instanceof UserManagementError) {
-					set.status = error.status;
-					const message = t(error.key, error.params);
-					return errorEnvelope(error.status, message, [
-						{ field: null, message },
-					]);
-				}
-				if (error instanceof NotGlobalAdminError) {
-					set.status = 403;
-					return errorEnvelope(403, t('user.globalAdminRequired'), []);
-				}
-				return undefined;
-			})
-			// ---- Public claim flow (token-gated, no session) ----------------
-			// Declared before the admin routes; the claim subpath cannot clash
-			// with `/:invitationId` because both are POST/GET-prefixed routes
-			// and claim uses the literal `claim` segment.
-			.post(
-				'/claim/:token',
-				async ({ params, body, request, set }) => {
-					const input = claimInvitationSchema.parse(body);
-					const result = await invitationService.claim(
-						params.token,
-						input,
-						// Real claim request headers (origin/user-agent/IP) are
-						// forwarded so the post-claim sign-in passes CSRF/origin
-						// validation and the session carries request context.
-						request.headers,
-					);
-					if (result.setCookie) {
-						set.headers['set-cookie'] = result.setCookie;
-					}
-					return ok({
-						userId: result.userId,
-						organizationName: result.organizationName,
-						next: '/profile/complete',
-					});
-				},
-			)
-			.get(
-				'/claim/:token',
-				async ({ params }) => {
-					const target = await invitationService.resolveClaimToken(
-						params.token,
-					);
-					// Public surface: only what the claim forms need. Email is
-					// read-only display context on the claim page.
-					return ok({
-						email: target.user.email,
-						name: target.user.name,
-						type: target.invitation.type,
-					});
-				},
-			)
-			// ---- Admin surface (global admin) -------------------------------
 			.post(
 				'/',
 				async (ctx) => {
@@ -268,25 +147,92 @@ export class InvitationController {
 	}
 }
 
-/** Username availability lives under /users; registered alongside. */
+/**
+ * Public claim flow — token-gated, no session.
+ *
+ * @remarks
+ * Deliberately unguarded and un-prefixed by `/admin`: the recipient of an
+ * invitation follows a link from an email before they hold any account. The
+ * token itself is the authorization (single-use, stored hashed).
+ */
+export class InvitationClaimController {
+	static plugin() {
+		const invitationService = container.resolve<InvitationService>(
+			INVITATION_SERVICE_TOKEN,
+		);
+
+		return domainPlugin({
+			name: 'invitation-claim',
+			prefix: '/invitations',
+			tags: ['Invitations'],
+		})
+			.post(
+				'/claim/:token',
+				async ({ params, body, request, set }) => {
+					const input = claimInvitationSchema.parse(body);
+					const result = await invitationService.claim(
+						params.token,
+						input,
+						// Real claim request headers (origin/user-agent/IP) are
+						// forwarded so the post-claim sign-in passes CSRF/origin
+						// validation and the session carries request context.
+						request.headers,
+					);
+					if (result.setCookie) {
+						set.headers['set-cookie'] = result.setCookie;
+					}
+					return ok({
+						userId: result.userId,
+						organizationName: result.organizationName,
+						next: '/profile/complete',
+					});
+				},
+			)
+			.get(
+				'/claim/:token',
+				async ({ params }) => {
+					const target = await invitationService.resolveClaimToken(
+						params.token,
+					);
+					// Public surface: only what the claim forms need. Email is
+					// read-only display context on the claim page.
+					return ok({
+						email: target.user.email,
+						name: target.user.name,
+						type: target.invitation.type,
+					});
+				},
+			);
+	}
+}
+
+/**
+ * Username availability check.
+ *
+ * @remarks
+ * Public (no guard): the claim form needs availability feedback before the
+ * visitor holds any session. It only exposes a boolean for a candidate
+ * handle, so the response is non-enumerating.
+ *
+ * Moved off `/users/username-available` — that path sat inside the
+ * self-service `/users` plugin and collided with its `/:userId` parameter
+ * route.
+ */
 export class UsernameCheckController {
 	static plugin() {
 		const userRepo = container.resolve<IUserManagementRepository>(
 			USER_MANAGEMENT_REPOSITORY_TOKEN,
 		);
-		return new Elysia({ name: 'username-availability', tags: ['Users'] })
-			.get(
-				'/users/username-available',
-				async ({ query }) => {
-					const { username } = usernameAvailableQuerySchema.parse(query);
-					return ok({
-						username,
-						available: await userRepo.isUsernameAvailable(username),
-					});
-				},
-				// Public (no guard): the claim form needs availability feedback
-				// before the visitor holds any session. Only exposes a boolean
-				// for a candidate handle; response shape is non-enumerating.
-			);
+		return domainPlugin({
+			name: 'username-availability',
+			prefix: '/username-availability',
+			tags: ['Users'],
+		}).get('/', async ({ query }) => {
+			const { username } = usernameAvailableQuerySchema.parse(query);
+			return ok({
+				username,
+				available: await userRepo.isUsernameAvailable(username),
+			});
+		});
 	}
 }

@@ -75,6 +75,23 @@ export class DomainHttpError extends Error {
 	}
 }
 
+/**
+ * The caller lacks the application-wide administrator role.
+ *
+ * @remarks
+ * Was declared privately and identically in three controllers (`user`,
+ * `organization`, `user-management`); it is one error with one meaning, so
+ * it lives here and every `onError` maps it through {@link AppError}.
+ */
+export class NotGlobalAdminError extends AppError {
+	constructor(
+		message = 'Global administrator role required',
+		key: ApiKey = 'user.globalAdminRequired',
+	) {
+		super(403, key, message);
+	}
+}
+
 /** Resolves an error into a finished response envelope, or `null` if unknown. */
 export function toErrorResponse(
 	error: unknown,

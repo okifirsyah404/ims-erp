@@ -24,12 +24,12 @@ const items: SidebarItem[] = [
 	},
 	{
 		titleKey: 'item.users',
-		url: '/users',
+		url: '/admin/users',
 		icon: Users,
 	},
 	{
 		titleKey: 'item.auditLog',
-		url: '/audit',
+		url: '/admin/audit',
 		icon: ScrollText,
 	},
 	{
