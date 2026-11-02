@@ -1,7 +1,20 @@
 import type { SocialProviders } from 'better-auth';
 import { appConfig } from '@config/providers/config';
 
-export const betterAuthSocialProviders: SocialProviders = {};
+const google = appConfig.auth.social?.google;
+
+export const betterAuthSocialProviders: SocialProviders = {
+	// Enabled only when credentials are configured; unset env vars leave
+	// Google sign-in disabled rather than failing auth construction.
+	...(google?.clientId && google?.clientSecret
+		? {
+				google: {
+					clientId: google.clientId,
+					clientSecret: google.clientSecret,
+				},
+			}
+		: {}),
+};
 
 /**
  * Trusted origins for Better Auth's origin/CSRF checks on state-changing

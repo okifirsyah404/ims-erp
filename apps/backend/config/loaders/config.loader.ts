@@ -103,6 +103,12 @@ export function loadEnvConfig(
         process.env.INITIAL_ADMIN_EMAIL ?? 'admin@example.com',
       seedAdminUsername: process.env.INITIAL_ADMIN_USERNAME ?? 'admin',
       seedAdminPassword: process.env.INITIAL_ADMIN_PASSWORD ?? 'admin123456',
+      social: {
+        google: {
+          clientId: process.env.GOOGLE_CLIENT_ID || null,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET || null,
+        },
+      },
     },
 
     scheduler: {

@@ -1,5 +1,5 @@
 import { createAuthClient } from 'better-auth/react'
-import { adminClient, organizationClient } from 'better-auth/client/plugins'
+import { adminClient, organizationClient, usernameClient } from 'better-auth/client/plugins'
 import { currentLanguage } from '@/i18n'
 import { erpAccessControl, erpRoles } from './erp-ac'
 
@@ -20,6 +20,8 @@ export const authClient = createAuthClient({
   },
   plugins: [
     adminClient(),
+    // Mirrors the server's username() plugin; enables `signIn.username`.
+    usernameClient(),
     // organizationClient mirrors the server's organization() plugin
     // configuration (same ac + roles from the shared catalog).
     organizationClient({
