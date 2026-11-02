@@ -62,14 +62,14 @@ function check(label: string, ok: boolean, detail: string) {
 const admin = await signIn('admin@local.com', 'admin123456');
 
 // ---- users ---------------------------------------------------------------
-const users = await call(admin, 'GET', '/users?limit=5');
+const users = await call(admin, 'GET', '/admin/users?limit=5');
 check(
-	'GET /users as admin',
+	'GET /admin/users as admin',
 	users.status === 200,
 	`${users.status} ${users.json?.message ?? ''}`,
 );
 const userRows = (users.json as { data?: Array<{ email: string }> } | null)?.data;
-check('GET /users returns rows', (userRows?.length ?? 0) > 0, 'empty');
+check('GET /admin/users returns rows', (userRows?.length ?? 0) > 0, 'empty');
 
 // The admin UI reads `user.organizations.length`. A listing served by a
 // handler that doesn't join memberships omits the field and crashes the whole
@@ -78,15 +78,15 @@ const missingOrgs = (userRows ?? []).filter(
 	(row) => !Array.isArray((row as { organizations?: unknown }).organizations),
 );
 check(
-	'every /users row carries an organizations array',
+	'every /admin/users row carries an organizations array',
 	(userRows?.length ?? 0) > 0 && missingOrgs.length === 0,
 	`${missingOrgs.length} row(s) missing organizations`,
 );
 
 // ---- roles ---------------------------------------------------------------
-const roles = await call(admin, 'GET', `/roles?organizationId=${ORG}`);
+const roles = await call(admin, 'GET', `/admin/roles?organizationId=${ORG}`);
 check(
-	'GET /roles as owner',
+	'GET /admin/roles as owner',
 	roles.status === 200,
 	`${roles.status} ${roles.json?.message ?? ''}`,
 );
@@ -95,11 +95,11 @@ const roleRows = (roles.json as { data?: Array<{ name: string; rank: number }> }
 const ownerRank = roleRows?.find((role) => role.name === 'owner')?.rank;
 check('seed owner role present (rank 100)', ownerRank === 100, String(ownerRank));
 
-const catalog = await call(admin, 'GET', '/roles/permissions');
+const catalog = await call(admin, 'GET', '/admin/roles/permissions');
 const catalogRows = (catalog.json as { data?: Array<{ resource: string }> } | null)
 	?.data;
 check(
-	'GET /roles/permissions',
+	'GET /admin/roles/permissions',
 	catalog.status === 200 && (catalogRows?.length ?? 0) > 0,
 	`${catalog.status}`,
 );
@@ -109,23 +109,23 @@ const memberRoleId = (
 )?.data?.find((role) => role.name === 'member')?.id;
 
 // ---- audit ---------------------------------------------------------------
-const audit = await call(admin, 'GET', '/audit?limit=5');
+const audit = await call(admin, 'GET', '/admin/audit?limit=5');
 check(
-	'GET /audit as owner',
+	'GET /admin/audit as owner',
 	audit.status === 200,
 	`${audit.status} ${audit.json?.message ?? ''}`,
 );
 
 // ---- invitations ---------------------------------------------------------
-const invitations = await call(admin, 'GET', '/invitations');
+const invitations = await call(admin, 'GET', '/admin/invitations');
 check(
-	'GET /invitations as admin',
+	'GET /admin/invitations as admin',
 	invitations.status === 200,
 	`${invitations.status} ${invitations.json?.message ?? ''}`,
 );
 
 // ---- rank guard: owner cannot grant rank 100 -----------------------------
-const escalation = await call(admin, 'POST', '/roles', {
+const escalation = await call(admin, 'POST', '/admin/roles', {
 	organizationId: ORG,
 	name: 'smoke_escalation',
 	rank: 100,
@@ -145,27 +145,27 @@ const existingRoles = (
 )?.data;
 for (const stale of existingRoles ?? []) {
 	if (stale.name.startsWith('smoke_')) {
-		await call(admin, 'DELETE', `/roles/${stale.id}`);
+		await call(admin, 'DELETE', `/admin/roles/${stale.id}`);
 	}
 }
 
-const created = await call(admin, 'POST', '/roles', {
+const created = await call(admin, 'POST', '/admin/roles', {
 	organizationId: ORG,
 	name: 'smoke_temp_role',
 	rank: 20,
 	permissions: { quotation: ['read'] },
 });
 check(
-	'POST /roles creates a low-rank custom role',
+	'POST /admin/roles creates a low-rank custom role',
 	created.status === 201,
 	`${created.status} ${created.json?.message ?? ''}`,
 );
 const createdId = (created.json as { data?: { id: string } } | null)?.data?.id;
 
 if (createdId) {
-	const removed = await call(admin, 'DELETE', `/roles/${createdId}`);
+	const removed = await call(admin, 'DELETE', `/admin/roles/${createdId}`);
 	check(
-		'DELETE /roles/:id soft-deletes an unused custom role',
+		'DELETE /admin/roles/:id soft-deletes an unused custom role',
 		removed.status === 200,
 		`${removed.status} ${removed.json?.message ?? ''}`,
 	);
@@ -176,7 +176,7 @@ const ownerRoleId = (
 	roles.json as { data?: Array<{ id: string; name: string }> } | null
 )?.data?.find((role) => role.name === 'member')?.id;
 if (ownerRoleId) {
-	const systemDelete = await call(admin, 'DELETE', `/roles/${ownerRoleId}`);
+	const systemDelete = await call(admin, 'DELETE', `/admin/roles/${ownerRoleId}`);
 	check(
 		'system role delete is refused (409)',
 		systemDelete.status === 409,
@@ -186,23 +186,45 @@ if (ownerRoleId) {
 
 // ---- member is denied the admin surfaces --------------------------------
 const member = await signIn('member.seed@entragate.local', 'member123456');
-const memberUsers = await call(member, 'GET', '/users');
+const memberUsers = await call(member, 'GET', '/admin/users');
 check(
-	'member denied GET /users (403)',
+	'member denied GET /admin/users (403)',
 	memberUsers.status === 403,
 	`${memberUsers.status}`,
 );
-const memberAudit = await call(member, 'GET', '/audit');
+const memberAudit = await call(member, 'GET', '/admin/audit');
 check(
-	'member denied GET /audit (403)',
+	'member denied GET /admin/audit (403)',
 	memberAudit.status === 403,
 	`${memberAudit.status}`,
 );
-const memberRoles = await call(member, 'GET', '/roles');
+const memberRoles = await call(member, 'GET', '/admin/roles');
 check(
-	'member denied GET /roles (403)',
+	'member denied GET /admin/roles (403)',
 	memberRoles.status === 403,
 	`${memberRoles.status}`,
+);
+
+// ---- id lookup is global-admin only -------------------------------------
+// `auth.users` is not tenant-scoped, so a bare `erp: {}` guard on
+// `GET /users/:userId` let any authenticated member read any profile across
+// tenants. The org-scoped listing above is the supported member surface.
+const targetUserId = (userRows ?? [])[0] as { id?: string } | undefined;
+const memberProfile = await call(
+	member,
+	'GET',
+	`/users/${targetUserId?.id ?? 'unknown'}`,
+);
+check(
+	'member denied GET /users/:userId (403)',
+	memberProfile.status === 403,
+	`${memberProfile.status}`,
+);
+const adminProfile = await call(admin, 'GET', `/users/${targetUserId?.id}`);
+check(
+	'admin allowed GET /users/:userId (200)',
+	adminProfile.status === 200,
+	`${adminProfile.status}`,
 );
 
 // ---- fixture sanity ------------------------------------------------------

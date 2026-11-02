@@ -144,4 +144,9 @@ export class RoleRepository implements IRoleRepository {
 			);
 		return rows.length;
 	}
+
+	/** Resolves the org's live `member` role (bulk-invite typo fallback). */
+	async findMemberRole(organizationId: string): Promise<TRoleSelect | null> {
+		return this.findByName(organizationId, 'member');
+	}
 }

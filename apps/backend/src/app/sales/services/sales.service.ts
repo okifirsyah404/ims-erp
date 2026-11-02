@@ -1,5 +1,7 @@
 import type { TQuotationSelect } from '@drizzle/schemas/sales.schema';
 import type { TPaymentSelect } from '@drizzle/schemas/sales.schema';
+import type { TPaginationResult } from '@ims-erp/common';
+import { DomainHttpError } from '@http/errors';
 import { inject, injectable } from 'tsyringe';
 import {
 	QUOTATION_REPOSITORY_TOKEN,
@@ -16,17 +18,30 @@ import type {
 } from '../contracts/payment.repository.interface';
 
 /**
- * Typed HTTP-facing error for sales workflow violations. The controller's
- * `onError` hook maps the `status` field directly onto the response, so
- * throwing this is how the service dictates a non-200 outcome.
+ * Typed HTTP-facing error for sales workflow violations. Controllers map the
+ * `status` field onto the response, so throwing this is how the service
+ * dictates a non-200 outcome.
+ *
+ * @remarks
+ * Messages here are user-facing English text composed at runtime, so this
+ * family extends {@link DomainHttpError} rather than carrying locale keys.
+ * Where a fixed-meaning error exists it should become an {@link AppError}
+ * subclass with a real key - that is the only form that survives translation.
  */
-export class SalesStateError extends Error {
-	constructor(
-		readonly status: 403 | 404 | 409 | 422,
-		message: string,
-	) {
-		super(message);
-		this.name = 'SalesStateError';
+export class SalesStateError extends DomainHttpError {}
+
+/**
+ * The quotation referenced by a new payment does not exist inside the
+ * caller's organization.
+ *
+ * @remarks
+ * Distinct from {@link SalesStateError} with a bare 404 so the controller can
+ * report the *quotation* rather than reusing a generic "not found" - the
+ * previous mapping told clients the wrong resource was missing.
+ */
+export class ReferencedQuotationNotFoundError extends SalesStateError {
+	constructor() {
+		super(404, 'Referenced quotation not found in this organization');
 	}
 }
 
@@ -108,7 +123,7 @@ export class SalesService {
 	async listQuotations(
 		organizationId: string,
 		pagination: { page: number; limit: number },
-	): Promise<{ data: TQuotationSelect[]; total: number }> {
+	): Promise<TPaginationResult<TQuotationSelect>> {
 		return this.quotationRepository.list(organizationId, pagination);
 	}
 
@@ -219,10 +234,7 @@ export class SalesService {
 			input.quotationId,
 		);
 		if (!quotation) {
-			throw new SalesStateError(
-				404,
-				'Referenced quotation not found in this organization',
-			);
+			throw new ReferencedQuotationNotFoundError();
 		}
 		return this.paymentRepository.create({
 			...input,

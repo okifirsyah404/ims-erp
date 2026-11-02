@@ -33,9 +33,9 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Results', to: '/results', permission: 'investor_portal.read_distribution' },
   { label: 'Payments', to: '/payments', permission: 'payment.read' },
   { label: 'Reports', to: '/reports', permission: 'financial_report.read' },
-  { label: 'Users', to: '/users', permission: 'member.create' },
-  { label: 'Roles', to: '/roles', permission: 'ac.read' },
-  { label: 'Audit', to: '/audit', permission: 'audit_log.read' },
+  { label: 'Users', to: '/admin/users', permission: 'member.create' },
+  { label: 'Roles', to: '/admin/roles', permission: 'ac.read' },
+  { label: 'Audit', to: '/admin/audit', permission: 'audit_log.read' },
 ]
 
 export function Sidebar() {

@@ -1,12 +1,12 @@
-import { Elysia } from 'elysia';
 import { z } from 'zod';
 import { container } from 'tsyringe';
-import { erpGuard } from '@authorization/elysia-auth';
 import { translator } from '@providers/i18n/translator';
+import { domainPlugin } from '@http/plugin';
+import { errorEnvelope, ok, okPaginated } from '@http/response';
 import { SALES_SERVICE_TOKEN } from '../constants/di';
 import {
+	ReferencedQuotationNotFoundError,
 	SalesService,
-	SalesStateError,
 } from '../services/sales.service';
 
 /** Body schema for creating a quotation. */
@@ -42,38 +42,6 @@ const createPaymentSchema = z.object({
 });
 
 /**
- * Builds the standard success envelope (empty `errors` list).
- */
-function envelope(status: number, message: string, data: unknown = null) {
-	return {
-		requestId: crypto.randomUUID(),
-		status,
-		message,
-		timestamp: Date.now(),
-		data,
-		errors: [] as { message: string }[],
-	};
-}
-
-/**
- * Builds the standard error envelope for a failed request.
- */
-function errorEnvelope(
-	status: number,
-	message: string,
-	errors: { message: string }[] = [],
-) {
-	return {
-		requestId: crypto.randomUUID(),
-		status,
-		message,
-		timestamp: Date.now(),
-		data: null,
-		errors,
-	};
-}
-
-/**
  * Sales routes. Every endpoint is protected through the `erp` macro; the
  * guard resolves session, organization, membership, and permissions BEFORE
  * the handler runs.
@@ -82,8 +50,10 @@ function errorEnvelope(
  * never from the request body.
  *
  * @remarks
- * The local `onError` hook maps validation failures to `400` and
- * {@link SalesStateError} onto its declared `status` (403/404/409/422).
+ * The shared {@link domainPlugin} error hook maps validation failures to
+ * `400`, {@link SalesStateError} onto its declared `status`, and
+ * {@link ReferencedQuotationNotFoundError} to the quotation-specific `404`
+ * message.
  */
 export class SalesController {
 	/**
@@ -94,25 +64,20 @@ export class SalesController {
 	static plugin() {
 		const salesService = container.resolve<SalesService>(SALES_SERVICE_TOKEN);
 
-		return new Elysia({ prefix: '/sales', name: 'sales', tags: ['Sales'] })
-			.use(erpGuard())
+		return domainPlugin({
+			name: 'sales',
+			prefix: '/sales',
+			tags: ['Sales'],
+			guards: 'erp',
+		})
 			.onError({ as: 'local' }, (ctx) => {
-				const { code, error, set } = ctx;
-				const t = translator(ctx);
-				if (code === 'VALIDATION' || error instanceof z.ZodError) {
-					set.status = 400;
-					return errorEnvelope(400, t('common.validationFailed'), [
-						{
-							message:
-								error instanceof z.ZodError
-									? error.issues.map((i) => i.message).join('; ')
-									: String(error),
-						},
+				const { error, set } = ctx;
+				if (error instanceof ReferencedQuotationNotFoundError) {
+					set.status = 404;
+					const t = translator(ctx);
+					return errorEnvelope(404, t('sales.quotationNotFound'), [
+						{ message: t('sales.quotationNotFound') },
 					]);
-				}
-				if (error instanceof SalesStateError) {
-					set.status = error.status;
-					return errorEnvelope(error.status, error.message);
 				}
 				return undefined;
 			})
@@ -125,7 +90,7 @@ export class SalesController {
 						actorUserId: erp.session.user.id,
 						actorRoles: erp.member.role.split(','),
 					});
-					return status(201, envelope(201, 'Created', row));
+					return status(201, ok(row));
 				},
 				{
 					erp: { permission: ['quotation:create'] },
@@ -139,16 +104,7 @@ export class SalesController {
 						erp.organizationId,
 						{ page: query.page, limit: query.limit },
 					);
-					return {
-						...envelope(200, 'OK'),
-						pagination: {
-							page: query.page,
-							limit: query.limit,
-							total: result.total,
-							totalPages: Math.max(1, Math.ceil(result.total / query.limit)),
-						},
-						data: result.data,
-					};
+					return okPaginated(result);
 				},
 				{
 					erp: { permission: ['quotation:read'] },
@@ -163,9 +119,14 @@ export class SalesController {
 					const row = await salesService.getQuotation(erp.organizationId, params.id);
 					if (!row) {
 						// 404: prevent existence disclosure across tenants.
-						return status(404, errorEnvelope(404, t('sales.quotationNotFound')));
+						return status(
+							404,
+							errorEnvelope(404, t('sales.quotationNotFound'), [
+								{ message: t('sales.quotationNotFound') },
+							]),
+						);
 					}
-					return envelope(200, 'OK', row);
+					return ok(row);
 				},
 				{
 					erp: { permission: ['quotation:read'] },
@@ -183,9 +144,14 @@ export class SalesController {
 						body,
 					);
 					if (!row) {
-						return status(404, errorEnvelope(404, t('sales.quotationNotFound')));
+						return status(
+							404,
+							errorEnvelope(404, t('sales.quotationNotFound'), [
+								{ message: t('sales.quotationNotFound') },
+							]),
+						);
 					}
-					return envelope(200, 'Updated', row);
+					return ok(row);
 				},
 				{
 					erp: { permission: ['quotation:update'] },
@@ -208,9 +174,14 @@ export class SalesController {
 						},
 					);
 					if (!row) {
-						return status(404, errorEnvelope(404, t('sales.quotationNotFound')));
+						return status(
+							404,
+							errorEnvelope(404, t('sales.quotationNotFound'), [
+								{ message: t('sales.quotationNotFound') },
+							]),
+						);
 					}
-					return envelope(200, 'Submitted', row);
+					return ok(row);
 				},
 				{
 					erp: { permission: ['quotation:submit'] },
@@ -233,9 +204,14 @@ export class SalesController {
 						},
 					);
 					if (!row) {
-						return status(404, errorEnvelope(404, t('sales.quotationNotFound')));
+						return status(
+							404,
+							errorEnvelope(404, t('sales.quotationNotFound'), [
+								{ message: t('sales.quotationNotFound') },
+							]),
+						);
 					}
-					return envelope(200, body.decision === 'approve' ? 'Approved' : 'Rejected', row);
+					return ok(row);
 				},
 				{
 					// Approval requires BOTH approve and reject-adjacent vocabulary
@@ -250,20 +226,15 @@ export class SalesController {
 				'/payments',
 				async (ctx) => {
 					const { body, erp, status } = ctx;
-					const t = translator(ctx);
-					try {
-						const row = await salesService.createPayment(body, {
-							organizationId: erp.organizationId,
-							actorUserId: erp.session.user.id,
-							actorRoles: erp.member.role.split(','),
-						});
-						return status(201, envelope(201, 'Created', row));
-					} catch (error) {
-						if (error instanceof SalesStateError && error.status === 404) {
-							return status(404, errorEnvelope(404, t('sales.quotationNotFound')));
-						}
-						throw error;
-					}
+					// A missing referenced quotation is mapped to the
+					// quotation-specific 404 by the local onError arm above:
+					// no try/catch re-translation here.
+					const row = await salesService.createPayment(body, {
+						organizationId: erp.organizationId,
+						actorUserId: erp.session.user.id,
+						actorRoles: erp.member.role.split(','),
+					});
+					return status(201, ok(row));
 				},
 				{
 					erp: { permission: ['payment:create'] },
@@ -277,9 +248,14 @@ export class SalesController {
 					const t = translator(ctx);
 					const row = await salesService.getPayment(erp.organizationId, params.id);
 					if (!row) {
-						return status(404, errorEnvelope(404, t('sales.paymentNotFound')));
+						return status(
+							404,
+							errorEnvelope(404, t('sales.paymentNotFound'), [
+								{ message: t('sales.paymentNotFound') },
+							]),
+						);
 					}
-					return envelope(200, 'OK', row);
+					return ok(row);
 				},
 				{
 					erp: { permission: ['payment:read'] },
@@ -301,9 +277,14 @@ export class SalesController {
 						},
 					);
 					if (!row) {
-						return status(404, errorEnvelope(404, t('sales.paymentNotFound')));
+						return status(
+							404,
+							errorEnvelope(404, t('sales.paymentNotFound'), [
+								{ message: t('sales.paymentNotFound') },
+							]),
+						);
 					}
-					return envelope(200, 'Approved', row);
+					return ok(row);
 				},
 				{
 					erp: { permission: ['payment:approve'] },
@@ -325,9 +306,14 @@ export class SalesController {
 						},
 					);
 					if (!row) {
-						return status(404, errorEnvelope(404, t('sales.paymentNotFound')));
+						return status(
+							404,
+							errorEnvelope(404, t('sales.paymentNotFound'), [
+								{ message: t('sales.paymentNotFound') },
+							]),
+						);
 					}
-					return envelope(200, 'Executed', row);
+					return ok(row);
 				},
 				{
 					erp: { permission: ['payment:execute'] },

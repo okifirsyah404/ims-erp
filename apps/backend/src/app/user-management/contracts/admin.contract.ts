@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { AUDIT_ACTIONS } from '@drizzle/schemas/audit.schema';
 import { USER_INVITATION_STATUSES } from '@drizzle/schemas/role.schema';
 import { erpStatements } from '@ims-erp/common';
 
@@ -7,10 +6,11 @@ import { erpStatements } from '@ims-erp/common';
  * Request/response contracts for the user-management admin API (phase 4).
  *
  * @remarks
- * Three surfaces share this file:
- * - `/users/*` — account lifecycle (list, deactivate, restore, soft-delete).
- * - `/roles/*` — per-organization role CRUD (owner/app-admin).
- * - `/audit` — read-only audit trail.
+ * Three surfaces share this file, all under the `/admin` prefix so they
+ * cannot collide with the self-service `/users/*` routes:
+ * - `/admin/users/*` — account lifecycle (list, deactivate, restore, soft-delete).
+ * - `/admin/roles/*` — per-organization role CRUD (owner/app-admin).
+ * - `/admin/audit` — read-only audit trail.
  *
  * Every schema is parsed at the controller boundary before any service call.
  */
@@ -188,37 +188,10 @@ export const KNOWN_RESOURCES = Object.keys(erpStatements);
 // Audit
 // ---------------------------------------------------------------------------
 
-/** Audit listing query. All filters are optional and ANDed. */
-export const auditQuerySchema = z.object({
-	page: z.coerce.number().int().min(1).default(1),
-	limit: z.coerce.number().int().min(1).max(100).default(20),
-	action: z.enum(AUDIT_ACTIONS).optional(),
-	actorUserId: z.string().min(1).optional(),
-	targetType: z
-		.enum(['invitation', 'user', 'role', 'member', 'organization'])
-		.optional(),
-	organizationId: z.string().min(1).optional(),
-	/** Inclusive ISO-8601 lower bound. */
-	from: z.string().datetime().optional(),
-	/** Exclusive ISO-8601 upper bound. */
-	to: z.string().datetime().optional(),
-});
-export type TAuditQuery = z.infer<typeof auditQuerySchema>;
-
-/** Admin-facing audit row. */
-export type TAdminAudit = {
-	id: string;
-	actorUserId: string;
-	actorEmail: string | null;
-	action: string;
-	targetType: string;
-	targetId: string;
-	organizationId: string | null;
-	meta: Record<string, unknown> | null;
-	ipAddress: string | null;
-	userAgent: string | null;
-	createdAt: Date;
-};
+// The audit read contract (`auditQuerySchema` / `TAuditQuery` /
+// `TAdminAudit`) moved to `@app/audit` in W6 — see
+// `src/app/audit/contracts/audit.contract.ts`. Nothing in this module reads
+// the ledger any more; it only writes entries through `AUDIT_SERVICE_TOKEN`.
 
 /** Invitation statuses re-exported for the pending panel's filter union. */
 export const INVITATION_STATUS_OPTIONS = USER_INVITATION_STATUSES;

@@ -1,6 +1,5 @@
 import type { TUserInvitationSelect, TRoleSelect } from '@drizzle/schemas/role.schema';
 import type { TUserSelect } from '@drizzle/schemas/auth.schema';
-import type { TAuditLogSelect } from '@drizzle/schemas/audit.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { TPermissionGrant } from '../contracts/admin.contract';
 
@@ -77,6 +76,8 @@ export interface IRoleRepository {
 	undelete(roleId: string): Promise<void>;
 	/** Live members in the org holding exactly this role name. */
 	countMembers(organizationId: string, roleName: string): Promise<number>;
+	/** Resolves the org's live `member` role (bulk-invite typo fallback). */
+	findMemberRole(organizationId: string): Promise<TRoleSelect | null>;
 }
 
 /** Filters for the admin audit listing (phase 4). */
@@ -90,13 +91,6 @@ export type TAuditListRequest = {
 	page: number;
 	limit: number;
 };
-
-/** Data-access contract over the append-only `audit.audit_logs` table. */
-export interface IAuditRepository {
-	list(
-		request: TAuditListRequest,
-	): Promise<TPaginationResult<TAuditLogSelect>>;
-}
 
 /**
  * Data-access contract over `auth.user_invitations` (module-owned table,

@@ -16,6 +16,7 @@ import {
 } from '@providers/queue/queue.connection';
 import { registerLocation } from './app/location/container';
 import { LocationController } from './app/location/controllers/location.controller';
+import { AuditController, registerAudit } from './app/audit';
 import {
 	OrganizationBootstrapController,
 	OrganizationController,
@@ -26,6 +27,7 @@ import { SalesController } from './app/sales/controllers/sales.controller';
 import { registerUser } from './app/user/container';
 import { UserController } from './app/user/controllers/user.controller';
 import {
+	InvitationClaimController,
 	InvitationController,
 	UsernameCheckController,
 } from './app/user-management/controllers/invitation.controller';
@@ -37,6 +39,10 @@ registerLocation(container);
 registerSales(container);
 registerUser(container);
 registerOrganization(container);
+// Before user-management: its services inject AUDIT_SERVICE_TOKEN. tsyringe
+// resolves lazily so the order is not load-bearing, but reading the graph
+// top-down is easier when the ledger is registered before its writers.
+registerAudit(container);
 registerUserManagement(container);
 registerAuthorization(container);
 
@@ -95,17 +101,24 @@ const bootstrap = new Elysia()
 	.use(elysiaApp)
 	.use(LocationController.plugin())
 	.use(SalesController.plugin())
-	// Admin user-management routes mount BEFORE UserController: both register
-	// `GET /users`, and with prefix-wrapped plugins the FIRST registration
-	// wins. The phase-4 listing is the permission-gated one (`member:read`),
-	// so it must not be shadowed by the legacy directory route.
+	// Admin surfaces share the `/admin` prefix, so their routes no longer
+	// overlap the self-service `/users/*` routes: mount order is irrelevant
+	// here (before the split, both modules registered `GET /users` and the
+	// first registration silently won).
 	.use(UserAdminController.plugin())
 	.use(UserController.plugin())
+	// Cross-cutting audit read surface (`GET /admin/audit`), mounted with the
+	// other `/admin` plugins it shares a prefix with.
+	.use(AuditController.plugin())
 	.use(OrganizationController.plugin())
 	// Creation mounts separately: it must accept an application admin with no
 	// organization context (ADR-0007), so it cannot ride the org-scoped guard.
 	.use(OrganizationBootstrapController.plugin())
 	.use(InvitationController.plugin())
+	// Public, sessionless claim flow: token-gated, deliberately outside
+	// `/admin`, so it must not inherit the admin guard. Mounted after the
+	// admin plugins only for readability; the paths never overlap.
+	.use(InvitationClaimController.plugin())
 	.use(UsernameCheckController.plugin())
 	.listen(appConfig.app.port);
 

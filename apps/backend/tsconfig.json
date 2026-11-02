@@ -35,6 +35,7 @@
 			"@modules/*": ["./src/modules/*"],
 			"@providers/*": ["./src/providers/*"],
 			"@di/*": ["./src/di/*"],
+			"@http/*": ["./src/http/*"],
 			"@authorization/*": ["./src/authorization/*"],
 			"@app/*": ["./src/app/*"]
 		} /* Specify a set of entries that re-map imports to additional lookup locations. */,

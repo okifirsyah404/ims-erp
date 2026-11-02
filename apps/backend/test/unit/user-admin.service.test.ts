@@ -7,14 +7,14 @@ import type {
 	TAdminUserRow,
 } from '../../src/app/user-management/contracts/repositories.interface';
 import type { IUserManagementAuthGateway } from '../../src/app/user-management/contracts/gateways.interface';
-import type { AuditService } from '../../src/app/user-management/services/audit.service';
+import type { AuditService } from '../../src/app/audit/services/audit.service';
 import {
 	RankGuardError,
 	UserNotFoundError,
 	UserStateError,
-} from '../../src/app/user-management/services/invitation.errors';
-import type { TActor } from '../../src/app/user-management/services/invitation.service';
-import { UserAdminService } from '../../src/app/user-management/services/user-admin.service';
+} from '../../src/app/user/services/invitation.errors';
+import type { TActor } from '../../src/app/user/services/invitation.service';
+import { UserAdminService } from '../../src/app/user/services/user-admin.service';
 
 /**
  * Unit tests for the phase-4 account lifecycle service. All dependencies are

@@ -1,3 +1,4 @@
+import type { TPaginationResult } from '@ims-erp/common';
 import type { TQuotationSelect } from '@drizzle/schemas/sales.schema';
 
 /**
@@ -64,7 +65,7 @@ export type TQuotationRepository = {
 	list(
 		organizationId: string,
 		pagination: { page: number; limit: number },
-	): Promise<{ data: TQuotationSelect[]; total: number }>;
+	): Promise<TPaginationResult<TQuotationSelect>>;
 	/**
 	 * Applies a whitelisted partial update to a quotation.
 	 *

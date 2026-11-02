@@ -7,7 +7,7 @@ import type { Permission } from './permissions';
 
 /**
  * API client for the phase-4 administration endpoints: account lifecycle
- * (`/users`), dynamic role CRUD (`/roles`) and the audit trail (`/audit`).
+ * (`/admin/users`), dynamic role CRUD (`/admin/roles`) and the audit trail (`/admin/audit`).
  *
  * @remarks
  * Every request carries the `x-organization-id` header because the backend
@@ -83,7 +83,7 @@ export async function listUsers(organizationId: string, params: TUserListParams 
 	const query = search.toString();
 
 	const envelope = (await request<TApiUser[]>(
-		`/users${query ? `?${query}` : ''}`,
+		`/admin/users${query ? `?${query}` : ''}`,
 		{ organizationId },
 	)) as TApiPaginatedResponse<TAdminUser>;
 	return { rows: envelope.data, pagination: envelope.pagination };
@@ -93,21 +93,21 @@ export async function listUsers(organizationId: string, params: TUserListParams 
 type TApiUser = TAdminUser;
 
 export async function deactivateUser(organizationId: string, userId: string) {
-	await request(`/users/${userId}/deactivate`, {
+	await request(`/admin/users/${userId}/deactivate`, {
 		method: 'POST',
 		organizationId,
 	});
 }
 
 export async function restoreUser(organizationId: string, userId: string) {
-	await request(`/users/${userId}/restore`, {
+	await request(`/admin/users/${userId}/restore`, {
 		method: 'POST',
 		organizationId,
 	});
 }
 
 export async function deleteUser(organizationId: string, userId: string) {
-	await request(`/users/${userId}`, { method: 'DELETE', organizationId });
+	await request(`/admin/users/${userId}`, { method: 'DELETE', organizationId });
 }
 
 // ---------------------------------------------------------------------------
@@ -138,7 +138,7 @@ export type TPermissionCatalogEntry = {
 export async function listRoles(organizationId: string, includeDeleted = false) {
 	const query = includeDeleted ? '?includeDeleted=true' : '';
 	const envelope = await request<TAdminRole[]>(
-		`/roles${query}`,
+		`/admin/roles${query}`,
 		{ organizationId },
 	);
 	return envelope.data;
@@ -146,7 +146,7 @@ export async function listRoles(organizationId: string, includeDeleted = false) 
 
 export async function permissionCatalog(organizationId: string) {
 	const envelope = await request<TPermissionCatalogEntry[]>(
-		'/roles/permissions',
+		'/admin/roles/permissions',
 		{ organizationId },
 	);
 	return envelope.data;
@@ -156,7 +156,7 @@ export async function createRole(
 	organizationId: string,
 	input: { name: string; rank: number; permissions: TPermissionGrant },
 ) {
-	const envelope = await request<TAdminRole>('/roles', {
+	const envelope = await request<TAdminRole>('/admin/roles', {
 		method: 'POST',
 		organizationId,
 		body: JSON.stringify(input),
@@ -173,7 +173,7 @@ export async function updateRole(
 		permissions?: TPermissionGrant;
 	},
 ) {
-	const envelope = await request<TAdminRole>(`/roles/${roleId}`, {
+	const envelope = await request<TAdminRole>(`/admin/roles/${roleId}`, {
 		method: 'PATCH',
 		organizationId,
 		body: JSON.stringify(input),
@@ -182,7 +182,7 @@ export async function updateRole(
 }
 
 export async function deleteRole(organizationId: string, roleId: string) {
-	await request(`/roles/${roleId}`, { method: 'DELETE', organizationId });
+	await request(`/admin/roles/${roleId}`, { method: 'DELETE', organizationId });
 }
 
 // ---------------------------------------------------------------------------
@@ -228,7 +228,7 @@ export async function listAudit(
 	const query = search.toString();
 
 	const envelope = (await request<TApiAuditRow[]>(
-		`/audit${query ? `?${query}` : ''}`,
+		`/admin/audit${query ? `?${query}` : ''}`,
 		{ organizationId },
 	)) as TApiPaginatedResponse<TAdminAudit>;
 	return { rows: envelope.data, pagination: envelope.pagination };
@@ -243,7 +243,7 @@ type TApiAuditRow = TAdminAudit;
 export type TInvitationStatus = 'pending' | 'accepted' | 'cancelled' | 'expired';
 
 /**
- * Invitation row as exposed by `GET /invitations`. The raw token never
+ * Invitation row as exposed by `GET /admin/invitations`. The raw token never
  * leaves the backend — only its hash is persisted — so this row carries the
  * expiry (`expiresAt`) the pending panel shows.
  */
@@ -286,7 +286,7 @@ export async function listInvitations(
 	const query = search.toString();
 
 	const envelope = (await request<TInvitation[]>(
-		`/invitations${query ? `?${query}` : ''}`,
+		`/admin/invitations${query ? `?${query}` : ''}`,
 		{ organizationId },
 	)) as TApiPaginatedResponse<TInvitation>;
 	return { rows: envelope.data, pagination: envelope.pagination };
@@ -303,7 +303,7 @@ export async function sendInvitations(
 	input: TInviteInput | TInviteInput[],
 ) {
 	const envelope = await request<TBulkInviteResult | unknown>(
-		'/invitations',
+		'/admin/invitations',
 		{
 			method: 'POST',
 			organizationId,
@@ -325,7 +325,7 @@ export async function resendInvitation(
 	organizationId: string,
 	invitationId: string,
 ) {
-	await request(`/invitations/${invitationId}/resend`, {
+	await request(`/admin/invitations/${invitationId}/resend`, {
 		method: 'POST',
 		organizationId,
 	});
@@ -409,7 +409,7 @@ export async function cancelInvitation(
 	organizationId: string,
 	invitationId: string,
 ) {
-	await request(`/invitations/${invitationId}/cancel`, {
+	await request(`/admin/invitations/${invitationId}/cancel`, {
 		method: 'POST',
 		organizationId,
 	});
@@ -419,7 +419,7 @@ export async function deleteInvitation(
 	organizationId: string,
 	invitationId: string,
 ) {
-	await request(`/invitations/${invitationId}`, {
+	await request(`/admin/invitations/${invitationId}`, {
 		method: 'DELETE',
 		organizationId,
 	});

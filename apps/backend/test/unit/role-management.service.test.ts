@@ -1,16 +1,16 @@
 import { describe, expect, mock, test } from 'bun:test';
 import type { TRoleSelect } from '../../drizzle/schemas/role.schema';
 import type { IRoleRepository } from '../../src/app/user-management/contracts/repositories.interface';
-import type { AuditService } from '../../src/app/user-management/services/audit.service';
+import type { AuditService } from '../../src/app/audit/services/audit.service';
 import {
 	InvalidPermissionGrantError,
 	RankGuardError,
 	RoleInUseError,
 	RoleNameTakenError,
 	RoleNotFoundError,
-} from '../../src/app/user-management/services/invitation.errors';
-import { RoleManagementService } from '../../src/app/user-management/services/role-management.service';
-import type { TActor } from '../../src/app/user-management/services/invitation.service';
+} from '../../src/app/user/services/invitation.errors';
+import { RoleManagementService } from '../../src/app/user/services/role-management.service';
+import type { TActor } from '../../src/app/user/services/invitation.service';
 
 /**
  * Unit tests for the phase-4 role service. Every dependency is a mock — no

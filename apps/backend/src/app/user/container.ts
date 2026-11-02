@@ -15,9 +15,16 @@ export * from './constants/di';
  * service.
  *
  * @remarks
- * The gateway wraps `auth.api` so all Better Auth–owned state (role, ban,
+ * The gateway wraps `auth.api` so all Better Auth-owned state (role, ban,
  * password) flows through Better Auth itself; the repository touches only
  * `deletedAt`.
+ *
+ * W7 note: the user-management *services* (`InvitationService`,
+ * `RoleManagementService`, `UserAdminService`) now live in
+ * `services/`, but they are still registered by
+ * {@link import('../user-management/container').registerUserManagement}
+ * because their repositories, contracts and tokens are still owned by that
+ * module — the repository merge was deliberately deferred.
  */
 export function registerUser(container: DependencyContainer): void {
 	container.register(USER_REPOSITORY_TOKEN, {
