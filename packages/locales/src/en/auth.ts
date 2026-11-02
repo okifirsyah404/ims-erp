@@ -12,6 +12,8 @@ const auth = {
 	'login.submit': 'Login',
 	'login.submitting': 'Signing in…',
 	'login.invalidCredentials': 'Invalid email/username or password',
+	'login.orContinueWith': 'Or continue with',
+	'login.googleSignIn': 'Sign in with Google',
 
 	'forgot.title': 'Forgot your password?',
 	'forgot.subtitle': "Enter your email and we'll send you a reset link",

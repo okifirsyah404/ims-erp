@@ -14,6 +14,8 @@ const auth_: Record<keyof typeof auth, string> = {
 	'login.submit': 'Masuk',
 	'login.submitting': 'Sedang masuk…',
 	'login.invalidCredentials': 'Email/username atau kata sandi salah',
+	'login.orContinueWith': 'Atau lanjutkan dengan',
+	'login.googleSignIn': 'Masuk dengan Google',
 
 	'forgot.title': 'Lupa kata sandi Anda?',
 	'forgot.subtitle':

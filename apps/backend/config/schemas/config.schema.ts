@@ -72,6 +72,20 @@ export const AuthConfigSchema = z.object({
 	seedAdminEmail: z.string().email(),
 	seedAdminUsername: z.string().min(1),
 	seedAdminPassword: z.string().min(8),
+	/**
+	 * Social login providers. A provider is enabled only when both of its
+	 * credentials are present; unset vars simply leave it disabled.
+	 */
+	social: z
+		.object({
+			google: z
+				.object({
+					clientId: z.string().min(1).nullish(),
+					clientSecret: z.string().min(1).nullish(),
+				})
+				.nullish(),
+		})
+		.nullish(),
 });
 
 /**
