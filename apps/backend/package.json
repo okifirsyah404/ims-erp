@@ -24,7 +24,6 @@
 		"@better-auth/drizzle-adapter": "^1.7.14",
 		"@better-auth/i18n": "^1.7.15",
 		"@better-auth/passkey": "^1.7.14",
-		"@bogeychan/elysia-logger": "^0.1.10",
 		"@elysia/openapi": "^1.4.16",
 		"@elysiajs/cors": "^1.4.2",
 		"@ims-erp/common": "workspace:*",

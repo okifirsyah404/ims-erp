@@ -1,0 +1,262 @@
+/**
+ * Test doubles and a capture bag for the stock/adjustment authorization tests.
+ *
+ * @remarks
+ * Split out of the test file because both the stock and adjustment controllers
+ * resolve different services, and the capture needs to be shared between them.
+ * The repositories are stubbed at their DI seams, so the REAL controllers and
+ * services run; only persistence is faked.
+ */
+import { container } from 'tsyringe';
+import type {
+	TStockAdjustmentSelect,
+	TStockBalanceSelect,
+	TStockMovementSelect,
+	TWarehouseSelect,
+} from '@drizzle/schemas/inventory.schema';
+import type {
+	IMovementRepository,
+	TMovementCreateData,
+	TMovementPaginationRequest,
+} from '../../src/app/inventory/contracts/movement.repository.interface';
+import type {
+	IBalanceRepository,
+	TBalancePaginationRequest,
+} from '../../src/app/inventory/contracts/balance.repository.interface';
+import type {
+	IAdjustmentRepository,
+	TAdjustmentPaginationRequest,
+} from '../../src/app/inventory/contracts/adjustment.repository.interface';
+import type {
+	IItemRepository,
+	TItemPaginationRequest,
+} from '../../src/app/inventory/contracts/item.repository.interface';
+import type { IWarehouseRepository } from '../../src/app/inventory/contracts/warehouse.repository.interface';
+import type { TPostMovementInput } from '../../src/app/inventory/services/stock.service';
+import {
+	ADJUSTMENT_REPOSITORY_TOKEN,
+	ADJUSTMENT_SERVICE_TOKEN,
+	BALANCE_REPOSITORY_TOKEN,
+	ITEM_REPOSITORY_TOKEN,
+	MOVEMENT_REPOSITORY_TOKEN,
+	STOCK_SERVICE_TOKEN,
+	WAREHOUSE_REPOSITORY_TOKEN,
+} from '../../src/app/inventory/constants/di';
+import { StockService } from '../../src/app/inventory/services/stock.service';
+import { AdjustmentService } from '../../src/app/inventory/services/adjustment.service';
+
+/** An adjustment row, writable by the test between requests. */
+export type IStockAdjustmentSelectLike = TStockAdjustmentSelect;
+
+/** What the stubs saw, so a test can assert on scope and payloads. */
+export type TAdjustmentCapture = {
+	/** Scope the balance list was asked for. */
+	balanceScope: string | null | undefined;
+	/** Scope the movement ledger was asked for. */
+	movementScope: string | null | undefined;
+	/** The last movement the service tried to post, if any. */
+	postedMovement: TPostMovementInput | null;
+	/** The acting organization recorded on that movement. */
+	movementActorOrganizationId: string | null;
+	/** The document `findById` should answer with, if any. */
+	adjustment: TStockAdjustmentSelect | null;
+};
+
+/** Mutable capture bag, reset between tests. */
+export const capture: TAdjustmentCapture = {
+	balanceScope: undefined,
+	movementScope: undefined,
+	postedMovement: null,
+	movementActorOrganizationId: null,
+	adjustment: null,
+};
+
+/** Clears captured state. Call from `beforeEach`. */
+export function resetCapture(): void {
+	capture.balanceScope = undefined;
+	capture.movementScope = undefined;
+	capture.postedMovement = null;
+	capture.movementActorOrganizationId = null;
+	capture.adjustment = null;
+}
+
+const WAREHOUSE: TWarehouseSelect = {
+	id: '01920000-0000-7000-8000-0000000000aa',
+	organizationId: null,
+	code: 'MAIN',
+	name: 'Main warehouse',
+	responsibleEmployeeId: null,
+	isDefault: true,
+	isActive: true,
+	createdAt: new Date(0),
+	updatedAt: null,
+	deletedAt: null,
+} as TWarehouseSelect;
+
+const emptyPage = (page: number, limit: number) => ({
+	meta: { page, limit, total: 0, totalPages: 0 },
+	data: [],
+});
+
+/** Registers every stock/adjustment repository and service double. */
+export function installStockDoubles(): void {
+	const movements: IMovementRepository = {
+		async paginate(request: TMovementPaginationRequest) {
+			capture.movementScope = request.scopeOrganizationId;
+			return emptyPage(request.page, request.limit);
+		},
+		async findById() {
+			return null;
+		},
+		async create(data: TMovementCreateData) {
+			// The ledger row records the ACTING organization (who did it), which
+			// is what a caller-identity assertion needs — it is not the balance
+			// scope, which follows the warehouse.
+			capture.postedMovement = data as unknown as TPostMovementInput;
+			capture.movementActorOrganizationId = data.organizationId ?? null;
+			return { ...data, id: 'movement-1' } as TStockMovementSelect;
+		},
+		async findReversalOf() {
+			return null;
+		},
+		async claimForReversal() {
+			return null;
+		},
+		async ledgerTotals() {
+			return [];
+		},
+	};
+
+	const balances: IBalanceRepository = {
+		async paginate(request: TBalancePaginationRequest) {
+			capture.balanceScope = request.scopeOrganizationId;
+			return emptyPage(request.page, request.limit);
+		},
+		async findByKey() {
+			return null;
+		},
+		async listByScope() {
+			return [];
+		},
+		async applyDelta(key) {
+			return {
+				id: 'balance-1',
+				organizationId: key.scopeOrganizationId,
+				itemId: key.itemId,
+				warehouseId: key.warehouseId,
+				binId: key.binId,
+				quantityOnHand: '0.000',
+				quantityReserved: '0.000',
+				quantityAvailable: '0.000',
+				lastMovementAt: null,
+				createdAt: new Date(0),
+				updatedAt: null,
+			} as TStockBalanceSelect;
+		},
+		async setQuantity() {
+			return {} as TStockBalanceSelect;
+		},
+		async remove() {
+			return false;
+		},
+	};
+
+	const adjustments: IAdjustmentRepository = {
+		async paginate(request: TAdjustmentPaginationRequest) {
+			return emptyPage(request.page, request.limit);
+		},
+		async findById() {
+			return capture.adjustment;
+		},
+		async findByCode() {
+			return null;
+		},
+		async create(data) {
+			return { ...data, id: 'adjustment-new' } as TStockAdjustmentSelect;
+		},
+		async update(id, data) {
+			if (!capture.adjustment) return null;
+			capture.adjustment = { ...capture.adjustment, ...data };
+			return capture.adjustment;
+		},
+		async listLines() {
+			return [];
+		},
+		async createLines() {
+			return [];
+		},
+		async replaceLines() {
+			return [];
+		},
+	};
+
+	const warehouses: IWarehouseRepository = {
+		async paginate() {
+			return emptyPage(1, 20);
+		},
+		async findById(id) {
+			return id === WAREHOUSE.id ? WAREHOUSE : null;
+		},
+		async findByCode() {
+			return null;
+		},
+		async create(data) {
+			return { ...data, id: 'new' } as TWarehouseSelect;
+		},
+		async update() {
+			return null;
+		},
+		async archive() {
+			return null;
+		},
+		async clearDefaultExcept() {},
+		async countLiveUnits() {
+			return 0;
+		},
+	};
+
+	const items: IItemRepository = {
+		async paginate(_request: TItemPaginationRequest) {
+			return emptyPage(1, 20);
+		},
+		async findById(id: string) {
+			return { id } as never;
+		},
+		async findBySku() {
+			return null;
+		},
+		async create() {
+			return {} as never;
+		},
+		async update() {
+			return null;
+		},
+		async archive() {
+			return null;
+		},
+		async countLiveUnits() {
+			return 0;
+		},
+		async countUnits() {
+			return 0;
+		},
+	} as unknown as IItemRepository;
+
+	// The services open `database.transaction` for their multi-statement writes;
+	// the double runs the callback directly because the repositories are stubs.
+	const database = {
+		transaction: async (callback: (tx: null) => unknown) => callback(null),
+	} as never;
+
+	container.register(MOVEMENT_REPOSITORY_TOKEN, { useValue: movements });
+	container.register(BALANCE_REPOSITORY_TOKEN, { useValue: balances });
+	container.register(ADJUSTMENT_REPOSITORY_TOKEN, { useValue: adjustments });
+	container.register(WAREHOUSE_REPOSITORY_TOKEN, { useValue: warehouses });
+	container.register(ITEM_REPOSITORY_TOKEN, { useValue: items });
+	container.register(STOCK_SERVICE_TOKEN, {
+		useValue: new StockService(movements, balances, warehouses, database),
+	});
+	container.register(ADJUSTMENT_SERVICE_TOKEN, {
+		useValue: new AdjustmentService(adjustments, items, container.resolve(STOCK_SERVICE_TOKEN), database),
+	});
+}

@@ -1,35 +1,38 @@
 // Required on Bun too: tsyringe's CJS entry throws at load if `Reflect.getMetadata`
 // is missing, and this project has `emitDecoratorMetadata: true`. Must stay the
 // first import — before `tsyringe` itself is pulled in.
-import 'reflect-metadata';
-import { cors } from '@elysiajs/cors';
-import { wrap } from '@bogeychan/elysia-logger';
+import { registerInventory } from '@app/inventory';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
-import { pinoLogger } from '@providers/logger/logger';
+import { cors } from '@elysiajs/cors';
 import { DEFAULT_LANGUAGE, LANGUAGE_CODES, en, id } from '@ims-erp/locales';
+import { pinoLogger } from '@providers/logger/logger';
+import { requestLogger } from '@providers/logger/request-logger';
+import {
+	createSchedulerQueue,
+	registerSweepSchedules,
+} from '@providers/queue/inventory-scheduler.queue';
+import { startInventorySchedulerWorker } from '@providers/queue/inventory-scheduler.worker';
+import { closeQueueConnection } from '@providers/queue/queue.connection';
+import { startWorkers, stopWorkers } from '@providers/queue/worker-registry';
 import { Elysia } from 'elysia';
 import { i18next } from 'elysia-i18next';
 import { createInstance } from 'i18next';
+import 'reflect-metadata';
 import { container } from 'tsyringe';
 import { createApp } from './app/app';
-import {
-	closeQueueConnection,
-} from '@providers/queue/queue.connection';
-import {
-	startWorkers,
-	stopWorkers,
-} from '@providers/queue/worker-registry';
-import { registerLocation } from './app/location/container';
 import { registerAudit } from './app/audit';
+import { registerLocation } from './app/location/container';
 import { registerOrganization } from './app/organization';
 import { registerSales } from './app/sales/container';
 import { registerUser, startAvatarWorker } from './app/user';
 import { registerUserManagement } from './app/user-management/container';
 import { registerAuthorization } from './authorization/container';
+
 registerProvider(container);
 registerLocation(container);
 registerSales(container);
+registerInventory(container);
 registerUser(container);
 registerOrganization(container);
 // Before user-management: its services inject AUDIT_SERVICE_TOKEN. tsyringe
@@ -80,7 +83,7 @@ const bootstrap = new Elysia()
 			},
 		}) as unknown as (app: Elysia) => Elysia,
 	)
-	.use(wrap(pinoLogger))
+	.use(requestLogger)
 	.use(
 		cors({
 			// Browser cross-origin requests from the web-admin dev server need
@@ -89,11 +92,7 @@ const bootstrap = new Elysia()
 				? appConfig.app.corsOrigins
 				: [appConfig.app.url ?? 'http://localhost:5173'],
 			credentials: true,
-			allowedHeaders: [
-				'Content-Type',
-				'x-organization-id',
-				'Accept-Language',
-			],
+			allowedHeaders: ['Content-Type', 'x-organization-id', 'Accept-Language'],
 			methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 		}),
 	)
@@ -107,6 +106,20 @@ const bootstrap = new Elysia()
 startWorkers([startAvatarWorker()], (error) =>
 	pinoLogger.error({ err: error }, 'background worker error'),
 );
+
+// Recurring sweeps (S4): late returns and guest-PII retention. `null` when
+// `scheduler.enabled` is false, which is the default for tests and scripts, so
+// booting with no Redis still works as before.
+const inventoryScheduler = startInventorySchedulerWorker();
+if (inventoryScheduler) {
+	inventoryScheduler.worker.on('error', (error) => {
+		pinoLogger.error({ err: error }, 'inventory scheduler error');
+	});
+	await registerSweepSchedules(createSchedulerQueue());
+	pinoLogger.info(
+		'inventory scheduler registered (late sweep + PII retention)',
+	);
+}
 
 process.on('SIGTERM', async () => {
 	// Workers first, then the shared connection they borrow: closing the

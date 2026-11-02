@@ -60,6 +60,219 @@ Also verified while checking: `gen-logical-references.ts` writes
 this change (`docs/database/` was unchanged), so this was not exercised; the
 hardcoded root is a portability defect worth fixing separately.
 
+## Doc change — feature module lifecycle gate (2026-11-02)
+
+Instructions-only change; no code, schema, migration, or seed was touched.
+Status: **implemented** (not `verified` — nobody has yet confirmed an agent
+follows the new gate end to end).
+
+- **`AGENTS.md`**: new `## Feature module lifecycle` section between `##
+Backend` and `## Internationalization`. Every backend feature work item —
+  and specifically creating / updating / deleting `apps/backend/src/app/<module>/`
+  — must (1) read `docs/database/` in the `erp-database-schema` protocol order,
+  (2) run the `.agents/skills/grill-me` design interview before writing code,
+  and (3) update `docs/database/` afterwards **when required** (table / column /
+  index / constraint change, new cross-module logical reference, or a
+  status / money / quantity / date / lifecycle rule change). Sync-back order is
+  `docs.dbml` → `gen-logical-references.ts` → `validate-dbml.ts`.
+- **`AGENTS.md`** `## Definition of done`: items 8–10 added (gates respected,
+  `docs.dbml` updated-or-recorded + validator `OK`, module deletion leaves no
+  orphans).
+- **`AGENTS.md`** `## How to update these docs`: paragraph making
+  `docs/database/` a same-change obligation, canonical over Drizzle.
+- **`.agents/docs/README.md`**: named the 5 companion MDs explicitly (the count
+  was right; the list was implicit) and pointed at the new gate.
+  **Correction:** an earlier edit in this same change bumped the count to "6"
+  on the assumption `implementation-phases.md` was uncounted. It was not —
+  `docs/database/` has exactly 5 MDs, and the "6" was wrong. Reverted.
+- **`.agents/docs/skills.md`**: `grill-me` added to the inventory as
+  *present, not in lock*, with the honest caveat that its `SKILL.md` delegates
+  to a `grilling` skill **that is not installed**.
+
+Verification actually run:
+
+```text
+Select-String docs/database/docs.dbml -Pattern '^// MODULE:'   → 26 markers
+Test-Path .agents/skills/grilling                              → False (absent, as documented)
+bun docs/database/validate-dbml.ts                             → parsed: 253 tables, 0 standalone refs
+                                                                  cross-module refs: 0
+                                                                  timestamp gaps: 0
+                                                                  OK   (exit 0)
+```
+
+`docs/database/` needed no change under the new rule: no table, column, index,
+constraint, logical reference, or status vocabulary was modified. Noted here
+rather than silently skipped.
+
+Known inaccuracy left in place, flagged not fixed: the new `## Feature module
+lifecycle` section describes the contract as 253 tables, the verified parser
+count; `docs/database/module-ownership.md`, `implementation-phases.md` and the
+`validate-dbml.ts` header comment still say **251** (`progress.md` line 481 above
+already recorded 253). The count is not the contract — a follow-up docs pass
+should reconcile 251 → 253 across the companions in one place.
+
+Also verified while checking: `gen-logical-references.ts` writes
+`logical-references.md` from `docs.dbml` using **absolute** paths
+(`B:/ims/erp/...`), as does `validate-dbml.ts`. Neither script had to run in
+this change (`docs/database/` was unchanged), so this was not exercised; the
+hardcoded root is a portability defect worth fixing separately.
+
+## Completed (this session — inventory S4 borrowing, 2026-11-03)
+
+**Nothing committed yet** — uncommitted working-tree state on top of S0–S3.
+Design: `.agents/docs/plans/inventory.md` §5–§11, D19–D22.
+
+### S4 — borrowing: state machine, sweeps, API, UI
+
+- **Step 1 was already done.** `borrowings`, `borrowing_lines`,
+  `borrowing_events`, their constraints, and all 23 indexes were already in
+  `inventory.schema.ts` and applied by `20261102133850_talented_jubilee`; every
+  §6 `borrowing:*` permission was already granted in `erp-permissions.ts`. The
+  plan doc's step 1 ("schema + ALTER for the circular FK") understated this —
+  only the FK was genuinely missing.
+- **Migration `20261102174836_colorful_rattler`** adds
+  `serial_tracked_items.current_borrowing_line_id` + its index (generated) and,
+  hand-written, the `REFERENCES borrowing_lines(id) ON DELETE SET NULL` that
+  `drizzle-kit generate` cannot emit because no `CREATE TABLE` order satisfies
+  the cycle. Applied to the live database and verified: `confdeltype = 'n'`.
+- **`StockService.postMovement` gained an optional `tx`.** It previously opened
+  its own `database.transaction()`, so borrowing could not commit custody,
+  movement, balance, and event together — a nested call is a savepoint, so an
+  outer rollback would have left a committed movement behind.
+- **`BorrowingService`** (new): transition matrix as data, `BRW-YYYYMM-####`
+  codes, skippable approval keyed on `borrowing:issue`/`:approve`, per-line
+  issue/return, `mark-lost` reducing stock at the line's snapshotted origin
+  warehouse, and guest-PII projection with `guestIdentityRedacted`.
+- **Real BullMQ worker** (decision: `harden`, not the plan's `setInterval`
+  fallback): `providers/queue/inventory-scheduler.queue.ts` +
+  `.worker.ts`, two `upsertJobScheduler` schedules (late sweep `*/15 * * * *`,
+  retention `0 3 * * *`) on `redis.queueDb`. `scheduler.enabled` defaults to
+  `false` so tests never open a connection. SIGTERM drains the worker before
+  `closeQueueConnection()`.
+- **OPEN-2 closed**: guest PII nulled 24 months after `closed_at`, exposed as
+  `scheduler.guestPiiRetentionMonths` / `GUEST_PII_RETENTION_MONTHS`.
+- **API**: `/borrowings` GET/POST, `/:id` GET, and
+  `submit|approve|reject|issue|return|extend|mark-lost|cancel|close`
+  transitions, each with its own `borrowing:*` permission.
+- **UI**: `borrowing-api.ts`, list, `new` (three borrower paths as a
+  discriminated union), detail with the event timeline rendering the movement
+  id behind every physical event, plus an `inventory` nav entry. `en`/`id`
+  bundles extended; the dead-key and parity tests both drove real fixes
+  (an untranslated `status`/`serial`, a duplicated `extend` key, and two keys
+  that no component used).
+
+### Verified (exact commands, 2026-11-03)
+
+| Command | Result |
+|---|---|
+| `bun run lint` (root) | 0 errors; 29 pre-existing warnings, none in borrowing files |
+| `bun run typecheck` (root) | 3 successful, 3 total |
+| `bun run test` (root) | backend **518 pass / 0 fail** (24 files, +60 new), locales 30 pass, web-admin 21 pass |
+| `bun run build` (web-admin) | built; `_borrowingId` and `new` chunks emitted |
+| `bunx --bun drizzle-kit generate` | `20261102174836_colorful_rattler` |
+| `bunx --bun drizzle-kit migrate` | applied successfully |
+| `bun run drizzle:seed` ×2 | second run wrote nothing (idempotent) |
+
+**Not yet done:** no browser walk-through of the new screens; the worker has
+not been observed firing against a real Redis. Both are worth doing before S4
+is called accepted.
+
+## Completed (this session - inventory module S0 + S1, 2026-11-02)
+
+Branch `feat/inventory-module`, base `4fd67b4`. **Nothing committed yet** — all
+of this is uncommitted working-tree state. Design: `.agents/docs/plans/inventory.md`
+(D1–D24), ADR-0008, ADR-0009.
+
+### S0 — contract and permission model
+
+- **ADR-0008** (nullable-organization inventory) and **ADR-0009** (serialized
+  units and borrowing custody) written under `.agents/docs/decisions/`.
+  ADR-0008 explicitly amends ADR-0007 §2 (which forbade `organization_id` on
+  master tables) for `inventory` only.
+- `docs/database/docs.dbml` inventory block rewritten to match the migration
+  exactly: +`inventory.items`, `warehouse_addresses`, `borrowings`,
+  `borrowing_lines`, `borrowing_events`; −`warehouse_zones`, `lot_batches`,
+  `cycle_counts`, `cycle_count_items`; nullable `organization_id` everywhere;
+  partial-index pairs; 23 intra-module `Ref:` lines. `catalog.items` marked
+  SUPERSEDED. TableGroup "Inventory" corrected (it still listed the three
+  dropped tables).
+- `docs/database/module-ownership.md`: Inventory is now **one** schema (the
+  `warehouse` schema is retired), row updated to 15 tables / 23 intra-module
+  FKs / 30 logical refs, and the "Tenant" obligation restated with the
+  inventory carve-out (`NULL` = global, never "any organization"). Totals
+  refreshed to 254 tables / 227 refs / 524 logical refs.
+- `docs/database/validate-dbml.ts` had to be taught two facts, not relaxed:
+  `items` is an allowed bare-name duplicate (catalog.items is superseded and
+  retained only until the catalogue satellites are adopted), and an
+  append-only event row may carry `occurred_at` instead of `created_at`.
+  `borrowing_events` added to the timestamp exemptions.
+- `packages/common/src/authorization/erp-permissions.ts`: `borrowing` statement
+  (10 actions) added; `warehouse:*` **stripped from every organization role**,
+  including `owner` — which spreads `...allErpStatements`, so
+  `warehouse: []` is set explicitly *after* the spread.
+- `.agents/docs/backlog.md`: ERP-0014 re-scoped and sliced into ERP-0027 (S2
+  warehouses), ERP-0028 (S3 stock ledger), ERP-0029 (S4 borrowing).
+- `.agents/docs/modules/inventory.md` rewritten (it described the deleted
+  NestJS backend); `.agents/docs/modules/warehouse.md` reduced to a pointer at
+  Inventory.
+
+### S1 — items and serialized units
+
+- `apps/backend/drizzle/schemas/inventory.schema.ts` — 10 tables, vocabularies,
+  partial-unique pairs, CHECKs; registered in `drizzle/db.ts`.
+- Migration `database/migrations/20261102133850_talented_jubilee/` (66
+  statements). **Regenerated** after index renames: `items_org_sku_uq`,
+  `items_org_name_idx` and `items_barcode_idx` collided with `catalog.items`
+  and are now `inventory_items_*`.
+- Full domain: `constants/di.ts`, contracts, repositories, `ItemService`,
+  `inventory.errors.ts`, `item.controller.ts`, `container.ts`, wired into
+  `src/index.ts`.
+- i18n `api` keys (en/id) consumed by the typed errors; new `inventory`
+  namespace (en/id) registered in the bundles, `i18next.d.ts` and
+  `NAMESPACES`; `nav.item.newItem` added.
+- UI: `src/lib/inventory-api.ts`, `components/inventory/{admin-only,
+  item-kind-list,item-form}.tsx`, four kind routes under
+  `/inventory/{products,components,materials,tools}`, and
+  `/inventory/items/{new,$itemId,$itemId.edit}`. `nav-inventory.tsx` points
+  the two unbuilt routes at the `'#'` non-link sentinel instead of 404s.
+
+### Verification (commands and exact outcomes)
+
+- `apps/backend`: `bunx tsc --noEmit -p tsconfig.json` → clean;
+  `bun test` → **214 pass / 0 fail** (403 expect calls, 15 files).
+- `packages/locales`: `bun test` → **30 pass / 0 fail** (parity + dead-keys).
+- `apps/web-admin`: `bunx tsc --noEmit -p tsconfig.app.json` → clean (the plain
+  `tsc --noEmit` checks *nothing* here: `files: []` plus project references);
+  `bun run build` → succeeds, inventory chunks emitted.
+- `docs/database/validate-dbml.ts` → `parsed: 254 tables`, `cross-module
+  refs: 0`, `timestamp gaps: 0`, **OK**.
+- Real PostgreSQL 18 (throwaway `postgres:18-alpine`, since removed;
+  **no containers left**):
+  - `database/verify-inventory-constraints.ts` → **ALL CHECKS PASSED**, run
+    twice consecutively (the script now drops `inventory` and replays the
+    migration, so it is repeatable).
+  - The **entire migration chain** (all 8 directories, in order) replays on a
+    fresh database with `ON_ERROR_STOP=1` → 0 failures.
+  - `pg_indexes` shows **zero** duplicate index names across schemas, and the
+    five `inventory.items` indexes carry the `inventory_items_*` names.
+
+### Known follow-ups (deliberate, not forgotten)
+
+- Circular FK `serial_tracked_items.current_borrowing_line_id` →
+  `borrowing_lines` arrives in a later `ALTER TABLE` migration (S4); the column
+  is intentionally absent from the schema today.
+- All 11 `catalog.*` satellite tables left in place (OPEN-1). `item_variants`
+  will be needed before serialized units are usable at volume.
+- Guest PII retention defaulted to **24 months** (OPEN-2).
+- Valuation **out of scope** (OPEN-3): `average_cost` / `total_value` are never
+  advanced.
+- S4.3 pre-check outstanding: confirm `@providers/queue` supports repeating
+  jobs before writing the late-return sweep; fallback is `setInterval` behind a
+  config flag.
+- `modules/product.md` still describes the NestJS-era sales catalog with a
+  single type-discriminated entity. The item master is now `inventory.items`
+  (ADR-0008); a pointer was added there.
+
 ## Completed (this session — backend tidy-up W1–W4, 2026-11-02)
 
 Conformance pass against the `/elysia-module`, `/elysia-tsyringe`,

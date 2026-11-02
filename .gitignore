@@ -28,6 +28,9 @@ out/
 build
 dist
 
+# TanStack Router/Start generated cache
+.tanstack/
+
 
 # Debug
 npm-debug.log*

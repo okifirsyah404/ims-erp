@@ -26,6 +26,16 @@ export type TestUser = {
 	organizationId: string | null;
 	/** Comma-separated organization roles. */
 	role: string;
+	/**
+	 * Platform role stored on the Better Auth user row (ADR-0006).
+	 *
+	 * @remarks
+	 * Deliberately a separate key from {@link role}, which is the
+	 * **organization** role. `requireGlobalAdmin` reads `user.role` on the
+	 * session, so the two must not be conflated: a user can be an
+	 * organization `admin` and still not be a platform admin.
+	 */
+	globalRole?: 'admin' | 'user';
 };
 
 export type FixtureState = {
@@ -41,18 +51,83 @@ export const fixture = {
 	orgA: ORG_A,
 	orgB: ORG_B,
 	users: {
-		owner: { id: 'user-owner', organizationId: ORG_A, role: 'owner' },
-		admin: { id: 'user-org-admin', organizationId: ORG_A, role: 'admin' },
-		sales: { id: 'user-sales', organizationId: ORG_A, role: 'sales' },
+		owner: {
+			id: 'user-owner',
+			organizationId: ORG_A,
+			role: 'owner',
+			globalRole: 'user',
+		},
+		admin: {
+			id: 'user-org-admin',
+			organizationId: ORG_A,
+			role: 'admin',
+			globalRole: 'user',
+		},
+		sales: {
+			id: 'user-sales',
+			organizationId: ORG_A,
+			role: 'sales',
+			globalRole: 'user',
+		},
 		salesFinance: {
 			id: 'user-sales-finance',
 			organizationId: ORG_A,
 			role: 'sales,owner',
+			globalRole: 'user',
 		},
-		technician: { id: 'user-tech', organizationId: ORG_A, role: 'technician' },
-		member: { id: 'user-member', organizationId: ORG_A, role: 'member' },
-		globalAdmin: { id: 'user-global-admin', organizationId: null, role: '' },
-		revoked: { id: 'user-revoked', organizationId: ORG_A, role: 'sales' },
+		technician: {
+			id: 'user-tech',
+			organizationId: ORG_A,
+			role: 'technician',
+			globalRole: 'user',
+		},
+		member: {
+			id: 'user-member',
+			organizationId: ORG_A,
+			role: 'member',
+			globalRole: 'user',
+		},
+		/**
+		 * Stock-capable roles used by the S3 tests.
+		 *
+		 * @remarks
+		 * `warehouse` holds every `stock:*` grant plus
+		 * `stock_adjustment:read|create|submit` — but **not** `approve`/`post`.
+		 * `finance` holds only `stock:read`. Those two roles are the interesting
+		 * pair for proving the stock walls; the older fixtures all lack stock
+		 * grants entirely.
+		 */
+		warehouse: {
+			id: 'user-warehouse',
+			organizationId: ORG_A,
+			role: 'warehouse',
+			globalRole: 'user',
+		},
+		finance: {
+			id: 'user-finance',
+			organizationId: ORG_A,
+			role: 'finance',
+			globalRole: 'user',
+		},
+		globalAdmin: {
+			id: 'user-global-admin',
+			organizationId: null,
+			role: '',
+			globalRole: 'admin',
+		},
+		/** Platform admin who is ALSO an owner of org A — warehouse routes use this. */
+		globalAdminOwner: {
+			id: 'user-global-admin-owner',
+			organizationId: ORG_A,
+			role: 'owner',
+			globalRole: 'admin',
+		},
+		revoked: {
+			id: 'user-revoked',
+			organizationId: ORG_A,
+			role: 'sales',
+			globalRole: 'user',
+		},
 	} satisfies Record<string, TestUser>,
 };
 
@@ -143,7 +218,14 @@ export function installAuthMock(): void {
 					const user = state.users[key];
 					if (!user) return null;
 					return {
-						user: { id: user.id, email: `${user.id}@test.local`, name: key },
+						user: {
+							id: user.id,
+							email: `${user.id}@test.local`,
+							name: key,
+							// Platform role, read by `requireGlobalAdmin`. Absent
+							// here, no fixture could ever pass that policy.
+							role: user.globalRole ?? 'user',
+						},
 						session: {
 							activeOrganizationId: user.organizationId,
 							userId: user.id,

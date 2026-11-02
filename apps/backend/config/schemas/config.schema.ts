@@ -74,6 +74,25 @@ export const AuthConfigSchema = z.object({
 	seedAdminPassword: z.string().min(8),
 });
 
+/**
+ * Background scheduler configuration (first introduced by S4).
+ *
+ * @remarks
+ * `enabled` defaults to `false` so unit tests and one-off scripts never open a
+ * Redis worker connection. `guestPiiRetentionMonths` is the OPEN-2 window,
+ * expressed as config rather than a constant in the sweep so the answer can
+ * change without a redeploy of new code.
+ */
+export const SchedulerConfigSchema = z.object({
+	enabled: z.boolean(),
+	/** Cron for the late-return sweep; every 15 minutes by default (§8). */
+	lateSweepCron: z.string().min(1),
+	/** Cron for the guest-PII retention sweep; daily by default (§11). */
+	retentionSweepCron: z.string().min(1),
+	/** Guest PII is nulled this many months after `closed_at`. */
+	guestPiiRetentionMonths: z.number().int().min(1),
+});
+
 export const EnvConfigSchema = z.object({
 	instance: InstanceConfigSchema,
 	app: AppConfigSchema,
@@ -82,6 +101,7 @@ export const EnvConfigSchema = z.object({
 	s3: S3ConfigSchema,
 	smtp: SMTPConfigSchema,
 	auth: AuthConfigSchema,
+	scheduler: SchedulerConfigSchema,
 });
 
 export type TInstanceConfig = z.infer<typeof InstanceConfigSchema>;
@@ -91,4 +111,5 @@ export type TRedisConfig = z.infer<typeof RedisConfigSchema>;
 export type TS3Config = z.infer<typeof S3ConfigSchema>;
 export type TSMTPConfig = z.infer<typeof SMTPConfigSchema>;
 export type TAuthConfig = z.infer<typeof AuthConfigSchema>;
+export type TSchedulerConfig = z.infer<typeof SchedulerConfigSchema>;
 export type TEnvConfig = z.infer<typeof EnvConfigSchema>;

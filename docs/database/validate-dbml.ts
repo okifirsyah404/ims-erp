@@ -33,8 +33,13 @@ const moduleOf = (s) =>
 // unique bare table names (so refs resolve unambiguously)
 const nameMap = new Map();
 let dups = 0;
+// Bare-name duplicates that are tolerated because the surviving name is
+// unambiguous in practice. `items` was superseded by inventory.items
+// (ADR-0008): catalog.items is retained only until the catalogue satellites
+// are adopted, and no new ref may target it.
+const DUP_ALLOWED = new Set(["payments", "items"]);
 for (const t of tables) {
-  if (nameMap.has(t.name) && nameMap.get(t.name) !== t.schema && t.name !== "payments") {
+  if (nameMap.has(t.name) && nameMap.get(t.name) !== t.schema && !DUP_ALLOWED.has(t.name)) {
     console.error(`DUPLICATE table name: ${t.schema}.${t.name} also in ${nameMap.get(t.name)}`); dups++;
   }
   nameMap.set(t.name, t.schema);
@@ -66,6 +71,8 @@ const TIMESTAMP_EXEMPT = new Set([
   "sales.quotations", "sales.payments",
   // append-only ledger / history (deleted_at meaningless, documented in notes)
   "inventory.stock_movements", "ticket.ticket_status_history", "audit.audit_logs",
+  // append-only business timeline (never edited, never soft-deleted)
+  "inventory.borrowing_events",
   // projection
   "inventory.stock_balances",
   // serial/lot rows are stock facts closed by disposition, not business entities
@@ -73,10 +80,13 @@ const TIMESTAMP_EXEMPT = new Set([
 ]);
 
 const gaps = [];
+// An append-only event row may timestamp itself with `occurred_at` instead of
+// `created_at`: they are the same instant for an immutable record.
+const CREATION_TIMESTAMPS = ["created_at", "occurred_at"];
 for (const t of tables) {
   const full = `${t.schema}.${t.name}`;
   const has = (c) => t.fields.includes(c);
-  if (!has("created_at")) gaps.push(`${full}: missing created_at`);
+  if (!CREATION_TIMESTAMPS.some(has)) gaps.push(`${full}: missing created_at`);
   if (TIMESTAMP_EXEMPT.has(full)) continue;
   if (!has("updated_at")) gaps.push(`${full}: missing updated_at`);
   if (!has("deleted_at")) gaps.push(`${full}: missing deleted_at`);

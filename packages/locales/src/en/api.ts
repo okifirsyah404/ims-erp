@@ -24,6 +24,36 @@ const api = {
 	'sales.quotationNotFound': 'Quotation not found',
 	'sales.paymentNotFound': 'Payment not found',
 
+	'inventory.itemNotFound': 'Item not found',
+	'inventory.unitNotFound': 'Item unit not found',
+	'inventory.skuTaken': 'An item with this SKU already exists',
+	'inventory.serialTaken': 'An item unit with this serial number already exists',
+	'inventory.ruleViolation': 'This inventory rule does not allow it: {{rule}}',
+	'inventory.itemHasUnits':
+		'Cannot archive an item that still has {{count}} live unit(s)',
+	'inventory.warehouseNotFound': 'Warehouse not found',
+	'inventory.warehouseCodeTaken':
+		'A warehouse with this code already exists in this scope',
+	'inventory.warehouseHasUnits':
+		'Cannot archive a warehouse that still holds {{count}} live unit(s)',
+	'inventory.storageNotFound': 'Storage not found',
+	'inventory.storageCodeTaken':
+		'A storage with this code already exists in this warehouse',
+	'inventory.movementNotFound': 'Stock movement not found',
+	'inventory.movementAlreadyReversed':
+		'This stock movement has already been reversed',
+	'inventory.insufficientStock':
+		'Cannot move {{requested}}: only {{available}} on hand',
+	'inventory.adjustmentNotFound': 'Stock adjustment not found',
+	'inventory.adjustmentCodeTaken':
+		'An adjustment with this code already exists in this organization',
+	'inventory.adjustmentTransition':
+		'An adjustment cannot move from "{{from}}" to "{{to}}"',
+	'inventory.selfApprovalForbidden':
+		'You cannot approve your own stock adjustment',
+	'inventory.adjustmentHasNoLines':
+		'A stock adjustment must have at least one line',
+
 	'user.notFound': 'User not found',
 	'user.emailInUse': 'Email already in use',
 	'user.globalAdminRequired': 'Global administrator role required',
@@ -80,6 +110,22 @@ const api = {
 
 	'auth.ownerGrantRequired': 'Only organization owners can grant the owner role',
 	'auth.roleNotGrantable': 'Role not grantable: {{roles}}',
+
+	// Borrowing (S4)
+	'inventory.borrowingNotFound': 'Borrowing not found',
+	'inventory.borrowingLineNotFound': 'Borrowing line not found',
+	'inventory.unitNotOnBorrowing': 'That unit is not issued on this borrowing',
+	'inventory.borrowingTransition':
+		'That status change is not allowed for this borrowing',
+	'inventory.borrowingCodeTaken': 'Could not allocate a unique borrowing code',
+	'inventory.borrowingHasNoLines': 'A borrowing must have at least one line',
+	'inventory.unitNotAvailable': 'That unit cannot be issued',
+	'inventory.borrowerIdentity':
+		'The borrower identity does not match the borrower type',
+	'inventory.guestIdentityIncomplete':
+		'A guest borrower is missing required identity data',
+	'inventory.borrowingSelfApprovalForbidden':
+		'You cannot approve your own borrowing',
 } as const;
 
 export default api;

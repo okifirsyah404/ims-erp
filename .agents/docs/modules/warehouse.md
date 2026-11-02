@@ -1,40 +1,50 @@
-> 2026-10-28: content below describes the deleted NestJS backend (apps/backend-nest). Domains listed as modules/ stubs do not exist in apps/backend-elysia (which has only user, organization, location). Treat as historical audit; re-verify against backend-elysia before acting.
-
 # Warehouse Module
+
+> 2026-11-02: **This module has been folded into Inventory.** Warehouses are
+> no longer a separate module or a separate Postgres schema; they are tables in
+> `inventory` (ADR-0008). The content below is retained only as a pointer —
+> see `.agents/docs/modules/inventory.md` for the implemented design.
+>
+> The earlier text here described the deleted NestJS backend
+> (`apps/backend-nest`) and a "one warehouse only, do not pretend
+> multi-warehouse" rule. That rule is **retired**: the schema models multiple
+> warehouses, and the company currently runs as many as it needs.
 
 ## Purpose and boundary
 
-Warehouse master data for **the** operational warehouse — v5.1 pins one
-warehouse for both stages (no multiple-warehouse delivery). Owns warehouse
-records and responsible-person assignment; stock movements/quantities belong
-to inventory.
+Warehouse is physical estate: master data for the places stock sits. It owns
+no quantities and no movements — those belong to the stock ledger.
 
-## Current state (audit, 2026-10-25)
+## Where it lives now
 
-**Scaffold only:**
+| Concern | Table | Notes |
+|---|---|---|
+| Warehouse master | `inventory.warehouses` | `organization_id` nullable; `NULL` = global estate |
+| Address | `inventory.warehouse_addresses` | Strict 1:1 satellite, ADR-0003 shape; no `kind` discriminator |
+| Storages (bins) | `inventory.warehouse_storages` | One level deep: warehouse → storage, **no zone level** |
 
-- `modules/warehouse/**` — empty stubs; registered in `app.module.ts`.
-- Pre-written unit specs (controller/service) exist.
-
-## Data ownership (planned, Phase 3 — commercial T03/T07)
-
-- `erp.warehouses` — code, name, address, responsible employee ref
-  (employee contract), status/deleted_at. One operational row in the agreed
-  package; schema must not pretend multi-warehouse (no unique-combination
-  complexity until a real second warehouse is contracted).
+The retired `warehouse` schema and its `warehouse_zones` / `warehouse_bins`
+tables are gone from `docs/database/docs.dbml`.
 
 ## Behavior targets
 
-- CRUD restricted to elevated roles; referenced by inventory movements and
-  (stage-1) stock transfer records.
+- Full CRUD, **application administrators only** (`user.role === 'admin'`).
+  No organization role holds `warehouse:*`, including `owner`. Routes use
+  `sessionGuard` + the global-admin policy, not `erpGuard`: a global warehouse
+  has no organization context for `erpGuard` to resolve.
+- Deactivation (`is_active`) rather than deletion when movements reference the
+  warehouse — `stock_movements.warehouse_id` is `RESTRICT`.
+- Uniqueness is a partial-index pair per organization scope, because
+  `organization_id` may be `NULL` (ADR-0008).
 
 ## Dependencies and rules
 
-- Leaf master data consumed by inventory via contracts. Resist speculative
-  multi-warehouse features (contractual + YAGNI).
+- Consumed by `inventory` movements, balances, serial units, and borrowing
+  lines (which snapshot `origin_warehouse_id`).
+- `responsible_employee_id` is a logical reference to `hr.employees` — no
+  cross-module FK.
 
 ## Tests
 
-- Existing stub specs to replace.
-- Required: permission gates, referential integrity with employee
-  responsible-person link, deactivation filtering.
+Planned for slice S2 (ERP-0027): permission gates proving org roles are
+denied, address 1:1 enforcement, and deactivation filtering.

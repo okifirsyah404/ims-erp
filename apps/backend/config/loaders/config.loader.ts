@@ -63,6 +63,10 @@ export function loadEnvConfig(
       user: process.env.REDIS_USER || null,
       password: process.env.REDIS_PASSWORD || null,
       db: process.env.REDIS_DB == null ? null : Number(process.env.REDIS_DB),
+      queueDb:
+        process.env.REDIS_QUEUE_DB == null
+          ? 1
+          : Number(process.env.REDIS_QUEUE_DB),
       url: process.env.REDIS_URL || null,
       cacheTtl:
         process.env.REDIS_CACHE_TTL == null
@@ -99,6 +103,22 @@ export function loadEnvConfig(
         process.env.INITIAL_ADMIN_EMAIL ?? 'admin@example.com',
       seedAdminUsername: process.env.INITIAL_ADMIN_USERNAME ?? 'admin',
       seedAdminPassword: process.env.INITIAL_ADMIN_PASSWORD ?? 'admin123456',
+    },
+
+    scheduler: {
+      // Off by default: a unit test or a one-off script must never open a
+      // Redis worker connection.
+      enabled:
+        process.env.SCHEDULER_ENABLED == null
+          ? false
+          : process.env.SCHEDULER_ENABLED.toLowerCase() === 'true',
+      lateSweepCron: process.env.SCHEDULER_LATE_SWEEP_CRON ?? '*/15 * * * *',
+      retentionSweepCron:
+        process.env.SCHEDULER_RETENTION_SWEEP_CRON ?? '0 3 * * *',
+      guestPiiRetentionMonths:
+        process.env.GUEST_PII_RETENTION_MONTHS == null
+          ? 24
+          : Number(process.env.GUEST_PII_RETENTION_MONTHS),
     },
   });
 }

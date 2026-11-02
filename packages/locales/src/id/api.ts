@@ -20,6 +20,36 @@ const api: Record<keyof typeof en, string> = {
 	'sales.quotationNotFound': 'Penawaran tidak ditemukan',
 	'sales.paymentNotFound': 'Pembayaran tidak ditemukan',
 
+	'inventory.itemNotFound': 'Barang tidak ditemukan',
+	'inventory.unitNotFound': 'Unit barang tidak ditemukan',
+	'inventory.skuTaken': 'Barang dengan SKU ini sudah ada',
+	'inventory.serialTaken': 'Unit barang dengan nomor seri ini sudah ada',
+	'inventory.ruleViolation': 'Aturan inventaris tidak mengizinkan: {{rule}}',
+	'inventory.itemHasUnits':
+		'Barang tidak dapat diarsipkan karena masih memiliki {{count}} unit aktif',
+	'inventory.warehouseNotFound': 'Gudang tidak ditemukan',
+	'inventory.warehouseCodeTaken':
+		'Gudang dengan kode ini sudah ada pada cakupan ini',
+	'inventory.warehouseHasUnits':
+		'Gudang tidak dapat diarsipkan karena masih menyimpan {{count}} unit aktif',
+	'inventory.storageNotFound': 'Penyimpanan tidak ditemukan',
+	'inventory.storageCodeTaken':
+		'Penyimpanan dengan kode ini sudah ada di gudang ini',
+	'inventory.movementNotFound': 'Pergerakan stok tidak ditemukan',
+	'inventory.movementAlreadyReversed':
+		'Pergerakan stok ini sudah dibalik sebelumnya',
+	'inventory.insufficientStock':
+		'Tidak dapat memindahkan {{requested}}: hanya tersedia {{available}}',
+	'inventory.adjustmentNotFound': 'Penyesuaian stok tidak ditemukan',
+	'inventory.adjustmentCodeTaken':
+		'Penyesuaian dengan kode ini sudah ada di organisasi ini',
+	'inventory.adjustmentTransition':
+		'Penyesuaian tidak dapat berpindah dari "{{from}}" ke "{{to}}"',
+	'inventory.selfApprovalForbidden':
+		'Anda tidak dapat menyetujui penyesuaian stok Anda sendiri',
+	'inventory.adjustmentHasNoLines':
+		'Penyesuaian stok harus memiliki minimal satu baris',
+
 	'user.notFound': 'Pengguna tidak ditemukan',
 	'user.emailInUse': 'Email sudah digunakan',
 	'user.globalAdminRequired': 'Peran administrator global diperlukan',
@@ -80,6 +110,25 @@ const api: Record<keyof typeof en, string> = {
 	'auth.ownerGrantRequired':
 		'Hanya pemilik organisasi yang dapat memberikan peran pemilik',
 	'auth.roleNotGrantable': 'Peran tidak dapat diberikan: {{roles}}',
+
+	// Borrowing (S4)
+	'inventory.borrowingNotFound': 'Peminjaman tidak ditemukan',
+	'inventory.borrowingLineNotFound': 'Baris peminjaman tidak ditemukan',
+	'inventory.unitNotOnBorrowing':
+		'Unit tersebut tidak dipinjamkan pada peminjaman ini',
+	'inventory.borrowingTransition':
+		'Perubahan status tersebut tidak diizinkan untuk peminjaman ini',
+	'inventory.borrowingCodeTaken':
+		'Tidak dapat membuat kode peminjaman yang unik',
+	'inventory.borrowingHasNoLines':
+		'Peminjaman harus memiliki minimal satu baris',
+	'inventory.unitNotAvailable': 'Unit tersebut tidak dapat dipinjamkan',
+	'inventory.borrowerIdentity':
+		'Identitas peminjam tidak sesuai dengan tipe peminjam',
+	'inventory.guestIdentityIncomplete':
+		'Peminjam tamu belum melengkapi data identitas wajib',
+	'inventory.borrowingSelfApprovalForbidden':
+		'Anda tidak dapat menyetujui peminjaman Anda sendiri',
 };
 
 export default api;

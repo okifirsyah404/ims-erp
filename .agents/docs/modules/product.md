@@ -1,4 +1,10 @@
 > 2026-10-28: content below describes the deleted NestJS backend (apps/backend-nest). Domains listed as modules/ stubs do not exist in apps/backend-elysia (which has only user, organization, location). Treat as historical audit; re-verify against backend-elysia before acting.
+>
+> 2026-11-02: the **item master now lives in Inventory** — `inventory.items`
+> supersedes `catalog.items` (ADR-0008), and item status only exists on
+> serialized units. See `inventory.md`. `catalog.item_categories` and
+> `catalog.units` exist but are unadopted; `inventory.items` carries free-text
+> `category` and `unit_label` meanwhile.
 
 # Product Module
 

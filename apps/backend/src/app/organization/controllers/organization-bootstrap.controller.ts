@@ -1,31 +1,10 @@
 import { container } from 'tsyringe';
-import type { ErpContext } from '@authorization/elysia-auth';
-import { NotGlobalAdminError } from '@http/errors';
+import { requireGlobalAdmin } from '@authorization/require-global-admin';
 import { domainPlugin } from '@http/plugin';
 import { created } from '@http/response';
 import { createOrganizationSchema } from '../contracts/organization.contract';
 import { ORGANIZATION_SERVICE_TOKEN } from '../constants/di';
 import { OrganizationService } from '../services/organization.service';
-
-/**
- * Organization creation is reserved for application admins — the company
- * owner role (`user.role === 'admin'`, ADR-0007).
- *
- * @remarks
- * Read from the guard-resolved session, never from client input. It is
- * deliberately membership-independent: an application admin with no
- * organization memberships must be able to bootstrap the first organization.
- * Better Auth re-checks the same rule inside `organization.create`
- * (`allowUserToCreateOrganization`).
- */
-function requireGlobalAdmin({ erp }: { erp: ErpContext }): void {
-	if (erp.session.user.role !== 'admin') {
-		throw new NotGlobalAdminError(
-			'Application administrator role required',
-			'user.globalAdminRequired',
-		);
-	}
-}
 
 /**
  * Organization creation boundary.

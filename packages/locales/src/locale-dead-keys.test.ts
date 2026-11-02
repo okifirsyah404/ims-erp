@@ -52,11 +52,28 @@ const SOURCES = [...sourceFiles(APP_SRC), ...sourceFiles(API_SRC), PACKAGE_ENTRY
 const CONCATENATED = SOURCES.map((file) => readFileSync(file, 'utf8')).join('\n');
 
 /**
- * Namespaces whose keys may be composed at runtime via a template literal.
- * A key under one of these is considered live when its *prefix* (everything
- * up to the last dot) appears in a backtick template in the source.
+ * Keys that may be composed at runtime via a template literal, as
+ * `namespace:prefix`. A key under one of these is considered live when the
+ * source contains the matching `` `namespace:prefix${…}` `` template.
  */
-const DYNAMIC_PREFIXES = ['common:status.', 'status.'];
+const DYNAMIC_PREFIXES = [
+	'common:status.',
+	'status.',
+	// `t(`inventory:kind.${kind}`)` — an item's kind selects its own label.
+	'inventory:kind.',
+	// The ledger and the adjustment workflow label their enums the same way:
+	// the value comes from the server, so the key has to be composed.
+	'inventory:movements.type.',
+	'inventory:movements.status.',
+	'inventory:adjustments.type.',
+	'inventory:adjustments.status.',
+	// S4 borrowing workflow: status, purpose, condition, and event type all
+	// arrive as server values, so the label key has to be composed.
+	'inventory:borrowingStatus.',
+	'inventory:borrowingPurpose.',
+	'inventory:borrowingCondition.',
+	'inventory:borrowingEvent.',
+];
 
 function isReferenced(namespace: string, key: string): boolean {
 	const qualified = `${namespace}:${key}`;
@@ -66,9 +83,8 @@ function isReferenced(namespace: string, key: string): boolean {
 	}
 	// Composed keys: `t(`common:status.${status}`)`.
 	for (const prefix of DYNAMIC_PREFIXES) {
-		const bare = prefix.replace(/^common:/, '');
-		if ((key.startsWith(bare) || qualified.startsWith(prefix)) &&
-			CONCATENATED.includes(`${prefix}\${`)) {
+		const applies = qualified.startsWith(prefix) || key.startsWith(prefix);
+		if (applies && CONCATENATED.includes(`${prefix}\${`)) {
 			return true;
 		}
 	}

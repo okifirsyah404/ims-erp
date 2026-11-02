@@ -1,0 +1,404 @@
+/**
+ * Inventory module copy.
+ *
+ * @remarks
+ * Scoped to what the item slice renders today. Keys are added with their
+ * screen, not ahead of it — `locale-dead-keys.test.ts` fails on any key that
+ * no component references, which keeps this file an accurate inventory of
+ * what the UI actually shows.
+ *
+ * Vocabulary note: `in_stock` is labelled "Ready" / "Siap". The stored value
+ * is never `ready` (ADR-0008); only the label changed.
+ */
+const inventory = {
+	// Shell.
+	'adminOnly': 'Inventory management is available to application administrators only.',
+
+	// Item list (shared by the four kind routes).
+	'items.description': 'Item master — SKU catalogue for this organization.',
+	'items.empty': 'No items yet for this organization.',
+	'items.sku': 'SKU',
+	'items.name': 'Name',
+	'items.kind': 'Kind',
+	'items.tracking': 'Tracking',
+	'items.serialized': 'Serialized',
+	'items.quantityTracked': 'Quantity',
+	'items.category': 'Category',
+	'items.unitLabel': 'Unit',
+	'items.minStockQty': 'Minimum stock',
+	'items.sellingPrice': 'Selling price',
+	'items.purchasePrice': 'Purchase price',
+	'items.description_label': 'Description',
+	'items.barcode': 'Barcode',
+
+	// Kind labels.
+	'kind.product': 'Product',
+	'kind.component': 'Component',
+	'kind.material': 'Material',
+	'kind.tool': 'Tool',
+	'kind.service': 'Service',
+
+	// Per-kind page titles.
+	'products.title': 'Products',
+	'components.title': 'Components',
+	'materials.title': 'Materials',
+	'tools.title': 'Tools',
+
+	// Create / edit form.
+	'form.newItem': 'New item',
+	'form.newItemDescription':
+		'SKU and kind are fixed at creation — both drive uniqueness and the status rules.',
+	'form.editItem': 'Edit item',
+	'form.editItemDescription':
+		'SKU and kind cannot be changed after creation.',
+	'form.create': 'Create item',
+	'form.creating': 'Creating…',
+	'form.save': 'Save changes',
+	'form.saving': 'Saving…',
+	'form.serializedHint':
+		'Serialized items are tracked per unit; quantities are not counted.',
+	'form.serviceHint': 'A service is never serialized and never stocked.',
+	'form.created': 'Item created',
+	'form.updated': 'Item updated',
+	'form.archived': 'Item archived',
+
+	// Item detail.
+	'detail.notFound': 'This item does not exist or has been archived.',
+	'detail.archive': 'Archive',
+	'detail.archiveConfirm': 'Archive this item?',
+	'detail.archiveConfirmBody':
+		'Archiving hides the item from the list. Items that still have units cannot be archived.',
+	'detail.units': 'Units',
+	'detail.unitsEmpty': 'No units registered yet.',
+	'detail.serialNumber': 'Serial number',
+	'detail.assetTag': 'Asset tag',
+	'detail.status': 'Status',
+	'detail.provisional': 'Provisional',
+
+	// Unit status labels.
+	'status.pre_order': 'Pre-order',
+	'status.in_stock': 'Ready',
+	'status.borrowed': 'Borrowed',
+	'status.lost': 'Lost',
+	'status.sold': 'Sold',
+	'status.applied_warranty': 'Applied to warranty',
+
+	// Unit registration.
+	'unit.new': 'Register unit',
+	'unit.newDescription':
+		'Units are the physical instances of a serialized item.',
+	'unit.serialNumber': 'Serial number',
+	'unit.serialNumberHint':
+		'Leave empty for a pre-order: a provisional serial is minted and replaced once on receipt.',
+	'unit.register': 'Register unit',
+	'unit.registering': 'Registering…',
+	'unit.registered': 'Unit registered',
+
+	// Provisional serial replacement.
+	'unit.replaceSerial': 'Set real serial',
+	'unit.replaceSerialBody':
+		'A provisional serial can be replaced exactly once.',
+	'unit.replaced': 'Serial number replaced',
+
+	// Warehouse list.
+	'warehouses.title': 'Warehouses',
+	'warehouses.description':
+		'Warehouse master - global and per-organization storage locations.',
+	'warehouses.new': 'New warehouse',
+	'warehouses.empty': 'No warehouses yet.',
+	'warehouses.code': 'Code',
+	'warehouses.name': 'Name',
+	'warehouses.scope': 'Scope',
+	'warehouses.global': 'Global',
+	'warehouses.organization': 'Organization',
+	'warehouses.status': 'Status',
+	'warehouses.default': 'Default',
+	'warehouses.inactive': 'Inactive',
+	'warehouses.notFound': 'Warehouse not found.',
+	'warehouses.noAddress': 'No address recorded.',
+	'warehouses.storages': 'Storages',
+	'warehouses.noStorages': 'No storages recorded.',
+	'warehouses.binType': 'Type',
+
+	// Warehouse create / edit form.
+	'warehouseForm.new': 'New warehouse',
+	'warehouseForm.newDescription':
+		'Code and scope are fixed at creation. A warehouse with no organization is global.',
+	'warehouseForm.edit': 'Edit warehouse',
+	'warehouseForm.editDescription':
+		'Code and scope cannot be changed after creation.',
+	'warehouseForm.details': 'Details',
+	'warehouseForm.detailsDescription':
+		'Only one warehouse can be the default within a scope.',
+	'warehouseForm.code': 'Code',
+	'warehouseForm.name': 'Name',
+	'warehouseForm.isDefault': 'Default warehouse',
+	'warehouseForm.isDefaultHint':
+		'Setting this as default clears the previous default in the same scope.',
+	'warehouseForm.isActive': 'Active',
+	'warehouseForm.address': 'Address',
+	'warehouseForm.addressDescription':
+		'Structured per region. Only the village is stored on the address.',
+	'warehouseForm.create': 'Create warehouse',
+	'warehouseForm.saving': 'Saving.',
+	'warehouseForm.created': 'Warehouse created',
+	'warehouseForm.updated': 'Warehouse updated',
+
+	// Address fields and the location cascade.
+	'address.label': 'Label',
+	'address.street': 'Street',
+	'address.rt': 'RT',
+	'address.rw': 'RW',
+	'address.postalCode': 'Postal code',
+	'address.province': 'Province',
+	'address.regency': 'Regency / city',
+	'address.district': 'District',
+	'address.village': 'Village',
+	'address.searchProvince': 'Search province',
+	'address.searchRegency': 'Search regency',
+	'address.searchDistrict': 'Search district',
+	'address.searchVillage': 'Search village',
+	'address.noResults': 'No results',
+
+	// Stock balances.
+	'stock.title': 'Stock balances',
+	'stock.description':
+		'What is on hand, per warehouse. A global warehouse holds one shared balance.',
+	'stock.empty': 'No stock recorded yet.',
+	'stock.item': 'Item',
+	'stock.warehouse': 'Warehouse',
+	'stock.bin': 'Storage',
+	'stock.onHand': 'On hand',
+	'stock.reserved': 'Reserved',
+	'stock.available': 'Available',
+	'stock.lastMovement': 'Last movement',
+	'stock.scope': 'Scope',
+	'stock.shared': 'Shared',
+	'stock.inStockOnly': 'In stock only',
+	'stock.noBin': 'Unassigned',
+	'stock.recompute': 'Rebuild from ledger',
+	'stock.recomputeConfirm': 'Rebuild balances from the ledger?',
+	'stock.recomputeConfirmBody':
+		'This recalculates the balances of one scope from the movement ledger. It is a repair tool; the running balance is normally already correct.',
+	'stock.recomputed': 'Balances rebuilt ({{written}} written, {{removed}} removed)',
+	'stock.movements': 'Movements',
+	'stock.adjust': 'Adjust stock',
+
+	// Movement ledger.
+	'movements.title': 'Stock movements',
+	'movements.description':
+		'The ledger. Every movement is append-only; a correction is a new row, never an edit.',
+	'movements.empty': 'No movements recorded yet.',
+	'movements.code': 'Code',
+	'movements.type': 'Type',
+	'movements.item': 'Item',
+	'movements.quantity': 'Quantity',
+	'movements.statusLabel': 'Status',
+	'movements.occurredAt': 'Occurred',
+	'movements.reference': 'Reference',
+	'movements.notes': 'Notes',
+	'movements.reverse': 'Reverse',
+	'movements.reverseConfirm': 'Reverse this movement?',
+	'movements.reverseConfirmBody':
+		'Reversing appends an opposing movement. It happens once and cannot be undone; it is refused if it would take stock below zero.',
+	'movements.reversed': 'Movement reversed',
+	'movements.type.receipt': 'Receipt',
+	'movements.type.issue': 'Issue',
+	'movements.type.transfer_in': 'Transfer in',
+	'movements.type.transfer_out': 'Transfer out',
+	'movements.type.adjustment_in': 'Adjustment in',
+	'movements.type.adjustment_out': 'Adjustment out',
+	'movements.type.return_in': 'Return in',
+	'movements.type.return_out': 'Return out',
+	'movements.type.consumption': 'Consumption',
+	'movements.type.borrowing_out': 'Borrowed out',
+	'movements.type.borrowing_in': 'Returned from borrowing',
+	'movements.status.draft': 'Draft',
+	'movements.status.posted': 'Posted',
+	'movements.status.reversed': 'Reversed',
+
+	// Adjustments list.
+	'adjustments.title': 'Stock adjustments',
+	'adjustments.description':
+		'A count becomes a movement only after it is approved and posted.',
+	'adjustments.new': 'New adjustment',
+	'adjustments.empty': 'No adjustments yet.',
+	'adjustments.code': 'Code',
+	'adjustments.type': 'Type',
+	'adjustments.statusLabel': 'Status',
+	'adjustments.requestedBy': 'Requested by',
+	'adjustments.requestedAt': 'Requested',
+	'adjustments.approvedBy': 'Approved by',
+	'adjustments.postedAt': 'Posted',
+	'adjustments.notes': 'Notes',
+	'adjustments.notFound': 'Adjustment not found.',
+	'adjustments.lines': 'Lines',
+	'adjustments.noLines': 'This adjustment has no lines.',
+	'adjustments.qtyBefore': 'System',
+	'adjustments.qtyAfter': 'Counted',
+	'adjustments.delta': 'Difference',
+	'adjustments.type.increase': 'Increase',
+	'adjustments.type.decrease': 'Decrease',
+	'adjustments.type.recount': 'Recount',
+	'adjustments.status.draft': 'Draft',
+	'adjustments.status.submitted': 'Submitted',
+	'adjustments.status.approved': 'Approved',
+	'adjustments.status.rejected': 'Rejected',
+	'adjustments.status.posted': 'Posted',
+	'adjustments.status.cancelled': 'Cancelled',
+
+	// Adjustment workflow actions.
+	'adjustmentActions.submit': 'Submit for approval',
+	'adjustmentActions.approve': 'Approve',
+	'adjustmentActions.reject': 'Reject',
+	'adjustmentActions.cancel': 'Cancel',
+	'adjustmentActions.post': 'Post to stock',
+	'adjustmentActions.submitted': 'Adjustment submitted',
+	'adjustmentActions.approved': 'Adjustment approved',
+	'adjustmentActions.rejected': 'Adjustment rejected',
+	'adjustmentActions.cancelled': 'Adjustment cancelled',
+	'adjustmentActions.posted': 'Adjustment posted to stock',
+	'adjustmentActions.selfApprovalBlocked':
+		'You raised this adjustment, so someone else must approve it.',
+
+	// Adjustment form.
+	'adjustmentForm.new': 'New adjustment',
+	'adjustmentForm.newDescription':
+		'Enter the counted total per line. The difference from the system quantity becomes the movement.',
+	'adjustmentForm.warehouse': 'Warehouse',
+	'adjustmentForm.type': 'Reason',
+	'adjustmentForm.reasonCode': 'Reason code',
+	'adjustmentForm.notes': 'Notes',
+	'adjustmentForm.lines': 'Lines',
+	'adjustmentForm.linesDescription':
+		'Counted total, not a difference. A line that matches the system posts nothing.',
+	'adjustmentForm.item': 'Item',
+	'adjustmentForm.bin': 'Storage',
+	'adjustmentForm.systemQuantity': 'System',
+	'adjustmentForm.countedQuantity': 'Counted',
+	'adjustmentForm.difference': 'Difference',
+	'adjustmentForm.lineNote': 'Note',
+	'adjustmentForm.addLine': 'Add line',
+	'adjustmentForm.removeLine': 'Remove',
+	'adjustmentForm.create': 'Create adjustment',
+	'adjustmentForm.creating': 'Creating.',
+	'adjustmentForm.created': 'Adjustment created',
+	'adjustmentForm.emptyLines': 'Add at least one line.',
+
+	// Borrowing (S4)
+	'borrowings.title': 'Borrowings',
+	'borrowings.description':
+		'Equipment out of the warehouse. Issuing moves custody and reduces stock; returning restores it.',
+	'borrowings.new': 'New borrowing',
+	'borrowings.notFound': 'Borrowing not found.',
+	'borrowings.empty': 'No borrowings yet.',
+	'borrowings.code': 'Code',
+	'borrowings.borrower': 'Borrower',
+	'borrowings.purpose': 'Purpose',
+	'borrowings.dueAt': 'Due',
+	'borrowings.status': 'Status',
+	'borrowings.actions': 'Actions',
+	'borrowings.guest': 'Guest',
+	'borrowings.lines': 'Units',
+	'borrowings.linesDescription':
+		'One line per serialized unit. The origin warehouse is captured from the unit and restored on return.',
+	'borrowings.timeline': 'Timeline',
+	'borrowings.timelineDescription':
+		'Append-only. Issued, returned, and lost entries are linked to the stock movement they wrote.',
+	'borrowings.movement': 'Movement',
+	'borrowings.auto': 'Automatic',
+	'borrowings.redacted': 'Identity withheld',
+	'borrowings.redactedHint':
+		'The identity number, address, and document reference are visible only to callers who can mark a unit lost.',
+	'borrowings.origin': 'Origin',
+	'borrowings.issuedAt': 'Issued',
+	'borrowings.returnedAt': 'Returned',
+	'borrowings.condition': 'Condition',
+	'borrowings.late': 'Late',
+	'borrowings.lost': 'Lost',
+	'borrowings.serial': 'Unit',
+	'borrowings.noEvents': 'No events recorded.',
+
+	'borrowingStatus.draft': 'Draft',
+	'borrowingStatus.requested': 'Requested',
+	'borrowingStatus.approved': 'Approved',
+	'borrowingStatus.rejected': 'Rejected',
+	'borrowingStatus.issued': 'Issued',
+	'borrowingStatus.partially_returned': 'Partly returned',
+	'borrowingStatus.returned': 'Returned',
+	'borrowingStatus.closed': 'Closed',
+	'borrowingStatus.cancelled': 'Cancelled',
+
+	'borrowingPurpose.rental': 'Rental',
+	'borrowingPurpose.internal_use': 'Internal use',
+	'borrowingPurpose.testing': 'Testing',
+	'borrowingPurpose.warranty_service': 'Warranty service',
+
+	'borrowingCondition.good': 'Good',
+	'borrowingCondition.damaged': 'Damaged',
+	'borrowingCondition.incomplete': 'Incomplete',
+
+	'borrowingEvent.requested': 'Requested',
+	'borrowingEvent.approved': 'Approved',
+	'borrowingEvent.rejected': 'Rejected',
+	'borrowingEvent.issued': 'Issued',
+	'borrowingEvent.returned': 'Returned',
+	'borrowingEvent.marked_late': 'Marked late',
+	'borrowingEvent.marked_lost': 'Marked lost',
+	'borrowingEvent.due_date_extended': 'Due date extended',
+	'borrowingEvent.cancelled': 'Cancelled',
+	'borrowingEvent.closed': 'Closed',
+
+	'borrowingActions.submit': 'Submit',
+	'borrowingActions.approve': 'Approve',
+	'borrowingActions.reject': 'Reject',
+	'borrowingActions.issue': 'Issue',
+	'borrowingActions.return': 'Return',
+	'borrowingActions.returnAll': 'Return all',
+	'borrowingActions.extend': 'Extend',
+	'borrowingActions.markLost': 'Mark lost',
+	'borrowingActions.cancel': 'Cancel',
+	'borrowingActions.close': 'Close',
+	'borrowingActions.submitted': 'Borrowing submitted',
+	'borrowingActions.approved': 'Borrowing approved',
+	'borrowingActions.rejected': 'Borrowing rejected',
+	'borrowingActions.issued': 'Units issued',
+	'borrowingActions.returned': 'Units returned',
+	'borrowingActions.extended': 'Due date extended',
+	'borrowingActions.lost': 'Unit marked lost',
+	'borrowingActions.cancelled': 'Borrowing cancelled',
+	'borrowingActions.closed': 'Borrowing closed',
+
+	'borrowingForm.new': 'New borrowing',
+	'borrowingForm.newDescription':
+		'Pick the borrower, then the units. Raising it does not move stock — issuing does.',
+	'borrowingForm.borrowerType': 'Borrower type',
+	'borrowingForm.user': 'Registered user',
+	'borrowingForm.customer': 'Customer',
+	'borrowingForm.guest': 'Guest',
+	'borrowingForm.userId': 'User id',
+	'borrowingForm.customerId': 'Customer id',
+	'borrowingForm.guestName': 'Guest name',
+	'borrowingForm.guestPhone': 'Phone',
+	'borrowingForm.guestIdType': 'Identity document',
+	'borrowingForm.guestIdNumber': 'Identity number',
+	'borrowingForm.guestAddress': 'Address',
+	'borrowingForm.guestDocumentRef': 'Document reference',
+	'borrowingForm.purpose': 'Purpose',
+	'borrowingForm.dueAt': 'Due date',
+	'borrowingForm.notes': 'Notes',
+	'borrowingForm.units': 'Units',
+	'borrowingForm.unitsDescription':
+		'Search by serial number. Only units currently in stock can be borrowed.',
+	'borrowingForm.searchUnits': 'Search serial number',
+	'borrowingForm.addUnit': 'Add unit',
+	'borrowingForm.removeUnit': 'Remove',
+	'borrowingForm.create': 'Raise borrowing',
+	'borrowingForm.creating': 'Raising.',
+	'borrowingForm.created': 'Borrowing raised',
+	'borrowingForm.emptyLines': 'Add at least one unit.',
+	'borrowingForm.identityHint':
+		'Identity data is stored with the borrowing and erased 24 months after it closes.',
+} as const;
+
+export default inventory;
