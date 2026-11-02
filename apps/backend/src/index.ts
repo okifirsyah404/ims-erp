@@ -16,6 +16,10 @@ import { createApp } from './app/app';
 import {
 	closeQueueConnection,
 } from '@providers/queue/queue.connection';
+import {
+	startWorkers,
+	stopWorkers,
+} from '@providers/queue/worker-registry';
 import { registerLocation } from './app/location/container';
 import { registerAudit } from './app/audit';
 import { registerOrganization } from './app/organization';
@@ -96,16 +100,20 @@ const bootstrap = new Elysia()
 	.use(createApp())
 	.listen(appConfig.app.port);
 
-// Avatar generation worker: consumes the BullMQ 'avatar' queue filled by
-// Better Auth's user.create.after hook, rendering each PNG through the DiceBear
-// HTTP API. Non-fatal at boot: a Redis outage must not take the API down.
-const avatarWorker = startAvatarWorker();
-avatarWorker.onError((error) => {
-	pinoLogger.error({ err: error }, 'avatar worker error');
-});
+// Background workers: consume BullMQ queues filled by module hooks. Every
+// worker is started through the shared registry, so adding a queue means one
+// entry in this array — not a new handle and a new shutdown branch. Non-fatal
+// at boot: a Redis outage must not take the API down.
+startWorkers([startAvatarWorker()], (error) =>
+	pinoLogger.error({ err: error }, 'background worker error'),
+);
 
 process.on('SIGTERM', async () => {
-	await avatarWorker.close();
+	// Workers first, then the shared connection they borrow: closing the
+	// connection while a worker is still draining would abort in-flight jobs.
+	for (const error of await stopWorkers()) {
+		pinoLogger.error({ err: error }, 'background worker failed to close');
+	}
 	await closeQueueConnection();
 });
 

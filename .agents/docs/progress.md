@@ -322,6 +322,62 @@ Verification: `bunx tsc --noEmit` → exit 0; `bun test` → **131 pass, 0 fail*
 **18/18**; `smoke-cache-invalidation.ts` → **9/9**; `/docs` → 200, anon
 `/users/me` → 401.
 
+### W11 — background workers go through one registry
+
+Anticipated second queue (`elysia-module` §3.6 now requires this seam).
+`src/index.ts` had one `const` per worker plus a `SIGTERM` branch per worker;
+adding a queue meant editing the composition root three times.
+
+New `src/providers/queue/worker-registry.ts` — a **collector, not a container**:
+`startWorkers([...], onError)` attaches the shared failure sink, `stopWorkers()`
+closes them all. Modules still own their workers; the registry only delegates.
+
+- `QueueWorker` = `{ onError, close }` is the shared contract;
+  `AvatarWorkerHandle` is now an alias of it, so the registry never imports the
+  user module.
+- `stopWorkers()` uses `Promise.allSettled` — one worker hanging on `close()`
+  must not block the others or hold up exit. Failed closes are returned and
+  logged.
+- `startWorkers()` throws on a second call instead of leaking the first set.
+- Construction stays at the call site (after `registerProvider` +
+  `register<Module>`). A registry that resolved its own workers would move
+  correctness back into import order — the failure mode `createApp()` avoids.
+- `closeQueueConnection()` stays in `index.ts` and still runs **after**
+  `stopWorkers()`: the shared connection must outlive the workers draining.
+- Rejected the names `app/queue-worker.ts` and `startBullQueue()`: `app/` is
+  feature modules, and "start queue" would be wrong for a producer-only queue.
+
+Adding a queue is now one array entry in `index.ts`.
+
+Tests: `test/unit/worker-registry.test.ts` (6) cover sink forwarding,
+double-start rejection, restart-after-stop, `allSettled` isolation when one
+close throws, and the empty case.
+
+New live probe `scripts/smoke-avatar-worker.ts`: dispatches a job and asserts
+the worker **consumed** it. Important limitation found while writing it —
+avatar rendering calls DiceBear, exposed only as an internal Compose service
+(`http://dicebear:3000`, no published port), so a bare local `bun run dev`
+cannot complete a render: the job is consumed and then fails `ECONNREFUSED` to
+DiceBear. The probe therefore asserts consumption, not the rendered image, and
+the runbook documents why.
+
+**`docs/database/` reviewed, unchanged** — no schema change.
+`validate-dbml.ts` → `253 tables`, `0 cross-module refs`, `0 timestamp gaps`, `OK`.
+
+`grill-me` gate: `grilling` is not installed; manual pass run. No tenant
+scoping, soft delete, money/datetime, status vocabulary or cross-module
+contract is touched by a worker-lifecycle refactor.
+
+Skills: `elysia-module` 1.3.0 → **1.4.0** (§3.6 now names the registry and the
+shared `QueueWorker` shape); `elysia-layered-architecture` 1.2.0 → **1.3.0**
+(rule 1.2 reference documents the registry contract and `allSettled`).
+
+Verification: `bunx tsc --noEmit` → exit 0; `bun test` → **137 pass, 0 fail**
+(131 + 6 new); `bunx oxlint` → 0 errors, same 4 pre-existing warnings;
+`smoke-admin-api.ts` → **18/18**; `smoke-cache-invalidation.ts` → **9/9**;
+`smoke-avatar-worker.ts` → **consumed**, re-runnable; `/docs` → 200, anon
+`/users/me` → 401.
+
 ## Completed (this session — multi-organization, 2026-11-02)
 
 ADR: `.agents/docs/decisions/ADR-0007-multi-organization.md` (supersedes the

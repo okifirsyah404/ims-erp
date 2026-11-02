@@ -45,11 +45,21 @@ loaded per-workspace from `.env`).
 |---|---|---|
 | `bun run scripts/smoke-admin-api.ts` | 18 checks over `/admin/users`, `/admin/roles`, `/admin/roles/permissions`, `/admin/audit`, `/admin/invitations`, the escalation guard, and every member denial (403) | ✅ verified 2026-11-02 — 18 passed / 0 failed |
 | `bun run scripts/smoke-cache-invalidation.ts` | the shared `auth.users` cache: an admin deactivate/restore/soft-delete is visible on the self-service read path **immediately** (no 5-minute staleness) | ✅ verified 2026-11-02 — 9 passed / 0 failed, idempotent |
+| `bun run scripts/smoke-avatar-worker.ts` | the avatar BullMQ worker was **started through the worker registry** and is subscribed to the queue: dispatches a job and waits for the worker to consume it (state leaves `waiting`) | ✅ verified 2026-11-02 — consumed, idempotent |
 
 Both scripts sign in as the seeded admin (`admin@local.com`) and/or member
 (`member.seed@entragate.local`) and reference the seeded organization id.
 `smoke-cache-invalidation.ts` restores its fixture, so it is safe to re-run;
 `smoke-admin-api.ts` creates and deletes its own throwaway role.
+
+`smoke-avatar-worker.ts` asserts **consumption only**, not a rendered avatar.
+Avatar rendering calls DiceBear, which the Compose stack exposes only as an
+internal service (`http://dicebear:3000`, no published port), so a bare local
+`bun run dev` cannot complete a render — the job is consumed and then fails on
+`ECONNREFUSED` to DiceBear. That failure proves the worker is wired; it is not
+a regression. To assert the rendered image outside Compose, point
+`AVATAR_API_URL` at `https://api.dicebear.com`.
+
 
 > The backend dev log prints full session cookies. Do not paste it into
 > issues, chats or commits.

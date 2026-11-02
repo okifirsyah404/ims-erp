@@ -4,6 +4,7 @@ import { appConfig } from '@config/providers/config';
 import { Worker } from 'bullmq';
 import { container } from 'tsyringe';
 import { queueConnection } from '@providers/queue/queue.connection';
+import type { QueueWorker } from '@providers/queue/worker-registry';
 import { avatarObjectKey, s3Client } from '@providers/s3/s3';
 import { USER_REPOSITORY_TOKEN } from '../constants/di';
 import type { IUserRepository } from '../contracts/user.repository.interface';
@@ -106,18 +107,16 @@ export async function processAvatarJob(
  * Handle the composition root uses to supervise the avatar worker.
  *
  * @remarks
- * Deliberately narrow: the caller needs to know when the worker fails and how
- * to stop it, nothing else. The BullMQ event names, the shutdown sequence and
- * the `Worker` type stay inside this module, so `src/index.ts` does not depend
- * on BullMQ. Same spirit as `plugin()` for controllers — the module owns its
- * lifecycle, the composition root only starts and stops it.
+ * Structurally the shared `QueueWorker` contract from
+ * `@providers/queue/worker-registry`, so the avatar worker can be handed to
+ * `startWorkers()` without the registry importing this module. Deliberately
+ * narrow: the caller needs to know when the worker fails and how to stop it,
+ * nothing else. The BullMQ event names, the shutdown sequence and the `Worker`
+ * type stay inside this module, so `src/index.ts` does not depend on BullMQ.
+ * Same spirit as `plugin()` for controllers — the module owns its lifecycle,
+ * the composition root only starts and stops it.
  */
-export type AvatarWorkerHandle = {
-	/** Registers the failure listener; forwards to the worker's `error` event. */
-	onError(listener: (error: Error) => void): void;
-	/** Stops the worker, letting in-flight jobs finish. */
-	close(): Promise<void>;
-};
+export type AvatarWorkerHandle = QueueWorker;
 
 /**
  * Starts the avatar worker. Call once at bootstrap.
