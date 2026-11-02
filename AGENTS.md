@@ -38,7 +38,7 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
 | --------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `bun install`                                                   | repo root                         | ✅ verified 2026-10-28/29 — clean installs (nest removal, dicebear add)                                                                                                                    |
 | `bun run dev`                                                   | repo root                         | ✅ verified 2026-10-29 — `turbo run dev`; live HTTP bring-up (auth 200, Redis, 401 envelope)                                                                                               |
-| `bun run lint` / `test` / `typecheck`                           | repo root, fans out per workspace | ✅ verified 2026-10-28→30 — backend 78/78 tests, typecheck clean                                                                                                                           |
+| `bun run lint` / `test` / `typecheck`                           | repo root, fans out per workspace | ✅ verified 2026-11-02 — backend 131/131, web-admin 21/21, typecheck clean                                                                                                                 |
 | `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend`                    | ✅ verified 2026-10-29/30 — migrations applied; seed idempotent (run twice). All use `bunx --bun drizzle-kit`; the `--bun` flag is required because the DB driver is `drizzle-orm/bun-sql` |
 
 > The previous NestJS backend (`apps/backend-nest`, package `backend`) was
@@ -54,11 +54,12 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
   `RedisClient` cache.
   Do not add a second ORM, auth system, or package manager. Do not fall back
   from Relational v2 (drizzle-orm 1.0.0-rc.5 channel) to v1 relations.
-- **Domain boundaries.** `apps/backend/src/app/<domain>/` owns its
-  domain. Routes/controllers do HTTP only; services own use cases;
-  repositories own Drizzle queries. HTTP layer never imports Drizzle directly.
-  Cross-domain access goes through exported service/contract APIs only —
-  never another domain's repository.
+- **Domain boundaries.** `apps/backend/src/app/<module>/` owns its module.
+  Controllers do HTTP only; services own use cases; repositories own Drizzle
+  queries. No controller or service may inject `DRIZZLE_TOKEN` — if a service
+  needs data it does not have, add a repository method, not a query.
+  Cross-module access goes through the owning module's exported contract or
+  service via DI token, never another module's repository.
 - **Auth and ownership are server-side facts.** Every endpoint enforces
   role permissions and record ownership, including exports. Frontend permission
   checks are UX only.
@@ -94,6 +95,47 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
 accepted / blocked`. Automated tests passing is not business acceptance.
 - **Statuses live in `.agents/docs/progress.md` and `backlog.md`.** Update
   them (and `progress.md`'s "next task") when you stop working.
+
+## Backend (`apps/backend`)
+
+Boundary changes are reviewed against four skills. Read the relevant one
+**before** editing a module, not after:
+
+| Skill                       | Governs                                                                     |
+| --------------------------- | --------------------------------------------------------------------------- |
+| `elysia-module`             | module folder set, one Postgres schema per module, what may cross a boundary |
+| `elysia-layered-architecture` | controller/service/repository split, queues, external-system ports        |
+| `elysia-tsyringe`           | module containers, composition root, resolve at the HTTP boundary            |
+| `tsyringe`                  | `InjectionToken<T>` typing, constructor injection, lifetimes                 |
+
+**Module shape.** `app/<module>/` = `container.ts` exporting
+`register<Module>(container)`, optional `index.ts` public entry, `contracts/`
+(interfaces + zod), `constants/di.ts`, `repositories/`, `services/`,
+`controllers/`, optional `queues/`. Controllers only — there is **no `routes/`
+directory**. `src/index.ts` calls each `register<Module>(container)` and mounts
+each `<Module>Controller.plugin()`.
+
+**Shared layers — never re-implement per module:**
+
+- `src/http/response.ts` — `ok` / `created` / `noContent` / `okPaginated` /
+  `errorEnvelope`. Success envelopes omit `errors`; `errorEnvelope` always
+  carries it. `noContent()` returns **200**, not 204, so existing clients keep
+  parsing.
+- `src/http/errors.ts` — `AppError` base, `DomainHttpError`,
+  `NotGlobalAdminError`, `toErrorResponse`. New domain errors extend `AppError`.
+- `src/http/plugin.ts` — `domainPlugin({ name, prefix, tags, guards })`. Never
+  hand-roll `new Elysia()` plus guard wiring. Guards:
+  `none | session | erp | erp+session`.
+- `src/di/tokens.ts` — `DRIZZLE_TOKEN` / `REDIS_TOKEN`, re-exported by
+  `di/provider.ts`. Token types come from the real contract; a bare `Symbol()`
+  without `InjectionToken<T>` is a defect.
+
+**URL layout.** Admin surfaces live under `/admin/*` (`/admin/users`,
+`/admin/roles`, `/admin/audit`, `/admin/invitations`). Self-service `/users/me*`
+and the public `/invitations/claim/:token`, `/username-availability` stay
+un-prefixed — they must not inherit the admin guard. Route moves change the
+backend **and** `apps/web-admin` (typed calls, sidebars, `routeTree.gen.ts` in
+the same change); a backend-only move is an incomplete change.
 
 ## Internationalization
 
@@ -186,8 +228,10 @@ architectural choices get a short ADR in `.agents/docs/decisions/`. When a doc
 and the code disagree, fix whichever is wrong and note it in `progress.md`.
 Changes to the skill set go through the existing skill manager and must be
 recorded in `skills.md` (source, version, hash) alongside `skills-lock.json`.
-Nested `AGENTS.md` files are only added when directory-specific rules genuinely
-help; keep this root file authoritative.
+The backend skills are `elysia-module`, `elysia-layered-architecture`,
+`elysia-tsyringe` and `tsyringe`; read the matching one before changing a
+module's boundaries. Nested `AGENTS.md` files are only added when
+directory-specific rules genuinely help; keep this root file authoritative.
 
 <!-- BEGIN:turborepo-agent-rules -->
 
