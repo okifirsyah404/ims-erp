@@ -12,7 +12,11 @@ import 'reflect-metadata';
 import { container } from 'tsyringe';
 import { elysiaApp } from './app/app';
 import { AuditController, registerAudit } from './app/audit';
-import { ItemController, registerInventory } from './app/inventory';
+import {
+	ItemController,
+	WarehouseController,
+	registerInventory,
+} from './app/inventory';
 import { registerLocation } from './app/location/container';
 import { LocationController } from './app/location/controllers/location.controller';
 import {
@@ -98,6 +102,7 @@ const bootstrap = new Elysia()
 	.use(LocationController.plugin())
 	.use(SalesController.plugin())
 	.use(ItemController.plugin())
+	.use(WarehouseController.plugin())
 	// Admin surfaces share the `/admin` prefix, so their routes no longer
 	// overlap the self-service `/users/*` routes: mount order is irrelevant
 	// here (before the split, both modules registered `GET /users` and the

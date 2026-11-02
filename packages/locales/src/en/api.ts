@@ -31,6 +31,14 @@ const api = {
 	'inventory.ruleViolation': 'This inventory rule does not allow it: {{rule}}',
 	'inventory.itemHasUnits':
 		'Cannot archive an item that still has {{count}} live unit(s)',
+	'inventory.warehouseNotFound': 'Warehouse not found',
+	'inventory.warehouseCodeTaken':
+		'A warehouse with this code already exists in this scope',
+	'inventory.warehouseHasUnits':
+		'Cannot archive a warehouse that still holds {{count}} live unit(s)',
+	'inventory.storageNotFound': 'Storage not found',
+	'inventory.storageCodeTaken':
+		'A storage with this code already exists in this warehouse',
 
 	'user.notFound': 'User not found',
 	'user.emailInUse': 'Email already in use',

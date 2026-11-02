@@ -24,6 +24,37 @@ Schema, keys, constraints, and conventions. Current declarations:
     structured Indonesian address references, tax identity.
   - `investors` — same shape plus `ownership_share` (placeholder); exact
     portion/reserve config is business data governed by owner approval.
+- **`inventory`** — inventory module (ADR-0008, ADR-0009):
+  - `items` — SKU-level master. `item_kind` (`product|component|material|tool|service`,
+    CHECK-guarded text, not an enum), `is_serialized`, `is_stock_tracked`,
+    `min_stock_qty`, exact-integer IDR prices. **Supersedes `catalog.items`.**
+  - `serial_tracked_items` — one physical unit per row. `status`
+    (`pre_order|in_stock|borrowed|lost|sold|applied_warranty`);
+    `is_provisional_serial` ties to `pre_order` via a CHECK. Name kept
+    deliberately (plan D9).
+  - `warehouses` — global (`organization_id IS NULL`) or per-organization.
+    Address fields moved out to `warehouse_addresses` (strict 1:1).
+  - `warehouse_addresses` — `street` free text plus optional
+    `rt`/`rw`/`postal_code` and a village-level logical ref to
+    `location.villages` (ADR-0003). Only `village_id` links to location data;
+    the province/regency/district selections are UI state, rebuilt on edit.
+  - `warehouse_storages` — flat bins, no zone level (D14).
+    `UNIQUE(warehouse_id, code) WHERE deleted_at IS NULL`.
+  - Not yet implemented: `stock_movements`, `stock_balances`, `borrowings`,
+    `borrowing_lines`, `borrowing_events` (S3/S4). The tables exist in the
+    schema and migration; the services do not.
+  - **Every `inventory.*` table has a nullable `organization_id`**; coded
+    tables use a partial-unique *pair* (`(organization_id, code) WHERE
+    organization_id IS NOT NULL` plus `(code) WHERE organization_id IS NULL`)
+    because PostgreSQL treats every NULL as distinct. Global rows are addressed
+    with `IS NULL` only — never `eq(column, null)`, never a sentinel.
+  - Warehouse routes are **application-admin-only** (`sessionGuard` +
+    `requireGlobalAdmin`), not org-permission-gated: no organization role holds
+    any `warehouse:*` action. Non-admins get 403 on reads, not an empty list.
+  - `is_default` is **service-enforced** to at most one per scope (including
+    the `NULL` scope); a partial unique index cannot express that.
+  - A warehouse's `organization_id` is **immutable after creation** (plan
+    D-C), as is its `code`.
 
 ## Conventions (pinned decisions)
 

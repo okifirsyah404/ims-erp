@@ -99,6 +99,66 @@ const inventory = {
 	'unit.replaceSerialBody':
 		'A provisional serial can be replaced exactly once.',
 	'unit.replaced': 'Serial number replaced',
+
+	// Warehouse list.
+	'warehouses.title': 'Warehouses',
+	'warehouses.description':
+		'Warehouse master - global and per-organization storage locations.',
+	'warehouses.new': 'New warehouse',
+	'warehouses.empty': 'No warehouses yet.',
+	'warehouses.code': 'Code',
+	'warehouses.name': 'Name',
+	'warehouses.scope': 'Scope',
+	'warehouses.global': 'Global',
+	'warehouses.organization': 'Organization',
+	'warehouses.status': 'Status',
+	'warehouses.default': 'Default',
+	'warehouses.inactive': 'Inactive',
+	'warehouses.notFound': 'Warehouse not found.',
+	'warehouses.noAddress': 'No address recorded.',
+	'warehouses.storages': 'Storages',
+	'warehouses.noStorages': 'No storages recorded.',
+	'warehouses.binType': 'Type',
+
+	// Warehouse create / edit form.
+	'warehouseForm.new': 'New warehouse',
+	'warehouseForm.newDescription':
+		'Code and scope are fixed at creation. A warehouse with no organization is global.',
+	'warehouseForm.edit': 'Edit warehouse',
+	'warehouseForm.editDescription':
+		'Code and scope cannot be changed after creation.',
+	'warehouseForm.details': 'Details',
+	'warehouseForm.detailsDescription':
+		'Only one warehouse can be the default within a scope.',
+	'warehouseForm.code': 'Code',
+	'warehouseForm.name': 'Name',
+	'warehouseForm.isDefault': 'Default warehouse',
+	'warehouseForm.isDefaultHint':
+		'Setting this as default clears the previous default in the same scope.',
+	'warehouseForm.isActive': 'Active',
+	'warehouseForm.address': 'Address',
+	'warehouseForm.addressDescription':
+		'Structured per region. Only the village is stored on the address.',
+	'warehouseForm.create': 'Create warehouse',
+	'warehouseForm.saving': 'Saving.',
+	'warehouseForm.created': 'Warehouse created',
+	'warehouseForm.updated': 'Warehouse updated',
+
+	// Address fields and the location cascade.
+	'address.label': 'Label',
+	'address.street': 'Street',
+	'address.rt': 'RT',
+	'address.rw': 'RW',
+	'address.postalCode': 'Postal code',
+	'address.province': 'Province',
+	'address.regency': 'Regency / city',
+	'address.district': 'District',
+	'address.village': 'Village',
+	'address.searchProvince': 'Search province',
+	'address.searchRegency': 'Search regency',
+	'address.searchDistrict': 'Search district',
+	'address.searchVillage': 'Search village',
+	'address.noResults': 'No results',
 } as const;
 
 export default inventory;

@@ -12,13 +12,13 @@ import SidebarSection from './sidebar-section';
  *
  * Routes that are planned but not built yet use the `'#'` sentinel that
  * `sidebar-section` renders as a non-link, rather than pointing at a 404:
- * `warehouses` and `item-movements` land with slices S2 and S3.
+ * `item-movements` lands with slice S3.
  */
 const items: SidebarItem[] = [
 	{
 		titleKey: 'item.warehouses',
 		icon: Warehouse,
-		url: '#',
+		url: '/inventory/warehouses',
 	},
 	{
 		titleKey: 'item.items',

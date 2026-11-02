@@ -39,7 +39,15 @@ import {
 
 export const ORGANIZATION_HEADER = 'x-organization-id';
 
-type SessionPayload = NonNullable<
+/**
+ * The Better Auth session shape resolved by the guards.
+ *
+ * @remarks
+ * Exported so record-level policies (e.g.
+ * {@link import('./require-global-admin').requireGlobalAdmin}) can be typed
+ * against it without redeclaring it structurally.
+ */
+export type SessionPayload = NonNullable<
 	Awaited<ReturnType<typeof auth.api.getSession>>
 >;
 

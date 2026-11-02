@@ -36,11 +36,26 @@ Honest record. Nothing shipped yet.
 
 | Slice | State | Commit | Delivered |
 |---|---|---|---|
-| S0 | ⬜ pending | — | Contract sync: `docs.dbml`, ADR-0008, ADR-0009, backlog ERP-0014 re-scope, `modules/inventory.md` rewrite, permission catalog |
-| S1 | ⬜ pending | — | `inventory.items` + `inventory.serial_tracked_items` (widened), migrations, seeders, item service/API, item UI |
-| S2 | ⬜ pending | — | `inventory.warehouses` + `warehouse_addresses` + `warehouse_storages`, global-admin write gate, warehouse UI |
+| S0 | ✅ shipped | `a9b2821` | Contract sync: `docs.dbml`, ADR-0008, ADR-0009, backlog ERP-0014 re-scope, `modules/inventory.md` rewrite, permission catalog |
+| S1 | ✅ shipped | `a9b2821` | `inventory.items` + `inventory.serial_tracked_items` (widened), migrations, item service/API, item UI |
+| S2 | ✅ shipped | — | `inventory.warehouses` + `warehouse_addresses` + `warehouse_storages` service/API, `requireGlobalAdmin` extraction, warehouse UI with searchable province→village cascade, inventory seeder (S1's item seeder folded in) |
 | S3 | ⬜ pending | — | `inventory.stock_movements` + `stock_balances`, movement service with balance maintenance, stock UI |
 | S4 | ⬜ pending | — | `inventory.borrowings` + `borrowing_lines` + `borrowing_events`, issue/return/late/lost state machine, late-return scheduled job, borrowing UI |
+
+**Notes recorded during implementation.**
+
+- The warehouse tables were already created by the S1 migration, so S2 wrote
+  **no migration**; it is service/API/UI/tests/seeder only.
+- `requireGlobalAdmin` had **no** test coverage despite the plan asserting
+  "covered by its existing tests"; `test/unit/require-global-admin.test.ts`
+  now covers it.
+- The shared auth test harness did not emit a platform `role` on the mock
+  session, so **no fixture could ever pass the global-admin policy**. Fixed in
+  `test/authorization/test-app.ts` with a separate `globalRole` field.
+- S2 decisions, settled with the product owner: one default **enforced** per
+  scope (D-A); full **searchable** province→village cascade (D-B);
+  `organizationId` **defaults to `NULL`** (global), scope immutable after
+  creation (D-C); S1's missing seeder **folded into S2** (D-D).
 
 ## 2. Context
 

@@ -27,6 +27,14 @@ const api: Record<keyof typeof en, string> = {
 	'inventory.ruleViolation': 'Aturan inventaris tidak mengizinkan: {{rule}}',
 	'inventory.itemHasUnits':
 		'Barang tidak dapat diarsipkan karena masih memiliki {{count}} unit aktif',
+	'inventory.warehouseNotFound': 'Gudang tidak ditemukan',
+	'inventory.warehouseCodeTaken':
+		'Gudang dengan kode ini sudah ada pada cakupan ini',
+	'inventory.warehouseHasUnits':
+		'Gudang tidak dapat diarsipkan karena masih menyimpan {{count}} unit aktif',
+	'inventory.storageNotFound': 'Penyimpanan tidak ditemukan',
+	'inventory.storageCodeTaken':
+		'Penyimpanan dengan kode ini sudah ada di gudang ini',
 
 	'user.notFound': 'Pengguna tidak ditemukan',
 	'user.emailInUse': 'Email sudah digunakan',

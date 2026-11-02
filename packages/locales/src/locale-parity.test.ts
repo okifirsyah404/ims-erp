@@ -85,6 +85,13 @@ describe('locale values', () => {
 			'admin:orgEdit.slug',
 			'admin:orgDetail.slug',
 			'admin:orgDetail.info',
+			// Indonesian terms used verbatim in the English UI: RT/RW are
+			// neighbourhood administrative units with no English equivalent.
+			'inventory:address.rt',
+			'inventory:address.rw',
+			'inventory:address.label',
+			// "Global" is the standard Indonesian term for a company-wide scope.
+			'inventory:warehouses.global',
 		]);
 
 		const untranslated = Object.entries(en_).flatMap(([namespace, bundle]) =>
