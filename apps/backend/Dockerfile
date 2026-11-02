@@ -4,7 +4,8 @@
 # The backend is compiled to a single self-contained executable with Bun's
 # `--compile` mode (the `build` script in apps/backend/package.json), so the
 # runtime image is a plain Alpine base plus the binary. @ims-erp/common is a
-# workspace dep exposing compiled dist/, so it is built inside the image first.
+# workspace dep exposing compiled dist/, so it is built inside the image first;
+# @ims-erp/locales is a source-only dep that is copied straight into the build.
 
 # ---- deps: install workspace deps ----
 # No --platform pin: each stage already builds for the build target by default,
@@ -15,6 +16,9 @@ FROM oven/bun:1.4-alpine AS deps
 WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
 COPY packages/common/package.json packages/common/
+# @ims-erp/locales is a source-only workspace package (exports resolve to
+# src/*.ts); bun requires its manifest at install time.
+COPY packages/locales/package.json packages/locales/
 COPY apps/backend/package.json apps/backend/
 RUN --mount=type=cache,target=/root/.bun/install/cache \
 	bun install --frozen-lockfile --ignore-scripts
@@ -22,6 +26,9 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
 # ---- build: compile @ims-erp/common, then the backend executable ----
 FROM deps AS build
 COPY packages/common/ packages/common/
+# @ims-erp/locales has no build step - its package.json exports point straight
+# at src/*.ts, so the sources are all the compile needs.
+COPY packages/locales/ packages/locales/
 COPY tsconfig.json ./
 RUN bun run --cwd packages/common build
 # apps/backend/.dockerignore keeps the host's dist/, .env, data/ and tests out

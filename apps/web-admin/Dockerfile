@@ -14,6 +14,9 @@ COPY packages/ui/package.json packages/ui/
 # web-admin imports @ims-erp/common (browser-safe permission catalog); bun
 # requires the workspace manifest at install time.
 COPY packages/common/package.json packages/common/
+# Same for @ims-erp/locales: bun.lock lists it as a web-admin workspace dep, so
+# a frozen install fails outright unless the manifest is on disk.
+COPY packages/locales/package.json packages/locales/
 COPY apps/web-admin/package.json apps/web-admin/
 RUN --mount=type=cache,target=/root/.bun/install/cache \
 	bun install --frozen-lockfile --ignore-scripts
@@ -30,6 +33,10 @@ COPY tsconfig.json ./
 # build it.)
 COPY packages/common/ packages/common/
 RUN bun run --cwd packages/common build
+# @ims-erp/locales is source-only (no build step): web-admin's tsconfig aliases
+# it to ../../packages/locales/src/index.ts and src/i18n imports `en`/`id` at
+# runtime, so vite needs the sources present.
+COPY packages/locales/ packages/locales/
 COPY apps/web-admin/ apps/web-admin/
 # Layout /app/apps/web-admin + /app/packages/ui keeps the tsconfig path
 # aliases (@ims-erp/ui/*, @workspace/ui/* -> ../../packages/ui/src/*) valid.
