@@ -4,7 +4,7 @@ description: Dependency-injection convention for this project using tsyringe - t
 license: MIT
 metadata:
   author: OpenAgentic
-  version: "1.0.0"
+  version: "1.1.0"
   dependsOn: elysiajs
   canonicalExample: apps/backend-elysia/drizzle/container.ts
 ---

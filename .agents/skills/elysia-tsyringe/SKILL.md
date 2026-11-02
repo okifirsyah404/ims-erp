@@ -1,10 +1,10 @@
 ---
 name: elysia-tsyringe
-description: Wiring Elysia controllers to tsyringe in this project - controllers exposed as static plugin() factories, container.resolve only inside plugin(), domain container.ts exports register<X>(container) called from src/index.ts, tokens in constants/di.ts, reflect-metadata at the entrypoint, one path-param name per position, and plugin-local onError mapping validation errors to the response envelope. Use when creating or wiring a domain controller, mounting routes, or debugging route/resolution crashes in apps/backend. Layering rules (what each layer may do) live in elysia-layered-architecture; token/lifetime rules in tsyringe.
+description: Wiring Elysia controllers to tsyringe in this project - controllers exposed as static plugin() factories, container.resolve only inside plugin(), domain container.ts exports register<X>(container) called from src/index.ts while src/app/app.ts mounts the plugins via a createApp() factory, tokens in constants/di.ts, reflect-metadata at the entrypoint (required on Bun too), one path-param name per position, and plugin-local onError mapping validation errors to the response envelope. Use when creating or wiring a domain controller, mounting routes, or debugging route/resolution crashes in apps/backend. Layering rules (what each layer may do) live in elysia-layered-architecture; token/lifetime rules in tsyringe.
 license: MIT
 metadata:
   author: OpenAgentic
-  version: "1.0.0"
+  version: "1.1.0"
   dependsOn: elysiajs
   canonicalExample: apps/backend/src/app/location
 ---
@@ -46,15 +46,29 @@ export class LocationController {
 	}
 }
 
-// src/index.ts
+// src/app/app.ts — the root app owns every controller mount
+export function createApp() {
+	return new Elysia()
+		.mount(auth.handler)
+		.use(openapi({ path: '/docs', documentation: betterAuthOpenApiDocument }))
+		.use(LocationController.plugin());
+}
+
+// src/index.ts — registration and cross-cutting plugins only
+registerProvider(container);
+registerLocation(container);
 const bootstrap = new Elysia()
 	.use(wrap(pinoLogger))
-	.use(elysiaApp)
-	.use(LocationController.plugin())
+	.use(createApp())
 	.listen(appConfig.app.port);
 ```
 
 Name the plugin (`name`) so Elysia deduplicates hooks on hot reload.
+
+`createApp()` is a factory, not `export const app`. Controllers resolve
+inside `plugin()`, so the container must be populated first; a module-level
+instance would build at import time and make correctness depend on hoisted
+import order between `app.ts` and `index.ts`.
 
 ### 2.2 `container.resolve` inside `plugin()` only — CRITICAL
 
@@ -67,14 +81,14 @@ never `new Service()`.
 Called from the composition root (`src/index.ts`) after provider
 registration. Order matters: `registerProvider(container)` (Drizzle,
 Redis) must precede `registerLocation(container)` or repositories resolve
-without their connections.
+without their connections. Registration lives in `src/index.ts`; mounting
+the resulting plugins lives in `src/app/app.ts` — keep the two apart.
 
 ```typescript
 // src/index.ts
 registerProvider(container);
 registerLocation(container);
 ```
-
 ### 2.4 Tokens live in `constants/di.ts` — HIGH
 
 The container re-exports them. Prevents the service ↔ container circular
@@ -82,8 +96,11 @@ import (see `elysia-layered-architecture` rule 1.4).
 
 ### 2.5 `import 'reflect-metadata'` at the entrypoint — HIGH
 
-Required even on Bun. First line of `src/index.ts`. Without it the server
-crashes at boot: `tsyringe requires a reflect polyfill`.
+Required even on Bun. First line of `src/index.ts`. Bun emits
+`design:paramtypes` natively, but tsyringe's CJS entry checks
+`Reflect.getMetadata` at load and throws without the polyfill. Removing it
+crashes boot: `tsyringe requires a reflect polyfill`. See the `tsyringe`
+skill, rule 2.1.
 
 ### 2.6 One path-param name per position — MEDIUM
 

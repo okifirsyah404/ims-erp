@@ -4,6 +4,7 @@ import { appConfig } from '@config/providers/config';
 import { Worker } from 'bullmq';
 import { container } from 'tsyringe';
 import { queueConnection } from '@providers/queue/queue.connection';
+import type { QueueWorker } from '@providers/queue/worker-registry';
 import { avatarObjectKey, s3Client } from '@providers/s3/s3';
 import { USER_REPOSITORY_TOKEN } from '../constants/di';
 import type { IUserRepository } from '../contracts/user.repository.interface';
@@ -103,21 +104,39 @@ export async function processAvatarJob(
 }
 
 /**
+ * Handle the composition root uses to supervise the avatar worker.
+ *
+ * @remarks
+ * Structurally the shared `QueueWorker` contract from
+ * `@providers/queue/worker-registry`, so the avatar worker can be handed to
+ * `startWorkers()` without the registry importing this module. Deliberately
+ * narrow: the caller needs to know when the worker fails and how to stop it,
+ * nothing else. The BullMQ event names, the shutdown sequence and the `Worker`
+ * type stay inside this module, so `src/index.ts` does not depend on BullMQ.
+ * Same spirit as `plugin()` for controllers — the module owns its lifecycle,
+ * the composition root only starts and stops it.
+ */
+export type AvatarWorkerHandle = QueueWorker;
+
+/**
  * Starts the avatar worker. Call once at bootstrap.
  *
  * @remarks
  * The repository is resolved once at the bootstrap boundary (same spirit
  * as controller `plugin()` factories): the worker outlives the request
  * lifecycle. Processes up to 2 jobs concurrently.
+ *
+ * Queue shutdown (`closeQueueConnection`) is intentionally *not* wired here:
+ * the connection is a shared provider, not this module's to close.
  */
-export function startAvatarWorker(): Worker<AvatarJobData> {
+export function startAvatarWorker(): AvatarWorkerHandle {
 	// Resolved once at the bootstrap boundary (same spirit as controller
 	// plugin() factories): the worker outlives the request lifecycle.
 	const userRepository = container.resolve<IUserRepository>(
 		USER_REPOSITORY_TOKEN,
 	);
 
-	return new Worker<AvatarJobData>(
+	const worker = new Worker<AvatarJobData>(
 		AVATAR_QUEUE_NAME,
 		async (job) => processAvatarJob(userRepository, job),
 		{
@@ -125,4 +144,11 @@ export function startAvatarWorker(): Worker<AvatarJobData> {
 			concurrency: 2,
 		},
 	);
+
+	return {
+		onError: (listener) => {
+			worker.on('error', listener);
+		},
+		close: () => worker.close(),
+	};
 }
