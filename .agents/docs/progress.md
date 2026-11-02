@@ -3,11 +3,68 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Doc change — feature module lifecycle gate (2026-11-02)
+
+Instructions-only change; no code, schema, migration, or seed was touched.
+Status: **implemented** (not `verified` — nobody has yet confirmed an agent
+follows the new gate end to end).
+
+- **`AGENTS.md`**: new `## Feature module lifecycle` section between `##
+Backend` and `## Internationalization`. Every backend feature work item —
+  and specifically creating / updating / deleting `apps/backend/src/app/<module>/`
+  — must (1) read `docs/database/` in the `erp-database-schema` protocol order,
+  (2) run the `.agents/skills/grill-me` design interview before writing code,
+  and (3) update `docs/database/` afterwards **when required** (table / column /
+  index / constraint change, new cross-module logical reference, or a
+  status / money / quantity / date / lifecycle rule change). Sync-back order is
+  `docs.dbml` → `gen-logical-references.ts` → `validate-dbml.ts`.
+- **`AGENTS.md`** `## Definition of done`: items 8–10 added (gates respected,
+  `docs.dbml` updated-or-recorded + validator `OK`, module deletion leaves no
+  orphans).
+- **`AGENTS.md`** `## How to update these docs`: paragraph making
+  `docs/database/` a same-change obligation, canonical over Drizzle.
+- **`.agents/docs/README.md`**: named the 5 companion MDs explicitly (the count
+  was right; the list was implicit) and pointed at the new gate.
+  **Correction:** an earlier edit in this same change bumped the count to "6"
+  on the assumption `implementation-phases.md` was uncounted. It was not —
+  `docs/database/` has exactly 5 MDs, and the "6" was wrong. Reverted.
+- **`.agents/docs/skills.md`**: `grill-me` added to the inventory as
+  *present, not in lock*, with the honest caveat that its `SKILL.md` delegates
+  to a `grilling` skill **that is not installed**.
+
+Verification actually run:
+
+```text
+Select-String docs/database/docs.dbml -Pattern '^// MODULE:'   → 26 markers
+Test-Path .agents/skills/grilling                              → False (absent, as documented)
+bun docs/database/validate-dbml.ts                             → parsed: 253 tables, 0 standalone refs
+                                                                  cross-module refs: 0
+                                                                  timestamp gaps: 0
+                                                                  OK   (exit 0)
+```
+
+`docs/database/` needed no change under the new rule: no table, column, index,
+constraint, logical reference, or status vocabulary was modified. Noted here
+rather than silently skipped.
+
+Known inaccuracy left in place, flagged not fixed: the new `## Feature module
+lifecycle` section describes the contract as 253 tables, the verified parser
+count; `docs/database/module-ownership.md`, `implementation-phases.md` and the
+`validate-dbml.ts` header comment still say **251** (`progress.md` line 481 above
+already recorded 253). The count is not the contract — a follow-up docs pass
+should reconcile 251 → 253 across the companions in one place.
+
+Also verified while checking: `gen-logical-references.ts` writes
+`logical-references.md` from `docs.dbml` using **absolute** paths
+(`B:/ims/erp/...`), as does `validate-dbml.ts`. Neither script had to run in
+this change (`docs/database/` was unchanged), so this was not exercised; the
+hardcoded root is a portability defect worth fixing separately.
+
 ## Completed (this session — backend tidy-up W1–W4, 2026-11-02)
 
 Conformance pass against the `/elysia-module`, `/elysia-tsyringe`,
-`/elysia-layered-architecture` and `/tsyringe` skills. Waves W1–W7 done;
-W8 (docs pass) in progress. **URLs changed** — backend and web-admin moved
+`/elysia-layered-architecture` and `/tsyringe` skills. Waves W1–W9 done;
+W8 (docs pass) complete. **URLs changed** — backend and web-admin moved
 together, nothing pushed.
 
 Remaining known follow-up (deliberately deferred, not forgotten): the
@@ -178,6 +235,148 @@ is now the documented seam where the two halves still meet.
   **9 passed, 0 failed**, idempotent across repeat runs.
 - Manual probes: `/username-availability` → 200; anon `/admin/users`,
   `/users/me` → 401; anon `/invitations/claim/<bad>` → 422.
+
+### W9 — controller mounting moved to `src/app/app.ts`
+
+`src/index.ts` no longer mounts controllers. It keeps the `register*`
+container calls, the i18n/CORS/logger plugins, `.listen()` and the avatar
+worker; `src/app/app.ts` owns every `.use(<Module>Controller.plugin())`
+inside an exported **`createApp()` factory**. A factory, not a module-level
+`const app`, because controllers resolve inside `plugin()`: an eager
+instance would build at import time and make correctness depend on hoisted
+import order between `app.ts` and `index.ts`.
+
+`app.ts` also hoists the two `await OpenAPI.*` calls to a module-level
+`betterAuthOpenApiDocument` so `/docs` stays a static snapshot while
+`createApp()` remains synchronous.
+
+**Corrected a wrong skill rule.** The `tsyringe` skill claimed "the current
+codebase imports no `reflect-metadata` and injection works. Do not add the
+polyfill speculatively". Removing the import to follow it crashed boot:
+
+```
+error: tsyringe requires a reflect polyfill. Please add 'import "reflect-metadata"'
+to the top of your entry point.
+  at node_modules/tsyringe/dist/cjs/index.js:5:15
+```
+
+tsyringe's CJS entry asserts `Reflect.getMetadata` at load; Bun's native
+`design:paramtypes` emission does not define it, so the guard fires on Bun
+too. The import is restored with a comment, and both skills now document the
+real mechanism instead of the "Bun needs no polyfill" myth.
+
+Skill bumps: `elysia-tsyringe` 1.0.0 → **1.1.0** (mount split + rule 2.5
+correction), `elysia-module` 1.1.0 → **1.2.0** (checklist §3.6 split),
+`tsyringe` 1.0.0 → **1.1.0** (rule 2.1 correction). Recorded in `skills.md`.
+
+Verification after the change: `bunx tsc --noEmit` → exit 0; `bun test` →
+**131 pass, 0 fail**; `bunx oxlint` → 0 errors, same 4 pre-existing warnings;
+`smoke-admin-api.ts` → **18/18**; `smoke-cache-invalidation.ts` → **9/9**;
+`/docs` → 200, anon `/users/me` and `/admin/users` → 401.
+
+### W10 — avatar worker lifecycle owned by the user module
+
+`src/index.ts` imported `./app/user/queues/avatar.worker` — the user module's
+*internals* — and owned the worker's lifecycle (`.on('error')`, `.close()`,
+SIGTERM). `app/user/` could not be lifted out without editing the composition
+root.
+
+Fixed without moving any file (the worker already lived in
+`app/user/queues/`):
+
+- `app/user/queues/avatar.worker.ts` — `startAvatarWorker()` now returns an
+  `AvatarWorkerHandle` (`onError`, `close`) instead of a raw BullMQ `Worker`.
+  The BullMQ event name, shutdown order and `Worker` type stay inside the
+  module; `index.ts` no longer depends on BullMQ at all.
+- `app/user/index.ts` (new) — public entry re-exporting `registerUser`,
+  `startAvatarWorker`, `AvatarWorkerHandle` and `avatarUserCreateHook`.
+  `index.ts` now imports `./app/user`, mirroring `./app/audit`.
+- `src/index.ts` — imports `{ registerUser, startAvatarWorker } from './app/user'`;
+  also removed a duplicated JSDoc block above `const bootstrap` left by W9.
+
+**Rejected:** a `src/app/queue-worker.ts` with a generic `startBullQueue()`
+mounted in `app/app.ts`. `app.ts` builds the HTTP app and returns an `Elysia`;
+a worker returns a process handle with deliberately **non-fatal** failure
+semantics. Merging them would repeat the mistake W9 undid, one layer up.
+
+`closeQueueConnection()` deliberately stays in `index.ts`: the queue
+connection is a shared provider, not the avatar worker's to close.
+
+**`docs/database/` reviewed, unchanged.** No table, column, index, constraint,
+cross-module reference or status vocabulary changed. The only column written is
+`auth.users.avatar_object_key` (already canonical at `docs.dbml:512`).
+`bun docs/database/validate-dbml.ts` → `parsed: 253 tables`, `cross-module
+refs: 0`, `timestamp gaps: 0`, `OK`, exit 0.
+
+`grill-me` gate: its `grilling` dependency is not installed in this repo, so the
+manual pass was run. Ownership → module owns worker lifecycle (above); tenant
+scoping / soft delete / money / datetime / status vocabulary / cross-module
+contracts → all unaffected by a lifecycle refactor.
+
+Skill: `elysia-module` 1.2.0 → **1.3.0** (§3.6 gained a worker-handle step and
+the "do not mount workers on `app/app.ts`" rule); `elysia-layered-architecture`
+1.1.0 → **1.2.0** (rule 1.2 reference now states the lifecycle contract).
+
+Verification: `bunx tsc --noEmit` → exit 0; `bun test` → **131 pass, 0 fail**;
+`bunx oxlint` → 0 errors, same 4 pre-existing warnings; `smoke-admin-api.ts` →
+**18/18**; `smoke-cache-invalidation.ts` → **9/9**; `/docs` → 200, anon
+`/users/me` → 401.
+
+### W11 — background workers go through one registry
+
+Anticipated second queue (`elysia-module` §3.6 now requires this seam).
+`src/index.ts` had one `const` per worker plus a `SIGTERM` branch per worker;
+adding a queue meant editing the composition root three times.
+
+New `src/providers/queue/worker-registry.ts` — a **collector, not a container**:
+`startWorkers([...], onError)` attaches the shared failure sink, `stopWorkers()`
+closes them all. Modules still own their workers; the registry only delegates.
+
+- `QueueWorker` = `{ onError, close }` is the shared contract;
+  `AvatarWorkerHandle` is now an alias of it, so the registry never imports the
+  user module.
+- `stopWorkers()` uses `Promise.allSettled` — one worker hanging on `close()`
+  must not block the others or hold up exit. Failed closes are returned and
+  logged.
+- `startWorkers()` throws on a second call instead of leaking the first set.
+- Construction stays at the call site (after `registerProvider` +
+  `register<Module>`). A registry that resolved its own workers would move
+  correctness back into import order — the failure mode `createApp()` avoids.
+- `closeQueueConnection()` stays in `index.ts` and still runs **after**
+  `stopWorkers()`: the shared connection must outlive the workers draining.
+- Rejected the names `app/queue-worker.ts` and `startBullQueue()`: `app/` is
+  feature modules, and "start queue" would be wrong for a producer-only queue.
+
+Adding a queue is now one array entry in `index.ts`.
+
+Tests: `test/unit/worker-registry.test.ts` (6) cover sink forwarding,
+double-start rejection, restart-after-stop, `allSettled` isolation when one
+close throws, and the empty case.
+
+New live probe `scripts/smoke-avatar-worker.ts`: dispatches a job and asserts
+the worker **consumed** it. Important limitation found while writing it —
+avatar rendering calls DiceBear, exposed only as an internal Compose service
+(`http://dicebear:3000`, no published port), so a bare local `bun run dev`
+cannot complete a render: the job is consumed and then fails `ECONNREFUSED` to
+DiceBear. The probe therefore asserts consumption, not the rendered image, and
+the runbook documents why.
+
+**`docs/database/` reviewed, unchanged** — no schema change.
+`validate-dbml.ts` → `253 tables`, `0 cross-module refs`, `0 timestamp gaps`, `OK`.
+
+`grill-me` gate: `grilling` is not installed; manual pass run. No tenant
+scoping, soft delete, money/datetime, status vocabulary or cross-module
+contract is touched by a worker-lifecycle refactor.
+
+Skills: `elysia-module` 1.3.0 → **1.4.0** (§3.6 now names the registry and the
+shared `QueueWorker` shape); `elysia-layered-architecture` 1.2.0 → **1.3.0**
+(rule 1.2 reference documents the registry contract and `allSettled`).
+
+Verification: `bunx tsc --noEmit` → exit 0; `bun test` → **137 pass, 0 fail**
+(131 + 6 new); `bunx oxlint` → 0 errors, same 4 pre-existing warnings;
+`smoke-admin-api.ts` → **18/18**; `smoke-cache-invalidation.ts` → **9/9**;
+`smoke-avatar-worker.ts` → **consumed**, re-runnable; `/docs` → 200, anon
+`/users/me` → 401.
 
 ## Completed (this session — multi-organization, 2026-11-02)
 

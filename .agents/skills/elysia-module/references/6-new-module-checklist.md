@@ -13,10 +13,13 @@ Creating a module means, in order:
    — except auth-projecting modules (rule 3.3), which have no schema file.
 4. `container.ts` exporting `register<Module>(container)`, called in
    `src/index.ts` after provider registration
-5. If the module calls an external system, define the port (interface) in
+5. The controller's `plugin()` mounted in `src/app/app.ts` via
+   `createApp()` — registration and mounting deliberately live in different
+   files (see `elysia-tsyringe` rule 2.3)
+6. If the module calls an external system, define the port (interface) in
    `contracts/` first and implement it in `services/` — before writing
    any call site (see the layered-architecture skill, rule 1.2).
-6. No edits to other modules' code. If another module must cooperate,
+7. No edits to other modules' code. If another module must cooperate,
    invert: the other module exposes a token/service, or (later) a domain
    event.
 
@@ -37,7 +40,8 @@ drizzle/schemas/location.schema.ts  # pgSchema('location'), 4 tables
 ```
 
 Registered in `src/index.ts`: `registerProvider(container)` →
-`registerLocation(container)` → `.use(LocationController.plugin())`.
+`registerLocation(container)`. Mounted in `src/app/app.ts` inside
+`createApp()`: `.use(LocationController.plugin())`.
 
 `src/app/user/` is the reference for the two variations — an
 auth-projecting module (no schema file, rule 3.3) with an external-system
@@ -69,6 +73,8 @@ src/app/user/
   module.
 - Registering the module but mounting no controller, or mounting routes
   without registering (resolution failures at first request).
+- Mounting a controller from `src/index.ts`, or registering a container from
+  `src/app/app.ts` — inverting the split makes both files harder to audit.
 - "Just one small change" in another module to make wiring easier — the
   beginning of the entanglement this skill prevents.
 - Calling `auth.api`/SDKs inline first and "extracting a port later" —

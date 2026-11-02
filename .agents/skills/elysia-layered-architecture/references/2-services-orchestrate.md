@@ -89,6 +89,18 @@ its DI token at bootstrap and writes through it — never raw `drizzleDB`
 inside a queue processor, or cache invalidation and soft-delete filtering
 are lost.
 
+The worker's *lifecycle* is module-owned too. `startAvatarWorker()` returns a
+narrow handle — `{ onError, close }`, structurally the shared `QueueWorker`
+contract — re-exported from the module's `index.ts`. `src/index.ts` hands every
+module's handle to one `startWorkers([...])` array
+(`@providers/queue/worker-registry`) and stops them all on `SIGTERM`, so the
+composition root knows nothing about BullMQ event names or shutdown ordering
+and a new queue costs one array entry. A worker's failure must stay non-fatal
+to the HTTP app, which is why workers are not mounted on `src/app/app.ts`.
+`stopWorkers()` uses `allSettled`: one worker hanging on `close()` must not
+block the others or hold up exit. The registry aggregates, it never constructs
+— building a worker inside it would hide the registration-order dependency.
+
 ## Anti-patterns
 
 - `this.database.select()` inside a service.

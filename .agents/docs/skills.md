@@ -25,12 +25,13 @@ not in lock** (local/project-specific additions), **n/a** (not installed).
 | drizzle-unix-timestamp | present, not in lock | project datetime convention (bigint ms, `unix-timestamp.ts`) |
 | drizzle-soft-deletes | present, not in lock | `deleted_at` never-hard-delete convention |
 | bun-test | present, not in lock | `bun test` conventions: mocked DB/Redis via constructor injection, no network (local, https://bun.com/docs/test) |
-| tsyringe | present, not in lock | project DI convention: Symbol tokens, composition root, transient default, resolution at HTTP boundary (local) |
+| tsyringe | present, not in lock | project DI convention: Symbol tokens, composition root, transient default, resolution at HTTP boundary (local) — v1.1.0 (2026-11-02): rule 2.1 corrected — the `reflect-metadata` polyfill **is** required on Bun (tsyringe throws at load without `Reflect.getMetadata`); the earlier "Bun needs no polyfill" claim was wrong and broke boot when removed |
 | dbml-database-docs | present, not in lock | DBML as canonical schema-doc format; `docs/database/docs.dbml` (local; format skill) |
 | erp-database-schema | present, not in lock | project schema reader: read protocol over `docs/database/` before any DB-touching work (local) |
-| elysia-layered-architecture | present, not in lock | controller/service/repository layering per Elysia domain (local) — v1.1.0 (2026-10-30): external-system ports in contracts/, module-owned queues/, `/me`-before-`/:id` ordering + `erp: {}` macro typing quirk; user module as secondary example |
-| elysia-module | present, not in lock | modular monolith boundaries, one schema per module (local) — v1.1.0 (2026-10-30): write-surface invariant for auth-projecting repos (user = `deletedAt`-only, rest via Better Auth gateway), `@better-auth/cli` 1.4.x regression caveat, `queues/` in checklist; user module as secondary example |
-| elysia-tsyringe | present, not in lock | wiring Elysia controllers to tsyringe, plugin factories, DI tokens (local) |
+| grill-me | present, not in lock | planning aid: a relentless interview to sharpen a plan before implementation; `disable-model-invocation: true`, so agents must be told to run it (requirement in root `AGENTS.md`, **Feature module lifecycle**). Its `SKILL.md` delegates to a `grilling` skill that is **not installed in this repo** — until it is, the interview must be run manually |
+| elysia-layered-architecture | present, not in lock | controller/service/repository layering per Elysia domain (local) — v1.1.0 (2026-10-30): external-system ports in contracts/, module-owned queues/, `/me`-before-`/:id` ordering + `erp: {}` macro typing quirk; user module as secondary example. v1.2.0 (2026-11-02): background-job lifecycle is module-owned (worker handle `{ onError, close }` exported from the module, not mounted on `app/app.ts`). v1.3.0 (2026-11-02): handles aggregate through `@providers/queue/worker-registry` (`startWorkers`/`stopWorkers`, `allSettled`) |
+| elysia-module | present, not in lock | modular monolith boundaries, one schema per module (local) — v1.1.0 (2026-10-30): write-surface invariant for auth-projecting repos (user = `deletedAt`-only, rest via Better Auth gateway), `@better-auth/cli` 1.4.x regression caveat, `queues/` in checklist; user module as secondary example. v1.2.0 (2026-11-02): new-module checklist §3.6 splits registration (`src/index.ts`) from mounting (`src/app/app.ts`). v1.3.0 (2026-11-02): module owns background-job lifecycle — export a worker handle (`{ onError, close }`) from `index.ts`; workers are never mounted on `src/app/app.ts`. v1.4.0 (2026-11-02): handles are registered in one `startWorkers([...])` array from `@providers/queue/worker-registry`; adding a queue is one array entry |
+| elysia-tsyringe | present, not in lock | wiring Elysia controllers to tsyringe, plugin factories, DI tokens (local) — v1.1.0 (2026-11-02): controllers mount in `src/app/app.ts` via a `createApp()` factory, not in `src/index.ts`; rule 2.5 corrected — `reflect-metadata` is required on Bun because tsyringe's CJS entry checks `Reflect.getMetadata` at load |
 | tanstack-router-auth | present, not in lock | web-admin authenticated-routes pattern: `_authed` guard + redirect preservation + `/users/me` session-user flow (local; derived from tanstack.com/router authenticated-routes guide, 2026-10-30) |
 | elysiajs | env-provided | Elysia v2 routes/plugins/typed clients (not on disk) |
 | zod | installed | schema validation, error handling (pproenca/dot-skills) |
@@ -82,10 +83,12 @@ v1.1.0 by decision — this section is the canonical record.
 
 - No skill installed for PostgreSQL/SQL review beyond the Drizzle ones;
   rely on `data-model.md` and the testing strategy for now.
-- `skills-lock.json` does not track the three project-specific skills
-  (`drizzle-unix-timestamp`, `drizzle-soft-deletes`, `tsyringe`); they are
-  intentionally local. Update the lockfile
-  via its supported mechanism only if their provenance should be pinned.
+- `skills-lock.json` does not track the project-specific skills
+  (`drizzle-unix-timestamp`, `drizzle-soft-deletes`, `bun-test`, `tsyringe`,
+  `elysia-layered-architecture`, `elysia-module`, `elysia-tsyringe`,
+  `tanstack-router-auth`, `dbml-database-docs`, `erp-database-schema`); they
+  are intentionally local. Update the lockfile via its supported mechanism
+  only if their provenance should be pinned.
 
 ## Rules
 

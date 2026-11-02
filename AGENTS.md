@@ -38,7 +38,7 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
 | --------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `bun install`                                                   | repo root                         | ✅ verified 2026-10-28/29 — clean installs (nest removal, dicebear add)                                                                                                                    |
 | `bun run dev`                                                   | repo root                         | ✅ verified 2026-10-29 — `turbo run dev`; live HTTP bring-up (auth 200, Redis, 401 envelope)                                                                                               |
-| `bun run lint` / `test` / `typecheck`                           | repo root, fans out per workspace | ✅ verified 2026-10-28→30 — backend 78/78 tests, typecheck clean                                                                                                                           |
+| `bun run lint` / `test` / `typecheck`                           | repo root, fans out per workspace | ✅ verified 2026-11-02 — backend 131/131, web-admin 21/21, typecheck clean                                                                                                                 |
 | `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend`                    | ✅ verified 2026-10-29/30 — migrations applied; seed idempotent (run twice). All use `bunx --bun drizzle-kit`; the `--bun` flag is required because the DB driver is `drizzle-orm/bun-sql` |
 
 > The previous NestJS backend (`apps/backend-nest`, package `backend`) was
@@ -54,11 +54,12 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
   `RedisClient` cache.
   Do not add a second ORM, auth system, or package manager. Do not fall back
   from Relational v2 (drizzle-orm 1.0.0-rc.5 channel) to v1 relations.
-- **Domain boundaries.** `apps/backend/src/app/<domain>/` owns its
-  domain. Routes/controllers do HTTP only; services own use cases;
-  repositories own Drizzle queries. HTTP layer never imports Drizzle directly.
-  Cross-domain access goes through exported service/contract APIs only —
-  never another domain's repository.
+- **Domain boundaries.** `apps/backend/src/app/<module>/` owns its module.
+  Controllers do HTTP only; services own use cases; repositories own Drizzle
+  queries. No controller or service may inject `DRIZZLE_TOKEN` — if a service
+  needs data it does not have, add a repository method, not a query.
+  Cross-module access goes through the owning module's exported contract or
+  service via DI token, never another module's repository.
 - **Auth and ownership are server-side facts.** Every endpoint enforces
   role permissions and record ownership, including exports. Frontend permission
   checks are UX only.
@@ -94,6 +95,129 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
 accepted / blocked`. Automated tests passing is not business acceptance.
 - **Statuses live in `.agents/docs/progress.md` and `backlog.md`.** Update
   them (and `progress.md`'s "next task") when you stop working.
+
+## Backend (`apps/backend`)
+
+Boundary changes are reviewed against four skills. Read the relevant one
+**before** editing a module, not after:
+
+| Skill                       | Governs                                                                     |
+| --------------------------- | --------------------------------------------------------------------------- |
+| `elysia-module`             | module folder set, one Postgres schema per module, what may cross a boundary |
+| `elysia-layered-architecture` | controller/service/repository split, queues, external-system ports        |
+| `elysia-tsyringe`           | module containers, composition root, resolve at the HTTP boundary            |
+| `tsyringe`                  | `InjectionToken<T>` typing, constructor injection, lifetimes                 |
+
+**Module shape.** `app/<module>/` = `container.ts` exporting
+`register<Module>(container)`, optional `index.ts` public entry, `contracts/`
+(interfaces + zod), `constants/di.ts`, `repositories/`, `services/`,
+`controllers/`, optional `queues/`. Controllers only — there is **no `routes/`
+directory**.
+
+**Registration and mounting are split across two files.** `src/index.ts`
+calls each `register<Module>(container)` and applies the cross-cutting
+plugins (i18n, CORS, logger) before `.listen()`. `src/app/app.ts` owns every
+`.use(<Module>Controller.plugin())` inside a `createApp()` **factory** — not
+a module-level `const app`. Controllers resolve inside `plugin()`, so the
+container must be populated first; an eagerly-built instance would make
+correctness depend on hoisted import order between the two files. Adding an
+endpoint means registering in `index.ts`, mounting in `app/app.ts`.
+
+**Shared layers — never re-implement per module:**
+
+- `src/http/response.ts` — `ok` / `created` / `noContent` / `okPaginated` /
+  `errorEnvelope`. Success envelopes omit `errors`; `errorEnvelope` always
+  carries it. `noContent()` returns **200**, not 204, so existing clients keep
+  parsing.
+- `src/http/errors.ts` — `AppError` base, `DomainHttpError`,
+  `NotGlobalAdminError`, `toErrorResponse`. New domain errors extend `AppError`.
+- `src/http/plugin.ts` — `domainPlugin({ name, prefix, tags, guards })`. Never
+  hand-roll `new Elysia()` plus guard wiring. Guards:
+  `none | session | erp | erp+session`.
+- `src/di/tokens.ts` — `DRIZZLE_TOKEN` / `REDIS_TOKEN`, re-exported by
+  `di/provider.ts`. Token types come from the real contract; a bare `Symbol()`
+  without `InjectionToken<T>` is a defect.
+
+**URL layout.** Admin surfaces live under `/admin/*` (`/admin/users`,
+`/admin/roles`, `/admin/audit`, `/admin/invitations`). Self-service `/users/me*`
+and the public `/invitations/claim/:token`, `/username-availability` stay
+un-prefixed — they must not inherit the admin guard. Route moves change the
+backend **and** `apps/web-admin` (typed calls, sidebars, `routeTree.gen.ts` in
+the same change); a backend-only move is an incomplete change.
+
+## Feature module lifecycle
+
+Creating, updating, or deleting a feature module — and any backend feature
+work that adds or changes endpoints, services, repositories, Drizzle schemas,
+or migrations — passes through two gates **before** code and one **after** it.
+The schema contract is 253 tables across 24 modules; nobody holds it in their
+head, and inventing a column or a cross-module link is the most expensive
+mistake available here.
+
+**Gate 1 — read `docs/database/` first.** The read protocol is owned by the
+`erp-database-schema` skill; follow its order:
+
+1. `docs/database/docs.dbml` — canonical persistence contract. Never read its
+   ~7,300 lines linearly: `grep -n "^// MODULE:" docs/database/docs.dbml`,
+   then read the header note and the tables of your module plus the tables of
+   any module you reference.
+2. `docs/database/module-ownership.md` — who owns which schema, the cross-module
+   contract methods (`resolveX` / `assertXOwnedBy`), the one two-schema
+   exception (Inventory: `warehouse` + `inventory`).
+3. `docs/database/integrity-and-consistency.md` — FK policy, soft delete,
+   uniqueness, concurrency, status vocabularies.
+4. `docs/database/data-dictionary.md` — column conventions (uuid pk, tenant
+   column, datetimes, money, quantity, codes).
+5. `docs/database/logical-references.md` — mandatory when the change crosses a
+   module boundary.
+6. `docs/database/implementation-phases.md` — only when the task depends on a
+   step that has not landed yet.
+
+Say which of these you skipped and why. `docs/database/docs.dbml` is canonical:
+when a Drizzle schema file and `docs.dbml` disagree, `docs.dbml` wins and the
+Drizzle file is the bug.
+
+**Gate 2 — grill the design with the `grill-me` skill.** Run
+`.agents/skills/grill-me` on the plan before writing code: a relentless
+interview to sharpen a design, not a rubber stamp. Its frontmatter sets
+`disable-model-invocation: true`, so it must be invoked explicitly — that is
+what this rule is for.
+
+- Its `SKILL.md` delegates to a `grilling` skill that is **not installed in
+  this repo**. If `grilling` is unavailable, run the same relentless-question
+  pass manually over: module ownership, tenant scoping (`organization_id`),
+  soft delete (`deleted_at`), money/datetime/bigint column types, cross-module
+  contract methods for every logical reference, and status vocabulary. Record
+  the resolved answers before implementing.
+
+**After implementation — `docs/database/` is updated when required.** "May" is
+not permission to skip; it is the condition below. A docs update is **required**
+when the change:
+
+- adds, changes, or removes a table, column, index, or constraint, or moves a
+  table between schemas;
+- adds a cross-module link — a plain id column carrying the standard logical
+  reference note and a contract method on the owning side;
+- changes a status vocabulary, a money/quantity/date column type, or a
+  lifecycle rule.
+
+When none of those changed, record one line in `progress.md` stating
+`docs/database/` was reviewed and is unchanged. **Deleting a module** also
+means removing its tables from `docs.dbml`, re-running both generators, and
+deleting its locale keys — an orphaned table or logical reference left behind
+is an incomplete deletion.
+
+**Sync-back order — always this order:**
+
+```text
+edit docs/database/docs.dbml   # canonical; edit before Drizzle
+bun docs/database/gen-logical-references.ts
+bun docs/database/validate-dbml.ts   # must print OK: 0 cross-module refs, 0 timestamp gaps
+```
+
+A non-zero exit from `validate-dbml.ts` means the module work is not done.
+Migrations remain append-only (see **Hard rules** above); `docs.dbml` describes
+the target, and each migration step lands its module in one append-only step.
 
 ## Internationalization
 
@@ -177,6 +301,14 @@ call sites.
 6. The phase exit criteria in `.agents/docs/phases/<current-phase>.md` that
    apply to the task are all met, or the task is left explicitly partial.
 7. No secrets printed or committed.
+8. The **Feature module lifecycle** gates were respected: `docs/database/` was
+   read and the `grill-me` pass (or its documented manual fallback) completed
+   before coding, with its answers recorded.
+9. `docs/database/docs.dbml` is updated, or `progress.md` records that it was
+   reviewed and needed no change — and `bun docs/database/validate-dbml.ts`
+   printed `OK`.
+10. A deleted module leaves no orphaned tables, logical references, locale
+    keys, container registrations, or mounts.
 
 ## How to update these docs
 
@@ -184,10 +316,19 @@ Update the existing file that owns the topic — do not create contradictory
 duplicates. Keep documents short and synchronized with verified code. Meaningful
 architectural choices get a short ADR in `.agents/docs/decisions/`. When a doc
 and the code disagree, fix whichever is wrong and note it in `progress.md`.
+
+`docs/database/` is the persistence contract and is updated in the **same**
+change as any structural change to a module — never in a follow-up commit.
+Edit `docs.dbml` before the Drizzle schemas, because it is canonical, then run
+`gen-logical-references.ts` and `validate-dbml.ts` (see **Feature module
+lifecycle**).
+
 Changes to the skill set go through the existing skill manager and must be
 recorded in `skills.md` (source, version, hash) alongside `skills-lock.json`.
-Nested `AGENTS.md` files are only added when directory-specific rules genuinely
-help; keep this root file authoritative.
+The backend skills are `elysia-module`, `elysia-layered-architecture`,
+`elysia-tsyringe` and `tsyringe`; read the matching one before changing a
+module's boundaries. Nested `AGENTS.md` files are only added when
+directory-specific rules genuinely help; keep this root file authoritative.
 
 <!-- BEGIN:turborepo-agent-rules -->
 
