@@ -30,6 +30,7 @@ import {
 	MovementNotFoundError,
 	WarehouseNotFoundError,
 } from './inventory.errors';
+import type { TTx } from '@drizzle/types';
 
 /** Movement types that decrease stock. Every other type increases it. */
 export { isOutbound } from '../constants/movement-direction';
@@ -162,11 +163,24 @@ export class StockService {
 	 * Appends a movement and applies its delta to the balance, atomically.
 	 *
 	 * @param input - The movement to post
+	 * @param tx - An outer transaction to join.
 	 * @returns The movement and the resulting balance
 	 * @throws {WarehouseNotFoundError} When the warehouse is absent
 	 * @throws {InsufficientStockError} When an outbound move would go below zero
+	 *
+	 * @remarks
+	 * `tx` exists for callers that must commit the movement **with** something
+	 * else. The borrowing flow is the only one today: issuing a unit writes the
+	 * unit's custody, the ledger row, the balance delta, and the timeline event
+	 * and none of those may commit alone. Passing an outer handle makes this
+	 * method join that transaction instead of opening a nested one (Drizzle
+	 * would treat a nested `database.transaction` as a savepoint, so a rollback
+	 * of the outer unit-of-work would not undo a committed movement).
 	 */
-	async postMovement(input: TPostMovementInput): Promise<TPostedMovement> {
+	async postMovement(
+		input: TPostMovementInput,
+		tx?: TTx,
+	): Promise<TPostedMovement> {
 		const { scopeOrganizationId } = await this.resolveScope(input.warehouseId);
 		const outbound = isOutbound(input.movementType);
 		const occurredAt = input.occurredAt ?? new Date();
@@ -182,7 +196,7 @@ export class StockService {
 		// leave a posted movement with no matching balance, or vice versa —
 		// that divergence is exactly what recomputeFromLedger would have to
 		// repair later.
-		return this.database.transaction(async (tx) => {
+		const run = async (handle: TTx): Promise<TPostedMovement> => {
 			// Negative stock is refused for every type. Checked INSIDE the
 			// transaction so the read reflects any concurrent commit that just
 			// landed, rather than a snapshot taken before the transaction began.
@@ -215,7 +229,7 @@ export class StockService {
 					createdBy: input.createdBy ?? null,
 					notes: input.notes ?? null,
 				},
-				tx,
+				handle,
 			);
 
 			const balance = await this.balanceRepository.applyDelta(
@@ -224,11 +238,13 @@ export class StockService {
 					quantity: outbound ? negate(input.quantity) : input.quantity,
 					occurredAt,
 				},
-				tx,
+				handle,
 			);
 
 			return { movement, balance, scopeOrganizationId };
-		});
+		};
+
+		return tx ? run(tx) : this.database.transaction(run);
 	}
 
 	/**

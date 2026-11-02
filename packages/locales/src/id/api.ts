@@ -110,6 +110,25 @@ const api: Record<keyof typeof en, string> = {
 	'auth.ownerGrantRequired':
 		'Hanya pemilik organisasi yang dapat memberikan peran pemilik',
 	'auth.roleNotGrantable': 'Peran tidak dapat diberikan: {{roles}}',
+
+	// Borrowing (S4)
+	'inventory.borrowingNotFound': 'Peminjaman tidak ditemukan',
+	'inventory.borrowingLineNotFound': 'Baris peminjaman tidak ditemukan',
+	'inventory.unitNotOnBorrowing':
+		'Unit tersebut tidak dipinjamkan pada peminjaman ini',
+	'inventory.borrowingTransition':
+		'Perubahan status tersebut tidak diizinkan untuk peminjaman ini',
+	'inventory.borrowingCodeTaken':
+		'Tidak dapat membuat kode peminjaman yang unik',
+	'inventory.borrowingHasNoLines':
+		'Peminjaman harus memiliki minimal satu baris',
+	'inventory.unitNotAvailable': 'Unit tersebut tidak dapat dipinjamkan',
+	'inventory.borrowerIdentity':
+		'Identitas peminjam tidak sesuai dengan tipe peminjam',
+	'inventory.guestIdentityIncomplete':
+		'Peminjam tamu belum melengkapi data identitas wajib',
+	'inventory.borrowingSelfApprovalForbidden':
+		'Anda tidak dapat menyetujui peminjaman Anda sendiri',
 };
 
 export default api;

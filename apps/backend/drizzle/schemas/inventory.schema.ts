@@ -709,9 +709,17 @@ export const stockAdjustmentItems = inventorySchema.table(
  * references for no gain (ADR-0009).
  *
  * `warehouse_id` is NULL while the unit is borrowed or lost — custody moves
- * to the borrower. `current_borrowing_line_id` is deliberately **not**
- * declared here: it closes a cycle with `borrowing_lines` and is added by a
- * later migration.
+ * to the borrower. `current_borrowing_line_id` points at the open line while
+ * the unit is out, so the return flow finds its line without scanning.
+ *
+ * **The FK cycle is declared, but the constraint is not emitted by
+ * `drizzle-kit generate`.** `serial_tracked_items → borrowing_lines` and
+ * `borrowing_lines → serial_tracked_items` are mutually referential: no
+ * `CREATE TABLE` order satisfies both. The column and index are generated
+ * normally; the foreign key is added by a hand-written `ALTER TABLE` in the
+ * migration and is intentionally absent from this table declaration so the
+ * two definitions cannot disagree. Adding `.references()` here would make
+ * `generate` emit a duplicate constraint and fail on `migrate`.
  */
 export const serialTrackedItems = inventorySchema.table(
 	'serial_tracked_items',
@@ -750,6 +758,11 @@ export const serialTrackedItems = inventorySchema.table(
 		customerId: uuid('customer_id'),
 		/** Logical reference to inventory.stock_movements.id (last touch). */
 		stockMovementId: uuid('stock_movement_id'),
+		/**
+		 * The open borrowing line this unit is currently out on, or `NULL` when
+		 * it is not borrowed. FK added by migration (see table doc comment).
+		 */
+		currentBorrowingLineId: uuid('current_borrowing_line_id'),
 		notes: text('notes'),
 		...softDeleteTimestamps,
 	},
@@ -764,6 +777,9 @@ export const serialTrackedItems = inventorySchema.table(
 		index('serial_tracked_items_status_idx').on(table.status),
 		index('serial_tracked_items_warehouse_id_idx').on(table.warehouseId),
 		index('serial_tracked_items_asset_tag_idx').on(table.assetTag),
+		index('serial_tracked_items_current_borrowing_line_id_idx').on(
+			table.currentBorrowingLineId,
+		),
 		check(
 			'serial_tracked_items_status_check',
 			sql`status IN ('pre_order', 'in_stock', 'borrowed', 'lost', 'sold', 'applied_warranty')`,
@@ -986,9 +1002,11 @@ export const borrowingEvents = inventorySchema.table(
 
 /**
  * Relations are declared per schema file and combined in `db.ts`.
- * `borrowing_lines` deliberately has no relation to
- * `serial_tracked_items.current_borrowing_line_id` — that column arrives in a
- * later migration to break the FK cycle.
+ *
+ * `serial_tracked_items.current_borrowing_line_id` has no relation declared
+ * here on purpose: it is the return leg of the FK cycle documented on
+ * `serialTrackedItems`. Queries that need the open line join on the column
+ * directly; the borrowing flow reaches units through `borrowingLines.unit`.
  */
 export const inventoryRelations = defineRelationsPart(
 	{

@@ -67,6 +67,12 @@ const DYNAMIC_PREFIXES = [
 	'inventory:movements.status.',
 	'inventory:adjustments.type.',
 	'inventory:adjustments.status.',
+	// S4 borrowing workflow: status, purpose, condition, and event type all
+	// arrive as server values, so the label key has to be composed.
+	'inventory:borrowingStatus.',
+	'inventory:borrowingPurpose.',
+	'inventory:borrowingCondition.',
+	'inventory:borrowingEvent.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

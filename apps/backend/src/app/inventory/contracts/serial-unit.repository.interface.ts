@@ -3,6 +3,7 @@ import type {
 	TSerialTrackedItemSelect,
 	UnitStatus,
 } from '@drizzle/schemas/inventory.schema';
+import type { TTx } from '@drizzle/types';
 
 /** Pagination + status filter for a unit list. */
 export type TUnitPaginationRequest = {
@@ -66,4 +67,34 @@ export interface ISerialUnitRepository {
 		id: string,
 		status: UnitStatus,
 	): Promise<TSerialTrackedItemSelect | null>;
+
+	/**
+	 * Moves a unit's custody to a borrower.
+	 *
+	 * @returns The updated unit, or `null` when it was not `in_stock`
+	 */
+	issueToBorrower(
+		id: string,
+		borrowingLineId: string,
+		tx?: TTx,
+	): Promise<TSerialTrackedItemSelect | null>;
+
+	/**
+	 * Restores a borrowed unit to a warehouse.
+	 *
+	 * @returns The updated unit, or `null` when it was not `borrowed`
+	 */
+	returnFromBorrower(
+		id: string,
+		warehouseId: string,
+		binId: string | null,
+		tx?: TTx,
+	): Promise<TSerialTrackedItemSelect | null>;
+
+	/**
+	 * Marks a borrowed unit lost.
+	 *
+	 * @returns The updated unit, or `null` when it was not `borrowed`
+	 */
+	markLost(id: string, tx?: TTx): Promise<TSerialTrackedItemSelect | null>;
 }

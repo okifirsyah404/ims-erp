@@ -154,6 +154,10 @@ function makeService(seed?: {
 			row.status = status;
 			return row;
 		},
+		// Borrowing custody methods: unused by the item suite.
+		issueToBorrower: async () => null,
+		returnFromBorrower: async () => null,
+		markLost: async () => null,
 	};
 
 	return {

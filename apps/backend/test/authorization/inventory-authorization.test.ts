@@ -141,6 +141,17 @@ beforeAll(async () => {
 		async updateStatus() {
 			return null;
 		},
+		// Borrowing custody methods: unused by this suite, but the contract
+		// requires them so the compiler keeps the mock honest.
+		async issueToBorrower() {
+			return null;
+		},
+		async returnFromBorrower() {
+			return null;
+		},
+		async markLost() {
+			return null;
+		},
 	};
 
 	// Import after mocks are installed (bun mock.module is hoist-sensitive).

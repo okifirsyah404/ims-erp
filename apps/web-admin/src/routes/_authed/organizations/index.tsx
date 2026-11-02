@@ -1,10 +1,15 @@
+import { toast } from '@/components/toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { toast } from '@/components/toast';
 
-import { Button } from '@ims-erp/ui/components/button';
+import { useSession } from '@/lib/auth-client';
+import {
+	organizationsQueryOptions,
+	restoreOrganization,
+} from '@/lib/organization-api';
 import { Badge } from '@ims-erp/ui/components/badge';
+import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
 	CardContent,
@@ -12,8 +17,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import { organizationsQueryOptions, restoreOrganization } from '@/lib/organization-api';
-import { useSession } from '@/lib/auth-client';
 
 export const Route = createFileRoute('/_authed/organizations/')({
 	component: OrganizationsPage,
@@ -69,7 +72,7 @@ function OrganizationsPage() {
 							className='group'
 						>
 							<Card className='h-full transition-shadow group-hover:shadow-md'>
-								<CardHeader className='flex-row items-center gap-3 space-y-0'>
+								<CardHeader className='flex items-center gap-3 space-y-0'>
 									<div className='flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted'>
 										{org.logo ? (
 											<img
@@ -83,16 +86,23 @@ function OrganizationsPage() {
 											</span>
 										)}
 									</div>
-									<CardTitle className='truncate text-base'>
-										{org.name}
-									</CardTitle>
+									<div className='flex flex-col gap-0.5'>
+										<CardTitle className='truncate text-base'>
+											{org.name}
+										</CardTitle>
+										<p className='text-sm text-muted-foreground truncate'>
+											{org.slug}
+										</p>
+									</div>
 								</CardHeader>
 								<CardContent className='text-sm text-muted-foreground'>
 									<p className='truncate'>{org.slug}</p>
 								</CardContent>
 								<CardFooter className='justify-between'>
 									{org.deletedAt ? (
-										<Badge variant='destructive'>{t('orgs.deletedBadge')}</Badge>
+										<Badge variant='destructive'>
+											{t('orgs.deletedBadge')}
+										</Badge>
 									) : (
 										<Badge variant='secondary'>{t('orgs.activeBadge')}</Badge>
 									)}

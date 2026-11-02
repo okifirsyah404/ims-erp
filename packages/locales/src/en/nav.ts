@@ -9,6 +9,7 @@ const nav = {
 
 	'item.warehouses': 'Warehouses',
 	'item.stock': 'Stock',
+	'item.borrowings': 'Borrowings',
 	'item.items': 'Items',
 	'item.products': 'Products',
 	'item.components': 'Components',

@@ -14,6 +14,7 @@ import { elysiaApp } from './app/app';
 import { AuditController, registerAudit } from './app/audit';
 import {
 	AdjustmentController,
+	BorrowingController,
 	ItemController,
 	StockController,
 	WarehouseController,
@@ -38,6 +39,11 @@ import { UserAdminController } from './app/user-management/controllers/user-admi
 import { registerUser } from './app/user/container';
 import { UserController } from './app/user/controllers/user.controller';
 import { startAvatarWorker } from './app/user/queues/avatar.worker';
+import {
+	createSchedulerQueue,
+	registerSweepSchedules,
+} from './providers/queue/inventory-scheduler.queue';
+import { startInventorySchedulerWorker } from './providers/queue/inventory-scheduler.worker';
 import { registerAuthorization } from './authorization/container';
 registerProvider(container);
 registerLocation(container);
@@ -107,6 +113,7 @@ const bootstrap = new Elysia()
 	.use(WarehouseController.plugin())
 	.use(StockController.plugin())
 	.use(AdjustmentController.plugin())
+	.use(BorrowingController.plugin())
 	// Admin surfaces share the `/admin` prefix, so their routes no longer
 	// overlap the self-service `/users/*` routes: mount order is irrelevant
 	// here (before the split, both modules registered `GET /users` and the
@@ -136,8 +143,23 @@ avatarWorker.on('error', (error) => {
 	pinoLogger.error({ err: error }, 'avatar worker error');
 });
 
+// Recurring sweeps (S4): late returns and guest-PII retention. `null` when
+// `scheduler.enabled` is false, which is the default for tests and scripts, so
+// booting with no Redis still works as before.
+const inventoryScheduler = startInventorySchedulerWorker();
+if (inventoryScheduler) {
+	inventoryScheduler.worker.on('error', (error) => {
+		pinoLogger.error({ err: error }, 'inventory scheduler error');
+	});
+	await registerSweepSchedules(createSchedulerQueue());
+	pinoLogger.info('inventory scheduler registered (late sweep + PII retention)');
+}
+
 process.on('SIGTERM', async () => {
+	// Stop accepting jobs, then drain: a worker closed after the shared
+	// connection quits reports a spurious failure and the job is retried.
 	await avatarWorker.close();
+	if (inventoryScheduler) await inventoryScheduler.worker.close();
 	await closeQueueConnection();
 });
 

@@ -15,10 +15,12 @@ import type { IWarehouseStorageRepository } from '../contracts/warehouse-storage
 import type { IMovementRepository } from '../contracts/movement.repository.interface';
 import type { IBalanceRepository } from '../contracts/balance.repository.interface';
 import type { IAdjustmentRepository } from '../contracts/adjustment.repository.interface';
+import type { IBorrowingRepository } from '../contracts/borrowing.repository.interface';
 import type { ItemService } from '../services/item.service';
 import type { WarehouseService } from '../services/warehouse.service';
 import type { StockService } from '../services/stock.service';
 import type { AdjustmentService } from '../services/adjustment.service';
+import type { BorrowingService } from '../services/borrowing.service';
 
 export const ITEM_REPOSITORY_TOKEN: InjectionToken<IItemRepository> =
 	Symbol('ITEM_REPOSITORY');
@@ -46,3 +48,8 @@ export const STOCK_SERVICE_TOKEN: InjectionToken<StockService> =
 	Symbol('STOCK_SERVICE');
 export const ADJUSTMENT_SERVICE_TOKEN: InjectionToken<AdjustmentService> =
 	Symbol('ADJUSTMENT_SERVICE');
+
+export const BORROWING_REPOSITORY_TOKEN: InjectionToken<IBorrowingRepository> =
+	Symbol('BORROWING_REPOSITORY');
+export const BORROWING_SERVICE_TOKEN: InjectionToken<BorrowingService> =
+	Symbol('BORROWING_SERVICE');

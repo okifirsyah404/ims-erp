@@ -110,6 +110,22 @@ const api = {
 
 	'auth.ownerGrantRequired': 'Only organization owners can grant the owner role',
 	'auth.roleNotGrantable': 'Role not grantable: {{roles}}',
+
+	// Borrowing (S4)
+	'inventory.borrowingNotFound': 'Borrowing not found',
+	'inventory.borrowingLineNotFound': 'Borrowing line not found',
+	'inventory.unitNotOnBorrowing': 'That unit is not issued on this borrowing',
+	'inventory.borrowingTransition':
+		'That status change is not allowed for this borrowing',
+	'inventory.borrowingCodeTaken': 'Could not allocate a unique borrowing code',
+	'inventory.borrowingHasNoLines': 'A borrowing must have at least one line',
+	'inventory.unitNotAvailable': 'That unit cannot be issued',
+	'inventory.borrowerIdentity':
+		'The borrower identity does not match the borrower type',
+	'inventory.guestIdentityIncomplete':
+		'A guest borrower is missing required identity data',
+	'inventory.borrowingSelfApprovalForbidden':
+		'You cannot approve your own borrowing',
 } as const;
 
 export default api;

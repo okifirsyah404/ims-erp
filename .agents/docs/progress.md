@@ -3,6 +3,66 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed (this session — inventory S4 borrowing, 2026-11-03)
+
+**Nothing committed yet** — uncommitted working-tree state on top of S0–S3.
+Design: `.agents/docs/plans/inventory.md` §5–§11, D19–D22.
+
+### S4 — borrowing: state machine, sweeps, API, UI
+
+- **Step 1 was already done.** `borrowings`, `borrowing_lines`,
+  `borrowing_events`, their constraints, and all 23 indexes were already in
+  `inventory.schema.ts` and applied by `20261102133850_talented_jubilee`; every
+  §6 `borrowing:*` permission was already granted in `erp-permissions.ts`. The
+  plan doc's step 1 ("schema + ALTER for the circular FK") understated this —
+  only the FK was genuinely missing.
+- **Migration `20261102174836_colorful_rattler`** adds
+  `serial_tracked_items.current_borrowing_line_id` + its index (generated) and,
+  hand-written, the `REFERENCES borrowing_lines(id) ON DELETE SET NULL` that
+  `drizzle-kit generate` cannot emit because no `CREATE TABLE` order satisfies
+  the cycle. Applied to the live database and verified: `confdeltype = 'n'`.
+- **`StockService.postMovement` gained an optional `tx`.** It previously opened
+  its own `database.transaction()`, so borrowing could not commit custody,
+  movement, balance, and event together — a nested call is a savepoint, so an
+  outer rollback would have left a committed movement behind.
+- **`BorrowingService`** (new): transition matrix as data, `BRW-YYYYMM-####`
+  codes, skippable approval keyed on `borrowing:issue`/`:approve`, per-line
+  issue/return, `mark-lost` reducing stock at the line's snapshotted origin
+  warehouse, and guest-PII projection with `guestIdentityRedacted`.
+- **Real BullMQ worker** (decision: `harden`, not the plan's `setInterval`
+  fallback): `providers/queue/inventory-scheduler.queue.ts` +
+  `.worker.ts`, two `upsertJobScheduler` schedules (late sweep `*/15 * * * *`,
+  retention `0 3 * * *`) on `redis.queueDb`. `scheduler.enabled` defaults to
+  `false` so tests never open a connection. SIGTERM drains the worker before
+  `closeQueueConnection()`.
+- **OPEN-2 closed**: guest PII nulled 24 months after `closed_at`, exposed as
+  `scheduler.guestPiiRetentionMonths` / `GUEST_PII_RETENTION_MONTHS`.
+- **API**: `/borrowings` GET/POST, `/:id` GET, and
+  `submit|approve|reject|issue|return|extend|mark-lost|cancel|close`
+  transitions, each with its own `borrowing:*` permission.
+- **UI**: `borrowing-api.ts`, list, `new` (three borrower paths as a
+  discriminated union), detail with the event timeline rendering the movement
+  id behind every physical event, plus an `inventory` nav entry. `en`/`id`
+  bundles extended; the dead-key and parity tests both drove real fixes
+  (an untranslated `status`/`serial`, a duplicated `extend` key, and two keys
+  that no component used).
+
+### Verified (exact commands, 2026-11-03)
+
+| Command | Result |
+|---|---|
+| `bun run lint` (root) | 0 errors; 29 pre-existing warnings, none in borrowing files |
+| `bun run typecheck` (root) | 3 successful, 3 total |
+| `bun run test` (root) | backend **518 pass / 0 fail** (24 files, +60 new), locales 30 pass, web-admin 21 pass |
+| `bun run build` (web-admin) | built; `_borrowingId` and `new` chunks emitted |
+| `bunx --bun drizzle-kit generate` | `20261102174836_colorful_rattler` |
+| `bunx --bun drizzle-kit migrate` | applied successfully |
+| `bun run drizzle:seed` ×2 | second run wrote nothing (idempotent) |
+
+**Not yet done:** no browser walk-through of the new screens; the worker has
+not been observed firing against a real Redis. Both are worth doing before S4
+is called accepted.
+
 ## Completed (this session - inventory module S0 + S1, 2026-11-02)
 
 Branch `feat/inventory-module`, base `4fd67b4`. **Nothing committed yet** — all

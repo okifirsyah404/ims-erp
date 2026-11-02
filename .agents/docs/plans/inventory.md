@@ -635,18 +635,59 @@ passes, `gen-logical-references.ts` output committed, ADRs 0008/0009 accepted.
 > is fixed; the balance lookup is now scoped by organization too, so it cannot
 > fold a global warehouse's shared row into a tenant's.
 
-**S4 — Borrowing.**
-1. `borrowings` / `borrowing_lines` / `borrowing_events` schema + the
-   `ALTER TABLE` for the circular FK.
-2. State machine service (D19) with skippable approval; issue/return/extend/
-   mark-late/mark-lost transitions, each writing its movement and event in one
-   transaction.
-3. Late-return sweep (§8) and guest-PII retention sweep (§11) — confirm the
-   queue provider supports repeating jobs first.
-4. API + UI: list, create (three borrower tabs), detail with event timeline.
-5. Tests: state machine exhaustive (every legal edge, every illegal edge 422),
-   every physical event has a movement, approval-skip permission rule,
-   sweep idempotency, PII redaction per role.
+**S4 — Borrowing.** **Status: shipped.** The slice landed larger and smaller
+than planned in equal measure: step 1's three tables, constraints, indexes, and
+every §6 permission were **already in place** before S4 started (only the
+circular FK was genuinely missing), while the whole of the borrowing module —
+repository, state machine, worker, API, UI, tests — was written here.
+1. ~~Schema~~ — done before the slice. The one real gap was
+   `serial_tracked_items.current_borrowing_line_id`, whose FK closes a cycle
+   (`serial_tracked_items → borrowing_lines → serial_tracked_items`) that no
+   `CREATE TABLE` order satisfies. `drizzle-kit generate` emits the column and
+   index; the `REFERENCES` is hand-written in migration
+   `20261102174836_colorful_rattler` with `ON DELETE SET NULL`, not `RESTRICT`:
+   deleting a borrowing already discards the link's meaning, and blocking the
+   delete would strand a borrowing that must remain removable. A unit's `status`,
+   not the pointer, is the source of truth for custody.
+2. State machine (D19) in `borrowing.service.ts`. Transitions are declared as
+   data (`BORROWING_TRANSITIONS`), so an illegal edge cannot be forgotten. Every
+   physical transition is **one transaction** covering the unit's custody, the
+   movement, the balance delta, and the event that references the movement —
+   which required the one cross-cutting change outside the module:
+   `StockService.postMovement` now takes an optional `tx` and joins it instead of
+   opening a nested `database.transaction()`. A nested transaction would have
+   been a savepoint, so an outer rollback would not have undone a committed
+   movement.
+3. Both sweeps. **Decision: a real BullMQ worker, not the `setInterval`
+   fallback the plan allowed.** A repeat schedule must survive a restart and must
+   not double-fire across instances; `upsertJobScheduler` keys on a stable
+   scheduler id, so declaring the same two ids from every instance yields
+   exactly two schedules. Two layers of idempotency remain regardless, because a
+   worker can be killed mid-job: the late sweep's candidate query *and* its
+   `UPDATE` both require `marked_late_at IS NULL`, and the retention sweep
+   requires `guest_name IS NOT NULL`. Shutdown order in `index.ts` drains the
+   worker **before** `closeQueueConnection()`, or BullMQ reports a spurious
+   failure and retries.
+4. API + UI: `/borrowings` CRUD, six bodyless transitions, return (per-line or
+   all), extend, and `mark-lost`; list, `new` with the three borrower paths, and
+   a detail page whose timeline renders the movement id behind every physical
+   event.
+5. Tests: 60 new cases. The unit suite (`borrowing.service.test.ts`, 30) pins
+   every legal and illegal edge, the approval-skip permission rule, one-movement-
+   per-physical-event with the movement id present on the event, partial vs full
+   return, sweep idempotency for both sweeps, and PII redaction per actor tier.
+   The integration suite (`borrowing-authorization.test.ts`, 30) drives the real
+   `erpGuard` for 401/403 on all twelve routes, the technician/cannot-issue and
+   warehouse/cannot-approve split, and cross-tenant 404.
+   **OPEN-2 closed**: guest PII is nulled 24 months after `closed_at`, exposed as
+   `scheduler.guestPiiRetentionMonths` so the window can change without a code
+   change. The borrowing row and its whole timeline survive — what expires is the
+   link between a trail and a person.
+
+**Known limitation, recorded rather than hidden:** the scheduler worker runs
+inside the API process, so a restart kills an in-flight sweep. That is
+acceptable only because both jobs are idempotent and the next tick re-runs them.
+A separate worker process is the eventual answer and is not yet scheduled.
 
 ## 14. Open questions
 
@@ -657,7 +698,7 @@ slice is called *accepted*.
 | ID | Question | Working default taken | Blocks |
 |---|---|---|---|
 | `OPEN-1` | Do the 11 `catalog.*` satellite tables move into `inventory.*`, or does `catalog` survive as a module with only `items` relocated? Specifically: is `item_variants` needed before serialized units are usable? | Items relocate; satellites stay in `catalog`, flagged. `items.category` and `items.unit_label` are plain text in S1 — no `item_categories` / `units` tables | S1 acceptance |
-| `OPEN-2` | Guest-PII retention period | 24 months after `closed_at` | S4 acceptance |
+| `OPEN-2` | Guest-PII retention period | **Closed in S4** — 24 months after `closed_at`, shipped as the `scheduler.guestPiiRetentionMonths` config constant (`GUEST_PII_RETENTION_MONTHS` env), so the window can change without a code change or migration | — |
 | `OPEN-3` | Stock valuation (`average_cost`, `total_value`) is absent from this plan. It needs a COA and a posting engine. Is quantity-only inventory acceptable for the first release, or must valuation land with S3? | Quantity-only; valuation fields exist but stay at 0 | S3 acceptance |
 
 ## 15. Risks

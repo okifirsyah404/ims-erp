@@ -27,6 +27,9 @@ import { Route as AuthedProfilesEditRouteImport } from './routes/_authed.profile
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
 import { Route as AuthedAdminRolesIndexRouteImport } from './routes/_authed/admin/roles/index'
 import { Route as AuthedAdminUsersIndexRouteImport } from './routes/_authed/admin/users/index'
+import { Route as AuthedInventoryBorrowingsIndexRouteImport } from './routes/_authed/inventory/borrowings/index'
+import { Route as AuthedInventoryBorrowingsBorrowingIdRouteImport } from './routes/_authed/inventory/borrowings/$borrowingId'
+import { Route as AuthedInventoryBorrowingsNewRouteImport } from './routes/_authed/inventory/borrowings/new'
 import { Route as AuthedInventoryComponentsIndexRouteImport } from './routes/_authed/inventory/components/index'
 import { Route as AuthedInventoryItemsItemIdRouteImport } from './routes/_authed/inventory/items/$itemId'
 import { Route as AuthedInventoryItemsNewRouteImport } from './routes/_authed/inventory/items/new'
@@ -138,6 +141,24 @@ const AuthedAdminUsersIndexRoute = AuthedAdminUsersIndexRouteImport.update({
   path: '/admin/users/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedInventoryBorrowingsIndexRoute =
+  AuthedInventoryBorrowingsIndexRouteImport.update({
+    id: '/inventory/borrowings/',
+    path: '/inventory/borrowings/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedInventoryBorrowingsBorrowingIdRoute =
+  AuthedInventoryBorrowingsBorrowingIdRouteImport.update({
+    id: '/inventory/borrowings/$borrowingId',
+    path: '/inventory/borrowings/$borrowingId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedInventoryBorrowingsNewRoute =
+  AuthedInventoryBorrowingsNewRouteImport.update({
+    id: '/inventory/borrowings/new',
+    path: '/inventory/borrowings/new',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedInventoryComponentsIndexRoute =
   AuthedInventoryComponentsIndexRouteImport.update({
     id: '/inventory/components/',
@@ -267,6 +288,8 @@ export interface FileRoutesByFullPath {
   '/account/': typeof AuthedAccountIndexRoute
   '/organizations/': typeof AuthedOrganizationsIndexRoute
   '/profiles/': typeof AuthedProfilesIndexRoute
+  '/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
+  '/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -277,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/admin/audit/': typeof AuthedAdminAuditIndexRoute
   '/admin/roles/': typeof AuthedAdminRolesIndexRoute
   '/admin/users/': typeof AuthedAdminUsersIndexRoute
+  '/inventory/borrowings/': typeof AuthedInventoryBorrowingsIndexRoute
   '/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
   '/inventory/products/': typeof AuthedInventoryProductsIndexRoute
@@ -303,6 +327,8 @@ export interface FileRoutesByTo {
   '/account': typeof AuthedAccountIndexRoute
   '/organizations': typeof AuthedOrganizationsIndexRoute
   '/profiles': typeof AuthedProfilesIndexRoute
+  '/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
+  '/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -313,6 +339,7 @@ export interface FileRoutesByTo {
   '/admin/audit': typeof AuthedAdminAuditIndexRoute
   '/admin/roles': typeof AuthedAdminRolesIndexRoute
   '/admin/users': typeof AuthedAdminUsersIndexRoute
+  '/inventory/borrowings': typeof AuthedInventoryBorrowingsIndexRoute
   '/inventory/components': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials': typeof AuthedInventoryMaterialsIndexRoute
   '/inventory/products': typeof AuthedInventoryProductsIndexRoute
@@ -343,6 +370,8 @@ export interface FileRoutesById {
   '/_authed/account/': typeof AuthedAccountIndexRoute
   '/_authed/organizations/': typeof AuthedOrganizationsIndexRoute
   '/_authed/profiles/': typeof AuthedProfilesIndexRoute
+  '/_authed/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
+  '/_authed/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/_authed/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/_authed/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/_authed/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -353,6 +382,7 @@ export interface FileRoutesById {
   '/_authed/admin/audit/': typeof AuthedAdminAuditIndexRoute
   '/_authed/admin/roles/': typeof AuthedAdminRolesIndexRoute
   '/_authed/admin/users/': typeof AuthedAdminUsersIndexRoute
+  '/_authed/inventory/borrowings/': typeof AuthedInventoryBorrowingsIndexRoute
   '/_authed/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/_authed/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
   '/_authed/inventory/products/': typeof AuthedInventoryProductsIndexRoute
@@ -383,6 +413,8 @@ export interface FileRouteTypes {
     | '/account/'
     | '/organizations/'
     | '/profiles/'
+    | '/inventory/borrowings/$borrowingId'
+    | '/inventory/borrowings/new'
     | '/inventory/items/$itemId'
     | '/inventory/items/new'
     | '/inventory/stock/adjust'
@@ -393,6 +425,7 @@ export interface FileRouteTypes {
     | '/admin/audit/'
     | '/admin/roles/'
     | '/admin/users/'
+    | '/inventory/borrowings/'
     | '/inventory/components/'
     | '/inventory/materials/'
     | '/inventory/products/'
@@ -419,6 +452,8 @@ export interface FileRouteTypes {
     | '/account'
     | '/organizations'
     | '/profiles'
+    | '/inventory/borrowings/$borrowingId'
+    | '/inventory/borrowings/new'
     | '/inventory/items/$itemId'
     | '/inventory/items/new'
     | '/inventory/stock/adjust'
@@ -429,6 +464,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/roles'
     | '/admin/users'
+    | '/inventory/borrowings'
     | '/inventory/components'
     | '/inventory/materials'
     | '/inventory/products'
@@ -458,6 +494,8 @@ export interface FileRouteTypes {
     | '/_authed/account/'
     | '/_authed/organizations/'
     | '/_authed/profiles/'
+    | '/_authed/inventory/borrowings/$borrowingId'
+    | '/_authed/inventory/borrowings/new'
     | '/_authed/inventory/items/$itemId'
     | '/_authed/inventory/items/new'
     | '/_authed/inventory/stock/adjust'
@@ -468,6 +506,7 @@ export interface FileRouteTypes {
     | '/_authed/admin/audit/'
     | '/_authed/admin/roles/'
     | '/_authed/admin/users/'
+    | '/_authed/inventory/borrowings/'
     | '/_authed/inventory/components/'
     | '/_authed/inventory/materials/'
     | '/_authed/inventory/products/'
@@ -615,6 +654,27 @@ declare module '@tanstack/react-router' {
       path: '/admin/users'
       fullPath: '/admin/users/'
       preLoaderRoute: typeof AuthedAdminUsersIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/inventory/borrowings/': {
+      id: '/_authed/inventory/borrowings/'
+      path: '/inventory/borrowings'
+      fullPath: '/inventory/borrowings/'
+      preLoaderRoute: typeof AuthedInventoryBorrowingsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/inventory/borrowings/$borrowingId': {
+      id: '/_authed/inventory/borrowings/$borrowingId'
+      path: '/inventory/borrowings/$borrowingId'
+      fullPath: '/inventory/borrowings/$borrowingId'
+      preLoaderRoute: typeof AuthedInventoryBorrowingsBorrowingIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/inventory/borrowings/new': {
+      id: '/_authed/inventory/borrowings/new'
+      path: '/inventory/borrowings/new'
+      fullPath: '/inventory/borrowings/new'
+      preLoaderRoute: typeof AuthedInventoryBorrowingsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/inventory/components/': {
@@ -840,6 +900,8 @@ interface AuthedRouteChildren {
   AuthedOrganizationsOrganizationIdRoute: typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   AuthedOrganizationsNewRoute: typeof AuthedOrganizationsNewRoute
   AuthedOrganizationsIndexRoute: typeof AuthedOrganizationsIndexRoute
+  AuthedInventoryBorrowingsBorrowingIdRoute: typeof AuthedInventoryBorrowingsBorrowingIdRoute
+  AuthedInventoryBorrowingsNewRoute: typeof AuthedInventoryBorrowingsNewRoute
   AuthedInventoryItemsItemIdRoute: typeof AuthedInventoryItemsItemIdRouteWithChildren
   AuthedInventoryItemsNewRoute: typeof AuthedInventoryItemsNewRoute
   AuthedInventoryStockAdjustRoute: typeof AuthedInventoryStockAdjustRoute
@@ -849,6 +911,7 @@ interface AuthedRouteChildren {
   AuthedAdminAuditIndexRoute: typeof AuthedAdminAuditIndexRoute
   AuthedAdminRolesIndexRoute: typeof AuthedAdminRolesIndexRoute
   AuthedAdminUsersIndexRoute: typeof AuthedAdminUsersIndexRoute
+  AuthedInventoryBorrowingsIndexRoute: typeof AuthedInventoryBorrowingsIndexRoute
   AuthedInventoryComponentsIndexRoute: typeof AuthedInventoryComponentsIndexRoute
   AuthedInventoryMaterialsIndexRoute: typeof AuthedInventoryMaterialsIndexRoute
   AuthedInventoryProductsIndexRoute: typeof AuthedInventoryProductsIndexRoute
@@ -867,6 +930,9 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedOrganizationsOrganizationIdRouteWithChildren,
   AuthedOrganizationsNewRoute: AuthedOrganizationsNewRoute,
   AuthedOrganizationsIndexRoute: AuthedOrganizationsIndexRoute,
+  AuthedInventoryBorrowingsBorrowingIdRoute:
+    AuthedInventoryBorrowingsBorrowingIdRoute,
+  AuthedInventoryBorrowingsNewRoute: AuthedInventoryBorrowingsNewRoute,
   AuthedInventoryItemsItemIdRoute: AuthedInventoryItemsItemIdRouteWithChildren,
   AuthedInventoryItemsNewRoute: AuthedInventoryItemsNewRoute,
   AuthedInventoryStockAdjustRoute: AuthedInventoryStockAdjustRoute,
@@ -877,6 +943,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminAuditIndexRoute: AuthedAdminAuditIndexRoute,
   AuthedAdminRolesIndexRoute: AuthedAdminRolesIndexRoute,
   AuthedAdminUsersIndexRoute: AuthedAdminUsersIndexRoute,
+  AuthedInventoryBorrowingsIndexRoute: AuthedInventoryBorrowingsIndexRoute,
   AuthedInventoryComponentsIndexRoute: AuthedInventoryComponentsIndexRoute,
   AuthedInventoryMaterialsIndexRoute: AuthedInventoryMaterialsIndexRoute,
   AuthedInventoryProductsIndexRoute: AuthedInventoryProductsIndexRoute,
