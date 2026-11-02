@@ -1,14 +1,14 @@
 import type { DependencyContainer } from 'tsyringe';
-import { OrganizationRepository } from '../repositories/organization.repository';
-import { BetterAuthOrganizationGateway } from '../services/better-auth-organization.gateway';
-import { OrganizationService } from '../services/organization.service';
+import { OrganizationRepository } from './repositories/organization.repository';
+import { BetterAuthOrganizationGateway } from './services/better-auth-organization.gateway';
+import { OrganizationService } from './services/organization.service';
 import {
 	ORGANIZATION_AUTH_GATEWAY_TOKEN,
 	ORGANIZATION_REPOSITORY_TOKEN,
 	ORGANIZATION_SERVICE_TOKEN,
-} from '../constants/di';
+} from './constants/di';
 
-export * from '../constants/di';
+export * from './constants/di';
 
 /**
  * Registers the organization module's repository, Better Auth gateway, and

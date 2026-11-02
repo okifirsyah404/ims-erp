@@ -1,6 +1,7 @@
 import type { TUserInvitationSelect, TRoleSelect } from '@drizzle/schemas/role.schema';
 import type { TUserSelect } from '@drizzle/schemas/auth.schema';
 import type { TAuditLogSelect } from '@drizzle/schemas/audit.schema';
+import type { AuditAction } from '@drizzle/schemas/audit.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { TPermissionGrant } from '../contracts/admin.contract';
 
@@ -77,6 +78,8 @@ export interface IRoleRepository {
 	undelete(roleId: string): Promise<void>;
 	/** Live members in the org holding exactly this role name. */
 	countMembers(organizationId: string, roleName: string): Promise<number>;
+	/** Resolves the org's live `member` role (bulk-invite typo fallback). */
+	findMemberRole(organizationId: string): Promise<TRoleSelect | null>;
 }
 
 /** Filters for the admin audit listing (phase 4). */
@@ -92,10 +95,31 @@ export type TAuditListRequest = {
 };
 
 /** Data-access contract over the append-only `audit.audit_logs` table. */
+/**
+ * One entry to append to the audit ledger.
+ *
+ * @remarks
+ * Lives in `contracts/` (not the service) because it is the repository's
+ * write DTO - the service fills it in, the repository persists it.
+ */
+export type TAuditEntry = {
+	actorUserId: string;
+	actorEmail?: string | null;
+	action: AuditAction;
+	targetType: 'invitation' | 'user' | 'role' | 'member' | 'organization';
+	targetId: string;
+	organizationId?: string | null;
+	meta?: Record<string, unknown>;
+	/** Caller request context; extracted from the real request headers. */
+	request?: { ip?: string | null; userAgent?: string | null };
+};
+
 export interface IAuditRepository {
 	list(
 		request: TAuditListRequest,
 	): Promise<TPaginationResult<TAuditLogSelect>>;
+	/** Appends one immutable audit row. */
+	insert(entry: TAuditEntry): Promise<void>;
 }
 
 /**

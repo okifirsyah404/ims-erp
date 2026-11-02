@@ -11,7 +11,6 @@ import type {
 } from '../contracts/gateways.interface';
 import type { InvitationService } from '../services/invitation.service';
 import type { AuditService } from '../services/audit.service';
-import type { RoleService } from '../services/role.service';
 import type { RoleManagementService } from '../services/role-management.service';
 import type { UserAdminService } from '../services/user-admin.service';
 import type { AuditQueryService } from '../services/audit-query.service';
@@ -32,9 +31,6 @@ export const INVITATION_SERVICE_TOKEN: InjectionToken<InvitationService> =
 	Symbol('INVITATION_SERVICE');
 export const AUDIT_SERVICE_TOKEN: InjectionToken<AuditService> = Symbol(
 	'AUDIT_SERVICE',
-);
-export const ROLE_SERVICE_TOKEN: InjectionToken<RoleService> = Symbol(
-	'ROLE_SERVICE',
 );
 export const ROLE_REPOSITORY_TOKEN: InjectionToken<IRoleRepository> = Symbol(
 	'ROLE_REPOSITORY',

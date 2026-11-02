@@ -7,7 +7,6 @@ import { BetterAuthUserManagementGateway } from './services/better-auth-user-man
 import { LoggerInvitationMailer } from './services/logger-mailer';
 import { InvitationService } from './services/invitation.service';
 import { AuditService } from './services/audit.service';
-import { RoleService } from './services/role.service';
 import { RoleManagementService } from './services/role-management.service';
 import { UserAdminService } from './services/user-admin.service';
 import { AuditQueryService } from './services/audit-query.service';
@@ -20,7 +19,6 @@ import {
 	INVITATION_SERVICE_TOKEN,
 	ROLE_MANAGEMENT_SERVICE_TOKEN,
 	ROLE_REPOSITORY_TOKEN,
-	ROLE_SERVICE_TOKEN,
 	USER_ADMIN_SERVICE_TOKEN,
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
@@ -48,7 +46,6 @@ export function registerUserManagement(container: DependencyContainer): void {
 		useClass: LoggerInvitationMailer,
 	});
 	container.register(AUDIT_SERVICE_TOKEN, { useClass: AuditService });
-	container.register(ROLE_SERVICE_TOKEN, { useClass: RoleService });
 	container.register(ROLE_MANAGEMENT_SERVICE_TOKEN, {
 		useClass: RoleManagementService,
 	});

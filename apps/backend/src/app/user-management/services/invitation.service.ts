@@ -5,11 +5,13 @@ import type { TPaginationResult } from '@ims-erp/common';
 import {
 	INVITATION_MAILER_TOKEN,
 	INVITATION_REPOSITORY_TOKEN,
+	ROLE_REPOSITORY_TOKEN,
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
 } from '../constants/di';
 import type {
 	IInvitationRepository,
+	IRoleRepository,
 	IUserManagementRepository,
 	TInvitationListRequest,
 } from '../contracts/repositories.interface';
@@ -20,7 +22,6 @@ import type {
 } from '../contracts/gateways.interface';
 import type { TCreateInvitationInput } from '../contracts/invitation.contract';
 import { hashToken } from './token';
-import { RoleService } from './role.service';
 import { AuditService } from './audit.service';
 import {
 	INVITATION_TTL_MS,
@@ -35,6 +36,7 @@ import {
 	InvitationNotPendingError,
 	InvitationNotFoundError,
 	InvitationPendingExistsError,
+	RoleNotFoundError,
 } from './invitation.errors';
 
 /** Actor context extracted from the guarded request. */
@@ -94,7 +96,8 @@ export class InvitationService {
 		private readonly authGateway: IUserManagementAuthGateway,
 		@inject(INVITATION_MAILER_TOKEN)
 		private readonly mailer: IInvitationMailer,
-		private readonly roleService: RoleService,
+		@inject(ROLE_REPOSITORY_TOKEN)
+		private readonly roles: IRoleRepository,
 		private readonly audit: AuditService,
 	) {}
 
@@ -119,10 +122,12 @@ export class InvitationService {
 
 		let roleName: string | null = null;
 		if (isOrgPath) {
-			const role = await this.roleService.requireRoleForOrganization(
-				input.roleId!,
-				input.organizationId!,
-			);
+			// `findById` + org ownership check: the single-invite path rejects
+			// typos; the bulk path falls back to `member` upstream.
+			const role = await this.roles.findById(input.roleId!);
+			if (!role || role.organizationId !== input.organizationId) {
+				throw new RoleNotFoundError(input.roleId!);
+			}
 			roleName = role.name;
 		}
 
@@ -247,7 +252,7 @@ export class InvitationService {
 				// Bulk role fallback: unknown role in an org row → member.
 				if (input.roleId && input.organizationId && isRoleNotFound(error)) {
 					const memberRole =
-						await this.roleService.findMemberRole(input.organizationId);
+						await this.roles.findMemberRole(input.organizationId);
 					if (memberRole) {
 						try {
 							results.push({
@@ -434,8 +439,8 @@ export class InvitationService {
 		let organizationName: string | null = null;
 		if (invitation.type === 'org' && invitation.organizationId) {
 			const role = invitation.roleId
-				? await this.roleService.findById(invitation.roleId)
-				: await this.roleService.findMemberRole(invitation.organizationId);
+				? await this.roles.findById(invitation.roleId)
+				: await this.roles.findMemberRole(invitation.organizationId);
 			organizationName = await this.authGateway.attachMembership({
 				userId: user.id,
 				organizationId: invitation.organizationId,
@@ -501,7 +506,7 @@ export class InvitationService {
 				organizationName = org;
 				if (invitation.roleId) {
 					roleName =
-						(await this.roleService.findById(invitation.roleId))?.name ??
+						(await this.roles.findById(invitation.roleId))?.name ??
 						null;
 				}
 			}
