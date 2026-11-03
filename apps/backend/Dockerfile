@@ -42,7 +42,7 @@ RUN bun run --cwd apps/backend build
 RUN test -x apps/backend/dist/server
 
 # ---- runtime: run the compiled executable ----
-FROM alpine:3.22 AS runtime
+FROM alpine:3.24 AS runtime
 # The executable is musl-linked (Bun resolves `--target bun` to the build host's
 # libc, and the build stage is Alpine), so no glibc shim is needed — verified
 # with `ldd`: ld-musl-x86_64.so.1, libstdc++.so.6, libgcc_s.so.1.
