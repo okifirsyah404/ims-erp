@@ -19,11 +19,8 @@ import { inject, injectable } from 'tsyringe';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { TUserSelect } from '@drizzle/schemas/auth.schema';
 import { members, organizations, users } from '@drizzle/schemas/auth.schema';
-import type {
-	IUserManagementRepository,
-	TAdminUserRow,
-	TUserListRequest,
-} from '../contracts/repositories.interface';
+import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
+import type { TAdminUserRow, TUserListRequest } from '../contracts/admin-listing.types';
 import {
 	USER_CACHE_PREFIX,
 	userCacheKey,

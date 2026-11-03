@@ -9,7 +9,7 @@ import {
 	assertTransitionAllowed,
 	isStatusAllowedForKind,
 } from '../../src/app/inventory/services/item.service';
-import { InventoryRuleViolationError } from '../../src/app/inventory/services/inventory.errors';
+import { InventoryRuleViolationError } from '../../src/app/inventory/errors/inventory.errors';
 
 /**
  * Exhaustive coverage of the kind × status matrix.

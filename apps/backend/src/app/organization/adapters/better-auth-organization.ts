@@ -12,7 +12,7 @@ import {
 	MemberNotFoundError,
 	OrganizationNotFoundError,
 	OrganizationSlugTakenError,
-} from '../services/organization.errors';
+} from '../errors/organization.errors';
 
 /**
  * Better Auth organization API implementation of

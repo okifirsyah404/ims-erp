@@ -28,7 +28,7 @@ import {
 	ItemSkuTakenError,
 	SerialNumberTakenError,
 	UnitNotFoundError,
-} from './inventory.errors';
+} from '../errors/inventory.errors';
 
 /**
  * Unit statuses allowed per item kind.

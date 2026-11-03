@@ -27,7 +27,7 @@ import {
 	WarehouseCodeTakenError,
 	WarehouseHasUnitsError,
 	WarehouseNotFoundError,
-} from '../../src/app/inventory/services/inventory.errors';
+} from '../../src/app/inventory/errors/inventory.errors';
 
 const ORG_A = 'org-a';
 const ORG_B = 'org-b';

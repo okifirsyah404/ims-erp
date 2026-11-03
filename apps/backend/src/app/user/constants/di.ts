@@ -1,11 +1,11 @@
 import { InjectionToken } from 'tsyringe';
-import type { IInvitationRepository } from '../contracts/repositories.interface';
-import type { IInvitationMailer } from '../contracts/gateways.interface';
-import type { IRoleRepository } from '../contracts/repositories.interface';
+import type { IInvitationRepository } from '../contracts/invitation.repository.interface';
+import type { IInvitationMailer } from '../contracts/invitation-mailer.gateway.interface';
+import type { IRoleRepository } from '../contracts/role.repository.interface';
 import type {
 	IUserManagementAuthGateway,
-} from '../contracts/gateways.interface';
-import type { IUserManagementRepository } from '../contracts/repositories.interface';
+} from '../contracts/user-management-auth.gateway.interface';
+import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
 import type { InvitationService } from '../services/invitation.service';
 import type { RoleManagementService } from '../services/role-management.service';
 import type { UserAdminService } from '../services/user-admin.service';

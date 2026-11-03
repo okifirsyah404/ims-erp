@@ -13,14 +13,14 @@ import type {
 import {
 	ROLE_REPOSITORY_TOKEN,
 } from '../constants/di';
-import type { IRoleRepository } from '../contracts/repositories.interface';
+import type { IRoleRepository } from '../contracts/role.repository.interface';
 import {
 	InvalidPermissionGrantError,
 	RankGuardError,
 	RoleInUseError,
 	RoleNameTakenError,
 	RoleNotFoundError,
-} from './invitation.errors';
+} from '../errors/invitation.errors';
 import { AUDIT_SERVICE_TOKEN } from '../../audit/constants/di';
 import type { AuditService } from '../../audit/services/audit.service';
 import type { TActor } from './invitation.service';

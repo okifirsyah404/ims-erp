@@ -17,7 +17,7 @@ import type {
 	TUpdateUser,
 } from '../contracts/user.contract';
 import { USER_AUTH_GATEWAY_TOKEN, USER_REPOSITORY_TOKEN } from '../constants/di';
-import { UserNotFoundError } from './user.errors';
+import { UserNotFoundError } from '../errors/user.errors';
 
 /**
  * Full user profile as returned by {@link UserService.getUser}.

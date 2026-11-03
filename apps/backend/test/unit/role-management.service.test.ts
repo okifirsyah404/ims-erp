@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 import type { TRoleSelect } from '../../drizzle/schemas/role.schema';
-import type { IRoleRepository } from '../../src/app/user/contracts/repositories.interface';
+import type { IRoleRepository } from '../../src/app/user/contracts/role.repository.interface';
 import type { AuditService } from '../../src/app/audit/services/audit.service';
 import {
 	InvalidPermissionGrantError,
@@ -8,7 +8,7 @@ import {
 	RoleInUseError,
 	RoleNameTakenError,
 	RoleNotFoundError,
-} from '../../src/app/user/services/invitation.errors';
+} from '../../src/app/user/errors/invitation.errors';
 import { RoleManagementService } from '../../src/app/user/services/role-management.service';
 import type { TActor } from '../../src/app/user/services/invitation.service';
 

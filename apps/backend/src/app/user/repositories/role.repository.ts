@@ -5,7 +5,7 @@ import type { TPermissionGrant } from '../contracts/admin.contract';
 import { DRIZZLE_TOKEN } from '@di/tokens';
 import { members } from '@drizzle/schemas/auth.schema';
 import { roles, type TRoleSelect } from '@drizzle/schemas/role.schema';
-import type { TRoleListRequest, IRoleRepository } from '../contracts/repositories.interface';
+import type { TRoleListRequest, IRoleRepository } from '../contracts/role.repository.interface';
 
 /**
  * Drizzle implementation of {@link IRoleRepository} over the per-organization

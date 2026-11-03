@@ -7,7 +7,7 @@ import {
 	ItemSkuTakenError,
 	SerialNumberTakenError,
 	UnitNotFoundError,
-} from '../../src/app/inventory/services/inventory.errors';
+} from '../../src/app/inventory/errors/inventory.errors';
 import type {
 	IItemRepository,
 	TItemCreateData,

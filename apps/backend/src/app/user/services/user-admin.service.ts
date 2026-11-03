@@ -6,9 +6,9 @@ import {
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
 } from '../constants/di';
-import type { IUserManagementRepository } from '../contracts/repositories.interface';
-import type { IUserManagementAuthGateway } from '../contracts/gateways.interface';
-import type { IRoleRepository } from '../contracts/repositories.interface';
+import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
+import type { IUserManagementAuthGateway } from '../contracts/user-management-auth.gateway.interface';
+import type { IRoleRepository } from '../contracts/role.repository.interface';
 import { AUDIT_SERVICE_TOKEN } from '../../audit/constants/di';
 import type { AuditService } from '../../audit/services/audit.service';
 import { presignObjectUrl } from '@providers/s3/s3';
@@ -17,7 +17,7 @@ import {
 	RankGuardError,
 	UserNotFoundError,
 	UserStateError,
-} from './invitation.errors';
+} from '../errors/invitation.errors';
 
 /**
  * Account lifecycle administration (phase 4).

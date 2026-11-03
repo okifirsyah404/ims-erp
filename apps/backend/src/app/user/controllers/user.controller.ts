@@ -14,7 +14,7 @@ import {
 	InvalidAvatarError,
 	UserEmailTakenError,
 	UserNotFoundError,
-} from '../services/user.errors';
+} from '../errors/user.errors';
 import { translator } from '@providers/i18n/translator';
 import { NotGlobalAdminError } from '@http/errors';
 import { domainPlugin } from '@http/plugin';

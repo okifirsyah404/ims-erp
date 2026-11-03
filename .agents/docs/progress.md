@@ -3,6 +3,55 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed — module directory cleanup: errors/, adapters/, utils/ (2026-11-04)
+
+Status: **verified** (typecheck + full test suite + lint).
+
+Refactor of `apps/backend/src/app/` so `services/` holds only `*.service.ts`
+files and every file type has a dedicated home:
+
+- **errors/** (new dirs in `user`, `inventory`, `organization`):
+  `user.errors.ts`, `invitation.errors.ts`, `inventory.errors.ts`,
+  `organization.errors.ts` moved out of `services/` (git mv, history kept).
+- **adapters/** (new dirs in `user`, `organization`): Better Auth wrappers
+  moved out of `services/` and renamed — `better-auth-user.gateway.ts` →
+  `adapters/better-auth-user.ts`, `better-auth-user-management.gateway.ts` →
+  `adapters/better-auth-user-management.ts`,
+  `better-auth-organization.gateway.ts` →
+  `adapters/better-auth-organization.ts`, `logger-mailer.ts` →
+  `adapters/logger-mailer.ts`. The `.gateway` suffix was dropped: "gateway"
+  naming is reserved for future websocket gateways; external-system port
+  implementations are adapters.
+- **user/utils/token.ts** moved out of `services/` (pure helpers).
+- **Contract split (user module only):** monolithic
+  `contracts/repositories.interface.ts` → per-domain
+  `invitation.repository.interface.ts`, `role.repository.interface.ts`,
+  `user-management.repository.interface.ts` (+ `admin-listing.types.ts` for
+  shared listing types); `contracts/gateways.interface.ts` →
+  `user-management-auth.gateway.interface.ts` (with `TClaimTarget`) and
+  `invitation-mailer.gateway.interface.ts`. All other `contracts/` files
+  untouched. `middleware/` is a reserved optional module dir (documented,
+  not created).
+- **Imports:** ~40 lines updated across services, controllers,
+  repositories, `constants/di.ts`, both containers, plus 9 test files.
+- **Docs/skills synced:** `elysia-module` → v1.5.0,
+  `elysia-layered-architecture` → v1.4.0 (checklists, layer tree, port
+  implementations in `adapters/`), root `AGENTS.md` module-shape paragraph,
+  `modules/organization.md` (stale `routes/`/`containers/` fixed), 
+  `modules/user.md` (current layout note), `skills.md` inventory.
+
+Verification actually run (2026-11-04):
+
+```text
+bun run typecheck (apps/backend)   → clean
+bun test (apps/backend)            → 530 pass / 0 fail (26 files)
+bun run lint (apps/backend)        → 0 errors; 2 warnings introduced by the
+                                     refactor were fixed, rest pre-existing
+```
+
+`docs/database/` reviewed and **unchanged** (no schema change — code
+layout only).
+
 ## Completed — admin users list presigns avatars (2026-11-03)
 
 Status: **verified** (unit test + live endpoint + presigned fetch).

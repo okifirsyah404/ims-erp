@@ -1,6 +1,6 @@
 # Elysia Layered Architecture
 
-**Version 1.3.0**
+**Version 1.4.0**
 OpenAgentic
 October 2026
 
@@ -16,8 +16,9 @@ October 2026
 Layered backend architecture for Elysia domains in `apps/backend/src/app/<domain>/`.
 Each domain is split into `contracts/` (zod schemas, interfaces, ports for
 external systems), `constants/di.ts` (DI tokens), `controllers/` (HTTP-only
-routes), `services/` (orchestration, including gateway implementations for
-outside systems such as Better Auth's `auth.api`), `repositories/`
+routes), `services/` (orchestration; `*.service.ts` files only; port
+implementations live in `adapters/`, domain errors in `errors/`),
+`repositories/`
 (Drizzle queries + cache), and optional `queues/` (module-owned BullMQ
 jobs). Controllers parse with zod at the boundary and build the
 `TApiResponse`/`TApiPaginatedResponse` envelope from `@ims-erp/common`;
