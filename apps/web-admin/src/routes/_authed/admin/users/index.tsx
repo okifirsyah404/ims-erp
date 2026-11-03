@@ -77,6 +77,7 @@ import {
 	type TUserStatus,
 } from '@/lib/admin-api';
 import { organizationsQueryOptions } from '@/lib/organization-api';
+import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { InviteDialog } from '@/components/admin/invite-dialog';
 import { PendingInvitationsPanel } from '@/components/admin/pending-invitations-panel';
 import { useActiveOrganizationId } from '@/lib/use-active-organization';
@@ -426,39 +427,16 @@ function UsersPage() {
 					)}
 					{isPending && <span className='sr-only'>{t('users.loading')}</span>}
 
-					{pagination && pagination.totalPages > 1 && (
-						<div className='mt-4 flex items-center justify-end gap-2'>
-							<Button
-								variant='outline'
-								size='sm'
-								disabled={(search.page ?? 1) <= 1}
-								onClick={() =>
-									void navigate({
-										search: (prev) => ({ ...prev, page: (prev.page ?? 1) - 1 }),
-									})
-								}
-							>
-								{t('common:action.previous')}
-							</Button>
-							<span className='text-xs text-muted-foreground'>
-								{t('common:pagination.summary', {
-									page: pagination.page,
-									totalPages: pagination.totalPages,
-								})}
-							</span>
-							<Button
-								variant='outline'
-								size='sm'
-								disabled={pagination.page >= pagination.totalPages}
-								onClick={() =>
-									void navigate({
-										search: (prev) => ({ ...prev, page: (prev.page ?? 1) + 1 }),
-									})
-								}
-							>
-								{t('common:action.next')}
-							</Button>
-						</div>
+					{pagination && (
+						<PaginationControls
+							page={pagination.page}
+							totalPages={pagination.totalPages}
+							onPageChange={(page) =>
+								void navigate({
+									search: (prev) => ({ ...prev, page }),
+								})
+							}
+						/>
 					)}
 				</CardContent>
 			</Card>

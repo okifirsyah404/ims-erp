@@ -27,6 +27,7 @@ const common_: Record<keyof typeof common, string> = {
 	'status.disabled': 'Dimatikan',
 
 	'pagination.summary': 'Halaman {{page}} dari {{totalPages}}',
+	'pagination.goto': 'Ke halaman {{page}}',
 
 	'error.generic': 'Terjadi kesalahan',
 	'error.failed': 'Gagal',

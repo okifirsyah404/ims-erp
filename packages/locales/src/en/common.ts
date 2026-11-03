@@ -26,6 +26,7 @@ const common = {
 	'status.disabled': 'Disabled',
 
 	'pagination.summary': 'Page {{page}} of {{totalPages}}',
+	'pagination.goto': 'Go to page {{page}}',
 
 	'error.generic': 'Something went wrong',
 	'error.failed': 'Failed',

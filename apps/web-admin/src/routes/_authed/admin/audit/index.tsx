@@ -37,6 +37,7 @@ import {
 } from '@/lib/admin-api';
 import { useActiveOrganizationId } from '@/lib/use-active-organization';
 import { usePermission } from '@/lib/use-permission';
+import { PaginationControls } from '@/components/pagination/pagination-controls';
 
 /** Audit actions the user-management domain emits (mirrors the backend). */
 const AUDIT_ACTIONS = [
@@ -321,39 +322,16 @@ function AuditPage() {
 					)}
 					{isPending && <span className='sr-only'>{t('audit.loading')}</span>}
 
-					{pagination && pagination.totalPages > 1 && (
-						<div className='mt-4 flex items-center justify-end gap-2'>
-							<Button
-								variant='outline'
-								size='sm'
-								disabled={(search.page ?? 1) <= 1}
-								onClick={() =>
-									void navigate({
-										search: (prev) => ({ ...prev, page: (prev.page ?? 1) - 1 }),
-									})
-								}
-							>
-								{t('common:action.previous')}
-							</Button>
-							<span className='text-xs text-muted-foreground'>
-								{t('common:pagination.summary', {
-									page: pagination.page,
-									totalPages: pagination.totalPages,
-								})}
-							</span>
-							<Button
-								variant='outline'
-								size='sm'
-								disabled={pagination.page >= pagination.totalPages}
-								onClick={() =>
-									void navigate({
-										search: (prev) => ({ ...prev, page: (prev.page ?? 1) + 1 }),
-									})
-								}
-							>
-								{t('common:action.next')}
-							</Button>
-						</div>
+					{pagination && (
+						<PaginationControls
+							page={pagination.page}
+							totalPages={pagination.totalPages}
+							onPageChange={(page) =>
+								void navigate({
+									search: (prev) => ({ ...prev, page }),
+								})
+							}
+						/>
 					)}
 				</CardContent>
 			</Card>

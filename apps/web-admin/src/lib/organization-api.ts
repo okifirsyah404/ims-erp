@@ -20,6 +20,9 @@ export type TOrganization = {
 	metadata: Record<string, unknown> | null;
 	createdAt: string;
 	deletedAt: string | null;
+	membersCount?: number;
+	rolesCount?: number;
+	projectCount?: number;
 };
 
 export type TOrganizationMember = {
