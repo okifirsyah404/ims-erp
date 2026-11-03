@@ -13,6 +13,12 @@
       "skillPath": "security/SKILL.md",
       "computedHash": "7a230edf3a24ce18162cb4379f59b6a19b8d24ca04db530609d0f15cede556dc"
     },
+    "conventional-commit": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/conventional-commit/SKILL.md",
+      "computedHash": "f29c9486cede6c7b2df0cfb0a2e4aa67446552b991bcf17d1b309e903171f03d"
+    },
     "dbml-database-docs": {
       "source": "aircury/ai-framework",
       "sourceType": "github",
@@ -30,6 +36,18 @@
       "sourceType": "github",
       "skillPath": "better-auth/emailAndPassword/SKILL.md",
       "computedHash": "863886759f729081e265941f4f72c503835d55a1f34f6d63cebe6571159fff4a"
+    },
+    "git-commit": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/git-commit/SKILL.md",
+      "computedHash": "78b6a33700091345cd449f9e3642ddd611b479b341efc9d6c750f7e04d15216a"
+    },
+    "github-issues": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/github-issues/SKILL.md",
+      "computedHash": "7c576643e9d3c622f18526a5554e8533410049dfc77e9bb10328081c4ea53d8c"
     },
     "grill-me": {
       "source": "mattpocock/skills",
