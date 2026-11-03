@@ -104,16 +104,21 @@ Boundary changes are reviewed against four skills. Read the relevant one
 | Skill                       | Governs                                                                     |
 | --------------------------- | --------------------------------------------------------------------------- |
 | `elysia-module`             | module folder set, one Postgres schema per module, what may cross a boundary |
-| `elysia-layered-architecture` | controller/service/repository split, queues, external-system ports        |
+| `elysia-layered-architecture` | controller/service/repository split, `errors/`, `adapters/` (external-system ports), queues, optional `middleware/` and `utils/` |
 | `elysia-tsyringe`           | module containers, composition root, resolve at the HTTP boundary            |
 | `tsyringe`                  | `InjectionToken<T>` typing, constructor injection, lifetimes                 |
 | `faker`                     | `@faker-js/faker` in database seeders: determinism (`faker.seed`), anchor-based idempotency, column-type mapping, what must never be faker-generated |
 
 **Module shape.** `app/<module>/` = `container.ts` exporting
 `register<Module>(container)`, optional `index.ts` public entry, `contracts/`
-(interfaces + zod), `constants/di.ts`, `repositories/`, `services/`,
-`controllers/`, optional `queues/`. Controllers only — there is **no `routes/`
-directory**.
+(interfaces + zod), `constants/di.ts`, `repositories/`, `services/`
+(`*.service.ts` files only), `controllers/`, `errors/`
+(`*.errors.ts`, domain errors extending `AppError`), optional `adapters/`
+(external-system port implementations, no file suffix — "gateway" naming
+is reserved for websocket gateways), optional `utils/` (pure helpers),
+optional `middleware/` (module middleware/hooks; reserved — create only
+when needed), optional `queues/`. Controllers only — there is **no
+`routes/` directory**.
 
 **Registration and mounting are split across two files.** `src/index.ts`
 calls each `register<Module>(container)` and applies the cross-cutting

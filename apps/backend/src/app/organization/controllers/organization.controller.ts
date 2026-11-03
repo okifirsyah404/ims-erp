@@ -20,7 +20,7 @@ import {
 	OrganizationNotFoundError,
 	OrganizationNotDeletedError,
 	OrganizationSlugTakenError,
-} from '../services/organization.errors';
+} from '../errors/organization.errors';
 
 /**
  * HTTP boundary for the organization module's organization-scoped routes.

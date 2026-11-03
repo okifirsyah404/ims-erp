@@ -61,13 +61,14 @@ before this hook existed keep their stored value and need one re-login
 ## Backend (`apps/backend/src/app/organization/`)
 
 Standard module layout: `contracts/` (zod + interfaces), `repositories/`,
-`services/`, `routes/`, `containers/`, `constants/`.
+`services/`, `errors/`, `adapters/`, `controllers/`, `constants/`,
+`container.ts` (there is **no** `routes/` or `containers/` directory).
 
 - **Repository** — Drizzle over Better Auth–owned `auth.organizations` /
   `auth.members`. Write surface limited to `deletedAt` (soft delete/restore);
   membership and profile mutations go through the Better Auth gateway.
   `countActive()` backs the last-organization guard.
-- **Gateway** (`better-auth-organization.gateway.ts`) — wraps `auth.api`:
+- **Adapter** (`adapters/better-auth-organization.ts`) — wraps `auth.api`:
   `createOrganization` (headers forwarded when session-scoped, `userId`
   for server-side/system creates), `setActive` (set or clear the session's
   active organization), `updateOrganization`, `getFullOrganization`,
@@ -101,7 +102,7 @@ Standard module layout: `contracts/` (zod + interfaces), `repositories/`,
 | DELETE | `/organizations/:organizationId/members/:memberId` | `member:delete` | 409 last owner |
 
 Domain errors map to 403/404/409 envelopes (see
-`services/organization.errors.ts`).
+`errors/organization.errors.ts`).
 
 ## Soft delete
 

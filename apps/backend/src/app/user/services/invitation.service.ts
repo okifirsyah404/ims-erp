@@ -8,26 +8,26 @@ import {
 	ROLE_REPOSITORY_TOKEN,
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
-} from '../../user-management/constants/di';
+} from '../constants/di';
 import type {
 	IInvitationRepository,
-	IRoleRepository,
-	IUserManagementRepository,
 	TInvitationListRequest,
-} from '../../user-management/contracts/repositories.interface';
-import type { TClaimTarget } from '../../user-management/contracts/gateways.interface';
+} from '../contracts/invitation.repository.interface';
 import type {
-	IInvitationMailer,
-	IUserManagementAuthGateway,
-} from '../../user-management/contracts/gateways.interface';
-import type { TCreateInvitationInput } from '../../user-management/contracts/invitation.contract';
-import { hashToken } from './token';
+	IRoleRepository,
+} from '../contracts/role.repository.interface';
+import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
+import type { TClaimTarget } from '../contracts/user-management-auth.gateway.interface';
+import type { IInvitationMailer } from '../contracts/invitation-mailer.gateway.interface';
+import type { IUserManagementAuthGateway } from '../contracts/user-management-auth.gateway.interface';
+import type { TCreateInvitationInput } from '../contracts/invitation.contract';
+import { hashToken } from '../utils/token';
 import { AuditService } from '../../audit/services/audit.service';
 import {
 	INVITATION_TTL_MS,
 	generateInvitationToken,
 	verifyToken,
-} from './token';
+} from '../utils/token';
 import {
 	ClaimConflictError,
 	ClaimStateError,
@@ -37,7 +37,7 @@ import {
 	InvitationNotFoundError,
 	InvitationPendingExistsError,
 	RoleNotFoundError,
-} from './invitation.errors';
+} from '../errors/invitation.errors';
 
 /** Actor context extracted from the guarded request. */
 export type TActor = {

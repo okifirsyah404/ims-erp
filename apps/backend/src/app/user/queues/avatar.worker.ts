@@ -5,7 +5,8 @@ import { Worker } from 'bullmq';
 import { container } from 'tsyringe';
 import { queueConnection } from '@providers/queue/queue.connection';
 import type { QueueWorker } from '@providers/queue/worker-registry';
-import { avatarObjectKey, s3Client } from '@providers/s3/s3';
+import { s3Client } from '@providers/s3/s3';
+import { avatarObjectKey } from '../constants/avatar-keys';
 import { USER_REPOSITORY_TOKEN } from '../constants/di';
 import type { IUserRepository } from '../contracts/user.repository.interface';
 import {

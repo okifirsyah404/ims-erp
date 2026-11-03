@@ -6,8 +6,14 @@
 
 Creating a module means, in order:
 
-1. `src/app/<module>/{contracts,constants,controllers,services,repositories}`
-   — plus `queues/` when the module owns background jobs (BullMQ).
+1. `src/app/<module>/{contracts,constants,controllers,services,repositories,errors}`
+   - plus `queues/` when the module owns background jobs (BullMQ),
+     `adapters/` when it implements an external-system port, `utils/`
+     for pure helpers, `middleware/` for module middleware/hooks
+     (reserved; create only when needed).
+   - `services/` contains only `*.service.ts` files; domain errors go in
+     `errors/<module>.errors.ts`. "Gateway" naming is reserved for
+     websocket gateways — external-system wrappers are adapters.
 2. `constants/di.ts` with the module's tokens (see `elysia-tsyringe`)
 3. `drizzle/schemas/<module>.schema.ts` with `pgSchema("<module>")`
    — except auth-projecting modules (rule 3.3), which have no schema file.
@@ -17,7 +23,7 @@ Creating a module means, in order:
    `createApp()` — registration and mounting deliberately live in different
    files (see `elysia-tsyringe` rule 2.3)
 6. If the module calls an external system, define the port (interface) in
-   `contracts/` first and implement it in `services/` — before writing
+   `contracts/` first and implement it in `adapters/` - before writing
    any call site (see the layered-architecture skill, rule 1.2).
 7. No edits to other modules' code. If another module must cooperate,
    invert: the other module exposes a token/service, or (later) a domain
@@ -49,12 +55,15 @@ port and a background job:
 
 ```
 src/app/user/
-  contracts/            # zod contracts, IUserRepository, IUserAuthGateway (port)
+  contracts/            # zod contracts + port interfaces (per-domain files)
   constants/di.ts       # USER_REPOSITORY_TOKEN, USER_AUTH_GATEWAY_TOKEN, USER_SERVICE_TOKEN
   controllers/          # user.controller.ts (self route `/me` before `/:userId`)
+  errors/               # user.errors.ts, invitation.errors.ts
+  adapters/             # better-auth-user.ts, logger-mailer.ts (port impls, no suffix)
   queues/               # avatar.queue.ts + avatar.worker.ts (BullMQ, module-owned)
   repositories/         # user.repository.ts (deletedAt-only writes, cache-aside)
-  services/             # user.service.ts (repo+gateway), better-auth-user.gateway.ts (port impl)
+  services/             # user.service.ts, invitation.service.ts (orchestration only)
+  utils/                # token.ts (pure helpers)
   container.ts          # registerUser(container)
 ```
 

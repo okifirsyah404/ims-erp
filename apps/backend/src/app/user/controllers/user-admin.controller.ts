@@ -20,8 +20,8 @@ import {
 } from '../constants/di';
 import type { RoleManagementService } from '../../user/services/role-management.service';
 import type { UserAdminService } from '../../user/services/user-admin.service';
-import type { IRoleRepository } from '../contracts/repositories.interface';
-import { UserManagementError } from '../../user/services/invitation.errors';
+import type { IRoleRepository } from '../contracts/role.repository.interface';
+import { UserManagementError } from '../errors/invitation.errors';
 import type { TActor } from '../../user/services/invitation.service';
 
 /** Audit actor derived from the guard-resolved session, never client input. */

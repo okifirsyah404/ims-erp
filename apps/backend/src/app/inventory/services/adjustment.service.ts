@@ -27,7 +27,7 @@ import {
 	AdjustmentTransitionError,
 	ItemNotFoundError,
 	SelfApprovalForbiddenError,
-} from './inventory.errors';
+} from '../errors/inventory.errors';
 
 /**
  * Legal status edges for an adjustment document.

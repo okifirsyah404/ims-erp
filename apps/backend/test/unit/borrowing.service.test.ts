@@ -40,7 +40,7 @@ import {
 	BorrowingTransitionError,
 	GuestIdentityIncompleteError,
 	UnitNotAvailableError,
-} from '../../src/app/inventory/services/inventory.errors';
+} from '../../src/app/inventory/errors/inventory.errors';
 import type { TBorrowingActor } from '../../src/app/inventory/services/borrowing.service';
 
 const ORG = 'org-1';

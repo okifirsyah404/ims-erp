@@ -29,7 +29,7 @@ import {
 	MovementAlreadyReversedError,
 	MovementNotFoundError,
 	WarehouseNotFoundError,
-} from './inventory.errors';
+} from '../errors/inventory.errors';
 import type { TTx } from '@drizzle/types';
 
 /** Movement types that decrease stock. Every other type increases it. */

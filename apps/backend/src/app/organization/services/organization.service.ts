@@ -32,7 +32,7 @@ import {
 	OrganizationNotFoundError,
 	OrganizationNotDeletedError,
 	OrganizationSlugTakenError,
-} from './organization.errors';
+} from '../errors/organization.errors';
 
 /**
  * Organization module service.

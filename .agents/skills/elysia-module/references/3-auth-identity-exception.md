@@ -48,9 +48,9 @@ organization services (rule 3.5).
 
 The user module is the full worked example of the split: repository
 (`repositories/user.repository.ts`, `deletedAt` + cache-aside reads over
-`auth.users`), gateway (`services/better-auth-user.gateway.ts` wrapping
+`auth.users`), adapter (`adapters/better-auth-user.ts` wrapping
 `auth.api.createUser`/`adminUpdateUser`/`setRole`/`banUser`/`unbanUser`),
-and a service pairing both (soft delete = gateway ban **+** repository
+and a service pairing both (soft delete = adapter ban **+** repository
 `deletedAt` — Better Auth ignores `deletedAt` during authentication, so
 the ban is what blocks logins).
 

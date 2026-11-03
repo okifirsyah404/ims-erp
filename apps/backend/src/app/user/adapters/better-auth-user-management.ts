@@ -3,11 +3,11 @@ import { APIError } from 'better-auth/api';
 import { runWithEndpointContext } from '@better-auth/core/context';
 import type { AuthEndpointContext } from '@better-auth/core/context';
 import { injectable } from 'tsyringe';
-import type { IUserManagementAuthGateway } from '../../user-management/contracts/gateways.interface';
+import type { IUserManagementAuthGateway } from '../contracts/user-management-auth.gateway.interface';
 import {
 	ClaimConflictError,
 	ClaimStateError,
-} from './invitation.errors';
+} from '../errors/invitation.errors';
 
 /**
  * Synthetic endpoint context for token-authorized server-side Better Auth

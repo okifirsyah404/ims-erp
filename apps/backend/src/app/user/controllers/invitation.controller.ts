@@ -12,8 +12,8 @@ import {
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
 } from '../constants/di';
 import type { InvitationService, TActor } from '../../user/services/invitation.service';
-import type { IUserManagementRepository } from '../contracts/repositories.interface';
-import { UserManagementError } from '../../user/services/invitation.errors';
+import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
+import { UserManagementError } from '../errors/invitation.errors';
 import { NotGlobalAdminError } from '@http/errors';
 import { domainPlugin } from '@http/plugin';
 import { created, errorEnvelope, ok, okPaginated } from '@http/response';

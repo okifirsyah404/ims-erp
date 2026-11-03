@@ -12,3 +12,9 @@ export {
 	startAvatarWorker,
 } from './queues/avatar.worker';
 export { avatarUserCreateHook } from './queues/avatar.queue';
+export { UserAdminController } from './controllers/user-admin.controller';
+export {
+	InvitationClaimController,
+	InvitationController,
+	UsernameCheckController,
+} from './controllers/invitation.controller';

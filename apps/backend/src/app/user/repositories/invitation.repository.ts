@@ -19,7 +19,7 @@ import type {
 	IInvitationRepository,
 	TInvitationCreate,
 	TInvitationListRequest,
-} from '../contracts/repositories.interface';
+} from '../contracts/invitation.repository.interface';
 
 /**
  * Drizzle implementation of {@link IInvitationRepository} over the

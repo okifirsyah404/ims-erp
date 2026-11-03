@@ -30,7 +30,7 @@ import {
 	WarehouseCodeTakenError,
 	WarehouseHasUnitsError,
 	WarehouseNotFoundError,
-} from './inventory.errors';
+} from '../errors/inventory.errors';
 
 /** A warehouse with its 1:1 address and its bins. */
 export type TWarehouseDetail = TWarehouseSelect & {

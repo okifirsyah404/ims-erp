@@ -58,11 +58,11 @@ export type TUserSortField = (typeof USER_SORT_FIELDS)[number];
 /** Sort directions for the admin user listing. */
 export type TUserSortDirection = (typeof USER_SORT_DIRECTIONS)[number];
 
-/** Path parameters identifying one user. */
-export const userIdParamsSchema = z.object({
-	userId: z.string().min(1),
-});
-export type TUserIdParams = z.infer<typeof userIdParamsSchema>;
+export {
+	/** Path parameters identifying one user (shared with `user.contract`). */
+	userIdParamsSchema,
+	type TUserIdParams,
+} from './user.contract';
 
 /** Admin-facing user row (no credential columns, ever). */
 export type TAdminUser = {

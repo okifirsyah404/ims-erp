@@ -4,7 +4,7 @@ description: Modular monolith boundaries for this project's Elysia backend - eac
 license: MIT
 metadata:
   author: OpenAgentic
-  version: "1.4.0"
+  version: "1.5.0"
   dependsOn: elysia-layered-architecture
   canonicalExample: apps/backend/src/app/location
   secondaryExample: apps/backend/src/app/user
@@ -119,8 +119,15 @@ cycle avoidance are detailed in rule 3.5's reference file.
 
 ### 3.6 New module checklist — MEDIUM
 
-1. `src/app/<module>/{contracts,constants,controllers,services,repositories}`
-   — plus `queues/` when the module owns background jobs (BullMQ)
+1. `src/app/<module>/{contracts,constants,controllers,services,repositories,errors}`
+   — plus `queues/` when the module owns background jobs (BullMQ),
+   `adapters/` when it implements an external-system port,
+   `utils/` for pure helpers, `middleware/` when it owns module
+   middleware/hooks (reserved; create only when needed).
+   `services/` contains only `*.service.ts` files — never errors,
+   gateways, or helpers. "Gateway" naming is reserved for websocket
+   gateways; external-system wrappers are **adapters** (`adapters/`,
+   no file suffix). Domain errors live in `errors/<module>.errors.ts`.
 2. `constants/di.ts` with the module's tokens (see `elysia-tsyringe`)
 3. `drizzle/schemas/<module>.schema.ts` with `pgSchema("<module>")`
    — except auth-projecting modules (rule 3.3)

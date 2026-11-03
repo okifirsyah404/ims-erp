@@ -1,4 +1,5 @@
-import { presignObjectUrl, avatarCustomObjectKey, s3Client } from '@providers/s3/s3';
+import { presignObjectUrl, s3Client } from '@providers/s3/s3';
+import { avatarCustomObjectKey } from '../constants/avatar-keys';
 import type { TUserSelect } from '@drizzle/schemas/auth.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
@@ -16,7 +17,7 @@ import type {
 	TUpdateUser,
 } from '../contracts/user.contract';
 import { USER_AUTH_GATEWAY_TOKEN, USER_REPOSITORY_TOKEN } from '../constants/di';
-import { UserNotFoundError } from './user.errors';
+import { UserNotFoundError } from '../errors/user.errors';
 
 /**
  * Full user profile as returned by {@link UserService.getUser}.

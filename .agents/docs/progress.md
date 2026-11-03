@@ -3,6 +3,55 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed — module directory cleanup: errors/, adapters/, utils/ (2026-11-04)
+
+Status: **verified** (typecheck + full test suite + lint).
+
+Refactor of `apps/backend/src/app/` so `services/` holds only `*.service.ts`
+files and every file type has a dedicated home:
+
+- **errors/** (new dirs in `user`, `inventory`, `organization`):
+  `user.errors.ts`, `invitation.errors.ts`, `inventory.errors.ts`,
+  `organization.errors.ts` moved out of `services/` (git mv, history kept).
+- **adapters/** (new dirs in `user`, `organization`): Better Auth wrappers
+  moved out of `services/` and renamed — `better-auth-user.gateway.ts` →
+  `adapters/better-auth-user.ts`, `better-auth-user-management.gateway.ts` →
+  `adapters/better-auth-user-management.ts`,
+  `better-auth-organization.gateway.ts` →
+  `adapters/better-auth-organization.ts`, `logger-mailer.ts` →
+  `adapters/logger-mailer.ts`. The `.gateway` suffix was dropped: "gateway"
+  naming is reserved for future websocket gateways; external-system port
+  implementations are adapters.
+- **user/utils/token.ts** moved out of `services/` (pure helpers).
+- **Contract split (user module only):** monolithic
+  `contracts/repositories.interface.ts` → per-domain
+  `invitation.repository.interface.ts`, `role.repository.interface.ts`,
+  `user-management.repository.interface.ts` (+ `admin-listing.types.ts` for
+  shared listing types); `contracts/gateways.interface.ts` →
+  `user-management-auth.gateway.interface.ts` (with `TClaimTarget`) and
+  `invitation-mailer.gateway.interface.ts`. All other `contracts/` files
+  untouched. `middleware/` is a reserved optional module dir (documented,
+  not created).
+- **Imports:** ~40 lines updated across services, controllers,
+  repositories, `constants/di.ts`, both containers, plus 9 test files.
+- **Docs/skills synced:** `elysia-module` → v1.5.0,
+  `elysia-layered-architecture` → v1.4.0 (checklists, layer tree, port
+  implementations in `adapters/`), root `AGENTS.md` module-shape paragraph,
+  `modules/organization.md` (stale `routes/`/`containers/` fixed), 
+  `modules/user.md` (current layout note), `skills.md` inventory.
+
+Verification actually run (2026-11-04):
+
+```text
+bun run typecheck (apps/backend)   → clean
+bun test (apps/backend)            → 530 pass / 0 fail (26 files)
+bun run lint (apps/backend)        → 0 errors; 2 warnings introduced by the
+                                     refactor were fixed, rest pre-existing
+```
+
+`docs/database/` reviewed and **unchanged** (no schema change — code
+layout only).
+
 ## Completed — admin users list presigns avatars (2026-11-03)
 
 Status: **verified** (unit test + live endpoint + presigned fetch).
@@ -447,6 +496,29 @@ of this is uncommitted working-tree state. Design: `.agents/docs/plans/inventory
   single type-discriminated entity. The item master is now `inventory.items`
   (ADR-0008); a pointer was added there.
 
+## Completed (this session — user-management → user merge, 2026-11-03)
+
+The deferred repository/contracts/tokens merge is done; `app/user-management/`
+is deleted. All names kept verbatim (no token collisions existed):
+
+- **Files moved** (git mv, content untouched): 4 contracts
+  (`admin.contract`, `gateways.interface`, `invitation.contract`,
+  `repositories.interface`), 2 controllers (`user-admin.controller`,
+  `invitation.controller`), 3 repositories (`user-management.repository`,
+  `role.repository`, `invitation.repository`) into `app/user/`.
+- **Tokens merged** into `user/constants/di.ts` (8 tokens appended).
+- **One container**: `registerUserManagement` folded into
+  `registerUser` in `user/container.ts`; `src/index.ts` updated.
+- **Barrel**: `user/index.ts` now exports the admin + invitation controllers;
+  `app.ts` imports them from `./user`.
+- **Dedupe**: `admin.contract.ts` re-exports `userIdParamsSchema` /
+  `TUserIdParams` from `user.contract.ts` instead of duplicating them.
+- Two `UserNotFoundError` classes remain deliberately: the self-service one
+  (`user.errors.ts`, plain `Error`) and the admin one (`invitation.errors.ts`,
+  i18n `UserManagementError` with HTTP 404) are caught by different
+  controllers.
+- `tsc --noEmit` clean; 301 unit tests pass.
+
 ## Completed (this session — backend tidy-up W1–W4, 2026-11-02)
 
 Conformance pass against the `/elysia-module`, `/elysia-tsyringe`,
@@ -454,9 +526,10 @@ Conformance pass against the `/elysia-module`, `/elysia-tsyringe`,
 W8 (docs pass) complete. **URLs changed** — backend and web-admin moved
 together, nothing pushed.
 
-Remaining known follow-up (deliberately deferred, not forgotten): the
+Remaining known follow-up (deliberately deferred, not forgotten): ~~the
 `user-management` **repositories/contracts/tokens** have not yet been merged
-into `user`; `user-management/container.ts` is the seam.
+into `user`; `user-management/container.ts` is the seam.~~ **Done** — see
+"Completed (this session — user-management → user merge, 2026-11-03)" below.
 
 ### W1 — DI tokens have one home (`03625fc`)
 

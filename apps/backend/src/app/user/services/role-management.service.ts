@@ -9,18 +9,18 @@ import type {
 	TCreateRole,
 	TPermissionGrant,
 	TUpdateRole,
-} from '../../user-management/contracts/admin.contract';
+} from '../contracts/admin.contract';
 import {
 	ROLE_REPOSITORY_TOKEN,
-} from '../../user-management/constants/di';
-import type { IRoleRepository } from '../../user-management/contracts/repositories.interface';
+} from '../constants/di';
+import type { IRoleRepository } from '../contracts/role.repository.interface';
 import {
 	InvalidPermissionGrantError,
 	RankGuardError,
 	RoleInUseError,
 	RoleNameTakenError,
 	RoleNotFoundError,
-} from './invitation.errors';
+} from '../errors/invitation.errors';
 import { AUDIT_SERVICE_TOKEN } from '../../audit/constants/di';
 import type { AuditService } from '../../audit/services/audit.service';
 import type { TActor } from './invitation.service';

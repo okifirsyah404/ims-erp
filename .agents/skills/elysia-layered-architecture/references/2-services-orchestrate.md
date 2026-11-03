@@ -45,13 +45,14 @@ export class LocationService {
 
 When a module must call an outside system — Better Auth's `auth.api`, an
 email provider, a payment SDK — the calls live behind a contract
-interface (a **port**) in `contracts/`, implemented in `services/`, and
-injected via a DI token. The service orchestrates repository + gateway;
-domain errors are translated at the gateway edge; the external SDK import
-appears nowhere else.
+interface (a **port**) in `contracts/`, implemented in `adapters/`, and
+injected via a DI token. The service orchestrates repository + adapter;
+domain errors are translated at the adapter edge; the external SDK import
+appears nowhere else. "Gateway" naming is reserved for websocket
+gateways — external-system wrappers are adapters (no file suffix).
 
 `apps/backend/src/app/user/services/user.service.ts` — orchestration over
-a repository (owns `deletedAt`) and a gateway (owns every Better
+a repository (owns `deletedAt`) and an adapter (owns every Better
 Auth–owned column):
 
 ```typescript
@@ -76,12 +77,12 @@ export class UserService {
 }
 ```
 
-The gateway implementation
-(`services/better-auth-user.gateway.ts`) wraps `auth.api` and translates
+The adapter implementation
+(`adapters/better-auth-user.ts`) wraps `auth.api` and translates
 `APIError`s into module domain errors (`UserEmailTakenError`,
-`UserNotFoundError`) — the same translation duty repositories delegate to
-their error mappers. Tests inject a mocked gateway via the token
-(see `test/unit/user.service.test.ts`).
+`UserNotFoundError`, from `errors/user.errors.ts`) — the same translation
+duty repositories delegate to their error mappers. Tests inject a mocked
+adapter via the token (see `test/unit/user.service.test.ts`).
 
 Module-owned background jobs (BullMQ) follow the same boundary: the
 worker (`queues/avatar.worker.ts`) resolves the module **repository** via

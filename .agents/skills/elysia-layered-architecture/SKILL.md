@@ -4,7 +4,7 @@ description: Layered backend architecture for this project's Elysia domains - co
 license: MIT
 metadata:
   author: OpenAgentic
-  version: "1.3.0"
+  version: "1.4.0"
   dependsOn: elysiajs
   canonicalExample: apps/backend/src/app/location
   secondaryExample: apps/backend/src/app/user
@@ -19,8 +19,13 @@ This project structures every backend domain
 contracts/   zod schemas + TypeScript interfaces (+ ports for external systems)
 constants/   DI tokens (constants/di.ts)
 controllers/ Elysia routes: HTTP concerns only
-services/    orchestration over repositories and ports; no HTTP, no Drizzle
+services/    orchestration over repositories and ports; no HTTP, no Drizzle; only *.service.ts
 repositories/ Drizzle queries + cache; implement contracts
+errors/      domain errors (*.errors.ts), extending AppError
+adapters/    external-system port implementations (no suffix; "gateway" is
+             reserved for websocket gateways) — optional
+utils/       pure helpers — optional
+middleware/  module middleware / Better Auth hooks — optional, reserved
 queues/      module-owned BullMQ queues + workers (optional; user module)
 container.ts registration of the domain's classes (see elysia-tsyringe)
 ```
@@ -88,9 +93,9 @@ swapped and repositories can be tested without HTTP.
 **External systems enter through ports.** When a module must call an
 outside system (Better Auth's `auth.api`, an email provider, a payment
 SDK), the calls live behind a contract interface in `contracts/`
-implemented in `services/` and injected via a DI token — never called
+implemented in `adapters/` and injected via a DI token — never called
 inline from a controller or service. The service then orchestrates
-repository + gateway; domain errors are translated at the gateway edge.
+repository + adapter; domain errors are translated at the adapter edge.
 
 ```typescript
 // apps/backend/src/app/user/services/user.service.ts — the pattern

@@ -6,7 +6,7 @@ import type {
 	TAuthGatewayCreateUser,
 } from '../contracts/user-auth.gateway.interface';
 import type { TSetUserRole, TUpdateUser } from '../contracts/user.contract';
-import { UserEmailTakenError, UserNotFoundError } from './user.errors';
+import { UserEmailTakenError, UserNotFoundError } from '../errors/user.errors';
 
 /**
  * Better Auth admin API implementation of {@link IUserAuthGateway}.

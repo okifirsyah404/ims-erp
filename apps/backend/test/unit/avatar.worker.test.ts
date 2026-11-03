@@ -4,7 +4,7 @@ import {
 	avatarSeed,
 	generateAvatarWebp,
 } from '../../src/app/user/queues/avatar.worker';
-import { avatarObjectKey } from '../../src/providers/s3/s3';
+import { avatarObjectKey } from '../../src/app/user/constants/avatar-keys';
 
 // Minimal WebP container check: 'RIFF' magic + 'WEBP' fourcc at offset 8.
 const WEBP_MAGIC = Buffer.concat([

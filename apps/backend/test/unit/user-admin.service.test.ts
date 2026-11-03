@@ -1,18 +1,18 @@
 import { describe, expect, mock, test } from 'bun:test';
 import type { TUserSelect } from '../../drizzle/schemas/auth.schema';
 import type { TRoleSelect } from '../../drizzle/schemas/role.schema';
+import type { IRoleRepository } from '../../src/app/user/contracts/role.repository.interface';
 import type {
-	IRoleRepository,
 	IUserManagementRepository,
-	TAdminUserRow,
-} from '../../src/app/user-management/contracts/repositories.interface';
-import type { IUserManagementAuthGateway } from '../../src/app/user-management/contracts/gateways.interface';
+} from '../../src/app/user/contracts/user-management.repository.interface';
+import type { TAdminUserRow } from '../../src/app/user/contracts/admin-listing.types';
+import type { IUserManagementAuthGateway } from '../../src/app/user/contracts/user-management-auth.gateway.interface';
 import type { AuditService } from '../../src/app/audit/services/audit.service';
 import {
 	RankGuardError,
 	UserNotFoundError,
 	UserStateError,
-} from '../../src/app/user/services/invitation.errors';
+} from '../../src/app/user/errors/invitation.errors';
 import type { TActor } from '../../src/app/user/services/invitation.service';
 import { UserAdminService } from '../../src/app/user/services/user-admin.service';
 

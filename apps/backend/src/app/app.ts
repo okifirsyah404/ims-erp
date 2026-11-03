@@ -4,18 +4,18 @@ import { OpenAPI } from '@providers/better-auth/open-api-extractor.auth';
 import Elysia from 'elysia';
 import { LocationController } from './location/controllers/location.controller';
 import { SalesController } from './sales/controllers/sales.controller';
-import { UserAdminController } from './user-management/controllers/user-admin.controller';
+import {
+	InvitationClaimController,
+	InvitationController,
+	UsernameCheckController,
+	UserAdminController,
+} from './user';
 import { UserController } from './user/controllers/user.controller';
 import { AuditController } from './audit';
 import {
 	OrganizationBootstrapController,
 	OrganizationController,
 } from './organization';
-import {
-	InvitationClaimController,
-	InvitationController,
-	UsernameCheckController,
-} from './user-management/controllers/invitation.controller';
 
 /**
  * Better Auth's aggregated OpenAPI document, extracted once at module load.

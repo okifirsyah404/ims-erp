@@ -8,7 +8,7 @@ import type {
 	TUserPaginationRequest,
 } from '../../src/app/user/contracts/user.repository.interface';
 import { UserService } from '../../src/app/user/services/user.service';
-import { UserNotFoundError } from '../../src/app/user/services/user.errors';
+import { UserNotFoundError } from '../../src/app/user/errors/user.errors';
 import type { TUserSelect } from '../../drizzle/schemas/auth.schema';
 
 function makeUser(overrides: Partial<TUserSelect> = {}): TUserSelect {

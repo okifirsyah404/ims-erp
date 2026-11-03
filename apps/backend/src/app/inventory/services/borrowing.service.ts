@@ -32,7 +32,7 @@ import {
 	GuestIdentityIncompleteError,
 	UnitNotAvailableError,
 	UnitNotOnBorrowingError,
-} from './inventory.errors';
+} from '../errors/inventory.errors';
 
 /**
  * Legal status edges for a borrowing (D19).
