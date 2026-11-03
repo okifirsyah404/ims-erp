@@ -1,13 +1,15 @@
-import { auth } from '../../../src/providers/better-auth/auth';
+import { fakerID_ID as faker } from '@faker-js/faker';
+import type { ErpRoleName } from '@ims-erp/common';
+import { and, eq } from 'drizzle-orm';
+import pino from 'pino';
 import { drizzleDB } from '../../../drizzle/db';
 import {
 	members,
 	organizations,
 	users,
 } from '../../../drizzle/schemas/auth.schema';
-import { and, eq } from 'drizzle-orm';
-import pino from 'pino';
-import type { ErpRoleName } from '@ims-erp/common';
+import { auth } from '../../../src/providers/better-auth/auth';
+import { seedSafeText } from './faker-content';
 
 const logger = pino({
 	timestamp: false,
@@ -43,20 +45,21 @@ const SEED_INTERNAL_ROLES: readonly ErpRoleName[] = [
 	'auditor',
 ];
 
-/** Deterministic, collision-free identity for a role's seed account. */
+/**
+ * Deterministic, collision-free identity for a role's seed account.
+ *
+ * @remarks
+ * Email and username are the seeder's idempotency anchors — deliberately NOT
+ * faker-generated (see the `faker` skill). Fake content (`name`, `bio`,
+ * `phone`) is generated separately by {@link seedAccountContent}.
+ */
 function seedIdentity(role: ErpRoleName): {
 	email: string;
 	username: string;
-	name: string;
 } {
-	const titleCased = role
-		.split('_')
-		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-		.join(' ');
 	return {
 		email: `${role}.seed@entragate.local`,
 		username: `${role}_seed`,
-		name: `${titleCased} (Seed)`,
 	};
 }
 
@@ -66,13 +69,54 @@ function seedRolePassword(role: ErpRoleName): string {
 }
 
 /**
+ * Deterministic faker seed for role-account content generation.
+ *
+ * @remarks
+ * Identity fields (email, username, password) are fixed anchors and carry
+ * seeder idempotency; faker only fills content (`name`, `bio`, `phone`).
+ * Seeding faker makes those stable across runs, so the existence guards stay
+ * no-ops on re-runs. Change only together with a fresh database (see the
+ * `faker` skill).
+ */
+const FAKER_SEED = 20261103;
+
+/**
+ * Generates the fake contact content for one role account.
+ *
+ * @remarks
+ * Phone uses a fixed `+62 811` prefix + zero-padded role index so the 16
+ * accounts can never collide on the unique `users_phone_live_idx` index,
+ * while faker supplies the trailing digits deterministically.
+ */
+function seedAccountContent(index: number): {
+	name: string;
+	bio: string;
+	phone: string;
+} {
+	return {
+		// Text goes through seedSafeText: faker emits occasional emoji/
+		// multi-byte characters a WIN1252-encoded dev database cannot store
+		// (see faker-content.ts).
+		name: seedSafeText(faker.person.fullName()),
+		bio: seedSafeText(faker.person.bio()),
+		phone: `+62811${String(index).padStart(2, '0')}${faker.string.numeric(6)}`,
+	};
+}
+
+/**
  * Idempotent role-account seeder: one login-capable account per internal
  * role, added to the Entragate organization with that role.
  *
  * - Accounts are created via the Better Auth API (hashing/username
  *   normalization match real sign-up); membership via `auth.api.addMember`.
+ * - Identity fields are fixed anchors (`<role>.seed@entragate.local`,
+ *   `<role>_seed`, `<role>123456`); faker fills content (`name`, `bio`,
+ *   `phone`) deterministically under `FAKER_SEED`. `phone` is written
+ *   directly via Drizzle (`input: false` additionalField owned by the
+ *   user-management module).
  * - Existence check is the membership row itself: an existing account
- *   without membership is joined; both present means skip.
+ *   without membership is joined; both present means skip. Existing
+ *   accounts are reused as-is (password/name/phone never reset).
  * - Passwords are deterministic dev-only values (`<role>123456`, e.g.
  *   `admin123456`); never logged. Re-runs never reset passwords.
  * - Missing organization is a no-op, not an error: in production the
@@ -116,9 +160,16 @@ export async function seedOrganizationMembers(): Promise<void> {
 export async function addSeedMembersTo(
 	organizationId: string,
 ): Promise<number> {
+	// Fixed faker seed: content fields (name, bio, phone) are deterministic,
+	// so re-runs and fresh databases produce identical accounts (see the
+	// `faker` skill). Identity anchors (email, username, password) are
+	// faker-independent.
+	faker.seed(FAKER_SEED);
+
 	let created = 0;
-	for (const role of SEED_INTERNAL_ROLES) {
+	for (const [index, role] of SEED_INTERNAL_ROLES.entries()) {
 		const identity = seedIdentity(role);
+		const content = seedAccountContent(index);
 
 		const [existingUser] = await drizzleDB
 			.select({ id: users.id })
@@ -132,11 +183,15 @@ export async function addSeedMembersTo(
 				await auth.api.createUser({
 					body: {
 						email: identity.email,
-						name: identity.name,
+						name: content.name,
 						password: seedRolePassword(role),
 						data: {
 							username: identity.username,
 							displayUsername: identity.username,
+							// `bio` is an input-allowed additionalField; `phone` is
+							// `input: false` and is written directly below (the
+							// user-management module owns that column via Drizzle).
+							bio: content.bio,
 						} as Record<string, unknown>,
 					},
 				})
@@ -152,6 +207,22 @@ export async function addSeedMembersTo(
 				),
 			)
 			.limit(1);
+
+		if (existingUser) {
+			logger.info(
+				{ role, userId, organizationId },
+				'Role account already exists; reusing (password/phone NOT reset)',
+			);
+		} else {
+			// `phone` is an `input: false` additionalField: Better Auth's API
+			// surface does not accept it, so the seeder writes the column
+			// directly — the same ownership rule the user-management module
+			// applies (set via Drizzle, never via the auth API).
+			await drizzleDB
+				.update(users)
+				.set({ phone: content.phone })
+				.where(eq(users.id, userId));
+		}
 
 		if (existingMember) {
 			logger.info(
@@ -171,7 +242,10 @@ export async function addSeedMembersTo(
 			},
 		});
 		created += 1;
-		logger.info({ role, userId, organizationId }, 'Role account added to organization');
+		logger.info(
+			{ role, userId, organizationId },
+			'Role account added to organization',
+		);
 	}
 
 	return created;

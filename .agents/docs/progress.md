@@ -3,6 +3,180 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+## Completed — admin users list presigns avatars (2026-11-03)
+
+Status: **verified** (unit test + live endpoint + presigned fetch).
+
+Root cause of "avatars show the fallback in the admin users table although
+the S3 objects exist": `UserAdminService.list` projected `image` **raw** —
+the S3 object key (`user/<id>/avatar.webp`), not a URL. The browser cannot
+load a relative object key as `<img src>`, so Radix `AvatarImage` errored
+and every row rendered the initials fallback. Only the profile path
+(`UserService.withPresignedAvatar`) was remapping; the admin list bypassed
+the convention.
+
+Fix: `apps/backend/src/app/user/services/user-admin.service.ts` `list()`
+now maps `image` through `presignObjectUrl` (null stays null) — the same
+short-lived-URL convention as the profile path. Audit of all user-serving
+services confirmed this was the only raw-`image` leak.
+
+Verification actually run (2026-11-03):
+
+```text
+bun run typecheck (apps/backend)                     → clean
+bun test test/unit/user-admin.service.test.ts        → 12 pass / 0 fail
+bun test (apps/backend)                              → 526 pass / 0 fail
+bun run lint                                         → pass
+GET /admin/users (live, dev server)                  → image = https://…/avatar.webp
+                                                       ?X-Amz-… (signed), not a key
+presigned URL fetch                                  → 200 image/webp
+```
+
+Presigned URLs expire after 300s by design; react-query's refetch-on-focus
+re-presigns. Same behavior as the profile page — no change.
+
+`docs/database/` reviewed and **unchanged** (no schema change).
+
+## Completed — avatar pipeline fix: DiceBear v10 + WebP (2026-11-03)
+
+Status: **verified** end to end (DB → S3 → presigned URL → format).
+
+Root cause of "no avatar on the web after seeding": the avatar worker's
+DiceBear URL sent `backgroundColor=transparent`. The DiceBear **v10** HTTP
+API validates `backgroundColor` against a hex-color pattern and rejects
+`transparent` with **400**. Every avatar job therefore failed all 3 BullMQ
+attempts, `auth.users.image` stayed `null`, and the web-admin avatar
+components (`{user.image && <AvatarImage/>}`) rendered only the initials
+fallback.
+
+Fix (`apps/backend`):
+
+- `src/app/user/queues/avatar.worker.ts`: style path
+  `10.x/initials/png` → `10.x/initials/webp`; **no `backgroundColor`
+  parameter at all** (per explicit decision — the style's seed-derived
+  default applies; do not re-add it, including `00000000`);
+  `generateAvatarPng` → `generateAvatarWebp`; temp file `.webp`.
+- `src/providers/s3/s3.ts`: `avatarObjectKey` → `user/<id>/avatar.webp`.
+- `src/app/user/services/user.service.ts`: comment-only key references.
+- `test/unit/avatar.worker.test.ts`: WebP magic check (RIFF/WEBP), new
+  guard test asserting `backgroundColor` is **absent** from the URL,
+  `.webp` key expectation.
+
+Verification actually run (2026-11-03):
+
+```text
+bun run typecheck (apps/backend)                     → clean
+bun test test/unit/avatar.worker.test.ts             → 11 pass / 0 fail
+bun test (apps/backend)                              → 525 pass / 0 fail
+bun run lint                                         → pass (pre-existing warnings only)
+drizzle:migrate-reset + reseed (user-run; a schema-reset
+  deadlock occurs when the dev server holds locks — stop the
+  server first for a scripted reset)                 → 17 seeded users all have
+                                                       image = user/<id>/avatar.webp
+presigned URL fetch                                  → 200, content-type image/webp
+avatar queue after drain                             → waiting: 0 (1 stale pre-fix failed
+                                                       job for a dead user id; ages out)
+```
+
+Pipeline confirmation: Better Auth `user.create.after` hook fires for
+seeded users (admin + 16 role accounts) → jobs enqueued at seed time →
+running dev-server worker drains them → S3 object written → key stored →
+presigned per request. Closes the ERP-0029 follow-up "worker not yet
+observed firing against real Redis".
+
+`docs/database/` reviewed and **unchanged** (no schema change; `image`
+remains a text key column).
+
+## Completed — faker-based seeders + faker skill (2026-11-03)
+
+Status: **implemented** for the skill/docs; the seeder run-twice idempotency
+and a full fresh-database `migrate-reset` were **verified**. Not `accepted`
+(no reviewer sign-off yet).
+
+### Encoding fix (WIN1252 vs emoji, 2026-11-03)
+
+`drizzle:migrate-reset` failed on a fresh database:
+`faker.person.bio()` emitted an emoji (🧣) and the WIN1252-encoded dev
+PostgreSQL cannot store 4-byte UTF-8. Fix: `seedSafeText()` helper
+(`database/seeders/seed/faker-content.ts`) strips non-Latin-1 characters and
+collapses whitespace; applied to every faker text field in
+`organization-members.seeder.ts` (name, bio) and `inventory.seeder.ts`
+(item name, category, material). Anchors are ASCII and untouched. A
+char-code filter is used instead of a negated-class regex (oxlint
+`no-control-regex`). Skill §3.1 records the rule.
+
+- **Dependency:** `@faker-js/faker@10.6.0` added as a devDependency of
+  `apps/backend` (`bun add @faker-js/faker --cwd apps/backend --dev`,
+  clean install).
+- **`apps/backend/database/seeders/seed/inventory.seeder.ts`**: curated
+  `SEED_ITEMS` fixture array replaced by `generateSeedItems()` — a
+  deterministic faker generator (`faker.seed(20261102)`, fixed constant),
+  4 items per kind × 5 kinds = 20 items. Kind invariants preserved (tools
+  serialized + unsellable; materials quantity-tracked with unit labels;
+  services untracked). SKUs/serials are deterministic anchors
+  (`ITEM-001`…`ITEM-020`, `<SKU>-S00n`) so the natural-key idempotency
+  guards still hold; faker only fills names, categories, and integer-IDR
+  prices per ADR-0002 (no `faker.finance.amount`). Opening-stock fixtures
+  re-anchored to `ITEM-005` (first component) / `ITEM-009` (first material)
+  with the mapping documented. Money and `organization_id` scoping
+  conventions respected; location seeder untouched (real administrative
+  reference data is never faker-generated).
+- **`apps/backend/database/seeders/index.ts`**: stale final log message
+  fixed ("Location seeding complete" → "Seeding complete"). No orchestration
+  change; `migrate-reset.ts` reuse of `runSeeders()` unaffected.
+- **Skill:** `.agents/skills/faker/SKILL.md` created (v1.0.0, local,
+  dependsOn `erp-database-schema`): deterministic seeding, anchor vs
+  content fields, never faker-generate canonical reference data /
+  statuses / currency, money-datetime-quantity column mapping, 10–50
+  rows/module sizing, anti-patterns.
+- **Docs:** `AGENTS.md` backend skill table gained the `faker` row; the
+  `drizzle:seed` command row notes faker-based deterministic seed content.
+  `.agents/docs/skills.md` inventory gained `faker` as *present, not in
+  lock*.
+
+- **`apps/backend/database/seeders/seed/organization-members.seeder.ts`**
+  (same session, 2026-11-03): the 16 role accounts' content fields are now
+  faker-generated — `name` (`faker.person.fullName()`), `bio`
+  (`faker.person.bio()`), `phone` (fixed `+62811` prefix + role index +
+  `faker.string.numeric(6)`, collision-free on `users_phone_live_idx`).
+  Identity anchors (`<role>.seed@entragate.local`, `<role>_seed`,
+  `<role>123456`) are unchanged. `FAKER_SEED = 20261103`, seeded once in
+  `addSeedMembersTo()`. `phone` is an `input: false` Better Auth
+  additionalField, so it is written directly via Drizzle on the creation
+  path — the same module-ownership rule the user-management module applies.
+  Existing accounts are reused as-is (never password/name/phone reset).
+  `seedIdentity` no longer returns a `name`; role remains discoverable via
+  email/username/membership role.
+
+Verification actually run (2026-11-03):
+
+```text
+bun run typecheck (apps/backend)                                → clean, no errors
+bun run drizzle:migrate-reset (fresh DB, after encoding fix)    → migrations + full seed OK:
+                                                                  16/16 role accounts created with
+                                                                  faker name/bio/phone (emoji-safe),
+                                                                  20 items, 4 opening-stock movements
+bun run drizzle:seed  (run 2, same DB)                          → created: 0, all guards skip;
+                                                                  idempotent (DoD #4)
+DB spot-check (auth.users)                                      → 0 rows with non-Latin-1 text;
+                                                                  member_seed bio = "adviser advocate,
+                                                                  musician" (emoji stripped)
+bun -e determinism check (faker.seed 20261103, 16 accounts)     → deterministic: true, phones unique
+bun run lint   (apps/backend)                                   → pass; pre-existing warnings only
+bun test       (apps/backend)                                   → 524 pass / 0 fail
+```
+
+Note: the dev DB still contains the old curated items (`CTRL-DOOR-01`, …)
+from previous seeds; the faker items coexist by design — anchors differ. A
+fresh database gets only faker-generated items.
+
+`docs/database/` was reviewed and is **unchanged**: no table, column,
+index, constraint, cross-module link, status vocabulary, or money/quantity/
+date rule changed — seeders are data, not schema.
+
+Next: the previous "next executable task" stands (unchanged by this
+data-only slice).
+
 ## Doc change — feature module lifecycle gate (2026-11-02)
 
 Instructions-only change; no code, schema, migration, or seed was touched.

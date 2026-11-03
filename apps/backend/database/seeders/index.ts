@@ -43,7 +43,7 @@ export async function runSeeders(): Promise<void> {
 			finishedAt: finishedAt.toISO(),
 			duration: elapsed,
 		},
-		'Location seeding complete',
+		'Seeding complete',
 	);
 }
 

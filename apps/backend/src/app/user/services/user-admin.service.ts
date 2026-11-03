@@ -11,6 +11,7 @@ import type { IUserManagementAuthGateway } from '../../user-management/contracts
 import type { IRoleRepository } from '../../user-management/contracts/repositories.interface';
 import { AUDIT_SERVICE_TOKEN } from '../../audit/constants/di';
 import type { AuditService } from '../../audit/services/audit.service';
+import { presignObjectUrl } from '@providers/s3/s3';
 import type { TActor } from './invitation.service';
 import {
 	RankGuardError,
@@ -53,6 +54,9 @@ export class UserAdminService {
 			role: query.role,
 			search: query.search,
 			includeDeleted: query.includeDeleted,
+			organizationId: query.organizationId,
+			sortBy: query.sortBy,
+			sortDir: query.sortDir,
 			page: query.page,
 			limit: query.limit,
 		});
@@ -65,12 +69,20 @@ export class UserAdminService {
 				username: row.user.username,
 				displayUsername: row.user.displayUsername,
 				phone: row.user.phone,
-				image: row.user.image,
+				// `image` stores an S3 object key, never a URL — remap to a
+				// short-lived presigned URL so the browser can actually load
+				// it (same convention as `UserService.withPresignedAvatar`).
+				// A raw key as <img src> fails and the UI falls back to
+				// initials.
+				image: row.user.image
+					? presignObjectUrl(row.user.image)
+					: null,
 				role: row.user.role,
 				status: row.user.status,
 				banned: row.user.banned,
 				createdAt: row.user.createdAt,
 				deletedAt: row.user.deletedAt,
+				joinedAt: row.user.claimedAt,
 				organizations: row.organizations,
 			})),
 			meta: result.meta,

@@ -23,6 +23,11 @@ export type TUserListRequest = {
 	/** Case-insensitive partial match on name, email or username. */
 	search?: string;
 	includeDeleted?: boolean;
+	/** Narrows the listing to users with a membership in this organization. */
+	organizationId?: string;
+	/** Sort column; `joinedAt` is the claim date (`users.claimedAt`). */
+	sortBy: 'name' | 'createdAt' | 'joinedAt';
+	sortDir: 'asc' | 'desc';
 	page: number;
 	limit: number;
 };

@@ -4,7 +4,7 @@ import { S3Client } from 'bun';
 /**
  * Bun-native S3 client built from the S3_* environment variables already
  * loaded by the config layer. Used for user avatars; storage keys are
- * stable (`user/<userId>/avatar.png`) while access happens through
+ * stable (`user/<userId>/avatar.webp`) while access happens through
  * short-lived presigned URLs, so the database never stores expiring URLs.
  */
 export const s3Client = new S3Client({
@@ -17,9 +17,9 @@ export const s3Client = new S3Client({
 	virtualHostedStyle: !(appConfig.s3.usePathStyle ?? false),
 });
 
-/** S3 key of the generated avatar PNG for a user. */
+/** S3 key of the generated avatar WebP for a user. */
 export function avatarObjectKey(userId: string): string {
-	return `user/${userId}/avatar.png`;
+	return `user/${userId}/avatar.webp`;
 }
 
 /** S3 key of a user-uploaded avatar (extension from the sniffed type). */

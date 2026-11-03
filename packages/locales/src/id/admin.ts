@@ -29,6 +29,13 @@ const admin_: Record<keyof typeof admin, string> = {
 	'users.deleted': 'Pengguna dihapus',
 	'users.empty': 'Pengguna tidak ditemukan',
 	'users.filterStatus': 'Status',
+	'users.filterOrganization': 'Organisasi',
+	'users.filters': 'Filter',
+	'users.filtersTitle': 'Filter pengguna',
+	'users.activeFilters': '{{count}} aktif',
+	'users.allOrganizations': 'Semua organisasi',
+	'users.joined': 'Bergabung',
+	'users.openActions': 'Buka menu tindakan',
 
 	'invite.title': 'Undang pengguna',
 	'invite.description':

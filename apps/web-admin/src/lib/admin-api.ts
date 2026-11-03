@@ -60,8 +60,16 @@ export type TAdminUser = {
 	banned: boolean | null;
 	createdAt: string;
 	deletedAt: string | null;
+	/**
+	 * When the user joined the application (`users.claimedAt`): the moment
+	 * an invited user claimed their invitation. Null for pending users.
+	 */
+	joinedAt: string | null;
 	organizations: Array<{ id: string; name: string; role: string }>;
 };
+
+export type TUserSortField = 'name' | 'createdAt' | 'joinedAt';
+export type TUserSortDirection = 'asc' | 'desc';
 
 export type TUserListParams = {
 	page?: number;
@@ -70,6 +78,10 @@ export type TUserListParams = {
 	role?: string;
 	search?: string;
 	includeDeleted?: boolean;
+	/** Narrows the listing to users with a membership in this organization. */
+	organizationId?: string;
+	sortBy?: TUserSortField;
+	sortDir?: TUserSortDirection;
 };
 
 export async function listUsers(organizationId: string, params: TUserListParams = {}) {
@@ -80,6 +92,9 @@ export async function listUsers(organizationId: string, params: TUserListParams 
 	if (params.role) search.set('role', params.role);
 	if (params.search) search.set('search', params.search);
 	if (params.includeDeleted) search.set('includeDeleted', 'true');
+	if (params.organizationId) search.set('organizationId', params.organizationId);
+	if (params.sortBy) search.set('sortBy', params.sortBy);
+	if (params.sortDir) search.set('sortDir', params.sortDir);
 	const query = search.toString();
 
 	const envelope = (await request<TApiUser[]>(

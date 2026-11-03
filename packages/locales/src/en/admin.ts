@@ -27,6 +27,13 @@ const admin = {
 	'users.deleted': 'User deleted',
 	'users.empty': 'No users found',
 	'users.filterStatus': 'Status',
+	'users.filterOrganization': 'Organization',
+	'users.filters': 'Filters',
+	'users.filtersTitle': 'Filter users',
+	'users.activeFilters': '{{count}} active',
+	'users.allOrganizations': 'All organizations',
+	'users.joined': 'Joined',
+	'users.openActions': 'Open actions menu',
 
 	'invite.title': 'Invite users',
 	'invite.description':

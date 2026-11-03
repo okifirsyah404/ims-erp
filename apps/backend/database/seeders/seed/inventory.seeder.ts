@@ -1,5 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import pino from 'pino';
+import { faker } from '@faker-js/faker';
+import { seedSafeText } from './faker-content';
 import { drizzleDB } from '../../../drizzle/db';
 import {
 	items,
@@ -21,6 +23,22 @@ const logger = pino({
 	},
 });
 
+/**
+ * Deterministic faker seed for the inventory seeder.
+ *
+ * @remarks
+ * Faker content is random, but seed identity is not: SKUs and serial numbers
+ * are deterministic anchors (`ITEM-<n>`, `<prefix>-<n>`), and idempotency is
+ * keyed on those anchors. Seeding faker makes repeated runs on the SAME
+ * database produce identical content, so the existence guards below always
+ * match; a different seed constant would make re-runs insert "new" items
+ * instead of no-ops. Change it only together with a fresh database.
+ */
+const FAKER_SEED = 20261102;
+
+/** Number of fake items generated per item kind. */
+const ITEMS_PER_KIND = 4;
+
 /** One seeded item plus, for serialized kinds, the units to register. */
 type TSeedItem = {
 	sku: string;
@@ -38,82 +56,140 @@ type TSeedItem = {
 };
 
 /**
- * The seeded item master.
+ * Generates the item master with faker, deterministically.
  *
  * @remarks
- * Deliberately covers every kind, because the kind drives the unit status
- * matrix (`assertTransitionAllowed`) and the S1 seeder step was never
- * delivered — without this, a fresh database has no items and the tool
- * borrowing flow of S4 has nothing to borrow.
+ * Covers every kind, because the kind drives the unit status matrix
+ * (`assertTransitionAllowed`) and the S1 seeder step was never delivered —
+ * without this, a fresh database has no items and the tool borrowing flow of
+ * S4 has nothing to borrow.
  *
- * `tool` items are serialized and not sellable; `material` items are
- * quantity-tracked and not serialized. That pair exercises both tracking
- * modes.
+ * Kind invariants preserved from the curated fixture set:
+ * - `tool` items are serialized, not stock-tracked, and not sellable.
+ * - `material` items are quantity-tracked, not serialized, and use unit
+ *   labels (m, kg, ...).
+ * - `service` items are neither serialized nor tracked and have no unit.
+ *
+ * Money is integer IDR (rupiah) per ADR-0002 — faker money helpers are float
+ * based and are NOT used for amounts.
  */
-const SEED_ITEMS: readonly TSeedItem[] = [
-	{
-		sku: 'CTRL-DOOR-01',
-		name: 'Door controller',
-		itemKind: 'product',
-		category: 'Access control',
-		unitLabel: 'pcs',
-		isSerialized: true,
-		isStockTracked: true,
-		minStockQty: '2.000',
-		sellingPrice: 2_500_000,
-		purchasePrice: 1_800_000,
-		serials: ['DC-2026-0001', 'DC-2026-0002'],
-	},
-	{
-		sku: 'CMP-PSU-12V',
-		name: 'Power supply 12V',
-		itemKind: 'component',
-		category: 'Access control',
-		unitLabel: 'pcs',
-		isSerialized: false,
-		isStockTracked: true,
-		minStockQty: '10.000',
-		sellingPrice: 250_000,
-		purchasePrice: 150_000,
-	},
-	{
-		sku: 'MAT-CABLE-CAT6',
-		name: 'Cable CAT6 (per metre)',
-		itemKind: 'material',
-		category: 'Cabling',
-		unitLabel: 'm',
-		isSerialized: false,
-		isStockTracked: true,
-		minStockQty: '100.000',
-		sellingPrice: 12_000,
-		purchasePrice: 7_500,
-	},
-	{
-		sku: 'TOOL-DRILL-01',
-		name: 'Rotary hammer drill',
-		itemKind: 'tool',
-		category: 'Tools',
-		unitLabel: 'pcs',
-		isSerialized: true,
-		isStockTracked: false,
-		minStockQty: '0.000',
-		sellingPrice: 0,
-		purchasePrice: 3_200_000,
-		serials: ['RH-0001', 'RH-0002', 'RH-0003'],
-	},
-	{
-		sku: 'SVC-INSTALL',
-		name: 'Installation service',
-		itemKind: 'service',
-		category: null,
-		unitLabel: null,
-		isSerialized: false,
-		isStockTracked: false,
-		minStockQty: '0.000',
-		sellingPrice: 750_000,
-		purchasePrice: 0,
-	},
-];
+function generateSeedItems(): TSeedItem[] {
+	// seedSafeText wraps every faker text field: WIN1252 dev databases cannot
+	// store emoji/multi-byte characters faker occasionally emits (see
+	// faker-content.ts).
+	faker.seed(FAKER_SEED);
+
+	const safeName = () => seedSafeText(faker.commerce.productName());
+	const safeAdjective = () => seedSafeText(faker.commerce.productAdjective());
+	const safeMaterial = () => seedSafeText(faker.commerce.productMaterial());
+	const safeCategory = (pool: readonly string[]) =>
+		seedSafeText(faker.helpers.arrayElement(pool));
+
+	const kinds: TSeedItem['itemKind'][] = [
+		'product',
+		'component',
+		'material',
+		'tool',
+		'service',
+	];
+
+	const items: TSeedItem[] = [];
+	let index = 0;
+
+	for (const itemKind of kinds) {
+		for (let i = 0; i < ITEMS_PER_KIND; i++) {
+			index += 1;
+			const sku = `ITEM-${String(index).padStart(3, '0')}`;
+
+			if (itemKind === 'tool') {
+				items.push({
+					sku,
+					name: safeName(),
+					itemKind,
+					category: safeCategory(['Tools', 'Instruments']),
+					unitLabel: 'pcs',
+					isSerialized: true,
+					isStockTracked: false,
+					minStockQty: '0.000',
+					// Tools are internal equipment: not sellable.
+					sellingPrice: 0,
+					purchasePrice: faker.number.int({ min: 500_000, max: 5_000_000 }),
+					serials: Array.from({ length: 3 }, (_, n) =>
+						`${sku}-S${String(n + 1).padStart(3, '0')}`,
+					),
+				});
+				continue;
+			}
+
+			if (itemKind === 'material') {
+				items.push({
+					sku,
+					name: safeMaterial(),
+					itemKind,
+					category: 'Cabling',
+					unitLabel: faker.helpers.arrayElement(['m', 'kg', 'roll']),
+					isSerialized: false,
+					isStockTracked: true,
+					minStockQty: faker.number
+						.int({ min: 10, max: 200 })
+						.toFixed(3),
+					sellingPrice: faker.number.int({ min: 5_000, max: 100_000 }),
+					purchasePrice: faker.number.int({ min: 2_500, max: 60_000 }),
+				});
+				continue;
+			}
+
+			if (itemKind === 'service') {
+				items.push({
+					sku,
+					name: `${safeAdjective()} installation service`,
+					itemKind,
+					category: null,
+					unitLabel: null,
+					isSerialized: false,
+					isStockTracked: false,
+					minStockQty: '0.000',
+					sellingPrice: faker.number.int({ min: 250_000, max: 2_500_000 }),
+					purchasePrice: 0,
+				});
+				continue;
+			}
+
+			// product and component share the same shape.
+			items.push({
+				sku,
+				name: safeName(),
+				itemKind,
+				category: safeCategory([
+					'Access control',
+					'CCTV',
+					'Networking',
+				]),
+				unitLabel: 'pcs',
+				isSerialized: itemKind === 'product' && i % 2 === 0,
+				isStockTracked: true,
+				minStockQty: faker.number.int({ min: 1, max: 10 }).toFixed(3),
+				sellingPrice: faker.number.int({ min: 100_000, max: 10_000_000 }),
+				purchasePrice: faker.number.int({ min: 50_000, max: 7_500_000 }),
+				...(itemKind === 'product' && i % 2 === 0
+					? {
+							serials: Array.from({ length: 2 }, (_, n) =>
+								`${sku}-S${String(n + 1).padStart(3, '0')}`,
+							),
+						}
+					: {}),
+			});
+		}
+	}
+
+	return items;
+}
+
+/**
+ * The generated item master. Computed once at module load with a fixed
+ * faker seed; see {@link generateSeedItems} for the kind invariants.
+ */
+const SEED_ITEMS: readonly TSeedItem[] = generateSeedItems();
 
 /**
  * Seeds the inventory module: a global default warehouse, an
@@ -196,16 +272,21 @@ type TSeedStock = {
  * The global warehouse's balances carry `organization_id = NULL`, which means
  * they are **shared** by every organization — so this is the seed that proves
  * the scope rule with real data rather than only in tests.
+ *
+ * SKUs are the deterministic anchors of {@link generateSeedItems}: with
+ * `ITEMS_PER_KIND = 4`, indices 1-4 are `product`, 5-8 `component`, 9-12
+ * `material`. ITEM-005 is the first generated `component` (stock-tracked),
+ * ITEM-009 the first generated `material`.
  */
 const SEED_GLOBAL_STOCK: readonly TSeedStock[] = [
-	{ sku: 'CMP-PSU-12V', quantity: '50.000' },
-	{ sku: 'MAT-CABLE-CAT6', quantity: '500.000' },
+	{ sku: 'ITEM-005', quantity: '50.000' },
+	{ sku: 'ITEM-009', quantity: '500.000' },
 ];
 
 /** Opening stock for the organization-owned warehouse (per-tenant balances). */
 const SEED_ORG_STOCK: readonly TSeedStock[] = [
-	{ sku: 'CMP-PSU-12V', quantity: '20.000' },
-	{ sku: 'MAT-CABLE-CAT6', quantity: '150.000' },
+	{ sku: 'ITEM-005', quantity: '20.000' },
+	{ sku: 'ITEM-009', quantity: '150.000' },
 ];
 
 /**
