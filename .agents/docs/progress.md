@@ -447,6 +447,29 @@ of this is uncommitted working-tree state. Design: `.agents/docs/plans/inventory
   single type-discriminated entity. The item master is now `inventory.items`
   (ADR-0008); a pointer was added there.
 
+## Completed (this session — user-management → user merge, 2026-11-03)
+
+The deferred repository/contracts/tokens merge is done; `app/user-management/`
+is deleted. All names kept verbatim (no token collisions existed):
+
+- **Files moved** (git mv, content untouched): 4 contracts
+  (`admin.contract`, `gateways.interface`, `invitation.contract`,
+  `repositories.interface`), 2 controllers (`user-admin.controller`,
+  `invitation.controller`), 3 repositories (`user-management.repository`,
+  `role.repository`, `invitation.repository`) into `app/user/`.
+- **Tokens merged** into `user/constants/di.ts` (8 tokens appended).
+- **One container**: `registerUserManagement` folded into
+  `registerUser` in `user/container.ts`; `src/index.ts` updated.
+- **Barrel**: `user/index.ts` now exports the admin + invitation controllers;
+  `app.ts` imports them from `./user`.
+- **Dedupe**: `admin.contract.ts` re-exports `userIdParamsSchema` /
+  `TUserIdParams` from `user.contract.ts` instead of duplicating them.
+- Two `UserNotFoundError` classes remain deliberately: the self-service one
+  (`user.errors.ts`, plain `Error`) and the admin one (`invitation.errors.ts`,
+  i18n `UserManagementError` with HTTP 404) are caught by different
+  controllers.
+- `tsc --noEmit` clean; 301 unit tests pass.
+
 ## Completed (this session — backend tidy-up W1–W4, 2026-11-02)
 
 Conformance pass against the `/elysia-module`, `/elysia-tsyringe`,
@@ -454,9 +477,10 @@ Conformance pass against the `/elysia-module`, `/elysia-tsyringe`,
 W8 (docs pass) complete. **URLs changed** — backend and web-admin moved
 together, nothing pushed.
 
-Remaining known follow-up (deliberately deferred, not forgotten): the
+Remaining known follow-up (deliberately deferred, not forgotten): ~~the
 `user-management` **repositories/contracts/tokens** have not yet been merged
-into `user`; `user-management/container.ts` is the seam.
+into `user`; `user-management/container.ts` is the seam.~~ **Done** — see
+"Completed (this session — user-management → user merge, 2026-11-03)" below.
 
 ### W1 — DI tokens have one home (`03625fc`)
 

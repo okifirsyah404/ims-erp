@@ -5,8 +5,8 @@ import type {
 	IRoleRepository,
 	IUserManagementRepository,
 	TAdminUserRow,
-} from '../../src/app/user-management/contracts/repositories.interface';
-import type { IUserManagementAuthGateway } from '../../src/app/user-management/contracts/gateways.interface';
+} from '../../src/app/user/contracts/repositories.interface';
+import type { IUserManagementAuthGateway } from '../../src/app/user/contracts/gateways.interface';
 import type { AuditService } from '../../src/app/audit/services/audit.service';
 import {
 	RankGuardError,

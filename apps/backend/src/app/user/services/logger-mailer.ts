@@ -2,7 +2,7 @@ import { pinoLogger } from '@providers/logger/logger';
 import type {
 	IInvitationMailer,
 	TInviteEmailPayload,
-} from '../../user-management/contracts/gateways.interface';
+} from '../contracts/gateways.interface';
 
 /**
  * Logger-backed mailer port implementation. Development stand-in for the

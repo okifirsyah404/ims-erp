@@ -1,3 +1,10 @@
+> 2026-11-03: the historical note below is stale (NestJS-era audit). The
+> Elysia backend's user module now also owns the former `user-management`
+> module (admin API: invitations, roles, account lifecycle) — repositories,
+> contracts, controllers and tokens were merged into `src/app/user/` and
+> `user-management/` deleted. See `progress.md`, "user-management → user
+> merge, 2026-11-03".
+
 > 2026-10-28: content below describes the deleted NestJS backend (apps/backend-nest). Domains listed as modules/ stubs do not exist in apps/backend-elysia (which has only user, organization, location). Treat as historical audit; re-verify against backend-elysia before acting.
 
 # User Module

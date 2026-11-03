@@ -8,19 +8,19 @@ import {
 	ROLE_REPOSITORY_TOKEN,
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
-} from '../../user-management/constants/di';
+} from '../constants/di';
 import type {
 	IInvitationRepository,
 	IRoleRepository,
 	IUserManagementRepository,
 	TInvitationListRequest,
-} from '../../user-management/contracts/repositories.interface';
-import type { TClaimTarget } from '../../user-management/contracts/gateways.interface';
+} from '../contracts/repositories.interface';
+import type { TClaimTarget } from '../contracts/gateways.interface';
 import type {
 	IInvitationMailer,
 	IUserManagementAuthGateway,
-} from '../../user-management/contracts/gateways.interface';
-import type { TCreateInvitationInput } from '../../user-management/contracts/invitation.contract';
+} from '../contracts/gateways.interface';
+import type { TCreateInvitationInput } from '../contracts/invitation.contract';
 import { hashToken } from './token';
 import { AuditService } from '../../audit/services/audit.service';
 import {

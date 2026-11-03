@@ -9,11 +9,11 @@ import type {
 	TCreateRole,
 	TPermissionGrant,
 	TUpdateRole,
-} from '../../user-management/contracts/admin.contract';
+} from '../contracts/admin.contract';
 import {
 	ROLE_REPOSITORY_TOKEN,
-} from '../../user-management/constants/di';
-import type { IRoleRepository } from '../../user-management/contracts/repositories.interface';
+} from '../constants/di';
+import type { IRoleRepository } from '../contracts/repositories.interface';
 import {
 	InvalidPermissionGrantError,
 	RankGuardError,

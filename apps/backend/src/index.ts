@@ -26,7 +26,6 @@ import { registerLocation } from './app/location/container';
 import { registerOrganization } from './app/organization';
 import { registerSales } from './app/sales/container';
 import { registerUser, startAvatarWorker } from './app/user';
-import { registerUserManagement } from './app/user-management/container';
 import { registerAuthorization } from './authorization/container';
 
 registerProvider(container);
@@ -35,11 +34,7 @@ registerSales(container);
 registerInventory(container);
 registerUser(container);
 registerOrganization(container);
-// Before user-management: its services inject AUDIT_SERVICE_TOKEN. tsyringe
-// resolves lazily so the order is not load-bearing, but reading the graph
-// top-down is easier when the ledger is registered before its writers.
 registerAudit(container);
-registerUserManagement(container);
 registerAuthorization(container);
 
 /**

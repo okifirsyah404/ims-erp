@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 import type { TRoleSelect } from '../../drizzle/schemas/role.schema';
-import type { IRoleRepository } from '../../src/app/user-management/contracts/repositories.interface';
+import type { IRoleRepository } from '../../src/app/user/contracts/repositories.interface';
 import type { AuditService } from '../../src/app/audit/services/audit.service';
 import {
 	InvalidPermissionGrantError,
