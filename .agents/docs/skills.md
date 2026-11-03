@@ -6,9 +6,10 @@ were executed; no skills were installed during this docs phase.
 
 ## Lockfile
 
-`skills-lock.json` (version 1) pins 12 skills by `source@sourceType: github`,
+`skills-lock.json` (version 1) pins 19 skills by `source@sourceType: github`,
 `skillPath`, and `computedHash`. Repositories referenced there:
-`better-auth/skills`, `shadcn-ui/ui`,
+`better-auth/skills`, `github/awesome-copilot`, `aircury/ai-framework`,
+`elysiajs/skills`, `mattpocock/skills`, `lobehub/lobehub`, `shadcn-ui/ui`,
 `tanstack-skills/tanstack-skills`, `bm629/agent-skills`, `pproenca/dot-skills`.
 
 ## Inventory
@@ -37,6 +38,9 @@ not in lock** (local/project-specific additions), **n/a** (not installed).
 | elysiajs | env-provided | Elysia v2 routes/plugins/typed clients (not on disk) |
 | zod | installed | schema validation, error handling (pproenca/dot-skills) |
 | shadcn | installed | `packages/ui` component authoring (shadcn-ui/ui) |
+| conventional-commit | installed | Conventional Commits message format: `type(scope): description` workflow and examples (github/awesome-copilot) |
+| git-commit | installed | commit workflow: examine diff, stage related files, write the message, run `git commit` — not for push/PR/rebase/history rewrites (github/awesome-copilot) |
+| github-issues | installed | GitHub issue management via MCP tools: create/update issues, labels, assignees, milestones, issue types, dependencies (github/awesome-copilot) |
 | tanstack-router / -query / -form / -table / -devtools | installed (5 skills) | TanStack stack patterns (tanstack-skills/tanstack-skills) |
 | tsdoc | installed | doc-comment conventions (bm629/agent-skills) |
 
