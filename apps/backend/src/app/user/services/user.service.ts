@@ -1,4 +1,5 @@
-import { presignObjectUrl, avatarCustomObjectKey, s3Client } from '@providers/s3/s3';
+import { presignObjectUrl, s3Client } from '@providers/s3/s3';
+import { avatarCustomObjectKey } from '../constants/avatar-keys';
 import type { TUserSelect } from '@drizzle/schemas/auth.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
