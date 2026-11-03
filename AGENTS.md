@@ -39,7 +39,7 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
 | `bun install`                                                   | repo root                         | ✅ verified 2026-10-28/29 — clean installs (nest removal, dicebear add)                                                                                                                    |
 | `bun run dev`                                                   | repo root                         | ✅ verified 2026-10-29 — `turbo run dev`; live HTTP bring-up (auth 200, Redis, 401 envelope)                                                                                               |
 | `bun run lint` / `test` / `typecheck`                           | repo root, fans out per workspace | ✅ verified 2026-11-02 — backend 131/131, web-admin 21/21, typecheck clean                                                                                                                 |
-| `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend`                    | ✅ verified 2026-10-29/30 — migrations applied; seed idempotent (run twice). All use `bunx --bun drizzle-kit`; the `--bun` flag is required because the DB driver is `drizzle-orm/bun-sql` |
+| `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend`                    | ✅ verified 2026-10-29/30 — migrations applied; seed idempotent (run twice). All use `bunx --bun drizzle-kit`; the `--bun` flag is required because the DB driver is `drizzle-orm/bun-sql`. Seed content is faker-generated (deterministic, `faker.seed`) since 2026-11-03; re-verified 2026-11-03 with `@faker-js/faker@10.6.0` |
 
 > The previous NestJS backend (`apps/backend-nest`, package `backend`) was
 > deleted 2026-10-28; its verified-command history is superseded. Docker
@@ -107,6 +107,7 @@ Boundary changes are reviewed against four skills. Read the relevant one
 | `elysia-layered-architecture` | controller/service/repository split, queues, external-system ports        |
 | `elysia-tsyringe`           | module containers, composition root, resolve at the HTTP boundary            |
 | `tsyringe`                  | `InjectionToken<T>` typing, constructor injection, lifetimes                 |
+| `faker`                     | `@faker-js/faker` in database seeders: determinism (`faker.seed`), anchor-based idempotency, column-type mapping, what must never be faker-generated |
 
 **Module shape.** `app/<module>/` = `container.ts` exporting
 `register<Module>(container)`, optional `index.ts` public entry, `contracts/`

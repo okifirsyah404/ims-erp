@@ -35,6 +35,7 @@ import {
 	type TBulkInviteResult,
 	type TInviteInput,
 } from '@/lib/admin-api';
+import { humanizeIdentifier } from '@/lib/format';
 
 /**
  * Invitation dialog with two paths (locked decisions D2/D13):
@@ -204,7 +205,7 @@ export function InviteDialog({
 										{assignable.map((role) => (
 											<SelectItem key={role.id} value={role.id}>
 												{t('invite.roleOption', {
-													name: role.name,
+													name: humanizeIdentifier(role.name),
 													rank: role.rank,
 												})}
 											</SelectItem>
@@ -258,7 +259,7 @@ export function InviteDialog({
 										{assignable.map((role) => (
 											<SelectItem key={role.id} value={role.id}>
 												{t('invite.roleOption', {
-													name: role.name,
+													name: humanizeIdentifier(role.name),
 													rank: role.rank,
 												})}
 											</SelectItem>

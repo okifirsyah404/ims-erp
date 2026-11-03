@@ -2,13 +2,18 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import {
 	avatarApiUrl,
 	avatarSeed,
-	generateAvatarPng,
+	generateAvatarWebp,
 } from '../../src/app/user/queues/avatar.worker';
 import { avatarObjectKey } from '../../src/providers/s3/s3';
 
-const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+// Minimal WebP container check: 'RIFF' magic + 'WEBP' fourcc at offset 8.
+const WEBP_MAGIC = Buffer.concat([
+	Buffer.from('RIFF'),
+	Buffer.alloc(4),
+	Buffer.from('WEBP'),
+]);
 const BASE = 'http://dicebear:3000';
-const API = 'http://dicebear:3000/10.x/initials/png';
+const API = 'http://dicebear:3000/10.x/initials/webp';
 
 /** Replaces global fetch for one test and records the requested URLs. */
 const originalFetch = globalThis.fetch;
@@ -16,7 +21,7 @@ let requested: string[] = [];
 
 function stubFetch(
 	respond: (url: string) => Response | Promise<Response> = () =>
-		new Response(PNG_MAGIC, { status: 200 }),
+		new Response(WEBP_MAGIC, { status: 200 }),
 ): void {
 	requested = [];
 	globalThis.fetch = (async (
@@ -33,12 +38,19 @@ afterEach(() => {
 });
 
 describe('avatarApiUrl', () => {
-	test('targets the initials PNG style with seed and size', () => {
+	test('targets the initials WebP style with seed and size', () => {
 		const url = new URL(avatarApiUrl(BASE, 'Budi Santoso'));
 		expect(`${url.origin}${url.pathname}`).toBe(API);
 		expect(url.searchParams.get('seed')).toBe('Budi Santoso');
 		expect(url.searchParams.get('size')).toBe('72');
-		expect(url.searchParams.get('backgroundColor')).toBe('transparent');
+	});
+
+	test('sends no backgroundColor parameter (v10 rejects transparent)', () => {
+		// DiceBear v10 validates backgroundColor against a hex pattern and
+		// answers 400 for the legacy `transparent` value. The style default
+		// applies instead — the parameter must stay absent, not re-added.
+		const url = new URL(avatarApiUrl(BASE, 'Budi Santoso'));
+		expect(url.searchParams.has('backgroundColor')).toBe(false);
 	});
 
 	test('is deterministic for the same seed', () => {
@@ -67,11 +79,14 @@ describe('avatarSeed', () => {
 	});
 });
 
-describe('generateAvatarPng', () => {
-	test('returns the PNG bytes served by the API', async () => {
+describe('generateAvatarWebp', () => {
+	test('returns the WebP bytes served by the API', async () => {
 		stubFetch();
-		const png = await generateAvatarPng('user-1', 'Budi Santoso');
-		expect(png.subarray(0, 4).equals(PNG_MAGIC)).toBe(true);
+		const webp = await generateAvatarWebp('user-1', 'Budi Santoso');
+		expect(
+			webp.subarray(0, 4).toString() === 'RIFF' &&
+				webp.subarray(8, 12).toString() === 'WEBP',
+		).toBe(true);
 		expect(requested).toHaveLength(1);
 		expect(new URL(requested[0]!).searchParams.get('seed')).toBe(
 			'Budi Santoso',
@@ -80,18 +95,18 @@ describe('generateAvatarPng', () => {
 
 	test('seeds with the user id when the name is blank', async () => {
 		stubFetch();
-		await generateAvatarPng('user-9', '   ');
+		await generateAvatarWebp('user-9', '   ');
 		expect(new URL(requested[0]!).searchParams.get('seed')).toBe('user-9');
 	});
 
 	test('throws on a non-2xx response', async () => {
 		stubFetch(() => new Response('nope', { status: 503 }));
-		await expect(generateAvatarPng('user-1', 'Budi')).rejects.toThrow(/503/);
+		await expect(generateAvatarWebp('user-1', 'Budi')).rejects.toThrow(/503/);
 	});
 });
 
 describe('avatarObjectKey', () => {
-	test('uses the user/<userId>/avatar.png pattern', () => {
-		expect(avatarObjectKey('abc-123')).toBe('user/abc-123/avatar.png');
+	test('uses the user/<userId>/avatar.webp pattern', () => {
+		expect(avatarObjectKey('abc-123')).toBe('user/abc-123/avatar.webp');
 	});
 });

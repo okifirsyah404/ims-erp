@@ -3,7 +3,8 @@ import { RedisClient } from 'bun';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import {
 	and,
-	count,
+	asc,
+	countDistinct,
 	desc,
 	eq,
 	ilike,
@@ -12,6 +13,7 @@ import {
 	isNull,
 	ne,
 	or,
+	sql,
 } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import type { TPaginationResult } from '@ims-erp/common';
@@ -120,7 +122,7 @@ export class UserManagementRepository implements IUserManagementRepository {
 	): Promise<void> {
 		await this.database
 			.update(users)
-			.set({ phone: input.phone, status: 'active' })
+			.set({ phone: input.phone, status: 'active', claimedAt: new Date() })
 			.where(and(eq(users.id, id), isNull(users.deletedAt)));
 		await this.invalidate(id);
 	}
@@ -185,7 +187,17 @@ export class UserManagementRepository implements IUserManagementRepository {
 	async listUsers(
 		request: TUserListRequest,
 	): Promise<TPaginationResult<TAdminUserRow>> {
-		const { status, role, search, includeDeleted, page, limit } = request;
+		const {
+			status,
+			role,
+			search,
+			includeDeleted,
+			organizationId,
+			sortBy,
+			sortDir,
+			page,
+			limit,
+		} = request;
 		const filters = [
 			includeDeleted ? undefined : isNull(users.deletedAt),
 			status ? eq(users.status, status) : undefined,
@@ -200,22 +212,56 @@ export class UserManagementRepository implements IUserManagementRepository {
 		].filter(Boolean);
 		const where = filters.length > 0 ? and(...filters) : undefined;
 
-		const [{ value: total }] = await this.database
-			.select({ value: count() })
+		// One membership query for the whole page's worth of users, then grouped
+		// in memory — avoids a per-row round trip on the admin table.
+		const membershipFilters = [
+			organizationId ? eq(members.organizationId, organizationId) : undefined,
+		].filter(Boolean);
+
+		// Page query. When an org filter is active the LEFT JOIN excludes users
+		// without a membership in that org; `countDistinct` keeps the pagination
+		// total correct despite the fan-out.
+		const pageQuery = this.database
+			.select({ user: users })
 			.from(users)
+			.leftJoin(
+				members,
+				and(eq(members.userId, users.id), ...membershipFilters),
+			)
+			.groupBy(users.id);
+
+		// Sort mapping. `joinedAt` is the claim date (`users.claimedAt`) —
+		// the real "joined the application" moment, not the pending row's
+		// creation. `NULLS LAST` keeps pending users (never claimed) from
+		// leading an ascending sort.
+		const rowsQuery =
+			sortBy === 'joinedAt'
+				? pageQuery.orderBy(
+						sql`${users.claimedAt} ${sql.raw(sortDir === 'asc' ? 'asc' : 'desc')} nulls last`,
+					)
+				: pageQuery.orderBy(
+						sortBy === 'name'
+							? sortDir === 'asc'
+								? asc(users.name)
+								: desc(users.name)
+							: sortDir === 'asc'
+								? asc(users.createdAt)
+								: desc(users.createdAt),
+					);
+
+		const [{ value: total }] = await this.database
+			.select({ value: countDistinct(users.id) })
+			.from(users)
+			.leftJoin(
+				members,
+				and(eq(members.userId, users.id), ...membershipFilters),
+			)
 			.where(where);
 
-		const rows = await this.database
-			.select()
-			.from(users)
-			.where(where)
-			.orderBy(desc(users.createdAt))
-			.offset((page - 1) * limit)
-			.limit(limit);
+		const rows = await rowsQuery.where(where).offset((page - 1) * limit).limit(limit);
 
-		// One membership query for the page, then group in memory — avoids a
-		// per-row round trip on the admin table.
-		const ids = rows.map((row) => row.id);
+		// One membership query for the page's users, grouped in memory.
+		const ids = rows.map((row) => row.user.id);
 		const memberships = ids.length
 			? await this.database
 					.select({
@@ -241,9 +287,9 @@ export class UserManagementRepository implements IUserManagementRepository {
 		}
 
 		return {
-			data: rows.map((user) => ({
-				user,
-				organizations: byUser.get(user.id) ?? [],
+			data: rows.map((row) => ({
+				user: row.user,
+				organizations: byUser.get(row.user.id) ?? [],
 			})),
 			meta: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
 		};

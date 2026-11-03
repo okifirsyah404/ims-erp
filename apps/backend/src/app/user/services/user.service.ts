@@ -167,7 +167,7 @@ export class UserService {
 
 	/**
 	 * Stores a user-uploaded avatar: writes the file to S3 under the
-	 * custom-key namespace (the generated `avatar.png` stays untouched as
+	 * custom-key namespace (the generated `avatar.webp` stays untouched as
 	 * fallback) and points `users.image` at the new key.
 	 *
 	 * @returns The refreshed profile with a fresh presigned URL
@@ -264,7 +264,7 @@ export class UserService {
 	 */
 	private withPresignedAvatar(user: TUserSelect): TUserProfile {
 		const { image, ...rest } = user;
-		// `image` stores an S3 object key (generated `avatar.png` or an
+		// `image` stores an S3 object key (generated `avatar.webp` or an
 		// uploaded `avatar-custom.*`), never a URL; presign per request.
 		return { ...rest, image: image ? presignObjectUrl(image) : null };
 	}

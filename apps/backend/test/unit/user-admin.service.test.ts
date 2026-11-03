@@ -48,6 +48,7 @@ function makeUser(overrides: Partial<TUserSelect> = {}): TUserSelect {
 		deletedAt: null,
 		status: 'active',
 		phone: null,
+		claimedAt: null,
 		...overrides,
 	};
 }
@@ -118,7 +119,12 @@ describe('UserAdminService.list', () => {
 			},
 		});
 
-		const result = await service.list({ page: 1, limit: 20 });
+		const result = await service.list({
+			page: 1,
+			limit: 20,
+			sortBy: 'createdAt',
+			sortDir: 'desc',
+		});
 
 		expect(result.data).toHaveLength(2);
 		for (const row of result.data) {
@@ -127,6 +133,48 @@ describe('UserAdminService.list', () => {
 		expect(result.data[0]?.organizations[0]?.role).toBe('member');
 		// A user with no memberships must be an empty array, never undefined.
 		expect(result.data[1]?.organizations).toEqual([]);
+	});
+
+	test('remaps the image S3 key to a presigned URL', async () => {
+		// Regression: the list projected `image` raw — an S3 object key
+		// (`user/<id>/avatar.webp`), not a URL. The browser cannot load a
+		// relative key as <img src>, so AvatarImage failed and every row
+		// fell back to initials. Same convention as the profile path.
+		const { service } = makeService({
+			paginate: {
+				data: [
+					{
+						user: makeUser({
+							id: 'u-avatar',
+							image: 'user/u-avatar/avatar.webp',
+						}),
+						organizations: [],
+					},
+					{
+						user: makeUser({ id: 'u-bare', email: 'bare@example.com' }),
+						organizations: [],
+					},
+				],
+				meta: { page: 1, limit: 20, total: 2, totalPages: 1 },
+			},
+		});
+
+		const result = await service.list({
+			page: 1,
+			limit: 20,
+			sortBy: 'createdAt',
+			sortDir: 'desc',
+		});
+
+		const withAvatar = result.data.find((row) => row.id === 'u-avatar');
+		const withoutAvatar = result.data.find((row) => row.id === 'u-bare');
+		// Presigned URL: absolute http(s) with AWS query params — never the
+		// bare object key.
+		expect(withAvatar?.image).toMatch(/^https?:\/\//);
+		expect(withAvatar?.image).toContain('X-Amz-');
+		expect(withAvatar?.image).not.toBe('user/u-avatar/avatar.webp');
+		// A user without an avatar stays null (renders the fallback).
+		expect(withoutAvatar?.image).toBeNull();
 	});
 });
 

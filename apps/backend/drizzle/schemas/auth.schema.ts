@@ -43,6 +43,12 @@ export const users = authSchema.table("users", {
   // Mirrors the `status` additionalField in auth.options.ts (same
   // hand-applied-delta caveat as deletedAt above).
   status: text("status").default("active"),
+  // When an invited user claimed their invitation (status pending → active).
+  // The true "joined the application" date: `createdAt` only records the
+  // admin's pre-creation of the pending row. Null for pending users; the
+  // migration backfills `created_at` for already-active rows (seeded or
+  // claimed before the column existed).
+  claimedAt: timestamp("claimed_at"),
   // Contact phone number, captured at invitation claim (form 1). Unique so
   // the planned phone login can never hit a migration wall. Mirrors the
   // `phone` additionalField in auth.options.ts (hand-applied-delta caveat).

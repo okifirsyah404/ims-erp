@@ -23,10 +23,18 @@ import { erpStatements } from '@ims-erp/common';
 export const USER_STATUSES = ['pending', 'active', 'deactivated'] as const;
 export type TUserStatus = (typeof USER_STATUSES)[number];
 
+/** Sortable columns for the admin user listing. */
+export const USER_SORT_FIELDS = ['name', 'createdAt', 'joinedAt'] as const;
+/** Sort directions for the admin user listing. */
+export const USER_SORT_DIRECTIONS = ['asc', 'desc'] as const;
+
 /**
  * User listing query. `status` is exact; `search` matches name, email or
  * username (case-insensitive partial); `includeDeleted` surfaces
- * soft-deleted rows.
+ * soft-deleted rows. `organizationId` narrows to users with an active
+ * membership in that org; `sortBy=joinedAt` ranks by the claim date
+ * (`users.claimedAt`, the real "joined the application" moment).
+ * Defaults mirror the historical ordering: newest accounts first.
  */
 export const userQuerySchema = z.object({
 	page: z.coerce.number().int().min(1).default(1),
@@ -39,8 +47,16 @@ export const userQuerySchema = z.object({
 		.enum(['true', 'false'])
 		.transform((value) => value === 'true')
 		.optional(),
+	organizationId: z.string().min(1).max(64).optional(),
+	sortBy: z.enum(USER_SORT_FIELDS).default('createdAt'),
+	sortDir: z.enum(USER_SORT_DIRECTIONS).default('desc'),
 });
 export type TUserQuery = z.infer<typeof userQuerySchema>;
+
+/** Sortable columns for the admin user listing. */
+export type TUserSortField = (typeof USER_SORT_FIELDS)[number];
+/** Sort directions for the admin user listing. */
+export type TUserSortDirection = (typeof USER_SORT_DIRECTIONS)[number];
 
 /** Path parameters identifying one user. */
 export const userIdParamsSchema = z.object({
@@ -62,6 +78,12 @@ export type TAdminUser = {
 	banned: boolean | null;
 	createdAt: Date;
 	deletedAt: Date | null;
+	/**
+	 * When the user joined the application (`users.claimedAt`): the moment
+	 * an invited user claimed their invitation. Null for pending users —
+	 * the seeded/legacy backfill sets it to `createdAt`.
+	 */
+	joinedAt: Date | null;
 	/** Active memberships, for the users table's organization column. */
 	organizations: Array<{ id: string; name: string; role: string }>;
 };
