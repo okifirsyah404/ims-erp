@@ -17,6 +17,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
+import { Building2 } from 'lucide-react';
+
+import { EmptyState } from '@/components/empty-state';
 
 export const Route = createFileRoute('/_authed/organizations/')({
 	component: OrganizationsPage,
@@ -161,11 +164,19 @@ function OrganizationsPage() {
 					))}
 				</div>
 			) : (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-						{t('orgs.empty')}
-					</CardContent>
-				</Card>
+				<EmptyState
+					icon={Building2}
+					title={t('orgs.emptyTitle')}
+					description={t('orgs.empty')}
+					className='border'
+					action={
+						canCreate ? (
+							<Button onClick={() => navigate({ to: '/organizations/new' })}>
+								{t('orgs.new')}
+							</Button>
+						) : undefined
+					}
+				/>
 			)}
 		</div>
 	);

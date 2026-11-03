@@ -146,6 +146,7 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgs.activeBadge': 'Aktif',
 	'orgs.empty':
 		'Belum ada organisasi. Buat yang pertama untuk memulai.',
+	'orgs.emptyTitle': 'Belum ada organisasi',
 	'orgs.restored': 'Organisasi dipulihkan',
 	'orgs.created': 'Organisasi dibuat',
 	'orgs.newTitle': 'Organisasi baru',

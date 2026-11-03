@@ -8,6 +8,7 @@ import type {
 import type {
 	IWarehouseRepository,
 	TWarehouseCreateData,
+	TWarehouseKindCounts,
 } from '../contracts/warehouse.repository.interface';
 import type {
 	IWarehouseAddressRepository,
@@ -29,14 +30,19 @@ import {
 	StorageNotFoundError,
 	WarehouseCodeTakenError,
 	WarehouseHasUnitsError,
+	WarehouseInactiveError,
 	WarehouseNotFoundError,
 } from '../errors/inventory.errors';
 
-/** A warehouse with its 1:1 address and its bins. */
+/** A warehouse with its 1:1 address, its bins, and its kind counts. */
 export type TWarehouseDetail = TWarehouseSelect & {
 	address: TWarehouseAddressSelect | null;
 	storages: TWarehouseStorageSelect[];
-};
+} & Omit<TWarehouseKindCounts, 'warehouseId'>;
+
+/** A list-page warehouse row decorated with kind counts. */
+export type TWarehouseWithCounts = TWarehouseSelect &
+	Omit<TWarehouseKindCounts, 'warehouseId'>;
 
 /** Input for updating a warehouse. `code`/`organizationId` already stripped. */
 export type TWarehouseUpdateInput = {
@@ -77,22 +83,33 @@ export class WarehouseService {
 		private readonly storageRepository: IWarehouseStorageRepository,
 	) {}
 
-	/** Fetches one filtered page of warehouses. */
-	paginate(request: {
+	/** Fetches one filtered page of warehouses, decorated with kind counts. */
+	async paginate(request: {
 		page: number;
 		limit: number;
 		search?: string;
 		scope?: string;
 		includeArchived?: boolean;
 		isActive?: boolean;
-	}): Promise<TPaginationResult<TWarehouseSelect>> {
+	}): Promise<TPaginationResult<TWarehouseWithCounts>> {
 		const { scope, ...rest } = request;
-		return this.warehouseRepository.paginate({
+		const result = await this.warehouseRepository.paginate({
 			...rest,
 			// `'global'` sentinel from the query string maps to the NULL scope;
 			// absent means "every scope".
 			organizationId: scope === undefined ? undefined : scope === 'global' ? null : scope,
 		});
+		const counts = await this.warehouseRepository.countKinds(
+			result.data.map((warehouse) => warehouse.id),
+		);
+		const byWarehouse = new Map(counts.map((row) => [row.warehouseId, row]));
+		return {
+			...result,
+			data: result.data.map((warehouse) => ({
+				...warehouse,
+				...byWarehouse.get(warehouse.id)!,
+			})),
+		};
 	}
 
 	/**
@@ -103,11 +120,20 @@ export class WarehouseService {
 	 */
 	async getWarehouse(id: string): Promise<TWarehouseDetail> {
 		const warehouse = await this.requireWarehouse(id);
-		const [address, storages] = await Promise.all([
+		const [address, storages, [counts]] = await Promise.all([
 			this.addressRepository.findByWarehouseId(id),
 			this.storageRepository.listByWarehouse(id),
+			this.warehouseRepository.countKinds([id]),
 		]);
-		return { ...warehouse, address, storages };
+		return {
+			...warehouse,
+			address,
+			storages,
+			productsCount: counts.productsCount,
+			materialsCount: counts.materialsCount,
+			toolsCount: counts.toolsCount,
+			storagesCount: counts.storagesCount,
+		};
 	}
 
 	/**
@@ -246,7 +272,8 @@ export class WarehouseService {
 		warehouseId: string,
 		input: Omit<TWarehouseStorageCreateData, 'warehouseId' | 'createdAt'>,
 	): Promise<TWarehouseStorageSelect> {
-		await this.requireWarehouse(warehouseId);
+		const warehouse = await this.requireWarehouse(warehouseId);
+		this.requireActiveWarehouse(warehouse);
 
 		const existing = await this.storageRepository.findByCode(
 			warehouseId,
@@ -270,6 +297,8 @@ export class WarehouseService {
 		storageId: string,
 		input: TWarehouseStorageUpdateData,
 	): Promise<TWarehouseStorageSelect> {
+		const warehouse = await this.requireWarehouse(warehouseId);
+		this.requireActiveWarehouse(warehouse);
 		const storage = await this.requireStorage(warehouseId, storageId);
 		const updated = await this.storageRepository.update(storage.id, input);
 		if (!updated) throw new StorageNotFoundError();
@@ -299,6 +328,23 @@ export class WarehouseService {
 		const warehouse = await this.warehouseRepository.findById(id);
 		if (!warehouse) throw new WarehouseNotFoundError();
 		return warehouse;
+	}
+
+	/**
+	 * Rejects storage writes into an inactive warehouse.
+	 *
+	 * @remarks
+	 * An inactive warehouse is read-only for logistics: units may still be
+	 * moved *out* of it elsewhere, but no new bin may appear and no bin may be
+	 * edited, or the warehouse would silently keep absorbing stock while
+	 * marked closed. Archiving an existing storage remains allowed — removing
+	 * capacity from a closed warehouse is the safe direction.
+	 *
+	 * @param warehouse - The parent warehouse row
+	 * @throws {WarehouseInactiveError} When `isActive` is false
+	 */
+	private requireActiveWarehouse(warehouse: TWarehouseSelect): void {
+		if (!warehouse.isActive) throw new WarehouseInactiveError(warehouse.code);
 	}
 
 	/**

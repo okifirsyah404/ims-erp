@@ -15,6 +15,15 @@ export type TItemPaginationRequest = {
 	itemKind?: ItemKind;
 	/** Case-insensitive partial match on the free-text category. */
 	category?: string;
+	/**
+	 * Only items with at least one live serialized unit in this warehouse.
+	 *
+	 * @remarks
+	 * Non-serialized quantity-tracked items have no units and are therefore
+	 * excluded when this filter is set — the units are the only physical
+	 * presence the schema can join on.
+	 */
+	warehouseId?: string;
 	/** Include archived (soft-deleted) rows. */
 	includeArchived?: boolean;
 };

@@ -39,6 +39,8 @@ const api = {
 	'inventory.storageNotFound': 'Storage not found',
 	'inventory.storageCodeTaken':
 		'A storage with this code already exists in this warehouse',
+	'inventory.warehouseInactive':
+		'Warehouse "{{warehouseCode}}" is inactive; its storages cannot be changed',
 	'inventory.movementNotFound': 'Stock movement not found',
 	'inventory.movementAlreadyReversed':
 		'This stock movement has already been reversed',

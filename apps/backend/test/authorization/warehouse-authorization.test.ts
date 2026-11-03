@@ -158,6 +158,15 @@ beforeAll(async () => {
 		async countLiveUnits() {
 			return 0;
 		},
+		async countKinds(warehouseIds) {
+			return warehouseIds.map((warehouseId) => ({
+				warehouseId,
+				productsCount: 0,
+				materialsCount: 0,
+				toolsCount: 0,
+				storagesCount: 0,
+			}));
+		},
 	};
 
 	const addressRepository: IWarehouseAddressRepository = {

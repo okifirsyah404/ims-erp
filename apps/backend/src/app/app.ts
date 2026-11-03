@@ -3,6 +3,13 @@ import { auth } from '@providers/better-auth/auth';
 import { OpenAPI } from '@providers/better-auth/open-api-extractor.auth';
 import Elysia from 'elysia';
 import { LocationController } from './location/controllers/location.controller';
+import {
+	AdjustmentController,
+	BorrowingController,
+	ItemController,
+	StockController,
+	WarehouseController,
+} from './inventory';
 import { SalesController } from './sales/controllers/sales.controller';
 import {
 	InvitationClaimController,
@@ -85,5 +92,13 @@ export function createApp() {
 			// admin plugins only for readability; the paths never overlap.
 			.use(InvitationClaimController.plugin())
 			.use(UsernameCheckController.plugin())
+			// Inventory (items, warehouses, stock, borrowing) rides `erp`- or
+			// `session`-guarded prefixes; mount order is irrelevant as none of its
+			// paths overlap the modules above.
+			.use(ItemController.plugin())
+			.use(WarehouseController.plugin())
+			.use(StockController.plugin())
+			.use(AdjustmentController.plugin())
+			.use(BorrowingController.plugin())
 	);
 }

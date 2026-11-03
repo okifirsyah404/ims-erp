@@ -144,6 +144,7 @@ const admin = {
 	'orgs.activeBadge': 'Active',
 	'orgs.empty':
 		'No organization exists yet. Create the first one to get started.',
+	'orgs.emptyTitle': 'No organizations yet',
 	'orgs.restored': 'Organization restored',
 	'orgs.created': 'Organization created',
 	'orgs.newTitle': 'New organization',

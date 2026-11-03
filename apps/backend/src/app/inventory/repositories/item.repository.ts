@@ -47,13 +47,31 @@ export class ItemRepository implements IItemRepository {
 	async paginate(
 		request: TItemPaginationRequest,
 	): Promise<TPaginationResult<TItemSelect>> {
-		const { page, limit, search, itemKind, category, includeArchived } =
-			request;
+		const {
+			page,
+			limit,
+			search,
+			itemKind,
+			category,
+			warehouseId,
+			includeArchived,
+		} = request;
 
 		const filters = [
 			includeArchived ? undefined : isNull(items.deletedAt),
 			itemKind ? eq(items.itemKind, itemKind) : undefined,
 			category ? ilike(items.category, `%${category}%`) : undefined,
+			// "Has a unit in this warehouse": an EXISTS keeps the row multiplicity
+			// of the outer query intact (a join would duplicate items that have
+			// several units here).
+			warehouseId
+				? sql`EXISTS (
+						SELECT 1 FROM ${serialTrackedItems}
+						WHERE ${serialTrackedItems.itemId} = ${items.id}
+							AND ${serialTrackedItems.warehouseId} = ${warehouseId}
+							AND ${serialTrackedItems.deletedAt} IS NULL
+					)`
+				: undefined,
 			search
 				? or(ilike(items.sku, `%${search}%`), ilike(items.name, `%${search}%`))
 				: undefined,

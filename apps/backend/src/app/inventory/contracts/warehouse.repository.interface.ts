@@ -30,6 +30,22 @@ export type TWarehousePaginationRequest = {
 	isActive?: boolean;
 };
 
+/**
+ * Item-kind + storage counts for one warehouse.
+ *
+ * @remarks
+ * `productsCount` includes both `product` and `component` kinds (a component
+ * is a sellable good in this ERP's vocabulary). Counts come from live
+ * serialized units, so they answer "what is physically here".
+ */
+export type TWarehouseKindCounts = {
+	warehouseId: string;
+	productsCount: number;
+	materialsCount: number;
+	toolsCount: number;
+	storagesCount: number;
+};
+
 /** Fields a client may set when creating a warehouse. */
 export type TWarehouseCreateData = Omit<
 	TWarehouseInsert,
@@ -137,4 +153,13 @@ export interface IWarehouseRepository {
 
 	/** Counts alive serialized units currently stored in a warehouse. */
 	countLiveUnits(warehouseId: string): Promise<number>;
+
+	/**
+	 * Counts items by kind and storages for the given warehouses.
+	 *
+	 * @remarks
+	 * Batched projection for list/detail pages. Every requested id appears in
+	 * the result, with zero counts when nothing matches.
+	 */
+	countKinds(warehouseIds: string[]): Promise<TWarehouseKindCounts[]>;
 }

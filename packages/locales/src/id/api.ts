@@ -35,6 +35,8 @@ const api: Record<keyof typeof en, string> = {
 	'inventory.storageNotFound': 'Penyimpanan tidak ditemukan',
 	'inventory.storageCodeTaken':
 		'Penyimpanan dengan kode ini sudah ada di gudang ini',
+	'inventory.warehouseInactive':
+		'Gudang "{{warehouseCode}}" tidak aktif; penyimpanannya tidak dapat diubah',
 	'inventory.movementNotFound': 'Pergerakan stok tidak ditemukan',
 	'inventory.movementAlreadyReversed':
 		'Pergerakan stok ini sudah dibalik sebelumnya',
