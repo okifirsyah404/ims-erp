@@ -19,12 +19,12 @@ export const s3Client = new S3Client({
 
 /** S3 key of the generated avatar WebP for a user. */
 export function avatarObjectKey(userId: string): string {
-	return `user/${userId}/avatar.webp`;
+	return `users/${userId}/avatar.webp`;
 }
 
 /** S3 key of a user-uploaded avatar (extension from the sniffed type). */
 export function avatarCustomObjectKey(userId: string, ext: string): string {
-	return `user/${userId}/avatar-custom.${ext}`;
+	return `users/${userId}/avatar-custom.${ext}`;
 }
 
 /** Presigned GET URL for an arbitrary avatar object key; short-lived. */
