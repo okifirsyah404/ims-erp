@@ -46,3 +46,8 @@ graphify-out/
 
 # Avatar worker temp files
 .tmp/
+
+# Logs 
+.logs/
+logs/
+*.log
