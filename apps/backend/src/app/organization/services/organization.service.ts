@@ -10,6 +10,7 @@ import type {
 	IOrganizationRepository,
 	TMemberPaginationRequest,
 	TOrganizationPaginationRequest,
+	TOrganizationWithCounts,
 } from '../contracts/organization.repository.interface';
 import type {
 	TAddMember,
@@ -116,7 +117,7 @@ export class OrganizationService {
 	 */
 	async listOrganizations(
 		request: TOrganizationPaginationRequest,
-	): Promise<TPaginationResult<TOrganizationSelect>> {
+	): Promise<TPaginationResult<TOrganizationWithCounts>> {
 		return this.repository.paginate(request);
 	}
 

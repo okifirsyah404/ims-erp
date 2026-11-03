@@ -22,6 +22,18 @@ export const Route = createFileRoute('/_authed/organizations/')({
 	component: OrganizationsPage,
 });
 
+/**
+ * Deterministic pseudo-random project count placeholder (0–24), stable per
+ * organization id. Removed once a real projects concept exists.
+ */
+function placeholderProjectCount(organizationId: string): number {
+	let hash = 0;
+	for (let index = 0; index < organizationId.length; index++) {
+		hash = (hash * 31 + organizationId.charCodeAt(index)) >>> 0;
+	}
+	return hash % 25;
+}
+
 function OrganizationsPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
@@ -95,8 +107,33 @@ function OrganizationsPage() {
 										</p>
 									</div>
 								</CardHeader>
-								<CardContent className='text-sm text-muted-foreground'>
-									<p className='truncate'>{org.slug}</p>
+								<CardContent>
+									<div className='grid grid-cols-3 gap-2 text-center text-sm'>
+										<div className='flex flex-col'>
+											<span className='font-semibold text-foreground tabular-nums'>
+												{org.membersCount ?? '—'}
+											</span>
+											<span className='text-xs text-muted-foreground'>
+												{t('orgs.stats.members')}
+											</span>
+										</div>
+										<div className='flex flex-col'>
+											<span className='font-semibold text-foreground tabular-nums'>
+												{org.rolesCount ?? '—'}
+											</span>
+											<span className='text-xs text-muted-foreground'>
+												{t('orgs.stats.roles')}
+											</span>
+										</div>
+										<div className='flex flex-col'>
+											<span className='font-semibold text-foreground tabular-nums'>
+												{placeholderProjectCount(org.id)}
+											</span>
+											<span className='text-xs text-muted-foreground'>
+												{t('orgs.stats.projects')}
+											</span>
+										</div>
+									</div>
 								</CardContent>
 								<CardFooter className='justify-between'>
 									{org.deletedAt ? (

@@ -21,6 +21,16 @@ export type TMemberPaginationRequest = TPaginationRequest & {
 };
 
 /**
+ * Organization row enriched with aggregate counts for list views.
+ * `projectCount` is a reserved placeholder until projects exist.
+ */
+export type TOrganizationWithCounts = TOrganizationSelect & {
+	membersCount: number;
+	rolesCount: number;
+	projectCount: number;
+};
+
+/**
  * Data-access contract over the Better Auth–owned `auth.organizations` /
  * `auth.members` tables.
  *
@@ -35,7 +45,7 @@ export interface IOrganizationRepository {
 	/** Paginated listing; excludes soft-deleted rows unless asked. */
 	paginate(
 		request: TOrganizationPaginationRequest,
-	): Promise<TPaginationResult<TOrganizationSelect>>;
+	): Promise<TPaginationResult<TOrganizationWithCounts>>;
 
 	/** Finds by id, including soft-deleted rows. */
 	findById(id: string): Promise<TOrganizationSelect | null>;

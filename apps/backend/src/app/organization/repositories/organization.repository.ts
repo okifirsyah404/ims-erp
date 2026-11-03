@@ -5,6 +5,7 @@ import {
 	users,
 	organizations,
 } from '@drizzle/schemas/auth.schema';
+import { roles as rolesTable } from '@drizzle/schemas/role.schema';
 import { TPaginationResult } from '@ims-erp/common';
 import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
@@ -13,6 +14,7 @@ import {
 	asc,
 	count,
 	eq,
+	inArray,
 	isNull,
 } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
@@ -20,6 +22,7 @@ import type {
 	IOrganizationRepository,
 	TMemberPaginationRequest,
 	TOrganizationPaginationRequest,
+	TOrganizationWithCounts,
 } from '../contracts/organization.repository.interface';
 import type { TOrganizationMember } from '../contracts/organization.contract';
 
@@ -63,7 +66,7 @@ export class OrganizationRepository implements IOrganizationRepository {
 	 */
 	async paginate(
 		request: TOrganizationPaginationRequest,
-	): Promise<TPaginationResult<TOrganizationSelect>> {
+	): Promise<TPaginationResult<TOrganizationWithCounts>> {
 		const { page, limit, includeDeleted = false } = request;
 		const base = this.db.select().from(organizations);
 		const rows = includeDeleted
@@ -84,6 +87,8 @@ export class OrganizationRepository implements IOrganizationRepository {
 					.from(organizations)
 					.where(isNull(organizations.deletedAt));
 
+		const withCounts = await this.attachCounts(rows);
+
 		return {
 			meta: {
 				page,
@@ -91,8 +96,62 @@ export class OrganizationRepository implements IOrganizationRepository {
 				total: Number(totalRow?.value ?? 0),
 				totalPages: Math.max(1, Math.ceil(Number(totalRow?.value ?? 0) / limit)),
 			},
-			data: rows,
+			data: withCounts,
 		};
+	}
+
+	/**
+	 * Enriches a page of organization rows with aggregate counts.
+	 *
+	 * Two grouped queries limited to the page's org ids (no N+1):
+	 * live member rows and live role rows (role master data from the
+	 * user-management schema, soft-deleted roles excluded). `projectCount`
+	 * is a reserved placeholder (0) until a projects concept exists.
+	 */
+	private async attachCounts(
+		rows: TOrganizationSelect[],
+	): Promise<TOrganizationWithCounts[]> {
+		const ids = rows.map((row) => row.id);
+		const membersCount = new Map<string, number>();
+		const rolesCount = new Map<string, number>();
+
+		if (ids.length > 0) {
+			const memberRows = await this.db
+				.select({
+					organizationId: members.organizationId,
+					value: count(),
+				})
+				.from(members)
+				.where(inArray(members.organizationId, ids))
+				.groupBy(members.organizationId);
+			for (const row of memberRows) {
+				membersCount.set(row.organizationId, Number(row.value));
+			}
+
+			const roleRows = await this.db
+				.select({
+					organizationId: rolesTable.organizationId,
+					value: count(),
+				})
+				.from(rolesTable)
+				.where(
+					and(
+						inArray(rolesTable.organizationId, ids),
+						isNull(rolesTable.deletedAt),
+					),
+				)
+				.groupBy(rolesTable.organizationId);
+			for (const row of roleRows) {
+				rolesCount.set(row.organizationId, Number(row.value));
+			}
+		}
+
+		return rows.map((row) => ({
+			...row,
+			membersCount: membersCount.get(row.id) ?? 0,
+			rolesCount: rolesCount.get(row.id) ?? 0,
+			projectCount: 0,
+		}));
 	}
 
 	/**

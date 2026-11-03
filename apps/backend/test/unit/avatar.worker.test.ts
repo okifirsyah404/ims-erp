@@ -106,7 +106,7 @@ describe('generateAvatarWebp', () => {
 });
 
 describe('avatarObjectKey', () => {
-	test('uses the user/<userId>/avatar.webp pattern', () => {
-		expect(avatarObjectKey('abc-123')).toBe('user/abc-123/avatar.webp');
+	test('uses the users/<userId>/avatar.webp pattern', () => {
+		expect(avatarObjectKey('abc-123')).toBe('users/abc-123/avatar.webp');
 	});
 });

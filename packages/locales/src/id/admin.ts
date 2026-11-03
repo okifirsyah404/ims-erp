@@ -158,6 +158,9 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgs.details': 'Detail organisasi',
 	'orgs.slugDescription':
 		'Slug bersifat permanen dan dipakai di URL serta konteks API.',
+	'orgs.stats.members': 'Anggota',
+	'orgs.stats.roles': 'Peran',
+	'orgs.stats.projects': 'Proyek',
 
 	'orgDetail.created': 'Dibuat',
 	'orgDetail.members': 'Anggota',
