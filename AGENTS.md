@@ -336,6 +336,18 @@ The backend skills are `elysia-module`, `elysia-layered-architecture`,
 module's boundaries. Nested `AGENTS.md` files are only added when
 directory-specific rules genuinely help; keep this root file authoritative.
 
+## Git and GitHub
+
+- `conventional-commit` — use when the user asks for a conventional commit:
+  writes `type(scope): description` messages per the Conventional Commits spec.
+- `git-commit` — use when the user asks to commit or says "/commit": examines
+  the diff, stages related files, writes the commit message, and runs
+  `git commit`. Do not use it to push, open pull requests, rebase, or rewrite
+  history.
+- `github-issues` — use for any GitHub issue management: create/update issues,
+  labels, assignees, milestones, issue types, and dependencies
+  ("blocked by" / "blocking").
+
 <!-- BEGIN:turborepo-agent-rules -->
 
 ## This is NOT the Turborepo you know
