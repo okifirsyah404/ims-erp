@@ -17,14 +17,14 @@ This file is short on purpose. Detailed, evidence-based answers live in
 
 Read by need: `domain-map.md` (business ownership), `data-model.md` (schema),
 `api-conventions.md`, `security-and-access.md`, `testing-strategy.md`,
-`backlog.md` + `phases/` (planning), `modules/` (per-module boundaries and
+`backlog.md` + `docs/plan/phases/` (planning), `modules/` (per-module boundaries and
 state), `decisions/` (ADR history), `skills.md` (skill inventory).
 
 ## Starting work
 
 - Base every session on `progress.md`'s **"Next executable task"**, claim it
   against `backlog.md` (stable `ERP-*` IDs), and respect the phase entry/exit
-  criteria in `.agents/docs/phases/`. Do not jump forward over failing gates.
+  criteria in `docs/plan/phases/`. Do not jump forward over failing gates.
 - Keep work small and verticals complete: a slice isn't done until backend,
   UI, migration, seed, and tests all reflect the same reality.
 
@@ -304,7 +304,7 @@ call sites.
 5. `progress.md` updated with exact commands and results; `backlog.md`
    statuses moved with evidence (and only to `accepted` on real reviewer
    approval).
-6. The phase exit criteria in `.agents/docs/phases/<current-phase>.md` that
+6. The phase exit criteria in `docs/plan/phases/<current-phase>.md` that
    apply to the task are all met, or the task is left explicitly partial.
 7. No secrets printed or committed.
 8. The **Feature module lifecycle** gates were respected: `docs/database/` was

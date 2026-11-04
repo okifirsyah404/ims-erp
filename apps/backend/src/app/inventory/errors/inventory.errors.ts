@@ -107,7 +107,7 @@ export class WarehouseHasUnitsError extends AppError {
  * @remarks
  * 422 rather than 409: the warehouse exists and the request is well-formed,
  * but the parent warehouse's state forbids the write (D4 in
- * `.agents/docs/plans/warehouse-hardening.md`).
+ * `docs/plan/plans/warehouse-hardening.md`).
  */
 export class WarehouseInactiveError extends AppError {
 	constructor(code: string) {

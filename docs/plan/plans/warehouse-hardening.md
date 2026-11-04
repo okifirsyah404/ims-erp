@@ -3,7 +3,7 @@
 > Status: approved plan (sharpened through a grilling session)
 > Scope: robust warehouse CRUD + warehouse detail page in the `inventory`
 > module. Builds on shipped inventory slices S1–S3 (see
-> `.agents/docs/plans/inventory.md`).
+> `docs/plan/plans/inventory.md`).
 > Affected apps: backend (Elysia API) + `apps/web-admin`.
 
 ## Implementation Status

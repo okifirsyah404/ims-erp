@@ -23,11 +23,11 @@ Reference when touching the relevant areas:
 | `security-and-access.md` | touching auth, permissions, portals, audit |
 | `skills.md` | checking available agent skills |
 | `backlog.md` | picking or planning work (stable task IDs) |
-| `phases/` | phase entry/exit criteria and dependencies |
+| `phases/` (`docs/plan/phases/`) | phase entry/exit criteria and dependencies |
 | `modules/` | per-technical-module boundaries, state, data ownership, tests |
 | `decisions/` | architectural decision records (ADRs) |
 | `testing-strategy.md` | writing tests |
-| `plan.md` | goals, priorities, forecasting |
+| `docs/plan/plan.md` | goals, priorities, forecasting; commercial plan in `docs/plan/erp-plan-en.md` / `erp-plan-id.md`; feature plans in `docs/plan/plans/` |
 
 Database schema documentation lives outside this folder, in
 `docs/database/` (repo root): `docs.dbml` (canonical persistence contract),
