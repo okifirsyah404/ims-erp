@@ -1,5 +1,8 @@
 # Progress
 
+Feature status rollup: `docs/plan/plans/features.md` (todo / in-progress /
+done by module; update in the same change as a `backlog.md` status move).
+
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
@@ -8,6 +11,75 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `decisions/`, plan docs). These were moved on 2026-11-05: tech docs to
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
+
+## Doc change — status rollup + plan-doc obligation (2026-11-05)
+
+Instructions/docs-only change; no code, schema, migration, or seed touched.
+Status: **implemented**.
+
+- **`docs/plan/plans/features.md` (new)**: feature status rollup grouped by
+  v5.1 module M01–M12, then backlog-only ERP IDs, then "Outside the plan"
+  (shipped features in neither the module plans nor a backlog ERP ID —
+  invitations/claim, dynamic roles, audit, admin users, username login,
+  account pages, forgot/reset password, avatar pipeline, Redis sessions,
+  location lookup, backend + web i18n, sales payments, stock adjustments,
+  worker registry, HTTP envelope, toast bus). Each row carries one line of
+  evidence (module path + test file or progress.md date).
+- **`AGENTS.md` Hard rules**: "Statuses live in…" bullet replaced by
+  **"Every code update writes to the plan docs"** — code, migration, seeder,
+  or test changes update `progress.md` + `backlog.md` in the same change,
+  with `features.md` moving alongside any `backlog.md` status move.
+- **`AGENTS.md` → How to update these docs**: same-change paragraph for
+  `progress.md`/`backlog.md` (a code change without either is incomplete;
+  when neither applies, record one `progress.md` line instead of skipping).
+- **`AGENTS.md` → Definition of done item 5**: now requires
+  `docs/plan/plans/features.md` updated in the same change.
+- **`backlog.md` stale statuses fixed** (code had outrun the ledger):
+  ERP-0002 authorization core → `implemented` (2026-10-29 core, 2026-11-01
+  shared catalog), ERP-0003 auth module → `implemented` (2026-10-29 live
+  HTTP verified), ERP-0027 warehouses S2 → `implemented` (2026-11-03/04
+  hardening, 23 tests), ERP-0028 stock ledger S3 → `implemented` (GL
+  reconciliation portion of ERP-0014 still open via OPEN-3). ERP-0029's
+  nonstandard "shipped" wording left as-is deliberately.
+- **`progress.md`**: rollup link added at the top; "Next executable task"
+  rewritten to the customer slice (ERP-0004/0005) — ERP-0002/0003 are no
+  longer open, so the old "ERP-0002/3/4/5" framing was stale.
+
+Verification: `Select-String AGENTS.md -Pattern 'Every code update'` matches
+the Hard rules bullet and the docs-update section; `features.md` present at
+`docs/plan/plans/features.md`. `docs/database/` reviewed and **unchanged**
+(no schema change — docs only).
+
+## Completed — org/inventory rebaseline design (ADR-0010) (2026-11-04)
+
+Status: **implemented** (docs only; ADR-0010 `proposed`, owner sign-off
+pending; no code touched).
+
+Grilling pass (manual, `grilling` skill) resolved: organizations = internal
+departments (one ledger, one tax identity); inventory rebaselined as built;
+warehouses all global with `inventory.warehouse_organizations` links as the
+only access rule (role in active org + link; unlinked 404; global admin
+bypass; org `admin` read-only stock); transfers as `transfer_out`/`transfer_in`
+pairs incl. storage→storage; `responsible_employee_id` display-only; borrowing
+stays in `inventory` covering M06 loans; procurement own module; OPEN-1 and
+OPEN-3 closed. Backlog ERP-0031..0035 added.
+
+Docs changed: ADR-0010 (new); `docs/database/docs.dbml` (new table,
+warehouse notes), `logical-references.md` (regenerated),
+`module-ownership.md` (inventory 16 tables / 24 FKs / 31 refs);
+`erp-module-plans/{README,m05,m06,m12}.md`; `phases/phase-3`, `phase-5`;
+`plans/inventory.md`, `plans/warehouse-hardening.md`; `backlog.md`;
+`features.md`. `erp-plan-en.md`/`-id.md` untouched until owner sign-off.
+
+```text
+bun docs/database/gen-logical-references.ts → 509 refs, 228 intra-module
+bun docs/database/validate-dbml.ts          → 255 tables, 0 cross-module refs,
+                                              0 timestamp gaps, OK
+```
+
+**Next executable task:** ERP-0031. First step: query dev DB for warehouses
+with non-null `organization_id` (decides whether backfill needs
+`recomputeFromLedger`).
 
 ## Completed — v5.1 per-module plans (2026-11-04)
 
@@ -1771,10 +1843,12 @@ verified history in this file.
 
 ## Next executable task
 
-**Customer slice (ERP-0002/3/4/5)** — HTTP bring-up is done (verified
-2026-10-29); continue applying the `erp` macro + scoping patterns from
-`security-and-access.md`. Also open: backend source-build Dockerfile + CI test
-job polish.
+**Customer slice (ERP-0004/0005)** — the last unstarted dependency root:
+backend customer CRUD (`ERP-0004`) then the web-admin customer page
+(`ERP-0005`). HTTP bring-up + auth core are done (verified 2026-10-29);
+apply the `erp` macro + scoping patterns from `security-and-access.md`.
+Also open: backend source-build Dockerfile + CI test job polish. Status
+rollup across all features: `docs/plan/plans/features.md`.
 
 ## Completed - Better Auth secondary storage (Redis), 2026-10-29
 

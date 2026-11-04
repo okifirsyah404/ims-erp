@@ -87,8 +87,9 @@ Common DoD in [README.md](README.md), plus:
 - Receipt-to-payable handoff to M09 goes through the finance contract/service
   token, not a direct table write.
 - The negative-stock guard has a test.
-- The UI shows **one** warehouse and does not offer to pick one (or the
-  extra-warehouse capability is formally rebaselined; see below).
+- Warehouse pickers list only warehouses linked to the active organization
+  (`GET /warehouses/linked`); unlinked access returns 404 (ADR-0010).
+- Goods receipts require a warehouse; storage optional.
 
 ## Dependencies
 
@@ -107,8 +108,17 @@ Common DoD in [README.md](README.md), plus:
 | SN reference | `inventory.serial_tracked_items` | shipped (statuses: pre_order, in_stock, borrowed, lost, sold, applied_warranty) |
 | Warehouse | `inventory.warehouses` | shipped **as multi-warehouse** CRUD with addresses and storages |
 
-- Status: **implemented (stock side, outside baseline shape)**. The
-  purchasing side is **planned**.
+- Status: **implemented (stock side)**. The purchasing side is **planned**
+  (ERP-0035, own `procurement` module posting receipts through the inventory
+  stock service).
+- **Rebaseline proposed 2026-11-04 (ADR-0010, owner sign-off pending):**
+  inventory is kept as built. Multiple warehouses and storages are in scope so
+  departments can track products, materials and tools; access via
+  warehouse↔organization links (ERP-0031). Transfers warehouse→warehouse and
+  storage→storage, both recorded in the ledger (ERP-0032), replace the earlier
+  "no bin-to-bin transfers" interpretation. Tracking views: ERP-0033. OPEN-1
+  and OPEN-3 closed (`plans/inventory.md`). The `beyond-baseline` list below
+  is historical.
 - `beyond-baseline`:
   - Multiple warehouses, `warehouse_addresses` and `warehouse_storages`, all
     with UI. This conflicts with the explicit limit "no multiple warehouses".

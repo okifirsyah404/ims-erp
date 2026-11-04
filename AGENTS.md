@@ -96,8 +96,14 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
 - **Honesty.** Never mark work implemented, verified, or accepted without
   evidence. Distinguish `planned / in-progress / implemented / verified /
 accepted / blocked`. Automated tests passing is not business acceptance.
-- **Statuses live in `docs/plan/progress.md` and `docs/plan/backlog.md`.** Update
-  them (and `progress.md`'s "next task") when you stop working.
+- **Every code update writes to the plan docs.** Any change to code,
+  migrations, seeders, or tests updates `docs/plan/progress.md` (dated entry
+  with exact commands and outcomes) and `docs/plan/backlog.md` (claimed
+  `ERP-*` status moved with evidence) in the same change — never in a
+  follow-up. Statuses live in `progress.md`, `backlog.md`, and
+  `docs/plan/plans/features.md` (feature rollup grouped todo / in-progress /
+  done); `features.md` moves with any `backlog.md` status change, and
+  `progress.md`'s "next task" is refreshed when you stop working.
 
 ## Backend (`apps/backend`)
 
@@ -306,7 +312,7 @@ call sites.
    any slice touching DB shape seeds idempotently (verify by running twice).
 5. `progress.md` updated with exact commands and results; `backlog.md`
    statuses moved with evidence (and only to `accepted` on real reviewer
-   approval).
+   approval); `docs/plan/plans/features.md` updated in the same change.
 6. The phase exit criteria in `docs/plan/phases/<current-phase>.md` that
    apply to the task are all met, or the task is left explicitly partial.
 7. No secrets printed or committed.
@@ -331,6 +337,12 @@ change as any structural change to a module — never in a follow-up commit.
 Edit `docs.dbml` before the Drizzle schemas, because it is canonical, then run
 `gen-logical-references.ts` and `validate-dbml.ts` (see **Feature module
 lifecycle**).
+
+`docs/plan/progress.md` and `docs/plan/backlog.md` are the work log and task
+ledger; both are updated in the **same** change as the code they describe.
+A code change with no progress entry and no backlog status move is an
+incomplete change; when neither genuinely applies (rare — e.g. a comment
+typo), record that in one `progress.md` line instead of skipping silently.
 
 Changes to the skill set go through the existing skill manager and must be
 recorded in `skills.md` (source, version, hash) alongside `skills-lock.json`.

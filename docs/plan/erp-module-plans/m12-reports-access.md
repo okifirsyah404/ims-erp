@@ -125,9 +125,10 @@ Common DoD in [README.md](README.md), plus:
   `docs/plan/progress.md`; tests pass). Exports, archive and portals are
   **planned**. Business acceptance is not recorded.
 - `beyond-baseline`:
-  - Better Auth `organizations`, `members` and `invitations` plus the
-    `organization` module (multi-tenant, shipped with UI). The plan has one
-    entity. See README.
+  - (Reclassified 2026-11-04, ADR-0010: organizations are internal
+    departments of one entity — consistent with v5.1, not beyond-baseline.)
+    The `warehouse` role's stock actions are scoped to warehouses linked to
+    the active organization; org `admin` gets read-only stock.
   - `passkeys`, `identity_verifications` and `user_devices`. These are extra
     auth features (cheap if Better Auth plugins provide them, but not
     requested).

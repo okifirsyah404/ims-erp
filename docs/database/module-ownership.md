@@ -36,7 +36,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 | 5 | Catalog | `catalog` | 12 | 16 | 15 |
 | 6 | Sales | `sales` | 12 | 10 | 36 |
 | 7 | Procurement | `procurement` | 11 | 13 | 30 |
-| 8 | Inventory | `inventory` | 15 | 23 | 30 |
+| 8 | Inventory | `inventory` | 16 | 24 | 31 |
 | 9 | Projects | `projects` | 13 | 0 | 33 |
 | 10 | HR | `hr` | 16 | 17 | 44 |
 | 11 | Payroll | `payroll` | 11 | 10 | 28 |

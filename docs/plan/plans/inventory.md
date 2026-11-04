@@ -697,9 +697,9 @@ slice is called *accepted*.
 
 | ID | Question | Working default taken | Blocks |
 |---|---|---|---|
-| `OPEN-1` | Do the 11 `catalog.*` satellite tables move into `inventory.*`, or does `catalog` survive as a module with only `items` relocated? Specifically: is `item_variants` needed before serialized units are usable? | Items relocate; satellites stay in `catalog`, flagged. `items.category` and `items.unit_label` are plain text in S1 — no `item_categories` / `units` tables | S1 acceptance |
+| `OPEN-1` | Do the 11 `catalog.*` satellite tables move into `inventory.*`, or does `catalog` survive as a module with only `items` relocated? Specifically: is `item_variants` needed before serialized units are usable? | **Closed 2026-11-04 (ADR-0010 grilling)** — `inventory.items` is the only item master; `category`/`unit_label` stay plain text; `catalog.*` satellites frozen in `docs.dbml`, none adopted | — |
 | `OPEN-2` | Guest-PII retention period | **Closed in S4** — 24 months after `closed_at`, shipped as the `scheduler.guestPiiRetentionMonths` config constant (`GUEST_PII_RETENTION_MONTHS` env), so the window can change without a code change or migration | — |
-| `OPEN-3` | Stock valuation (`average_cost`, `total_value`) is absent from this plan. It needs a COA and a posting engine. Is quantity-only inventory acceptable for the first release, or must valuation land with S3? | Quantity-only; valuation fields exist but stay at 0 | S3 acceptance |
+| `OPEN-3` | Stock valuation (`average_cost`, `total_value`) is absent from this plan. It needs a COA and a posting engine. Is quantity-only inventory acceptable for the first release, or must valuation land with S3? | **Closed 2026-11-04** — quantity-only is the v5.1 baseline; finance posts the period inventory value/HPP summary manually in M09 | — |
 
 ## 15. Risks
 

@@ -20,7 +20,7 @@ Honest record. Nothing shipped yet.
 
 | # | Decision |
 |---|---|
-| D1 | Permissions stay as-is: **global admin only** (ADR-0008; no `warehouse:*` catalog grants added) |
+| D1 | Permissions stay as-is: **global admin only** (ADR-0008; no `warehouse:*` catalog grants added). **Superseded for organization access by ADR-0010** (warehouse↔organization links, ERP-0031); CRUD stays global-admin-only. |
 | D2 | **No archive/restore lifecycle change.** Backend soft delete already exists (`DELETE /warehouses/:id`, guarded by `WarehouseHasUnitsError`) but is surfaced as an **active toggle** (`isActive`) in the UI. No restore endpoint is added. |
 | D3 | `isDefault` stays **fully manual** — no backend default-warehouse rules; user sets/unsets freely. |
 | D4 | Business-rule guards to add: **storage code uniqueness per warehouse** and **storage create/update blocked in inactive warehouse**. No other guards. |

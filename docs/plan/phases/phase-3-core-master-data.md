@@ -14,7 +14,7 @@
    tested).
 2. ERP-0008 master data by owner in `domain-map.md`: company profile, suppliers
    (+restricted bank details), unified product/service catalog with
-   categories/units, single warehouse, employees (+restricted salary bank
+   categories/units, warehouses linked to organizations (ADR-0010), employees (+restricted salary bank
    details), COA, cash/bank accounts, subscription packages, investors.
    Decisions explicitly logged (not silently made) where a catalog entity gets
    a discriminator.

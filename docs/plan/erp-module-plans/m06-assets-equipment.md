@@ -99,9 +99,9 @@ Common DoD in [README.md](README.md), plus:
 | Service notes | `asset_maintenances` | none |
 | Borrowing | (none in `assets`; lives in `inventory.borrowings`) | `inventory` borrowings shipped with UI (`/inventory/borrowings`) |
 
-- Status: **planned** for the asset register. Borrowing is **implemented in
-  the wrong module** relative to the plan (M05/inventory, tied to tool items
-  instead of asset records).
+- Status: **planned** for the asset register (separate `assets` module).
+  Borrowing/return is **covered by `inventory` borrowing** (ADR-0010,
+  proposed): M06 does not build a second loan engine.
 - `beyond-baseline`:
   - `asset_depreciations`, if it is used to calculate depreciation.
     Automatic depreciation is an explicit limit. Holding finance-entered book

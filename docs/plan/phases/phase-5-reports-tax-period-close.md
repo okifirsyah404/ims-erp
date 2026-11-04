@@ -7,8 +7,9 @@
   items explicitly rather than being silently assumed.
 
 ## Work (ERP-0014, ERP-0015, ERP-0016, ERP-0017)
-1. ERP-0014 inventory: stock movements + valuation boundaries; one warehouse;
-   reconciliation to GL control account.
+1. ERP-0014 inventory: stock movements + valuation boundaries; multiple
+   warehouses linked to organizations (ADR-0010, proposed); quantity-only, value
+   via finance summary (OPEN-3 closed); reconciliation to GL control account.
 2. ERP-0015 assets & projects: assets/tools master incl. depreciation
    adjustments via journal; project progress + handover/BAST records.
 3. ERP-0016 reports: P&L, balance sheet (assets = liabilities + equity
