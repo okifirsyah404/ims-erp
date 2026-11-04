@@ -131,6 +131,7 @@ const inventory = {
 	'warehouses.storageTab': 'Storage',
 	'warehouses.capacity': 'Capacity',
 	'warehouses.state': 'State',
+	'warehouses.quantity': 'Quantity',
 	'warehouses.activate': 'Set active',
 	'warehouses.deactivate': 'Set inactive',
 	'warehouses.activated': 'Warehouse activated',

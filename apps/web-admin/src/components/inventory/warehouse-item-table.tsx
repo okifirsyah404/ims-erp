@@ -23,16 +23,28 @@ import { itemsQueryOptions, type TItemKind } from '@/lib/inventory-api';
 const PAGE_SIZE = 10;
 
 /**
+ * Trims a decimal-string quantity (`numeric(18,3)` wire format) to at most
+ * three fraction digits, dropping trailing zeros: `'2.000'` → `'2'`,
+ * `'1.500'` → `'1.5'`.
+ */
+function formatQuantity(value: string): string {
+	const number = Number(value);
+	return Number.isFinite(number)
+		? String(Math.round(number * 1000) / 1000)
+		: value;
+}
+
+/**
  * Read-only item table for one kind, scoped to a warehouse.
  *
  * @remarks
  * Server-side pagination and search: page and search are component state
  * that flows into the query key, so each change is a fresh request, and
  * `placeholderData` keeps the previous page visible while the next loads.
- * `warehouseId` narrows to items with at least one live unit in the
- * warehouse (backend EXISTS filter). The item master carries no per-warehouse
- * quantity — positions and statuses live on the units — so the columns are
- * the item's own identifying/stock-policy fields.
+ * `warehouseId` narrows to items with stock in the warehouse (backend EXISTS
+ * filter over live units) and decorates each row with the item's
+ * `quantity_on_hand` summed over `stock_balances` bins — the Quantity column
+ * therefore covers serialized and quantity-tracked items alike.
  */
 export function WarehouseItemTable({
 	warehouseId,
@@ -102,6 +114,9 @@ export function WarehouseItemTable({
 								<TableHead>{t('inventory:items.sku')}</TableHead>
 								<TableHead>{t('inventory:items.name')}</TableHead>
 								<TableHead>{t('inventory:items.unitLabel')}</TableHead>
+								<TableHead className='text-right'>
+									{t('inventory:warehouses.quantity')}
+								</TableHead>
 								<TableHead>{t('inventory:items.minStockQty')}</TableHead>
 								<TableHead className='text-right'>
 									<span className='sr-only'>{t('common:action.edit')}</span>
@@ -117,6 +132,11 @@ export function WarehouseItemTable({
 									<TableCell>{item.name}</TableCell>
 									<TableCell className='text-muted-foreground'>
 										{item.unitLabel ?? '—'}
+									</TableCell>
+									<TableCell className='text-right tabular-nums'>
+										{item.quantityOnHand == null
+											? '—'
+											: formatQuantity(item.quantityOnHand)}
 									</TableCell>
 									<TableCell className='tabular-nums'>
 										{item.minStockQty}

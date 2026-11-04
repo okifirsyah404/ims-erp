@@ -14,6 +14,7 @@ Honest record. Nothing shipped yet.
 |---|---|---|---|
 | 1 | ✅ done | — | Backend: `WarehouseInactiveError` guard on storage create/update, `countKinds` batched counts on list/detail, `warehouseId` items filter (EXISTS join), locale keys (en + id), tests |
 | 2 | ✅ done | — | Frontend: card-grid list page (search, archived filter, pagination, active toggle, archive), detail page (stats cards, address, 4 tabs with storage create/edit/archive modal), i18n keys (en + id) |
+| 2b | ✅ done | — | Follow-ups: location-selector popup fix (`ComboboxContent` portal), `Empty` component adoption, per-item **quantity** on detail tabs — `/items?warehouseId=` now decorates rows with `quantityOnHand` (SUM over `stock_balances`) and the `warehouseId` filter matches units **or** balances so quantity-tracked items appear; `warehouses.quantity` locale key (en + id) |
 
 ## Grilling outcome — locked decisions
 

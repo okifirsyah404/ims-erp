@@ -11,6 +11,7 @@ import {
 	asc,
 	count,
 	eq,
+	getTableColumns,
 	ilike,
 	isNull,
 	or,
@@ -20,6 +21,7 @@ import { inject, injectable } from 'tsyringe';
 import type {
 	IItemRepository,
 	TItemCreateData,
+	TItemListRow,
 	TItemPaginationRequest,
 	TItemUpdateData,
 } from '../contracts/item.repository.interface';
@@ -46,7 +48,7 @@ export class ItemRepository implements IItemRepository {
 	 */
 	async paginate(
 		request: TItemPaginationRequest,
-	): Promise<TPaginationResult<TItemSelect>> {
+	): Promise<TPaginationResult<TItemListRow>> {
 		const {
 			page,
 			limit,
@@ -61,15 +63,23 @@ export class ItemRepository implements IItemRepository {
 			includeArchived ? undefined : isNull(items.deletedAt),
 			itemKind ? eq(items.itemKind, itemKind) : undefined,
 			category ? ilike(items.category, `%${category}%`) : undefined,
-			// "Has a unit in this warehouse": an EXISTS keeps the row multiplicity
-			// of the outer query intact (a join would duplicate items that have
-			// several units here).
+			// "Has a physical presence in this warehouse": either a live
+			// serialized unit or a stock balance. Two EXISTS keep the row
+			// multiplicity of the outer query intact (a join would duplicate
+			// items that have several units/bins here).
 			warehouseId
-				? sql`EXISTS (
-						SELECT 1 FROM ${serialTrackedItems}
-						WHERE ${serialTrackedItems.itemId} = ${items.id}
-							AND ${serialTrackedItems.warehouseId} = ${warehouseId}
-							AND ${serialTrackedItems.deletedAt} IS NULL
+				? sql`(
+						EXISTS (
+							SELECT 1 FROM ${serialTrackedItems}
+							WHERE ${serialTrackedItems.itemId} = ${items.id}
+								AND ${serialTrackedItems.warehouseId} = ${warehouseId}
+								AND ${serialTrackedItems.deletedAt} IS NULL
+						)
+						OR EXISTS (
+							SELECT 1 FROM inventory.stock_balances sb
+							WHERE sb.item_id = ${items.id}
+								AND sb.warehouse_id = ${warehouseId}
+						)
 					)`
 				: undefined,
 			search
@@ -85,7 +95,22 @@ export class ItemRepository implements IItemRepository {
 			.where(where);
 
 		const data = await this.database
-			.select()
+			// The warehouse-scoped quantity is a scalar subquery, not a join: a
+			// join to `stock_balances` would duplicate items that hold stock in
+			// several bins, breaking both row multiplicity and LIMIT/OFFSET.
+			// Without a warehouse filter the column is simply NULL.
+			.select({
+				...getTableColumns(items),
+				quantityOnHand:
+					warehouseId !== undefined
+						? sql<
+								string
+							>`COALESCE((SELECT SUM(sb.quantity_on_hand)
+									FROM inventory.stock_balances sb
+									WHERE sb.warehouse_id = ${warehouseId}
+										AND sb.item_id = ${sql.raw('"inventory"."items"."id"')}), 0)::text`
+						: sql<string | null>`NULL`,
+			})
 			.from(items)
 			.where(where)
 			.orderBy(asc(items.name))

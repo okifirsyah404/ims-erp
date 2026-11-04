@@ -119,6 +119,7 @@ const inventory = {
 	'warehouses.storageTab': 'Penyimpanan',
 	'warehouses.capacity': 'Kapasitas',
 	'warehouses.state': 'Keadaan',
+	'warehouses.quantity': 'Kuantitas',
 	'warehouses.activate': 'Setel aktif',
 	'warehouses.deactivate': 'Setel tidak aktif',
 	'warehouses.activated': 'Gudang diaktifkan',

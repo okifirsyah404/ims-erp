@@ -56,6 +56,12 @@ export type TItem = {
 	createdAt: string;
 	updatedAt: string | null;
 	deletedAt: string | null;
+	/**
+	 * Total `quantity_on_hand` for this item in the requested warehouse,
+	 * summed over `stock_balances` bins. Present only when the list request
+	 * carried `warehouseId` (decimal string, like the numeric column).
+	 */
+	quantityOnHand?: string | null;
 };
 
 /** One serialized unit. */
