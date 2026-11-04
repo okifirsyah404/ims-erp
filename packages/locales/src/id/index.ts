@@ -1,4 +1,5 @@
 import admin_ from './admin';
+import assets_ from './assets';
 import auth_ from './auth';
 import common_ from './common';
 import dashboard_ from './dashboard';
@@ -14,6 +15,7 @@ export const id = {
 	auth: auth_,
 	account: account_,
 	admin: admin_,
+	assets: assets_,
 	inventory: inventory_,
 	dashboard: dashboard_,
 	api: api_,

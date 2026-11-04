@@ -37,9 +37,15 @@ import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admi
 import { Route as AuthedAdminRolesIndexRouteImport } from './routes/_authed/admin/roles/index'
 import { Route as AuthedAdminSettingsIndexRouteImport } from './routes/_authed/admin/settings/index'
 import { Route as AuthedAdminUsersIndexRouteImport } from './routes/_authed/admin/users/index'
+import { Route as AuthedAssetsCategoriesIndexRouteImport } from './routes/_authed/assets/categories/index'
 import { Route as AuthedAssetsDepreciationIndexRouteImport } from './routes/_authed/assets/depreciation/index'
+import { Route as AuthedAssetsDisposalsIndexRouteImport } from './routes/_authed/assets/disposals/index'
+import { Route as AuthedAssetsLoansIndexRouteImport } from './routes/_authed/assets/loans/index'
 import { Route as AuthedAssetsRegisterIndexRouteImport } from './routes/_authed/assets/register/index'
+import { Route as AuthedAssetsRegisterAssetIdRouteImport } from './routes/_authed/assets/register/$assetId'
+import { Route as AuthedAssetsRegisterNewRouteImport } from './routes/_authed/assets/register/new'
 import { Route as AuthedAssetsServiceRecordsIndexRouteImport } from './routes/_authed/assets/service-records/index'
+import { Route as AuthedAssetsToolSetsIndexRouteImport } from './routes/_authed/assets/tool-sets/index'
 import { Route as AuthedCrmCustomersIndexRouteImport } from './routes/_authed/crm/customers/index'
 import { Route as AuthedCrmLeadsIndexRouteImport } from './routes/_authed/crm/leads/index'
 import { Route as AuthedFinanceAccountsIndexRouteImport } from './routes/_authed/finance/accounts/index'
@@ -242,22 +248,56 @@ const AuthedAdminUsersIndexRoute = AuthedAdminUsersIndexRouteImport.update({
   path: '/admin/users/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedAssetsCategoriesIndexRoute =
+  AuthedAssetsCategoriesIndexRouteImport.update({
+    id: '/assets/categories/',
+    path: '/assets/categories/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedAssetsDepreciationIndexRoute =
   AuthedAssetsDepreciationIndexRouteImport.update({
     id: '/assets/depreciation/',
     path: '/assets/depreciation/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedAssetsDisposalsIndexRoute =
+  AuthedAssetsDisposalsIndexRouteImport.update({
+    id: '/assets/disposals/',
+    path: '/assets/disposals/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedAssetsLoansIndexRoute = AuthedAssetsLoansIndexRouteImport.update({
+  id: '/assets/loans/',
+  path: '/assets/loans/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedAssetsRegisterIndexRoute =
   AuthedAssetsRegisterIndexRouteImport.update({
     id: '/assets/register/',
     path: '/assets/register/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedAssetsRegisterAssetIdRoute =
+  AuthedAssetsRegisterAssetIdRouteImport.update({
+    id: '/assets/register/$assetId',
+    path: '/assets/register/$assetId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedAssetsRegisterNewRoute = AuthedAssetsRegisterNewRouteImport.update({
+  id: '/assets/register/new',
+  path: '/assets/register/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedAssetsServiceRecordsIndexRoute =
   AuthedAssetsServiceRecordsIndexRouteImport.update({
     id: '/assets/service-records/',
     path: '/assets/service-records/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedAssetsToolSetsIndexRoute =
+  AuthedAssetsToolSetsIndexRouteImport.update({
+    id: '/assets/tool-sets/',
+    path: '/assets/tool-sets/',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedCrmCustomersIndexRoute = AuthedCrmCustomersIndexRouteImport.update({
@@ -628,6 +668,8 @@ export interface FileRoutesByFullPath {
   '/reports/': typeof AuthedReportsIndexRoute
   '/sales/': typeof AuthedSalesIndexRoute
   '/subscription/': typeof AuthedSubscriptionIndexRoute
+  '/assets/register/$assetId': typeof AuthedAssetsRegisterAssetIdRoute
+  '/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
   '/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -641,9 +683,13 @@ export interface FileRoutesByFullPath {
   '/admin/roles/': typeof AuthedAdminRolesIndexRoute
   '/admin/settings/': typeof AuthedAdminSettingsIndexRoute
   '/admin/users/': typeof AuthedAdminUsersIndexRoute
+  '/assets/categories/': typeof AuthedAssetsCategoriesIndexRoute
   '/assets/depreciation/': typeof AuthedAssetsDepreciationIndexRoute
+  '/assets/disposals/': typeof AuthedAssetsDisposalsIndexRoute
+  '/assets/loans/': typeof AuthedAssetsLoansIndexRoute
   '/assets/register/': typeof AuthedAssetsRegisterIndexRoute
   '/assets/service-records/': typeof AuthedAssetsServiceRecordsIndexRoute
+  '/assets/tool-sets/': typeof AuthedAssetsToolSetsIndexRoute
   '/crm/customers/': typeof AuthedCrmCustomersIndexRoute
   '/crm/leads/': typeof AuthedCrmLeadsIndexRoute
   '/finance/accounts/': typeof AuthedFinanceAccountsIndexRoute
@@ -717,6 +763,8 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthedReportsIndexRoute
   '/sales': typeof AuthedSalesIndexRoute
   '/subscription': typeof AuthedSubscriptionIndexRoute
+  '/assets/register/$assetId': typeof AuthedAssetsRegisterAssetIdRoute
+  '/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
   '/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -730,9 +778,13 @@ export interface FileRoutesByTo {
   '/admin/roles': typeof AuthedAdminRolesIndexRoute
   '/admin/settings': typeof AuthedAdminSettingsIndexRoute
   '/admin/users': typeof AuthedAdminUsersIndexRoute
+  '/assets/categories': typeof AuthedAssetsCategoriesIndexRoute
   '/assets/depreciation': typeof AuthedAssetsDepreciationIndexRoute
+  '/assets/disposals': typeof AuthedAssetsDisposalsIndexRoute
+  '/assets/loans': typeof AuthedAssetsLoansIndexRoute
   '/assets/register': typeof AuthedAssetsRegisterIndexRoute
   '/assets/service-records': typeof AuthedAssetsServiceRecordsIndexRoute
+  '/assets/tool-sets': typeof AuthedAssetsToolSetsIndexRoute
   '/crm/customers': typeof AuthedCrmCustomersIndexRoute
   '/crm/leads': typeof AuthedCrmLeadsIndexRoute
   '/finance/accounts': typeof AuthedFinanceAccountsIndexRoute
@@ -810,6 +862,8 @@ export interface FileRoutesById {
   '/_authed/reports/': typeof AuthedReportsIndexRoute
   '/_authed/sales/': typeof AuthedSalesIndexRoute
   '/_authed/subscription/': typeof AuthedSubscriptionIndexRoute
+  '/_authed/assets/register/$assetId': typeof AuthedAssetsRegisterAssetIdRoute
+  '/_authed/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/_authed/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
   '/_authed/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/_authed/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -823,9 +877,13 @@ export interface FileRoutesById {
   '/_authed/admin/roles/': typeof AuthedAdminRolesIndexRoute
   '/_authed/admin/settings/': typeof AuthedAdminSettingsIndexRoute
   '/_authed/admin/users/': typeof AuthedAdminUsersIndexRoute
+  '/_authed/assets/categories/': typeof AuthedAssetsCategoriesIndexRoute
   '/_authed/assets/depreciation/': typeof AuthedAssetsDepreciationIndexRoute
+  '/_authed/assets/disposals/': typeof AuthedAssetsDisposalsIndexRoute
+  '/_authed/assets/loans/': typeof AuthedAssetsLoansIndexRoute
   '/_authed/assets/register/': typeof AuthedAssetsRegisterIndexRoute
   '/_authed/assets/service-records/': typeof AuthedAssetsServiceRecordsIndexRoute
+  '/_authed/assets/tool-sets/': typeof AuthedAssetsToolSetsIndexRoute
   '/_authed/crm/customers/': typeof AuthedCrmCustomersIndexRoute
   '/_authed/crm/leads/': typeof AuthedCrmLeadsIndexRoute
   '/_authed/finance/accounts/': typeof AuthedFinanceAccountsIndexRoute
@@ -903,6 +961,8 @@ export interface FileRouteTypes {
     | '/reports/'
     | '/sales/'
     | '/subscription/'
+    | '/assets/register/$assetId'
+    | '/assets/register/new'
     | '/inventory/borrowings/$borrowingId'
     | '/inventory/borrowings/new'
     | '/inventory/items/$itemId'
@@ -916,9 +976,13 @@ export interface FileRouteTypes {
     | '/admin/roles/'
     | '/admin/settings/'
     | '/admin/users/'
+    | '/assets/categories/'
     | '/assets/depreciation/'
+    | '/assets/disposals/'
+    | '/assets/loans/'
     | '/assets/register/'
     | '/assets/service-records/'
+    | '/assets/tool-sets/'
     | '/crm/customers/'
     | '/crm/leads/'
     | '/finance/accounts/'
@@ -992,6 +1056,8 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/subscription'
+    | '/assets/register/$assetId'
+    | '/assets/register/new'
     | '/inventory/borrowings/$borrowingId'
     | '/inventory/borrowings/new'
     | '/inventory/items/$itemId'
@@ -1005,9 +1071,13 @@ export interface FileRouteTypes {
     | '/admin/roles'
     | '/admin/settings'
     | '/admin/users'
+    | '/assets/categories'
     | '/assets/depreciation'
+    | '/assets/disposals'
+    | '/assets/loans'
     | '/assets/register'
     | '/assets/service-records'
+    | '/assets/tool-sets'
     | '/crm/customers'
     | '/crm/leads'
     | '/finance/accounts'
@@ -1084,6 +1154,8 @@ export interface FileRouteTypes {
     | '/_authed/reports/'
     | '/_authed/sales/'
     | '/_authed/subscription/'
+    | '/_authed/assets/register/$assetId'
+    | '/_authed/assets/register/new'
     | '/_authed/inventory/borrowings/$borrowingId'
     | '/_authed/inventory/borrowings/new'
     | '/_authed/inventory/items/$itemId'
@@ -1097,9 +1169,13 @@ export interface FileRouteTypes {
     | '/_authed/admin/roles/'
     | '/_authed/admin/settings/'
     | '/_authed/admin/users/'
+    | '/_authed/assets/categories/'
     | '/_authed/assets/depreciation/'
+    | '/_authed/assets/disposals/'
+    | '/_authed/assets/loans/'
     | '/_authed/assets/register/'
     | '/_authed/assets/service-records/'
+    | '/_authed/assets/tool-sets/'
     | '/_authed/crm/customers/'
     | '/_authed/crm/leads/'
     | '/_authed/finance/accounts/'
@@ -1357,11 +1433,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminUsersIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/assets/categories/': {
+      id: '/_authed/assets/categories/'
+      path: '/assets/categories'
+      fullPath: '/assets/categories/'
+      preLoaderRoute: typeof AuthedAssetsCategoriesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/assets/depreciation/': {
       id: '/_authed/assets/depreciation/'
       path: '/assets/depreciation'
       fullPath: '/assets/depreciation/'
       preLoaderRoute: typeof AuthedAssetsDepreciationIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/assets/disposals/': {
+      id: '/_authed/assets/disposals/'
+      path: '/assets/disposals'
+      fullPath: '/assets/disposals/'
+      preLoaderRoute: typeof AuthedAssetsDisposalsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/assets/loans/': {
+      id: '/_authed/assets/loans/'
+      path: '/assets/loans'
+      fullPath: '/assets/loans/'
+      preLoaderRoute: typeof AuthedAssetsLoansIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/assets/register/': {
@@ -1371,11 +1468,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAssetsRegisterIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/assets/register/$assetId': {
+      id: '/_authed/assets/register/$assetId'
+      path: '/assets/register/$assetId'
+      fullPath: '/assets/register/$assetId'
+      preLoaderRoute: typeof AuthedAssetsRegisterAssetIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/assets/register/new': {
+      id: '/_authed/assets/register/new'
+      path: '/assets/register/new'
+      fullPath: '/assets/register/new'
+      preLoaderRoute: typeof AuthedAssetsRegisterNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/assets/service-records/': {
       id: '/_authed/assets/service-records/'
       path: '/assets/service-records'
       fullPath: '/assets/service-records/'
       preLoaderRoute: typeof AuthedAssetsServiceRecordsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/assets/tool-sets/': {
+      id: '/_authed/assets/tool-sets/'
+      path: '/assets/tool-sets'
+      fullPath: '/assets/tool-sets/'
+      preLoaderRoute: typeof AuthedAssetsToolSetsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/crm/customers/': {
@@ -1890,6 +2008,8 @@ interface AuthedRouteChildren {
   AuthedReportsIndexRoute: typeof AuthedReportsIndexRoute
   AuthedSalesIndexRoute: typeof AuthedSalesIndexRoute
   AuthedSubscriptionIndexRoute: typeof AuthedSubscriptionIndexRoute
+  AuthedAssetsRegisterAssetIdRoute: typeof AuthedAssetsRegisterAssetIdRoute
+  AuthedAssetsRegisterNewRoute: typeof AuthedAssetsRegisterNewRoute
   AuthedInventoryBorrowingsBorrowingIdRoute: typeof AuthedInventoryBorrowingsBorrowingIdRoute
   AuthedInventoryBorrowingsNewRoute: typeof AuthedInventoryBorrowingsNewRoute
   AuthedInventoryItemsItemIdRoute: typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -1902,9 +2022,13 @@ interface AuthedRouteChildren {
   AuthedAdminRolesIndexRoute: typeof AuthedAdminRolesIndexRoute
   AuthedAdminSettingsIndexRoute: typeof AuthedAdminSettingsIndexRoute
   AuthedAdminUsersIndexRoute: typeof AuthedAdminUsersIndexRoute
+  AuthedAssetsCategoriesIndexRoute: typeof AuthedAssetsCategoriesIndexRoute
   AuthedAssetsDepreciationIndexRoute: typeof AuthedAssetsDepreciationIndexRoute
+  AuthedAssetsDisposalsIndexRoute: typeof AuthedAssetsDisposalsIndexRoute
+  AuthedAssetsLoansIndexRoute: typeof AuthedAssetsLoansIndexRoute
   AuthedAssetsRegisterIndexRoute: typeof AuthedAssetsRegisterIndexRoute
   AuthedAssetsServiceRecordsIndexRoute: typeof AuthedAssetsServiceRecordsIndexRoute
+  AuthedAssetsToolSetsIndexRoute: typeof AuthedAssetsToolSetsIndexRoute
   AuthedCrmCustomersIndexRoute: typeof AuthedCrmCustomersIndexRoute
   AuthedCrmLeadsIndexRoute: typeof AuthedCrmLeadsIndexRoute
   AuthedFinanceAccountsIndexRoute: typeof AuthedFinanceAccountsIndexRoute
@@ -1970,6 +2094,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedReportsIndexRoute: AuthedReportsIndexRoute,
   AuthedSalesIndexRoute: AuthedSalesIndexRoute,
   AuthedSubscriptionIndexRoute: AuthedSubscriptionIndexRoute,
+  AuthedAssetsRegisterAssetIdRoute: AuthedAssetsRegisterAssetIdRoute,
+  AuthedAssetsRegisterNewRoute: AuthedAssetsRegisterNewRoute,
   AuthedInventoryBorrowingsBorrowingIdRoute:
     AuthedInventoryBorrowingsBorrowingIdRoute,
   AuthedInventoryBorrowingsNewRoute: AuthedInventoryBorrowingsNewRoute,
@@ -1984,9 +2110,13 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminRolesIndexRoute: AuthedAdminRolesIndexRoute,
   AuthedAdminSettingsIndexRoute: AuthedAdminSettingsIndexRoute,
   AuthedAdminUsersIndexRoute: AuthedAdminUsersIndexRoute,
+  AuthedAssetsCategoriesIndexRoute: AuthedAssetsCategoriesIndexRoute,
   AuthedAssetsDepreciationIndexRoute: AuthedAssetsDepreciationIndexRoute,
+  AuthedAssetsDisposalsIndexRoute: AuthedAssetsDisposalsIndexRoute,
+  AuthedAssetsLoansIndexRoute: AuthedAssetsLoansIndexRoute,
   AuthedAssetsRegisterIndexRoute: AuthedAssetsRegisterIndexRoute,
   AuthedAssetsServiceRecordsIndexRoute: AuthedAssetsServiceRecordsIndexRoute,
+  AuthedAssetsToolSetsIndexRoute: AuthedAssetsToolSetsIndexRoute,
   AuthedCrmCustomersIndexRoute: AuthedCrmCustomersIndexRoute,
   AuthedCrmLeadsIndexRoute: AuthedCrmLeadsIndexRoute,
   AuthedFinanceAccountsIndexRoute: AuthedFinanceAccountsIndexRoute,

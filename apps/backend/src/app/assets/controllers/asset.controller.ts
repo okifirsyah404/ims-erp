@@ -58,15 +58,6 @@ export class AssetController {
 					detail: { description: 'Paginated asset register' },
 				},
 			)
-			.get(
-				'/:id',
-				async ({ params }) =>
-					ok(await assetService.getAsset(assetIdParamSchema.parse(params).id)),
-				{
-					erp: { permission: ['asset:read'] },
-					detail: { description: 'One asset' },
-				},
-			)
 			.post(
 				'',
 				async ({ body, erp, request, status }) =>

@@ -73,6 +73,17 @@ const DYNAMIC_PREFIXES = [
 	'inventory:borrowingPurpose.',
 	'inventory:borrowingCondition.',
 	'inventory:borrowingEvent.',
+	// Asset module (M06): statuses, conditions, types and workflow enums are
+	// server values, so the label keys are composed at runtime.
+	'assets:status.',
+	'assets:condition.',
+	'assets:type.',
+	'assets:disposalStatus.',
+	'assets:disposalMethod.',
+	'assets:maintenanceType.',
+	'assets:maintenanceStatus.',
+	'assets:maintenanceStatus.',
+	'assets:toolSetStatus.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

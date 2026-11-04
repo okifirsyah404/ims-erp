@@ -1,0 +1,207 @@
+/**
+ * Copy modul aset (M06, rencana hardening Fase A-4).
+ *
+ * @remarks
+ * Paritas kunci dengan `en/assets.ts` dijaga oleh locale-parity test.
+ */
+const assets = {
+	// Register list.
+	'register.title': 'Register Aset',
+	'register.description':
+		'Peralatan, kendaraan, dan perkakas milik organisasi ini.',
+	'register.empty': 'Belum ada aset terdaftar untuk organisasi ini.',
+	'register.emptyTitle': 'Belum ada apa pun di sini',
+	'register.new': 'Daftarkan aset',
+	'register.searchPlaceholder': 'Cari kode, nama, atau nomor seri…',
+	'register.includeArchived': 'Sertakan yang diarsipkan',
+	'register.filterAllStatuses': 'Semua status',
+	'register.code': 'Kode',
+	'register.name': 'Nama',
+	'register.status': 'Status',
+	'register.condition': 'Kondisi',
+	'register.bookValue': 'Nilai buku',
+	'register.serialNumber': 'Nomor seri',
+	'register.location': 'Lokasi',
+	'register.acquisitionCost': 'Biaya perolehan',
+
+	// Register detail.
+	'detail.title': 'Detail aset',
+	'detail.custody': 'Peminjaman',
+	'detail.movements': 'Perpindahan',
+	'detail.conditionChecks': 'Pemeriksaan kondisi',
+	'detail.maintenances': 'Catatan servis',
+	'detail.depreciations': 'Penyusutan',
+	'detail.documents': 'Dokumen',
+	'detail.noHistory': 'Belum ada catatan.',
+	'detail.returnedAt': 'Dikembalikan pada',
+	'detail.deactivate': 'Nonaktifkan',
+	'detail.archive': 'Arsipkan',
+	'detail.assign': 'Pinjamkan',
+	'detail.return': 'Kembalikan',
+	'detail.dispose': 'Penghapusan',
+
+	// Forms.
+	'form.newAsset': 'Daftarkan aset',
+	'form.newAssetDescription':
+		'Kode dialokasikan otomatis. Biaya adalah nilai pasti.',
+	'form.editAsset': 'Ubah aset',
+	'form.editAssetDescription':
+		'Kode, status, dan valuasi dikelola melalui operasi.',
+	'form.create': 'Buat aset',
+	'form.creating': 'Membuat.',
+	'form.save': 'Simpan perubahan',
+	'form.saving': 'Menyimpan.',
+	'form.deactivateTitle': 'Nonaktifkan aset',
+	'form.deactivateDescription':
+		'Aset diparkir; alasan wajib diisi (audit).',
+	'form.reason': 'Alasan',
+	'form.reasonPlaceholder': 'Mengapa aset ini dinonaktifkan?',
+	'form.deactivate': 'Nonaktifkan',
+	'form.deactivating': 'Menonaktifkan.',
+	'form.assignTitle': 'Pinjamkan aset',
+	'form.assignDescription': 'Peminjaman dicatat; aset menjadi digunakan.',
+	'form.holderUserId': 'Pemegang (id pengguna)',
+	'form.notes': 'Catatan',
+	'form.assign': 'Pinjamkan',
+	'form.assigning': 'Meminjamkan.',
+	'form.returnTitle': 'Kembalikan aset',
+	'form.returnDescription': 'Kondisi masuk dicatat pada baris peminjaman.',
+	'form.return': 'Kembalikan aset',
+	'form.returning': 'Mengembalikan.',
+	'form.disposeTitle': 'Ajukan penghapusan',
+	'form.disposeDescription':
+		'Penghapusan dibuat sebagai draf; persetujuan dan eksekusi menyusul.',
+	'form.proceedsAmount': 'Hasil penjualan',
+	'form.dispose': 'Buat penghapusan',
+	'form.cancel': 'Batal',
+
+	// Disposals page.
+	'disposals.title': 'Penghapusan',
+	'disposals.description':
+		'Catatan alur penghapusan; baris tereksekusi menyimpan bukti keuangan aset.',
+	'disposals.empty': 'Belum ada penghapusan.',
+	'disposals.emptyTitle': 'Belum ada apa pun di sini',
+	'disposals.code': 'Kode',
+	'disposals.status': 'Status',
+	'disposals.method': 'Metode',
+	'disposals.proceeds': 'Hasil penjualan',
+	'disposals.approve': 'Setujui',
+	'disposals.execute': 'Eksekusi',
+	'disposals.cancel': 'Batalkan',
+	'disposals.approved': 'Penghapusan disetujui.',
+	'disposals.executed': 'Penghapusan dieksekusi; aset dipensiunkan.',
+	'disposals.cancelled': 'Penghapusan dibatalkan.',
+
+	// Loans page.
+	'loans.title': 'Peminjaman',
+	'loans.description':
+		'Penyerahan kepemilikan aset yang terbuka dan yang sudah selesai.',
+	'loans.empty': 'Belum ada catatan peminjaman.',
+	'loans.emptyTitle': 'Belum ada apa pun di sini',
+	'loans.open': 'Terbuka',
+	'loans.filterAll': 'Semua peminjaman',
+	'loans.assign': 'Pinjamkan',
+	'loans.return': 'Kembalikan',
+
+	// Service records page.
+	'service.title': 'Catatan Servis',
+	'service.description': 'Riwayat pemeliharaan per aset.',
+	'service.empty': 'Belum ada catatan servis.',
+	'service.emptyTitle': 'Belum ada apa pun di sini',
+
+	// Depreciation page.
+	'depreciation.title': 'Penyusutan',
+	'depreciation.description':
+		'Entri penyusutan bulanan manual (log gaya keuangan).',
+	'depreciation.empty': 'Belum ada entri penyusutan.',
+	'depreciation.emptyTitle': 'Belum ada apa pun di sini',
+	'depreciation.period': 'Periode',
+	'depreciation.record': 'Catat entri',
+	'depreciation.periodYear': 'Tahun',
+	'depreciation.periodMonth': 'Bulan',
+	'depreciation.depreciationAmount': 'Jumlah penyusutan',
+
+	// Tool sets page.
+	'toolSets.title': 'Set Perkakas',
+	'toolSets.description': 'Kit yang dipinjamkan ke teknisi sebagai satu unit.',
+	'toolSets.empty': 'Belum ada set perkakas.',
+	'toolSets.emptyTitle': 'Belum ada apa pun di sini',
+	'toolSets.new': 'Set perkakas baru',
+	'toolSets.code': 'Kode',
+	'toolSets.name': 'Nama',
+	'toolSets.addItem': 'Tambah item',
+	'toolSets.removeItem': 'Hapus',
+	'toolSets.assetId': 'Id aset',
+	'toolSets.created': 'Set perkakas dibuat.',
+	'toolSets.itemAdded': 'Item ditambahkan ke set perkakas.',
+	'toolSets.itemRemoved': 'Item dihapus dari set perkakas.',
+
+	// Categories page.
+	'categories.title': 'Kategori Aset',
+	'categories.description':
+		'Klasifikasi dan aturan penyusutan bawaan per kategori.',
+	'categories.empty': 'Belum ada kategori.',
+	'categories.emptyTitle': 'Belum ada apa pun di sini',
+	'categories.new': 'Kategori baru',
+	'categories.code': 'Kode',
+	'categories.name': 'Nama',
+	'categories.assetType': 'Jenis aset',
+	'categories.depMethod': 'Penyusutan bawaan',
+	'categories.lifeMonths': 'Umur ekonomis (bulan)',
+	'categories.created': 'Kategori dibuat.',
+
+	// Enum labels (composed at runtime).
+	'status.in_stock': 'Tersedia',
+	'status.in_use': 'Digunakan',
+	'status.maintenance': 'Perawatan',
+	'status.inactive': 'Nonaktif',
+	'status.disposed': 'Dihapus',
+	'status.lost': 'Hilang',
+	'condition.new': 'Baru',
+	'condition.good': 'Baik',
+	'condition.fair': 'Cukup',
+	'condition.poor': 'Buruk',
+	'condition.damaged': 'Rusak',
+	'type.equipment': 'Peralatan',
+	'type.vehicle': 'Kendaraan',
+	'type.tool': 'Perkakas',
+	'type.furniture': 'Meubelair',
+	'type.it': 'TI',
+	'type.intangible': 'Tak berwujud',
+	'disposalStatus.draft': 'Draf',
+	'disposalStatus.submitted': 'Diajukan',
+	'disposalStatus.approved': 'Disetujui',
+	'disposalStatus.executed': 'Tereksekusi',
+	'disposalStatus.cancelled': 'Dibatalkan',
+	'disposalMethod.sale': 'Dijual',
+	'disposalMethod.scrap': 'Dibusukkan',
+	'disposalMethod.donation': 'Donasi',
+	'disposalMethod.transfer': 'Transfer',
+	'disposalMethod.trade_in': 'Tukar tambah',
+	'maintenanceType.preventive': 'Preventif',
+	'maintenanceType.corrective': 'Korektif',
+	'maintenanceType.calibration': 'Kalibrasi',
+	'maintenanceType.inspection': 'Inspeksi',
+	'toolSetStatus.available': 'Tersedia',
+	'toolSetStatus.lent': 'Dipinjam',
+	'toolSetStatus.maintenance': 'Perawatan',
+	'toolSetStatus.retired': 'Dipensiunkan',
+	'maintenanceStatus.scheduled': 'Terjadwal',
+	'maintenanceStatus.in_progress': 'Berjalan',
+	'maintenanceStatus.completed': 'Selesai',
+	'maintenanceStatus.cancelled': 'Dibatalkan',
+
+	// Feedback.
+	'created': 'Aset terdaftar.',
+	'updated': 'Aset diperbarui.',
+	'deactivated': 'Aset dinonaktifkan.',
+	'reactivated': 'Aset diaktifkan kembali.',
+	'archived': 'Aset diarsipkan.',
+	'assigned': 'Aset dipinjamkan.',
+	'returned': 'Aset dikembalikan.',
+	'depreciated': 'Penyusutan dicatat.',
+	'serviced': 'Catatan servis disimpan.',
+	'disposalRequested': 'Penghapusan diajukan.',
+} as const;
+
+export default assets;
