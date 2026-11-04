@@ -64,6 +64,7 @@ describe('locale values', () => {
 			'common:language.switchToIndonesian',
 			'nav:section.platform',
 			'nav:item.organizations',
+			'nav:item.crm',
 			'auth:login.email',
 			'auth:login.emailPlaceholder',
 			'account:tab.email',
