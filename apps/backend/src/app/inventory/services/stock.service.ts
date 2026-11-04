@@ -32,6 +32,7 @@ import {
 import type { TTx } from '@drizzle/types';
 import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
 import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import { InventoryAuditWriter } from './inventory-audit.writer';
 
 /** Movement types that decrease stock. Every other type increases it. */
 export { isOutbound } from '../constants/movement-direction';
@@ -103,6 +104,8 @@ export class StockService {
 		 */
 		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: DocumentNumberingService,
+		/** Fire-and-forget audit writer (hardening plan D3). */
+		private readonly audit: InventoryAuditWriter,
 		/**
 		 * The live Drizzle handle, for the service-owned transaction boundary.
 		 *
@@ -251,7 +254,31 @@ export class StockService {
 			return { movement, balance, scopeOrganizationId };
 		};
 
-		return tx ? run(tx) : this.database.transaction(run);
+		return (tx ? run(tx) : this.database.transaction(run)).then(
+			async (posted) => {
+				// Per-operation ledger audit (hardening plan D3): one entry per
+				// postMovement invocation, NOT per ledger row — the ledger itself
+				// is the row-level trail. Fire-and-forget.
+				await this.audit.record({
+					actor: { userId: input.createdBy ?? 'system' },
+					action: 'stock.posted',
+					targetType: 'stock_movement',
+					targetId: posted.movement.id,
+					organizationId: input.actorOrganizationId,
+					meta: {
+						code: posted.movement.code,
+						movementType: input.movementType,
+						itemId: input.itemId,
+						warehouseId: input.warehouseId,
+						binId: input.binId ?? null,
+						quantity: input.quantity,
+						referenceType: input.referenceType ?? null,
+						referenceId: input.referenceId ?? null,
+					},
+				});
+				return posted;
+			},
+		);
 	}
 
 	/**
@@ -357,6 +384,24 @@ export class StockService {
 			);
 
 			return { movement: reversal, balance, scopeOrganizationId };
+		}).then(async (reversed) => {
+			await this.audit.record({
+				actor: { userId: createdBy ?? 'system' },
+				action: 'stock.reversed',
+				targetType: 'stock_movement',
+				targetId: reversed.movement.id,
+				organizationId: actorOrganizationId,
+				meta: {
+					code: reversed.movement.code,
+					reversalOf: original.code,
+					reversalOfId: original.id,
+					movementType: reversalType,
+					itemId: original.itemId,
+					warehouseId: original.warehouseId,
+					quantity: original.quantity,
+				},
+			});
+			return reversed;
 		});
 	}
 

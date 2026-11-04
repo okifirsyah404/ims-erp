@@ -17,6 +17,7 @@
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { Elysia } from 'elysia';
 import { createNumberingDouble } from '../helpers/numbering-double';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import {
 	fixture,
 	installAuthMock,
@@ -128,6 +129,7 @@ beforeAll(async () => {
 			} as never,
 			{ postMovement: async () => ({}) } as never,
 			createNumberingDouble(),
+			new AuditWriterDouble(),
 			database,
 		),
 	});

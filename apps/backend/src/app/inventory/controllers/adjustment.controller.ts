@@ -64,6 +64,14 @@ export class AdjustmentController {
 			),
 		});
 
+		/** Full audit actor from the session + request headers. */
+		const auditActor = (erp: ErpContext, request: Request) => ({
+			userId: erp.session.user.id,
+			email: erp.session.user.email,
+			ip: request.headers.get('x-forwarded-for'),
+			userAgent: request.headers.get('user-agent'),
+		});
+
 		return domainPlugin({
 			name: 'inventory-adjustments',
 			prefix: '/stock/adjustments',
@@ -133,11 +141,12 @@ export class AdjustmentController {
 			)
 			.post(
 				'/:id/submit',
-				async ({ params, erp }) =>
+				async ({ params, erp, request }) =>
 					ok(
 						await adjustmentService.submit(
 							idParamSchema.parse(params).id,
 							erp.organizationId,
+							auditActor(erp, request),
 						),
 					),
 				{
@@ -165,11 +174,12 @@ export class AdjustmentController {
 			)
 			.post(
 				'/:id/reject',
-				async ({ params, erp }) =>
+				async ({ params, erp, request }) =>
 					ok(
 						await adjustmentService.reject(
 							idParamSchema.parse(params).id,
 							erp.organizationId,
+							auditActor(erp, request),
 						),
 					),
 				{
@@ -179,11 +189,12 @@ export class AdjustmentController {
 			)
 			.post(
 				'/:id/cancel',
-				async ({ params, erp }) =>
+				async ({ params, erp, request }) =>
 					ok(
 						await adjustmentService.cancel(
 							idParamSchema.parse(params).id,
 							erp.organizationId,
+							auditActor(erp, request),
 						),
 					),
 				{

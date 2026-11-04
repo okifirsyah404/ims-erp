@@ -47,6 +47,7 @@ import {
 import { StockService } from '../../src/app/inventory/services/stock.service';
 import { signedContribution } from '../../src/app/inventory/repositories/movement.repository';
 import { createNumberingDouble } from '../helpers/numbering-double';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import {
 	InsufficientStockError,
 	MovementAlreadyReversedError,
@@ -349,6 +350,7 @@ beforeEach(() => {
 		container.resolve(BALANCE_REPOSITORY_TOKEN),
 		container.resolve(WAREHOUSE_REPOSITORY_TOKEN),
 		createNumberingDouble(),
+		new AuditWriterDouble(),
 		database,
 	) });
 	service = container.resolve<StockService>(STOCK_SERVICE_TOKEN);

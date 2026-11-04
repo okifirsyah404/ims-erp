@@ -16,6 +16,7 @@
  */
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { Elysia } from 'elysia';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import { container } from 'tsyringe';
 import type { TWarehouseSelect } from '@drizzle/schemas/inventory.schema';
 import {
@@ -238,6 +239,9 @@ beforeAll(async () => {
 	const { WarehouseService } = await import(
 		'../../src/app/inventory/services/warehouse.service'
 	);
+	const { InventoryAuditWriter } = await import(
+		'../../src/app/inventory/services/inventory-audit.writer'
+	);
 	const { WarehouseController } = await import(
 		'../../src/app/inventory/controllers/warehouse.controller'
 	);
@@ -251,6 +255,9 @@ beforeAll(async () => {
 	});
 	container.register(WAREHOUSE_STORAGE_REPOSITORY_TOKEN, {
 		useValue: storageRepository,
+	});
+	container.register(InventoryAuditWriter, {
+		useValue: new AuditWriterDouble(),
 	});
 	container.register(WAREHOUSE_SERVICE_TOKEN, { useClass: WarehouseService });
 

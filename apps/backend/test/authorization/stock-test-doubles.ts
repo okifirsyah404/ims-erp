@@ -45,6 +45,7 @@ import {
 import { StockService } from '../../src/app/inventory/services/stock.service';
 import { AdjustmentService } from '../../src/app/inventory/services/adjustment.service';
 import { createNumberingDouble } from '../helpers/numbering-double';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
 
 /** An adjustment row, writable by the test between requests. */
 export type IStockAdjustmentSelectLike = TStockAdjustmentSelect;
@@ -269,6 +270,7 @@ export function installStockDoubles(): void {
 			balances,
 			warehouses,
 			createNumberingDouble(),
+			new AuditWriterDouble(),
 			database,
 		),
 	});
@@ -278,6 +280,7 @@ export function installStockDoubles(): void {
 			items,
 			container.resolve(STOCK_SERVICE_TOKEN),
 			createNumberingDouble(),
+			new AuditWriterDouble(),
 			database,
 		),
 	});

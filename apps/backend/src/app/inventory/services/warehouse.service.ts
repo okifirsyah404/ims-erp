@@ -1,4 +1,7 @@
 import { inject, injectable } from 'tsyringe';
+import { InventoryAuditWriter } from './inventory-audit.writer';
+import { SYSTEM_AUDIT_ACTOR } from '../constants/audit-actor';
+import type { TInventoryAuditActor } from '../constants/audit-actor';
 import type { TPaginationResult } from '@ims-erp/common';
 import type {
 	TWarehouseAddressSelect,
@@ -81,6 +84,8 @@ export class WarehouseService {
 		private readonly addressRepository: IWarehouseAddressRepository,
 		@inject(WAREHOUSE_STORAGE_REPOSITORY_TOKEN)
 		private readonly storageRepository: IWarehouseStorageRepository,
+		/** Fire-and-forget audit writer (hardening plan D3). */
+		private readonly audit: InventoryAuditWriter,
 	) {}
 
 	/** Fetches one filtered page of warehouses, decorated with kind counts. */
@@ -144,6 +149,7 @@ export class WarehouseService {
 	 */
 	async createWarehouse(
 		input: TWarehouseCreateData,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TWarehouseDetail> {
 		const organizationId = input.organizationId ?? null;
 
@@ -163,6 +169,15 @@ export class WarehouseService {
 			);
 		}
 
+		await this.audit.record({
+			actor,
+			action: 'warehouse.created',
+			targetType: 'warehouse',
+			targetId: warehouse.id,
+			organizationId: warehouse.organizationId,
+			meta: { code: warehouse.code, name: warehouse.name, isDefault: warehouse.isDefault },
+		});
+
 		return this.getWarehouse(warehouse.id);
 	}
 
@@ -176,6 +191,7 @@ export class WarehouseService {
 	async updateWarehouse(
 		id: string,
 		input: TWarehouseUpdateInput,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TWarehouseDetail> {
 		const current = await this.requireWarehouse(id);
 		const updated = await this.warehouseRepository.update(id, input);
@@ -190,6 +206,28 @@ export class WarehouseService {
 				id,
 			);
 		}
+
+		await this.audit.record({
+			actor,
+			action: 'warehouse.updated',
+			targetType: 'warehouse',
+			targetId: id,
+			organizationId: updated.organizationId,
+			meta: InventoryAuditWriter.snapshot(
+				{
+					name: current.name,
+					responsibleEmployeeId: current.responsibleEmployeeId,
+					isDefault: current.isDefault,
+					isActive: current.isActive,
+				},
+				{
+					name: updated.name,
+					responsibleEmployeeId: updated.responsibleEmployeeId,
+					isDefault: updated.isDefault,
+					isActive: updated.isActive,
+				},
+			),
+		});
 
 		return this.getWarehouse(id);
 	}
@@ -208,14 +246,25 @@ export class WarehouseService {
 	 * @throws {WarehouseNotFoundError} When absent or archived
 	 * @throws {WarehouseHasUnitsError} When live units still reference it
 	 */
-	async archiveWarehouse(id: string): Promise<TWarehouseSelect> {
-		await this.requireWarehouse(id);
+	async archiveWarehouse(
+		id: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+	): Promise<TWarehouseSelect> {
+		const current = await this.requireWarehouse(id);
 
 		const units = await this.warehouseRepository.countLiveUnits(id);
 		if (units > 0) throw new WarehouseHasUnitsError(units);
 
 		const archived = await this.warehouseRepository.archive(id);
 		if (!archived) throw new WarehouseNotFoundError();
+		await this.audit.record({
+			actor,
+			action: 'warehouse.archived',
+			targetType: 'warehouse',
+			targetId: id,
+			organizationId: archived.organizationId,
+			meta: { code: archived.code, name: current.name },
+		});
 		return archived;
 	}
 
@@ -271,6 +320,7 @@ export class WarehouseService {
 	async createStorage(
 		warehouseId: string,
 		input: Omit<TWarehouseStorageCreateData, 'warehouseId' | 'createdAt'>,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TWarehouseStorageSelect> {
 		const warehouse = await this.requireWarehouse(warehouseId);
 		this.requireActiveWarehouse(warehouse);
@@ -281,7 +331,16 @@ export class WarehouseService {
 		);
 		if (existing) throw new StorageCodeTakenError();
 
-		return this.storageRepository.create({ ...input, warehouseId });
+		const storage = await this.storageRepository.create({ ...input, warehouseId });
+		await this.audit.record({
+			actor,
+			action: 'storage.created',
+			targetType: 'warehouse_storage',
+			targetId: storage.id,
+			organizationId: warehouse.organizationId,
+			meta: { warehouseId, code: storage.code, name: storage.name },
+		});
+		return storage;
 	}
 
 	/**
@@ -296,12 +355,24 @@ export class WarehouseService {
 		warehouseId: string,
 		storageId: string,
 		input: TWarehouseStorageUpdateData,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TWarehouseStorageSelect> {
 		const warehouse = await this.requireWarehouse(warehouseId);
 		this.requireActiveWarehouse(warehouse);
 		const storage = await this.requireStorage(warehouseId, storageId);
 		const updated = await this.storageRepository.update(storage.id, input);
 		if (!updated) throw new StorageNotFoundError();
+		await this.audit.record({
+			actor,
+			action: 'storage.updated',
+			targetType: 'warehouse_storage',
+			targetId: storage.id,
+			organizationId: warehouse.organizationId,
+			meta: InventoryAuditWriter.snapshot(
+				{ name: storage.name, binType: storage.binType, capacity: storage.capacity, isActive: storage.isActive },
+				{ name: updated.name, binType: updated.binType, capacity: updated.capacity, isActive: updated.isActive },
+			),
+		});
 		return updated;
 	}
 
@@ -316,10 +387,20 @@ export class WarehouseService {
 	async archiveStorage(
 		warehouseId: string,
 		storageId: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TWarehouseStorageSelect> {
+		const warehouse = await this.requireWarehouse(warehouseId);
 		const storage = await this.requireStorage(warehouseId, storageId);
 		const archived = await this.storageRepository.archive(storage.id);
 		if (!archived) throw new StorageNotFoundError();
+		await this.audit.record({
+			actor,
+			action: 'storage.archived',
+			targetType: 'warehouse_storage',
+			targetId: storage.id,
+			organizationId: warehouse.organizationId,
+			meta: { warehouseId, code: storage.code },
+		});
 		return archived;
 	}
 

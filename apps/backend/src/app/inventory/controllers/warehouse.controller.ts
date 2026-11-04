@@ -15,6 +15,19 @@ import {
 } from '../contracts/warehouse.contract';
 import { WAREHOUSE_SERVICE_TOKEN } from '../constants/di';
 import type { WarehouseService } from '../services/warehouse.service';
+import type { TInventoryAuditActor } from '../constants/audit-actor';
+
+/**
+ * Audit actor from the session (global-admin routes; no `erp` context).
+ */
+function auditActor(session: { user: { id: string; email?: string | null } }, request: Request): TInventoryAuditActor {
+	return {
+		userId: session.user.id,
+		email: session.user.email ?? null,
+		ip: request.headers.get('x-forwarded-for'),
+		userAgent: request.headers.get('user-agent'),
+	};
+}
 
 /**
  * REST controller for warehouses, their 1:1 addresses, and their storages.
@@ -75,10 +88,11 @@ export class WarehouseController {
 			)
 			.post(
 				'',
-				async ({ body, status }) => {
+				async ({ body, erp, request, status }) => {
 					const { address, ...rest } = createWarehouseSchema.parse(body);
 					const row = await warehouseService.createWarehouse(
 						address ? { ...rest, address } : rest,
+						auditActor(erp.session, request),
 					);
 					return status(201, created(row));
 				},
@@ -90,11 +104,12 @@ export class WarehouseController {
 			)
 			.patch(
 				'/:id',
-				async ({ params, body }) =>
+				async ({ params, body, erp, request }) =>
 					ok(
 						await warehouseService.updateWarehouse(
 							idParamSchema.parse(params).id,
 							updateWarehouseSchema.parse(body),
+							auditActor(erp.session, request),
 						),
 					),
 				adminRoute(
@@ -103,8 +118,11 @@ export class WarehouseController {
 			)
 			.delete(
 				'/:id',
-				async ({ params }) =>
-					ok(await warehouseService.archiveWarehouse(idParamSchema.parse(params).id)),
+				async ({ params, erp, request }) =>
+					ok(await warehouseService.archiveWarehouse(
+						idParamSchema.parse(params).id,
+						auditActor(erp.session, request),
+					)),
 				adminRoute('Archives a warehouse that holds no live units'),
 			)
 			// 1:1 address: PUT upserts, GET reads, DELETE removes. No POST —
@@ -153,13 +171,14 @@ export class WarehouseController {
 			)
 			.post(
 				'/:id/storages',
-				async ({ params, body, status }) =>
+				async ({ params, body, erp, request, status }) =>
 					status(
 						201,
 						created(
 							await warehouseService.createStorage(
 								idParamSchema.parse(params).id,
 								createStorageSchema.parse(body),
+								auditActor(erp.session, request),
 							),
 						),
 					),
@@ -167,13 +186,14 @@ export class WarehouseController {
 			)
 			.patch(
 				'/:id/storages/:storageId',
-				async ({ params, body }) => {
+				async ({ params, body, erp, request }) => {
 					const parsed = nestedIdParamSchema.parse(params);
 					return ok(
 						await warehouseService.updateStorage(
 							parsed.id,
 							parsed.storageId,
 							updateStorageSchema.parse(body),
+							auditActor(erp.session, request),
 						),
 					);
 				},
@@ -181,10 +201,14 @@ export class WarehouseController {
 			)
 			.delete(
 				'/:id/storages/:storageId',
-				async ({ params }) => {
+				async ({ params, erp, request }) => {
 					const parsed = nestedIdParamSchema.parse(params);
 					return ok(
-						await warehouseService.archiveStorage(parsed.id, parsed.storageId),
+						await warehouseService.archiveStorage(
+							parsed.id,
+							parsed.storageId,
+							auditActor(erp.session, request),
+						),
 					);
 				},
 				adminRoute('Archives a storage'),

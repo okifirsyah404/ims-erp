@@ -17,6 +17,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { container } from 'tsyringe';
 import { createNumberingDouble } from '../helpers/numbering-double';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import type {
 	TStockAdjustmentItemSelect,
 	TStockAdjustmentSelect,
@@ -223,6 +224,7 @@ function build(onHand: Record<string, string> = {}) {
 			items,
 			stock.service,
 			createNumberingDouble(),
+			new AuditWriterDouble(),
 			database,
 		),
 	});

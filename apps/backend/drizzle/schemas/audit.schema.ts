@@ -13,9 +13,19 @@ import { unixTimestamp } from '@drizzle/datatypes/unix-timestamp';
 export const auditSchema = pgSchema('audit');
 
 /**
- * Audit event vocabulary for the user-management domain. Kept as a const
- * tuple (not a DB enum) per the DBML project rule: status vocabularies are
- * text guarded by application code.
+ * Audit event vocabulary.
+ *
+ * @remarks
+ * A single append-only ledger serves every domain (user-management, inventory,
+ * and later assets), so actions are namespaced `<domain>.<event>`. Kept as a
+ * const tuple (not a DB enum) per the DBML project rule: status vocabularies
+ * are text guarded by application code.
+ *
+ * Inventory actions (hardening plan Phase I-3 / D3) cover the
+ * financial-control events (adjustment workflow, borrowing issue/return/loss,
+ * stock posting/reversal — per *operation*, not per ledger row) and
+ * master-data CRUD. Master-data entries carry before/after snapshots in
+ * `meta`.
  */
 export const AUDIT_ACTIONS = [
 	'invitation.sent',
@@ -34,6 +44,33 @@ export const AUDIT_ACTIONS = [
 	'member.removed',
 	'member.roleChanged',
 	'org.created',
+	// --- inventory: financial-control events ---
+	'stock_adjustment.created',
+	'stock_adjustment.submitted',
+	'stock_adjustment.approved',
+	'stock_adjustment.rejected',
+	'stock_adjustment.cancelled',
+	'stock_adjustment.posted',
+	'borrowing.created',
+	'borrowing.approved',
+	'borrowing.rejected',
+	'borrowing.issued',
+	'borrowing.returned',
+	'borrowing.lost',
+	'borrowing.cancelled',
+	'borrowing.closed',
+	'stock.posted',
+	'stock.reversed',
+	// --- inventory: master-data CRUD ---
+	'item.created',
+	'item.updated',
+	'item.archived',
+	'warehouse.created',
+	'warehouse.updated',
+	'warehouse.archived',
+	'storage.created',
+	'storage.updated',
+	'storage.archived',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

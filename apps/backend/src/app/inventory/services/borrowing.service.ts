@@ -23,6 +23,7 @@ import {
 import type { StockService } from './stock.service';
 import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
 import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import { InventoryAuditWriter } from './inventory-audit.writer';
 import {
 	BorrowerIdentityError,
 	BorrowingHasNoLinesError,
@@ -156,6 +157,8 @@ export class BorrowingService {
 		 */
 		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: DocumentNumberingService,
+		/** Fire-and-forget audit writer (hardening plan D3). */
+		private readonly audit: InventoryAuditWriter,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 	) {}
 
@@ -396,6 +399,18 @@ export class BorrowingService {
 			}
 		});
 
+		await this.audit.record({
+			actor: { userId: actor.actorUserId },
+			action: 'borrowing.issued',
+			targetType: 'borrowing',
+			targetId: id,
+			organizationId,
+			meta: {
+				code: borrowing.code,
+				lineCount: open.length,
+			},
+		});
+
 		return this.getById(id, organizationId, actor);
 	}
 
@@ -437,6 +452,7 @@ export class BorrowingService {
 		}
 
 		const now = new Date();
+		let nextStatus: BorrowingStatus = 'returned';
 		await this.database.transaction(async (tx) => {
 			for (const line of targets) {
 				await this.returnLine(
@@ -450,8 +466,7 @@ export class BorrowingService {
 				);
 			}
 			const remaining = open.length - targets.length;
-			const nextStatus: BorrowingStatus =
-				remaining > 0 ? 'partially_returned' : 'returned';
+			nextStatus = remaining > 0 ? 'partially_returned' : 'returned';
 			const updated = await this.borrowingRepository.update(
 				id,
 				nextStatus === 'returned'
@@ -463,6 +478,20 @@ export class BorrowingService {
 			if (!updated) {
 				throw new BorrowingTransitionError(borrowing.status, nextStatus);
 			}
+		});
+
+		await this.audit.record({
+			actor: { userId: actor.actorUserId },
+			action: 'borrowing.returned',
+			targetType: 'borrowing',
+			targetId: id,
+			organizationId,
+			meta: {
+				code: borrowing.code,
+				lineCount: targets.length,
+				condition: options.condition,
+				fullyReturned: nextStatus === 'returned',
+			},
 		});
 
 		return this.getById(id, organizationId, actor);
@@ -493,12 +522,14 @@ export class BorrowingService {
 		}
 
 		const now = new Date();
+		let lostSerialNumber: string | null = null;
 		await this.database.transaction(async (tx) => {
 			const unit = await this.serialUnitRepository.markLost(
 				line.serialTrackedItemId,
 				tx,
 			);
 			if (!unit) throw new UnitNotOnBorrowingError();
+			lostSerialNumber = unit.serialNumber;
 			await this.borrowingRepository.updateLine(
 				line.id,
 				{ markedLostAt: now, lostReportedBy: actor.actorUserId },
@@ -534,6 +565,21 @@ export class BorrowingService {
 				},
 				tx,
 			);
+		});
+
+		await this.audit.record({
+			actor: { userId: actor.actorUserId },
+			action: 'borrowing.lost',
+			targetType: 'borrowing',
+			targetId: id,
+			organizationId,
+			meta: {
+				code: borrowing.code,
+				lineId: line.id,
+				serialNumber: lostSerialNumber,
+				originWarehouseId: line.originWarehouseId,
+				note: options.note ?? null,
+			},
 		});
 
 		return this.getById(id, organizationId, actor);
@@ -607,6 +653,14 @@ export class BorrowingService {
 		}
 		await this.transitionHeader(id, organizationId, 'cancelled', {});
 		await this.appendEvent(id, 'cancelled', null, actor.actorUserId);
+		await this.audit.record({
+			actor: { userId: actor.actorUserId },
+			action: 'borrowing.cancelled',
+			targetType: 'borrowing',
+			targetId: id,
+			organizationId,
+			meta: { code: borrowing.code },
+		});
 		return this.getById(id, organizationId, actor);
 	}
 
@@ -627,6 +681,14 @@ export class BorrowingService {
 			closedAt: new Date(),
 		});
 		await this.appendEvent(id, 'closed', null, actor.actorUserId);
+		await this.audit.record({
+			actor: { userId: actor.actorUserId },
+			action: 'borrowing.closed',
+			targetType: 'borrowing',
+			targetId: id,
+			organizationId,
+			meta: { code: id },
+		});
 		return this.getById(id, organizationId, actor);
 	}
 

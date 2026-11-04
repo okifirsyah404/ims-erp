@@ -13,6 +13,7 @@
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { Elysia } from 'elysia';
 import { container } from 'tsyringe';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import { erpRoleGrants, erpStatements } from '@ims-erp/common';
 import {
 	fixture,
@@ -163,6 +164,9 @@ beforeAll(async () => {
 	const { ItemService } = await import(
 		'../../src/app/inventory/services/item.service'
 	);
+	const { InventoryAuditWriter } = await import(
+		'../../src/app/inventory/services/inventory-audit.writer'
+	);
 	const { ItemController } = await import(
 		'../../src/app/inventory/controllers/item.controller'
 	);
@@ -171,6 +175,9 @@ beforeAll(async () => {
 	container.register(ITEM_REPOSITORY_TOKEN, { useValue: itemRepository });
 	container.register(SERIAL_UNIT_REPOSITORY_TOKEN, {
 		useValue: serialUnitRepository,
+	});
+	container.register(InventoryAuditWriter, {
+		useValue: new AuditWriterDouble(),
 	});
 	container.register(ITEM_SERVICE_TOKEN, { useClass: ItemService });
 

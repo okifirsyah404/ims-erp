@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { ItemService } from '../../src/app/inventory/services/item.service';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import {
 	InventoryRuleViolationError,
 	ItemHasUnitsError,
@@ -161,7 +162,7 @@ function makeService(seed?: {
 	};
 
 	return {
-		service: new ItemService(itemRepository, serialUnitRepository),
+		service: new ItemService(itemRepository, serialUnitRepository, new AuditWriterDouble()),
 		items,
 		units,
 	};

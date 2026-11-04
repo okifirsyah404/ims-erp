@@ -8,7 +8,10 @@ import { MovementRepository } from './repositories/movement.repository';
 import { BalanceRepository } from './repositories/balance.repository';
 import { AdjustmentRepository } from './repositories/adjustment.repository';
 import { BorrowingRepository } from './repositories/borrowing.repository';
+import { InventoryAuditWriter } from './services/inventory-audit.writer';
 import { ItemService } from './services/item.service';
+import { AUDIT_SERVICE_TOKEN } from '../audit/constants/di';
+import type { AuditService } from '../audit/services/audit.service';
 import { WarehouseService } from './services/warehouse.service';
 import { StockService } from './services/stock.service';
 import { AdjustmentService } from './services/adjustment.service';
@@ -42,6 +45,16 @@ export * from './constants/di';
  * @param container - The tsyringe container to populate
  */
 export function registerInventory(container: DependencyContainer): void {
+	// Shared fire-and-forget audit adapter over the audit module's
+	// AuditService. Resolved eagerly here, which is safe: registerAudit runs
+	// before registerInventory at the composition root, and both the writer
+	// and the inner service are stateless.
+	const auditWriter = new InventoryAuditWriter(
+		container.resolve<AuditService>(AUDIT_SERVICE_TOKEN),
+	);
+	// One shared writer instance for every inventory service.
+	container.registerInstance(InventoryAuditWriter, auditWriter);
+
 	container.register(ITEM_REPOSITORY_TOKEN, { useClass: ItemRepository });
 	container.register(SERIAL_UNIT_REPOSITORY_TOKEN, {
 		useClass: SerialUnitRepository,

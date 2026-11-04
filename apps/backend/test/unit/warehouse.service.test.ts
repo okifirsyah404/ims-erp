@@ -21,6 +21,7 @@ import type { IWarehouseRepository } from '../../src/app/inventory/contracts/war
 import type { IWarehouseAddressRepository } from '../../src/app/inventory/contracts/warehouse-address.repository.interface';
 import type { IWarehouseStorageRepository } from '../../src/app/inventory/contracts/warehouse-storage.repository.interface';
 import { WarehouseService } from '../../src/app/inventory/services/warehouse.service';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import {
 	StorageCodeTakenError,
 	StorageNotFoundError,
@@ -195,6 +196,7 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 		warehouseRepository,
 		addressRepository,
 		storageRepository,
+		new AuditWriterDouble(),
 	);
 
 	return { service, rows, clearDefaultCalls, warehouseRepository };

@@ -30,6 +30,19 @@ import {
 	ItemNotFoundError,
 	SelfApprovalForbiddenError,
 } from '../errors/inventory.errors';
+import { InventoryAuditWriter } from './inventory-audit.writer';
+import { SYSTEM_AUDIT_ACTOR } from '../constants/audit-actor';
+import type { TInventoryAuditActor } from '../constants/audit-actor';
+
+/**
+ * Adapts the route-layer {@link TAdjustmentActor} (permission flags, no
+ * request context) to the audit actor shape. The controller supplies
+ * email/ip/user-agent via {@link TInventoryAuditActor} on methods that take
+ * one directly; transitions only need the user id.
+ */
+function actorAuditActor(actor: TAdjustmentActor): TInventoryAuditActor {
+	return { userId: actor.actorUserId ?? 'system' };
+}
 
 /**
  * Legal status edges for an adjustment document.
@@ -145,6 +158,8 @@ export class AdjustmentService {
 		 */
 		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: DocumentNumberingService,
+		/** Fire-and-forget audit writer (hardening plan D3). */
+		private readonly audit: InventoryAuditWriter,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 	) {}
 
@@ -233,6 +248,20 @@ export class AdjustmentService {
 			);
 
 			return { adjustment, lines };
+		}).then(async (detail) => {
+			await this.audit.record({
+				actor: actorAuditActor(actor),
+				action: 'stock_adjustment.created',
+				targetType: 'stock_adjustment',
+				targetId: detail.adjustment.id,
+				organizationId,
+				meta: {
+					code: detail.adjustment.code,
+					adjustmentType: detail.adjustment.adjustmentType,
+					lineCount: detail.lines.length,
+				},
+			});
+			return detail;
 		});
 	}
 
@@ -270,8 +299,9 @@ export class AdjustmentService {
 	async submit(
 		id: string,
 		organizationId: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TStockAdjustmentSelect> {
-		return this.transition(id, organizationId, 'submitted', {});
+		return this.transition(id, organizationId, 'submitted', {}, actor);
 	}
 
 	/**
@@ -299,25 +329,27 @@ export class AdjustmentService {
 			throw new SelfApprovalForbiddenError();
 		}
 		return this.transition(id, organizationId, 'approved', {
-			approvedBy: actor.actorUserId,
+			approvedBy: actorAuditActor(actor).userId,
 			approvedAt: new Date(),
-		});
+		}, actorAuditActor(actor));
 	}
 
 	/** Moves `submitted → rejected`. */
 	async reject(
 		id: string,
 		organizationId: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TStockAdjustmentSelect> {
-		return this.transition(id, organizationId, 'rejected', {});
+		return this.transition(id, organizationId, 'rejected', {}, actor);
 	}
 
 	/** Moves `draft|submitted → cancelled`. */
 	async cancel(
 		id: string,
 		organizationId: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TStockAdjustmentSelect> {
-		return this.transition(id, organizationId, 'cancelled', {});
+		return this.transition(id, organizationId, 'cancelled', {}, actor);
 	}
 
 	/**
@@ -406,6 +438,18 @@ export class AdjustmentService {
 		});
 		if (!posted) throw new AdjustmentNotFoundError();
 
+		await this.audit.record({
+			actor: actorAuditActor(actor),
+			action: 'stock_adjustment.posted',
+			targetType: 'stock_adjustment',
+			targetId: id,
+			organizationId,
+			meta: {
+				code: adjustment.code,
+				movementsPosted: lines.length,
+			},
+		});
+
 		return { adjustment: posted, lines };
 	}
 
@@ -422,6 +466,7 @@ export class AdjustmentService {
 		organizationId: string,
 		to: AdjustmentStatus,
 		extra: Partial<TStockAdjustmentSelect>,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TStockAdjustmentSelect> {
 		const adjustment = await this.requireDocument(id, organizationId);
 		if (!isLegalTransition(adjustment.status, to)) {
@@ -432,6 +477,21 @@ export class AdjustmentService {
 			...extra,
 		});
 		if (!updated) throw new AdjustmentNotFoundError();
+		// Financial-control event (hardening plan D3): every workflow edge is
+		// attributable. Fire-and-forget — an audit failure never fails the
+		// transition.
+		await this.audit.record({
+			actor,
+			action: `stock_adjustment.${to === 'cancelled' ? 'cancelled' : to}` as 'stock_adjustment.submitted',
+			targetType: 'stock_adjustment',
+			targetId: id,
+			organizationId,
+			meta: {
+				code: adjustment.code,
+				from: adjustment.status,
+				to,
+			},
+		});
 		return updated;
 	}
 
