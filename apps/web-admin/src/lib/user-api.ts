@@ -185,8 +185,15 @@ export function presignedUrlExpiresAt(url: string): number | null {
 }
 
 /**
+ * Floor on the reschedule delay. A freshly signed URL can never legitimately
+ * be due again within seconds; a sub-floor value means clock skew or an
+ * in-flight refresh loop, and would otherwise hot-loop `/users/me`.
+ */
+const PRESIGNED_URL_MIN_REFRESH_DELAY_MS = 5_000;
+
+/**
  * Milliseconds until a presigned URL should be refreshed, clamped into
- * `[0, TTL - margin]`.
+ * `[PRESIGNED_URL_MIN_REFRESH_DELAY_MS, TTL - margin]`.
  *
  * @remarks
  * Unparseable URLs fall back to {@link PRESIGNED_URL_FALLBACK_TTL_SECONDS}
@@ -199,7 +206,10 @@ export function presignedUrlRefreshDelayMs(url: string): number {
 		expiresAt === null
 			? PRESIGNED_URL_FALLBACK_TTL_SECONDS * 1000
 			: expiresAt - Date.now();
-	return Math.max(0, ttlMs - PRESIGNED_URL_REFRESH_MARGIN_SECONDS * 1000);
+	return Math.max(
+		PRESIGNED_URL_MIN_REFRESH_DELAY_MS,
+		ttlMs - PRESIGNED_URL_REFRESH_MARGIN_SECONDS * 1000,
+	);
 }
 
 const MAX_REFRESH_BACKOFF_MS = 5 * 60_000;
@@ -234,6 +244,7 @@ export function useSelfUserImageRefresh(): void {
 		let timer: ReturnType<typeof setTimeout> | undefined;
 		let failures = 0;
 		let disposed = false;
+		let refreshing = false;
 
 		const clear = () => {
 			if (timer !== undefined) clearTimeout(timer);
@@ -253,7 +264,9 @@ export function useSelfUserImageRefresh(): void {
 
 		const refresh = () => {
 			timer = undefined;
-			if (disposed || document.visibilityState !== 'visible') return;
+			if (disposed || refreshing || document.visibilityState !== 'visible')
+				return;
+			refreshing = true;
 			void queryClient
 				.invalidateQueries({ queryKey: selfUserQueryOptions.queryKey })
 				.then(() => {
@@ -268,6 +281,9 @@ export function useSelfUserImageRefresh(): void {
 						MAX_REFRESH_BACKOFF_MS,
 					);
 					timer = setTimeout(refresh, backoff);
+				})
+				.finally(() => {
+					refreshing = false;
 				});
 		};
 
@@ -275,6 +291,9 @@ export function useSelfUserImageRefresh(): void {
 		// covers the initial load, profile edits and post-refresh values.
 		const selfKey: readonly unknown[] = selfUserQueryOptions.queryKey;
 		const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+			// Skip while a refresh is in flight - its .then(arm) reschedules,
+			// avoiding stacked timers during the invalidation round-trip.
+			if (refreshing) return;
 			const key: readonly unknown[] | undefined = event.query?.queryKey;
 			if (
 				key?.length === selfKey.length &&

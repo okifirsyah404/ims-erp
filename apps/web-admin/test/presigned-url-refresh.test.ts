@@ -59,14 +59,14 @@ describe('presignedUrlRefreshDelayMs', () => {
 		expect(delay).toBeLessThanOrEqual(270_000);
 	});
 
-	test('clamps to zero for an already-expired URL (refetch immediately)', () => {
+	test('floors at 5s for an already-expired URL (no hot-loop)', () => {
 		const url = presigned('a.png', Date.now() - 600_000, 300);
-		expect(presignedUrlRefreshDelayMs(url)).toBe(0);
+		expect(presignedUrlRefreshDelayMs(url)).toBe(5_000);
 	});
 
-	test('clamps to zero when inside the margin but not yet expired', () => {
+	test('floors at 5s when inside the margin but not yet expired', () => {
 		const url = presigned('a.png', Date.now() - 290_000, 300);
-		expect(presignedUrlRefreshDelayMs(url)).toBe(0);
+		expect(presignedUrlRefreshDelayMs(url)).toBe(5_000);
 	});
 
 	test('falls back to a periodic refresh for unparseable URLs', () => {
