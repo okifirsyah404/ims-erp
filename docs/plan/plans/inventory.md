@@ -17,10 +17,10 @@ that matter. S0 exists to fix them before code lands.
 | Document | Current claim | Reality after this plan |
 |---|---|---|
 | `docs/database/docs.dbml` | Canonical persistence contract: `catalog.items` (item master, `item_type ∈ good\|service\|bundle\|subscription`), `inventory.warehouses` with `location_text`/`village_id`, `inventory.warehouse_zones`, `inventory.serial_tracked_items` (`status ∈ in_stock\|installed\|in_service\|sold\|disposed`), `stock_movements.movement_type` without borrowing | Item master moves into `inventory.items`; 3 borrowing tables are added; status vocabulary changes; `warehouse_zones` dropped; `movement_type` gains `borrowing_out`/`borrowing_in`; **`catalog` satellites left in place, flagged (OPEN-1)** |
-| `.agents/docs/modules/inventory.md` (stayed in `.agents/docs/`) | Self-flagged stale (line 1: describes deleted `apps/backend-nest`) | Rewritten to describe what ships |
-| `.agents/docs/backlog.md` (stayed in `.agents/docs/`) ERP-0014 | "stock movements + valuation boundaries; reconciliation to GL control", Phase 5, depends on ERP-0010 | Re-scoped: no GL reconciliation (accounting does not exist), borrowing added, depends on nothing but auth |
+| `docs/architecture/modules/inventory.md` | Self-flagged stale (line 1: describes deleted `apps/backend-nest`) | Rewritten to describe what ships |
+| `docs/plan/backlog.md` ERP-0014 | "stock movements + valuation boundaries; reconciliation to GL control", Phase 5, depends on ERP-0010 | Re-scoped: no GL reconciliation (accounting does not exist), borrowing added, depends on nothing but auth |
 | `packages/common/.../erp-permissions.ts` | `warehouse`, `stock`, `stock_adjustment`, `product` statements; `warehouse:read` granted to 8 org roles | `borrowing` statement added; `warehouse:*` stripped from every org role |
-| `.agents/docs/data-model.md` (stayed in `.agents/docs/`) | "Nothing exists for inventory/stock/warehouse" | Still accurate today; updated per slice |
+| `docs/architecture/data-model.md` | "Nothing exists for inventory/stock/warehouse" | Still accurate today; updated per slice |
 
 **Phase gate override.** `backlog.md` puts inventory in Phase 5 behind
 `ERP-0010` (accounting), which depends on `ERP-0008`, which does not exist.
@@ -581,13 +581,13 @@ validation, unauthorized.
    ERP master tables" reading, which this plan contradicts.
 4. **New ADR-0009 — Serialized unit tracking and borrowing custody.** Records
    D7–D13, D18, D22 and the one-time provisional-serial mutation.
-5. **`.agents/docs/backlog.md`** (stays in `.agents/docs/`) — rewrite ERP-0014 as five slices with the
+5. **`docs/plan/backlog.md`** — rewrite ERP-0014 as five slices with the
    overridden dependency (`—` instead of `ERP-0010`), and note the deferred
    tables (D17).
-6. **`.agents/docs/modules/inventory.md`** (stays in `.agents/docs/`) — replace the stale-content banner
+6. **`docs/architecture/modules/inventory.md`** — replace the stale-content banner
    with a description of what actually ships.
 7. **`packages/common/.../erp-permissions.ts`** — §6 grants.
-8. **`.agents/docs/progress.md`** (stays in `.agents/docs/`) — record the phase-gate override.
+8. **`docs/plan/progress.md`** — record the phase-gate override.
 
 ## 13. Bootstrap & sequencing
 

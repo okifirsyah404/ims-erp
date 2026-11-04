@@ -1,0 +1,34 @@
+# Architecture & Technical Documentation
+
+Technical, evidence-based documentation for the IMS/Entragate ERP. Planning and
+status live in `docs/plan/`; agent skills inventory in `.agents/docs/skills.md`.
+
+## First session / resume reading order
+
+1. `../AGENTS.md` (repo root) — hard rules and definition of done
+2. `project-audit.md` — what exists, what works, known failures
+3. `stack-compatibility.md` — exact resolved versions and risks
+4. `../plan/progress.md` — latest state; start where the doc says work stopped
+5. `architecture.md` — module boundaries and DI rules
+6. `domain-map.md` — business capability ownership and scope boundaries
+
+## Reference by need
+
+| File | Read when |
+|---|---|
+| `data-model.md` | adding/changing tables, keys, money, or dates |
+| `api-conventions.md` | adding/changing endpoints |
+| `security-and-access.md` | touching auth, permissions, portals, audit |
+| `testing-strategy.md` | writing tests |
+| `runbook.md` | running/verifying commands, environment variables |
+| `modules/` | per-technical-module boundaries, state, data ownership, tests |
+| `decisions/` | architectural decision records (ADRs) |
+
+Database schema documentation lives in `docs/database/` (sibling folder):
+`docs.dbml` (canonical persistence contract), 5 companion MDs
+(`module-ownership`, `integrity-and-consistency`, `data-dictionary`,
+`logical-references`, `implementation-phases`), and the
+`gen-logical-references.ts` / `validate-dbml.ts` scripts.
+
+Any backend feature work reads that folder first and runs the `grill-me`
+design interview; see **Feature module lifecycle** in `../AGENTS.md`.

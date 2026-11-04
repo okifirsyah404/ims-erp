@@ -177,4 +177,4 @@ cycle avoidance are detailed in rule 3.5's reference file.
 
 ## Related
 
-- `.agents/docs/architecture.md` — module map and boundaries overview.
+- `docs/architecture/architecture.md` — module map and boundaries overview.

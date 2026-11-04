@@ -3,7 +3,8 @@
 > 2026-11-02: **This module has been folded into Inventory.** Warehouses are
 > no longer a separate module or a separate Postgres schema; they are tables in
 > `inventory` (ADR-0008). The content below is retained only as a pointer —
-> see `.agents/docs/modules/inventory.md` for the implemented design.
+> Note: `.agents/docs/modules/inventory.md` was later moved to
+> `docs/architecture/modules/inventory.md`.
 >
 > The earlier text here described the deleted NestJS backend
 > (`apps/backend-nest`) and a "one warehouse only, do not pretend

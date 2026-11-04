@@ -686,11 +686,11 @@ SELECT schema_name FROM information_schema.schemata
 -- expected: 24 rows
 ```
 
-**Documentation.** Update `.agents/docs/data-model.md` (remove the `erp`
-schema, point at `docs/database/docs.dbml`), `.agents/docs/architecture.md`
-(correct the `erp` schema ownership section), `.agents/docs/progress.md`
+**Documentation.** Update `docs/architecture/data-model.md` (remove the `erp`
+schema, point at `docs/database/docs.dbml`), `docs/architecture/architecture.md`
+(correct the `erp` schema ownership section), `docs/plan/progress.md`
 (record the exact commands and the outcome of every step) and
-`.agents/docs/backlog.md` (move the status of the corresponding item).
+`docs/plan/backlog.md` (move the status of the corresponding item).
 
 **Exit criteria.**
 

@@ -3,6 +3,26 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+> **Historical paths:** entries dated before 2026-11-05 may reference
+> `.agents/docs/...` locations (e.g. `progress.md`, `backlog.md`, `modules/`,
+> `decisions/`, plan docs). These were moved on 2026-11-05: tech docs to
+> `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
+> entries are left as written; only current/live sections use the new paths.
+
+## Completed — v5.1 per-module plans (2026-11-04)
+
+Status: **implemented** (docs only; not owner-reviewed).
+
+`docs/plan/erp-module-plans/` added: `README.md` (index, glossary, common
+DoD, `beyond-baseline` table) + `m01`–`m12` files restating
+`docs/plan/erp-plan-en.md` v5.1 per module (scope, limits, tasks, SOPs,
+controls, acceptance, DoD, dependencies, current state vs plan). Inferred
+detail is marked _interpretation, needs owner confirmation_. Finding: build
+has drifted past v5.1 (multi-tenant organization, multi-warehouse, 24-module
+`docs.dbml` vs 12 plan modules, while M09 Finance — the end of the plan's
+main sequence — has no code). Cut/rebaseline decision is **open** for the
+owner. `docs/database/` reviewed and **unchanged**; no code touched.
+
 ## Completed — module directory cleanup: errors/, adapters/, utils/ (2026-11-04)
 
 Status: **verified** (typecheck + full test suite + lint).

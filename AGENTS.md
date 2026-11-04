@@ -6,19 +6,22 @@ Elysia backend (`apps/backend`), React/TanStack web admin, Better Auth,
 Drizzle ORM (Relational v2) on PostgreSQL.
 
 This file is short on purpose. Detailed, evidence-based answers live in
-`.agents/docs/`. Read in this order:
+`docs/architecture/` (tech) and `docs/plan/` (planning/status). Read in this order:
 
-1. `.agents/docs/README.md` — navigation and resume reading order
-2. `.agents/docs/project-audit.md` — what actually exists and what works
-3. `.agents/docs/stack-compatibility.md` — exact resolved versions and risks
-4. `.agents/docs/progress.md` — where work stopped; the next executable task
-5. `.agents/docs/architecture.md` — boundaries you must not violate
-6. `.agents/docs/runbook.md` — commands before you invent any
+1. `docs/architecture/README.md` — navigation and resume reading order (index)
+2. `docs/architecture/project-audit.md` — what actually exists and what works
+3. `docs/architecture/stack-compatibility.md` — exact resolved versions and risks
+4. `docs/plan/progress.md` — where work stopped; the next executable task
+5. `docs/architecture/architecture.md` — boundaries you must not violate
+6. `docs/architecture/runbook.md` — commands before you invent any
 
-Read by need: `domain-map.md` (business ownership), `data-model.md` (schema),
-`api-conventions.md`, `security-and-access.md`, `testing-strategy.md`,
-`backlog.md` + `docs/plan/phases/` (planning), `modules/` (per-module boundaries and
-state), `decisions/` (ADR history), `skills.md` (skill inventory).
+Read by need: `docs/architecture/domain-map.md` (business ownership),
+`docs/architecture/data-model.md` (schema), `docs/architecture/api-conventions.md`,
+`docs/architecture/security-and-access.md`, `docs/architecture/testing-strategy.md`,
+`docs/plan/backlog.md` + `docs/plan/phases/` (planning),
+`docs/architecture/modules/` (per-module boundaries and
+state), `docs/architecture/decisions/` (ADR history),
+`.agents/docs/skills.md` (skill inventory).
 
 ## Starting work
 
@@ -93,7 +96,7 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
 - **Honesty.** Never mark work implemented, verified, or accepted without
   evidence. Distinguish `planned / in-progress / implemented / verified /
 accepted / blocked`. Automated tests passing is not business acceptance.
-- **Statuses live in `.agents/docs/progress.md` and `backlog.md`.** Update
+- **Statuses live in `docs/plan/progress.md` and `docs/plan/backlog.md`.** Update
   them (and `progress.md`'s "next task") when you stop working.
 
 ## Backend (`apps/backend`)
@@ -320,7 +323,7 @@ call sites.
 
 Update the existing file that owns the topic — do not create contradictory
 duplicates. Keep documents short and synchronized with verified code. Meaningful
-architectural choices get a short ADR in `.agents/docs/decisions/`. When a doc
+architectural choices get a short ADR in `docs/architecture/decisions/`. When a doc
 and the code disagree, fix whichever is wrong and note it in `progress.md`.
 
 `docs/database/` is the persistence contract and is updated in the **same**
