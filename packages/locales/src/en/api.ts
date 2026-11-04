@@ -65,6 +65,14 @@ const api = {
 		'An asset cannot move from "{{from}}" to "{{to}}"',
 	'assets.assetHasHistory':
 		'Cannot archive an asset with custody or maintenance history',
+	'assets.assignBlocked':
+		'An asset in status "{{status}}" cannot be assigned',
+	'assets.periodAlreadyDepreciated':
+		'This asset already has a depreciation entry for {{period}}',
+	'assets.depreciationExceedsBookValue':
+		'Depreciation cannot exceed the remaining book value',
+	'assets.toolSetNotEmpty':
+		'Cannot archive a tool set that still holds items',
 
 	'user.notFound': 'User not found',
 	'user.emailInUse': 'Email already in use',

@@ -10,7 +10,11 @@ import {
 	StockController,
 	WarehouseController,
 } from './inventory';
-import { AssetCategoryController, AssetController } from './assets';
+import {
+	AssetCategoryController,
+	AssetController,
+	AssetOperationsController,
+} from './assets';
 import { SalesController } from './sales/controllers/sales.controller';
 import {
 	InvitationClaimController,
@@ -103,5 +107,6 @@ export function createApp() {
 			.use(BorrowingController.plugin())
 .use(AssetController.plugin())
 .use(AssetCategoryController.plugin())
+.use(AssetOperationsController.plugin())
 	);
 }

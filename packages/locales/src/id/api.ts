@@ -60,6 +60,14 @@ const api: Record<keyof typeof en, string> = {
 		'Aset tidak dapat berpindah dari "{{from}}" ke "{{to}}"',
 	'assets.assetHasHistory':
 		'Tidak dapat mengarsipkan aset dengan riwayat peminjaman atau pemeliharaan',
+	'assets.assignBlocked':
+		'Aset dengan status "{{status}}" tidak dapat dipinjamkan',
+	'assets.periodAlreadyDepreciated':
+		'Aset ini sudah memiliki entri penyusutan untuk {{period}}',
+	'assets.depreciationExceedsBookValue':
+		'Penyusutan tidak boleh melebihi nilai buku tersisa',
+	'assets.toolSetNotEmpty':
+		'Tidak dapat mengarsipkan set perkakas yang masih berisi item',
 
 	'user.notFound': 'Pengguna tidak ditemukan',
 	'user.emailInUse': 'Email sudah digunakan',

@@ -1,11 +1,15 @@
 import type { DependencyContainer } from 'tsyringe';
 import { AssetCategoryRepository } from './repositories/asset-category.repository';
 import { AssetRepository } from './repositories/asset.repository';
+import { AssetOperationsRepository } from './repositories/asset-operations.repository';
 import { AssetCategoryService } from './services/asset-category.service';
 import { AssetService } from './services/asset.service';
+import { AssetOperationsService } from './services/asset-operations.service';
 import {
 	ASSET_CATEGORY_REPOSITORY_TOKEN,
 	ASSET_CATEGORY_SERVICE_TOKEN,
+	ASSET_OPERATIONS_REPOSITORY_TOKEN,
+	ASSET_OPERATIONS_SERVICE_TOKEN,
 	ASSET_REPOSITORY_TOKEN,
 	ASSET_SERVICE_TOKEN,
 } from './constants/di';
@@ -29,9 +33,15 @@ export function registerAssets(container: DependencyContainer): void {
 		useClass: AssetCategoryRepository,
 	});
 	container.register(ASSET_REPOSITORY_TOKEN, { useClass: AssetRepository });
+	container.register(ASSET_OPERATIONS_REPOSITORY_TOKEN, {
+		useClass: AssetOperationsRepository,
+	});
 
 	container.register(ASSET_CATEGORY_SERVICE_TOKEN, {
 		useClass: AssetCategoryService,
 	});
 	container.register(ASSET_SERVICE_TOKEN, { useClass: AssetService });
+	container.register(ASSET_OPERATIONS_SERVICE_TOKEN, {
+		useClass: AssetOperationsService,
+	});
 }
