@@ -2,7 +2,7 @@
 
 > Rewritten 2026-11-02. The previous content described `apps/backend-nest`
 > (deleted) and a single-warehouse, COGS-free model that no longer matches the
-> contract. Authoritative design: `.agents/docs/plans/inventory.md` (decisions
+> contract. Authoritative design: `docs/plan/plans/inventory.md` (decisions
 > D1–D24) plus ADR-0008 and ADR-0009.
 
 ## Purpose and boundary

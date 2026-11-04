@@ -3,6 +3,26 @@
 Latest verified state. Update this file every working session, including
 exact commands and outcomes. `progress.md` lies are worse than missing code.
 
+> **Historical paths:** entries dated before 2026-11-05 may reference
+> `.agents/docs/...` locations (e.g. `progress.md`, `backlog.md`, `modules/`,
+> `decisions/`, plan docs). These were moved on 2026-11-05: tech docs to
+> `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
+> entries are left as written; only current/live sections use the new paths.
+
+## Completed — v5.1 per-module plans (2026-11-04)
+
+Status: **implemented** (docs only; not owner-reviewed).
+
+`docs/plan/erp-module-plans/` added: `README.md` (index, glossary, common
+DoD, `beyond-baseline` table) + `m01`–`m12` files restating
+`docs/plan/erp-plan-en.md` v5.1 per module (scope, limits, tasks, SOPs,
+controls, acceptance, DoD, dependencies, current state vs plan). Inferred
+detail is marked _interpretation, needs owner confirmation_. Finding: build
+has drifted past v5.1 (multi-tenant organization, multi-warehouse, 24-module
+`docs.dbml` vs 12 plan modules, while M09 Finance — the end of the plan's
+main sequence — has no code). Cut/rebaseline decision is **open** for the
+owner. `docs/database/` reviewed and **unchanged**; no code touched.
+
 ## Completed — module directory cleanup: errors/, adapters/, utils/ (2026-11-04)
 
 Status: **verified** (typecheck + full test suite + lint).
@@ -343,7 +363,7 @@ hardcoded root is a portability defect worth fixing separately.
 ## Completed (this session — inventory S4 borrowing, 2026-11-03)
 
 **Nothing committed yet** — uncommitted working-tree state on top of S0–S3.
-Design: `.agents/docs/plans/inventory.md` §5–§11, D19–D22.
+Design: `docs/plan/plans/inventory.md` §5–§11, D19–D22.
 
 ### S4 — borrowing: state machine, sweeps, API, UI
 
@@ -403,7 +423,7 @@ is called accepted.
 ## Completed (this session - inventory module S0 + S1, 2026-11-02)
 
 Branch `feat/inventory-module`, base `4fd67b4`. **Nothing committed yet** — all
-of this is uncommitted working-tree state. Design: `.agents/docs/plans/inventory.md`
+of this is uncommitted working-tree state. Design: `docs/plan/plans/inventory.md`
 (D1–D24), ADR-0008, ADR-0009.
 
 ### S0 — contract and permission model
@@ -897,7 +917,7 @@ Verification (2026-11-02):
 
 ## Completed (this session - user-management phase 4: admin UI + admin API, 2026-11-01)
 
-Plan: `.agents/docs/plans/user-management.md`. Phase 4 of 7 complete (backend +
+Plan: `docs/plan/plans/user-management.md`. Phase 4 of 7 complete (backend +
 admin UI; `/members` page enhancements + member role-change UI remain).
 
 Backend — new surface, all gated by the phase-3 dynamic guard:
@@ -1025,7 +1045,7 @@ throwaways deleted.
 
 ## Completed (this session - user-management phase 3: dynamic hasPermission guard + single grant source, 2026-11-01)
 
-Plan: `.agents/docs/plans/user-management.md`. Phase 3 of 7 complete.
+Plan: `docs/plan/plans/user-management.md`. Phase 3 of 7 complete.
 
 - **Single grant source enforced**: `packages/common/src/authorization/
   erp-permissions.ts` now owns the merged catalog — built-in organization
@@ -1085,7 +1105,7 @@ Plan: `.agents/docs/plans/user-management.md`. Phase 3 of 7 complete.
 
 ## Completed (this session - user-management phase 2: invitation module + claim flow, 2026-11-01)
 
-Plan: `.agents/docs/plans/user-management.md`. Phase 2 of 7 complete.
+Plan: `docs/plan/plans/user-management.md`. Phase 2 of 7 complete.
 
 - **Module** `apps/backend/src/app/user-management/`: contracts (gateways/
   repositories/services interfaces + DI tokens), errors, token utils
@@ -1136,7 +1156,7 @@ Plan: `.agents/docs/plans/user-management.md`. Phase 2 of 7 complete.
 
 ## Completed (this session - user-management phase 1: schema + role seeding, 2026-11-01)
 
-Plan: `.agents/docs/plans/user-management.md` (grilled/approved). Phase 1 of 7:
+Plan: `docs/plan/plans/user-management.md` (grilled/approved). Phase 1 of 7:
 database shape for the invitation-only user lifecycle.
 
 - **New schema** `apps/backend/drizzle/schemas/role.schema.ts` (auth schema,

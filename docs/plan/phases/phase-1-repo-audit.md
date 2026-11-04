@@ -8,12 +8,12 @@
 ## Work
 - Audit repo status; inspect all instructions, skills, and lockfile states.
 - Establish baseline checks; classify all domains with evidence.
-- Reconcile existing docs; write/adapt the `.agents/docs/` set; rewrite root
+- Reconcile existing docs; write/adapt the `.agents/docs/` set (plan docs later moved to `docs/plan/`); rewrite root
   `AGENTS.md`; keep the Turborepo managed block intact.
 - Verify resolved stack versions from `bun.lock` into `stack-compatibility.md`.
 
 ## Outputs
-- `.agents/docs/*` (this repo's doc set) with `decisions/` and `phases/`.
+- `.agents/docs/` (this repo's doc set) with `decisions/` and phases (now under `docs/plan/phases/`).
 - `project-audit.md` with baseline-labeled failing tests.
 - Decisions ADR-0001..0005 (org model, money minor-units, structured Indonesian
   address refs, Relational v2, drizzle DI boundary).
