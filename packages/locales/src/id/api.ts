@@ -52,6 +52,15 @@ const api: Record<keyof typeof en, string> = {
 	'inventory.adjustmentHasNoLines':
 		'Penyesuaian stok harus memiliki minimal satu baris',
 
+	'assets.assetNotFound': 'Aset tidak ditemukan',
+	'assets.categoryNotFound': 'Kategori aset tidak ditemukan',
+	'assets.categoryCodeTaken': 'Kategori aset dengan kode ini sudah ada',
+	'assets.ruleViolation': 'Aturan aset tidak mengizinkan: {{rule}}',
+	'assets.illegalTransition':
+		'Aset tidak dapat berpindah dari "{{from}}" ke "{{to}}"',
+	'assets.assetHasHistory':
+		'Tidak dapat mengarsipkan aset dengan riwayat peminjaman atau pemeliharaan',
+
 	'user.notFound': 'Pengguna tidak ditemukan',
 	'user.emailInUse': 'Email sudah digunakan',
 	'user.globalAdminRequired': 'Peran administrator global diperlukan',

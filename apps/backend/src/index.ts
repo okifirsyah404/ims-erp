@@ -2,6 +2,7 @@
 // is missing, and this project has `emitDecoratorMetadata: true`. Must stay the
 // first import — before `tsyringe` itself is pulled in.
 import { registerInventory } from '@app/inventory';
+import { registerAssets } from '@app/assets';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
 import { cors } from '@elysiajs/cors';
@@ -35,6 +36,7 @@ registerSales(container);
 // into inventory services (stock/adjustment/borrowing).
 registerOrganization(container);
 registerInventory(container);
+registerAssets(container);
 registerUser(container);
 registerAudit(container);
 registerAuthorization(container);

@@ -71,6 +71,28 @@ export const AUDIT_ACTIONS = [
 	'storage.created',
 	'storage.updated',
 	'storage.archived',
+	// --- assets (M06, hardening plan Part II) ---
+	'asset_category.created',
+	'asset_category.updated',
+	'asset_category.archived',
+	'asset.created',
+	'asset.updated',
+	'asset.deactivated',
+	'asset.reactivated',
+	'asset.archived',
+	'asset.assigned',
+	'asset.returned',
+	'asset.moved',
+	'asset.condition_recorded',
+	'asset.serviced',
+	'asset.depreciated',
+	'asset.disposal_requested',
+	'asset.disposal_approved',
+	'asset.disposal_executed',
+	'asset.disposal_cancelled',
+	'asset.tool_set_created',
+	'asset.tool_set_updated',
+	'asset.tool_set_archived',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

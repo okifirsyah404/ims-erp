@@ -56,6 +56,16 @@ const api = {
 	'inventory.adjustmentHasNoLines':
 		'A stock adjustment must have at least one line',
 
+	'assets.assetNotFound': 'Asset not found',
+	'assets.categoryNotFound': 'Asset category not found',
+	'assets.categoryCodeTaken':
+		'An asset category with this code already exists',
+	'assets.ruleViolation': 'This asset rule does not allow it: {{rule}}',
+	'assets.illegalTransition':
+		'An asset cannot move from "{{from}}" to "{{to}}"',
+	'assets.assetHasHistory':
+		'Cannot archive an asset with custody or maintenance history',
+
 	'user.notFound': 'User not found',
 	'user.emailInUse': 'Email already in use',
 	'user.globalAdminRequired': 'Global administrator role required',
