@@ -181,6 +181,19 @@ export function installStockDoubles(): void {
 			capture.adjustment = { ...capture.adjustment, ...data };
 			return capture.adjustment;
 		},
+		async claimForPost(id: string, _tx: unknown) {
+			const row = capture.adjustment;
+			if (
+				!row ||
+				row.id !== id ||
+				row.status !== 'approved' ||
+				row.postedAt !== null
+			) {
+				return null;
+			}
+			capture.adjustment = { ...row, status: 'posted', postedAt: new Date() };
+			return capture.adjustment;
+		},
 		async listLines() {
 			return [];
 		},

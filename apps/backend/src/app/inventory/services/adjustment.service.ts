@@ -360,9 +360,11 @@ export class AdjustmentService {
 	 * so a retried request cannot post its movements twice.
 	 *
 	 * Each line's movement and balance delta are written by
-	 * {@link StockService.postMovement}, which owns its own transaction. The
-	 * status flip happens **last**, so a failure anywhere leaves the document
-	 * `approved` and re-postable rather than half-posted.
+	 * {@link StockService.postMovement}, joining the posting transaction. The
+	 * status flip happens FIRST inside the transaction as an atomic
+	 * conditional claim: of two concurrent posts exactly one wins, and a
+	 * failure on any line rolls back the claim along with every movement, so
+	 * a half-posted document is impossible.
 	 *
 	 * A line whose `quantity_after` equals the live `quantity_before` writes
 	 * nothing — a recount that agrees is a valid outcome, and the document still
@@ -396,47 +398,58 @@ export class AdjustmentService {
 			adjustment.warehouseId,
 		);
 
-		for (const line of lines) {
-			// The live balance, not the stored snapshot: the snapshot is what the
-			// counter saw, but the movement must reflect reality now.
-			const current = await this.stockService.balanceFor(
-				scopeOrganizationId,
-				adjustment.warehouseId,
-				line.itemId,
-				line.binId,
-			);
+		// ONE transaction for the claim and every per-line movement (hardening
+		// plan Phase I-4): a failed line rolls back all prior lines AND the
+		// claim, so a partial posting of an approved adjustment is impossible.
+		// The status flip happens FIRST inside the transaction as an atomic
+		// conditional claim (`WHERE status = 'approved' AND posted_at IS
+		// NULL`): of two concurrent posts exactly one wins; the loser fails
+		// here rather than double-posting. A rollback of any movement returns
+		// the document to `approved` and re-postable — no compensating update.
+		const posted = await this.database.transaction(async (tx) => {
+			const claimed = await this.adjustmentRepository.claimForPost(id, tx);
+			if (!claimed) throw new AdjustmentTransitionError('approved', 'posted');
 
-			const before = Number(current?.quantityOnHand ?? '0');
-			const after = Number(line.quantityAfter);
-			const delta = after - before;
-			if (delta === 0) continue;
+			for (const line of lines) {
+				// The live balance, not the stored snapshot: the snapshot is what
+				// the counter saw, but the movement must reflect reality now.
+				const current = await this.stockService.balanceFor(
+					scopeOrganizationId,
+					adjustment.warehouseId,
+					line.itemId,
+					line.binId,
+				);
 
-			const movementType: MovementType =
-				delta > 0 ? 'adjustment_in' : 'adjustment_out';
+				const before = Number(current?.quantityOnHand ?? '0');
+				const after = Number(line.quantityAfter);
+				const delta = after - before;
+				if (delta === 0) continue;
 
-			await this.stockService.postMovement({
-				// The acting tenant is recorded on the ledger even when the
-				// warehouse is global and the balance is shared.
-				actorOrganizationId: organizationId,
-				warehouseId: adjustment.warehouseId,
-				binId: line.binId,
-				itemId: line.itemId,
-				movementType,
-				// postMovement takes an unsigned quantity; direction is the type.
-				quantity: Math.abs(delta).toFixed(3),
-				referenceType: 'manual_adjustment',
-				referenceId: adjustment.id,
-				createdBy: actor.actorUserId,
-				notes: line.note ?? adjustment.notes ?? null,
-			});
-		}
+				const movementType: MovementType =
+					delta > 0 ? 'adjustment_in' : 'adjustment_out';
 
-		// Flip status only after every movement is committed.
-		const posted = await this.adjustmentRepository.update(id, {
-			status: 'posted',
-			postedAt: new Date(),
+				await this.stockService.postMovement(
+					{
+						// The acting tenant is recorded on the ledger even when the
+						// warehouse is global and the balance is shared.
+						actorOrganizationId: organizationId,
+						warehouseId: adjustment.warehouseId,
+						binId: line.binId,
+						itemId: line.itemId,
+						movementType,
+						// postMovement takes an unsigned quantity; direction is the type.
+						quantity: Math.abs(delta).toFixed(3),
+						referenceType: 'manual_adjustment',
+						referenceId: adjustment.id,
+						createdBy: actor.actorUserId,
+						notes: line.note ?? adjustment.notes ?? null,
+					},
+					tx,
+				);
+			}
+
+			return claimed;
 		});
-		if (!posted) throw new AdjustmentNotFoundError();
 
 		await this.audit.record({
 			actor: actorAuditActor(actor),

@@ -119,6 +119,19 @@ function fakeAdjustments() {
 			Object.assign(row, data);
 			return row;
 		},
+		async claimForPost(id: string, _tx: unknown) {
+			const row = documents.find(
+				(candidate) =>
+					candidate.id === id &&
+					candidate.deletedAt === null &&
+					candidate.status === 'approved' &&
+					candidate.postedAt === null,
+			);
+			if (!row) return null;
+			row.status = 'posted';
+			row.postedAt = new Date();
+			return row;
+		},
 		async listLines(adjustmentId: string) {
 			return lines.filter(
 				(row) =>
@@ -212,7 +225,25 @@ function build(onHand: Record<string, string> = {}) {
 	stock = fakeStock(onHand);
 	items = fakeItems();
 	const database = {
-		transaction: async (callback: (tx: null) => unknown) => callback(null),
+		// Emulates a real transaction: a thrown callback rolls the world back
+		// (status/postedAt snapshot restore) — this is exactly the property
+		// the atomic-claim test asserts.
+		transaction: async (callback: (tx: null) => unknown) => {
+			const snapshot = adjustments.documents.map((row) => ({
+				row,
+				status: row.status,
+				postedAt: row.postedAt,
+			}));
+			try {
+				return await callback(null);
+			} catch (error) {
+				for (const entry of snapshot) {
+					entry.row.status = entry.status;
+					entry.row.postedAt = entry.postedAt;
+				}
+				throw error;
+			}
+		},
 	} as never;
 
 	container.register(ADJUSTMENT_REPOSITORY_TOKEN, { useValue: adjustments });
@@ -278,6 +309,51 @@ describe('adjustment — lifecycle', () => {
 		const posted = await service.post(id, ORG_A, actor(APPROVER));
 		expect(posted.adjustment.status).toBe('posted');
 		expect(posted.adjustment.postedAt).not.toBeNull();
+	});
+
+	test('posting is atomic: a failing movement rolls the claim back so the document stays re-postable', async () => {
+		const id = await raise();
+		await approved(id);
+
+		// Make the very first movement fail mid-transaction (simulating a
+		// serialization failure or insufficient stock under the FOR UPDATE
+		// lock). Mutate the live double: the service captured it at build.
+		const healthyPost = (stock.service as unknown as {
+			postMovement: (input: TPostMovementInput) => Promise<unknown>;
+		}).postMovement;
+		(stock.service as unknown as {
+			postMovement: () => Promise<never>;
+		}).postMovement = async () => {
+			throw new Error('boom');
+		};
+		await expect(
+			service.post(id, ORG_A, actor(APPROVER)),
+		).rejects.toThrow('boom');
+
+		// The claim must have rolled back with the transaction: the document
+		// is still approved, not stuck in `posted` with zero movements.
+		const after = await service.findDetail(id, ORG_A);
+		expect(after.adjustment.status).toBe('approved');
+		expect(after.adjustment.postedAt).toBeNull();
+
+		// Re-post with the healthy stock double succeeds.
+		(stock.service as unknown as {
+			postMovement: (input: TPostMovementInput) => Promise<unknown>;
+		}).postMovement = healthyPost;
+		const posted = await service.post(id, ORG_A, actor(APPROVER));
+		expect(posted.adjustment.status).toBe('posted');
+		expect(stock.posted.length).toBeGreaterThan(0);
+	});
+
+	test('a second post of an already-posted document is an idempotent no-op, not a double movement', async () => {
+		const id = await raise();
+		await approved(id);
+		await service.post(id, ORG_A, actor(APPROVER));
+		const movements = stock.posted.length;
+
+		const again = await service.post(id, ORG_A, actor(APPROVER));
+		expect(again.adjustment.status).toBe('posted');
+		expect(stock.posted.length).toBe(movements);
 	});
 
 	test('reject and cancel are terminal', async () => {
