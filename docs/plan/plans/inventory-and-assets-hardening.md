@@ -10,14 +10,33 @@
 > `docs/plan/plans/warehouse-hardening.md` (warehouse CRUD/UI — shipped; this
 > plan covers stock/ledger integrity and master-data audit, not CRUD/UI).
 > Target doc home once implementation starts: `docs/plan/plans/inventory-and-assets-hardening.md`.
+>
+> **dbml deviation (shipped):** `assets.status` uses
+> `('in_stock','in_use','maintenance','inactive','disposed','lost')` — the
+> dbml vocabulary plus `'inactive'`, per D18 (deactivation-with-reason SOP).
+> Enforced by `assets_deactivation_reason_check`:
+> `inactive ⇔ deactivation_reason IS NOT NULL`.
 
 ## Implementation Status
 
-Honest record. Nothing shipped yet.
+All phases shipped. Commits on `fix/inventory-module-hardening`.
 
 | Phase | State | Commit | Delivered |
 |---|---|---|---|
-| — | ⬜ not started | — | — |
+| I-1 Ledger integrity | ✅ done | `8238323` | `applyDelta` row-lock sole mutation path; CHECKs `quantity_on_hand >= 0`, `quantity_reserved >= 0`; default-warehouse partial unique index; seeder routed through `applyDelta` |
+| I-2 ERP-0009 numbering | ✅ done | `6670e56` | `organization.document_sequences` + atomic allocate-in-tx service; `Math.random()` codes removed (MV/ADJ/BRW) |
+| I-3 Audit | ✅ done | `ccf8b47` | Audit rows for adjustment/borrowing workflows + master-data CRUD with before/after snapshots; per-operation ledger events |
+| I-4 Adjustment posting | ✅ done | `182480b` | Atomic `claimForPost` inside ONE posting transaction; rollback releases the claim; no partial posting |
+| I-5 Verifier | ✅ done | `e6677d1` | `verify-inventory-constraints.ts`: CHECKs, ledger-vs-balance, ERP-0009 20-way concurrency, atomic claim, D17 negative-stock smoke — all PASS on real PG 18 |
+| A-1 Schema & migrations | ✅ done | `1c5fef1` | 11 asset tables per docs.dbml; `assets.status` adds `'inactive'` (D18 deviation); verified clean on fresh PG 18 |
+| A-2 Numbering & permissions | ✅ done | `2f768fd` | Register/category CRUD over ERP-0009 codes (`AST-REG`, `AST-CAT`); `asset:*` matrix wired; audit vocabulary |
+| A-3 Services & API | ✅ done | `ead5c9e` | Custody (D12), depreciation (D14), disposal workflow (D21), maintenance, condition checks, documents, tool sets; atomic claims for return/execution; 18 unit tests |
+| A-4 UI | ✅ done | `1dcfe0c` | Register (list/detail/new), loans, disposals, depreciation, service records, tool sets, categories; en+id `assets` namespace; parity + dead-key tests green |
+| Final pass | ✅ done | (this commit) | Verifier extended with asset checks (D18 CHECK, disposal vocabulary, financial-proof persistence) — ALL CHECKS PASSED on real PG 18; docs.dbml deviation noted |
+
+Deferred (see Explicit follow-ups below): provisional-serial guard,
+valuation/UI sync (OPEN-3), DB role GRANT/REVOKE script, partial-unique
+org+code indexes for asset tables.
 
 ## Grilling outcome — locked decisions
 

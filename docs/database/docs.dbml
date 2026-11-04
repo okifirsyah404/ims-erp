@@ -4756,6 +4756,7 @@ Table assets.assets {
   depreciation_started_on date
   condition text [not null, default: 'good']
   status text [not null, default: 'in_stock']
+  deactivation_reason text [note: "DEVIATION (shipped): dbml originally omitted this column and the 'inactive' status. D18 added deactivation-with-reason; enforced by assets_deactivation_reason_check (inactive ⇔ reason NOT NULL)."]
   location_description text
   custodian_employee_id uuid [note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
   assigned_at bigint
@@ -4775,7 +4776,8 @@ Table assets.assets {
   }
   Checks {
     `asset_type IN ('equipment', 'vehicle', 'tool', 'furniture', 'it', 'intangible')`
-    `status IN ('in_stock', 'in_use', 'maintenance', 'disposed', 'lost')`
+    `status IN ('in_stock', 'in_use', 'maintenance', 'inactive', 'disposed', 'lost')` [note: "DEVIATION (shipped): 'inactive' added per D18."]
+    `(status = 'inactive' AND deactivation_reason IS NOT NULL) OR (status <> 'inactive' AND deactivation_reason IS NULL)`
     `condition IN ('new', 'good', 'fair', 'poor', 'damaged')`
     `depreciation_method IN ('straight_line', 'declining_balance', 'none')`
     `acquisition_cost >= 0`

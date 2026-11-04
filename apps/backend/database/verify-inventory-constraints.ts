@@ -30,7 +30,7 @@ const { join } = await import('node:path');
 const MIGRATIONS = join(import.meta.dir, 'migrations');
 
 await sql.unsafe(
-	'drop schema if exists inventory, organization, audit, location, auth cascade',
+	'drop schema if exists inventory, organization, audit, location, auth, assets cascade',
 );
 for (const dir of readdirSync(MIGRATIONS).sort()) {
 	const file = join(MIGRATIONS, dir, 'migration.sql');
@@ -431,8 +431,97 @@ await pass(
 	},
 );
 
+/* ---------------------------------------------------------------------- *
+ * Part II — asset module checks (M06 hardening, Phase A-1)
+ * ---------------------------------------------------------------------- */
+
+console.log('--- asset module CHECK constraints (Part II) ---');
+
+await pass('asset category accepted', () =>
+	sql.unsafe(
+		`insert into assets.asset_categories (organization_id, code, name, asset_type, default_depreciation_method, created_at)
+		 values ('org-a', 'CAT-1', 'Laptops', 'it', 'straight_line', 1)`,
+	),
+);
+await reject('unknown asset category type rejected', () =>
+	sql.unsafe(
+		`insert into assets.asset_categories (organization_id, code, name, asset_type, default_depreciation_method, created_at)
+		 values ('org-a', 'CAT-X', 'X', 'spaceship', 'straight_line', 1)`,
+	),
+);
+
+const assetRow = () =>
+	sql.unsafe(`select id from assets.assets where organization_id = 'org-a' and code = 'AST-1'`);
+
+await pass('asset accepted in_stock', () =>
+	sql.unsafe(
+		`insert into assets.assets (organization_id, code, name, status, created_at)
+		 values ('org-a', 'AST-1', 'Laptop A', 'in_stock', 1)`,
+	),
+);
+await reject('unknown asset status rejected by CHECK', async () => {
+	const [row] = await assetRow();
+	await sql.unsafe(
+		`update assets.assets set status = 'ready' where id = '${row.id}'`,
+	);
+});
+
+// D18: inactive requires a reason, and only inactive may carry one.
+await reject('inactive without reason rejected (D18)', async () => {
+	const [row] = await assetRow();
+	await sql.unsafe(
+		`update assets.assets set status = 'inactive' where id = '${row.id}'`,
+	);
+});
+await pass('inactive with reason accepted (D18)', async () => {
+	const [row] = await assetRow();
+	await sql.unsafe(
+		`update assets.assets set status = 'inactive', deactivation_reason = 'end of life' where id = '${row.id}'`,
+	);
+});
+await reject('reason on non-inactive rejected (D18)', async () => {
+	const [row] = await assetRow();
+	await sql.unsafe(
+		`update assets.assets set status = 'in_stock', deactivation_reason = 'leftover' where id = '${row.id}'`,
+	);
+});
+await pass('reactivated clears the reason (D18)', async () => {
+	const [row] = await assetRow();
+	await sql.unsafe(
+		`update assets.assets set status = 'in_stock', deactivation_reason = null where id = '${row.id}'`,
+	);
+});
+
+await reject('negative book value rejected', async () => {
+	const [row] = await assetRow();
+	await sql.unsafe(
+		`update assets.assets set book_value = -1 where id = '${row.id}'`,
+	);
+});
+
+// Disposal vocabulary + disposal record persists as financial proof.
+await pass('disposal record accepted', () =>
+	sql.unsafe(
+		`insert into assets.asset_disposals (organization_id, code, asset_id, disposal_method, status, created_at)
+		 select 'org-a', 'DSP-1', a.id, 'sale', 'executed', 1 from assets.assets a where a.code = 'AST-1'`,
+	),
+);
+await reject('unknown disposal status rejected', () =>
+	sql.unsafe(
+		`insert into assets.asset_disposals (organization_id, code, asset_id, disposal_method, status, created_at)
+		 select 'org-a', 'DSP-2', a.id, 'sale', 'done', 1 from assets.assets a where a.code = 'AST-1'`,
+	),
+);
+await pass('executed disposal keeps its record (financial proof)', async () => {
+	const rows = await sql.unsafe(
+		`select count(*)::int as n from assets.asset_disposals where code = 'DSP-1'`,
+	);
+	if (Number(rows[0].n) !== 1) throw new Error('disposal record missing');
+});
+
 await sql.close();
 console.log(
 	failures === 0 ? '\nALL CHECKS PASSED' : `\n${failures} CHECK(S) FAILED`,
 );
 process.exit(failures === 0 ? 0 : 1);
+
