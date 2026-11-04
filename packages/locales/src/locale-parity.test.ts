@@ -93,6 +93,8 @@ describe('locale values', () => {
 			'inventory:address.label',
 			// "Global" is the standard Indonesian term for a company-wide scope.
 			'inventory:warehouses.global',
+			// "Total" is the same word in Indonesian.
+			'dashboard:widget.cash.total',
 		]);
 
 		const untranslated = Object.entries(en_).flatMap(([namespace, bundle]) =>
