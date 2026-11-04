@@ -46,6 +46,7 @@ import {
 } from '../../src/app/inventory/constants/di';
 import { StockService } from '../../src/app/inventory/services/stock.service';
 import { signedContribution } from '../../src/app/inventory/repositories/movement.repository';
+import { createNumberingDouble } from '../helpers/numbering-double';
 import {
 	InsufficientStockError,
 	MovementAlreadyReversedError,
@@ -201,6 +202,11 @@ function fakeBalances(store: BalanceStore): IBalanceRepository {
 		async applyDelta(key, delta: TBalanceDelta) {
 			const existing = store.get(keyOf(key));
 			if (!existing) {
+				// Mirror the repository: a negative opening delta is refused
+				// (the CHECK constraints would reject it in the database).
+				if (Number(delta.quantity) < 0) {
+					throw new InsufficientStockError('0.000', delta.quantity);
+				}
 				const created = {
 					id: `balance-${store.size}`,
 					organizationId: key.scopeOrganizationId,
@@ -217,8 +223,16 @@ function fakeBalances(store: BalanceStore): IBalanceRepository {
 				store.set(keyOf(key), created);
 				return created;
 			}
-			// Accumulate — the whole point of the atomic upsert.
+			// Accumulate — the whole point of the serialized upsert-then-lock
+			// path. Mirrors the repository's conditional UPDATE: a delta that
+			// would overdraw the balance is refused, not applied.
 			const onHand = Number(existing.quantityOnHand) + Number(delta.quantity);
+			if (onHand < 0) {
+				throw new InsufficientStockError(
+					existing.quantityOnHand,
+					delta.quantity,
+				);
+			}
 			existing.quantityOnHand = onHand.toFixed(3);
 			existing.quantityAvailable = onHand.toFixed(3);
 			existing.lastMovementAt = delta.occurredAt;
@@ -334,6 +348,7 @@ beforeEach(() => {
 		container.resolve(MOVEMENT_REPOSITORY_TOKEN),
 		container.resolve(BALANCE_REPOSITORY_TOKEN),
 		container.resolve(WAREHOUSE_REPOSITORY_TOKEN),
+		createNumberingDouble(),
 		database,
 	) });
 	service = container.resolve<StockService>(STOCK_SERVICE_TOKEN);

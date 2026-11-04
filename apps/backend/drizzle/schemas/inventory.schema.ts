@@ -277,6 +277,29 @@ export const warehouses = inventorySchema.table(
 		}),
 		index('warehouses_is_default_idx').on(table.isDefault),
 		index('warehouses_is_active_idx').on(table.isActive),
+		/**
+		 * Exactly one **alive** default warehouse per scope, expressed as two
+		 * partial unique indexes (the house pattern — same as the
+		 * `stock_balances` scope indexes, because a plain unique index treats
+		 * two NULL `organization_id`s as distinct and would allow a global
+		 * default to collide with itself).
+		 *
+		 * `clearDefaultExcept` enforces this in the service; the indexes are
+		 * the backstop. Soft-deleted warehouses are excluded — they no longer
+		 * hold the flag.
+		 */
+		uniqueIndex('warehouses_org_default_uq')
+			.on(table.organizationId)
+			.where(sql`organization_id IS NOT NULL AND is_default AND deleted_at IS NULL`),
+		/**
+		 * Global scope: `organization_id` is NULL, and Postgres unique indexes
+		 * treat NULLs as distinct — so the org index above cannot cover it.
+		 * `coalesce` maps NULL to a sentinel, making the NULL-scope default
+		 * collide with itself.
+		 */
+		uniqueIndex('warehouses_global_default_uq')
+			.on(sql`coalesce(${table.organizationId}, '00000000-0000-0000-0000-000000000000'::uuid)`)
+			.where(sql`organization_id IS NULL AND is_default AND deleted_at IS NULL`),
 	],
 );
 
@@ -573,6 +596,19 @@ export const stockBalances = inventorySchema.table(
 		check(
 			'stock_balances_available_check',
 			sql`quantity_available = quantity_on_hand - quantity_reserved`,
+		),
+		// Stock can never go negative — enforced by the database, not just the
+		// service. This is the backstop that makes the TOCTOU race in the
+		// outbound pre-check harmless: two concurrent posts may both pass the
+		// service check, but only the first update wins; the second violates
+		// this constraint and rolls back (mapped to InsufficientStockError).
+		check(
+			'stock_balances_on_hand_check',
+			sql`quantity_on_hand >= 0`,
+		),
+		check(
+			'stock_balances_reserved_check',
+			sql`quantity_reserved >= 0`,
 		),
 	],
 );

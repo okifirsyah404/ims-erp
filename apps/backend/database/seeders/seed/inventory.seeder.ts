@@ -3,10 +3,10 @@ import pino from 'pino';
 import { faker } from '@faker-js/faker';
 import { seedSafeText } from './faker-content';
 import { drizzleDB } from '../../../drizzle/db';
+import { BalanceRepository } from '../../../src/app/inventory/repositories/balance.repository';
 import {
 	items,
 	serialTrackedItems,
-	stockBalances,
 	stockMovements,
 	warehouseAddresses,
 	warehouseStorages,
@@ -355,6 +355,8 @@ async function ensureOpeningStock(input: {
 	const itemId = await findItemId(itemOrganizationId, sku);
 	if (!itemId) return;
 
+	const balanceRepository = new BalanceRepository(drizzleDB);
+
 	// Idempotency guard. Keyed on the warehouse scope, not the caller: the
 	// opening receipt belongs to whichever scope owns the warehouse (data-model
 	// "scope rule"), so a re-run finds exactly the row it would otherwise write.
@@ -385,43 +387,24 @@ async function ensureOpeningStock(input: {
 			createdAt: occurredAt,
 		});
 
-		// Balances mirror the movement: same scope, same quantity. Reservations
-		// are unbuilt, so available equals on-hand.
-		//
-		// The lookup is scoped by organization as well as warehouse. Matching on
-		// warehouse alone would find the *shared* row of a global warehouse, or a
-		// sibling tenant's row, and add this quantity to it.
-		const [balance] = await tx
-			.select({ id: stockBalances.id })
-			.from(stockBalances)
-			.where(
-				sql`${stockBalances.organizationId} IS NOT DISTINCT FROM ${scopeOrganizationId} AND ${stockBalances.warehouseId} = ${warehouseId} AND ${stockBalances.itemId} = ${itemId} AND ${stockBalances.binId} IS NULL`,
-			)
-			.limit(1);
-
-		if (balance) {
-			await tx
-				.update(stockBalances)
-				.set({
-					quantityOnHand: sql`${stockBalances.quantityOnHand} + ${quantity}`,
-					quantityAvailable: sql`${stockBalances.quantityOnHand} + ${quantity} - ${stockBalances.quantityReserved}`,
-					lastMovementAt: occurredAt,
-					updatedAt: occurredAt,
-				})
-				.where(eq(stockBalances.id, balance.id));
-			return;
-		}
-
-		await tx.insert(stockBalances).values({
-			organizationId: scopeOrganizationId,
-			itemId,
-			warehouseId,
-			quantityOnHand: quantity,
-			quantityReserved: '0',
-			quantityAvailable: quantity,
-			lastMovementAt: occurredAt,
-			createdAt: occurredAt,
-		});
+		// Balance mirrors the movement — through `applyDelta`, the same
+		// serialized path every other writer uses (hardening plan D7). The
+		// hand-rolled select-then-update/insert previously here violated the
+		// "applyDelta is the ONLY way" contract and would silently diverge if
+		// the locking/enforcement logic in the repository ever changed.
+		// The lookup is scoped by organization as well as warehouse: matching
+		// on warehouse alone would find the *shared* row of a global
+		// warehouse, or a sibling tenant's row, and add this quantity to it.
+		await balanceRepository.applyDelta(
+			{
+				scopeOrganizationId,
+				itemId,
+				warehouseId,
+				binId: null,
+			},
+			{ quantity, occurredAt },
+			tx,
+		);
 	});
 
 	logger.info({ sku, warehouseId, quantity }, 'Seeded opening stock');

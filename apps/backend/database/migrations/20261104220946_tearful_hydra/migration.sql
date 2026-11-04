@@ -1,0 +1,4 @@
+CREATE UNIQUE INDEX "warehouses_org_default_uq" ON "inventory"."warehouses" ("organization_id") WHERE organization_id IS NOT NULL AND is_default AND deleted_at IS NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "warehouses_global_default_uq" ON "inventory"."warehouses" (coalesce("organization_id", '00000000-0000-0000-0000-000000000000'::uuid)) WHERE organization_id IS NULL AND is_default AND deleted_at IS NULL;--> statement-breakpoint
+ALTER TABLE "inventory"."stock_balances" ADD CONSTRAINT "stock_balances_on_hand_check" CHECK (quantity_on_hand >= 0);--> statement-breakpoint
+ALTER TABLE "inventory"."stock_balances" ADD CONSTRAINT "stock_balances_reserved_check" CHECK (quantity_reserved >= 0);

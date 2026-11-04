@@ -25,12 +25,13 @@ import {
 	WAREHOUSE_REPOSITORY_TOKEN,
 } from '../constants/di';
 import {
-	InsufficientStockError,
 	MovementAlreadyReversedError,
 	MovementNotFoundError,
 	WarehouseNotFoundError,
 } from '../errors/inventory.errors';
 import type { TTx } from '@drizzle/types';
+import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
+import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 
 /** Movement types that decrease stock. Every other type increases it. */
 export { isOutbound } from '../constants/movement-direction';
@@ -95,6 +96,13 @@ export class StockService {
 		private readonly balanceRepository: IBalanceRepository,
 		@inject(WAREHOUSE_REPOSITORY_TOKEN)
 		private readonly warehouseRepository: IWarehouseRepository,
+		/**
+		 * ERP-0009 numbering authority: movement codes are sequence-allocated
+		 * inside the posting transaction (hardening plan D4), replacing the
+		 * former random-suffix scheme.
+		 */
+		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: DocumentNumberingService,
 		/**
 		 * The live Drizzle handle, for the service-owned transaction boundary.
 		 *
@@ -197,25 +205,24 @@ export class StockService {
 		// that divergence is exactly what recomputeFromLedger would have to
 		// repair later.
 		const run = async (handle: TTx): Promise<TPostedMovement> => {
-			// Negative stock is refused for every type. Checked INSIDE the
-			// transaction so the read reflects any concurrent commit that just
-			// landed, rather than a snapshot taken before the transaction began.
-			if (outbound) {
-				const current = await this.balanceRepository.findByKey(key);
-				const available = Number(current?.quantityOnHand ?? '0');
-				const requested = Number(input.quantity);
-				if (requested > available) {
-					throw new InsufficientStockError(
-						available.toFixed(3),
-						requested.toFixed(3),
-					);
-				}
-			}
+			// Negative stock is refused by `applyDelta` itself: the conditional
+			// UPDATE runs under a FOR UPDATE row lock, so the check cannot race
+			// (hardening plan Phase I-1 / D2). The old read-then-throw pre-check
+			// here was a TOCTOU window — two concurrent posts could both pass it
+			// and drive the balance negative. `applyDelta` now throws
+			// InsufficientStockError with the true on-hand figure, and this
+			// transaction rolls back, leaving no movement row behind.
 
+			// Sequence-allocated code (ERP-0009, hardening plan D4): allocated
+			// inside this transaction, so a rollback releases the number (an
+			// accepted gap) and concurrent posts get strictly distinct codes
+			// without any retry loop. Global-warehouse movements share the
+			// null-scope sequence, mirroring the balance scope rule.
+			const code = await this.movementCode(handle, input.actorOrganizationId);
 			const movement = await this.movementRepository.create(
 				{
 					organizationId: input.actorOrganizationId,
-					code: buildMovementCode(),
+					code,
 					movementType: input.movementType,
 					itemId: input.itemId,
 					warehouseId: input.warehouseId,
@@ -314,23 +321,14 @@ export class StockService {
 			// it may not take the balance below zero. Reversing a receipt for
 			// stock that has since been issued is NOT allowed — the correct
 			// repair is to issue again or to adjust, not to invent negative
-			// stock.
-			if (!originalOutbound) {
-				const current = await this.balanceRepository.findByKey(key);
-				const available = Number(current?.quantityOnHand ?? '0');
-				const requested = Number(original.quantity);
-				if (requested > available) {
-					throw new InsufficientStockError(
-						available.toFixed(3),
-						requested.toFixed(3),
-					);
-				}
-			}
+			// stock. Enforcement lives in `applyDelta` (row-locked conditional
+			// update); the insufficient-stock error rolls this transaction back,
+			// which also releases the reversal claim (see comment above).
 
 			const reversal = await this.movementRepository.create(
 				{
 					organizationId: actorOrganizationId,
-					code: buildMovementCode(),
+					code: await this.movementCode(tx, actorOrganizationId),
 					movementType: reversalType,
 					itemId: original.itemId,
 					warehouseId: original.warehouseId,
@@ -432,6 +430,28 @@ export class StockService {
 
 		return { written, removed };
 	}
+
+	/**
+	 * Allocates and formats the next movement code (ERP-0009).
+	 *
+	 * @remarks
+	 * Must be called inside the movement's transaction so the allocation
+	 * commits/rolls back with the document. `organizationId` may be `null`
+	 * for global warehouses — those share one null-scope sequence, mirroring
+	 * the balance scope rule.
+	 */
+	private async movementCode(
+		tx: TTx,
+		organizationId: string | null,
+	): Promise<string> {
+		const number = await this.numbering.allocate(
+			organizationId,
+			'stock_movement',
+			tx,
+		);
+		const stamp = new Date().toISOString().replace(/\D/g, '').slice(0, 14);
+		return this.numbering.format('MV', stamp, number, 6);
+	}
 }
 
 /** Key for grouping ledger totals and balance rows. */
@@ -454,16 +474,13 @@ function normalizeQuantity(quantity: number): string {
 }
 
 /**
- * Generates a movement document code.
+ * Mints a movement code via the ERP-0009 numbering service.
  *
  * @remarks
- * ERP-0009 (document numbering) does not exist, so the code is generated
- * in-service (plan §7). Time-ordered and unique per millisecond via a random
- * suffix, which keeps it within `varchar(32)`.
+ * Format `MV-<YYYYMMDDHHMMSS>-<#6>` — the serial part is sequence-allocated
+ * per `(organization, doc_type)` inside the caller's transaction, so codes
+ * are unique without a retry loop (hardening plan D4). Kept as a service
+ * method (not a free function) because allocation needs the numbering
+ * service and the transaction handle.
  */
-function buildMovementCode(): string {
-	const now = new Date();
-	const stamp = now.toISOString().replace(/\D/g, '').slice(0, 14);
-	const random = Math.random().toString(36).slice(2, 8).toUpperCase();
-	return `MV-${stamp}-${random}`;
-}
+

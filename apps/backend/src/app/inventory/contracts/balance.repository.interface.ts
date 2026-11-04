@@ -45,11 +45,13 @@ export type TBalanceDelta = {
  * Balance persistence contract.
  *
  * @remarks
- * `applyDelta` is the ONLY way quantity changes, and it is an **atomic upsert**
- * (`ON CONFLICT … DO UPDATE SET quantity_on_hand = quantity_on_hand +
- * excluded.…`), never read-then-write: two concurrent posts against the same
- * `(scope, warehouse, item, bin)` must not lose an update. The two partial
- * unique indexes make the conflict target expressible per scope.
+ * `applyDelta` is the ONLY way quantity changes, and it is **serialized per
+ * balance row**: upsert-if-absent → `SELECT … FOR UPDATE` → conditional
+ * `UPDATE … WHERE quantity_on_hand + delta >= 0`. Two concurrent posts against
+ * the same `(scope, warehouse, item, bin)` cannot lose an update, and the
+ * database itself refuses a delta that would drive the balance negative —
+ * the service throws {@link InsufficientStockError} in that case. The CHECK
+ * constraints on `stock_balances` are the last line of defense.
  *
  * `quantity_available` is maintained in the same statement (it is a CHECK
  * constraint: `available = on_hand - reserved`), and stays equal to
