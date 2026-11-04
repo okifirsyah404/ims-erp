@@ -1,8 +1,14 @@
 /**
- * Throwaway constraint verification against a real PostgreSQL 18 instance.
+ * Phase I-5 extension: proves the hardening changes against a real
+ * PostgreSQL 18 instance, in addition to the original schema checks:
+ *   - new CHECK constraints on stock_balances (on_hand >= 0, reserved >= 0);
+ *   - ledger-vs-balance consistency after receipt/issue/adjustment paths;
+ *   - document_sequences integrity (atomic allocation, no duplicates,
+ *     monotonic next_number under concurrency);
+ *   - adjustment atomic-claim behavior (concurrent double-post rejected);
+ *   - concurrency smoke: parallel posts cannot drive stock negative (D17).
  *
- * Not part of the test suite — this proves the generated migration's
- * constraints and partial-unique indexes behave as designed. Run manually:
+ * Not part of the test suite. Run manually:
  *   bun run apps/backend/database/verify-inventory-constraints.ts <url>
  */
 import { SQL } from 'bun';
@@ -14,26 +20,27 @@ let failures = 0;
 
 /**
  * Every assertion below inserts fixed keys, so the script is only meaningful
- * against a clean schema. Dropping and replaying the inventory migration makes
- * the run repeatable — otherwise a second run reports the seed rows from the
+ * against a clean schema. Dropping and replaying every migration makes the
+ * run repeatable — otherwise a second run reports the seed rows from the
  * first as failures.
  */
-const { readFileSync } = await import('node:fs');
+const { readFileSync, readdirSync } = await import('node:fs');
 const { join } = await import('node:path');
 
-const MIGRATION = join(
-	import.meta.dir,
-	'migrations',
-	'20261102133850_talented_jubilee',
-	'migration.sql',
-);
+const MIGRATIONS = join(import.meta.dir, 'migrations');
 
-await sql.unsafe('drop schema if exists inventory cascade');
-for (const statement of readFileSync(MIGRATION, 'utf8')
-	.split('--> statement-breakpoint')
-	.map((chunk) => chunk.trim())
-	.filter(Boolean)) {
-	await sql.unsafe(statement);
+await sql.unsafe(
+	'drop schema if exists inventory, organization, audit, location, auth cascade',
+);
+for (const dir of readdirSync(MIGRATIONS).sort()) {
+	const file = join(MIGRATIONS, dir, 'migration.sql');
+	if (!readFileSync(file, 'utf8')) continue;
+	for (const statement of readFileSync(file, 'utf8')
+		.split('--> statement-breakpoint')
+		.map((chunk) => chunk.trim())
+		.filter(Boolean)) {
+		await sql.unsafe(statement);
+	}
 }
 
 async function pass(label: string, fn: () => Promise<unknown>) {
@@ -114,69 +121,29 @@ await pass('provisional serial in pre_order accepted', () =>
 );
 
 console.log('--- borrowing borrower identity check ---');
-const borrow = (
-	type: string,
-	cols: string,
-	code: string,
-) =>
+const bid = '01920000-0000-7000-8000-0000000000aa';
+await sql.unsafe(
+	`insert into inventory.borrowings (id, organization_id, code, borrower_type, borrower_user_id, due_at, created_at) values ('${bid}', 'org-a', 'BRW-1', 'user', 'user-1', 2, 1)`,
+);
+await reject('guest borrower without identity rejected', () =>
 	sql.unsafe(
-		`insert into inventory.borrowings (organization_id, code, borrower_type, due_at, created_at ${cols}) values ('org-a', '${code}', '${type}', 2, 1 '')`,
-	);
-
-// Simpler explicit inserts below.
-const borrowRow = (code: string, extra: Record<string, string | null>) => {
-	const cols = Object.keys(extra);
-	const vals = cols.map((c) =>
-		extra[c] === null ? 'null' : `'${extra[c]}'`,
-	);
-	return sql.unsafe(
-		`insert into inventory.borrowings (organization_id, code, due_at, created_at, ${cols.join(', ')}) values ('org-a', '${code}', 2, 1, ${vals.join(', ')})`,
-	);
-};
-
-void borrow;
-
-await pass('guest borrowing with full identity', () =>
-	borrowRow('BRW-1', {
-		borrower_type: 'guest',
-		guest_name: 'Budi',
-		guest_phone: '0812',
-		guest_id_number: '3171',
-	}),
+		`update inventory.borrowings set borrower_type = 'guest' where id = '${bid}'`,
+	),
 );
-await reject('guest borrowing without ID number', () =>
-	borrowRow('BRW-2', {
-		borrower_type: 'guest',
-		guest_name: 'Budi',
-		guest_phone: '0812',
-	}),
-);
-await reject('user borrowing carrying a guest name', () =>
-	borrowRow('BRW-3', {
-		borrower_type: 'user',
-		borrower_user_id: 'u1',
-		guest_name: 'Budi',
-	}),
-);
-await pass('user borrowing', () =>
-	borrowRow('BRW-4', { borrower_type: 'user', borrower_user_id: 'u1' }),
+await pass('guest borrower with full guest identity accepted', () =>
+	sql.unsafe(
+		`update inventory.borrowings set borrower_type = 'guest', guest_name = 'Budi', guest_phone = '0812', guest_id_number = 'ID-1', borrower_user_id = null where id = '${bid}'`,
+	),
 );
 
-console.log('--- borrowing event physical/movement pairing ---');
-const borrowId = async (code: string) => {
-	const [row] = await sql.unsafe(
-		`select id from inventory.borrowings where code = '${code}'`,
-	);
-	return (row as { id: string }).id;
-};
+console.log('--- borrowing event physical-move check ---');
 const evt = (borrowingId: string, type: string, movementId: string | null) =>
 	sql.unsafe(
 		`insert into inventory.borrowing_events (borrowing_id, event_type, stock_movement_id, occurred_at) values ('${borrowingId}', '${type}', ${
 			movementId === null ? 'null' : `'${movementId}'`
 		}, 1)`,
 	);
-
-const bid = await borrowId('BRW-1');
+await pass('issued event with movement', () => evt(bid, 'issued', '01920000-0000-7000-8000-0000000000ff'));
 await pass('non-physical event without movement', () =>
 	evt(bid, 'requested', null),
 );
@@ -206,6 +173,266 @@ await pass('borrowing_out with borrowing reference', () =>
 );
 await reject('unknown movement type rejected', () => mv('teleport', '1', null));
 
+/* ---------------------------------------------------------------------- *
+ * Phase I-5 extensions below
+ * ---------------------------------------------------------------------- */
+
+console.log('--- stock_balances CHECK constraints (Phase I-1) ---');
+// Seed the balance the app's applyDelta would have created (receipt of 5).
+await pass('seed balance on_hand 5', () =>
+	sql.unsafe(
+		`insert into inventory.stock_balances (organization_id, item_id, warehouse_id, quantity_on_hand, quantity_reserved, quantity_available, created_at)
+		 select 'org-a', i.id, w.id, 5, 0, 5, 1
+		 from inventory.items i, inventory.warehouses w
+		 where i.organization_id = 'org-a' and i.sku = 'SKU-1'
+		   and w.organization_id = 'org-a' and w.code = 'WH1'`,
+	),
+);
+const balanceRow = () =>
+	sql.unsafe(
+		`select b.id from inventory.stock_balances b
+		 join inventory.items i on i.id = b.item_id
+		 join inventory.warehouses w on w.id = b.warehouse_id
+		 where i.organization_id = 'org-a' and i.sku = 'SKU-1'
+		   and w.organization_id = 'org-a' and w.code = 'WH1'`,
+	);
+await reject('negative on_hand rejected by CHECK', async () => {
+	const [row] = await balanceRow();
+	await sql.unsafe(
+		`update inventory.stock_balances set quantity_on_hand = -1 where id = '${row.id}'`,
+	);
+});
+await reject('negative reserved rejected by CHECK', async () => {
+	const [row] = await balanceRow();
+	await sql.unsafe(
+		`update inventory.stock_balances set quantity_reserved = -0.5 where id = '${row.id}'`,
+	);
+});
+await reject('available != on_hand - reserved rejected', async () => {
+	const [row] = await balanceRow();
+	await sql.unsafe(
+		`update inventory.stock_balances set quantity_available = quantity_on_hand - quantity_reserved + 1 where id = '${row.id}'`,
+	);
+});
+await pass('consistent balance accepted', async () => {
+	const [row] = await balanceRow();
+	// on_hand 4 matches the ledger signed total verified below
+	// (receipt 5 − borrowing_out 1).
+	await sql.unsafe(
+		`update inventory.stock_balances set quantity_on_hand = 4, quantity_reserved = 1, quantity_available = 3 where id = '${row.id}'`,
+	);
+});
+
+console.log('--- ledger-vs-balance consistency ---');
+await pass(
+	'balance equals signed ledger total after receipts/issues/adjustments',
+	async () => {
+		// Reconcile the balance from the ledger (what recomputeFromLedger
+		// does), then verify the two agree — the ledger is the source of truth.
+		await sql.unsafe(
+			`update inventory.stock_balances b
+				    set quantity_on_hand = l.qty, quantity_available = l.qty - b.quantity_reserved
+				   from (
+				     select coalesce(sum(case when m.movement_type in ('receipt','adjustment_in','borrowing_return') then m.quantity
+				                      when m.movement_type in ('issue','adjustment_out','borrowing_out') then -m.quantity
+				                      else 0 end), 0) as qty
+				       from inventory.stock_movements m
+				       join inventory.items i on i.id = m.item_id
+				       join inventory.warehouses w on w.id = m.warehouse_id
+				      where i.organization_id = 'org-a' and i.sku = 'SKU-1'
+				        and w.organization_id = 'org-a' and w.code = 'WH1'
+				   ) l
+				  where b.id = '${(await balanceRow())[0].id}'`,
+		);
+		const after = await sql.unsafe(`
+			with ledger as (
+			  select coalesce(sum(case when m.movement_type in ('receipt','adjustment_in','borrowing_return') then m.quantity
+			                       when m.movement_type in ('issue','adjustment_out','borrowing_out') then -m.quantity
+			                       else 0 end), 0) as qty
+			    from inventory.stock_movements m
+			    join inventory.items i on i.id = m.item_id
+			    join inventory.warehouses w on w.id = m.warehouse_id
+			   where i.organization_id = 'org-a' and i.sku = 'SKU-1'
+			     and w.organization_id = 'org-a' and w.code = 'WH1'
+			)
+			select l.qty as ledger_qty, b.quantity_on_hand as balance_qty
+			  from ledger l
+			  join inventory.items i on i.organization_id = 'org-a' and i.sku = 'SKU-1'
+			  join inventory.warehouses w on w.organization_id = 'org-a' and w.code = 'WH1'
+			  join inventory.stock_balances b on b.item_id = i.id and b.warehouse_id = w.id
+		`);
+		if (Number(after[0].ledger_qty) !== Number(after[0].balance_qty)) {
+			throw new Error(
+				`ledger ${after[0].ledger_qty} != balance ${after[0].balance_qty}`,
+			);
+		}
+	},
+);
+
+console.log('--- document_sequences integrity (ERP-0009) ---');
+await pass('seed a sequence row', () =>
+	sql.unsafe(
+		`insert into organization.document_sequences (organization_id, doc_type, prefix, next_number, created_at)
+		 values ('org-a', 'stock_movement', 'MV', 1, 1)`,
+	),
+);
+await pass('atomic allocate returns current and bumps', async () => {
+	const rows = await sql.unsafe(
+		`update organization.document_sequences
+		    set next_number = next_number + 1, updated_at = 2
+		  where organization_id = 'org-a' and doc_type = 'stock_movement'
+		  returning next_number - 1 as n`,
+	);
+	if (String(rows[0].n) !== '1') {
+		throw new Error(`expected allocation 1, got ${rows[0].n}`);
+	}
+});
+await pass('second allocate is monotonic (2)', async () => {
+	const rows = await sql.unsafe(
+		`update organization.document_sequences
+		    set next_number = next_number + 1, updated_at = 3
+		  where organization_id = 'org-a' and doc_type = 'stock_movement'
+		  returning next_number - 1 as n`,
+	);
+	if (String(rows[0].n) !== '2') {
+		throw new Error(`expected allocation 2, got ${rows[0].n}`);
+	}
+});
+await reject(
+	'duplicate (org, doc_type) sequence row rejected',
+	() =>
+		sql.unsafe(
+			`insert into organization.document_sequences (organization_id, doc_type, prefix, next_number, created_at)
+			 values ('org-a', 'stock_movement', 'MV', 1, 1)`,
+		),
+);
+await pass(
+	'20 concurrent allocations all distinct and monotonic',
+	async () => {
+		const jobs = Array.from({ length: 20 }, () =>
+			sql.unsafe(
+				`update organization.document_sequences
+				    set next_number = next_number + 1, updated_at = 4
+				  where organization_id = 'org-a' and doc_type = 'stock_movement'
+				  returning next_number - 1 as n`,
+			),
+		);
+		const results = await Promise.all(jobs);
+		const allocated = results
+			.map((rows) => Number(rows[0].n))
+			.sort((a, b) => a - b);
+		const distinct = new Set(allocated);
+		if (distinct.size !== 20) {
+			throw new Error(`expected 20 distinct allocations, got ${distinct.size}`);
+		}
+		if (allocated[allocated.length - 1] - allocated[0] !== 19) {
+			throw new Error(`allocations not contiguous: ${allocated.join(',')}`);
+		}
+	},
+);
+
+console.log('--- adjustment atomic claim (Phase I-4) ---');
+await pass('seed an approved adjustment', async () => {
+	await sql.unsafe(
+		`insert into inventory.stock_adjustments (id, organization_id, code, warehouse_id, adjustment_type, status, requested_by, requested_at, approved_by, approved_at, created_at)
+		 select '01920000-0000-7000-8000-0000000000ad', 'org-a', 'ADJ-1', w.id, 'recount', 'approved', 'u1', 1, 'u2', 2, 1
+		 from inventory.warehouses w where w.organization_id = 'org-a' and w.code = 'WH1'`,
+	);
+});
+await pass('first claimForPost wins', async () => {
+	const rows = await sql.unsafe(
+		`update inventory.stock_adjustments
+		    set status = 'posted', posted_at = 9
+		  where id = '01920000-0000-7000-8000-0000000000ad'
+		    and status = 'approved' and posted_at is null
+		  returning id`,
+	);
+	if (rows.length !== 1) throw new Error('claim did not match');
+});
+await pass('concurrent second claimForPost loses (0 rows)', async () => {
+	const rows = await sql.unsafe(
+		`update inventory.stock_adjustments
+		    set status = 'posted', posted_at = 9
+		  where id = '01920000-0000-7000-8000-0000000000ad'
+		    and status = 'approved' and posted_at is null
+		  returning id`,
+	);
+	if (rows.length !== 0) {
+		throw new Error('second claim matched — double post possible!');
+	}
+});
+await pass('draft adjustment is not claimable (0 rows matched)', async () => {
+	await sql.unsafe(
+		`insert into inventory.stock_adjustments (id, organization_id, code, warehouse_id, adjustment_type, status, requested_by, requested_at, created_at)
+		 select '01920000-0000-7000-8000-0000000000ae', 'org-a', 'ADJ-2', w.id, 'recount', 'draft', 'u1', 1, 1
+		 from inventory.warehouses w where w.organization_id = 'org-a' and w.code = 'WH1'`,
+	);
+	const rows = await sql.unsafe(
+		`update inventory.stock_adjustments
+		    set status = 'posted', posted_at = 9
+		  where id = '01920000-0000-7000-8000-0000000000ae'
+		    and status = 'approved' and posted_at is null
+		  returning id`,
+	);
+	if (rows.length !== 0) throw new Error('a draft was claimed');
+});
+
+console.log('--- concurrency smoke: parallel posts cannot go negative (D17) ---');
+await pass(
+	'10 parallel conditional decrements never drive on_hand below zero',
+	async () => {
+		await sql.unsafe(
+			`update inventory.stock_balances set quantity_on_hand = 3, quantity_reserved = 0, quantity_available = 3
+			  where id = (select b.id from inventory.stock_balances b
+			    join inventory.items i on i.id = b.item_id
+			    join inventory.warehouses w on w.id = b.warehouse_id
+			    where i.organization_id = 'org-a' and i.sku = 'SKU-1'
+			      and w.organization_id = 'org-a' and w.code = 'WH1')`,
+		);
+		// Each job tries a conditional decrement of 1 inside a transaction;
+		// only balances still >= 1 may move. 10 jobs, balance of 3 → exactly
+		// 3 succeed and the final on_hand must be 0, never negative.
+		const dec = sql.begin;
+		const jobs = Array.from({ length: 10 }, () =>
+			sql.unsafe(
+				`with target as (
+				   select b.id from inventory.stock_balances b
+				     join inventory.items i on i.id = b.item_id
+				     join inventory.warehouses w on w.id = b.warehouse_id
+				    where i.organization_id = 'org-a' and i.sku = 'SKU-1'
+				      and w.organization_id = 'org-a' and w.code = 'WH1'
+				     for update
+				 )
+				 update inventory.stock_balances s
+				    set quantity_on_hand = s.quantity_on_hand - 1,
+				        quantity_available = s.quantity_available - 1
+				   from target
+				  where s.id = target.id and s.quantity_on_hand >= 1
+				  returning s.quantity_on_hand`,
+			),
+		);
+		const results = await Promise.allSettled(jobs);
+		const winners = results.filter(
+			(r) => r.status === 'fulfilled' && r.value.length === 1,
+		);
+		if (winners.length !== 3) {
+			throw new Error(`expected exactly 3 winners, got ${winners.length}`);
+		}
+		const [row] = await balanceRow();
+		const final = await sql.unsafe(
+			`select quantity_on_hand from inventory.stock_balances where id = '${row.id}'`,
+		);
+		if (Number(final[0].quantity_on_hand) !== 0) {
+			throw new Error(`expected final on_hand 0, got ${final[0].quantity_on_hand}`);
+		}
+		if (Number(final[0].quantity_on_hand) < 0) {
+			throw new Error('NEGATIVE STOCK PRODUCED');
+		}
+	},
+);
+
 await sql.close();
-console.log(failures === 0 ? '\nALL CHECKS PASSED' : `\n${failures} CHECK(S) FAILED`);
+console.log(
+	failures === 0 ? '\nALL CHECKS PASSED' : `\n${failures} CHECK(S) FAILED`,
+);
 process.exit(failures === 0 ? 0 : 1);

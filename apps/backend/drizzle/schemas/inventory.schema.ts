@@ -298,7 +298,7 @@ export const warehouses = inventorySchema.table(
 		 * collide with itself.
 		 */
 		uniqueIndex('warehouses_global_default_uq')
-			.on(sql`coalesce(${table.organizationId}, '00000000-0000-0000-0000-000000000000'::uuid)`)
+			.on(sql`coalesce(${table.organizationId}, '00000000-0000-0000-0000-000000000000')`)
 			.where(sql`organization_id IS NULL AND is_default AND deleted_at IS NULL`),
 	],
 );
