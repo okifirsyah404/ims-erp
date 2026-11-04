@@ -16,6 +16,7 @@
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { container } from 'tsyringe';
+import { createNumberingDouble } from '../helpers/numbering-double';
 import type {
 	TStockAdjustmentItemSelect,
 	TStockAdjustmentSelect,
@@ -221,6 +222,7 @@ function build(onHand: Record<string, string> = {}) {
 			adjustments as unknown as IAdjustmentRepository,
 			items,
 			stock.service,
+			createNumberingDouble(),
 			database,
 		),
 	});

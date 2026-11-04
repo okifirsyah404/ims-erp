@@ -20,8 +20,10 @@ import {
 	STOCK_SERVICE_TOKEN,
 } from '../constants/di';
 import type { StockService } from './stock.service';
+import type { TTx } from '@drizzle/types';
+import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
+import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import {
-	AdjustmentCodeTakenError,
 	AdjustmentHasNoLinesError,
 	AdjustmentNotFoundError,
 	AdjustmentTransitionError,
@@ -137,6 +139,12 @@ export class AdjustmentService {
 		private readonly itemRepository: IItemRepository,
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stockService: StockService,
+		/**
+		 * ERP-0009 numbering authority: adjustment codes are sequence-allocated
+		 * inside the creating transaction (hardening plan D4).
+		 */
+		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: DocumentNumberingService,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 	) {}
 
@@ -189,10 +197,15 @@ export class AdjustmentService {
 		// Validates the warehouse exists and is alive before anything is written.
 		await this.stockService.resolveScope(data.warehouseId);
 
-		const code = await this.allocateCode(organizationId);
 		const now = new Date();
 
 		return this.database.transaction(async (tx) => {
+			// Sequence-allocated code (ERP-0009, hardening plan D4) — inside the
+			// transaction, so a rollback releases the number (accepted gap) and
+			// concurrent creates get strictly distinct codes with no retry loop.
+			// Replaces the former time-stamp + random-suffix + collision-retry
+			// scheme.
+			const code = await this.adjustmentCode(tx, organizationId);
 			const adjustment = await this.adjustmentRepository.create(
 				{
 					organizationId,
@@ -503,26 +516,24 @@ export class AdjustmentService {
 	}
 
 	/**
-	 * Allocates the next document code for a tenant.
+	 * Allocates and formats the next adjustment code (ERP-0009).
 	 *
-	 * @param organizationId - The raising tenant
-	 * @throws {AdjustmentCodeTakenError} After too many collisions
 	 * @remarks
-	 * ERP-0009 (document numbering) does not exist yet, so the code is
-	 * time-ordered plus a random suffix and retried on collision. Uniqueness is
-	 * ultimately enforced by the `(organization_id, code)` index.
+	 * Format `ADJ-<YYYYMMDDHHMMSS>-<#4>`, serial part sequence-allocated per
+	 * `(organization, 'stock_adjustment')` inside the caller's transaction.
+	 * Uniqueness follows from the sequence — no collision retry needed.
+	 * Must be called inside the document's transaction.
 	 */
-	private async allocateCode(organizationId: string): Promise<string> {
-		for (let attempt = 0; attempt < 5; attempt += 1) {
-			const stamp = new Date().toISOString().replace(/\D/g, '').slice(0, 14);
-			const random = Math.random().toString(36).slice(2, 6).toUpperCase();
-			const code = `ADJ-${stamp}-${random}`;
-			const existing = await this.adjustmentRepository.findByCode(
-				organizationId,
-				code,
-			);
-			if (!existing) return code;
-		}
-		throw new AdjustmentCodeTakenError();
+	private async adjustmentCode(
+		tx: TTx,
+		organizationId: string,
+	): Promise<string> {
+		const number = await this.numbering.allocate(
+			organizationId,
+			'stock_adjustment',
+			tx,
+		);
+		const stamp = new Date().toISOString().replace(/\D/g, '').slice(0, 14);
+		return this.numbering.format('ADJ', stamp, number, 4);
 	}
 }

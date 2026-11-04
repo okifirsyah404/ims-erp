@@ -44,6 +44,7 @@ import {
 } from '../../src/app/inventory/constants/di';
 import { StockService } from '../../src/app/inventory/services/stock.service';
 import { AdjustmentService } from '../../src/app/inventory/services/adjustment.service';
+import { createNumberingDouble } from '../helpers/numbering-double';
 
 /** An adjustment row, writable by the test between requests. */
 export type IStockAdjustmentSelectLike = TStockAdjustmentSelect;
@@ -263,9 +264,21 @@ export function installStockDoubles(): void {
 	container.register(WAREHOUSE_REPOSITORY_TOKEN, { useValue: warehouses });
 	container.register(ITEM_REPOSITORY_TOKEN, { useValue: items });
 	container.register(STOCK_SERVICE_TOKEN, {
-		useValue: new StockService(movements, balances, warehouses, database),
+		useValue: new StockService(
+			movements,
+			balances,
+			warehouses,
+			createNumberingDouble(),
+			database,
+		),
 	});
 	container.register(ADJUSTMENT_SERVICE_TOKEN, {
-		useValue: new AdjustmentService(adjustments, items, container.resolve(STOCK_SERVICE_TOKEN), database),
+		useValue: new AdjustmentService(
+			adjustments,
+			items,
+			container.resolve(STOCK_SERVICE_TOKEN),
+			createNumberingDouble(),
+			database,
+		),
 	});
 }

@@ -16,6 +16,7 @@
  */
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { Elysia } from 'elysia';
+import { createNumberingDouble } from '../helpers/numbering-double';
 import {
 	fixture,
 	installAuthMock,
@@ -126,6 +127,7 @@ beforeAll(async () => {
 				markLost: async () => null,
 			} as never,
 			{ postMovement: async () => ({}) } as never,
+			createNumberingDouble(),
 			database,
 		),
 	});

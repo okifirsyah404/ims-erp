@@ -21,9 +21,10 @@ import {
 	STOCK_SERVICE_TOKEN,
 } from '../constants/di';
 import type { StockService } from './stock.service';
+import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
+import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import {
 	BorrowerIdentityError,
-	BorrowingCodeTakenError,
 	BorrowingHasNoLinesError,
 	BorrowingLineNotFoundError,
 	BorrowingNotFoundError,
@@ -149,6 +150,12 @@ export class BorrowingService {
 		private readonly serialUnitRepository: ISerialUnitRepository,
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stockService: StockService,
+		/**
+		 * ERP-0009 numbering authority: borrowing codes are sequence-allocated
+		 * inside the creating transaction (hardening plan D4).
+		 */
+		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: DocumentNumberingService,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 	) {}
 
@@ -202,10 +209,14 @@ export class BorrowingService {
 		// unit moved in the meantime.
 		const resolved = await this.resolveLines(input.lines);
 
-		const code = await this.allocateCode(organizationId);
 		const now = new Date();
 
 		const borrowing = await this.database.transaction(async (tx) => {
+			// Sequence-allocated code (ERP-0009, hardening plan D4) — inside the
+			// transaction, so a rollback releases the number (accepted gap) and
+			// concurrent creates get strictly distinct codes with no retry
+			// loop. Replaces the former random-suffix + collision-retry scheme.
+			const code = await this.borrowingCode(tx, organizationId);
 			const header = await this.borrowingRepository.create(
 				{
 					organizationId,
@@ -1015,26 +1026,26 @@ export class BorrowingService {
 	}
 
 	/**
-	 * Allocates the next borrowing code.
+	 * Allocates and formats the next borrowing code (ERP-0009).
 	 *
 	 * @remarks
-	 * `BRW-YYYYMM-####` per the plan. ERP-0009 (document numbering) does not
-	 * exist, so the sequence is time-ordered with a random suffix and retried on
-	 * collision; the `(organization_id, code)` unique index is the real guard.
+	 * Format `BRW-<YYYYMM>-<#4>` per the plan, serial part sequence-allocated
+	 * per `(organization, 'borrowing')` inside the caller's transaction.
+	 * Uniqueness follows from the sequence — no collision retry needed.
+	 * Must be called inside the document's transaction.
 	 */
-	private async allocateCode(organizationId: string): Promise<string> {
+	private async borrowingCode(
+		tx: TTx,
+		organizationId: string,
+	): Promise<string> {
+		const number = await this.numbering.allocate(
+			organizationId,
+			'borrowing',
+			tx,
+		);
 		const now = new Date();
 		const month = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-		for (let attempt = 0; attempt < 5; attempt += 1) {
-			const suffix = Math.floor(Math.random() * 9000 + 1000);
-			const code = `BRW-${month}-${suffix}`;
-			const existing = await this.borrowingRepository.findByCode(
-				organizationId,
-				code,
-			);
-			if (!existing) return code;
-		}
-		throw new BorrowingCodeTakenError();
+		return this.numbering.format('BRW', month, number, 4);
 	}
 }
 

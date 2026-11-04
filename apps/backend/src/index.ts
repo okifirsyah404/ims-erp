@@ -31,9 +31,11 @@ import { registerAuthorization } from './authorization/container';
 registerProvider(container);
 registerLocation(container);
 registerSales(container);
+// Organization first: its DocumentNumberingService (ERP-0009) is injected
+// into inventory services (stock/adjustment/borrowing).
+registerOrganization(container);
 registerInventory(container);
 registerUser(container);
-registerOrganization(container);
 registerAudit(container);
 registerAuthorization(container);
 

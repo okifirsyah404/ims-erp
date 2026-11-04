@@ -42,6 +42,7 @@ import {
 	UnitNotAvailableError,
 } from '../../src/app/inventory/errors/inventory.errors';
 import type { TBorrowingActor } from '../../src/app/inventory/services/borrowing.service';
+import { createNumberingDouble } from '../helpers/numbering-double';
 
 const ORG = 'org-1';
 const WAREHOUSE = '01920000-0000-7000-8000-0000000000aa';
@@ -369,6 +370,7 @@ function makeHarness() {
 		borrowings,
 		units,
 		stock,
+		createNumberingDouble(),
 		// The service owns one transaction; an immediate handler keeps the fake
 		// repositories transactional enough for these assertions.
 		{
