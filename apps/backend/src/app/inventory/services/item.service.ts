@@ -10,6 +10,7 @@ import { UNIT_STATUS_TRANSITIONS } from '@drizzle/schemas/inventory.schema';
 import type {
 	IItemRepository,
 	TItemCreateData,
+	TItemListRow,
 	TItemPaginationRequest,
 	TItemUpdateData,
 } from '../contracts/item.repository.interface';
@@ -144,7 +145,7 @@ export class ItemService {
 	/** Fetches one filtered page of items. */
 	paginate(
 		request: TItemPaginationRequest,
-	): Promise<TPaginationResult<TItemSelect>> {
+	): Promise<TPaginationResult<TItemListRow>> {
 		return this.itemRepository.paginate(request);
 	}
 

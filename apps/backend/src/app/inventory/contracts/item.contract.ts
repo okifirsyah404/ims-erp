@@ -23,6 +23,11 @@ export const itemListQuerySchema = inventoryPaginationSchema.extend({
 	search: z.string().min(1).optional(),
 	itemKind: z.enum(ITEM_KINDS).optional(),
 	category: z.string().min(1).optional(),
+	/**
+	 * Scope the list to items with at least one live unit in this warehouse.
+	 * Used by the warehouse detail page's kind tabs.
+	 */
+	warehouseId: z.uuid().optional(),
 	includeArchived: z
 		.union([z.boolean(), z.enum(['true', 'false'])])
 		.transform((value) => value === true || value === 'true')

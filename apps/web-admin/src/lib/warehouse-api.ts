@@ -59,11 +59,20 @@ export type TWarehouseStorage = {
 	deletedAt: string | null;
 };
 
-/** A warehouse with its address and bins, as returned by `GET /warehouses/:id`. */
-export type TWarehouseDetail = TWarehouse & {
-	address: TWarehouseAddress | null;
-	storages: TWarehouseStorage[];
+/** A list-page warehouse row decorated with backend kind counts. */
+export type TWarehouseWithCounts = TWarehouse & {
+	productsCount: number;
+	materialsCount: number;
+	toolsCount: number;
+	storagesCount: number;
 };
+
+/** A warehouse with its address and bins, as returned by `GET /warehouses/:id`. */
+export type TWarehouseDetail = TWarehouse &
+	TWarehouseWithCounts & {
+		address: TWarehouseAddress | null;
+		storages: TWarehouseStorage[];
+	};
 
 /** Address fields the form submits. */
 export type TWarehouseAddressInput = {
@@ -107,7 +116,14 @@ async function request<T>(
 			init?.body != null ? { 'Content-Type': 'application/json' } : undefined,
 		...init,
 	});
-	const envelope = (await response.json()) as TApiResponse<T>;
+	let envelope: TApiResponse<T>;
+	try {
+		envelope = (await response.json()) as TApiResponse<T>;
+	} catch {
+		// Empty or non-JSON body (e.g. a bare 404/500 from the server) — surface
+		// the status instead of a cryptic JSON.parse error.
+		throw new Error(`HTTP ${response.status}`);
+	}
 	if (!response.ok) {
 		throw new Error(
 			envelope.errors?.[0]?.message ?? envelope.message ?? 'Request failed',
@@ -137,9 +153,9 @@ export async function listWarehouses(params?: {
 	}
 	const query = search.toString();
 
-	const envelope = (await request<TWarehouse[]>(
+	const envelope = (await request<TWarehouseWithCounts[]>(
 		`/warehouses${query ? `?${query}` : ''}`,
-	)) as TApiPaginatedResponse<TWarehouse>;
+	)) as TApiPaginatedResponse<TWarehouseWithCounts>;
 	return { rows: envelope.data, pagination: envelope.pagination };
 }
 
@@ -197,7 +213,14 @@ export async function upsertWarehouseAddress(
 /** Adds a storage (bin) to a warehouse. */
 export async function createStorage(
 	warehouseId: string,
-	input: { code: string; name?: string | null; binType?: string | null; capacity?: number | null },
+	input: {
+		code: string;
+		name?: string | null;
+		binType?: string | null;
+		/** Decimal string, matching the `numeric(18,3)` column. */
+		capacity?: string | null;
+		isActive?: boolean;
+	},
 ) {
 	const envelope = await request<TWarehouseStorage>(
 		`/warehouses/${warehouseId}/storages`,
@@ -215,6 +238,31 @@ export async function archiveStorage(warehouseId: string, storageId: string) {
 	const envelope = await request<TWarehouseStorage>(
 		`/warehouses/${warehouseId}/storages/${storageId}`,
 		{ method: 'DELETE' },
+	);
+	return envelope.data;
+}
+
+/** Fields the storage edit form submits. `code` is immutable. */
+export type TWarehouseStorageUpdateInput = {
+	name?: string | null;
+	binType?: string | null;
+	capacity?: string | null;
+	isActive?: boolean;
+};
+
+/**
+ * Updates a storage's mutable fields.
+ *
+ * @returns The updated row.
+ */
+export async function updateStorage(
+	warehouseId: string,
+	storageId: string,
+	input: TWarehouseStorageUpdateInput,
+) {
+	const envelope = await request<TWarehouseStorage>(
+		`/warehouses/${warehouseId}/storages/${storageId}`,
+		{ method: 'PATCH', body: JSON.stringify(input) },
 	);
 	return envelope.data;
 }

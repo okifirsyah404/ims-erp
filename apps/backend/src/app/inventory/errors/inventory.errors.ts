@@ -101,6 +101,25 @@ export class WarehouseHasUnitsError extends AppError {
 	}
 }
 
+/**
+ * A storage cannot be written into an inactive warehouse.
+ *
+ * @remarks
+ * 422 rather than 409: the warehouse exists and the request is well-formed,
+ * but the parent warehouse's state forbids the write (D4 in
+ * `.agents/docs/plans/warehouse-hardening.md`).
+ */
+export class WarehouseInactiveError extends AppError {
+	constructor(code: string) {
+		super(
+			422,
+			'inventory.warehouseInactive',
+			`Warehouse "${code}" is inactive; its storages cannot be changed`,
+			{ warehouseCode: code },
+		);
+	}
+}
+
 /** The requested storage (bin) does not exist in this warehouse. */
 export class StorageNotFoundError extends AppError {
 	constructor() {

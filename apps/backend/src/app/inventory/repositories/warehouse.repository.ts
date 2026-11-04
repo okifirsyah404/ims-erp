@@ -1,7 +1,9 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
 import {
+	items,
 	serialTrackedItems,
 	warehouseAddresses,
+	warehouseStorages,
 	warehouses,
 } from '@drizzle/schemas/inventory.schema';
 import type { TPaginationResult } from '@ims-erp/common';
@@ -12,6 +14,7 @@ import {
 	count,
 	eq,
 	ilike,
+	inArray,
 	isNull,
 	ne,
 	or,
@@ -20,6 +23,7 @@ import { inject, injectable } from 'tsyringe';
 import type {
 	IWarehouseRepository,
 	TWarehouseCreateData,
+	TWarehouseKindCounts,
 	TWarehousePaginationRequest,
 	TWarehouseUpdateData,
 } from '../contracts/warehouse.repository.interface';
@@ -105,6 +109,85 @@ export class WarehouseRepository implements IWarehouseRepository {
 			.where(and(eq(warehouses.id, id), isNull(warehouses.deletedAt)))
 			.limit(1);
 		return row ?? null;
+	}
+
+	/**
+	 * Counts items by kind and storages for a set of warehouses.
+	 *
+	 * @remarks
+	 * One grouped query per table, driven by the warehouse page — never
+	 * per-warehouse loops. Item counts come from live serialized units (the
+	 * only thing physically *in* a warehouse); an item with all its units
+	 * elsewhere or sold is not in this warehouse's count. Non-serialized,
+	 * quantity-tracked items have no units and are not counted (the stock
+	 * ledger is out of scope for this projection).
+	 *
+	 * @param warehouseIds - The warehouses on the current page
+	 */
+	async countKinds(
+		warehouseIds: string[],
+	): Promise<TWarehouseKindCounts[]> {
+		if (warehouseIds.length === 0) return [];
+
+		const unitRows = await this.database
+			.select({
+				warehouseId: serialTrackedItems.warehouseId,
+				itemKind: items.itemKind,
+				value: count(),
+			})
+			.from(serialTrackedItems)
+			.innerJoin(items, eq(items.id, serialTrackedItems.itemId))
+			.where(
+				and(
+					isNull(serialTrackedItems.deletedAt),
+					inArray(serialTrackedItems.warehouseId, warehouseIds),
+				),
+			)
+			.groupBy(serialTrackedItems.warehouseId, items.itemKind);
+
+		const storageRows = await this.database
+			.select({
+				warehouseId: warehouseStorages.warehouseId,
+				value: count(),
+			})
+			.from(warehouseStorages)
+			.where(
+				and(
+					isNull(warehouseStorages.deletedAt),
+					inArray(warehouseStorages.warehouseId, warehouseIds),
+				),
+			)
+			.groupBy(warehouseStorages.warehouseId);
+
+		const byWarehouse = new Map<string, TWarehouseKindCounts>(
+			warehouseIds.map((warehouseId) => [
+				warehouseId,
+				{
+					warehouseId,
+					productsCount: 0,
+					materialsCount: 0,
+					toolsCount: 0,
+					storagesCount: 0,
+				},
+			]),
+		);
+		for (const row of unitRows) {
+			if (row.warehouseId === null) continue;
+			const target = byWarehouse.get(row.warehouseId);
+			if (!target) continue;
+			if (row.itemKind === 'product' || row.itemKind === 'component') {
+				target.productsCount += row.value;
+			} else if (row.itemKind === 'material') {
+				target.materialsCount += row.value;
+			} else if (row.itemKind === 'tool') {
+				target.toolsCount += row.value;
+			}
+		}
+		for (const row of storageRows) {
+			const target = byWarehouse.get(row.warehouseId);
+			if (target) target.storagesCount += row.value;
+		}
+		return [...byWarehouse.values()];
 	}
 
 	/**

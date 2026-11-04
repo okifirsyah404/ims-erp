@@ -26,6 +26,7 @@ import {
 	StorageNotFoundError,
 	WarehouseCodeTakenError,
 	WarehouseHasUnitsError,
+	WarehouseInactiveError,
 	WarehouseNotFoundError,
 } from '../../src/app/inventory/errors/inventory.errors';
 
@@ -118,6 +119,15 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 		},
 		async countLiveUnits() {
 			return 0;
+		},
+		async countKinds(warehouseIds) {
+			return warehouseIds.map((warehouseId) => ({
+				warehouseId,
+				productsCount: 0,
+				materialsCount: 0,
+				toolsCount: 0,
+				storagesCount: 0,
+			}));
 		},
 	};
 
@@ -464,5 +474,42 @@ describe('storages', () => {
 		await expect(
 			service.listStorages(missing),
 		).rejects.toBeInstanceOf(WarehouseNotFoundError);
+	});
+
+	test('creating a storage in an inactive warehouse is a 422 (D4)', async () => {
+		const inactive = makeWarehouse({ code: 'CLOSED' });
+		const { service, rows } = makeRepos([inactive]);
+
+		const storage = await service.createStorage(inactive.id, { code: 'A1' });
+		rows[0].isActive = false;
+
+		await expect(
+			service.createStorage(inactive.id, { code: 'B2' }),
+		).rejects.toBeInstanceOf(WarehouseInactiveError);
+		void storage;
+	});
+
+	test('updating a storage in an inactive warehouse is a 422 (D4)', async () => {
+		const inactive = makeWarehouse({ code: 'CLOSED' });
+		const { service, rows } = makeRepos([inactive]);
+
+		const storage = await service.createStorage(inactive.id, { code: 'A1' });
+		rows[0].isActive = false;
+
+		await expect(
+			service.updateStorage(inactive.id, storage.id, { name: 'nope' }),
+		).rejects.toBeInstanceOf(WarehouseInactiveError);
+	});
+
+	test('archiving a storage in an inactive warehouse stays allowed (D4)', async () => {
+		const inactive = makeWarehouse({ code: 'CLOSED' });
+		const { service, rows } = makeRepos([inactive]);
+
+		const storage = await service.createStorage(inactive.id, { code: 'A1' });
+		rows[0].isActive = false;
+
+		const archived = await service.archiveStorage(inactive.id, storage.id);
+
+		expect(archived.deletedAt).not.toBeNull();
 	});
 });

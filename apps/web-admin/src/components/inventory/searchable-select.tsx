@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import {
 	Combobox,
+	ComboboxContent,
 	ComboboxEmpty,
 	ComboboxInput,
 	ComboboxItem,
@@ -82,17 +83,21 @@ export function SearchableSelect({
 				showClear
 				onChange={(event) => setTerm(event.target.value)}
 			/>
-			<ComboboxList>
-				{loading && options.length === 0 ? (
-					<div className='px-2 py-1.5 text-sm text-muted-foreground'>…</div>
-				) : null}
-				<ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
-				{options.map((option) => (
-					<ComboboxItem key={option.value} value={option}>
-						{option.label}
-					</ComboboxItem>
-				))}
-			</ComboboxList>
+			{/* Popup: portals + positions the list. Without it the list renders
+			    inline in the form, permanently expanded (the bug this fixes). */}
+			<ComboboxContent>
+				<ComboboxList>
+					{loading && options.length === 0 ? (
+						<div className='px-2 py-1.5 text-sm text-muted-foreground'>…</div>
+					) : null}
+					<ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
+					{options.map((option) => (
+						<ComboboxItem key={option.value} value={option}>
+							{option.label}
+						</ComboboxItem>
+					))}
+				</ComboboxList>
+			</ComboboxContent>
 		</Combobox>
 	);
 }

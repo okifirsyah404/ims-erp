@@ -56,6 +56,12 @@ export type TItem = {
 	createdAt: string;
 	updatedAt: string | null;
 	deletedAt: string | null;
+	/**
+	 * Total `quantity_on_hand` for this item in the requested warehouse,
+	 * summed over `stock_balances` bins. Present only when the list request
+	 * carried `warehouseId` (decimal string, like the numeric column).
+	 */
+	quantityOnHand?: string | null;
 };
 
 /** One serialized unit. */
@@ -122,6 +128,8 @@ export async function listItems(params?: {
 	limit?: number;
 	itemKind?: TItemKind;
 	search?: string;
+	/** Only items with at least one live unit in this warehouse. */
+	warehouseId?: string;
 	includeArchived?: boolean;
 }) {
 	const search = new URLSearchParams();
@@ -129,6 +137,7 @@ export async function listItems(params?: {
 	if (params?.limit) search.set('limit', String(params.limit));
 	if (params?.itemKind) search.set('itemKind', params.itemKind);
 	if (params?.search) search.set('search', params.search);
+	if (params?.warehouseId) search.set('warehouseId', params.warehouseId);
 	if (params?.includeArchived) search.set('includeArchived', 'true');
 	const query = search.toString();
 
@@ -213,10 +222,14 @@ export async function replaceProvisionalSerial(
 export const itemsQueryOptions = (params: {
 	itemKind?: TItemKind;
 	search?: string;
+	warehouseId?: string;
+	page?: number;
+	limit?: number;
 }) =>
 	queryOptions({
 		queryKey: ['inventory', 'items', params] as const,
-		queryFn: () => listItems({ ...params, limit: 100 }),
+		queryFn: () =>
+			listItems({ ...params, limit: params.limit ?? 100 }),
 	});
 
 export function itemQueryOptions(itemId: string) {

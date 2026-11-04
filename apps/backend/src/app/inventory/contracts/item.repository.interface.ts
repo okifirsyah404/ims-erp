@@ -5,6 +5,20 @@ import type {
 	TItemSelect,
 } from '@drizzle/schemas/inventory.schema';
 
+/**
+ * One item list row.
+ *
+ * @remarks
+ * When the request carries `warehouseId`, the repository decorates each row
+ * with the item's total `quantity_on_hand` in that warehouse (summed over
+ * `stock_balances` bins, as a decimal string like the numeric column it comes
+ * from). Without the filter the field is `null` — the plain item master does
+ * not carry a per-warehouse quantity.
+ */
+export type TItemListRow = TItemSelect & {
+	quantityOnHand?: string | null;
+};
+
 /** Pagination + filters for the item list endpoint. */
 export type TItemPaginationRequest = {
 	page: number;
@@ -15,6 +29,13 @@ export type TItemPaginationRequest = {
 	itemKind?: ItemKind;
 	/** Case-insensitive partial match on the free-text category. */
 	category?: string;
+	/**
+	 * Only items with a physical presence in this warehouse: at least one live
+	 * serialized unit **or** a stock balance. The second clause matters for
+	 * quantity-tracked items, which have no units at all — their stock lives
+	 * only in `stock_balances`.
+	 */
+	warehouseId?: string;
 	/** Include archived (soft-deleted) rows. */
 	includeArchived?: boolean;
 };
@@ -42,7 +63,7 @@ export interface IItemRepository {
 	/** Fetches one filtered page of items. */
 	paginate(
 		request: TItemPaginationRequest,
-	): Promise<TPaginationResult<TItemSelect>>;
+	): Promise<TPaginationResult<TItemListRow>>;
 
 	/** Fetches one alive item by id. */
 	findById(id: string): Promise<TItemSelect | null>;
