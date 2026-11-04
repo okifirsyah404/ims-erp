@@ -100,8 +100,11 @@ Found in `docs/database/docs.dbml` (24 modules, ~253 tables, checked
 
 | Item | Where | Why it is outside v5.1 |
 |---|---|---|
-| Multi-tenant `organization` module (9 tables, shipped code + UI) | `organization` schema, `apps/backend/src/app/organization` | Plan: **one business entity**. Tenant scoping (`organization_id`) on every table is extra. |
-| Multiple warehouses + storages + warehouse addresses (shipped code + UI) | `inventory.warehouses`, `warehouse_storages`, `warehouse_addresses`; `docs/plan/plans/warehouse-hardening.md` | Plan: **one warehouse** in both stages; "no multiple warehouses" is an explicit limit. |
+| Inventory as built (multi-warehouse, storages, addresses, borrowing, adjustments) | `inventory` schema; ADR-0010 | **Rebaseline proposed (ADR-0010, 2026-11-04)** — keep as built; organizations access warehouses via `warehouse_organizations` links; no further inventory extras until procurement lands. Owner sign-off pending. |
+
+Reclassified 2026-11-04 (ADR-0010): the `organization` module is **consistent
+with v5.1** — organizations are internal departments of one company (one
+ledger, one tax identity), per ADR-0001/0007.
 | `location` module — Indonesian province→village tree (4 tables, shipped) | `location` schema | Not in any module. Supporting master data at most. |
 | `budgeting` module (8 tables) | `budgeting` schema | No budgeting in any module. |
 | `approval` as a generic engine (7 tables) | `approval` schema | Plan: "simple approvals", "no multi-level approvals". |

@@ -2208,16 +2208,16 @@ Ref: procurement.purchase_return_items.purchase_order_item_id > procurement.purc
 
 Table inventory.warehouses {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [note: "Null means global/company-wide inventory (ADR-0008). Logical reference to auth.organizations.id; cross-module FK intentionally omitted."]
+  organization_id text [note: "Frozen at NULL (ADR-0010): every warehouse is global; organization access comes from warehouse_organizations. Column kept because migrations are append-only. Logical reference to auth.organizations.id; cross-module FK intentionally omitted."]
   code varchar(32) [not null]
   name text [not null]
-  responsible_employee_id uuid [note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
+  responsible_employee_id uuid [note: "Display-only person in charge (ADR-0010); grants no access. Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
   is_default boolean [not null, default: false]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
-  Note: "Warehouse master. Address fields live in warehouse_addresses (strict 1:1). Writes are application-admin-only; no organization role holds warehouse:*."
+  Note: "Warehouse master. Address fields live in warehouse_addresses (strict 1:1). Writes are application-admin-only; no organization role holds warehouse:*. Organization access is granted by warehouse_organizations links (ADR-0010)."
   Indexes {
     (organization_id, code) [unique, name: 'warehouses_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
     (code) [unique, name: 'warehouses_global_code_uq', note: 'WHERE organization_id IS NULL']
@@ -2262,6 +2262,20 @@ Table inventory.warehouse_storages {
   Indexes {
     warehouse_id [name: 'warehouse_storages_warehouse_id_idx']
     (warehouse_id, code) [unique, name: 'warehouse_storages_warehouse_code_uq', note: 'WHERE deleted_at IS NULL']
+  }
+}
+
+Table inventory.warehouse_organizations {
+  id uuid [pk, default: `uuidv7()`]
+  warehouse_id uuid [not null]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Organization module contract."]
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Many-to-many link granting an organization (internal department) access to a global warehouse (ADR-0010). Members act through their role in the active organization; no per-member assignment. Link writes are application-admin-only and audited; unlink is rejected while the organization has open borrowings in the warehouse."
+  Indexes {
+    (warehouse_id, organization_id) [unique, name: 'warehouse_organizations_uq', note: 'WHERE deleted_at IS NULL']
+    organization_id [name: 'warehouse_organizations_organization_id_idx']
   }
 }
 
@@ -2615,6 +2629,7 @@ Table inventory.borrowing_events {
 // Intra-module FKs (Warehouse + Inventory are one module).
 Ref: inventory.warehouse_addresses.warehouse_id > inventory.warehouses.id [delete: cascade]
 Ref: inventory.warehouse_storages.warehouse_id > inventory.warehouses.id [delete: cascade]
+Ref: inventory.warehouse_organizations.warehouse_id > inventory.warehouses.id [delete: cascade]
 Ref: inventory.stock_movements.item_id > inventory.items.id [delete: restrict]
 Ref: inventory.stock_movements.warehouse_id > inventory.warehouses.id [delete: restrict]
 Ref: inventory.stock_movements.bin_id > inventory.warehouse_storages.id [delete: set null]
