@@ -14,7 +14,14 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-04.
+Last synced: 2026-11-05.
+
+> **Sidebar shell note (2026-11-05):** the web-admin sidebar now renders the
+> full M01–M12 nav map (see `progress.md`, "UI — full ERP sidebar shell").
+> Routes marked below as `dbml only` / `Evidence: none` may already have a
+> `ComingSoonPage` stub route (e.g. `/finance/tax/*`, `/procurement/*`,
+> `/crm/*`); a stub is UI scaffolding, **not** feature status. Status here
+> still means real, working functionality.
 
 ---
 

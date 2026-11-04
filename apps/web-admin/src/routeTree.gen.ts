@@ -19,14 +19,46 @@ import { Route as ResetPasswordIndexRouteImport } from './routes/reset-password/
 import { Route as AuthedAccountIndexRouteImport } from './routes/_authed.account.index'
 import { Route as AuthedAccountEmailRouteImport } from './routes/_authed.account.email'
 import { Route as AuthedAccountSessionsRouteImport } from './routes/_authed.account.sessions'
+import { Route as AuthedAssetsIndexRouteImport } from './routes/_authed/assets/index'
+import { Route as AuthedCrmIndexRouteImport } from './routes/_authed/crm/index'
+import { Route as AuthedFinanceIndexRouteImport } from './routes/_authed/finance/index'
+import { Route as AuthedHrIndexRouteImport } from './routes/_authed/hr/index'
 import { Route as AuthedOrganizationsIndexRouteImport } from './routes/_authed/organizations/index'
 import { Route as AuthedOrganizationsOrganizationIdRouteImport } from './routes/_authed/organizations/$organizationId'
 import { Route as AuthedOrganizationsNewRouteImport } from './routes/_authed/organizations/new'
+import { Route as AuthedProcurementIndexRouteImport } from './routes/_authed/procurement/index'
 import { Route as AuthedProfilesIndexRouteImport } from './routes/_authed.profiles.index'
 import { Route as AuthedProfilesEditRouteImport } from './routes/_authed.profiles.edit'
+import { Route as AuthedProjectsIndexRouteImport } from './routes/_authed/projects/index'
+import { Route as AuthedReportsIndexRouteImport } from './routes/_authed/reports/index'
+import { Route as AuthedSalesIndexRouteImport } from './routes/_authed/sales/index'
+import { Route as AuthedSubscriptionIndexRouteImport } from './routes/_authed/subscription/index'
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
 import { Route as AuthedAdminRolesIndexRouteImport } from './routes/_authed/admin/roles/index'
+import { Route as AuthedAdminSettingsIndexRouteImport } from './routes/_authed/admin/settings/index'
 import { Route as AuthedAdminUsersIndexRouteImport } from './routes/_authed/admin/users/index'
+import { Route as AuthedAssetsDepreciationIndexRouteImport } from './routes/_authed/assets/depreciation/index'
+import { Route as AuthedAssetsRegisterIndexRouteImport } from './routes/_authed/assets/register/index'
+import { Route as AuthedAssetsServiceRecordsIndexRouteImport } from './routes/_authed/assets/service-records/index'
+import { Route as AuthedCrmCustomersIndexRouteImport } from './routes/_authed/crm/customers/index'
+import { Route as AuthedCrmLeadsIndexRouteImport } from './routes/_authed/crm/leads/index'
+import { Route as AuthedFinanceAccountsIndexRouteImport } from './routes/_authed/finance/accounts/index'
+import { Route as AuthedFinanceCashBankIndexRouteImport } from './routes/_authed/finance/cash-bank/index'
+import { Route as AuthedFinanceClosingIndexRouteImport } from './routes/_authed/finance/closing/index'
+import { Route as AuthedFinanceExpensesIndexRouteImport } from './routes/_authed/finance/expenses/index'
+import { Route as AuthedFinanceInvestorsIndexRouteImport } from './routes/_authed/finance/investors/index'
+import { Route as AuthedFinanceJournalIndexRouteImport } from './routes/_authed/finance/journal/index'
+import { Route as AuthedFinanceOpeningBalancesIndexRouteImport } from './routes/_authed/finance/opening-balances/index'
+import { Route as AuthedFinancePayablesIndexRouteImport } from './routes/_authed/finance/payables/index'
+import { Route as AuthedFinanceReceivablesIndexRouteImport } from './routes/_authed/finance/receivables/index'
+import { Route as AuthedFinanceReconciliationIndexRouteImport } from './routes/_authed/finance/reconciliation/index'
+import { Route as AuthedFinanceReportsIndexRouteImport } from './routes/_authed/finance/reports/index'
+import { Route as AuthedFinanceTaxIndexRouteImport } from './routes/_authed/finance/tax/index'
+import { Route as AuthedHrAttendanceIndexRouteImport } from './routes/_authed/hr/attendance/index'
+import { Route as AuthedHrEmployeesIndexRouteImport } from './routes/_authed/hr/employees/index'
+import { Route as AuthedHrLeaveIndexRouteImport } from './routes/_authed/hr/leave/index'
+import { Route as AuthedHrOvertimeIndexRouteImport } from './routes/_authed/hr/overtime/index'
+import { Route as AuthedHrPayrollIndexRouteImport } from './routes/_authed/hr/payroll/index'
 import { Route as AuthedInventoryBorrowingsIndexRouteImport } from './routes/_authed/inventory/borrowings/index'
 import { Route as AuthedInventoryBorrowingsBorrowingIdRouteImport } from './routes/_authed/inventory/borrowings/$borrowingId'
 import { Route as AuthedInventoryBorrowingsNewRouteImport } from './routes/_authed/inventory/borrowings/new'
@@ -43,6 +75,24 @@ import { Route as AuthedInventoryWarehousesIndexRouteImport } from './routes/_au
 import { Route as AuthedInventoryWarehousesWarehouseIdRouteImport } from './routes/_authed/inventory/warehouses/$warehouseId'
 import { Route as AuthedInventoryWarehousesNewRouteImport } from './routes/_authed/inventory/warehouses/new'
 import { Route as AuthedOrganizationsOrganizationIdEditRouteImport } from './routes/_authed/organizations/$organizationId.edit'
+import { Route as AuthedProcurementPurchaseOrdersIndexRouteImport } from './routes/_authed/procurement/purchase-orders/index'
+import { Route as AuthedProcurementReceiptsIndexRouteImport } from './routes/_authed/procurement/receipts/index'
+import { Route as AuthedProcurementSuppliersIndexRouteImport } from './routes/_authed/procurement/suppliers/index'
+import { Route as AuthedProjectsBastIndexRouteImport } from './routes/_authed/projects/bast/index'
+import { Route as AuthedProjectsTicketsIndexRouteImport } from './routes/_authed/projects/tickets/index'
+import { Route as AuthedReportsMonthlyArchivesIndexRouteImport } from './routes/_authed/reports/monthly-archives/index'
+import { Route as AuthedSalesDownPaymentsIndexRouteImport } from './routes/_authed/sales/down-payments/index'
+import { Route as AuthedSalesInvoicesIndexRouteImport } from './routes/_authed/sales/invoices/index'
+import { Route as AuthedSalesQuotesIndexRouteImport } from './routes/_authed/sales/quotes/index'
+import { Route as AuthedSalesReceiptsIndexRouteImport } from './routes/_authed/sales/receipts/index'
+import { Route as AuthedSubscriptionActivationsIndexRouteImport } from './routes/_authed/subscription/activations/index'
+import { Route as AuthedSubscriptionApiKeysIndexRouteImport } from './routes/_authed/subscription/api-keys/index'
+import { Route as AuthedFinanceInvestorsProfitSharingIndexRouteImport } from './routes/_authed/finance/investors/profit-sharing/index'
+import { Route as AuthedFinanceInvestorsRegistryIndexRouteImport } from './routes/_authed/finance/investors/registry/index'
+import { Route as AuthedFinanceTaxCorrectionsIndexRouteImport } from './routes/_authed/finance/tax/corrections/index'
+import { Route as AuthedFinanceTaxRecapIndexRouteImport } from './routes/_authed/finance/tax/recap/index'
+import { Route as AuthedFinanceTaxTypesIndexRouteImport } from './routes/_authed/finance/tax/types/index'
+import { Route as AuthedFinanceTaxWithholdingIndexRouteImport } from './routes/_authed/finance/tax/withholding/index'
 import { Route as AuthedInventoryItemsItemIdEditRouteImport } from './routes/_authed/inventory/items/$itemId.edit'
 import { Route as AuthedInventoryStockAdjustmentsIndexRouteImport } from './routes/_authed/inventory/stock/adjustments/index'
 import { Route as AuthedInventoryStockAdjustmentsAdjustmentIdRouteImport } from './routes/_authed/inventory/stock/adjustments/$adjustmentId'
@@ -99,6 +149,26 @@ const AuthedAccountSessionsRoute = AuthedAccountSessionsRouteImport.update({
   path: '/sessions',
   getParentRoute: () => AuthedAccountRoute,
 } as any)
+const AuthedAssetsIndexRoute = AuthedAssetsIndexRouteImport.update({
+  id: '/assets/',
+  path: '/assets/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCrmIndexRoute = AuthedCrmIndexRouteImport.update({
+  id: '/crm/',
+  path: '/crm/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedFinanceIndexRoute = AuthedFinanceIndexRouteImport.update({
+  id: '/finance/',
+  path: '/finance/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHrIndexRoute = AuthedHrIndexRouteImport.update({
+  id: '/hr/',
+  path: '/hr/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedOrganizationsIndexRoute =
   AuthedOrganizationsIndexRouteImport.update({
     id: '/organizations/',
@@ -116,6 +186,11 @@ const AuthedOrganizationsNewRoute = AuthedOrganizationsNewRouteImport.update({
   path: '/organizations/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedProcurementIndexRoute = AuthedProcurementIndexRouteImport.update({
+  id: '/procurement/',
+  path: '/procurement/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedProfilesIndexRoute = AuthedProfilesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -125,6 +200,26 @@ const AuthedProfilesEditRoute = AuthedProfilesEditRouteImport.update({
   id: '/edit',
   path: '/edit',
   getParentRoute: () => AuthedProfilesRoute,
+} as any)
+const AuthedProjectsIndexRoute = AuthedProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedReportsIndexRoute = AuthedReportsIndexRouteImport.update({
+  id: '/reports/',
+  path: '/reports/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSalesIndexRoute = AuthedSalesIndexRouteImport.update({
+  id: '/sales/',
+  path: '/sales/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSubscriptionIndexRoute = AuthedSubscriptionIndexRouteImport.update({
+  id: '/subscription/',
+  path: '/subscription/',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAdminAuditIndexRoute = AuthedAdminAuditIndexRouteImport.update({
   id: '/admin/audit/',
@@ -136,9 +231,139 @@ const AuthedAdminRolesIndexRoute = AuthedAdminRolesIndexRouteImport.update({
   path: '/admin/roles/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedAdminSettingsIndexRoute =
+  AuthedAdminSettingsIndexRouteImport.update({
+    id: '/admin/settings/',
+    path: '/admin/settings/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedAdminUsersIndexRoute = AuthedAdminUsersIndexRouteImport.update({
   id: '/admin/users/',
   path: '/admin/users/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAssetsDepreciationIndexRoute =
+  AuthedAssetsDepreciationIndexRouteImport.update({
+    id: '/assets/depreciation/',
+    path: '/assets/depreciation/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedAssetsRegisterIndexRoute =
+  AuthedAssetsRegisterIndexRouteImport.update({
+    id: '/assets/register/',
+    path: '/assets/register/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedAssetsServiceRecordsIndexRoute =
+  AuthedAssetsServiceRecordsIndexRouteImport.update({
+    id: '/assets/service-records/',
+    path: '/assets/service-records/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedCrmCustomersIndexRoute = AuthedCrmCustomersIndexRouteImport.update({
+  id: '/crm/customers/',
+  path: '/crm/customers/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCrmLeadsIndexRoute = AuthedCrmLeadsIndexRouteImport.update({
+  id: '/crm/leads/',
+  path: '/crm/leads/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedFinanceAccountsIndexRoute =
+  AuthedFinanceAccountsIndexRouteImport.update({
+    id: '/finance/accounts/',
+    path: '/finance/accounts/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceCashBankIndexRoute =
+  AuthedFinanceCashBankIndexRouteImport.update({
+    id: '/finance/cash-bank/',
+    path: '/finance/cash-bank/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceClosingIndexRoute =
+  AuthedFinanceClosingIndexRouteImport.update({
+    id: '/finance/closing/',
+    path: '/finance/closing/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceExpensesIndexRoute =
+  AuthedFinanceExpensesIndexRouteImport.update({
+    id: '/finance/expenses/',
+    path: '/finance/expenses/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceInvestorsIndexRoute =
+  AuthedFinanceInvestorsIndexRouteImport.update({
+    id: '/finance/investors/',
+    path: '/finance/investors/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceJournalIndexRoute =
+  AuthedFinanceJournalIndexRouteImport.update({
+    id: '/finance/journal/',
+    path: '/finance/journal/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceOpeningBalancesIndexRoute =
+  AuthedFinanceOpeningBalancesIndexRouteImport.update({
+    id: '/finance/opening-balances/',
+    path: '/finance/opening-balances/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinancePayablesIndexRoute =
+  AuthedFinancePayablesIndexRouteImport.update({
+    id: '/finance/payables/',
+    path: '/finance/payables/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceReceivablesIndexRoute =
+  AuthedFinanceReceivablesIndexRouteImport.update({
+    id: '/finance/receivables/',
+    path: '/finance/receivables/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceReconciliationIndexRoute =
+  AuthedFinanceReconciliationIndexRouteImport.update({
+    id: '/finance/reconciliation/',
+    path: '/finance/reconciliation/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceReportsIndexRoute =
+  AuthedFinanceReportsIndexRouteImport.update({
+    id: '/finance/reports/',
+    path: '/finance/reports/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceTaxIndexRoute = AuthedFinanceTaxIndexRouteImport.update({
+  id: '/finance/tax/',
+  path: '/finance/tax/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHrAttendanceIndexRoute = AuthedHrAttendanceIndexRouteImport.update({
+  id: '/hr/attendance/',
+  path: '/hr/attendance/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHrEmployeesIndexRoute = AuthedHrEmployeesIndexRouteImport.update({
+  id: '/hr/employees/',
+  path: '/hr/employees/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHrLeaveIndexRoute = AuthedHrLeaveIndexRouteImport.update({
+  id: '/hr/leave/',
+  path: '/hr/leave/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHrOvertimeIndexRoute = AuthedHrOvertimeIndexRouteImport.update({
+  id: '/hr/overtime/',
+  path: '/hr/overtime/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHrPayrollIndexRoute = AuthedHrPayrollIndexRouteImport.update({
+  id: '/hr/payroll/',
+  path: '/hr/payroll/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedInventoryBorrowingsIndexRoute =
@@ -236,6 +461,112 @@ const AuthedOrganizationsOrganizationIdEditRoute =
     path: '/edit',
     getParentRoute: () => AuthedOrganizationsOrganizationIdRoute,
   } as any)
+const AuthedProcurementPurchaseOrdersIndexRoute =
+  AuthedProcurementPurchaseOrdersIndexRouteImport.update({
+    id: '/procurement/purchase-orders/',
+    path: '/procurement/purchase-orders/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedProcurementReceiptsIndexRoute =
+  AuthedProcurementReceiptsIndexRouteImport.update({
+    id: '/procurement/receipts/',
+    path: '/procurement/receipts/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedProcurementSuppliersIndexRoute =
+  AuthedProcurementSuppliersIndexRouteImport.update({
+    id: '/procurement/suppliers/',
+    path: '/procurement/suppliers/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedProjectsBastIndexRoute = AuthedProjectsBastIndexRouteImport.update({
+  id: '/projects/bast/',
+  path: '/projects/bast/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedProjectsTicketsIndexRoute =
+  AuthedProjectsTicketsIndexRouteImport.update({
+    id: '/projects/tickets/',
+    path: '/projects/tickets/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedReportsMonthlyArchivesIndexRoute =
+  AuthedReportsMonthlyArchivesIndexRouteImport.update({
+    id: '/reports/monthly-archives/',
+    path: '/reports/monthly-archives/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedSalesDownPaymentsIndexRoute =
+  AuthedSalesDownPaymentsIndexRouteImport.update({
+    id: '/sales/down-payments/',
+    path: '/sales/down-payments/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedSalesInvoicesIndexRoute =
+  AuthedSalesInvoicesIndexRouteImport.update({
+    id: '/sales/invoices/',
+    path: '/sales/invoices/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedSalesQuotesIndexRoute = AuthedSalesQuotesIndexRouteImport.update({
+  id: '/sales/quotes/',
+  path: '/sales/quotes/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSalesReceiptsIndexRoute =
+  AuthedSalesReceiptsIndexRouteImport.update({
+    id: '/sales/receipts/',
+    path: '/sales/receipts/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedSubscriptionActivationsIndexRoute =
+  AuthedSubscriptionActivationsIndexRouteImport.update({
+    id: '/subscription/activations/',
+    path: '/subscription/activations/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedSubscriptionApiKeysIndexRoute =
+  AuthedSubscriptionApiKeysIndexRouteImport.update({
+    id: '/subscription/api-keys/',
+    path: '/subscription/api-keys/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceInvestorsProfitSharingIndexRoute =
+  AuthedFinanceInvestorsProfitSharingIndexRouteImport.update({
+    id: '/finance/investors/profit-sharing/',
+    path: '/finance/investors/profit-sharing/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceInvestorsRegistryIndexRoute =
+  AuthedFinanceInvestorsRegistryIndexRouteImport.update({
+    id: '/finance/investors/registry/',
+    path: '/finance/investors/registry/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceTaxCorrectionsIndexRoute =
+  AuthedFinanceTaxCorrectionsIndexRouteImport.update({
+    id: '/finance/tax/corrections/',
+    path: '/finance/tax/corrections/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceTaxRecapIndexRoute =
+  AuthedFinanceTaxRecapIndexRouteImport.update({
+    id: '/finance/tax/recap/',
+    path: '/finance/tax/recap/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceTaxTypesIndexRoute =
+  AuthedFinanceTaxTypesIndexRouteImport.update({
+    id: '/finance/tax/types/',
+    path: '/finance/tax/types/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceTaxWithholdingIndexRoute =
+  AuthedFinanceTaxWithholdingIndexRouteImport.update({
+    id: '/finance/tax/withholding/',
+    path: '/finance/tax/withholding/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedInventoryItemsItemIdEditRoute =
   AuthedInventoryItemsItemIdEditRouteImport.update({
     id: '/edit',
@@ -286,8 +617,17 @@ export interface FileRoutesByFullPath {
   '/organizations/new': typeof AuthedOrganizationsNewRoute
   '/profiles/edit': typeof AuthedProfilesEditRoute
   '/account/': typeof AuthedAccountIndexRoute
+  '/assets/': typeof AuthedAssetsIndexRoute
+  '/crm/': typeof AuthedCrmIndexRoute
+  '/finance/': typeof AuthedFinanceIndexRoute
+  '/hr/': typeof AuthedHrIndexRoute
   '/organizations/': typeof AuthedOrganizationsIndexRoute
+  '/procurement/': typeof AuthedProcurementIndexRoute
   '/profiles/': typeof AuthedProfilesIndexRoute
+  '/projects/': typeof AuthedProjectsIndexRoute
+  '/reports/': typeof AuthedReportsIndexRoute
+  '/sales/': typeof AuthedSalesIndexRoute
+  '/subscription/': typeof AuthedSubscriptionIndexRoute
   '/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
   '/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -299,7 +639,30 @@ export interface FileRoutesByFullPath {
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/admin/audit/': typeof AuthedAdminAuditIndexRoute
   '/admin/roles/': typeof AuthedAdminRolesIndexRoute
+  '/admin/settings/': typeof AuthedAdminSettingsIndexRoute
   '/admin/users/': typeof AuthedAdminUsersIndexRoute
+  '/assets/depreciation/': typeof AuthedAssetsDepreciationIndexRoute
+  '/assets/register/': typeof AuthedAssetsRegisterIndexRoute
+  '/assets/service-records/': typeof AuthedAssetsServiceRecordsIndexRoute
+  '/crm/customers/': typeof AuthedCrmCustomersIndexRoute
+  '/crm/leads/': typeof AuthedCrmLeadsIndexRoute
+  '/finance/accounts/': typeof AuthedFinanceAccountsIndexRoute
+  '/finance/cash-bank/': typeof AuthedFinanceCashBankIndexRoute
+  '/finance/closing/': typeof AuthedFinanceClosingIndexRoute
+  '/finance/expenses/': typeof AuthedFinanceExpensesIndexRoute
+  '/finance/investors/': typeof AuthedFinanceInvestorsIndexRoute
+  '/finance/journal/': typeof AuthedFinanceJournalIndexRoute
+  '/finance/opening-balances/': typeof AuthedFinanceOpeningBalancesIndexRoute
+  '/finance/payables/': typeof AuthedFinancePayablesIndexRoute
+  '/finance/receivables/': typeof AuthedFinanceReceivablesIndexRoute
+  '/finance/reconciliation/': typeof AuthedFinanceReconciliationIndexRoute
+  '/finance/reports/': typeof AuthedFinanceReportsIndexRoute
+  '/finance/tax/': typeof AuthedFinanceTaxIndexRoute
+  '/hr/attendance/': typeof AuthedHrAttendanceIndexRoute
+  '/hr/employees/': typeof AuthedHrEmployeesIndexRoute
+  '/hr/leave/': typeof AuthedHrLeaveIndexRoute
+  '/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
+  '/hr/payroll/': typeof AuthedHrPayrollIndexRoute
   '/inventory/borrowings/': typeof AuthedInventoryBorrowingsIndexRoute
   '/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
@@ -307,10 +670,28 @@ export interface FileRoutesByFullPath {
   '/inventory/stock/': typeof AuthedInventoryStockIndexRoute
   '/inventory/tools/': typeof AuthedInventoryToolsIndexRoute
   '/inventory/warehouses/': typeof AuthedInventoryWarehousesIndexRoute
+  '/procurement/purchase-orders/': typeof AuthedProcurementPurchaseOrdersIndexRoute
+  '/procurement/receipts/': typeof AuthedProcurementReceiptsIndexRoute
+  '/procurement/suppliers/': typeof AuthedProcurementSuppliersIndexRoute
+  '/projects/bast/': typeof AuthedProjectsBastIndexRoute
+  '/projects/tickets/': typeof AuthedProjectsTicketsIndexRoute
+  '/reports/monthly-archives/': typeof AuthedReportsMonthlyArchivesIndexRoute
+  '/sales/down-payments/': typeof AuthedSalesDownPaymentsIndexRoute
+  '/sales/invoices/': typeof AuthedSalesInvoicesIndexRoute
+  '/sales/quotes/': typeof AuthedSalesQuotesIndexRoute
+  '/sales/receipts/': typeof AuthedSalesReceiptsIndexRoute
+  '/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
+  '/subscription/api-keys/': typeof AuthedSubscriptionApiKeysIndexRoute
   '/inventory/items/$itemId/edit': typeof AuthedInventoryItemsItemIdEditRoute
   '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/inventory/warehouses/$warehouseId/edit': typeof AuthedInventoryWarehousesWarehouseIdEditRoute
   '/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
+  '/finance/investors/profit-sharing/': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
+  '/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
+  '/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
+  '/finance/tax/recap/': typeof AuthedFinanceTaxRecapIndexRoute
+  '/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
+  '/finance/tax/withholding/': typeof AuthedFinanceTaxWithholdingIndexRoute
   '/inventory/stock/adjustments/': typeof AuthedInventoryStockAdjustmentsIndexRoute
   '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
 }
@@ -325,8 +706,17 @@ export interface FileRoutesByTo {
   '/organizations/new': typeof AuthedOrganizationsNewRoute
   '/profiles/edit': typeof AuthedProfilesEditRoute
   '/account': typeof AuthedAccountIndexRoute
+  '/assets': typeof AuthedAssetsIndexRoute
+  '/crm': typeof AuthedCrmIndexRoute
+  '/finance': typeof AuthedFinanceIndexRoute
+  '/hr': typeof AuthedHrIndexRoute
   '/organizations': typeof AuthedOrganizationsIndexRoute
+  '/procurement': typeof AuthedProcurementIndexRoute
   '/profiles': typeof AuthedProfilesIndexRoute
+  '/projects': typeof AuthedProjectsIndexRoute
+  '/reports': typeof AuthedReportsIndexRoute
+  '/sales': typeof AuthedSalesIndexRoute
+  '/subscription': typeof AuthedSubscriptionIndexRoute
   '/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
   '/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -338,7 +728,30 @@ export interface FileRoutesByTo {
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/admin/audit': typeof AuthedAdminAuditIndexRoute
   '/admin/roles': typeof AuthedAdminRolesIndexRoute
+  '/admin/settings': typeof AuthedAdminSettingsIndexRoute
   '/admin/users': typeof AuthedAdminUsersIndexRoute
+  '/assets/depreciation': typeof AuthedAssetsDepreciationIndexRoute
+  '/assets/register': typeof AuthedAssetsRegisterIndexRoute
+  '/assets/service-records': typeof AuthedAssetsServiceRecordsIndexRoute
+  '/crm/customers': typeof AuthedCrmCustomersIndexRoute
+  '/crm/leads': typeof AuthedCrmLeadsIndexRoute
+  '/finance/accounts': typeof AuthedFinanceAccountsIndexRoute
+  '/finance/cash-bank': typeof AuthedFinanceCashBankIndexRoute
+  '/finance/closing': typeof AuthedFinanceClosingIndexRoute
+  '/finance/expenses': typeof AuthedFinanceExpensesIndexRoute
+  '/finance/investors': typeof AuthedFinanceInvestorsIndexRoute
+  '/finance/journal': typeof AuthedFinanceJournalIndexRoute
+  '/finance/opening-balances': typeof AuthedFinanceOpeningBalancesIndexRoute
+  '/finance/payables': typeof AuthedFinancePayablesIndexRoute
+  '/finance/receivables': typeof AuthedFinanceReceivablesIndexRoute
+  '/finance/reconciliation': typeof AuthedFinanceReconciliationIndexRoute
+  '/finance/reports': typeof AuthedFinanceReportsIndexRoute
+  '/finance/tax': typeof AuthedFinanceTaxIndexRoute
+  '/hr/attendance': typeof AuthedHrAttendanceIndexRoute
+  '/hr/employees': typeof AuthedHrEmployeesIndexRoute
+  '/hr/leave': typeof AuthedHrLeaveIndexRoute
+  '/hr/overtime': typeof AuthedHrOvertimeIndexRoute
+  '/hr/payroll': typeof AuthedHrPayrollIndexRoute
   '/inventory/borrowings': typeof AuthedInventoryBorrowingsIndexRoute
   '/inventory/components': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials': typeof AuthedInventoryMaterialsIndexRoute
@@ -346,10 +759,28 @@ export interface FileRoutesByTo {
   '/inventory/stock': typeof AuthedInventoryStockIndexRoute
   '/inventory/tools': typeof AuthedInventoryToolsIndexRoute
   '/inventory/warehouses': typeof AuthedInventoryWarehousesIndexRoute
+  '/procurement/purchase-orders': typeof AuthedProcurementPurchaseOrdersIndexRoute
+  '/procurement/receipts': typeof AuthedProcurementReceiptsIndexRoute
+  '/procurement/suppliers': typeof AuthedProcurementSuppliersIndexRoute
+  '/projects/bast': typeof AuthedProjectsBastIndexRoute
+  '/projects/tickets': typeof AuthedProjectsTicketsIndexRoute
+  '/reports/monthly-archives': typeof AuthedReportsMonthlyArchivesIndexRoute
+  '/sales/down-payments': typeof AuthedSalesDownPaymentsIndexRoute
+  '/sales/invoices': typeof AuthedSalesInvoicesIndexRoute
+  '/sales/quotes': typeof AuthedSalesQuotesIndexRoute
+  '/sales/receipts': typeof AuthedSalesReceiptsIndexRoute
+  '/subscription/activations': typeof AuthedSubscriptionActivationsIndexRoute
+  '/subscription/api-keys': typeof AuthedSubscriptionApiKeysIndexRoute
   '/inventory/items/$itemId/edit': typeof AuthedInventoryItemsItemIdEditRoute
   '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/inventory/warehouses/$warehouseId/edit': typeof AuthedInventoryWarehousesWarehouseIdEditRoute
   '/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
+  '/finance/investors/profit-sharing': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
+  '/finance/investors/registry': typeof AuthedFinanceInvestorsRegistryIndexRoute
+  '/finance/tax/corrections': typeof AuthedFinanceTaxCorrectionsIndexRoute
+  '/finance/tax/recap': typeof AuthedFinanceTaxRecapIndexRoute
+  '/finance/tax/types': typeof AuthedFinanceTaxTypesIndexRoute
+  '/finance/tax/withholding': typeof AuthedFinanceTaxWithholdingIndexRoute
   '/inventory/stock/adjustments': typeof AuthedInventoryStockAdjustmentsIndexRoute
   '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
 }
@@ -368,8 +799,17 @@ export interface FileRoutesById {
   '/_authed/organizations/new': typeof AuthedOrganizationsNewRoute
   '/_authed/profiles/edit': typeof AuthedProfilesEditRoute
   '/_authed/account/': typeof AuthedAccountIndexRoute
+  '/_authed/assets/': typeof AuthedAssetsIndexRoute
+  '/_authed/crm/': typeof AuthedCrmIndexRoute
+  '/_authed/finance/': typeof AuthedFinanceIndexRoute
+  '/_authed/hr/': typeof AuthedHrIndexRoute
   '/_authed/organizations/': typeof AuthedOrganizationsIndexRoute
+  '/_authed/procurement/': typeof AuthedProcurementIndexRoute
   '/_authed/profiles/': typeof AuthedProfilesIndexRoute
+  '/_authed/projects/': typeof AuthedProjectsIndexRoute
+  '/_authed/reports/': typeof AuthedReportsIndexRoute
+  '/_authed/sales/': typeof AuthedSalesIndexRoute
+  '/_authed/subscription/': typeof AuthedSubscriptionIndexRoute
   '/_authed/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
   '/_authed/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/_authed/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -381,7 +821,30 @@ export interface FileRoutesById {
   '/_authed/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/_authed/admin/audit/': typeof AuthedAdminAuditIndexRoute
   '/_authed/admin/roles/': typeof AuthedAdminRolesIndexRoute
+  '/_authed/admin/settings/': typeof AuthedAdminSettingsIndexRoute
   '/_authed/admin/users/': typeof AuthedAdminUsersIndexRoute
+  '/_authed/assets/depreciation/': typeof AuthedAssetsDepreciationIndexRoute
+  '/_authed/assets/register/': typeof AuthedAssetsRegisterIndexRoute
+  '/_authed/assets/service-records/': typeof AuthedAssetsServiceRecordsIndexRoute
+  '/_authed/crm/customers/': typeof AuthedCrmCustomersIndexRoute
+  '/_authed/crm/leads/': typeof AuthedCrmLeadsIndexRoute
+  '/_authed/finance/accounts/': typeof AuthedFinanceAccountsIndexRoute
+  '/_authed/finance/cash-bank/': typeof AuthedFinanceCashBankIndexRoute
+  '/_authed/finance/closing/': typeof AuthedFinanceClosingIndexRoute
+  '/_authed/finance/expenses/': typeof AuthedFinanceExpensesIndexRoute
+  '/_authed/finance/investors/': typeof AuthedFinanceInvestorsIndexRoute
+  '/_authed/finance/journal/': typeof AuthedFinanceJournalIndexRoute
+  '/_authed/finance/opening-balances/': typeof AuthedFinanceOpeningBalancesIndexRoute
+  '/_authed/finance/payables/': typeof AuthedFinancePayablesIndexRoute
+  '/_authed/finance/receivables/': typeof AuthedFinanceReceivablesIndexRoute
+  '/_authed/finance/reconciliation/': typeof AuthedFinanceReconciliationIndexRoute
+  '/_authed/finance/reports/': typeof AuthedFinanceReportsIndexRoute
+  '/_authed/finance/tax/': typeof AuthedFinanceTaxIndexRoute
+  '/_authed/hr/attendance/': typeof AuthedHrAttendanceIndexRoute
+  '/_authed/hr/employees/': typeof AuthedHrEmployeesIndexRoute
+  '/_authed/hr/leave/': typeof AuthedHrLeaveIndexRoute
+  '/_authed/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
+  '/_authed/hr/payroll/': typeof AuthedHrPayrollIndexRoute
   '/_authed/inventory/borrowings/': typeof AuthedInventoryBorrowingsIndexRoute
   '/_authed/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/_authed/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
@@ -389,10 +852,28 @@ export interface FileRoutesById {
   '/_authed/inventory/stock/': typeof AuthedInventoryStockIndexRoute
   '/_authed/inventory/tools/': typeof AuthedInventoryToolsIndexRoute
   '/_authed/inventory/warehouses/': typeof AuthedInventoryWarehousesIndexRoute
+  '/_authed/procurement/purchase-orders/': typeof AuthedProcurementPurchaseOrdersIndexRoute
+  '/_authed/procurement/receipts/': typeof AuthedProcurementReceiptsIndexRoute
+  '/_authed/procurement/suppliers/': typeof AuthedProcurementSuppliersIndexRoute
+  '/_authed/projects/bast/': typeof AuthedProjectsBastIndexRoute
+  '/_authed/projects/tickets/': typeof AuthedProjectsTicketsIndexRoute
+  '/_authed/reports/monthly-archives/': typeof AuthedReportsMonthlyArchivesIndexRoute
+  '/_authed/sales/down-payments/': typeof AuthedSalesDownPaymentsIndexRoute
+  '/_authed/sales/invoices/': typeof AuthedSalesInvoicesIndexRoute
+  '/_authed/sales/quotes/': typeof AuthedSalesQuotesIndexRoute
+  '/_authed/sales/receipts/': typeof AuthedSalesReceiptsIndexRoute
+  '/_authed/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
+  '/_authed/subscription/api-keys/': typeof AuthedSubscriptionApiKeysIndexRoute
   '/_authed/inventory/items/$itemId/edit': typeof AuthedInventoryItemsItemIdEditRoute
   '/_authed/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/_authed/inventory/warehouses/$warehouseId/edit': typeof AuthedInventoryWarehousesWarehouseIdEditRoute
   '/_authed/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
+  '/_authed/finance/investors/profit-sharing/': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
+  '/_authed/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
+  '/_authed/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
+  '/_authed/finance/tax/recap/': typeof AuthedFinanceTaxRecapIndexRoute
+  '/_authed/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
+  '/_authed/finance/tax/withholding/': typeof AuthedFinanceTaxWithholdingIndexRoute
   '/_authed/inventory/stock/adjustments/': typeof AuthedInventoryStockAdjustmentsIndexRoute
   '/_authed/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
 }
@@ -411,8 +892,17 @@ export interface FileRouteTypes {
     | '/organizations/new'
     | '/profiles/edit'
     | '/account/'
+    | '/assets/'
+    | '/crm/'
+    | '/finance/'
+    | '/hr/'
     | '/organizations/'
+    | '/procurement/'
     | '/profiles/'
+    | '/projects/'
+    | '/reports/'
+    | '/sales/'
+    | '/subscription/'
     | '/inventory/borrowings/$borrowingId'
     | '/inventory/borrowings/new'
     | '/inventory/items/$itemId'
@@ -424,7 +914,30 @@ export interface FileRouteTypes {
     | '/organizations/$organizationId/edit'
     | '/admin/audit/'
     | '/admin/roles/'
+    | '/admin/settings/'
     | '/admin/users/'
+    | '/assets/depreciation/'
+    | '/assets/register/'
+    | '/assets/service-records/'
+    | '/crm/customers/'
+    | '/crm/leads/'
+    | '/finance/accounts/'
+    | '/finance/cash-bank/'
+    | '/finance/closing/'
+    | '/finance/expenses/'
+    | '/finance/investors/'
+    | '/finance/journal/'
+    | '/finance/opening-balances/'
+    | '/finance/payables/'
+    | '/finance/receivables/'
+    | '/finance/reconciliation/'
+    | '/finance/reports/'
+    | '/finance/tax/'
+    | '/hr/attendance/'
+    | '/hr/employees/'
+    | '/hr/leave/'
+    | '/hr/overtime/'
+    | '/hr/payroll/'
     | '/inventory/borrowings/'
     | '/inventory/components/'
     | '/inventory/materials/'
@@ -432,10 +945,28 @@ export interface FileRouteTypes {
     | '/inventory/stock/'
     | '/inventory/tools/'
     | '/inventory/warehouses/'
+    | '/procurement/purchase-orders/'
+    | '/procurement/receipts/'
+    | '/procurement/suppliers/'
+    | '/projects/bast/'
+    | '/projects/tickets/'
+    | '/reports/monthly-archives/'
+    | '/sales/down-payments/'
+    | '/sales/invoices/'
+    | '/sales/quotes/'
+    | '/sales/receipts/'
+    | '/subscription/activations/'
+    | '/subscription/api-keys/'
     | '/inventory/items/$itemId/edit'
     | '/inventory/stock/adjustments/$adjustmentId'
     | '/inventory/warehouses/$warehouseId/edit'
     | '/organizations/$organizationId/members/new'
+    | '/finance/investors/profit-sharing/'
+    | '/finance/investors/registry/'
+    | '/finance/tax/corrections/'
+    | '/finance/tax/recap/'
+    | '/finance/tax/types/'
+    | '/finance/tax/withholding/'
     | '/inventory/stock/adjustments/'
     | '/organizations/$organizationId/members/$memberId/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -450,8 +981,17 @@ export interface FileRouteTypes {
     | '/organizations/new'
     | '/profiles/edit'
     | '/account'
+    | '/assets'
+    | '/crm'
+    | '/finance'
+    | '/hr'
     | '/organizations'
+    | '/procurement'
     | '/profiles'
+    | '/projects'
+    | '/reports'
+    | '/sales'
+    | '/subscription'
     | '/inventory/borrowings/$borrowingId'
     | '/inventory/borrowings/new'
     | '/inventory/items/$itemId'
@@ -463,7 +1003,30 @@ export interface FileRouteTypes {
     | '/organizations/$organizationId/edit'
     | '/admin/audit'
     | '/admin/roles'
+    | '/admin/settings'
     | '/admin/users'
+    | '/assets/depreciation'
+    | '/assets/register'
+    | '/assets/service-records'
+    | '/crm/customers'
+    | '/crm/leads'
+    | '/finance/accounts'
+    | '/finance/cash-bank'
+    | '/finance/closing'
+    | '/finance/expenses'
+    | '/finance/investors'
+    | '/finance/journal'
+    | '/finance/opening-balances'
+    | '/finance/payables'
+    | '/finance/receivables'
+    | '/finance/reconciliation'
+    | '/finance/reports'
+    | '/finance/tax'
+    | '/hr/attendance'
+    | '/hr/employees'
+    | '/hr/leave'
+    | '/hr/overtime'
+    | '/hr/payroll'
     | '/inventory/borrowings'
     | '/inventory/components'
     | '/inventory/materials'
@@ -471,10 +1034,28 @@ export interface FileRouteTypes {
     | '/inventory/stock'
     | '/inventory/tools'
     | '/inventory/warehouses'
+    | '/procurement/purchase-orders'
+    | '/procurement/receipts'
+    | '/procurement/suppliers'
+    | '/projects/bast'
+    | '/projects/tickets'
+    | '/reports/monthly-archives'
+    | '/sales/down-payments'
+    | '/sales/invoices'
+    | '/sales/quotes'
+    | '/sales/receipts'
+    | '/subscription/activations'
+    | '/subscription/api-keys'
     | '/inventory/items/$itemId/edit'
     | '/inventory/stock/adjustments/$adjustmentId'
     | '/inventory/warehouses/$warehouseId/edit'
     | '/organizations/$organizationId/members/new'
+    | '/finance/investors/profit-sharing'
+    | '/finance/investors/registry'
+    | '/finance/tax/corrections'
+    | '/finance/tax/recap'
+    | '/finance/tax/types'
+    | '/finance/tax/withholding'
     | '/inventory/stock/adjustments'
     | '/organizations/$organizationId/members/$memberId/edit'
   id:
@@ -492,8 +1073,17 @@ export interface FileRouteTypes {
     | '/_authed/organizations/new'
     | '/_authed/profiles/edit'
     | '/_authed/account/'
+    | '/_authed/assets/'
+    | '/_authed/crm/'
+    | '/_authed/finance/'
+    | '/_authed/hr/'
     | '/_authed/organizations/'
+    | '/_authed/procurement/'
     | '/_authed/profiles/'
+    | '/_authed/projects/'
+    | '/_authed/reports/'
+    | '/_authed/sales/'
+    | '/_authed/subscription/'
     | '/_authed/inventory/borrowings/$borrowingId'
     | '/_authed/inventory/borrowings/new'
     | '/_authed/inventory/items/$itemId'
@@ -505,7 +1095,30 @@ export interface FileRouteTypes {
     | '/_authed/organizations/$organizationId/edit'
     | '/_authed/admin/audit/'
     | '/_authed/admin/roles/'
+    | '/_authed/admin/settings/'
     | '/_authed/admin/users/'
+    | '/_authed/assets/depreciation/'
+    | '/_authed/assets/register/'
+    | '/_authed/assets/service-records/'
+    | '/_authed/crm/customers/'
+    | '/_authed/crm/leads/'
+    | '/_authed/finance/accounts/'
+    | '/_authed/finance/cash-bank/'
+    | '/_authed/finance/closing/'
+    | '/_authed/finance/expenses/'
+    | '/_authed/finance/investors/'
+    | '/_authed/finance/journal/'
+    | '/_authed/finance/opening-balances/'
+    | '/_authed/finance/payables/'
+    | '/_authed/finance/receivables/'
+    | '/_authed/finance/reconciliation/'
+    | '/_authed/finance/reports/'
+    | '/_authed/finance/tax/'
+    | '/_authed/hr/attendance/'
+    | '/_authed/hr/employees/'
+    | '/_authed/hr/leave/'
+    | '/_authed/hr/overtime/'
+    | '/_authed/hr/payroll/'
     | '/_authed/inventory/borrowings/'
     | '/_authed/inventory/components/'
     | '/_authed/inventory/materials/'
@@ -513,10 +1126,28 @@ export interface FileRouteTypes {
     | '/_authed/inventory/stock/'
     | '/_authed/inventory/tools/'
     | '/_authed/inventory/warehouses/'
+    | '/_authed/procurement/purchase-orders/'
+    | '/_authed/procurement/receipts/'
+    | '/_authed/procurement/suppliers/'
+    | '/_authed/projects/bast/'
+    | '/_authed/projects/tickets/'
+    | '/_authed/reports/monthly-archives/'
+    | '/_authed/sales/down-payments/'
+    | '/_authed/sales/invoices/'
+    | '/_authed/sales/quotes/'
+    | '/_authed/sales/receipts/'
+    | '/_authed/subscription/activations/'
+    | '/_authed/subscription/api-keys/'
     | '/_authed/inventory/items/$itemId/edit'
     | '/_authed/inventory/stock/adjustments/$adjustmentId'
     | '/_authed/inventory/warehouses/$warehouseId/edit'
     | '/_authed/organizations/$organizationId/members/new'
+    | '/_authed/finance/investors/profit-sharing/'
+    | '/_authed/finance/investors/registry/'
+    | '/_authed/finance/tax/corrections/'
+    | '/_authed/finance/tax/recap/'
+    | '/_authed/finance/tax/types/'
+    | '/_authed/finance/tax/withholding/'
     | '/_authed/inventory/stock/adjustments/'
     | '/_authed/organizations/$organizationId/members/$memberId/edit'
   fileRoutesById: FileRoutesById
@@ -600,6 +1231,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAccountSessionsRouteImport
       parentRoute: typeof AuthedAccountRoute
     }
+    '/_authed/assets/': {
+      id: '/_authed/assets/'
+      path: '/assets'
+      fullPath: '/assets/'
+      preLoaderRoute: typeof AuthedAssetsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/crm/': {
+      id: '/_authed/crm/'
+      path: '/crm'
+      fullPath: '/crm/'
+      preLoaderRoute: typeof AuthedCrmIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/': {
+      id: '/_authed/finance/'
+      path: '/finance'
+      fullPath: '/finance/'
+      preLoaderRoute: typeof AuthedFinanceIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/': {
+      id: '/_authed/hr/'
+      path: '/hr'
+      fullPath: '/hr/'
+      preLoaderRoute: typeof AuthedHrIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/organizations/': {
       id: '/_authed/organizations/'
       path: '/organizations'
@@ -621,6 +1280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedOrganizationsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/procurement/': {
+      id: '/_authed/procurement/'
+      path: '/procurement'
+      fullPath: '/procurement/'
+      preLoaderRoute: typeof AuthedProcurementIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/profiles/': {
       id: '/_authed/profiles/'
       path: '/'
@@ -634,6 +1300,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/profiles/edit'
       preLoaderRoute: typeof AuthedProfilesEditRouteImport
       parentRoute: typeof AuthedProfilesRoute
+    }
+    '/_authed/projects/': {
+      id: '/_authed/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof AuthedProjectsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/reports/': {
+      id: '/_authed/reports/'
+      path: '/reports'
+      fullPath: '/reports/'
+      preLoaderRoute: typeof AuthedReportsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/sales/': {
+      id: '/_authed/sales/'
+      path: '/sales'
+      fullPath: '/sales/'
+      preLoaderRoute: typeof AuthedSalesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/subscription/': {
+      id: '/_authed/subscription/'
+      path: '/subscription'
+      fullPath: '/subscription/'
+      preLoaderRoute: typeof AuthedSubscriptionIndexRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/admin/audit/': {
       id: '/_authed/admin/audit/'
@@ -649,11 +1343,172 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminRolesIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/admin/settings/': {
+      id: '/_authed/admin/settings/'
+      path: '/admin/settings'
+      fullPath: '/admin/settings/'
+      preLoaderRoute: typeof AuthedAdminSettingsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/admin/users/': {
       id: '/_authed/admin/users/'
       path: '/admin/users'
       fullPath: '/admin/users/'
       preLoaderRoute: typeof AuthedAdminUsersIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/assets/depreciation/': {
+      id: '/_authed/assets/depreciation/'
+      path: '/assets/depreciation'
+      fullPath: '/assets/depreciation/'
+      preLoaderRoute: typeof AuthedAssetsDepreciationIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/assets/register/': {
+      id: '/_authed/assets/register/'
+      path: '/assets/register'
+      fullPath: '/assets/register/'
+      preLoaderRoute: typeof AuthedAssetsRegisterIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/assets/service-records/': {
+      id: '/_authed/assets/service-records/'
+      path: '/assets/service-records'
+      fullPath: '/assets/service-records/'
+      preLoaderRoute: typeof AuthedAssetsServiceRecordsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/crm/customers/': {
+      id: '/_authed/crm/customers/'
+      path: '/crm/customers'
+      fullPath: '/crm/customers/'
+      preLoaderRoute: typeof AuthedCrmCustomersIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/crm/leads/': {
+      id: '/_authed/crm/leads/'
+      path: '/crm/leads'
+      fullPath: '/crm/leads/'
+      preLoaderRoute: typeof AuthedCrmLeadsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/accounts/': {
+      id: '/_authed/finance/accounts/'
+      path: '/finance/accounts'
+      fullPath: '/finance/accounts/'
+      preLoaderRoute: typeof AuthedFinanceAccountsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/cash-bank/': {
+      id: '/_authed/finance/cash-bank/'
+      path: '/finance/cash-bank'
+      fullPath: '/finance/cash-bank/'
+      preLoaderRoute: typeof AuthedFinanceCashBankIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/closing/': {
+      id: '/_authed/finance/closing/'
+      path: '/finance/closing'
+      fullPath: '/finance/closing/'
+      preLoaderRoute: typeof AuthedFinanceClosingIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/expenses/': {
+      id: '/_authed/finance/expenses/'
+      path: '/finance/expenses'
+      fullPath: '/finance/expenses/'
+      preLoaderRoute: typeof AuthedFinanceExpensesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/investors/': {
+      id: '/_authed/finance/investors/'
+      path: '/finance/investors'
+      fullPath: '/finance/investors/'
+      preLoaderRoute: typeof AuthedFinanceInvestorsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/journal/': {
+      id: '/_authed/finance/journal/'
+      path: '/finance/journal'
+      fullPath: '/finance/journal/'
+      preLoaderRoute: typeof AuthedFinanceJournalIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/opening-balances/': {
+      id: '/_authed/finance/opening-balances/'
+      path: '/finance/opening-balances'
+      fullPath: '/finance/opening-balances/'
+      preLoaderRoute: typeof AuthedFinanceOpeningBalancesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/payables/': {
+      id: '/_authed/finance/payables/'
+      path: '/finance/payables'
+      fullPath: '/finance/payables/'
+      preLoaderRoute: typeof AuthedFinancePayablesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/receivables/': {
+      id: '/_authed/finance/receivables/'
+      path: '/finance/receivables'
+      fullPath: '/finance/receivables/'
+      preLoaderRoute: typeof AuthedFinanceReceivablesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/reconciliation/': {
+      id: '/_authed/finance/reconciliation/'
+      path: '/finance/reconciliation'
+      fullPath: '/finance/reconciliation/'
+      preLoaderRoute: typeof AuthedFinanceReconciliationIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/reports/': {
+      id: '/_authed/finance/reports/'
+      path: '/finance/reports'
+      fullPath: '/finance/reports/'
+      preLoaderRoute: typeof AuthedFinanceReportsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/tax/': {
+      id: '/_authed/finance/tax/'
+      path: '/finance/tax'
+      fullPath: '/finance/tax/'
+      preLoaderRoute: typeof AuthedFinanceTaxIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/attendance/': {
+      id: '/_authed/hr/attendance/'
+      path: '/hr/attendance'
+      fullPath: '/hr/attendance/'
+      preLoaderRoute: typeof AuthedHrAttendanceIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/employees/': {
+      id: '/_authed/hr/employees/'
+      path: '/hr/employees'
+      fullPath: '/hr/employees/'
+      preLoaderRoute: typeof AuthedHrEmployeesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/leave/': {
+      id: '/_authed/hr/leave/'
+      path: '/hr/leave'
+      fullPath: '/hr/leave/'
+      preLoaderRoute: typeof AuthedHrLeaveIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/overtime/': {
+      id: '/_authed/hr/overtime/'
+      path: '/hr/overtime'
+      fullPath: '/hr/overtime/'
+      preLoaderRoute: typeof AuthedHrOvertimeIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/payroll/': {
+      id: '/_authed/hr/payroll/'
+      path: '/hr/payroll'
+      fullPath: '/hr/payroll/'
+      preLoaderRoute: typeof AuthedHrPayrollIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/inventory/borrowings/': {
@@ -767,6 +1622,132 @@ declare module '@tanstack/react-router' {
       fullPath: '/organizations/$organizationId/edit'
       preLoaderRoute: typeof AuthedOrganizationsOrganizationIdEditRouteImport
       parentRoute: typeof AuthedOrganizationsOrganizationIdRoute
+    }
+    '/_authed/procurement/purchase-orders/': {
+      id: '/_authed/procurement/purchase-orders/'
+      path: '/procurement/purchase-orders'
+      fullPath: '/procurement/purchase-orders/'
+      preLoaderRoute: typeof AuthedProcurementPurchaseOrdersIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/procurement/receipts/': {
+      id: '/_authed/procurement/receipts/'
+      path: '/procurement/receipts'
+      fullPath: '/procurement/receipts/'
+      preLoaderRoute: typeof AuthedProcurementReceiptsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/procurement/suppliers/': {
+      id: '/_authed/procurement/suppliers/'
+      path: '/procurement/suppliers'
+      fullPath: '/procurement/suppliers/'
+      preLoaderRoute: typeof AuthedProcurementSuppliersIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/projects/bast/': {
+      id: '/_authed/projects/bast/'
+      path: '/projects/bast'
+      fullPath: '/projects/bast/'
+      preLoaderRoute: typeof AuthedProjectsBastIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/projects/tickets/': {
+      id: '/_authed/projects/tickets/'
+      path: '/projects/tickets'
+      fullPath: '/projects/tickets/'
+      preLoaderRoute: typeof AuthedProjectsTicketsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/reports/monthly-archives/': {
+      id: '/_authed/reports/monthly-archives/'
+      path: '/reports/monthly-archives'
+      fullPath: '/reports/monthly-archives/'
+      preLoaderRoute: typeof AuthedReportsMonthlyArchivesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/sales/down-payments/': {
+      id: '/_authed/sales/down-payments/'
+      path: '/sales/down-payments'
+      fullPath: '/sales/down-payments/'
+      preLoaderRoute: typeof AuthedSalesDownPaymentsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/sales/invoices/': {
+      id: '/_authed/sales/invoices/'
+      path: '/sales/invoices'
+      fullPath: '/sales/invoices/'
+      preLoaderRoute: typeof AuthedSalesInvoicesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/sales/quotes/': {
+      id: '/_authed/sales/quotes/'
+      path: '/sales/quotes'
+      fullPath: '/sales/quotes/'
+      preLoaderRoute: typeof AuthedSalesQuotesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/sales/receipts/': {
+      id: '/_authed/sales/receipts/'
+      path: '/sales/receipts'
+      fullPath: '/sales/receipts/'
+      preLoaderRoute: typeof AuthedSalesReceiptsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/subscription/activations/': {
+      id: '/_authed/subscription/activations/'
+      path: '/subscription/activations'
+      fullPath: '/subscription/activations/'
+      preLoaderRoute: typeof AuthedSubscriptionActivationsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/subscription/api-keys/': {
+      id: '/_authed/subscription/api-keys/'
+      path: '/subscription/api-keys'
+      fullPath: '/subscription/api-keys/'
+      preLoaderRoute: typeof AuthedSubscriptionApiKeysIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/investors/profit-sharing/': {
+      id: '/_authed/finance/investors/profit-sharing/'
+      path: '/finance/investors/profit-sharing'
+      fullPath: '/finance/investors/profit-sharing/'
+      preLoaderRoute: typeof AuthedFinanceInvestorsProfitSharingIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/investors/registry/': {
+      id: '/_authed/finance/investors/registry/'
+      path: '/finance/investors/registry'
+      fullPath: '/finance/investors/registry/'
+      preLoaderRoute: typeof AuthedFinanceInvestorsRegistryIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/tax/corrections/': {
+      id: '/_authed/finance/tax/corrections/'
+      path: '/finance/tax/corrections'
+      fullPath: '/finance/tax/corrections/'
+      preLoaderRoute: typeof AuthedFinanceTaxCorrectionsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/tax/recap/': {
+      id: '/_authed/finance/tax/recap/'
+      path: '/finance/tax/recap'
+      fullPath: '/finance/tax/recap/'
+      preLoaderRoute: typeof AuthedFinanceTaxRecapIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/tax/types/': {
+      id: '/_authed/finance/tax/types/'
+      path: '/finance/tax/types'
+      fullPath: '/finance/tax/types/'
+      preLoaderRoute: typeof AuthedFinanceTaxTypesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/tax/withholding/': {
+      id: '/_authed/finance/tax/withholding/'
+      path: '/finance/tax/withholding'
+      fullPath: '/finance/tax/withholding/'
+      preLoaderRoute: typeof AuthedFinanceTaxWithholdingIndexRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/inventory/items/$itemId/edit': {
       id: '/_authed/inventory/items/$itemId/edit'
@@ -899,7 +1880,16 @@ interface AuthedRouteChildren {
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedOrganizationsOrganizationIdRoute: typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   AuthedOrganizationsNewRoute: typeof AuthedOrganizationsNewRoute
+  AuthedAssetsIndexRoute: typeof AuthedAssetsIndexRoute
+  AuthedCrmIndexRoute: typeof AuthedCrmIndexRoute
+  AuthedFinanceIndexRoute: typeof AuthedFinanceIndexRoute
+  AuthedHrIndexRoute: typeof AuthedHrIndexRoute
   AuthedOrganizationsIndexRoute: typeof AuthedOrganizationsIndexRoute
+  AuthedProcurementIndexRoute: typeof AuthedProcurementIndexRoute
+  AuthedProjectsIndexRoute: typeof AuthedProjectsIndexRoute
+  AuthedReportsIndexRoute: typeof AuthedReportsIndexRoute
+  AuthedSalesIndexRoute: typeof AuthedSalesIndexRoute
+  AuthedSubscriptionIndexRoute: typeof AuthedSubscriptionIndexRoute
   AuthedInventoryBorrowingsBorrowingIdRoute: typeof AuthedInventoryBorrowingsBorrowingIdRoute
   AuthedInventoryBorrowingsNewRoute: typeof AuthedInventoryBorrowingsNewRoute
   AuthedInventoryItemsItemIdRoute: typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -910,7 +1900,30 @@ interface AuthedRouteChildren {
   AuthedInventoryWarehousesNewRoute: typeof AuthedInventoryWarehousesNewRoute
   AuthedAdminAuditIndexRoute: typeof AuthedAdminAuditIndexRoute
   AuthedAdminRolesIndexRoute: typeof AuthedAdminRolesIndexRoute
+  AuthedAdminSettingsIndexRoute: typeof AuthedAdminSettingsIndexRoute
   AuthedAdminUsersIndexRoute: typeof AuthedAdminUsersIndexRoute
+  AuthedAssetsDepreciationIndexRoute: typeof AuthedAssetsDepreciationIndexRoute
+  AuthedAssetsRegisterIndexRoute: typeof AuthedAssetsRegisterIndexRoute
+  AuthedAssetsServiceRecordsIndexRoute: typeof AuthedAssetsServiceRecordsIndexRoute
+  AuthedCrmCustomersIndexRoute: typeof AuthedCrmCustomersIndexRoute
+  AuthedCrmLeadsIndexRoute: typeof AuthedCrmLeadsIndexRoute
+  AuthedFinanceAccountsIndexRoute: typeof AuthedFinanceAccountsIndexRoute
+  AuthedFinanceCashBankIndexRoute: typeof AuthedFinanceCashBankIndexRoute
+  AuthedFinanceClosingIndexRoute: typeof AuthedFinanceClosingIndexRoute
+  AuthedFinanceExpensesIndexRoute: typeof AuthedFinanceExpensesIndexRoute
+  AuthedFinanceInvestorsIndexRoute: typeof AuthedFinanceInvestorsIndexRoute
+  AuthedFinanceJournalIndexRoute: typeof AuthedFinanceJournalIndexRoute
+  AuthedFinanceOpeningBalancesIndexRoute: typeof AuthedFinanceOpeningBalancesIndexRoute
+  AuthedFinancePayablesIndexRoute: typeof AuthedFinancePayablesIndexRoute
+  AuthedFinanceReceivablesIndexRoute: typeof AuthedFinanceReceivablesIndexRoute
+  AuthedFinanceReconciliationIndexRoute: typeof AuthedFinanceReconciliationIndexRoute
+  AuthedFinanceReportsIndexRoute: typeof AuthedFinanceReportsIndexRoute
+  AuthedFinanceTaxIndexRoute: typeof AuthedFinanceTaxIndexRoute
+  AuthedHrAttendanceIndexRoute: typeof AuthedHrAttendanceIndexRoute
+  AuthedHrEmployeesIndexRoute: typeof AuthedHrEmployeesIndexRoute
+  AuthedHrLeaveIndexRoute: typeof AuthedHrLeaveIndexRoute
+  AuthedHrOvertimeIndexRoute: typeof AuthedHrOvertimeIndexRoute
+  AuthedHrPayrollIndexRoute: typeof AuthedHrPayrollIndexRoute
   AuthedInventoryBorrowingsIndexRoute: typeof AuthedInventoryBorrowingsIndexRoute
   AuthedInventoryComponentsIndexRoute: typeof AuthedInventoryComponentsIndexRoute
   AuthedInventoryMaterialsIndexRoute: typeof AuthedInventoryMaterialsIndexRoute
@@ -918,7 +1931,25 @@ interface AuthedRouteChildren {
   AuthedInventoryStockIndexRoute: typeof AuthedInventoryStockIndexRoute
   AuthedInventoryToolsIndexRoute: typeof AuthedInventoryToolsIndexRoute
   AuthedInventoryWarehousesIndexRoute: typeof AuthedInventoryWarehousesIndexRoute
+  AuthedProcurementPurchaseOrdersIndexRoute: typeof AuthedProcurementPurchaseOrdersIndexRoute
+  AuthedProcurementReceiptsIndexRoute: typeof AuthedProcurementReceiptsIndexRoute
+  AuthedProcurementSuppliersIndexRoute: typeof AuthedProcurementSuppliersIndexRoute
+  AuthedProjectsBastIndexRoute: typeof AuthedProjectsBastIndexRoute
+  AuthedProjectsTicketsIndexRoute: typeof AuthedProjectsTicketsIndexRoute
+  AuthedReportsMonthlyArchivesIndexRoute: typeof AuthedReportsMonthlyArchivesIndexRoute
+  AuthedSalesDownPaymentsIndexRoute: typeof AuthedSalesDownPaymentsIndexRoute
+  AuthedSalesInvoicesIndexRoute: typeof AuthedSalesInvoicesIndexRoute
+  AuthedSalesQuotesIndexRoute: typeof AuthedSalesQuotesIndexRoute
+  AuthedSalesReceiptsIndexRoute: typeof AuthedSalesReceiptsIndexRoute
+  AuthedSubscriptionActivationsIndexRoute: typeof AuthedSubscriptionActivationsIndexRoute
+  AuthedSubscriptionApiKeysIndexRoute: typeof AuthedSubscriptionApiKeysIndexRoute
   AuthedInventoryStockAdjustmentsAdjustmentIdRoute: typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
+  AuthedFinanceInvestorsProfitSharingIndexRoute: typeof AuthedFinanceInvestorsProfitSharingIndexRoute
+  AuthedFinanceInvestorsRegistryIndexRoute: typeof AuthedFinanceInvestorsRegistryIndexRoute
+  AuthedFinanceTaxCorrectionsIndexRoute: typeof AuthedFinanceTaxCorrectionsIndexRoute
+  AuthedFinanceTaxRecapIndexRoute: typeof AuthedFinanceTaxRecapIndexRoute
+  AuthedFinanceTaxTypesIndexRoute: typeof AuthedFinanceTaxTypesIndexRoute
+  AuthedFinanceTaxWithholdingIndexRoute: typeof AuthedFinanceTaxWithholdingIndexRoute
   AuthedInventoryStockAdjustmentsIndexRoute: typeof AuthedInventoryStockAdjustmentsIndexRoute
 }
 
@@ -929,7 +1960,16 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedOrganizationsOrganizationIdRoute:
     AuthedOrganizationsOrganizationIdRouteWithChildren,
   AuthedOrganizationsNewRoute: AuthedOrganizationsNewRoute,
+  AuthedAssetsIndexRoute: AuthedAssetsIndexRoute,
+  AuthedCrmIndexRoute: AuthedCrmIndexRoute,
+  AuthedFinanceIndexRoute: AuthedFinanceIndexRoute,
+  AuthedHrIndexRoute: AuthedHrIndexRoute,
   AuthedOrganizationsIndexRoute: AuthedOrganizationsIndexRoute,
+  AuthedProcurementIndexRoute: AuthedProcurementIndexRoute,
+  AuthedProjectsIndexRoute: AuthedProjectsIndexRoute,
+  AuthedReportsIndexRoute: AuthedReportsIndexRoute,
+  AuthedSalesIndexRoute: AuthedSalesIndexRoute,
+  AuthedSubscriptionIndexRoute: AuthedSubscriptionIndexRoute,
   AuthedInventoryBorrowingsBorrowingIdRoute:
     AuthedInventoryBorrowingsBorrowingIdRoute,
   AuthedInventoryBorrowingsNewRoute: AuthedInventoryBorrowingsNewRoute,
@@ -942,7 +1982,31 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedInventoryWarehousesNewRoute: AuthedInventoryWarehousesNewRoute,
   AuthedAdminAuditIndexRoute: AuthedAdminAuditIndexRoute,
   AuthedAdminRolesIndexRoute: AuthedAdminRolesIndexRoute,
+  AuthedAdminSettingsIndexRoute: AuthedAdminSettingsIndexRoute,
   AuthedAdminUsersIndexRoute: AuthedAdminUsersIndexRoute,
+  AuthedAssetsDepreciationIndexRoute: AuthedAssetsDepreciationIndexRoute,
+  AuthedAssetsRegisterIndexRoute: AuthedAssetsRegisterIndexRoute,
+  AuthedAssetsServiceRecordsIndexRoute: AuthedAssetsServiceRecordsIndexRoute,
+  AuthedCrmCustomersIndexRoute: AuthedCrmCustomersIndexRoute,
+  AuthedCrmLeadsIndexRoute: AuthedCrmLeadsIndexRoute,
+  AuthedFinanceAccountsIndexRoute: AuthedFinanceAccountsIndexRoute,
+  AuthedFinanceCashBankIndexRoute: AuthedFinanceCashBankIndexRoute,
+  AuthedFinanceClosingIndexRoute: AuthedFinanceClosingIndexRoute,
+  AuthedFinanceExpensesIndexRoute: AuthedFinanceExpensesIndexRoute,
+  AuthedFinanceInvestorsIndexRoute: AuthedFinanceInvestorsIndexRoute,
+  AuthedFinanceJournalIndexRoute: AuthedFinanceJournalIndexRoute,
+  AuthedFinanceOpeningBalancesIndexRoute:
+    AuthedFinanceOpeningBalancesIndexRoute,
+  AuthedFinancePayablesIndexRoute: AuthedFinancePayablesIndexRoute,
+  AuthedFinanceReceivablesIndexRoute: AuthedFinanceReceivablesIndexRoute,
+  AuthedFinanceReconciliationIndexRoute: AuthedFinanceReconciliationIndexRoute,
+  AuthedFinanceReportsIndexRoute: AuthedFinanceReportsIndexRoute,
+  AuthedFinanceTaxIndexRoute: AuthedFinanceTaxIndexRoute,
+  AuthedHrAttendanceIndexRoute: AuthedHrAttendanceIndexRoute,
+  AuthedHrEmployeesIndexRoute: AuthedHrEmployeesIndexRoute,
+  AuthedHrLeaveIndexRoute: AuthedHrLeaveIndexRoute,
+  AuthedHrOvertimeIndexRoute: AuthedHrOvertimeIndexRoute,
+  AuthedHrPayrollIndexRoute: AuthedHrPayrollIndexRoute,
   AuthedInventoryBorrowingsIndexRoute: AuthedInventoryBorrowingsIndexRoute,
   AuthedInventoryComponentsIndexRoute: AuthedInventoryComponentsIndexRoute,
   AuthedInventoryMaterialsIndexRoute: AuthedInventoryMaterialsIndexRoute,
@@ -950,8 +2014,31 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedInventoryStockIndexRoute: AuthedInventoryStockIndexRoute,
   AuthedInventoryToolsIndexRoute: AuthedInventoryToolsIndexRoute,
   AuthedInventoryWarehousesIndexRoute: AuthedInventoryWarehousesIndexRoute,
+  AuthedProcurementPurchaseOrdersIndexRoute:
+    AuthedProcurementPurchaseOrdersIndexRoute,
+  AuthedProcurementReceiptsIndexRoute: AuthedProcurementReceiptsIndexRoute,
+  AuthedProcurementSuppliersIndexRoute: AuthedProcurementSuppliersIndexRoute,
+  AuthedProjectsBastIndexRoute: AuthedProjectsBastIndexRoute,
+  AuthedProjectsTicketsIndexRoute: AuthedProjectsTicketsIndexRoute,
+  AuthedReportsMonthlyArchivesIndexRoute:
+    AuthedReportsMonthlyArchivesIndexRoute,
+  AuthedSalesDownPaymentsIndexRoute: AuthedSalesDownPaymentsIndexRoute,
+  AuthedSalesInvoicesIndexRoute: AuthedSalesInvoicesIndexRoute,
+  AuthedSalesQuotesIndexRoute: AuthedSalesQuotesIndexRoute,
+  AuthedSalesReceiptsIndexRoute: AuthedSalesReceiptsIndexRoute,
+  AuthedSubscriptionActivationsIndexRoute:
+    AuthedSubscriptionActivationsIndexRoute,
+  AuthedSubscriptionApiKeysIndexRoute: AuthedSubscriptionApiKeysIndexRoute,
   AuthedInventoryStockAdjustmentsAdjustmentIdRoute:
     AuthedInventoryStockAdjustmentsAdjustmentIdRoute,
+  AuthedFinanceInvestorsProfitSharingIndexRoute:
+    AuthedFinanceInvestorsProfitSharingIndexRoute,
+  AuthedFinanceInvestorsRegistryIndexRoute:
+    AuthedFinanceInvestorsRegistryIndexRoute,
+  AuthedFinanceTaxCorrectionsIndexRoute: AuthedFinanceTaxCorrectionsIndexRoute,
+  AuthedFinanceTaxRecapIndexRoute: AuthedFinanceTaxRecapIndexRoute,
+  AuthedFinanceTaxTypesIndexRoute: AuthedFinanceTaxTypesIndexRoute,
+  AuthedFinanceTaxWithholdingIndexRoute: AuthedFinanceTaxWithholdingIndexRoute,
   AuthedInventoryStockAdjustmentsIndexRoute:
     AuthedInventoryStockAdjustmentsIndexRoute,
 }

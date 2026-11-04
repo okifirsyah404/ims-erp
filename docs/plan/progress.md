@@ -12,6 +12,54 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## UI — full ERP sidebar shell + placeholder routes (2026-11-05)
+
+Status: **implemented** (UI-first; no backend, schema, migration, or seed
+touched).
+
+- **`apps/web-admin/src/components/sidebar/nav-config.ts` (new)**: single
+  typed nav map covering the docs module plan M01–M12 plus Administration.
+  Sections: Dasbor; CRM & Penjualan (CRM → `/crm/*` and Penjualan →
+  `/sales/*` split as sibling parents); Langganan & Lisensi; Integrasi (flat
+  — four items, no grouping parent); Inventaris & Pengadaan (Gudang, Stok,
+  Barang, Pengadaan → `/procurement/*`, Aset & Peralatan → `/assets/*` merged
+  in; Peminjaman stays at `/inventory/borrowings`); Proyek & Purnajual;
+  Karyawan & Kehadiran; Keuangan (M09 + merged M10 Pajak at `/finance/tax/*`
+  + merged M11 Bonus & Investor at `/finance/investors/*`; new Saldo Awal and
+  Rekonsiliasi items per the m09 Stage-1 plan); Laporan & Hak Akses;
+  Administrasi (Organisasi, Pengguna, Peran, Log Audit, Pengaturan).
+- **Owner review changes applied during the session**: Assets & Equipment
+  merged into the inventory section; CRM/Sales split; Integrations flattened;
+  Finance made robust (opening balances + reconciliation added, Tax and
+  Investors merged in as `/finance/tax/*` and `/finance/investors/*`).
+- **`coming-soon-page.tsx` (new)**: shared placeholder page (icon, title,
+  "Segera hadir" badge) rendered by 55 thin route stubs under
+  `_authed/{sales,crm,subscription,integrations,procurement,assets,projects,hr,finance,tax→removed,investors→moved,reports,admin/settings}`.
+  Real implementations replace the stub body; the route shell stays.
+- **`sidebar-section.tsx`**: parent items with children now link to their
+  hub route; sub-items get active highlighting (`activeProps` on the TanStack
+  `Link` inside `SidebarMenuSubButton`, matching top-level behavior).
+- **`main-sidebar.tsx`**: renders sections from `nav-config.ts`. The
+  `role === 'admin'` gate on the Administration section is **removed for
+  review purposes** (UI-first); backend authorization unchanged and
+  authoritative. Restore item gating via the `erp-permissions` catalog when
+  wiring ERP-0002 to the sidebar.
+- **Deleted**: legacy `nav-main.tsx`, `nav-project.tsx`,
+  `nav-inventory.tsx`, `nav-admin.tsx` (superseded by the config).
+- **`packages/locales` nav bundles**: +~60 keys en/id (module + item labels,
+  Indonesian-first per docs: SPH, BAST, Kuitansi, Tutup Periode, Saldo Awal,
+  Pemotongan Pajak, Data Investor). Dead keys removed with their last
+  references: `project.*` (legacy nav), `section.platform`, `section.assets`,
+  `section.tax`, `section.investors`, `item.crmSales`, `item.integrations`.
+  `nav:item.crm` added to the parity test's allowed-identical set (proper
+  noun); `item.whatsappAi` given a real Indonesian translation.
+
+Verification: `bun run build` in `apps/web-admin` (tsc -b + vite, regenerates
+`routeTree.gen.ts`) — passes; `bun test` in `packages/locales` — 30/30.
+Docs changed: `progress.md` (this entry), `plans/features.md` (sidebar shell
+rollup note). Backlog: no status moves (UI shell is not an ERP ID; ERP-0005
+customer-slice UI remains `planned`).
+
 ## Doc change — status rollup + plan-doc obligation (2026-11-05)
 
 Instructions/docs-only change; no code, schema, migration, or seed touched.

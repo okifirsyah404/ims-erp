@@ -54,7 +54,14 @@ export default function SidebarSection({
 									<SidebarMenuSub>
 										{item.items?.map((subItem) => (
 											<SidebarMenuSubItem key={subItem.titleKey}>
-												<SidebarMenuSubButton href={subItem.url}>
+												<SidebarMenuSubButton
+													render={
+														<Link
+															to={subItem.url}
+															activeProps={{ 'data-active': true }}
+														/>
+													}
+												>
 													<span>{t(subItem.titleKey)}</span>
 												</SidebarMenuSubButton>
 											</SidebarMenuSubItem>
