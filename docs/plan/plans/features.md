@@ -31,6 +31,11 @@ Last synced: 2026-11-05.
 - Stage 1 widgets: sales, cash, profit, inventory, projects, subscriptions — T14.
   Evidence: none. Blocked in practice by missing source modules.
 - Stage 2 widgets: gateway, payroll, verified subscriptions — T31. Evidence: none.
+- UI mock scaffold: `_authed.index.tsx` renders a dummy `DashboardPage`
+  (sample data via `apps/web-admin/src/lib/dashboard-api.ts`, `dashboard`
+  locale namespace). Scaffold only — **not feature status**; figures are
+  placeholders until the real API replaces the mock fetcher.
+
 
 ## M02 CRM and Sales
 

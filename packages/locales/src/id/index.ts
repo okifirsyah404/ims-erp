@@ -1,6 +1,7 @@
 import admin_ from './admin';
 import auth_ from './auth';
 import common_ from './common';
+import dashboard_ from './dashboard';
 import inventory_ from './inventory';
 import nav_ from './nav';
 import account_ from './account';
@@ -14,5 +15,6 @@ export const id = {
 	account: account_,
 	admin: admin_,
 	inventory: inventory_,
+	dashboard: dashboard_,
 	api: api_,
 } as const;

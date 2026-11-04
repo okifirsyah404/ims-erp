@@ -12,6 +12,42 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed (this session — dummy dashboard view, 2026-11-06)
+
+Status: **implemented** (UI mock only; no backend, schema, migration, or seed
+touched — `docs/database/` reviewed, unchanged).
+
+- **M01 dashboard dummy view** per the grill-me plan: all Stage-1 widget
+  placeholders (sales, cash per account, provisional profit, inventory,
+  projects by status, subscriptions) plus a 6-month invoiced-sales bar chart,
+  a sample activity feed, and quick links —
+  `apps/web-admin/src/components/dashboard/dashboard-page.tsx` (new),
+  rendered by `_authed.index.tsx` (replaced the shadcn placeholder boxes).
+  Persistent "sample data" banner; profit carries its "provisional" badge
+  (M01 labelling rule). Every widget links to its ComingSoon source route.
+  All copy in `en`/`id`.
+- **`apps/web-admin/src/lib/dashboard-api.ts` (new)**: typed mock summary +
+  `fetchDashboardSummary()` (async signature, ready to swap for the real
+  `/dashboard/summary`), `dashboardQueryOptions()`, `formatIdr()` (integer
+  IDR minor units → `id-ID` currency string, pinned per ADR-0002). ponytail
+  comment marks the swap point and the server-side permission-gating rule.
+- **`packages/locales`**: new `dashboard` namespace (en/id, flat dot-keys)
+  registered in `en/index.ts`, `id/index.ts`, `i18next.d.ts` and
+  `NAMESPACES`. Quick links reuse `nav:item.*`; parity test's
+  allowed-identical set gained `dashboard:widget.cash.total` ("Total" is the
+  same word).
+- **Test**: `apps/web-admin/test/unit/dashboard-api.test.ts` (new) — mock
+  shape (all six widgets, integer minor units, provisional profit, 6-month
+  series ending in the current month, route/nav-key sanity) and `formatIdr`
+  output.
+
+Verification: `bun test` in `apps/web-admin` — 41/41; `bun test` in
+`packages/locales` — 34/34 (dead-key + parity guards pass); `bun run build`
+in `apps/web-admin` (tsc -b + vite) — passes; `bun run lint` — only the 9
+pre-existing warnings, none in new files. Docs changed: `progress.md` (this
+entry), `plans/features.md` (M01 mock-scaffold note). Backlog: no status
+moves (a UI mock is not an ERP ID; M01 stays blocked on source modules).
+
 ## UI — full ERP sidebar shell + placeholder routes (2026-11-05)
 
 Status: **implemented** (UI-first; no backend, schema, migration, or seed
