@@ -12,6 +12,92 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — ADR-0011 port step 2: item extensions, 2026-11-05
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner).
+
+Gate 1 (read): `docs.dbml` Inventory (`inventory.items`) and Catalog
+(`catalog.item_categories`, `catalog.units`, `catalog.items` — superseded /
+unadopted) modules, Commerce (`commerce.catalog_publications`,
+`catalog_publication_items` — the website catalog's home). Skipped
+`implementation-phases.md` (no dependency on an unlanded phase step).
+
+Gate 2 (design pass; three answers from the module owner 2026-11-05):
+- Website catalog fields and item photos: **deferred to M04** (Commerce
+  module per docs.dbml) — owner's choice.
+- Active flag: **yes** — `inventory.items.is_active` (boolean, default
+  true). Not a `status` column: docs.dbml says status exists only on
+  serialized units (ADR-0008). Inactive items stay listed (filter) but are
+  not offered for new documents; archiving (`deleted_at`) is unchanged.
+- Categories: **flat** (one level) — owner's choice.
+- Ownership: inventory core belongs to programmer A; these extensions are
+  programmer B's under A's review (ADR-0011 §13).
+- New table `inventory.item_categories`: company-wide, no `organization_id`
+  (ADR-0011 §2); `slug` (unique among live rows), `name`, `short_name`,
+  `sort_order`, `description`, `is_active`, timestamps, `deleted_at`.
+  `inventory.items.category_id` → same-module FK (`ON DELETE RESTRICT`);
+  archiving a category with live items is refused (409). Replaces the
+  free-text `category` column (dropped; no production data) and makes
+  `catalog.item_categories` superseded.
+- Units: fixed list in code + CHECK on `inventory.items.unit_label`
+  (`pcs, unit, set, paket, titik, m, roll, kg, jam, bulan, tahun, lic, lot,
+  pulau` — the M02 list plus the units programmer A's seeder uses),
+  `NOT NULL DEFAULT 'pcs'`; `catalog.units` superseded.
+- New columns: `brand varchar(100)`, `specification text` (printed on
+  SPHs), `created_by text` (logical ref to auth.users, from the session).
+- Money/datetimes: unchanged (prices stay bigint minor units).
+- Permissions: categories read with `product:read`; create/update/archive
+  with `product:create` / `product:update` / `product:archive`.
+- Copy: `inventory` locale namespace (en/id).
+
+Implementation:
+- `docs.dbml` first: `inventory.items` (category_id, brand, specification,
+  unit_label NOT NULL + CHECK, is_active, created_by), new
+  `inventory.item_categories`, `catalog.item_categories` / `catalog.units`
+  marked superseded; `validate-dbml.ts` allows the `item_categories` bare
+  name twice (same precedent as `items`). `gen-logical-references.ts` →
+  506 refs; `validate-dbml.ts` → OK (256 tables, 0 cross-module refs,
+  0 timestamp gaps).
+- Migration `20261105142244_polite_betty_brant` (generated with explicit
+  `--hints` that the five columns are new, not renames of `category`),
+  inspected, plus a hand-added backfill so empty/free-text units become
+  `pcs` before `SET NOT NULL` and the CHECK; applied to `ims_erp_sync`
+  (4 empty units backfilled).
+- Backend `src/app/inventory`: `ItemCategoryRepository` / `Service` /
+  `Controller` (`GET|POST /item-categories`, `PATCH|DELETE
+  /item-categories/:id`); errors `inventory.categoryNotFound`,
+  `categorySlugTaken`, `categoryHasItems` (409 with count),
+  `categoryUnavailable` (422, en/id); `ItemService` checks the category
+  (a new choice must be active; an item may keep its now-inactive one);
+  item list filters `categoryId`, `activeOnly`, search also matches brand;
+  `createdBy` from the session.
+- Seeders: `item-category.seeder.ts` (the website's 9 categories in every
+  environment, `tools` / `cabling` dev-only, idempotent by slug);
+  `inventory.seeder.ts` picks category slugs and fixed units (services
+  `paket`).
+- Web admin: item form (category select incl. the item's own inactive
+  one, fixed unit select, brand, specification, active checkbox), item
+  list (category name + "Nonaktif" badge), item detail (category, brand,
+  active, specification); new `/inventory/categories` page (list, create /
+  edit dialog with fixed slug, archive confirm); sidebar "Barang → Kategori
+  barang"; `lib/item-category-api.ts`. The unit-of-measure type is
+  `TItemUnitLabel` / `ITEM_UNIT_LABELS` (`TItemUnit` already names a
+  serialized unit).
+- Checks: `bun run test` — backend 556 (5 new), web-admin 41, locales 38;
+  web `tsc -p tsconfig.app.json` and backend `tsc` clean;
+  `drizzle:migrate-reset` + `drizzle:seed` again → 11 categories, items
+  linked, second run inserted 0 (idempotent). Browser (Playwright,
+  Chromium 1161, id-ID, owner): category created; material item created
+  with category, unit `m`, brand, two-line specification, inactive; list
+  shows category + "Nonaktif"; detail shows all fields; archiving a used
+  category refused with the Indonesian 409 message. Test rows archived
+  afterwards in `ims_erp_sync`. Pre-existing console warning (not from this
+  change): Base UI `nativeButton` on link-buttons in the item detail page
+  and item list.
+- Deferred (owner's choice): website catalog fields and item photos → M04
+  (Commerce module per docs.dbml).
+
 ## Completed — ADR-0011 port step 1: numbering, company profile, role grants, 2026-11-05
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A or
@@ -94,9 +180,7 @@ accepted by the owner).
   from the session only); status vocabularies — `status` active/inactive,
   `reset_policy`, `invoice_usage`, all CHECK-guarded. `docs/database/`
   updated and validated (see above).
-- Next: port step 2 — item extensions on `inventory.items` (brand,
-  specification, status, category table, fixed unit list, images, website
-  profile), per ADR-0011 §3; run the gate-1 read and gate-2 grill first.
+- Next: see step 2 above, then port step 3 (M02).
 
 ## In progress — merge plan for M02/M05/M07 onto main (ADR-0011), 2026-11-05
 

@@ -81,6 +81,7 @@ const nav = {
 	'item.materials': 'Materials',
 	'item.tools': 'Tools',
 	'item.newItem': 'New item',
+	'item.itemCategories': 'Item categories',
 	'item.itemMovements': 'Item Movements',
 	'item.organizations': 'Organization',
 	'item.users': 'Users',

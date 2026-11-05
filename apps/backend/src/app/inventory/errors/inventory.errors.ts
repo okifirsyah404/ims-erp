@@ -353,3 +353,36 @@ export class BorrowingSelfApprovalForbiddenError extends AppError {
 		);
 	}
 }
+
+/** The requested item category does not exist (or is archived). */
+export class ItemCategoryNotFoundError extends AppError {
+	constructor() {
+		super(404, 'inventory.categoryNotFound', 'Item category not found');
+	}
+}
+
+/** A live category already uses this slug. */
+export class ItemCategorySlugTakenError extends AppError {
+	constructor() {
+		super(409, 'inventory.categorySlugTaken', 'An item category with this slug already exists');
+	}
+}
+
+/** A category with live items cannot be archived (deactivate it instead). */
+export class ItemCategoryHasItemsError extends AppError {
+	constructor(count: number) {
+		super(
+			409,
+			'inventory.categoryHasItems',
+			`Cannot archive a category that still has ${count} live item(s)`,
+			{ count },
+		);
+	}
+}
+
+/** An item names a category that does not exist, is archived, or inactive. */
+export class ItemCategoryUnavailableError extends AppError {
+	constructor() {
+		super(422, 'inventory.categoryUnavailable', 'The item category is not available');
+	}
+}

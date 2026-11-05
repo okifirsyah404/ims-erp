@@ -27,8 +27,10 @@ export type TItemPaginationRequest = {
 	search?: string;
 	/** Exact kind filter. */
 	itemKind?: ItemKind;
-	/** Case-insensitive partial match on the free-text category. */
-	category?: string;
+	/** Exact category (ADR-0011). */
+	categoryId?: string;
+	/** Only items offered for new documents (`is_active`). */
+	activeOnly?: boolean;
 	/**
 	 * Only items with a physical presence in this warehouse: at least one live
 	 * serialized unit **or** a stock balance. The second clause matters for

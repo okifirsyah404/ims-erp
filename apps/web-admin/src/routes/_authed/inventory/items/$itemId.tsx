@@ -34,6 +34,7 @@ import {
 } from '@ims-erp/ui/components/alert-dialog';
 import { Input } from '@ims-erp/ui/components/input';
 import { AdminOnly } from '@/components/inventory/admin-only';
+import { useItemCategoryNames } from '@/lib/item-category-api';
 import {
 	archiveItem,
 	itemQueryOptions,
@@ -50,6 +51,7 @@ export const Route = createFileRoute('/_authed/inventory/items/$itemId')({
 
 function ItemDetailPage() {
 	const { t } = useTranslation(['inventory', 'common']);
+	const categoryNames = useItemCategoryNames();
 	const { itemId } = useParams({ from: Route.id });
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
@@ -142,7 +144,15 @@ function ItemDetailPage() {
 
 				<Card>
 					<CardContent className='grid grid-cols-2 gap-4 p-4 text-sm sm:grid-cols-4'>
-						<Detail label={t('inventory:items.category')} value={item.category} />
+						<Detail
+							label={t('inventory:items.category')}
+							value={item.categoryId ? (categoryNames.get(item.categoryId) ?? null) : null}
+						/>
+						<Detail label={t('inventory:items.brand')} value={item.brand} />
+						<Detail
+							label={t('inventory:items.isActive')}
+							value={item.isActive ? t('inventory:items.isActive') : t('inventory:items.inactive')}
+						/>
 						<Detail label={t('inventory:items.unitLabel')} value={item.unitLabel} />
 						<Detail label={t('inventory:items.barcode')} value={item.barcode} />
 						<Detail
@@ -171,6 +181,15 @@ function ItemDetailPage() {
 						/>
 					</CardContent>
 				</Card>
+
+				{item.specification && (
+					<Card>
+						<CardContent className='p-4 text-sm'>
+							<div className='text-muted-foreground'>{t('inventory:items.specification')}</div>
+							<p className='mt-1 whitespace-pre-line'>{item.specification}</p>
+						</CardContent>
+					</Card>
+				)}
 
 				{item.isSerialized ? (
 					<UnitsPanel itemId={itemId} units={units ?? []} />

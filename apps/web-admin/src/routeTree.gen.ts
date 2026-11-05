@@ -63,6 +63,7 @@ import { Route as AuthedHrPayrollIndexRouteImport } from './routes/_authed/hr/pa
 import { Route as AuthedInventoryBorrowingsIndexRouteImport } from './routes/_authed/inventory/borrowings/index'
 import { Route as AuthedInventoryBorrowingsBorrowingIdRouteImport } from './routes/_authed/inventory/borrowings/$borrowingId'
 import { Route as AuthedInventoryBorrowingsNewRouteImport } from './routes/_authed/inventory/borrowings/new'
+import { Route as AuthedInventoryCategoriesIndexRouteImport } from './routes/_authed/inventory/categories/index'
 import { Route as AuthedInventoryComponentsIndexRouteImport } from './routes/_authed/inventory/components/index'
 import { Route as AuthedInventoryItemsItemIdRouteImport } from './routes/_authed/inventory/items/$itemId'
 import { Route as AuthedInventoryItemsNewRouteImport } from './routes/_authed/inventory/items/new'
@@ -391,6 +392,12 @@ const AuthedInventoryBorrowingsNewRoute =
     path: '/inventory/borrowings/new',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedInventoryCategoriesIndexRoute =
+  AuthedInventoryCategoriesIndexRouteImport.update({
+    id: '/inventory/categories/',
+    path: '/inventory/categories/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedInventoryComponentsIndexRoute =
   AuthedInventoryComponentsIndexRouteImport.update({
     id: '/inventory/components/',
@@ -672,6 +679,7 @@ export interface FileRoutesByFullPath {
   '/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
   '/hr/payroll/': typeof AuthedHrPayrollIndexRoute
   '/inventory/borrowings/': typeof AuthedInventoryBorrowingsIndexRoute
+  '/inventory/categories/': typeof AuthedInventoryCategoriesIndexRoute
   '/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
   '/inventory/products/': typeof AuthedInventoryProductsIndexRoute
@@ -762,6 +770,7 @@ export interface FileRoutesByTo {
   '/hr/overtime': typeof AuthedHrOvertimeIndexRoute
   '/hr/payroll': typeof AuthedHrPayrollIndexRoute
   '/inventory/borrowings': typeof AuthedInventoryBorrowingsIndexRoute
+  '/inventory/categories': typeof AuthedInventoryCategoriesIndexRoute
   '/inventory/components': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials': typeof AuthedInventoryMaterialsIndexRoute
   '/inventory/products': typeof AuthedInventoryProductsIndexRoute
@@ -856,6 +865,7 @@ export interface FileRoutesById {
   '/_authed/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
   '/_authed/hr/payroll/': typeof AuthedHrPayrollIndexRoute
   '/_authed/inventory/borrowings/': typeof AuthedInventoryBorrowingsIndexRoute
+  '/_authed/inventory/categories/': typeof AuthedInventoryCategoriesIndexRoute
   '/_authed/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/_authed/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
   '/_authed/inventory/products/': typeof AuthedInventoryProductsIndexRoute
@@ -950,6 +960,7 @@ export interface FileRouteTypes {
     | '/hr/overtime/'
     | '/hr/payroll/'
     | '/inventory/borrowings/'
+    | '/inventory/categories/'
     | '/inventory/components/'
     | '/inventory/materials/'
     | '/inventory/products/'
@@ -1040,6 +1051,7 @@ export interface FileRouteTypes {
     | '/hr/overtime'
     | '/hr/payroll'
     | '/inventory/borrowings'
+    | '/inventory/categories'
     | '/inventory/components'
     | '/inventory/materials'
     | '/inventory/products'
@@ -1133,6 +1145,7 @@ export interface FileRouteTypes {
     | '/_authed/hr/overtime/'
     | '/_authed/hr/payroll/'
     | '/_authed/inventory/borrowings/'
+    | '/_authed/inventory/categories/'
     | '/_authed/inventory/components/'
     | '/_authed/inventory/materials/'
     | '/_authed/inventory/products/'
@@ -1552,6 +1565,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedInventoryBorrowingsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/inventory/categories/': {
+      id: '/_authed/inventory/categories/'
+      path: '/inventory/categories'
+      fullPath: '/inventory/categories/'
+      preLoaderRoute: typeof AuthedInventoryCategoriesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/inventory/components/': {
       id: '/_authed/inventory/components/'
       path: '/inventory/components'
@@ -1946,6 +1966,7 @@ interface AuthedRouteChildren {
   AuthedHrOvertimeIndexRoute: typeof AuthedHrOvertimeIndexRoute
   AuthedHrPayrollIndexRoute: typeof AuthedHrPayrollIndexRoute
   AuthedInventoryBorrowingsIndexRoute: typeof AuthedInventoryBorrowingsIndexRoute
+  AuthedInventoryCategoriesIndexRoute: typeof AuthedInventoryCategoriesIndexRoute
   AuthedInventoryComponentsIndexRoute: typeof AuthedInventoryComponentsIndexRoute
   AuthedInventoryMaterialsIndexRoute: typeof AuthedInventoryMaterialsIndexRoute
   AuthedInventoryProductsIndexRoute: typeof AuthedInventoryProductsIndexRoute
@@ -2030,6 +2051,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedHrOvertimeIndexRoute: AuthedHrOvertimeIndexRoute,
   AuthedHrPayrollIndexRoute: AuthedHrPayrollIndexRoute,
   AuthedInventoryBorrowingsIndexRoute: AuthedInventoryBorrowingsIndexRoute,
+  AuthedInventoryCategoriesIndexRoute: AuthedInventoryCategoriesIndexRoute,
   AuthedInventoryComponentsIndexRoute: AuthedInventoryComponentsIndexRoute,
   AuthedInventoryMaterialsIndexRoute: AuthedInventoryMaterialsIndexRoute,
   AuthedInventoryProductsIndexRoute: AuthedInventoryProductsIndexRoute,

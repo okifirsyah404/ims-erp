@@ -101,6 +101,8 @@ describe('locale values', () => {
 			'settings:numbering.type.sales_order',
 			'settings:numbering.type.invoice',
 			'settings:numbering.type.purchase_order',
+			// "Slug" is the same technical term in Indonesian.
+			'inventory:categories.slug',
 		]);
 
 		const untranslated = Object.entries(en_).flatMap(([namespace, bundle]) =>

@@ -119,6 +119,7 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 					{ titleKey: 'item.materials', url: '/inventory/materials' },
 					{ titleKey: 'item.tools', url: '/inventory/tools' },
 					{ titleKey: 'item.newItem', url: '/inventory/items/new' },
+					{ titleKey: 'item.itemCategories', url: '/inventory/categories' },
 					{ titleKey: 'item.itemMovements', url: '/inventory/stock/movements' },
 				],
 			},

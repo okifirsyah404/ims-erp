@@ -27,6 +27,11 @@ const api = {
 	'inventory.itemNotFound': 'Item not found',
 	'inventory.unitNotFound': 'Item unit not found',
 	'inventory.skuTaken': 'An item with this SKU already exists',
+	'inventory.categoryNotFound': 'Item category not found',
+	'inventory.categorySlugTaken': 'An item category with this slug already exists',
+	'inventory.categoryHasItems':
+		'Cannot archive a category that still has {{count}} item(s); deactivate it instead',
+	'inventory.categoryUnavailable': 'The selected category is not available',
 	'inventory.serialTaken': 'An item unit with this serial number already exists',
 	'inventory.ruleViolation': 'This inventory rule does not allow it: {{rule}}',
 	'inventory.itemHasUnits':

@@ -4,6 +4,8 @@ import { faker } from '@faker-js/faker';
 import { seedSafeText } from './faker-content';
 import { drizzleDB } from '../../../drizzle/db';
 import {
+	type ItemUnit,
+	itemCategories,
 	items,
 	serialTrackedItems,
 	stockBalances,
@@ -15,6 +17,7 @@ import {
 import { organizations } from '../../../drizzle/schemas/auth.schema';
 import { village } from '../../../drizzle/schemas/location.schema';
 import { SEED_ORGANIZATION_SLUG } from './organization.seeder';
+import { WEBSITE_CATEGORIES } from './item-category.seeder';
 
 const logger = pino({
 	timestamp: false,
@@ -44,8 +47,9 @@ type TSeedItem = {
 	sku: string;
 	name: string;
 	itemKind: 'product' | 'component' | 'material' | 'tool' | 'service';
-	category: string | null;
-	unitLabel: string | null;
+	/** Slug of an `inventory.item_categories` row (ADR-0011), or none. */
+	categorySlug: string | null;
+	unitLabel: ItemUnit;
 	isSerialized: boolean;
 	isStockTracked: boolean;
 	minStockQty: string;
@@ -82,8 +86,6 @@ function generateSeedItems(): TSeedItem[] {
 	const safeName = () => seedSafeText(faker.commerce.productName());
 	const safeAdjective = () => seedSafeText(faker.commerce.productAdjective());
 	const safeMaterial = () => seedSafeText(faker.commerce.productMaterial());
-	const safeCategory = (pool: readonly string[]) =>
-		seedSafeText(faker.helpers.arrayElement(pool));
 
 	const kinds: TSeedItem['itemKind'][] = [
 		'product',
@@ -106,7 +108,7 @@ function generateSeedItems(): TSeedItem[] {
 					sku,
 					name: safeName(),
 					itemKind,
-					category: safeCategory(['Tools', 'Instruments']),
+					categorySlug: 'tools',
 					unitLabel: 'pcs',
 					isSerialized: true,
 					isStockTracked: false,
@@ -126,7 +128,7 @@ function generateSeedItems(): TSeedItem[] {
 					sku,
 					name: safeMaterial(),
 					itemKind,
-					category: 'Cabling',
+					categorySlug: 'cabling',
 					unitLabel: faker.helpers.arrayElement(['m', 'kg', 'roll']),
 					isSerialized: false,
 					isStockTracked: true,
@@ -144,8 +146,9 @@ function generateSeedItems(): TSeedItem[] {
 					sku,
 					name: `${safeAdjective()} installation service`,
 					itemKind,
-					category: null,
-					unitLabel: null,
+					categorySlug: null,
+					// Services are sold per job.
+					unitLabel: 'paket',
 					isSerialized: false,
 					isStockTracked: false,
 					minStockQty: '0.000',
@@ -160,11 +163,7 @@ function generateSeedItems(): TSeedItem[] {
 				sku,
 				name: safeName(),
 				itemKind,
-				category: safeCategory([
-					'Access control',
-					'CCTV',
-					'Networking',
-				]),
+				categorySlug: faker.helpers.arrayElement(WEBSITE_CATEGORIES).slug,
 				unitLabel: 'pcs',
 				isSerialized: itemKind === 'product' && i % 2 === 0,
 				isStockTracked: true,
@@ -539,8 +538,14 @@ async function ensureItems(
 	organizationId: string | null,
 	warehouseId: string,
 ): Promise<void> {
+	// Categories come from `seedItemCategories`, which runs first.
+	const categoryRows = await drizzleDB
+		.select({ id: itemCategories.id, slug: itemCategories.slug })
+		.from(itemCategories)
+		.where(sql`${itemCategories.deletedAt} IS NULL`);
+	const categoryIds = new Map(categoryRows.map((row) => [row.slug, row.id]));
 	for (const seed of SEED_ITEMS) {
-		const itemId = await ensureItem(seed, organizationId);
+		const itemId = await ensureItem(seed, organizationId, categoryIds);
 		for (const serialNumber of seed.serials ?? []) {
 			await ensureUnit({
 				organizationId,
@@ -556,6 +561,7 @@ async function ensureItems(
 async function ensureItem(
 	seed: TSeedItem,
 	organizationId: string | null,
+	categoryIds: ReadonlyMap<string, string>,
 ): Promise<string> {
 	const [existing] = await drizzleDB
 		.select({ id: items.id })
@@ -575,7 +581,7 @@ async function ensureItem(
 			sku: seed.sku,
 			name: seed.name,
 			itemKind: seed.itemKind,
-			category: seed.category,
+			categoryId: seed.categorySlug ? (categoryIds.get(seed.categorySlug) ?? null) : null,
 			unitLabel: seed.unitLabel,
 			isSerialized: seed.isSerialized,
 			isStockTracked: seed.isStockTracked,

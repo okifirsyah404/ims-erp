@@ -54,7 +54,8 @@ export class ItemRepository implements IItemRepository {
 			limit,
 			search,
 			itemKind,
-			category,
+			categoryId,
+			activeOnly,
 			warehouseId,
 			includeArchived,
 		} = request;
@@ -62,7 +63,8 @@ export class ItemRepository implements IItemRepository {
 		const filters = [
 			includeArchived ? undefined : isNull(items.deletedAt),
 			itemKind ? eq(items.itemKind, itemKind) : undefined,
-			category ? ilike(items.category, `%${category}%`) : undefined,
+			categoryId ? eq(items.categoryId, categoryId) : undefined,
+			activeOnly ? eq(items.isActive, true) : undefined,
 			// "Has a physical presence in this warehouse": either a live
 			// serialized unit or a stock balance. Two EXISTS keep the row
 			// multiplicity of the outer query intact (a join would duplicate
@@ -83,7 +85,11 @@ export class ItemRepository implements IItemRepository {
 					)`
 				: undefined,
 			search
-				? or(ilike(items.sku, `%${search}%`), ilike(items.name, `%${search}%`))
+				? or(
+						ilike(items.sku, `%${search}%`),
+						ilike(items.name, `%${search}%`),
+						ilike(items.brand, `%${search}%`),
+					)
 				: undefined,
 		].filter(Boolean);
 

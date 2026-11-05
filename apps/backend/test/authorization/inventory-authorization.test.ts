@@ -55,7 +55,11 @@ function seedRow(organizationId: string): TItemSelect {
 		name: 'Door controller',
 		description: null,
 		itemKind: 'product',
-		category: null,
+		categoryId: null,
+		brand: null,
+		specification: null,
+		isActive: true,
+		createdBy: null,
 		unitLabel: 'pcs',
 		isSerialized: true,
 		isStockTracked: true,
@@ -156,6 +160,7 @@ beforeAll(async () => {
 
 	// Import after mocks are installed (bun mock.module is hoist-sensitive).
 	const {
+		ITEM_CATEGORY_REPOSITORY_TOKEN,
 		ITEM_REPOSITORY_TOKEN,
 		SERIAL_UNIT_REPOSITORY_TOKEN,
 		ITEM_SERVICE_TOKEN,
@@ -171,6 +176,10 @@ beforeAll(async () => {
 	container.register(ITEM_REPOSITORY_TOKEN, { useValue: itemRepository });
 	container.register(SERIAL_UNIT_REPOSITORY_TOKEN, {
 		useValue: serialUnitRepository,
+	});
+	// No category is involved in the authorization suite.
+	container.register(ITEM_CATEGORY_REPOSITORY_TOKEN, {
+		useValue: { findById: async () => null } as never,
 	});
 	container.register(ITEM_SERVICE_TOKEN, { useClass: ItemService });
 

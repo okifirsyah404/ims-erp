@@ -70,6 +70,7 @@ export class ItemController {
 						// Tenant scope is the caller's organization; an
 						// application admin may create a global item.
 						organizationId: resolveOrganizationId(parsed.organizationId, erp),
+						createdBy: erp.session.user.id,
 					} as never);
 					return status(201, created(row));
 				},

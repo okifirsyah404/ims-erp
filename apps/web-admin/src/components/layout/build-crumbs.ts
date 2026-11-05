@@ -43,6 +43,7 @@ const LABELS: Record<string, NavKey> = {
 		'breadcrumb.memberEdit',
 	'/admin/settings': 'item.settings',
 	'/admin/settings/numbering': 'item.documentNumbering',
+	'/inventory/categories': 'item.itemCategories',
 };
 
 /**

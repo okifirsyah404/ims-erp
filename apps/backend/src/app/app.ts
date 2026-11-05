@@ -6,6 +6,7 @@ import { LocationController } from './location/controllers/location.controller';
 import {
 	AdjustmentController,
 	BorrowingController,
+	ItemCategoryController,
 	ItemController,
 	StockController,
 	WarehouseController,
@@ -100,6 +101,7 @@ export function createApp() {
 			// `session`-guarded prefixes; mount order is irrelevant as none of its
 			// paths overlap the modules above.
 			.use(ItemController.plugin())
+			.use(ItemCategoryController.plugin())
 			.use(WarehouseController.plugin())
 			.use(StockController.plugin())
 			.use(AdjustmentController.plugin())

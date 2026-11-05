@@ -221,8 +221,10 @@ Last synced: 2026-11-05.
 - ERP-0025 Release preparation.
 
 ### in-progress
-- ERP-0036 Port M02/M05/M07 onto main (ADR-0011): step 1 implemented
-  2026-11-05; steps 2-6 planned. Evidence: `progress.md` 2026-11-05.
+- ERP-0036 Port M02/M05/M07 onto main (ADR-0011): steps 1-2 implemented
+  2026-11-05 (numbering, company profile, role grants; item categories,
+  fixed units, brand/specification/active on items); steps 3-6 planned.
+  Evidence: `progress.md` 2026-11-05, `test/unit/item-category.service.test.ts`.
 
 ### implemented
 - ERP-0009 Document numbering (company-wide series, settings page).

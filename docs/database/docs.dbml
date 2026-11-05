@@ -102,6 +102,7 @@ TableGroup "Inventory" {
   inventory.warehouses
   inventory.warehouse_addresses
   inventory.warehouse_storages
+  inventory.item_categories
   inventory.items
   inventory.stock_movements
   inventory.stock_balances
@@ -1244,7 +1245,7 @@ Table catalog.item_categories {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Item category tree. Hierarchy is self referencing."
+  Note: "SUPERSEDED by inventory.item_categories (ADR-0011): not built, do not build against it. Item category tree. Hierarchy is self referencing."
   Indexes {
     (organization_id, code) [unique, name: 'item_categories_org_code_uq']
     parent_category_id [name: 'item_categories_parent_category_id_idx']
@@ -1262,7 +1263,7 @@ Table catalog.units {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Unit of measure such as pcs, set, month or year."
+  Note: "SUPERSEDED by the fixed unit list on inventory.items.unit_label (ADR-0011): not built, do not build against it. Unit of measure such as pcs, set, month or year."
   Indexes {
     (organization_id, code) [unique, name: 'units_org_code_uq']
     base_unit_id [name: 'units_base_unit_id_idx']
@@ -2286,8 +2287,11 @@ Table inventory.items {
   name text [not null]
   description text
   item_kind text [not null]
-  category text [note: "Free text until catalog.item_categories is adopted (OPEN-1)."]
-  unit_label varchar(32) [note: "Free text until catalog.units is adopted (OPEN-1)."]
+  category_id uuid [note: "Same-module reference to inventory.item_categories (ADR-0011); replaces the former free-text category."]
+  brand varchar(100)
+  specification text [note: "Technical specification printed on quotations."]
+  unit_label varchar(32) [not null, default: 'pcs', note: "Fixed unit list (ADR-0011), guarded by a CHECK; replaces free text."]
+  is_active boolean [not null, default: true, note: "Inactive items stay listed but are not offered for new documents. Not a status: status exists only on serialized units."]
   is_serialized boolean [not null, default: false]
   is_stock_tracked boolean [not null, default: true]
   min_stock_qty numeric(18,3) [not null, default: 0]
@@ -2295,6 +2299,7 @@ Table inventory.items {
   selling_price bigint [not null, default: 0, note: "Exact integer IDR minor units (ADR-0002). Never a float."]
   purchase_price bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
@@ -2311,7 +2316,22 @@ Table inventory.items {
     `selling_price >= 0 AND purchase_price >= 0`
     `min_stock_qty >= 0`
     `NOT (item_kind = 'service') OR (is_serialized = false AND is_stock_tracked = false)`
+    `unit_label IN ('pcs', 'unit', 'set', 'paket', 'titik', 'm', 'roll', 'kg', 'jam', 'bulan', 'tahun', 'lic', 'lot', 'pulau')`
   }
+}
+
+Table inventory.item_categories {
+  id uuid [pk, default: `uuidv7()`]
+  slug varchar(64) [not null, note: "Matches the public website's category slug."]
+  name varchar(120) [not null]
+  short_name varchar(60)
+  sort_order integer [not null, default: 0]
+  description text
+  is_active boolean [not null, default: true]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Item category, one level, company-wide (ADR-0011): no organization_id. Supersedes catalog.item_categories. Partial unique index on slug WHERE deleted_at IS NULL in the Drizzle schema; a category with live items cannot be archived."
 }
 
 Table inventory.stock_movements {
@@ -2630,6 +2650,7 @@ Table inventory.borrowing_events {
 Ref: inventory.warehouse_addresses.warehouse_id > inventory.warehouses.id [delete: cascade]
 Ref: inventory.warehouse_storages.warehouse_id > inventory.warehouses.id [delete: cascade]
 Ref: inventory.warehouse_organizations.warehouse_id > inventory.warehouses.id [delete: cascade]
+Ref: inventory.items.category_id > inventory.item_categories.id [delete: restrict]
 Ref: inventory.stock_movements.item_id > inventory.items.id [delete: restrict]
 Ref: inventory.stock_movements.warehouse_id > inventory.warehouses.id [delete: restrict]
 Ref: inventory.stock_movements.bin_id > inventory.warehouse_storages.id [delete: set null]

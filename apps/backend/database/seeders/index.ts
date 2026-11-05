@@ -8,6 +8,7 @@ import { seedOrganization } from './seed/organization.seeder';
 import { seedOrganizationMembers } from './seed/organization-members.seeder';
 import { seedOrganizationRoles } from './seed/organization-roles.seeder';
 import { seedCompanyProfile } from './seed/company-profile.seeder';
+import { seedItemCategories } from './seed/item-category.seeder';
 
 const logger = pino({
 	timestamp: false,
@@ -30,7 +31,9 @@ export async function runSeeders(): Promise<void> {
 	await seedOrganizationMembers();
 	await seedOrganizationRoles();
 	await seedCompanyProfile();
-	// Needs the organization (scope) and location (address village) rows above.
+	await seedItemCategories();
+	// Needs the organization (scope), location (address village) and item
+	// category rows above.
 	await seedInventory();
 
 	const finishedAt = DateTime.now();

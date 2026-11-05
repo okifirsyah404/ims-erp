@@ -23,6 +23,11 @@ const api: Record<keyof typeof en, string> = {
 	'inventory.itemNotFound': 'Barang tidak ditemukan',
 	'inventory.unitNotFound': 'Unit barang tidak ditemukan',
 	'inventory.skuTaken': 'Barang dengan SKU ini sudah ada',
+	'inventory.categoryNotFound': 'Kategori barang tidak ditemukan',
+	'inventory.categorySlugTaken': 'Kategori barang dengan slug ini sudah ada',
+	'inventory.categoryHasItems':
+		'Kategori yang masih dipakai {{count}} barang tidak bisa diarsipkan; nonaktifkan saja',
+	'inventory.categoryUnavailable': 'Kategori yang dipilih tidak tersedia',
 	'inventory.serialTaken': 'Unit barang dengan nomor seri ini sudah ada',
 	'inventory.ruleViolation': 'Aturan inventaris tidak mengizinkan: {{rule}}',
 	'inventory.itemHasUnits':

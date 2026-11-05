@@ -21,6 +21,8 @@ import type { WarehouseService } from '../services/warehouse.service';
 import type { StockService } from '../services/stock.service';
 import type { AdjustmentService } from '../services/adjustment.service';
 import type { BorrowingService } from '../services/borrowing.service';
+import type { IItemCategoryRepository } from '../contracts/item-category.repository.interface';
+import type { ItemCategoryService } from '../services/item-category.service';
 
 export const ITEM_REPOSITORY_TOKEN: InjectionToken<IItemRepository> =
 	Symbol('ITEM_REPOSITORY');
@@ -28,6 +30,10 @@ export const SERIAL_UNIT_REPOSITORY_TOKEN: InjectionToken<ISerialUnitRepository>
 	Symbol('SERIAL_UNIT_REPOSITORY');
 export const ITEM_SERVICE_TOKEN: InjectionToken<ItemService> =
 	Symbol('ITEM_SERVICE');
+export const ITEM_CATEGORY_REPOSITORY_TOKEN: InjectionToken<IItemCategoryRepository> =
+	Symbol('ITEM_CATEGORY_REPOSITORY');
+export const ITEM_CATEGORY_SERVICE_TOKEN: InjectionToken<ItemCategoryService> =
+	Symbol('ITEM_CATEGORY_SERVICE');
 
 export const WAREHOUSE_REPOSITORY_TOKEN: InjectionToken<IWarehouseRepository> =
 	Symbol('WAREHOUSE_REPOSITORY');

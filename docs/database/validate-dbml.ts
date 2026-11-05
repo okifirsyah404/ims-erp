@@ -38,7 +38,9 @@ let dups = 0;
 // unambiguous in practice. `items` was superseded by inventory.items
 // (ADR-0008): catalog.items is retained only until the catalogue satellites
 // are adopted, and no new ref may target it.
-const DUP_ALLOWED = new Set(["payments", "items"]);
+// "item_categories": inventory.item_categories supersedes the unbuilt
+// catalog.item_categories (ADR-0011), the same way inventory.items does.
+const DUP_ALLOWED = new Set(["payments", "items", "item_categories"]);
 for (const t of tables) {
   if (nameMap.has(t.name) && nameMap.get(t.name) !== t.schema && !DUP_ALLOWED.has(t.name)) {
     console.error(`DUPLICATE table name: ${t.schema}.${t.name} also in ${nameMap.get(t.name)}`); dups++;

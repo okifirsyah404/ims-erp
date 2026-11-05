@@ -28,6 +28,7 @@ import {
 	check,
 	date,
 	index,
+	integer,
 	numeric,
 	pgSchema,
 	text,
@@ -62,6 +63,28 @@ export const ITEM_KINDS = [
 	'service',
 ] as const;
 export type ItemKind = (typeof ITEM_KINDS)[number];
+
+/**
+ * Fixed unit list for `items.unit_label` (ADR-0011): the M02 catalog units
+ * plus the units used by the inventory seeder. A CHECK guards the column.
+ */
+export const ITEM_UNITS = [
+	'pcs',
+	'unit',
+	'set',
+	'paket',
+	'titik',
+	'm',
+	'roll',
+	'kg',
+	'jam',
+	'bulan',
+	'tahun',
+	'lic',
+	'lot',
+	'pulau',
+] as const;
+export type ItemUnit = (typeof ITEM_UNITS)[number];
 
 /**
  * Unit statuses.
@@ -346,6 +369,43 @@ export const warehouseStorages = inventorySchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
+ * inventory.item_categories
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Item category, one level, company-wide (ADR-0011): no `organization_id`.
+ *
+ * @remarks
+ * `slug` matches the public website's category slug. Supersedes the unbuilt
+ * `catalog.item_categories`; a category with live items cannot be archived
+ * (service rule; the FK from `items.category_id` is `RESTRICT`).
+ */
+export const itemCategories = inventorySchema.table(
+	'item_categories',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		slug: varchar('slug', { length: 64 }).notNull(),
+		name: varchar('name', { length: 120 }).notNull(),
+		shortName: varchar('short_name', { length: 60 }),
+		sortOrder: integer('sort_order').notNull().default(0),
+		description: text('description'),
+		isActive: boolean('is_active').notNull().default(true),
+		createdAt: unixTimestamp('created_at').notNull(),
+		updatedAt: unixTimestamp('updated_at')
+			.notNull()
+			.$onUpdate(() => new Date()),
+		deletedAt: unixTimestampNullable('deleted_at'),
+	},
+	(table) => [
+		uniqueIndex('item_categories_slug_uq')
+			.on(table.slug)
+			.where(sql`deleted_at IS NULL`),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
  * inventory.items
  * ------------------------------------------------------------------------ */
 
@@ -366,10 +426,20 @@ export const items = inventorySchema.table(
 		name: text('name').notNull(),
 		description: text('description'),
 		itemKind: text('item_kind').notNull(),
-		/** Free text until `catalog.item_categories` is adopted (OPEN-1). */
-		category: text('category'),
-		/** Free text until `catalog.units` is adopted (OPEN-1). */
-		unitLabel: varchar('unit_label', { length: 32 }),
+		/** Same-module category (ADR-0011); replaces the former free text. */
+		categoryId: uuid('category_id').references(() => itemCategories.id, {
+			onDelete: 'restrict',
+		}),
+		brand: varchar('brand', { length: 100 }),
+		/** Technical specification printed on quotations. */
+		specification: text('specification'),
+		/** One of {@link ITEM_UNITS} (CHECK below). */
+		unitLabel: varchar('unit_label', { length: 32 }).notNull().default('pcs'),
+		/**
+		 * Inactive items stay listed but are not offered for new documents.
+		 * Not a status: status exists only on serialized units (ADR-0008).
+		 */
+		isActive: boolean('is_active').notNull().default(true),
 		isSerialized: boolean('is_serialized').notNull().default(false),
 		isStockTracked: boolean('is_stock_tracked').notNull().default(true),
 		minStockQty: numeric('min_stock_qty', { precision: 18, scale: 3 })
@@ -386,6 +456,8 @@ export const items = inventorySchema.table(
 		currencyCode: varchar('currency_code', { length: 3 })
 			.notNull()
 			.default('IDR'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		createdBy: text('created_by'),
 		...softDeleteTimestamps,
 	},
 	(table) => [
@@ -405,6 +477,11 @@ export const items = inventorySchema.table(
 			sql`selling_price >= 0 AND purchase_price >= 0`,
 		),
 		check('inventory_items_min_stock_check', sql`min_stock_qty >= 0`),
+		check(
+			'inventory_items_unit_label_check',
+			sql`unit_label IN ('pcs', 'unit', 'set', 'paket', 'titik', 'm', 'roll', 'kg', 'jam', 'bulan', 'tahun', 'lic', 'lot', 'pulau')`,
+		),
+		index('inventory_items_category_id_idx').on(table.categoryId),
 		// A service is never a physical thing: it can be neither serialized
 		// nor stock-tracked.
 		check(
@@ -1013,6 +1090,7 @@ export const inventoryRelations = defineRelationsPart(
 		warehouses,
 		warehouseAddresses,
 		warehouseStorages,
+		itemCategories,
 		items,
 		stockMovements,
 		stockBalances,
@@ -1044,7 +1122,17 @@ export const inventoryRelations = defineRelationsPart(
 				to: r.warehouses.id,
 			}),
 		},
+		itemCategories: {
+			items: r.many.items({
+				from: r.itemCategories.id,
+				to: r.items.categoryId,
+			}),
+		},
 		items: {
+			category: r.one.itemCategories({
+				from: r.items.categoryId,
+				to: r.itemCategories.id,
+			}),
 			units: r.many.serialTrackedItems({
 				from: r.items.id,
 				to: r.serialTrackedItems.itemId,
@@ -1101,6 +1189,7 @@ export const inventoryRelations = defineRelationsPart(
  * Inferred types
  * ------------------------------------------------------------------------ */
 
+export type TItemCategorySelect = typeof itemCategories.$inferSelect;
 export type TItemSelect = typeof items.$inferSelect;
 export type TItemInsert = typeof items.$inferInsert;
 

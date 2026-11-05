@@ -18,12 +18,15 @@ import type {
 	ISerialUnitRepository,
 	TUnitPaginationRequest,
 } from '../contracts/serial-unit.repository.interface';
+import type { IItemCategoryRepository } from '../contracts/item-category.repository.interface';
 import {
+	ITEM_CATEGORY_REPOSITORY_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
 	SERIAL_UNIT_REPOSITORY_TOKEN,
 } from '../constants/di';
 import {
 	InventoryRuleViolationError,
+	ItemCategoryUnavailableError,
 	ItemHasUnitsError,
 	ItemNotFoundError,
 	ItemSkuTakenError,
@@ -140,7 +143,21 @@ export class ItemService {
 		private readonly itemRepository: IItemRepository,
 		@inject(SERIAL_UNIT_REPOSITORY_TOKEN)
 		private readonly serialUnitRepository: ISerialUnitRepository,
+		@inject(ITEM_CATEGORY_REPOSITORY_TOKEN)
+		private readonly categoryRepository: Pick<IItemCategoryRepository, 'findById'>,
 	) {}
+
+	/**
+	 * A newly chosen category must exist and be active; an item may keep the
+	 * (now inactive) category it already has.
+	 *
+	 * @throws {ItemCategoryUnavailableError} When the category cannot be used
+	 */
+	private async assertCategory(categoryId: string | null | undefined, current?: string | null) {
+		if (!categoryId || categoryId === current) return;
+		const category = await this.categoryRepository.findById(categoryId);
+		if (!category?.isActive) throw new ItemCategoryUnavailableError();
+	}
 
 	/** Fetches one filtered page of items. */
 	paginate(
@@ -169,6 +186,7 @@ export class ItemService {
 	 */
 	async createItem(data: TItemCreateData): Promise<TItemSelect> {
 		this.assertItemShape(data);
+		await this.assertCategory(data.categoryId);
 
 		const existing = await this.itemRepository.findBySku(
 			data.organizationId ?? null,
@@ -195,6 +213,7 @@ export class ItemService {
 		data: TItemUpdateData,
 	): Promise<TItemSelect> {
 		const current = await this.getItem(id);
+		await this.assertCategory(data.categoryId, current.categoryId);
 
 		if (Object.keys(data).length > 0) {
 			this.assertItemShape({
