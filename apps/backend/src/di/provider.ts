@@ -1,5 +1,10 @@
 import { drizzleDB } from '@drizzle/db';
 import { redisClient } from '@providers/redis/redis';
+import {
+	type IObjectStorage,
+	OBJECT_STORAGE_TOKEN,
+	s3ObjectStorage,
+} from '@providers/s3/object-storage';
 import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { DependencyContainer } from 'tsyringe';
@@ -19,5 +24,8 @@ export function registerProvider(container: DependencyContainer) {
 	});
 	container.register<RedisClient>(REDIS_TOKEN, {
 		useValue: redisClient,
+	});
+	container.register<IObjectStorage>(OBJECT_STORAGE_TOKEN, {
+		useValue: s3ObjectStorage,
 	});
 }

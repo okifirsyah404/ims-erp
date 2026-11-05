@@ -20,7 +20,7 @@ import {
 } from './user';
 import { UserController } from './user/controllers/user.controller';
 import { AuditController } from './audit';
-import { CustomerController } from './crm';
+import { CustomerController, LeadController, PublicWebsiteController } from './crm';
 import {
 	CompanyProfileController,
 	NumberingController,
@@ -104,6 +104,9 @@ export function createApp() {
 			.use(ItemController.plugin())
 			.use(ItemCategoryController.plugin())
 			.use(CustomerController.plugin())
+			.use(LeadController.plugin())
+			// Server-to-server website API: API-key guard, no session.
+			.use(PublicWebsiteController.plugin())
 			.use(WarehouseController.plugin())
 			.use(StockController.plugin())
 			.use(AdjustmentController.plugin())

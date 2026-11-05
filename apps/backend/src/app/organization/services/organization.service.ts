@@ -207,6 +207,17 @@ export class OrganizationService {
 	}
 
 	/** Paginated member list joined with user identity fields. */
+	/**
+	 * Role string of a user's membership, or `null` when not a member.
+	 *
+	 * @remarks
+	 * Exported for other modules' record rules (ADR-0011 step 3b: a lead may
+	 * only be assigned to a member of the caller's organization).
+	 */
+	getMemberRole(organizationId: string, userId: string): Promise<string | null> {
+		return this.repository.findMemberRole(organizationId, userId);
+	}
+
 	async listMembers(
 		organizationId: string,
 		request: TMemberPaginationRequest,

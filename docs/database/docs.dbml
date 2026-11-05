@@ -49,6 +49,7 @@ TableGroup "CRM" {
   crm.customer_addresses
   crm.leads
   crm.lead_activities
+  crm.lead_attachments
   crm.customer_segments
   crm.customer_segment_members
   crm.customer_interactions
@@ -983,8 +984,9 @@ Ref: organization.cost_centers.department_id > organization.departments.id [dele
 // ---------------------------------------------------------------------------
 // MODULE: CRM  (schema: crm)
 // Customer master, groups, contacts, addresses, leads, segments, interactions,
-// credit limit history. Tenant scoped, except crm.customers and
-// crm.customer_contacts, which are company-wide (ADR-0011).
+// credit limit history. Tenant scoped, except crm.customers,
+// crm.customer_contacts and the lead tables, which are company-wide
+// (ADR-0011).
 // ---------------------------------------------------------------------------
 
 Table crm.customers {
@@ -1085,59 +1087,74 @@ Table crm.customer_addresses {
 
 Table crm.leads {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
   name text [not null]
   company_name text
   email text
-  phone text
-  whatsapp text
-  source text [not null, default: 'other']
-  source_detail text
+  phone varchar(30)
+  whatsapp varchar(30)
+  source text [not null]
   status text [not null, default: 'new']
-  estimated_value bigint
+  needs text [note: "What the prospect asks for; website inquiries store a readable summary here."]
+  estimated_value bigint [note: "Exact integer IDR minor units (ADR-0002)."]
   currency_code varchar(3) [not null, default: 'IDR']
-  owner_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  customer_id uuid
-  expected_close_date date
+  owner_user_id text [note: "Assigned salesperson. Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  next_follow_up_at bigint
+  customer_id uuid [note: "Customer the lead was converted into (status won)."]
   converted_at bigint
   lost_reason text
+  channel text [note: "Website form that created the lead: rfq, contact or demo; null for manual leads."]
+  reference varchar(40) [note: "Public reference handed back to the website visitor (document numbering web_*)."]
+  submission jsonb [note: "The website payload as received, for audit."]
+  idempotency_key varchar(100) [note: "Website Idempotency-Key; a replay returns the original reference."]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Prospect before a customer record exists. estimated_value is exact integer minor units."
+  Note: "Prospect before a customer record exists, company-wide (ADR-0011): no organization_id. Statuses are the ones approved on the M02 branch (survey and quotation stages; won = converted). Visibility: holders of lead:assign see all leads, others only leads assigned to them (service rule). Partial unique indexes on reference and idempotency_key WHERE NOT NULL in the Drizzle schema."
   Indexes {
-    (organization_id, code) [unique, name: 'leads_org_code_uq']
     owner_user_id [name: 'leads_owner_user_id_idx']
     status [name: 'leads_status_idx']
+    next_follow_up_at [name: 'leads_next_follow_up_at_idx']
   }
   Checks {
-    `source IN ('referral', 'website', 'whatsapp', 'exhibition', 'call', 'other')`
-    `status IN ('new', 'contacted', 'qualified', 'proposal', 'won', 'lost')`
+    `source IN ('website', 'whatsapp', 'instagram', 'phone', 'referral', 'walk_in', 'other')`
+    `status IN ('new', 'contacted', 'survey', 'quotation', 'won', 'lost')`
+    `channel IS NULL OR channel IN ('rfq', 'contact', 'demo')`
   }
 }
 
 Table crm.lead_activities {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   lead_id uuid [not null]
   activity_type text [not null]
-  subject text
-  notes text
+  notes text [not null]
   occurred_at bigint [not null]
-  next_action_at bigint
-  next_action_note text
-  assigned_to_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_by text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Follow up log of a lead."
+  deleted_at bigint
+  Note: "Follow-up log of a lead (calls, visits, surveys), company-wide like its lead (ADR-0011)."
   Indexes {
-    lead_id [name: 'lead_activities_lead_id_idx']
-    assigned_to_user_id [name: 'lead_activities_assigned_to_user_id_idx']
+    (lead_id, occurred_at) [name: 'lead_activities_lead_id_idx']
   }
   Checks {
-    `activity_type IN ('call', 'email', 'whatsapp', 'meeting', 'visit', 'note')`
+    `activity_type IN ('call', 'whatsapp', 'email', 'meeting', 'survey', 'note')`
+  }
+}
+
+Table crm.lead_attachments {
+  id uuid [pk, default: `uuidv7()`]
+  lead_id uuid [not null]
+  file_name varchar(255) [not null]
+  content_type varchar(120) [not null]
+  size_bytes integer [not null]
+  storage_key text [not null, note: "Object-storage key; never sent to clients (downloads use short-lived presigned URLs)."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "File sent with a website RFQ (PDF, DWG, JPG, PNG; up to 10 files of 25 MB)."
+  Indexes {
+    lead_id [name: 'lead_attachments_lead_id_idx']
   }
 }
 
@@ -1490,8 +1507,9 @@ Table catalog.item_cost_histories {
 
 Ref: crm.customer_contacts.customer_id > crm.customers.id [delete: restrict]
 Ref: crm.customer_addresses.customer_id > crm.customers.id [delete: cascade]
-Ref: crm.leads.customer_id > crm.customers.id [delete: set null]
-Ref: crm.lead_activities.lead_id > crm.leads.id [delete: cascade]
+Ref: crm.leads.customer_id > crm.customers.id [delete: restrict]
+Ref: crm.lead_activities.lead_id > crm.leads.id [delete: restrict]
+Ref: crm.lead_attachments.lead_id > crm.leads.id [delete: restrict]
 Ref: crm.customer_segment_members.segment_id > crm.customer_segments.id [delete: cascade]
 Ref: crm.customer_segment_members.customer_id > crm.customers.id [delete: cascade]
 Ref: crm.customer_interactions.customer_id > crm.customers.id [delete: cascade]

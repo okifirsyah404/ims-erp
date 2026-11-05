@@ -44,6 +44,7 @@ import { Route as AuthedAssetsServiceRecordsIndexRouteImport } from './routes/_a
 import { Route as AuthedCrmCustomersIndexRouteImport } from './routes/_authed/crm/customers/index'
 import { Route as AuthedCrmCustomersCustomerIdRouteImport } from './routes/_authed/crm/customers/$customerId'
 import { Route as AuthedCrmLeadsIndexRouteImport } from './routes/_authed/crm/leads/index'
+import { Route as AuthedCrmLeadsLeadIdRouteImport } from './routes/_authed/crm/leads/$leadId'
 import { Route as AuthedFinanceAccountsIndexRouteImport } from './routes/_authed/finance/accounts/index'
 import { Route as AuthedFinanceCashBankIndexRouteImport } from './routes/_authed/finance/cash-bank/index'
 import { Route as AuthedFinanceClosingIndexRouteImport } from './routes/_authed/finance/closing/index'
@@ -283,6 +284,11 @@ const AuthedCrmCustomersCustomerIdRoute =
 const AuthedCrmLeadsIndexRoute = AuthedCrmLeadsIndexRouteImport.update({
   id: '/crm/leads/',
   path: '/crm/leads/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCrmLeadsLeadIdRoute = AuthedCrmLeadsLeadIdRouteImport.update({
+  id: '/crm/leads/$leadId',
+  path: '/crm/leads/$leadId',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedFinanceAccountsIndexRoute =
@@ -651,6 +657,7 @@ export interface FileRoutesByFullPath {
   '/subscription/': typeof AuthedSubscriptionIndexRoute
   '/admin/settings/numbering': typeof AuthedAdminSettingsNumberingRoute
   '/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
+  '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
   '/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
   '/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -743,6 +750,7 @@ export interface FileRoutesByTo {
   '/subscription': typeof AuthedSubscriptionIndexRoute
   '/admin/settings/numbering': typeof AuthedAdminSettingsNumberingRoute
   '/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
+  '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
   '/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
   '/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -839,6 +847,7 @@ export interface FileRoutesById {
   '/_authed/subscription/': typeof AuthedSubscriptionIndexRoute
   '/_authed/admin/settings/numbering': typeof AuthedAdminSettingsNumberingRoute
   '/_authed/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
+  '/_authed/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
   '/_authed/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
   '/_authed/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/_authed/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -935,6 +944,7 @@ export interface FileRouteTypes {
     | '/subscription/'
     | '/admin/settings/numbering'
     | '/crm/customers/$customerId'
+    | '/crm/leads/$leadId'
     | '/inventory/borrowings/$borrowingId'
     | '/inventory/borrowings/new'
     | '/inventory/items/$itemId'
@@ -1027,6 +1037,7 @@ export interface FileRouteTypes {
     | '/subscription'
     | '/admin/settings/numbering'
     | '/crm/customers/$customerId'
+    | '/crm/leads/$leadId'
     | '/inventory/borrowings/$borrowingId'
     | '/inventory/borrowings/new'
     | '/inventory/items/$itemId'
@@ -1122,6 +1133,7 @@ export interface FileRouteTypes {
     | '/_authed/subscription/'
     | '/_authed/admin/settings/numbering'
     | '/_authed/crm/customers/$customerId'
+    | '/_authed/crm/leads/$leadId'
     | '/_authed/inventory/borrowings/$borrowingId'
     | '/_authed/inventory/borrowings/new'
     | '/_authed/inventory/items/$itemId'
@@ -1443,6 +1455,13 @@ declare module '@tanstack/react-router' {
       path: '/crm/leads'
       fullPath: '/crm/leads/'
       preLoaderRoute: typeof AuthedCrmLeadsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/crm/leads/$leadId': {
+      id: '/_authed/crm/leads/$leadId'
+      path: '/crm/leads/$leadId'
+      fullPath: '/crm/leads/$leadId'
+      preLoaderRoute: typeof AuthedCrmLeadsLeadIdRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/finance/accounts/': {
@@ -1952,6 +1971,7 @@ interface AuthedRouteChildren {
   AuthedSubscriptionIndexRoute: typeof AuthedSubscriptionIndexRoute
   AuthedAdminSettingsNumberingRoute: typeof AuthedAdminSettingsNumberingRoute
   AuthedCrmCustomersCustomerIdRoute: typeof AuthedCrmCustomersCustomerIdRoute
+  AuthedCrmLeadsLeadIdRoute: typeof AuthedCrmLeadsLeadIdRoute
   AuthedInventoryBorrowingsBorrowingIdRoute: typeof AuthedInventoryBorrowingsBorrowingIdRoute
   AuthedInventoryBorrowingsNewRoute: typeof AuthedInventoryBorrowingsNewRoute
   AuthedInventoryItemsItemIdRoute: typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -2035,6 +2055,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSubscriptionIndexRoute: AuthedSubscriptionIndexRoute,
   AuthedAdminSettingsNumberingRoute: AuthedAdminSettingsNumberingRoute,
   AuthedCrmCustomersCustomerIdRoute: AuthedCrmCustomersCustomerIdRoute,
+  AuthedCrmLeadsLeadIdRoute: AuthedCrmLeadsLeadIdRoute,
   AuthedInventoryBorrowingsBorrowingIdRoute:
     AuthedInventoryBorrowingsBorrowingIdRoute,
   AuthedInventoryBorrowingsNewRoute: AuthedInventoryBorrowingsNewRoute,

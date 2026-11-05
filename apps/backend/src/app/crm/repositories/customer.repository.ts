@@ -4,6 +4,7 @@ import {
 	customers,
 	type TCustomerSelect,
 } from '@drizzle/schemas/crm.schema';
+import { likePattern } from '@drizzle/search';
 import type { TPaginationResult } from '@ims-erp/common';
 import { and, asc, count, eq, ilike, isNull, or } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
@@ -14,11 +15,6 @@ import type {
 	TUpdateCustomerInput,
 } from '../contracts/customer.contract';
 import type { ICustomerRepository } from '../contracts/customer.repository.interface';
-
-/** `%term%` for ILIKE with `%`, `_` and `\` in the term matched literally. */
-function containsPattern(term: string): string {
-	return `%${term.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
-}
 
 /** Drizzle implementation of {@link ICustomerRepository}. */
 @injectable()
@@ -36,7 +32,7 @@ export class CustomerRepository implements ICustomerRepository {
 			status ? eq(customers.status, status) : undefined,
 			customerType ? eq(customers.customerType, customerType) : undefined,
 			search
-				? or(ilike(customers.name, containsPattern(search)), ilike(customers.code, containsPattern(search)))
+				? or(ilike(customers.name, likePattern(search)), ilike(customers.code, likePattern(search)))
 				: undefined,
 		);
 		const [{ value: total }] = await this.database.select({ value: count() }).from(customers).where(where);

@@ -76,6 +76,8 @@ const DYNAMIC_PREFIXES = [
 	// Numbering pattern problems: the backend error composes
 	// `numbering.pattern.${code}` from the validator's problem code.
 	'numbering.pattern.',
+	// Website inquiry errors compose `publicApi.${kind}`.
+	'publicApi.',
 	// The numbering settings page labels server values (document type,
 	// reset policy) by composing the key.
 	'settings:numbering.type.',
@@ -83,6 +85,10 @@ const DYNAMIC_PREFIXES = [
 	// Customer type and status labels come from server values.
 	'crm:customerType.',
 	'crm:customerStatus.',
+	'crm:leadStatus.',
+	'crm:leadSource.',
+	'crm:leadChannel.',
+	'crm:activityType.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

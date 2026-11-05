@@ -12,6 +12,97 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — ADR-0011 port step 3b: leads, follow-ups, website API, 2026-11-05
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner).
+
+Gate 1 (read): docs.dbml `crm.leads`, `crm.lead_activities`, `auth.apikeys`;
+main's `@better-auth/api-key` plugin (default config only), `providers/s3`
+(`s3Client`, `presignObjectUrl`), the organization and user services, and the
+dynamic permission resolver (`PERMISSION_RESOLVER_TOKEN`, roles from
+`auth.roles`).
+
+Gate 2 (3b):
+- Ownership: CRM module (`app/crm`); the website endpoints are a separate
+  public controller in the same module (`/public/v1/rfq|contact|demo`).
+- Tenant scope: none — leads, activities and attachments are company-wide
+  (ADR-0011 §2). The website key still belongs to an organization (Better
+  Auth `references: 'organization'`), which only authenticates the website.
+- `crm.leads`: docs.dbml shape adapted to the owner-approved M02 rules —
+  statuses `new, contacted, survey, quotation, won, lost`; sources
+  `website, whatsapp, instagram, phone, referral, walk_in, other`;
+  `owner_user_id` = assigned salesperson; `customer_id` = converted
+  customer (same-module FK, `restrict`); website columns `channel`,
+  `reference`, `submission` (jsonb), `idempotency_key` (partial unique
+  indexes `WHERE NOT NULL`); `needs`, `next_follow_up_at`; DBML `code`,
+  `source_detail`, `expected_close_date` dropped (unused by the approved
+  flow).
+- `crm.lead_activities`: types `call, whatsapp, email, meeting, survey,
+  note`; `occurred_at`, `created_by`; DBML `subject` / `next_action_*` /
+  `assigned_to_user_id` dropped (the next follow-up lives on the lead).
+- New `crm.lead_attachments` (RFQ files: PDF/DWG/JPG/PNG, ≤10 × 25 MB;
+  storage key never leaves the server; downloads by 5-minute presigned URL).
+- Visibility: holders of `lead:assign` (resolved with the dynamic
+  permission resolver, not the static catalog) see all leads and may
+  assign; everyone else only leads assigned to them; others answer 404.
+  The assignee must be a member of the caller's organization holding
+  `lead:read` (new organization-service method `getMemberRole`, read-only,
+  for programmer A's review). Names of assignees/authors come from the user
+  service (they may sit in another department).
+- Conversion: links an active customer or creates one through
+  `CustomerService` (3a contract); the lead becomes `won` atomically
+  (409 on a race).
+- Website: `ewk_` keys (config `website`, 600 requests/minute) in the
+  Better Auth api-key plugin; `publicApiGuard` (Bearer key); numbering
+  `web_rfq|web_contact|web_demo` (step 1); `Idempotency-Key` replays return
+  the first reference; `scripts/create-website-api-key.ts`.
+- Money: `estimated_value` bigint minor units. Datetimes bigint ms.
+- Also fixed in this step: step 1's `canSeeBanks` used the static grant
+  catalog; it moves to the dynamic resolver like every new check.
+
+Implementation:
+- `docs.dbml` first (crm.leads / lead_activities as above, new
+  crm.lead_attachments, Refs `restrict`); generator 504 refs; validator OK.
+- `crm.schema.ts` leads, lead_activities, lead_attachments; migration
+  `20261105152712_massive_secret_warriors` (3 tables + FKs, additive),
+  applied to `ims_erp_sync`.
+- Backend `src/app/crm`: `LeadService` (visibility, assignment through
+  `OrganizationService.getMemberRole` + `PERMISSION_RESOLVER_TOKEN`, names
+  through `UserService.getUser`, conversion through `CustomerService`,
+  5-minute presigned attachment URLs), `WebsiteInquiryService` (ported
+  rules; `submitRfq` is async so size/type errors reject instead of
+  throwing synchronously), `LeadController` (`/leads`, `/:id`,
+  `/:id/attachments/:attachmentId/url`, `/:id/status|assign|activities|
+  convert`, archive), `PublicWebsiteController` (`/public/v1/rfq|contact|
+  demo`, JSON or multipart). `src/authorization/public-api-auth.ts`
+  (`publicApi` macro, `AppError` keys `publicApi.*`), website api-key
+  config (`website`, `ewk_`, 600/min), `providers/s3/object-storage.ts`
+  (`OBJECT_STORAGE_TOKEN`, registered in `di/provider.ts`),
+  `drizzle/search.ts` `likePattern` (shared with customers),
+  `scripts/create-website-api-key.ts`. Organization module: read-only
+  `findMemberRole` / `getMemberRole` (for programmer A's review).
+- Web admin: `/crm/leads` list (search incl. reference, status, source,
+  assigned filter for managers, follow-up due, pagination, create) replaces
+  the stub; `/crm/leads/$leadId` (details, website attachments download,
+  pipeline status with lost reason, assignee select for managers,
+  follow-up log, edit, convert to new/existing customer, archive);
+  `lib/lead-api.ts`; date helpers in `lib/format.ts`; `crm` locale keys.
+- Checks: `bun run test` — backend 570 (9 new: lead + website inquiry),
+  web-admin 41, locales 42; backend and web `tsc` clean; lint 0. Live
+  public API (dev key created with the script, kept out of logs): no key /
+  bad key → 401 (Indonesian), contact 201 `MSG-2026-00001`, same
+  Idempotency-Key replay 200 with the same reference, invalid payload 400,
+  RFQ multipart with a PDF 201 `RFQ-2026-00001` (file stored in MinIO).
+  Browser (Playwright, Chromium 1161, id-ID, owner): website RFQ listed
+  unassigned, attachment downloaded through a signed URL, manual lead with
+  value/follow-up/status, conversion to a new customer; no console errors.
+  Download changed from `window.open` to a link click (no popup blocker).
+  Test rows archived afterwards.
+- Behaviour change to tell the website team: invalid public payloads now
+  answer **400** with main's validation envelope (the M02 branch answered
+  422 with a per-field list).
+
 ## Completed — ADR-0011 port step 3a: customers and contacts, 2026-11-05
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A

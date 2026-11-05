@@ -40,8 +40,6 @@ Last synced: 2026-11-05.
 ## M02 CRM and Sales
 
 ### planned
-- Leads, follow-ups/surveys — T05. Evidence: dbml `crm` only (ADR-0011
-  step 3b).
 - Invoice, DP (customer advance), receipt — T05, ERP-0011. Evidence: dbml
   `finance.invoices`/`receipts` only.
 - One template per document — T05. Evidence: dbml `documents` only.
@@ -53,6 +51,10 @@ Last synced: 2026-11-05.
 - Customers + contacts — T05, ERP-0004/0005. Evidence: `apps/backend/src/app/crm`,
   `test/unit/customer.service.test.ts`, `/crm/customers` pages, `progress.md`
   2026-11-05 (ADR-0011 step 3a). Gaps: real-PG integration tests, e2e.
+- Leads, follow-ups/surveys, website RFQ/contact/demo intake — T05.
+  Evidence: `apps/backend/src/app/crm` (leads, public website API),
+  `test/unit/lead.service.test.ts`, `/crm/leads` pages, `progress.md`
+  2026-11-05 (ADR-0011 step 3b). Gaps: real-PG integration tests, e2e.
 
 ### in-progress
 - SPH (quotation) + simple price approval — T05, ERP-0011 (`planned` in
@@ -229,7 +231,8 @@ Last synced: 2026-11-05.
 - ERP-0036 Port M02/M05/M07 onto main (ADR-0011): steps 1-2 implemented
   2026-11-05 (numbering, company profile, role grants; item categories,
   fixed units, brand/specification/active on items) and 3a (customers +
-  contacts, `/crm/customers`); 3b-3d and 4-6 planned.
+  contacts, `/crm/customers`) and 3b (leads, follow-ups, website API);
+  3c-3d and 4-6 planned.
   Evidence: `progress.md` 2026-11-05, `test/unit/item-category.service.test.ts`.
 
 ### implemented
