@@ -4939,6 +4939,7 @@ Table assets.borrowings {
   status text [not null, default: 'requested']
   purpose text [not null, default: 'internal_use']
   borrower_type text [not null]
+  tool_set_id uuid [note: "Logical reference to assets.tool_sets.id (same module). Set when the borrowing lends a whole kit (D6); NULL for a hand-picked set of assets."]
   borrower_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
   borrower_customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted."]
   guest_name text

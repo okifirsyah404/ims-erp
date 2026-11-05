@@ -19,35 +19,38 @@
  */
 import { describe, expect, test } from 'bun:test';
 import type {
+	TAssetMovementSelect,
+	TAssetSelect,
 	TBorrowingEventSelect,
 	TBorrowingLineSelect,
 	TBorrowingSelect,
-	TSerialTrackedItemSelect,
-} from '@drizzle/schemas/inventory.schema';
+} from '@drizzle/schemas/asset.schema';
 import type {
 	IBorrowingRepository,
 	TBorrowingPaginationRequest,
-} from '../../src/app/inventory/contracts/borrowing.repository.interface';
-import type { ISerialUnitRepository } from '../../src/app/inventory/contracts/serial-unit.repository.interface';
-import type { StockService } from '../../src/app/inventory/services/stock.service';
+} from '../../src/app/assets/contracts/borrowing.repository.interface';
+import type { IAssetRepository } from '../../src/app/assets/contracts/asset.repository.interface';
+import type { IAssetOperationsRepository } from '../../src/app/assets/contracts/asset-operations.repository.interface';
+import type { WarehouseService } from '../../src/app/inventory/services/warehouse.service';
+import { AssetOperationsService } from '../../src/app/assets/services/asset-operations.service';
 import {
 	BorrowingService,
 	isLegalBorrowingTransition,
 	monthsBefore,
-} from '../../src/app/inventory/services/borrowing.service';
+} from '../../src/app/assets/services/borrowing.service';
 import {
 	BorrowingSelfApprovalForbiddenError,
 	BorrowingTransitionError,
 	GuestIdentityIncompleteError,
 	UnitNotAvailableError,
-} from '../../src/app/inventory/errors/inventory.errors';
-import type { TBorrowingActor } from '../../src/app/inventory/services/borrowing.service';
+} from '../../src/app/assets/errors/borrowing.errors';
+import type { TBorrowingActor } from '../../src/app/assets/services/borrowing.service';
 import { createNumberingDouble } from '../helpers/numbering-double';
 import { AuditWriterDouble } from '../helpers/audit-writer-double';
 
 const ORG = 'org-1';
 const WAREHOUSE = '01920000-0000-7000-8000-0000000000aa';
-const ITEM = '01920000-0000-7000-8000-000000000001';
+const STORAGE = '01920000-0000-7000-8000-0000000000ab';
 
 const NOW = new Date('2026-06-01T00:00:00.000Z');
 const FUTURE = new Date('2026-06-15T00:00:00.000Z');
@@ -93,6 +96,7 @@ class FakeBorrowingRepository implements IBorrowingRepository {
 			status: data.status ?? 'requested',
 			purpose: data.purpose ?? 'internal_use',
 			borrowerType: data.borrowerType,
+			toolSetId: data.toolSetId ?? null,
 			borrowerUserId: data.borrowerUserId ?? null,
 			borrowerCustomerId: data.borrowerCustomerId ?? null,
 			guestName: data.guestName ?? null,
@@ -151,8 +155,9 @@ class FakeBorrowingRepository implements IBorrowingRepository {
 				({
 					id: nextId('line'),
 					borrowingId: line.borrowingId,
-					serialTrackedItemId: line.serialTrackedItemId,
-					originWarehouseId: line.originWarehouseId,
+					assetId: line.assetId,
+					originWarehouseId: line.originWarehouseId ?? null,
+					originStorageId: line.originStorageId ?? null,
 					issuedAt: null,
 					dueAt: line.dueAt ?? null,
 					returnedAt: null,
@@ -185,7 +190,7 @@ class FakeBorrowingRepository implements IBorrowingRepository {
 			borrowingId: event.borrowingId,
 			borrowingLineId: event.borrowingLineId ?? null,
 			eventType: event.eventType,
-			stockMovementId: event.stockMovementId ?? null,
+			assetMovementId: event.assetMovementId ?? null,
 			actorUserId: event.actorUserId ?? null,
 			occurredAt: event.occurredAt,
 			note: event.note ?? null,
@@ -256,130 +261,122 @@ class FakeBorrowingRepository implements IBorrowingRepository {
 	}
 }
 
-/** In-memory unit store honouring the custody guards. */
-class FakeUnitRepository implements ISerialUnitRepository {
-	readonly units = new Map<string, TSerialTrackedItemSelect>();
+/** In-memory asset register honouring the custody guards. */
+class FakeAssetRepository {
+	readonly assets = new Map<string, TAssetSelect>();
 
-	seed(status: string, warehouseId: string | null = WAREHOUSE) {
-		const unit = {
-			id: nextId('unit'),
+	seed(
+		status = 'ready',
+		warehouseId: string | null = WAREHOUSE,
+		storageId: string | null = STORAGE,
+	) {
+		const asset = {
+			id: nextId('asset'),
 			organizationId: ORG,
-			itemId: ITEM,
-			serialNumber: `SN-${this.units.size + 1}`,
-			isProvisionalSerial: false,
-			assetTag: null,
+			code: `AST-${this.assets.size + 1}`,
+			name: `Tool ${this.assets.size + 1}`,
+			serialNumber: `SN-${this.assets.size + 1}`,
 			status,
+			condition: 'good',
 			warehouseId,
-			binId: null,
-			currentBorrowingLineId: null,
-			acquiredOn: null,
-			warrantyExpiresOn: null,
-			purchaseOrderLineId: null,
-			customerId: null,
-			stockMovementId: null,
-			notes: null,
+			storageId,
+			locationDescription: null,
+			custodianEmployeeId: null,
+			borrowedSince: null,
 			createdAt: NOW,
 			updatedAt: null,
 			deletedAt: null,
-		} as TSerialTrackedItemSelect;
-		this.units.set(unit.id, unit);
-		return unit;
+		} as unknown as TAssetSelect;
+		this.assets.set(asset.id, asset);
+		return asset;
 	}
 
-	async paginate() {
-		return {
-			meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
-			data: [...this.units.values()],
-		};
-	}
 	async findById(id: string) {
-		return this.units.get(id) ?? null;
+		return this.assets.get(id) ?? null;
 	}
-	async findBySerial() {
-		return null;
-	}
-	async create(): Promise<TSerialTrackedItemSelect> {
-		throw new Error('not used');
-	}
-	async replaceProvisionalSerial() {
-		return null;
-	}
-	async updateStatus(id: string, status: string) {
-		const row = this.units.get(id);
+
+	async update(id: string, data: Record<string, unknown>) {
+		const row = this.assets.get(id);
 		if (!row) return null;
-		row.status = status;
-		return row;
-	}
-	async issueToBorrower(id: string, borrowingLineId: string) {
-		const row = this.units.get(id);
-		if (!row || row.status !== 'in_stock') return null;
-		row.status = 'borrowed';
-		row.warehouseId = null;
-		row.binId = null;
-		row.currentBorrowingLineId = borrowingLineId;
-		return row;
-	}
-	async returnFromBorrower(id: string, warehouseId: string, binId: string | null) {
-		const row = this.units.get(id);
-		if (!row || row.status !== 'borrowed') return null;
-		row.status = 'in_stock';
-		row.warehouseId = warehouseId;
-		row.binId = binId;
-		row.currentBorrowingLineId = null;
-		return row;
-	}
-	async markLost(id: string) {
-		const row = this.units.get(id);
-		if (!row || row.status !== 'borrowed') return null;
-		row.status = 'lost';
-		row.warehouseId = null;
-		row.binId = null;
-		row.currentBorrowingLineId = null;
+		Object.assign(row, data);
 		return row;
 	}
 }
 
-/** Records every movement posted, so "one physical event, one movement" holds. */
-function makeRecordingStockService() {
-	const posted: {
-		movementType: string;
-		warehouseId: string;
-		itemId: string;
-		quantity: string;
-		referenceType?: string | null;
-		referenceId?: string | null;
-	}[] = [];
-	const service = {
-		posted,
-		async postMovement(input: Record<string, unknown>) {
-			posted.push(input as never);
-			return {
-				movement: { id: nextId('mov') },
-				balance: {},
-				scopeOrganizationId: ORG,
-			};
-		},
-	} as unknown as StockService & { posted: typeof posted };
-	return service;
+/** In-memory movement ledger plus the custody reads the reconcile performs. */
+class FakeOperationsRepository {
+	readonly movements: TAssetMovementSelect[] = [];
+
+	constructor(private readonly borrowings: FakeBorrowingRepository) {}
+
+	async findOpenBorrowingLine(assetId: string) {
+		const line = [...this.borrowings.lines.values()].find(
+			(row) =>
+				row.assetId === assetId &&
+				row.issuedAt !== null &&
+				row.returnedAt === null &&
+				row.markedLostAt === null &&
+				row.deletedAt === null,
+		);
+		return line ? { issuedAt: line.issuedAt } : null;
+	}
+
+	async hasOpenMaintenance() {
+		return false;
+	}
+
+	async createMovement(data: Record<string, unknown>) {
+		const row = {
+			id: nextId('mov'),
+			...data,
+		} as unknown as TAssetMovementSelect;
+		this.movements.push(row);
+		return row;
+	}
+
+	async findToolSetById() {
+		return null;
+	}
+	async listToolSetItems() {
+		return [];
+	}
+	async updateToolSet() {
+		return null;
+	}
 }
+
+/** Inventory owns warehouses; Assets only ever calls the two contract methods. */
+const warehouses = {
+	assertWarehouseReachableByOrg: async () => true,
+	assertStorageInWarehouse: async () => undefined,
+} as unknown as WarehouseService;
 
 function makeHarness() {
 	const borrowings = new FakeBorrowingRepository();
-	const units = new FakeUnitRepository();
-	const stock = makeRecordingStockService();
-	const service = new BorrowingService(
-		borrowings,
-		units,
-		stock,
+	const assets = new FakeAssetRepository();
+	const operationsRepository = new FakeOperationsRepository(borrowings);
+	// The services own one transaction each; an immediate handler keeps the fake
+	// repositories transactional enough for these assertions.
+	const database = {
+		transaction: async <T>(fn: (tx: unknown) => Promise<T>) => fn({}),
+	} as never;
+	const operations = new AssetOperationsService(
+		assets as unknown as IAssetRepository,
+		operationsRepository as unknown as IAssetOperationsRepository,
 		createNumberingDouble(),
 		new AuditWriterDouble(),
-		// The service owns one transaction; an immediate handler keeps the fake
-		// repositories transactional enough for these assertions.
-		{
-			transaction: async <T>(fn: (tx: unknown) => Promise<T>) => fn({}),
-		} as never,
+		warehouses,
+		database,
 	);
-	return { borrowings, units, stock, service };
+	const service = new BorrowingService(
+		borrowings,
+		assets as unknown as IAssetRepository,
+		operations,
+		createNumberingDouble(),
+		new AuditWriterDouble(),
+		database,
+	);
+	return { borrowings, assets, operationsRepository, service };
 }
 
 const fullActor: TBorrowingActor = {
@@ -396,25 +393,27 @@ const plainActor: TBorrowingActor = {
 	canSeeGuestPii: false,
 };
 
-/** Raises a borrowing against freshly seeded in-stock units. */
+/** Raises a borrowing against freshly seeded ready assets. */
 async function raise(
 	harness: ReturnType<typeof makeHarness>,
 	count = 1,
 	actor: TBorrowingActor = fullActor,
 ) {
-	const unitIds = Array.from({ length: count }, () => harness.units.seed('in_stock').id);
+	const assetIds = Array.from({ length: count }, () =>
+		harness.assets.seed('ready').id,
+	);
 	const view = await harness.service.create(
 		{
 			branch: 'user',
 			purpose: 'internal_use',
 			dueAt: FUTURE,
 			borrowerUserId: 'borrower-1',
-			lines: unitIds.map((serialTrackedItemId) => ({ serialTrackedItemId })),
+			lines: assetIds.map((assetId) => ({ assetId })),
 		},
 		ORG,
 		actor,
 	);
-	return { view, unitIds };
+	return { view, assetIds };
 }
 
 describe('isLegalBorrowingTransition', () => {
@@ -447,7 +446,7 @@ describe('isLegalBorrowingTransition', () => {
 });
 
 describe('create', () => {
-	test('captures the unit’s warehouse as the origin and writes a requested event', async () => {
+	test('captures the asset’s location as the origin and writes a requested event', async () => {
 		const harness = makeHarness();
 		const { view } = await raise(harness, 2);
 
@@ -455,15 +454,16 @@ describe('create', () => {
 		expect(view.lines).toHaveLength(2);
 		for (const line of view.lines) {
 			expect(line.originWarehouseId).toBe(WAREHOUSE);
+			expect(line.originStorageId).toBe(STORAGE);
 		}
 		expect(view.events.map((event) => event.eventType)).toEqual(['requested']);
-		// Nothing physical happened, so no movement was posted.
-		expect(harness.stock.posted).toHaveLength(0);
+		// Nothing physical happened, so no movement was written.
+		expect(harness.operationsRepository.movements).toHaveLength(0);
 	});
 
 	test('refuses a guest without a phone or id number', async () => {
 		const harness = makeHarness();
-		const unit = harness.units.seed('in_stock');
+		const asset = harness.assets.seed('ready');
 		await expect(
 			harness.service.create(
 				{
@@ -473,7 +473,7 @@ describe('create', () => {
 					guestName: 'Budi',
 					guestPhone: null,
 					guestIdNumber: '123',
-					lines: [{ serialTrackedItemId: unit.id }],
+					lines: [{ assetId: asset.id }],
 				},
 				ORG,
 				fullActor,
@@ -481,9 +481,9 @@ describe('create', () => {
 		).rejects.toBeInstanceOf(GuestIdentityIncompleteError);
 	});
 
-	test('refuses a unit that is not in stock', async () => {
+	test('refuses an asset that is not ready', async () => {
 		const harness = makeHarness();
-		const unit = harness.units.seed('borrowed');
+		const asset = harness.assets.seed('borrowed');
 		await expect(
 			harness.service.create(
 				{
@@ -491,7 +491,7 @@ describe('create', () => {
 					purpose: 'internal_use',
 					dueAt: FUTURE,
 					borrowerUserId: 'b',
-					lines: [{ serialTrackedItemId: unit.id }],
+					lines: [{ assetId: asset.id }],
 				},
 				ORG,
 				fullActor,
@@ -499,9 +499,9 @@ describe('create', () => {
 		).rejects.toBeInstanceOf(UnitNotAvailableError);
 	});
 
-	test('refuses the same unit twice in one borrowing', async () => {
+	test('refuses the same asset twice in one borrowing', async () => {
 		const harness = makeHarness();
-		const unit = harness.units.seed('in_stock');
+		const asset = harness.assets.seed('ready');
 		await expect(
 			harness.service.create(
 				{
@@ -509,10 +509,7 @@ describe('create', () => {
 					purpose: 'internal_use',
 					dueAt: FUTURE,
 					borrowerUserId: 'b',
-					lines: [
-						{ serialTrackedItemId: unit.id },
-						{ serialTrackedItemId: unit.id },
-					],
+					lines: [{ assetId: asset.id }, { assetId: asset.id }],
 				},
 				ORG,
 				fullActor,
@@ -522,28 +519,27 @@ describe('create', () => {
 });
 
 describe('issue', () => {
-	test('moves custody, posts one borrowing_out per line, and links the event', async () => {
+	test('moves custody, writes one borrow_out per line, and links the event', async () => {
 		const harness = makeHarness();
-		const { view, unitIds } = await raise(harness, 2);
+		const { view, assetIds } = await raise(harness, 2);
 		await harness.service.approve(view.id, ORG, fullActor);
 		const issued = await harness.service.issue(view.id, ORG, fullActor);
 
 		expect(issued.status).toBe('issued');
-		// Custody left the warehouse: no warehouse, no bin, line ref set.
-		for (const unitId of unitIds) {
-			const unit = harness.units.units.get(unitId);
-			expect(unit?.status).toBe('borrowed');
-			expect(unit?.warehouseId).toBeNull();
-			expect(unit?.currentBorrowingLineId).not.toBeNull();
+		// Custody left the warehouse: no location, custody timestamp set.
+		for (const assetId of assetIds) {
+			const asset = harness.assets.assets.get(assetId);
+			expect(asset?.status).toBe('borrowed');
+			expect(asset?.warehouseId).toBeNull();
+			expect(asset?.storageId).toBeNull();
+			expect(asset?.borrowedSince).not.toBeNull();
 		}
-		// One movement per unit, all typed borrowing_out and ref'd to the doc.
-		expect(harness.stock.posted).toHaveLength(2);
-		for (const movement of harness.stock.posted) {
-			expect(movement.movementType).toBe('borrowing_out');
-			expect(movement.quantity).toBe('1');
-			expect(movement.referenceType).toBe('borrowing');
-			expect(movement.referenceId).toBe(view.id);
-			expect(movement.warehouseId).toBe(WAREHOUSE);
+		// One movement per asset, all borrow_out from the origin warehouse.
+		expect(harness.operationsRepository.movements).toHaveLength(2);
+		for (const movement of harness.operationsRepository.movements) {
+			expect(movement.movementType).toBe('borrow_out');
+			expect(movement.fromWarehouseId).toBe(WAREHOUSE);
+			expect(movement.fromStorageId).toBe(STORAGE);
 		}
 		// Every physical event carries a movement id and the schema CHECK agrees.
 		const issuedEvents = harness.borrowings.events.filter(
@@ -551,7 +547,7 @@ describe('issue', () => {
 		);
 		expect(issuedEvents).toHaveLength(2);
 		for (const event of issuedEvents) {
-			expect(event.stockMovementId).not.toBeNull();
+			expect(event.assetMovementId).not.toBeNull();
 		}
 	});
 
@@ -562,7 +558,7 @@ describe('issue', () => {
 			harness.service.issue(view.id, ORG, plainActor),
 		).rejects.toBeInstanceOf(BorrowingTransitionError);
 		// And nothing was issued.
-		expect(harness.stock.posted).toHaveLength(0);
+		expect(harness.operationsRepository.movements).toHaveLength(0);
 	});
 
 	test('allows skipping approval for a caller holding borrowing:issue', async () => {
@@ -595,25 +591,27 @@ describe('issue', () => {
 });
 
 describe('return', () => {
-	test('restores the unit to its origin and moves the header to returned', async () => {
+	test('restores the asset to its origin and moves the header to returned', async () => {
 		const harness = makeHarness();
-		const { view, unitIds } = await raise(harness);
+		const { view, assetIds } = await raise(harness);
 		await harness.service.issue(view.id, ORG, fullActor);
 		const returned = await harness.service.returnLines(view.id, ORG, fullActor, {
 			condition: 'good',
 		});
 
 		expect(returned.status).toBe('returned');
-		const unit = harness.units.units.get(unitIds[0] as string);
-		expect(unit?.status).toBe('in_stock');
-		expect(unit?.warehouseId).toBe(WAREHOUSE);
-		expect(unit?.currentBorrowingLineId).toBeNull();
+		const asset = harness.assets.assets.get(assetIds[0] as string);
+		expect(asset?.status).toBe('ready');
+		expect(asset?.warehouseId).toBe(WAREHOUSE);
+		expect(asset?.storageId).toBe(STORAGE);
+		expect(asset?.borrowedSince).toBeNull();
 
-		const inbound = harness.stock.posted.filter(
-			(movement) => movement.movementType === 'borrowing_in',
+		const inbound = harness.operationsRepository.movements.filter(
+			(movement) => movement.movementType === 'borrow_return',
 		);
 		expect(inbound).toHaveLength(1);
-		expect(inbound[0]?.warehouseId).toBe(WAREHOUSE);
+		expect(inbound[0]?.toWarehouseId).toBe(WAREHOUSE);
+		expect(inbound[0]?.toStorageId).toBe(STORAGE);
 	});
 
 	test('moves to partially_returned when one of two lines comes back', async () => {
@@ -643,9 +641,9 @@ describe('return', () => {
 });
 
 describe('markLost', () => {
-	test('marks the unit lost, reduces stock at the origin, and links the event', async () => {
+	test('parks the asset as lost and links the movement event', async () => {
 		const harness = makeHarness();
-		const { view, unitIds } = await raise(harness);
+		const { view, assetIds } = await raise(harness);
 		await harness.service.issue(view.id, ORG, fullActor);
 		const [line] = await harness.borrowings.listLines(view.id);
 
@@ -653,23 +651,20 @@ describe('markLost', () => {
 			lineId: line?.id as string,
 		});
 
-		const unit = harness.units.units.get(unitIds[0] as string);
-		expect(unit?.status).toBe('lost');
-		// The loss is NOT restored to a warehouse — it is gone from stock.
-		expect(unit?.warehouseId).toBeNull();
+		const asset = harness.assets.assets.get(assetIds[0] as string);
+		expect(asset?.status).toBe('lost');
+		// The loss is NOT restored to a warehouse — it is gone.
+		expect(asset?.warehouseId).toBeNull();
 
-		// The reduction hits the warehouse the unit left from, at quantity 1.
-		const loss = harness.stock.posted.filter(
-			(movement) => movement.movementType === 'adjustment_out',
+		const loss = harness.operationsRepository.movements.filter(
+			(movement) => movement.movementType === 'lost',
 		);
 		expect(loss).toHaveLength(1);
-		expect(loss[0]?.warehouseId).toBe(WAREHOUSE);
-		expect(loss[0]?.quantity).toBe('1');
 
 		const lostEvent = harness.borrowings.events.find(
 			(event) => event.eventType === 'marked_lost',
 		);
-		expect(lostEvent?.stockMovementId).not.toBeNull();
+		expect(lostEvent?.assetMovementId).not.toBeNull();
 	});
 
 	test('refuses to report a loss on a borrowing that was not issued', async () => {
@@ -722,7 +717,7 @@ describe('late sweep', () => {
 		expect(lateEvents()).toHaveLength(1);
 		// Automated: no actor, and no movement (nothing physical moved).
 		expect(lateEvents()[0]?.actorUserId).toBeNull();
-		expect(lateEvents()[0]?.stockMovementId).toBeNull();
+		expect(lateEvents()[0]?.assetMovementId).toBeNull();
 		expect(lateEvents()[0]?.note).toBe('auto');
 	});
 
@@ -760,7 +755,7 @@ describe('late sweep', () => {
 describe('guest retention sweep', () => {
 	async function guestBorrowing(closedAt: Date) {
 		const harness = makeHarness();
-		const unit = harness.units.seed('in_stock');
+		const asset = harness.assets.seed('ready');
 		const created = await harness.service.create(
 			{
 				branch: 'guest',
@@ -771,7 +766,7 @@ describe('guest retention sweep', () => {
 				guestIdNumber: '3174099999990001',
 				guestAddressText: 'Jl. Merdeka 1',
 				guestIdType: 'ktp',
-				lines: [{ serialTrackedItemId: unit.id }],
+				lines: [{ assetId: asset.id }],
 			},
 			ORG,
 			fullActor,
@@ -819,7 +814,7 @@ describe('guest retention sweep', () => {
 describe('guest PII projection', () => {
 	test('redacts the identity fields for a caller without the tier', async () => {
 		const harness = makeHarness();
-		const unit = harness.units.seed('in_stock');
+		const asset = harness.assets.seed('ready');
 		const created = await harness.service.create(
 			{
 				branch: 'guest',
@@ -829,7 +824,7 @@ describe('guest PII projection', () => {
 				guestPhone: '0812',
 				guestIdNumber: '3174099999990001',
 				guestAddressText: 'Jl. Merdeka 1',
-				lines: [{ serialTrackedItemId: unit.id }],
+				lines: [{ assetId: asset.id }],
 			},
 			ORG,
 			fullActor,
@@ -849,7 +844,7 @@ describe('guest PII projection', () => {
 
 	test('shows the identity fields to a caller holding the tier', async () => {
 		const harness = makeHarness();
-		const unit = harness.units.seed('in_stock');
+		const asset = harness.assets.seed('ready');
 		const created = await harness.service.create(
 			{
 				branch: 'guest',
@@ -859,7 +854,7 @@ describe('guest PII projection', () => {
 				guestPhone: '0812',
 				guestIdNumber: '3174099999990001',
 				guestAddressText: 'Jl. Merdeka 1',
-				lines: [{ serialTrackedItemId: unit.id }],
+				lines: [{ assetId: asset.id }],
 			},
 			ORG,
 			fullActor,

@@ -242,6 +242,65 @@ migrate + seed run twice; 530 tests pass; DB CHECKs verified.
    `asset.placed`, `asset.transferred`, `asset.disposed`, `asset.lost`) through
    the existing `InventoryAuditWriter`.
 
+**Status: DONE (2026-11-06).** Borrowing engine lives in `assets`; the
+assignment custody path is gone; the destructive migration landed and the full
+gate set is green.
+
+- `git mv` carried the service/repository/controller/contracts and both test
+  suites into `apps/backend/src/app/assets/`; DI tokens, container
+  registration, `app.ts` mounts and the asset `index.ts` export retargeted.
+- `BorrowingService` now calls `AssetOperationsService.borrowOut` /
+  `borrowReturn` / `markAssetLost` / `syncCustody` / `reconcileStatus`; one
+  `asset_movements` row per physical transition, and the event CHECK
+  (`issued|returned|marked_lost` require `asset_movement_id`) holds.
+- `AssetOperationsService` gained `reconcileStatus`, `syncCustody`, `place`,
+  `transfer`, `setToolSetStatus`, `toolSetAssetIds` and a private
+  `assertLocation`; `asset_assignments` code, contract, repository methods and
+  controller routes were deleted.
+- Inventory exposes the two contract methods through
+  `WarehouseService`: `assertStorageInWarehouse` is real, and
+  `assertWarehouseReachableByOrg` returns `true` as the documented ERP-0031
+  stub. Assets never touches an inventory repository.
+- Locale keys were re-keyed `inventory:borrowing.*` → `assets.borrowing.*` in
+  both `en` and `id`; audit vocabulary is
+  `asset.borrowed|returned|lost|moved|placed|transferred|disposed|…`.
+- Migration `20261105221923_erp0036_slice3_borrowing_engine`: drops the
+  inventory borrowing trio and `assets.asset_assignments`, adds
+  `assets.borrowings.tool_set_id`, and tightens
+  `serial_tracked_items.status_check` (no `borrowed`). Hand-edited to drop the
+  manually-created
+  `serial_tracked_items_current_borrowing_line_id_borrowing_lines_id_fkey`
+  **before** `borrowing_lines` disappears (it was never in Drizzle metadata).
+  `serial_tracked_items.current_borrowing_line_id` stays as dead-but-documented
+  (D17).
+- Tests retargeted asset-shaped: borrowing service (state machine, approval
+  skip, sweeps), borrowing authorization, asset operations (reconcile, place,
+  transfer), kind×status matrix, item service, inventory authorization.
+  `verify-inventory-constraints.ts` now probes `assets.borrowings` /
+  `assets.borrowing_events`, and its D18 asset probes use `ready` instead of
+  the retired `in_stock`.
+
+```text
+bun run typecheck                      → clean (backend, locales, ui)
+bun run test                           → 526 pass, 0 fail (27 files, 979 expects)
+bun run lint                           → 0 errors (6 pre-existing warnings)
+bunx --bun drizzle-kit generate --hints-file … 
+  → 20261105221923_erp0036_slice3_borrowing_engine (hand-edited)
+bun run drizzle:migrate                → migrations applied successfully
+bun run drizzle:seed                   → complete (run 1)
+bun run drizzle:seed                   → complete (run 2, idempotent)
+bun docs/database/validate-dbml.ts     → 255 tables, 228 refs, 0 cross-module,
+                                         0 timestamp gaps, OK
+```
+
+Post-migration DB checks (`ims_erp_local`): only the three `assets.borrowing*`
+tables exist (no `inventory.borrowing*`, no `assets.asset_assignments`),
+`assets.borrowings.tool_set_id` present, the manual FK is gone, and
+`serial_tracked_items_status_check` is
+`pre_order|in_stock|lost|sold|applied_warranty`. `docs/database/` was reviewed
+and needed no change beyond Slice 1/2 (no table, column, link or vocabulary
+moved in this slice).
+
 ### Slice 4 — Permissions, numbering, seed
 
 1. Rename the permission resource `borrowing` → `asset_borrowing` across

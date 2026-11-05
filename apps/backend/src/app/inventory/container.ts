@@ -7,7 +7,6 @@ import { WarehouseStorageRepository } from './repositories/warehouse-storage.rep
 import { MovementRepository } from './repositories/movement.repository';
 import { BalanceRepository } from './repositories/balance.repository';
 import { AdjustmentRepository } from './repositories/adjustment.repository';
-import { BorrowingRepository } from './repositories/borrowing.repository';
 import { InventoryAuditWriter } from './services/inventory-audit.writer';
 import { ItemService } from './services/item.service';
 import { AUDIT_SERVICE_TOKEN } from '../audit/constants/di';
@@ -15,13 +14,10 @@ import type { AuditService } from '../audit/services/audit.service';
 import { WarehouseService } from './services/warehouse.service';
 import { StockService } from './services/stock.service';
 import { AdjustmentService } from './services/adjustment.service';
-import { BorrowingService } from './services/borrowing.service';
 import {
 	ADJUSTMENT_REPOSITORY_TOKEN,
 	ADJUSTMENT_SERVICE_TOKEN,
 	BALANCE_REPOSITORY_TOKEN,
-	BORROWING_REPOSITORY_TOKEN,
-	BORROWING_SERVICE_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
 	ITEM_SERVICE_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
@@ -89,14 +85,5 @@ export function registerInventory(container: DependencyContainer): void {
 	container.register(STOCK_SERVICE_TOKEN, { useClass: StockService });
 	container.register(ADJUSTMENT_SERVICE_TOKEN, {
 		useClass: AdjustmentService,
-	});
-
-	// Borrowing injects StockService (it posts movements inside its own
-	// transaction), so STOCK_SERVICE_TOKEN must already be registered above.
-	container.register(BORROWING_REPOSITORY_TOKEN, {
-		useClass: BorrowingRepository,
-	});
-	container.register(BORROWING_SERVICE_TOKEN, {
-		useClass: BorrowingService,
 	});
 }

@@ -105,5 +105,5 @@ export interface IAssetRepository {
 	 * assignments and maintenance records; the disposal FK is RESTRICT, so
 	 * the database enforces that one itself.
 	 */
-	countReferences(id: string): Promise<{ assignments: number; maintenances: number }>;
+	countReferences(id: string): Promise<{ borrowings: number; maintenances: number }>;
 }

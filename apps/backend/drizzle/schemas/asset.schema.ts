@@ -460,53 +460,6 @@ export const assets = assetsSchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
- * assets.asset_assignments
- * ------------------------------------------------------------------------ */
-
-/**
- * Custody of an asset.
- *
- * @deprecated ERP-0036 D6: borrowing becomes the only custody mechanism and
- * this table is dropped in Slice 3 together with its endpoints. Kept in this
- * commit so the existing assign/return code still compiles.
- */
-export const assetAssignments = assetsSchema.table(
-	'asset_assignments',
-	{
-		id: uuid('id')
-			.primaryKey()
-			.default(sql`uuidv7()`),
-		organizationId: organizationId(),
-		assetId: uuid('asset_id')
-			.notNull()
-			.references(() => assets.id, { onDelete: 'cascade' }),
-		/** Logical reference to hr.employees.id — cross-module FK omitted. */
-		assignedToEmployeeId: uuid('assigned_to_employee_id'),
-		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		assignedToUserId: text('assigned_to_user_id'),
-		assignedAt: unixTimestamp('assigned_at').notNull(),
-		returnedAt: unixTimestampNullable('returned_at'),
-		conditionOnAssign: text('condition_on_assign'),
-		conditionOnReturn: text('condition_on_return'),
-		notes: text('notes'),
-		createdAt: unixTimestamp('created_at').notNull(),
-		updatedAt: unixTimestampNullable('updated_at').$onUpdate(() => new Date()),
-		deletedAt: unixTimestampNullable('deleted_at'),
-	},
-	(table) => [
-		index('asset_assignments_asset_id_idx').on(table.assetId),
-		index('asset_assignments_employee_id_idx').on(table.assignedToEmployeeId),
-		index('asset_assignments_open_idx')
-			.on(table.assetId)
-			.where(sql`returned_at IS NULL AND deleted_at IS NULL`),
-		check(
-			'asset_assignments_returned_check',
-			sql`${table.returnedAt} IS NULL OR ${table.returnedAt} >= ${table.assignedAt}`,
-		),
-	],
-);
-
-/* ------------------------------------------------------------------------ *
  * assets.asset_movements
  * ------------------------------------------------------------------------ */
 
@@ -925,6 +878,12 @@ export const borrowings = assetsSchema.table(
 		status: text('status').notNull().default('requested'),
 		purpose: text('purpose').notNull().default('internal_use'),
 		borrowerType: text('borrower_type').notNull(),
+		/**
+		 * Logical reference to `assets.tool_sets.id` (same module). Set when
+		 * the borrowing lends a whole kit (D6), so return can restore the set
+		 * to `available`.
+		 */
+		toolSetId: uuid('tool_set_id'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
 		borrowerUserId: text('borrower_user_id'),
 		/** Logical reference to crm.customers.id — cross-module FK omitted. */
@@ -1116,8 +1075,6 @@ export type TAssetCategorySelect = typeof assetCategories.$inferSelect;
 export type TAssetCategoryInsert = typeof assetCategories.$inferInsert;
 export type TAssetSelect = typeof assets.$inferSelect;
 export type TAssetInsert = typeof assets.$inferInsert;
-export type TAssetAssignmentSelect = typeof assetAssignments.$inferSelect;
-export type TAssetAssignmentInsert = typeof assetAssignments.$inferInsert;
 export type TAssetMovementSelect = typeof assetMovements.$inferSelect;
 export type TAssetMovementInsert = typeof assetMovements.$inferInsert;
 export type TAssetMaintenanceSelect = typeof assetMaintenances.$inferSelect;

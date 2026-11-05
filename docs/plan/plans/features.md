@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-05.
+Last synced: 2026-11-06.
 
 > **Sidebar shell note (2026-11-05):** the web-admin sidebar now renders the
 > full M01–M12 nav map (see `progress.md`, "UI — full ERP sidebar shell").
@@ -126,9 +126,11 @@ Last synced: 2026-11-05.
   prints `OK`; plan `plans/assets-equipment-location-and-borrowing.md` Slice 1
   done); Slice 2 shipped 2026-11-05 (asset schema rewritten, cleanup script
   applied, migration `20261105123204_faulty_ikaris`, reset + migrate + seed
-  twice, 530 tests, DB CHECKs verified — see `progress.md`). Code port, seed,
-  permissions and UI remain (Slices 3–5); the inventory borrowing trio and
-  `asset_assignments` drop in Slice 3 with the code move.
+  twice, 530 tests, DB CHECKs verified — see `progress.md`); Slice 3 shipped
+  2026-11-06 (borrowing engine moved to `assets`,
+  `inventory/services/borrowing.service.ts` and `assets.asset_assignments`
+  gone, migration `20261105221923_erp0036_slice3_borrowing_engine`, migrate +
+  seed twice, 526 tests). Slices 4–5 remain (permissions/numbering/seed, UI).
   Stage 0 execution review resolved all blocking defects (global assets with
   stubbed warehouse reachability, global unique asset code, no
   `document_sequences` change, jsonb permission migration). Supersedes the M06
@@ -142,11 +144,12 @@ Last synced: 2026-11-05.
 
 ### implemented
 - Tool borrowing/return (S4) — T07, ERP-0029 (backlog "shipped" → mapped
-  `implemented`). Evidence: `inventory/services/borrowing.service.ts`, 60 tests,
-  late-return + guest-PII retention sweeps on BullMQ; UI
-  `/inventory/borrowings/*`. Pending: browser walk-through; worker still in API
-  process. Note: lives in `inventory`; covers the M06 loan register
-  (ADR-0010, proposed).
+  `implemented`). Engine **moved to `assets`** by ERP-0036 Slice 3
+  (2026-11-06): `assets/services/borrowing.service.ts`, 526 backend tests
+  green; late-return + guest-PII retention sweeps on BullMQ. UI still at
+  `/inventory/borrowings/*` until ERP-0036 Slice 5. Pending: browser
+  walk-through; worker still in API process. Note: covers the M06 loan
+  register (ADR-0010, proposed).
 
 ## M07 Projects and After-Sales
 

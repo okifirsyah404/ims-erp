@@ -1,6 +1,5 @@
 import type { TPaginationResult } from '@ims-erp/common';
 import type {
-	TAssetAssignmentSelect,
 	TAssetConditionCheckSelect,
 	TAssetDepreciationSelect,
 	TAssetDisposalSelect,
@@ -12,32 +11,9 @@ import type {
 } from '@drizzle/schemas/asset.schema';
 import type { TTx } from '@drizzle/types';
 
-/** Input for opening a custody assignment (D12). */
-export type TAssignmentCreateData = {
-	organizationId: string;
-	assetId: string;
-	assignedToEmployeeId?: string | null;
-	assignedToUserId?: string | null;
-	conditionOnAssign?: string | null;
-	notes?: string | null;
-	assignedAt: Date;
-	createdAt: Date;
-};
-
-/** Pagination for a single asset's custody history. */
-export type TAssignmentListRequest = {
-	assetId: string;
-	organizationId: string;
-	/** Only the open assignment. */
-	openOnly?: boolean;
-	page: number;
-	limit: number;
-};
-
 /**
- * Data-access contract over the asset operation tables (assignments,
- * movements, condition checks, maintenances, depreciations, disposals,
- * documents, tool sets).
+ * Data-access contract over the asset operation tables (movements, condition
+ * checks, maintenances, depreciations, disposals, documents, tool sets).
  *
  * @remarks
  * Grouped in one repository because they are all child ledgers of the
@@ -46,35 +22,17 @@ export type TAssignmentListRequest = {
 export interface IAssetOperationsRepository {
 	/* ------------------------------ custody ------------------------------ */
 
-	createAssignment(
-		data: TAssignmentCreateData,
-		tx?: TTx,
-	): Promise<TAssetAssignmentSelect>;
-
-	listAssignments(
-		request: TAssignmentListRequest,
-	): Promise<TPaginationResult<TAssetAssignmentSelect>>;
-
-	/** The open (not returned) assignment of an asset, if any. */
-	findOpenAssignment(
+	/**
+	 * The open borrowing line of an asset, if any — what `syncCustody` and
+	 * `reconcileStatus` derive from (D7/D8).
+	 */
+	findOpenBorrowingLine(
 		assetId: string,
 		tx?: TTx,
-	): Promise<TAssetAssignmentSelect | null>;
+	): Promise<{ issuedAt: Date | null } | null>;
 
-	/**
-	 * Atomically claims the open assignment for return: a conditional
-	 * `UPDATE … WHERE returned_at IS NULL` (Phase I-4 lesson) — of two
-	 * concurrent returns exactly one wins.
-	 */
-	claimForReturn(
-		assignmentId: string,
-		data: {
-			returnedAt: Date;
-			conditionOnReturn: string;
-			notes?: string | null;
-		},
-		tx: TTx,
-	): Promise<TAssetAssignmentSelect | null>;
+	/** Whether the asset is on a maintenance that has not finished. */
+	hasOpenMaintenance(assetId: string, tx?: TTx): Promise<boolean>;
 
 	/* ----------------------------- movements ----------------------------- */
 
@@ -83,6 +41,10 @@ export interface IAssetOperationsRepository {
 			organizationId: string;
 			assetId: string;
 			movementType: string;
+			fromWarehouseId?: string | null;
+			fromStorageId?: string | null;
+			toWarehouseId?: string | null;
+			toStorageId?: string | null;
 			fromLocation?: string | null;
 			toLocation?: string | null;
 			movedAt: Date;

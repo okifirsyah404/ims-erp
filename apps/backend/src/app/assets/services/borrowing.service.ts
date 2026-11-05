@@ -4,26 +4,26 @@ import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type { TTx } from '@drizzle/types';
 import type {
 	BorrowingStatus,
+	TAssetSelect,
 	TBorrowingInsert,
 	TBorrowingLineSelect,
 	TBorrowingSelect,
-	TSerialTrackedItemSelect,
-} from '@drizzle/schemas/inventory.schema';
+} from '@drizzle/schemas/asset.schema';
 import type {
 	IBorrowingRepository,
 	TBorrowingLineInput,
 	TBorrowingPaginationRequest,
 } from '../contracts/borrowing.repository.interface';
-import type { ISerialUnitRepository } from '../contracts/serial-unit.repository.interface';
+import type { IAssetRepository } from '../contracts/asset.repository.interface';
 import {
+	ASSET_OPERATIONS_SERVICE_TOKEN,
+	ASSET_REPOSITORY_TOKEN,
 	BORROWING_REPOSITORY_TOKEN,
-	SERIAL_UNIT_REPOSITORY_TOKEN,
-	STOCK_SERVICE_TOKEN,
 } from '../constants/di';
-import type { StockService } from './stock.service';
+import type { AssetOperationsService } from './asset-operations.service';
 import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
 import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import { InventoryAuditWriter } from './inventory-audit.writer';
+import { InventoryAuditWriter } from '@app/inventory/services/inventory-audit.writer';
 import {
 	BorrowerIdentityError,
 	BorrowingHasNoLinesError,
@@ -34,7 +34,7 @@ import {
 	GuestIdentityIncompleteError,
 	UnitNotAvailableError,
 	UnitNotOnBorrowingError,
-} from '../errors/inventory.errors';
+} from '../errors/borrowing.errors';
 
 /**
  * Legal status edges for a borrowing (D19).
@@ -95,6 +95,8 @@ export type TBorrowingCreateInput = {
 	guestAddressText?: string | null;
 	guestIdDocumentRef?: string | null;
 	notes?: string | null;
+	/** Lend a whole tool set (D6); it expands to one line per member asset. */
+	toolSetId?: string | null;
 	lines: TBorrowingLineInput[];
 };
 
@@ -105,7 +107,7 @@ export type TBorrowingView = TBorrowingSelect & {
 		id: string;
 		borrowingLineId: string | null;
 		eventType: string;
-		stockMovementId: string | null;
+		assetMovementId: string | null;
 		actorUserId: string | null;
 		occurredAt: Date;
 		note: string | null;
@@ -123,21 +125,21 @@ export type TSweepResult = {
 };
 
 /**
- * Borrowing lifecycle service (S4).
+ * Borrowing lifecycle service (D5).
  *
  * @remarks
  * **One issue/return engine.** "Tested" is a borrowing with `purpose =
  * 'testing'`, not a parallel flow (D8).
  *
  * **Every physical transition is one transaction** containing, atomically:
- * 1. the unit's custody change,
- * 2. the `stock_movements` row,
- * 3. the balance delta,
+ * 1. the borrowing line's issue/return snapshot,
+ * 2. the `asset_movements` row (D4 — borrowing never writes the stock ledger),
+ * 3. the asset's location/custody/status reconcile,
  * 4. the append-only timeline event that references the movement.
  *
- * That is why {@link StockService.postMovement} accepts an outer transaction:
- * a movement committed outside the unit change would leave the ledger claiming
- * stock the warehouse still shows.
+ * That is why {@link AssetOperationsService} accepts an outer transaction: a
+ * movement committed outside the line change would leave the timeline claiming
+ * custody the register still shows as in stock.
  *
  * **Guest PII never leaves this service unredacted** unless the caller holds
  * the tier required in §6.
@@ -147,10 +149,11 @@ export class BorrowingService {
 	constructor(
 		@inject(BORROWING_REPOSITORY_TOKEN)
 		private readonly borrowingRepository: IBorrowingRepository,
-		@inject(SERIAL_UNIT_REPOSITORY_TOKEN)
-		private readonly serialUnitRepository: ISerialUnitRepository,
-		@inject(STOCK_SERVICE_TOKEN)
-		private readonly stockService: StockService,
+		@inject(ASSET_REPOSITORY_TOKEN)
+		private readonly assetRepository: IAssetRepository,
+		/** Asset custody reconcile (D7/D8) and the movement ledger (D3). */
+		@inject(ASSET_OPERATIONS_SERVICE_TOKEN)
+		private readonly assetOperations: AssetOperationsService,
 		/**
 		 * ERP-0009 numbering authority: borrowing codes are sequence-allocated
 		 * inside the creating transaction (hardening plan D4).
@@ -204,13 +207,18 @@ export class BorrowingService {
 		actor: TBorrowingActor,
 		status: 'draft' | 'requested' = 'requested',
 	): Promise<TBorrowingView> {
-		if (input.lines.length === 0) throw new BorrowingHasNoLinesError();
+		if (input.lines.length === 0 && !input.toolSetId) {
+			throw new BorrowingHasNoLinesError();
+		}
 		const identity = this.resolveIdentity(input);
-		// Resolves each unit once: confirms availability AND captures the origin
-		// warehouse, which is NOT NULL on the line. The unit's location at
-		// creation is the best known origin; issue re-snapshots it in case the
-		// unit moved in the meantime.
-		const resolved = await this.resolveLines(input.lines);
+		// D6: a tool set lends as one kit, expanded into one line per member.
+		const requested = input.toolSetId
+			? [...input.lines, ...(await this.toolSetLines(input.toolSetId, organizationId))]
+			: input.lines;
+		if (requested.length === 0) throw new BorrowingHasNoLinesError();
+		// Resolves each asset once: confirms availability AND captures the origin
+		// warehouse/storage, which the return and loss flows restore.
+		const resolved = await this.resolveLines(requested, organizationId);
 
 		const now = new Date();
 
@@ -241,14 +249,16 @@ export class BorrowingService {
 					guestPhone: identity.guestPhone,
 					borrowerUserId: identity.borrowerUserId,
 					borrowerCustomerId: identity.borrowerCustomerId,
+					toolSetId: input.toolSetId ?? null,
 				},
 				tx,
 			);
 			await this.borrowingRepository.createLines(
-				resolved.map(({ line, unit }) => ({
+				resolved.map(({ line, asset }) => ({
 					borrowingId: header.id,
-					serialTrackedItemId: line.serialTrackedItemId,
-					originWarehouseId: unit.warehouseId as string,
+					assetId: line.assetId,
+					originWarehouseId: asset.warehouseId,
+					originStorageId: asset.storageId,
 					dueAt: line.dueAt ?? input.dueAt,
 					issuedAt: null,
 					returnedAt: null,
@@ -269,7 +279,7 @@ export class BorrowingService {
 						borrowingId: header.id,
 						borrowingLineId: null,
 						eventType: 'requested',
-						stockMovementId: null,
+						assetMovementId: null,
 						actorUserId: actor.actorUserId,
 						occurredAt: now,
 						note: null,
@@ -382,7 +392,7 @@ export class BorrowingService {
 		const now = new Date();
 		await this.database.transaction(async (tx) => {
 			for (const line of open) {
-				await this.issueLine(borrowing, line, actor, now, tx);
+				await this.issueLine(borrowing, line, organizationId, actor, now, tx);
 			}
 			const issued = await this.borrowingRepository.update(
 				id,
@@ -397,19 +407,31 @@ export class BorrowingService {
 			if (!issued) {
 				throw new BorrowingTransitionError(borrowing.status, 'issued');
 			}
+			// D6: the kit is out as a unit while any of its lines is open.
+			if (borrowing.toolSetId) {
+				await this.assetOperations.setToolSetStatus(
+					borrowing.toolSetId,
+					'lent',
+					tx,
+				);
+			}
 		});
 
-		await this.audit.record({
-			actor: { userId: actor.actorUserId },
-			action: 'borrowing.issued',
-			targetType: 'borrowing',
-			targetId: id,
-			organizationId,
-			meta: {
-				code: borrowing.code,
-				lineCount: open.length,
-			},
-		});
+		for (const line of open) {
+			await this.audit.record({
+				actor: { userId: actor.actorUserId },
+				action: 'asset.borrowed',
+				targetType: 'asset',
+				targetId: line.assetId,
+				organizationId,
+				meta: {
+					code: borrowing.code,
+					borrowingId: id,
+					lineId: line.id,
+					toolSetId: borrowing.toolSetId,
+				},
+			});
+		}
 
 		return this.getById(id, organizationId, actor);
 	}
@@ -458,6 +480,7 @@ export class BorrowingService {
 				await this.returnLine(
 					borrowing,
 					line,
+					organizationId,
 					actor,
 					options.condition,
 					options.note ?? null,
@@ -478,32 +501,42 @@ export class BorrowingService {
 			if (!updated) {
 				throw new BorrowingTransitionError(borrowing.status, nextStatus);
 			}
+			// D6: the kit is only available again once every line is back.
+			if (nextStatus === 'returned' && borrowing.toolSetId) {
+				await this.assetOperations.setToolSetStatus(
+					borrowing.toolSetId,
+					'available',
+					tx,
+				);
+			}
 		});
 
-		await this.audit.record({
-			actor: { userId: actor.actorUserId },
-			action: 'borrowing.returned',
-			targetType: 'borrowing',
-			targetId: id,
-			organizationId,
-			meta: {
-				code: borrowing.code,
-				lineCount: targets.length,
-				condition: options.condition,
-				fullyReturned: nextStatus === 'returned',
-			},
-		});
+		for (const line of targets) {
+			await this.audit.record({
+				actor: { userId: actor.actorUserId },
+				action: 'asset.returned',
+				targetType: 'asset',
+				targetId: line.assetId,
+				organizationId,
+				meta: {
+					code: borrowing.code,
+					borrowingId: id,
+					lineId: line.id,
+					condition: options.condition,
+					fullyReturned: nextStatus === 'returned',
+				},
+			});
+		}
 
 		return this.getById(id, organizationId, actor);
 	}
 
 	/**
-	 * Reports a line as lost and writes the stock reduction.
+	 * Reports a line as lost and parks the asset in the terminal `lost` state.
 	 *
 	 * @remarks
-	 * The loss reduces stock by 1 at the warehouse the unit **left from**,
-	 * captured on the line at issue time (`origin_warehouse_id`) — the unit
-	 * itself has no warehouse while out. The unit is not restored anywhere.
+	 * The asset is not restored anywhere; the loss is an `asset_movements`
+	 * `lost` row. Nothing is written to the stock ledger (D4).
 	 */
 	async markLost(
 		id: string,
@@ -522,43 +555,32 @@ export class BorrowingService {
 		}
 
 		const now = new Date();
-		let lostSerialNumber: string | null = null;
 		await this.database.transaction(async (tx) => {
-			const unit = await this.serialUnitRepository.markLost(
-				line.serialTrackedItemId,
-				tx,
-			);
-			if (!unit) throw new UnitNotOnBorrowingError();
-			lostSerialNumber = unit.serialNumber;
+			const asset = await this.assetRepository.findById(line.assetId);
+			if (!asset) throw new UnitNotOnBorrowingError();
 			await this.borrowingRepository.updateLine(
 				line.id,
 				{ markedLostAt: now, lostReportedBy: actor.actorUserId },
 				tx,
 			);
-
-			// Quantity 1: a line is exactly one serialized unit.
-			const posted = await this.stockService.postMovement(
+			const movement = await this.assetOperations.markAssetLost(
+				asset.id,
+				organizationId,
 				{
-					actorOrganizationId: organizationId,
-					warehouseId: line.originWarehouseId,
-					itemId: unit.itemId,
-					movementType: 'adjustment_out',
-					quantity: '1',
-					occurredAt: now,
-					referenceType: 'borrowing',
-					referenceId: id,
-					createdBy: actor.actorUserId,
 					notes: options.note ?? `Lost on borrowing ${borrowing.code}`,
+					at: now,
 				},
+				{ userId: actor.actorUserId },
 				tx,
 			);
+			await this.assetOperations.syncCustody(asset.id, tx);
 
 			await this.borrowingRepository.appendEvent(
 				{
 					borrowingId: id,
 					borrowingLineId: line.id,
 					eventType: 'marked_lost',
-					stockMovementId: posted.movement.id,
+					assetMovementId: movement.id,
 					actorUserId: actor.actorUserId,
 					occurredAt: now,
 					note: options.note ?? null,
@@ -569,15 +591,14 @@ export class BorrowingService {
 
 		await this.audit.record({
 			actor: { userId: actor.actorUserId },
-			action: 'borrowing.lost',
-			targetType: 'borrowing',
-			targetId: id,
+			action: 'asset.lost',
+			targetType: 'asset',
+			targetId: line.assetId,
 			organizationId,
 			meta: {
 				code: borrowing.code,
+				borrowingId: id,
 				lineId: line.id,
-				serialNumber: lostSerialNumber,
-				originWarehouseId: line.originWarehouseId,
 				note: options.note ?? null,
 			},
 		});
@@ -620,7 +641,7 @@ export class BorrowingService {
 					borrowingId: id,
 					borrowingLineId: null,
 					eventType: 'due_date_extended',
-					stockMovementId: null,
+					assetMovementId: null,
 					actorUserId: actor.actorUserId,
 					occurredAt: now,
 					note: `New due date: ${dueAt.toISOString()}`,
@@ -727,7 +748,7 @@ export class BorrowingService {
 				borrowingId: row.borrowingId,
 				borrowingLineId: row.line.id,
 				eventType: 'marked_late',
-				stockMovementId: null,
+				assetMovementId: null,
 				actorUserId: null,
 				occurredAt: now,
 				note: 'auto',
@@ -777,70 +798,58 @@ export class BorrowingService {
 	private async issueLine(
 		borrowing: TBorrowingSelect,
 		line: TBorrowingLineSelect,
+		organizationId: string,
 		actor: TBorrowingActor,
 		now: Date,
 		tx: TTx,
 	): Promise<void> {
-		const unit = await this.serialUnitRepository.findById(
-			line.serialTrackedItemId,
-		);
-		if (!unit) throw new UnitNotOnBorrowingError();
-		if (unit.status !== 'in_stock') {
-			throw new UnitNotAvailableError(unit.serialNumber, unit.status);
+		const asset = await this.assetRepository.findById(line.assetId);
+		if (!asset) throw new UnitNotOnBorrowingError();
+		const label = asset.serialNumber ?? asset.code;
+		if (asset.status !== 'ready') {
+			throw new UnitNotAvailableError(label, asset.status);
 		}
-		if (!unit.warehouseId) {
-			// Stock-tracked but warehouse-less is not issuable: there would be no
-			// balance key to decrement and no origin to restore on return.
-			throw new UnitNotAvailableError(unit.serialNumber, 'not in a warehouse');
+		if (!asset.warehouseId) {
+			// Warehouse-less is not issuable: there would be no origin to
+			// restore on return.
+			throw new UnitNotAvailableError(label, 'not in a warehouse');
 		}
 
-		// The origin warehouse must be the one the unit is actually in, so a
-		// return restores a truthful location and a loss reduces the right stock.
-		const originWarehouseId = unit.warehouseId;
-		const originBinId = unit.binId;
-
-		const moved = await this.serialUnitRepository.issueToBorrower(
-			unit.id,
-			line.id,
-			tx,
-		);
-		if (!moved) throw new UnitNotAvailableError(unit.serialNumber, 'unavailable');
-
-		// Snapshot the origin so the return and the loss flows do not have to
-		// infer it from a unit that no longer has a warehouse.
+		// Snapshot the origin so return and loss do not have to infer it from an
+		// asset that no longer has a location.
 		await this.borrowingRepository.updateLine(
 			line.id,
 			{
-				originWarehouseId,
+				originWarehouseId: asset.warehouseId,
+				originStorageId: asset.storageId,
 				issuedAt: now,
 				dueAt: line.dueAt ?? borrowing.dueAt,
 			},
 			tx,
 		);
 
-		const posted = await this.stockService.postMovement(
+		const movement = await this.assetOperations.borrowOut(
+			asset.id,
+			organizationId,
 			{
-				actorOrganizationId: borrowing.organizationId ?? '',
-				warehouseId: originWarehouseId,
-				binId: originBinId,
-				itemId: unit.itemId,
-				movementType: 'borrowing_out',
-				quantity: '1',
-				occurredAt: now,
-				referenceType: 'borrowing',
-				referenceId: borrowing.id,
-				createdBy: actor.actorUserId,
+				warehouseId: asset.warehouseId,
+				storageId: asset.storageId,
+				toLocation: line.siteAddressText,
 				notes: `Issued on ${borrowing.code}`,
+				at: now,
 			},
+			{ userId: actor.actorUserId },
 			tx,
 		);
+		await this.assetOperations.syncCustody(asset.id, tx);
+		await this.assetOperations.reconcileStatus(asset.id, tx);
 
 		await this.borrowingRepository.appendEvent(
 			{
 				borrowingId: borrowing.id,
 				borrowingLineId: line.id,
 				eventType: 'issued',
-				stockMovementId: posted.movement.id,
+				assetMovementId: movement.id,
 				actorUserId: actor.actorUserId,
 				occurredAt: now,
 				note: null,
@@ -853,27 +862,20 @@ export class BorrowingService {
 	private async returnLine(
 		borrowing: TBorrowingSelect,
 		line: TBorrowingLineSelect,
+		organizationId: string,
 		actor: TBorrowingActor,
 		condition: 'good' | 'damaged' | 'incomplete',
 		note: string | null,
 		now: Date,
 		tx: TTx,
 	): Promise<void> {
-		const unit = await this.serialUnitRepository.findById(
-			line.serialTrackedItemId,
-		);
-		if (!unit) throw new UnitNotOnBorrowingError();
-		if (unit.status !== 'borrowed') {
-			throw new UnitNotAvailableError(unit.serialNumber, unit.status);
+		const asset = await this.assetRepository.findById(line.assetId);
+		if (!asset) throw new UnitNotOnBorrowingError();
+		const label = asset.serialNumber ?? asset.code;
+		if (asset.status !== 'borrowed') {
+			throw new UnitNotAvailableError(label, asset.status);
 		}
-
-		const restored = await this.serialUnitRepository.returnFromBorrower(
-			unit.id,
-			line.originWarehouseId,
-			null,
-			tx,
-		);
-		if (!restored) throw new UnitNotOnBorrowingError();
+		if (!line.originWarehouseId) throw new UnitNotOnBorrowingError();
 
 		await this.borrowingRepository.updateLine(
 			line.id,
@@ -881,28 +883,28 @@ export class BorrowingService {
 			tx,
 		);
 
-		const posted = await this.stockService.postMovement(
+		const movement = await this.assetOperations.borrowReturn(
+			asset.id,
+			organizationId,
 			{
-				actorOrganizationId: borrowing.organizationId ?? '',
 				warehouseId: line.originWarehouseId,
-				itemId: unit.itemId,
-				movementType: 'borrowing_in',
-				quantity: '1',
-				occurredAt: now,
-				referenceType: 'borrowing',
-				referenceId: borrowing.id,
-				createdBy: actor.actorUserId,
+				storageId: line.originStorageId,
+				condition,
 				notes: `Returned (${condition}) from ${borrowing.code}`,
+				at: now,
 			},
+			{ userId: actor.actorUserId },
 			tx,
 		);
+		await this.assetOperations.syncCustody(asset.id, tx);
+		await this.assetOperations.reconcileStatus(asset.id, tx);
 
 		await this.borrowingRepository.appendEvent(
 			{
 				borrowingId: borrowing.id,
 				borrowingLineId: line.id,
 				eventType: 'returned',
-				stockMovementId: posted.movement.id,
+				assetMovementId: movement.id,
 				actorUserId: actor.actorUserId,
 				occurredAt: now,
 				note: note ?? condition,
@@ -944,7 +946,7 @@ export class BorrowingService {
 			eventType,
 			// Non-physical events must not carry a movement; the schema CHECK
 			// enforces this and the service never passes one.
-			stockMovementId: null,
+			assetMovementId: null,
 			actorUserId,
 			occurredAt: new Date(),
 			note: null,
@@ -965,45 +967,58 @@ export class BorrowingService {
 	}
 
 	/**
-	 * Resolves each requested line to its unit, refusing duplicates and units
+	 * Resolves each requested line to its asset, refusing duplicates and assets
 	 * that cannot be issued.
 	 *
-	 * @returns Each line paired with its unit, so the caller can snapshot the
-	 *   origin warehouse without a second read
+	 * @returns Each line paired with its asset, so the caller can snapshot the
+	 *   origin location without a second read
 	 */
 	private async resolveLines(
 		lines: readonly TBorrowingLineInput[],
-	): Promise<
-		{ line: TBorrowingLineInput; unit: TSerialTrackedItemSelect }[]
-	> {
+		organizationId: string,
+	): Promise<{ line: TBorrowingLineInput; asset: TAssetSelect }[]> {
 		const seen = new Set<string>();
 		const resolved: {
 			line: TBorrowingLineInput;
-			unit: TSerialTrackedItemSelect;
+			asset: TAssetSelect;
 		}[] = [];
 		for (const line of lines) {
-			if (seen.has(line.serialTrackedItemId)) {
+			if (seen.has(line.assetId)) {
 				throw new UnitNotOnBorrowingError();
 			}
-			seen.add(line.serialTrackedItemId);
-			const unit = await this.serialUnitRepository.findById(
-				line.serialTrackedItemId,
-			);
-			if (!unit) throw new UnitNotOnBorrowingError();
-			if (unit.status !== 'in_stock') {
-				throw new UnitNotAvailableError(unit.serialNumber, unit.status);
+			seen.add(line.assetId);
+			const asset = await this.assetRepository.findById(line.assetId);
+			// A global (organization-less) asset is lendable by any tenant (B1).
+			if (
+				!asset ||
+				(asset.organizationId !== null && asset.organizationId !== organizationId)
+			) {
+				throw new UnitNotOnBorrowingError();
 			}
-			if (!unit.warehouseId) {
-				// Stock-tracked but warehouse-less is not issuable: there would be
-				// no balance key to decrement and no origin to restore on return.
-				throw new UnitNotAvailableError(
-					unit.serialNumber,
-					'not in a warehouse',
-				);
+			const label = asset.serialNumber ?? asset.code;
+			if (asset.status !== 'ready') {
+				throw new UnitNotAvailableError(label, asset.status);
 			}
-			resolved.push({ line, unit });
+			if (!asset.warehouseId) {
+				// Warehouse-less is not issuable: there would be no origin to
+				// restore on return.
+				throw new UnitNotAvailableError(label, 'not in a warehouse');
+			}
+			resolved.push({ line, asset });
 		}
 		return resolved;
+	}
+
+	/** D6: expands a tool set into one line per member asset. */
+	private async toolSetLines(
+		toolSetId: string,
+		organizationId: string,
+	): Promise<TBorrowingLineInput[]> {
+		const assetIds = await this.assetOperations.toolSetAssetIds(
+			toolSetId,
+			organizationId,
+		);
+		return assetIds.map((assetId) => ({ assetId }));
 	}
 
 	/** Validates and narrows the three borrower identity paths. */
@@ -1065,7 +1080,7 @@ export class BorrowingService {
 			id: string;
 			borrowingLineId: string | null;
 			eventType: string;
-			stockMovementId: string | null;
+			assetMovementId: string | null;
 			actorUserId: string | null;
 			occurredAt: Date;
 			note: string | null;
@@ -1125,4 +1140,4 @@ export function monthsBefore(date: Date, months: number): Date {
 }
 
 /** Re-exported so callers never need the schema type directly. */
-export type { TSerialTrackedItemSelect };
+export type { TAssetSelect };

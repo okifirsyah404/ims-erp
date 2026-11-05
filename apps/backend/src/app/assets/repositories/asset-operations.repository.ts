@@ -1,19 +1,19 @@
 import { inject, injectable } from 'tsyringe';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, count, desc, eq, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import type { TPaginationResult } from '@ims-erp/common';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import {
-	assetAssignments,
 	assetConditionChecks,
 	assetDepreciations,
 	assetDisposals,
 	assetDocuments,
 	assetMaintenances,
 	assetMovements,
+	borrowingLines,
+	borrowings,
 	toolSetItems,
 	toolSets,
-	type TAssetAssignmentSelect,
 	type TAssetConditionCheckSelect,
 	type TAssetDepreciationSelect,
 	type TAssetDisposalSelect,
@@ -26,8 +26,6 @@ import {
 import type { TTx } from '@drizzle/types';
 import type {
 	IAssetOperationsRepository,
-	TAssignmentCreateData,
-	TAssignmentListRequest,
 } from '../contracts/asset-operations.repository.interface';
 
 /** Shared pagination tail. */
@@ -58,75 +56,42 @@ export class AssetOperationsRepository implements IAssetOperationsRepository {
 
 	/* ------------------------------ custody ------------------------------ */
 
-	async createAssignment(
-		data: TAssignmentCreateData,
-		tx?: TTx,
-	): Promise<TAssetAssignmentSelect> {
-		const db = tx ?? this.database;
-		const [row] = await db.insert(assetAssignments).values(data).returning();
-		return row;
-	}
-
-	async listAssignments(
-		request: TAssignmentListRequest,
-	): Promise<TPaginationResult<TAssetAssignmentSelect>> {
-		const { assetId, organizationId, openOnly, page, limit } = request;
-		const where = and(
-			eq(assetAssignments.assetId, assetId),
-			eq(assetAssignments.organizationId, organizationId),
-			isNull(assetAssignments.deletedAt),
-			openOnly ? isNull(assetAssignments.returnedAt) : undefined,
-		);
-		const [{ value: total }] = await this.database
-			.select({ value: count() })
-			.from(assetAssignments)
-			.where(where);
-		const data = await this.database
-			.select()
-			.from(assetAssignments)
-			.where(where)
-			.orderBy(desc(assetAssignments.assignedAt))
-			.limit(limit)
-			.offset((page - 1) * limit);
-		return pageOf(page, limit, total, data);
-	}
-
-	async findOpenAssignment(
+	async findOpenBorrowingLine(
 		assetId: string,
 		tx?: TTx,
-	): Promise<TAssetAssignmentSelect | null> {
+	): Promise<{ issuedAt: Date | null } | null> {
 		const db = tx ?? this.database;
 		const [row] = await db
-			.select()
-			.from(assetAssignments)
+			.select({ issuedAt: borrowingLines.issuedAt })
+			.from(borrowingLines)
+			.innerJoin(borrowings, eq(borrowingLines.borrowingId, borrowings.id))
 			.where(
 				and(
-					eq(assetAssignments.assetId, assetId),
-					isNull(assetAssignments.returnedAt),
-					isNull(assetAssignments.deletedAt),
+					eq(borrowingLines.assetId, assetId),
+					isNotNull(borrowingLines.issuedAt),
+					isNull(borrowingLines.returnedAt),
+					isNull(borrowingLines.markedLostAt),
+					isNull(borrowingLines.deletedAt),
+					isNull(borrowings.deletedAt),
 				),
 			)
 			.limit(1);
 		return row ?? null;
 	}
 
-	async claimForReturn(
-		assignmentId: string,
-		data: { returnedAt: Date; conditionOnReturn: string; notes?: string | null },
-		tx: TTx,
-	): Promise<TAssetAssignmentSelect | null> {
-		const [row] = await tx
-			.update(assetAssignments)
-			.set({ ...data, updatedAt: new Date() })
+	async hasOpenMaintenance(assetId: string, tx?: TTx): Promise<boolean> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select({ value: count() })
+			.from(assetMaintenances)
 			.where(
 				and(
-					eq(assetAssignments.id, assignmentId),
-					isNull(assetAssignments.returnedAt),
-					isNull(assetAssignments.deletedAt),
+					eq(assetMaintenances.assetId, assetId),
+					isNull(assetMaintenances.deletedAt),
+					inArray(assetMaintenances.status, ['scheduled', 'in_progress']),
 				),
-			)
-			.returning();
-		return row ?? null;
+			);
+		return row.value > 0;
 	}
 
 	/* ----------------------------- movements ----------------------------- */
@@ -136,6 +101,10 @@ export class AssetOperationsRepository implements IAssetOperationsRepository {
 			organizationId: string;
 			assetId: string;
 			movementType: string;
+			fromWarehouseId?: string | null;
+			fromStorageId?: string | null;
+			toWarehouseId?: string | null;
+			toStorageId?: string | null;
 			fromLocation?: string | null;
 			toLocation?: string | null;
 			movedAt: Date;

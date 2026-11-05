@@ -16,29 +16,20 @@ export const listQuery = z.object({
 	limit: z.coerce.number().int().positive().max(100).default(20),
 });
 
-/* ------------------------------- custody ------------------------------- */
+/* ------------------------------ location ------------------------------- */
 
-export const assetAssignSchema = z
-	.object({
-		assignedToEmployeeId: z.string().uuid().nullish(),
-		assignedToUserId: z.string().nullish(),
-		conditionOnAssign: z.enum(ASSET_CONDITIONS).nullish(),
-		notes: z.string().nullish(),
-	})
-	.refine((d) => d.assignedToEmployeeId || d.assignedToUserId, {
-		message: 'A holder (employee or user) is required',
-	});
-
-export const assetReturnSchema = z.object({
-	conditionOnReturn: z.enum(ASSET_CONDITIONS),
-	notes: z.string().nullish(),
+/** Places a ready asset into a warehouse storage (D3). */
+export const assetPlaceSchema = z.object({
+	warehouseId: z.string().uuid(),
+	storageId: z.string().uuid().nullish(),
+	locationDescription: z.string().max(500).nullish(),
 });
 
-export const assignmentListQuerySchema = listQuery.extend({
-	openOnly: z
-		.enum(['true', 'false'])
-		.default('false')
-		.transform((v) => v === 'true'),
+/** Moves a ready asset to another warehouse storage, clearing the source. */
+export const assetTransferSchema = z.object({
+	toWarehouseId: z.string().uuid(),
+	toStorageId: z.string().uuid().nullish(),
+	notes: z.string().max(1000).nullish(),
 });
 
 /* ------------------------------ movements ------------------------------ */
@@ -137,8 +128,8 @@ export const toolSetItemAddSchema = z.object({
 	quantity: z.number().positive().default(1),
 });
 
-export type TAssetAssignInput = z.infer<typeof assetAssignSchema>;
-export type TAssetReturnInput = z.infer<typeof assetReturnSchema>;
+export type TAssetPlaceInput = z.infer<typeof assetPlaceSchema>;
+export type TAssetTransferInput = z.infer<typeof assetTransferSchema>;
 export type TAssetMoveInput = z.infer<typeof assetMoveSchema>;
 export type TConditionCheckInput = z.infer<typeof conditionCheckSchema>;
 export type TMaintenanceCreateInput = z.infer<typeof maintenanceCreateSchema>;

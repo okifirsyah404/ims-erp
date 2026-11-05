@@ -1,16 +1,18 @@
 import { inject, injectable } from 'tsyringe';
 import type { TPaginationResult } from '@ims-erp/common';
 import type {
-	TAssetAssignmentSelect,
 	TAssetConditionCheckSelect,
 	TAssetDepreciationSelect,
 	TAssetDisposalSelect,
 	TAssetDocumentSelect,
 	TAssetMaintenanceSelect,
 	TAssetMovementSelect,
+	TAssetSelect,
 	TToolSetItemSelect,
 	TToolSetSelect,
 } from '@drizzle/schemas/asset.schema';
+import type { AssetStatus } from '@drizzle/schemas/asset.schema';
+import type { TTx } from '@drizzle/types';
 import {
 	ASSET_CONDITIONS,
 	ASSET_STATUSES,
@@ -29,10 +31,9 @@ import { DRIZZLE_TOKEN } from '@di/provider';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { ASSET_REPOSITORY_TOKEN, ASSET_OPERATIONS_REPOSITORY_TOKEN } from '../constants/di';
 import type { IAssetRepository } from '../contracts/asset.repository.interface';
-import type {
-	IAssetOperationsRepository,
-	TAssignmentListRequest,
-} from '../contracts/asset-operations.repository.interface';
+import type { IAssetOperationsRepository } from '../contracts/asset-operations.repository.interface';
+import { WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import type { WarehouseService } from '@app/inventory/services/warehouse.service';
 import { ASSET_DOC_TYPES } from '../constants/doc-types';
 import {
 	AssetNotFoundError,
@@ -72,197 +73,314 @@ export class AssetOperationsService {
 		private readonly numbering: DocumentNumberingService,
 		/** Fire-and-forget audit writer, shared with the inventory module. */
 		private readonly audit: InventoryAuditWriter,
+		/** Inventory owns warehouses/storages; Assets validates through this port. */
+		@inject(WAREHOUSE_SERVICE_TOKEN)
+		private readonly warehouses: WarehouseService,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 	) {}
 
 	/* =============================== custody ============================= */
 
 	/**
-	 * D12: assigns an asset to a holder. Guards: the asset must not be
-	 * `borrowed`/`inactive`/`disposed`/`lost`, and no open assignment may
-	 * exist. Flips the asset to `borrowed` and writes a `borrow_out` movement in
-	 * the same transaction.
+	 * D7: derives the asset's status from facts it already records.
+	 *
+	 * @remarks
+	 * `inactive` is asset-owned and sticky; `disposed`/`lost` are terminal.
+	 * Everything else follows custody: an open borrowing means `borrowed`, an
+	 * unfinished maintenance means `maintenance`, otherwise `ready`.
 	 */
-	async assign(
+	async reconcileStatus(
+		assetId: string,
+		tx?: TTx,
+	): Promise<TAssetSelect | null> {
+		const asset = await this.requireAsset(assetId);
+		if (['inactive', 'disposed', 'lost'].includes(asset.status)) return asset;
+		const [open, maintenance] = await Promise.all([
+			this.operations.findOpenBorrowingLine(assetId, tx),
+			this.operations.hasOpenMaintenance(assetId, tx),
+		]);
+		const status: AssetStatus = open
+			? 'borrowed'
+			: maintenance
+				? 'maintenance'
+				: 'ready';
+		if (status === asset.status) return asset;
+		return this.assetRepository.update(assetId, { status }, tx);
+	}
+
+	/**
+	 * D8: writes the custody snapshot.
+	 *
+	 * @remarks
+	 * `borrowed_since` is the issue time of the open borrowing line, or NULL
+	 * once nothing is out. `custodian_employee_id` is not derived here: a
+	 * borrowing names a user, customer, or guest, never an employee row.
+	 */
+	async syncCustody(assetId: string, tx?: TTx): Promise<TAssetSelect | null> {
+		const open = await this.operations.findOpenBorrowingLine(assetId, tx);
+		return this.assetRepository.update(
+			assetId,
+			{ borrowedSince: open?.issuedAt ?? null },
+			tx,
+		);
+	}
+
+	/** Writes one `borrow_out` movement and takes the asset off-site (D4). */
+	async borrowOut(
 		assetId: string,
 		organizationId: string,
 		data: {
-			assignedToEmployeeId?: string | null;
-			assignedToUserId?: string | null;
-			conditionOnAssign?: string | null;
+			warehouseId: string;
+			storageId: string | null;
+			toLocation?: string | null;
+			condition?: string | null;
 			notes?: string | null;
+			at?: Date;
+		},
+		actor: TAssetOperationActor,
+		tx: TTx,
+	): Promise<TAssetMovementSelect> {
+		const at = data.at ?? new Date();
+		const movement = await this.operations.createMovement(
+			{
+				organizationId,
+				assetId,
+				movementType: 'borrow_out',
+				fromWarehouseId: data.warehouseId,
+				fromStorageId: data.storageId,
+				toLocation: data.toLocation ?? null,
+				movedAt: at,
+				movedByUserId: actor.userId,
+				condition: data.condition ?? null,
+				notes: data.notes ?? null,
+				createdAt: at,
+			},
+			tx,
+		);
+		// The asset has no location while it is out; the line snapshots it.
+		await this.assetRepository.update(
+			assetId,
+			{ warehouseId: null, storageId: null },
+			tx,
+		);
+		return movement;
+	}
+
+	/** Writes one `borrow_return` movement and restores the asset's location. */
+	async borrowReturn(
+		assetId: string,
+		organizationId: string,
+		data: {
+			warehouseId: string;
+			storageId: string | null;
+			condition?: string | null;
+			notes?: string | null;
+			at?: Date;
+		},
+		actor: TAssetOperationActor,
+		tx: TTx,
+	): Promise<TAssetMovementSelect> {
+		const at = data.at ?? new Date();
+		const movement = await this.operations.createMovement(
+			{
+				organizationId,
+				assetId,
+				movementType: 'borrow_return',
+				toWarehouseId: data.warehouseId,
+				toStorageId: data.storageId,
+				movedAt: at,
+				movedByUserId: actor.userId,
+				condition: data.condition ?? null,
+				notes: data.notes ?? null,
+				createdAt: at,
+			},
+			tx,
+		);
+		await this.assetRepository.update(
+			assetId,
+			{ warehouseId: data.warehouseId, storageId: data.storageId },
+			tx,
+		);
+		return movement;
+	}
+
+	/** Writes a `lost` movement and parks the asset in the terminal status. */
+	async markAssetLost(
+		assetId: string,
+		organizationId: string,
+		data: { notes?: string | null; at?: Date },
+		actor: TAssetOperationActor,
+		tx: TTx,
+	): Promise<TAssetMovementSelect> {
+		const at = data.at ?? new Date();
+		const movement = await this.operations.createMovement(
+			{
+				organizationId,
+				assetId,
+				movementType: 'lost',
+				movedAt: at,
+				movedByUserId: actor.userId,
+				notes: data.notes ?? null,
+				createdAt: at,
+			},
+			tx,
+		);
+		await this.assetRepository.update(assetId, { status: 'lost' }, tx);
+		return movement;
+	}
+
+	/**
+	 * Places a ready asset into a warehouse storage, writing the `receipt`
+	 * movement. The storage must belong to the warehouse (Inventory owns both).
+	 */
+	async place(
+		assetId: string,
+		organizationId: string,
+		data: {
+			warehouseId: string;
+			storageId?: string | null;
+			locationDescription?: string | null;
 		},
 		actor: TAssetOperationActor = SYSTEM_AUDIT_ACTOR,
-	): Promise<TAssetAssignmentSelect> {
-		if (!data.assignedToEmployeeId && !data.assignedToUserId) {
-			throw new AssetRuleViolationError('assignment_needs_holder');
-		}
-		if (
-			data.conditionOnAssign &&
-			!CONDITION_VALUES.includes(data.conditionOnAssign as never)
-		) {
+	): Promise<TAssetMovementSelect> {
+		const asset = await this.requireAssetInScope(assetId, organizationId);
+		if (asset.status !== 'ready') {
 			throw new AssetRuleViolationError(
-				`unknown condition "${data.conditionOnAssign}"`,
+				`place_blocked:${asset.status}`,
+				'assets.placeBlocked',
+				`An asset in status "${asset.status}" cannot be placed`,
 			);
 		}
+		await this.assertLocation(
+			data.warehouseId,
+			data.storageId ?? null,
+			organizationId,
+		);
 
-		const assignment = await this.database.transaction(async (tx) => {
-			const asset = await this.requireAsset(assetId);
-			if (asset.organizationId !== organizationId) {
-				throw new AssetNotFoundError();
-			}
-			if (['borrowed', 'inactive', 'disposed', 'lost'].includes(asset.status)) {
-				throw new AssetRuleViolationError(
-					`assign_blocked:${asset.status}`,
-					'assets.assignBlocked',
-					`An asset in status "${asset.status}" cannot be assigned`,
-				);
-			}
-			const open = await this.operations.findOpenAssignment(assetId, tx);
-			if (open) {
-				throw new AssetRuleViolationError('assignment_already_open');
-			}
-
-			const now = new Date();
-			const created = await this.operations.createAssignment(
+		const now = new Date();
+		const movement = await this.database.transaction(async (tx) => {
+			const created = await this.operations.createMovement(
 				{
 					organizationId,
 					assetId,
-					assignedToEmployeeId: data.assignedToEmployeeId ?? null,
-					assignedToUserId: data.assignedToUserId ?? null,
-					conditionOnAssign: data.conditionOnAssign ?? null,
-					notes: data.notes ?? null,
-					assignedAt: now,
+					movementType: 'receipt',
+					toWarehouseId: data.warehouseId,
+					toStorageId: data.storageId ?? null,
+					toLocation: data.locationDescription ?? null,
+					movedAt: now,
+					movedByUserId: actor.userId,
 					createdAt: now,
 				},
 				tx,
 			);
 			await this.assetRepository.update(
 				assetId,
-				{ status: 'borrowed', borrowedSince: now },
-				tx,
-			);
-			await this.operations.createMovement(
 				{
-					organizationId,
-					assetId,
-					movementType: 'borrow_out',
-					fromLocation: asset.locationDescription,
-					toLocation: asset.locationDescription,
-					movedAt: now,
-					movedByUserId: actor.userId,
-					condition: data.conditionOnAssign ?? null,
-					notes: data.notes ?? null,
-					createdAt: now,
+					warehouseId: data.warehouseId,
+					storageId: data.storageId ?? null,
+					locationDescription:
+						data.locationDescription ?? asset.locationDescription,
 				},
 				tx,
 			);
 			return created;
 		});
-
 		await this.audit.record({
 			actor,
-			action: 'asset.assigned',
-			targetType: 'asset_assignment',
-			targetId: assignment.id,
+			action: 'asset.placed',
+			targetType: 'asset_movement',
+			targetId: movement.id,
 			organizationId,
 			meta: {
 				assetId,
-				assignedToUserId: data.assignedToUserId ?? null,
-				assignedToEmployeeId: data.assignedToEmployeeId ?? null,
-				conditionOnAssign: data.conditionOnAssign ?? null,
+				warehouseId: data.warehouseId,
+				storageId: data.storageId ?? null,
 			},
 		});
-		return assignment;
+		return movement;
 	}
 
-	/**
-	 * D12: returns an assigned asset. The open assignment is claimed with a
-	 * conditional update (one concurrent return wins); condition-in is
-	 * mandatory and updates the asset's condition. Flips the asset back to
-	 * `ready` and writes a `borrow_return` movement in the same transaction.
-	 */
-	async returnAsset(
+	/** Moves a ready asset to another warehouse/storage, clearing the source. */
+	async transfer(
 		assetId: string,
 		organizationId: string,
 		data: {
-			conditionOnReturn: string;
+			toWarehouseId: string;
+			toStorageId?: string | null;
 			notes?: string | null;
 		},
 		actor: TAssetOperationActor = SYSTEM_AUDIT_ACTOR,
-	): Promise<TAssetAssignmentSelect> {
-		if (!CONDITION_VALUES.includes(data.conditionOnReturn as never)) {
+	): Promise<TAssetMovementSelect> {
+		const asset = await this.requireAssetInScope(assetId, organizationId);
+		if (asset.status !== 'ready') {
 			throw new AssetRuleViolationError(
-				`unknown condition "${data.conditionOnReturn}"`,
+				`transfer_blocked:${asset.status}`,
+				'assets.transferBlocked',
+				`An asset in status "${asset.status}" cannot be transferred`,
 			);
 		}
+		await this.assertLocation(
+			data.toWarehouseId,
+			data.toStorageId ?? null,
+			organizationId,
+		);
 
-		const returned = await this.database.transaction(async (tx) => {
-			const asset = await this.requireAsset(assetId);
-			if (asset.organizationId !== organizationId) {
-				throw new AssetNotFoundError();
-			}
-			if (asset.status !== 'borrowed') {
-				throw new AssetTransitionError(asset.status, 'ready');
-			}
-			const open = await this.operations.findOpenAssignment(assetId, tx);
-			if (!open) throw new AssetRuleViolationError('assignment_none_open');
-
-			const now = new Date();
-			const claimed = await this.operations.claimForReturn(
-				open.id,
-				{
-					returnedAt: now,
-					conditionOnReturn: data.conditionOnReturn,
-					notes: data.notes ?? null,
-				},
-				tx,
-			);
-			if (!claimed) {
-				// A concurrent return won the claim.
-				throw new AssetRuleViolationError('assignment_already_returned');
-			}
-			await this.assetRepository.update(
-				assetId,
-				{ status: 'ready', borrowedSince: null, condition: data.conditionOnReturn },
-				tx,
-			);
-			await this.operations.createMovement(
+		const now = new Date();
+		const movement = await this.database.transaction(async (tx) => {
+			const created = await this.operations.createMovement(
 				{
 					organizationId,
 					assetId,
-					movementType: 'borrow_return',
-					toLocation: asset.locationDescription,
+					movementType: 'transfer',
+					fromWarehouseId: asset.warehouseId,
+					fromStorageId: asset.storageId,
+					toWarehouseId: data.toWarehouseId,
+					toStorageId: data.toStorageId ?? null,
 					movedAt: now,
 					movedByUserId: actor.userId,
-					condition: data.conditionOnReturn,
 					notes: data.notes ?? null,
 					createdAt: now,
 				},
 				tx,
 			);
-			return claimed;
+			await this.assetRepository.update(
+				assetId,
+				{
+					warehouseId: data.toWarehouseId,
+					storageId: data.toStorageId ?? null,
+				},
+				tx,
+			);
+			return created;
 		});
-
 		await this.audit.record({
 			actor,
-			action: 'asset.returned',
-			targetType: 'asset_assignment',
-			targetId: returned.id,
+			action: 'asset.transferred',
+			targetType: 'asset_movement',
+			targetId: movement.id,
 			organizationId,
 			meta: {
 				assetId,
-				conditionOnReturn: data.conditionOnReturn,
-				notes: data.notes ?? null,
+				fromWarehouseId: asset.warehouseId,
+				toWarehouseId: data.toWarehouseId,
 			},
 		});
-		return returned;
+		return movement;
 	}
 
-	listAssignments(
-		request: TAssignmentListRequest,
-	): Promise<TPaginationResult<TAssetAssignmentSelect>> {
-		return this.operations.listAssignments(request);
+	/** Inventory contract: the warehouse exists and the storage belongs to it. */
+	private async assertLocation(
+		warehouseId: string,
+		storageId: string | null,
+		organizationId: string,
+	): Promise<void> {
+		await this.warehouses.assertWarehouseReachableByOrg(
+			warehouseId,
+			organizationId,
+		);
+		if (storageId) {
+			await this.warehouses.assertStorageInWarehouse(storageId, warehouseId);
+		}
 	}
 
 	/* ============================= movements ============================= */
@@ -937,6 +1055,31 @@ export class AssetOperationsService {
 			organizationId,
 			meta: { code: current.code },
 		});
+	}
+
+	/** D6: flips a kit's status inside the borrowing transaction. */
+	async setToolSetStatus(
+		id: string,
+		status: 'lent' | 'available',
+		tx?: TTx,
+	): Promise<void> {
+		await this.operations.updateToolSet(id, { status }, tx);
+	}
+
+	/** D6: the member assets of a kit, for borrowing expansion. */
+	async toolSetAssetIds(
+		toolSetId: string,
+		organizationId: string,
+	): Promise<string[]> {
+		const set = await this.operations.findToolSetById(toolSetId);
+		if (
+			!set ||
+			(set.organizationId !== null && set.organizationId !== organizationId)
+		) {
+			throw new AssetNotFoundError();
+		}
+		const items = await this.operations.listToolSetItems(toolSetId);
+		return items.map((item) => item.assetId);
 	}
 
 	async addToolSetItem(

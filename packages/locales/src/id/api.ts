@@ -60,8 +60,10 @@ const api: Record<keyof typeof en, string> = {
 		'Aset tidak dapat berpindah dari "{{from}}" ke "{{to}}"',
 	'assets.assetHasHistory':
 		'Tidak dapat mengarsipkan aset dengan riwayat peminjaman atau pemeliharaan',
-	'assets.assignBlocked':
-		'Aset dengan status "{{status}}" tidak dapat dipinjamkan',
+	'assets.placeBlocked':
+		'Aset tidak dapat ditempatkan pada status saat ini',
+	'assets.transferBlocked':
+		'Aset tidak dapat dipindahkan pada status saat ini',
 	'assets.periodAlreadyDepreciated':
 		'Aset ini sudah memiliki entri penyusutan untuk {{period}}',
 	'assets.depreciationExceedsBookValue':
@@ -131,22 +133,22 @@ const api: Record<keyof typeof en, string> = {
 	'auth.roleNotGrantable': 'Peran tidak dapat diberikan: {{roles}}',
 
 	// Borrowing (S4)
-	'inventory.borrowingNotFound': 'Peminjaman tidak ditemukan',
-	'inventory.borrowingLineNotFound': 'Baris peminjaman tidak ditemukan',
-	'inventory.unitNotOnBorrowing':
-		'Unit tersebut tidak dipinjamkan pada peminjaman ini',
-	'inventory.borrowingTransition':
+	'assets.borrowingNotFound': 'Peminjaman tidak ditemukan',
+	'assets.borrowingLineNotFound': 'Baris peminjaman tidak ditemukan',
+	'assets.unitNotOnBorrowing':
+		'Aset tersebut tidak dipinjamkan pada peminjaman ini',
+	'assets.borrowingTransition':
 		'Perubahan status tersebut tidak diizinkan untuk peminjaman ini',
-	'inventory.borrowingCodeTaken':
+	'assets.borrowingCodeTaken':
 		'Tidak dapat membuat kode peminjaman yang unik',
-	'inventory.borrowingHasNoLines':
+	'assets.borrowingHasNoLines':
 		'Peminjaman harus memiliki minimal satu baris',
-	'inventory.unitNotAvailable': 'Unit tersebut tidak dapat dipinjamkan',
-	'inventory.borrowerIdentity':
+	'assets.unitNotAvailable': 'Aset tersebut tidak dapat dipinjamkan',
+	'assets.borrowerIdentity':
 		'Identitas peminjam tidak sesuai dengan tipe peminjam',
-	'inventory.guestIdentityIncomplete':
+	'assets.guestIdentityIncomplete':
 		'Peminjam tamu belum melengkapi data identitas wajib',
-	'inventory.borrowingSelfApprovalForbidden':
+	'assets.borrowingSelfApprovalForbidden':
 		'Anda tidak dapat menyetujui peminjaman Anda sendiri',
 };
 

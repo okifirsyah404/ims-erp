@@ -65,9 +65,8 @@ export type ItemKind = (typeof ITEM_KINDS)[number];
  * service rule (`assertTransitionAllowed`), not a DB check, because the unit
  * row does not know its item kind without a join.
  *
- * ERP-0036 D9 retires `borrowed` once borrowing moves to `assets`; the value
- * stays until that code move so the live borrowing flow never writes a status
- * the check rejects.
+ * ERP-0036 D9: `borrowed` is gone — borrowing is an asset concern now, and
+ * `serial_tracked_items` serves serialized products only.
  *
  * The UI label for `in_stock` is "Siap" — `ready` is never a stored value here
  * (that is the **asset** vocabulary).
@@ -75,7 +74,6 @@ export type ItemKind = (typeof ITEM_KINDS)[number];
 export const UNIT_STATUSES = [
 	'pre_order',
 	'in_stock',
-	'borrowed',
 	'lost',
 	'sold',
 	'applied_warranty',
@@ -85,8 +83,7 @@ export type UnitStatus = (typeof UNIT_STATUSES)[number];
 /** Universal transitions allowed for every kind. */
 export const UNIT_STATUS_TRANSITIONS: Record<UnitStatus, UnitStatus[]> = {
 	pre_order: ['in_stock', 'lost'],
-	in_stock: ['borrowed', 'sold', 'applied_warranty', 'lost'],
-	borrowed: ['in_stock', 'lost'],
+	in_stock: ['sold', 'applied_warranty', 'lost'],
 	lost: [],
 	sold: [],
 	applied_warranty: ['in_stock', 'lost'],
@@ -148,69 +145,6 @@ export type AdjustmentStatus = (typeof ADJUSTMENT_STATUSES)[number];
  */
 export const ADJUSTMENT_TYPES = ['increase', 'decrease', 'recount'] as const;
 export type AdjustmentType = (typeof ADJUSTMENT_TYPES)[number];
-
-/** Borrowing document states. */
-export const BORROWING_STATUSES = [
-	'draft',
-	'requested',
-	'approved',
-	'rejected',
-	'issued',
-	'partially_returned',
-	'returned',
-	'closed',
-	'cancelled',
-] as const;
-export type BorrowingStatus = (typeof BORROWING_STATUSES)[number];
-
-/**
- * Borrowing purposes. `testing` lives here rather than as its own flow:
- * one issue/return engine, one discriminator.
- */
-export const BORROWING_PURPOSES = [
-	'rental',
-	'internal_use',
-	'testing',
-	'warranty_service',
-] as const;
-export type BorrowingPurpose = (typeof BORROWING_PURPOSES)[number];
-
-/** Who is holding the item. */
-export const BORROWER_TYPES = ['user', 'customer', 'guest'] as const;
-export type BorrowerType = (typeof BORROWER_TYPES)[number];
-
-/** Guest identity document kinds. */
-export const GUEST_ID_TYPES = ['ktp', 'sim', 'passport', 'other'] as const;
-export type GuestIdType = (typeof GUEST_ID_TYPES)[number];
-
-/** Condition recorded when a borrowed unit comes back. */
-export const RETURN_CONDITIONS = ['good', 'damaged', 'incomplete'] as const;
-export type ReturnCondition = (typeof RETURN_CONDITIONS)[number];
-
-/**
- * Borrowing event types. The three **physical** ones must carry a
- * `stock_movement_id`; the rest must not.
- */
-export const BORROWING_EVENT_TYPES = [
-	'requested',
-	'approved',
-	'rejected',
-	'issued',
-	'returned',
-	'marked_late',
-	'marked_lost',
-	'due_date_extended',
-	'cancelled',
-	'closed',
-] as const;
-export type BorrowingEventType = (typeof BORROWING_EVENT_TYPES)[number];
-
-/** Event types that moved physical stock. */
-export const PHYSICAL_EVENT_TYPES = [
-	'issued',
-	'returned',
-	'marked_lost',
-] as const satisfies readonly BorrowingEventType[];
 
 /* ------------------------------------------------------------------------ *
  * Helpers
@@ -746,19 +680,14 @@ export const stockAdjustmentItems = inventorySchema.table(
  * becoming `item_units`: renaming would churn 33 documented logical
  * references for no gain (ADR-0009).
  *
- * `warehouse_id` is NULL while the unit is borrowed or lost — custody moves
- * to the borrower. `current_borrowing_line_id` points at the open line while
- * the unit is out, so the return flow finds its line without scanning.
- * ERP-0036 retires both once borrowing moves to `assets` (Slice 3).
+ * `warehouse_id` is NULL while the unit is lost. `current_borrowing_line_id`
+ * is **superseded** (ERP-0036 D17): borrowing moved to `assets`, nothing writes
+ * it, and it stays only until the later cleanup migration. Its FK to
+ * `inventory.borrowing_lines` was dropped with that table in ERP-0036 Slice 3.
  *
- * **The FK cycle is declared, but the constraint is not emitted by
- * `drizzle-kit generate`.** `serial_tracked_items → borrowing_lines` and
- * `borrowing_lines → serial_tracked_items` are mutually referential: no
- * `CREATE TABLE` order satisfies both. The column and index are generated
- * normally; the foreign key is added by a hand-written `ALTER TABLE` in the
- * migration and is intentionally absent from this table declaration so the
- * two definitions cannot disagree. Adding `.references()` here would make
- * `generate` emit a duplicate constraint and fail on `migrate`.
+ * **No FK is declared here.** The former `serial_tracked_items →
+ * borrowing_lines` cycle is gone; the leftover column is a plain uuid with no
+ * constraint.
  */
 export const serialTrackedItems = inventorySchema.table(
 	'serial_tracked_items',
@@ -798,8 +727,9 @@ export const serialTrackedItems = inventorySchema.table(
 		/** Logical reference to inventory.stock_movements.id (last touch). */
 		stockMovementId: uuid('stock_movement_id'),
 		/**
-		 * The open borrowing line this unit is currently out on, or `NULL` when
-		 * it is not borrowed. FK added by migration (see table doc comment).
+		 * Superseded (ERP-0036 D17). The open borrowing line this unit was out
+		 * on under the retired inventory borrowing flow. No FK; nothing writes
+		 * it. Removed in the later cleanup migration.
 		 */
 		currentBorrowingLineId: uuid('current_borrowing_line_id'),
 		notes: text('notes'),
@@ -821,7 +751,7 @@ export const serialTrackedItems = inventorySchema.table(
 		),
 		check(
 			'serial_tracked_items_status_check',
-			sql`status IN ('pre_order', 'in_stock', 'borrowed', 'lost', 'sold', 'applied_warranty')`,
+			sql`status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty')`,
 		),
 		// A provisional serial only ever exists on a not-yet-received unit.
 		check(
@@ -836,216 +766,11 @@ export const serialTrackedItems = inventorySchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
- * inventory.borrowings
- * ------------------------------------------------------------------------ */
-
-/**
- * Borrowing header.
- *
- * A borrower is one of three things and the identity path is fixed by
- * `borrower_type`: a registered user, a registered customer, or a guest
- * whose identity is **snapshotted here** because there is no row to point
- * at. Guest PII (`guest_id_number`, `guest_id_document_ref`,
- * `guest_address_text`) is access-restricted and expired by the retention
- * sweep.
- */
-export const borrowings = inventorySchema.table(
-	'borrowings',
-	{
-		id: uuid('id')
-			.primaryKey()
-			.default(sql`uuidv7()`),
-		organizationId: organizationId(),
-		code: varchar('code', { length: 32 }).notNull(),
-		status: text('status').notNull().default('requested'),
-		purpose: text('purpose').notNull().default('internal_use'),
-		borrowerType: text('borrower_type').notNull(),
-		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		borrowerUserId: text('borrower_user_id'),
-		/** Logical reference to crm.customers.id — cross-module FK omitted. */
-		borrowerCustomerId: uuid('borrower_customer_id'),
-		guestName: text('guest_name'),
-		guestPhone: text('guest_phone'),
-		guestIdType: text('guest_id_type'),
-		guestIdNumber: text('guest_id_number'),
-		guestAddressText: text('guest_address_text'),
-		/** Plain text until a Documents module exists. */
-		guestIdDocumentRef: text('guest_id_document_ref'),
-		/** Logical reference to auth.users.id. */
-		requestedBy: text('requested_by'),
-		requestedAt: unixTimestampNullable('requested_at'),
-		/** Logical reference to auth.users.id. */
-		approvedBy: text('approved_by'),
-		approvedAt: unixTimestampNullable('approved_at'),
-		/** Logical reference to auth.users.id. */
-		issuedBy: text('issued_by'),
-		issuedAt: unixTimestampNullable('issued_at'),
-		dueAt: unixTimestamp('due_at').notNull(),
-		/** Logical reference to auth.users.id. */
-		closedBy: text('closed_by'),
-		closedAt: unixTimestampNullable('closed_at'),
-		notes: text('notes'),
-		...softDeleteTimestamps,
-	},
-	(table) => [
-		...scopedUnique(table.organizationId, table.code, {
-			orgScoped: 'borrowings_org_code_uq',
-			global: 'borrowings_global_code_uq',
-		}),
-		index('borrowings_status_idx').on(table.status),
-		index('borrowings_borrower_user_id_idx').on(table.borrowerUserId),
-		index('borrowings_borrower_customer_id_idx').on(
-			table.borrowerCustomerId,
-		),
-		index('borrowings_due_at_idx').on(table.dueAt),
-		check(
-			'borrowings_status_check',
-			sql`status IN ('draft', 'requested', 'approved', 'rejected', 'issued', 'partially_returned', 'returned', 'closed', 'cancelled')`,
-		),
-		check(
-			'borrowings_purpose_check',
-			sql`purpose IN ('rental', 'internal_use', 'testing', 'warranty_service')`,
-		),
-		check(
-			'borrowings_borrower_type_check',
-			sql`borrower_type IN ('user', 'customer', 'guest')`,
-		),
-		check(
-			'borrowings_guest_id_type_check',
-			sql`guest_id_type IS NULL OR guest_id_type IN ('ktp', 'sim', 'passport', 'other')`,
-		),
-		// Exactly one identity path is populated, and it matches the type.
-		check(
-			'borrowings_borrower_identity_check',
-			sql`(borrower_type = 'user' AND borrower_user_id IS NOT NULL AND borrower_customer_id IS NULL AND guest_name IS NULL AND guest_phone IS NULL AND guest_id_number IS NULL)
-				OR (borrower_type = 'customer' AND borrower_customer_id IS NOT NULL AND borrower_user_id IS NULL AND guest_name IS NULL AND guest_phone IS NULL AND guest_id_number IS NULL)
-				OR (borrower_type = 'guest' AND guest_name IS NOT NULL AND guest_phone IS NOT NULL AND guest_id_number IS NOT NULL AND borrower_user_id IS NULL AND borrower_customer_id IS NULL)`,
-		),
-	],
-);
-
-/* ------------------------------------------------------------------------ *
- * inventory.borrowing_lines
- * ------------------------------------------------------------------------ */
-
-/**
- * One borrowed unit.
- *
- * Borrowing is serialized-only: a line always names a specific unit, never a
- * quantity. `originWarehouseId` snapshots where the unit left from, because
- * the unit itself loses its warehouse while it is out — the loss flow needs
- * to know which warehouse to reduce.
- */
-export const borrowingLines = inventorySchema.table(
-	'borrowing_lines',
-	{
-		id: uuid('id')
-			.primaryKey()
-			.default(sql`uuidv7()`),
-		borrowingId: uuid('borrowing_id')
-			.notNull()
-			.references(() => borrowings.id, { onDelete: 'cascade' }),
-		serialTrackedItemId: uuid('serial_tracked_item_id')
-			.notNull()
-			.references(() => serialTrackedItems.id, { onDelete: 'restrict' }),
-		originWarehouseId: uuid('origin_warehouse_id')
-			.notNull()
-			.references(() => warehouses.id, { onDelete: 'restrict' }),
-		issuedAt: unixTimestampNullable('issued_at'),
-		dueAt: unixTimestampNullable('due_at'),
-		returnedAt: unixTimestampNullable('returned_at'),
-		returnedCondition: text('returned_condition'),
-		markedLateAt: unixTimestampNullable('marked_late_at'),
-		markedLostAt: unixTimestampNullable('marked_lost_at'),
-		/** Logical reference to auth.users.id. */
-		lostReportedBy: text('lost_reported_by'),
-		siteAddressText: text('site_address_text'),
-		/** Logical reference to projects.projects.id — cross-module FK omitted. */
-		projectId: uuid('project_id'),
-		notes: text('notes'),
-		...softDeleteTimestamps,
-	},
-	(table) => [
-		uniqueIndex('borrowing_lines_borrowing_unit_uq').on(
-			table.borrowingId,
-			table.serialTrackedItemId,
-		),
-		index('borrowing_lines_unit_id_idx').on(table.serialTrackedItemId),
-		index('borrowing_lines_open_idx')
-			.on(table.dueAt)
-			.where(sql`returned_at IS NULL AND marked_lost_at IS NULL`),
-		check(
-			'borrowing_lines_condition_check',
-			sql`returned_condition IS NULL OR returned_condition IN ('good', 'damaged', 'incomplete')`,
-		),
-		check(
-			'borrowing_lines_due_after_issue_check',
-			sql`due_at IS NULL OR issued_at IS NULL OR due_at > issued_at`,
-		),
-	],
-);
-
-/* ------------------------------------------------------------------------ *
- * inventory.borrowing_events
- * ------------------------------------------------------------------------ */
-
-/**
- * Business timeline of a borrowing.
- *
- * Append-only. The three physical event types must carry the
- * `stock_movement_id` that recorded the movement; every other type must not.
- * Stock movements never point back here — one direction only.
- */
-export const borrowingEvents = inventorySchema.table(
-	'borrowing_events',
-	{
-		id: uuid('id')
-			.primaryKey()
-			.default(sql`uuidv7()`),
-		borrowingId: uuid('borrowing_id')
-			.notNull()
-			.references(() => borrowings.id, { onDelete: 'cascade' }),
-		borrowingLineId: uuid('borrowing_line_id').references(
-			() => borrowingLines.id,
-			{ onDelete: 'cascade' },
-		),
-		eventType: text('event_type').notNull(),
-		/** Logical reference to inventory.stock_movements.id. */
-		stockMovementId: uuid('stock_movement_id'),
-		/** Logical reference to auth.users.id — NULL for automated sweeps. */
-		actorUserId: text('actor_user_id'),
-		occurredAt: unixTimestamp('occurred_at').notNull(),
-		note: text('note'),
-	},
-	(table) => [
-		index('borrowing_events_borrowing_occurred_idx').on(
-			table.borrowingId,
-			table.occurredAt,
-		),
-		index('borrowing_events_line_id_idx').on(table.borrowingLineId),
-		check(
-			'borrowing_events_type_check',
-			sql`event_type IN ('requested', 'approved', 'rejected', 'issued', 'returned', 'marked_late', 'marked_lost', 'due_date_extended', 'cancelled', 'closed')`,
-		),
-		check(
-			'borrowing_events_movement_check',
-			sql`(event_type IN ('issued', 'returned', 'marked_lost') AND stock_movement_id IS NOT NULL)
-				OR (event_type NOT IN ('issued', 'returned', 'marked_lost') AND stock_movement_id IS NULL)`,
-		),
-	],
-);
-
-/* ------------------------------------------------------------------------ *
  * Relations (Relational v2)
  * ------------------------------------------------------------------------ */
 
 /**
  * Relations are declared per schema file and combined in `db.ts`.
- *
- * `serial_tracked_items.current_borrowing_line_id` has no relation declared
- * here on purpose: it is the return leg of the FK cycle documented on
- * `serialTrackedItems`. Queries that need the open line join on the column
- * directly; the borrowing flow reaches units through `borrowingLines.unit`.
  */
 export const inventoryRelations = defineRelationsPart(
 	{
@@ -1056,9 +781,6 @@ export const inventoryRelations = defineRelationsPart(
 		stockMovements,
 		stockBalances,
 		serialTrackedItems,
-		borrowings,
-		borrowingLines,
-		borrowingEvents,
 	},
 	(r) => ({
 		warehouses: {
@@ -1099,40 +821,6 @@ export const inventoryRelations = defineRelationsPart(
 				to: r.warehouses.id,
 			}),
 		},
-		borrowings: {
-			lines: r.many.borrowingLines({
-				from: r.borrowings.id,
-				to: r.borrowingLines.borrowingId,
-			}),
-			events: r.many.borrowingEvents({
-				from: r.borrowings.id,
-				to: r.borrowingEvents.borrowingId,
-			}),
-		},
-		borrowingLines: {
-			borrowing: r.one.borrowings({
-				from: r.borrowingLines.borrowingId,
-				to: r.borrowings.id,
-			}),
-			unit: r.one.serialTrackedItems({
-				from: r.borrowingLines.serialTrackedItemId,
-				to: r.serialTrackedItems.id,
-			}),
-			events: r.many.borrowingEvents({
-				from: r.borrowingLines.id,
-				to: r.borrowingEvents.borrowingLineId,
-			}),
-		},
-		borrowingEvents: {
-			borrowing: r.one.borrowings({
-				from: r.borrowingEvents.borrowingId,
-				to: r.borrowings.id,
-			}),
-			line: r.one.borrowingLines({
-				from: r.borrowingEvents.borrowingLineId,
-				to: r.borrowingLines.id,
-			}),
-		},
 	}),
 );
 
@@ -1168,12 +856,3 @@ export type TStockAdjustmentItemSelect =
 	typeof stockAdjustmentItems.$inferSelect;
 export type TStockAdjustmentItemInsert =
 	typeof stockAdjustmentItems.$inferInsert;
-
-export type TBorrowingSelect = typeof borrowings.$inferSelect;
-export type TBorrowingInsert = typeof borrowings.$inferInsert;
-
-export type TBorrowingLineSelect = typeof borrowingLines.$inferSelect;
-export type TBorrowingLineInsert = typeof borrowingLines.$inferInsert;
-
-export type TBorrowingEventSelect = typeof borrowingEvents.$inferSelect;
-export type TBorrowingEventInsert = typeof borrowingEvents.$inferInsert;

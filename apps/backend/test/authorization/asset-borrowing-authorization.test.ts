@@ -61,7 +61,7 @@ const ROUTES: ReadonlyArray<{ method: string; path: string; body?: unknown }> = 
 			borrowerType: 'user',
 			borrowerUserId: 'borrower-1',
 			dueAt: '2026-12-01T00:00:00.000Z',
-			lines: [{ serialTrackedItemId: UNIT_ID }],
+			lines: [{ assetId: UNIT_ID }],
 		},
 	},
 	{ method: 'POST', path: `/borrowings/${BORROWING_ID}/submit` },
@@ -93,13 +93,13 @@ beforeAll(async () => {
 
 	const { container } = await import('tsyringe');
 	const { BORROWING_SERVICE_TOKEN } = await import(
-		'../../src/app/inventory/constants/di'
+		'../../src/app/assets/constants/di'
 	);
 	const { BorrowingRepository } = await import(
-		'../../src/app/inventory/repositories/borrowing.repository'
+		'../../src/app/assets/repositories/borrowing.repository'
 	);
 	const { BorrowingService } = await import(
-		'../../src/app/inventory/services/borrowing.service'
+		'../../src/app/assets/services/borrowing.service'
 	);
 
 	// A real service over repositories whose reads match nothing, so every route
@@ -121,13 +121,8 @@ beforeAll(async () => {
 	container.register(BORROWING_SERVICE_TOKEN, {
 		useValue: new BorrowingService(
 			borrowingRepository,
-			{
-				findById: async () => null,
-				issueToBorrower: async () => null,
-				returnFromBorrower: async () => null,
-				markLost: async () => null,
-			} as never,
-			{ postMovement: async () => ({}) } as never,
+			{ findById: async () => null } as never,
+			{} as never,
 			createNumberingDouble(),
 			new AuditWriterDouble(),
 			database,
@@ -135,7 +130,7 @@ beforeAll(async () => {
 	});
 
 	const { BorrowingController } = await import(
-		'../../src/app/inventory/controllers/borrowing.controller'
+		'../../src/app/assets/controllers/borrowing.controller'
 	);
 	const { erpGuard } = await import('../../src/authorization/elysia-auth');
 
@@ -169,7 +164,7 @@ describe('borrowing routes — grants decide access', () => {
 				borrowerType: 'user',
 				borrowerUserId: 'technician-1',
 				dueAt: '2026-12-01T00:00:00.000Z',
-				lines: [{ serialTrackedItemId: UNIT_ID }],
+				lines: [{ assetId: UNIT_ID }],
 			},
 		},
 	];
@@ -285,7 +280,7 @@ describe('borrowing payload validation', () => {
 				guestPhone: '0812',
 				// guestIdNumber missing on purpose.
 				dueAt: '2026-12-01T00:00:00.000Z',
-				lines: [{ serialTrackedItemId: UNIT_ID }],
+				lines: [{ assetId: UNIT_ID }],
 			}),
 		);
 		// 400 from the schema, not 500 from the service: the discriminated union
@@ -294,7 +289,7 @@ describe('borrowing payload validation', () => {
 		expect(response.status).toBeLessThan(500);
 	});
 
-	test('a borrowing with no lines is rejected at the edge', async () => {
+	test('a borrowing with no lines is rejected', async () => {
 		const response = await app.handle(
 			jsonRequest('POST', '/borrowings', SESSION, {
 				borrowerType: 'user',
@@ -303,6 +298,8 @@ describe('borrowing payload validation', () => {
 				lines: [],
 			}),
 		);
+		// The schema allows empty lines only when a tool set is lent, so this is
+		// a clean 4xx from the service, never a 500.
 		expect(response.status).toBeGreaterThanOrEqual(400);
 		expect(response.status).toBeLessThan(500);
 	});
@@ -319,7 +316,7 @@ describe('borrowing payload validation', () => {
 				status: 'issued',
 				code: 'BRW-HACK-0001',
 				organizationId: 'other-org',
-				lines: [{ serialTrackedItemId: UNIT_ID }],
+				lines: [{ assetId: UNIT_ID }],
 			}),
 		);
 		expect(response.status).toBeLessThan(500);

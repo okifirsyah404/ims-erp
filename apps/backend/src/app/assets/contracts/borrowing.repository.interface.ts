@@ -7,7 +7,7 @@ import type {
 	TBorrowingLineInsert,
 	TBorrowingLineSelect,
 	TBorrowingSelect,
-} from '@drizzle/schemas/inventory.schema';
+} from '@drizzle/schemas/asset.schema';
 import type { TTx } from '@drizzle/types';
 
 /**
@@ -42,9 +42,9 @@ export type TBorrowingCreateData = TBorrowingInsert;
 /** A line to insert, already resolved by the service. */
 export type TBorrowingLineData = TBorrowingLineInsert;
 
-/** One line the user asked to borrow, resolved to a concrete unit. */
+/** One line the user asked to borrow, resolved to a concrete asset. */
 export type TBorrowingLineInput = {
-	serialTrackedItemId: string;
+	assetId: string;
 	/** Defaults to the header's `due_at`. */
 	dueAt?: Date | null;
 	siteAddressText?: string | null;

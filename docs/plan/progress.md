@@ -12,6 +12,60 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed (this session - ERP-0036 Slice 3 borrowing port, 2026-11-06)
+
+Status: **verified** on the local database; **implemented** in code. Slice 3 of
+`docs/plan/plans/assets-equipment-location-and-borrowing.md`.
+
+What landed:
+
+- Borrowing engine moved from `inventory` to `assets` (`git mv` of service,
+  repository, controller, contracts and both test suites); DI tokens, container
+  registration, `app.ts` mounts and the asset `index.ts` export retargeted.
+- `inventory` borrowing trio and `assets.asset_assignments` **dropped**, with
+  their services, contracts, repository methods and routes. `BorrowingService`
+  writes `asset_movements` through `AssetOperationsService`, and the event
+  CHECK tying `issued|returned|marked_lost` to a movement id holds.
+- `AssetOperationsService` gained `reconcileStatus` (D7), `syncCustody` (D8),
+  `place` (`receipt`), `transfer` (`transfer` + source cleared), plus
+  `borrowOut`, `borrowReturn`, `markAssetLost`, `setToolSetStatus`,
+  `toolSetAssetIds` and a private `assertLocation`.
+- Inventory exposes `assertStorageInWarehouse` (real) and
+  `assertWarehouseReachableByOrg` (returns `true`; ERP-0031 stub with the call
+  site kept real) through `WarehouseService`; Assets holds no inventory
+  repository.
+- Tool-set lending expands to N lines and flips `tool_sets.status`
+  `available ↔ lent`; guest PII, approval chain and both sweeps unchanged.
+- Locale keys re-keyed `inventory:borrowing.*` → `assets:*` (en + id); audit
+  actions are `asset.borrowed|returned|lost|moved|placed|transferred|disposed`.
+- Migration `20261105221923_erp0036_slice3_borrowing_engine` hand-edited:
+  drop the manually-created
+  `serial_tracked_items_current_borrowing_line_id_borrowing_lines_id_fkey`
+  **before** `borrowing_lines`, since it never existed in Drizzle metadata.
+  `serial_tracked_items.current_borrowing_line_id` stays superseded (D17).
+- Tests retargeted asset-shaped (borrowing service + authorization, asset
+  operations custody/location, kind×status matrix, item/inventory suites), and
+  `verify-inventory-constraints.ts` now probes `assets.borrowing*` plus `ready`.
+
+```text
+bun run typecheck                      → clean
+bun run test                           → 526 pass, 0 fail (27 files, 979 expects)
+bun run lint                           → 0 errors (6 pre-existing warnings)
+bunx --bun drizzle-kit generate --hints-file … 
+  → 20261105221923_erp0036_slice3_borrowing_engine
+bun run drizzle:migrate                → migrations applied successfully
+bun run drizzle:seed                   → complete (run 1)
+bun run drizzle:seed                   → complete (run 2, idempotent)
+bun docs/database/validate-dbml.ts     → 255 tables, 228 refs, 0 cross-module,
+                                         0 timestamp gaps, OK
+```
+
+Post-migration DB checks (`ims_erp_local`): only `assets.borrowing_events`,
+`assets.borrowing_lines`, `assets.borrowings` remain; `tool_set_id` exists;
+the old manual FK is gone; `serial_tracked_items_status_check` is
+`pre_order|in_stock|lost|sold|applied_warranty`. `docs/database/` reviewed —
+no change required (no table/column/link/vocabulary moved in Slice 3).
+
 ## Completed (this session - ERP-0036 Slice 2 schema + destructive migration, 2026-11-05)
 
 Status: **verified** on the local database; **implemented** in code. Slice 2 of

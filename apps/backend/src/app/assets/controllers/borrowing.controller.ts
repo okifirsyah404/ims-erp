@@ -11,7 +11,7 @@ import {
 	markLostSchema,
 	returnBorrowingSchema,
 } from '../contracts/borrowing.contract';
-import { idParamSchema } from '../contracts/item.contract';
+import { assetIdParamSchema } from '../contracts/asset.contract';
 import { BORROWING_SERVICE_TOKEN } from '../constants/di';
 import type {
 	BorrowingService,
@@ -81,9 +81,9 @@ export class BorrowingController {
 		};
 
 		return domainPlugin({
-			name: 'inventory-borrowings',
+			name: 'asset-borrowings',
 			prefix: '/borrowings',
-			tags: ['Inventory'],
+			tags: ['Assets'],
 			guards: 'erp',
 		})
 			.get(
@@ -105,7 +105,7 @@ export class BorrowingController {
 				async ({ params, erp }) =>
 					ok(
 						await borrowingService.getById(
-							idParamSchema.parse(params).id,
+							assetIdParamSchema.parse(params).id,
 							erp.organizationId,
 							await actorFor(erp),
 						),
@@ -156,6 +156,7 @@ export class BorrowingController {
 									? (parsed.guestIdDocumentRef ?? null)
 									: null,
 							notes: parsed.notes ?? null,
+							toolSetId: parsed.toolSetId ?? null,
 							lines: parsed.lines,
 						},
 						erp.organizationId,
@@ -174,7 +175,7 @@ export class BorrowingController {
 				async ({ params, erp }) =>
 					ok(
 						await borrowingService.submit(
-							idParamSchema.parse(params).id,
+							assetIdParamSchema.parse(params).id,
 							erp.organizationId,
 							await actorFor(erp),
 						),
@@ -189,7 +190,7 @@ export class BorrowingController {
 				async ({ params, erp }) =>
 					ok(
 						await borrowingService.approve(
-							idParamSchema.parse(params).id,
+							assetIdParamSchema.parse(params).id,
 							erp.organizationId,
 							await actorFor(erp),
 						),
@@ -204,7 +205,7 @@ export class BorrowingController {
 				async ({ params, erp }) =>
 					ok(
 						await borrowingService.reject(
-							idParamSchema.parse(params).id,
+							assetIdParamSchema.parse(params).id,
 							erp.organizationId,
 							await actorFor(erp),
 						),
@@ -219,7 +220,7 @@ export class BorrowingController {
 				async ({ params, erp }) =>
 					ok(
 						await borrowingService.issue(
-							idParamSchema.parse(params).id,
+							assetIdParamSchema.parse(params).id,
 							erp.organizationId,
 							await actorFor(erp),
 						),
@@ -238,7 +239,7 @@ export class BorrowingController {
 					const parsed = returnBorrowingSchema.parse(body);
 					return ok(
 						await borrowingService.returnLines(
-							idParamSchema.parse(params).id,
+							assetIdParamSchema.parse(params).id,
 							erp.organizationId,
 							await actorFor(erp),
 							{
@@ -259,7 +260,7 @@ export class BorrowingController {
 				async ({ params, body, erp }) =>
 					ok(
 						await borrowingService.extend(
-							idParamSchema.parse(params).id,
+							assetIdParamSchema.parse(params).id,
 							erp.organizationId,
 							await actorFor(erp),
 							extendBorrowingSchema.parse(body).dueAt,
@@ -276,7 +277,7 @@ export class BorrowingController {
 					const parsed = markLostSchema.parse(body);
 					return ok(
 						await borrowingService.markLost(
-							idParamSchema.parse(params).id,
+							assetIdParamSchema.parse(params).id,
 							erp.organizationId,
 							await actorFor(erp),
 							{ lineId: parsed.lineId, note: parsed.note ?? null },
@@ -286,7 +287,7 @@ export class BorrowingController {
 				{
 					erp: { permission: ['borrowing:mark_lost'] },
 					detail: {
-						description: 'Reports a line lost and reduces stock at its origin',
+						description: 'Reports a line lost; the asset is parked as lost',
 					},
 				},
 			)
@@ -295,7 +296,7 @@ export class BorrowingController {
 				async ({ params, erp }) =>
 					ok(
 						await borrowingService.cancel(
-							idParamSchema.parse(params).id,
+							assetIdParamSchema.parse(params).id,
 							erp.organizationId,
 							await actorFor(erp),
 						),
@@ -310,7 +311,7 @@ export class BorrowingController {
 				async ({ params, erp }) =>
 					ok(
 						await borrowingService.close(
-							idParamSchema.parse(params).id,
+							assetIdParamSchema.parse(params).id,
 							erp.organizationId,
 							await actorFor(erp),
 						),

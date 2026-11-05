@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { inventoryPaginationSchema } from './item.contract';
 
 /**
  * Request schemas for the borrowing workflow.
@@ -8,7 +7,7 @@ import { inventoryPaginationSchema } from './item.contract';
  * The body never carries `organizationId`, `status`, `code`, or any of the
  * `requested_by` / `approved_by` / `issued_by` actor columns: all are decided by
  * the service from the guard-resolved context, because a client that could set
- * them could approve its own borrowing or issue its own units.
+ * them could approve its own borrowing or issue its own assets.
  *
  * The three borrower paths are modelled as a **discriminated union on
  * `borrowerType`**, so an inconsistent body (a guest with a `borrowerUserId`)
@@ -16,7 +15,7 @@ import { inventoryPaginationSchema } from './item.contract';
  * identity check, which exists for defence in depth.
  */
 
-/** The borrower paths, matching `borrowings.borrower_type`. */
+/** The borrower paths, matching `assets.borrowings.borrower_type`. */
 export const BORROWER_TYPES = ['user', 'customer', 'guest'] as const;
 
 /** The borrowing purposes (D8). */
@@ -27,20 +26,20 @@ export const BORROWING_PURPOSES = [
 	'warranty_service',
 ] as const;
 
-/** The condition a unit comes back in. */
+/** The condition an asset comes back in. */
 export const RETURN_CONDITIONS = ['good', 'damaged', 'incomplete'] as const;
 
 /** Guest identity document kinds. */
 export const GUEST_ID_TYPES = ['ktp', 'sim', 'passport', 'other'] as const;
 
-/** One requested unit. */
+/** One requested asset. */
 export const borrowingLineSchema = z.object({
-	/** The serialized unit. Borrowing is serialized-only (Q5). */
-	serialTrackedItemId: z.uuid(),
+	/** The physical asset. Borrowing is serialized-only (D1). */
+	assetId: z.string().uuid(),
 	/** Per-line due date; defaults to the header's. */
 	dueAt: z.coerce.date().nullable().optional(),
 	siteAddressText: z.string().max(1000).nullable().optional(),
-	projectId: z.uuid().nullable().optional(),
+	projectId: z.string().uuid().nullable().optional(),
 	notes: z.string().max(1000).nullable().optional(),
 });
 
@@ -87,9 +86,14 @@ export const createBorrowingSchema = z
 		purpose: z.enum(BORROWING_PURPOSES).default('internal_use'),
 		dueAt: z.coerce.date(),
 		notes: z.string().max(2000).nullable().optional(),
+		/**
+		 * Lend a whole tool set (D6): the service expands it to one line per
+		 * member asset and marks the set `lent`. `lines` may be empty then.
+		 */
+		toolSetId: z.string().uuid().nullable().optional(),
 		/** Start as a draft instead of raising it immediately. */
 		draft: z.boolean().optional(),
-		lines: z.array(borrowingLineSchema).min(1),
+		lines: z.array(borrowingLineSchema).default([]),
 	})
 	.and(
 		z.discriminatedUnion('borrowerType', [
@@ -100,7 +104,9 @@ export const createBorrowingSchema = z
 	);
 
 /** Filters for the borrowing list. */
-export const borrowingListQuerySchema = inventoryPaginationSchema.extend({
+export const borrowingListQuerySchema = z.object({
+	page: z.coerce.number().int().min(1).default(1),
+	limit: z.coerce.number().int().min(1).max(100).default(20),
 	status: z
 		.enum([
 			'draft',
@@ -115,6 +121,7 @@ export const borrowingListQuerySchema = inventoryPaginationSchema.extend({
 		])
 		.optional(),
 	borrowerType: z.enum(BORROWER_TYPES).optional(),
+	search: z.string().min(1).optional(),
 });
 
 /** Body for a return: one line or all, always with a condition. */

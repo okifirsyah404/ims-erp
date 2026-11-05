@@ -113,37 +113,7 @@ await pass('provisional serial in pre_order accepted', () =>
 	unit('PO-1', 'pre_order', true),
 );
 
-console.log('--- borrowing borrower identity check ---');
-const bid = '01920000-0000-7000-8000-0000000000aa';
-await sql.unsafe(
-	`insert into inventory.borrowings (id, organization_id, code, borrower_type, borrower_user_id, due_at, created_at) values ('${bid}', 'org-a', 'BRW-1', 'user', 'user-1', 2, 1)`,
-);
-await reject('guest borrower without identity rejected', () =>
-	sql.unsafe(
-		`update inventory.borrowings set borrower_type = 'guest' where id = '${bid}'`,
-	),
-);
-await pass('guest borrower with full guest identity accepted', () =>
-	sql.unsafe(
-		`update inventory.borrowings set borrower_type = 'guest', guest_name = 'Budi', guest_phone = '0812', guest_id_number = 'ID-1', borrower_user_id = null where id = '${bid}'`,
-	),
-);
-
-console.log('--- borrowing event physical-move check ---');
-const evt = (borrowingId: string, type: string, movementId: string | null) =>
-	sql.unsafe(
-		`insert into inventory.borrowing_events (borrowing_id, event_type, stock_movement_id, occurred_at) values ('${borrowingId}', '${type}', ${
-			movementId === null ? 'null' : `'${movementId}'`
-		}, 1)`,
-	);
-await pass('issued event with movement', () => evt(bid, 'issued', '01920000-0000-7000-8000-0000000000ff'));
-await pass('non-physical event without movement', () =>
-	evt(bid, 'requested', null),
-);
-await reject('non-physical event carrying a movement', () =>
-	evt(bid, 'marked_late', '01920000-0000-7000-8000-0000000000ff'),
-);
-await reject('issued event without a movement', () => evt(bid, 'issued', null));
+console.log('--- borrowing probes moved to the asset section (ERP-0036) ---');
 
 console.log('--- stock movement constraints ---');
 const mv = (type: string, qty: string, refType: string | null) =>
@@ -483,15 +453,50 @@ await pass('inactive with reason accepted (D18)', async () => {
 await reject('reason on non-inactive rejected (D18)', async () => {
 	const [row] = await assetRow();
 	await sql.unsafe(
-		`update assets.assets set status = 'in_stock', deactivation_reason = 'leftover' where id = '${row.id}'`,
+		`update assets.assets set status = 'ready', deactivation_reason = 'leftover' where id = '${row.id}'`,
 	);
 });
 await pass('reactivated clears the reason (D18)', async () => {
 	const [row] = await assetRow();
 	await sql.unsafe(
-		`update assets.assets set status = 'in_stock', deactivation_reason = null where id = '${row.id}'`,
+		`update assets.assets set status = 'ready', deactivation_reason = null where id = '${row.id}'`,
 	);
 });
+
+console.log('--- asset borrowing checks (ERP-0036) ---');
+const bid = '01920000-0000-7000-8000-0000000000ba';
+await pass('asset borrowing accepted for a user borrower', () =>
+	sql.unsafe(
+		`insert into assets.borrowings (id, organization_id, code, borrower_type, borrower_user_id, due_at, created_at) values ('${bid}', 'org-a', 'BRW-AST-1', 'user', 'user-1', 2, 1)`,
+	),
+);
+await reject('asset guest borrower without identity rejected', () =>
+	sql.unsafe(
+		`update assets.borrowings set borrower_type = 'guest' where id = '${bid}'`,
+	),
+);
+await pass('asset guest borrower with full guest identity accepted', () =>
+	sql.unsafe(
+		`update assets.borrowings set borrower_type = 'guest', guest_name = 'Budi', guest_phone = '0812', guest_id_number = 'ID-1', borrower_user_id = null where id = '${bid}'`,
+	),
+);
+
+const astEvt = (type: string, movementId: string | null) =>
+	sql.unsafe(
+		`insert into assets.borrowing_events (borrowing_id, event_type, asset_movement_id, occurred_at) values ('${bid}', '${type}', ${
+			movementId === null ? 'null' : `'${movementId}'`
+		}, 1)`,
+	);
+await pass('asset issued event with movement', () =>
+	astEvt('issued', '01920000-0000-7000-8000-0000000000ff'),
+);
+await pass('asset non-physical event without movement', () =>
+	astEvt('requested', null),
+);
+await reject('asset non-physical event carrying a movement', () =>
+	astEvt('marked_late', '01920000-0000-7000-8000-0000000000ff'),
+);
+await reject('asset issued event without a movement', () => astEvt('issued', null));
 
 await reject('negative book value rejected', async () => {
 	const [row] = await assetRow();

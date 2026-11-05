@@ -15,21 +15,20 @@ import { InventoryRuleViolationError } from '../../src/app/inventory/errors/inve
  * Exhaustive coverage of the kind × status matrix.
  *
  * @remarks
- * This matrix is the module's central business rule — a serialized consumable
- * passes through `borrowed` while it is out, and no unit is ever `ready` (that
- * is the **asset** vocabulary). Every pair is asserted explicitly rather than
- * spot-checked, because a hole here silently corrupts unit state in the stock
- * and borrowing flows that build on it.
+ * This matrix is the module's central business rule — no unit is ever `ready`
+ * or `borrowed` (those are the **asset** vocabulary). Every pair is asserted
+ * explicitly rather than spot-checked, because a hole here silently corrupts
+ * unit state in the stock flows that build on it.
  *
- * ERP-0036 removed `tool` and `service`; `borrowed` stays until borrowing moves
- * to `assets` (Slice 3).
+ * ERP-0036 removed `tool` and `service`, and moved `borrowed` to `assets`
+ * (Slice 3).
  */
 
 /** Statuses a kind may hold, per ADR-0008. Source of truth for the assertions. */
 const EXPECTED: Record<ItemKind, readonly UnitStatus[]> = {
-	product: ['pre_order', 'in_stock', 'borrowed', 'lost', 'sold', 'applied_warranty'],
-	component: ['pre_order', 'in_stock', 'borrowed', 'lost', 'sold', 'applied_warranty'],
-	material: ['pre_order', 'in_stock', 'borrowed', 'lost', 'sold', 'applied_warranty'],
+	product: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
+	component: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
+	material: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
 };
 
 describe('item kind × status matrix', () => {
@@ -58,23 +57,11 @@ describe('item kind × status matrix', () => {
 
 	describe('assertTransitionAllowed', () => {
 		it('rejects an illegal edge even when the destination is legal', () => {
-			// `pre_order` cannot jump straight to `borrowed`; it must be received
+			// `pre_order` cannot jump straight to `sold`; it must be received
 			// into stock first.
 			expect(() =>
-				assertTransitionAllowed('product', 'pre_order', 'borrowed'),
+				assertTransitionAllowed('product', 'pre_order', 'sold'),
 			).toThrow(InventoryRuleViolationError);
-		});
-
-		it('allows in_stock → borrowed', () => {
-			expect(() =>
-				assertTransitionAllowed('product', 'in_stock', 'borrowed'),
-			).not.toThrow();
-		});
-
-		it('allows borrowed → in_stock (return)', () => {
-			expect(() =>
-				assertTransitionAllowed('product', 'borrowed', 'in_stock'),
-			).not.toThrow();
 		});
 
 		it('allows in_stock → sold for a product', () => {
@@ -101,14 +88,14 @@ describe('item kind × status matrix', () => {
 
 		it('names the rule in the error so the envelope can explain it', () => {
 			try {
-				assertTransitionAllowed('product', 'pre_order', 'borrowed');
+				assertTransitionAllowed('product', 'pre_order', 'sold');
 				throw new Error('expected a violation');
 			} catch (error) {
 				expect(error).toBeInstanceOf(InventoryRuleViolationError);
 				const violation = error as InventoryRuleViolationError;
 				expect(violation.status).toBe(422);
 				expect(violation.rule).toContain('pre_order');
-				expect(violation.rule).toContain('borrowed');
+				expect(violation.rule).toContain('sold');
 			}
 		});
 	});

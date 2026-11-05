@@ -43,34 +43,13 @@ import {
  * - `sold` and `applied_warranty` are product-only.
  * - Every consumable kind additionally reaches `sold`/`applied_warranty`.
  *
- * ERP-0036 removed `tool` and `service` as item kinds; `borrowed` stays on the
- * three remaining kinds until borrowing moves to `assets` (Slice 3).
+ * ERP-0036 removed `tool` and `service` as item kinds, and `borrowed` moved
+ * with the borrowing engine to `assets` (Slice 3).
  */
 const STATUSES_BY_KIND: Record<ItemKind, readonly UnitStatus[]> = {
-	product: [
-		'pre_order',
-		'in_stock',
-		'borrowed',
-		'lost',
-		'sold',
-		'applied_warranty',
-	],
-	component: [
-		'pre_order',
-		'in_stock',
-		'borrowed',
-		'lost',
-		'sold',
-		'applied_warranty',
-	],
-	material: [
-		'pre_order',
-		'in_stock',
-		'borrowed',
-		'lost',
-		'sold',
-		'applied_warranty',
-	],
+	product: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
+	component: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
+	material: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
 };
 
 /**

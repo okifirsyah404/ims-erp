@@ -10,7 +10,7 @@ import {
 } from '@drizzle/schemas/asset.schema';
 import {
 	assetMaintenances,
-	assetAssignments,
+	borrowingLines,
 } from '@drizzle/schemas/asset.schema';
 import type { TTx } from '@drizzle/types';
 import type {
@@ -147,14 +147,14 @@ export class AssetRepository implements IAssetRepository {
 	 */
 	async countReferences(
 		id: string,
-	): Promise<{ assignments: number; maintenances: number }> {
-		const [assignmentRow] = await this.database
+	): Promise<{ borrowings: number; maintenances: number }> {
+		const [borrowingRow] = await this.database
 			.select({ value: count() })
-			.from(assetAssignments)
+			.from(borrowingLines)
 			.where(
 				and(
-					eq(assetAssignments.assetId, id),
-					isNull(assetAssignments.deletedAt),
+					eq(borrowingLines.assetId, id),
+					isNull(borrowingLines.deletedAt),
 				),
 			);
 		const [maintenanceRow] = await this.database
@@ -167,7 +167,7 @@ export class AssetRepository implements IAssetRepository {
 				),
 			);
 		return {
-			assignments: assignmentRow.value,
+			borrowings: borrowingRow.value,
 			maintenances: maintenanceRow.value,
 		};
 	}

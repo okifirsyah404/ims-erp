@@ -5,9 +5,8 @@ import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok, okPaginated } from '@http/response';
 import { assetIdParamSchema } from '../contracts/asset.contract';
 import {
-	assignmentListQuerySchema,
-	assetAssignSchema,
-	assetReturnSchema,
+	assetPlaceSchema,
+	assetTransferSchema,
 	assetMoveSchema,
 	conditionCheckSchema,
 	conditionCheckListQuerySchema,
@@ -51,9 +50,9 @@ function auditActor(erp: ErpContext, request: Request): TInventoryAuditActor {
  * tool sets.
  *
  * @remarks
- * Permission mapping rides the existing `asset:*` matrix (D16): custody
- * needs `asset:assign`/`asset:return`, service logs `asset:maintain`,
- * disposal workflow `asset:dispose`, everything else read/update. All
+ * Permission mapping rides the existing `asset:*` matrix (D16): location
+ * changes need `asset:update`, service logs `asset:maintain`, disposal
+ * workflow `asset:dispose`, everything else read/update. All
  * sub-resources nest under `/assets/:id/...` except disposals and tool
  * sets, which are organization-level documents.
  */
@@ -71,59 +70,48 @@ export class AssetOperationsController {
 			tags: ['Assets'],
 			guards: 'erp',
 		})
-			/* ------------------------------ custody ------------------------------ */
+			/* ------------------------------ location ----------------------------- */
 			.post(
-				'/:id/assignments',
+				'/:id/place',
 				async ({ params, body, erp, request, status }) =>
 					status(
 						201,
 						created(
-							await operations.assign(
+							await operations.place(
 								assetIdParamSchema.parse(params).id,
 								erp.organizationId,
-								assetAssignSchema.parse(body),
+								assetPlaceSchema.parse(body),
 								auditActor(erp, request),
 							),
 						),
 					),
 				{
-					erp: { permission: ['asset:assign'] },
-					detail: { description: 'Assigns an asset to a holder (D12)' },
-				},
-			)
-			.get(
-				'/:id/assignments',
-				async ({ params, query, erp }) => {
-					const { id } = assetIdParamSchema.parse(params);
-					return okPaginated(
-						await operations.listAssignments({
-							assetId: id,
-							organizationId: erp.organizationId,
-							...assignmentListQuerySchema.parse(query),
-						}),
-					);
-				},
-				{
-					erp: { permission: ['asset:read'] },
-					detail: { description: 'Custody history of an asset' },
+					erp: { permission: ['asset:update'] },
+					detail: {
+						description:
+							'Places a ready asset into a warehouse storage (receipt movement)',
+					},
 				},
 			)
 			.post(
-				'/:id/return',
-				async ({ params, body, erp, request }) =>
-					ok(
-						await operations.returnAsset(
-							assetIdParamSchema.parse(params).id,
-							erp.organizationId,
-							assetReturnSchema.parse(body),
-							auditActor(erp, request),
+				'/:id/transfer',
+				async ({ params, body, erp, request, status }) =>
+					status(
+						201,
+						created(
+							await operations.transfer(
+								assetIdParamSchema.parse(params).id,
+								erp.organizationId,
+								assetTransferSchema.parse(body),
+								auditActor(erp, request),
+							),
 						),
 					),
 				{
-					erp: { permission: ['asset:return'] },
+					erp: { permission: ['asset:update'] },
 					detail: {
 						description:
-							'Returns an assigned asset; condition-in is mandatory (D12)',
+							'Transfers a ready asset to another storage, clearing the source',
 					},
 				},
 			)
@@ -540,14 +528,8 @@ export class AssetOperationsController {
 					if (!asset || asset.organizationId !== erp.organizationId) {
 						return ok(null);
 					}
-					const [assignments, movements, checks, maintenances, depreciations, documents] =
+					const [movements, checks, maintenances, depreciations, documents] =
 						await Promise.all([
-							operations.listAssignments({
-								assetId: id,
-								organizationId: erp.organizationId,
-								page: 1,
-								limit: 20,
-							}),
 							operations.listMovements(id, erp.organizationId, 1, 20),
 							operations.listConditionChecks(id, erp.organizationId, 1, 20),
 							operations.listMaintenances(id, erp.organizationId, 1, 20),
@@ -557,7 +539,6 @@ export class AssetOperationsController {
 					return ok({
 						asset,
 						history: {
-							assignments: assignments.data,
 							movements: movements.data,
 							conditionChecks: checks.data,
 							maintenances: maintenances.data,

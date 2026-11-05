@@ -17,7 +17,6 @@ import { container } from 'tsyringe';
 import { createNumberingDouble } from '../helpers/numbering-double';
 import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import type {
-	TAssetAssignmentSelect,
 	TAssetDisposalSelect,
 	TAssetSelect,
 	TToolSetItemSelect,
@@ -30,8 +29,8 @@ import type {
 } from '../../src/app/assets/contracts/asset.repository.interface';
 import type {
 	IAssetOperationsRepository,
-	TAssignmentListRequest,
 } from '../../src/app/assets/contracts/asset-operations.repository.interface';
+import type { WarehouseService } from '../../src/app/inventory/services/warehouse.service';
 import {
 	ASSET_OPERATIONS_REPOSITORY_TOKEN,
 	ASSET_OPERATIONS_SERVICE_TOKEN,
@@ -48,18 +47,19 @@ import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '../../src/app/organization/con
 const ORG_A = 'org-a';
 const ORG_B = 'org-b';
 const ASSET_ID = '01920000-0000-7000-8000-0000000000a1';
+const WAREHOUSE = '01920000-0000-7000-8000-0000000000b1';
+const STORAGE = '01920000-0000-7000-8000-0000000000b2';
+const OTHER_WAREHOUSE = '01920000-0000-7000-8000-0000000000b3';
 const USER = 'user-1';
 
 const actor = { userId: USER, email: 'u@x.io' };
 
 type AssetRow = TAssetSelect;
-type AssignmentRow = TAssetAssignmentSelect;
 type DisposalRow = TAssetDisposalSelect;
 
 /** Builds a fresh in-memory world for the operations service. */
 function buildWorld() {
 	const assets: AssetRow[] = [];
-	const assignments: AssignmentRow[] = [];
 	const disposals: DisposalRow[] = [];
 	const depreciations: Array<Record<string, unknown>> = [];
 	const movements: Array<Record<string, unknown>> = [];
@@ -68,6 +68,9 @@ function buildWorld() {
 	const documents: Array<Record<string, unknown>> = [];
 	const toolSets: Array<Record<string, unknown>> = [];
 	const toolSetItems: Array<Record<string, unknown>> = [];
+	/** Feeds for the custody reads; empty means "not borrowed, not serviced". */
+	const openLines = new Map<string, { issuedAt: Date | null }>();
+	const openMaintenances = new Set<string>();
 
 	let idSeq = 0;
 	const nextId = () => `id-${++idSeq}`;
@@ -89,6 +92,9 @@ function buildWorld() {
 			depreciationMethod: 'straight_line',
 			borrowedSince: null,
 			deactivationReason: null,
+			warehouseId: null,
+			storageId: null,
+			locationDescription: null,
 			createdAt: new Date(),
 			updatedAt: null,
 			deletedAt: null,
@@ -99,14 +105,12 @@ function buildWorld() {
 	const database = {
 		transaction: async (callback: (tx: 'TX') => unknown) => {
 			const assetSnap = assets.map((row) => ({ ...row }));
-			const assignmentSnap = assignments.map((row) => ({ ...row }));
 			const disposalSnap = disposals.map((row) => ({ ...row }));
 			const depSnap = [...depreciations];
 			try {
 				return await callback('TX' as never);
 			} catch (error) {
 				assets.splice(0, assets.length, ...assetSnap);
-				assignments.splice(0, assignments.length, ...assignmentSnap);
 				disposals.splice(0, disposals.length, ...disposalSnap);
 				depreciations.splice(0, depreciations.length, ...depSnap);
 				throw error;
@@ -149,53 +153,16 @@ function buildWorld() {
 			return row;
 		},
 		async countReferences() {
-			return { assignments: 0, maintenances: 0 };
+			return { borrowings: 0, maintenances: 0 };
 		},
 	};
 
 	const operations: IAssetOperationsRepository = {
-		async createAssignment(data) {
-			const row = {
-				id: nextId(),
-				returnedAt: null,
-				conditionOnReturn: null,
-				deletedAt: null,
-				updatedAt: null,
-				...data,
-			} as AssignmentRow;
-			assignments.push(row);
-			return row;
+		async findOpenBorrowingLine(assetId) {
+			return openLines.get(assetId) ?? null;
 		},
-		async listAssignments(request: TAssignmentListRequest) {
-			const rows = assignments.filter(
-				(r) =>
-					r.assetId === request.assetId &&
-					(!request.openOnly || r.returnedAt === null),
-			);
-			return {
-				meta: {
-					page: request.page,
-					limit: request.limit,
-					total: rows.length,
-					totalPages: 1,
-				},
-				data: rows,
-			};
-		},
-		async findOpenAssignment(assetId) {
-			return (
-				assignments.find(
-					(r) => r.assetId === assetId && r.returnedAt === null,
-				) ?? null
-			);
-		},
-		async claimForReturn(assignmentId, data, _tx: TTx) {
-			const row = assignments.find(
-				(r) => r.id === assignmentId && r.returnedAt === null,
-			);
-			if (!row) return null;
-			Object.assign(row, data);
-			return row;
+		async hasOpenMaintenance(assetId) {
+			return openMaintenances.has(assetId);
 		},
 		async createMovement(data) {
 			const row = { id: nextId(), ...data };
@@ -366,6 +333,10 @@ function buildWorld() {
 
 	const audit = new AuditWriterDouble();
 	const numbering = createNumberingDouble();
+	const warehouses = {
+		assertWarehouseReachableByOrg: async () => true,
+		assertStorageInWarehouse: async () => undefined,
+	} as unknown as WarehouseService;
 
 	container.register(ASSET_REPOSITORY_TOKEN, { useValue: assetRepository });
 	container.register(ASSET_OPERATIONS_REPOSITORY_TOKEN, {
@@ -380,6 +351,7 @@ function buildWorld() {
 			operations,
 			numbering,
 			audit,
+			warehouses,
 			database,
 		),
 	});
@@ -391,11 +363,12 @@ function buildWorld() {
 		service,
 		audit,
 		assets,
-		assignments,
 		disposals,
 		depreciations,
 		movements,
 		checks,
+		openLines,
+		openMaintenances,
 		makeAsset,
 		database,
 	};
@@ -407,104 +380,109 @@ beforeEach(() => {
 	world = buildWorld();
 });
 
-describe('asset operations — custody (D12)', () => {
-	test('a happy assignment flips the asset to borrowed and writes a borrow_out movement', async () => {
-		world.assets.push(world.makeAsset());
-		const assignment = await world.service.assign(
-			ASSET_ID,
-			ORG_A,
-			{ assignedToUserId: USER, conditionOnAssign: 'good' },
-			actor,
-		);
-		expect(assignment.returnedAt).toBeNull();
+describe('asset operations — custody & location (D7/D8)', () => {
+	test('reconcile derives borrowed from an open borrowing line', async () => {
+		world.assets.push(world.makeAsset({ status: 'ready' }));
+		world.openLines.set(ASSET_ID, { issuedAt: new Date('2026-06-01') });
+		await world.service.reconcileStatus(ASSET_ID);
 		expect(world.assets[0].status).toBe('borrowed');
-		expect(world.movements).toHaveLength(1);
-		expect(world.movements[0].movementType).toBe('borrow_out');
-		expect(world.audit.forAction('asset.assigned')).toHaveLength(1);
 	});
 
-	test('assignment is blocked for borrowed/inactive/disposed/lost assets', async () => {
-		for (const status of ['borrowed', 'inactive', 'disposed', 'lost']) {
+	test('reconcile derives maintenance when nothing is out but service is open', async () => {
+		world.assets.push(world.makeAsset({ status: 'borrowed' }));
+		world.openMaintenances.add(ASSET_ID);
+		await world.service.reconcileStatus(ASSET_ID);
+		expect(world.assets[0].status).toBe('maintenance');
+	});
+
+	test('reconcile returns a parked or terminal asset unchanged', async () => {
+		for (const status of ['inactive', 'disposed', 'lost']) {
 			const fresh = buildWorld();
 			fresh.assets.push(fresh.makeAsset({ status }));
-			await expect(
-				fresh.service.assign(
-					ASSET_ID,
-					ORG_A,
-					{ assignedToUserId: USER },
-					actor,
-				),
-			).rejects.toThrow(AssetRuleViolationError);
+			fresh.openLines.set(ASSET_ID, { issuedAt: new Date() });
+			await fresh.service.reconcileStatus(ASSET_ID);
+			expect(fresh.assets[0].status).toBe(status);
 		}
 	});
 
-	test('a second assignment while one is open is refused', async () => {
-		world.assets.push(world.makeAsset());
-		await world.service.assign(ASSET_ID, ORG_A, { assignedToUserId: USER }, actor);
-		await expect(
-			world.service.assign(
-				ASSET_ID,
-				ORG_A,
-				{ assignedToUserId: 'user-2' },
-				actor,
-			),
-		).rejects.toThrow(AssetRuleViolationError);
+	test('syncCustody writes borrowed_since from the open line, then clears it', async () => {
+		world.assets.push(world.makeAsset({ status: 'borrowed' }));
+		const issuedAt = new Date('2026-06-01T08:00:00.000Z');
+		world.openLines.set(ASSET_ID, { issuedAt });
+		await world.service.syncCustody(ASSET_ID);
+		expect(world.assets[0].borrowedSince).toEqual(issuedAt);
+
+		world.openLines.delete(ASSET_ID);
+		await world.service.syncCustody(ASSET_ID);
+		expect(world.assets[0].borrowedSince).toBeNull();
 	});
 
-	test('assignment requires a holder', async () => {
-		world.assets.push(world.makeAsset());
-		await expect(
-			world.service.assign(ASSET_ID, ORG_A, {}, actor),
-		).rejects.toThrow(AssetRuleViolationError);
-	});
-
-	test('return writes condition-in, resets the asset to ready, writes a borrow_return movement', async () => {
-		world.assets.push(world.makeAsset());
-		await world.service.assign(ASSET_ID, ORG_A, { assignedToUserId: USER }, actor);
-		const returned = await world.service.returnAsset(
+	test('place writes a receipt movement and sets the asset location', async () => {
+		world.assets.push(world.makeAsset({ status: 'ready' }));
+		await world.service.place(
 			ASSET_ID,
 			ORG_A,
-			{ conditionOnReturn: 'damaged' },
+			{ warehouseId: WAREHOUSE, storageId: STORAGE, locationDescription: 'Rack A' },
 			actor,
 		);
-		expect(returned.returnedAt).not.toBeNull();
-		expect(returned.conditionOnReturn).toBe('damaged');
-		expect(world.assets[0].status).toBe('ready');
-		expect(world.assets[0].condition).toBe('damaged');
-		expect(world.assets[0].borrowedSince).toBeNull();
-		expect(world.movements).toHaveLength(2);
-		expect(world.movements[1].movementType).toBe('borrow_return');
+		expect(world.assets[0].warehouseId).toBe(WAREHOUSE);
+		expect(world.assets[0].storageId).toBe(STORAGE);
+		expect(world.assets[0].locationDescription).toBe('Rack A');
+		expect(world.movements).toHaveLength(1);
+		expect(world.movements[0].movementType).toBe('receipt');
+		expect(world.movements[0].toWarehouseId).toBe(WAREHOUSE);
+		expect(world.movements[0].toStorageId).toBe(STORAGE);
+		expect(world.audit.forAction('asset.placed')).toHaveLength(1);
 	});
 
-	test('return without an open assignment is a rule violation', async () => {
-		world.assets.push(world.makeAsset());
+	test('place is refused for an asset that is not ready', async () => {
+		world.assets.push(world.makeAsset({ status: 'borrowed' }));
 		await expect(
-			world.service.returnAsset(
+			world.service.place(ASSET_ID, ORG_A, { warehouseId: WAREHOUSE }, actor),
+		).rejects.toThrow(AssetRuleViolationError);
+		expect(world.movements).toHaveLength(0);
+	});
+
+	test('place in another organization is a 404, not a leak', async () => {
+		world.assets.push(world.makeAsset({ status: 'ready' }));
+		await expect(
+			world.service.place(ASSET_ID, ORG_B, { warehouseId: WAREHOUSE }, actor),
+		).rejects.toThrow(AssetNotFoundError);
+	});
+
+	test('transfer writes a transfer movement and clears the source', async () => {
+		world.assets.push(
+			world.makeAsset({
+				status: 'ready',
+				warehouseId: WAREHOUSE,
+				storageId: STORAGE,
+			}),
+		);
+		await world.service.transfer(
+			ASSET_ID,
+			ORG_A,
+			{ toWarehouseId: OTHER_WAREHOUSE, toStorageId: null },
+			actor,
+		);
+		expect(world.assets[0].warehouseId).toBe(OTHER_WAREHOUSE);
+		expect(world.assets[0].storageId).toBeNull();
+		expect(world.movements).toHaveLength(1);
+		expect(world.movements[0].movementType).toBe('transfer');
+		expect(world.movements[0].fromWarehouseId).toBe(WAREHOUSE);
+		expect(world.movements[0].toWarehouseId).toBe(OTHER_WAREHOUSE);
+		expect(world.audit.forAction('asset.transferred')).toHaveLength(1);
+	});
+
+	test('transfer is refused while the asset is out', async () => {
+		world.assets.push(world.makeAsset({ status: 'borrowed' }));
+		await expect(
+			world.service.transfer(
 				ASSET_ID,
 				ORG_A,
-				{ conditionOnReturn: 'good' },
+				{ toWarehouseId: OTHER_WAREHOUSE },
 				actor,
 			),
 		).rejects.toThrow(AssetRuleViolationError);
-	});
-
-	test('returning a non-borrowed asset is a transition error', async () => {
-		world.assets.push(world.makeAsset({ status: 'ready' }));
-		await expect(
-			world.service.returnAsset(
-				ASSET_ID,
-				ORG_A,
-				{ conditionOnReturn: 'good' },
-				actor,
-			),
-		).rejects.toThrow(AssetTransitionError);
-	});
-
-	test('another organization is a 404, not a leak', async () => {
-		world.assets.push(world.makeAsset());
-		await expect(
-			world.service.assign(ASSET_ID, ORG_B, { assignedToUserId: USER }, actor),
-		).rejects.toThrow(AssetNotFoundError);
 	});
 });
 

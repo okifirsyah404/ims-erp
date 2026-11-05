@@ -3,7 +3,7 @@ import {
 	borrowingEvents,
 	borrowingLines,
 	borrowings,
-} from '@drizzle/schemas/inventory.schema';
+} from '@drizzle/schemas/asset.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import {
@@ -34,7 +34,7 @@ import type {
 	TBorrowingLineInsert,
 	TBorrowingLineSelect,
 	TBorrowingSelect,
-} from '@drizzle/schemas/inventory.schema';
+} from '@drizzle/schemas/asset.schema';
 import type { TTx } from '@drizzle/types';
 
 /**

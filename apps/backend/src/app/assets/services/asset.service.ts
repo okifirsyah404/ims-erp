@@ -34,9 +34,9 @@ import type { TInventoryAuditActor } from '../../inventory/constants/audit-actor
  * leave back to `ready`). `disposed` is terminal and only reachable via
  * the disposal workflow (D21) — never through `update`.
  *
- * ERP-0036 D7 vocabulary: `in_stock` → `ready`, `in_use` → `borrowed`. A
- * borrowed asset is normally derived from an open borrowing, but this
- * transitional custody flow still writes the status directly until Slice 3.
+ * ERP-0036 D7 vocabulary: `in_stock` → `ready`, `in_use` → `borrowed`.
+ * Custody statuses are derived by `AssetOperationsService.reconcileStatus`
+ * (open borrowing / open maintenance), not written by this lifecycle.
  */
 export const ASSET_STATUS_TRANSITIONS: Record<AssetStatus, AssetStatus[]> = {
 	ready: ['borrowed', 'maintenance', 'inactive', 'lost'],
@@ -46,9 +46,6 @@ export const ASSET_STATUS_TRANSITIONS: Record<AssetStatus, AssetStatus[]> = {
 	lost: [],
 	disposed: [],
 };
-
-/** Statuses that block a custody assignment (Phase A-3 guards). */
-const ASSIGNMENT_BLOCKED: AssetStatus[] = ['borrowed', 'inactive', 'disposed', 'lost'];
 
 /** The actor context for custody/lifecycle operations. */
 export type TAssetActor = TInventoryAuditActor;
@@ -254,11 +251,11 @@ export class AssetService {
 		const current = await this.requireAsset(id);
 		const references =
 			await this.assetRepository.countReferences(id);
-		if (references.assignments > 0 || references.maintenances > 0) {
+		if (references.borrowings > 0 || references.maintenances > 0) {
 			throw new AssetRuleViolationError(
-				`asset_has_history:${references.assignments}/${references.maintenances}`,
+				`asset_has_history:${references.borrowings}/${references.maintenances}`,
 				'assets.assetHasHistory',
-				'Cannot archive an asset with custody or maintenance history',
+				'Cannot archive an asset with borrowing or maintenance history',
 			);
 		}
 		const archived = await this.assetRepository.archive(id);
@@ -288,5 +285,3 @@ export class AssetService {
 		return category;
 	}
 }
-
-export { ASSIGNMENT_BLOCKED };

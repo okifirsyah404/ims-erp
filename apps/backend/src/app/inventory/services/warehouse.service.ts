@@ -412,6 +412,45 @@ export class WarehouseService {
 	}
 
 	/**
+	 * Asserts a storage belongs to a warehouse.
+	 *
+	 * @param storageId - Storage (bin) id
+	 * @param warehouseId - Expected parent warehouse
+	 * @throws {StorageNotFoundError} When either row is absent in this pairing
+	 * @remarks
+	 * Cross-module contract method: Assets owns the asset rows but never reads
+	 * Inventory tables, so it validates locations through this port.
+	 */
+	async assertStorageInWarehouse(
+		storageId: string,
+		warehouseId: string,
+	): Promise<void> {
+		await this.requireStorage(warehouseId, storageId);
+	}
+
+	/**
+	 * Whether a warehouse is reachable from an organization.
+	 *
+	 * @param warehouseId - Warehouse id
+	 * @param organizationId - Caller's tenant, or `null` for a global caller
+	 * @returns Always `true` today
+	 * @throws {WarehouseNotFoundError} When the warehouse does not exist
+	 * @remarks
+	 * **Stub (B1).** No warehouse→organization link exists until ERP-0031 adds
+	 * `inventory.warehouse_organizations`, so every alive warehouse is
+	 * reachable. The call site is real so that follow-up is a body swap,
+	 * not a refactor.
+	 */
+	async assertWarehouseReachableByOrg(
+		warehouseId: string,
+		organizationId: string | null,
+	): Promise<boolean> {
+		await this.requireWarehouse(warehouseId);
+		void organizationId;
+		return true;
+	}
+
+	/**
 	 * Rejects storage writes into an inactive warehouse.
 	 *
 	 * @remarks
