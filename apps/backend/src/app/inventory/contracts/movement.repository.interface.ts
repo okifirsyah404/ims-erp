@@ -104,6 +104,14 @@ export interface IMovementRepository {
 	 * movement is excluded because its reversal row already carries the
 	 * opposite delta.
 	 */
+	/**
+	 * Every non-draft movement of a scope, in posting order — the input of
+	 * the moving-average replay in `recomputeFromLedger`.
+	 */
+	ledgerRows(
+		scopeOrganizationId: string | null,
+	): Promise<Pick<TStockMovementSelect, 'itemId' | 'warehouseId' | 'binId' | 'movementType' | 'quantity' | 'unitCost'>[]>;
+
 	ledgerTotals(
 		scopeOrganizationId: string | null,
 	): Promise<

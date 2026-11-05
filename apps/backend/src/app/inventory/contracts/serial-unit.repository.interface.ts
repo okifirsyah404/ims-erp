@@ -49,7 +49,7 @@ export interface ISerialUnitRepository {
 	): Promise<TSerialTrackedItemSelect | null>;
 
 	/** Inserts a unit. */
-	create(data: TUnitCreateData): Promise<TSerialTrackedItemSelect>;
+	create(data: TUnitCreateData, tx?: TTx): Promise<TSerialTrackedItemSelect>;
 
 	/**
 	 * Replaces a provisional serial with the real one, exactly once.

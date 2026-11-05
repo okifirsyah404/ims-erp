@@ -12,8 +12,12 @@ import type {
 } from '../contracts/procurement.repository.interface';
 import type { PurchaseOrderService } from '../services/purchase-order.service';
 import type { SupplierService } from '../services/supplier.service';
+import type { IGoodsReceiptRepository } from '../contracts/goods-receipt.repository.interface';
+import type { GoodsReceiptService } from '../services/goods-receipt.service';
 
 export const SUPPLIER_REPOSITORY_TOKEN: InjectionToken<ISupplierRepository> = Symbol('SUPPLIER_REPOSITORY');
 export const SUPPLIER_SERVICE_TOKEN: InjectionToken<SupplierService> = Symbol('SUPPLIER_SERVICE');
 export const PURCHASE_ORDER_REPOSITORY_TOKEN: InjectionToken<IPurchaseOrderRepository> = Symbol('PURCHASE_ORDER_REPOSITORY');
 export const PURCHASE_ORDER_SERVICE_TOKEN: InjectionToken<PurchaseOrderService> = Symbol('PURCHASE_ORDER_SERVICE');
+export const GOODS_RECEIPT_REPOSITORY_TOKEN: InjectionToken<IGoodsReceiptRepository> = Symbol('GOODS_RECEIPT_REPOSITORY');
+export const GOODS_RECEIPT_SERVICE_TOKEN: InjectionToken<GoodsReceiptService> = Symbol('GOODS_RECEIPT_SERVICE');

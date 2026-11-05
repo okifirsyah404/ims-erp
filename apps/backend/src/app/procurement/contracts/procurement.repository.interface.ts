@@ -9,6 +9,7 @@ import type {
 	TSupplierSelect,
 } from '@drizzle/schemas/procurement.schema';
 import type { TPaginationResult } from '@ims-erp/common';
+import type { IPurchaseOrderReceiving } from './goods-receipt.repository.interface';
 import type { TPurchaseOrderListQuery } from './purchase-order.contract';
 import type { TSupplierListQuery, TUpdateSupplierInput } from './supplier.contract';
 
@@ -71,7 +72,7 @@ export type TPurchaseOrderTransitionPatch = Partial<
 >;
 
 /** Persistence port for purchase orders and their items (live rows only). */
-export interface IPurchaseOrderRepository {
+export interface IPurchaseOrderRepository extends IPurchaseOrderReceiving {
 	paginate(query: TPurchaseOrderListQuery): Promise<TPaginationResult<TPurchaseOrderSelect>>;
 	findById(id: string): Promise<TPurchaseOrderSelect | null>;
 	findItems(purchaseOrderId: string): Promise<TPurchaseOrderItemSelect[]>;

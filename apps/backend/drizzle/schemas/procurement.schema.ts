@@ -256,8 +256,78 @@ export const purchaseOrderItems = procurementSchema.table(
 	],
 );
 
+/* ------------------------------------------------------------------------ *
+ * procurement.goods_receipts (posted on creation, immutable)
+ * ------------------------------------------------------------------------ */
+
+export const goodsReceipts = procurementSchema.table(
+	'goods_receipts',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		/** e.g. 0001/BPB/IMS/XI/26, assigned on creation. */
+		code: varchar('code', { length: 32 }).notNull(),
+		purchaseOrderId: uuid('purchase_order_id')
+			.notNull()
+			.references(() => purchaseOrders.id, { onDelete: 'restrict' }),
+		/** Logical reference to inventory.warehouses.id — cross-module FK omitted. */
+		warehouseId: uuid('warehouse_id').notNull(),
+		/** Logical reference to inventory.warehouse_storages.id — cross-module FK omitted. */
+		binId: uuid('bin_id'),
+		status: text('status').notNull().default('posted'),
+		receiptDate: date('receipt_date').notNull(),
+		supplierDeliveryRef: varchar('supplier_delivery_ref', { length: 100 }),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		receivedBy: text('received_by'),
+		notes: text('notes'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('goods_receipts_code_uq')
+			.on(table.code)
+			.where(sql`deleted_at IS NULL`),
+		index('goods_receipts_purchase_order_id_idx').on(table.purchaseOrderId),
+		index('goods_receipts_warehouse_id_idx').on(table.warehouseId),
+		check('goods_receipts_status_check', sql`${table.status} IN ('posted')`),
+	],
+);
+
+export const goodsReceiptItems = procurementSchema.table(
+	'goods_receipt_items',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		goodsReceiptId: uuid('goods_receipt_id')
+			.notNull()
+			.references(() => goodsReceipts.id, { onDelete: 'cascade' }),
+		purchaseOrderItemId: uuid('purchase_order_item_id')
+			.notNull()
+			.references(() => purchaseOrderItems.id, { onDelete: 'restrict' }),
+		/** Logical reference to inventory.items.id — cross-module FK omitted. */
+		itemId: uuid('item_id').notNull(),
+		sku: varchar('sku', { length: 64 }).notNull(),
+		name: text('name').notNull(),
+		unit: varchar('unit', { length: 32 }).notNull(),
+		quantity: numeric('quantity', { precision: 18, scale: 3 }).notNull(),
+		/** Ex-VAT unit price booked into stock (IDR minor units). */
+		unitCost: bigint('unit_cost', { mode: 'number' }).notNull().default(0),
+		/** One serial per unit for serialized items. */
+		serialNumbers: jsonb('serial_numbers').$type<string[]>(),
+		/** Logical reference to inventory.stock_movements.id — cross-module FK omitted. */
+		stockMovementId: uuid('stock_movement_id'),
+		...timestamps,
+	},
+	(table) => [
+		index('goods_receipt_items_goods_receipt_id_idx').on(table.goodsReceiptId),
+		index('goods_receipt_items_purchase_order_item_id_idx').on(table.purchaseOrderItemId),
+		check('goods_receipt_items_amounts_check', sql`${table.quantity} > 0 AND ${table.unitCost} >= 0`),
+	],
+);
+
 export const procurementRelations = defineRelationsPart(
-	{ suppliers, purchaseOrders, purchaseOrderItems },
+	{ suppliers, purchaseOrders, purchaseOrderItems, goodsReceipts, goodsReceiptItems },
 	(r) => ({
 		purchaseOrders: {
 			supplier: r.one.suppliers({ from: r.purchaseOrders.supplierId, to: r.suppliers.id }),
@@ -275,3 +345,7 @@ export type TPurchaseOrderInsert = typeof purchaseOrders.$inferInsert;
 export type TPurchaseOrderSelect = typeof purchaseOrders.$inferSelect;
 export type TPurchaseOrderItemInsert = typeof purchaseOrderItems.$inferInsert;
 export type TPurchaseOrderItemSelect = typeof purchaseOrderItems.$inferSelect;
+export type TGoodsReceiptInsert = typeof goodsReceipts.$inferInsert;
+export type TGoodsReceiptSelect = typeof goodsReceipts.$inferSelect;
+export type TGoodsReceiptItemInsert = typeof goodsReceiptItems.$inferInsert;
+export type TGoodsReceiptItemSelect = typeof goodsReceiptItems.$inferSelect;

@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { inject, injectable } from 'tsyringe';
 import type { TPaginationResult } from '@ims-erp/common';
 import type {
@@ -284,7 +285,12 @@ export class ItemService {
 			acquiredOn?: string | null;
 			warrantyExpiresOn?: string | null;
 			notes?: string | null;
+			/** Procurement link of a received unit (ADR-0011 step 4b). */
+			purchaseOrderLineId?: string | null;
+			stockMovementId?: string | null;
 		},
+		/** Joins an outer transaction (a goods receipt posts units with its movements). */
+		tx?: TTx,
 	): Promise<TSerialTrackedItemSelect> {
 		const item = await this.getItem(itemId);
 
@@ -334,11 +340,11 @@ export class ItemService {
 			binId: data.binId ?? null,
 			acquiredOn: data.acquiredOn ?? null,
 			warrantyExpiresOn: data.warrantyExpiresOn ?? null,
-			purchaseOrderLineId: null,
+			purchaseOrderLineId: data.purchaseOrderLineId ?? null,
 			customerId: null,
-			stockMovementId: null,
+			stockMovementId: data.stockMovementId ?? null,
 			notes: data.notes ?? null,
-		});
+		}, tx);
 	}
 
 	/**

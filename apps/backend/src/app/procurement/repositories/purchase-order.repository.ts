@@ -19,10 +19,16 @@ import type {
 	TPurchaseOrderTransitionPatch,
 } from '../contracts/procurement.repository.interface';
 import type { TPurchaseOrderListQuery } from '../contracts/purchase-order.contract';
+import type {
+	IPurchaseOrderReceiving,
+	TReceivedQuantity,
+	TReceiveResult,
+} from '../contracts/goods-receipt.repository.interface';
+import { quantityToMilli } from '@ims-erp/common';
 
 /** Drizzle implementation of {@link IPurchaseOrderRepository}. */
 @injectable()
-export class PurchaseOrderRepository implements IPurchaseOrderRepository {
+export class PurchaseOrderRepository implements IPurchaseOrderRepository, IPurchaseOrderReceiving {
 	constructor(@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase) {}
 
 	private live(id: string) {
@@ -114,6 +120,46 @@ export class PurchaseOrderRepository implements IPurchaseOrderRepository {
 			.where(and(this.live(id), inArray(purchaseOrders.status, [...from])))
 			.returning();
 		return row ?? null;
+	}
+
+	async receive(purchaseOrderId: string, lines: TReceivedQuantity[], tx: TTx): Promise<TReceiveResult> {
+		const [order] = await tx
+			.select()
+			.from(purchaseOrders)
+			.where(this.live(purchaseOrderId))
+			.for('update');
+		if (!order || (order.status !== 'sent' && order.status !== 'partially_received')) {
+			return { ok: false, reason: 'notReceivable' };
+		}
+		const items = await tx
+			.select()
+			.from(purchaseOrderItems)
+			.where(and(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId), isNull(purchaseOrderItems.deletedAt)))
+			.for('update');
+		const now = new Date();
+		const received = new Map(items.map((item) => [item.id, quantityToMilli(item.quantityReceived)]));
+		for (const [index, line] of lines.entries()) {
+			const item = items.find((row) => row.id === line.purchaseOrderItemId);
+			if (!item) return { ok: false, reason: 'notReceivable', line: index + 1 };
+			const total = received.get(item.id)! + quantityToMilli(line.quantity);
+			if (total > quantityToMilli(item.quantity)) return { ok: false, reason: 'overReceived', line: index + 1 };
+			received.set(item.id, total);
+		}
+		for (const item of items) {
+			const total = received.get(item.id)!;
+			if (total === quantityToMilli(item.quantityReceived)) continue;
+			await tx
+				.update(purchaseOrderItems)
+				.set({ quantityReceived: (Number(total) / 1000).toFixed(3), updatedAt: now })
+				.where(eq(purchaseOrderItems.id, item.id));
+		}
+		const complete = items.every((item) => received.get(item.id)! >= quantityToMilli(item.quantity));
+		const [updated] = await tx
+			.update(purchaseOrders)
+			.set({ status: complete ? 'received' : 'partially_received', updatedAt: now })
+			.where(eq(purchaseOrders.id, purchaseOrderId))
+			.returning();
+		return { ok: true, order: updated };
 	}
 
 	async hasReceipts(id: string): Promise<boolean> {

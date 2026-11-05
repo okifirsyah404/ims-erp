@@ -5,6 +5,11 @@ import {
 	OBJECT_STORAGE_TOKEN,
 	s3ObjectStorage,
 } from '@providers/s3/object-storage';
+import {
+	drizzleTransactionRunner,
+	type ITransactionRunner,
+	TRANSACTION_RUNNER_TOKEN,
+} from '@providers/database/transaction-runner';
 import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { DependencyContainer } from 'tsyringe';
@@ -27,5 +32,8 @@ export function registerProvider(container: DependencyContainer) {
 	});
 	container.register<IObjectStorage>(OBJECT_STORAGE_TOKEN, {
 		useValue: s3ObjectStorage,
+	});
+	container.register<ITransactionRunner>(TRANSACTION_RUNNER_TOKEN, {
+		useValue: drizzleTransactionRunner(drizzleDB),
 	});
 }

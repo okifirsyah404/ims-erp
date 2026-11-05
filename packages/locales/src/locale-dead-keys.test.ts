@@ -113,6 +113,7 @@ const DYNAMIC_PREFIXES = [
 	'finance.term.',
 	'finance.invoiceState.',
 	'procurement.poState.',
+	'procurement.receiptLine.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

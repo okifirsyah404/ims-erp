@@ -99,9 +99,9 @@ Last synced: 2026-11-06.
 ### planned
 - Inventory movement boundaries / valuation + GL reconciliation — ERP-0014
   (re-scoped into S1–S4; valuation deferred, OPEN-3).
-- Goods receipt, payables — T07, ERP-0012 / ERP-0035. Evidence: dbml
-  `procurement` only (goods receipts are step 4b).
-- HPP / stock value via finance summary — T07. Evidence: none.
+- Payables (supplier invoices) — T07, ERP-0012 / ERP-0035. Evidence: none.
+- Stock value via finance summary / GL — T07. Evidence: balances carry
+  `total_value` (step 4b); no summary or journal yet.
 
 ### implemented
 - Suppliers (bank details restricted) and purchase orders with one-level
@@ -109,6 +109,13 @@ Last synced: 2026-11-06.
   `apps/backend/src/app/procurement`, `test/unit/procurement.service.test.ts`,
   `/procurement/suppliers`, `/procurement/purchase-orders`, `progress.md`
   2026-11-06 (ADR-0011 step 4a). Gaps: real-PG integration tests, e2e.
+- Goods receipts (BPB) against sent POs with serials, and moving-average
+  HPP per stock balance — T07, ERP-0035 / ERP-0014. Evidence:
+  `procurement/services/goods-receipt.service.ts`,
+  `inventory/utils/moving-average.ts`, `test/unit/goods-receipt.service.test.ts`,
+  `test/unit/moving-average.test.ts`, `/procurement/receipts`, `progress.md`
+  2026-11-06 (step 4b). Gaps: programmer A's review of the stock-service
+  change, real-PG integration tests.
 - Stock ledger S3 — ERP-0028. Evidence:
   `apps/backend/src/app/inventory/services/stock.service.ts`,
   `test/unit/stock.service.test.ts` (22 tests), UI

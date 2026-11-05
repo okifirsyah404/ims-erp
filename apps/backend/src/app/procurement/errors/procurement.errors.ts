@@ -65,3 +65,30 @@ export class PurchaseOrderCodeTakenError extends AppError {
 		super(409, 'procurement.poCodeTaken', `PO number ${code} is already used`, { code });
 	}
 }
+
+export class GoodsReceiptNotFoundError extends AppError {
+	constructor() {
+		super(404, 'procurement.goodsReceiptNotFound', 'Goods receipt not found');
+	}
+}
+
+/** Only a sent or partly received PO can be received against. */
+export class GoodsReceiptOrderNotReceivableError extends AppError {
+	constructor() {
+		super(422, 'procurement.orderNotReceivable', 'Only a sent or partly received purchase order can be received');
+	}
+}
+
+/** A receipt line that is unknown, more than is open, or without its serials. */
+export class GoodsReceiptLineError extends AppError {
+	constructor(kind: 'unknown' | 'over' | 'serials', line: number) {
+		super(422, `procurement.receiptLine.${kind}` as const, `Line ${line}: ${kind}`, { line });
+	}
+}
+
+/** The storage is not an active storage of the chosen warehouse. */
+export class GoodsReceiptBinError extends AppError {
+	constructor() {
+		super(422, 'procurement.receiptBin', 'The storage does not belong to the chosen warehouse');
+	}
+}

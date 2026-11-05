@@ -119,6 +119,7 @@ const nav = {
 	'breadcrumb.quotationEdit': 'Edit',
 	'breadcrumb.print': 'Print',
 	'breadcrumb.purchaseOrderNew': 'New purchase order',
+	'breadcrumb.goodsReceiptNew': 'Receive goods',
 } as const;
 
 export default nav;

@@ -527,7 +527,12 @@ export const stockMovements = inventorySchema.table(
 			{ onDelete: 'restrict' },
 		),
 		quantity: numeric('quantity', { precision: 18, scale: 3 }).notNull(),
-		/** e.g. 'manual_adjustment' | 'borrowing' | 'receipt'. */
+		/**
+		 * IDR minor units the movement was valued at (ADR-0011 §5 moving
+		 * average): the given cost inbound, the balance average outbound.
+		 */
+		unitCost: bigint('unit_cost', { mode: 'number' }).notNull().default(0),
+		/** e.g. 'manual_adjustment' | 'borrowing' | 'receipt' | 'goods_receipt'. */
 		referenceType: text('reference_type'),
 		referenceId: text('reference_id'),
 		status: text('status').notNull().default('posted'),
@@ -584,11 +589,10 @@ export const stockMovements = inventorySchema.table(
  * caused it (ADR-0008) — no database triggers. `recomputeFromLedger` is the
  * repair operation.
  *
- * **No valuation.** `average_cost` / `total_value` / `currency_code` were
- * removed: they were guaranteed to hold `0` forever and a cost field that is
- * never written is worse than an absent one, because it invites trust.
- * Valuation is owned by the (future) accounting module; the base price lives
- * on `items.selling_price` / `items.purchase_price`. `quantity_reserved` stays
+ * **Moving-average valuation** (ADR-0011 §5, supersedes the earlier "no
+ * valuation" decision for the inventory value): `average_cost` and
+ * `total_value` are maintained by the stock service with the quantity, in
+ * the same transaction; the accounting journal still needs finance approval. `quantity_reserved` stays
  * 0 until reservations are built, so `quantity_available` equals
  * `quantity_on_hand` throughout.
  *
@@ -632,11 +636,18 @@ export const stockBalances = inventorySchema.table(
 		})
 			.notNull()
 			.default('0'),
+		/** Moving-average unit cost, IDR minor units (ADR-0011 §5). Restricted. */
+		averageCost: bigint('average_cost', { mode: 'number' }).notNull().default(0),
+		/** Value of `quantity_on_hand` at cost; the last unit out takes the remainder. */
+		totalValue: bigint('total_value', { mode: 'number' }).notNull().default(0),
 		lastMovementAt: unixTimestampNullable('last_movement_at'),
 		createdAt: unixTimestamp('created_at').notNull(),
 		updatedAt: unixTimestampNullable('updated_at').$onUpdate(() => new Date()),
 	},
 	(table) => [
+		// Both unique indexes are NULLS NOT DISTINCT in the database (migration
+		// 20261105185010, hand-written: Drizzle's index builder cannot express
+		// it), so a bin-less balance is one row and its upserts conflict.
 		uniqueIndex('stock_balances_org_scope_uq')
 			.on(
 				table.organizationId,

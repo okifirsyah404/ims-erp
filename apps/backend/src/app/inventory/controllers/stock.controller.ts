@@ -12,6 +12,19 @@ import {
 import { idParamSchema } from '../contracts/item.contract';
 import { STOCK_SERVICE_TOKEN } from '../constants/di';
 import type { StockService } from '../services/stock.service';
+import {
+	type IPermissionResolver,
+	PERMISSION_RESOLVER_TOKEN,
+} from '@authorization/permission-resolver';
+
+/** Cost columns (ADR-0011 §5) are restricted to `product:read_cost`. */
+const COST_FIELDS = ['unitCost', 'averageCost', 'totalValue'] as const;
+
+function hideCost<T extends object>(row: T): T {
+	const copy = { ...row } as Record<string, unknown>;
+	for (const field of COST_FIELDS) delete copy[field];
+	return copy as T;
+}
 
 /**
  * REST controller for the stock ledger, balances, receipts, and issues.
@@ -38,6 +51,15 @@ export class StockController {
 	 */
 	static plugin() {
 		const stockService = container.resolve<StockService>(STOCK_SERVICE_TOKEN);
+		const permissions = container.resolve<IPermissionResolver>(PERMISSION_RESOLVER_TOKEN);
+		const canSeeCost = (erp: ErpContext) =>
+			permissions.hasPermission(erp.organizationId, erp.member.role.split(',').map((role) => role.trim()), {
+				product: ['read_cost'],
+			});
+		const page = async <T extends object>(erp: ErpContext, result: { meta: unknown; data: T[] }) =>
+			(await canSeeCost(erp)) ? result : { ...result, data: result.data.map(hideCost) };
+		const posted_ = async <T extends { movement: object; balance: object }>(erp: ErpContext, result: T): Promise<T> =>
+			(await canSeeCost(erp)) ? result : { ...result, movement: hideCost(result.movement), balance: hideCost(result.balance) };
 
 		return domainPlugin({
 			name: 'inventory-stock',
@@ -50,13 +72,16 @@ export class StockController {
 				async ({ query, erp }) => {
 					const parsed = balanceListQuerySchema.parse(query);
 					return okPaginated(
-						await stockService.paginateBalances({
-							...parsed,
-							scopeOrganizationId: resolveReadScope(
-								parsed.scopeOrganizationId,
-								erp,
-							),
-						}),
+						await page(
+							erp,
+							await stockService.paginateBalances({
+								...parsed,
+								scopeOrganizationId: resolveReadScope(
+									parsed.scopeOrganizationId,
+									erp,
+								),
+							}),
+						) as never,
 					);
 				},
 				{
@@ -69,13 +94,16 @@ export class StockController {
 				async ({ query, erp }) => {
 					const parsed = movementListQuerySchema.parse(query);
 					return okPaginated(
-						await stockService.paginateMovements({
-							...parsed,
-							scopeOrganizationId: resolveReadScope(
-								parsed.scopeOrganizationId,
-								erp,
-							),
-						}),
+						await page(
+							erp,
+							await stockService.paginateMovements({
+								...parsed,
+								scopeOrganizationId: resolveReadScope(
+									parsed.scopeOrganizationId,
+									erp,
+								),
+							}),
+						) as never,
 					);
 				},
 				{
@@ -87,7 +115,7 @@ export class StockController {
 				'/receipts',
 				async ({ body, erp, status }) => {
 					const parsed = receiptSchema.parse(body);
-					const posted = await stockService.postMovement({
+					const result = await stockService.postMovement({
 						actorOrganizationId: erp.organizationId,
 						warehouseId: parsed.warehouseId,
 						binId: parsed.binId ?? null,
@@ -102,7 +130,7 @@ export class StockController {
 						createdBy: erp.session.user.id,
 						notes: parsed.notes ?? null,
 					});
-					return status(201, created(posted));
+					return status(201, created(await posted_(erp, result)));
 				},
 				{
 					erp: { permission: ['stock:receive'] },
@@ -113,7 +141,7 @@ export class StockController {
 				'/issues',
 				async ({ body, erp, status }) => {
 					const parsed = issueSchema.parse(body);
-					const posted = await stockService.postMovement({
+					const result = await stockService.postMovement({
 						actorOrganizationId: erp.organizationId,
 						warehouseId: parsed.warehouseId,
 						binId: parsed.binId ?? null,
@@ -128,7 +156,7 @@ export class StockController {
 						createdBy: erp.session.user.id,
 						notes: parsed.notes ?? null,
 					});
-					return status(201, created(posted));
+					return status(201, created(await posted_(erp, result)));
 				},
 				{
 					erp: { permission: ['stock:issue'] },

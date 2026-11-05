@@ -31,6 +31,7 @@ import {
 	WarehouseNotFoundError,
 } from '../errors/inventory.errors';
 import type { TTx } from '@drizzle/types';
+import { applyMovementCost, type TCostState } from '../utils/moving-average';
 
 /** Movement types that decrease stock. Every other type increases it. */
 export { isOutbound } from '../constants/movement-direction';
@@ -52,6 +53,12 @@ export type TPostMovementInput = {
 	notes?: string | null;
 	/** Required for transfer types by a schema CHECK. */
 	targetWarehouseId?: string | null;
+	/**
+	 * Inbound unit cost in IDR minor units (ADR-0011 §5). Omitted inbound
+	 * movements are valued at the current average; outbound movements always
+	 * leave at the average.
+	 */
+	unitCost?: number | null;
 };
 
 /** A movement plus the balance it produced. */
@@ -197,12 +204,13 @@ export class StockService {
 		// that divergence is exactly what recomputeFromLedger would have to
 		// repair later.
 		const run = async (handle: TTx): Promise<TPostedMovement> => {
-			// Negative stock is refused for every type. Checked INSIDE the
-			// transaction so the read reflects any concurrent commit that just
-			// landed, rather than a snapshot taken before the transaction began.
+			// The balance row is locked for the cost update (ADR-0011 §5); the
+			// quantity check reads the same locked row, so it also reflects any
+			// concurrent commit that just landed.
+			const locked = await this.balanceRepository.lockForCost(key, handle);
+			// Negative stock is refused for every type.
 			if (outbound) {
-				const current = await this.balanceRepository.findByKey(key);
-				const available = Number(current?.quantityOnHand ?? '0');
+				const available = Number(locked.quantityOnHand);
 				const requested = Number(input.quantity);
 				if (requested > available) {
 					throw new InsufficientStockError(
@@ -211,6 +219,11 @@ export class StockService {
 					);
 				}
 			}
+			const cost = applyMovementCost(costState(locked), {
+				outbound,
+				quantity: input.quantity,
+				unitCost: outbound ? null : input.unitCost,
+			});
 
 			const movement = await this.movementRepository.create(
 				{
@@ -222,6 +235,7 @@ export class StockService {
 					binId: input.binId ?? null,
 					targetWarehouseId: input.targetWarehouseId ?? null,
 					quantity: input.quantity,
+					unitCost: cost.unitCost,
 					referenceType: input.referenceType ?? null,
 					referenceId: input.referenceId ?? null,
 					status: 'posted',
@@ -240,8 +254,13 @@ export class StockService {
 				},
 				handle,
 			);
+			await this.balanceRepository.setCost(key, cost, handle);
 
-			return { movement, balance, scopeOrganizationId };
+			return {
+				movement,
+				balance: { ...balance, averageCost: cost.averageCost, totalValue: cost.totalValue },
+				scopeOrganizationId,
+			};
 		};
 
 		return tx ? run(tx) : this.database.transaction(run);
@@ -315,9 +334,9 @@ export class StockService {
 			// stock that has since been issued is NOT allowed — the correct
 			// repair is to issue again or to adjust, not to invent negative
 			// stock.
+			const locked = await this.balanceRepository.lockForCost(key, tx);
 			if (!originalOutbound) {
-				const current = await this.balanceRepository.findByKey(key);
-				const available = Number(current?.quantityOnHand ?? '0');
+				const available = Number(locked.quantityOnHand);
 				const requested = Number(original.quantity);
 				if (requested > available) {
 					throw new InsufficientStockError(
@@ -326,6 +345,14 @@ export class StockService {
 					);
 				}
 			}
+
+			// The reversal carries the original's cost, so the value it added
+			// (or took) comes back out (or in) exactly.
+			const cost = applyMovementCost(costState(locked), {
+				outbound: !originalOutbound,
+				quantity: original.quantity,
+				unitCost: original.unitCost,
+			});
 
 			const reversal = await this.movementRepository.create(
 				{
@@ -337,6 +364,7 @@ export class StockService {
 					binId: original.binId,
 					targetWarehouseId: null,
 					quantity: original.quantity,
+					unitCost: cost.unitCost,
 					referenceType: 'reversal',
 					referenceId: original.id,
 					status: 'posted',
@@ -357,8 +385,13 @@ export class StockService {
 				},
 				tx,
 			);
+			await this.balanceRepository.setCost(key, cost, tx);
 
-			return { movement: reversal, balance, scopeOrganizationId };
+			return {
+				movement: reversal,
+				balance: { ...balance, averageCost: cost.averageCost, totalValue: cost.totalValue },
+				scopeOrganizationId,
+			};
 		});
 	}
 
@@ -430,8 +463,34 @@ export class StockService {
 			}
 		}
 
+		// Cost is path-dependent, so it is replayed in posting order rather than
+		// summed (ADR-0011 §5).
+		const costs = new Map<string, TCostState & { key: TBalanceKey }>();
+		for (const row of await this.movementRepository.ledgerRows(scopeOrganizationId)) {
+			const id = keyOf(row.itemId, row.warehouseId, row.binId);
+			const state = costs.get(id) ?? {
+				key: { scopeOrganizationId, itemId: row.itemId, warehouseId: row.warehouseId, binId: row.binId },
+				quantity: '0',
+				averageCost: 0,
+				totalValue: 0,
+			};
+			const outbound = isOutbound(row.movementType);
+			const next = applyMovementCost(state, { outbound, quantity: row.quantity, unitCost: row.unitCost });
+			const quantity = Number(state.quantity) + (outbound ? -1 : 1) * Number(row.quantity);
+			costs.set(id, { ...state, ...next, quantity: normalizeQuantity(quantity) });
+		}
+		for (const [id, state] of costs) {
+			if (Number(byKey.get(id) ?? '0') === 0) continue;
+			await this.balanceRepository.setCost(state.key, state);
+		}
+
 		return { written, removed };
 	}
+}
+
+/** The cost state of a locked balance. */
+function costState(locked: { quantityOnHand: string; averageCost: number; totalValue: number }): TCostState {
+	return { quantity: locked.quantityOnHand, averageCost: locked.averageCost, totalValue: locked.totalValue };
 }
 
 /** Key for grouping ledger totals and balance rows. */

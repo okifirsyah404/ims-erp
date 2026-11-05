@@ -60,6 +60,7 @@ function PurchaseOrderDetailPage() {
 	const canApprove = usePermission('purchase_order.approve');
 	const canSend = usePermission('purchase_order.send');
 	const canCancel = usePermission('purchase_order.cancel');
+	const canReceive = usePermission('stock.receive');
 	const [dialog, setDialog] = useState<'reject' | 'cancel' | null>(null);
 	const [reason, setReason] = useState('');
 	const [busy, setBusy] = useState(false);
@@ -140,6 +141,14 @@ function PurchaseOrderDetailPage() {
 					{data.status === 'approved' && canSend && (
 						<Button disabled={busy} onClick={() => void run(() => sendPurchaseOrder(purchaseOrderId), t('procurement:pos.sent'))}>
 							{t('procurement:pos.markSent')}
+						</Button>
+					)}
+					{(data.status === 'sent' || data.status === 'partially_received') && canReceive && (
+						<Button
+							render={<Link to='/procurement/receipts/new' search={{ purchaseOrderId }} />}
+							nativeButton={false}
+						>
+							{t('procurement:receipts.receiveGoods')}
 						</Button>
 					)}
 					{cancellable && canCancel && (

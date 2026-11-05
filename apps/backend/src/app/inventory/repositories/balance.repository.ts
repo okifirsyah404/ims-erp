@@ -196,6 +196,48 @@ export class BalanceRepository implements IBalanceRepository {
 		return row;
 	}
 
+	async lockForCost(
+		key: TBalanceKey,
+		tx: TTx,
+	): Promise<{ quantityOnHand: string; averageCost: number; totalValue: number }> {
+		// Create the row first (no-op when present) so the lock always has a
+		// row to hold: two first-ever receipts then serialize on it.
+		await tx
+			.insert(stockBalances)
+			.values({
+				organizationId: key.scopeOrganizationId,
+				itemId: key.itemId,
+				warehouseId: key.warehouseId,
+				binId: key.binId,
+				quantityOnHand: '0',
+				quantityReserved: '0',
+				quantityAvailable: '0',
+				lastMovementAt: null,
+				createdAt: new Date(),
+			})
+			.onConflictDoNothing({
+				target: conflictTarget(key.scopeOrganizationId),
+				where: scopePredicateFor(key.scopeOrganizationId),
+			});
+		const [row] = await tx
+			.select({
+				quantityOnHand: stockBalances.quantityOnHand,
+				averageCost: stockBalances.averageCost,
+				totalValue: stockBalances.totalValue,
+			})
+			.from(stockBalances)
+			.where(keyPredicate(key))
+			.for('update');
+		return row ?? { quantityOnHand: '0', averageCost: 0, totalValue: 0 };
+	}
+
+	async setCost(key: TBalanceKey, cost: { averageCost: number; totalValue: number }, tx?: TTx): Promise<void> {
+		await (tx ?? this.database)
+			.update(stockBalances)
+			.set({ averageCost: cost.averageCost, totalValue: cost.totalValue, updatedAt: new Date() })
+			.where(keyPredicate(key));
+	}
+
 	/** Hard-deletes a balance row. */
 	async remove(key: TBalanceKey): Promise<boolean> {
 		const rows = await this.database

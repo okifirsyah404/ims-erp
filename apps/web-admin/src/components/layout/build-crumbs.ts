@@ -53,6 +53,8 @@ const LABELS: Record<string, NavKey> = {
 	'/procurement/suppliers': 'item.suppliers',
 	'/procurement/purchase-orders': 'item.purchaseOrders',
 	'/procurement/purchase-orders/new': 'breadcrumb.purchaseOrderNew',
+	'/procurement/receipts': 'item.goodsReceipts',
+	'/procurement/receipts/new': 'breadcrumb.goodsReceiptNew',
 	'/procurement/purchase-orders/$purchaseOrderId/edit': 'breadcrumb.quotationEdit',
 	'/procurement/purchase-orders/$purchaseOrderId/print': 'breadcrumb.print',
 	'/sales/quotes/new': 'breadcrumb.quotationNew',

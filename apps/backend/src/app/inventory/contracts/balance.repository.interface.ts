@@ -97,6 +97,18 @@ export interface IBalanceRepository {
 		tx?: TTx,
 	): Promise<TStockBalanceSelect>;
 
+	/**
+	 * Ensures the balance row exists and locks it (`FOR UPDATE`) for a cost
+	 * update inside `tx`; returns the quantity and cost before the movement.
+	 */
+	lockForCost(
+		key: TBalanceKey,
+		tx: TTx,
+	): Promise<{ quantityOnHand: string; averageCost: number; totalValue: number }>;
+
+	/** Sets the moving-average cost and value of a balance (ADR-0011 §5). */
+	setCost(key: TBalanceKey, cost: { averageCost: number; totalValue: number }, tx?: TTx): Promise<void>;
+
 	/** Hard-deletes a balance row (recompute cleanup for empty keys). */
 	remove(key: TBalanceKey): Promise<boolean>;
 }

@@ -144,6 +144,20 @@ function fakeMovements(): IMovementRepository & { rows: TStockMovementSelect[] }
 			row.status = 'reversed';
 			return row;
 		},
+		async ledgerRows(scopeOrganizationId) {
+			return rows
+				.filter(
+					(row) => (WAREHOUSES.find((w) => w.id === row.warehouseId)?.organizationId ?? null) === scopeOrganizationId,
+				)
+				.map(({ itemId, warehouseId, binId, movementType, quantity, unitCost }) => ({
+					itemId,
+					warehouseId,
+					binId,
+					movementType,
+					quantity,
+					unitCost,
+				}));
+		},
 		async ledgerTotals(scopeOrganizationId) {
 			const signed = new Map<string, number>();
 			for (const row of rows) {
@@ -192,6 +206,18 @@ function fakeBalances(store: BalanceStore): IBalanceRepository {
 		},
 		async findByKey(key) {
 			return store.get(keyOf(key)) ?? null;
+		},
+		async lockForCost(key) {
+			const row = store.get(keyOf(key));
+			return {
+				quantityOnHand: row?.quantityOnHand ?? '0',
+				averageCost: row?.averageCost ?? 0,
+				totalValue: row?.totalValue ?? 0,
+			};
+		},
+		async setCost(key, cost) {
+			const row = store.get(keyOf(key));
+			if (row) Object.assign(row, cost);
 		},
 		async listByScope(scopeOrganizationId) {
 			return [...store.values()].filter(
@@ -748,5 +774,34 @@ describe('stock — the ledger is the truth', () => {
 		expect(await balanceOf(ORG_A, ORG_A_WAREHOUSE)).toBe('9.000');
 		// Org B untouched.
 		expect(await balanceOf(ORG_B, ORG_B_WAREHOUSE)).toBe('2.000');
+	});
+});
+
+describe('stock — moving-average cost (ADR-0011 §5)', () => {
+	test('cost follows receipts, issues and reversals, and recompute rebuilds the same value', async () => {
+		const post = (movementType: 'receipt' | 'issue', quantity: string, unitCost?: number) =>
+			service.postMovement({
+				actorOrganizationId: ORG_A,
+				warehouseId: ORG_A_WAREHOUSE,
+				itemId: ITEM_ID,
+				movementType,
+				quantity,
+				unitCost,
+			});
+		const first = await post('receipt', '10.000', 1_000);
+		expect(first.movement.unitCost).toBe(1_000);
+		await post('receipt', '5.000', 1_300);
+		const issue = await post('issue', '3.000');
+		// Outbound leaves at the average of 16 500 / 15.
+		expect(issue.movement.unitCost).toBe(1_100);
+		expect(issue.balance).toMatchObject({ averageCost: 1_100, totalValue: 13_200 });
+		const reversal = await service.reverseMovement(issue.movement.id, ORG_A);
+		expect(reversal.movement.unitCost).toBe(1_100);
+		expect(reversal.balance).toMatchObject({ averageCost: 1_100, totalValue: 16_500 });
+
+		const before = await service.balanceFor(ORG_A, ORG_A_WAREHOUSE, ITEM_ID, null);
+		await service.recomputeFromLedger(ORG_A);
+		const after = await service.balanceFor(ORG_A, ORG_A_WAREHOUSE, ITEM_ID, null);
+		expect(after).toMatchObject({ averageCost: before!.averageCost, totalValue: before!.totalValue });
 	});
 });

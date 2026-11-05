@@ -1899,8 +1899,8 @@ Table sales.delivery_notes {
 // ---------------------------------------------------------------------------
 // MODULE: Procurement  (schema: procurement)
 // Supplier master, purchase requests, purchase orders, goods receipts and
-// purchase returns. Tenant scoped, except suppliers and purchase orders, which
-// are company-wide (ADR-0011).
+// purchase returns. Tenant scoped, except suppliers, purchase orders and goods
+// receipts, which are company-wide (ADR-0011).
 // ---------------------------------------------------------------------------
 
 Table procurement.suppliers {
@@ -2130,54 +2130,52 @@ Table procurement.purchase_order_items {
 }
 
 Table procurement.goods_receipts {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [not null, note: "Assigned on creation (BPB). Unique among live rows (partial index in the Drizzle schema)."]
   purchase_order_id uuid [not null]
   warehouse_id uuid [not null, note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
-  status text [not null, default: 'draft']
-  receipt_date date
+  bin_id uuid [note: "Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  status text [not null, default: 'posted']
+  receipt_date date [not null]
+  supplier_delivery_ref varchar(100) [note: "The supplier's delivery note number."]
   received_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  received_at bigint
   notes text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Goods receipt note. Posting creates the stock movement inside the Inventory module."
+  deleted_at bigint
+  Note: "Goods receipt note, company-wide (ADR-0011). Posted on creation: the stock receipt movements (with unit cost) and serial units are written in the same transaction through the Inventory module contract. Immutable; corrections go through stock adjustments."
   Indexes {
-    (organization_id, code) [unique, name: 'goods_receipts_org_code_uq']
     purchase_order_id [name: 'goods_receipts_purchase_order_id_idx']
     warehouse_id [name: 'goods_receipts_warehouse_id_idx']
   }
   Checks {
-    `status IN ('draft', 'posted', 'cancelled')`
+    `status IN ('posted')`
   }
 }
 
 Table procurement.goods_receipt_items {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   goods_receipt_id uuid [not null]
-  purchase_order_item_id uuid
-  item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  quantity_accepted numeric(18,3) [not null, default: 0]
-  quantity_rejected numeric(18,3) [not null, default: 0]
-  rejection_reason text
-  unit_price bigint [not null, default: 0]
-  lot_number text
-  serial_numbers text
+  purchase_order_item_id uuid [not null]
+  item_id uuid [not null, note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  sku varchar(64) [not null]
+  name text [not null]
+  unit varchar(32) [not null]
+  quantity numeric(18,3) [not null]
+  unit_cost bigint [not null, default: 0, note: "Ex-VAT unit price booked into stock (IDR minor units)."]
+  serial_numbers jsonb [note: "One serial per unit for serialized items."]
+  stock_movement_id uuid [note: "Logical reference to inventory.stock_movements.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Line of a goods receipt. Accepted quantity becomes the stock movement."
+  deleted_at bigint
+  Note: "Line of a goods receipt; its quantity became the stock receipt movement."
   Indexes {
     goods_receipt_id [name: 'goods_receipt_items_goods_receipt_id_idx']
     purchase_order_item_id [name: 'goods_receipt_items_purchase_order_item_id_idx']
   }
   Checks {
-    `quantity_accepted >= 0`
-    `quantity_rejected >= 0`
-    `unit_price >= 0`
+    `quantity > 0`
+    `unit_cost >= 0`
   }
 }
 
@@ -2252,7 +2250,7 @@ Ref: procurement.purchase_orders.supplier_id > procurement.suppliers.id [delete:
 Ref: procurement.purchase_order_items.purchase_order_id > procurement.purchase_orders.id [delete: cascade]
 Ref: procurement.goods_receipts.purchase_order_id > procurement.purchase_orders.id [delete: restrict]
 Ref: procurement.goods_receipt_items.goods_receipt_id > procurement.goods_receipts.id [delete: cascade]
-Ref: procurement.goods_receipt_items.purchase_order_item_id > procurement.purchase_order_items.id [delete: set null]
+Ref: procurement.goods_receipt_items.purchase_order_item_id > procurement.purchase_order_items.id [delete: restrict]
 Ref: procurement.purchase_returns.purchase_order_id > procurement.purchase_orders.id [delete: restrict]
 Ref: procurement.purchase_returns.supplier_id > procurement.suppliers.id [delete: restrict]
 Ref: procurement.purchase_return_items.purchase_return_id > procurement.purchase_returns.id [delete: cascade]
@@ -2404,7 +2402,8 @@ Table inventory.stock_movements {
   bin_id uuid
   target_warehouse_id uuid
   quantity numeric(18,3) [not null]
-  reference_type text [note: "e.g. manual_adjustment, borrowing, receipt."]
+  unit_cost bigint [not null, default: 0, note: "IDR minor units the movement was valued at (ADR-0011 moving average): the given cost for inbound moves, the balance average for outbound ones."]
+  reference_type text [note: "e.g. manual_adjustment, borrowing, receipt, goods_receipt."]
   reference_id text
   status text [not null, default: 'posted']
   occurred_at bigint [not null]
@@ -2438,13 +2437,15 @@ Table inventory.stock_balances {
   quantity_on_hand numeric(18,3) [not null, default: 0]
   quantity_reserved numeric(18,3) [not null, default: 0]
   quantity_available numeric(18,3) [not null, default: 0]
+  average_cost bigint [not null, default: 0, note: "Moving-average unit cost, IDR minor units (ADR-0011 §5). Restricted to product:read_cost."]
+  total_value bigint [not null, default: 0, note: "Value of quantity_on_hand at cost; the last unit out takes the exact remainder."]
   last_movement_at bigint
   created_at bigint [not null]
   updated_at bigint
-  Note: "Balance cache over stock_movements. Service-maintained inside the same transaction as the movement that caused it, never by a trigger; recomputeFromLedger is the repair operation (ADR-0008). No deleted_at. No valuation columns: average_cost/total_value were removed because they were guaranteed to hold 0 forever. Valuation is owned by the accounting module; the base price lives on items.selling_price / items.purchase_price (OPEN-3 closed). Scope rule: a balance's organization_id follows the WAREHOUSE scope, not the caller — a global warehouse (organization_id IS NULL) has ONE shared balance row visible to every organization."
+  Note: "Balance cache over stock_movements. Service-maintained inside the same transaction as the movement that caused it, never by a trigger; recomputeFromLedger is the repair operation (ADR-0008). No deleted_at. Moving-average valuation (ADR-0011 §5, supersedes OPEN-3 for the inventory value): average_cost and total_value are maintained with the quantity in the same transaction; the accounting journal still needs finance approval. Scope rule: a balance's organization_id follows the WAREHOUSE scope, not the caller — a global warehouse (organization_id IS NULL) has ONE shared balance row visible to every organization."
   Indexes {
-    (organization_id, warehouse_id, item_id, bin_id) [unique, name: 'stock_balances_org_scope_uq', note: 'WHERE organization_id IS NOT NULL']
-    (warehouse_id, item_id, bin_id) [unique, name: 'stock_balances_global_scope_uq', note: 'WHERE organization_id IS NULL']
+    (organization_id, warehouse_id, item_id, bin_id) [unique, name: 'stock_balances_org_scope_uq', note: 'NULLS NOT DISTINCT WHERE organization_id IS NOT NULL (a bin-less balance is one row)']
+    (warehouse_id, item_id, bin_id) [unique, name: 'stock_balances_global_scope_uq', note: 'NULLS NOT DISTINCT WHERE organization_id IS NULL']
     item_id [name: 'stock_balances_item_id_idx']
   }
   Checks {

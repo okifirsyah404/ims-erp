@@ -12,6 +12,125 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — ADR-0011 port step 4b: goods receipts and moving-average cost, 2026-11-06
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner). Touches programmer A's stock ledger: **review
+required** in the merge PR (ADR-0011 §5, §13) — `stock.service.ts`
+(`postMovement` cost, `reverseMovement`, `recomputeFromLedger` cost replay),
+`balance.repository.ts` (`lockForCost`, `setCost`), `movement.repository.ts`
+(`ledgerRows`, ledger scope), `serial-unit.repository.ts`, `stock.controller.ts`
+(cost hidden without `product:read_cost`).
+
+What landed:
+- Migration `20261105183351_stock_cost_goods_receipts` (generated, inspected,
+  applied to `ims_erp_sync`): `stock_movements.unit_cost`,
+  `stock_balances.average_cost` / `total_value`, `procurement.goods_receipts`
+  / `goods_receipt_items` per the rewritten DBML.
+- Inventory: `utils/moving-average.ts` (`applyMovementCost`,
+  `exVatUnitCost`), cost in `postMovement` under a `FOR UPDATE` balance lock,
+  reversal at the original cost, ledger replay in `recomputeFromLedger`;
+  `ItemService.registerUnit(…, tx)` with PO line / movement links.
+- `src/providers/database/transaction-runner.ts` (`TRANSACTION_RUNNER_TOKEN`)
+  — the receipt, PO progress, movements and serial units commit together.
+- Procurement: `GoodsReceiptService` / `GoodsReceiptController`
+  (`/goods-receipts`, `/goods-receipts/warehouses`,
+  `/goods-receipts/receivable-orders`), `PurchaseOrderRepository.receive`
+  (locks the PO, refuses over-receipt), errors with `api` locale keys.
+- Web: `/procurement/receipts` (list, new, detail), "Terima barang" on the PO
+  page; locale keys `receipts.*` / `receipt.*` in en + id.
+
+Pre-existing defects in programmer A's inventory code found and fixed here
+(flag in the review):
+1. `serial-unit.repository.create` never set `created_at` (NOT NULL, no
+   default) — every serial unit insert failed with 500. Now set on insert.
+2. The `stock_balances` unique indexes treated `bin_id IS NULL` as distinct,
+   so every `ON CONFLICT` upsert of a bin-less balance inserted a new row
+   (one row per movement). Custom migration
+   `20261105185010_stock_balances_nulls_not_distinct` (`drizzle-kit generate
+   --custom`, hand-written) merges duplicates into the oldest row and rebuilds
+   both partial indexes `NULLS NOT DISTINCT` (PostgreSQL 15+; dev runs 18.6).
+   Drizzle's index builder cannot express it, so the schema carries a comment;
+   `drizzle-kit generate` afterwards printed "No schema changes". DBML index
+   notes updated.
+3. `recomputeFromLedger` selected movements by the movement's own
+   `organization_id` (the poster), while balances are scoped by the
+   warehouse's organization — a tenant user receiving into a shared warehouse
+   was dropped from the recompute. `ledgerTotals` / `ledgerRows` now select by
+   the warehouse's scope (`balanceScopeFilter`).
+
+Verification (2026-11-06):
+- `bun docs/database/gen-logical-references.ts` + `bun
+  docs/database/validate-dbml.ts` → `OK` (257 tables, 0 cross-module refs, 0
+  timestamp gaps).
+- `NODE_ENV=development bun run drizzle:migrate` → applied (index definitions
+  checked with `pg_indexes`: `NULLS NOT DISTINCT`; 0 duplicate balance keys).
+- `bun run typecheck` → 3/3; `bun run lint` → 4/4; `bun run test` → backend
+  630 pass, web-admin 45 pass, locales 54 pass, 0 fail; `bun run build`
+  (web-admin) → built.
+- Browser + API check (temporary Playwright script, deleted): recompute of
+  the shared scope rebuilt `80.000 @ 5,000,000 = 400,000,000`; a partial
+  receipt through the UI as the warehouse role (BPB numbered
+  `0013/BPB/DEV/XI/26`, serials `in_stock`), over-receipt 422, the rest
+  received → PO `received`, cancel of a received PO 422; a second PO at
+  another price → one balance row `110.000 @ 7,272,727 = 800,000,000`
+  (expected value and average match); the warehouse role sees no cost fields;
+  no browser errors.
+- `docs/database/` updated (DBML cost columns, goods receipts, balance index
+  notes).
+- Test data left in the dev DB: several test POs `Uji BPB …` with their
+  receipts and serials `SN-…`.
+
+Next executable task: ADR-0011 step 5 — delivery notes (surat jalan, the
+private sample's layout) issuing stock at average cost, opening stock and
+adjustments with cost, inventory value view.
+
+Gate 1 (read): docs.dbml `inventory.stock_movements` / `stock_balances` (the
+note says valuation was removed, OPEN-3) and `procurement.goods_receipts` /
+`goods_receipt_items`; `StockService.postMovement` / `reverseMovement` /
+`recomputeFromLedger`, `BalanceRepository.applyDelta`, `ItemService.registerUnit`
+and the serial-unit columns `purchase_order_line_id` / `stock_movement_id`;
+the old branch's goods-receipt rules (posted on creation, immutable,
+corrections through adjustments; cost = ex-VAT unit price); numbering type
+`goods_receipt` (`BPB`); grants `stock:receive` (warehouse, owner).
+
+Gate 2 (manual grilling pass):
+- Cost (ADR-0011 §5 supersedes OPEN-3 for the inventory value; the journal
+  still waits for accounting): `stock_movements.unit_cost` (bigint, the cost
+  each movement was valued at) and `stock_balances.average_cost` /
+  `total_value` (bigint) per balance row. Inbound with a cost →
+  `value += round(qty × cost)`, `average = round(value / qty)`; inbound
+  without a cost takes the current average; outbound takes the average, and
+  the last unit out takes the exact remaining value (no drift). Reversals
+  use the original movement's cost. The balance row is locked (`FOR
+  UPDATE`) for the cost update; quantities keep the atomic `ON CONFLICT`
+  delta. `recomputeFromLedger` replays the ledger in order so cost is
+  rebuilt too (the test oracle). Cost columns reach the client only with
+  `product:read_cost`.
+- Cross-module unit of work: new provider `TRANSACTION_RUNNER_TOKEN`
+  (`run(work(tx))`) — the procurement service runs the receipt, its PO
+  progress, the stock movements (`postMovement(input, tx)`) and serial units
+  (`registerUnit(…, tx)`, new optional `tx`) in one transaction (the old
+  branch's ADR-0009 rule). No service injects `DRIZZLE_TOKEN`.
+- Goods receipts (`procurement.goods_receipts`, company-wide): only for
+  `sent` or `partially_received` POs; one warehouse (bin optional) per
+  receipt; posted on creation (status `posted`, DBML `draft / cancelled`
+  dropped), numbered `BPB` on creation, immutable (corrections are stock
+  adjustments); quantities ≤ what is still open per line; PO becomes
+  `partially_received` / `received`; `receipt_date` business date,
+  `supplier_delivery_ref` (supplier's surat jalan). Lines:
+  `purchase_order_item_id` (same-module FK), item snapshot, `quantity`,
+  `unit_cost` = ex-VAT unit price (VAT-included POs: price × 10000 /
+  (10000 + rate), half-up), `serial_numbers` (jsonb array; one per unit for
+  serialized items, which become `in_stock` units linked to the PO line and
+  the movement). DBML `quantity_rejected` / `rejection_reason` / `lot_number`
+  dropped (rejects are simply not received).
+- Permissions: create with `stock:receive` (warehouse, owner); read with
+  `stock:read` or `purchase_order:read`; receivable POs are listed through
+  the receipt controller so the warehouse needs no PO grant.
+- Web: `/procurement/receipts` (list, detail, new from a PO), "Terima barang"
+  on a sent PO. No print (no sample).
+
 ## Completed — ADR-0011 port step 4a: suppliers and purchase orders, 2026-11-06
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
@@ -105,9 +224,7 @@ Verification (2026-11-06):
   used for the print was restored.
 - Test data left in the dev DB: supplier `HIT9ND3` and its PO.
 
-Next: step 4b — goods receipts against sent POs (warehouse, serials),
-`unit_cost` on stock movements and `average_cost` / `total_value` on
-balances (ADR-0011 §5, programmer A reviews the stock-service change).
+Next: step 4b (done, entry above).
 
 ## Completed — ADR-0011 port step 3d-2: invoices, DP and receipts, 2026-11-06
 

@@ -98,10 +98,12 @@ export class SerialUnitRepository implements ISerialUnitRepository {
 	/** Inserts a unit. */
 	async create(
 		data: TUnitCreateData,
+		tx?: TTx,
 	): Promise<TSerialTrackedItemSelect> {
-		const [row] = await this.database
+		const [row] = await (tx ?? this.database)
 			.insert(serialTrackedItems)
-			.values(data as never)
+			// `created_at` is NOT NULL without a database default (like items).
+			.values({ ...data, createdAt: new Date() } as never)
 			.returning();
 		return row;
 	}

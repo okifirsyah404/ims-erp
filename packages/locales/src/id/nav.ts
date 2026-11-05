@@ -118,6 +118,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'breadcrumb.quotationEdit': 'Ubah',
 	'breadcrumb.print': 'Cetak',
 	'breadcrumb.purchaseOrderNew': 'Purchase order baru',
+	'breadcrumb.goodsReceiptNew': 'Terima barang',
 };
 
 export default nav_;

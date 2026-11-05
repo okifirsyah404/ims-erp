@@ -82,6 +82,8 @@ import { Route as AuthedOrganizationsOrganizationIdEditRouteImport } from './rou
 import { Route as AuthedProcurementPurchaseOrdersIndexRouteImport } from './routes/_authed/procurement/purchase-orders/index'
 import { Route as AuthedProcurementPurchaseOrdersNewRouteImport } from './routes/_authed/procurement/purchase-orders/new'
 import { Route as AuthedProcurementReceiptsIndexRouteImport } from './routes/_authed/procurement/receipts/index'
+import { Route as AuthedProcurementReceiptsReceiptIdRouteImport } from './routes/_authed/procurement/receipts/$receiptId'
+import { Route as AuthedProcurementReceiptsNewRouteImport } from './routes/_authed/procurement/receipts/new'
 import { Route as AuthedProcurementSuppliersIndexRouteImport } from './routes/_authed/procurement/suppliers/index'
 import { Route as AuthedProcurementSuppliersSupplierIdRouteImport } from './routes/_authed/procurement/suppliers/$supplierId'
 import { Route as AuthedProjectsBastIndexRouteImport } from './routes/_authed/projects/bast/index'
@@ -519,6 +521,18 @@ const AuthedProcurementReceiptsIndexRoute =
     path: '/procurement/receipts/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedProcurementReceiptsReceiptIdRoute =
+  AuthedProcurementReceiptsReceiptIdRouteImport.update({
+    id: '/procurement/receipts/$receiptId',
+    path: '/procurement/receipts/$receiptId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedProcurementReceiptsNewRoute =
+  AuthedProcurementReceiptsNewRouteImport.update({
+    id: '/procurement/receipts/new',
+    path: '/procurement/receipts/new',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedProcurementSuppliersIndexRoute =
   AuthedProcurementSuppliersIndexRouteImport.update({
     id: '/procurement/suppliers/',
@@ -757,6 +771,8 @@ export interface FileRoutesByFullPath {
   '/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/procurement/purchase-orders/new': typeof AuthedProcurementPurchaseOrdersNewRoute
+  '/procurement/receipts/$receiptId': typeof AuthedProcurementReceiptsReceiptIdRoute
+  '/procurement/receipts/new': typeof AuthedProcurementReceiptsNewRoute
   '/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
@@ -863,6 +879,8 @@ export interface FileRoutesByTo {
   '/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/procurement/purchase-orders/new': typeof AuthedProcurementPurchaseOrdersNewRoute
+  '/procurement/receipts/$receiptId': typeof AuthedProcurementReceiptsReceiptIdRoute
+  '/procurement/receipts/new': typeof AuthedProcurementReceiptsNewRoute
   '/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
@@ -973,6 +991,8 @@ export interface FileRoutesById {
   '/_authed/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/_authed/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/_authed/procurement/purchase-orders/new': typeof AuthedProcurementPurchaseOrdersNewRoute
+  '/_authed/procurement/receipts/$receiptId': typeof AuthedProcurementReceiptsReceiptIdRoute
+  '/_authed/procurement/receipts/new': typeof AuthedProcurementReceiptsNewRoute
   '/_authed/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
   '/_authed/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/_authed/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
@@ -1083,6 +1103,8 @@ export interface FileRouteTypes {
     | '/inventory/warehouses/new'
     | '/organizations/$organizationId/edit'
     | '/procurement/purchase-orders/new'
+    | '/procurement/receipts/$receiptId'
+    | '/procurement/receipts/new'
     | '/procurement/suppliers/$supplierId'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
@@ -1189,6 +1211,8 @@ export interface FileRouteTypes {
     | '/inventory/warehouses/new'
     | '/organizations/$organizationId/edit'
     | '/procurement/purchase-orders/new'
+    | '/procurement/receipts/$receiptId'
+    | '/procurement/receipts/new'
     | '/procurement/suppliers/$supplierId'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
@@ -1298,6 +1322,8 @@ export interface FileRouteTypes {
     | '/_authed/inventory/warehouses/new'
     | '/_authed/organizations/$organizationId/edit'
     | '/_authed/procurement/purchase-orders/new'
+    | '/_authed/procurement/receipts/$receiptId'
+    | '/_authed/procurement/receipts/new'
     | '/_authed/procurement/suppliers/$supplierId'
     | '/_authed/sales/orders/$orderId'
     | '/_authed/sales/quotes/new'
@@ -1890,6 +1916,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProcurementReceiptsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/procurement/receipts/$receiptId': {
+      id: '/_authed/procurement/receipts/$receiptId'
+      path: '/procurement/receipts/$receiptId'
+      fullPath: '/procurement/receipts/$receiptId'
+      preLoaderRoute: typeof AuthedProcurementReceiptsReceiptIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/procurement/receipts/new': {
+      id: '/_authed/procurement/receipts/new'
+      path: '/procurement/receipts/new'
+      fullPath: '/procurement/receipts/new'
+      preLoaderRoute: typeof AuthedProcurementReceiptsNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/procurement/suppliers/': {
       id: '/_authed/procurement/suppliers/'
       path: '/procurement/suppliers'
@@ -2239,6 +2279,8 @@ interface AuthedRouteChildren {
   AuthedInventoryWarehousesWarehouseIdRoute: typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   AuthedInventoryWarehousesNewRoute: typeof AuthedInventoryWarehousesNewRoute
   AuthedProcurementPurchaseOrdersNewRoute: typeof AuthedProcurementPurchaseOrdersNewRoute
+  AuthedProcurementReceiptsReceiptIdRoute: typeof AuthedProcurementReceiptsReceiptIdRoute
+  AuthedProcurementReceiptsNewRoute: typeof AuthedProcurementReceiptsNewRoute
   AuthedProcurementSuppliersSupplierIdRoute: typeof AuthedProcurementSuppliersSupplierIdRoute
   AuthedSalesOrdersOrderIdRoute: typeof AuthedSalesOrdersOrderIdRoute
   AuthedSalesQuotesNewRoute: typeof AuthedSalesQuotesNewRoute
@@ -2339,6 +2381,9 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedInventoryWarehousesNewRoute: AuthedInventoryWarehousesNewRoute,
   AuthedProcurementPurchaseOrdersNewRoute:
     AuthedProcurementPurchaseOrdersNewRoute,
+  AuthedProcurementReceiptsReceiptIdRoute:
+    AuthedProcurementReceiptsReceiptIdRoute,
+  AuthedProcurementReceiptsNewRoute: AuthedProcurementReceiptsNewRoute,
   AuthedProcurementSuppliersSupplierIdRoute:
     AuthedProcurementSuppliersSupplierIdRoute,
   AuthedSalesOrdersOrderIdRoute: AuthedSalesOrdersOrderIdRoute,
