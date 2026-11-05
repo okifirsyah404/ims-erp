@@ -25,6 +25,7 @@ import {
 	SalesOrderNotFoundError,
 	SalesOrderQuotationNotReadyError,
 } from '../../src/app/sales/errors/sales-order.errors';
+import { SalesOrderDeliveredError } from '../../src/app/sales/errors/delivery-note.errors';
 import { SalesOrderService, type TSalesOrderContext } from '../../src/app/sales/services/sales-order.service';
 
 const Q = '0190a1b2-0000-7000-8000-0000000000f1';
@@ -73,6 +74,10 @@ class FakeOrders implements ISalesOrderRepository {
 		quotation.closedBy = null;
 		return order;
 	}
+	async allocateDelivery() {
+		return { ok: true as const };
+	}
+	async markInProgress() {}
 }
 
 function quotation(status: QuotationStatus, overrides: Partial<TQuotationSelect> = {}): TQuotationSelect {
@@ -111,6 +116,7 @@ const finance: TSalesOrderContext = { actorUserId: 'finance', canViewAll: true, 
 
 let orders: FakeOrders;
 let billed: Set<string>;
+let delivering: Set<string>;
 let service: SalesOrderService;
 const create = (ctx: TSalesOrderContext, extra: Record<string, unknown> = {}) =>
 	service.create(ctx, createSalesOrderSchema.parse({ quotationId: Q, ...extra }));
@@ -118,6 +124,7 @@ const create = (ctx: TSalesOrderContext, extra: Record<string, unknown> = {}) =>
 beforeEach(() => {
 	quotations = new Map();
 	billed = new Set();
+	delivering = new Set();
 	orders = new FakeOrders();
 	service = new SalesOrderService(
 		orders,
@@ -131,6 +138,7 @@ beforeEach(() => {
 		{ next: async () => '0001/SO/IMS/XI/26' },
 		{ getUser: async (id: string) => ({ id, name: `User ${id}` }) as never },
 		{ hasLiveInvoices: async (id: string) => billed.has(id) },
+		{ hasLiveNotes: async (id: string) => delivering.has(id) },
 	);
 });
 
@@ -214,6 +222,14 @@ describe('cancelling', () => {
 		const order = await create(sales);
 		billed.add(order.id);
 		await expect(service.cancel(manager, order.id, 'batal')).rejects.toBeInstanceOf(SalesOrderBilledError);
+		expect(quotations.get(Q)!.status).toBe('won');
+	});
+
+	test('an order with live delivery notes cannot be cancelled', async () => {
+		quotations.set(Q, quotation('approved'));
+		const order = await create(sales);
+		delivering.add(order.id);
+		await expect(service.cancel(manager, order.id, 'batal')).rejects.toBeInstanceOf(SalesOrderDeliveredError);
 		expect(quotations.get(Q)!.status).toBe('won');
 	});
 });

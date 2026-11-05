@@ -109,11 +109,14 @@ const DYNAMIC_PREFIXES = [
 	'doc.statusText.',
 	'method.',
 	'sales.quotationState.',
+	'deliveryStatus.',
 	// Finance errors compose `finance.term.${problem}` / `finance.invoiceState.${kind}`.
 	'finance.term.',
 	'finance.invoiceState.',
 	'procurement.poState.',
 	'procurement.receiptLine.',
+	'sales.deliveryLine.',
+	'sales.deliveryState.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

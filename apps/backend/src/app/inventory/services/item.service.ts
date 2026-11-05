@@ -391,6 +391,31 @@ export class ItemService {
 		return updated;
 	}
 
+	/** Serials of an item in stock in one warehouse, for picking a delivery (step 5a). */
+	inStockSerials(itemId: string, warehouseId: string): Promise<string[]> {
+		return this.serialUnitRepository.listInStockSerials(itemId, warehouseId);
+	}
+
+	/**
+	 * Sells serialized units shipped on a delivery note (`in_stock → sold`,
+	 * ADR-0011 §4), inside the caller's transaction.
+	 *
+	 * @returns The serials that were not in stock in that warehouse (nothing
+	 * to roll back here: the caller fails its transaction when any are left)
+	 * @throws {InventoryRuleViolationError} When the item's kind cannot be sold
+	 */
+	async sellUnits(
+		itemId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; customerId: string | null; stockMovementId: string | null },
+		tx: TTx,
+	): Promise<string[]> {
+		const item = await this.getItem(itemId);
+		assertTransitionAllowed(item.itemKind as ItemKind, 'in_stock', 'sold');
+		const sold = await this.serialUnitRepository.sell(itemId, serialNumbers, data, tx);
+		return serialNumbers.filter((serial) => !sold.includes(serial));
+	}
+
 	/**
 	 * Moves a unit to a new status, enforcing the kind/transition matrix.
 	 *

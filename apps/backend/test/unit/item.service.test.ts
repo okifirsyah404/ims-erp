@@ -175,6 +175,8 @@ function makeService(seed?: {
 		issueToBorrower: async () => null,
 		returnFromBorrower: async () => null,
 		markLost: async () => null,
+		listInStockSerials: async () => [],
+		sell: async () => [],
 	};
 
 	return {

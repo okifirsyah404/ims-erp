@@ -2,7 +2,8 @@
  * Sales domain schema — owns the `sales` Postgres schema.
  *
  * Quotations (SPH) with their items and status history (ADR-0011 port step
- * 3c), sales orders (step 3d), plus the transitional `payments` scaffold.
+ * 3c), sales orders (step 3d), delivery notes (step 5a), plus the
+ * transitional `payments` scaffold.
  *
  * House rules honoured here:
  * - **Company-wide, no `organization_id`** on the quotation tables
@@ -418,6 +419,103 @@ export const orderStatusHistory = salesSchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
+ * sales.delivery_notes / sales.delivery_note_items (step 5a)
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Delivery note (surat jalan) states. `prepared` is numbered and printable;
+ * shipping posts the stock issue and sells the serial units; `delivered`
+ * records who received it. Only `prepared` may be cancelled.
+ */
+export const DELIVERY_NOTE_STATUSES = ['prepared', 'shipped', 'delivered', 'cancelled'] as const;
+export type DeliveryNoteStatus = (typeof DELIVERY_NOTE_STATUSES)[number];
+
+export const deliveryNotes = salesSchema.table(
+	'delivery_notes',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		code: varchar('code', { length: 32 }).notNull(),
+		salesOrderId: uuid('sales_order_id')
+			.notNull()
+			.references(() => salesOrders.id, { onDelete: 'restrict' }),
+		/** Logical reference to inventory.warehouses.id — cross-module FK omitted. */
+		warehouseId: uuid('warehouse_id').notNull(),
+		/** Logical reference to inventory.warehouse_storages.id — cross-module FK omitted. */
+		binId: uuid('bin_id'),
+		status: text('status').$type<DeliveryNoteStatus>().notNull().default('prepared'),
+		/** Jakarta business date, `YYYY-MM-DD`. */
+		deliveryDate: date('delivery_date').notNull(),
+		projectName: text('project_name'),
+		projectLocation: text('project_location'),
+		recipientName: text('recipient_name').notNull(),
+		recipientAddress: text('recipient_address'),
+		recipientPic: varchar('recipient_pic', { length: 200 }),
+		recipientContact: varchar('recipient_contact', { length: 200 }),
+		driverName: varchar('driver_name', { length: 200 }),
+		vehicleNumber: varchar('vehicle_number', { length: 32 }),
+		notes: text('notes'),
+		shippedAt: unixTimestampNullable('shipped_at'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		shippedBy: text('shipped_by'),
+		receivedAt: unixTimestampNullable('received_at'),
+		receiverName: text('receiver_name'),
+		cancelledAt: unixTimestampNullable('cancelled_at'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		cancelledBy: text('cancelled_by'),
+		cancellationReason: text('cancellation_reason'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		createdBy: text('created_by'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('delivery_notes_code_uq')
+			.on(table.code)
+			.where(sql`deleted_at IS NULL`),
+		index('delivery_notes_sales_order_id_idx').on(table.salesOrderId),
+		index('delivery_notes_status_idx').on(table.status),
+		check('delivery_notes_status_check', sql`${table.status} IN ('prepared', 'shipped', 'delivered', 'cancelled')`),
+	],
+);
+
+export const deliveryNoteItems = salesSchema.table(
+	'delivery_note_items',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		deliveryNoteId: uuid('delivery_note_id')
+			.notNull()
+			.references(() => deliveryNotes.id, { onDelete: 'cascade' }),
+		salesOrderItemId: uuid('sales_order_item_id')
+			.notNull()
+			.references(() => salesOrderItems.id, { onDelete: 'restrict' }),
+		/** Logical reference to inventory.items.id; null = custom order line. */
+		itemId: uuid('item_id'),
+		sku: varchar('sku', { length: 64 }),
+		name: text('name').notNull(),
+		unit: varchar('unit', { length: 32 }).notNull(),
+		quantity: numeric('quantity', { precision: 18, scale: 3 }).notNull(),
+		/** Order unit price, printed as Harga. */
+		unitPrice: bigint('unit_price', { mode: 'number' }).notNull().default(0),
+		/** Moving-average cost the issue took; null until shipped or for non-stock lines. */
+		unitCost: bigint('unit_cost', { mode: 'number' }),
+		serialNumbers: jsonb('serial_numbers').$type<string[]>(),
+		remarks: text('remarks'),
+		/** Logical reference to inventory.stock_movements.id — cross-module FK omitted. */
+		stockMovementId: uuid('stock_movement_id'),
+		sortOrder: integer('sort_order').notNull().default(0),
+		...timestamps,
+	},
+	(table) => [
+		index('delivery_note_items_delivery_note_id_idx').on(table.deliveryNoteId),
+		index('delivery_note_items_sales_order_item_id_idx').on(table.salesOrderItemId),
+		check('delivery_note_items_amounts_check', sql`${table.quantity} > 0 AND ${table.unitPrice} >= 0`),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
  * sales.payments (transitional scaffold, dropped in S7)
  * ------------------------------------------------------------------------ */
 
@@ -449,7 +547,7 @@ export const payments = salesSchema.table(
 );
 
 export const salesRelations = defineRelationsPart(
-	{ quotations, quotationItems, quotationStatusHistory, salesOrders, salesOrderItems, orderStatusHistory },
+	{ quotations, quotationItems, quotationStatusHistory, salesOrders, salesOrderItems, orderStatusHistory, deliveryNotes, deliveryNoteItems },
 	(r) => ({
 		quotations: {
 			items: r.many.quotationItems({
@@ -479,6 +577,12 @@ export const salesRelations = defineRelationsPart(
 				to: r.salesOrders.id,
 			}),
 		},
+		deliveryNotes: {
+			items: r.many.deliveryNoteItems({
+				from: r.deliveryNotes.id,
+				to: r.deliveryNoteItems.deliveryNoteId,
+			}),
+		},
 		quotationStatusHistory: {
 			quotation: r.one.quotations({
 				from: r.quotationStatusHistory.quotationId,
@@ -498,5 +602,9 @@ export type TSalesOrderSelect = typeof salesOrders.$inferSelect;
 export type TSalesOrderItemInsert = typeof salesOrderItems.$inferInsert;
 export type TSalesOrderItemSelect = typeof salesOrderItems.$inferSelect;
 export type TOrderStatusHistorySelect = typeof orderStatusHistory.$inferSelect;
+export type TDeliveryNoteInsert = typeof deliveryNotes.$inferInsert;
+export type TDeliveryNoteSelect = typeof deliveryNotes.$inferSelect;
+export type TDeliveryNoteItemInsert = typeof deliveryNoteItems.$inferInsert;
+export type TDeliveryNoteItemSelect = typeof deliveryNoteItems.$inferSelect;
 export type TPaymentInsert = typeof payments.$inferInsert;
 export type TPaymentSelect = typeof payments.$inferSelect;

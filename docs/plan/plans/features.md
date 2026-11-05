@@ -65,7 +65,14 @@ Last synced: 2026-11-06.
   reopens it) — T05, ERP-0011. Evidence: `apps/backend/src/app/sales`
   (sales orders), `test/unit/sales-order.service.test.ts`, `/sales/orders`
   pages, `progress.md` 2026-11-06 (ADR-0011 step 3d-1). Gaps: real-PG
-  integration tests, e2e; delivery (step 5).
+  integration tests, e2e.
+- Delivery notes (surat jalan): prepared against an order (partial
+  deliveries), shipped out of stock at average cost with serial units sold,
+  delivered with the receiver; print in the company's exact layout — T05/T07,
+  ERP-0011 / ERP-0036. Evidence: `apps/backend/src/app/sales` (delivery
+  notes), `test/unit/delivery-note.service.test.ts`, `/sales/deliveries`
+  pages, `progress.md` 2026-11-06 (ADR-0011 step 5a). Gaps: programmer A's
+  review of the serial-unit contract, real-PG integration tests, returns.
 - Invoices with free billing terms, DP, receipts (kwitansi), invoice print
   in the company's exact layout — T05, ERP-0011. Evidence:
   `apps/backend/src/app/finance`, `test/unit/invoice.service.test.ts`,

@@ -131,6 +131,12 @@ describe('locale values', () => {
 			'sales:doc.heading',
 			'sales:doc.total',
 			'sales:orders.open',
+			// Surat jalan print labels the company uses verbatim.
+			'sales:sj.no',
+			'sales:sj.qty',
+			'sales:sj.email',
+			'sales:sj.serials',
+			'sales:delivery.status',
 			'inventory:address.rt',
 			'inventory:address.rw',
 			'inventory:address.label',

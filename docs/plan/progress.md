@@ -12,6 +12,117 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — ADR-0011 port step 5a: delivery notes (surat jalan), 2026-11-06
+
+Next executable task: ADR-0011 step 5b — adjustment lines with unit cost
+(opening stock), and the inventory value view (balances at average cost,
+`product:read_cost`).
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner). Step 5 is split: 5a delivery notes with the surat
+jalan print, 5b adjustment cost / opening stock and the inventory value view.
+Touches programmer A's inventory contracts (review in the merge PR):
+`ItemService.inStockSerials` / `sellUnits` and
+`SerialUnitRepository.listInStockSerials` / `sell` (new, additive).
+
+What landed:
+- Migration `20261105190928_sales_delivery_notes` (generated, inspected,
+  applied to `ims_erp_sync`): `sales.delivery_notes` (company-wide, rewritten
+  per the DBML) and `sales.delivery_note_items`.
+- Sales: `DeliveryNoteRepository`, `DeliveryNoteService`,
+  `DeliveryNoteController` (`/delivery-notes`, `/warehouses`,
+  `/deliverable-orders`, `/serials`, `/:id/ship|deliver|cancel`);
+  `SalesOrderRepository.allocateDelivery` (row locks, open-quantity guard,
+  line fulfilment) and `markInProgress`; cancelling an order with live notes
+  → 422 `sales.orderDelivered`. Errors with `api` keys en + id.
+- Shipping: stock-tracked lines post `issue` at the moving average (cost kept
+  on the line, hidden without `product:read_cost`); serialized lines sell
+  their units (`in_stock → sold`, customer set; the item kind must allow
+  `sold`). The two item flags are handled independently: dev seed has
+  serialized tools that are not stock-tracked (ITEM-013..016), which
+  contradicts `assertItemShape` — flagged for programmer A.
+- Web: `/sales/deliveries` (list, new with `?salesOrderId`, detail with
+  ship / deliver / cancel, print), "Surat jalan" card on the sales order
+  page, sidebar entry; print `delivery-note-document.tsx` in the sample's
+  layout (Letter, Arial). Locale keys `deliveries.*`, `delivery.*`,
+  `deliveryStatus.*`, `sj.*` in en + id.
+
+Verification (2026-11-06):
+- `bun docs/database/gen-logical-references.ts` + `bun
+  docs/database/validate-dbml.ts` → `OK` (258 tables, 0 cross-module refs, 0
+  timestamp gaps). `docs/database/` updated (delivery notes rewritten, lines
+  added, sales header note).
+- `NODE_ENV=development bun run drizzle:migrate` → applied.
+- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (remaining warnings
+  pre-existing); `bun run test` → backend 637 pass, web-admin 45, locales 54,
+  0 fail; `bun run build` (web-admin) → built.
+- Browser + API check (temporary Playwright script, deleted): SPH by sales,
+  approved by the owner, sales order; two serialized units received by a
+  goods receipt; the warehouse role prepared a note through the UI (recipient
+  prefilled from the order, serials ticked from the in-stock list) →
+  `0005/SJ/DEV/XI/26`, order lines 3/4 partial, 2/2 and 1/1 fulfilled;
+  over-delivery 422; cancelling the order 422; sales role reads notes 200;
+  print rendered to PDF and compared with the sample (Letter, same blocks,
+  seven-row table, Catatan box, three signatures); ship through the UI →
+  balance `104.000 → 101.000`, value down exactly 3 × 7,272,727, both units
+  `sold`, line cost visible to the owner and null for the warehouse, order
+  `in_progress`; delivered with the receiver name; a second note cancelled
+  gave its quantity back; no browser errors.
+- Test data left in the dev DB: SPH/SO/PO `Uji SJ …`, notes
+  `0001`–`0006/SJ/DEV/XI/26`, serials `SJ-…`.
+
+Gate 1 (read): docs.dbml `sales.delivery_notes` (tenant-scoped scaffold, no
+lines, statuses `prepared / shipped / delivered / returned`),
+`sales.sales_orders` / `sales_order_items` (`quantity_delivered`,
+`fulfillment_status` already exist), `inventory.stock_movements` (no
+reference-type vocabulary except borrowing), `serial_tracked_items`
+(`status`, `warehouse_id`, `customer_id`, `stock_movement_id`); ADR-0011 §4
+(a shipped delivery note makes a unit `sold`), §5 (delivery notes post
+`issue` movements), §7 (every delivery document names its warehouse,
+storage optional); numbering type `delivery_note` (`SJ`); grants
+`stock:issue` / `stock:read`; the private surat jalan sample (Letter size).
+Skipped: `implementation-phases.md` (no dependency on an unlanded step).
+
+Gate 2 (manual grilling pass):
+- Ownership: `sales.delivery_notes` + new `sales.delivery_note_items`, owned
+  by the sales module (programmer B, ADR-0011 §13). Company-wide like the
+  orders (ADR-0011/0012): `organization_id` dropped. `warehouse_id`,
+  `bin_id`, `item_id`, `stock_movement_id` are logical references validated
+  through the inventory contracts (`StockService.resolveScope`,
+  `WarehouseService.getWarehouse`, `ItemService.getItem`).
+- Lifecycle: `prepared` (numbered `SJ` on creation so the driver's copy can
+  be printed) → `shipped` (posts one `issue` movement per stock-tracked line
+  at the moving average, records the cost on the line, marks the listed
+  serial units `sold` to the order's customer) → `delivered` (receiver name
+  and date). `prepared` may be `cancelled`; shipped notes are final
+  (returns are `sales.sales_returns`, later). `returned` dropped from the
+  vocabulary, `cancelled` added.
+- Quantities: a line ≤ what the order line still has open; open = ordered −
+  `quantity_delivered`, where `quantity_delivered` counts every live
+  (non-cancelled) note, updated under a row lock on create and given back on
+  cancel. Line fulfilment `partial` / `fulfilled`; the order goes
+  `confirmed → in_progress` on the first shipment. Custom lines (no item)
+  and non-stock items print but post no movement.
+- Serials: serialized lines need one serial per unit at creation; shipping
+  checks each unit is `in_stock` in that warehouse (atomic update guarded on
+  status and warehouse), else 422. New inventory contract method
+  `ItemService.sellUnits(itemId, serials, {warehouseId, customerId,
+  stockMovementId}, tx)`.
+- Unit of work: `TRANSACTION_RUNNER_TOKEN` (ship = movements + serials +
+  status in one transaction). No service injects `DRIZZLE_TOKEN`.
+- Print (sample, Letter): logo + company letterhead, "SURAT JALAN BARANG /
+  PROYEK / KONSTRUKSI", Tanggal / Nama Proyek / Lokasi Proyek, Data
+  Pengirim (company profile), Data Penerima (name, address, PIC, phone/email),
+  table No. / Nama Barang / QTY / Satuan / Harga / Keterangan (padded to the
+  sample's 7 rows; serials go in Keterangan), Catatan (defaults to the
+  sample's warranty sentence, editable), three signatures Supir / Pengirim /
+  Penerima. The sample has no number line; the SJ number is added as the
+  first field ("No. Surat Jalan") because the document must be traceable.
+- Permissions: create / ship / deliver / cancel with `stock:issue`
+  (warehouse, owner); read with `stock:read` or `sales_order:read`. Cost on
+  lines only with `product:read_cost`. Cancelling a sales order with live
+  delivery notes → 422.
+
 ## Completed — ADR-0011 port step 4b: goods receipts and moving-average cost, 2026-11-06
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
@@ -81,9 +192,7 @@ Verification (2026-11-06):
 - Test data left in the dev DB: several test POs `Uji BPB …` with their
   receipts and serials `SN-…`.
 
-Next executable task: ADR-0011 step 5 — delivery notes (surat jalan, the
-private sample's layout) issuing stock at average cost, opening stock and
-adjustments with cost, inventory value view.
+Next executable task: step 5a (done, entry above).
 
 Gate 1 (read): docs.dbml `inventory.stock_movements` / `stock_balances` (the
 note says valuation was removed, OPEN-3) and `procurement.goods_receipts` /

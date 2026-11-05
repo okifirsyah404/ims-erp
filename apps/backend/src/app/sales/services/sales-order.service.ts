@@ -12,7 +12,9 @@ import type {
 } from '@drizzle/schemas/sales.schema';
 import { businessDateOf, type TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
-import { QUOTATION_REPOSITORY_TOKEN, SALES_ORDER_REPOSITORY_TOKEN } from '../constants/di';
+import { DELIVERY_NOTE_REPOSITORY_TOKEN, QUOTATION_REPOSITORY_TOKEN, SALES_ORDER_REPOSITORY_TOKEN } from '../constants/di';
+import type { IDeliveryNoteRepository } from '../contracts/delivery-note.repository.interface';
+import { SalesOrderDeliveredError } from '../errors/delivery-note.errors';
 import type { IQuotationRepository } from '../contracts/quotation.repository.interface';
 import type { TCreateSalesOrderRequest, TSalesOrderListQuery } from '../contracts/sales-order.contract';
 import type { ISalesOrderRepository } from '../contracts/sales-order.repository.interface';
@@ -68,6 +70,8 @@ export class SalesOrderService {
 		private readonly users: Pick<UserService, 'getUser'>,
 		@inject(INVOICE_LOOKUP_SERVICE_TOKEN)
 		private readonly invoices: Pick<InvoiceLookupService, 'hasLiveInvoices'>,
+		@inject(DELIVERY_NOTE_REPOSITORY_TOKEN)
+		private readonly deliveries: Pick<IDeliveryNoteRepository, 'hasLiveNotes'>,
 	) {}
 
 	private async requireVisible(ctx: TSalesOrderContext, id: string): Promise<TSalesOrderSelect> {
@@ -183,6 +187,8 @@ export class SalesOrderService {
 		await this.requireVisible(ctx, id);
 		// Void the invoices first: an order that was billed stays.
 		if (await this.invoices.hasLiveInvoices(id)) throw new SalesOrderBilledError();
+		// Cancel the prepared delivery notes first; shipped goods keep the order.
+		if (await this.deliveries.hasLiveNotes(id)) throw new SalesOrderDeliveredError();
 		const cancelled = await this.orders.cancel(id, ctx.actorUserId, reason);
 		if (!cancelled) throw new SalesOrderNotCancellableError();
 		return cancelled;

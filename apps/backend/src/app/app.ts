@@ -14,6 +14,7 @@ import {
 import { QuotationController } from './sales/controllers/quotation.controller';
 import { SalesController } from './sales/controllers/sales.controller';
 import { SalesOrderController } from './sales/controllers/sales-order.controller';
+import { DeliveryNoteController } from './sales/controllers/delivery-note.controller';
 import { InvoiceController, ReceiptController } from './finance';
 import { GoodsReceiptController, PurchaseOrderController, SupplierController } from './procurement';
 import {
@@ -82,6 +83,7 @@ export function createApp() {
 			.use(LocationController.plugin())
 			.use(QuotationController.plugin())
 			.use(SalesOrderController.plugin())
+			.use(DeliveryNoteController.plugin())
 			.use(InvoiceController.plugin())
 			.use(ReceiptController.plugin())
 			.use(SupplierController.plugin())

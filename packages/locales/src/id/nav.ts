@@ -35,6 +35,8 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.suppliers': 'Pemasok',
 	'item.purchaseOrders': 'Pesanan Pembelian',
 	'item.goodsReceipts': 'Penerimaan Barang',
+	'item.deliveryNotes': 'Surat Jalan',
+	'breadcrumb.deliveryNoteNew': 'Buat surat jalan',
 	'item.assets': 'Aset & Peralatan',
 	'item.assetRegister': 'Register Aset',
 	'item.serviceRecords': 'Catatan Servis',

@@ -83,6 +83,7 @@ TableGroup "Sales" {
   sales.order_status_history
   sales.sales_returns
   sales.delivery_notes
+  sales.delivery_note_items
 }
 
 TableGroup "Procurement" {
@@ -1536,8 +1537,8 @@ Ref: catalog.item_cost_histories.item_id > catalog.items.id [delete: cascade]
 // ---------------------------------------------------------------------------
 // MODULE: Sales  (schema: sales)
 // Quotation to order flow, contracts, targets, status history, returns and
-// delivery notes. Tenant scoped, except the quotation and sales order
-// tables, which are company-wide (ADR-0011).
+// delivery notes. Tenant scoped, except the quotation, sales order and
+// delivery note tables, which are company-wide (ADR-0011).
 // The scaffold sales.quotations created by migration
 // 20261029044823_dear_living_lightning was replaced, not altered, by the
 // recreation migration of ADR-0011 step 3c (implementation-phases.md S3).
@@ -1871,28 +1872,69 @@ Table sales.sales_returns {
 }
 
 Table sales.delivery_notes {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [not null, note: "Assigned on creation (SJ). Unique among live rows (partial index in the Drizzle schema)."]
   sales_order_id uuid [not null]
-  carrier text
-  tracking_number text
-  shipped_at bigint
-  received_at bigint
-  receiver_name text
-  receiver_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  warehouse_id uuid [not null, note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  bin_id uuid [note: "Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
   status text [not null, default: 'prepared']
-  notes text
+  delivery_date date [not null, note: "Jakarta business date printed as Tanggal."]
+  project_name text [note: "Nama Proyek; defaults to the order title."]
+  project_location text [note: "Lokasi Proyek."]
+  recipient_name text [not null, note: "Nama Perusahaan / Penerima; defaults to the order's customer."]
+  recipient_address text [note: "Alamat Proyek."]
+  recipient_pic varchar(200) [note: "PIC / Kontak."]
+  recipient_contact varchar(200) [note: "Telp/Email of the recipient."]
+  driver_name varchar(200) [note: "Printed under Tertanda Supir."]
+  vehicle_number varchar(32)
+  notes text [note: "Catatan box of the print."]
+  shipped_at bigint
+  shipped_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  received_at bigint
+  receiver_name text [note: "Who signed as Penerima."]
+  cancelled_at bigint
+  cancelled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancellation_reason text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Delivery note, surat jalan. Confirms physical handover of a sales order."
+  deleted_at bigint
+  Note: "Delivery note (surat jalan), company-wide (ADR-0011). Shipping posts one stock issue movement per stock-tracked line at the moving-average cost and marks the listed serial units sold, in one transaction through the Inventory module contract. Shipped notes are final; returns are sales_returns."
   Indexes {
-    (organization_id, code) [unique, name: 'delivery_notes_org_code_uq']
     sales_order_id [name: 'delivery_notes_sales_order_id_idx']
+    status [name: 'delivery_notes_status_idx']
   }
   Checks {
-    `status IN ('prepared', 'shipped', 'delivered', 'returned')`
+    `status IN ('prepared', 'shipped', 'delivered', 'cancelled')`
+  }
+}
+
+Table sales.delivery_note_items {
+  id uuid [pk, default: `uuidv7()`]
+  delivery_note_id uuid [not null]
+  sales_order_item_id uuid [not null]
+  item_id uuid [note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Null for a custom order line."]
+  sku varchar(64)
+  name text [not null]
+  unit varchar(32) [not null]
+  quantity numeric(18,3) [not null]
+  unit_price bigint [not null, default: 0, note: "Order unit price, printed as Harga (IDR minor units)."]
+  unit_cost bigint [note: "Moving-average cost the issue movement took (IDR minor units); null until shipped or for non-stock lines."]
+  serial_numbers jsonb [note: "One serial per unit for serialized items."]
+  remarks text [note: "Keterangan."]
+  stock_movement_id uuid [note: "Logical reference to inventory.stock_movements.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  sort_order integer [not null, default: 0]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Line of a delivery note, copied from a sales order line."
+  Indexes {
+    delivery_note_id [name: 'delivery_note_items_delivery_note_id_idx']
+    sales_order_item_id [name: 'delivery_note_items_sales_order_item_id_idx']
+  }
+  Checks {
+    `quantity > 0`
+    `unit_price >= 0`
   }
 }
 
@@ -2242,7 +2284,9 @@ Ref: sales.contracts.sales_order_id > sales.sales_orders.id [delete: set null]
 Ref: sales.quotation_status_history.quotation_id > sales.quotations.id [delete: cascade]
 Ref: sales.order_status_history.sales_order_id > sales.sales_orders.id [delete: cascade]
 Ref: sales.sales_returns.sales_order_id > sales.sales_orders.id [delete: cascade]
-Ref: sales.delivery_notes.sales_order_id > sales.sales_orders.id [delete: cascade]
+Ref: sales.delivery_notes.sales_order_id > sales.sales_orders.id [delete: restrict]
+Ref: sales.delivery_note_items.delivery_note_id > sales.delivery_notes.id [delete: cascade]
+Ref: sales.delivery_note_items.sales_order_item_id > sales.sales_order_items.id [delete: restrict]
 Ref: procurement.supplier_contacts.supplier_id > procurement.suppliers.id [delete: cascade]
 Ref: procurement.supplier_addresses.supplier_id > procurement.suppliers.id [delete: cascade]
 Ref: procurement.purchase_request_items.purchase_request_id > procurement.purchase_requests.id [delete: cascade]

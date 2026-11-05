@@ -36,6 +36,8 @@ const nav = {
 	'item.suppliers': 'Suppliers',
 	'item.purchaseOrders': 'Purchase Orders',
 	'item.goodsReceipts': 'Goods Receipts',
+	'item.deliveryNotes': 'Delivery Notes',
+	'breadcrumb.deliveryNoteNew': 'New delivery note',
 	'item.assets': 'Assets & Equipment',
 	'item.assetRegister': 'Asset Register',
 	'item.serviceRecords': 'Service Records',

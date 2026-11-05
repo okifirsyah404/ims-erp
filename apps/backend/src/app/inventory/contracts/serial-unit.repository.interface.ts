@@ -97,4 +97,22 @@ export interface ISerialUnitRepository {
 	 * @returns The updated unit, or `null` when it was not `borrowed`
 	 */
 	markLost(id: string, tx?: TTx): Promise<TSerialTrackedItemSelect | null>;
+
+	/** Serial numbers of the item's units `in_stock` in one warehouse (ADR-0011 step 5a). */
+	listInStockSerials(itemId: string, warehouseId: string): Promise<string[]>;
+
+	/**
+	 * Marks the listed units sold to a customer, guarded on `status =
+	 * 'in_stock'` and the warehouse inside the update; custody leaves the
+	 * warehouse.
+	 *
+	 * @returns The serial numbers actually sold (fewer than asked = some were
+	 * not in stock there)
+	 */
+	sell(
+		itemId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; customerId: string | null; stockMovementId: string | null },
+		tx: TTx,
+	): Promise<string[]>;
 }

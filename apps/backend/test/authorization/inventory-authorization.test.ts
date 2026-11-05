@@ -156,6 +156,12 @@ beforeAll(async () => {
 		async returnFromBorrower() {
 			return null;
 		},
+		async listInStockSerials() {
+			return [];
+		},
+		async sell() {
+			return [];
+		},
 		async markLost() {
 			return null;
 		},

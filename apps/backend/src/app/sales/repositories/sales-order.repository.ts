@@ -13,12 +13,14 @@ import {
 	type TSalesOrderSelect,
 } from '@drizzle/schemas/sales.schema';
 import { likePattern } from '@drizzle/search';
-import type { TPaginationResult } from '@ims-erp/common';
+import { quantityToMilli, type TPaginationResult } from '@ims-erp/common';
 import { and, asc, count, desc, eq, ilike, isNull, ne, or, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import type {
 	ISalesOrderRepository,
+	TAllocationResult,
+	TDeliveryAllocation,
 	TSalesOrderHeaderData,
 	TSalesOrderItemData,
 	TSalesOrderPaginationRequest,
@@ -204,5 +206,56 @@ export class SalesOrderRepository implements ISalesOrderRepository {
 			return order;
 		});
 	}
-}
 
+	async allocateDelivery(
+		salesOrderId: string,
+		lines: TDeliveryAllocation[],
+		options: { release?: boolean },
+		tx: TTx,
+	): Promise<TAllocationResult> {
+		const [order] = await tx.select().from(salesOrders).where(this.live(salesOrderId)).for('update');
+		if (!order) return { ok: false, reason: 'notDeliverable' };
+		// Giving quantities back (a cancelled note) is allowed in any state.
+		if (!options.release && order.status !== 'confirmed' && order.status !== 'in_progress') {
+			return { ok: false, reason: 'notDeliverable' };
+		}
+		const items = await tx
+			.select()
+			.from(salesOrderItems)
+			.where(and(eq(salesOrderItems.salesOrderId, salesOrderId), isNull(salesOrderItems.deletedAt)))
+			.for('update');
+		const delivered = new Map(items.map((item) => [item.id, quantityToMilli(item.quantityDelivered)]));
+		const sign = options.release ? -1n : 1n;
+		for (const [index, line] of lines.entries()) {
+			const item = items.find((row) => row.id === line.salesOrderItemId);
+			if (!item) return { ok: false, reason: 'notDeliverable', line: index + 1 };
+			const total = delivered.get(item.id)! + sign * quantityToMilli(line.quantity);
+			if (total > quantityToMilli(item.quantity)) return { ok: false, reason: 'overDelivered', line: index + 1 };
+			delivered.set(item.id, total < 0n ? 0n : total);
+		}
+		const now = new Date();
+		for (const item of items) {
+			const total = delivered.get(item.id)!;
+			if (total === quantityToMilli(item.quantityDelivered)) continue;
+			await tx
+				.update(salesOrderItems)
+				.set({
+					quantityDelivered: (Number(total) / 1000).toFixed(3),
+					fulfillmentStatus: total === 0n ? 'pending' : total >= quantityToMilli(item.quantity) ? 'fulfilled' : 'partial',
+					updatedAt: now,
+				})
+				.where(eq(salesOrderItems.id, item.id));
+		}
+		return { ok: true };
+	}
+
+	async markInProgress(salesOrderId: string, actorUserId: string, note: string, tx: TTx): Promise<void> {
+		const now = new Date();
+		const [order] = await tx
+			.update(salesOrders)
+			.set({ status: 'in_progress', updatedAt: now })
+			.where(and(this.live(salesOrderId), eq(salesOrders.status, 'confirmed')))
+			.returning({ id: salesOrders.id });
+		if (order) await this.logOrder(tx, salesOrderId, 'confirmed', 'in_progress', actorUserId, now, note);
+	}
+}

@@ -5,6 +5,7 @@ import type {
 	TSalesOrderItemSelect,
 	TSalesOrderSelect,
 } from '@drizzle/schemas/sales.schema';
+import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { TSalesOrderListQuery } from './sales-order.contract';
 
@@ -58,4 +59,28 @@ export interface ISalesOrderRepository {
 	 * `approved` when it was never sent); `null` when not `confirmed`.
 	 */
 	cancel(id: string, actorUserId: string, reason: string): Promise<TSalesOrderSelect | null>;
+
+	/**
+	 * Adds (or, with `release`, gives back) delivery-note quantities on the
+	 * order lines under row locks: the order must be `confirmed` or
+	 * `in_progress` to allocate, and no line may go above its ordered quantity
+	 * or below zero. Line fulfilment becomes `pending` / `partial` /
+	 * `fulfilled`.
+	 */
+	allocateDelivery(
+		salesOrderId: string,
+		lines: TDeliveryAllocation[],
+		options: { release?: boolean },
+		tx: TTx,
+	): Promise<TAllocationResult>;
+
+	/** `confirmed → in_progress` with a history row (first shipment); no-op otherwise. */
+	markInProgress(salesOrderId: string, actorUserId: string, note: string, tx: TTx): Promise<void>;
 }
+
+/** What one delivery note takes from each order line. */
+export type TDeliveryAllocation = { salesOrderItemId: string; quantity: string };
+
+export type TAllocationResult =
+	| { ok: true }
+	| { ok: false; reason: 'notDeliverable' | 'overDelivered'; line?: number };

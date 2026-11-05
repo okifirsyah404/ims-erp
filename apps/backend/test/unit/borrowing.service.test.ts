@@ -326,6 +326,12 @@ class FakeUnitRepository implements ISerialUnitRepository {
 		row.currentBorrowingLineId = null;
 		return row;
 	}
+	async listInStockSerials() {
+		return [];
+	}
+	async sell() {
+		return [];
+	}
 	async markLost(id: string) {
 		const row = this.units.get(id);
 		if (!row || row.status !== 'borrowed') return null;
