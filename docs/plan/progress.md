@@ -14,9 +14,9 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 ## In progress — merge plan for M02/M05/M07 onto main (ADR-0011), 2026-11-05
 
-Status: **planned** (docs only; ADR-0011 `proposed`, needs programmer A's
-agreement and the owner's change-control sign-off). No code, schema,
-migration, or seed touched.
+Status: **in-progress** (ADR-0011 accepted 2026-11-05 after discussion with
+programmer A and the owner, as reported by programmer B's module owner).
+Porting starts on `merge/main-sync`.
 
 - Trial merge of `feat/m05-inventory-purchasing` into main (dry run,
   `git merge-tree`): 49 conflicting files; both branches define

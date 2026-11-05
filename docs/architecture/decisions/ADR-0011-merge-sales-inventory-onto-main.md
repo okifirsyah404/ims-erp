@@ -1,9 +1,10 @@
 # ADR-0011 — Merging the M02/M05/M07 Branch onto Main: One Item Master, One Ledger
 
-- **Status:** proposed (2026-11-05). Needs agreement from programmer A (Oki,
-  owner of the platform and inventory core) and the owner's sign-off on the
-  v5.1 change-control items below. Depends on ADR-0007, ADR-0008, ADR-0009
-  and asks for ADR-0010 to be accepted.
+- **Status:** accepted (2026-11-05, after discussion between programmer A
+  (Oki, owner of the platform and inventory core), programmer B's module
+  owner, and the owner; reported by programmer B's module owner). Depends on
+  ADR-0007, ADR-0008, ADR-0009 and ADR-0010 (many warehouses, agreed in the
+  same discussion).
 - **Context:** Two lines of work grew in parallel from commit `c254919`:
   - `main` (programmer A): internal organizations as departments (ADR-0007),
     per-organization dynamic roles (`auth.roles`), user management, audit
