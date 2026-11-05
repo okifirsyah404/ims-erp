@@ -36,7 +36,7 @@ export type TAssetCreateData = Omit<
 	| 'accumulatedDepreciation'
 	| 'status'
 	| 'deactivationReason'
-	| 'assignedAt'
+	| 'borrowedSince'
 	| 'organizationId'
 > & {
 	createdAt?: Date;

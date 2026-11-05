@@ -79,8 +79,8 @@ export class AssetOperationsService {
 
 	/**
 	 * D12: assigns an asset to a holder. Guards: the asset must not be
-	 * `in_use`/`inactive`/`disposed`/`lost`, and no open assignment may
-	 * exist. Flips the asset to `in_use` and writes a `loan` movement in
+	 * `borrowed`/`inactive`/`disposed`/`lost`, and no open assignment may
+	 * exist. Flips the asset to `borrowed` and writes a `borrow_out` movement in
 	 * the same transaction.
 	 */
 	async assign(
@@ -111,7 +111,7 @@ export class AssetOperationsService {
 			if (asset.organizationId !== organizationId) {
 				throw new AssetNotFoundError();
 			}
-			if (['in_use', 'inactive', 'disposed', 'lost'].includes(asset.status)) {
+			if (['borrowed', 'inactive', 'disposed', 'lost'].includes(asset.status)) {
 				throw new AssetRuleViolationError(
 					`assign_blocked:${asset.status}`,
 					'assets.assignBlocked',
@@ -139,14 +139,14 @@ export class AssetOperationsService {
 			);
 			await this.assetRepository.update(
 				assetId,
-				{ status: 'in_use', assignedAt: now },
+				{ status: 'borrowed', borrowedSince: now },
 				tx,
 			);
 			await this.operations.createMovement(
 				{
 					organizationId,
 					assetId,
-					movementType: 'loan',
+					movementType: 'borrow_out',
 					fromLocation: asset.locationDescription,
 					toLocation: asset.locationDescription,
 					movedAt: now,
@@ -180,7 +180,7 @@ export class AssetOperationsService {
 	 * D12: returns an assigned asset. The open assignment is claimed with a
 	 * conditional update (one concurrent return wins); condition-in is
 	 * mandatory and updates the asset's condition. Flips the asset back to
-	 * `in_stock` and writes a `return` movement in the same transaction.
+	 * `ready` and writes a `borrow_return` movement in the same transaction.
 	 */
 	async returnAsset(
 		assetId: string,
@@ -202,8 +202,8 @@ export class AssetOperationsService {
 			if (asset.organizationId !== organizationId) {
 				throw new AssetNotFoundError();
 			}
-			if (asset.status !== 'in_use') {
-				throw new AssetTransitionError(asset.status, 'in_stock');
+			if (asset.status !== 'borrowed') {
+				throw new AssetTransitionError(asset.status, 'ready');
 			}
 			const open = await this.operations.findOpenAssignment(assetId, tx);
 			if (!open) throw new AssetRuleViolationError('assignment_none_open');
@@ -224,14 +224,14 @@ export class AssetOperationsService {
 			}
 			await this.assetRepository.update(
 				assetId,
-				{ status: 'in_stock', assignedAt: null, condition: data.conditionOnReturn },
+				{ status: 'ready', borrowedSince: null, condition: data.conditionOnReturn },
 				tx,
 			);
 			await this.operations.createMovement(
 				{
 					organizationId,
 					assetId,
-					movementType: 'return',
+					movementType: 'borrow_return',
 					toLocation: asset.locationDescription,
 					movedAt: now,
 					movedByUserId: actor.userId,

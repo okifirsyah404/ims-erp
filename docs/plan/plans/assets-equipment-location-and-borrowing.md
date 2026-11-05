@@ -189,6 +189,28 @@ Order inside the slice matters: the CHECK tightens only after the rows are gone.
 9. Apply to a disposable database only; then `bun run drizzle:migrate` and
    `bun run drizzle:seed` **twice** to prove idempotency.
 
+**Status: DONE (2026-11-05), with one sequencing deviation.** Cleanup script
+applied; asset/inventory schemas and the destructive migration landed; reset +
+migrate + seed run twice; 530 tests pass; DB CHECKs verified.
+
+- **Sequencing deviation:** the inventory borrowing trio,
+  `serial_tracked_items.borrowed` + its CHECK, and `assets.asset_assignments`
+  are **not** dropped in this slice. Dropping them while `borrowing.service.ts`
+  and the assignment endpoints still use them would leave a commit that cannot
+  compile or serve traffic. The code moves in Slice 3 and the `DROP TABLE`s
+  ride that migration. The contract (`docs.dbml`) still describes the target.
+- Migration `20261105123204_faulty_ikaris` was hand-edited beyond the plan:
+  asset-type seed inserts placed after their unique index and before the FK
+  adds; old status/movement CHECKs dropped **before** the backfills and
+  re-added after (`UPDATE … 'ready'/'borrowed'`, `loan→borrow_out`,
+  `return→borrow_return`); asset-table org columns dropped `NOT NULL`; the
+  scope-split unique pairs replaced the old org-only codes.
+- `database/seeders/index.ts` gained `import 'reflect-metadata'` first: both
+  `drizzle:seed` and `drizzle:migrate-reset` crashed on Bun 1.4.4 without it.
+- `asset.service.ts` / `asset-operations.service.ts` were retargeted to the new
+  status and movement vocabulary so the slice compiles; Slice 3 replaces the
+  custody path with borrowing.
+
 ### Slice 3 — Borrowing port, capacity reconcile, movements
 
 1. `git mv` the inventory borrowing files into `apps/backend/src/app/assets/`:

@@ -124,7 +124,11 @@ Last synced: 2026-11-05.
   shipped 2026-11-05 (`docs/database/docs.dbml`: assets 14 tables incl.
   `asset_types` + borrowing trio, inventory 13 tables, `validate-dbml.ts`
   prints `OK`; plan `plans/assets-equipment-location-and-borrowing.md` Slice 1
-  done). Schema, migration, code and UI are still pending — five slices total.
+  done); Slice 2 shipped 2026-11-05 (asset schema rewritten, cleanup script
+  applied, migration `20261105123204_faulty_ikaris`, reset + migrate + seed
+  twice, 530 tests, DB CHECKs verified — see `progress.md`). Code port, seed,
+  permissions and UI remain (Slices 3–5); the inventory borrowing trio and
+  `asset_assignments` drop in Slice 3 with the code move.
   Stage 0 execution review resolved all blocking defects (global assets with
   stubbed warehouse reachability, global unique asset code, no
   `document_sequences` change, jsonb permission migration). Supersedes the M06

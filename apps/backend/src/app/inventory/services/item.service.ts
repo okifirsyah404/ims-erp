@@ -40,10 +40,11 @@ import {
  * @remarks
  * `UNIT_STATUS_TRANSITIONS` in the schema describes where a status may go.
  * This table describes which statuses a kind may hold **at all**:
- * - `tool` may only be borrowed (plus the states any unit passes through on
- *   its way in and out: pre-ordered, in stock, lost).
  * - `sold` and `applied_warranty` are product-only.
- * - The four consumable kinds additionally reach `sold`/`applied_warranty`.
+ * - Every consumable kind additionally reaches `sold`/`applied_warranty`.
+ *
+ * ERP-0036 removed `tool` and `service` as item kinds; `borrowed` stays on the
+ * three remaining kinds until borrowing moves to `assets` (Slice 3).
  */
 const STATUSES_BY_KIND: Record<ItemKind, readonly UnitStatus[]> = {
 	product: [
@@ -70,8 +71,6 @@ const STATUSES_BY_KIND: Record<ItemKind, readonly UnitStatus[]> = {
 		'sold',
 		'applied_warranty',
 	],
-	tool: ['pre_order', 'in_stock', 'borrowed', 'lost'],
-	service: [],
 };
 
 /**
@@ -131,7 +130,6 @@ export function assertTransitionAllowed(
  * @remarks
  * Owns the cross-field rules the schema cannot express, because a unit row
  * does not know its item's kind without a join:
- * - A `service` item is never serialized and never stock-tracked.
  * - A non-serialized item has no units.
  * - A unit's status must be legal for its item's kind.
  * - A provisional serial is replaced exactly once.
@@ -440,13 +438,6 @@ export class ItemService {
 	 * @throws {InventoryRuleViolationError} When the shape is impossible
 	 */
 	private assertItemShape(data: TItemCreateData): void {
-		if (data.itemKind === 'service') {
-			if (data.isSerialized || data.isStockTracked) {
-				throw new InventoryRuleViolationError(
-					'A service is never serialized and never stock-tracked',
-				);
-			}
-		}
 		if (data.isSerialized && !data.isStockTracked) {
 			throw new InventoryRuleViolationError(
 				'A serialized item must be stock-tracked',

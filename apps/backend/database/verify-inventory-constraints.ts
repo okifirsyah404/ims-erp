@@ -95,15 +95,8 @@ await pass('global item SKU-1', () => item(null, 'SKU-1'));
 await reject('second global SKU-1 blocked', () => item(null, 'SKU-1'));
 await pass('org-a SKU-1 allowed', () => item('org-a', 'SKU-1'));
 await reject('unknown item kind rejected', () => item('org-a', 'SKU-X', 'spaceship'));
-await reject(
-	'serialized service rejected by check',
-	() => item('org-a', 'SVC-1', 'service', true, false),
-);
-await reject(
-	'stock-tracked service rejected by check',
-	() => item('org-a', 'SVC-2', 'service', false, true),
-);
-await pass('non-stocked service accepted', () => item('org-a', 'SVC-3', 'service', false, false));
+await reject('tool item kind rejected', () => item('org-a', 'TOL-1', 'tool', true, false));
+await reject('service item kind rejected', () => item('org-a', 'SVC-1', 'service', false, false));
 
 console.log('--- unit status vocabulary ---');
 const unit = (serial: string, status: string, provisional = false) =>
@@ -437,6 +430,14 @@ await pass(
 
 console.log('--- asset module CHECK constraints (Part II) ---');
 
+await pass('asset types seeded for the FK', () =>
+	sql.unsafe(
+		`insert into assets.asset_types (code, name, created_at)
+		 values ('it', 'IT', 1), ('equipment', 'Equipment', 1)
+		 on conflict (code) do nothing`,
+	),
+);
+
 await pass('asset category accepted', () =>
 	sql.unsafe(
 		`insert into assets.asset_categories (organization_id, code, name, asset_type, default_depreciation_method, created_at)
@@ -453,16 +454,16 @@ await reject('unknown asset category type rejected', () =>
 const assetRow = () =>
 	sql.unsafe(`select id from assets.assets where organization_id = 'org-a' and code = 'AST-1'`);
 
-await pass('asset accepted in_stock', () =>
+await pass('asset accepted as ready', () =>
 	sql.unsafe(
 		`insert into assets.assets (organization_id, code, name, status, created_at)
-		 values ('org-a', 'AST-1', 'Laptop A', 'in_stock', 1)`,
+		 values ('org-a', 'AST-1', 'Laptop A', 'ready', 1)`,
 	),
 );
-await reject('unknown asset status rejected by CHECK', async () => {
+await reject('superseded in_stock status rejected by CHECK', async () => {
 	const [row] = await assetRow();
 	await sql.unsafe(
-		`update assets.assets set status = 'ready' where id = '${row.id}'`,
+		`update assets.assets set status = 'in_stock' where id = '${row.id}'`,
 	);
 });
 

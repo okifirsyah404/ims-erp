@@ -48,19 +48,14 @@ export const inventorySchema = pgSchema('inventory');
  * ------------------------------------------------------------------------ */
 
 /**
- * Item kinds. Drives the consumption matrix:
- * - `product`, `component`, `material` — may be sold, applied to warranty,
- *   borrowed, or tested.
- * - `tool` — may **only** be borrowed.
- * - `service` — never stocked, never serialized.
+ * Item kinds (ERP-0036 D9). Inventory is the **consumable** module:
+ * `product`, `component` and `material` may be sold, applied to warranty,
+ * borrowed as a quantity, or tested.
+ *
+ * Physical tools are assets (`assets.assets`), never items, and services are
+ * neither stocked nor serialized, so neither kind exists here any more.
  */
-export const ITEM_KINDS = [
-	'product',
-	'component',
-	'material',
-	'tool',
-	'service',
-] as const;
+export const ITEM_KINDS = ['product', 'component', 'material'] as const;
 export type ItemKind = (typeof ITEM_KINDS)[number];
 
 /**
@@ -70,7 +65,12 @@ export type ItemKind = (typeof ITEM_KINDS)[number];
  * service rule (`assertTransitionAllowed`), not a DB check, because the unit
  * row does not know its item kind without a join.
  *
- * The UI label for `in_stock` is "Siap" — `ready` is never a stored value.
+ * ERP-0036 D9 retires `borrowed` once borrowing moves to `assets`; the value
+ * stays until that code move so the live borrowing flow never writes a status
+ * the check rejects.
+ *
+ * The UI label for `in_stock` is "Siap" — `ready` is never a stored value here
+ * (that is the **asset** vocabulary).
  */
 export const UNIT_STATUSES = [
 	'pre_order',
@@ -92,7 +92,15 @@ export const UNIT_STATUS_TRANSITIONS: Record<UnitStatus, UnitStatus[]> = {
 	applied_warranty: ['in_stock', 'lost'],
 };
 
-/** Stock movement types. `borrowing_*` are written by the borrowing flow. */
+/**
+ * Stock movement types.
+ *
+ * @remarks
+ * ERP-0036 D17: `borrowing_out` / `borrowing_in` are **superseded** — asset
+ * borrowing writes `assets.asset_movements` instead (an asset has no item, and
+ * the ledger requires one). The values stay in the vocabulary and CHECK until
+ * the later cleanup migration so this slice stays reversible.
+ */
 export const MOVEMENT_TYPES = [
 	'receipt',
 	'issue',
@@ -421,19 +429,13 @@ export const items = inventorySchema.table(
 		index('inventory_items_barcode_idx').on(table.barcode),
 		check(
 			'inventory_items_kind_check',
-			sql`item_kind IN ('product', 'component', 'material', 'tool', 'service')`,
+			sql`item_kind IN ('product', 'component', 'material')`,
 		),
 		check(
 			'inventory_items_prices_check',
 			sql`selling_price >= 0 AND purchase_price >= 0`,
 		),
 		check('inventory_items_min_stock_check', sql`min_stock_qty >= 0`),
-		// A service is never a physical thing: it can be neither serialized
-		// nor stock-tracked.
-		check(
-			'inventory_items_service_not_stocked_check',
-			sql`NOT (item_kind = 'service') OR (is_serialized = false AND is_stock_tracked = false)`,
-		),
 	],
 );
 
@@ -747,6 +749,7 @@ export const stockAdjustmentItems = inventorySchema.table(
  * `warehouse_id` is NULL while the unit is borrowed or lost — custody moves
  * to the borrower. `current_borrowing_line_id` points at the open line while
  * the unit is out, so the return flow finds its line without scanning.
+ * ERP-0036 retires both once borrowing moves to `assets` (Slice 3).
  *
  * **The FK cycle is declared, but the constraint is not emitted by
  * `drizzle-kit generate`.** `serial_tracked_items → borrowing_lines` and

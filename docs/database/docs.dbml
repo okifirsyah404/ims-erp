@@ -4721,7 +4721,7 @@ Table assets.assets {
 Table assets.asset_maintenances {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null means global/company-wide (ADR-0008 scope rule)."]
   code varchar(32) [not null]
   asset_id uuid [not null]
   maintenance_type text [not null, default: 'preventive']
@@ -4739,7 +4739,8 @@ Table assets.asset_maintenances {
   updated_at bigint [not null]
   Note: "Maintenance record of an asset. The next service date drives the maintenance schedule."
   Indexes {
-    (organization_id, code) [unique, name: 'asset_maintenances_org_code_uq']
+(organization_id, code) [unique, name: 'asset_maintenances_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
+(code) [unique, name: 'asset_maintenances_global_code_uq', note: 'WHERE organization_id IS NULL']
     asset_id [name: 'asset_maintenances_asset_id_idx']
     status [name: 'asset_maintenances_status_idx']
     next_service_date [name: 'asset_maintenances_next_service_date_idx']
@@ -4755,7 +4756,7 @@ Table assets.asset_depreciations {
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null means global/company-wide (ADR-0008 scope rule)."]
   asset_id uuid [not null]
   period_year integer [not null]
   period_month integer [not null]
@@ -4783,7 +4784,7 @@ Table assets.asset_depreciations {
 Table assets.asset_disposals {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null means global/company-wide (ADR-0008 scope rule)."]
   code varchar(32) [not null]
   asset_id uuid [not null]
   disposal_date date
@@ -4802,7 +4803,8 @@ Table assets.asset_disposals {
   updated_at bigint [not null]
   Note: "Disposal of an asset. The asset is soft deleted, the disposal record stays as the financial proof."
   Indexes {
-    (organization_id, code) [unique, name: 'asset_disposals_org_code_uq']
+(organization_id, code) [unique, name: 'asset_disposals_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
+(code) [unique, name: 'asset_disposals_global_code_uq', note: 'WHERE organization_id IS NULL']
     asset_id [name: 'asset_disposals_asset_id_idx']
     status [name: 'asset_disposals_status_idx']
   }
@@ -4818,7 +4820,7 @@ Table assets.asset_documents {
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null means global/company-wide (ADR-0008 scope rule)."]
   asset_id uuid [not null]
   document_id uuid [not null, note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   document_type text [not null]
@@ -4836,7 +4838,7 @@ Table assets.asset_documents {
 Table assets.asset_condition_checks {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null means global/company-wide (ADR-0008 scope rule)."]
   asset_id uuid [not null]
   check_date date [not null]
   condition text [not null]
@@ -4859,7 +4861,7 @@ Table assets.asset_condition_checks {
 
 Table assets.tool_sets {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null means global/company-wide (ADR-0008 scope rule)."]
   code varchar(32) [not null]
   name text [not null]
   description text
@@ -4870,7 +4872,8 @@ Table assets.tool_sets {
   deleted_at bigint
   Note: "Tool kit lent to a technician as one unit."
   Indexes {
-    (organization_id, code) [unique, name: 'tool_sets_org_code_uq']
+(organization_id, code) [unique, name: 'tool_sets_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
+(code) [unique, name: 'tool_sets_global_code_uq', note: 'WHERE organization_id IS NULL']
     custodian_employee_id [name: 'tool_sets_custodian_employee_id_idx']
   }
   Checks {
@@ -4882,7 +4885,7 @@ Table assets.tool_set_items {
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null means global/company-wide (ADR-0008 scope rule)."]
   tool_set_id uuid [not null]
   asset_id uuid [not null]
   quantity numeric(18,3) [not null, default: 1]
@@ -4902,7 +4905,7 @@ Table assets.asset_movements {
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null means global/company-wide (ADR-0008 scope rule)."]
   asset_id uuid [not null]
   movement_type text [not null, default: 'transfer']
   from_warehouse_id uuid [note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]

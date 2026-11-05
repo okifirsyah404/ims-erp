@@ -31,20 +31,24 @@ import type { TInventoryAuditActor } from '../../inventory/constants/audit-actor
  *
  * @remarks
  * `inactive` is the D18 parked state (enter from any non-terminal status,
- * leave back to `in_stock`). `disposed` is terminal and only reachable via
+ * leave back to `ready`). `disposed` is terminal and only reachable via
  * the disposal workflow (D21) — never through `update`.
+ *
+ * ERP-0036 D7 vocabulary: `in_stock` → `ready`, `in_use` → `borrowed`. A
+ * borrowed asset is normally derived from an open borrowing, but this
+ * transitional custody flow still writes the status directly until Slice 3.
  */
 export const ASSET_STATUS_TRANSITIONS: Record<AssetStatus, AssetStatus[]> = {
-	in_stock: ['in_use', 'maintenance', 'inactive', 'lost'],
-	in_use: ['in_stock', 'maintenance', 'inactive', 'lost'],
-	maintenance: ['in_stock', 'inactive', 'lost'],
-	inactive: ['in_stock', 'lost'],
+	ready: ['borrowed', 'maintenance', 'inactive', 'lost'],
+	borrowed: ['ready', 'maintenance', 'inactive', 'lost'],
+	maintenance: ['ready', 'inactive', 'lost'],
+	inactive: ['ready', 'lost'],
 	lost: [],
 	disposed: [],
 };
 
 /** Statuses that block a custody assignment (Phase A-3 guards). */
-const ASSIGNMENT_BLOCKED: AssetStatus[] = ['in_use', 'inactive', 'disposed', 'lost'];
+const ASSIGNMENT_BLOCKED: AssetStatus[] = ['borrowed', 'inactive', 'disposed', 'lost'];
 
 /** The actor context for custody/lifecycle operations. */
 export type TAssetActor = TInventoryAuditActor;
@@ -108,7 +112,7 @@ export class AssetService {
 					organizationId,
 					code,
 					createdAt: rest.createdAt ?? new Date(),
-					status: 'in_stock',
+					status: 'ready',
 					accumulatedDepreciation: 0,
 					bookValue: rest.acquisitionCost ?? 0,
 				},
@@ -212,17 +216,17 @@ export class AssetService {
 		return updated;
 	}
 
-	/** D18: brings a parked asset back to `in_stock`, clearing the reason. */
+	/** D18: brings a parked asset back to `ready`, clearing the reason. */
 	async reactivateAsset(
 		id: string,
 		actor: TAssetActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TAssetSelect> {
 		const current = await this.requireAsset(id);
 		if (current.status !== 'inactive') {
-			throw new AssetTransitionError(current.status, 'in_stock');
+			throw new AssetTransitionError(current.status, 'ready');
 		}
 		const updated = await this.assetRepository.update(id, {
-			status: 'in_stock',
+			status: 'ready',
 			deactivationReason: null,
 		});
 		if (!updated) throw new AssetNotFoundError();

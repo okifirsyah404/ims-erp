@@ -12,6 +12,75 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed (this session - ERP-0036 Slice 2 schema + destructive migration, 2026-11-05)
+
+Status: **verified** on the local database; **implemented** in code. Slice 2 of
+`docs/plan/plans/assets-equipment-location-and-borrowing.md`.
+
+What landed:
+
+- `apps/backend/database/cleanup-tool-items.ts` — one-shot, `--dry-run` first,
+  refuses on mixed borrowings or adjustment lines, deletes `tool`/`service`
+  items + units and their ledger rows behind a transaction, writing audit rows.
+  Dry run on the old DB: `items: 8, byKind {tool: 4, service: 4}, units: 12,
+  borrowings: 0, stockMovements: 0, stockBalances: 0`; then `--apply` succeeded.
+- `apps/backend/drizzle/schemas/asset.schema.ts` rewritten to the 14-table
+  contract: `asset_types` lookup + FKs, `assets` location columns,
+  `borrowed_since`, nullable org, `ready|borrowed|...` status, global code
+  unique, expression serial unique; `asset_movements` location ids + new
+  vocabulary; the borrowing trio ported to `assets`.
+- `apps/backend/drizzle/schemas/inventory.schema.ts`: `ITEM_KINDS` is
+  `product|component|material`, the service CHECK is gone, the kind CHECK and
+  item seeder shrink accordingly.
+- `apps/backend/database/seeders/seed/inventory.seeder.ts`: tool/service blocks
+  deleted, kinds trimmed, faker doc rewritten.
+- `item.service.ts`, `asset.service.ts`, `asset-operations.service.ts`,
+  `asset.repository.interface.ts`: status/vocabulary moves (`in_stock`→`ready`,
+  `in_use`→`borrowed`, `loan`→`borrow_out`, `return`→`borrow_return`,
+  `assigned_at`→`borrowed_since`).
+- Tests updated: seeder data, kind×status matrix, item/asset operation suites,
+  and the manual `verify-inventory-constraints.ts` verifier.
+- New migration `20261105123204_faulty_ikaris`, hand-edited per plan: asset-type
+  seed inserts before the FK adds, old status/movement CHECKs dropped before the
+  backfills and re-added after, idempotent `in_stock→ready` / `in_use→borrowed`
+  and `loan/return` backfills.
+
+**Deviations from the plan, recorded deliberately:**
+
+1. **The inventory borrowing trio and `assets.asset_assignments` stay until
+   Slice 3.** Removing them in Slice 2 makes the live borrowing service and
+   assignment endpoints reference dropped tables, so that commit could not
+   compile or run. Their code moves in Slice 3 and the `DROP TABLE`s ride that
+   migration. Same reason `serial_tracked_items.borrowed` and its CHECK stay for
+   one more slice. The contract (`docs.dbml`) still describes the target state.
+2. `database/seeders/index.ts` now imports `reflect-metadata` first. Both
+   `drizzle:seed` and `drizzle:migrate-reset` crashed under Bun 1.4.4 with
+   “tsyringe requires a reflect polyfill” before this; the backend entrypoint
+   already imported it, the seeder entrypoint did not.
+3. `docs.dbml` nullable-org/scoped-unique fixes for the eight asset tables and
+   three index pairs landed here (they were drafted after the Slice 1 commit).
+
+```text
+bun run typecheck                      → clean
+bun run test                           → 530 pass, 0 fail (27 files, 981 expects)
+bun run lint                           → 0 errors (6 pre-existing warnings)
+bun docs/database/gen-logical-references.ts
+  → regenerated: 513 refs across 37 targets, 228 intra-module refs
+bun docs/database/validate-dbml.ts
+  → parsed: 255 tables, 228 refs; cross-module refs: 0; timestamp gaps: 0; OK
+bun run database/cleanup-tool-items.ts --apply
+  → items 8 (tool 4, service 4), units 12 deleted; Cleanup applied.
+bun run drizzle:migrate-reset          → migrations + seed complete
+bun run drizzle:migrate                → migrations applied successfully
+bun run drizzle:seed                   → complete (second run, idempotent)
+```
+
+Post-migration DB checks (`ims_erp_local`): item kinds are exactly
+`product|component|material` (4 each), units all `in_stock` (4), six
+`asset_types` rows, `assets` schema 15 tables (11 old + asset_types + borrowing
+trio, assignments pending Slice 3), `inventory` still 12 tables (trio pending
+Slice 3), and the three CHECK definitions match the new vocabularies.
+
 ## Completed (this session - ERP-0036 Slice 1 contract, 2026-11-05)
 
 Status: **implemented** for the contract only (`docs/database/` + plan docs); no

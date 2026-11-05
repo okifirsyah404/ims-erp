@@ -43,7 +43,7 @@ const ITEMS_PER_KIND = 4;
 type TSeedItem = {
 	sku: string;
 	name: string;
-	itemKind: 'product' | 'component' | 'material' | 'tool' | 'service';
+	itemKind: 'product' | 'component' | 'material';
 	category: string | null;
 	unitLabel: string | null;
 	isSerialized: boolean;
@@ -59,16 +59,14 @@ type TSeedItem = {
  * Generates the item master with faker, deterministically.
  *
  * @remarks
- * Covers every kind, because the kind drives the unit status matrix
- * (`assertTransitionAllowed`) and the S1 seeder step was never delivered —
- * without this, a fresh database has no items and the tool borrowing flow of
- * S4 has nothing to borrow.
+ * Covers every remaining kind. ERP-0036 moved physical tools to `assets` and
+ * deleted `service`, so only consumables are seeded here; asset equipment is
+ * seeded by the assets seeder.
  *
- * Kind invariants preserved from the curated fixture set:
- * - `tool` items are serialized, not stock-tracked, and not sellable.
+ * Kind invariants:
  * - `material` items are quantity-tracked, not serialized, and use unit
  *   labels (m, kg, ...).
- * - `service` items are neither serialized nor tracked and have no unit.
+ * - `product`/`component` are stocked; even-indexed products are serialized.
  *
  * Money is integer IDR (rupiah) per ADR-0002 — faker money helpers are float
  * based and are NOT used for amounts.
@@ -80,18 +78,11 @@ function generateSeedItems(): TSeedItem[] {
 	faker.seed(FAKER_SEED);
 
 	const safeName = () => seedSafeText(faker.commerce.productName());
-	const safeAdjective = () => seedSafeText(faker.commerce.productAdjective());
 	const safeMaterial = () => seedSafeText(faker.commerce.productMaterial());
 	const safeCategory = (pool: readonly string[]) =>
 		seedSafeText(faker.helpers.arrayElement(pool));
 
-	const kinds: TSeedItem['itemKind'][] = [
-		'product',
-		'component',
-		'material',
-		'tool',
-		'service',
-	];
+	const kinds: TSeedItem['itemKind'][] = ['product', 'component', 'material'];
 
 	const items: TSeedItem[] = [];
 	let index = 0;
@@ -100,26 +91,6 @@ function generateSeedItems(): TSeedItem[] {
 		for (let i = 0; i < ITEMS_PER_KIND; i++) {
 			index += 1;
 			const sku = `ITEM-${String(index).padStart(3, '0')}`;
-
-			if (itemKind === 'tool') {
-				items.push({
-					sku,
-					name: safeName(),
-					itemKind,
-					category: safeCategory(['Tools', 'Instruments']),
-					unitLabel: 'pcs',
-					isSerialized: true,
-					isStockTracked: false,
-					minStockQty: '0.000',
-					// Tools are internal equipment: not sellable.
-					sellingPrice: 0,
-					purchasePrice: faker.number.int({ min: 500_000, max: 5_000_000 }),
-					serials: Array.from({ length: 3 }, (_, n) =>
-						`${sku}-S${String(n + 1).padStart(3, '0')}`,
-					),
-				});
-				continue;
-			}
 
 			if (itemKind === 'material') {
 				items.push({
@@ -135,22 +106,6 @@ function generateSeedItems(): TSeedItem[] {
 						.toFixed(3),
 					sellingPrice: faker.number.int({ min: 5_000, max: 100_000 }),
 					purchasePrice: faker.number.int({ min: 2_500, max: 60_000 }),
-				});
-				continue;
-			}
-
-			if (itemKind === 'service') {
-				items.push({
-					sku,
-					name: `${safeAdjective()} installation service`,
-					itemKind,
-					category: null,
-					unitLabel: null,
-					isSerialized: false,
-					isStockTracked: false,
-					minStockQty: '0.000',
-					sellingPrice: faker.number.int({ min: 250_000, max: 2_500_000 }),
-					purchasePrice: 0,
 				});
 				continue;
 			}
@@ -194,7 +149,7 @@ const SEED_ITEMS: readonly TSeedItem[] = generateSeedItems();
 /**
  * Seeds the inventory module: a global default warehouse, an
  * organization-scoped warehouse, their addresses and bins, and the item
- * master with a serialized tool set and a quantity-tracked material set.
+ * master (consumables only since ERP-0036).
  *
  * @remarks
  * Idempotent: every insert is guarded by a lookup on the natural key

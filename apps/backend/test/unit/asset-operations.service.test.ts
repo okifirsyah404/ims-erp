@@ -79,7 +79,7 @@ function buildWorld() {
 			code: 'AST-REG-000001',
 			name: 'Laptop',
 			assetType: 'it',
-			status: 'in_stock',
+			status: 'ready',
 			condition: 'good',
 			acquisitionCost: 10_000_000,
 			salvageValue: 0,
@@ -87,7 +87,7 @@ function buildWorld() {
 			bookValue: 10_000_000,
 			currencyCode: 'IDR',
 			depreciationMethod: 'straight_line',
-			assignedAt: null,
+			borrowedSince: null,
 			deactivationReason: null,
 			createdAt: new Date(),
 			updatedAt: null,
@@ -408,7 +408,7 @@ beforeEach(() => {
 });
 
 describe('asset operations — custody (D12)', () => {
-	test('a happy assignment flips the asset to in_use and writes a loan movement', async () => {
+	test('a happy assignment flips the asset to borrowed and writes a borrow_out movement', async () => {
 		world.assets.push(world.makeAsset());
 		const assignment = await world.service.assign(
 			ASSET_ID,
@@ -417,14 +417,14 @@ describe('asset operations — custody (D12)', () => {
 			actor,
 		);
 		expect(assignment.returnedAt).toBeNull();
-		expect(world.assets[0].status).toBe('in_use');
+		expect(world.assets[0].status).toBe('borrowed');
 		expect(world.movements).toHaveLength(1);
-		expect(world.movements[0].movementType).toBe('loan');
+		expect(world.movements[0].movementType).toBe('borrow_out');
 		expect(world.audit.forAction('asset.assigned')).toHaveLength(1);
 	});
 
-	test('assignment is blocked for in_use/inactive/disposed/lost assets', async () => {
-		for (const status of ['in_use', 'inactive', 'disposed', 'lost']) {
+	test('assignment is blocked for borrowed/inactive/disposed/lost assets', async () => {
+		for (const status of ['borrowed', 'inactive', 'disposed', 'lost']) {
 			const fresh = buildWorld();
 			fresh.assets.push(fresh.makeAsset({ status }));
 			await expect(
@@ -458,7 +458,7 @@ describe('asset operations — custody (D12)', () => {
 		).rejects.toThrow(AssetRuleViolationError);
 	});
 
-	test('return writes condition-in, resets the asset to in_stock, writes a return movement', async () => {
+	test('return writes condition-in, resets the asset to ready, writes a borrow_return movement', async () => {
 		world.assets.push(world.makeAsset());
 		await world.service.assign(ASSET_ID, ORG_A, { assignedToUserId: USER }, actor);
 		const returned = await world.service.returnAsset(
@@ -469,11 +469,11 @@ describe('asset operations — custody (D12)', () => {
 		);
 		expect(returned.returnedAt).not.toBeNull();
 		expect(returned.conditionOnReturn).toBe('damaged');
-		expect(world.assets[0].status).toBe('in_stock');
+		expect(world.assets[0].status).toBe('ready');
 		expect(world.assets[0].condition).toBe('damaged');
-		expect(world.assets[0].assignedAt).toBeNull();
+		expect(world.assets[0].borrowedSince).toBeNull();
 		expect(world.movements).toHaveLength(2);
-		expect(world.movements[1].movementType).toBe('return');
+		expect(world.movements[1].movementType).toBe('borrow_return');
 	});
 
 	test('return without an open assignment is a rule violation', async () => {
@@ -488,8 +488,8 @@ describe('asset operations — custody (D12)', () => {
 		).rejects.toThrow(AssetRuleViolationError);
 	});
 
-	test('returning a non-in_use asset is a transition error', async () => {
-		world.assets.push(world.makeAsset({ status: 'in_stock' }));
+	test('returning a non-borrowed asset is a transition error', async () => {
+		world.assets.push(world.makeAsset({ status: 'ready' }));
 		await expect(
 			world.service.returnAsset(
 				ASSET_ID,

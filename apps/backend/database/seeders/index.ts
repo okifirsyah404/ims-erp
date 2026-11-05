@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { DateTime, Duration } from 'luxon';
 import pino from 'pino';
 import { closeDB, drizzleDB } from '../../drizzle/db';
