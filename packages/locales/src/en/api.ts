@@ -66,6 +66,19 @@ const api = {
 	'organization.lastOrganization':
 		'This is your last organization and cannot be removed',
 	'organization.notFound': 'Organization not found',
+	'organization.companyProfileRequired':
+		'Fill in the company profile (with its document code) first',
+	'numbering.unknownDocumentType': 'Unknown document type',
+	'numbering.pattern.length': 'The pattern must be 1-100 characters',
+	'numbering.pattern.unknownToken': 'Unknown token {{token}}',
+	'numbering.pattern.tokenNotForType':
+		'Token {{token}} is only available for: {{types}}',
+	'numbering.pattern.tokenTakesNoWidth': 'Token {{token}} does not take a width',
+	'numbering.pattern.seqWidth': 'The {SEQ:n} width must be between 1 and 10',
+	'numbering.pattern.seqOnce': 'The pattern must contain {SEQ} exactly once',
+	'numbering.pattern.braces': 'Unbalanced or malformed token braces',
+	'numbering.pattern.literals':
+		'Only letters, digits, space, / - . _ are allowed outside tokens',
 	'organization.slugTaken': 'Organization slug is already taken',
 	'organization.alreadyDeleted': 'Organization is already deleted',
 	'organization.notDeleted': 'Organization is not deleted',

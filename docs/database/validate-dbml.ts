@@ -13,8 +13,9 @@
 // reference for the hand-written Drizzle schemas, not a DDL source.
 import { Parser } from "@dbml/core";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
-const SRC = "B:/ims/erp/docs/database/docs.dbml";
+const SRC = join(import.meta.dir, "docs.dbml");
 
 const db = new Parser().parse(readFileSync(SRC, "utf8"), "dbmlv2");
 

@@ -34,12 +34,14 @@ export const erpStatements = {
 	sales_order: ['read', 'create', 'update', 'submit', 'approve', 'cancel', 'export'],
 
 	// Purchasing
-	supplier: ['read', 'create', 'update', 'archive'],
+	/** `read_bank`: see/edit supplier bank accounts (owner, finance, purchasing). */
+	supplier: ['read', 'create', 'update', 'archive', 'read_bank'],
 	purchase_request: ['read', 'create', 'update', 'submit', 'approve', 'reject'],
 	purchase_order: ['read', 'create', 'update', 'submit', 'approve', 'send', 'cancel', 'export'],
 
 	// Projects and technicians
-	project: ['read', 'create', 'update', 'assign', 'close', 'export'],
+	/** `read_cost`: see/record project direct costs (owner, finance, project manager). */
+	project: ['read', 'create', 'update', 'assign', 'close', 'export', 'read_cost'],
 	task: ['read', 'create', 'update', 'assign', 'submit', 'verify'],
 	daily_report: ['read', 'create', 'update', 'submit', 'verify', 'export'],
 	kpi: ['read', 'configure', 'evaluate', 'export'],
@@ -57,7 +59,8 @@ export const erpStatements = {
 	payslip: ['read', 'publish', 'download'],
 
 	// Inventory
-	product: ['read', 'create', 'update', 'archive', 'import', 'export'],
+	/** `read_cost`: see/edit purchase price (owner, finance, purchasing only). */
+	product: ['read', 'create', 'update', 'archive', 'import', 'export', 'read_cost'],
 	// Application-admin-only in practice: warehouse routes ride
 	// `sessionGuard` + the global-admin policy, never `erpGuard`, because a
 	// global warehouse has no organization context. No organization role
@@ -305,6 +308,9 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		settlement: ['read', 'verify', 'approve', 'reject'],
 		purchase_request: ['read', 'approve', 'reject'],
 		purchase_order: ['read', 'approve'],
+		// Approves stock adjustments like POs (decision 2026-11-03, ADR-0011).
+		stock: ['read'],
+		stock_adjustment: ['read', 'approve', 'post'],
 		employee: ['read'],
 		asset: ['read', 'create', 'update', 'assign', 'return', 'maintain', 'export'],
 		borrowing: [
@@ -357,7 +363,13 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		borrowing: ['read', 'create', 'approve'],
 		dashboard: ['read'],
 		master_data: ['read'],
-		project: ['read', 'update', 'assign', 'export'],
+		// Creates projects from deals and closes them after BAST (decision
+		// 2026-11-04, ADR-0011).
+		project: ['read', 'create', 'update', 'assign', 'close', 'export', 'read_cost'],
+		// Customer contact data for projects and tickets (read only).
+		customer: ['read'],
+		// After-sales tickets: logs, assigns, closes with customer confirmation.
+		service_ticket: ['read', 'create', 'update', 'assign', 'resolve', 'close'],
 		task: ['read', 'create', 'update', 'assign', 'submit', 'verify'],
 		daily_report: ['read', 'create', 'update', 'submit', 'verify'],
 		kpi: ['read', 'evaluate'],
@@ -373,6 +385,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		ac: ['read'],
 		borrowing: ['read', 'create'],
 		project: ['read'],
+		// Only tickets assigned to them (record rule in the ticket service).
+		service_ticket: ['read', 'update', 'resolve'],
 		task: ['read', 'update', 'submit'],
 		daily_report: ['read', 'create', 'update', 'submit'],
 		advance: ['read', 'create', 'update', 'submit'],
@@ -396,11 +410,15 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		ac: ['read'],
 		dashboard: ['read'],
 		master_data: ['read'],
-		supplier: ['read', 'create', 'update', 'archive'],
+		supplier: ['read', 'create', 'update', 'archive', 'read_bank'],
 		purchase_request: ['read', 'create', 'update', 'submit'],
 		purchase_order: ['read', 'create', 'update', 'submit', 'send', 'export'],
-		product: ['read'],
+		// Maintains the item master incl. purchase price (decision 2026-11-02).
+		product: ['read', 'create', 'update', 'read_cost'],
 		stock: ['read'],
+		// Prepares opening stock / adjustments with costs; never approves
+		// (decision 2026-11-03).
+		stock_adjustment: ['read', 'create', 'submit'],
 		document: ['read', 'download'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
@@ -434,10 +452,19 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		invoice: ['read', 'create', 'update', 'issue', 'void', 'export'],
 		receipt: ['read', 'create', 'verify', 'post', 'reverse', 'export'],
 		payment: ['read', 'create', 'submit', 'approve', 'execute', 'reverse', 'export'],
+		// Reads "Deal" SPHs and their sales orders to bill them; the services
+		// limit SPHs to deals (decision 2026-11-04).
+		quotation: ['read'],
+		sales_order: ['read'],
+		// Project direct costs, read only (decision 2026-11-04).
+		project: ['read', 'read_cost'],
 		cash_bank: ['read', 'create', 'update', 'reconcile', 'export'],
 		payroll_payment: ['read', 'execute'],
 		financial_report: ['read', 'export'],
 		tax: ['read', 'export'],
+		product: ['read', 'read_cost'],
+		// Supplier payments need the supplier's bank account (decision 2026-11-02).
+		supplier: ['read', 'read_bank'],
 		stock: ['read'],
 		investor: ['read'],
 		investor_report: ['read'],

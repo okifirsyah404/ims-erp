@@ -12,6 +12,48 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## In progress — ADR-0011 port step 1: numbering, company profile, role grants, 2026-11-05
+
+Status: **implemented** (backend; settings pages in the web admin follow).
+
+- `packages/common` role catalog: statements `product:read_cost`,
+  `supplier:read_bank`, `project:read_cost`; grants for project manager
+  (projects, tickets, customer read), technician (tickets), purchasing
+  (item master + purchase price, adjustments prepare), finance (deal SPHs
+  and sales orders read, project costs, purchase price, supplier bank),
+  operations manager (approve/post adjustments). Finance does NOT get
+  `stock_adjustment:read` (kept as programmer A's inventory tests expect;
+  revisit at port step 5). Dev roles refreshed with
+  `scripts/refresh-role-grants.ts`.
+- Schema `organization` (`drizzle/schemas/organization.schema.ts`, migration
+  `20261105131135_demonic_the_fallen`, inspected, applied to the disposable
+  `ims_erp_sync`): `company_profiles` (singleton), `company_bank_accounts`
+  (invoice usage vat/non_vat), `document_sequences` (one series per
+  document type, atomic allocation). Company-wide, no `organization_id`
+  (ADR-0011 §2). `docs.dbml` updated; `bun docs/database/validate-dbml.ts`
+  OK (255 tables, 0 cross-module refs, 0 timestamp gaps);
+  `logical-references.md` regenerated. Both scripts now resolve paths next
+  to themselves (they pointed at `B:/ims/erp/...`).
+- Backend (`src/app/organization`): `NumberingService` (`next(type, {date,
+  context, tx})`, settings list/preview/update), `CompanyProfileService`
+  (profile + invoice bank accounts in one transaction), routes
+  `GET|PUT /company-profile`, `GET /document-numbering`,
+  `POST /document-numbering/:type/preview`, `PUT /document-numbering/:type`.
+  Errors are `AppError` keys (`organization.companyProfileRequired`,
+  `numbering.*`) in en/id; `{COMPANY}` comes from the profile's
+  `document_code`. Dev seeder `company-profile.seeder.ts` (idempotent,
+  skipped in production).
+- Checks: `bun run test` — backend 549 pass (16 new), web-admin 41,
+  locales 34; `bun run lint` 0; `bun run build` 0; backend `tsc` clean;
+  seed run twice after `drizzle:migrate-reset` (idempotent). Live HTTP on
+  the dev server: profile required → 422 (id/en messages), save profile
+  200, numbering list 200 (`0001/QT/IMS/XI/26`), bad pattern 422 with the
+  translated token message, PO pattern preview. 50 concurrent `allocate`
+  calls against PostgreSQL returned 50 unique numbers; a new period
+  restarted at 1.
+- Local note: the agent's shell has `NODE_ENV=production`; seeders and
+  scripts were run with `NODE_ENV=development`.
+
 ## In progress — merge plan for M02/M05/M07 onto main (ADR-0011), 2026-11-05
 
 Status: **in-progress** (ADR-0011 accepted 2026-11-05 after discussion with

@@ -62,6 +62,19 @@ const api: Record<keyof typeof en, string> = {
 	'organization.lastOrganization':
 		'Ini organisasi terakhir Anda dan tidak dapat dihapus',
 	'organization.notFound': 'Organisasi tidak ditemukan',
+	'organization.companyProfileRequired':
+		'Lengkapi profil perusahaan (beserta kode dokumen) terlebih dahulu',
+	'numbering.unknownDocumentType': 'Jenis dokumen tidak dikenal',
+	'numbering.pattern.length': 'Pola harus 1-100 karakter',
+	'numbering.pattern.unknownToken': 'Token {{token}} tidak dikenal',
+	'numbering.pattern.tokenNotForType':
+		'Token {{token}} hanya tersedia untuk: {{types}}',
+	'numbering.pattern.tokenTakesNoWidth': 'Token {{token}} tidak memakai lebar digit',
+	'numbering.pattern.seqWidth': 'Lebar {SEQ:n} harus antara 1 dan 10',
+	'numbering.pattern.seqOnce': 'Pola harus memuat {SEQ} tepat satu kali',
+	'numbering.pattern.braces': 'Kurung kurawal token tidak seimbang atau salah',
+	'numbering.pattern.literals':
+		'Di luar token hanya boleh huruf, angka, spasi, / - . _',
 	'organization.slugTaken': 'Slug organisasi sudah dipakai',
 	'organization.alreadyDeleted': 'Organisasi sudah dihapus',
 	'organization.notDeleted': 'Organisasi belum dihapus',

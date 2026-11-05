@@ -5,9 +5,10 @@
 // are kept; generated sections are marked with GEN markers.
 import { Parser } from "@dbml/core";
 import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
-const SRC = "B:/ims/erp/docs/database/docs.dbml";
-const OUT = "B:/ims/erp/docs/database/logical-references.md";
+const SRC = join(import.meta.dir, "docs.dbml");
+const OUT = join(import.meta.dir, "logical-references.md");
 
 const NOTE_RE = /^Logical reference to ([\w]+)\.([\w]+)\.id\. Cross-module FK intentionally omitted\./;
 

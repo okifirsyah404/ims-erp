@@ -20,6 +20,8 @@ import {
 import { UserController } from './user/controllers/user.controller';
 import { AuditController } from './audit';
 import {
+	CompanyProfileController,
+	NumberingController,
 	OrganizationBootstrapController,
 	OrganizationController,
 } from './organization';
@@ -86,6 +88,8 @@ export function createApp() {
 			// Creation mounts separately: it must accept an application admin with no
 			// organization context (ADR-0007), so it cannot ride the org-scoped guard.
 			.use(OrganizationBootstrapController.plugin())
+			.use(CompanyProfileController.plugin())
+			.use(NumberingController.plugin())
 			.use(InvitationController.plugin())
 			// Public, sessionless claim flow: token-gated, deliberately outside
 			// `/admin`, so it must not inherit the admin guard. Mounted after the

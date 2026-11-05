@@ -73,6 +73,9 @@ const DYNAMIC_PREFIXES = [
 	'inventory:borrowingPurpose.',
 	'inventory:borrowingCondition.',
 	'inventory:borrowingEvent.',
+	// Numbering pattern problems: the backend error composes
+	// `numbering.pattern.${code}` from the validator's problem code.
+	'numbering.pattern.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

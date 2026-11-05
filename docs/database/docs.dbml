@@ -763,38 +763,41 @@ Ref: location.villages.district_id > location.districts.id [delete: cascade]
 // MODULE: Organization  (schema: organization)
 // Company profile, branches, departments, positions, cost centres, bank
 // accounts, fiscal settings, document numbering, settings key value.
-// All tenant scoped by organization_id.
+// Tenant scoped by organization_id, except company_profiles,
+// company_bank_accounts and document_sequences, which are company-wide
+// (ADR-0011: one company, organizations are internal departments).
 // ---------------------------------------------------------------------------
 
 Table organization.company_profiles {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  legal_name text [not null]
-  trading_name text
-  tax_id text [note: "NPWP number of the company."]
-  business_type text
-  email text
-  phone text
-  website text
+  legal_name varchar(200) [not null]
+  trading_name varchar(200)
+  document_code varchar(16) [not null, note: "Company code in document numbers (the {COMPANY} token), upper-case letters and digits."]
+  tagline varchar(300)
+  tax_id varchar(32) [note: "NPWP number of the company."]
+  email varchar(200)
+  phone varchar(100)
+  website varchar(200)
   logo_object_key text
-  established_on date
-  address_line text
+  address_line text [note: "Free-text address as printed on the letterhead."]
   address_village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
-  address_district_id uuid [note: "Logical reference to location.districts.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
-  address_regency_id uuid [note: "Logical reference to location.regencies.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
-  address_province_id uuid [note: "Logical reference to location.provinces.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
   postal_code varchar(10)
+  signatory_name varchar(200)
+  signatory_title varchar(100)
+  default_quotation_terms text
+  default_invoice_terms text
+  warranty_coverage text [note: "Warranty certificate section, one item per line; empty means the built-in text."]
+  warranty_exclusions text
+  warranty_service_terms text
   status text [not null, default: 'active']
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Legal and display profile of the company behind one Better Auth organization."
-  Indexes {
-    organization_id [unique, name: 'company_profiles_organization_id_uq']
-    tax_id [name: 'company_profiles_tax_id_idx']
-  }
+  Note: "Legal and display profile of the one company (letterhead, signatory, default terms). Company-wide, no organization_id (ADR-0011): organizations are internal departments. One live row, enforced by the partial unique index company_profiles_singleton_uq ON ((true)) WHERE deleted_at IS NULL in the Drizzle schema."
   Checks {
     `status IN ('active', 'inactive')`
+    `document_code ~ '^[A-Z0-9]+$'`
   }
 }
 
@@ -883,23 +886,25 @@ Table organization.cost_centers {
 
 Table organization.company_bank_accounts {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
-  bank_name text [not null]
+  bank_name varchar(100) [not null]
   bank_code varchar(20)
-  branch_name text
-  account_number text [not null]
-  account_holder text [not null]
+  branch_name varchar(100)
+  account_number varchar(50) [not null]
+  account_holder varchar(200) [not null]
   currency_code varchar(3) [not null, default: 'IDR']
+  invoice_usage text [note: "Account printed on invoices with VAT (vat) or without VAT (non_vat); null for other accounts."]
   is_primary boolean [not null, default: false]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Company owned bank account. Finance owns its own operational cash and bank accounts, this is the master reference."
+  Note: "Company owned bank account, company-wide (ADR-0011). Finance owns its own operational cash and bank accounts, this is the master reference. Partial unique indexes in the Drizzle schema: code and invoice_usage are unique among live rows."
   Indexes {
-    (organization_id, code) [unique, name: 'company_bank_accounts_org_code_uq']
     account_number [name: 'company_bank_accounts_account_number_idx']
+  }
+  Checks {
+    `invoice_usage IS NULL OR invoice_usage IN ('vat', 'non_vat')`
   }
 }
 
@@ -926,25 +931,20 @@ Table organization.fiscal_settings {
 }
 
 Table organization.document_sequences {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  module text [not null]
-  document_type text [not null]
-  prefix text [not null]
-  suffix text
-  padding smallint [not null, default: 4]
+  module varchar(32) [not null, note: "Owning module of the document type (sales, crm, procurement, inventory, projects, aftersales)."]
+  document_type varchar(32) [not null]
+  pattern varchar(100) [note: "Token pattern, e.g. {SEQ:4}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YY}; null means the code default for the type."]
+  reset_policy text [note: "null means the code default for the type."]
+  period_key varchar(7) [not null, note: "Period the counter belongs to: 2026 (yearly), 2026-11 (monthly), all (never). A new period starts again at 1."]
   next_number bigint [not null, default: 1]
-  reset_policy text [not null, default: 'yearly']
-  last_reset_on date
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Numbering series per module and document type. The allocation is a locked row update in the owning service."
-  Indexes {
-    (organization_id, module, document_type) [unique, name: 'document_sequences_scope_uq']
-  }
+  deleted_at bigint
+  Note: "One numbering series per document type for the whole company (ADR-0011). Allocation is one atomic INSERT ... ON CONFLICT DO UPDATE ... RETURNING in the owning repository. Partial unique index on document_type WHERE deleted_at IS NULL in the Drizzle schema."
   Checks {
-    `reset_policy IN ('never', 'yearly', 'monthly', 'daily')`
+    `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
     `next_number > 0`
   }
 }
