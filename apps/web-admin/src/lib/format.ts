@@ -43,3 +43,37 @@ export function toDateTimeInput(value: string | number | null): string {
 export function fromDateTimeInput(value: string): number | null {
 	return value ? new Date(value).getTime() : null;
 }
+
+/**
+ * Formats integer IDR minor units for display: 123456789 → "Rp 1.234.567,89".
+ *
+ * @remarks
+ * Pinned to `id-ID` on purpose: the ERP operates in rupiah regardless of UI
+ * language, so switching the interface to English must not re-format money.
+ */
+export function formatIdr(minor: number): string {
+	return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(minor / 100);
+}
+
+/** A business date (`YYYY-MM-DD`, Asia/Jakarta) as a long date in the given language. */
+export function formatBusinessDate(value: string | null | undefined, language?: string): string {
+	if (!value) return '—';
+	return new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : 'id-ID', {
+		dateStyle: 'long',
+		timeZone: 'UTC',
+	}).format(new Date(`${value}T00:00:00Z`));
+}
+
+/** Today's business date in Asia/Jakarta, `YYYY-MM-DD` (for `<input type="date">`). */
+export function todayBusinessDate(): string {
+	return new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
+}
+
+/** Whole rupiah typed by a person ↔ integer minor units (ADR-0002). */
+export function rupiahToMinor(value: string): number {
+	return Math.round(Number(value || '0') * 100);
+}
+
+export function minorToRupiah(minor: number): string {
+	return String(minor / 100);
+}

@@ -1,201 +1,252 @@
-import { DRIZZLE_TOKEN, REDIS_TOKEN } from '@di/provider';
+import { DRIZZLE_TOKEN } from '@di/provider';
+import type { TTx } from '@drizzle/types';
 import {
-	TQuotationInsert,
-	TQuotationSelect,
+	type QuotationStatus,
+	quotationItems,
 	quotations,
-	QUOTATION_STATUSES,
+	quotationStatusHistory,
+	type TQuotationItemSelect,
+	type TQuotationSelect,
+	type TQuotationStatusHistorySelect,
 } from '@drizzle/schemas/sales.schema';
-import { RedisClient } from 'bun';
+import { likePattern } from '@drizzle/search';
 import type { TPaginationResult } from '@ims-erp/common';
-import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, asc, count, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm';
+import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import type {
-	TApproveQuotationInput,
-	TCreateQuotationInput,
-	TQuotationRepository,
-	TSubmitQuotationInput,
-	TUpdateQuotationInput,
+	IQuotationRepository,
+	TQuotationHeaderData,
+	TQuotationItemData,
+	TQuotationPaginationRequest,
+	TQuotationTransitionPatch,
 } from '../contracts/quotation.repository.interface';
 
-/**
- * Drizzle implementation of the quotation repository.
- *
- * Tenant scoping: every query filters by organizationId. List/select
- * operations never run unscoped and filter afterwards.
- *
- * @remarks
- * Cache-aside with a 5-minute TTL on the hot read (`findById`), keyed per
- * tenant: `sales:quotation:{organizationId}:id:{id}`. Writes invalidate
- * explicitly. `list` is never cached. Keys are tenant-scoped because every
- * query is scoped by organizationId.
- */
+/** Drizzle implementation of {@link IQuotationRepository}. */
 @injectable()
-export class QuotationRepository implements TQuotationRepository {
-	constructor(
-		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
-		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
-	) {}
+export class QuotationRepository implements IQuotationRepository {
+	constructor(@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase) {}
 
-	/** Tenant-scoped Redis key namespace for cached reads. */
-	private readonly cachePrefix = 'sales:quotation';
-
-	/** Cache-aside TTL applied to the cached `findById` read (5 minutes). */
-	private readonly cacheTtlSeconds = 300;
-
-	/**
-	 * Creates a quotation pinned to `draft` status with server-set
-	 * `id`/`createdAt`; the client never supplies status.
-	 */
-	async create(input: TCreateQuotationInput): Promise<TQuotationSelect> {
-		const now = new Date();
-		const row: TQuotationInsert = {
-			id: crypto.randomUUID(),
-			organizationId: input.organizationId,
-			code: input.code,
-			title: input.title,
-			amount: input.amount,
-			status: 'draft',
-			createdBy: input.createdBy,
-			createdAt: now,
-		};
-		const [created] = await this.database
-			.insert(quotations)
-			.values(row)
-			.returning();
-		return created;
+	private live(id: string) {
+		return and(eq(quotations.id, id), isNull(quotations.deletedAt));
 	}
 
-	/**
-	 * Fetches one tenant-scoped quotation.
-	 *
-	 * @remarks
-	 * Cache-aside with negative caching: an absent row is cached as the
-	 * literal string `'null'` so repeated misses do not hit the database.
-	 */
-	async findById(
-		organizationId: string,
-		id: string,
-	): Promise<TQuotationSelect | null> {
-		const cacheKey = `${this.cachePrefix}:${organizationId}:id:${id}`;
-		const cached = await this.redisClient.get(cacheKey);
-		if (cached === 'null') return null;
-		if (cached) return JSON.parse(cached) as TQuotationSelect;
-
-		const [row] = await this.database
-			.select()
-			.from(quotations)
-			.where(
-				and(eq(quotations.id, id), eq(quotations.organizationId, organizationId)),
-			)
-			.limit(1);
-
-		await this.redisClient.set(
-			cacheKey,
-			JSON.stringify(row ?? null),
-			'EX',
-			this.cacheTtlSeconds,
+	private async insertItems(tx: TTx, quotationId: string, items: TQuotationItemData[], now: Date) {
+		await tx.insert(quotationItems).values(
+			items.map((item, index) => ({
+				...item,
+				quotationId,
+				sortOrder: index,
+				createdAt: now,
+				updatedAt: now,
+			})),
 		);
-		return row ?? null;
 	}
 
-	/**
-	 * Evicts the tenant-scoped per-id cache entry.
-	 */
-	private async invalidate(organizationId: string, id: string): Promise<void> {
-		await this.redisClient.del(`${this.cachePrefix}:${organizationId}:id:${id}`);
+	private async log(
+		tx: TTx,
+		quotationId: string,
+		fromStatus: QuotationStatus | null,
+		toStatus: QuotationStatus,
+		changedBy: string,
+		now: Date,
+		note: string | null = null,
+	) {
+		await tx.insert(quotationStatusHistory).values({
+			quotationId,
+			fromStatus,
+			toStatus,
+			changedBy,
+			changedAt: now,
+			note,
+			createdAt: now,
+			updatedAt: now,
+		});
 	}
 
-	/**
-	 * Lists one page of the tenant's quotations, oldest first. Never
-	 * cached: pagination plus a live count offers little hit value.
-	 */
-	async list(
-		organizationId: string,
-		pagination: { page: number; limit: number },
-	): Promise<TPaginationResult<TQuotationSelect>> {
-		const where = eq(quotations.organizationId, organizationId);
-		const [{ value: total }] = await this.database
-			.select({ value: count() })
-			.from(quotations)
-			.where(where);
+	async paginate(request: TQuotationPaginationRequest): Promise<TPaginationResult<TQuotationSelect>> {
+		const { page, limit, search, status, customerId, createdBy, includeWon, excludeSuperseded } = request;
+		const where = and(
+			isNull(quotations.deletedAt),
+			status ? eq(quotations.status, status) : undefined,
+			excludeSuperseded && status !== 'superseded' ? ne(quotations.status, 'superseded') : undefined,
+			customerId ? eq(quotations.customerId, customerId) : undefined,
+			createdBy
+				? includeWon
+					? or(eq(quotations.createdBy, createdBy), eq(quotations.status, 'won'))
+					: eq(quotations.createdBy, createdBy)
+				: undefined,
+			search
+				? or(
+						ilike(quotations.code, likePattern(search)),
+						ilike(quotations.title, likePattern(search)),
+						ilike(sql`${quotations.customerSnapshot}->>'name'`, likePattern(search)),
+					)
+				: undefined,
+		);
+		const [{ value: total }] = await this.database.select({ value: count() }).from(quotations).where(where);
 		const data = await this.database
 			.select()
 			.from(quotations)
 			.where(where)
-			.orderBy(asc(quotations.createdAt))
-			.limit(pagination.limit)
-			.offset((pagination.page - 1) * pagination.limit);
-		return {
-			data,
-			meta: {
-				page: pagination.page,
-				limit: pagination.limit,
-				total,
-				totalPages: Math.ceil(total / pagination.limit) || 1,
-			},
-		};
+			.orderBy(desc(quotations.createdAt), desc(quotations.id))
+			.limit(limit)
+			.offset((page - 1) * limit);
+		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
 	}
 
-	/**
-	 * Applies a whitelisted partial update and invalidates the read cache.
-	 */
-	async update(
-		organizationId: string,
-		id: string,
-		patch: TUpdateQuotationInput,
-	): Promise<TQuotationSelect | null> {
-		// Mass-assignment protection: only the whitelisted fields are taken
-		// from the patch; organizationId/status/createdBy are never writable.
-		const [row] = await this.database
-			.update(quotations)
-			.set({
-				...(patch.title !== undefined ? { title: patch.title } : {}),
-				...(patch.amount !== undefined ? { amount: patch.amount } : {}),
-				updatedAt: new Date(),
-			})
-			.where(
-				and(eq(quotations.id, id), eq(quotations.organizationId, organizationId)),
-			)
-			.returning();
-		if (row) await this.invalidate(organizationId, id);
+	async findById(id: string): Promise<TQuotationSelect | null> {
+		const [row] = await this.database.select().from(quotations).where(this.live(id)).limit(1);
 		return row ?? null;
 	}
 
-	/**
-	 * Race-safe status transition: the update only lands when the row is
-	 * still in `from` state.
-	 *
-	 * @returns The updated row, or `null` when absent, foreign, or the
-	 * status no longer matches
-	 */
-	async transitionStatus(
-		organizationId: string,
+	findItems(quotationId: string): Promise<TQuotationItemSelect[]> {
+		return this.database
+			.select()
+			.from(quotationItems)
+			.where(and(eq(quotationItems.quotationId, quotationId), isNull(quotationItems.deletedAt)))
+			.orderBy(asc(quotationItems.sortOrder));
+	}
+
+	findRevisions(baseCode: string): Promise<TQuotationSelect[]> {
+		return this.database
+			.select()
+			.from(quotations)
+			.where(and(eq(quotations.baseCode, baseCode), isNull(quotations.deletedAt)))
+			.orderBy(asc(quotations.revision));
+	}
+
+	findHistory(quotationId: string): Promise<TQuotationStatusHistorySelect[]> {
+		return this.database
+			.select()
+			.from(quotationStatusHistory)
+			.where(eq(quotationStatusHistory.quotationId, quotationId))
+			.orderBy(asc(quotationStatusHistory.changedAt), asc(quotationStatusHistory.id));
+	}
+
+	create(
+		header: TQuotationHeaderData & { code: string; createdBy: string },
+		items: TQuotationItemData[],
+	): Promise<TQuotationSelect> {
+		return this.database.transaction(async (tx) => {
+			const now = new Date();
+			const [row] = await tx
+				.insert(quotations)
+				.values({ ...header, baseCode: header.code, revision: 0, status: 'draft', createdAt: now, updatedAt: now })
+				.returning();
+			await this.insertItems(tx, row.id, items, now);
+			await this.log(tx, row.id, null, 'draft', header.createdBy, now);
+			return row;
+		});
+	}
+
+	replaceDraft(id: string, header: TQuotationHeaderData, items: TQuotationItemData[]): Promise<TQuotationSelect | null> {
+		return this.database.transaction(async (tx) => {
+			const now = new Date();
+			const [row] = await tx
+				.update(quotations)
+				.set({ ...header, updatedAt: now })
+				.where(and(this.live(id), eq(quotations.status, 'draft')))
+				.returning();
+			if (!row) return null;
+			// Draft lines are replaced as a whole; nothing references them yet.
+			await tx.delete(quotationItems).where(eq(quotationItems.quotationId, id));
+			await this.insertItems(tx, id, items, now);
+			return row;
+		});
+	}
+
+	transition(
 		id: string,
-		from: TQuotationSelect['status'],
-		to: TQuotationSelect['status'],
+		from: readonly QuotationStatus[],
+		to: QuotationStatus,
+		patch: TQuotationTransitionPatch,
+		actor: { userId: string; note?: string | null },
 	): Promise<TQuotationSelect | null> {
-		const [row] = await this.database
-			.update(quotations)
-			.set({ status: to, updatedAt: new Date() })
-			.where(
-				and(
-					eq(quotations.id, id),
-					eq(quotations.organizationId, organizationId),
-					eq(quotations.status, from),
-				),
-			)
-			.returning();
-		if (row) await this.invalidate(organizationId, id);
-		return row ?? null;
+		return this.database.transaction(async (tx) => {
+			const now = new Date();
+			const [current] = await tx
+				.select({ status: quotations.status })
+				.from(quotations)
+				.where(this.live(id))
+				.for('update');
+			if (!current || !from.includes(current.status)) return null;
+			const [row] = await tx
+				.update(quotations)
+				.set({ ...patch, status: to, updatedAt: now })
+				.where(and(this.live(id), inArray(quotations.status, [...from])))
+				.returning();
+			if (!row) return null;
+			await this.log(tx, id, current.status, to, actor.userId, now, actor.note ?? null);
+			return row;
+		});
+	}
+
+	createRevision(id: string, from: readonly QuotationStatus[], actorUserId: string): Promise<TQuotationSelect | null> {
+		return this.database.transaction(async (tx) => {
+			const now = new Date();
+			const [current] = await tx
+				.select({ status: quotations.status })
+				.from(quotations)
+				.where(this.live(id))
+				.for('update');
+			if (!current || !from.includes(current.status)) return null;
+			const [old] = await tx
+				.update(quotations)
+				.set({ status: 'superseded', updatedAt: now })
+				.where(this.live(id))
+				.returning();
+			await this.log(tx, id, current.status, 'superseded', actorUserId, now);
+
+			const [{ value: latest }] = await tx
+				.select({ value: sql<number>`max(${quotations.revision})` })
+				.from(quotations)
+				.where(eq(quotations.baseCode, old.baseCode));
+			const revision = Number(latest) + 1;
+			const {
+				id: _id,
+				createdAt: _createdAt,
+				updatedAt: _updatedAt,
+				deletedAt: _deletedAt,
+				...copy
+			} = old;
+			const [row] = await tx
+				.insert(quotations)
+				.values({
+					...copy,
+					code: `${old.baseCode}-R${revision}`,
+					revision,
+					previousRevisionId: old.id,
+					status: 'draft',
+					// The SPH keeps its owner; the history records who revised it.
+					createdBy: old.createdBy,
+					submittedAt: null,
+					approvedBy: null,
+					approvedAt: null,
+					rejectedReason: null,
+					sentBy: null,
+					sentAt: null,
+					closedBy: null,
+					closedAt: null,
+					lostReason: null,
+					lostNote: null,
+					createdAt: now,
+					updatedAt: now,
+				})
+				.returning();
+			const items = await tx
+				.select()
+				.from(quotationItems)
+				.where(and(eq(quotationItems.quotationId, id), isNull(quotationItems.deletedAt)))
+				.orderBy(asc(quotationItems.sortOrder));
+			await this.insertItems(
+				tx,
+				row.id,
+				items.map(({ id: _i, quotationId: _q, sortOrder: _s, createdAt: _c, updatedAt: _u, deletedAt: _d, ...item }) => item),
+				now,
+			);
+			await this.log(tx, row.id, null, 'draft', actorUserId, now, `revision of ${old.code}`);
+			return row;
+		});
 	}
 }
-
-// keep the input type referenced for contract completeness
-export type { TSubmitQuotationInput, TApproveQuotationInput };
-
-/**
- * Re-export of the quotation status enum for consumers that need the
- * allowed workflow states without importing the Drizzle schema directly.
- */
-export const quotationStatuses = QUOTATION_STATUSES;

@@ -197,6 +197,20 @@ export class LeadService {
 		return updated;
 	}
 
+	/**
+	 * Cross-module contract for sales: confirms the lead exists and, when it is
+	 * still before the quotation stage, moves it to `quotation`. Not bound to
+	 * the caller's lead visibility — the quotation's creator may not own it.
+	 *
+	 * @returns `false` when the lead does not exist (or is archived)
+	 */
+	async noteQuotation(leadId: string): Promise<boolean> {
+		const lead = await this.leads.findById(leadId);
+		if (!lead) return false;
+		await this.leads.markQuoted(leadId);
+		return true;
+	}
+
 	async assign(ctx: TLeadContext, id: string, userId: string | null): Promise<TLeadSelect> {
 		if (!ctx.canManage) throw new LeadAssignForbiddenError();
 		await this.requireVisible(ctx, id);

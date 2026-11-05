@@ -88,6 +88,13 @@ describe('locale values', () => {
 			'admin:orgDetail.info',
 			// Indonesian terms used verbatim in the English UI: RT/RW are
 			// neighbourhood administrative units with no English equivalent.
+			// Same word in both languages.
+			'sales:quotation.status',
+			'sales:quotation.subtotal',
+			'sales:detail.email',
+			'sales:status.won',
+			// The printed SPH keeps the company's own (partly English) labels.
+			'sales:doc.date',
 			'inventory:address.rt',
 			'inventory:address.rw',
 			'inventory:address.label',

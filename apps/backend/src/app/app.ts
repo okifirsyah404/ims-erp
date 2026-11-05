@@ -11,6 +11,7 @@ import {
 	StockController,
 	WarehouseController,
 } from './inventory';
+import { QuotationController } from './sales/controllers/quotation.controller';
 import { SalesController } from './sales/controllers/sales.controller';
 import {
 	InvitationClaimController,
@@ -76,6 +77,7 @@ export function createApp() {
 				}),
 			)
 			.use(LocationController.plugin())
+			.use(QuotationController.plugin())
 			.use(SalesController.plugin())
 			// Admin surfaces share the `/admin` prefix, so their routes no longer
 			// overlap the self-service `/users/*` routes: mount order is irrelevant

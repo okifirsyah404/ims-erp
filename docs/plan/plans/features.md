@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-05.
+Last synced: 2026-11-06.
 
 > **Sidebar shell note (2026-11-05):** the web-admin sidebar now renders the
 > full M01–M12 nav map (see `progress.md`, "UI — full ERP sidebar shell").
@@ -55,12 +55,13 @@ Last synced: 2026-11-05.
   Evidence: `apps/backend/src/app/crm` (leads, public website API),
   `test/unit/lead.service.test.ts`, `/crm/leads` pages, `progress.md`
   2026-11-05 (ADR-0011 step 3b). Gaps: real-PG integration tests, e2e.
-
-### in-progress
-- SPH (quotation) + simple price approval — T05, ERP-0011 (`planned` in
-  backlog). Evidence: `apps/backend/src/app/sales` create/list/get/update/
-  submit/decision; `test/authorization/authorization.test.ts`. Gaps:
-  `quotation_items` not in Drizzle, no UI route.
+- SPH (quotation) + approval (no self-approval, no amount limit), revisions,
+  lost ("Batal"), planned billing, print — T05, ERP-0011 (backlog
+  `in-progress`: orders/invoices open). Evidence: `apps/backend/src/app/sales`
+  (quotations), `test/unit/quotation.service.test.ts`,
+  `test/authorization/authorization.test.ts`, `/sales/quotes` pages,
+  `progress.md` 2026-11-06 (ADR-0011 step 3c). Gaps: real-PG integration
+  tests, e2e; `won` arrives with sales orders (3d).
 
 ## M03 Subscription and Licensing
 

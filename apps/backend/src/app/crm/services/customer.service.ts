@@ -75,6 +75,11 @@ export class CustomerService {
 		return customer?.status === 'active' ? customer : null;
 	}
 
+	/** A live contact of the customer, or `null` — for documents naming the attention person. */
+	getContact(customerId: string, contactId: string): Promise<TCustomerContactSelect | null> {
+		return this.contacts.findById(customerId, contactId);
+	}
+
 	async create(input: TCreateCustomerInput, actorUserId: string): Promise<TCustomerSelect> {
 		await this.assertVillage(input.villageId);
 		await this.assertCodeFree(input.code);

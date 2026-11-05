@@ -81,6 +81,9 @@ beforeAll(async () => {
 	const rows = [seedRow(fixture.orgA)];
 
 	const itemRepository: IItemRepository = {
+		async findActiveByIds() {
+			return [];
+		},
 		async paginate(r) {
 			return {
 				meta: {

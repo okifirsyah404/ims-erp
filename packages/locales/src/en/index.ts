@@ -8,6 +8,7 @@ import account from './account';
 import api from './api';
 import settings from './settings';
 import crm from './crm';
+import sales from './sales';
 
 /**
  * English resources, grouped by namespace. This bundle is the source of
@@ -24,6 +25,7 @@ export const en = {
 	api,
 	settings,
 	crm,
+	sales,
 } as const;
 
 export type Namespace = keyof typeof en;

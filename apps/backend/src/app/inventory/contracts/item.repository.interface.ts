@@ -70,6 +70,9 @@ export interface IItemRepository {
 	/** Fetches one alive item by id. */
 	findById(id: string): Promise<TItemSelect | null>;
 
+	/** Fetches the alive, active items among `ids` (missing ones are skipped). */
+	findActiveByIds(ids: string[]): Promise<TItemSelect[]>;
+
 	/** Fetches one alive item by tenant + SKU. */
 	findBySku(
 		organizationId: string | null,

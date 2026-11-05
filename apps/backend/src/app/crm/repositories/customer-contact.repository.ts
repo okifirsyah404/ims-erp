@@ -63,6 +63,15 @@ export class CustomerContactRepository implements ICustomerContactRepository {
 		});
 	}
 
+	async findById(customerId: string, id: string): Promise<TCustomerContactSelect | null> {
+		const [row] = await this.database
+			.select()
+			.from(customerContacts)
+			.where(and(this.ofCustomer(customerId), eq(customerContacts.id, id)))
+			.limit(1);
+		return row ?? null;
+	}
+
 	async softDelete(customerId: string, id: string): Promise<boolean> {
 		const now = new Date();
 		const rows = await this.database

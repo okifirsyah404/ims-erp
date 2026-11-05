@@ -77,6 +77,7 @@ const crm = {
 	'leads.convert': 'Make customer',
 	'leads.converted': 'The lead is now a customer',
 	'leads.openCustomer': 'Open customer',
+	'leads.newQuotation': 'New quotation',
 	'lead.name': 'Name',
 	'lead.companyName': 'Company',
 	'lead.phone': 'Phone',

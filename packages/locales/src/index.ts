@@ -38,7 +38,7 @@ export const LANGUAGES = [
 export const DEFAULT_LANGUAGE: LanguageCode = 'en';
 
 /** Every i18next namespace, in the order resources are registered. */
-export const NAMESPACES = ['common', 'nav', 'auth', 'account', 'admin', 'inventory', 'dashboard', 'api', 'settings', 'crm'] as const;
+export const NAMESPACES = ['common', 'nav', 'auth', 'account', 'admin', 'inventory', 'dashboard', 'api', 'settings', 'crm', 'sales'] as const;
 
 /** Narrows an arbitrary string (e.g. a detector result) to a shipped code. */
 export function isLanguageCode(value: string | null | undefined): value is LanguageCode {

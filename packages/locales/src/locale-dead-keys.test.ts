@@ -89,6 +89,11 @@ const DYNAMIC_PREFIXES = [
 	'crm:leadSource.',
 	'crm:leadChannel.',
 	'crm:activityType.',
+	// Quotation status and lost-reason labels come from server values; the
+	// backend composes `sales.quotationState.${kind}` errors.
+	'sales:status.',
+	'sales:lostReason.',
+	'sales.quotationState.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

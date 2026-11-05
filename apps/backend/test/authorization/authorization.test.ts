@@ -12,6 +12,7 @@ import {
 	buildTestApp,
 	fixture,
 	installAuthMock,
+	quotationBody,
 	resetFixture,
 	setRoleGrants,
 } from './test-app';
@@ -62,11 +63,7 @@ describe('401 unauthenticated', () => {
 
 	test('POST /sales/quotations without session returns 401', async () => {
 		const response = await app.handle(
-			jsonRequest('POST', '/sales/quotations', undefined, {
-				code: 'Q-1',
-				title: 'T',
-				amount: 100,
-			}),
+			jsonRequest('POST', '/sales/quotations', undefined, quotationBody()),
 		);
 		expect(response.status).toBe(401);
 	});
@@ -85,11 +82,7 @@ describe('global admin without organization membership', () => {
 
 	test('cannot create ERP records (403)', async () => {
 		const response = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'globalAdmin', {
-				code: 'Q-GA',
-				title: 'T',
-				amount: 100,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'globalAdmin', quotationBody()),
 		);
 		expect(response.status).toBe(403);
 	});
@@ -108,24 +101,17 @@ describe('owner organization permissions', () => {
 
 	test('owner can create a quotation', async () => {
 		const response = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'owner', {
-				code: 'Q-O1',
-				title: 'Owner quote',
-				amount: 1000,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'owner', quotationBody()),
 		);
 		expect(response.status).toBe(201);
 		const body = await response.json();
-		expect(body.data.organizationId).toBe(fixture.orgA);
+		expect(body.data.createdBy).toBe(fixture.users.owner.id);
+		expect(body.data.status).toBe('draft');
 	});
 
 	test('member (baseline) cannot create quotations (403)', async () => {
 		const response = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'member', {
-				code: 'Q-M1',
-				title: 'T',
-				amount: 1,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'member', quotationBody()),
 		);
 		expect(response.status).toBe(403);
 	});
@@ -137,11 +123,7 @@ describe('owner organization permissions', () => {
 describe('sales role separation of duties', () => {
 	test('sales can create a quotation', async () => {
 		const response = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'sales', {
-				code: 'Q-S1',
-				title: 'Sales quote',
-				amount: 500,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'sales', quotationBody()),
 		);
 		expect(response.status).toBe(201);
 	});
@@ -149,11 +131,7 @@ describe('sales role separation of duties', () => {
 	test('sales cannot approve a quotation (permission denied, 403)', async () => {
 		// Sales creates a quotation, submits it, then attempts approval.
 		const create = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'sales', {
-				code: 'Q-S2',
-				title: 'Sales quote 2',
-				amount: 500,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'sales', quotationBody()),
 		);
 		const { data } = (await create.json()) as { data: { id: string } };
 
@@ -177,11 +155,7 @@ describe('sales role separation of duties', () => {
 describe('technician access', () => {
 	test('technician cannot create quotations (no project-wide perms)', async () => {
 		const response = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'technician', {
-				code: 'Q-T1',
-				title: 'T',
-				amount: 10,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'technician', quotationBody()),
 		);
 		expect(response.status).toBe(403);
 	});
@@ -201,11 +175,7 @@ describe('cross-organization isolation', () => {
 	test('reading another organization record by id returns 404 (no disclosure)', async () => {
 		// Owner of org A creates a quotation...
 		const create = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'owner', {
-				code: 'Q-X1',
-				title: 'X',
-				amount: 100,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'owner', quotationBody()),
 		);
 		const { data } = (await create.json()) as { data: { id: string } };
 
@@ -218,18 +188,15 @@ describe('cross-organization isolation', () => {
 		expect(response.status).toBe(403);
 	});
 
-	test('quotation created in org A is scoped to org A (never org B)', async () => {
+	test('quotations are company-wide: no organization column (ADR-0011, ADR-0012)', async () => {
 		const create = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'owner', {
-				code: 'Q-SCOPE',
-				title: 'Scoped',
-				amount: 100,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'owner', quotationBody()),
 		);
+		expect(create.status).toBe(201);
 		const { data } = (await create.json()) as {
-			data: { id: string; organizationId: string };
+			data: { id: string; organizationId?: string };
 		};
-		expect(data.organizationId).toBe(fixture.orgA);
+		expect(data.organizationId).toBeUndefined();
 	});
 });
 
@@ -240,11 +207,7 @@ describe('cross-organization foreign keys', () => {
 	test('payment referencing another organization quotation is rejected', async () => {
 		// Owner creates a quotation in org A...
 		const create = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'owner', {
-				code: 'Q-FK',
-				title: 'FK',
-				amount: 100,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'owner', quotationBody()),
 		);
 		const { data } = (await create.json()) as { data: { id: string } };
 
@@ -285,11 +248,7 @@ describe('organization context selection', () => {
 describe('multi-role self-approval', () => {
 	test('multi-role (sales+finance) user cannot approve their own quotation', async () => {
 		const create = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'salesFinance', {
-				code: 'Q-MR1',
-				title: 'MR',
-				amount: 100,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'salesFinance', quotationBody()),
 		);
 		expect(create.status).toBe(201);
 		const { data } = (await create.json()) as { data: { id: string } };
@@ -307,34 +266,30 @@ describe('multi-role self-approval', () => {
 		);
 		expect(response.status).toBe(403);
 		const body = await response.json();
-		expect(JSON.stringify(body)).toContain('Self-approval');
+		// The test app mounts no i18n plugin, so the message is the stable key.
+		expect(body.message).toBe('sales.selfApproval');
 	});
 
-	test('a different approver with approve permission passes SoD but hits the missing-config denial', async () => {
+	test('a different approver with approve permission can approve (no amount limit, owner decision 2026-10-31)', async () => {
 		// sales creates...
 		const create = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'sales', {
-				code: 'Q-AP1',
-				title: 'AP',
-				amount: 100,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'sales', quotationBody()),
 		);
 		const { data } = (await create.json()) as { data: { id: string } };
 		await app.handle(
 			jsonRequest('POST', `/sales/quotations/${data.id}/submit`, 'sales'),
 		);
 
-		// ...owner (different actor, has quotation:approve) approves:
-		// passes SoD, but approval limit configuration is missing ->
-		// explicit configuration denial (never a silent approval).
+		// ...owner (different actor, has quotation:approve) approves.
 		const response = await app.handle(
 			jsonRequest('POST', `/sales/quotations/${data.id}/decision`, 'owner', {
 				decision: 'approve',
 			}),
 		);
-		expect(response.status).toBe(403);
+		expect(response.status).toBe(200);
 		const body = await response.json();
-		expect(JSON.stringify(body)).toContain('configuration');
+		expect(body.data.status).toBe('approved');
+		expect(body.data.approvedBy).toBe(fixture.users.owner.id);
 	});
 });
 
@@ -345,11 +300,7 @@ describe('payment execution requires approval', () => {
 	test('execute before approval returns 422 state error', async () => {
 		// owner creates quotation + payment
 		const q = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'owner', {
-				code: 'Q-P1',
-				title: 'P',
-				amount: 100,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'owner', quotationBody()),
 		);
 		const { data: quotation } = (await q.json()) as { data: { id: string } };
 
@@ -371,11 +322,7 @@ describe('payment execution requires approval', () => {
 
 	test('payment creator cannot execute their own payment (SoD)', async () => {
 		const q = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'owner', {
-				code: 'Q-P2',
-				title: 'P2',
-				amount: 100,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'owner', quotationBody()),
 		);
 		const { data: quotation } = (await q.json()) as { data: { id: string } };
 		const p = await app.handle(
@@ -435,7 +382,7 @@ describe('multi-permission requirements', () => {
 
 	test('patch update requires quotation:update (member denied)', async () => {
 		const response = await app.handle(
-			jsonRequest('PATCH', '/sales/quotations/q-x', 'member', { title: 'n' }),
+			jsonRequest('PATCH', '/sales/quotations/q-x', 'member', quotationBody()),
 		);
 		expect(response.status).toBe(403);
 	});
@@ -473,11 +420,7 @@ describe('dynamic role grants', () => {
 
 		// The fixture member has the roles `sales,owner`.
 		const response = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'salesFinance', {
-				code: 'Q-DYN1',
-				title: 'Dyn',
-				amount: 100,
-			}),
+			jsonRequest('POST', '/sales/quotations', 'salesFinance', quotationBody()),
 		);
 		expect(response.status).toBe(201);
 	});

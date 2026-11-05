@@ -82,6 +82,9 @@ class FakeContacts implements ICustomerContactRepository {
 		const row = this.rows.find((r) => r.id === id && r.customerId === customerId && !r.deleted);
 		return row ? Object.assign(row, patch) : null;
 	}
+	async findById(customerId: string, id: string) {
+		return this.rows.find((r) => r.id === id && r.customerId === customerId && !r.deleted) ?? null;
+	}
 	async softDelete(customerId: string, id: string) {
 		const row = this.rows.find((r) => r.id === id && r.customerId === customerId && !r.deleted);
 		if (row) row.deleted = true;

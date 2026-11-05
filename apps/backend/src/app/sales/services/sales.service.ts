@@ -1,17 +1,11 @@
-import type { TQuotationSelect } from '@drizzle/schemas/sales.schema';
 import type { TPaymentSelect } from '@drizzle/schemas/sales.schema';
-import type { TPaginationResult } from '@ims-erp/common';
 import { DomainHttpError } from '@http/errors';
 import { inject, injectable } from 'tsyringe';
 import {
 	QUOTATION_REPOSITORY_TOKEN,
 	PAYMENT_REPOSITORY_TOKEN,
 } from '../constants/di';
-import type {
-	TCreateQuotationInput,
-	TQuotationRepository,
-	TUpdateQuotationInput,
-} from '../contracts/quotation.repository.interface';
+import type { IQuotationRepository } from '../contracts/quotation.repository.interface';
 import type {
 	TCreatePaymentInput,
 	TPaymentRepository,
@@ -41,7 +35,7 @@ export class SalesStateError extends DomainHttpError {}
  */
 export class ReferencedQuotationNotFoundError extends SalesStateError {
 	constructor() {
-		super(404, 'Referenced quotation not found in this organization');
+		super(404, 'Referenced quotation not found');
 	}
 }
 
@@ -55,24 +49,7 @@ export type TQuotationActionContext = {
 };
 
 /**
- * Approval limit configuration. Amount limits are configuration-driven:
- * when no configuration exists for the organization, protected approval
- * actions are DENIED with a configuration error (never silently allowed).
- *
- * Storage for these rules is planned (`approval_rule` in the permission
- * catalog); until the configuration module exists, approvals of quotations
- * whose amount exceeds `DEFAULT_APPROVAL_LIMIT` are denied and absent
- * configuration is reported as an explicit error.
- */
-/**
- * Fallback approval limit while the approval-rule configuration module
- * does not exist. `0` means any protected approval is denied until real
- * limits are configured — deny-by-default, never silently allowed.
- */
-const DEFAULT_APPROVAL_LIMIT = 0;
-
-/**
- * Application service for the sales module (quotations + payments).
+ * Application service for the transitional payments (scaffold until S7).
  *
  * @remarks
  * Enforces separation-of-duties (self-approval/self-execution bans) and
@@ -84,134 +61,10 @@ const DEFAULT_APPROVAL_LIMIT = 0;
 export class SalesService {
 	constructor(
 		@inject(QUOTATION_REPOSITORY_TOKEN)
-		private readonly quotationRepository: TQuotationRepository,
+		private readonly quotationRepository: Pick<IQuotationRepository, 'findById'>,
 		@inject(PAYMENT_REPOSITORY_TOKEN)
 		private readonly paymentRepository: TPaymentRepository,
 	) {}
-
-	/**
-	 * Creates a quotation owned by the acting user.
-	 *
-	 * @remarks
-	 * `organizationId`/`createdBy` come from the guard context, never from
-	 * the request body.
-	 */
-	async createQuotation(
-		input: Omit<TCreateQuotationInput, 'organizationId' | 'createdBy'>,
-		ctx: TQuotationActionContext,
-	): Promise<TQuotationSelect> {
-		return this.quotationRepository.create({
-			...input,
-			organizationId: ctx.organizationId,
-			createdBy: ctx.actorUserId,
-		});
-	}
-
-	/**
-	 * Fetches one tenant-scoped quotation.
-	 *
-	 * @returns The quotation, or `null` when absent or foreign
-	 */
-	async getQuotation(
-		organizationId: string,
-		id: string,
-	): Promise<TQuotationSelect | null> {
-		return this.quotationRepository.findById(organizationId, id);
-	}
-
-	/** Lists one page of the tenant's quotations, oldest first. */
-	async listQuotations(
-		organizationId: string,
-		pagination: { page: number; limit: number },
-	): Promise<TPaginationResult<TQuotationSelect>> {
-		return this.quotationRepository.list(organizationId, pagination);
-	}
-
-	/** Applies a whitelisted partial update to a quotation. */
-	async updateQuotation(
-		organizationId: string,
-		id: string,
-		patch: TUpdateQuotationInput,
-	): Promise<TQuotationSelect | null> {
-		return this.quotationRepository.update(organizationId, id, patch);
-	}
-
-	/**
-	 * Submits a quotation (draft -> submitted).
-	 *
-	 * @throws SalesStateError 422 when the quotation is not in draft state
-	 */
-	async submitQuotation(
-		organizationId: string,
-		id: string,
-		_ctx: TQuotationActionContext,
-	): Promise<TQuotationSelect | null> {
-		const quotation = await this.quotationRepository.findById(organizationId, id);
-		if (!quotation) return null;
-		const updated = await this.quotationRepository.transitionStatus(
-			organizationId,
-			id,
-			'draft',
-			'submitted',
-		);
-		if (!updated) {
-			throw new SalesStateError(422, 'Quotation is not in draft state');
-		}
-		return updated;
-	}
-
-	/**
-	 * Approves or rejects a submitted quotation.
-	 *
-	 * Separation of duties: the creator can NEVER approve their own
-	 * quotation, regardless of permissions or combined roles. Approval also
-	 * requires valid state (submitted) and a configured amount limit.
-	 *
-	 * @throws SalesStateError 403 on self-approval or amount over the limit
-	 * @throws SalesStateError 422 when the quotation is not in submitted state
-	 */
-	async decideQuotation(
-		organizationId: string,
-		id: string,
-		decision: 'approve' | 'reject',
-		ctx: TQuotationActionContext,
-	): Promise<TQuotationSelect | null> {
-		const quotation = await this.quotationRepository.findById(organizationId, id);
-		if (!quotation) return null;
-
-		if (quotation.createdBy === ctx.actorUserId) {
-			throw new SalesStateError(
-				403,
-				'Self-approval is not allowed',
-			);
-		}
-
-		if (decision === 'approve') {
-			// Amount limits come from configuration. With no approval rule
-			// configured (limit 0), any positive-amount approval is denied with
-			// a clear configuration error rather than silently allowed.
-			if (DEFAULT_APPROVAL_LIMIT <= 0) {
-				throw new SalesStateError(
-					403,
-					'Approval limit configuration missing: configure an approval_rule for this organization before approving',
-				);
-			}
-			if (quotation.amount > DEFAULT_APPROVAL_LIMIT) {
-				throw new SalesStateError(403, 'Quotation amount exceeds approval limit');
-			}
-		}
-
-		const updated = await this.quotationRepository.transitionStatus(
-			organizationId,
-			id,
-			'submitted',
-			decision === 'approve' ? 'approved' : 'rejected',
-		);
-		if (!updated) {
-			throw new SalesStateError(422, 'Quotation is not in submitted state');
-		}
-		return updated;
-	}
 
 	/**
 	 * Creates a payment against a quotation.
@@ -229,10 +82,8 @@ export class SalesService {
 	): Promise<TPaymentSelect> {
 		// Validate the referenced quotation belongs to the permitted
 		// organization (cross-organization FK references are rejected).
-		const quotation = await this.quotationRepository.findById(
-			ctx.organizationId,
-			input.quotationId,
-		);
+		// Quotations are company-wide (ADR-0011): only existence is checked.
+		const quotation = await this.quotationRepository.findById(input.quotationId);
 		if (!quotation) {
 			throw new ReferencedQuotationNotFoundError();
 		}

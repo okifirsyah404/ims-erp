@@ -14,7 +14,8 @@
  */
 import type { InjectionToken } from 'tsyringe';
 import type { SalesService } from '../services/sales.service';
-import type { TQuotationRepository } from '../contracts/quotation.repository.interface';
+import type { IQuotationRepository } from '../contracts/quotation.repository.interface';
+import type { QuotationService } from '../services/quotation.service';
 import type { TPaymentRepository } from '../contracts/payment.repository.interface';
 
 /** Token resolving to the {@link SalesService} implementation. */
@@ -23,9 +24,12 @@ export const SALES_SERVICE_TOKEN: InjectionToken<SalesService> = Symbol(
 );
 
 /** Token resolving to the quotation repository implementation. */
-export const QUOTATION_REPOSITORY_TOKEN: InjectionToken<TQuotationRepository> =
+export const QUOTATION_REPOSITORY_TOKEN: InjectionToken<IQuotationRepository> =
 	Symbol('QUOTATION_REPOSITORY_TOKEN');
 
 /** Token resolving to the payment repository implementation. */
 export const PAYMENT_REPOSITORY_TOKEN: InjectionToken<TPaymentRepository> =
 	Symbol('PAYMENT_REPOSITORY_TOKEN');
+
+/** Token resolving to the {@link QuotationService} implementation. */
+export const QUOTATION_SERVICE_TOKEN: InjectionToken<QuotationService> = Symbol('QUOTATION_SERVICE_TOKEN');

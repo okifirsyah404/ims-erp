@@ -178,6 +178,15 @@ export class ItemService {
 	}
 
 	/**
+	 * Active items among `ids`, for modules putting items on new documents
+	 * (sales quotations). Missing, archived and inactive items are skipped;
+	 * the caller reports which ones it did not get back.
+	 */
+	getActiveItems(ids: string[]): Promise<TItemSelect[]> {
+		return this.itemRepository.findActiveByIds([...new Set(ids)]);
+	}
+
+	/**
 	 * Creates an item.
 	 *
 	 * @throws {InventoryRuleViolationError} When the kind/data combination is

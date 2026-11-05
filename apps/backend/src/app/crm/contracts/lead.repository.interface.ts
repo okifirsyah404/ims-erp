@@ -79,6 +79,9 @@ export interface ILeadRepository {
 	/** `null` when the lead is missing or already converted. */
 	setStatus(id: string, status: LeadStatus, lostReason: string | null): Promise<TLeadSelect | null>;
 
+	/** `new | contacted | survey` → `quotation`; `null` when the lead was elsewhere (no change). */
+	markQuoted(id: string): Promise<TLeadSelect | null>;
+
 	assign(id: string, ownerUserId: string | null): Promise<TLeadSelect | null>;
 
 	/** Open → `won` with the customer; `null` when not open (race). */

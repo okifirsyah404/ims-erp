@@ -89,6 +89,12 @@ class FakeLeads implements ILeadRepository {
 		const row = await this.findById(id);
 		return row && row.status !== 'won' ? Object.assign(row, { status, lostReason }) : null;
 	}
+	async markQuoted(id: string) {
+		const row = await this.findById(id);
+		return row && ['new', 'contacted', 'survey'].includes(row.status)
+			? Object.assign(row, { status: 'quotation' as LeadStatus })
+			: null;
+	}
 	async assign(id: string, ownerUserId: string | null) {
 		const row = await this.findById(id);
 		return row ? Object.assign(row, { ownerUserId }) : null;

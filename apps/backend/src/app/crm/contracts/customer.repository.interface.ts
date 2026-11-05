@@ -33,6 +33,9 @@ export interface ICustomerContactRepository {
 	/** Primary contact first, then by name. */
 	listByCustomer(customerId: string): Promise<TCustomerContactSelect[]>;
 
+	/** One live contact of the customer, or `null`. */
+	findById(customerId: string, id: string): Promise<TCustomerContactSelect | null>;
+
 	/** Creates a contact; a new primary clears the previous one. */
 	create(customerId: string, data: TCreateContactInput): Promise<TCustomerContactSelect>;
 

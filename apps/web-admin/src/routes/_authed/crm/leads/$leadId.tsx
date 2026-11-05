@@ -65,6 +65,7 @@ function LeadDetailPage() {
 	const canManage = usePermission('lead.assign');
 	const canArchive = usePermission('lead.archive');
 	const canConvert = usePermission(['lead.update', 'customer.create']);
+	const canQuote = usePermission('quotation.create');
 	const { data: lead, isPending, isError } = useQuery(leadQueryOptions(leadId));
 	const assignees = useQuery(leadAssigneesQueryOptions(canManage));
 	const [submitting, setSubmitting] = useState(false);
@@ -145,6 +146,19 @@ function LeadDetailPage() {
 							onClick={() => void navigate({ to: '/crm/customers/$customerId', params: { customerId: lead.customerId! } })}
 						>
 							{t('crm:leads.openCustomer')}
+						</Button>
+					)}
+					{lead.customerId && canQuote && (
+						<Button
+							variant='outline'
+							onClick={() =>
+								void navigate({
+									to: '/sales/quotes/new',
+									search: { customerId: lead.customerId!, leadId: lead.id },
+								})
+							}
+						>
+							{t('crm:leads.newQuotation')}
 						</Button>
 					)}
 					{canArchive && (

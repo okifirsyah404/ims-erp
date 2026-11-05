@@ -46,6 +46,11 @@ const LABELS: Record<string, NavKey> = {
 	'/inventory/categories': 'item.itemCategories',
 	'/crm/customers': 'item.customers',
 	'/crm/leads': 'item.leads',
+	'/sales': 'item.sales',
+	'/sales/quotes': 'item.quotes',
+	'/sales/quotes/new': 'breadcrumb.quotationNew',
+	'/sales/quotes/$quotationId/edit': 'breadcrumb.quotationEdit',
+	'/sales/quotes/$quotationId/print': 'breadcrumb.print',
 };
 
 /**

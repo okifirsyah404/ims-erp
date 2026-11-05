@@ -113,6 +113,7 @@ function makeService(seed?: {
 			data: items,
 		}),
 		findById: async (id) => items.find((i) => i.id === id) ?? null,
+		findActiveByIds: async (ids) => items.filter((i) => ids.includes(i.id) && i.isActive),
 		findBySku: async (org, sku) =>
 			items.find((i) => i.organizationId === org && i.sku === sku) ?? null,
 		create: async (data) => {

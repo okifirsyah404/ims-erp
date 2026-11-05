@@ -80,6 +80,7 @@ const crm: Record<keyof typeof en, string> = {
 	'leads.convert': 'Jadikan Pelanggan',
 	'leads.converted': 'Lead sudah menjadi pelanggan',
 	'leads.openCustomer': 'Buka pelanggan',
+	'leads.newQuotation': 'Buat penawaran',
 	'lead.name': 'Nama',
 	'lead.companyName': 'Perusahaan',
 	'lead.phone': 'Telepon',

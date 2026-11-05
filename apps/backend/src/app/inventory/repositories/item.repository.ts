@@ -13,6 +13,7 @@ import {
 	eq,
 	getTableColumns,
 	ilike,
+	inArray,
 	isNull,
 	or,
 	sql,
@@ -130,6 +131,14 @@ export class ItemRepository implements IItemRepository {
 	}
 
 	/** Fetches one alive item by id. */
+	async findActiveByIds(ids: string[]): Promise<TItemSelect[]> {
+		if (ids.length === 0) return [];
+		return this.database
+			.select()
+			.from(items)
+			.where(and(inArray(items.id, ids), eq(items.isActive, true), isNull(items.deletedAt)));
+	}
+
 	async findById(id: string): Promise<TItemSelect | null> {
 		const [row] = await this.database
 			.select()

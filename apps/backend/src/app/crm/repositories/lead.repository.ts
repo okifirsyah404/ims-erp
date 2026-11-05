@@ -125,6 +125,15 @@ export class LeadRepository implements ILeadRepository {
 		return row ?? null;
 	}
 
+	async markQuoted(id: string): Promise<TLeadSelect | null> {
+		const [row] = await this.database
+			.update(leads)
+			.set({ status: 'quotation', updatedAt: new Date() })
+			.where(and(this.live(id), inArray(leads.status, ['new', 'contacted', 'survey'])))
+			.returning();
+		return row ?? null;
+	}
+
 	async assign(id: string, ownerUserId: string | null): Promise<TLeadSelect | null> {
 		const [row] = await this.database
 			.update(leads)

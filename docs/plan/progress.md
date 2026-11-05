@@ -12,6 +12,149 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — ADR-0011 port step 3c: quotations (SPH), 2026-11-05/06
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner). Sales orders, invoices and receipts are step 3d.
+
+Gate 1 (read): docs.dbml `sales.quotations`, `sales.quotation_items`,
+`sales.quotation_status_history`, legacy `sales.payments`;
+`implementation-phases.md` S3 (recreate, do not alter; empty
+`sales.payments` in the same migration; total = sum of items); main's
+scaffold sales module and `test/authorization/authorization.test.ts`
+(drives the scaffold through `/sales/quotations` and `/sales/payments`);
+the old branch's owner-approved SPH service, contract and domain helpers.
+`logical-references.md` read for the new sales → crm / inventory links.
+Skipped: `implementation-phases.md` steps other than S3 (nothing else is a
+prerequisite).
+
+Gate 2 (3c, manual grilling pass — `grilling` skill not installed):
+- Ownership: Sales module (`app/sales`), new `QuotationService` /
+  `QuotationController` (`/sales/quotations`). The scaffold quotation code is
+  replaced; the transitional payment endpoints (`/sales/payments`, approve /
+  execute separation of duties) stay until S7, now validating the quotation
+  through the new repository.
+- Tenant scope: none — quotations, items and status history are company-wide
+  like customers (ADR-0011 §2, ADR-0012). `sales.payments` keeps its
+  `organization_id` (transitional, "do not extend").
+- Statuses (owner-approved, replace DBML `expired` / `cancelled`): `draft →
+  submitted → approved | rejected`, `approved → sent`; any open status →
+  `lost` ("Batal", reason `price | competitor | project_cancelled |
+  no_response | other`, `other` needs a note); `won` ("Deal") is reached
+  only by creating its sales order (step 3d); revising a non-draft SPH marks
+  it `superseded` and creates draft revision `<base>-R<n>`. Expiry is shown
+  (end of the `valid_until` Jakarta day), never a status.
+- Separation of duties: the creator can never approve or reject their own
+  SPH; no amount limit (owner decision 2026-10-31) — main's scaffold
+  "approval limit configuration missing" denial is removed and its test
+  rewritten.
+- Visibility: holders of `quotation:approve` or `quotation:export` see all;
+  billing staff (`invoice:read`) also see `won` SPHs and their revisions;
+  everyone else only SPHs they created; anything else answers 404. Resolved
+  with the dynamic permission resolver.
+- Columns: DBML names kept where equivalent (`subtotal`, `discount_total`,
+  `tax_total`, `grand_total`, `approved_by/at`, `submitted_at`, `sent_at`,
+  `rejected_reason`, `customer_contact_id`, `quotation_date` /
+  `valid_until` as `date`). Added for the approved flow: `base_code`,
+  `revision`, `previous_revision_id`, `attention`, `payment_terms`,
+  `payment_schedule` (jsonb, shares in bps summing to 10000), `guarantee`,
+  `terms`, `customer_snapshot` (jsonb), `lead_id`, `vat_enabled`,
+  `vat_rate_bps` (VAT per document, default 1100), `sent_by`, `closed_by`,
+  `closed_at`, `lost_reason`, `lost_note`. Dropped: `price_list_id` (no
+  catalog module, ADR-0011), `organization_id`.
+- Items: `item_id` → `inventory.items.id` (logical reference, validated
+  through the new `ItemService.getActiveItems`); snapshot `sku`, `name`,
+  `specification`, `unit` (fixed unit list); `quantity numeric(18,3)`;
+  money bigint minor units; `line_total = round(quantity × unit_price) −
+  discount_amount`, recomputed by the service; per-line `tax_amount` and
+  `unit_id` dropped (VAT is per document, units are a fixed list). Custom
+  lines (no item) carry their own name, unit and price.
+- Logical references: `customer_id`, `customer_contact_id` → CRM
+  (`CustomerService.getActiveCustomer` / contact check); `lead_id` → CRM
+  (`LeadService.noteQuotation`: moves `new/contacted/survey` to
+  `quotation`); `item_id` → Inventory; user ids → Identity.
+- Numbering: `NumberingService.next('quotation')` at creation (gaps
+  accepted); revision codes append `-R<n>`. Code unique among live rows.
+- Status history: every transition appends a `quotation_status_history` row
+  in the same transaction (repository-owned).
+- Money/datetime: bigint IDR minor units; `quotation_date` / `valid_until`
+  are Jakarta business dates (`date`, `YYYY-MM-DD` strings); operational
+  timestamps unix ms.
+- Migration: one migration drops the scaffold `sales.quotations` (dev rows
+  are scaffold test data, no customer/items — discarded, as S3 allows),
+  creates the three tables and empties `sales.payments`.
+- Web: `/sales/quotes` list, new/edit form, detail with actions, print view
+  with the company profile; `sales` locale namespace (en + id).
+
+What landed:
+- `docs.dbml` first: `sales.quotations` / `quotation_items` /
+  `quotation_status_history` rewritten to the shape above, company-wide;
+  self-FK `previous_revision_id`. `bun docs/database/gen-logical-references.ts`
+  → 502 refs; `bun docs/database/validate-dbml.ts` → `OK` (257 tables,
+  0 cross-module refs, 0 timestamp gaps).
+- Migration `20261105164421_sales_quotations_target`: generated with
+  all-`create` hints, then hand-edited to the S3 procedure (`DELETE FROM
+  sales.payments`; `DROP TABLE sales.quotations`; `CREATE TABLE` target; two
+  child tables, indexes, checks). Scaffold tables were empty on
+  `ims_erp_sync` (0 quotations, 0 payments) before applying.
+  `bun run drizzle:migrate` applied; a second `drizzle:generate` → "No schema
+  changes". `drizzle:seed` run twice: both complete, unchanged.
+- `@ims-erp/common`: `domain/money.ts` (`bpsShare`, `quantityToMilli`,
+  `quantityTimesPrice`, BigInt half-up) and `domain/business-date.ts`
+  (`endOfBusinessDate`, `businessDateOf`), ported from the old branch.
+- Backend `app/sales`: `QuotationService` / `QuotationController`
+  (`/sales/quotations`: list, get, create, patch, submit, decision,
+  revisions, send, lost), repository-owned transactions with history rows,
+  `errors/quotation.errors.ts` (locale keys `sales.*`, en + id), `utils/`
+  (totals, validity, schedule). The scaffold `SalesService` /
+  `SalesController` keep only the transitional payments (`/sales/payments`).
+  Main's "approval limit configuration missing" denial is gone (owner
+  decision: no amount limit).
+- Contract methods for review: `ItemService.getActiveItems` (inventory),
+  `CustomerService.getContact` and `LeadService.noteQuotation` (CRM).
+- Programmer A's `test/authorization/*`: harness now builds the real
+  quotation controller/service over in-memory fakes; bodies use
+  `quotationBody()`; "scoped to org A" became "company-wide, no organization
+  column"; the owner-approves test now expects 200; the self-approval test
+  asserts the key `sales.selfApproval`.
+- Web: `lib/quotation-api.ts`, `components/sales/quotation-form.tsx` and
+  `quotation-document.tsx` (print labels from the `id` bundle via
+  `getFixedT`, the company's format), routes `/sales/quotes`, `/new`,
+  `/$quotationId`, `/edit`, `/print`; lead detail gets "Buat penawaran" for
+  converted leads; `formatIdr` moved to `lib/format.ts`; `lib/terbilang.ts`;
+  breadcrumb labels for sales routes.
+
+Verification (2026-11-06):
+- `apps/backend`: `bunx tsc --noEmit -p .` clean; `bun run lint` no new
+  warnings; `NODE_ENV=test bun test` → 590 pass, 0 fail (incl.
+  `test/unit/quotation.service.test.ts`, 17 tests).
+- `apps/web-admin`: `bun run build` OK; `bunx tsc -b` clean; `bun test` →
+  45 pass (incl. `test/unit/quotation-helpers.test.ts`); lint no new
+  warnings.
+- `packages/locales`: `bun test` → 46 pass (parity + dead keys).
+- Browser (Playwright, temporary script, deleted): owner creates an SPH from
+  an inventory item + a custom line (1.5 paket) with DP 30% / Terpasang 70%;
+  printed payment line derived; submit; creator sees no approve button and
+  the hint; `sales_manager.seed` approves; owner marks sent; history
+  Draf → Menunggu persetujuan → Disetujui → Terkirim; print view with
+  letterhead, PPN 11%, terbilang; another salesperson gets 404.
+- Live API on `ims_erp_sync`: revise sent → `-R1` draft with both lines,
+  original `superseded`; revising the superseded one 422; editing it 422;
+  reject without reason 400, with reason 200; lost `other` without note 400,
+  `price` 200; revise lost → `-R2`; list shows only `-R2`.
+- Test data left in the dev DB: customer `SPH-SKL8P` and SPH
+  `0001/QT/DEV/XI/26` (+R1, R2, all closed).
+
+Open (3c): breadcrumb shows the raw id on detail pages (same as customers
+and leads); real-PG integration tests and e2e; a sales-order link and the
+`won` transition arrive with 3d.
+
+Next executable task: ADR-0011 step 3d — sales orders (`sales.sales_orders`,
+`sales_order_items`, `order_status_history`; SPH → `won` by creating its
+order, cancelling reopens), then invoices / DP / receipts in the finance
+module per docs.dbml, with prints. Gate 1 starts at docs.dbml `sales.sales_*`
+and `finance.invoices` / `receipts`.
+
 ## Completed — one company, one organization (ADR-0012), 2026-11-05
 
 Status: **implemented** (module owner's decision; programmer A to acknowledge

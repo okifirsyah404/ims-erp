@@ -114,6 +114,9 @@ const nav = {
 	'breadcrumb.organizationEdit': 'Edit',
 	'breadcrumb.memberNew': 'Add member',
 	'breadcrumb.memberEdit': 'Edit member',
+	'breadcrumb.quotationNew': 'New quotation',
+	'breadcrumb.quotationEdit': 'Edit',
+	'breadcrumb.print': 'Print',
 } as const;
 
 export default nav;

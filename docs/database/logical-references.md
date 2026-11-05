@@ -51,10 +51,10 @@ Table crm.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 504 |
-| Distinct targets | 36 |
+| Logical reference columns | 502 |
+| Distinct targets | 37 |
 | Cross-module `Ref:` declarations | 0 |
-| Intra-module `Ref:` declarations | 229 |
+| Intra-module `Ref:` declarations | 230 |
 
 Counts are re-derived on every run of `validate-dbml.ts`, which parses
 `docs.dbml` with `@dbml/core` and fails the run if a `Ref:` crosses a module
@@ -64,10 +64,10 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 | Target | Owner | Referring columns |
 |---|---|---|
-| `auth.organizations.id` | Identity | 215 || `auth.users.id` | Identity | 136 || `hr.employees.id` | HR | 23 || `crm.customers.id` | CRM | 17 || `documents.documents.id` | Documents | 17 || `catalog.items.id` | Catalog | 15 || `location.villages.id` | Location | 8 || `projects.projects.id` | Projects | 8 || `organization.departments.id` | Organization | 6 || `catalog.units.id` | Catalog | 5 || `location.districts.id` | Location | 5 || `location.provinces.id` | Location | 5 || `location.regencies.id` | Location | 5 || `crm.customer_contacts.id` | CRM | 3 || `inventory.warehouses.id` | Inventory | 3 || `organization.branches.id` | Organization | 3 || `organization.positions.id` | Organization | 3 || `procurement.suppliers.id` | Procurement | 3 || `sales.sales_orders.id` | Sales | 3 || `assets.assets.id` | Assets | 2 || `auth.portal_identities.id` | Identity | 2 || `organization.cost_centers.id` | Organization | 2 || `procurement.purchase_orders.id` | Procurement | 2 || `accounting.chart_of_accounts.id` | Accounting | 1 || `accounting.journal_entries.id` | Accounting | 1 || `aftersales.service_tickets.id` | After-Sales | 1 || `catalog.item_categories.id` | Catalog | 1 || `catalog.price_lists.id` | Catalog | 1 || `crm.customer_addresses.id` | CRM | 1 || `crm.customer_groups.id` | CRM | 1 || `finance.cash_bank_accounts.id` | Finance | 1 || `finance.cash_bank_transactions.id` | Finance | 1 || `finance.invoices.id` | Finance | 1 || `finance.payments.id` | Finance | 1 || `hr.bank_accounts.id` | HR | 1 || `payroll.salary_components.id` | Payroll | 1 |
-## The 36 targets in full
+| `auth.organizations.id` | Identity | 212 || `auth.users.id` | Identity | 138 || `hr.employees.id` | HR | 23 || `crm.customers.id` | CRM | 17 || `documents.documents.id` | Documents | 17 || `catalog.items.id` | Catalog | 14 || `location.villages.id` | Location | 8 || `projects.projects.id` | Projects | 8 || `organization.departments.id` | Organization | 6 || `location.districts.id` | Location | 5 || `location.provinces.id` | Location | 5 || `location.regencies.id` | Location | 5 || `catalog.units.id` | Catalog | 4 || `crm.customer_contacts.id` | CRM | 3 || `inventory.warehouses.id` | Inventory | 3 || `organization.branches.id` | Organization | 3 || `organization.positions.id` | Organization | 3 || `procurement.suppliers.id` | Procurement | 3 || `sales.sales_orders.id` | Sales | 3 || `assets.assets.id` | Assets | 2 || `auth.portal_identities.id` | Identity | 2 || `organization.cost_centers.id` | Organization | 2 || `procurement.purchase_orders.id` | Procurement | 2 || `accounting.chart_of_accounts.id` | Accounting | 1 || `accounting.journal_entries.id` | Accounting | 1 || `aftersales.service_tickets.id` | After-Sales | 1 || `catalog.item_categories.id` | Catalog | 1 || `crm.customer_addresses.id` | CRM | 1 || `crm.customer_groups.id` | CRM | 1 || `crm.leads.id` | CRM | 1 || `finance.cash_bank_accounts.id` | Finance | 1 || `finance.cash_bank_transactions.id` | Finance | 1 || `finance.invoices.id` | Finance | 1 || `finance.payments.id` | Finance | 1 || `hr.bank_accounts.id` | HR | 1 || `inventory.items.id` | Inventory | 1 || `payroll.salary_components.id` | Payroll | 1 |
+## The 37 targets in full
 
-### `auth.organizations.id` - owner Identity, 215 referring columns
+### `auth.organizations.id` - owner Identity, 212 referring columns
 
 - `accounting.account_balances`  ->  `organization_id`
 - `accounting.accounting_periods`  ->  `organization_id`
@@ -272,9 +272,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `sales.delivery_notes`  ->  `organization_id`
 - `sales.discount_requests`  ->  `organization_id`
 - `sales.order_status_history`  ->  `organization_id`
-- `sales.quotation_items`  ->  `organization_id`
-- `sales.quotation_status_history`  ->  `organization_id`
-- `sales.quotations`  ->  `organization_id`
 - `sales.sales_order_items`  ->  `organization_id`
 - `sales.sales_orders`  ->  `organization_id`
 - `sales.sales_returns`  ->  `organization_id`
@@ -285,7 +282,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `ticket.ticket_status_history`  ->  `organization_id`
 - `ticket.tickets`  ->  `organization_id`
 
-### `auth.users.id` - owner Identity, 136 referring columns
+### `auth.users.id` - owner Identity, 138 referring columns
 
 - `accounting.accounting_periods`  ->  `closed_by`
 - `accounting.accounting_periods`  ->  `reopened_by`
@@ -412,7 +409,9 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `sales.order_status_history`  ->  `changed_by`
 - `sales.quotation_status_history`  ->  `changed_by`
 - `sales.quotations`  ->  `approved_by`
+- `sales.quotations`  ->  `closed_by`
 - `sales.quotations`  ->  `created_by`
+- `sales.quotations`  ->  `sent_by`
 - `sales.sales_orders`  ->  `approved_by`
 - `sales.sales_orders`  ->  `sales_person_user_id`
 - `sales.sales_returns`  ->  `approved_by`
@@ -490,7 +489,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `projects.project_handover`  ->  `document_id`
 - `sales.contracts`  ->  `document_id`
 
-### `catalog.items.id` - owner Catalog, 15 referring columns
+### `catalog.items.id` - owner Catalog, 14 referring columns
 
 - `aftersales.service_parts_usage`  ->  `item_id`
 - `aftersales.spare_parts`  ->  `item_id`
@@ -505,7 +504,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `procurement.purchase_order_items`  ->  `item_id`
 - `procurement.purchase_request_items`  ->  `item_id`
 - `procurement.purchase_return_items`  ->  `item_id`
-- `sales.quotation_items`  ->  `item_id`
 - `sales.sales_order_items`  ->  `item_id`
 
 ### `location.villages.id` - owner Location, 8 referring columns
@@ -539,14 +537,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `hr.employees`  ->  `department_id`
 - `procurement.purchase_requests`  ->  `department_id`
 
-### `catalog.units.id` - owner Catalog, 5 referring columns
-
-- `finance.invoice_items`  ->  `unit_id`
-- `procurement.purchase_order_items`  ->  `unit_id`
-- `procurement.purchase_request_items`  ->  `unit_id`
-- `sales.quotation_items`  ->  `unit_id`
-- `sales.sales_order_items`  ->  `unit_id`
-
 ### `location.districts.id` - owner Location, 5 referring columns
 
 - `crm.customer_addresses`  ->  `district_id`
@@ -570,6 +560,13 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `investor.investor_addresses`  ->  `regency_id`
 - `investor.investors`  ->  `regency_id`
 - `procurement.supplier_addresses`  ->  `regency_id`
+
+### `catalog.units.id` - owner Catalog, 4 referring columns
+
+- `finance.invoice_items`  ->  `unit_id`
+- `procurement.purchase_order_items`  ->  `unit_id`
+- `procurement.purchase_request_items`  ->  `unit_id`
+- `sales.sales_order_items`  ->  `unit_id`
 
 ### `crm.customer_contacts.id` - owner CRM, 3 referring columns
 
@@ -643,10 +640,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 - `commerce.promotion_rules`  ->  `item_category_id`
 
-### `catalog.price_lists.id` - owner Catalog, 1 referring column
-
-- `sales.quotations`  ->  `price_list_id`
-
 ### `crm.customer_addresses.id` - owner CRM, 1 referring column
 
 - `sales.sales_orders`  ->  `customer_address_id`
@@ -654,6 +647,10 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 ### `crm.customer_groups.id` - owner CRM, 1 referring column
 
 - `catalog.price_lists`  ->  `customer_group_id`
+
+### `crm.leads.id` - owner CRM, 1 referring column
+
+- `sales.quotations`  ->  `lead_id`
 
 ### `finance.cash_bank_accounts.id` - owner Finance, 1 referring column
 
@@ -674,6 +671,10 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 ### `hr.bank_accounts.id` - owner HR, 1 referring column
 
 - `payroll.payroll_payment_items`  ->  `bank_account_id`
+
+### `inventory.items.id` - owner Inventory (warehouse schema), 1 referring column
+
+- `sales.quotation_items`  ->  `item_id`
 
 ### `payroll.salary_components.id` - owner Payroll, 1 referring column
 
