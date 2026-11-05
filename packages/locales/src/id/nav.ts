@@ -78,7 +78,6 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.products': 'Produk',
 	'item.components': 'Komponen',
 	'item.materials': 'Material',
-	'item.tools': 'Peralatan',
 	'item.newItem': 'Barang baru',
 	'item.itemMovements': 'Mutasi Barang',
 	'item.organizations': 'Organisasi',

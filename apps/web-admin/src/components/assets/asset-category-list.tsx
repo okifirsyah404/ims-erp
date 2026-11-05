@@ -21,6 +21,7 @@ import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	assetCategoriesQueryOptions,
+	assetTypesQueryOptions,
 	createAssetCategory,
 } from '@/lib/asset-api';
 import { usePermission } from '@/lib/use-permission';
@@ -52,6 +53,10 @@ export function AssetCategoryList() {
 		}),
 		placeholderData: (previous) => previous,
 	});
+
+	const types = useQuery(assetTypesQueryOptions());
+	const typeName = (code: string) =>
+		types.data?.find((row) => row.code === code)?.name ?? code;
 
 	const create = useMutation({
 		mutationFn: () =>
@@ -144,7 +149,7 @@ export function AssetCategoryList() {
 										)}
 									</td>
 									<td className='px-3 py-2'>
-										{t(`assets:type.${category.assetType}`)}
+										{typeName(category.assetType)}
 									</td>
 									<td className='px-3 py-2'>
 										{category.defaultDepreciationMethod}

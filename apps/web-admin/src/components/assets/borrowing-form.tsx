@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -27,13 +27,15 @@ import {
 	type TBorrowingPurpose,
 	type TGuestIdType,
 } from '@/lib/borrowing-api';
+import { assetsQueryOptions } from '@/lib/asset-api';
 import { toast } from '@/components/toast';
 
 /** One unit the user has added to the request. */
 type TUnitDraft = {
 	/** React key, so removing a row cannot reuse another row's state. */
 	key: number;
-	serialTrackedItemId: string;
+	assetId: string;
+	label: string;
 };
 
 let nextKey = 1;
@@ -44,7 +46,7 @@ let nextKey = 1;
  * @remarks
  * **Creating a borrowing does not move stock.** The document starts in
  * `requested`; issuing it is a separate action by someone holding
- * `borrowing:issue`. That split is why this form has no "issue" button — a form
+ * `asset_borrowing:issue`. That split is why this form has no "issue" button — a form
  * that could hand out a tool would bypass approval entirely.
  *
  * The three borrower kinds are modelled as a **discriminated union** end to end
@@ -53,12 +55,12 @@ let nextKey = 1;
  * only the active branch's fields are sent; the backend rejects a mixed body at
  * the edge rather than trusting this form to be careful.
  *
- * The units input takes a pasted serial UUID rather than a picker: borrowing is
- * serialized-only (Q5), and the backend re-checks availability under guard, so a
- * picker would only add a second source of truth about what is in stock.
+ * The unit picker lists assets that are currently `ready`; the backend
+ * re-checks availability and custody under guard, so the list is a convenience
+ * rather than a second source of truth.
  */
 export function BorrowingForm() {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['assets', 'common']);
 	const queryClient = useQueryClient();
 
 	const [borrowerType, setBorrowerType] = useState<
@@ -76,14 +78,18 @@ export function BorrowingForm() {
 	const [dueAt, setDueAt] = useState('');
 	const [notes, setNotes] = useState('');
 	const [units, setUnits] = useState<TUnitDraft[]>([]);
-	const [unitInput, setUnitInput] = useState('');
+	const [unitSelect, setUnitSelect] = useState('');
+
+	const readyAssets = useQuery(
+		assetsQueryOptions({ page: 1, limit: 100, status: 'ready' }),
+	);
 
 	const creation = useMutation({
 		mutationFn: (input: Parameters<typeof createBorrowing>[0]) =>
 			createBorrowing(input),
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ['inventory'] });
-			toast.success(t('inventory:borrowingForm.created'));
+			void queryClient.invalidateQueries({ queryKey: ['assets'] });
+			toast.success(t('assets:borrowingForm.created'));
 			setUnits([]);
 			setNotes('');
 		},
@@ -115,14 +121,18 @@ export function BorrowingForm() {
 	}
 
 	function addUnit() {
-		const value = unitInput.trim();
-		if (value === '') return;
-		if (units.some((unit) => unit.serialTrackedItemId === value)) return;
+		if (unitSelect === '') return;
+		if (units.some((unit) => unit.assetId === unitSelect)) return;
+		const asset = readyAssets.data?.rows.find((row) => row.id === unitSelect);
 		setUnits((current) => [
 			...current,
-			{ key: nextKey++, serialTrackedItemId: value },
+			{
+				key: nextKey++,
+				assetId: unitSelect,
+				label: asset ? `${asset.code} · ${asset.name}` : unitSelect,
+			},
 		]);
-		setUnitInput('');
+		setUnitSelect('');
 	}
 
 	function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -131,7 +141,7 @@ export function BorrowingForm() {
 		if (!borrower || !dueAt || units.length === 0) return;
 
 		const lines: TBorrowingLineInput[] = units.map((unit) => ({
-			serialTrackedItemId: unit.serialTrackedItemId,
+			assetId: unit.assetId,
 		}));
 
 		creation.mutate({
@@ -151,17 +161,17 @@ export function BorrowingForm() {
 			<Card>
 				<CardHeader>
 					<CardTitle className='text-base'>
-						{t('inventory:borrowingForm.new')}
+						{t('assets:borrowingForm.new')}
 					</CardTitle>
 					<CardDescription>
-						{t('inventory:borrowingForm.newDescription')}
+						{t('assets:borrowingForm.newDescription')}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<FieldGroup>
 						<Field>
 							<FieldLabel htmlFor='borrowerType'>
-								{t('inventory:borrowingForm.borrowerType')}
+								{t('assets:borrowingForm.borrowerType')}
 							</FieldLabel>
 							<NativeSelect
 								id='borrowerType'
@@ -172,12 +182,12 @@ export function BorrowingForm() {
 									)
 								}
 							>
-								<option value='user'>{t('inventory:borrowingForm.user')}</option>
+								<option value='user'>{t('assets:borrowingForm.user')}</option>
 								<option value='customer'>
-									{t('inventory:borrowingForm.customer')}
+									{t('assets:borrowingForm.customer')}
 								</option>
 								<option value='guest'>
-									{t('inventory:borrowingForm.guest')}
+									{t('assets:borrowingForm.guest')}
 								</option>
 							</NativeSelect>
 						</Field>
@@ -185,7 +195,7 @@ export function BorrowingForm() {
 						{borrowerType === 'user' ? (
 							<Field>
 								<FieldLabel htmlFor='borrowerUserId'>
-									{t('inventory:borrowingForm.userId')}
+									{t('assets:borrowingForm.userId')}
 								</FieldLabel>
 								<Input
 									id='borrowerUserId'
@@ -198,7 +208,7 @@ export function BorrowingForm() {
 						{borrowerType === 'customer' ? (
 							<Field>
 								<FieldLabel htmlFor='borrowerCustomerId'>
-									{t('inventory:borrowingForm.customerId')}
+									{t('assets:borrowingForm.customerId')}
 								</FieldLabel>
 								<Input
 									id='borrowerCustomerId'
@@ -214,7 +224,7 @@ export function BorrowingForm() {
 							<>
 								<Field>
 									<FieldLabel htmlFor='guestName'>
-										{t('inventory:borrowingForm.guestName')}
+										{t('assets:borrowingForm.guestName')}
 									</FieldLabel>
 									<Input
 										id='guestName'
@@ -224,7 +234,7 @@ export function BorrowingForm() {
 								</Field>
 								<Field>
 									<FieldLabel htmlFor='guestPhone'>
-										{t('inventory:borrowingForm.guestPhone')}
+										{t('assets:borrowingForm.guestPhone')}
 									</FieldLabel>
 									<Input
 										id='guestPhone'
@@ -234,7 +244,7 @@ export function BorrowingForm() {
 								</Field>
 								<Field>
 									<FieldLabel htmlFor='guestIdType'>
-										{t('inventory:borrowingForm.guestIdType')}
+										{t('assets:borrowingForm.guestIdType')}
 									</FieldLabel>
 									<NativeSelect
 										id='guestIdType'
@@ -253,7 +263,7 @@ export function BorrowingForm() {
 								</Field>
 								<Field>
 									<FieldLabel htmlFor='guestIdNumber'>
-										{t('inventory:borrowingForm.guestIdNumber')}
+										{t('assets:borrowingForm.guestIdNumber')}
 									</FieldLabel>
 									<Input
 										id='guestIdNumber'
@@ -263,7 +273,7 @@ export function BorrowingForm() {
 								</Field>
 								<Field>
 									<FieldLabel htmlFor='guestAddress'>
-										{t('inventory:borrowingForm.guestAddress')}
+										{t('assets:borrowingForm.guestAddress')}
 									</FieldLabel>
 									<Input
 										id='guestAddress'
@@ -275,7 +285,7 @@ export function BorrowingForm() {
 								</Field>
 								<Field>
 									<FieldLabel htmlFor='guestIdDocumentRef'>
-										{t('inventory:borrowingForm.guestDocumentRef')}
+										{t('assets:borrowingForm.guestDocumentRef')}
 									</FieldLabel>
 									<Input
 										id='guestIdDocumentRef'
@@ -286,14 +296,14 @@ export function BorrowingForm() {
 									/>
 								</Field>
 								<p className='text-xs text-muted-foreground'>
-									{t('inventory:borrowingForm.identityHint')}
+									{t('assets:borrowingForm.identityHint')}
 								</p>
 							</>
 						) : null}
 
 						<Field>
 							<FieldLabel htmlFor='purpose'>
-								{t('inventory:borrowingForm.purpose')}
+								{t('assets:borrowingForm.purpose')}
 							</FieldLabel>
 							<NativeSelect
 								id='purpose'
@@ -305,7 +315,7 @@ export function BorrowingForm() {
 								{BORROWING_PURPOSES.map((option) => (
 									<option key={option} value={option}>
 										{t(
-											`inventory:borrowingPurpose.${option}` as 'inventory:borrowingPurpose.rental',
+											`assets:borrowingPurpose.${option}` as 'assets:borrowingPurpose.rental',
 										)}
 									</option>
 								))}
@@ -314,7 +324,7 @@ export function BorrowingForm() {
 
 						<Field>
 							<FieldLabel htmlFor='dueAt'>
-								{t('inventory:borrowingForm.dueAt')}
+								{t('assets:borrowingForm.dueAt')}
 							</FieldLabel>
 							<Input
 								id='dueAt'
@@ -326,7 +336,7 @@ export function BorrowingForm() {
 
 						<Field>
 							<FieldLabel htmlFor='notes'>
-								{t('inventory:borrowingForm.notes')}
+								{t('assets:borrowingForm.notes')}
 							</FieldLabel>
 							<Input
 								id='notes'
@@ -337,33 +347,38 @@ export function BorrowingForm() {
 
 						<Field>
 							<FieldLabel htmlFor='unitInput'>
-								{t('inventory:borrowings.serial')}
+								{t('assets:borrowings.serial')}
 							</FieldLabel>
 							<p className='text-xs text-muted-foreground'>
-								{t('inventory:borrowingForm.unitsDescription')}
+								{t('assets:borrowingForm.unitsDescription')}
 							</p>
 							<div className='flex gap-2'>
-								<Input
+								<NativeSelect
 									id='unitInput'
-									value={unitInput}
-									placeholder={t('inventory:borrowingForm.searchUnits')}
-									onChange={(event) => setUnitInput(event.target.value)}
-									onKeyDown={(event) => {
-										if (event.key === 'Enter') {
-											// Enter adds a unit rather than submitting the form —
-											// the natural gesture in a repeatable list input.
-											event.preventDefault();
-											addUnit();
-										}
-									}}
-								/>
+									value={unitSelect}
+									onChange={(event) => setUnitSelect(event.target.value)}
+								>
+									<option value=''>
+										{t('assets:borrowingForm.searchUnits')}
+									</option>
+									{(readyAssets.data?.rows ?? [])
+										.filter(
+											(asset) =>
+												!units.some((unit) => unit.assetId === asset.id),
+										)
+										.map((asset) => (
+											<option key={asset.id} value={asset.id}>
+												{asset.code} · {asset.name}
+											</option>
+										))}
+								</NativeSelect>
 								<Button type='button' variant='secondary' onClick={addUnit}>
-									{t('inventory:borrowingForm.addUnit')}
+									{t('assets:borrowingForm.addUnit')}
 								</Button>
 							</div>
 							{units.length === 0 ? (
 								<p className='text-xs text-muted-foreground'>
-									{t('inventory:borrowingForm.emptyLines')}
+									{t('assets:borrowingForm.emptyLines')}
 								</p>
 							) : (
 								<ol className='space-y-1 text-sm'>
@@ -373,7 +388,7 @@ export function BorrowingForm() {
 											className='flex items-center justify-between gap-2'
 										>
 											<Badge variant='outline' className='font-mono text-xs'>
-												{unit.serialTrackedItemId}
+												{unit.label}
 											</Badge>
 											<Button
 												type='button'
@@ -385,7 +400,7 @@ export function BorrowingForm() {
 													)
 												}
 											>
-												{t('inventory:borrowingForm.removeUnit')}
+												{t('assets:borrowingForm.removeUnit')}
 											</Button>
 										</li>
 									))}
@@ -395,8 +410,8 @@ export function BorrowingForm() {
 
 						<Button type='submit' disabled={!canSubmit}>
 							{creation.isPending
-								? t('inventory:borrowingForm.creating')
-								: t('inventory:borrowingForm.create')}
+								? t('assets:borrowingForm.creating')
+								: t('assets:borrowingForm.create')}
 						</Button>
 					</FieldGroup>
 				</CardContent>

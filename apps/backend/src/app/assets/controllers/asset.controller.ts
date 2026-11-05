@@ -58,6 +58,14 @@ export class AssetController {
 					detail: { description: 'Paginated asset register' },
 				},
 			)
+			.get(
+				'/types',
+				async () => ok(await assetService.listTypes()),
+				{
+					erp: { permission: ['asset:read'] },
+					detail: { description: 'Active asset types for form and filter options' },
+				},
+			)
 			.post(
 				'',
 				async ({ body, erp, request, status }) =>

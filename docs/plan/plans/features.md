@@ -118,8 +118,13 @@ Last synced: 2026-11-06.
 
 ## M06 Assets and Equipment
 
-### in-progress
+### planned
 
+- Asset register: value, PIC, condition, service notes — T07, ERP-0015.
+  Evidence: dbml `assets` only.
+- Depreciation as manual journal — T07, ERP-0015. Evidence: none.
+
+### implemented
 - Location tracking + borrowing ownership — ERP-0036. Evidence: contract
   shipped 2026-11-05 (`docs/database/docs.dbml`: assets 14 tables incl.
   `asset_types` + borrowing trio, inventory 13 tables, `validate-dbml.ts`
@@ -133,25 +138,22 @@ Last synced: 2026-11-06.
   seed twice, 526 tests); Slice 4 shipped 2026-11-06 (`borrowing` →
   `asset_borrowing` in all 10 roles, data-only migration
   `20261105223616_erp0036_slice4_permission_rename`, global asset-code
-  sequence, `seed/assets.seeder.ts`, migrate + seed twice, 526 tests). Slice 5
-  remains (UI/i18n/removals).
+  sequence, `seed/assets.seeder.ts`, migrate + seed twice, 526 tests); Slice 5
+  shipped 2026-11-06 (borrowing screens moved to `/assets/borrowings`,
+  `GET /assets/types` added for the register filter + forms, asset detail gained
+  place/transfer with warehouse→storage picker, inventory tools page + warehouse
+  tools tab + `asset_assignments` UI gone, locale keys re-homed to
+  `assets:borrowing*`; locale parity/dead-key guards green, web-admin build,
+  root lint/typecheck/test, `validate-dbml.ts` all green). All five slices
+  landed; browser walk-through pending.
   Stage 0 execution review resolved all blocking defects (global assets with
   stubbed warehouse reachability, global unique asset code, no
-  `document_sequences` change, jsonb permission migration). Supersedes the M06
-  "loan register" note below once implemented.
-
-### planned
-
-- Asset register: value, PIC, condition, service notes — T07, ERP-0015.
-  Evidence: dbml `assets` only.
-- Depreciation as manual journal — T07, ERP-0015. Evidence: none.
-
-### implemented
+  `document_sequences` change, jsonb permission migration).
 - Tool borrowing/return (S4) — T07, ERP-0029 (backlog "shipped" → mapped
   `implemented`). Engine **moved to `assets`** by ERP-0036 Slice 3
   (2026-11-06): `assets/services/borrowing.service.ts`, 526 backend tests
-  green; late-return + guest-PII retention sweeps on BullMQ. UI still at
-  `/inventory/borrowings/*` until ERP-0036 Slice 5. Pending: browser
+  green; late-return + guest-PII retention sweeps on BullMQ. UI moved to
+  `/assets/borrowings/*` by ERP-0036 Slice 5 (2026-11-06). Pending: browser
   walk-through; worker still in API process. Note: covers the M06 loan
   register (ADR-0010, proposed).
 

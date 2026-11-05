@@ -12,6 +12,67 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed (this session - ERP-0036 Slice 5 UI/i18n/removals, 2026-11-06)
+
+Status: **implemented** in code; locale and type gates green. Slice 5 of
+`docs/plan/plans/assets-equipment-location-and-borrowing.md`.
+
+What landed:
+
+- Borrowing screens moved from `inventory` to `assets`: routes
+  `/assets/borrowings`, `/assets/borrowings/new`,
+  `/assets/borrowings/$borrowingId`, components under
+  `components/assets/borrowing-*.tsx`. Links, query keys (`['assets',
+  'borrowings']`), and translation namespaces re-pointed.
+- `apps/web-admin/src/lib/borrowing-api.ts` retargeted to the ported engine:
+  `TBorrowingLine.assetId`/`originStorageId`, `TBorrowingEvent.assetMovementId`,
+  `TBorrowingLineInput.assetId`, `toolSetId` on create. `toDetail` now unwraps
+  the flat service view (`{...borrowing, lines, events}`), which the previous
+  nested-shape guess silently dropped.
+- New read endpoint `GET /assets/types` (`asset.repository.listTypes` →
+  `AssetService.listTypes`, guarded `asset:read`) returns active types ordered
+  by name. Register list gained an `assetType` filter and renders the lookup
+  `name`; the register form and category list load the same options; `ASSET_TYPES`
+  and `assets:type.*` are gone.
+- `ASSET_STATUSES` in the client fixed to `ready|borrowed|maintenance|inactive|
+  disposed|lost`; movement types extended to the D3 vocabulary and rendered via
+  `assets:movementType.*`.
+- Asset detail: custody/assign/return UI removed (`asset_assignments` is gone),
+  replaced by a location card with the place/transfer dialog (warehouse →
+  storage picker over `/warehouses`), and a "Borrow" shortcut to
+  `/assets/borrowings/new`.
+- Removals: `routes/_authed/inventory/tools/index.tsx`,
+  `routes/_authed/inventory/borrowings/*`, `routes/_authed/assets/loans/index.tsx`,
+  `components/assets/asset-loan-list.tsx`; warehouse Tools tab/stat; nav
+  `item.tools`; `ITEM_KINDS` trimmed to `product|component|material` (item form
+  service branch dropped).
+- Locales (en + id): borrowing copy moved `inventory:` → `assets:`;
+  `inventory:tools.*`, `inventory:borrowings.*`, `assets:type.*`, `assets:loans.*`,
+  `inventory:kind.tool`, `inventory:kind.service`, `inventory:form.serviceHint`,
+  `inventory:warehouses.tools` and `nav:item.tools` deleted; new
+  `assets:register.filterAllTypes|type`, `assets:detail.{place,transfer,placed,
+  transferred,noWarehouse,locationDescription,selectWarehouse,selectStorage,borrow}`
+  and `assets:movementType.*` added. `DYNAMIC_PREFIXES` re-keyed to
+  `assets:borrowing*`, `assets:type.` dropped, `assets:movementType.` added.
+
+```text
+bun run test (packages/locales)          → 38 pass, 0 fail (parity + dead keys)
+bun run build (apps/web-admin)           → tsc -b clean; vite build OK; routeTree
+                                          regenerated (no inventory/borrowings,
+                                          no inventory/tools, no assets/loans)
+bun run typecheck (root)                 → clean (backend + locales + ui)
+bun run lint (root)                      → 0 errors (6 pre-existing backend warnings)
+bun run test (root)                      → backend 526 pass, 0 fail; all workspaces green
+bun docs/database/validate-dbml.ts       → 255 tables, 228 refs, 0 cross-module,
+                                          0 timestamp gaps, OK
+```
+
+No schema change in this slice, so no migration was generated. `docs/database/`
+was reviewed and is unchanged (the new `/assets/types` endpoint reads an
+existing table). `drizzle:migrate` + `drizzle:seed` run-twice evidence remains the
+Slice 4 run; the destructive migration still needs reviewer confirmation of the
+target `POSTGRES_URL` before it is applied outside the local database.
+
 ## Completed (this session - ERP-0036 Slice 4 permissions + seed, 2026-11-06)
 
 Status: **verified** on the local database; **implemented** in code. Slice 4 of

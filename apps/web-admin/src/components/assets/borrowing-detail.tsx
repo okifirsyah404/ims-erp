@@ -48,7 +48,7 @@ const STATUS_VARIANT: Record<
  *
  * @remarks
  * **The timeline is the point of this page.** Every `issued`, `returned`, and
- * `marked_lost` entry shows the `stockMovementId` it wrote, because that link is
+ * `marked_lost` entry shows the `assetMovementId` it wrote, because that link is
  * what distinguishes a real custody change from a claimed one — the backend's
  * CHECK constraint makes the link mandatory, so a rendered entry without a
  * movement id is either an automated `marked_late` or a bug.
@@ -58,14 +58,14 @@ const STATUS_VARIANT: Record<
  * marker explaining why rather than a blank row that looks like missing data.
  */
 export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['assets', 'common']);
 	const queryClient = useQueryClient();
 	const { data, isPending, isError, error } = useQuery(
 		borrowingQueryOptions(borrowingId),
 	);
 
 	const invalidate = () => {
-		void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+		void queryClient.invalidateQueries({ queryKey: ['assets'] });
 	};
 
 	const transition = useMutation({
@@ -76,7 +76,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 			// Each key is spelled out rather than looked up, so the compiler and
 			// the dead-key scan see exactly which translations are used.
 			if (action === 'submit') {
-				toast.success(t('inventory:borrowingActions.submitted'));
+				toast.success(t('assets:borrowingActions.submitted'));
 			}
 			invalidate();
 		},
@@ -86,7 +86,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 	const extend = useMutation({
 		mutationFn: (dueAt: string) => extendBorrowing(borrowingId, dueAt),
 		onSuccess: () => {
-			toast.success(t('inventory:borrowingActions.extended'));
+			toast.success(t('assets:borrowingActions.extended'));
 			invalidate();
 		},
 		onError: (mutationError) => toast.error(mutationError.message),
@@ -99,7 +99,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 				condition: 'good',
 			}),
 		onSuccess: () => {
-			toast.success(t('inventory:borrowingActions.returned'));
+			toast.success(t('assets:borrowingActions.returned'));
 			invalidate();
 		},
 		onError: (mutationError) => toast.error(mutationError.message),
@@ -109,7 +109,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 		mutationFn: (lineId: string) =>
 			markBorrowingLineLost(borrowingId, { lineId }),
 		onSuccess: () => {
-			toast.success(t('inventory:borrowingActions.lost'));
+			toast.success(t('assets:borrowingActions.lost'));
 			invalidate();
 		},
 		onError: (mutationError) => toast.error(mutationError.message),
@@ -139,7 +139,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 		return (
 			<Card>
 				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{t('inventory:borrowings.notFound')}
+					{t('assets:borrowings.notFound')}
 				</CardContent>
 			</Card>
 		);
@@ -165,7 +165,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 	 * prompt sends nothing.
 	 */
 	function promptExtend() {
-		const input = window.prompt(t('inventory:borrowingForm.dueAt'));
+		const input = window.prompt(t('assets:borrowingForm.dueAt'));
 		if (!input) return;
 		const parsed = new Date(input);
 		if (Number.isNaN(parsed.getTime())) return;
@@ -180,12 +180,12 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 						<h2 className='font-mono text-lg font-semibold'>{borrowing.code}</h2>
 						<Badge variant={STATUS_VARIANT[borrowing.status]}>
 							{t(
-								`inventory:borrowingStatus.${borrowing.status}` as 'inventory:borrowingStatus.requested',
+								`assets:borrowingStatus.${borrowing.status}` as 'assets:borrowingStatus.requested',
 							)}
 						</Badge>
 					</div>
 					<p className='text-sm text-muted-foreground'>
-						{t('inventory:borrowings.dueAt')}:{' '}
+						{t('assets:borrowings.dueAt')}:{' '}
 						{new Date(borrowing.dueAt).toLocaleDateString()}
 					</p>
 				</div>
@@ -196,7 +196,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 							disabled={busy}
 							onClick={() => transition.mutate('submit')}
 						>
-							{t('inventory:borrowingActions.submit')}
+							{t('assets:borrowingActions.submit')}
 						</Button>
 					) : null}
 					{borrowing.status === 'requested' ? (
@@ -206,7 +206,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 								disabled={busy}
 								onClick={() => transition.mutate('approve')}
 							>
-								{t('inventory:borrowingActions.approve')}
+								{t('assets:borrowingActions.approve')}
 							</Button>
 							<Button
 								size='sm'
@@ -214,7 +214,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 								disabled={busy}
 								onClick={() => transition.mutate('reject')}
 							>
-								{t('inventory:borrowingActions.reject')}
+								{t('assets:borrowingActions.reject')}
 							</Button>
 						</>
 					) : null}
@@ -224,7 +224,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 							disabled={busy}
 							onClick={() => transition.mutate('issue')}
 						>
-							{t('inventory:borrowingActions.issue')}
+							{t('assets:borrowingActions.issue')}
 						</Button>
 					) : null}
 					{openLines.length > 1 ? (
@@ -233,7 +233,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 							disabled={busy}
 							onClick={() => returnLines.mutate(undefined)}
 						>
-							{t('inventory:borrowingActions.returnAll')}
+							{t('assets:borrowingActions.returnAll')}
 						</Button>
 					) : null}
 					{borrowing.status === 'issued' ||
@@ -245,7 +245,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 							disabled={busy}
 							onClick={promptExtend}
 						>
-							{t('inventory:borrowingActions.extend')}
+							{t('assets:borrowingActions.extend')}
 						</Button>
 					) : null}
 					{borrowing.status === 'returned' ? (
@@ -254,7 +254,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 							disabled={busy}
 							onClick={() => transition.mutate('close')}
 						>
-							{t('inventory:borrowingActions.close')}
+							{t('assets:borrowingActions.close')}
 						</Button>
 					) : null}
 					{borrowing.status === 'requested' || borrowing.status === 'approved' ? (
@@ -264,7 +264,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 							disabled={busy}
 							onClick={() => transition.mutate('cancel')}
 						>
-							{t('inventory:borrowingActions.cancel')}
+							{t('assets:borrowingActions.cancel')}
 						</Button>
 					) : null}
 				</div>
@@ -275,23 +275,23 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 			<Card>
 				<CardHeader>
 					<CardTitle className='text-base'>
-						{t('inventory:borrowings.lines')}
+						{t('assets:borrowings.lines')}
 					</CardTitle>
 					<p className='text-sm text-muted-foreground'>
-						{t('inventory:borrowings.linesDescription')}
+						{t('assets:borrowings.linesDescription')}
 					</p>
 				</CardHeader>
 				<CardContent>
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead>{t('inventory:borrowings.serial')}</TableHead>
-								<TableHead>{t('inventory:borrowings.origin')}</TableHead>
-								<TableHead>{t('inventory:borrowings.issuedAt')}</TableHead>
-								<TableHead>{t('inventory:borrowings.returnedAt')}</TableHead>
-								<TableHead>{t('inventory:borrowings.condition')}</TableHead>
+								<TableHead>{t('assets:borrowings.serial')}</TableHead>
+								<TableHead>{t('assets:borrowings.origin')}</TableHead>
+								<TableHead>{t('assets:borrowings.issuedAt')}</TableHead>
+								<TableHead>{t('assets:borrowings.returnedAt')}</TableHead>
+								<TableHead>{t('assets:borrowings.condition')}</TableHead>
 								<TableHead className='text-right'>
-									{t('inventory:borrowings.actions')}
+									{t('assets:borrowings.actions')}
 								</TableHead>
 							</TableRow>
 						</TableHeader>
@@ -313,16 +313,16 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 			<Card>
 				<CardHeader>
 					<CardTitle className='text-base'>
-						{t('inventory:borrowings.timeline')}
+						{t('assets:borrowings.timeline')}
 					</CardTitle>
 					<p className='text-sm text-muted-foreground'>
-						{t('inventory:borrowings.timelineDescription')}
+						{t('assets:borrowings.timelineDescription')}
 					</p>
 				</CardHeader>
 				<CardContent>
 					{events.length === 0 ? (
 						<p className='text-sm text-muted-foreground'>
-							{t('inventory:borrowings.noEvents')}
+							{t('assets:borrowings.noEvents')}
 						</p>
 					) : (
 						<ol className='space-y-3'>
@@ -331,19 +331,19 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 									<span className='text-xs text-muted-foreground'>
 										{new Date(event.occurredAt).toLocaleString()}
 									</span>
-									<Badge variant={event.stockMovementId ? 'default' : 'outline'}>
+									<Badge variant={event.assetMovementId ? 'default' : 'outline'}>
 										{t(
-											`inventory:borrowingEvent.${event.eventType}` as 'inventory:borrowingEvent.issued',
+											`assets:borrowingEvent.${event.eventType}` as 'assets:borrowingEvent.issued',
 										)}
 									</Badge>
-									{event.stockMovementId ? (
+									{event.assetMovementId ? (
 										<span className='font-mono text-xs text-muted-foreground'>
-											{t('inventory:borrowings.movement')}: {event.stockMovementId}
+											{t('assets:borrowings.movement')}: {event.assetMovementId}
 										</span>
 									) : null}
 									{event.actorUserId === null ? (
 										<Badge variant='secondary'>
-											{t('inventory:borrowings.auto')}
+											{t('assets:borrowings.auto')}
 										</Badge>
 									) : null}
 									{event.note ? (
@@ -378,7 +378,7 @@ function BorrowerCard({
 		guestIdentityRedacted?: boolean;
 	};
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['assets', 'common']);
 
 	// The detail projection attaches the flag; the list projection does not.
 	const redacted = borrowing.guestIdentityRedacted === true;
@@ -387,22 +387,22 @@ function BorrowerCard({
 		<Card>
 			<CardHeader>
 				<CardTitle className='text-base'>
-					{t('inventory:borrowings.borrower')}
+					{t('assets:borrowings.borrower')}
 				</CardTitle>
 			</CardHeader>
 			<CardContent className='space-y-1 text-sm'>
 				{borrowing.borrowerType === 'guest' ? (
 					<>
 						<p className='font-medium'>
-							{borrowing.guestName ?? t('inventory:borrowings.guest')}
+							{borrowing.guestName ?? t('assets:borrowings.guest')}
 						</p>
 						{borrowing.guestPhone ? <p>{borrowing.guestPhone}</p> : null}
 						{redacted ? (
 							<div className='rounded-md border border-dashed p-2 text-xs text-muted-foreground'>
 								<p className='font-medium'>
-									{t('inventory:borrowings.redacted')}
+									{t('assets:borrowings.redacted')}
 								</p>
-								<p>{t('inventory:borrowings.redactedHint')}</p>
+								<p>{t('assets:borrowings.redactedHint')}</p>
 							</div>
 						) : (
 							<>
@@ -448,7 +448,7 @@ function LineRow({
 	onReturn: () => void;
 	onMarkLost: () => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['assets', 'common']);
 
 	// A line is "open" only once issued and while neither returned nor lost.
 	const open =
@@ -457,15 +457,15 @@ function LineRow({
 	return (
 		<TableRow>
 			<TableCell className='font-mono text-xs'>
-				{line.serialTrackedItemId}
+				{line.assetId}
 				{line.markedLateAt ? (
 					<Badge variant='destructive' className='ml-2'>
-						{t('inventory:borrowings.late')}
+						{t('assets:borrowings.late')}
 					</Badge>
 				) : null}
 				{line.markedLostAt ? (
 					<Badge variant='destructive' className='ml-2'>
-						{t('inventory:borrowings.lost')}
+						{t('assets:borrowings.lost')}
 					</Badge>
 				) : null}
 			</TableCell>
@@ -481,7 +481,7 @@ function LineRow({
 			<TableCell className='text-xs text-muted-foreground'>
 				{line.returnedCondition
 					? t(
-							`inventory:borrowingCondition.${line.returnedCondition}` as 'inventory:borrowingCondition.good',
+							`assets:borrowingCondition.${line.returnedCondition}` as 'assets:borrowingCondition.good',
 						)
 					: '—'}
 			</TableCell>
@@ -489,7 +489,7 @@ function LineRow({
 				{open ? (
 					<>
 						<Button size='sm' disabled={busy} onClick={onReturn}>
-							{t('inventory:borrowingActions.return')}
+							{t('assets:borrowingActions.return')}
 						</Button>
 						<Button
 							size='sm'
@@ -497,7 +497,7 @@ function LineRow({
 							disabled={busy}
 							onClick={onMarkLost}
 						>
-							{t('inventory:borrowingActions.markLost')}
+							{t('assets:borrowingActions.markLost')}
 						</Button>
 					</>
 				) : null}

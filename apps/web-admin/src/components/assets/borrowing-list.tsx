@@ -57,12 +57,12 @@ type TListAction = 'approve' | 'reject' | 'issue' | 'cancel' | 'close';
  * predictable 422.
  *
  * `issue` is offered from `requested` as well as `approved` because approval is
- * skippable for a caller holding `borrowing:issue` — the backend decides whether
+ * skippable for a caller holding `asset_borrowing:issue` — the backend decides whether
  * *this* caller may skip it, and a caller who may not gets a 422 with an
  * explanation rather than a hidden button.
  */
 export function BorrowingList() {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['assets', 'common']);
 	const queryClient = useQueryClient();
 	const { data, isPending, isError, error } = useQuery(
 		borrowingsQueryOptions({ limit: 100 }),
@@ -76,22 +76,22 @@ export function BorrowingList() {
 			// dead-key scan then see exactly which translations are used.
 			switch (action) {
 				case 'approve':
-					toast.success(t('inventory:borrowingActions.approved'));
+					toast.success(t('assets:borrowingActions.approved'));
 					break;
 				case 'reject':
-					toast.success(t('inventory:borrowingActions.rejected'));
+					toast.success(t('assets:borrowingActions.rejected'));
 					break;
 				case 'issue':
-					toast.success(t('inventory:borrowingActions.issued'));
+					toast.success(t('assets:borrowingActions.issued'));
 					break;
 				case 'cancel':
-					toast.success(t('inventory:borrowingActions.cancelled'));
+					toast.success(t('assets:borrowingActions.cancelled'));
 					break;
 				case 'close':
-					toast.success(t('inventory:borrowingActions.closed'));
+					toast.success(t('assets:borrowingActions.closed'));
 					break;
 			}
-			void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+			void queryClient.invalidateQueries({ queryKey: ['assets'] });
 		},
 		onError: (mutationError) => {
 			toast.error(mutationError.message);
@@ -126,32 +126,32 @@ export function BorrowingList() {
 				<div className='flex flex-wrap items-start justify-between gap-3'>
 					<div>
 						<h2 className='text-lg font-semibold'>
-							{t('inventory:borrowings.title')}
+							{t('assets:borrowings.title')}
 						</h2>
 						<p className='max-w-prose text-sm text-muted-foreground'>
-							{t('inventory:borrowings.description')}
+							{t('assets:borrowings.description')}
 						</p>
 					</div>
-					<Button size='sm' render={<Link to='/inventory/borrowings/new' />}>
-						{t('inventory:borrowings.new')}
+					<Button size='sm' render={<Link to='/assets/borrowings/new' />}>
+						{t('assets:borrowings.new')}
 					</Button>
 				</div>
 
 				{rows.length === 0 ? (
 					<p className='py-6 text-center text-sm text-muted-foreground'>
-						{t('inventory:borrowings.empty')}
+						{t('assets:borrowings.empty')}
 					</p>
 				) : (
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead>{t('inventory:borrowings.code')}</TableHead>
-								<TableHead>{t('inventory:borrowings.borrower')}</TableHead>
-								<TableHead>{t('inventory:borrowings.purpose')}</TableHead>
-								<TableHead>{t('inventory:borrowings.dueAt')}</TableHead>
-								<TableHead>{t('inventory:borrowings.status')}</TableHead>
+								<TableHead>{t('assets:borrowings.code')}</TableHead>
+								<TableHead>{t('assets:borrowings.borrower')}</TableHead>
+								<TableHead>{t('assets:borrowings.purpose')}</TableHead>
+								<TableHead>{t('assets:borrowings.dueAt')}</TableHead>
+								<TableHead>{t('assets:borrowings.status')}</TableHead>
 								<TableHead className='text-right'>
-									{t('inventory:borrowings.actions')}
+									{t('assets:borrowings.actions')}
 								</TableHead>
 							</TableRow>
 						</TableHeader>
@@ -187,7 +187,7 @@ function BorrowingRow({
 	pending: boolean;
 	onAction: (action: TListAction) => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['assets', 'common']);
 
 	/**
 	 * The borrower label.
@@ -199,7 +199,7 @@ function BorrowingRow({
 	 */
 	const borrower =
 		row.borrowerType === 'guest'
-			? (row.guestName ?? t('inventory:borrowings.guest'))
+			? (row.guestName ?? t('assets:borrowings.guest'))
 			: row.borrowerType === 'user'
 				? (row.borrowerUserId ?? '—')
 				: (row.borrowerCustomerId ?? '—');
@@ -208,7 +208,7 @@ function BorrowingRow({
 		<TableRow>
 			<TableCell className='font-mono text-xs'>
 				<Link
-					to='/inventory/borrowings/$borrowingId'
+					to='/assets/borrowings/$borrowingId'
 					params={{ borrowingId: row.id }}
 					className='underline-offset-4 hover:underline'
 				>
@@ -218,7 +218,7 @@ function BorrowingRow({
 			<TableCell>{borrower}</TableCell>
 			<TableCell className='text-xs text-muted-foreground'>
 				{t(
-					`inventory:borrowingPurpose.${row.purpose}` as 'inventory:borrowingPurpose.rental',
+					`assets:borrowingPurpose.${row.purpose}` as 'assets:borrowingPurpose.rental',
 				)}
 			</TableCell>
 			<TableCell className='text-xs'>
@@ -227,7 +227,7 @@ function BorrowingRow({
 			<TableCell>
 				<Badge variant={STATUS_VARIANT[row.status]}>
 					{t(
-						`inventory:borrowingStatus.${row.status}` as 'inventory:borrowingStatus.requested',
+						`assets:borrowingStatus.${row.status}` as 'assets:borrowingStatus.requested',
 					)}
 				</Badge>
 			</TableCell>
@@ -239,7 +239,7 @@ function BorrowingRow({
 							disabled={pending}
 							onClick={() => onAction('approve')}
 						>
-							{t('inventory:borrowingActions.approve')}
+							{t('assets:borrowingActions.approve')}
 						</Button>
 						<Button
 							size='sm'
@@ -247,7 +247,7 @@ function BorrowingRow({
 							disabled={pending}
 							onClick={() => onAction('reject')}
 						>
-							{t('inventory:borrowingActions.reject')}
+							{t('assets:borrowingActions.reject')}
 						</Button>
 					</>
 				) : null}
@@ -258,7 +258,7 @@ function BorrowingRow({
 						disabled={pending}
 						onClick={() => onAction('issue')}
 					>
-						{t('inventory:borrowingActions.issue')}
+						{t('assets:borrowingActions.issue')}
 					</Button>
 				) : null}
 				{row.status === 'requested' || row.status === 'approved' ? (
@@ -268,7 +268,7 @@ function BorrowingRow({
 						disabled={pending}
 						onClick={() => onAction('cancel')}
 					>
-						{t('inventory:borrowingActions.cancel')}
+						{t('assets:borrowingActions.cancel')}
 					</Button>
 				) : null}
 				{row.status === 'returned' ? (
@@ -277,7 +277,7 @@ function BorrowingRow({
 						disabled={pending}
 						onClick={() => onAction('close')}
 					>
-						{t('inventory:borrowingActions.close')}
+						{t('assets:borrowingActions.close')}
 					</Button>
 				) : null}
 			</TableCell>

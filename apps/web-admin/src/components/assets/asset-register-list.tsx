@@ -28,6 +28,7 @@ import { toast } from '@/components/toast';
 import {
 	archiveAsset,
 	assetsQueryOptions,
+	assetTypesQueryOptions,
 	ASSET_STATUSES,
 	formatMoney,
 	type TAssetStatus,
@@ -64,10 +65,14 @@ export function AssetRegisterList() {
 			limit: PAGE_SIZE,
 			search: search.search,
 			status: search.status as TAssetStatus | undefined,
+			assetType: search.assetType,
 			includeArchived: search.includeArchived,
 		}),
 		placeholderData: (previous) => previous,
 	});
+	const types = useQuery(assetTypesQueryOptions());
+	const typeName = (code: string) =>
+		types.data?.find((row) => row.code === code)?.name ?? code;
 
 	const archive = useMutationSafe(archiveAsset, queryClient);
 
@@ -146,6 +151,32 @@ export function AssetRegisterList() {
 						))}
 					</SelectContent>
 				</Select>
+				<Select
+					value={search.assetType ?? 'all'}
+					onValueChange={(value: string | null) =>
+						void navigate({
+							search: (prev) => ({
+								...prev,
+								page: 1,
+								assetType: value === 'all' ? undefined : (value ?? undefined),
+							}),
+						})
+					}
+				>
+					<SelectTrigger className='w-44'>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>
+							{t('assets:register.filterAllTypes')}
+						</SelectItem>
+						{(types.data ?? []).map((type) => (
+							<SelectItem key={type.code} value={type.code}>
+								{type.name}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 				<label className='flex items-center gap-2 text-sm text-muted-foreground'>
 					<Checkbox
 						checked={search.includeArchived === true}
@@ -208,6 +239,12 @@ export function AssetRegisterList() {
 								</p>
 							</CardHeader>
 							<CardContent className='flex-1 space-y-1 text-sm'>
+								<p>
+									<span className='text-muted-foreground'>
+										{t('assets:register.type')}:{' '}
+									</span>
+									{typeName(asset.assetType)}
+								</p>
 								<p>
 									<span className='text-muted-foreground'>
 										{t('assets:register.condition')}:{' '}

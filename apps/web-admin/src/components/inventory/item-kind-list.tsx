@@ -28,7 +28,7 @@ export function ItemKindList({
 	kind,
 	title,
 }: {
-	kind: Extract<TItemKind, 'product' | 'component' | 'material' | 'tool'>;
+	kind: Extract<TItemKind, 'product' | 'component' | 'material'>;
 	title: string;
 }) {
 	const { t } = useTranslation(['inventory', 'common']);

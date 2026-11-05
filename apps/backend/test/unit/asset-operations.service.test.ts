@@ -155,6 +155,9 @@ function buildWorld() {
 		async countReferences() {
 			return { borrowings: 0, maintenances: 0 };
 		},
+		async listTypes() {
+			return [];
+		},
 	};
 
 	const operations: IAssetOperationsRepository = {

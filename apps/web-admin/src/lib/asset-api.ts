@@ -16,10 +16,10 @@ import { queryOptions } from '@tanstack/react-query';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-/** Asset lifecycle statuses, mirroring `ASSET_STATUSES` (D18 adds inactive). */
+/** Asset lifecycle statuses, mirroring `ASSET_STATUSES` (D7). */
 export const ASSET_STATUSES = [
-	'in_stock',
-	'in_use',
+	'ready',
+	'borrowed',
 	'maintenance',
 	'inactive',
 	'disposed',
@@ -27,15 +27,18 @@ export const ASSET_STATUSES = [
 ] as const;
 export type TAssetStatus = (typeof ASSET_STATUSES)[number];
 
-export const ASSET_TYPES = [
-	'equipment',
-	'vehicle',
-	'tool',
-	'furniture',
-	'it',
-	'intangible',
-] as const;
-export type TAssetType = (typeof ASSET_TYPES)[number];
+/** Type codes come from the `assets.asset_types` lookup (D10). */
+export type TAssetType = string;
+
+/** One row of the asset-type lookup; `name` is the display label. */
+export type TAssetTypeRow = {
+	id: string;
+	code: string;
+	name: string;
+	defaultUsefulLifeMonths: number | null;
+	defaultDepreciationMethod: string;
+	isActive: boolean;
+};
 
 export const ASSET_CONDITIONS = ['new', 'good', 'fair', 'poor', 'damaged'] as const;
 export type TAssetCondition = (typeof ASSET_CONDITIONS)[number];
@@ -76,8 +79,10 @@ export type TAsset = {
 	status: TAssetStatus;
 	deactivationReason: string | null;
 	locationDescription: string | null;
+	warehouseId: string | null;
+	storageId: string | null;
 	custodianEmployeeId: string | null;
-	assignedAt: string | null;
+	borrowedSince: string | null;
 	createdAt: string;
 	updatedAt: string | null;
 	deletedAt: string | null;
@@ -98,25 +103,23 @@ export type TAssetCategory = {
 	deletedAt: string | null;
 };
 
-export type TAssetAssignment = {
-	id: string;
-	organizationId: string;
-	assetId: string;
-	assignedToEmployeeId: string | null;
-	assignedToUserId: string | null;
-	assignedAt: string;
-	returnedAt: string | null;
-	conditionOnAssign: string | null;
-	conditionOnReturn: string | null;
-	notes: string | null;
-};
-
 export type TAssetMovement = {
 	id: string;
 	assetId: string;
-	movementType: 'transfer' | 'loan' | 'return' | 'project_site';
+	movementType:
+		| 'receipt'
+		| 'transfer'
+		| 'borrow_out'
+		| 'borrow_return'
+		| 'project_site'
+		| 'disposal'
+		| 'lost';
 	fromLocation: string | null;
 	toLocation: string | null;
+	fromWarehouseId: string | null;
+	fromStorageId: string | null;
+	toWarehouseId: string | null;
+	toStorageId: string | null;
 	movedAt: string;
 	condition: string | null;
 	notes: string | null;
@@ -208,7 +211,6 @@ export type TToolSetItem = {
 export type TAssetDetail = {
 	asset: TAsset;
 	history: {
-		assignments: TAssetAssignment[];
 		movements: TAssetMovement[];
 		conditionChecks: TAssetConditionCheck[];
 		maintenances: TAssetMaintenance[];
@@ -268,6 +270,7 @@ export type TAssetListParams = {
 	limit: number;
 	search?: string;
 	status?: TAssetStatus;
+	assetType?: string;
 	categoryId?: string;
 	includeArchived?: boolean;
 };
@@ -279,6 +282,7 @@ export function assetsQueryOptions(params: TAssetListParams) {
 	});
 	if (params.search) search.set('search', params.search);
 	if (params.status) search.set('status', params.status);
+	if (params.assetType) search.set('assetType', params.assetType);
 	if (params.categoryId) search.set('categoryId', params.categoryId);
 	if (params.includeArchived) search.set('includeArchived', 'true');
 	return queryOptions({
@@ -346,30 +350,44 @@ export function archiveAssetCategory(id: string) {
 	return sendData<void>(`/asset-categories/${id}`, 'DELETE');
 }
 
+/* ----------------------------- asset types ----------------------------- */
+
+/** Active asset types (global lookup). */
+export function assetTypesQueryOptions() {
+	return queryOptions({
+		queryKey: ['asset-types'],
+		queryFn: () => getData<TAssetTypeRow[]>('/assets/types'),
+	});
+}
+
 /* ------------------------------- custody ------------------------------- */
 
-export function assignAsset(
+/* removed: custody is borrowing-owned since ERP-0036 (D12). */
+
+/* ------------------------------ location ------------------------------- */
+
+/** Places a ready asset into a warehouse storage (receipt movement). */
+export function placeAsset(
 	assetId: string,
 	input: {
-		assignedToUserId?: string | null;
-		assignedToEmployeeId?: string | null;
-		conditionOnAssign?: string;
+		warehouseId: string;
+		storageId?: string | null;
+		locationDescription?: string | null;
+	},
+) {
+	return sendData<TAssetMovement>(`/assets/${assetId}/place`, 'POST', input);
+}
+
+/** Moves a ready asset to another storage, clearing the source. */
+export function transferAsset(
+	assetId: string,
+	input: {
+		toWarehouseId: string;
+		toStorageId?: string | null;
 		notes?: string | null;
 	},
 ) {
-	return sendData<TAssetAssignment>(`/assets/${assetId}/assignments`, 'POST', input);
-}
-
-export function returnAsset(
-	assetId: string,
-	input: { conditionOnReturn: string; notes?: string | null },
-) {
-	return sendData<TAssetAssignment>(`/assets/${assetId}/return`, 'POST', input);
-}
-
-/** A loan is overdue when its asset is still `in_use` past the intended due context. */
-export function isLoanOpen(assignment: TAssetAssignment): boolean {
-	return assignment.returnedAt === null;
+	return sendData<TAssetMovement>(`/assets/${assetId}/transfer`, 'POST', input);
 }
 
 /* ------------------------------ movements ------------------------------ */

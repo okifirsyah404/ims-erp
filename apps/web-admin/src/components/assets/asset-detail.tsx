@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -9,24 +10,40 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@ims-erp/ui/components/dialog';
+import { NativeSelect } from '@ims-erp/ui/components/native-select';
 import { CircleAlert, Wrench } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { EmptyState } from '@/components/empty-state';
+import { toast } from '@/components/toast';
 import {
 	assetDetailQueryOptions,
 	formatMoney,
+	placeAsset,
+	transferAsset,
+	type TAsset,
 } from '@/lib/asset-api';
+import {
+	warehouseQueryOptions,
+	warehousesQueryOptions,
+} from '@/lib/warehouse-api';
 import { usePermission } from '@/lib/use-permission';
 
 /**
- * Asset detail (Phase A-4): stats, meta, and history sections
- * (custody, movements, condition checks, service records, depreciation,
- * documents). Actions: assign, return, deactivate/reactivate, dispose.
+ * Asset detail (Phase A-4): stats, location, and history sections
+ * (movements, condition checks, service records, depreciation, documents).
+ * Actions: place/transfer location, deactivate/reactivate, dispose.
  */
 export function AssetDetail({ assetId }: { assetId: string }) {
 	const { t } = useTranslation(['assets', 'common']);
 	const canUpdate = usePermission('asset.update');
-	const canAssign = usePermission('asset.assign');
 	const canDispose = usePermission('asset.dispose');
 
 	const { data, isPending, isError, error } = useQuery({
@@ -67,9 +84,9 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 					</p>
 				</div>
 				<div className='flex flex-wrap gap-2'>
-					{canAssign && asset.status === 'in_stock' ? (
-						<Button render={<Link to='/assets/loans' />} variant='outline'>
-							{t('assets:detail.assign')}
+					{canUpdate && asset.status === 'ready' ? (
+						<Button render={<Link to='/assets/borrowings/new' />} variant='outline'>
+							{t('assets:detail.borrow')}
 						</Button>
 					) : null}
 					{canUpdate && asset.status !== 'inactive' && asset.deletedAt === null ? (
@@ -128,26 +145,19 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 				</Card>
 			</div>
 
+			{/* Location --------------------------------------------------- */}
+			<LocationCard assetId={asset.id} asset={asset} canUpdate={canUpdate} />
+
 			{/* History sections ------------------------------------------- */}
 			<div className='grid gap-6 lg:grid-cols-2'>
-				<HistorySection
-					title={t('assets:detail.custody')}
-					empty={t('assets:detail.noHistory')}
-					rows={history.assignments.map((assignment) => ({
-						id: assignment.id,
-						left:
-							assignment.assignedToUserId ?? assignment.assignedToEmployeeId ?? '—',
-						right: assignment.returnedAt
-							? `${t('assets:detail.returnedAt')}: ${assignment.returnedAt}`
-							: t('assets:loans.open'),
-					}))}
-				/>
 				<HistorySection
 					title={t('assets:detail.movements')}
 					empty={t('assets:detail.noHistory')}
 					rows={history.movements.map((movement) => ({
 						id: movement.id,
-						left: movement.movementType,
+						left: t(
+							`assets:movementType.${movement.movementType}` as 'assets:movementType.receipt',
+						),
 						right: movement.toLocation ?? '—',
 					}))}
 				/>
@@ -190,6 +200,179 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 			</div>
 			<Wrench className='hidden' />
 		</div>
+	);
+}
+
+/** Current warehouse/storage plus the place/transfer actions (D3). */
+function LocationCard({
+	assetId,
+	asset,
+	canUpdate,
+}: {
+	assetId: string;
+	asset: TAsset;
+	canUpdate: boolean;
+}) {
+	const { t } = useTranslation(['assets', 'common']);
+	const [mode, setMode] = useState<'place' | 'transfer' | null>(null);
+	const warehouses = useQuery({
+		...warehousesQueryOptions({ limit: 100, isActive: true }),
+		enabled: canUpdate,
+	});
+	const warehouse = useQuery({
+		...warehouseQueryOptions(asset.warehouseId ?? ''),
+		enabled: canUpdate && asset.warehouseId !== null,
+	});
+	const warehouseName =
+		warehouse.data?.name ??
+		warehouses.data?.rows.find((row) => row.id === asset.warehouseId)?.name;
+	const storageName = warehouse.data?.storages.find(
+		(row) => row.id === asset.storageId,
+	)?.name;
+
+	return (
+		<Card>
+			<CardHeader className='flex flex-row items-start justify-between gap-2'>
+				<CardTitle className='text-sm'>{t('assets:register.location')}</CardTitle>
+				{canUpdate && asset.status === 'ready' ? (
+					<div className='flex gap-2'>
+						<Button
+							size='sm'
+							variant='outline'
+							onClick={() => setMode('place')}
+						>
+							{t('assets:detail.place')}
+						</Button>
+						<Button
+							size='sm'
+							variant='outline'
+							disabled={asset.warehouseId === null}
+							onClick={() => setMode('transfer')}
+						>
+							{t('assets:detail.transfer')}
+						</Button>
+					</div>
+				) : null}
+			</CardHeader>
+			<CardContent className='space-y-1 text-sm'>
+				<p>
+					{warehouseName ??
+						asset.warehouseId ??
+						t('assets:detail.noWarehouse')}
+					{storageName ? ` · ${storageName}` : ''}
+				</p>
+				{asset.locationDescription ? (
+					<p className='text-muted-foreground'>{asset.locationDescription}</p>
+				) : null}
+			</CardContent>
+			{mode ? (
+				<LocationDialog
+					assetId={assetId}
+					mode={mode}
+					defaultWarehouseId={asset.warehouseId ?? ''}
+					onClose={() => setMode(null)}
+				/>
+			) : null}
+		</Card>
+	);
+}
+
+/** Warehouse -> storage picker, submitting either `place` or `transfer`. */
+function LocationDialog({
+	assetId,
+	mode,
+	defaultWarehouseId,
+	onClose,
+}: {
+	assetId: string;
+	mode: 'place' | 'transfer';
+	defaultWarehouseId: string;
+	onClose: () => void;
+}) {
+	const { t } = useTranslation(['assets', 'common']);
+	const queryClient = useQueryClient();
+	const warehouses = useQuery(warehousesQueryOptions({ limit: 100, isActive: true }));
+	const [warehouseId, setWarehouseId] = useState(defaultWarehouseId);
+	const [storageId, setStorageId] = useState('');
+	const warehouse = useQuery({
+		...warehouseQueryOptions(warehouseId),
+		enabled: warehouseId !== '',
+	});
+
+	const save = useMutation({
+		mutationFn: () =>
+			mode === 'place'
+				? placeAsset(assetId, {
+						warehouseId,
+						storageId: storageId || null,
+					})
+				: transferAsset(assetId, {
+						toWarehouseId: warehouseId,
+						toStorageId: storageId || null,
+					}),
+		onSuccess: async () => {
+			toast.success(
+				mode === 'place' ? t('assets:detail.placed') : t('assets:detail.transferred'),
+			);
+			await queryClient.invalidateQueries({ queryKey: ['assets'] });
+			onClose();
+		},
+		onError: (error: Error) => toast.error(error.message),
+	});
+
+	return (
+		<Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>
+						{mode === 'place'
+							? t('assets:detail.place')
+							: t('assets:detail.transfer')}
+					</DialogTitle>
+					<DialogDescription>
+						{t('assets:detail.locationDescription')}
+					</DialogDescription>
+				</DialogHeader>
+				<div className='space-y-3'>
+					<NativeSelect
+						value={warehouseId}
+						onChange={(event) => {
+							setWarehouseId(event.target.value);
+							setStorageId('');
+						}}
+					>
+						<option value=''>{t('assets:detail.selectWarehouse')}</option>
+						{(warehouses.data?.rows ?? []).map((row) => (
+							<option key={row.id} value={row.id}>
+								{row.code} · {row.name}
+							</option>
+						))}
+					</NativeSelect>
+					<NativeSelect
+						value={storageId}
+						onChange={(event) => setStorageId(event.target.value)}
+					>
+						<option value=''>{t('assets:detail.selectStorage')}</option>
+						{(warehouse.data?.storages ?? []).map((row) => (
+							<option key={row.id} value={row.id}>
+								{row.code} · {row.name}
+							</option>
+						))}
+					</NativeSelect>
+				</div>
+				<DialogFooter>
+					<Button variant='ghost' onClick={onClose}>
+						{t('assets:form.cancel')}
+					</Button>
+					<Button
+						disabled={warehouseId === '' || save.isPending}
+						onClick={() => save.mutate()}
+					>
+						{t('assets:form.save')}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }
 

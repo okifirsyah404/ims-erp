@@ -66,14 +66,8 @@ export function ItemForm({
 		String(item?.purchasePrice ?? 0),
 	);
 
-	const isService = itemKind === 'service';
-
 	function handleKindChange(next: TItemKind) {
 		setItemKind(next);
-		if (next === 'service') {
-			setIsSerialized(false);
-			setIsStockTracked(false);
-		}
 	}
 
 	function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -219,7 +213,6 @@ export function ItemForm({
 									min={0}
 									step='0.001'
 									value={minStockQty}
-									disabled={isService}
 									onChange={(event) => setMinStockQty(event.target.value)}
 								/>
 							</Field>
@@ -255,21 +248,18 @@ export function ItemForm({
 							<label className='flex items-center gap-2 text-sm'>
 								<Checkbox
 									checked={isSerialized}
-									disabled={isService}
 									onCheckedChange={(checked) => setIsSerialized(checked === true)}
 								/>
 								{t('inventory:items.serialized')}
 							</label>
 							<p className='text-xs text-muted-foreground'>
-								{isService
-									? t('inventory:form.serviceHint')
-									: t('inventory:form.serializedHint')}
+								{t('inventory:form.serializedHint')}
 							</p>
 
 							<label className='flex items-center gap-2 text-sm'>
 								<Checkbox
 									checked={isStockTracked}
-									disabled={isService || isSerialized}
+									disabled={isSerialized}
 									onCheckedChange={(checked) =>
 										setIsStockTracked(checked === true)
 									}

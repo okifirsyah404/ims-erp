@@ -67,23 +67,22 @@ const DYNAMIC_PREFIXES = [
 	'inventory:movements.status.',
 	'inventory:adjustments.type.',
 	'inventory:adjustments.status.',
-	// S4 borrowing workflow: status, purpose, condition, and event type all
-	// arrive as server values, so the label key has to be composed.
-	'inventory:borrowingStatus.',
-	'inventory:borrowingPurpose.',
-	'inventory:borrowingCondition.',
-	'inventory:borrowingEvent.',
-	// Asset module (M06): statuses, conditions, types and workflow enums are
+	// Borrowing workflow (ERP-0036): status, purpose, condition, and event
+	// type all arrive as server values, so the label key has to be composed.
+	'assets:borrowingStatus.',
+	'assets:borrowingPurpose.',
+	'assets:borrowingCondition.',
+	'assets:borrowingEvent.',
+	// Asset module (M06): statuses, conditions and workflow enums are
 	// server values, so the label keys are composed at runtime.
 	'assets:status.',
 	'assets:condition.',
-	'assets:type.',
 	'assets:disposalStatus.',
 	'assets:disposalMethod.',
 	'assets:maintenanceType.',
 	'assets:maintenanceStatus.',
-	'assets:maintenanceStatus.',
 	'assets:toolSetStatus.',
+	'assets:movementType.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

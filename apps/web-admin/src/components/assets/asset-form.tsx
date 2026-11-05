@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -28,7 +28,7 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from '@/components/toast';
 import {
-	ASSET_TYPES,
+	assetTypesQueryOptions,
 	createAsset,
 	updateAsset,
 	type TAsset,
@@ -47,6 +47,7 @@ export function AssetForm({ asset }: { asset?: TAsset }) {
 
 	const [name, setName] = useState(asset?.name ?? '');
 	const [assetType, setAssetType] = useState<TAssetType>(asset?.assetType ?? 'equipment');
+	const types = useQuery(assetTypesQueryOptions());
 	const [serialNumber, setSerialNumber] = useState(asset?.serialNumber ?? '');
 	const [acquisitionCost, setAcquisitionCost] = useState(
 		String(asset?.acquisitionCost ?? '0'),
@@ -110,9 +111,9 @@ export function AssetForm({ asset }: { asset?: TAsset }) {
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							{ASSET_TYPES.map((value) => (
-								<SelectItem key={value} value={value}>
-									{t(`type.${value}`)}
+							{(types.data ?? []).map((type) => (
+								<SelectItem key={type.code} value={type.code}>
+									{type.name}
 								</SelectItem>
 							))}
 						</SelectContent>

@@ -250,7 +250,6 @@ function WarehouseCard({
 	const stats: Array<[string, number]> = [
 		[t('inventory:warehouses.products'), warehouse.productsCount],
 		[t('inventory:warehouses.materials'), warehouse.materialsCount],
-		[t('inventory:warehouses.tools'), warehouse.toolsCount],
 		[t('inventory:warehouses.storages'), warehouse.storagesCount],
 	];
 

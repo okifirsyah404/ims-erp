@@ -5,8 +5,10 @@ import type { TPaginationResult } from '@ims-erp/common';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import {
 	assets,
+	assetTypes,
 	type TAssetInsert,
 	type TAssetSelect,
+	type TAssetTypeSelect,
 } from '@drizzle/schemas/asset.schema';
 import {
 	assetMaintenances,
@@ -90,6 +92,14 @@ export class AssetRepository implements IAssetRepository {
 			.where(and(eq(assets.id, id), isNull(assets.deletedAt)))
 			.limit(1);
 		return row ?? null;
+	}
+
+	async listTypes(): Promise<TAssetTypeSelect[]> {
+		return this.database
+			.select()
+			.from(assetTypes)
+			.where(and(eq(assetTypes.isActive, true), isNull(assetTypes.deletedAt)))
+			.orderBy(assetTypes.name);
 	}
 
 	async findByCode(

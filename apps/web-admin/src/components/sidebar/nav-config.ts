@@ -117,7 +117,6 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 					{ titleKey: 'item.products', url: '/inventory/products' },
 					{ titleKey: 'item.components', url: '/inventory/components' },
 					{ titleKey: 'item.materials', url: '/inventory/materials' },
-					{ titleKey: 'item.tools', url: '/inventory/tools' },
 					{ titleKey: 'item.newItem', url: '/inventory/items/new' },
 					{ titleKey: 'item.itemMovements', url: '/inventory/stock/movements' },
 				],
@@ -137,7 +136,7 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/assets',
 				icon: Repeat,
 				items: [
-					{ titleKey: 'item.borrowings', url: '/inventory/borrowings' },
+					{ titleKey: 'item.borrowings', url: '/assets/borrowings' },
 					{ titleKey: 'item.assetRegister', url: '/assets/register' },
 					{ titleKey: 'item.serviceRecords', url: '/assets/service-records' },
 					{ titleKey: 'item.depreciation', url: '/assets/depreciation' },

@@ -79,7 +79,6 @@ const nav = {
 	'item.products': 'Products',
 	'item.components': 'Components',
 	'item.materials': 'Materials',
-	'item.tools': 'Tools',
 	'item.newItem': 'New item',
 	'item.itemMovements': 'Item Movements',
 	'item.organizations': 'Organization',

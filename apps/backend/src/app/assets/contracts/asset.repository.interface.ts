@@ -3,6 +3,7 @@ import type {
 	AssetStatus,
 	TAssetInsert,
 	TAssetSelect,
+	TAssetTypeSelect,
 } from '@drizzle/schemas/asset.schema';
 import type { TTx } from '@drizzle/types';
 
@@ -82,6 +83,9 @@ export interface IAssetRepository {
 	): Promise<TPaginationResult<TAssetSelect>>;
 
 	findById(id: string): Promise<TAssetSelect | null>;
+
+	/** Active asset types, for form and filter options. */
+	listTypes(): Promise<TAssetTypeSelect[]>;
 
 	/** Uniqueness probe for `(organizationId, code)` among alive rows. */
 	findByCode(

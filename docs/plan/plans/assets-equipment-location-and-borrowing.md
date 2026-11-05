@@ -367,6 +367,9 @@ keys are not part of the persistence contract).
 
 ### Slice 5 — UI, i18n, removals
 
+**Status: DONE (2026-11-06).** Screens moved, lookup wired, removals and
+locale re-keying complete.
+
 1. Borrowing screens move under Assets & Equipment (list, detail, form) using
    the ported `borrowing-api.ts`; the loans page becomes a borrowing list
    filtered to open borrowings.

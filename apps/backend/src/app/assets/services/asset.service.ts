@@ -85,6 +85,11 @@ export class AssetService {
 		return this.requireAsset(id);
 	}
 
+	/** Active asset types (lookup table, global reference data). */
+	listTypes(): ReturnType<IAssetRepository['listTypes']> {
+		return this.assetRepository.listTypes();
+	}
+
 	/**
 	 * Registers a new asset. The code is sequence-allocated (D15) inside the
 	 * creating transaction; `book_value` starts at the acquisition cost.

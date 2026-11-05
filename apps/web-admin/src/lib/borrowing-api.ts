@@ -95,19 +95,24 @@ export type TBorrowing = {
 	dueAt: string;
 	closedBy: string | null;
 	closedAt: string | null;
+	/** Set when the borrowing lends a whole tool set (D6). */
+	toolSetId: string | null;
 	notes: string | null;
 	createdAt: string;
 	updatedAt: string | null;
 	deletedAt: string | null;
+	/** Detail projection only: `true` when guest identity fields were withheld. */
+	guestIdentityRedacted?: boolean;
 };
 
-/** One borrowed unit. A line is exactly one serialized unit. */
+/** One borrowed unit. A line is exactly one asset. */
 export type TBorrowingLine = {
 	id: string;
 	borrowingId: string;
-	serialTrackedItemId: string;
+	assetId: string;
 	/** The warehouse the unit left from; a return restores it here. */
-	originWarehouseId: string;
+	originWarehouseId: string | null;
+	originStorageId: string | null;
 	issuedAt: string | null;
 	dueAt: string | null;
 	returnedAt: string | null;
@@ -128,7 +133,7 @@ export type TBorrowingLine = {
  * One timeline entry.
  *
  * @remarks
- * **`issued`, `returned`, and `marked_lost` always carry a `stockMovementId`** —
+ * **`issued`, `returned`, and `marked_lost` always carry an `assetMovementId`** —
  * the backend's CHECK constraint requires it, which is how the trail proves a
  * physical event was actually written to the ledger rather than merely claimed.
  * Every other event carries `null`. `marked_late` also has a null actor: it is
@@ -138,7 +143,7 @@ export type TBorrowingEvent = {
 	id: string;
 	borrowingLineId: string | null;
 	eventType: string;
-	stockMovementId: string | null;
+	assetMovementId: string | null;
 	actorUserId: string | null;
 	occurredAt: string;
 	note: string | null;
@@ -151,9 +156,15 @@ export type TBorrowingDetail = {
 	events: TBorrowingEvent[];
 };
 
+/** The flat shape the API returns for a detail read. */
+type TBorrowingView = TBorrowing & {
+	lines: TBorrowingLine[];
+	events: TBorrowingEvent[];
+};
+
 /** One requested unit. */
 export type TBorrowingLineInput = {
-	serialTrackedItemId: string;
+	assetId: string;
 	dueAt?: string | null;
 	siteAddressText?: string | null;
 	projectId?: string | null;
@@ -179,6 +190,8 @@ export type TBorrowingCreateInput = TBorrowerInput & {
 	purpose: TBorrowingPurpose;
 	dueAt: string;
 	notes?: string | null;
+	/** Lends a whole tool set; the backend expands it to one line per member. */
+	toolSetId?: string | null;
 	lines: TBorrowingLineInput[];
 };
 
@@ -202,22 +215,13 @@ async function request<T>(
 }
 
 /**
- * Unwraps a response that may be a bare borrowing, a detail envelope, or
- * nothing.
- *
- * @remarks
- * The service returns the detail shape everywhere, but the shared envelope
- * generic cannot see the discriminant, so both shapes arrive at this seam. A
- * `null` body is passed through as `null` — the detail page renders it as
- * "not found" rather than crashing on a destructure.
+ * Unwraps the flat detail shape the service returns into the screen shape, or
+ * passes `null` through so the detail page renders "not found".
  */
-function toDetail(
-	data: TBorrowing | TBorrowingDetail | null,
-): TBorrowingDetail | null {
+function toDetail(data: TBorrowingView | null): TBorrowingDetail | null {
 	if (data === null) return null;
-	return 'borrowing' in data
-		? data
-		: { borrowing: data, lines: [], events: [] };
+	const { lines, events, ...borrowing } = data;
+	return { borrowing, lines, events };
 }
 
 /** Fetches one page of borrowings. */
@@ -244,7 +248,7 @@ export async function listBorrowings(params?: {
 
 /** Fetches one borrowing with its lines and timeline. */
 export async function getBorrowing(borrowingId: string) {
-	const envelope = await request<TBorrowingDetail | TBorrowing>(
+	const envelope = await request<TBorrowingView>(
 		`/borrowings/${borrowingId}`,
 	);
 	return toDetail(envelope.data);
@@ -252,7 +256,7 @@ export async function getBorrowing(borrowingId: string) {
 
 /** Raises a borrowing. It starts in `requested`. */
 export async function createBorrowing(input: TBorrowingCreateInput) {
-	const envelope = await request<TBorrowingDetail | TBorrowing>('/borrowings', {
+	const envelope = await request<TBorrowingView>('/borrowings', {
 		method: 'POST',
 		body: JSON.stringify(input),
 	});
@@ -280,7 +284,7 @@ export async function transitionBorrowing(
 	borrowingId: string,
 	action: TBorrowingAction,
 ) {
-	const envelope = await request<TBorrowingDetail | TBorrowing>(
+	const envelope = await request<TBorrowingView>(
 		`/borrowings/${borrowingId}/${action}`,
 		{ method: 'POST' },
 	);
@@ -296,7 +300,7 @@ export async function returnBorrowing(
 		note?: string | null;
 	},
 ) {
-	const envelope = await request<TBorrowingDetail | TBorrowing>(
+	const envelope = await request<TBorrowingView>(
 		`/borrowings/${borrowingId}/return`,
 		{ method: 'POST', body: JSON.stringify(input) },
 	);
@@ -305,7 +309,7 @@ export async function returnBorrowing(
 
 /** Extends the due date. Nothing physical moves. */
 export async function extendBorrowing(borrowingId: string, dueAt: string) {
-	const envelope = await request<TBorrowingDetail | TBorrowing>(
+	const envelope = await request<TBorrowingView>(
 		`/borrowings/${borrowingId}/extend`,
 		{ method: 'POST', body: JSON.stringify({ dueAt }) },
 	);
@@ -323,7 +327,7 @@ export async function markBorrowingLineLost(
 	borrowingId: string,
 	input: { lineId: string; note?: string | null },
 ) {
-	const envelope = await request<TBorrowingDetail | TBorrowing>(
+	const envelope = await request<TBorrowingView>(
 		`/borrowings/${borrowingId}/mark-lost`,
 		{ method: 'POST', body: JSON.stringify(input) },
 	);
@@ -339,13 +343,13 @@ export const borrowingsQueryOptions = (params: {
 	search?: string;
 } = {}) =>
 	queryOptions({
-		queryKey: ['inventory', 'borrowings', params] as const,
+		queryKey: ['assets', 'borrowings', params] as const,
 		queryFn: () => listBorrowings(params),
 	});
 
 /** Query options for one borrowing. */
 export const borrowingQueryOptions = (borrowingId: string) =>
 	queryOptions({
-		queryKey: ['inventory', 'borrowings', borrowingId] as const,
+		queryKey: ['assets', 'borrowings', borrowingId] as const,
 		queryFn: () => getBorrowing(borrowingId),
 	});
