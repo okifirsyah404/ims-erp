@@ -20,6 +20,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.customers': 'Pelanggan',
 	'item.leads': 'Prospek',
 	'item.quotes': 'SPH',
+	'item.salesOrders': 'Sales order',
 	'item.invoices': 'Faktur',
 	'item.downPayments': 'Uang Muka',
 	'item.receipts': 'Kuitansi',

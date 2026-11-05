@@ -18,7 +18,8 @@ import { businessDateOf, type TPaginationResult } from '@ims-erp/common';
 import { documentImageUrl } from '@providers/s3/document-image';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import { inject, injectable } from 'tsyringe';
-import { QUOTATION_REPOSITORY_TOKEN } from '../constants/di';
+import { QUOTATION_REPOSITORY_TOKEN, SALES_ORDER_REPOSITORY_TOKEN } from '../constants/di';
+import type { ISalesOrderRepository } from '../contracts/sales-order.repository.interface';
 import type {
 	TQuotationBodyRequest,
 	TQuotationDecisionRequest,
@@ -78,6 +79,8 @@ export type TQuotationDetail = TQuotationView & {
 	history: (TQuotationStatusHistorySelect & { by: TQuotationPerson | null })[];
 	creator: TQuotationPerson | null;
 	approver: TQuotationPerson | null;
+	/** The live sales order of a Deal (`won`) SPH. */
+	salesOrder: { id: string; code: string; status: string } | null;
 };
 
 function withValidity(quotation: TQuotationSelect): TQuotationView {
@@ -113,6 +116,8 @@ export class QuotationService {
 		private readonly users: Pick<UserService, 'getUser'>,
 		@inject(OBJECT_STORAGE_TOKEN)
 		private readonly storage: Pick<IObjectStorage, 'presignGet'>,
+		@inject(SALES_ORDER_REPOSITORY_TOKEN)
+		private readonly orders: Pick<ISalesOrderRepository, 'findLiveByQuotation'>,
 	) {}
 
 	private async requireVisible(ctx: TQuotationContext, id: string): Promise<TQuotationSelect> {
@@ -242,10 +247,11 @@ export class QuotationService {
 
 	async get(ctx: TQuotationContext, id: string): Promise<TQuotationDetail> {
 		const quotation = await this.requireVisible(ctx, id);
-		const [items, revisions, history] = await Promise.all([
+		const [items, revisions, history, order] = await Promise.all([
 			this.quotations.findItems(id),
 			this.quotations.findRevisions(quotation.baseCode),
 			this.quotations.findHistory(id),
+			quotation.status === 'won' ? this.orders.findLiveByQuotation(id) : Promise.resolve(null),
 		]);
 		const people = await this.people([quotation.createdBy, quotation.approvedBy, ...history.map((h) => h.changedBy)]);
 		const person = (userId: string | null) => (userId ? (people.get(userId) ?? null) : null);
@@ -263,6 +269,7 @@ export class QuotationService {
 			history: history.map((entry) => ({ ...entry, by: person(entry.changedBy) })),
 			creator: person(quotation.createdBy),
 			approver: person(quotation.approvedBy),
+			salesOrder: order ? { id: order.id, code: order.code, status: order.status } : null,
 		};
 	}
 
@@ -321,7 +328,9 @@ export class QuotationService {
 		const quotation = await this.requireVisible(ctx, id);
 		if (quotation.status === 'draft') throw new QuotationStateError('revisionOfDraft');
 		if (quotation.status === 'superseded') throw new QuotationStateError('notLatest');
-		if (quotation.status === 'won') throw new QuotationStateError('won');
+		if (quotation.status === 'won' || (await this.orders.findLiveByQuotation(id))) {
+			throw new QuotationStateError('won');
+		}
 		const revision = await this.quotations.createRevision(
 			id,
 			['submitted', 'approved', 'rejected', 'sent', 'lost'],

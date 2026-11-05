@@ -48,6 +48,7 @@ const LABELS: Record<string, NavKey> = {
 	'/crm/leads': 'item.leads',
 	'/sales': 'item.sales',
 	'/sales/quotes': 'item.quotes',
+	'/sales/orders': 'item.salesOrders',
 	'/sales/quotes/new': 'breadcrumb.quotationNew',
 	'/sales/quotes/$quotationId/edit': 'breadcrumb.quotationEdit',
 	'/sales/quotes/$quotationId/print': 'breadcrumb.print',

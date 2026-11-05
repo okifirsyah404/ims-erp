@@ -2,7 +2,7 @@
  * Sales domain schema — owns the `sales` Postgres schema.
  *
  * Quotations (SPH) with their items and status history (ADR-0011 port step
- * 3c), plus the transitional `payments` scaffold.
+ * 3c), sales orders (step 3d), plus the transitional `payments` scaffold.
  *
  * House rules honoured here:
  * - **Company-wide, no `organization_id`** on the quotation tables
@@ -268,6 +268,155 @@ export const quotationStatusHistory = salesSchema.table(
 	(table) => [index('quotation_status_history_quotation_id_idx').on(table.quotationId)],
 );
 
+/**
+ * Sales order statuses. `confirmed` = active: an order is created from an
+ * approved or sent SPH and needs no further approval. `in_progress`,
+ * `delivered` and `completed` are reserved for fulfilment (steps 4-5).
+ */
+export const SALES_ORDER_STATUSES = ['confirmed', 'in_progress', 'delivered', 'completed', 'cancelled'] as const;
+export type SalesOrderStatus = (typeof SALES_ORDER_STATUSES)[number];
+
+export const FULFILLMENT_STATUSES = ['pending', 'reserved', 'partial', 'fulfilled', 'cancelled'] as const;
+export type FulfillmentStatus = (typeof FULFILLMENT_STATUSES)[number];
+
+/* ------------------------------------------------------------------------ *
+ * sales.sales_orders
+ * ------------------------------------------------------------------------ */
+
+export const salesOrders = salesSchema.table(
+	'sales_orders',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		code: varchar('code', { length: 32 }).notNull(),
+		/** The SPH this order closed as Deal; one live order per SPH. */
+		quotationId: uuid('quotation_id')
+			.notNull()
+			.references(() => quotations.id, { onDelete: 'restrict' }),
+		/** Number of that SPH revision. */
+		quotationCode: varchar('quotation_code', { length: 40 }).notNull(),
+		/** Logical reference to crm.customers.id — cross-module FK omitted. */
+		customerId: uuid('customer_id').notNull(),
+		customerSnapshot: jsonb('customer_snapshot').$type<TQuotationCustomerSnapshot>().notNull(),
+		customerPoNumber: varchar('customer_po_number', { length: 100 }),
+		title: text('title').notNull(),
+		attention: varchar('attention', { length: 200 }),
+		status: text('status').$type<SalesOrderStatus>().notNull().default('confirmed'),
+		/** Jakarta business date, `YYYY-MM-DD`. */
+		orderDate: date('order_date').notNull(),
+		deliveryDate: date('delivery_date'),
+		paymentTerms: varchar('payment_terms', { length: 300 }),
+		paymentSchedule: jsonb('payment_schedule').$type<TPaymentScheduleItem[]>(),
+		guarantee: varchar('guarantee', { length: 300 }),
+		vatEnabled: boolean('vat_enabled').notNull(),
+		vatRateBps: integer('vat_rate_bps').notNull().default(0),
+		subtotal: bigint('subtotal', { mode: 'number' }).notNull().default(0),
+		discountTotal: bigint('discount_total', { mode: 'number' }).notNull().default(0),
+		taxTotal: bigint('tax_total', { mode: 'number' }).notNull().default(0),
+		grandTotal: bigint('grand_total', { mode: 'number' }).notNull().default(0),
+		currencyCode: varchar('currency_code', { length: 3 }).notNull().default('IDR'),
+		/** Logical reference to auth.users.id — the SPH owner (visibility). */
+		salesPersonUserId: text('sales_person_user_id'),
+		notes: text('notes'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		createdBy: text('created_by'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		cancelledBy: text('cancelled_by'),
+		cancelledAt: unixTimestampNullable('cancelled_at'),
+		cancellationReason: text('cancellation_reason'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('sales_orders_code_uq')
+			.on(table.code)
+			.where(sql`deleted_at IS NULL`),
+		uniqueIndex('sales_orders_live_quotation_uq')
+			.on(table.quotationId)
+			.where(sql`deleted_at IS NULL AND status <> 'cancelled'`),
+		index('sales_orders_quotation_id_idx').on(table.quotationId),
+		index('sales_orders_customer_id_idx').on(table.customerId),
+		index('sales_orders_status_idx').on(table.status),
+		index('sales_orders_sales_person_idx').on(table.salesPersonUserId),
+		check(
+			'sales_orders_status_check',
+			sql`${table.status} IN ('confirmed', 'in_progress', 'delivered', 'completed', 'cancelled')`,
+		),
+		check('sales_orders_vat_rate_check', sql`${table.vatRateBps} >= 0 AND ${table.vatRateBps} <= 10000`),
+		check(
+			'sales_orders_amounts_check',
+			sql`${table.subtotal} >= 0 AND ${table.discountTotal} >= 0 AND ${table.taxTotal} >= 0 AND ${table.grandTotal} >= 0`,
+		),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * sales.sales_order_items
+ * ------------------------------------------------------------------------ */
+
+export const salesOrderItems = salesSchema.table(
+	'sales_order_items',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		salesOrderId: uuid('sales_order_id')
+			.notNull()
+			.references(() => salesOrders.id, { onDelete: 'cascade' }),
+		quotationItemId: uuid('quotation_item_id').references(() => quotationItems.id, { onDelete: 'restrict' }),
+		/** Logical reference to inventory.items.id; null = custom line. */
+		itemId: uuid('item_id'),
+		sku: varchar('sku', { length: 64 }),
+		name: text('name').notNull(),
+		specification: text('specification'),
+		unit: varchar('unit', { length: 32 }).notNull(),
+		quantity: numeric('quantity', { precision: 18, scale: 3 }).notNull().default('1'),
+		unitPrice: bigint('unit_price', { mode: 'number' }).notNull().default(0),
+		discountAmount: bigint('discount_amount', { mode: 'number' }).notNull().default(0),
+		lineTotal: bigint('line_total', { mode: 'number' }).notNull().default(0),
+		quantityDelivered: numeric('quantity_delivered', { precision: 18, scale: 3 }).notNull().default('0'),
+		fulfillmentStatus: text('fulfillment_status').$type<FulfillmentStatus>().notNull().default('pending'),
+		sortOrder: integer('sort_order').notNull().default(0),
+		...timestamps,
+	},
+	(table) => [
+		index('sales_order_items_order_sort_idx').on(table.salesOrderId, table.sortOrder),
+		index('sales_order_items_fulfillment_status_idx').on(table.fulfillmentStatus),
+		check(
+			'sales_order_items_amounts_check',
+			sql`${table.quantity} > 0 AND ${table.unitPrice} >= 0 AND ${table.discountAmount} >= 0 AND ${table.lineTotal} >= 0 AND ${table.quantityDelivered} >= 0`,
+		),
+		check(
+			'sales_order_items_fulfillment_status_check',
+			sql`${table.fulfillmentStatus} IN ('pending', 'reserved', 'partial', 'fulfilled', 'cancelled')`,
+		),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * sales.order_status_history (append-only)
+ * ------------------------------------------------------------------------ */
+
+export const orderStatusHistory = salesSchema.table(
+	'order_status_history',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		salesOrderId: uuid('sales_order_id')
+			.notNull()
+			.references(() => salesOrders.id, { onDelete: 'cascade' }),
+		fromStatus: text('from_status'),
+		toStatus: text('to_status').notNull(),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		changedBy: text('changed_by'),
+		changedAt: unixTimestamp('changed_at').notNull(),
+		note: text('note'),
+		...timestamps,
+	},
+	(table) => [index('order_status_history_sales_order_id_idx').on(table.salesOrderId)],
+);
+
 /* ------------------------------------------------------------------------ *
  * sales.payments (transitional scaffold, dropped in S7)
  * ------------------------------------------------------------------------ */
@@ -300,7 +449,7 @@ export const payments = salesSchema.table(
 );
 
 export const salesRelations = defineRelationsPart(
-	{ quotations, quotationItems, quotationStatusHistory },
+	{ quotations, quotationItems, quotationStatusHistory, salesOrders, salesOrderItems, orderStatusHistory },
 	(r) => ({
 		quotations: {
 			items: r.many.quotationItems({
@@ -318,6 +467,18 @@ export const salesRelations = defineRelationsPart(
 				to: r.quotations.id,
 			}),
 		},
+		salesOrders: {
+			items: r.many.salesOrderItems({
+				from: r.salesOrders.id,
+				to: r.salesOrderItems.salesOrderId,
+			}),
+		},
+		salesOrderItems: {
+			order: r.one.salesOrders({
+				from: r.salesOrderItems.salesOrderId,
+				to: r.salesOrders.id,
+			}),
+		},
 		quotationStatusHistory: {
 			quotation: r.one.quotations({
 				from: r.quotationStatusHistory.quotationId,
@@ -332,5 +493,10 @@ export type TQuotationSelect = typeof quotations.$inferSelect;
 export type TQuotationItemInsert = typeof quotationItems.$inferInsert;
 export type TQuotationItemSelect = typeof quotationItems.$inferSelect;
 export type TQuotationStatusHistorySelect = typeof quotationStatusHistory.$inferSelect;
+export type TSalesOrderInsert = typeof salesOrders.$inferInsert;
+export type TSalesOrderSelect = typeof salesOrders.$inferSelect;
+export type TSalesOrderItemInsert = typeof salesOrderItems.$inferInsert;
+export type TSalesOrderItemSelect = typeof salesOrderItems.$inferSelect;
+export type TOrderStatusHistorySelect = typeof orderStatusHistory.$inferSelect;
 export type TPaymentInsert = typeof payments.$inferInsert;
 export type TPaymentSelect = typeof payments.$inferSelect;

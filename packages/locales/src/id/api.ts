@@ -20,6 +20,10 @@ const api: Record<keyof typeof en, string> = {
 
 	'sales.quotationNotFound': 'Penawaran tidak ditemukan',
 	'sales.paymentNotFound': 'Pembayaran tidak ditemukan',
+	'sales.orderNotFound': 'Sales order tidak ditemukan',
+	'sales.orderQuotationNotReady': 'Hanya penawaran yang sudah disetujui atau terkirim yang bisa dijadikan sales order',
+	'sales.orderExists': 'Penawaran ini sudah memiliki sales order',
+	'sales.orderNotCancellable': 'Hanya sales order yang aktif yang bisa dibatalkan',
 	'sales.customerUnavailable': 'Pelanggan tidak ditemukan atau nonaktif',
 	'sales.contactInvalid': 'Kontak tersebut bukan milik pelanggan ini',
 	'sales.leadNotFound': 'Lead tidak ditemukan',

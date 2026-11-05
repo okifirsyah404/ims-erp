@@ -13,6 +13,7 @@ import {
 } from './inventory';
 import { QuotationController } from './sales/controllers/quotation.controller';
 import { SalesController } from './sales/controllers/sales.controller';
+import { SalesOrderController } from './sales/controllers/sales-order.controller';
 import {
 	InvitationClaimController,
 	InvitationController,
@@ -78,6 +79,7 @@ export function createApp() {
 			)
 			.use(LocationController.plugin())
 			.use(QuotationController.plugin())
+			.use(SalesOrderController.plugin())
 			.use(SalesController.plugin())
 			// Admin surfaces share the `/admin` prefix, so their routes no longer
 			// overlap the self-service `/users/*` routes: mount order is irrelevant

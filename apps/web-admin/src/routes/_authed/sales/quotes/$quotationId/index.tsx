@@ -23,6 +23,7 @@ import {
 	TableRow,
 } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { CreateOrderDialog } from '@/components/sales/create-order-dialog';
 import { toast } from '@/components/toast';
 import { authClient } from '@/lib/auth-client';
 import { formatBusinessDate, formatDateTime, formatIdr } from '@/lib/format';
@@ -39,6 +40,7 @@ import {
 	type TQuotation,
 	type TQuotationLostReason,
 } from '@/lib/quotation-api';
+import { createSalesOrder } from '@/lib/sales-order-api';
 import { usePermission } from '@/lib/use-permission';
 
 /** `/sales/quotes/$quotationId` — one SPH: lines, workflow, revisions, history. */
@@ -65,6 +67,8 @@ function QuotationDetailPage() {
 	const canSubmit = usePermission('quotation.submit');
 	const canApprove = usePermission('quotation.approve');
 	const canSend = usePermission('quotation.send');
+	const canOrder = usePermission('sales_order.create');
+	const [ordering, setOrdering] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const [rejecting, setRejecting] = useState(false);
 	const [rejectReason, setRejectReason] = useState('');
@@ -166,6 +170,20 @@ function QuotationDetailPage() {
 							onClick={() => void run(() => sendQuotation(quotationId), t('sales:detail.sent'))}
 						>
 							{t('sales:detail.markSent')}
+						</Button>
+					)}
+					{(data.status === 'approved' || data.status === 'sent') && canOrder && (
+						<Button disabled={busy} onClick={() => setOrdering(true)}>
+							{t('sales:orders.new')}
+						</Button>
+					)}
+					{data.salesOrder && (
+						<Button
+							variant='outline'
+							render={<Link to='/sales/orders/$orderId' params={{ orderId: data.salesOrder.id }} />}
+							nativeButton={false}
+						>
+							{t('sales:orders.open', { code: data.salesOrder.code })}
 						</Button>
 					)}
 					{revisable && canUpdate && (
@@ -366,6 +384,25 @@ function QuotationDetailPage() {
 						<Detail label={t('sales:quotation.notes')} value={data.notes} />
 					</CardContent>
 				</Card>
+			)}
+
+			{ordering && (
+				<CreateOrderDialog
+					quotationId={quotationId}
+					submitting={busy}
+					onClose={() => setOrdering(false)}
+					onSave={(input) =>
+						void run(
+							async () => {
+								const order = await createSalesOrder(input);
+								setOrdering(false);
+								void navigate({ to: '/sales/orders/$orderId', params: { orderId: order.id } });
+								return data;
+							},
+							t('sales:orders.created'),
+						)
+					}
+				/>
 			)}
 
 			<Dialog open={rejecting} onOpenChange={setRejecting}>

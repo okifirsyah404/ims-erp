@@ -97,6 +97,7 @@ describe('locale values', () => {
 			'sales:doc.date',
 			'sales:doc.heading',
 			'sales:doc.total',
+			'sales:orders.open',
 			'inventory:address.rt',
 			'inventory:address.rw',
 			'inventory:address.label',

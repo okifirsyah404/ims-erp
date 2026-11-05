@@ -87,6 +87,8 @@ import { Route as AuthedProjectsTicketsIndexRouteImport } from './routes/_authed
 import { Route as AuthedReportsMonthlyArchivesIndexRouteImport } from './routes/_authed/reports/monthly-archives/index'
 import { Route as AuthedSalesDownPaymentsIndexRouteImport } from './routes/_authed/sales/down-payments/index'
 import { Route as AuthedSalesInvoicesIndexRouteImport } from './routes/_authed/sales/invoices/index'
+import { Route as AuthedSalesOrdersIndexRouteImport } from './routes/_authed/sales/orders/index'
+import { Route as AuthedSalesOrdersOrderIdRouteImport } from './routes/_authed/sales/orders/$orderId'
 import { Route as AuthedSalesQuotesIndexRouteImport } from './routes/_authed/sales/quotes/index'
 import { Route as AuthedSalesQuotesNewRouteImport } from './routes/_authed/sales/quotes/new'
 import { Route as AuthedSalesReceiptsIndexRouteImport } from './routes/_authed/sales/receipts/index'
@@ -539,6 +541,17 @@ const AuthedSalesInvoicesIndexRoute =
     path: '/sales/invoices/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedSalesOrdersIndexRoute = AuthedSalesOrdersIndexRouteImport.update({
+  id: '/sales/orders/',
+  path: '/sales/orders/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSalesOrdersOrderIdRoute =
+  AuthedSalesOrdersOrderIdRouteImport.update({
+    id: '/sales/orders/$orderId',
+    path: '/sales/orders/$orderId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedSalesQuotesIndexRoute = AuthedSalesQuotesIndexRouteImport.update({
   id: '/sales/quotes/',
   path: '/sales/quotes/',
@@ -694,6 +707,7 @@ export interface FileRoutesByFullPath {
   '/inventory/warehouses/$warehouseId': typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   '/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
+  '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/admin/audit/': typeof AuthedAdminAuditIndexRoute
   '/admin/roles/': typeof AuthedAdminRolesIndexRoute
@@ -737,6 +751,7 @@ export interface FileRoutesByFullPath {
   '/reports/monthly-archives/': typeof AuthedReportsMonthlyArchivesIndexRoute
   '/sales/down-payments/': typeof AuthedSalesDownPaymentsIndexRoute
   '/sales/invoices/': typeof AuthedSalesInvoicesIndexRoute
+  '/sales/orders/': typeof AuthedSalesOrdersIndexRoute
   '/sales/quotes/': typeof AuthedSalesQuotesIndexRoute
   '/sales/receipts/': typeof AuthedSalesReceiptsIndexRoute
   '/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
@@ -791,6 +806,7 @@ export interface FileRoutesByTo {
   '/inventory/warehouses/$warehouseId': typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   '/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
+  '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/admin/audit': typeof AuthedAdminAuditIndexRoute
   '/admin/roles': typeof AuthedAdminRolesIndexRoute
@@ -834,6 +850,7 @@ export interface FileRoutesByTo {
   '/reports/monthly-archives': typeof AuthedReportsMonthlyArchivesIndexRoute
   '/sales/down-payments': typeof AuthedSalesDownPaymentsIndexRoute
   '/sales/invoices': typeof AuthedSalesInvoicesIndexRoute
+  '/sales/orders': typeof AuthedSalesOrdersIndexRoute
   '/sales/quotes': typeof AuthedSalesQuotesIndexRoute
   '/sales/receipts': typeof AuthedSalesReceiptsIndexRoute
   '/subscription/activations': typeof AuthedSubscriptionActivationsIndexRoute
@@ -892,6 +909,7 @@ export interface FileRoutesById {
   '/_authed/inventory/warehouses/$warehouseId': typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   '/_authed/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/_authed/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
+  '/_authed/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/_authed/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/_authed/admin/audit/': typeof AuthedAdminAuditIndexRoute
   '/_authed/admin/roles/': typeof AuthedAdminRolesIndexRoute
@@ -935,6 +953,7 @@ export interface FileRoutesById {
   '/_authed/reports/monthly-archives/': typeof AuthedReportsMonthlyArchivesIndexRoute
   '/_authed/sales/down-payments/': typeof AuthedSalesDownPaymentsIndexRoute
   '/_authed/sales/invoices/': typeof AuthedSalesInvoicesIndexRoute
+  '/_authed/sales/orders/': typeof AuthedSalesOrdersIndexRoute
   '/_authed/sales/quotes/': typeof AuthedSalesQuotesIndexRoute
   '/_authed/sales/receipts/': typeof AuthedSalesReceiptsIndexRoute
   '/_authed/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
@@ -993,6 +1012,7 @@ export interface FileRouteTypes {
     | '/inventory/warehouses/$warehouseId'
     | '/inventory/warehouses/new'
     | '/organizations/$organizationId/edit'
+    | '/sales/orders/$orderId'
     | '/sales/quotes/new'
     | '/admin/audit/'
     | '/admin/roles/'
@@ -1036,6 +1056,7 @@ export interface FileRouteTypes {
     | '/reports/monthly-archives/'
     | '/sales/down-payments/'
     | '/sales/invoices/'
+    | '/sales/orders/'
     | '/sales/quotes/'
     | '/sales/receipts/'
     | '/subscription/activations/'
@@ -1090,6 +1111,7 @@ export interface FileRouteTypes {
     | '/inventory/warehouses/$warehouseId'
     | '/inventory/warehouses/new'
     | '/organizations/$organizationId/edit'
+    | '/sales/orders/$orderId'
     | '/sales/quotes/new'
     | '/admin/audit'
     | '/admin/roles'
@@ -1133,6 +1155,7 @@ export interface FileRouteTypes {
     | '/reports/monthly-archives'
     | '/sales/down-payments'
     | '/sales/invoices'
+    | '/sales/orders'
     | '/sales/quotes'
     | '/sales/receipts'
     | '/subscription/activations'
@@ -1190,6 +1213,7 @@ export interface FileRouteTypes {
     | '/_authed/inventory/warehouses/$warehouseId'
     | '/_authed/inventory/warehouses/new'
     | '/_authed/organizations/$organizationId/edit'
+    | '/_authed/sales/orders/$orderId'
     | '/_authed/sales/quotes/new'
     | '/_authed/admin/audit/'
     | '/_authed/admin/roles/'
@@ -1233,6 +1257,7 @@ export interface FileRouteTypes {
     | '/_authed/reports/monthly-archives/'
     | '/_authed/sales/down-payments/'
     | '/_authed/sales/invoices/'
+    | '/_authed/sales/orders/'
     | '/_authed/sales/quotes/'
     | '/_authed/sales/receipts/'
     | '/_authed/subscription/activations/'
@@ -1809,6 +1834,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSalesInvoicesIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/sales/orders/': {
+      id: '/_authed/sales/orders/'
+      path: '/sales/orders'
+      fullPath: '/sales/orders/'
+      preLoaderRoute: typeof AuthedSalesOrdersIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/sales/orders/$orderId': {
+      id: '/_authed/sales/orders/$orderId'
+      path: '/sales/orders/$orderId'
+      fullPath: '/sales/orders/$orderId'
+      preLoaderRoute: typeof AuthedSalesOrdersOrderIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/sales/quotes/': {
       id: '/_authed/sales/quotes/'
       path: '/sales/quotes'
@@ -2059,6 +2098,7 @@ interface AuthedRouteChildren {
   AuthedInventoryStockMovementsRoute: typeof AuthedInventoryStockMovementsRoute
   AuthedInventoryWarehousesWarehouseIdRoute: typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   AuthedInventoryWarehousesNewRoute: typeof AuthedInventoryWarehousesNewRoute
+  AuthedSalesOrdersOrderIdRoute: typeof AuthedSalesOrdersOrderIdRoute
   AuthedSalesQuotesNewRoute: typeof AuthedSalesQuotesNewRoute
   AuthedAdminAuditIndexRoute: typeof AuthedAdminAuditIndexRoute
   AuthedAdminRolesIndexRoute: typeof AuthedAdminRolesIndexRoute
@@ -2102,6 +2142,7 @@ interface AuthedRouteChildren {
   AuthedReportsMonthlyArchivesIndexRoute: typeof AuthedReportsMonthlyArchivesIndexRoute
   AuthedSalesDownPaymentsIndexRoute: typeof AuthedSalesDownPaymentsIndexRoute
   AuthedSalesInvoicesIndexRoute: typeof AuthedSalesInvoicesIndexRoute
+  AuthedSalesOrdersIndexRoute: typeof AuthedSalesOrdersIndexRoute
   AuthedSalesQuotesIndexRoute: typeof AuthedSalesQuotesIndexRoute
   AuthedSalesReceiptsIndexRoute: typeof AuthedSalesReceiptsIndexRoute
   AuthedSubscriptionActivationsIndexRoute: typeof AuthedSubscriptionActivationsIndexRoute
@@ -2149,6 +2190,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedInventoryWarehousesWarehouseIdRoute:
     AuthedInventoryWarehousesWarehouseIdRouteWithChildren,
   AuthedInventoryWarehousesNewRoute: AuthedInventoryWarehousesNewRoute,
+  AuthedSalesOrdersOrderIdRoute: AuthedSalesOrdersOrderIdRoute,
   AuthedSalesQuotesNewRoute: AuthedSalesQuotesNewRoute,
   AuthedAdminAuditIndexRoute: AuthedAdminAuditIndexRoute,
   AuthedAdminRolesIndexRoute: AuthedAdminRolesIndexRoute,
@@ -2195,6 +2237,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedReportsMonthlyArchivesIndexRoute,
   AuthedSalesDownPaymentsIndexRoute: AuthedSalesDownPaymentsIndexRoute,
   AuthedSalesInvoicesIndexRoute: AuthedSalesInvoicesIndexRoute,
+  AuthedSalesOrdersIndexRoute: AuthedSalesOrdersIndexRoute,
   AuthedSalesQuotesIndexRoute: AuthedSalesQuotesIndexRoute,
   AuthedSalesReceiptsIndexRoute: AuthedSalesReceiptsIndexRoute,
   AuthedSubscriptionActivationsIndexRoute:

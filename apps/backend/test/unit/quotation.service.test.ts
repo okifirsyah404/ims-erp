@@ -191,6 +191,7 @@ beforeEach(() => {
 		{ next: async () => '1376/QT/IMS/XI/26' },
 		{ getUser: async (id: string) => ({ id, name: `User ${id}` }) as never },
 		{ presignGet: (key: string) => `https://files.test/${key}` },
+		{ findLiveByQuotation: async () => null },
 	);
 });
 

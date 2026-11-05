@@ -12,6 +12,84 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — ADR-0011 port step 3d-1: sales orders (SPH → Deal), 2026-11-06
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner). Step 3d is split: 3d-1 sales orders (this), 3d-2
+invoices / DP / receipts with prints (next).
+
+Gate 1 (read): docs.dbml `sales.sales_orders`, `sales_order_items`,
+`order_status_history` and their refs; the old branch's owner-approved
+`sales-order.service.ts` / `billing.contract.ts`; role grants
+(`sales_order:*`); numbering type `sales_order` (`SO`). Skipped:
+`logical-references.md` beyond the generated tables (no new target module
+besides CRM/Inventory/Identity already documented in 3c).
+
+Gate 2 (manual grilling pass):
+- Ownership: Sales module, `SalesOrderService` / `SalesOrderController`
+  (`/sales/orders`). Company-wide like quotations (no `organization_id`).
+- Lifecycle (owner-approved 2026-11-04, mapped onto the DBML vocabulary):
+  an order is created only from an `approved` or `sent` SPH and is
+  `confirmed` (active) at once — no separate approval; creating it marks the
+  SPH `won` ("Deal") in the same transaction; `confirmed → cancelled` with a
+  reason reopens the SPH to `sent` (or `approved` if never sent).
+  `in_progress / delivered / completed` stay in the CHECK for steps 4–5.
+  One live order per SPH (partial unique index). Cancelling an order that
+  has live invoices is refused once invoices exist (3d-2 adds that guard
+  through the finance contract).
+- Columns: DBML names kept (`code`, `quotation_id`, `customer_id`, `status`,
+  `order_date`, `delivery_date`, money columns, `sales_person_user_id` =
+  the SPH owner, `cancelled_at`, `cancellation_reason`, `notes`); added for
+  the approved flow: `customer_snapshot`, `customer_po_number`, `title`,
+  `attention`, `payment_terms`, `payment_schedule`, `guarantee`,
+  `quotation_code`, `vat_enabled`, `vat_rate_bps`, `created_by`,
+  `cancelled_by`, `deleted_at`; dropped: `organization_id`,
+  `customer_address_id` (addresses not built), `shipping_total` (not in the
+  flow), `warehouse_id` (chosen on the delivery note, step 5),
+  `approved_by/at` (no order approval).
+- Items: copied from the SPH lines (`quotation_item_id` same-module FK,
+  `item_id` → `inventory.items` logical, sku/name/specification/unit
+  snapshot, numeric quantity, money); `quantity_delivered` and
+  `fulfillment_status` kept for delivery notes (step 5); `tax_amount` and
+  `unit_id` dropped (VAT per document, fixed units).
+- Visibility: holders of `sales_order:approve|export` or `invoice:read` see
+  all orders; others only orders of their own SPHs (`sales_person_user_id`).
+  Creating needs `sales_order:create` and a visible SPH; cancelling needs
+  `sales_order:cancel` (sales manager / owner).
+- Numbering: `NumberingService.next('sales_order')` on creation.
+- Web: `/sales/orders` list and detail; "Buat sales order" on an approved/sent
+  SPH; the SPH detail links its order. No print (no sample for orders).
+
+What landed:
+- docs.dbml first (three tables rewritten company-wide, refs to
+  `quotations` / `quotation_items` as `restrict`);
+  `gen-logical-references.ts` → 497 refs; `validate-dbml.ts` → OK.
+- Migration `20261105172403_sales_orders` (3 × `CREATE TABLE`, indexes incl.
+  the partial `sales_orders_live_quotation_uq`, FKs), read and applied to
+  `ims_erp_sync`; a second `drizzle:generate` → no changes.
+- Backend: `SalesOrderRepository` (create + SPH → `won`, cancel + SPH
+  reopened, each with both history rows in one transaction),
+  `SalesOrderService`, `SalesOrderController`, `errors/sales-order.errors.ts`
+  (`sales.order*` keys, en + id). Quotation detail returns its live
+  `salesOrder`; revising an SPH that has a live order is refused (409).
+- Web: `lib/sales-order-api.ts`, `components/sales/create-order-dialog.tsx`,
+  routes `/sales/orders` and `/sales/orders/$orderId`, nav "Sales order",
+  breadcrumb label; SPH page buttons "Buat sales order" / "Sales order <no>".
+
+Verification (2026-11-06):
+- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` → 600 pass
+  (`test/unit/sales-order.service.test.ts`, 7 tests).
+- Web `bun run build` OK, `bunx tsc -b` clean, `bun test` → 45 pass;
+  locales → 46 pass; lint: no warnings in new files.
+- Browser (temporary Playwright script, deleted): `sales.seed` creates an
+  SPH, `sales_manager.seed` approves; the salesperson creates the order from
+  the SPH page (`0001/SO/DEV/XI/26`, PO number kept, status Aktif, no cancel
+  button for sales); the SPH shows Deal with a link to the order; revising
+  it → 409, a second order → 409; the manager cancels with a reason; the
+  SPH is `approved` again with no order link; the list shows the order.
+- Test data left in the dev DB: SPH `0005/QT/DEV/XI/26` (approved) and its
+  cancelled order `0001/SO/DEV/XI/26`.
+
 ## Completed — SPH print matches the company's sample; document images, 2026-11-06
 
 Status: **implemented** (module owner's request: "documentnya pakai yang ada di

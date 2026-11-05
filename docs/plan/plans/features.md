@@ -62,7 +62,12 @@ Last synced: 2026-11-06.
   (quotations), `test/unit/quotation.service.test.ts`,
   `test/authorization/authorization.test.ts`, `/sales/quotes` pages,
   `progress.md` 2026-11-06 (ADR-0011 step 3c). Gaps: real-PG integration
-  tests, e2e; `won` arrives with sales orders (3d).
+  tests, e2e.
+- Sales orders from an approved or sent SPH (SPH becomes Deal; cancelling
+  reopens it) — T05, ERP-0011. Evidence: `apps/backend/src/app/sales`
+  (sales orders), `test/unit/sales-order.service.test.ts`, `/sales/orders`
+  pages, `progress.md` 2026-11-06 (ADR-0011 step 3d-1). Gaps: real-PG
+  integration tests, e2e; delivery (step 5) and invoices (3d-2).
 
 ## M03 Subscription and Licensing
 

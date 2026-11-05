@@ -67,6 +67,7 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				icon: ReceiptText,
 				items: [
 					{ titleKey: 'item.quotes', url: '/sales/quotes' },
+					{ titleKey: 'item.salesOrders', url: '/sales/orders' },
 					{ titleKey: 'item.invoices', url: '/sales/invoices' },
 					{ titleKey: 'item.downPayments', url: '/sales/down-payments' },
 					{ titleKey: 'item.receipts', url: '/sales/receipts' },

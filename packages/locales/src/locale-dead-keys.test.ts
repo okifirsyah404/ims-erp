@@ -95,6 +95,7 @@ const DYNAMIC_PREFIXES = [
 	// The logo and signature upload fields compose their label key.
 	'settings:companyProfile.image.',
 	'sales:lostReason.',
+	'sales:orderStatus.',
 	'sales.quotationState.',
 ];
 

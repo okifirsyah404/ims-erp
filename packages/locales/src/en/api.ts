@@ -24,6 +24,10 @@ const api = {
 
 	'sales.quotationNotFound': 'Quotation not found',
 	'sales.paymentNotFound': 'Payment not found',
+	'sales.orderNotFound': 'Sales order not found',
+	'sales.orderQuotationNotReady': 'Only an approved or sent quotation can become a sales order',
+	'sales.orderExists': 'This quotation already has a sales order',
+	'sales.orderNotCancellable': 'Only a confirmed sales order can be cancelled',
 	'sales.customerUnavailable': 'Customer not found or inactive',
 	'sales.contactInvalid': 'The contact does not belong to this customer',
 	'sales.leadNotFound': 'Lead not found',

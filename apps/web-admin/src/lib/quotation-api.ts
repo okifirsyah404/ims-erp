@@ -132,6 +132,8 @@ export type TQuotationDetail = TQuotation & {
 	history: TQuotationHistoryEntry[];
 	creator: TPerson | null;
 	approver: TPerson | null;
+	/** The live sales order of a Deal (`won`) SPH. */
+	salesOrder: { id: string; code: string; status: string } | null;
 };
 
 export type TQuotationLineInput = {

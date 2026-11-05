@@ -1536,8 +1536,8 @@ Ref: catalog.item_cost_histories.item_id > catalog.items.id [delete: cascade]
 // ---------------------------------------------------------------------------
 // MODULE: Sales  (schema: sales)
 // Quotation to order flow, contracts, targets, status history, returns and
-// delivery notes. Tenant scoped, except the quotation tables, which are
-// company-wide (ADR-0011).
+// delivery notes. Tenant scoped, except the quotation and sales order
+// tables, which are company-wide (ADR-0011).
 // The scaffold sales.quotations created by migration
 // 20261029044823_dear_living_lightning was replaced, not altered, by the
 // recreation migration of ADR-0011 step 3c (implementation-phases.md S3).
@@ -1670,77 +1670,82 @@ Table sales.discount_requests {
 }
 
 Table sales.sales_orders {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  quotation_id uuid
+  code varchar(32) [not null, note: "Unique among live rows (partial index in the Drizzle schema)."]
+  quotation_id uuid [not null, note: "The SPH this order closed as Deal; one live order per SPH (partial unique index)."]
+  quotation_code varchar(40) [not null, note: "Number of that SPH revision, printed on later documents."]
   customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  customer_address_id uuid [note: "Logical reference to crm.customer_addresses.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  status text [not null, default: 'draft']
-  order_date date
+  customer_snapshot jsonb [not null, note: "Customer data copied from the SPH."]
+  customer_po_number varchar(100) [note: "The customer's purchase order number, when they issued one."]
+  title text [not null]
+  attention varchar(200)
+  status text [not null, default: 'confirmed']
+  order_date date [not null]
   delivery_date date
+  payment_terms varchar(300)
+  payment_schedule jsonb [note: "Planned billing terms copied from the SPH; null = one term."]
+  guarantee varchar(300)
+  vat_enabled boolean [not null]
+  vat_rate_bps integer [not null, default: 0]
   subtotal bigint [not null, default: 0]
   discount_total bigint [not null, default: 0]
   tax_total bigint [not null, default: 0]
-  shipping_total bigint [not null, default: 0]
   grand_total bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   sales_person_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  warehouse_id uuid [note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
-  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  approved_at bigint
+  notes text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancelled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   cancelled_at bigint
   cancellation_reason text
-  notes text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Confirmed customer order. Stock commitment is done by the Inventory module through a logical reservation."
+  deleted_at bigint
+  Note: "Confirmed customer order, company-wide (ADR-0011): no organization_id. Created only from an approved or sent quotation, which becomes won in the same transaction; cancelling it reopens the quotation. in_progress, delivered and completed are reserved for fulfilment. Stock commitment is done by the Inventory module through a logical reservation."
   Indexes {
-    (organization_id, code) [unique, name: 'sales_orders_org_code_uq']
     quotation_id [name: 'sales_orders_quotation_id_idx']
     customer_id [name: 'sales_orders_customer_id_idx']
     status [name: 'sales_orders_status_idx']
+    sales_person_user_id [name: 'sales_orders_sales_person_idx']
   }
   Checks {
-    `status IN ('draft', 'confirmed', 'in_progress', 'delivered', 'completed', 'cancelled')`
+    `status IN ('confirmed', 'in_progress', 'delivered', 'completed', 'cancelled')`
+    `vat_rate_bps >= 0 AND vat_rate_bps <= 10000`
     `subtotal >= 0`
     `discount_total >= 0`
     `tax_total >= 0`
-    `shipping_total >= 0`
     `grand_total >= 0`
   }
 }
 
 Table sales.sales_order_items {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   sales_order_id uuid [not null]
-  item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  quotation_item_id uuid
-  description text
+  quotation_item_id uuid [note: "The SPH line it was copied from."]
+  item_id uuid [note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Null = custom line."]
+  sku varchar(64)
+  name text [not null]
+  specification text
+  unit varchar(32) [not null]
   quantity numeric(18,3) [not null, default: 1]
-  unit_id uuid [note: "Logical reference to catalog.units.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
   unit_price bigint [not null, default: 0]
   discount_amount bigint [not null, default: 0]
-  tax_amount bigint [not null, default: 0]
   line_total bigint [not null, default: 0]
   quantity_delivered numeric(18,3) [not null, default: 0]
   fulfillment_status text [not null, default: 'pending']
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Line of a sales order."
+  deleted_at bigint
+  Note: "Line of a sales order, copied from its quotation line. Company-wide like its header."
   Indexes {
-    sales_order_id [name: 'sales_order_items_sales_order_id_idx']
+    (sales_order_id, sort_order) [name: 'sales_order_items_order_sort_idx']
     fulfillment_status [name: 'sales_order_items_fulfillment_status_idx']
   }
   Checks {
     `quantity > 0`
     `unit_price >= 0`
     `discount_amount >= 0`
-    `tax_amount >= 0`
     `line_total >= 0`
     `quantity_delivered >= 0`
     `fulfillment_status IN ('pending', 'reserved', 'partial', 'fulfilled', 'cancelled')`
@@ -1821,18 +1826,17 @@ Table sales.quotation_status_history {
 }
 
 Table sales.order_status_history {
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   sales_order_id uuid [not null]
   from_status text
   to_status text [not null]
   changed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   changed_at bigint [not null]
   note text
-  Note: "Append only status history of a sales order."
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Append only status history of a sales order, company-wide."
   Indexes {
     sales_order_id [name: 'order_status_history_sales_order_id_idx']
   }
@@ -2215,7 +2219,8 @@ Table procurement.purchase_return_items {
 Ref: sales.quotation_items.quotation_id > sales.quotations.id [delete: cascade]
 Ref: sales.quotations.previous_revision_id > sales.quotations.id [delete: restrict]
 Ref: sales.discount_requests.quotation_id > sales.quotations.id [delete: cascade]
-Ref: sales.sales_orders.quotation_id > sales.quotations.id [delete: set null]
+Ref: sales.sales_orders.quotation_id > sales.quotations.id [delete: restrict]
+Ref: sales.sales_order_items.quotation_item_id > sales.quotation_items.id [delete: restrict]
 Ref: sales.sales_order_items.sales_order_id > sales.sales_orders.id [delete: cascade]
 Ref: sales.discount_requests.sales_order_id > sales.sales_orders.id [delete: cascade]
 Ref: sales.contracts.sales_order_id > sales.sales_orders.id [delete: set null]

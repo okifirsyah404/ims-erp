@@ -12,6 +12,7 @@ import { mock } from 'bun:test';
 import {
 	QUOTATION_REPOSITORY_TOKEN,
 	PAYMENT_REPOSITORY_TOKEN,
+	SALES_ORDER_REPOSITORY_TOKEN,
 } from '../../src/app/sales/constants/di';
 import {
 	PERMISSION_RESOLVER_TOKEN,
@@ -438,6 +439,7 @@ export function installSalesMocks() {
 	};
 
 	container.register(QUOTATION_REPOSITORY_TOKEN, { useValue: quotationRepository });
+	container.register(SALES_ORDER_REPOSITORY_TOKEN, { useValue: { findLiveByQuotation: async () => null } as never });
 	container.register(PAYMENT_REPOSITORY_TOKEN, { useValue: paymentRepository });
 
 	return { quotationStore, payments };

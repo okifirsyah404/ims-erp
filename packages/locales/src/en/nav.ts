@@ -21,6 +21,7 @@ const nav = {
 	'item.customers': 'Customers',
 	'item.leads': 'Leads',
 	'item.quotes': 'Quotations',
+	'item.salesOrders': 'Sales orders',
 	'item.invoices': 'Invoices',
 	'item.downPayments': 'Down Payments',
 	'item.receipts': 'Receipts',
