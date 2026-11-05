@@ -1,5 +1,4 @@
 import type {
-	BankAccountInvoiceUsage,
 	TCompanyBankAccountSelect,
 	TCompanyProfileSelect,
 } from '@drizzle/schemas/organization.schema';
@@ -8,23 +7,29 @@ import type { TCompanyProfileInput, TInvoiceBankAccount } from './company-profil
 
 export type TCompanyProfileData = Omit<TCompanyProfileInput, 'bankAccounts'> & { updatedBy: string };
 
+/** The two invoice accounts; `null` removes one. */
+export type TInvoiceAccountsData = {
+	vat: TInvoiceBankAccount | null;
+	nonVat: TInvoiceBankAccount | null;
+};
+
 /** Persistence port for the company profile and its invoice bank accounts. */
 export interface ICompanyProfileRepository {
 	/** The live company profile, if one was saved. */
 	findProfile(tx?: TTx): Promise<TCompanyProfileSelect | null>;
 
-	/** Creates the profile or updates the live one. */
-	saveProfile(data: TCompanyProfileData, tx?: TTx): Promise<TCompanyProfileSelect>;
-
 	/** Live bank accounts that are printed on invoices. */
 	findInvoiceAccounts(tx?: TTx): Promise<TCompanyBankAccountSelect[]>;
 
 	/**
-	 * Sets the account printed for one invoice usage; `null` soft-deletes it.
+	 * Creates or updates the profile and, when `accounts` is given, sets both
+	 * invoice accounts (`null` soft-deletes one) — all in one transaction.
+	 *
+	 * @returns The saved profile and the live invoice accounts afterwards
 	 */
-	saveInvoiceAccount(
-		usage: BankAccountInvoiceUsage,
-		account: TInvoiceBankAccount | null,
-		tx?: TTx,
-	): Promise<void>;
+	save(
+		data: TCompanyProfileData,
+		accounts?: TInvoiceAccountsData,
+	): Promise<{ profile: TCompanyProfileSelect; accounts: TCompanyBankAccountSelect[] }>;
 }
+

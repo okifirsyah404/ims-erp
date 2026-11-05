@@ -14,6 +14,7 @@ import type { TInvoiceBankAccount } from '../contracts/company-profile.contract'
 import type {
 	ICompanyProfileRepository,
 	TCompanyProfileData,
+	TInvoiceAccountsData,
 } from '../contracts/company-profile.repository.interface';
 
 /** Account codes of the two invoice accounts (unique among live accounts). */
@@ -27,7 +28,8 @@ const INVOICE_ACCOUNT_CODES: Record<BankAccountInvoiceUsage, string> = {
  *
  * @remarks
  * The profile is a singleton (`company_profiles_singleton_uq`); saving reads
- * the live row and updates it, or inserts the first one.
+ * the live row and updates it, or inserts the first one. The profile and its
+ * invoice accounts commit together in `save`'s own transaction.
  */
 @injectable()
 export class CompanyProfileRepository implements ICompanyProfileRepository {
@@ -42,19 +44,29 @@ export class CompanyProfileRepository implements ICompanyProfileRepository {
 		return row ?? null;
 	}
 
-	async saveProfile(data: TCompanyProfileData, tx?: TTx): Promise<TCompanyProfileSelect> {
-		const db = tx ?? this.database;
+	save(data: TCompanyProfileData, accounts?: TInvoiceAccountsData) {
+		return this.database.transaction(async (tx) => {
+			const profile = await this.saveProfile(data, tx);
+			if (accounts) {
+				await this.saveInvoiceAccount('vat', accounts.vat, tx);
+				await this.saveInvoiceAccount('non_vat', accounts.nonVat, tx);
+			}
+			return { profile, accounts: await this.findInvoiceAccounts(tx) };
+		});
+	}
+
+	private async saveProfile(data: TCompanyProfileData, tx: TTx): Promise<TCompanyProfileSelect> {
 		const now = new Date();
 		const existing = await this.findProfile(tx);
 		if (existing) {
-			const [row] = await db
+			const [row] = await tx
 				.update(companyProfiles)
 				.set({ ...data, updatedAt: now })
 				.where(eq(companyProfiles.id, existing.id))
 				.returning();
 			return row;
 		}
-		const [row] = await db
+		const [row] = await tx
 			.insert(companyProfiles)
 			.values({ ...data, createdAt: now, updatedAt: now })
 			.returning();
@@ -68,27 +80,27 @@ export class CompanyProfileRepository implements ICompanyProfileRepository {
 			.where(and(isNull(companyBankAccounts.deletedAt), isNotNull(companyBankAccounts.invoiceUsage)));
 	}
 
-	async saveInvoiceAccount(
+	/** Sets the account printed for one invoice usage; `null` soft-deletes it. */
+	private async saveInvoiceAccount(
 		usage: BankAccountInvoiceUsage,
 		account: TInvoiceBankAccount | null,
-		tx?: TTx,
+		tx: TTx,
 	): Promise<void> {
-		const db = tx ?? this.database;
 		const now = new Date();
 		const live = and(eq(companyBankAccounts.invoiceUsage, usage), isNull(companyBankAccounts.deletedAt));
 		if (!account) {
-			await db.update(companyBankAccounts).set({ deletedAt: now, updatedAt: now }).where(live);
+			await tx.update(companyBankAccounts).set({ deletedAt: now, updatedAt: now }).where(live);
 			return;
 		}
-		const [existing] = await db.select({ id: companyBankAccounts.id }).from(companyBankAccounts).where(live);
+		const [existing] = await tx.select({ id: companyBankAccounts.id }).from(companyBankAccounts).where(live);
 		if (existing) {
-			await db
+			await tx
 				.update(companyBankAccounts)
 				.set({ ...account, updatedAt: now })
 				.where(eq(companyBankAccounts.id, existing.id));
 			return;
 		}
-		await db.insert(companyBankAccounts).values({
+		await tx.insert(companyBankAccounts).values({
 			...account,
 			code: INVOICE_ACCOUNT_CODES[usage],
 			invoiceUsage: usage,

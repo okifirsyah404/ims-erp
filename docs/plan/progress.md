@@ -78,9 +78,25 @@ accepted by the owner).
   scripts were run with `NODE_ENV=development`. Logo upload for the
   letterhead (`logo_object_key`) is not wired yet; it comes with the
   printed documents in step 3.
+- Rules follow-up (same day, after re-reading main's AGENTS.md):
+  `CompanyProfileService` no longer injects `DRIZZLE_TOKEN` — the profile
+  and its invoice accounts are saved in one transaction inside
+  `CompanyProfileRepository.save`; `id/settings.ts` typed as
+  `Record<keyof typeof en, string>`; `backlog.md` (ERP-0008 in-progress,
+  ERP-0009 implemented, new ERP-0036) and `features.md` updated.
+- Gate 2 design pass for step 1, recorded after the fact (it should have
+  come before coding; the decisions themselves were made in ADR-0011):
+  ownership — `organization` module per docs.dbml; tenant scope — none,
+  company-wide (ADR-0011 §2); soft delete — `deleted_at` on all three tables
+  with partial unique indexes; money — none; datetimes — bigint ms;
+  cross-module refs — `address_village_id` (location, not accepted by the
+  API yet, so no contract call needed) and `updated_by` (auth.users, written
+  from the session only); status vocabularies — `status` active/inactive,
+  `reset_policy`, `invoice_usage`, all CHECK-guarded. `docs/database/`
+  updated and validated (see above).
 - Next: port step 2 — item extensions on `inventory.items` (brand,
   specification, status, category table, fixed unit list, images, website
-  profile), per ADR-0011 §3.
+  profile), per ADR-0011 §3; run the gate-1 read and gate-2 grill first.
 
 ## In progress — merge plan for M02/M05/M07 onto main (ADR-0011), 2026-11-05
 

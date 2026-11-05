@@ -215,13 +215,21 @@ Last synced: 2026-11-05.
 - ERP-0001 Repo housekeeping.
 - ERP-0006 Address reference model + lookup API (lookup API itself exists; see
   Outside the plan).
-- ERP-0008 Remaining master data (company profile, suppliers, catalog, COA,
-  cash/bank, packages, investors).
-- ERP-0009 Document numbering service.
+- ERP-0008 Remaining master data (suppliers, catalog, COA, cash/bank,
+  packages, investors) — company profile part implemented, see below.
 - ERP-0024 UAT, reconciliation, backup drill.
 - ERP-0025 Release preparation.
 
+### in-progress
+- ERP-0036 Port M02/M05/M07 onto main (ADR-0011): step 1 implemented
+  2026-11-05; steps 2-6 planned. Evidence: `progress.md` 2026-11-05.
+
 ### implemented
+- ERP-0009 Document numbering (company-wide series, settings page).
+  Evidence: `apps/backend/src/app/organization`, `test/unit/numbering.service.test.ts`,
+  `progress.md` 2026-11-05.
+- ERP-0008 (part) Company profile + invoice bank accounts. Evidence:
+  `test/unit/company-profile.service.test.ts`, `progress.md` 2026-11-05.
 - ERP-0030 Faker seeders + `faker` skill. Evidence: `apps/backend/database/
   seeders`, `test/unit/inventory-seeder.data.test.ts`,
   `member-seed-config.test.ts`; run-twice verified 2026-11-03.

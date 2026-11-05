@@ -1,6 +1,4 @@
-import { DRIZZLE_TOKEN } from '@di/provider';
 import type { TCompanyBankAccountSelect, TCompanyProfileSelect } from '@drizzle/schemas/organization.schema';
-import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { COMPANY_PROFILE_REPOSITORY_TOKEN } from '../constants/di';
 import type {
@@ -60,9 +58,6 @@ export class CompanyProfileService {
 	constructor(
 		@inject(COMPANY_PROFILE_REPOSITORY_TOKEN)
 		private readonly repository: ICompanyProfileRepository,
-		/** The live Drizzle handle, for the service-owned transaction boundary. */
-		@inject(DRIZZLE_TOKEN)
-		private readonly database: BunSQLDatabase,
 	) {}
 
 	/** The profile, or `null` before it was first saved. */
@@ -78,14 +73,11 @@ export class CompanyProfileService {
 		includeBanks: boolean,
 	): Promise<TCompanyProfileView> {
 		const { bankAccounts, ...profile } = input;
-		return this.database.transaction(async (tx) => {
-			const saved = await this.repository.saveProfile({ ...profile, updatedBy: actorUserId }, tx);
-			// Callers who may not see the accounts may not change them either.
-			if (bankAccounts && includeBanks) {
-				await this.repository.saveInvoiceAccount('vat', bankAccounts.vat, tx);
-				await this.repository.saveInvoiceAccount('non_vat', bankAccounts.nonVat, tx);
-			}
-			return toView(saved, includeBanks ? await this.repository.findInvoiceAccounts(tx) : null);
-		});
+		// Callers who may not see the accounts may not change them either.
+		const saved = await this.repository.save(
+			{ ...profile, updatedBy: actorUserId },
+			includeBanks ? bankAccounts : undefined,
+		);
+		return toView(saved.profile, includeBanks ? saved.accounts : null);
 	}
 }

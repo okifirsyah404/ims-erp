@@ -1,7 +1,9 @@
+import type en from '../en/settings';
+
 /**
  * Indonesian company settings copy — mirrors the `en` key set exactly.
  */
-const settings = {
+const settings: Record<keyof typeof en, string> = {
 	'companyProfile.title': 'Profil Perusahaan',
 	'companyProfile.description':
 		'Kop surat, penanda tangan, rekening bank, dan ketentuan bawaan yang dicetak di dokumen. Satu profil untuk seluruh perusahaan.',
@@ -80,6 +82,6 @@ const settings = {
 	'numbering.type.bast': 'Berita acara serah terima (BAST)',
 	'numbering.type.warranty': 'Sertifikat garansi',
 	'numbering.type.service_ticket': 'Tiket servis',
-} as const;
+};
 
 export default settings;

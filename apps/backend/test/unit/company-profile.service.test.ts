@@ -3,8 +3,8 @@
  *
  * @remarks
  * The profile is company-wide; the two invoice bank accounts are only
- * returned when the caller may see them, and saving writes the profile and
- * both accounts through one transaction handle.
+ * returned when the caller may see them, and saving hands the profile and
+ * both accounts to one repository call (one transaction there).
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type {
@@ -12,7 +12,6 @@ import type {
 	TCompanyBankAccountSelect,
 	TCompanyProfileSelect,
 } from '@drizzle/schemas/organization.schema';
-import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import {
 	companyProfileSchema,
 	type TInvoiceBankAccount,
@@ -20,23 +19,16 @@ import {
 import type {
 	ICompanyProfileRepository,
 	TCompanyProfileData,
+	TInvoiceAccountsData,
 } from '../../src/app/organization/contracts/company-profile.repository.interface';
 import { CompanyProfileService } from '../../src/app/organization/services/company-profile.service';
-
-const TX = { tx: true } as never;
 
 class FakeProfiles implements ICompanyProfileRepository {
 	profile: TCompanyProfileSelect | null = null;
 	accounts: TCompanyBankAccountSelect[] = [];
-	handles: unknown[] = [];
+	saves = 0;
 
 	async findProfile() {
-		return this.profile;
-	}
-
-	async saveProfile(data: TCompanyProfileData, tx?: unknown) {
-		this.handles.push(tx);
-		this.profile = { ...(this.profile ?? {}), ...data } as TCompanyProfileSelect;
 		return this.profile;
 	}
 
@@ -44,16 +36,21 @@ class FakeProfiles implements ICompanyProfileRepository {
 		return this.accounts;
 	}
 
-	async saveInvoiceAccount(usage: BankAccountInvoiceUsage, account: TInvoiceBankAccount | null, tx?: unknown) {
-		this.handles.push(tx);
-		this.accounts = this.accounts.filter((a) => a.invoiceUsage !== usage);
-		if (account) this.accounts.push({ ...account, invoiceUsage: usage } as TCompanyBankAccountSelect);
+	async save(data: TCompanyProfileData, accounts?: TInvoiceAccountsData) {
+		this.saves += 1;
+		this.profile = { ...(this.profile ?? {}), ...data } as TCompanyProfileSelect;
+		if (accounts) {
+			const set = (usage: BankAccountInvoiceUsage, account: TInvoiceBankAccount | null) => {
+				this.accounts = this.accounts.filter((a) => a.invoiceUsage !== usage);
+				if (account) this.accounts.push({ ...account, invoiceUsage: usage } as TCompanyBankAccountSelect);
+			};
+			set('vat', accounts.vat);
+			set('non_vat', accounts.nonVat);
+		}
+		return { profile: this.profile, accounts: this.accounts };
 	}
 }
 
-const database = {
-	transaction: async <T>(run: (tx: never) => Promise<T>) => run(TX),
-} as unknown as BunSQLDatabase;
 
 const input = companyProfileSchema.parse({
 	legalName: 'PT Inovasi Mitra Sejati',
@@ -71,7 +68,7 @@ describe('CompanyProfileService', () => {
 
 	beforeEach(() => {
 		repository = new FakeProfiles();
-		service = new CompanyProfileService(repository, database);
+		service = new CompanyProfileService(repository);
 	});
 
 	test('input is normalised: upper-case document code, empty text becomes null', () => {
@@ -85,9 +82,9 @@ describe('CompanyProfileService', () => {
 		expect(await service.get(true)).toBeNull();
 	});
 
-	test('saves the profile and both accounts in one transaction', async () => {
+	test('saves the profile and both accounts in one repository call', async () => {
 		const view = await service.save(input, 'user-1', true);
-		expect(repository.handles).toEqual([TX, TX, TX]);
+		expect(repository.saves).toBe(1);
 		expect(repository.profile?.updatedBy).toBe('user-1');
 		expect(view.bankAccounts).toEqual({
 			vat: { bankName: 'BCA', accountNumber: '123 456 7890', accountHolder: 'PT IMS' },
@@ -107,7 +104,7 @@ describe('CompanyProfileService', () => {
 describe('CompanyProfileService without bank accounts in the input', () => {
 	test('saving the profile alone leaves the accounts untouched', async () => {
 		const repository = new FakeProfiles();
-		const service = new CompanyProfileService(repository, database);
+		const service = new CompanyProfileService(repository);
 		await service.save(input, 'user-1', true);
 		const { bankAccounts: _omitted, ...profileOnly } = input;
 		const view = await service.save({ ...profileOnly, tagline: 'Baru' }, 'user-2', true);
@@ -117,7 +114,7 @@ describe('CompanyProfileService without bank accounts in the input', () => {
 
 	test('a caller without bank access cannot change the accounts', async () => {
 		const repository = new FakeProfiles();
-		const service = new CompanyProfileService(repository, database);
+		const service = new CompanyProfileService(repository);
 		await service.save(input, 'user-1', true);
 		await service.save(
 			{ ...input, bankAccounts: { vat: null, nonVat: null } },
