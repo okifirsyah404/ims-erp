@@ -17,6 +17,7 @@ import {
 import { organizations } from '../../../drizzle/schemas/auth.schema';
 import { village } from '../../../drizzle/schemas/location.schema';
 import { SEED_ORGANIZATION_SLUG } from './organization.seeder';
+import { isProductionEnv } from '../../../config/providers/env';
 import { WEBSITE_CATEGORIES } from './item-category.seeder';
 
 const logger = pino({
@@ -205,6 +206,11 @@ const SEED_ITEMS: readonly TSeedItem[] = generateSeedItems();
  * that S3/S4 have a resolvable "default warehouse" without inventing one.
  */
 export async function seedInventory(): Promise<void> {
+	// Dev-only sample data (faker): production starts with an empty inventory.
+	if (isProductionEnv()) {
+		logger.info('Production environment; skipping inventory sample data');
+		return;
+	}
 	const [organization] = await drizzleDB
 		.select({ id: organizations.id })
 		.from(organizations)

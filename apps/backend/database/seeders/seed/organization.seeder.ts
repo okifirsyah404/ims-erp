@@ -1,9 +1,8 @@
 import { auth } from '../../../src/providers/better-auth/auth';
 import { appConfig } from '../../../config/providers/config';
-import { isProductionEnv } from '../../../config/providers/env';
 import { drizzleDB } from '../../../drizzle/db';
 import { organizations, users } from '../../../drizzle/schemas/auth.schema';
-import { eq } from 'drizzle-orm';
+import { eq, isNull } from 'drizzle-orm';
 import pino from 'pino';
 
 const logger = pino({
@@ -77,23 +76,22 @@ export async function ensureOrganization(input: {
 }
 
 /**
- * Idempotent organization seeder for the default deployment organization
- * ("Entragate"), with the initial admin as its `owner` member.
+ * Idempotent seeder for the company's single organization ("Entragate"),
+ * with the initial admin as its `owner` member.
  *
  * @remarks
- * **Skipped entirely in production** (`prod`/`production`): production
- * organizations are created through the API by an application admin, and the
- * first organization is NOT assumed to be seeded. The skip is a no-op rather
- * than a throw so the remaining seeders still run.
- *
- * The seeded organization is keyed by slug, so additional organizations can
- * be seeded alongside it via {@link ensureOrganization}.
+ * Runs in **every environment** (ADR-0012: one company, one organization,
+ * so production needs it too). It does nothing when any live organization
+ * already exists, whatever its slug — the single-organization rule.
  */
 export async function seedOrganization(): Promise<void> {
-	if (isProductionEnv()) {
-		logger.info(
-			'Production environment; skipping organization seeding (create organizations through the API)',
-		);
+	const [live] = await drizzleDB
+		.select({ id: organizations.id })
+		.from(organizations)
+		.where(isNull(organizations.deletedAt))
+		.limit(1);
+	if (live) {
+		logger.info({ organizationId: live.id }, 'Organization already exists; skipping');
 		return;
 	}
 

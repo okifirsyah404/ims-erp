@@ -89,6 +89,7 @@ const api: Record<keyof typeof en, string> = {
 	'organization.lastOrganization':
 		'Ini organisasi terakhir Anda dan tidak dapat dihapus',
 	'organization.notFound': 'Organisasi tidak ditemukan',
+	'organization.singleCompany': 'Sistem ini hanya memiliki satu organisasi (perusahaan); organisasi lain tidak bisa ditambahkan',
 	'organization.companyProfileRequired':
 		'Lengkapi profil perusahaan (beserta kode dokumen) terlebih dahulu',
 	'numbering.unknownDocumentType': 'Jenis dokumen tidak dikenal',

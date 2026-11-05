@@ -12,6 +12,29 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — one company, one organization (ADR-0012), 2026-11-05
+
+Status: **implemented** (module owner's decision; programmer A to acknowledge
+in the merge PR).
+
+- Owner: "dibikin 1 organisasi aja", seed it, hide the add button once it
+  exists. ADR-0012 written (amends ADR-0007 §1 and ADR-0010).
+- Backend: `OrganizationService.createOrganization` / `restoreOrganization`
+  → 409 `organization.singleCompany` (en/id) when a live organization
+  exists. `test/unit/single-organization.test.ts` (3 tests).
+- Seeders: `organization.seeder.ts` runs in every environment and skips when
+  any live organization exists; `organization-members.seeder.ts` (role
+  accounts with `<role>123456` passwords) and `inventory.seeder.ts` (faker
+  sample data) are now explicitly dev-only. Verified on a disposable
+  `ims_erp_prodcheck` with `NODE_ENV=production`: 1 organization, 1 user
+  (initial admin), 0 items, 9 website categories, no role accounts; the
+  database was dropped afterwards. Dev seed run twice: unchanged.
+- Web admin: "new organization" hidden on `/organizations` and in the sidebar
+  switcher when a live organization exists.
+- Also tidied the misplaced doc comment from step 3b in
+  `organization.service.ts` (`getMemberRole` / `listMembers`).
+- docs/database reviewed: no structural change.
+
 ## Completed — ADR-0011 port step 3b: leads, follow-ups, website API, 2026-11-05
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A

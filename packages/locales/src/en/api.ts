@@ -93,6 +93,7 @@ const api = {
 	'organization.lastOrganization':
 		'This is your last organization and cannot be removed',
 	'organization.notFound': 'Organization not found',
+	'organization.singleCompany': 'This deployment has one organization (the company); another one cannot be added',
 	'organization.companyProfileRequired':
 		'Fill in the company profile (with its document code) first',
 	'numbering.unknownDocumentType': 'Unknown document type',

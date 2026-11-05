@@ -46,6 +46,8 @@ function OrganizationsPage() {
 	const { t } = useTranslation(['admin', 'common']);
 
 	const hasAny = (data?.rows.length ?? 0) > 0;
+	// One company, one organization (ADR-0012): no "new" once a live one exists.
+	const hasLive = (data?.rows ?? []).some((org) => !org.deletedAt);
 
 	async function handleRestore(organizationId: string) {
 		try {
@@ -70,7 +72,7 @@ function OrganizationsPage() {
 						{t('orgs.description')}
 					</p>
 				</div>
-				{!isPending && canCreate && (
+				{!isPending && canCreate && !hasLive && (
 					<Button onClick={() => navigate({ to: '/organizations/new' })}>
 						{t('orgs.new')}
 					</Button>
