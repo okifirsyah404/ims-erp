@@ -306,8 +306,8 @@ describe('warehouse access is application-admin-only', () => {
 		const roles = ['technician', 'sales', 'sales_manager', 'warehouse'] as const;
 		for (const role of roles) {
 			const grants = erpRoleGrants[role] as Record<string, readonly string[]>;
-			expect(grants.borrowing).toBeDefined();
-			expect(grants.borrowing).toContain('read');
+			expect(grants.asset_borrowing).toBeDefined();
+			expect(grants.asset_borrowing).toContain('read');
 		}
 	});
 
@@ -316,19 +316,19 @@ describe('warehouse access is application-admin-only', () => {
 			string,
 			readonly string[]
 		>;
-		expect(technician.borrowing).toContain('create');
-		expect(technician.borrowing).not.toContain('issue');
+		expect(technician.asset_borrowing).toContain('create');
+		expect(technician.asset_borrowing).not.toContain('issue');
 	});
 
 	test('only management roles may mark a unit lost', () => {
 		for (const role of ['owner', 'admin', 'operations_manager'] as const) {
 			const grants = erpRoleGrants[role] as Record<string, readonly string[]>;
-			expect(grants.borrowing).toContain('mark_lost');
+			expect(grants.asset_borrowing).toContain('mark_lost');
 		}
 		const technician = erpRoleGrants.technician as Record<
 			string,
 			readonly string[]
 		>;
-		expect(technician.borrowing).not.toContain('mark_lost');
+		expect(technician.asset_borrowing).not.toContain('mark_lost');
 	});
 });

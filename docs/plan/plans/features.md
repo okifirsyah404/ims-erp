@@ -130,7 +130,11 @@ Last synced: 2026-11-06.
   2026-11-06 (borrowing engine moved to `assets`,
   `inventory/services/borrowing.service.ts` and `assets.asset_assignments`
   gone, migration `20261105221923_erp0036_slice3_borrowing_engine`, migrate +
-  seed twice, 526 tests). Slices 4–5 remain (permissions/numbering/seed, UI).
+  seed twice, 526 tests); Slice 4 shipped 2026-11-06 (`borrowing` →
+  `asset_borrowing` in all 10 roles, data-only migration
+  `20261105223616_erp0036_slice4_permission_rename`, global asset-code
+  sequence, `seed/assets.seeder.ts`, migrate + seed twice, 526 tests). Slice 5
+  remains (UI/i18n/removals).
   Stage 0 execution review resolved all blocking defects (global assets with
   stubbed warehouse reachability, global unique asset code, no
   `document_sequences` change, jsonb permission migration). Supersedes the M06

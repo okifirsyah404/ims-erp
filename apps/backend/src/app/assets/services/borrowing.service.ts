@@ -24,6 +24,7 @@ import type { AssetOperationsService } from './asset-operations.service';
 import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
 import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import { InventoryAuditWriter } from '@app/inventory/services/inventory-audit.writer';
+import { ASSET_DOC_TYPES } from '../constants/doc-types';
 import {
 	BorrowerIdentityError,
 	BorrowingHasNoLinesError,
@@ -43,7 +44,7 @@ import {
  * Declared as data, not an `if` chain, so an illegal edge cannot be forgotten —
  * the same reasoning as `ADJUSTMENT_TRANSITIONS`. Notable shape:
  * - `requested → issued` is legal **only** for a caller holding
- *   `borrowing:issue`; the skippable approval is a permission rule applied in
+ *   `asset_borrowing:issue`; the skippable approval is a permission rule applied in
  *   the service, not a separate edge.
  * - `issued → partially_returned → returned` is the per-line return path.
  * - `rejected` and `cancelled` are terminal; `closed` follows `returned`.
@@ -73,11 +74,11 @@ export function isLegalBorrowingTransition(
 /** Who is acting, and what they may bypass. */
 export type TBorrowingActor = {
 	actorUserId: string;
-	/** Holding `borrowing:approve` — may approve without a second person. */
+	/** Holding `asset_borrowing:approve` — may approve without a second person. */
 	canApprove: boolean;
-	/** Holding `borrowing:issue` — may skip approval entirely. */
+	/** Holding `asset_borrowing:issue` — may skip approval entirely. */
 	canIssue: boolean;
-	/** Holding `borrowing:mark_lost` (or app admin) — sees guest PII. */
+	/** Holding `asset_borrowing:mark_lost` (or app admin) — sees guest PII. */
 	canSeeGuestPii: boolean;
 };
 
@@ -355,7 +356,7 @@ export class BorrowingService {
 	 * Issues every open line, moving custody out of the warehouse.
 	 *
 	 * @remarks
-	 * Legal from `requested` only when the caller holds `borrowing:issue`
+	 * Legal from `requested` only when the caller holds `asset_borrowing:issue`
 	 * (skippable approval, §7); otherwise from `approved`.
 	 *
 	 * Per line, inside **one** transaction: the unit's custody, a
@@ -378,7 +379,7 @@ export class BorrowingService {
 			!actor.canApprove
 		) {
 			// Approval is skippable, not optional: skipping it is a privilege
-			// (`borrowing:issue` or `borrowing:approve`), never a default.
+			// (`asset_borrowing:issue` or `asset_borrowing:approve`), never a default.
 			throw new BorrowingTransitionError(borrowing.status, 'issued');
 		}
 		if (!isLegalBorrowingTransition(borrowing.status, 'issued')) {
@@ -656,7 +657,7 @@ export class BorrowingService {
 	 * Cancels a borrowing that has not been issued.
 	 *
 	 * @remarks
-	 * Only the requester may cancel (`borrowing:create` in §7); the controller
+	 * Only the requester may cancel (`asset_borrowing:create` in §7); the controller
 	 * enforces that by comparing `requestedBy`. A cancelled borrowing never
 	 * wrote a movement, so nothing needs reversing.
 	 */
@@ -1107,7 +1108,7 @@ export class BorrowingService {
 	 *
 	 * @remarks
 	 * Format `BRW-<YYYYMM>-<#4>` per the plan, serial part sequence-allocated
-	 * per `(organization, 'borrowing')` inside the caller's transaction.
+	 * per `(organization, 'asset_borrowing')` inside the caller's transaction.
 	 * Uniqueness follows from the sequence — no collision retry needed.
 	 * Must be called inside the document's transaction.
 	 */
@@ -1117,7 +1118,7 @@ export class BorrowingService {
 	): Promise<string> {
 		const number = await this.numbering.allocate(
 			organizationId,
-			'borrowing',
+			ASSET_DOC_TYPES.borrowing,
 			tx,
 		);
 		const now = new Date();

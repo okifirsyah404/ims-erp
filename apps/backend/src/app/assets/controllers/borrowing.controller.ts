@@ -22,10 +22,10 @@ import type {
  * REST controller for the borrowing workflow.
  *
  * @remarks
- * **Authorization is declared per route** (§7): `borrowing:create` to raise,
- * `borrowing:approve` to approve/reject, `borrowing:issue` to issue,
- * `borrowing:return` to return, `borrowing:extend` to extend,
- * `borrowing:mark_lost` to report a loss, and `borrowing:update` to cancel.
+ * **Authorization is declared per route** (§7): `asset_borrowing:create` to raise,
+ * `asset_borrowing:approve` to approve/reject, `asset_borrowing:issue` to issue,
+ * `asset_borrowing:return` to return, `asset_borrowing:extend` to extend,
+ * `asset_borrowing:mark_lost` to report a loss, and `asset_borrowing:update` to cancel.
  *
  * **The actor flags are computed here, not in the service.** The service
  * receives a plain {@link TBorrowingActor} so it never reads a session — the
@@ -33,7 +33,7 @@ import type {
  * - `canApprove` — the self-approval bypass.
  * - `canIssue` — skipping approval is a privilege, not a default.
  * - `canSeeGuestPii` — the guest-PII tier from §6, deliberately keyed on
- *   `borrowing:mark_lost` rather than a new statement.
+ *   `asset_borrowing:mark_lost` rather than a new statement.
  *
  * **Tenant scope** is always `ctx.erp.organizationId`; every service call takes
  * it explicitly so a cross-tenant id is a 404 rather than a leak.
@@ -66,15 +66,15 @@ export class BorrowingController {
 			const canSeeGuestPii = await resolver.hasPermission(
 				erp.organizationId,
 				roles,
-				{ borrowing: ['mark_lost'] },
+				{ asset_borrowing: ['mark_lost'] },
 			);
 			return {
 				actorUserId: erp.session.user.id,
 				canApprove: await resolver.hasPermission(erp.organizationId, roles, {
-					borrowing: ['approve'],
+					asset_borrowing: ['approve'],
 				}),
 				canIssue: await resolver.hasPermission(erp.organizationId, roles, {
-					borrowing: ['issue'],
+					asset_borrowing: ['issue'],
 				}),
 				canSeeGuestPii,
 			};
@@ -96,7 +96,7 @@ export class BorrowingController {
 						}),
 					),
 				{
-					erp: { permission: ['borrowing:read'] },
+					erp: { permission: ['asset_borrowing:read'] },
 					detail: { description: 'Paginated borrowings' },
 				},
 			)
@@ -111,7 +111,7 @@ export class BorrowingController {
 						),
 					),
 				{
-					erp: { permission: ['borrowing:read'] },
+					erp: { permission: ['asset_borrowing:read'] },
 					detail: {
 						description: 'One borrowing with its lines and event timeline',
 					},
@@ -166,7 +166,7 @@ export class BorrowingController {
 					return created(view);
 				},
 				{
-					erp: { permission: ['borrowing:create'] },
+					erp: { permission: ['asset_borrowing:create'] },
 					detail: { description: 'Raises a borrowing' },
 				},
 			)
@@ -181,7 +181,7 @@ export class BorrowingController {
 						),
 					),
 				{
-					erp: { permission: ['borrowing:create'] },
+					erp: { permission: ['asset_borrowing:create'] },
 					detail: { description: 'Submits a draft borrowing for approval' },
 				},
 			)
@@ -196,7 +196,7 @@ export class BorrowingController {
 						),
 					),
 				{
-					erp: { permission: ['borrowing:approve'] },
+					erp: { permission: ['asset_borrowing:approve'] },
 					detail: { description: 'Approves a requested borrowing' },
 				},
 			)
@@ -211,7 +211,7 @@ export class BorrowingController {
 						),
 					),
 				{
-					erp: { permission: ['borrowing:approve'] },
+					erp: { permission: ['asset_borrowing:approve'] },
 					detail: { description: 'Rejects a requested borrowing' },
 				},
 			)
@@ -226,7 +226,7 @@ export class BorrowingController {
 						),
 					),
 				{
-					erp: { permission: ['borrowing:issue'] },
+					erp: { permission: ['asset_borrowing:issue'] },
 					detail: {
 						description:
 							'Issues every open line, moving custody out of the warehouse',
@@ -251,7 +251,7 @@ export class BorrowingController {
 					);
 				},
 				{
-					erp: { permission: ['borrowing:return'] },
+					erp: { permission: ['asset_borrowing:return'] },
 					detail: { description: 'Returns one line, or every open line' },
 				},
 			)
@@ -267,7 +267,7 @@ export class BorrowingController {
 						),
 					),
 				{
-					erp: { permission: ['borrowing:extend'] },
+					erp: { permission: ['asset_borrowing:extend'] },
 					detail: { description: 'Extends the due date' },
 				},
 			)
@@ -285,7 +285,7 @@ export class BorrowingController {
 					);
 				},
 				{
-					erp: { permission: ['borrowing:mark_lost'] },
+					erp: { permission: ['asset_borrowing:mark_lost'] },
 					detail: {
 						description: 'Reports a line lost; the asset is parked as lost',
 					},
@@ -302,7 +302,7 @@ export class BorrowingController {
 						),
 					),
 				{
-					erp: { permission: ['borrowing:create'] },
+					erp: { permission: ['asset_borrowing:create'] },
 					detail: { description: 'Cancels a borrowing that was not issued' },
 				},
 			)
@@ -317,7 +317,7 @@ export class BorrowingController {
 						),
 					),
 				{
-					erp: { permission: ['borrowing:update'] },
+					erp: { permission: ['asset_borrowing:update'] },
 					detail: {
 						description:
 							'Closes a returned borrowing, starting the PII retention clock',

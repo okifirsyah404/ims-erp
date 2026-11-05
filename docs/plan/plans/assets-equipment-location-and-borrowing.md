@@ -324,6 +324,47 @@ moved in this slice).
    - no `tool`/`service` item kinds (trimmed in Slice 2).
    The seeder runs after `seedInventory()`; types seed before any asset row.
 
+**Status: DONE (2026-11-06).** Permission resource renamed, the jsonb grants
+migrated, numbering keys moved, and the assets seeder landed.
+
+- `packages/common/src/authorization/erp-permissions.ts`: all ten actions moved
+  from `borrowing` to `asset_borrowing` for every role that held them — no
+  action added or removed (B6). Backend route guards and the controller's
+  `actorFor` capability checks use the new resource.
+- Migration `20261105223616_erp0036_slice4_permission_rename` is **data only**
+  (custom, snapshot unchanged): idempotently renames `auth.roles.permissions`
+  `borrowing` → `asset_borrowing`, and renames the
+  `organization.document_sequences` row so the allocated BRW number is kept
+  rather than restarted. If a target row already exists the stale source row is
+  deleted instead of violating the unique key.
+- `ASSET_DOC_TYPES.borrowing = 'asset_borrowing'`; `BorrowingService` allocates
+  through it and keeps `BRW-YYYYMM-####`. `AssetService` now allocates on the
+  **global** (`''`) sequence (D13), matching the globally-unique `assets.code`.
+- New `database/seeders/seed/assets.seeder.ts`, wired after `seedInventory()`:
+  six `asset_types` (upsert, idempotent on `code`), six assets with
+  warehouse/storage placement and `receipt` movements, the `TS-SEED-01` tool
+  set with two members, and three borrowings (`issued` asset out, `returned`
+  asset back, `issued` with a `marked_lost` line). Every row is guarded by its
+  fixed code/note, so re-runs are no-ops.
+
+```text
+bun run typecheck                      → clean
+bun test                               → 526 pass, 0 fail (979 expects)
+bun run drizzle:migrate                → migrations applied successfully
+bun run drizzle:seed                   → complete (run 1)
+bun run drizzle:seed                   → complete (run 2, idempotent)
+bun docs/database/validate-dbml.ts     → 255 tables, 228 refs, 0 cross-module,
+                                         0 timestamp gaps, OK
+```
+
+Post-migration DB checks (`ims_erp_local`): 19 role rows carry
+`asset_borrowing` and zero carry `borrowing`; six seeded assets with the
+expected statuses (one `borrowed`, one `lost`, four `ready`); 5 receipts, 3
+`borrow_out`, 1 `borrow_return`, 1 `lost` movement; three borrowings with one
+line each; physical events all carry `asset_movement_id`; `TS-SEED-01` has two
+members. `docs/database/` reviewed — no change required (permission/numbering
+keys are not part of the persistence contract).
+
 ### Slice 5 — UI, i18n, removals
 
 1. Borrowing screens move under Assets & Equipment (list, detail, form) using

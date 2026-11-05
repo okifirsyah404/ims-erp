@@ -98,7 +98,9 @@ export class AssetService {
 
 		const created = await this.database.transaction(async (tx) => {
 			const number = await this.numbering.allocate(
-				organizationId,
+				// D13: one global `AST-…` space regardless of tenant, so the
+				// globally-unique code index can never collide across scopes.
+				null,
 				ASSET_DOC_TYPES.asset,
 				tx,
 			);

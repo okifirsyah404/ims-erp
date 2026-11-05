@@ -12,6 +12,60 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed (this session - ERP-0036 Slice 4 permissions + seed, 2026-11-06)
+
+Status: **verified** on the local database; **implemented** in code. Slice 4 of
+`docs/plan/plans/assets-equipment-location-and-borrowing.md`.
+
+What landed:
+
+- `packages/common/src/authorization/erp-permissions.ts`: permission resource
+  `borrowing` renamed `asset_borrowing` in all 10 role blocks that held it, with
+  the same ten actions (`read/create/update/approve/issue/return/extend/
+  mark_late/mark_lost/export`) — B6, nothing added or removed.
+- Backend route guards plus the borrowing controller's `actorFor` capability
+  probes use `asset_borrowing`; the same rename went into the service JSDoc.
+- `ASSET_DOC_TYPES.borrowing = 'asset_borrowing'`; `BorrowingService` allocates
+  through it and keeps the `BRW-YYYYMM-####` format (D14). `AssetService`
+  allocates asset codes on the **global** (`null` → `''`) sequence (D13) so the
+  globally-unique `assets.code` index cannot collide across scopes.
+- Migration `20261105223616_erp0036_slice4_permission_rename` (custom,
+  data-only, snapshot unchanged): idempotently moves `auth.roles.permissions`
+  `borrowing` → `asset_borrowing`, and renames the
+  `organization.document_sequences` row so an allocated BRW number is kept, not
+  restarted (a pre-existing target row deletes the stale source instead of
+  violating the unique key).
+- New `database/seeders/seed/assets.seeder.ts`, wired after `seedInventory()` in
+  `database/seeders/index.ts`: six `asset_types` upserts, six assets with
+  warehouse/storage placement and `receipt` movements, the `TS-SEED-01` tool set
+  with two members, and three borrowings (out, returned, out + `marked_lost`).
+  All anchors are fixed codes/notes and fixed dates — re-runs are no-ops.
+- `inventory-authorization.test.ts` retargeted to `asset_borrowing`.
+
+```text
+bun run build (packages/common)         → clean (dist rebuilt; tests import dist)
+bun run typecheck                       → clean
+bun test (backend)                      → 526 pass, 0 fail (979 expects)
+bun run drizzle:migrate                 → migrations applied successfully
+bun run drizzle:seed                    → complete (run 1)
+bun run drizzle:seed                    → complete (run 2, idempotent)
+bun docs/database/validate-dbml.ts      → 255 tables, 228 refs, 0 cross-module,
+                                          0 timestamp gaps, OK
+```
+
+Post-migration DB checks (`ims_erp_local`): 19 `auth.roles` rows carry
+`asset_borrowing` and 0 carry `borrowing`; 6 assets (`AST-SEED-001..006`) with
+one `borrowed`, one `lost`, four `ready`; movements 5 `receipt` + 3
+`borrow_out` + 1 `borrow_return` + 1 `lost`; 3 borrowings with one line each;
+every physical borrowing event carries `asset_movement_id` and
+`requested`/`approved` carry none; `TS-SEED-01` has 2 members.
+`docs/database/` reviewed — no change required (permission and numbering keys
+are not part of the persistence contract).
+
+Note: the migration comment must stay ASCII-only — a `→` in a comment aborted
+the run with `character with byte sequence 0xe2 0x86 0x92 ... has no
+equivalent in encoding "WIN1252"`.
+
 ## Completed (this session - ERP-0036 Slice 3 borrowing port, 2026-11-06)
 
 Status: **verified** on the local database; **implemented** in code. Slice 3 of

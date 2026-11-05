@@ -55,7 +55,7 @@ export const documentSequences = organizationSchema.table(
 			.default(sql`uuidv7()`),
 		/** Logical ref to `auth.organizations.id` — cross-module FK omitted. */
 		organizationId: varchar('organization_id', { length: 64 }).notNull(),
-		/** Document family, e.g. `stock_movement`, `stock_adjustment`, `borrowing`. */
+		/** Document family, e.g. `stock_movement`, `stock_adjustment`, `asset_borrowing`. */
 		docType: varchar('doc_type', { length: 32 }).notNull(),
 		/** Code prefix the allocating domain uses, informational. */
 		prefix: varchar('prefix', { length: 16 }).notNull().default(''),

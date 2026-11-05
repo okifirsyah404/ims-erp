@@ -15,6 +15,8 @@ export const ASSET_DOC_TYPES = {
 	maintenance: 'asset_maintenance',
 	/** Disposal records: `DSP-<...>-<#5>`. */
 	disposal: 'asset_disposal',
+	/** Borrowing documents: `BRW-YYYYMM-<#4>`. */
+	borrowing: 'asset_borrowing',
 } as const;
 
 export type AssetDocType = (typeof ASSET_DOC_TYPES)[keyof typeof ASSET_DOC_TYPES];

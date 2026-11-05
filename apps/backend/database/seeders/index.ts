@@ -5,6 +5,7 @@ import { closeDB, drizzleDB } from '../../drizzle/db';
 import { seedLocations } from './seed/location.seeder';
 import { seedAuth } from './seed/auth.seeder';
 import { seedInventory } from './seed/inventory.seeder';
+import { seedAssets } from './seed/assets.seeder';
 import { seedOrganization } from './seed/organization.seeder';
 import { seedOrganizationMembers } from './seed/organization-members.seeder';
 import { seedOrganizationRoles } from './seed/organization-roles.seeder';
@@ -29,8 +30,10 @@ export async function runSeeders(): Promise<void> {
 	await seedOrganization();
 	await seedOrganizationMembers();
 	await seedOrganizationRoles();
-	// Needs the organization (scope) and location (address village) rows above.
+	// Needs the organization (scope), location (address village) and the
+	// warehouse/storage rows above; asset placements reference them.
 	await seedInventory();
+	await seedAssets();
 
 	const finishedAt = DateTime.now();
 	const elapsed = Duration.fromObject({
