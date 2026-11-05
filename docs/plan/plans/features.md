@@ -118,7 +118,20 @@ Last synced: 2026-11-05.
 
 ## M06 Assets and Equipment
 
+### in-progress
+
+- Location tracking + borrowing ownership — ERP-0036. Evidence: contract
+  shipped 2026-11-05 (`docs/database/docs.dbml`: assets 14 tables incl.
+  `asset_types` + borrowing trio, inventory 13 tables, `validate-dbml.ts`
+  prints `OK`; plan `plans/assets-equipment-location-and-borrowing.md` Slice 1
+  done). Schema, migration, code and UI are still pending — five slices total.
+  Stage 0 execution review resolved all blocking defects (global assets with
+  stubbed warehouse reachability, global unique asset code, no
+  `document_sequences` change, jsonb permission migration). Supersedes the M06
+  "loan register" note below once implemented.
+
 ### planned
+
 - Asset register: value, PIC, condition, service notes — T07, ERP-0015.
   Evidence: dbml `assets` only.
 - Depreciation as manual journal — T07, ERP-0015. Evidence: none.

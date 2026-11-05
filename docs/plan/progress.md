@@ -12,7 +12,157 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
-## Completed (this session — dummy dashboard view, 2026-11-06)
+## Completed (this session - ERP-0036 Slice 1 contract, 2026-11-05)
+
+Status: **implemented** for the contract only (`docs/database/` + plan docs); no
+Drizzle schema, migration, seeder, service or UI touched yet.
+
+`docs/database/docs.dbml` is now the target contract for ERP-0036:
+
+- **Assets block rewritten** (now 14 tables). New `assets.asset_types` (global
+  lookup, no `organization_id`, unique `code`); `assets.asset_categories` and
+  `assets.assets` gain a real `Ref` to `assets.asset_types.code` and lose their
+  `asset_type IN (...)` CHECKs; `assets.assets` gains `warehouse_id` /
+  `storage_id` (logical refs into `inventory`), renames `assigned_at` →
+  `borrowed_since`, drops `organization_id NOT NULL`, and switches the status
+  CHECK to `ready|borrowed|maintenance|inactive|disposed|lost`.
+- **Uniqueness settled** (Stage 0 B5 / D13): `assets.code` is a single global
+  unique index (codes allocate on the global sequence); serials are unique per
+  scope via an expression index on `(coalesce(organization_id,''), serial_number)
+  WHERE serial_number IS NOT NULL AND deleted_at IS NULL`.
+- `assets.asset_movements`: four location id columns, new vocabulary
+  `receipt|transfer|borrow_out|borrow_return|project_site|disposal|lost`,
+  location/type indexes.
+- `assets.borrowings` / `borrowing_lines` / `borrowing_events` added (ported
+  from inventory, `asset_id` and `asset_movement_id`, plus `origin_storage_id`),
+  with intra-module FKs. `assets.asset_assignments` deleted (D6).
+- **Inventory block**: borrowing trio + its 5 refs deleted (13 tables left);
+  `item_kind` is `product|component|material` and the service clause is gone;
+  `serial_tracked_items.status` drops `borrowed` and gains the superseded
+  `current_borrowing_line_id` column + index for the later cleanup;
+  `stock_movements` borrowing vocabulary annotated as superseded (D17).
+- TableGroups updated for both modules (`inventory.borrowing*` out,
+  `assets.asset_types` + `assets.borrowing*` in, `assets.asset_assignments` out).
+- `module-ownership.md`: Inventory 16→13 tables / 24→19 FKs / 31→12 logical
+  refs; Assets 11→14 / 11→16 / 26→33; module profiles rewritten (Inventory no
+  longer owns borrowing, Assets owns it, placement asserts listed with the
+  ERP-0031 stub called out); the nullable-org carve-out now covers Inventory
+  **and** Assets, not Inventory alone.
+- `data-dictionary.md`: nullable-org rule, the `assets.assets.code`
+  global-uniqueness exception, `assets.borrowing_events` added to the
+  no-`deleted_at` list, new scope-split/expression index conventions,
+  `warehouse_id`/`storage_id` generic columns, Assets glossary rewritten
+  (assignment → borrowing, location, movement, derived status).
+
+```text
+bun docs/database/gen-logical-references.ts
+  → regenerated: 513 refs across 37 targets, 228 intra-module refs
+bun docs/database/validate-dbml.ts
+  → parsed: 255 tables, 228 refs
+    cross-module refs: 0
+    timestamp gaps: 0
+    OK
+```
+
+Two gate defects were found and fixed rather than worked around:
+
+1. **`docs.dbml` at `HEAD` did not parse.** `assets.assets.status` carried a
+   `[note: …]` setting on a `Checks` entry; `@dbml/core` rejects it with
+   `Unknown check setting 'note'`. The same construct existed in three other
+   checks I touched. All check-level notes were moved into table `Note:`
+   strings; the file parses again.
+2. **The cross-module check was vacuous.** `validate-dbml.ts` iterated
+   `db.refs`, which `@dbml/core` v11 leaves undefined — the parse result keeps
+   all 228 refs on `schema.refs`. It now reads every ref and prefers
+   `endpoint.schemaName` over the bare-name map (which is ambiguous because
+   `items` exists in both `catalog` and `inventory`). First real run reported
+   11 false positives from that ambiguity, then 0.
+
+Also noted for later slices: `gen-logical-references.ts` anchors its regex at
+the start of a column note, so any cross-module note must **begin** with
+`Logical reference to …` or it is silently uncounted.
+
+`docs/database/` **was** changed (this is the contract slice).
+`docs/plan/plans/assets-equipment-location-and-borrowing.md` Slice 1 marked
+DONE with these deviations.
+
+## Completed (this session - assets/equipment Stage 0 review, 2026-11-05)
+
+Status: **in-progress** (plan doc amended; still no code, schema, migration or
+seed touched).
+
+- Ran an execution review (`Stage 0`) of
+  `docs/plan/plans/assets-equipment-location-and-borrowing.md` against the
+  actual code before writing anything. Design holds; the plan as written was
+  not executable. Nine defects found, six blocking:
+  - **B1** D11's reachability rule needs `inventory.warehouse_organizations`,
+    which exists only in `docs.dbml:2268` — not in Drizzle, not migrated; it is
+    backlog **ERP-0031**, still `planned`. Resolved by keeping global assets but
+    stubbing `assertWarehouseReachableByOrg` to return `true` (all warehouses
+    are global today), with a real call site so ERP-0031 is a body swap.
+  - **B2** Slice order broke the migration: the tightened `item_kind` CHECK
+    would fail while seeded `tool`/`service` rows exist, and the cleanup script
+    sat in Slice 4. Cleanup + seeder trim moved into Slice 2, before
+    `drizzle:generate`.
+  - **B3** The `borrowing` → `asset_borrowing` rename would silently revoke
+    every role's access: grants are jsonb (`role.schema.ts:73`) and
+    `organization-roles.seeder.ts` is insert-only. Added an idempotent jsonb
+    key-rename data migration in the same slice.
+  - **B4** D11's `document_sequences.organization_id` nullable change was wrong:
+    the service already writes a `''` sentinel
+    (`document-numbering.service.ts:62`) and `NULL` never conflicts in
+    `ON CONFLICT (organization_id, doc_type)`, so it would have minted
+    duplicate sequences. Clause dropped; no schema change.
+  - **B5** Acceptance said a global asset and an org asset cannot share a code,
+    but `(org, code)` unique plus code-unique-where-org-is-null does not deliver
+    it. Ruling: `assets.code` globally unique, codes allocate from the global
+    sequence; serials unique on `(coalesce(organization_id,''), serial_number)`.
+  - **B6** D15 said "eight actions"; the real grant has ten (adds `mark_late`,
+    `export`). Rename only, keep ten.
+- Non-blocking defects (B7-B9) recorded and folded into the slices: the
+  borrowing port needs `origin_storage_id`, the `asset_movement_id` FK policy,
+  movement rows for disposal/maintenance and the `asset_types` seed before the
+  FK is added; `reconcileStatus` needed explicit source rules; and the
+  scheduler worker, warehouse `toolsCount`, borrowing errors living in
+  `inventory.errors.ts`, asset-type endpoints, the `in_stock→ready` backfill and
+  the affected tests were missing from the plan.
+- Migrations will need one **hand edit**: the
+  `serial_tracked_items.current_borrowing_line_id` FK exists in the database and
+  in `20261102174836_colorful_rattler` but not in Drizzle metadata, so
+  `drizzle:generate` cannot emit its `DROP CONSTRAINT`.
+- `docs/database/` was reviewed and is **unchanged** so far; it changes in
+  Slice 1. `bun docs/database/validate-dbml.ts` not run (no edits yet).
+- Verified: nothing executed — reading only (`git status`, `Read`, ripgrep).
+
+## Completed (this session - assets/equipment design plan, 2026-11-05)
+
+Status: **design only** (no code, schema, migration or seed touched;
+`docs/database/` reviewed but not yet edited - it changes in slice 1).
+
+- **7-round grilling session** resolved the "tools are equipment" question and
+  the follow-up "equipment movements must be tracked between warehouses /
+  warehouse storages". Output: `docs/plan/plans/assets-equipment-location-and-borrowing.md`
+  (D1-D20, five slices, acceptance criteria, accepted risks).
+- Key calls: the **asset row is the physical unit**; assets gain
+  `warehouse_id`/`storage_id` plus location ids on `asset_movements`; the
+  **borrowing engine moves into `assets`** (guest PII, approval chain, sweeps
+  retained, ported by `git mv`) and the inventory trio is dropped;
+  `asset_assignments` is dropped because borrowing becomes the only custody;
+  asset status becomes `ready|borrowed|maintenance|inactive|disposed|lost`
+  derived by one reconcile; `item_kind` shrinks to
+  `product|component|material`; `asset_type` becomes a seeded lookup table;
+  asset tables go nullable-org (app-admin write, org read); `borrowing`
+  permission renamed `asset_borrowing`.
+- New backlog item **ERP-0036** (planned); `features.md` M06 updated in the
+  same change.
+- Destructive step accepted on the basis that **no production database
+  exists**: one migration drops `inventory.borrowings`/`borrowing_lines`/
+  `borrowing_events` and `assets.asset_assignments`, and a `--dry-run`-first
+  script hard-deletes tool items and serial units. Must not run against any
+  `POSTGRES_URL` the author cannot name.
+- Verified: nothing (design only). No commands run beyond reading files.
+
+## Completed (this session - dummy dashboard view, 2026-11-06)
 
 Status: **implemented** (UI mock only; no backend, schema, migration, or seed
 touched — `docs/database/` reviewed, unchanged).

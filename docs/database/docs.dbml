@@ -111,9 +111,6 @@ TableGroup "Inventory" {
   inventory.stock_transfer_items
   inventory.stock_reservations
   inventory.serial_tracked_items
-  inventory.borrowings
-  inventory.borrowing_lines
-  inventory.borrowing_events
 }
 
 TableGroup "Projects" {
@@ -201,9 +198,9 @@ TableGroup "Accounting" {
 }
 
 TableGroup "Assets" {
+  assets.asset_types
   assets.asset_categories
   assets.assets
-  assets.asset_assignments
   assets.asset_maintenances
   assets.asset_depreciations
   assets.asset_disposals
@@ -212,6 +209,9 @@ TableGroup "Assets" {
   assets.tool_sets
   assets.tool_set_items
   assets.asset_movements
+  assets.borrowings
+  assets.borrowing_lines
+  assets.borrowing_events
 }
 
 TableGroup "After-Sales" {
@@ -2298,7 +2298,7 @@ Table inventory.items {
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
-  Note: "Item master at SKU level. One item master for the whole ERP; catalog.items is superseded by this table (ADR-0008). Status exists only on serialized units, never here."
+  Note: "Item master at SKU level. One item master for the whole ERP; catalog.items is superseded by this table (ADR-0008). Status exists only on serialized units, never here. ERP-0036 D9: item_kind is product|component|material only — physical tools are assets (assets.assets) and services are neither stocked nor serialized, so the former service clause is gone."
   Indexes {
     (organization_id, sku) [unique, name: 'inventory_items_org_sku_uq', note: 'WHERE organization_id IS NOT NULL']
     (sku) [unique, name: 'inventory_items_global_sku_uq', note: 'WHERE organization_id IS NULL']
@@ -2307,10 +2307,9 @@ Table inventory.items {
     barcode [name: 'inventory_items_barcode_idx']
   }
   Checks {
-    `item_kind IN ('product', 'component', 'material', 'tool', 'service')`
+    `item_kind IN ('product', 'component', 'material')`
     `selling_price >= 0 AND purchase_price >= 0`
     `min_stock_qty >= 0`
-    `NOT (item_kind = 'service') OR (is_serialized = false AND is_stock_tracked = false)`
   }
 }
 
@@ -2331,7 +2330,7 @@ Table inventory.stock_movements {
   created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
   notes text
   created_at bigint [not null]
-  Note: "Authoritative, append-only stock ledger. One row per movement, never updated after posting; a reversal is a new row. No updated_at, no deleted_at."
+  Note: "Authoritative, append-only stock ledger. One row per movement, never updated after posting; a reversal is a new row. No updated_at, no deleted_at. ERP-0036 D17: the borrowing_out / borrowing_in movement types and the reference_type='borrowing' clause are SUPERSEDED — nothing writes them (asset borrowing writes assets.asset_movements); they stay until the later cleanup migration."
   Indexes {
     (organization_id, code) [unique, name: 'stock_movements_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
     (code) [unique, name: 'stock_movements_global_code_uq', note: 'WHERE organization_id IS NULL']
@@ -2510,11 +2509,12 @@ Table inventory.serial_tracked_items {
   purchase_order_line_id text [note: "Logical reference to the procurement line this unit was ordered on. Procurement does not exist yet, so this is unvalidated."]
   customer_id uuid [note: "Logical reference to crm.customers.id, set when sold. Cross-module FK intentionally omitted."]
   stock_movement_id uuid [note: "Logical reference to inventory.stock_movements.id (last touch)."]
+  current_borrowing_line_id uuid [note: "SUPERSEDED (ERP-0036 D17): nothing writes it once borrowing moves to assets. Its FK to inventory.borrowing_lines is dropped with that table; column and index stay until the later cleanup migration."]
   notes text
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
-  Note: "One physical, serialized instance of an item. The table keeps its contract name (ADR-0009); current_borrowing_line_id arrives in a later migration to break the FK cycle with borrowing_lines."
+  Note: "One physical, serialized instance of an item. Serves serialized products only after ERP-0036: tools are assets and never have a unit row here."
   Indexes {
     (organization_id, serial_number) [unique, name: 'serial_tracked_items_org_serial_uq', note: 'WHERE organization_id IS NOT NULL']
     (serial_number) [unique, name: 'serial_tracked_items_global_serial_uq', note: 'WHERE organization_id IS NULL']
@@ -2522,107 +2522,12 @@ Table inventory.serial_tracked_items {
     status [name: 'serial_tracked_items_status_idx']
     warehouse_id [name: 'serial_tracked_items_warehouse_id_idx']
     asset_tag [name: 'serial_tracked_items_asset_tag_idx']
+    current_borrowing_line_id [name: 'serial_tracked_items_current_borrowing_line_id_idx']
   }
   Checks {
-    `status IN ('pre_order', 'in_stock', 'borrowed', 'lost', 'sold', 'applied_warranty')`
+    `status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty')`
     `is_provisional_serial = false OR status = 'pre_order'`
     `warranty_expires_on IS NULL OR acquired_on IS NULL OR warranty_expires_on >= acquired_on`
-  }
-}
-
-Table inventory.borrowings {
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [note: "Null means global/company-wide (ADR-0008)."]
-  code varchar(32) [not null]
-  status text [not null, default: 'requested']
-  purpose text [not null, default: 'internal_use']
-  borrower_type text [not null]
-  borrower_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
-  borrower_customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted."]
-  guest_name text
-  guest_phone text
-  guest_id_type text
-  guest_id_number text [note: "Guest PII. Access-restricted and expired by the retention sweep (24 months is the working default)."]
-  guest_address_text text
-  guest_id_document_ref text [note: "Plain text until a Documents module exists."]
-  requested_by text [note: "Logical reference to auth.users.id."]
-  requested_at bigint
-  approved_by text [note: "Logical reference to auth.users.id."]
-  approved_at bigint
-  issued_by text [note: "Logical reference to auth.users.id."]
-  issued_at bigint
-  due_at bigint [not null]
-  closed_by text [note: "Logical reference to auth.users.id."]
-  closed_at bigint
-  notes text
-  created_at bigint [not null]
-  updated_at bigint
-  deleted_at bigint
-  Note: "Borrowing header. A borrower is a registered user, a registered customer, or a guest whose identity is snapshotted here because there is no row to point at (ADR-0009)."
-  Indexes {
-    (organization_id, code) [unique, name: 'borrowings_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
-    (code) [unique, name: 'borrowings_global_code_uq', note: 'WHERE organization_id IS NULL']
-    status [name: 'borrowings_status_idx']
-    borrower_user_id [name: 'borrowings_borrower_user_id_idx']
-    borrower_customer_id [name: 'borrowings_borrower_customer_id_idx']
-    due_at [name: 'borrowings_due_at_idx']
-  }
-  Checks {
-    `status IN ('draft', 'requested', 'approved', 'rejected', 'issued', 'partially_returned', 'returned', 'closed', 'cancelled')`
-    `purpose IN ('rental', 'internal_use', 'testing', 'warranty_service')`
-    `borrower_type IN ('user', 'customer', 'guest')`
-    `guest_id_type IS NULL OR guest_id_type IN ('ktp', 'sim', 'passport', 'other')`
-    `(borrower_type = 'user' AND borrower_user_id IS NOT NULL AND borrower_customer_id IS NULL AND guest_name IS NULL AND guest_phone IS NULL AND guest_id_number IS NULL) OR (borrower_type = 'customer' AND borrower_customer_id IS NOT NULL AND borrower_user_id IS NULL AND guest_name IS NULL AND guest_phone IS NULL AND guest_id_number IS NULL) OR (borrower_type = 'guest' AND guest_name IS NOT NULL AND guest_phone IS NOT NULL AND guest_id_number IS NOT NULL AND borrower_user_id IS NULL AND borrower_customer_id IS NULL)`
-  }
-}
-
-Table inventory.borrowing_lines {
-  id uuid [pk, default: `uuidv7()`]
-  borrowing_id uuid [not null]
-  serial_tracked_item_id uuid [not null]
-  origin_warehouse_id uuid [not null, note: "Snapshot of where the unit left from: the unit itself loses its warehouse while it is out (ADR-0009)."]
-  issued_at bigint
-  due_at bigint
-  returned_at bigint
-  returned_condition text
-  marked_late_at bigint
-  marked_lost_at bigint
-  lost_reported_by text [note: "Logical reference to auth.users.id."]
-  site_address_text text
-  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted."]
-  notes text
-  created_at bigint [not null]
-  updated_at bigint
-  deleted_at bigint
-  Note: "One borrowed unit. Borrowing is serialized-only: a line always names a specific unit, never a quantity (ADR-0009)."
-  Indexes {
-    (borrowing_id, serial_tracked_item_id) [unique, name: 'borrowing_lines_borrowing_unit_uq']
-    serial_tracked_item_id [name: 'borrowing_lines_unit_id_idx']
-    due_at [name: 'borrowing_lines_open_idx', note: 'WHERE returned_at IS NULL AND marked_lost_at IS NULL']
-  }
-  Checks {
-    `returned_condition IS NULL OR returned_condition IN ('good', 'damaged', 'incomplete')`
-    `due_at IS NULL OR issued_at IS NULL OR due_at > issued_at`
-  }
-}
-
-Table inventory.borrowing_events {
-  id uuid [pk, default: `uuidv7()`]
-  borrowing_id uuid [not null]
-  borrowing_line_id uuid
-  event_type text [not null]
-  stock_movement_id uuid [note: "Logical reference to inventory.stock_movements.id. Required for the physical event types, forbidden otherwise."]
-  actor_user_id text [note: "Logical reference to auth.users.id. NULL for automated sweeps."]
-  occurred_at bigint [not null]
-  note text
-  Note: "Append-only business timeline of a borrowing. Stock movements never point back here: one direction only (ADR-0009)."
-  Indexes {
-    (borrowing_id, occurred_at) [name: 'borrowing_events_borrowing_occurred_idx']
-    borrowing_line_id [name: 'borrowing_events_line_id_idx']
-  }
-  Checks {
-    `event_type IN ('requested', 'approved', 'rejected', 'issued', 'returned', 'marked_late', 'marked_lost', 'due_date_extended', 'cancelled', 'closed')`
-    `(event_type IN ('issued', 'returned', 'marked_lost') AND stock_movement_id IS NOT NULL) OR (event_type NOT IN ('issued', 'returned', 'marked_lost') AND stock_movement_id IS NULL)`
   }
 }
 
@@ -2646,11 +2551,6 @@ Ref: inventory.stock_reservations.warehouse_id > inventory.warehouses.id [delete
 Ref: inventory.serial_tracked_items.item_id > inventory.items.id [delete: restrict]
 Ref: inventory.serial_tracked_items.warehouse_id > inventory.warehouses.id [delete: set null]
 Ref: inventory.serial_tracked_items.bin_id > inventory.warehouse_storages.id [delete: set null]
-Ref: inventory.borrowing_lines.borrowing_id > inventory.borrowings.id [delete: cascade]
-Ref: inventory.borrowing_lines.serial_tracked_item_id > inventory.serial_tracked_items.id [delete: restrict]
-Ref: inventory.borrowing_lines.origin_warehouse_id > inventory.warehouses.id [delete: restrict]
-Ref: inventory.borrowing_events.borrowing_id > inventory.borrowings.id [delete: cascade]
-Ref: inventory.borrowing_events.borrowing_line_id > inventory.borrowing_lines.id [delete: cascade]
 
 // ---------------------------------------------------------------------------
 // MODULE: Projects  (schema: projects)
@@ -4706,14 +4606,38 @@ Ref: accounting.withholding_tax_records.tax_type_id > accounting.tax_types.id [d
 
 // ---------------------------------------------------------------------------
 // MODULE: Assets  (schema: assets)
-// Asset master and categories, assignments, maintenance, depreciation,
-// disposal, documents, condition checks, tool sets and movements.
-// Tenant scoped.
+// Asset types, categories, the asset register, maintenance, depreciation,
+// disposal, documents, condition checks, tool sets, movements and borrowing.
+// Tenant scoped with a global scope: organization_id NULL means
+// company-wide/global, per ADR-0008's scope rule.
+// ERP-0036: the asset row IS the physical unit; borrowing is the only custody
+// mechanism (asset_assignments removed); borrowing moved here from inventory.
 // ---------------------------------------------------------------------------
+
+Table assets.asset_types {
+  id uuid [pk, default: `uuidv7()`]
+  code varchar(32) [not null]
+  name text [not null]
+  default_useful_life_months integer
+  default_depreciation_method text [not null, default: 'straight_line']
+  is_active boolean [not null, default: true]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Asset type lookup (ERP-0036 D10). Global reference data, NOT tenant scoped: no organization_id. `code` is the stable identity referenced by assets.asset_type / asset_categories.asset_type; `name` is the editable label. Writes are application-admin-only. A type cannot be soft deleted while an asset or category references it; is_active is the 'stop offering it' switch."
+  Indexes {
+    code [unique, name: 'asset_types_code_uq']
+    is_active [name: 'asset_types_is_active_idx']
+  }
+  Checks {
+    `default_depreciation_method IN ('straight_line', 'declining_balance', 'none')`
+    `default_useful_life_months IS NULL OR default_useful_life_months > 0`
+  }
+}
 
 Table assets.asset_categories {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null means global/company-wide (ADR-0008 scope rule)."]
   code varchar(32) [not null]
   name text [not null]
   parent_category_id uuid
@@ -4726,18 +4650,18 @@ Table assets.asset_categories {
   deleted_at bigint
   Note: "Asset category with the default depreciation rule of the category."
   Indexes {
-    (organization_id, code) [unique, name: 'asset_categories_org_code_uq']
+    (organization_id, code) [unique, name: 'asset_categories_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
+    (code) [unique, name: 'asset_categories_global_code_uq', note: 'WHERE organization_id IS NULL']
     parent_category_id [name: 'asset_categories_parent_category_id_idx']
   }
   Checks {
-    `asset_type IN ('equipment', 'vehicle', 'tool', 'furniture', 'it', 'intangible')`
     `default_depreciation_method IN ('straight_line', 'declining_balance', 'none')`
   }
 }
 
 Table assets.assets {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null means global/company-wide (ADR-0008 scope rule); global rows are app-admin write, org read."]
   code varchar(32) [not null]
   name text [not null]
   description text
@@ -4755,29 +4679,35 @@ Table assets.assets {
   depreciation_method text [not null, default: 'straight_line']
   depreciation_started_on date
   condition text [not null, default: 'good']
-  status text [not null, default: 'in_stock']
+  status text [not null, default: 'ready']
   deactivation_reason text [note: "DEVIATION (shipped): dbml originally omitted this column and the 'inactive' status. D18 added deactivation-with-reason; enforced by assets_deactivation_reason_check (inactive ⇔ reason NOT NULL)."]
-  location_description text
-  custodian_employee_id uuid [note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
-  assigned_at bigint
+  location_description text [note: "Off-site / non-warehouse location (customer site, technician van). May be set together with warehouse_id/storage_id 'en route to site X' (D19)."]
+  warehouse_id uuid [note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Current warehouse of the physical unit (D2); NULL while borrowed, disposed or lost."]
+  storage_id uuid [note: "Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Storage (bin) inside warehouse_id; a storage id always implies its warehouse_id."]
+  custodian_employee_id uuid [note: "Written denormalisation of the open borrowing's borrower, produced only by syncCustody (D8); never accepted from a request body. Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
+  borrowed_since bigint [note: "Renamed from assigned_at (D8). Written only by syncCustody in the same transaction as borrow issue / return / disposal / loss."]
   supplier_id uuid [note: "Logical reference to procurement.suppliers.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
   purchase_order_id uuid [note: "Logical reference to procurement.purchase_orders.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
   document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Asset master. Costs are exact integer minor units. Master data referenced by financial records is never hard deleted."
+  Note: "Asset master; ONE ROW PER PHYSICAL UNIT (D1), quantity is always 1. Costs are exact integer minor units. Master data referenced by financial records is never hard deleted. status is a denormalisation derived by reconcileStatus (D7) for unit-backed rows: open borrowing ⇒ borrowed, in-progress maintenance ⇒ maintenance, terminal writes disposed/lost, otherwise ready; inactive is asset-owned and never overwritten by reconcile. Status vocabulary (D7): in_stock→ready, in_use→borrowed, inactive retained per D18."
   Indexes {
-    (organization_id, code) [unique, name: 'assets_org_code_uq']
+    code [unique, name: 'assets_code_uq', note: 'Global across scopes so an org asset and a global asset can never share a code (D13); codes are allocated from the global numbering sequence.']
+    (organization_id, serial_number) [unique, name: 'assets_serial_uq', note: "Expression index on (coalesce(organization_id, ''), serial_number) WHERE serial_number IS NOT NULL AND deleted_at IS NULL — organization_id alone would let every global asset repeat because NULL never conflicts."]
+    asset_type [name: 'assets_asset_type_idx']
     category_id [name: 'assets_category_id_idx']
     custodian_employee_id [name: 'assets_custodian_employee_id_idx']
     status [name: 'assets_status_idx']
+    warehouse_id [name: 'assets_warehouse_id_idx']
+    storage_id [name: 'assets_storage_id_idx']
     serial_number [name: 'assets_serial_number_idx']
   }
   Checks {
-    `asset_type IN ('equipment', 'vehicle', 'tool', 'furniture', 'it', 'intangible')`
-    `status IN ('in_stock', 'in_use', 'maintenance', 'inactive', 'disposed', 'lost')` [note: "DEVIATION (shipped): 'inactive' added per D18."]
+    `status IN ('ready', 'borrowed', 'maintenance', 'inactive', 'disposed', 'lost')`
     `(status = 'inactive' AND deactivation_reason IS NOT NULL) OR (status <> 'inactive' AND deactivation_reason IS NULL)`
+    `storage_id IS NULL OR warehouse_id IS NOT NULL`
     `condition IN ('new', 'good', 'fair', 'poor', 'damaged')`
     `depreciation_method IN ('straight_line', 'declining_balance', 'none')`
     `acquisition_cost >= 0`
@@ -4785,30 +4715,6 @@ Table assets.assets {
     `accumulated_depreciation >= 0`
     `book_value >= 0`
     `useful_life_months IS NULL OR useful_life_months > 0`
-  }
-}
-
-Table assets.asset_assignments {
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  asset_id uuid [not null]
-  assigned_to_employee_id uuid [note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
-  assigned_to_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  assigned_at bigint [not null]
-  returned_at bigint
-  condition_on_assign text
-  condition_on_return text
-  notes text
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  Note: "Custody of an asset. An open assignment keeps the asset in use."
-  Indexes {
-    asset_id [name: 'asset_assignments_asset_id_idx']
-    assigned_to_employee_id [name: 'asset_assignments_employee_id_idx']
-  }
-  Checks {
-    `returned_at IS NULL OR returned_at >= assigned_at`
   }
 }
 
@@ -4999,26 +4905,132 @@ Table assets.asset_movements {
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   asset_id uuid [not null]
   movement_type text [not null, default: 'transfer']
-  from_location text
-  to_location text
+  from_warehouse_id uuid [note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  from_storage_id uuid [note: "Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted."]
+  to_warehouse_id uuid [note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted."]
+  to_storage_id uuid [note: "Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted."]
+  from_location text [note: "Free-text off-site detail (D3); kept alongside the location ids."]
+  to_location text [note: "Free-text off-site detail (D3); kept alongside the location ids."]
   moved_at bigint [not null]
   moved_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   condition text
   notes text
   created_at bigint [not null]
-  Note: "Movement of an asset between locations or projects."
+  Note: "Movement of an asset between warehouses/storages or off-site. ERP-0036 D3 replaced the vocabulary (was transfer/loan/return/project_site). Asset borrowing does NOT write the stock ledger (D4): issue/return write rows here instead. Append-only history; one direction only — borrowing_events points at a movement, never the reverse."
   Indexes {
     asset_id [name: 'asset_movements_asset_id_idx']
     moved_at [name: 'asset_movements_moved_at_idx']
+    movement_type [name: 'asset_movements_movement_type_idx']
+    from_warehouse_id [name: 'asset_movements_from_warehouse_id_idx']
+    to_warehouse_id [name: 'asset_movements_to_warehouse_id_idx']
   }
   Checks {
-    `movement_type IN ('transfer', 'loan', 'return', 'project_site')`
+    `movement_type IN ('receipt', 'transfer', 'borrow_out', 'borrow_return', 'project_site', 'disposal', 'lost')`
+  }
+}
+
+Table assets.borrowings {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Null means global/company-wide (ADR-0008)."]
+  code varchar(32) [not null]
+  status text [not null, default: 'requested']
+  purpose text [not null, default: 'internal_use']
+  borrower_type text [not null]
+  borrower_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
+  borrower_customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted."]
+  guest_name text
+  guest_phone text
+  guest_id_type text
+  guest_id_number text [note: "Guest PII. Access-restricted and expired by the retention sweep (24 months is the working default)."]
+  guest_address_text text
+  guest_id_document_ref text [note: "Plain text until a Documents module exists."]
+  requested_by text [note: "Logical reference to auth.users.id."]
+  requested_at bigint
+  approved_by text [note: "Logical reference to auth.users.id."]
+  approved_at bigint
+  issued_by text [note: "Logical reference to auth.users.id."]
+  issued_at bigint
+  due_at bigint [not null]
+  closed_by text [note: "Logical reference to auth.users.id."]
+  closed_at bigint
+  notes text
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Borrowing header, MOVED HERE FROM inventory (ERP-0036 D5) unchanged in concept. A borrower is a registered user, a registered customer, or a guest whose identity is snapshotted here because there is no row to point at (ADR-0009). Codes are `<BRW-YYYYMM-####>` allocated on doc type `asset_borrowing` (D14)."
+  Indexes {
+    (organization_id, code) [unique, name: 'borrowings_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
+    (code) [unique, name: 'borrowings_global_code_uq', note: 'WHERE organization_id IS NULL']
+    status [name: 'borrowings_status_idx']
+    borrower_user_id [name: 'borrowings_borrower_user_id_idx']
+    borrower_customer_id [name: 'borrowings_borrower_customer_id_idx']
+    due_at [name: 'borrowings_due_at_idx']
+  }
+  Checks {
+    `status IN ('draft', 'requested', 'approved', 'rejected', 'issued', 'partially_returned', 'returned', 'closed', 'cancelled')`
+    `purpose IN ('rental', 'internal_use', 'testing', 'warranty_service')`
+    `borrower_type IN ('user', 'customer', 'guest')`
+    `guest_id_type IS NULL OR guest_id_type IN ('ktp', 'sim', 'passport', 'other')`
+    `(borrower_type = 'user' AND borrower_user_id IS NOT NULL AND borrower_customer_id IS NULL AND guest_name IS NULL AND guest_phone IS NULL AND guest_id_number IS NULL) OR (borrower_type = 'customer' AND borrower_customer_id IS NOT NULL AND borrower_user_id IS NULL AND guest_name IS NULL AND guest_phone IS NULL AND guest_id_number IS NULL) OR (borrower_type = 'guest' AND guest_name IS NOT NULL AND guest_phone IS NOT NULL AND guest_id_number IS NOT NULL AND borrower_user_id IS NULL AND borrower_customer_id IS NULL)`
+  }
+}
+
+Table assets.borrowing_lines {
+  id uuid [pk, default: `uuidv7()`]
+  borrowing_id uuid [not null]
+  asset_id uuid [not null, note: "The physical unit borrowed (D1). Replaces inventory's serial_tracked_item_id."]
+  origin_warehouse_id uuid [note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Snapshot of where the unit left from: the asset loses its warehouse while it is out (ADR-0009)."]
+  origin_storage_id uuid [note: "Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted. Snapshot of the storage the unit left from, so return restores the exact bin."]
+  issued_at bigint
+  due_at bigint
+  returned_at bigint
+  returned_condition text
+  marked_late_at bigint
+  marked_lost_at bigint
+  lost_reported_by text [note: "Logical reference to auth.users.id."]
+  site_address_text text
+  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted."]
+  notes text
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "One borrowed asset. Borrowing is serialized-only: a line always names a specific asset, never a quantity (ADR-0009)."
+  Indexes {
+    (borrowing_id, asset_id) [unique, name: 'borrowing_lines_borrowing_asset_uq']
+    asset_id [name: 'borrowing_lines_asset_id_idx']
+    due_at [name: 'borrowing_lines_open_idx', note: 'WHERE returned_at IS NULL AND marked_lost_at IS NULL']
+  }
+  Checks {
+    `returned_condition IS NULL OR returned_condition IN ('good', 'damaged', 'incomplete')`
+    `due_at IS NULL OR issued_at IS NULL OR due_at > issued_at`
+    `origin_storage_id IS NULL OR origin_warehouse_id IS NOT NULL`
+  }
+}
+
+Table assets.borrowing_events {
+  id uuid [pk, default: `uuidv7()`]
+  borrowing_id uuid [not null]
+  borrowing_line_id uuid
+  event_type text [not null]
+  asset_movement_id uuid [note: "Logical reference to assets.asset_movements.id (same module, journal column kept FK-free so the ledger never points back). Required for the physical event types, forbidden otherwise."]
+  actor_user_id text [note: "Logical reference to auth.users.id. NULL for automated sweeps."]
+  occurred_at bigint [not null]
+  note text
+  Note: "Append-only business timeline of a borrowing. Movements never point back here: one direction only (ADR-0009). Append-only: no updated_at, no deleted_at."
+  Indexes {
+    (borrowing_id, occurred_at) [name: 'borrowing_events_borrowing_occurred_idx']
+    borrowing_line_id [name: 'borrowing_events_line_id_idx']
+  }
+  Checks {
+    `event_type IN ('requested', 'approved', 'rejected', 'issued', 'returned', 'marked_late', 'marked_lost', 'due_date_extended', 'cancelled', 'closed')`
+    `(event_type IN ('issued', 'returned', 'marked_lost') AND asset_movement_id IS NOT NULL) OR (event_type NOT IN ('issued', 'returned', 'marked_lost') AND asset_movement_id IS NULL)`
   }
 }
 
 Ref: assets.asset_categories.parent_category_id > assets.asset_categories.id [delete: set null]
+Ref: assets.asset_categories.asset_type > assets.asset_types.code [delete: restrict]
 Ref: assets.assets.category_id > assets.asset_categories.id [delete: set null]
-Ref: assets.asset_assignments.asset_id > assets.assets.id [delete: cascade]
+Ref: assets.assets.asset_type > assets.asset_types.code [delete: restrict]
 Ref: assets.asset_maintenances.asset_id > assets.assets.id [delete: cascade]
 Ref: assets.asset_depreciations.asset_id > assets.assets.id [delete: cascade]
 Ref: assets.asset_disposals.asset_id > assets.assets.id [delete: restrict]
@@ -5027,6 +5039,10 @@ Ref: assets.asset_condition_checks.asset_id > assets.assets.id [delete: cascade]
 Ref: assets.tool_set_items.tool_set_id > assets.tool_sets.id [delete: cascade]
 Ref: assets.tool_set_items.asset_id > assets.assets.id [delete: restrict]
 Ref: assets.asset_movements.asset_id > assets.assets.id [delete: cascade]
+Ref: assets.borrowing_lines.borrowing_id > assets.borrowings.id [delete: cascade]
+Ref: assets.borrowing_lines.asset_id > assets.assets.id [delete: restrict]
+Ref: assets.borrowing_events.borrowing_id > assets.borrowings.id [delete: cascade]
+Ref: assets.borrowing_events.borrowing_line_id > assets.borrowing_lines.id [delete: cascade]
 
 // ---------------------------------------------------------------------------
 // MODULE: After-Sales  (schema: aftersales)

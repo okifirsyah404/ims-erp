@@ -38,7 +38,11 @@ must never be edited. Any column that references `auth.users.id` or
 
 `organization_id` is always present on tenant scoped tables, never nullable
 (except `audit.audit_logs`, which may record a global admin action outside
-any organization). It is the first filter in every query.
+any organization, and the modules that carry an explicit global scope:
+`inventory.*` since ADR-0008 and `assets.*` since ERP-0036 D11, where `NULL`
+means "company-wide", not "missing"). It is the first filter in every query;
+for a nullable-org module the filter is `organization_id IS NULL OR
+organization_id = $1`.
 
 **Scope note (ADR-0007).** These tenant-scoped ERP tables are part of the
 target data model and are **not yet built** — the shipped schema has no
@@ -123,6 +127,13 @@ Percentages use `numeric(9,4)` and rates `numeric(18,6)`.
 Codes are the human reference of a document (`SPH-2026-0001`, `PO-2026-0007`)
 and are allocated from `organization.document_sequences`, never generated ad hoc.
 
+**Exception — `assets.assets.code` is globally unique** (ERP-0036 D13), not
+per organization: an org-scoped asset and a global asset must never share a
+code, which `(organization_id, code)` cannot express because `NULL` never
+conflicts in a unique index. Asset register codes therefore allocate from the
+global (`''` sentinel) sequence regardless of tenant. Serial numbers are
+unique per *scope* via `(coalesce(organization_id,''), serial_number)`.
+
 ### 1.7 Status columns
 
 | Rule | Value |
@@ -163,6 +174,7 @@ with a status instead of a deletion timestamp
 (`accounting.journal_entries`, `accounting.journal_lines`,
 `inventory.stock_movements`, `inventory.stock_balances`,
 `inventory.serial_tracked_items`, `inventory.lot_batches`,
+`assets.borrowing_events`,
 `sales.quotation_status_history`, `sales.order_status_history`,
 `ticket.ticket_status_history`, `approval.approval_decisions`,
 `approval.approval_policy_versions`, `automation.outbox_messages`,
@@ -223,6 +235,9 @@ is owned by the calling module and the ERP does not query inside it.
 | business code | `(organization_id, code)` unique |
 | foreign key column | single column index named `<table>_<column>_idx` |
 | natural key | unique index named `<table>_..._uq` |
+| scope-split unique (nullable org) | two partial uniques: `(organization_id, code) WHERE organization_id IS NOT NULL` and `(code) WHERE organization_id IS NULL` |
+| scope-split unique where `NULL` never conflicts | expression index on `(coalesce(organization_id, ''), serial_number)` — a plain scope-split would let every global row repeat its natural key |
+| globally unique despite a nullable org | a single unique index, no scope split (`assets.assets.code`)
 
 Index names are `<table>_<column>_idx` or `<table>_<purpose>_uq`, so a name
 in `docs.dbml` matches the name in the migration.
@@ -251,6 +266,7 @@ in `docs.dbml` matches the name in the migration.
 | `source_type` / `source_id` | `text` | polymorphic origin of a record |
 | `reference_type` / `reference_id` | `text` | polymorphic target of a record |
 | `document_id` | `uuid` | attached document |
+| `warehouse_id` / `storage_id` | `uuid` | physical place: warehouse, and the storage (bin) inside it. Logical references to `inventory.warehouses` / `inventory.warehouse_storages`; a `storage_id` always implies its `warehouse_id` |
 | `is_active` | `boolean` | in use |
 | `created_at` / `updated_at` | `bigint` | audit timestamps |
 | `deleted_at` | `bigint` | soft delete marker |
@@ -395,7 +411,7 @@ Used by the content tables: `commerce.web_pages`, `documents.documents`,
 | adjustment | a counted or justified correction of the stock. |
 | transfer | a move between two warehouses, two movements. |
 | lot batch | a batch with a manufacturing and an expiry date. |
-| serial tracked item | a unit tracked by serial number. |
+| serial tracked item | a unit tracked by serial number. Serialized **products** only since ERP-0036: a physical tool is an asset, not an item. |
 | cycle count | a periodic stock count; the variance becomes an adjustment. |
 
 Note: the warehouse schema (`warehouse.warehouses`, `warehouse.warehouse_zones`,
@@ -498,12 +514,21 @@ open -> cancelled
 
 | Term | Meaning |
 |---|---|
-| asset | a tracked piece of equipment, a vehicle, a tool, IT hardware. |
-| assignment | the custody of an asset by a person. |
+| asset | a tracked piece of equipment, a vehicle, a tool, IT hardware. **One row per physical unit** (ERP-0036 D1): quantity is always 1. |
+| asset type | the global lookup row (`assets.asset_types`) that classifies an asset or category; `code` is the stable identity, `name` the editable label. |
+| location | where the physical unit is: `warehouse_id` + `storage_id`, plus `location_description` for off-site detail (a customer site, a van). |
+| movement | the append-only record of a move: `receipt`, `transfer`, `borrow_out`, `borrow_return`, `project_site`, `disposal`, `lost`. |
+| borrowing | the **only** custody mechanism: a request with an approval chain, issued against a specific asset, returned with a condition. Internal lending is `purpose='internal_use'`. |
+| borrower | a registered user, a registered customer, or a guest whose identity is snapshotted and later redacted by the retention sweep. |
 | depreciation | the monthly book value reduction, with an audit trail. |
 | disposal | the sale, scrap, donation or transfer of an asset. |
 | condition check | a periodic inspection. |
-| tool set | a kit lent to a technician as one unit. |
+| tool set | a kit lent to a technician as one unit; lending expands to one borrowing line per member asset. |
+
+Asset status is **derived**, not hand-written, for unit-backed rows:
+`ready | borrowed | maintenance | inactive | disposed | lost`. `inactive` is
+the only asset-owned state (`deactivation_reason IS NOT NULL`) and survives a
+reconcile.
 
 ### After-Sales
 
