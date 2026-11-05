@@ -10,9 +10,12 @@ import { AppSidebar } from '../sidebar/main-sidebar';
 export default function MainLayout({ children }: React.ComponentProps<'div'>) {
 	return (
 		<SidebarProvider>
-			<AppSidebar />
+			{/* Printed documents show only the page content. */}
+			<div className='contents print:hidden'>
+				<AppSidebar />
+			</div>
 			<SidebarInset>
-				<header className='flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12'>
+				<header className='flex h-16 print:hidden shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12'>
 					<div className='flex items-center gap-2 px-4'>
 						<SidebarTrigger className='-ml-1' />
 						<Separator

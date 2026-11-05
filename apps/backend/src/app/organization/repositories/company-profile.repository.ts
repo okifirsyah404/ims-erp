@@ -73,6 +73,17 @@ export class CompanyProfileRepository implements ICompanyProfileRepository {
 		return row;
 	}
 
+	async setImage(kind: 'logo' | 'signature', key: string | null): Promise<TCompanyProfileSelect | null> {
+		const existing = await this.findProfile();
+		if (!existing) return null;
+		const [row] = await this.database
+			.update(companyProfiles)
+			.set(kind === 'logo' ? { logoObjectKey: key, updatedAt: new Date() } : { signatureObjectKey: key, updatedAt: new Date() })
+			.where(eq(companyProfiles.id, existing.id))
+			.returning();
+		return row ?? null;
+	}
+
 	findInvoiceAccounts(tx?: TTx): Promise<TCompanyBankAccountSelect[]> {
 		return (tx ?? this.database)
 			.select()

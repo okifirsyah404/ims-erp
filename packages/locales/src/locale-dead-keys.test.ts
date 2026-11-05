@@ -92,6 +92,8 @@ const DYNAMIC_PREFIXES = [
 	// Quotation status and lost-reason labels come from server values; the
 	// backend composes `sales.quotationState.${kind}` errors.
 	'sales:status.',
+	// The logo and signature upload fields compose their label key.
+	'settings:companyProfile.image.',
 	'sales:lostReason.',
 	'sales.quotationState.',
 ];

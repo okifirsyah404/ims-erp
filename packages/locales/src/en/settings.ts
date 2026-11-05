@@ -76,6 +76,11 @@ const settings = {
 	'numbering.type.bast': 'Handover (BAST)',
 	'numbering.type.warranty': 'Warranty certificate',
 	'numbering.type.service_ticket': 'Service ticket',
+	'companyProfile.section.images': 'Logo and signature',
+	'companyProfile.imagesHint': 'Printed on documents: the logo in the letterhead, the signature (with stamp) above the signatory name.',
+	'companyProfile.image.logo': 'Letterhead logo',
+	'companyProfile.image.signature': 'Signature and stamp',
+	'companyProfile.imageSaved': 'Image saved',
 } as const;
 
 export default settings;

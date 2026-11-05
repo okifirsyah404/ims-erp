@@ -64,6 +64,7 @@ export function QuotationForm({
 	const [customerSearch, setCustomerSearch] = useState('');
 	const [contactId, setContactId] = useState(quotation?.customerContactId ?? '');
 	const [title, setTitle] = useState(quotation?.title ?? '');
+	const [heading, setHeading] = useState(quotation?.heading ?? '');
 	const [attention, setAttention] = useState(quotation?.attention ?? '');
 	const [quotationDate, setQuotationDate] = useState(quotation?.quotationDate ?? todayBusinessDate());
 	const [validUntil, setValidUntil] = useState(quotation?.validUntil ?? '');
@@ -165,6 +166,7 @@ export function QuotationForm({
 					customerContactId: contactId || null,
 					leadId: quotation ? quotation.leadId : (leadId ?? null),
 					title: title.trim(),
+					heading: heading.trim() || null,
 					attention: attention.trim() || null,
 					paymentTerms: paymentTerms.trim() || null,
 					paymentSchedule: schedule.length
@@ -272,6 +274,17 @@ export function QuotationForm({
 								value={title}
 								onChange={(e) => setTitle(e.target.value)}
 							/>
+						</Field>
+						<Field className='sm:col-span-2'>
+							<FieldLabel htmlFor='quotation-heading'>{t('sales:quotation.heading')}</FieldLabel>
+							<Input
+								id='quotation-heading'
+								maxLength={120}
+								value={heading}
+								placeholder='QUOTATION'
+								onChange={(e) => setHeading(e.target.value)}
+							/>
+							<FieldDescription>{t('sales:form.headingHint')}</FieldDescription>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='quotation-date'>{t('sales:quotation.date')}</FieldLabel>

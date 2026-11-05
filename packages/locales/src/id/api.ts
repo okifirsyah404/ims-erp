@@ -9,6 +9,7 @@ const api: Record<keyof typeof en, string> = {
 	'common.notFound': 'Tidak ditemukan',
 	'common.conflict': 'Konflik',
 	'common.unsupportedMediaType': 'Tipe media tidak didukung',
+	'common.imageInvalid': 'Unggah gambar PNG, JPG, atau WebP maksimal {{max}} MB',
 	'common.payloadTooLarge': 'Data yang dikirim terlalu besar',
 	'common.authenticationRequired': 'Autentikasi diperlukan',
 

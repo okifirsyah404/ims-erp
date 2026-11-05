@@ -183,12 +183,14 @@ beforeEach(() => {
 								specification: 'Stainless 304',
 								unitLabel: 'unit',
 								sellingPrice: 1_500_000_000,
+								imageObjectKey: 'inventory/items/sg/photo.png',
 							},
 						] as never)
 					: [],
 		},
 		{ next: async () => '1376/QT/IMS/XI/26' },
 		{ getUser: async (id: string) => ({ id, name: `User ${id}` }) as never },
+		{ presignGet: (key: string) => `https://files.test/${key}` },
 	);
 });
 
@@ -229,7 +231,16 @@ describe('create', () => {
 		expect(created.taxTotal).toBe(330_000_000);
 		expect(created.grandTotal).toBe(3_330_000_000);
 		const [line] = await repo.findItems(created.id);
-		expect(line).toMatchObject({ sku: 'SG-01', name: 'Swing gate', unit: 'unit', quantity: '2', lineTotal: 3_000_000_000 });
+		expect(line).toMatchObject({
+			sku: 'SG-01',
+			name: 'Swing gate',
+			unit: 'unit',
+			quantity: '2',
+			lineTotal: 3_000_000_000,
+			imageObjectKey: 'inventory/items/sg/photo.png',
+		});
+		const [shown] = (await service.get(sales, created.id)).items;
+		expect(shown!.imageUrl).toBe('https://files.test/inventory/items/sg/photo.png');
 		expect(repo.history.map((h) => h.toStatus)).toEqual(['draft']);
 	});
 

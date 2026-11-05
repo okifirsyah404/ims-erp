@@ -114,6 +114,8 @@ export const companyProfiles = organizationSchema.table(
 		website: varchar('website', { length: 200 }),
 		/** Object-storage key of the letterhead logo. */
 		logoObjectKey: text('logo_object_key'),
+		/** Object-storage key of the signature and stamp image above the signatory name. */
+		signatureObjectKey: text('signature_object_key'),
 		/** Free-text address as printed on the letterhead. */
 		addressLine: text('address_line'),
 		/** Logical reference to location.villages.id — cross-module FK omitted. */

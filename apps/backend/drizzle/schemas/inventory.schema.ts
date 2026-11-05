@@ -433,6 +433,8 @@ export const items = inventorySchema.table(
 		brand: varchar('brand', { length: 100 }),
 		/** Technical specification printed on quotations. */
 		specification: text('specification'),
+		/** Object-storage key of the one photo printed on documents (M04 owns the catalog gallery). */
+		imageObjectKey: text('image_object_key'),
 		/** One of {@link ITEM_UNITS} (CHECK below). */
 		unitLabel: varchar('unit_label', { length: 32 }).notNull().default('pcs'),
 		/**

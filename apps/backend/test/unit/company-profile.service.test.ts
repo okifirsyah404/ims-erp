@@ -21,7 +21,9 @@ import type {
 	TCompanyProfileData,
 	TInvoiceAccountsData,
 } from '../../src/app/organization/contracts/company-profile.repository.interface';
+import { CompanyProfileRequiredError } from '../../src/app/organization/errors/organization.errors';
 import { CompanyProfileService } from '../../src/app/organization/services/company-profile.service';
+import { DocumentImageInvalidError, documentImageFrom } from '../../src/providers/s3/document-image';
 
 class FakeProfiles implements ICompanyProfileRepository {
 	profile: TCompanyProfileSelect | null = null;
@@ -38,7 +40,7 @@ class FakeProfiles implements ICompanyProfileRepository {
 
 	async save(data: TCompanyProfileData, accounts?: TInvoiceAccountsData) {
 		this.saves += 1;
-		this.profile = { ...(this.profile ?? {}), ...data } as TCompanyProfileSelect;
+		this.profile = { ...this.profile, ...data } as TCompanyProfileSelect;
 		if (accounts) {
 			const set = (usage: BankAccountInvoiceUsage, account: TInvoiceBankAccount | null) => {
 				this.accounts = this.accounts.filter((a) => a.invoiceUsage !== usage);
@@ -49,7 +51,21 @@ class FakeProfiles implements ICompanyProfileRepository {
 		}
 		return { profile: this.profile, accounts: this.accounts };
 	}
+
+	async setImage(kind: 'logo' | 'signature', key: string | null) {
+		if (!this.profile) return null;
+		Object.assign(this.profile, kind === 'logo' ? { logoObjectKey: key } : { signatureObjectKey: key });
+		return this.profile;
+	}
 }
+
+const stored: string[] = [];
+const storage = {
+	put: async (key: string) => {
+		stored.push(key);
+	},
+	presignGet: (key: string) => `https://files.test/${key}`,
+};
 
 
 const input = companyProfileSchema.parse({
@@ -68,7 +84,7 @@ describe('CompanyProfileService', () => {
 
 	beforeEach(() => {
 		repository = new FakeProfiles();
-		service = new CompanyProfileService(repository);
+		service = new CompanyProfileService(repository, storage);
 	});
 
 	test('input is normalised: upper-case document code, empty text becomes null', () => {
@@ -104,7 +120,7 @@ describe('CompanyProfileService', () => {
 describe('CompanyProfileService without bank accounts in the input', () => {
 	test('saving the profile alone leaves the accounts untouched', async () => {
 		const repository = new FakeProfiles();
-		const service = new CompanyProfileService(repository);
+		const service = new CompanyProfileService(repository, storage);
 		await service.save(input, 'user-1', true);
 		const { bankAccounts: _omitted, ...profileOnly } = input;
 		const view = await service.save({ ...profileOnly, tagline: 'Baru' }, 'user-2', true);
@@ -114,7 +130,7 @@ describe('CompanyProfileService without bank accounts in the input', () => {
 
 	test('a caller without bank access cannot change the accounts', async () => {
 		const repository = new FakeProfiles();
-		const service = new CompanyProfileService(repository);
+		const service = new CompanyProfileService(repository, storage);
 		await service.save(input, 'user-1', true);
 		await service.save(
 			{ ...input, bankAccounts: { vat: null, nonVat: null } },
@@ -122,5 +138,37 @@ describe('CompanyProfileService without bank accounts in the input', () => {
 			false,
 		);
 		expect((await service.get(true))?.bankAccounts?.vat?.bankName).toBe('BCA');
+	});
+});
+
+describe('CompanyProfileService images', () => {
+	const png = () => new File([new Uint8Array([137, 80, 78, 71])], 'logo.png', { type: 'image/png' });
+
+	test('needs a saved profile first', async () => {
+		const service = new CompanyProfileService(new FakeProfiles(), storage);
+		await expect(service.setImage('logo', png(), false)).rejects.toBeInstanceOf(CompanyProfileRequiredError);
+	});
+
+	test('every upload gets a fresh key (printed documents keep theirs); removal clears it', async () => {
+		const service = new CompanyProfileService(new FakeProfiles(), storage);
+		await service.save(input, 'user-1', true);
+		const first = await service.setImage('logo', png(), false);
+		const second = await service.setImage('signature', png(), false);
+		const third = await service.setImage('logo', png(), false);
+		expect(first.logoUrl).toMatch(/^https:\/\/files\.test\/company\/logo\/[0-9a-f-]{36}\.png$/);
+		expect(second.signatureUrl).toContain('company/signature/');
+		expect(third.logoUrl).not.toBe(first.logoUrl);
+		expect((await service.setImage('logo', null, false)).logoUrl).toBeNull();
+	});
+
+	test('only PNG, JPG or WebP up to 2 MB', () => {
+		expect(() => documentImageFrom({ file: new File(['x'], 'a.pdf', { type: 'application/pdf' }) })).toThrow(
+			DocumentImageInvalidError,
+		);
+		expect(() =>
+			documentImageFrom({ file: new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'a.png', { type: 'image/png' }) }),
+		).toThrow(DocumentImageInvalidError);
+		expect(() => documentImageFrom({})).toThrow(DocumentImageInvalidError);
+		expect(documentImageFrom({ file: png() }).name).toBe('logo.png');
 	});
 });

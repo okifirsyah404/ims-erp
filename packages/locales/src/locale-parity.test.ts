@@ -95,6 +95,8 @@ describe('locale values', () => {
 			'sales:status.won',
 			// The printed SPH keeps the company's own (partly English) labels.
 			'sales:doc.date',
+			'sales:doc.heading',
+			'sales:doc.total',
 			'inventory:address.rt',
 			'inventory:address.rw',
 			'inventory:address.label',

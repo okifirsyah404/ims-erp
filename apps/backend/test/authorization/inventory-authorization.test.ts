@@ -167,6 +167,7 @@ beforeAll(async () => {
 		ITEM_REPOSITORY_TOKEN,
 		SERIAL_UNIT_REPOSITORY_TOKEN,
 		ITEM_SERVICE_TOKEN,
+		ITEM_IMAGE_SERVICE_TOKEN,
 	} = await import('../../src/app/inventory/constants/di');
 	const { ItemService } = await import(
 		'../../src/app/inventory/services/item.service'
@@ -185,6 +186,8 @@ beforeAll(async () => {
 		useValue: { findById: async () => null } as never,
 	});
 	container.register(ITEM_SERVICE_TOKEN, { useClass: ItemService });
+	// Photos are not part of the authorization suite.
+	container.register(ITEM_IMAGE_SERVICE_TOKEN, { useValue: { withImageUrl: (item: object) => ({ ...item, imageUrl: null }) } as never });
 
 	app = new Elysia().use(erpGuard()).use(ItemController.plugin());
 });

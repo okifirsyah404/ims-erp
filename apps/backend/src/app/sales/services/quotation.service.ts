@@ -15,6 +15,8 @@ import {
 	type TQuotationStatusHistorySelect,
 } from '@drizzle/schemas/sales.schema';
 import { businessDateOf, type TPaginationResult } from '@ims-erp/common';
+import { documentImageUrl } from '@providers/s3/document-image';
+import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import { inject, injectable } from 'tsyringe';
 import { QUOTATION_REPOSITORY_TOKEN } from '../constants/di';
 import type {
@@ -70,7 +72,8 @@ export type TQuotationView = TQuotationSelect & TQuotationValidity;
 export type TQuotationPerson = { userId: string; name: string };
 
 export type TQuotationDetail = TQuotationView & {
-	items: TQuotationItemSelect[];
+	/** Lines with a short-lived URL of their snapshotted photo. */
+	items: (TQuotationItemSelect & { imageUrl: string | null })[];
 	revisions: Pick<TQuotationSelect, 'id' | 'code' | 'revision' | 'status' | 'grandTotal' | 'createdAt'>[];
 	history: (TQuotationStatusHistorySelect & { by: TQuotationPerson | null })[];
 	creator: TQuotationPerson | null;
@@ -108,6 +111,8 @@ export class QuotationService {
 		private readonly numbering: Pick<NumberingService, 'next'>,
 		@inject(USER_SERVICE_TOKEN)
 		private readonly users: Pick<UserService, 'getUser'>,
+		@inject(OBJECT_STORAGE_TOKEN)
+		private readonly storage: Pick<IObjectStorage, 'presignGet'>,
 	) {}
 
 	private async requireVisible(ctx: TQuotationContext, id: string): Promise<TQuotationSelect> {
@@ -149,7 +154,10 @@ export class QuotationService {
 		const found = new Map((await this.items.getActiveItems(wanted)).map((item) => [item.id, item]));
 
 		const items: TQuotationItemData[] = body.lines.map((line, index) => {
-			let base: Pick<TQuotationItemData, 'itemId' | 'sku' | 'name' | 'specification' | 'unit' | 'unitPrice'>;
+			let base: Pick<
+			TQuotationItemData,
+			'itemId' | 'sku' | 'name' | 'specification' | 'imageObjectKey' | 'unit' | 'unitPrice'
+		>;
 			if (line.itemId) {
 				const item = found.get(line.itemId);
 				if (!item) throw new QuotationItemUnavailableError(index + 1);
@@ -158,6 +166,7 @@ export class QuotationService {
 					sku: item.sku,
 					name: line.name ?? item.name,
 					specification: line.specification ?? item.specification,
+					imageObjectKey: item.imageObjectKey,
 					unit: line.unit ?? item.unitLabel,
 					unitPrice: line.unitPrice ?? item.sellingPrice,
 				};
@@ -167,6 +176,7 @@ export class QuotationService {
 					sku: null,
 					name: line.name!,
 					specification: line.specification,
+					imageObjectKey: null,
 					unit: line.unit!,
 					unitPrice: line.unitPrice!,
 				};
@@ -199,6 +209,7 @@ export class QuotationService {
 				},
 				leadId: body.leadId ?? null,
 				title: body.title,
+				heading: body.heading,
 				attention,
 				// The printed "Payment" line defaults to the planned schedule.
 				paymentTerms: body.paymentTerms ?? (body.paymentSchedule ? describeSchedule(body.paymentSchedule) : null),
@@ -240,7 +251,7 @@ export class QuotationService {
 		const person = (userId: string | null) => (userId ? (people.get(userId) ?? null) : null);
 		return {
 			...withValidity(quotation),
-			items,
+			items: items.map((item) => ({ ...item, imageUrl: documentImageUrl(this.storage, item.imageObjectKey) })),
 			revisions: revisions.map(({ id, code, revision, status, grandTotal, createdAt }) => ({
 				id,
 				code,

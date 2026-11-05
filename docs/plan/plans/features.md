@@ -56,7 +56,8 @@ Last synced: 2026-11-06.
   `test/unit/lead.service.test.ts`, `/crm/leads` pages, `progress.md`
   2026-11-05 (ADR-0011 step 3b). Gaps: real-PG integration tests, e2e.
 - SPH (quotation) + approval (no self-approval, no amount limit), revisions,
-  lost ("Batal"), planned billing, print — T05, ERP-0011 (backlog
+  lost ("Batal"), planned billing, print in the company's exact SPH layout
+  (logo, signature, item photos) — T05, ERP-0011 (backlog
   `in-progress`: orders/invoices open). Evidence: `apps/backend/src/app/sales`
   (quotations), `test/unit/quotation.service.test.ts`,
   `test/authorization/authorization.test.ts`, `/sales/quotes` pages,

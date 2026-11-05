@@ -780,7 +780,8 @@ Table organization.company_profiles {
   email varchar(200)
   phone varchar(100)
   website varchar(200)
-  logo_object_key text
+  logo_object_key text [note: "Object-storage key of the letterhead logo (PNG, JPG or WebP)."]
+  signature_object_key text [note: "Object-storage key of the signature and stamp image printed above the signatory name."]
   address_line text [note: "Free-text address as printed on the letterhead."]
   address_village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
   postal_code varchar(10)
@@ -1551,6 +1552,7 @@ Table sales.quotations {
   revision integer [not null, default: 0, note: "0 = original, 1..n = revisions."]
   previous_revision_id uuid [note: "The revision this one replaced (now superseded)."]
   title text [not null, note: "Subject (Perihal)."]
+  heading varchar(120) [note: "Title in the coloured bar of the printed SPH, e.g. QUOTATION SYSTEM AKSES KONTROL; null prints QUOTATION."]
   customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
   customer_contact_id uuid [note: "Logical reference to crm.customer_contacts.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
   customer_snapshot jsonb [not null, note: "Customer code, name, type, contacts, NPWP and address frozen at the last edit; printed instead of the live customer."]
@@ -1611,6 +1613,7 @@ Table sales.quotation_items {
   sku varchar(64)
   name text [not null, note: "Item name snapshot (printed bold)."]
   specification text [note: "Multi-line specification printed under the name."]
+  image_object_key text [note: "Snapshot of the item's document photo when the line was priced (keys are never overwritten)."]
   unit varchar(32) [not null, note: "One of the fixed item units."]
   quantity numeric(18,3) [not null, default: 1]
   unit_price bigint [not null, default: 0]
@@ -2325,6 +2328,7 @@ Table inventory.items {
   category_id uuid [note: "Same-module reference to inventory.item_categories (ADR-0011); replaces the former free-text category."]
   brand varchar(100)
   specification text [note: "Technical specification printed on quotations."]
+  image_object_key text [note: "Object-storage key of the one photo printed on documents (quotation Gambar column). The website catalog gallery is separate (M04)."]
   unit_label varchar(32) [not null, default: 'pcs', note: "Fixed unit list (ADR-0011), guarded by a CHECK; replaces free text."]
   is_active boolean [not null, default: true, note: "Inactive items stay listed but are not offered for new documents. Not a status: status exists only on serialized units."]
   is_serialized boolean [not null, default: false]

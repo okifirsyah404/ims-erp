@@ -41,6 +41,9 @@ export type TCompanyProfile = {
 	warrantyCoverage: string | null;
 	warrantyExclusions: string | null;
 	warrantyServiceTerms: string | null;
+	/** Short-lived inline URLs of the letterhead logo and the signature image. */
+	logoUrl: string | null;
+	signatureUrl: string | null;
 	/** `null` when the caller may not see bank accounts. */
 	bankAccounts: { vat: TInvoiceBankAccount | null; nonVat: TInvoiceBankAccount | null } | null;
 };
@@ -49,7 +52,7 @@ export type TCompanyProfile = {
  * What the form sends. Omitting `bankAccounts` leaves them unchanged (the
  * server also ignores them from callers without bank access).
  */
-export type TCompanyProfileInput = Omit<TCompanyProfile, 'bankAccounts'> & {
+export type TCompanyProfileInput = Omit<TCompanyProfile, 'bankAccounts' | 'logoUrl' | 'signatureUrl'> & {
 	bankAccounts?: { vat: TInvoiceBankAccount | null; nonVat: TInvoiceBankAccount | null };
 };
 

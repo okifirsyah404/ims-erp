@@ -13,6 +13,7 @@ const api = {
 	'common.notFound': 'Not found',
 	'common.conflict': 'Conflict',
 	'common.unsupportedMediaType': 'Unsupported media type',
+	'common.imageInvalid': 'Upload a PNG, JPG or WebP image of at most {{max}} MB',
 	'common.payloadTooLarge': 'Payload too large',
 	'common.authenticationRequired': 'Authentication required',
 

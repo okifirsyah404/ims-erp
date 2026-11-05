@@ -47,6 +47,10 @@ const common = {
 	 */
 	'language.switchToEnglish': 'English',
 	'language.switchToIndonesian': 'Bahasa Indonesia',
+	'image.none': 'No image',
+	'image.remove': 'Remove image',
+	'image.hint': 'PNG, JPG or WebP, at most 2 MB.',
+	'image.tooLarge': 'The image is larger than 2 MB.',
 } as const;
 
 export default common;

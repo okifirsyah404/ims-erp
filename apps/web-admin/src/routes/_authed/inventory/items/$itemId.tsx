@@ -41,8 +41,12 @@ import {
 	itemUnitsQueryOptions,
 	registerUnit,
 	replaceProvisionalSerial,
+	type TItem,
 	type TItemUnit,
 } from '@/lib/inventory-api';
+import { DocumentImageField } from '@/components/documents/document-image-field';
+import { removeDocumentImage, uploadDocumentImage } from '@/lib/document-image-api';
+import { usePermission } from '@/lib/use-permission';
 
 /** `/inventory/items/$itemId` — item detail plus its serialized units. */
 export const Route = createFileRoute('/_authed/inventory/items/$itemId')({
@@ -60,6 +64,8 @@ function ItemDetailPage() {
 	const { data: units } = useQuery(itemUnitsQueryOptions(itemId));
 
 	const [archiving, setArchiving] = useState(false);
+	const canUpdate = usePermission('product.update');
+	const setItem = (saved: TItem) => queryClient.setQueryData(itemQueryOptions(itemId).queryKey, saved);
 
 	if (isPending) return null;
 
@@ -190,6 +196,23 @@ function ItemDetailPage() {
 						</CardContent>
 					</Card>
 				)}
+
+				<Card>
+					<CardContent className='p-4'>
+						<DocumentImageField
+							label={t('inventory:items.documentPhoto')}
+							hint={t('inventory:items.documentPhotoHint')}
+							imageUrl={item.imageUrl}
+							disabled={!canUpdate}
+							onUpload={async (file) => {
+								setItem(await uploadDocumentImage<TItem>(`/items/${itemId}/image`, file));
+							}}
+							onRemove={async () => {
+								setItem(await removeDocumentImage<TItem>(`/items/${itemId}/image`));
+							}}
+						/>
+					</CardContent>
+				</Card>
 
 				{item.isSerialized ? (
 					<UnitsPanel itemId={itemId} units={units ?? []} />

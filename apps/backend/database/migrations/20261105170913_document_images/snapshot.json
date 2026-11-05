@@ -1,0 +1,149 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "60b58b97-b71f-4a1c-a53a-4961fd36b15d",
+  "prevIds": [
+    "5f2590a8-0652-43ac-a60d-00389535ae5a"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "inventory",
+        "items",
+        "image_object_key"
+      ],
+      "writes": [
+        "s|col|inventory.items.image_object_key",
+        "n|col|inventory.items.image_object_key",
+        "e|col|inventory.items.image_object_key"
+      ],
+      "reads": [
+        "n|tbl|inventory.items",
+        "n|sch|inventory"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "organization",
+        "company_profiles",
+        "signature_object_key"
+      ],
+      "writes": [
+        "s|col|organization.company_profiles.signature_object_key",
+        "n|col|organization.company_profiles.signature_object_key",
+        "e|col|organization.company_profiles.signature_object_key"
+      ],
+      "reads": [
+        "n|tbl|organization.company_profiles",
+        "n|sch|organization"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "sales",
+        "quotation_items",
+        "image_object_key"
+      ],
+      "writes": [
+        "s|col|sales.quotation_items.image_object_key",
+        "n|col|sales.quotation_items.image_object_key",
+        "e|col|sales.quotation_items.image_object_key"
+      ],
+      "reads": [
+        "n|tbl|sales.quotation_items",
+        "n|sch|sales"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "sales",
+        "quotations",
+        "heading"
+      ],
+      "writes": [
+        "s|col|sales.quotations.heading",
+        "n|col|sales.quotations.heading",
+        "e|col|sales.quotations.heading"
+      ],
+      "reads": [
+        "n|tbl|sales.quotations",
+        "n|sch|sales"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "inventory",
+        "table": "items",
+        "name": "image_object_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "organization",
+        "table": "company_profiles",
+        "name": "signature_object_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "sales",
+        "table": "quotation_items",
+        "name": "image_object_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "sales",
+        "table": "quotations",
+        "name": "heading",
+        "type": "varchar(120)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

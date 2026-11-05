@@ -72,4 +72,10 @@ export type TInvoiceBankAccount = NonNullable<TInvoiceBankAccounts['vat']>;
 /** What clients get; `bankAccounts` is `null` for callers without access. */
 export type TCompanyProfileView = Omit<TCompanyProfileInput, 'bankAccounts'> & {
 	bankAccounts: TInvoiceBankAccounts | null;
+	/** Short-lived inline URLs of the letterhead logo and the signature image. */
+	logoUrl: string | null;
+	signatureUrl: string | null;
 };
+
+/** Images on the profile: the letterhead logo and the signature with stamp. */
+export type TCompanyImageKind = 'logo' | 'signature';

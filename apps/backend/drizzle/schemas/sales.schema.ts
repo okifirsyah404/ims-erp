@@ -128,6 +128,8 @@ export const quotations = salesSchema.table(
 		}),
 		/** Subject ("Perihal"). */
 		title: text('title').notNull(),
+		/** Title in the coloured bar of the printed SPH; null prints "QUOTATION". */
+		heading: varchar('heading', { length: 120 }),
 		/** Logical reference to crm.customers.id — cross-module FK omitted. */
 		customerId: uuid('customer_id').notNull(),
 		/** Logical reference to crm.customer_contacts.id — cross-module FK omitted. */
@@ -221,6 +223,8 @@ export const quotationItems = salesSchema.table(
 		name: text('name').notNull(),
 		/** Multi-line specification printed under the name. */
 		specification: text('specification'),
+		/** Snapshot of the item's document photo (keys are never overwritten). */
+		imageObjectKey: text('image_object_key'),
 		/** One of the fixed item units. */
 		unit: varchar('unit', { length: 32 }).notNull(),
 		quantity: numeric('quantity', { precision: 18, scale: 3 }).notNull().default('1'),

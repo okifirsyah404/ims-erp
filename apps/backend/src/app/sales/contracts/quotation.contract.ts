@@ -78,6 +78,8 @@ export const quotationBodySchema = z
 		customerContactId: z.uuid().nullish(),
 		leadId: z.uuid().nullish(),
 		title: z.string().trim().min(1).max(200),
+		/** Title in the coloured bar of the print; null prints "QUOTATION". */
+		heading: optionalText(120),
 		/** Attention person ("Up"); defaults to the chosen contact's name. */
 		attention: optionalText(200),
 		/** e.g. "DP 50% - 50% BAST"; defaults to the schedule's description. */

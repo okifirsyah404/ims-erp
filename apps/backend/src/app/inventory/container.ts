@@ -8,6 +8,7 @@ import { MovementRepository } from './repositories/movement.repository';
 import { BalanceRepository } from './repositories/balance.repository';
 import { AdjustmentRepository } from './repositories/adjustment.repository';
 import { BorrowingRepository } from './repositories/borrowing.repository';
+import { ItemImageService } from './services/item-image.service';
 import { ItemService } from './services/item.service';
 import { ItemCategoryRepository } from './repositories/item-category.repository';
 import { ItemCategoryService } from './services/item-category.service';
@@ -24,6 +25,7 @@ import {
 	ITEM_CATEGORY_REPOSITORY_TOKEN,
 	ITEM_CATEGORY_SERVICE_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
+	ITEM_IMAGE_SERVICE_TOKEN,
 	ITEM_SERVICE_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
 	SERIAL_UNIT_REPOSITORY_TOKEN,
@@ -51,6 +53,7 @@ export function registerInventory(container: DependencyContainer): void {
 		useClass: SerialUnitRepository,
 	});
 	container.register(ITEM_SERVICE_TOKEN, { useClass: ItemService });
+	container.register(ITEM_IMAGE_SERVICE_TOKEN, { useClass: ItemImageService });
 	container.register(ITEM_CATEGORY_REPOSITORY_TOKEN, {
 		useClass: ItemCategoryRepository,
 	});

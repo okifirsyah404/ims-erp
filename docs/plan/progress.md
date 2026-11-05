@@ -12,6 +12,72 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — SPH print matches the company's sample; document images, 2026-11-06
+
+Status: **implemented** (module owner's request: "documentnya pakai yang ada di
+sample-private, contoh layoutnya harus dipersis"; not yet accepted by the
+owner on paper).
+
+Gate 1 (read): the private SPH and invoice samples
+(`.agents/samples-private/`, never committed); docs.dbml
+`organization.company_profiles` (`logo_object_key` existed, no upload),
+`inventory.items`, `sales.quotations` / `quotation_items`.
+
+Gate 2 (owner answers, AskUserQuestion 2026-11-06):
+- "Gambar" column: **one document photo per item** in the item master
+  (`inventory.items.image_object_key`), snapshotted onto the quotation line
+  (`sales.quotation_items.image_object_key`); custom lines have none. The
+  website catalog gallery stays in M04.
+- Coloured-bar title: **per-SPH field** `sales.quotations.heading`
+  (varchar 120, null prints "QUOTATION").
+- Signature: `organization.company_profiles.signature_object_key` (signature
+  with stamp above the signatory name), next to the existing logo key.
+- Images: PNG/JPG/WebP ≤ 2 MB, a fresh object key per upload so issued
+  documents keep their picture; inline presigned URLs (1 h).
+- No new cross-module link (the photo key is copied as a value, like the
+  other snapshot columns).
+
+What landed:
+- docs.dbml first (4 columns); `gen-logical-references.ts` → 502 refs;
+  `validate-dbml.ts` → OK. Migration `20261105170913_document_images`
+  (4 × `ADD COLUMN`, read and applied to `ims_erp_sync`); a second
+  `drizzle:generate` → no changes.
+- Backend: `providers/s3/document-image.ts` (validation, storage, URL);
+  `PUT|DELETE /company-profile/:kind` (`logo|signature`,
+  `company_setting:update`), profile view gains `logoUrl` / `signatureUrl`;
+  `ItemImageService` + `PUT|DELETE /items/:id/image` (`product:update`),
+  item detail gains `imageUrl`; quotation `heading`, line photo snapshot,
+  detail items carry `imageUrl`. Error `common.imageInvalid` (en + id).
+- Web: `components/documents/document-image-field.tsx`; logo/signature card
+  on `/admin/settings`; photo card on the item page; "Judul dokumen" in the
+  SPH form; `quotation-document.tsx` rewritten to the sample: logo + serif
+  name + tagline + double rule repeated on every page (table header),
+  amber heading bar, bold Kepada/Up/Telp/Hal and Date/Ref/Payment/Guaranty,
+  item table NO / DESCRIPTION / Gambar / PRICE / QTY (2) / SUBTOTAL with a
+  bold row per item and its specification + photo below, amounts as
+  "Rp 50,000,000", "Terbilang : … Rupiah." with Total in the last row (Sub
+  Total / Diskon / PPN rows only when they apply), Term of Condition and
+  "Hormat Kami," with the signature image. Sidebar and header are hidden
+  when printing.
+
+Verification (2026-11-06):
+- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` → 593
+  pass (company-profile image tests added; quotation photo snapshot test);
+  lint: 5 warnings, all pre-existing.
+- Web `bunx tsc -b` clean, `bun run build` OK, `bun test` → 45 pass;
+  locales `bun test` → 46 pass.
+- Browser (temporary Playwright script, deleted): logo and signature
+  uploaded on `/admin/settings`, photo on an item page; SPH printed to PDF
+  (A4) and compared with the sample: one-page and a 16-line three-page SPH —
+  letterhead repeats on each page, an item never splits from its
+  specification, VAT rows appear only with VAT. Test images removed from
+  the dev profile and items afterwards; test SPHs `0002`–`0004/QT/DEV/XI/26`
+  remain in the dev DB.
+
+Known differences from the sample, deliberate: the last row reads "Total"
+(the sample's "Total Jum" is a cut-off cell); a discount shows as its own
+"Diskon" row (the sample has none).
+
 ## Completed — ADR-0011 port step 3c: quotations (SPH), 2026-11-05/06
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
@@ -149,7 +215,8 @@ Open (3c): breadcrumb shows the raw id on detail pages (same as customers
 and leads); real-PG integration tests and e2e; a sales-order link and the
 `won` transition arrive with 3d.
 
-Next executable task: ADR-0011 step 3d — sales orders (`sales.sales_orders`,
+Next executable task: ADR-0011 step 3d — prints follow the private samples
+(invoice sample read 2026-11-06) — sales orders (`sales.sales_orders`,
 `sales_order_items`, `order_status_history`; SPH → `won` by creating its
 order, cancelling reopens), then invoices / DP / receipts in the finance
 module per docs.dbml, with prints. Gate 1 starts at docs.dbml `sales.sales_*`

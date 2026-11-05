@@ -444,6 +444,8 @@ const inventory = {
 	'borrowingForm.emptyLines': 'Tambahkan minimal satu unit.',
 	'borrowingForm.identityHint':
 		'Data identitas disimpan bersama peminjaman dan dihapus 24 bulan setelah peminjaman ditutup.',
+	'items.documentPhoto': 'Foto di dokumen',
+	'items.documentPhotoHint': 'Dicetak di kolom Gambar pada penawaran. PNG, JPG, atau WebP, maksimal 2 MB. Penawaran yang sudah terbit tetap memakai fotonya.',
 } as const;
 
 export default inventory;

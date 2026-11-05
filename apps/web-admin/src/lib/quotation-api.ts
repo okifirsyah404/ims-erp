@@ -67,6 +67,8 @@ export type TQuotation = {
 	baseCode: string;
 	revision: number;
 	title: string;
+	/** Coloured-bar title on the print; null prints "QUOTATION". */
+	heading: string | null;
 	customerId: string;
 	customerContactId: string | null;
 	customerSnapshot: TQuotationCustomerSnapshot;
@@ -104,6 +106,8 @@ export type TQuotationItem = {
 	sku: string | null;
 	name: string;
 	specification: string | null;
+	/** Short-lived URL of the snapshotted item photo. */
+	imageUrl: string | null;
 	unit: TItemUnitLabel;
 	/** Decimal string, up to three decimals. */
 	quantity: string;
@@ -144,6 +148,7 @@ export type TQuotationInput = {
 	customerId: string;
 	customerContactId: string | null;
 	title: string;
+	heading: string | null;
 	attention: string | null;
 	paymentTerms: string | null;
 	paymentSchedule: TPaymentScheduleItem[] | null;

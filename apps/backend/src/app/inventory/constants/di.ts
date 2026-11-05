@@ -17,6 +17,7 @@ import type { IBalanceRepository } from '../contracts/balance.repository.interfa
 import type { IAdjustmentRepository } from '../contracts/adjustment.repository.interface';
 import type { IBorrowingRepository } from '../contracts/borrowing.repository.interface';
 import type { ItemService } from '../services/item.service';
+import type { ItemImageService } from '../services/item-image.service';
 import type { WarehouseService } from '../services/warehouse.service';
 import type { StockService } from '../services/stock.service';
 import type { AdjustmentService } from '../services/adjustment.service';
@@ -59,3 +60,6 @@ export const BORROWING_REPOSITORY_TOKEN: InjectionToken<IBorrowingRepository> =
 	Symbol('BORROWING_REPOSITORY');
 export const BORROWING_SERVICE_TOKEN: InjectionToken<BorrowingService> =
 	Symbol('BORROWING_SERVICE');
+
+/** Token resolving to the {@link ItemImageService} (document photo of an item). */
+export const ITEM_IMAGE_SERVICE_TOKEN: InjectionToken<ItemImageService> = Symbol('ITEM_IMAGE_SERVICE_TOKEN');

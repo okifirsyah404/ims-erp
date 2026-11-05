@@ -67,6 +67,8 @@ export type TItem = {
 	categoryId: string | null;
 	brand: string | null;
 	specification: string | null;
+	/** Short-lived URL of the document photo (detail endpoint only). */
+	imageUrl?: string | null;
 	unitLabel: TItemUnitLabel;
 	/** Inactive items are not offered for new documents. */
 	isActive: boolean;

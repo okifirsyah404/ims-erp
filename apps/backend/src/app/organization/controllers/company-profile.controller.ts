@@ -1,5 +1,6 @@
 import type { ErpContext } from '@authorization/elysia-auth';
 import { container } from 'tsyringe';
+import { z } from 'zod';
 import { domainPlugin } from '@http/plugin';
 import { ok } from '@http/response';
 import {
@@ -7,7 +8,8 @@ import {
 	PERMISSION_RESOLVER_TOKEN,
 } from '@authorization/permission-resolver';
 import { COMPANY_PROFILE_SERVICE_TOKEN } from '../constants/di';
-import { companyProfileSchema } from '../contracts/company-profile.contract';
+import { companyProfileSchema, type TCompanyImageKind } from '../contracts/company-profile.contract';
+import { documentImageFrom } from '@providers/s3/document-image';
 
 /**
  * Invoice bank accounts go to `invoice:read` or `company_setting:read`
@@ -20,6 +22,9 @@ async function canSeeBanks(permissions: IPermissionResolver, erp: ErpContext): P
 		(await permissions.hasPermission(erp.organizationId, roles, { company_setting: ['read'] }))
 	);
 }
+
+const imageKindSchema = z.object({ kind: z.enum(['logo', 'signature']) });
+const imageKind = (params: unknown): TCompanyImageKind => imageKindSchema.parse(params).kind;
 
 /**
  * REST controller for the company profile (`/company-profile`).
@@ -52,6 +57,24 @@ export class CompanyProfileController {
 				{
 					erp: { permission: ['company_setting:update'] },
 					detail: { description: 'Saves the company profile and its invoice bank accounts' },
+				},
+			)
+			.put(
+				'/:kind',
+				async ({ params, body, erp }) =>
+					ok(await service.setImage(imageKind(params), documentImageFrom(body), await canSeeBanks(permissions, erp))),
+				{
+					erp: { permission: ['company_setting:update'] },
+					detail: { description: 'Uploads the letterhead logo or the signature image (multipart `file`)' },
+				},
+			)
+			.delete(
+				'/:kind',
+				async ({ params, erp }) =>
+					ok(await service.setImage(imageKind(params), null, await canSeeBanks(permissions, erp))),
+				{
+					erp: { permission: ['company_setting:update'] },
+					detail: { description: 'Removes the letterhead logo or the signature image' },
 				},
 			);
 	}

@@ -272,6 +272,7 @@ import { CUSTOMER_SERVICE_TOKEN, LEAD_SERVICE_TOKEN } from '../../src/app/crm/co
 import { ITEM_SERVICE_TOKEN } from '../../src/app/inventory/constants/di';
 import { NUMBERING_SERVICE_TOKEN } from '../../src/app/organization/constants/di';
 import { USER_SERVICE_TOKEN } from '../../src/app/user/constants/di';
+import { OBJECT_STORAGE_TOKEN } from '../../src/providers/s3/object-storage';
 
 export const TEST_CUSTOMER_ID = '0190a1b2-0000-7000-8000-000000000001';
 export const TEST_ITEM_ID = '0190a1b2-0000-7000-8000-000000000002';
@@ -393,6 +394,7 @@ export function installSalesMocks() {
 		useValue: { next: async () => `${sequence + 1}/QT/IMS/XI/26` } as never,
 	});
 	container.register(USER_SERVICE_TOKEN, { useValue: { getUser: async () => null } as never });
+	container.register(OBJECT_STORAGE_TOKEN, { useValue: { presignGet: () => '', put: async () => undefined } as never });
 
 	const payments: Record<string, Record<string, unknown>> = {};
 	let paySeq = 0;

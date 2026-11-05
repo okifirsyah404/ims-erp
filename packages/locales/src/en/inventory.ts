@@ -455,6 +455,8 @@ const inventory = {
 	'borrowingForm.emptyLines': 'Add at least one unit.',
 	'borrowingForm.identityHint':
 		'Identity data is stored with the borrowing and erased 24 months after it closes.',
+	'items.documentPhoto': 'Photo on documents',
+	'items.documentPhotoHint': 'Printed in the Gambar column of quotations. PNG, JPG or WebP, at most 2 MB. Quotations already issued keep their photo.',
 } as const;
 
 export default inventory;

@@ -4,14 +4,18 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Alert, AlertDescription } from '@ims-erp/ui/components/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DocumentImageField } from '@/components/documents/document-image-field';
 import { CompanyProfileForm } from '@/components/settings/company-profile-form';
 import { toast } from '@/components/toast';
 import {
 	companyProfileQueryOptions,
 	numberingQueryOptions,
 	saveCompanyProfile,
+	type TCompanyProfile,
 	type TCompanyProfileInput,
 } from '@/lib/company-settings-api';
+import { removeDocumentImage, uploadDocumentImage } from '@/lib/document-image-api';
 import { usePermission } from '@/lib/use-permission';
 
 /** `/admin/settings` — the company profile (one for the whole company). */
@@ -25,6 +29,10 @@ function CompanyProfilePage() {
 	const canEdit = usePermission('company_setting.update');
 	const [submitting, setSubmitting] = useState(false);
 	const { data: profile, isPending, isError, error } = useQuery(companyProfileQueryOptions());
+
+	const setProfile = (saved: TCompanyProfile) => queryClient.setQueryData(companyProfileQueryOptions().queryKey, saved);
+	// Image URLs are re-signed on every read; they must not re-mount the form.
+	const formKey = profile ? JSON.stringify({ ...profile, logoUrl: null, signatureUrl: null }) : 'new';
 
 	async function handleSubmit(input: TCompanyProfileInput) {
 		setSubmitting(true);
@@ -65,12 +73,37 @@ function CompanyProfilePage() {
 					)}
 					<CompanyProfileForm
 						// Re-mount with fresh values after a save.
-						key={profile ? JSON.stringify(profile) : 'new'}
+						key={formKey}
 						profile={profile}
 						readOnly={!canEdit}
 						submitting={submitting}
 						onSubmit={(input) => void handleSubmit(input)}
 					/>
+					{profile && (
+						<Card>
+							<CardHeader>
+								<CardTitle>{t('settings:companyProfile.section.images')}</CardTitle>
+								<CardDescription>{t('settings:companyProfile.imagesHint')}</CardDescription>
+							</CardHeader>
+							<CardContent className='grid gap-6 sm:grid-cols-2'>
+								{(['logo', 'signature'] as const).map((kind) => (
+									<DocumentImageField
+										key={kind}
+										label={t(`settings:companyProfile.image.${kind}`)}
+										imageUrl={kind === 'logo' ? profile.logoUrl : profile.signatureUrl}
+										disabled={!canEdit}
+										onUpload={async (file) => {
+											setProfile(await uploadDocumentImage<TCompanyProfile>(`/company-profile/${kind}`, file));
+											toast.success(t('settings:companyProfile.imageSaved'));
+										}}
+										onRemove={async () => {
+											setProfile(await removeDocumentImage<TCompanyProfile>(`/company-profile/${kind}`));
+										}}
+									/>
+								))}
+							</CardContent>
+						</Card>
+					)}
 				</>
 			)}
 		</div>

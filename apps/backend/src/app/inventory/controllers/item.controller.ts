@@ -11,7 +11,8 @@ import {
 	unitListQuerySchema,
 	updateItemSchema,
 } from '../contracts/item.contract';
-import { ITEM_SERVICE_TOKEN } from '../constants/di';
+import { documentImageFrom } from '@providers/s3/document-image';
+import { ITEM_IMAGE_SERVICE_TOKEN, ITEM_SERVICE_TOKEN } from '../constants/di';
 import type { ItemService } from '../services/item.service';
 
 /**
@@ -36,6 +37,7 @@ export class ItemController {
 	 */
 	static plugin() {
 		const itemService = container.resolve<ItemService>(ITEM_SERVICE_TOKEN);
+		const itemImages = container.resolve(ITEM_IMAGE_SERVICE_TOKEN);
 
 		return domainPlugin({
 			name: 'inventory-items',
@@ -55,7 +57,7 @@ export class ItemController {
 			.get(
 				'/:id',
 				async ({ params }) =>
-					ok(await itemService.getItem(idParamSchema.parse(params).id)),
+					ok(itemImages.withImageUrl(await itemService.getItem(idParamSchema.parse(params).id))),
 				{
 					erp: { permission: ['product:read'] },
 					detail: { description: 'One item by id' },
@@ -104,6 +106,23 @@ export class ItemController {
 				{
 					erp: { permission: ['product:archive'] },
 					detail: { description: 'Archives an item (soft delete)' },
+				},
+			)
+			.put(
+				'/:id/image',
+				async ({ params, body }) =>
+					ok(await itemImages.setImage(idParamSchema.parse(params).id, documentImageFrom(body))),
+				{
+					erp: { permission: ['product:update'] },
+					detail: { description: 'Uploads the photo printed on documents (multipart `file`)' },
+				},
+			)
+			.delete(
+				'/:id/image',
+				async ({ params }) => ok(await itemImages.setImage(idParamSchema.parse(params).id, null)),
+				{
+					erp: { permission: ['product:update'] },
+					detail: { description: 'Removes the document photo' },
 				},
 			)
 			.get(
