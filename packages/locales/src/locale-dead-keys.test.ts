@@ -80,6 +80,9 @@ const DYNAMIC_PREFIXES = [
 	// reset policy) by composing the key.
 	'settings:numbering.type.',
 	'settings:numbering.reset.',
+	// Customer type and status labels come from server values.
+	'crm:customerType.',
+	'crm:customerStatus.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

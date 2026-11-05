@@ -20,6 +20,13 @@ const api: Record<keyof typeof en, string> = {
 	'sales.quotationNotFound': 'Penawaran tidak ditemukan',
 	'sales.paymentNotFound': 'Pembayaran tidak ditemukan',
 
+	'crm.customerNotFound': 'Pelanggan tidak ditemukan',
+	'crm.customerCodeTaken': 'Kode pelanggan {{code}} sudah dipakai',
+	'crm.customerAlreadyActive': 'Pelanggan sudah aktif',
+	'crm.customerAlreadyInactive': 'Pelanggan sudah nonaktif',
+	'crm.villageNotFound': 'Kelurahan/desa tidak ditemukan',
+	'crm.contactNotFound': 'Kontak tidak ditemukan',
+
 	'inventory.itemNotFound': 'Barang tidak ditemukan',
 	'inventory.unitNotFound': 'Unit barang tidak ditemukan',
 	'inventory.skuTaken': 'Barang dengan SKU ini sudah ada',

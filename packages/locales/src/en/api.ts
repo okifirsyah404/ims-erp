@@ -24,6 +24,13 @@ const api = {
 	'sales.quotationNotFound': 'Quotation not found',
 	'sales.paymentNotFound': 'Payment not found',
 
+	'crm.customerNotFound': 'Customer not found',
+	'crm.customerCodeTaken': 'Customer code {{code}} is already used',
+	'crm.customerAlreadyActive': 'The customer is already active',
+	'crm.customerAlreadyInactive': 'The customer is already inactive',
+	'crm.villageNotFound': 'Village (kelurahan/desa) not found',
+	'crm.contactNotFound': 'Contact not found',
+
 	'inventory.itemNotFound': 'Item not found',
 	'inventory.unitNotFound': 'Item unit not found',
 	'inventory.skuTaken': 'An item with this SKU already exists',

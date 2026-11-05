@@ -7,6 +7,7 @@ import nav from './nav';
 import account from './account';
 import api from './api';
 import settings from './settings';
+import crm from './crm';
 
 /**
  * English resources, grouped by namespace. This bundle is the source of
@@ -22,6 +23,7 @@ export const en = {
 	dashboard,
 	api,
 	settings,
+	crm,
 } as const;
 
 export type Namespace = keyof typeof en;

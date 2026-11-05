@@ -20,6 +20,7 @@ import {
 } from './user';
 import { UserController } from './user/controllers/user.controller';
 import { AuditController } from './audit';
+import { CustomerController } from './crm';
 import {
 	CompanyProfileController,
 	NumberingController,
@@ -102,6 +103,7 @@ export function createApp() {
 			// paths overlap the modules above.
 			.use(ItemController.plugin())
 			.use(ItemCategoryController.plugin())
+			.use(CustomerController.plugin())
 			.use(WarehouseController.plugin())
 			.use(StockController.plugin())
 			.use(AdjustmentController.plugin())

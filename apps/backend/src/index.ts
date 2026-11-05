@@ -2,6 +2,7 @@
 // is missing, and this project has `emitDecoratorMetadata: true`. Must stay the
 // first import — before `tsyringe` itself is pulled in.
 import { registerInventory } from '@app/inventory';
+import { registerCrm } from '@app/crm';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
 import { cors } from '@elysiajs/cors';
@@ -32,6 +33,7 @@ registerProvider(container);
 registerLocation(container);
 registerSales(container);
 registerInventory(container);
+registerCrm(container);
 registerUser(container);
 registerOrganization(container);
 registerAudit(container);

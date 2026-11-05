@@ -7,6 +7,7 @@ import nav_ from './nav';
 import account_ from './account';
 import api_ from './api';
 import settings_ from './settings';
+import crm_ from './crm';
 
 /** Indonesian resources — same namespace/key shape as `en`. */
 export const id = {
@@ -19,4 +20,5 @@ export const id = {
 	dashboard: dashboard_,
 	api: api_,
 	settings: settings_,
+	crm: crm_,
 } as const;

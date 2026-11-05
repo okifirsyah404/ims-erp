@@ -983,40 +983,41 @@ Ref: organization.cost_centers.department_id > organization.departments.id [dele
 // ---------------------------------------------------------------------------
 // MODULE: CRM  (schema: crm)
 // Customer master, groups, contacts, addresses, leads, segments, interactions,
-// credit limit history. Tenant scoped.
+// credit limit history. Tenant scoped, except crm.customers and
+// crm.customer_contacts, which are company-wide (ADR-0011).
 // ---------------------------------------------------------------------------
 
 Table crm.customers {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  customer_type text [not null, default: 'individual']
+  code varchar(32) [not null, note: "Upper-case; unique among live rows (partial index in the Drizzle schema)."]
+  customer_type text [not null, default: 'company']
   name text [not null]
   legal_name text
-  tax_id text
+  tax_id varchar(16) [note: "NPWP digits only, 15 or 16."]
   email text
-  phone text
-  whatsapp text
+  phone varchar(30)
+  whatsapp varchar(30)
+  address_line text [note: "Primary address, printed on documents. crm.customer_addresses (more addresses) is not built yet."]
+  village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
+  postal_code varchar(10)
   status text [not null, default: 'active']
-  customer_group_id uuid
   owner_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   portal_identity_id uuid [note: "Logical reference to auth.portal_identities.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   default_currency_code varchar(3) [not null, default: 'IDR']
   notes text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Customer master. One customer may have several addresses, contacts and credit limit versions."
+  Note: "Customer master, company-wide (ADR-0011): no organization_id. Contacts and documents reference it; documents also keep a snapshot. Inactive customers cannot be used on new documents."
   Indexes {
-    (organization_id, code) [unique, name: 'customers_org_code_uq']
-    customer_group_id [name: 'customers_customer_group_id_idx']
-    owner_user_id [name: 'customers_owner_user_id_idx']
-    (organization_id, name) [name: 'customers_org_name_idx']
+    name [name: 'customers_name_idx']
     tax_id [name: 'customers_tax_id_idx']
+    owner_user_id [name: 'customers_owner_user_id_idx']
   }
   Checks {
     `customer_type IN ('individual', 'company', 'government', 'partner')`
-    `status IN ('lead', 'prospect', 'active', 'inactive', 'blocked')`
+    `status IN ('active', 'inactive')`
   }
 }
 
@@ -1038,18 +1039,17 @@ Table crm.customer_groups {
 
 Table crm.customer_contacts {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   customer_id uuid [not null]
   name text [not null]
   position text
   email text
-  phone text
-  whatsapp text
+  phone varchar(30)
+  whatsapp varchar(30)
   is_primary boolean [not null, default: false]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Contact person of a customer."
+  Note: "Contact person of a customer, company-wide like its customer (ADR-0011). At most one primary contact per customer (kept by the repository)."
   Indexes {
     customer_id [name: 'customer_contacts_customer_id_idx']
   }
@@ -1488,8 +1488,7 @@ Table catalog.item_cost_histories {
   }
 }
 
-Ref: crm.customers.customer_group_id > crm.customer_groups.id [delete: set null]
-Ref: crm.customer_contacts.customer_id > crm.customers.id [delete: cascade]
+Ref: crm.customer_contacts.customer_id > crm.customers.id [delete: restrict]
 Ref: crm.customer_addresses.customer_id > crm.customers.id [delete: cascade]
 Ref: crm.leads.customer_id > crm.customers.id [delete: set null]
 Ref: crm.lead_activities.lead_id > crm.leads.id [delete: cascade]

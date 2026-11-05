@@ -23,6 +23,7 @@ declare module 'i18next' {
 		dashboard: typeof en.dashboard;
 		api: typeof en.api;
 		settings: typeof en.settings;
+		crm: typeof en.crm;
 	}
 
 	interface CustomTypeOptions {

@@ -44,6 +44,7 @@ const LABELS: Record<string, NavKey> = {
 	'/admin/settings': 'item.settings',
 	'/admin/settings/numbering': 'item.documentNumbering',
 	'/inventory/categories': 'item.itemCategories',
+	'/crm/customers': 'item.customers',
 };
 
 /**

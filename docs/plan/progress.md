@@ -12,6 +12,79 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — ADR-0011 port step 3a: customers and contacts, 2026-11-05
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner).
+
+Step 3 (M02) is split: 3a customers/contacts, 3b leads + website API,
+3c quotations (SPH), 3d sales orders + invoices + receipts + prints. Module
+owner's answers 2026-11-05: invoices and receipts go to the **finance**
+module as in docs.dbml (not sales); lead and SPH statuses stay the ones the
+owner approved on the M02 branch (SPH deal/lost/revisions, expiry is not a
+status) and docs.dbml is updated to match.
+
+Gate 1 (read): docs.dbml CRM (`crm.customers`, `customer_contacts`,
+`customer_addresses`, `leads`, `lead_activities`), Sales (`quotations`,
+`quotation_items`, `sales_orders`, `delivery_notes`) and Finance
+(`invoices`, `receipts`, `payments`) modules; Location (`villages`) for the
+address reference. `implementation-phases.md` read for the sales scaffold
+note: the scaffold `sales.quotations` / `sales.payments` from
+`dear_living_lightning` are replaced, not altered.
+
+Gate 2 (3a):
+- Ownership: CRM module (`app/crm`, schema `crm`).
+- Tenant scope: none — company-wide (ADR-0011 §2); docs.dbml notes the
+  exception.
+- `crm.customers`: docs.dbml shape minus `organization_id` and
+  `customer_group_id` (customer groups are out of scope; Ref removed), plus
+  the primary address (`address_line`, `village_id`, `postal_code`) and
+  `created_by`. Status `active | inactive` (M02 rule: inactive customers
+  cannot be used on new documents); types as docs.dbml
+  (`individual | company | government | partner`). Code upper-case,
+  unique among live rows (partial index), race handled as 409.
+- `crm.customer_contacts`: docs.dbml shape minus `organization_id`; one
+  primary per customer kept by the repository; FK `RESTRICT` (soft deletes
+  only).
+- Cross-module refs: `village_id` validated through `LocationService.
+  getVillage`; `owner_user_id`, `created_by` from the session;
+  `portal_identity_id` stays null until the portal (M02 stage 2).
+- Soft delete on both; datetimes bigint ms; no money columns.
+- Permissions: existing `customer:read|create|update|archive`.
+- Exported contract for later steps: `CustomerService.getActiveCustomer`.
+
+Implementation:
+- `docs.dbml` first (crm.customers / customer_contacts as above; Ref to
+  customer_groups removed; contacts FK `restrict`); generator 506 refs;
+  validator OK.
+- `drizzle/schemas/crm.schema.ts`, migration `20261105150641_cold_sprite`
+  (inspected, additive), applied to `ims_erp_sync`; relations registered in
+  `drizzle/db.ts`. `drizzle/errors.ts` `isUniqueViolation` (from the M02
+  branch).
+- Backend `src/app/crm`: errors (`crm.customerNotFound`,
+  `customerCodeTaken`, `customerAlreadyActive|Inactive`, `villageNotFound`,
+  `contactNotFound`, en/id), contract (zod, strict), repositories (search
+  escapes `%`/`_`; one primary contact per customer in a transaction),
+  `CustomerService`, `CustomerController` (`/customers`, `/:id`,
+  `/:id/activate|deactivate`, `/:id/contacts[/:contactId]`); registered in
+  `src/index.ts`, mounted in `app/app.ts`.
+- Web admin: `lib/customer-api.ts`; `/crm/customers` list (search, status
+  filter, pagination, create) replaces the coming-soon stub;
+  `/crm/customers/$customerId` detail (edit, activate/deactivate, contacts
+  add/edit/remove with primary badge); dialogs reuse `LocationCascade`;
+  new `crm` locale namespace (en/id).
+- Checks: `bun run test` — backend 561 (5 new), web-admin 41, locales 42;
+  backend and web `tsc` clean; lint 0; seed run twice OK. Live HTTP with
+  `Accept-Language: id`: 404/409 messages in Indonesian. Browser
+  (Playwright, Chromium 1161, id-ID, owner): create (code upper-cased, NPWP
+  digits only), duplicate code refused with the Indonesian 409 message,
+  primary contact, deactivate. Fixed during the check: the code input's
+  `pattern` was invalid under the browser's `v` regex flag (now escapes
+  `/` and `-`). Test rows archived afterwards in `ims_erp_sync`.
+- Dev note: the dev backend does not watch `packages/locales`; after a
+  locale change, stop the processes on 3000/5173 and restart (a plain
+  restart once kept serving old bundles).
+
 ## Completed — ADR-0011 port step 2: item extensions, 2026-11-05
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
