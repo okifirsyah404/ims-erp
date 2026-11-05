@@ -133,7 +133,7 @@ jobs:
         uses: hrishikesh-kadam/setup-lcov@v1
 
       - name: Report code coverage
-        uses: zgosalvez/github-actions-report-lcov@v7.2.2
+        uses: zgosalvez/github-actions-report-lcov@v7.2.3
         if: (!cancelled())
         with:
           coverage-files: apps/backend/coverage/lcov.info
