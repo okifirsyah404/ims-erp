@@ -35,10 +35,13 @@ registerSales(container);
 // Organization first: its DocumentNumberingService (ERP-0009) is injected
 // into inventory services (stock/adjustment/borrowing).
 registerOrganization(container);
+// Audit before the modules that resolve AUDIT_SERVICE_TOKEN eagerly
+// (registerInventory builds the shared InventoryAuditWriter at
+// registration time; registerAssets documents the same expectation).
+registerAudit(container);
 registerInventory(container);
 registerAssets(container);
 registerUser(container);
-registerAudit(container);
 registerAuthorization(container);
 
 /**

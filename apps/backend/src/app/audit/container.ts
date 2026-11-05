@@ -17,9 +17,10 @@ export * from './constants/di';
  * @remarks
  * Extracted from `user-management` (W6) because the ledger is
  * cross-cutting — every module writes to it — while `user-management` only
- * happened to be its first writer. Registration order at the composition
- * root is irrelevant (tsyringe resolves lazily); keep it before the modules
- * that inject `AUDIT_SERVICE_TOKEN` purely for readability.
+ * happened to be its first writer. Registration order DOES matter at the
+ * composition root: `registerInventory` resolves `AUDIT_SERVICE_TOKEN`
+ * eagerly (it builds the shared `InventoryAuditWriter` at registration
+ * time), so `registerAudit` must run before it.
  */
 export function registerAudit(container: DependencyContainer): void {
 	container.register(AUDIT_REPOSITORY_TOKEN, { useClass: AuditRepository });
