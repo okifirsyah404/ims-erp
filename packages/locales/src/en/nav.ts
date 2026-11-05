@@ -77,6 +77,7 @@ const nav = {
 
 	'item.warehouses': 'Warehouses',
 	'item.stock': 'Stock',
+	'item.inventoryValue': 'Inventory Value',
 	'item.borrowings': 'Borrowings',
 	'item.items': 'Items',
 	'item.products': 'Products',

@@ -775,6 +775,11 @@ export const stockAdjustmentItems = inventorySchema.table(
 		quantityAfter: numeric('quantity_after', { precision: 18, scale: 3 })
 			.notNull()
 			.default('0'),
+		/**
+		 * Cost an increase enters stock at, IDR minor units (opening stock,
+		 * ADR-0011 §6). Null = the current moving average; ignored for decreases.
+		 */
+		unitCost: bigint('unit_cost', { mode: 'number' }),
 		note: text('note'),
 		...softDeleteTimestamps,
 	},
@@ -784,6 +789,7 @@ export const stockAdjustmentItems = inventorySchema.table(
 		),
 		check('stock_adjustment_items_before_check', sql`quantity_before >= 0`),
 		check('stock_adjustment_items_after_check', sql`quantity_after >= 0`),
+		check('stock_adjustment_items_unit_cost_check', sql`unit_cost IS NULL OR unit_cost >= 0`),
 	],
 );
 

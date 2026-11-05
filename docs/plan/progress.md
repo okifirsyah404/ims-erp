@@ -12,11 +12,92 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — ADR-0011 port step 5b: adjustment cost, opening stock, inventory value, 2026-11-06
+
+Next executable task: ADR-0011 step 6 — M07 projects (BAST and warranty
+certificate with the private samples' layouts), then the single PR to main.
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner). Step 5 (5a + 5b) is complete. Touches programmer
+A's adjustment workflow and inventory module: **review required** in the
+merge PR (ADR-0011 §6, §13) — `adjustment.service.ts` (`unitCost` kept on the
+line, increases post at it), `adjustment.controller.ts` (cost stripped in and
+out without `product:read_cost`), `adjustment-form.tsx` / `adjustment-detail.tsx`
+/ `stock-list.tsx` (cost field and column, value link), new
+`stock-valuation.*` files.
+
+What landed:
+- Migration `20261105192747_adjustment_item_unit_cost` (generated, inspected,
+  applied to `ims_erp_sync`): `stock_adjustment_items.unit_cost` + check.
+- Opening stock = an `increase` adjustment with reason `opening_stock` (form
+  suggestion) and a unit cost per line; null = moving average.
+- `GET /stock/valuation` (`stock:read` + `product:read_cost`):
+  `StockValuationRepository` / `Service` / `Controller`, mounted before
+  `StockController`. Web `/inventory/stock/value` (sidebar "Nilai
+  Persediaan", link on the stock page).
+
+Findings for programmer A (pre-existing, not changed here):
+- `adjustment-form.tsx` loads `/warehouses` (application-admin only,
+  ADR-0008), so the warehouse and purchasing roles get 403 and cannot pick a
+  warehouse — they cannot raise adjustments (or opening stock) from the UI.
+  The receipt and delivery forms use their own warehouse endpoints for this.
+- Dev seed balances carry no cost (valued at Rp0); real opening stock must
+  be entered through `opening_stock` adjustments. ITEM-013 (a serialized
+  `tool`, not stock-tracked) still got a stock movement from a 4b goods
+  receipt test, because goods receipts post for every line.
+
+Verification (2026-11-06):
+- `bun docs/database/gen-logical-references.ts` + `bun
+  docs/database/validate-dbml.ts` → `OK` (258 tables, 0 cross-module refs, 0
+  timestamp gaps). `docs/database/` updated (`stock_adjustment_items.unit_cost`).
+- `NODE_ENV=development bun run drizzle:migrate` → applied.
+- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (warnings
+  pre-existing); `bun run test` → backend 639 pass (new: opening-stock cost
+  test, `stock-valuation.service.test.ts`), web-admin 45, locales 54, 0 fail;
+  `bun run build` (web-admin) → built.
+- Browser + API check (temporary Playwright script, deleted): the owner
+  raised opening stock through the adjustment form (cost field shown, Rp
+  25.000 → `unit_cost` 2,500,000, reason `opening_stock`), submitted,
+  approved and posted → balance `10.000 @ 2,500,000 = 25,000,000` and the
+  grand total rose by exactly 25,000,000; the warehouse role sees no cost
+  field, a cost it sends is stored as null, `/stock/valuation` → 403; the
+  value page lists the balances with per-warehouse totals; only browser
+  errors: the two pre-existing `/warehouses` 403s above.
+- Test data left in the dev DB: opening-stock adjustments for ITEM-012 and
+  ITEM-006 (10 each at Rp 25.000), one cancelled warehouse adjustment.
+
+Gate 1 (read): docs.dbml `inventory.stock_adjustments` /
+`stock_adjustment_items` (no cost column), `stock_balances.average_cost` /
+`total_value` (step 4b); `AdjustmentService.create` / `buildLines` / `post`
+(posts `adjustment_in` / `adjustment_out` through `StockService.postMovement`,
+creator cannot approve — `SelfApprovalForbiddenError` already exists);
+`adjustment.controller.ts` grants (`stock_adjustment:create|approve|post`);
+role catalog (purchasing "prepares opening stock / adjustments with costs").
+Skipped: `logical-references.md` (no new cross-module link; same module),
+`implementation-phases.md` (no unlanded dependency).
+
+Gate 2 (manual grilling pass):
+- `inventory.stock_adjustment_items.unit_cost` (bigint, nullable, IDR minor
+  units): the cost an increase line enters stock at. Null = the current
+  moving average (a recount surplus). Ignored for decreases (they always
+  leave at the average). This is the opening-stock use of ADR-0011 §6: an
+  `increase` adjustment with reason code `opening_stock` and a cost per
+  line, through the existing approval chain (creator cannot approve). No
+  second table, no new adjustment type.
+- Cost visibility: only callers with `product:read_cost` may set or see
+  `unit_cost`; for others the controller strips it from the body and the
+  responses (the warehouse counts, purchasing/owner price).
+- Inventory value view: read-only `GET /stock/valuation` (inventory module,
+  `stock:read` + `product:read_cost`): non-zero balances with item SKU /
+  name / unit and warehouse code / name, quantity, average cost and value,
+  plus totals per warehouse and the grand total — computed in SQL from
+  `stock_balances` (the ledger-maintained truth). Web `/inventory/stock/value`.
+- No journal entries (accounting module not ported; ADR-0011 §5 covers the
+  inventory value only).
+
 ## Completed — ADR-0011 port step 5a: delivery notes (surat jalan), 2026-11-06
 
-Next executable task: ADR-0011 step 5b — adjustment lines with unit cost
-(opening stock), and the inventory value view (balances at average cost,
-`product:read_cost`).
+Next executable task: step 5b (done, entry above).
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
 or accepted by the owner). Step 5 is split: 5a delivery notes with the surat

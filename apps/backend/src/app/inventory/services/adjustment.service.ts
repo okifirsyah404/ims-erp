@@ -379,6 +379,9 @@ export class AdjustmentService {
 				movementType,
 				// postMovement takes an unsigned quantity; direction is the type.
 				quantity: Math.abs(delta).toFixed(3),
+				// An increase enters at the line's cost (opening stock); without
+				// one, and for every decrease, the moving average applies.
+				unitCost: delta > 0 ? line.unitCost : null,
 				referenceType: 'manual_adjustment',
 				referenceId: adjustment.id,
 				createdBy: actor.actorUserId,
@@ -496,6 +499,7 @@ export class AdjustmentService {
 				binId: input.binId ?? null,
 				quantityBefore: current?.quantityOnHand ?? '0',
 				quantityAfter: input.quantityAfter,
+				unitCost: input.unitCost ?? null,
 				note: input.note ?? null,
 			});
 		}

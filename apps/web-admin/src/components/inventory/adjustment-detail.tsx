@@ -18,6 +18,8 @@ import {
 	TableRow,
 } from '@ims-erp/ui/components/table';
 import type { TranslationKey } from '@ims-erp/locales';
+import { formatIdr } from '@/lib/format';
+import { usePermission } from '@/lib/use-permission';
 import {
 	adjustmentQueryOptions,
 	transitionAdjustment,
@@ -33,6 +35,7 @@ import {
  * line posts nothing — and that is correct, not a bug.
  */
 export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
+	const canSeeCost = usePermission('product.read_cost');
 	const { t } = useTranslation(['inventory', 'common']);
 	const queryClient = useQueryClient();
 	const { data, isPending, isError, error } = useQuery(
@@ -241,6 +244,9 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 									<TableHead className='text-right'>
 										{t('inventory:adjustments.delta')}
 									</TableHead>
+									{canSeeCost && (
+										<TableHead className='text-right'>{t('inventory:adjustmentForm.unitCost')}</TableHead>
+									)}
 									<TableHead>{t('inventory:adjustmentForm.lineNote')}</TableHead>
 								</TableRow>
 							</TableHeader>
@@ -265,6 +271,11 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 												{delta > 0 ? '+' : ''}
 												{delta.toFixed(3)}
 											</TableCell>
+											{canSeeCost && (
+												<TableCell className='text-right font-mono'>
+													{line.unitCost === null ? '—' : formatIdr(line.unitCost)}
+												</TableCell>
+											)}
 											<TableCell className='text-xs text-muted-foreground'>
 												{line.note ?? '—'}
 											</TableCell>

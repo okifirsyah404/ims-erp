@@ -1,0 +1,2 @@
+ALTER TABLE "inventory"."stock_adjustment_items" ADD COLUMN "unit_cost" bigint;--> statement-breakpoint
+ALTER TABLE "inventory"."stock_adjustment_items" ADD CONSTRAINT "stock_adjustment_items_unit_cost_check" CHECK (unit_cost IS NULL OR unit_cost >= 0);

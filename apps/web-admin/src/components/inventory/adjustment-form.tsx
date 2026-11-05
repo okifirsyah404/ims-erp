@@ -24,6 +24,7 @@ import {
 } from '@/lib/adjustment-api';
 import { itemsQueryOptions } from '@/lib/inventory-api';
 import { balancesQueryOptions } from '@/lib/stock-api';
+import { usePermission } from '@/lib/use-permission';
 import { warehousesQueryOptions } from '@/lib/warehouse-api';
 
 /** One editable line row. `key` is React's, so removing a row cannot reuse state. */
@@ -34,6 +35,8 @@ type TLineDraft = {
 	binId: string;
 	/** Counted total as typed; empty means "not entered yet". */
 	quantityAfter: string;
+	/** Unit cost in rupiah as typed (opening stock); empty = moving average. */
+	unitCost: string;
 	note: string;
 };
 
@@ -43,6 +46,7 @@ const blankLine = (): TLineDraft => ({
 	itemId: '',
 	binId: '',
 	quantityAfter: '',
+	unitCost: '',
 	note: '',
 });
 
@@ -62,6 +66,8 @@ const blankLine = (): TLineDraft => ({
 export function AdjustmentForm() {
 	const { t } = useTranslation(['inventory', 'common']);
 	const queryClient = useQueryClient();
+	// Line costs (opening stock) are for `product:read_cost` holders only.
+	const canSeeCost = usePermission('product.read_cost');
 
 	const [warehouseId, setWarehouseId] = useState('');
 	const [adjustmentType, setAdjustmentType] =
@@ -118,6 +124,8 @@ export function AdjustmentForm() {
 				itemId: line.itemId,
 				binId: line.binId === '' ? null : line.binId,
 				quantityAfter: Number(line.quantityAfter),
+				// Rupiah as typed → IDR minor units (ADR-0002).
+				unitCost: canSeeCost && line.unitCost !== '' ? Math.round(Number(line.unitCost) * 100) : null,
 				note: line.note === '' ? null : line.note,
 			}));
 
@@ -226,10 +234,14 @@ export function AdjustmentForm() {
 							</FieldLabel>
 							<Input
 								id='adjustment-reason'
+								list='adjustment-reasons'
 								value={reasonCode}
 								onChange={(event) => setReasonCode(event.target.value)}
 								maxLength={64}
 							/>
+							<datalist id='adjustment-reasons'>
+								<option value='opening_stock'>{t('inventory:adjustmentForm.reasonOpeningStock')}</option>
+							</datalist>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='adjustment-notes'>
@@ -323,6 +335,25 @@ export function AdjustmentForm() {
 									}
 								/>
 							</Field>
+							{canSeeCost && (
+								<Field>
+									<FieldLabel htmlFor={`line-cost-${line.key}`}>
+										{t('inventory:adjustmentForm.unitCost')}
+									</FieldLabel>
+									<Input
+										id={`line-cost-${line.key}`}
+										type='number'
+										min={0}
+										step='0.01'
+										inputMode='decimal'
+										placeholder={t('inventory:adjustmentForm.unitCostPlaceholder')}
+										value={line.unitCost}
+										onChange={(event) =>
+											updateLine(line.key, { unitCost: event.target.value })
+										}
+									/>
+								</Field>
+							)}
 							<Field>
 								<FieldLabel htmlFor={`line-diff-${line.key}`}>
 									{t('inventory:adjustmentForm.difference')}

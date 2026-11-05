@@ -9,6 +9,7 @@ import {
 	ItemCategoryController,
 	ItemController,
 	StockController,
+	StockValuationController,
 	WarehouseController,
 } from './inventory';
 import { QuotationController } from './sales/controllers/quotation.controller';
@@ -121,6 +122,8 @@ export function createApp() {
 			// Server-to-server website API: API-key guard, no session.
 			.use(PublicWebsiteController.plugin())
 			.use(WarehouseController.plugin())
+			// Before StockController: a static path must not be shadowed by `/stock/:…`.
+			.use(StockValuationController.plugin())
 			.use(StockController.plugin())
 			.use(AdjustmentController.plugin())
 			.use(BorrowingController.plugin())

@@ -446,6 +446,22 @@ const inventory = {
 		'Data identitas disimpan bersama peminjaman dan dihapus 24 bulan setelah peminjaman ditutup.',
 	'items.documentPhoto': 'Foto di dokumen',
 	'items.documentPhotoHint': 'Dicetak di kolom Gambar pada penawaran. PNG, JPG, atau WebP, maksimal 2 MB. Penawaran yang sudah terbit tetap memakai fotonya.',
+	'adjustmentForm.unitCost': 'Harga pokok per unit (Rp)',
+	'adjustmentForm.unitCostPlaceholder': 'Kosong = harga rata-rata',
+	'adjustmentForm.reasonOpeningStock': 'Stok awal',
+	'value.title': 'Nilai persediaan',
+	'value.description': 'Stok yang ada dinilai dengan HPP rata-rata bergerak, per barang dan gudang. Penerimaan masuk dengan harga pokoknya; pengiriman dan pengurangan keluar dengan harga rata-rata.',
+	'value.total': 'Total nilai persediaan',
+	'value.allWarehouses': 'Semua gudang',
+	'value.balances': '{{count}} saldo',
+	'value.search': 'Cari SKU atau nama barang…',
+	'value.empty': 'Tidak ada stok.',
+	'value.item': 'Barang',
+	'value.warehouse': 'Gudang',
+	'value.quantity': 'Stok',
+	'value.averageCost': 'HPP rata-rata',
+	'value.totalValue': 'Nilai',
+	'value.link': 'Nilai persediaan',
 } as const;
 
 export default inventory;

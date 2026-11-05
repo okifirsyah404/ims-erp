@@ -2534,6 +2534,7 @@ Table inventory.stock_adjustment_items {
   bin_id uuid
   quantity_before numeric(18,3) [not null, default: 0]
   quantity_after numeric(18,3) [not null, default: 0]
+  unit_cost bigint [note: "Cost an increase enters stock at (IDR minor units; opening stock, ADR-0011 §6). Null = the current moving average. Ignored for decreases."]
   note text
   created_at bigint [not null]
   updated_at bigint [not null]
@@ -2545,6 +2546,7 @@ Table inventory.stock_adjustment_items {
   Checks {
     `quantity_before >= 0`
     `quantity_after >= 0`
+    `unit_cost IS NULL OR unit_cost >= 0`
   }
 }
 

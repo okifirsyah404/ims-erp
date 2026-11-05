@@ -457,6 +457,22 @@ const inventory = {
 		'Identity data is stored with the borrowing and erased 24 months after it closes.',
 	'items.documentPhoto': 'Photo on documents',
 	'items.documentPhotoHint': 'Printed in the Gambar column of quotations. PNG, JPG or WebP, at most 2 MB. Quotations already issued keep their photo.',
+	'adjustmentForm.unitCost': 'Unit cost (Rp)',
+	'adjustmentForm.unitCostPlaceholder': 'Empty = average cost',
+	'adjustmentForm.reasonOpeningStock': 'Opening stock',
+	'value.title': 'Inventory value',
+	'value.description': 'Stock on hand at its moving-average cost (HPP), per item and warehouse. Receipts add at their cost; deliveries and decreases leave at the average.',
+	'value.total': 'Total inventory value',
+	'value.allWarehouses': 'All warehouses',
+	'value.balances': '{{count}} balances',
+	'value.search': 'Search SKU or item name…',
+	'value.empty': 'No stock on hand.',
+	'value.item': 'Item',
+	'value.warehouse': 'Warehouse',
+	'value.quantity': 'On hand',
+	'value.averageCost': 'Average cost',
+	'value.totalValue': 'Value',
+	'value.link': 'Inventory value',
 } as const;
 
 export default inventory;

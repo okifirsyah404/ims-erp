@@ -107,8 +107,8 @@ Last synced: 2026-11-06.
 - Inventory movement boundaries / valuation + GL reconciliation — ERP-0014
   (re-scoped into S1–S4; valuation deferred, OPEN-3).
 - Payables (supplier invoices) — T07, ERP-0012 / ERP-0035. Evidence: none.
-- Stock value via finance summary / GL — T07. Evidence: balances carry
-  `total_value` (step 4b); no summary or journal yet.
+- Stock value in the GL (journals) — T07, ERP-0014. Evidence: none (the
+  value view exists, see implemented).
 
 ### implemented
 - Suppliers (bank details restricted) and purchase orders with one-level
@@ -123,6 +123,13 @@ Last synced: 2026-11-06.
   `test/unit/moving-average.test.ts`, `/procurement/receipts`, `progress.md`
   2026-11-06 (step 4b). Gaps: programmer A's review of the stock-service
   change, real-PG integration tests.
+- Opening stock / adjustments with unit cost, and the inventory value view
+  (stock at average cost per item and warehouse, totals) — T07, ERP-0014 /
+  ERP-0036. Evidence: `inventory/services/adjustment.service.ts`,
+  `inventory/services/stock-valuation.service.ts`,
+  `test/unit/adjustment.service.test.ts`, `test/unit/stock-valuation.service.test.ts`,
+  `/inventory/stock/value`, `progress.md` 2026-11-06 (step 5b). Gaps:
+  programmer A's review; the adjustment form's warehouse list is admin-only.
 - Stock ledger S3 — ERP-0028. Evidence:
   `apps/backend/src/app/inventory/services/stock.service.ts`,
   `test/unit/stock.service.test.ts` (22 tests), UI

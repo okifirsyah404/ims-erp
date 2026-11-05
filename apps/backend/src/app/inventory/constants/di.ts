@@ -24,6 +24,8 @@ import type { AdjustmentService } from '../services/adjustment.service';
 import type { BorrowingService } from '../services/borrowing.service';
 import type { IItemCategoryRepository } from '../contracts/item-category.repository.interface';
 import type { ItemCategoryService } from '../services/item-category.service';
+import type { IStockValuationRepository } from '../contracts/stock-valuation.contract';
+import type { StockValuationService } from '../services/stock-valuation.service';
 
 export const ITEM_REPOSITORY_TOKEN: InjectionToken<IItemRepository> =
 	Symbol('ITEM_REPOSITORY');
@@ -63,3 +65,9 @@ export const BORROWING_SERVICE_TOKEN: InjectionToken<BorrowingService> =
 
 /** Token resolving to the {@link ItemImageService} (document photo of an item). */
 export const ITEM_IMAGE_SERVICE_TOKEN: InjectionToken<ItemImageService> = Symbol('ITEM_IMAGE_SERVICE_TOKEN');
+
+/** Token resolving to the inventory value repository (ADR-0011 step 5b). */
+export const STOCK_VALUATION_REPOSITORY_TOKEN: InjectionToken<IStockValuationRepository> = Symbol('STOCK_VALUATION_REPOSITORY_TOKEN');
+
+/** Token resolving to the {@link StockValuationService}. */
+export const STOCK_VALUATION_SERVICE_TOKEN: InjectionToken<StockValuationService> = Symbol('STOCK_VALUATION_SERVICE_TOKEN');

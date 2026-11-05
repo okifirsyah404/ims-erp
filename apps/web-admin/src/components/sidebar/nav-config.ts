@@ -9,6 +9,7 @@ import {
 	HandCoins,
 	KeyRound,
 	Layers,
+	Calculator,
 	LayoutDashboard,
 	MessageSquare,
 	Package,
@@ -112,6 +113,7 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		items: [
 			{ titleKey: 'item.warehouses', url: '/inventory/warehouses', icon: Warehouse },
 			{ titleKey: 'item.stock', url: '/inventory/stock', icon: Layers },
+			{ titleKey: 'item.inventoryValue', url: '/inventory/stock/value', icon: Calculator },
 			{
 				titleKey: 'item.items',
 				icon: Package,

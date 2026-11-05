@@ -16,6 +16,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { balancesQueryOptions, recomputeBalances } from '@/lib/stock-api';
+import { usePermission } from '@/lib/use-permission';
 
 /**
  * The stock balance list: what is on hand, per warehouse.
@@ -34,6 +35,7 @@ import { balancesQueryOptions, recomputeBalances } from '@/lib/stock-api';
 export function StockList() {
 	const { t } = useTranslation(['inventory', 'common']);
 	const queryClient = useQueryClient();
+	const canSeeCost = usePermission('product.read_cost');
 	const [inStockOnly, setInStockOnly] = useState(false);
 	const { data, isPending, isError, error } = useQuery(
 		balancesQueryOptions({ limit: 100, inStockOnly }),
@@ -86,6 +88,14 @@ export function StockList() {
 						/>
 						{t('inventory:stock.inStockOnly')}
 					</label>
+					{canSeeCost && (
+						<Button
+							variant='outline'
+							render={<Link to='/inventory/stock/value' />}
+						>
+							{t('inventory:value.link')}
+						</Button>
+					)}
 					<Button
 						variant='outline'
 						render={<Link to='/inventory/stock/movements' />}

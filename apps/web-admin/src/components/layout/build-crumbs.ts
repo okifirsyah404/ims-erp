@@ -50,6 +50,7 @@ const LABELS: Record<string, NavKey> = {
 	'/sales/quotes': 'item.quotes',
 	'/sales/orders': 'item.salesOrders',
 	'/sales/deliveries': 'item.deliveryNotes',
+	'/inventory/stock/value': 'item.inventoryValue',
 	'/sales/deliveries/new': 'breadcrumb.deliveryNoteNew',
 	'/sales/deliveries/$deliveryNoteId/print': 'breadcrumb.print',
 	'/procurement': 'item.procurement',

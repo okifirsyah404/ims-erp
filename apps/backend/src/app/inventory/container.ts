@@ -16,6 +16,8 @@ import { WarehouseService } from './services/warehouse.service';
 import { StockService } from './services/stock.service';
 import { AdjustmentService } from './services/adjustment.service';
 import { BorrowingService } from './services/borrowing.service';
+import { StockValuationRepository } from './repositories/stock-valuation.repository';
+import { StockValuationService } from './services/stock-valuation.service';
 import {
 	ADJUSTMENT_REPOSITORY_TOKEN,
 	ADJUSTMENT_SERVICE_TOKEN,
@@ -34,6 +36,8 @@ import {
 	WAREHOUSE_REPOSITORY_TOKEN,
 	WAREHOUSE_SERVICE_TOKEN,
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
+	STOCK_VALUATION_REPOSITORY_TOKEN,
+	STOCK_VALUATION_SERVICE_TOKEN,
 } from './constants/di';
 
 export * from './constants/di';
@@ -87,6 +91,8 @@ export function registerInventory(container: DependencyContainer): void {
 	// injects it, and tsyringe resolves lazily but the token must already exist
 	// for bootstrap to fail early rather than at first request.
 	container.register(STOCK_SERVICE_TOKEN, { useClass: StockService });
+	container.register(STOCK_VALUATION_REPOSITORY_TOKEN, { useClass: StockValuationRepository });
+	container.register(STOCK_VALUATION_SERVICE_TOKEN, { useClass: StockValuationService });
 	container.register(ADJUSTMENT_SERVICE_TOKEN, {
 		useClass: AdjustmentService,
 	});

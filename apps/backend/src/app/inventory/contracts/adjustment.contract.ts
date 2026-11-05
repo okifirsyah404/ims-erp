@@ -40,6 +40,11 @@ export const adjustmentLineSchema = z.object({
 	itemId: z.uuid(),
 	binId: z.uuid().nullable().optional(),
 	quantityAfter: countedQuantitySchema,
+	/**
+	 * Cost an increase enters stock at, IDR minor units (opening stock,
+	 * ADR-0011 §6). Absent = the current moving average.
+	 */
+	unitCost: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullable().optional(),
 	note: z.string().max(1000).nullable().optional(),
 });
 
