@@ -4,6 +4,7 @@ import { appConfig } from '../config/providers/config';
 import { authRelations } from './schemas/auth.schema';
 import { auditLogRelations } from './schemas/audit.schema';
 import { crmRelations } from './schemas/crm.schema';
+import { financeRelations } from './schemas/finance.schema';
 import { inventoryRelations } from './schemas/inventory.schema';
 import { locationRelations } from './schemas/location.schema';
 import { roleRelations } from './schemas/role.schema';
@@ -21,6 +22,7 @@ export const drizzleDB = drizzle({
 		...salesRelations,
 		...inventoryRelations,
 		...crmRelations,
+		...financeRelations,
 	},
 });
 

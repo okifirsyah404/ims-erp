@@ -40,8 +40,6 @@ Last synced: 2026-11-06.
 ## M02 CRM and Sales
 
 ### planned
-- Invoice, DP (customer advance), receipt — T05, ERP-0011. Evidence: dbml
-  `finance.invoices`/`receipts` only.
 - One template per document — T05. Evidence: dbml `documents` only.
 - Checkout / online orders — T21, ERP-0020. Evidence: dbml `commerce` only.
 - Payment gateway callbacks + reconciliation — T22, ERP-0020. Evidence: none
@@ -67,7 +65,13 @@ Last synced: 2026-11-06.
   reopens it) — T05, ERP-0011. Evidence: `apps/backend/src/app/sales`
   (sales orders), `test/unit/sales-order.service.test.ts`, `/sales/orders`
   pages, `progress.md` 2026-11-06 (ADR-0011 step 3d-1). Gaps: real-PG
-  integration tests, e2e; delivery (step 5) and invoices (3d-2).
+  integration tests, e2e; delivery (step 5).
+- Invoices with free billing terms, DP, receipts (kwitansi), invoice print
+  in the company's exact layout — T05, ERP-0011. Evidence:
+  `apps/backend/src/app/finance`, `test/unit/invoice.service.test.ts`,
+  `/sales/invoices`, `/sales/down-payments`, `/sales/receipts`,
+  `progress.md` 2026-11-06 (ADR-0011 step 3d-2). Gaps: real-PG integration
+  tests, e2e, kwitansi print (no sample), `finance.payments` ledger (S7).
 
 ## M03 Subscription and Licensing
 

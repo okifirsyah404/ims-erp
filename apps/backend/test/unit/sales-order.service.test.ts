@@ -19,6 +19,7 @@ import type {
 } from '../../src/app/sales/contracts/sales-order.repository.interface';
 import { QuotationNotFoundError } from '../../src/app/sales/errors/quotation.errors';
 import {
+	SalesOrderBilledError,
 	SalesOrderExistsError,
 	SalesOrderNotCancellableError,
 	SalesOrderNotFoundError,
@@ -109,12 +110,14 @@ const manager: TSalesOrderContext = { actorUserId: 'manager', canViewAll: true, 
 const finance: TSalesOrderContext = { actorUserId: 'finance', canViewAll: true, canUseAnyQuotation: false };
 
 let orders: FakeOrders;
+let billed: Set<string>;
 let service: SalesOrderService;
 const create = (ctx: TSalesOrderContext, extra: Record<string, unknown> = {}) =>
 	service.create(ctx, createSalesOrderSchema.parse({ quotationId: Q, ...extra }));
 
 beforeEach(() => {
 	quotations = new Map();
+	billed = new Set();
 	orders = new FakeOrders();
 	service = new SalesOrderService(
 		orders,
@@ -127,6 +130,7 @@ beforeEach(() => {
 		},
 		{ next: async () => '0001/SO/IMS/XI/26' },
 		{ getUser: async (id: string) => ({ id, name: `User ${id}` }) as never },
+		{ hasLiveInvoices: async (id: string) => billed.has(id) },
 	);
 });
 
@@ -203,5 +207,13 @@ describe('cancelling', () => {
 		const order = await create(sales);
 		await service.cancel(manager, order.id, 'Salah pelanggan');
 		expect(quotations.get(Q)!.status).toBe('approved');
+	});
+
+	test('an order with live invoices cannot be cancelled', async () => {
+		quotations.set(Q, quotation('approved'));
+		const order = await create(sales);
+		billed.add(order.id);
+		await expect(service.cancel(manager, order.id, 'batal')).rejects.toBeInstanceOf(SalesOrderBilledError);
+		expect(quotations.get(Q)!.status).toBe('won');
 	});
 });

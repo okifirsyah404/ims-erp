@@ -1,15 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Contact } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { InvoiceList } from '@/components/finance/invoice-list';
 
+/** `/sales/down-payments` — DP invoices: the first billing term of each deal. */
 export const Route = createFileRoute('/_authed/sales/down-payments/')({
-	component: ComingSoonStubPage,
+	component: DownPaymentsPage,
 });
 
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.downPayments')} icon={Contact} />;
+function DownPaymentsPage() {
+	const { t } = useTranslation('finance');
+	return (
+		<InvoiceList title={t('downPayments.title')} description={t('downPayments.description')} termKind='down_payment' />
+	);
 }

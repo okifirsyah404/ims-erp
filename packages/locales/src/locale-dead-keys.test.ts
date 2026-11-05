@@ -96,7 +96,15 @@ const DYNAMIC_PREFIXES = [
 	'settings:companyProfile.image.',
 	'sales:lostReason.',
 	'sales:orderStatus.',
+	// Invoice status, term kind and receipt method labels come from server values.
+	'finance:status.',
+	'finance:termKind.',
+	'finance:method.',
+	'method.',
 	'sales.quotationState.',
+	// Finance errors compose `finance.term.${problem}` / `finance.invoiceState.${kind}`.
+	'finance.term.',
+	'finance.invoiceState.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

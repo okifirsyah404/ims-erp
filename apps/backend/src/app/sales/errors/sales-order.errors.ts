@@ -27,3 +27,10 @@ export class SalesOrderNotCancellableError extends AppError {
 		super(422, 'sales.orderNotCancellable', 'Only a confirmed sales order can be cancelled');
 	}
 }
+
+/** An order with live (not void) invoices cannot be cancelled. */
+export class SalesOrderBilledError extends AppError {
+	constructor() {
+		super(422, 'sales.orderBilled', 'This sales order has invoices; void them before cancelling');
+	}
+}

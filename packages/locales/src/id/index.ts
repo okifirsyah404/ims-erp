@@ -9,6 +9,7 @@ import api_ from './api';
 import settings_ from './settings';
 import crm_ from './crm';
 import sales_ from './sales';
+import finance_ from './finance';
 
 /** Indonesian resources — same namespace/key shape as `en`. */
 export const id = {
@@ -23,4 +24,5 @@ export const id = {
 	settings: settings_,
 	crm: crm_,
 	sales: sales_,
+	finance: finance_,
 } as const;

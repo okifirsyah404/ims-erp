@@ -12,6 +12,118 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — ADR-0011 port step 3d-2: invoices, DP and receipts, 2026-11-06
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner).
+
+Gate 1 (read): docs.dbml Finance module (`finance.invoices`,
+`invoice_items`, `payments`, `receipts`, `payment_allocations`); the old
+branch's owner-approved billing (`invoice.service.ts`, `invoice-terms.ts`,
+`payment-schedule.ts`: free terms, numbering on issue, receipts valid on
+creation, corrections by reversal); role grants `invoice:*` / `receipt:*`;
+the private invoice sample (layout). Skipped: `implementation-phases.md` S4
+detail beyond the finance tables (S4 is the finance step; this lands its
+invoice/receipt part only).
+
+Gate 2 (manual grilling pass):
+- Ownership: new **Finance** module (`app/finance`, schema `finance`):
+  `InvoiceService`, `ReceiptService`, controllers `/invoices`, `/receipts`.
+  Company-wide (no `organization_id`, ADR-0011).
+- Cross-module: Finance reads orders through a Sales contract
+  (`SalesBillingService.getOrderForBilling` / `listOrdersForBilling`, live
+  orders only); Sales asks Finance before cancelling an order
+  (`InvoiceLookupService.hasLiveInvoices`) — an order with live invoices
+  cannot be cancelled. Two small services, so no DI cycle.
+- Invoices (owner decisions 2026-10-31 / 2026-11-04): free billing terms per
+  invoice — percentage of the order tax base, a VAT-inclusive amount, the
+  remainder, or the next planned term; the term that reaches the order's tax
+  base takes the exact remaining VAT (no rounding drift); terms are computed
+  under a per-order advisory lock. `draft` (no number) → `issued` (numbered
+  on issue, no gaps) → `partially_paid` → `paid`; unpaid `draft|issued` →
+  `void` with a reason. `term_kind` is derived: the first live invoice of an
+  order that does not settle it is `down_payment` (the DP menu), the one
+  that settles it `settlement`, others `installment`. DBML `overdue` is
+  shown from `due_date`, never stored; `cancelled` dropped.
+- Receipts (kwitansi): valid on creation (no second verification, owner
+  2026-10-31), numbered on creation, never more than the outstanding
+  amount; corrections by `reversed` with a reason (no delete). The single
+  ledger `finance.payments` is not built yet (S7 retires `sales.payments`);
+  receipts carry no `payment_id` until then.
+- Columns: invoices keep DBML names (`code`, `invoice_type`, `customer_id`,
+  `sales_order_id`, `issue_date`, `due_date`, `subtotal` = the term's tax
+  base, `discount_total` = 0, `tax_total`, `grand_total`, `paid_total`,
+  `outstanding_total`, `status`, `issued_by/at`, `voided_at`, `void_reason`,
+  `notes`) plus `term_kind`, `description`, `percentage_bps`,
+  `customer_snapshot`, `sales_order_code`, `quotation_code`, `title`,
+  `vat_enabled`, `vat_rate_bps`, `terms` (snapshot of the company's default
+  invoice terms), `created_by`, `voided_by`, `deleted_at`; `approved_by/at`
+  dropped (no invoice approval). `finance.invoice_items` stays unbuilt: an
+  invoice bills a share of its order, and the print lists the order lines.
+- Print: exactly the company's invoice sample (company block, INVOICE,
+  Ditujukan kepada / Informasi invoice, Rincian barang, Ringkasan tagihan,
+  terbilang; page 2 "INVOICE - LANJUTAN" with the payment schedule, bank
+  accounts, signatures, terms; "Halaman x dari y"). No kwitansi sample
+  exists, so receipts get no print in this step.
+- Web: `/sales/invoices` (list + detail with issue / void / receipts /
+  print), `/sales/down-payments` (DP invoices), `/sales/receipts`; "Buat
+  invoice" with the billing summary on the sales order page.
+
+What landed:
+- docs.dbml first (`finance.invoices`, `finance.receipts` company-wide;
+  receipts → invoices `restrict`, the `payment_id` ref removed until
+  `finance.payments` exists); `gen-logical-references.ts` → 497 refs;
+  `validate-dbml.ts` → OK.
+- Migration `20261105173322_finance_invoices_receipts` (`CREATE SCHEMA
+  finance`, 2 tables, partial unique code indexes, checks), read and applied
+  to `ims_erp_sync`.
+- Backend: new module `app/finance` (`InvoiceRepository` with the per-order
+  advisory lock and atomic receipt / reversal updates, `InvoiceService`,
+  `InvoiceLookupService`, `InvoiceController` `/invoices` incl.
+  `/invoices/orders/:orderId/summary`, `ReceiptController` `/receipts`,
+  `utils/invoice-terms.ts`, `errors/finance.errors.ts`), registered in
+  `src/index.ts`, mounted in `app/app.ts`. Sales: `SalesBillingService`
+  (contract for Finance); cancelling an order with live invoices → 422
+  `sales.orderBilled`.
+- Web: `lib/invoice-api.ts`, `components/finance/{invoice-list,
+  billing-card, invoice-document}.tsx`, routes `/sales/invoices`,
+  `/sales/invoices/$invoiceId` (+ `/print`), `/sales/down-payments`,
+  `/sales/receipts`; billing card on the sales order page; `finance`
+  locale namespace (en + id).
+
+Verification (2026-11-06):
+- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` → 612 pass
+  (`test/unit/invoice.service.test.ts` 11 tests: odd-base 50/50 settles
+  exactly, VAT-inclusive split, planned terms, DP/installment/settlement
+  kinds, void frees the share, numbering on issue, due-before-issue,
+  partial/full/over payment, reversal; sales-order billed guard).
+- Web `bun run build` OK, `bunx tsc -b` clean, `bun test` → 45 pass; locales
+  → 50 pass; lint: no warnings in new files.
+- Browser (temporary Playwright script, deleted): SPH (DP 30% / BAST 70%) →
+  approved → order `0002/SO/DEV/XI/26`; `sales.seed` gets 403 on
+  `/invoices`; `finance.seed` creates the DP from the order page, issues it
+  (`0001/INV/DEV/XI/26`); the manager cannot cancel the billed order (422);
+  partial payment → `partially_paid`, overpayment → 422, rest → `paid`;
+  the next term is `settlement` and DP + settlement = order total exactly;
+  DP and receipt lists show them. Invoice printed to PDF (A4) and compared
+  with the sample: page 1 company block / INVOICE / Ditujukan kepada /
+  Informasi invoice / Rincian barang / Ringkasan tagihan / terbilang; page 2
+  INVOICE - LANJUTAN / Jadwal pembayaran / Informasi rekening / Tanda tangan
+  / Syarat dan ketentuan; "Halaman x dari 2". The company profile used for
+  the print was restored afterwards.
+- Test data left in the dev DB: SPH `0006/QT/DEV/XI/26`, order
+  `0002/SO/DEV/XI/26`, invoices `0001`–`0002/INV/DEV/XI/26`, two receipts.
+
+Deliberate differences from the invoice sample: table header text is white
+on the navy bar (the sample's dark text is unreadable); the terbilang is of
+the amount due (the sample's "sesuai dokumen asal" line spelled a
+different figure). No kwitansi print yet: there is no sample.
+
+Next executable task: ADR-0011 step 4 — procurement (suppliers, purchase
+orders with the PO sample print) and moving-average cost; then step 5
+(delivery notes with the surat jalan sample, adjustments, inventory value)
+and step 6 (M07), then the PR to main.
+
 ## Completed — ADR-0011 port step 3d-1: sales orders (SPH → Deal), 2026-11-06
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A

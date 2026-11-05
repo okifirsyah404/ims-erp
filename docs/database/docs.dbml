@@ -3885,20 +3885,28 @@ Ref: payroll.payslip_acknowledgements.payslip_id > payroll.payslips.id [delete: 
 // Single payment ledger (finance.payments), invoices and credit memos,
 // receipts, supplier bills, expense claims, employee advances and expense
 // settlements, cash and bank accounts, reconciliation, payment terms.
-// Tenant scoped.
+// Tenant scoped, except finance.invoices and finance.receipts, which are
+// company-wide (ADR-0011).
 // ---------------------------------------------------------------------------
 
 Table finance.invoices {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [note: "Assigned on issue (no gaps); null while draft. Unique among live rows (partial index in the Drizzle schema)."]
   invoice_type text [not null, default: 'sales']
-  customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  sales_order_id uuid [note: "Logical reference to sales.sales_orders.id. Cross-module FK intentionally omitted. Validated through the Sales module contract."]
+  term_kind text [not null, note: "down_payment = first live invoice of its order that does not settle it; settlement = the one that settles it; installment otherwise."]
+  customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
+  customer_snapshot jsonb [not null, note: "Customer data copied from the sales order."]
+  sales_order_id uuid [not null, note: "Logical reference to sales.sales_orders.id. Cross-module FK intentionally omitted. Validated through the Sales module contract."]
+  sales_order_code varchar(32) [not null]
+  quotation_code varchar(40) [not null, note: "The SPH number printed as No. Ref."]
+  title text [not null, note: "Subject (Perihal), from the order."]
+  description text [not null, note: "Term label, e.g. DP 30% or Pelunasan."]
+  percentage_bps integer [note: "Share of the order tax base when billed by percentage."]
   issue_date date
   due_date date
-  subtotal bigint [not null, default: 0]
+  vat_enabled boolean [not null]
+  vat_rate_bps integer [not null, default: 0]
+  subtotal bigint [not null, default: 0, note: "Tax base (DPP) of this term."]
   discount_total bigint [not null, default: 0]
   tax_total bigint [not null, default: 0]
   grand_total bigint [not null, default: 0]
@@ -3906,31 +3914,35 @@ Table finance.invoices {
   outstanding_total bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   status text [not null, default: 'draft']
+  terms text [note: "Terms and conditions printed on the invoice, copied from the company profile."]
+  notes text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   issued_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   issued_at bigint
-  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  approved_at bigint
+  voided_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   voided_at bigint
   void_reason text
-  notes text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Customer invoice, faktur. Voiding is an append only mark, the invoice is never deleted."
+  deleted_at bigint
+  Note: "Customer invoice (faktur) for one billing term of a sales order, company-wide (ADR-0011): no organization_id. Free terms: the invoices of an order never exceed its total and the settling term takes the exact remainder. draft -> issued -> partially_paid -> paid; unpaid draft or issued -> void. Overdue is shown from due_date, never stored. Voiding is an append only mark, the invoice is never deleted."
   Indexes {
-    (organization_id, code) [unique, name: 'invoices_org_code_uq']
     customer_id [name: 'invoices_customer_id_idx']
     sales_order_id [name: 'invoices_sales_order_id_idx']
     status [name: 'invoices_status_idx']
     due_date [name: 'invoices_due_date_idx']
+    term_kind [name: 'invoices_term_kind_idx']
   }
   Checks {
-    `invoice_type IN ('sales', 'proforma', 'recurring')`
-    `status IN ('draft', 'issued', 'partially_paid', 'paid', 'overdue', 'void', 'cancelled')`
+    `invoice_type IN ('sales')`
+    `term_kind IN ('down_payment', 'installment', 'settlement')`
+    `status IN ('draft', 'issued', 'partially_paid', 'paid', 'void')`
+    `vat_rate_bps >= 0 AND vat_rate_bps <= 10000`
     `subtotal >= 0`
     `discount_total >= 0`
     `tax_total >= 0`
-    `grand_total >= 0`
-    `paid_total >= 0`
+    `grand_total > 0`
+    `paid_total >= 0 AND paid_total <= grand_total`
     `outstanding_total >= 0`
     `due_date IS NULL OR issue_date IS NULL OR due_date >= issue_date`
   }
@@ -4016,32 +4028,30 @@ Table finance.payments {
 }
 
 Table finance.receipts {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  invoice_id uuid
-  payment_id uuid
-  received_date date
-  amount bigint [not null, default: 0]
+  code varchar(32) [not null, note: "Assigned on creation. Unique among live rows (partial index in the Drizzle schema)."]
+  invoice_id uuid [not null]
+  received_date date [not null]
+  amount bigint [not null]
   currency_code varchar(3) [not null, default: 'IDR']
   method text [not null, default: 'bank_transfer']
-  status text [not null, default: 'draft']
+  reference varchar(100) [note: "Transfer reference or similar."]
+  notes text
+  status text [not null, default: 'posted']
   received_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  posted_at bigint
+  reversed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   reversed_at bigint
   reversal_reason text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Cash receipt register, kwitansi. It is the customer facing proof of a payment, the money movement stays in finance.payments."
+  deleted_at bigint
+  Note: "Cash receipt register, kwitansi, company-wide. Valid on creation (no second verification); mistakes are reversed, never deleted. Never more than the invoice's outstanding amount. Linked to finance.payments once the single payment ledger lands (S7)."
   Indexes {
-    (organization_id, code) [unique, name: 'receipts_org_code_uq']
     invoice_id [name: 'receipts_invoice_id_idx']
-    payment_id [name: 'receipts_payment_id_idx']
     status [name: 'receipts_status_idx']
   }
   Checks {
-    `status IN ('draft', 'verified', 'posted', 'reversed', 'void')`
+    `status IN ('posted', 'reversed')`
     `amount > 0`
     `method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque')`
   }
@@ -4421,8 +4431,7 @@ Ref: finance.payments.invoice_id > finance.invoices.id [delete: restrict]
 Ref: finance.payments.supplier_bill_id > finance.supplier_bills.id [delete: restrict]
 Ref: finance.payments.employee_advance_id > finance.employee_advances.id [delete: restrict]
 Ref: finance.payments.cash_bank_account_id > finance.cash_bank_accounts.id [delete: restrict]
-Ref: finance.receipts.invoice_id > finance.invoices.id [delete: set null]
-Ref: finance.receipts.payment_id > finance.payments.id [delete: set null]
+Ref: finance.receipts.invoice_id > finance.invoices.id [delete: restrict]
 Ref: finance.expense_settlements.employee_advance_id > finance.employee_advances.id [delete: set null]
 Ref: finance.expense_settlement_items.expense_settlement_id > finance.expense_settlements.id [delete: cascade]
 Ref: finance.employee_advances.payment_id > finance.payments.id [delete: set null]

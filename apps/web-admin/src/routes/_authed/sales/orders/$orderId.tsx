@@ -23,6 +23,7 @@ import {
 	TableRow,
 } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { BillingCard } from '@/components/finance/billing-card';
 import { toast } from '@/components/toast';
 import { formatBusinessDate, formatDateTime, formatIdr } from '@/lib/format';
 import { cancelSalesOrder, SALES_ORDER_STATUS_VARIANT, salesOrderQueryOptions } from '@/lib/sales-order-api';
@@ -181,6 +182,8 @@ function SalesOrderDetailPage() {
 					</dl>
 				</CardContent>
 			</Card>
+
+			<BillingCard orderId={orderId} active={data.status !== 'cancelled'} />
 
 			<div className='grid gap-6 lg:grid-cols-2'>
 				{data.paymentSchedule && (

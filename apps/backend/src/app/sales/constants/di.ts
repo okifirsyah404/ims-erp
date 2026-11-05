@@ -18,6 +18,7 @@ import type { IQuotationRepository } from '../contracts/quotation.repository.int
 import type { QuotationService } from '../services/quotation.service';
 import type { ISalesOrderRepository } from '../contracts/sales-order.repository.interface';
 import type { SalesOrderService } from '../services/sales-order.service';
+import type { SalesBillingService } from '../services/sales-billing.service';
 import type { TPaymentRepository } from '../contracts/payment.repository.interface';
 
 /** Token resolving to the {@link SalesService} implementation. */
@@ -41,3 +42,6 @@ export const SALES_ORDER_REPOSITORY_TOKEN: InjectionToken<ISalesOrderRepository>
 
 /** Token resolving to the {@link SalesOrderService} implementation. */
 export const SALES_ORDER_SERVICE_TOKEN: InjectionToken<SalesOrderService> = Symbol('SALES_ORDER_SERVICE_TOKEN');
+
+/** Token resolving to the {@link SalesBillingService} (Sales contract for Finance). */
+export const SALES_BILLING_SERVICE_TOKEN: InjectionToken<SalesBillingService> = Symbol('SALES_BILLING_SERVICE_TOKEN');

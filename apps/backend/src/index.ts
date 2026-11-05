@@ -3,6 +3,7 @@
 // first import — before `tsyringe` itself is pulled in.
 import { registerInventory } from '@app/inventory';
 import { registerCrm } from '@app/crm';
+import { registerFinance } from '@app/finance';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
 import { cors } from '@elysiajs/cors';
@@ -34,6 +35,7 @@ registerLocation(container);
 registerSales(container);
 registerInventory(container);
 registerCrm(container);
+registerFinance(container);
 registerUser(container);
 registerOrganization(container);
 registerAudit(container);

@@ -1,3 +1,5 @@
+import { INVOICE_LOOKUP_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { InvoiceLookupService } from '@app/finance/services/invoice-lookup.service';
 import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import type { NumberingService } from '@app/organization/services/numbering.service';
 import { USER_SERVICE_TOKEN } from '@app/user/constants/di';
@@ -16,6 +18,7 @@ import type { TCreateSalesOrderRequest, TSalesOrderListQuery } from '../contract
 import type { ISalesOrderRepository } from '../contracts/sales-order.repository.interface';
 import { QuotationNotFoundError } from '../errors/quotation.errors';
 import {
+	SalesOrderBilledError,
 	SalesOrderExistsError,
 	SalesOrderNotCancellableError,
 	SalesOrderNotFoundError,
@@ -63,6 +66,8 @@ export class SalesOrderService {
 		private readonly numbering: Pick<NumberingService, 'next'>,
 		@inject(USER_SERVICE_TOKEN)
 		private readonly users: Pick<UserService, 'getUser'>,
+		@inject(INVOICE_LOOKUP_SERVICE_TOKEN)
+		private readonly invoices: Pick<InvoiceLookupService, 'hasLiveInvoices'>,
 	) {}
 
 	private async requireVisible(ctx: TSalesOrderContext, id: string): Promise<TSalesOrderSelect> {
@@ -176,6 +181,8 @@ export class SalesOrderService {
 	/** Confirmed → cancelled with a reason; the SPH is reopened. */
 	async cancel(ctx: TSalesOrderContext, id: string, reason: string): Promise<TSalesOrderSelect> {
 		await this.requireVisible(ctx, id);
+		// Void the invoices first: an order that was billed stays.
+		if (await this.invoices.hasLiveInvoices(id)) throw new SalesOrderBilledError();
 		const cancelled = await this.orders.cancel(id, ctx.actorUserId, reason);
 		if (!cancelled) throw new SalesOrderNotCancellableError();
 		return cancelled;

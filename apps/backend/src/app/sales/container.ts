@@ -3,6 +3,7 @@ import { PaymentRepository } from './repositories/payment.repository';
 import { QuotationService } from './services/quotation.service';
 import { SalesOrderRepository } from './repositories/sales-order.repository';
 import { SalesOrderService } from './services/sales-order.service';
+import { SalesBillingService } from './services/sales-billing.service';
 import { SalesService } from './services/sales.service';
 import {
 	QUOTATION_REPOSITORY_TOKEN,
@@ -10,6 +11,7 @@ import {
 	QUOTATION_SERVICE_TOKEN,
 	SALES_ORDER_REPOSITORY_TOKEN,
 	SALES_ORDER_SERVICE_TOKEN,
+	SALES_BILLING_SERVICE_TOKEN,
 	SALES_SERVICE_TOKEN,
 } from './constants/di';
 import type { DependencyContainer } from 'tsyringe';
@@ -40,4 +42,5 @@ export function registerSales(container: DependencyContainer): void {
 	});
 	container.register(SALES_ORDER_REPOSITORY_TOKEN, { useClass: SalesOrderRepository });
 	container.register(SALES_ORDER_SERVICE_TOKEN, { useClass: SalesOrderService });
+	container.register(SALES_BILLING_SERVICE_TOKEN, { useClass: SalesBillingService });
 }

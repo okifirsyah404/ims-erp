@@ -25,6 +25,7 @@ declare module 'i18next' {
 		settings: typeof en.settings;
 		crm: typeof en.crm;
 		sales: typeof en.sales;
+		finance: typeof en.finance;
 	}
 
 	interface CustomTypeOptions {
