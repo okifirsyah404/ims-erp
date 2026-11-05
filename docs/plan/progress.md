@@ -12,6 +12,27 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## In progress — merge plan for M02/M05/M07 onto main (ADR-0011), 2026-11-05
+
+Status: **planned** (docs only; ADR-0011 `proposed`, needs programmer A's
+agreement and the owner's change-control sign-off). No code, schema,
+migration, or seed touched.
+
+- Trial merge of `feat/m05-inventory-purchasing` into main (dry run,
+  `git merge-tree`): 49 conflicting files; both branches define
+  `inventory.warehouses` / `stock_*` with different columns, two item
+  masters, two serial tables, two migration chains.
+- Decisions agreed with programmer B's module owner, recorded in
+  `docs/architecture/decisions/ADR-0011-merge-sales-inventory-onto-main.md`:
+  main is the base; one company (no tenant column on business data); one
+  item master `inventory.items` (extended); one serial model; one ledger
+  with moving-average cost; many warehouses (accept ADR-0010); borrowing in
+  M06; dynamic roles; uuid IDs; migrations rebuilt on main's chain; module
+  and docs names follow main; ownership per table.
+- Next: programmer A reviews ADR-0011; the owner signs the change-control
+  items (many warehouses + transfers, computed average HPP); then the port
+  starts on `merge/main-sync` in the order the ADR lists.
+
 ## Completed (this session — dummy dashboard view, 2026-11-06)
 
 Status: **implemented** (UI mock only; no backend, schema, migration, or seed
