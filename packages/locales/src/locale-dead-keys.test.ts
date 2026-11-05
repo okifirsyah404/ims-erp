@@ -76,6 +76,10 @@ const DYNAMIC_PREFIXES = [
 	// Numbering pattern problems: the backend error composes
 	// `numbering.pattern.${code}` from the validator's problem code.
 	'numbering.pattern.',
+	// The numbering settings page labels server values (document type,
+	// reset policy) by composing the key.
+	'settings:numbering.type.',
+	'settings:numbering.reset.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

@@ -86,6 +86,8 @@ const nav = {
 	'item.users': 'Users',
 	'item.auditLog': 'Audit Log',
 	'item.settings': 'Settings',
+	'item.companyProfile': 'Company profile',
+	'item.documentNumbering': 'Document numbering',
 
 	'theme.label': 'Theme',
 	'theme.light': 'Light theme',

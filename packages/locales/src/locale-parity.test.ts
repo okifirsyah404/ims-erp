@@ -95,6 +95,12 @@ describe('locale values', () => {
 			'inventory:warehouses.global',
 			// "Total" is the same word in Indonesian.
 			'dashboard:widget.cash.total',
+			// Business terms the company uses verbatim in Indonesian documents.
+			'settings:companyProfile.email',
+			'settings:companyProfile.bankName',
+			'settings:numbering.type.sales_order',
+			'settings:numbering.type.invoice',
+			'settings:numbering.type.purchase_order',
 		]);
 
 		const untranslated = Object.entries(en_).flatMap(([namespace, bundle]) =>

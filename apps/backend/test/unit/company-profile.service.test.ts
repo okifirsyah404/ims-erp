@@ -86,7 +86,7 @@ describe('CompanyProfileService', () => {
 	});
 
 	test('saves the profile and both accounts in one transaction', async () => {
-		const view = await service.save(input, 'user-1');
+		const view = await service.save(input, 'user-1', true);
 		expect(repository.handles).toEqual([TX, TX, TX]);
 		expect(repository.profile?.updatedBy).toBe('user-1');
 		expect(view.bankAccounts).toEqual({
@@ -96,9 +96,34 @@ describe('CompanyProfileService', () => {
 	});
 
 	test('bank accounts are hidden from callers without access', async () => {
-		await service.save(input, 'user-1');
+		await service.save(input, 'user-1', true);
+		expect((await service.save(input, 'user-2', false)).bankAccounts).toBeNull();
 		expect((await service.get(false))?.bankAccounts).toBeNull();
 		expect((await service.get(true))?.bankAccounts?.vat?.bankName).toBe('BCA');
 		expect((await service.get(false))?.legalName).toBe('PT Inovasi Mitra Sejati');
+	});
+});
+
+describe('CompanyProfileService without bank accounts in the input', () => {
+	test('saving the profile alone leaves the accounts untouched', async () => {
+		const repository = new FakeProfiles();
+		const service = new CompanyProfileService(repository, database);
+		await service.save(input, 'user-1', true);
+		const { bankAccounts: _omitted, ...profileOnly } = input;
+		const view = await service.save({ ...profileOnly, tagline: 'Baru' }, 'user-2', true);
+		expect(view.tagline).toBe('Baru');
+		expect(view.bankAccounts?.vat?.bankName).toBe('BCA');
+	});
+
+	test('a caller without bank access cannot change the accounts', async () => {
+		const repository = new FakeProfiles();
+		const service = new CompanyProfileService(repository, database);
+		await service.save(input, 'user-1', true);
+		await service.save(
+			{ ...input, bankAccounts: { vat: null, nonVat: null } },
+			'user-2',
+			false,
+		);
+		expect((await service.get(true))?.bankAccounts?.vat?.bankName).toBe('BCA');
 	});
 });

@@ -22,6 +22,7 @@ declare module 'i18next' {
 		inventory: typeof en.inventory;
 		dashboard: typeof en.dashboard;
 		api: typeof en.api;
+		settings: typeof en.settings;
 	}
 
 	interface CustomTypeOptions {

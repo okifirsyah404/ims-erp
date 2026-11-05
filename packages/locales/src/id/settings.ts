@@ -1,0 +1,85 @@
+/**
+ * Indonesian company settings copy — mirrors the `en` key set exactly.
+ */
+const settings = {
+	'companyProfile.title': 'Profil Perusahaan',
+	'companyProfile.description':
+		'Kop surat, penanda tangan, rekening bank, dan ketentuan bawaan yang dicetak di dokumen. Satu profil untuk seluruh perusahaan.',
+	'companyProfile.saved': 'Profil perusahaan disimpan',
+	'companyProfile.empty':
+		'Profil perusahaan belum diisi. Nomor dokumen membutuhkan kode dokumennya.',
+	'companyProfile.readOnly':
+		'Anda dapat melihat profil; mengubahnya membutuhkan akses pengaturan perusahaan.',
+	'companyProfile.section.identity': 'Perusahaan',
+	'companyProfile.section.contact': 'Alamat dan kontak',
+	'companyProfile.section.signatory': 'Penanda tangan',
+	'companyProfile.section.banks': 'Rekening bank di invoice',
+	'companyProfile.section.terms': 'Ketentuan bawaan',
+	'companyProfile.section.warranty': 'Sertifikat garansi',
+	'companyProfile.legalName': 'Nama badan usaha',
+	'companyProfile.tradingName': 'Nama dagang',
+	'companyProfile.documentCode': 'Kode dokumen',
+	'companyProfile.documentCodeHint':
+		'Dipakai nomor dokumen ({COMPANY}), mis. IMS. Hanya huruf dan angka.',
+	'companyProfile.tagline': 'Slogan',
+	'companyProfile.taxId': 'NPWP',
+	'companyProfile.addressLine': 'Alamat',
+	'companyProfile.postalCode': 'Kode pos',
+	'companyProfile.phone': 'Telepon',
+	'companyProfile.email': 'Email',
+	'companyProfile.website': 'Situs web',
+	'companyProfile.signatoryName': 'Nama penanda tangan',
+	'companyProfile.signatoryTitle': 'Jabatan penanda tangan',
+	'companyProfile.bankVat': 'Invoice dengan PPN',
+	'companyProfile.bankNonVat': 'Invoice tanpa PPN',
+	'companyProfile.bankHint': 'Kosongkan ketiga kolom bila tidak ada rekening yang dicetak.',
+	'companyProfile.bankIncomplete':
+		'Isi bank, nomor rekening, dan atas nama, atau kosongkan ketiganya.',
+	'companyProfile.bankName': 'Bank',
+	'companyProfile.accountNumber': 'Nomor rekening',
+	'companyProfile.accountHolder': 'Atas nama',
+	'companyProfile.defaultQuotationTerms': 'Ketentuan penawaran',
+	'companyProfile.defaultInvoiceTerms': 'Ketentuan invoice',
+	'companyProfile.warrantyCoverage': 'Cakupan garansi',
+	'companyProfile.warrantyExclusions': 'Pengecualian',
+	'companyProfile.warrantyServiceTerms': 'Ketentuan layanan',
+	'companyProfile.linesHint': 'Satu butir per baris. Kosong memakai teks bawaan.',
+
+	'numbering.title': 'Penomoran Dokumen',
+	'numbering.description':
+		'Format nomor per jenis dokumen. Perubahan hanya berlaku untuk dokumen yang diberi nomor sesudahnya.',
+	'numbering.documentType': 'Dokumen',
+	'numbering.pattern': 'Pola',
+	'numbering.resetPolicy': 'Mulai ulang',
+	'numbering.nextNumber': 'Nomor berikutnya',
+	'numbering.custom': 'Diubah',
+	'numbering.default': 'Bawaan',
+	'numbering.edit': 'Ubah',
+	'numbering.editTitle': 'Penomoran {{type}}',
+	'numbering.preview': 'Pratinjau',
+	'numbering.saved': 'Penomoran disimpan',
+	'numbering.tokensHelp':
+		'Token: {SEQ} atau {SEQ:4} (nomor, diisi nol), {TYPE}, {COMPANY}, {MM}, {MM_ROMAN}, {YY}, {YYYY}; PO juga {SUPPLIER} dan {CATEGORY}; sertifikat garansi {CUSTOMER}.',
+	'numbering.profileNeeded':
+		'Isi profil perusahaan terlebih dahulu: nomor memakai kode dokumennya.',
+	'numbering.reset.never': 'Tidak pernah',
+	'numbering.reset.yearly': 'Setiap tahun',
+	'numbering.reset.monthly': 'Setiap bulan',
+	'numbering.type.quotation': 'Penawaran (SPH)',
+	'numbering.type.sales_order': 'Sales order',
+	'numbering.type.invoice': 'Invoice',
+	'numbering.type.receipt': 'Kwitansi',
+	'numbering.type.web_rfq': 'Website: permintaan penawaran',
+	'numbering.type.web_contact': 'Website: pesan kontak',
+	'numbering.type.web_demo': 'Website: permintaan demo',
+	'numbering.type.purchase_order': 'Purchase order',
+	'numbering.type.goods_receipt': 'Penerimaan barang',
+	'numbering.type.stock_adjustment': 'Penyesuaian stok',
+	'numbering.type.delivery_note': 'Surat jalan',
+	'numbering.type.project': 'Proyek',
+	'numbering.type.bast': 'Berita acara serah terima (BAST)',
+	'numbering.type.warranty': 'Sertifikat garansi',
+	'numbering.type.service_ticket': 'Tiket servis',
+} as const;
+
+export default settings;

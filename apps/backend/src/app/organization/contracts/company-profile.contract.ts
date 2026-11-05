@@ -51,18 +51,25 @@ export const companyProfileSchema = z.object({
 	warrantyCoverage: text(8000),
 	warrantyExclusions: text(8000),
 	warrantyServiceTerms: text(8000),
-	bankAccounts: z.object({
-		/** Printed on invoices with VAT. */
-		vat: invoiceBankAccountSchema,
-		/** Printed on invoices without VAT. */
-		nonVat: invoiceBankAccountSchema,
-	}),
+	/**
+	 * Omitted = leave the accounts unchanged (callers who may not see them
+	 * must not blank them by saving the profile).
+	 */
+	bankAccounts: z
+		.object({
+			/** Printed on invoices with VAT. */
+			vat: invoiceBankAccountSchema,
+			/** Printed on invoices without VAT. */
+			nonVat: invoiceBankAccountSchema,
+		})
+		.optional(),
 });
 
 export type TCompanyProfileInput = z.output<typeof companyProfileSchema>;
-export type TInvoiceBankAccount = NonNullable<TCompanyProfileInput['bankAccounts']['vat']>;
+type TInvoiceBankAccounts = NonNullable<TCompanyProfileInput['bankAccounts']>;
+export type TInvoiceBankAccount = NonNullable<TInvoiceBankAccounts['vat']>;
 
 /** What clients get; `bankAccounts` is `null` for callers without access. */
 export type TCompanyProfileView = Omit<TCompanyProfileInput, 'bankAccounts'> & {
-	bankAccounts: TCompanyProfileInput['bankAccounts'] | null;
+	bankAccounts: TInvoiceBankAccounts | null;
 };

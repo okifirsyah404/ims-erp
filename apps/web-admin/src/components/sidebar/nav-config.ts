@@ -250,7 +250,16 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 			{ titleKey: 'item.users', url: '/admin/users', icon: Users },
 			{ titleKey: 'item.roles', url: '/admin/roles', icon: ShieldCheck },
 			{ titleKey: 'item.auditLog', url: '/admin/audit', icon: ScrollText },
-			{ titleKey: 'item.settings', url: '/admin/settings', icon: Settings },
+			{
+				titleKey: 'item.settings',
+				url: '/admin/settings',
+				icon: Settings,
+				// Company-wide settings (ADR-0011).
+				items: [
+					{ titleKey: 'item.companyProfile', url: '/admin/settings' },
+					{ titleKey: 'item.documentNumbering', url: '/admin/settings/numbering' },
+				],
+			},
 		],
 	},
 ];

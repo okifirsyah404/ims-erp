@@ -36,6 +36,7 @@ import { Route as AuthedSubscriptionIndexRouteImport } from './routes/_authed/su
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
 import { Route as AuthedAdminRolesIndexRouteImport } from './routes/_authed/admin/roles/index'
 import { Route as AuthedAdminSettingsIndexRouteImport } from './routes/_authed/admin/settings/index'
+import { Route as AuthedAdminSettingsNumberingRouteImport } from './routes/_authed/admin/settings/numbering'
 import { Route as AuthedAdminUsersIndexRouteImport } from './routes/_authed/admin/users/index'
 import { Route as AuthedAssetsDepreciationIndexRouteImport } from './routes/_authed/assets/depreciation/index'
 import { Route as AuthedAssetsRegisterIndexRouteImport } from './routes/_authed/assets/register/index'
@@ -235,6 +236,12 @@ const AuthedAdminSettingsIndexRoute =
   AuthedAdminSettingsIndexRouteImport.update({
     id: '/admin/settings/',
     path: '/admin/settings/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedAdminSettingsNumberingRoute =
+  AuthedAdminSettingsNumberingRouteImport.update({
+    id: '/admin/settings/numbering',
+    path: '/admin/settings/numbering',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedAdminUsersIndexRoute = AuthedAdminUsersIndexRouteImport.update({
@@ -628,6 +635,7 @@ export interface FileRoutesByFullPath {
   '/reports/': typeof AuthedReportsIndexRoute
   '/sales/': typeof AuthedSalesIndexRoute
   '/subscription/': typeof AuthedSubscriptionIndexRoute
+  '/admin/settings/numbering': typeof AuthedAdminSettingsNumberingRoute
   '/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
   '/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -717,6 +725,7 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthedReportsIndexRoute
   '/sales': typeof AuthedSalesIndexRoute
   '/subscription': typeof AuthedSubscriptionIndexRoute
+  '/admin/settings/numbering': typeof AuthedAdminSettingsNumberingRoute
   '/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
   '/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -810,6 +819,7 @@ export interface FileRoutesById {
   '/_authed/reports/': typeof AuthedReportsIndexRoute
   '/_authed/sales/': typeof AuthedSalesIndexRoute
   '/_authed/subscription/': typeof AuthedSubscriptionIndexRoute
+  '/_authed/admin/settings/numbering': typeof AuthedAdminSettingsNumberingRoute
   '/_authed/inventory/borrowings/$borrowingId': typeof AuthedInventoryBorrowingsBorrowingIdRoute
   '/_authed/inventory/borrowings/new': typeof AuthedInventoryBorrowingsNewRoute
   '/_authed/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -903,6 +913,7 @@ export interface FileRouteTypes {
     | '/reports/'
     | '/sales/'
     | '/subscription/'
+    | '/admin/settings/numbering'
     | '/inventory/borrowings/$borrowingId'
     | '/inventory/borrowings/new'
     | '/inventory/items/$itemId'
@@ -992,6 +1003,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/subscription'
+    | '/admin/settings/numbering'
     | '/inventory/borrowings/$borrowingId'
     | '/inventory/borrowings/new'
     | '/inventory/items/$itemId'
@@ -1084,6 +1096,7 @@ export interface FileRouteTypes {
     | '/_authed/reports/'
     | '/_authed/sales/'
     | '/_authed/subscription/'
+    | '/_authed/admin/settings/numbering'
     | '/_authed/inventory/borrowings/$borrowingId'
     | '/_authed/inventory/borrowings/new'
     | '/_authed/inventory/items/$itemId'
@@ -1348,6 +1361,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/settings'
       fullPath: '/admin/settings/'
       preLoaderRoute: typeof AuthedAdminSettingsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/admin/settings/numbering': {
+      id: '/_authed/admin/settings/numbering'
+      path: '/admin/settings/numbering'
+      fullPath: '/admin/settings/numbering'
+      preLoaderRoute: typeof AuthedAdminSettingsNumberingRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/admin/users/': {
@@ -1890,6 +1910,7 @@ interface AuthedRouteChildren {
   AuthedReportsIndexRoute: typeof AuthedReportsIndexRoute
   AuthedSalesIndexRoute: typeof AuthedSalesIndexRoute
   AuthedSubscriptionIndexRoute: typeof AuthedSubscriptionIndexRoute
+  AuthedAdminSettingsNumberingRoute: typeof AuthedAdminSettingsNumberingRoute
   AuthedInventoryBorrowingsBorrowingIdRoute: typeof AuthedInventoryBorrowingsBorrowingIdRoute
   AuthedInventoryBorrowingsNewRoute: typeof AuthedInventoryBorrowingsNewRoute
   AuthedInventoryItemsItemIdRoute: typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -1970,6 +1991,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedReportsIndexRoute: AuthedReportsIndexRoute,
   AuthedSalesIndexRoute: AuthedSalesIndexRoute,
   AuthedSubscriptionIndexRoute: AuthedSubscriptionIndexRoute,
+  AuthedAdminSettingsNumberingRoute: AuthedAdminSettingsNumberingRoute,
   AuthedInventoryBorrowingsBorrowingIdRoute:
     AuthedInventoryBorrowingsBorrowingIdRoute,
   AuthedInventoryBorrowingsNewRoute: AuthedInventoryBorrowingsNewRoute,

@@ -12,9 +12,10 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
-## In progress — ADR-0011 port step 1: numbering, company profile, role grants, 2026-11-05
+## Completed — ADR-0011 port step 1: numbering, company profile, role grants, 2026-11-05
 
-Status: **implemented** (backend; settings pages in the web admin follow).
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A or
+accepted by the owner).
 
 - `packages/common` role catalog: statements `product:read_cost`,
   `supplier:read_bank`, `project:read_cost`; grants for project manager
@@ -51,8 +52,35 @@ Status: **implemented** (backend; settings pages in the web admin follow).
   translated token message, PO pattern preview. 50 concurrent `allocate`
   calls against PostgreSQL returned 50 unique numbers; a new period
   restarted at 1.
+- Bank accounts: `PUT /company-profile` ignores `bankAccounts` when omitted
+  or when the caller lacks `invoice:read` / `company_setting:read`, and the
+  response hides them from such callers (no blanking or overwriting what
+  they cannot see).
+- Web admin: `/admin/settings` (company profile form, replaces the
+  "coming soon" stub) and `/admin/settings/numbering` (series table + edit
+  dialog with a server-rendered live preview); sidebar "Settings" now has
+  both sub-items; breadcrumbs labelled. Copy in the new `settings` locale
+  namespace (en/id); API client `lib/company-settings-api.ts` sends
+  `Accept-Language`. Locale tests: dynamic prefixes for
+  `settings:numbering.type.` / `.reset.` / `numbering.pattern.`; five
+  business terms allowed identical in id (Email, Bank, Sales order,
+  Invoice, Purchase order).
+- Browser check (Playwright script against the dev server, Chromium 1161,
+  locale id-ID, owner): half-filled bank account refused; profile saved
+  (document code upper-cased to IMS); numbering table in Indonesian with
+  `0001/QT/IMS/XI/26`; invalid pattern shows "Token {FOO} tidak dikenal";
+  preview `SPH/IMS/2026/001`; saved. The test pattern was reset to the
+  default afterwards in `ims_erp_sync`.
+- Final checks: `bun run test` — backend 551, web-admin 41, locales 38;
+  `bun run lint` 0; `bun run build` 0; web `tsc -p tsconfig.app.json`
+  clean.
 - Local note: the agent's shell has `NODE_ENV=production`; seeders and
-  scripts were run with `NODE_ENV=development`.
+  scripts were run with `NODE_ENV=development`. Logo upload for the
+  letterhead (`logo_object_key`) is not wired yet; it comes with the
+  printed documents in step 3.
+- Next: port step 2 — item extensions on `inventory.items` (brand,
+  specification, status, category table, fixed unit list, images, website
+  profile), per ADR-0011 §3.
 
 ## In progress — merge plan for M02/M05/M07 onto main (ADR-0011), 2026-11-05
 

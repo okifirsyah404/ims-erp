@@ -52,7 +52,8 @@ function toView(
  * Readable by every organization member because every print needs the
  * letterhead; the invoice bank accounts only when `includeBanks` (decided
  * by the controller from the caller's grants). The profile and its two
- * invoice accounts are saved in one transaction.
+ * invoice accounts are saved in one transaction; omitted accounts, or
+ * accounts sent by a caller without bank access, are left unchanged.
  */
 @injectable()
 export class CompanyProfileService {
@@ -71,13 +72,20 @@ export class CompanyProfileService {
 		return toView(profile, includeBanks ? await this.repository.findInvoiceAccounts() : null);
 	}
 
-	async save(input: TCompanyProfileInput, actorUserId: string): Promise<TCompanyProfileView> {
+	async save(
+		input: TCompanyProfileInput,
+		actorUserId: string,
+		includeBanks: boolean,
+	): Promise<TCompanyProfileView> {
 		const { bankAccounts, ...profile } = input;
 		return this.database.transaction(async (tx) => {
 			const saved = await this.repository.saveProfile({ ...profile, updatedBy: actorUserId }, tx);
-			await this.repository.saveInvoiceAccount('vat', bankAccounts.vat, tx);
-			await this.repository.saveInvoiceAccount('non_vat', bankAccounts.nonVat, tx);
-			return toView(saved, await this.repository.findInvoiceAccounts(tx));
+			// Callers who may not see the accounts may not change them either.
+			if (bankAccounts && includeBanks) {
+				await this.repository.saveInvoiceAccount('vat', bankAccounts.vat, tx);
+				await this.repository.saveInvoiceAccount('non_vat', bankAccounts.nonVat, tx);
+			}
+			return toView(saved, includeBanks ? await this.repository.findInvoiceAccounts(tx) : null);
 		});
 	}
 }
