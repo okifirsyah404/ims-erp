@@ -4,6 +4,7 @@
 import { registerInventory } from '@app/inventory';
 import { registerCrm } from '@app/crm';
 import { registerFinance } from '@app/finance';
+import { registerProcurement } from '@app/procurement';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
 import { cors } from '@elysiajs/cors';
@@ -36,6 +37,7 @@ registerSales(container);
 registerInventory(container);
 registerCrm(container);
 registerFinance(container);
+registerProcurement(container);
 registerUser(container);
 registerOrganization(container);
 registerAudit(container);

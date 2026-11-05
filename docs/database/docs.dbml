@@ -1899,39 +1899,48 @@ Table sales.delivery_notes {
 // ---------------------------------------------------------------------------
 // MODULE: Procurement  (schema: procurement)
 // Supplier master, purchase requests, purchase orders, goods receipts and
-// purchase returns. Tenant scoped.
+// purchase returns. Tenant scoped, except suppliers and purchase orders, which
+// are company-wide (ADR-0011).
 // ---------------------------------------------------------------------------
 
 Table procurement.suppliers {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [not null, note: "Upper-case letters and digits; the {SUPPLIER} token of PO numbers. Unique among live rows (partial index in the Drizzle schema)."]
   name text [not null]
   legal_name text
   supplier_type text [not null, default: 'company']
-  tax_id text
+  tax_id varchar(16) [note: "NPWP digits only, 15 or 16."]
   email text
-  phone text
-  whatsapp text
-  payment_terms_days integer [not null, default: 30]
+  phone varchar(30)
+  whatsapp varchar(30)
+  website varchar(200)
+  address_line text [note: "Address printed on purchase orders."]
+  village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
+  postal_code varchar(10)
+  pic_name varchar(120) [note: "Supplier-side person in charge, printed on purchase orders."]
+  pic_title varchar(100)
+  pic_phone varchar(30)
+  pic_email text
+  payment_terms_days integer [not null, default: 0]
+  payment_term_note varchar(300) [note: "Default payment line of new purchase orders."]
   bank_name text
   bank_account_number text
   bank_account_holder text
   status text [not null, default: 'active']
-  owner_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   notes text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Supplier master. Bank details are restricted and never returned to the client without the supplier read permission."
+  Note: "Supplier master, company-wide (ADR-0011): no organization_id. Bank details are restricted and never returned to the client without supplier:read_bank. Inactive suppliers cannot be used on new purchase orders."
   Indexes {
-    (organization_id, code) [unique, name: 'suppliers_org_code_uq']
+    name [name: 'suppliers_name_idx']
     status [name: 'suppliers_status_idx']
     tax_id [name: 'suppliers_tax_id_idx']
   }
   Checks {
     `supplier_type IN ('company', 'individual', 'government')`
-    `status IN ('active', 'inactive', 'blocked')`
+    `status IN ('active', 'inactive')`
     `payment_terms_days >= 0`
   }
 }
@@ -2040,75 +2049,83 @@ Table procurement.purchase_request_items {
 }
 
 Table procurement.purchase_orders {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(40) [note: "Assigned on approval, e.g. PO/IMS-HIT/HW/1026/001; null before. Unique among live rows (partial index in the Drizzle schema)."]
   supplier_id uuid [not null]
-  purchase_request_id uuid
+  supplier_snapshot jsonb [not null, note: "Supplier name, address, NPWP and PIC printed on the PO."]
+  category text [not null, note: "{CATEGORY} token of the number: hardware HW, software SW, service JS, other LN."]
+  subject varchar(200) [not null, note: "Perihal."]
   status text [not null, default: 'draft']
-  order_date date
+  order_date date [not null]
   expected_delivery_date date
+  supplier_quote_ref varchar(100) [note: "The supplier's quotation number (Ref. Penawaran)."]
+  supplier_quote_date date
+  project_name varchar(200)
+  buyer_pic_name varchar(120)
+  vat_mode text [not null, default: 'none', note: "none, included (prices contain VAT) or added (VAT on top)."]
+  vat_rate_bps integer [not null, default: 0]
   subtotal bigint [not null, default: 0]
   tax_total bigint [not null, default: 0]
-  shipping_total bigint [not null, default: 0]
   grand_total bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
-  payment_terms_days integer [not null, default: 30]
-  ship_to_address_text text
+  payment_terms varchar(500) [note: "Printed as the first purchase term (Pembayaran)."]
+  terms text [note: "Further purchase terms, one per line."]
+  notes text
+  rejection_reason text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  submitted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   submitted_at bigint
   approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   approved_at bigint
+  sent_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   sent_at bigint
-  closed_at bigint
+  cancelled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancelled_at bigint
   cancelled_reason text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Purchase order to a supplier. The supplier bill and its payment stay in the Finance module."
+  deleted_at bigint
+  Note: "Purchase order to a supplier, company-wide (ADR-0011). draft -> submitted -> approved -> sent -> partially_received -> received; rejection returns to draft; cancelled while nothing was received. One-level approval, never by the creator. The supplier bill and its payment stay in the Finance module."
   Indexes {
-    (organization_id, code) [unique, name: 'purchase_orders_org_code_uq']
     supplier_id [name: 'purchase_orders_supplier_id_idx']
-    purchase_request_id [name: 'purchase_orders_purchase_request_id_idx']
     status [name: 'purchase_orders_status_idx']
   }
   Checks {
-    `status IN ('draft', 'submitted', 'approved', 'sent', 'partially_received', 'received', 'closed', 'cancelled')`
+    `status IN ('draft', 'submitted', 'approved', 'sent', 'partially_received', 'received', 'cancelled')`
+    `category IN ('hardware', 'software', 'service', 'other')`
+    `vat_mode IN ('none', 'included', 'added')`
+    `vat_rate_bps >= 0 AND vat_rate_bps <= 10000`
     `subtotal >= 0`
     `tax_total >= 0`
-    `shipping_total >= 0`
     `grand_total >= 0`
-    `payment_terms_days >= 0`
   }
 }
 
 Table procurement.purchase_order_items {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   purchase_order_id uuid [not null]
-  item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  description text
+  item_id uuid [not null, note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  sku varchar(64) [not null]
+  name text [not null]
+  specification text
+  unit varchar(32) [not null]
   quantity numeric(18,3) [not null, default: 1]
-  unit_id uuid [note: "Logical reference to catalog.units.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
   unit_price bigint [not null, default: 0]
-  tax_amount bigint [not null, default: 0]
-  line_total bigint [not null, default: 0]
+  line_total bigint [not null, default: 0, note: "round(quantity x unit_price)."]
   quantity_received numeric(18,3) [not null, default: 0]
-  quantity_rejected numeric(18,3) [not null, default: 0]
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Line of a purchase order."
+  deleted_at bigint
+  Note: "Line of a purchase order, company-wide like its header. VAT is per purchase order."
   Indexes {
-    purchase_order_id [name: 'purchase_order_items_purchase_order_id_idx']
+    (purchase_order_id, sort_order) [name: 'purchase_order_items_order_sort_idx']
   }
   Checks {
     `quantity > 0`
     `unit_price >= 0`
-    `tax_amount >= 0`
     `line_total >= 0`
     `quantity_received >= 0`
-    `quantity_rejected >= 0`
   }
 }
 
@@ -2232,7 +2249,6 @@ Ref: procurement.supplier_contacts.supplier_id > procurement.suppliers.id [delet
 Ref: procurement.supplier_addresses.supplier_id > procurement.suppliers.id [delete: cascade]
 Ref: procurement.purchase_request_items.purchase_request_id > procurement.purchase_requests.id [delete: cascade]
 Ref: procurement.purchase_orders.supplier_id > procurement.suppliers.id [delete: restrict]
-Ref: procurement.purchase_orders.purchase_request_id > procurement.purchase_requests.id [delete: set null]
 Ref: procurement.purchase_order_items.purchase_order_id > procurement.purchase_orders.id [delete: cascade]
 Ref: procurement.goods_receipts.purchase_order_id > procurement.purchase_orders.id [delete: restrict]
 Ref: procurement.goods_receipt_items.goods_receipt_id > procurement.goods_receipts.id [delete: cascade]

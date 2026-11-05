@@ -100,11 +100,19 @@ const DYNAMIC_PREFIXES = [
 	'finance:status.',
 	'finance:termKind.',
 	'finance:method.',
+	// Procurement labels composed from server values or form field names.
+	'procurement:supplier.',
+	'procurement:supplierType.',
+	'procurement:category.',
+	'procurement:vatMode.',
+	'procurement:status.',
+	'doc.statusText.',
 	'method.',
 	'sales.quotationState.',
 	// Finance errors compose `finance.term.${problem}` / `finance.invoiceState.${kind}`.
 	'finance.term.',
 	'finance.invoiceState.',
+	'procurement.poState.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

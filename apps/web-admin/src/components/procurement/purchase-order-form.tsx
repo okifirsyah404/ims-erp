@@ -1,0 +1,347 @@
+import { useQuery } from '@tanstack/react-query';
+import { useDeferredValue, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { Button } from '@ims-erp/ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Input } from '@ims-erp/ui/components/input';
+import { Textarea } from '@ims-erp/ui/components/textarea';
+import { formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
+import { listItems, type TItem } from '@/lib/inventory-api';
+import {
+	PO_VAT_MODES,
+	previewPoTotals,
+	PURCHASE_CATEGORIES,
+	suppliersQueryOptions,
+	type TPoVatMode,
+	type TPurchaseCategory,
+	type TPurchaseOrderDetail,
+	type TPurchaseOrderInput,
+} from '@/lib/procurement-api';
+
+type TLineDraft = { key: string; itemId: string; sku: string; name: string; unit: string; quantity: string; unitPrice: string; specification: string };
+
+const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
+
+/** Create/edit form for a purchase order; totals are a preview, the server recomputes. */
+export function PurchaseOrderForm({
+	order,
+	submitting,
+	onSubmit,
+	onCancel,
+}: {
+	order: TPurchaseOrderDetail | null;
+	submitting: boolean;
+	onSubmit: (input: TPurchaseOrderInput) => void;
+	onCancel: () => void;
+}) {
+	const { t } = useTranslation(['procurement', 'common']);
+	const [supplierId, setSupplierId] = useState(order?.supplierId ?? '');
+	const [supplierSearch, setSupplierSearch] = useState('');
+	const [category, setCategory] = useState<TPurchaseCategory>(order?.category ?? 'hardware');
+	const [subject, setSubject] = useState(order?.subject ?? '');
+	const [orderDate, setOrderDate] = useState(order?.orderDate ?? todayBusinessDate());
+	const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(order?.expectedDeliveryDate ?? '');
+	const [supplierQuoteRef, setSupplierQuoteRef] = useState(order?.supplierQuoteRef ?? '');
+	const [supplierQuoteDate, setSupplierQuoteDate] = useState(order?.supplierQuoteDate ?? '');
+	const [projectName, setProjectName] = useState(order?.projectName ?? '');
+	const [buyerPicName, setBuyerPicName] = useState(order?.buyerPicName ?? '');
+	const [vatMode, setVatMode] = useState<TPoVatMode>(order?.vatMode ?? 'included');
+	const [vatPercent, setVatPercent] = useState(String((order && order.vatMode !== 'none' ? order.vatRateBps : 1100) / 100));
+	const [paymentTerms, setPaymentTerms] = useState(order?.paymentTerms ?? '');
+	const [terms, setTerms] = useState(order?.terms ?? '');
+	const [notes, setNotes] = useState(order?.notes ?? '');
+	const [lines, setLines] = useState<TLineDraft[]>(
+		(order?.items ?? []).map((item) => ({
+			key: crypto.randomUUID(),
+			itemId: item.itemId,
+			sku: item.sku,
+			name: item.name,
+			unit: item.unit,
+			quantity: String(Number(item.quantity)),
+			unitPrice: minorToRupiah(item.unitPrice),
+			specification: item.specification ?? '',
+		})),
+	);
+	const [itemSearch, setItemSearch] = useState('');
+	const deferredSupplier = useDeferredValue(supplierSearch.trim());
+	const deferredItem = useDeferredValue(itemSearch.trim());
+	const suppliers = useQuery(suppliersQueryOptions({ status: 'active', search: deferredSupplier || undefined, limit: 20 }));
+	const items = useQuery({
+		queryKey: ['inventory', 'items', 'po-picker', deferredItem] as const,
+		queryFn: () => listItems({ search: deferredItem || undefined, activeOnly: true, limit: 20 }),
+		enabled: deferredItem !== '',
+	});
+
+	const vatRateBps = Math.round(Number(vatPercent || '0') * 100);
+	const lineTotals = lines.map((line) => Math.round((Math.round(Number(line.quantity) * 1000) * rupiahToMinor(line.unitPrice)) / 1000));
+	const totals = previewPoTotals(lineTotals, vatMode, vatMode === 'none' ? 0 : vatRateBps);
+	const supplierOptions = suppliers.data?.rows ?? [];
+	const patch = (key: string, value: Partial<TLineDraft>) =>
+		setLines((current) => current.map((line) => (line.key === key ? { ...line, ...value } : line)));
+
+	function addItem(item: TItem) {
+		setLines((current) => [
+			...current,
+			{
+				key: crypto.randomUUID(),
+				itemId: item.id,
+				sku: item.sku,
+				name: item.name,
+				unit: item.unitLabel,
+				quantity: '1',
+				unitPrice: minorToRupiah(item.purchasePrice),
+				specification: item.specification ?? '',
+			},
+		]);
+		setItemSearch('');
+	}
+
+	const text = (value: string) => value.trim() || null;
+	const input = (id: string, label: string, value: string, set: (value: string) => void, props: React.ComponentProps<typeof Input> = {}) => (
+		<Field>
+			<FieldLabel htmlFor={id}>{label}</FieldLabel>
+			<Input id={id} value={value} onChange={(event) => set(event.target.value)} {...props} />
+		</Field>
+	);
+
+	return (
+		<form
+			className='flex flex-col gap-6'
+			onSubmit={(event) => {
+				event.preventDefault();
+				onSubmit({
+					supplierId,
+					category,
+					subject: subject.trim(),
+					orderDate,
+					expectedDeliveryDate: expectedDeliveryDate || null,
+					supplierQuoteRef: text(supplierQuoteRef),
+					supplierQuoteDate: supplierQuoteDate || null,
+					projectName: text(projectName),
+					buyerPicName: text(buyerPicName),
+					vatMode,
+					vatRateBps: vatMode === 'none' ? null : vatRateBps,
+					paymentTerms: text(paymentTerms),
+					terms: text(terms),
+					notes: text(notes),
+					lines: lines.map((line) => ({
+						itemId: line.itemId,
+						quantity: line.quantity,
+						unitPrice: rupiahToMinor(line.unitPrice),
+						specification: text(line.specification),
+					})),
+				});
+			}}
+		>
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('procurement:po.header')}</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<FieldGroup className='grid gap-4 sm:grid-cols-2'>
+						<Field>
+							<FieldLabel htmlFor='po-supplier-search'>{t('procurement:po.findSupplier')}</FieldLabel>
+							<Input
+								id='po-supplier-search'
+								type='search'
+								value={supplierSearch}
+								onChange={(event) => setSupplierSearch(event.target.value)}
+							/>
+						</Field>
+						<Field>
+							<FieldLabel htmlFor='po-supplier'>{t('procurement:po.supplier')}</FieldLabel>
+							<select id='po-supplier' required className={select} value={supplierId} onChange={(event) => setSupplierId(event.target.value)}>
+								<option value=''>{t('procurement:po.pickSupplier')}</option>
+								{order && !supplierOptions.some((row) => row.id === order.supplierId) && (
+									<option value={order.supplierId}>
+										{order.supplierSnapshot.code} — {order.supplierSnapshot.name}
+									</option>
+								)}
+								{supplierOptions.map((row) => (
+									<option key={row.id} value={row.id}>
+										{row.code} — {row.name}
+									</option>
+								))}
+							</select>
+						</Field>
+						<Field>
+							<FieldLabel htmlFor='po-category'>{t('procurement:po.category')}</FieldLabel>
+							<select id='po-category' className={select} value={category} onChange={(event) => setCategory(event.target.value as TPurchaseCategory)}>
+								{PURCHASE_CATEGORIES.map((value) => (
+									<option key={value} value={value}>
+										{t(`procurement:category.${value}`)}
+									</option>
+								))}
+							</select>
+						</Field>
+						{input('po-subject', t('procurement:po.subject'), subject, setSubject, { required: true, maxLength: 200 })}
+						{input('po-date', t('procurement:po.orderDate'), orderDate, setOrderDate, { type: 'date', required: true })}
+						{input('po-delivery', t('procurement:po.expectedDeliveryDate'), expectedDeliveryDate, setExpectedDeliveryDate, { type: 'date', min: orderDate })}
+						{input('po-quote-ref', t('procurement:po.supplierQuoteRef'), supplierQuoteRef, setSupplierQuoteRef, { maxLength: 100 })}
+						{input('po-quote-date', t('procurement:po.supplierQuoteDate'), supplierQuoteDate, setSupplierQuoteDate, { type: 'date' })}
+						{input('po-project', t('procurement:po.projectName'), projectName, setProjectName, { maxLength: 200 })}
+						{input('po-buyer-pic', t('procurement:po.buyerPicName'), buyerPicName, setBuyerPicName, { maxLength: 120 })}
+					</FieldGroup>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('procurement:po.lines')}</CardTitle>
+				</CardHeader>
+				<CardContent className='flex flex-col gap-4'>
+					{lines.map((line, index) => (
+						<div key={line.key} className='grid gap-3 rounded-md border p-3 sm:grid-cols-6'>
+							<div className='flex items-center justify-between sm:col-span-6'>
+								<span className='text-sm font-medium'>
+									{index + 1}. {line.name} · {line.sku}
+								</span>
+								<Button type='button' variant='ghost' size='sm' onClick={() => setLines((current) => current.filter((row) => row.key !== line.key))}>
+									{t('procurement:po.removeLine')}
+								</Button>
+							</div>
+							<Field className='sm:col-span-6'>
+								<FieldLabel htmlFor={`po-spec-${line.key}`}>{t('procurement:po.specification')}</FieldLabel>
+								<Textarea
+									id={`po-spec-${line.key}`}
+									rows={2}
+									maxLength={4000}
+									value={line.specification}
+									onChange={(event) => patch(line.key, { specification: event.target.value })}
+								/>
+							</Field>
+							<Field className='sm:col-span-2'>
+								<FieldLabel htmlFor={`po-qty-${line.key}`}>
+									{t('procurement:po.quantity')} ({line.unit})
+								</FieldLabel>
+								<Input
+									id={`po-qty-${line.key}`}
+									type='number'
+									required
+									min='0.001'
+									step='0.001'
+									inputMode='decimal'
+									value={line.quantity}
+									onChange={(event) => patch(line.key, { quantity: event.target.value })}
+								/>
+							</Field>
+							<Field className='sm:col-span-2'>
+								<FieldLabel htmlFor={`po-price-${line.key}`}>{t('procurement:po.unitPrice')}</FieldLabel>
+								<Input
+									id={`po-price-${line.key}`}
+									type='number'
+									required
+									min='0'
+									step='0.01'
+									inputMode='decimal'
+									value={line.unitPrice}
+									onChange={(event) => patch(line.key, { unitPrice: event.target.value })}
+								/>
+							</Field>
+							<div className='flex flex-col justify-end text-right text-sm sm:col-span-2'>
+								<span className='text-muted-foreground'>{t('procurement:po.lineTotal')}</span>
+								<span className='font-medium'>{formatIdr(lineTotals[index] ?? 0)}</span>
+							</div>
+						</div>
+					))}
+					<div className='flex flex-col gap-2 rounded-md border border-dashed p-3'>
+						<FieldLabel htmlFor='po-item-search'>{t('procurement:po.addItem')}</FieldLabel>
+						<Input
+							id='po-item-search'
+							type='search'
+							placeholder={t('procurement:po.itemSearchHint')}
+							value={itemSearch}
+							onChange={(event) => setItemSearch(event.target.value)}
+						/>
+						{deferredItem !== '' && (
+							<ul className='flex max-h-56 flex-col overflow-y-auto rounded-md border'>
+								{(items.data?.rows ?? []).map((item) => (
+									<li key={item.id}>
+										<button
+											type='button'
+											className='flex w-full justify-between gap-4 px-3 py-2 text-left text-sm hover:bg-muted'
+											onClick={() => addItem(item)}
+										>
+											<span>
+												<span className='font-medium'>{item.name}</span>
+												<span className='text-muted-foreground'> · {item.sku}</span>
+											</span>
+											<span className='text-muted-foreground'>{formatIdr(item.purchasePrice)}</span>
+										</button>
+									</li>
+								))}
+							</ul>
+						)}
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('procurement:po.totalsAndTerms')}</CardTitle>
+				</CardHeader>
+				<CardContent className='grid gap-6 sm:grid-cols-2'>
+					<FieldGroup>
+						<Field>
+							<FieldLabel htmlFor='po-vat-mode'>{t('procurement:po.vatMode')}</FieldLabel>
+							<select id='po-vat-mode' className={select} value={vatMode} onChange={(event) => setVatMode(event.target.value as TPoVatMode)}>
+								{PO_VAT_MODES.map((value) => (
+									<option key={value} value={value}>
+										{t(`procurement:vatMode.${value}`)}
+									</option>
+								))}
+							</select>
+						</Field>
+						{vatMode !== 'none' &&
+							input('po-vat-rate', t('procurement:po.vatRate'), vatPercent, setVatPercent, {
+								type: 'number',
+								min: '0',
+								max: '100',
+								step: '0.01',
+								inputMode: 'decimal',
+							})}
+						<Field>
+							<FieldLabel htmlFor='po-payment'>{t('procurement:po.paymentTerms')}</FieldLabel>
+							<Input id='po-payment' maxLength={500} value={paymentTerms} onChange={(event) => setPaymentTerms(event.target.value)} />
+							<FieldDescription>{t('procurement:po.paymentTermsHint')}</FieldDescription>
+						</Field>
+					</FieldGroup>
+					<dl className='flex flex-col gap-1 text-sm'>
+						<div className='flex justify-between'>
+							<dt>{t('procurement:po.subtotal')}</dt>
+							<dd>{formatIdr(totals.subtotal)}</dd>
+						</div>
+						<div className='flex justify-between'>
+							<dt>{t(`procurement:vatMode.${vatMode}`)}</dt>
+							<dd>{formatIdr(totals.taxTotal)}</dd>
+						</div>
+						<div className='flex justify-between border-t pt-1 text-base font-bold'>
+							<dt>{t('procurement:po.grandTotal')}</dt>
+							<dd>{formatIdr(totals.grandTotal)}</dd>
+						</div>
+					</dl>
+					<Field className='sm:col-span-2'>
+						<FieldLabel htmlFor='po-terms'>{t('procurement:po.terms')}</FieldLabel>
+						<Textarea id='po-terms' rows={5} maxLength={8000} value={terms} onChange={(event) => setTerms(event.target.value)} />
+						<FieldDescription>{t('procurement:po.termsHint')}</FieldDescription>
+					</Field>
+					<Field className='sm:col-span-2'>
+						<FieldLabel htmlFor='po-notes'>{t('procurement:po.notes')}</FieldLabel>
+						<Textarea id='po-notes' rows={3} maxLength={4000} value={notes} onChange={(event) => setNotes(event.target.value)} />
+					</Field>
+				</CardContent>
+			</Card>
+
+			<div className='flex justify-end gap-2'>
+				<Button type='button' variant='outline' onClick={onCancel}>
+					{t('common:action.cancel')}
+				</Button>
+				<Button type='submit' disabled={submitting || lines.length === 0 || !supplierId}>
+					{t('common:action.save')}
+				</Button>
+			</div>
+		</form>
+	);
+}

@@ -80,8 +80,10 @@ import { Route as AuthedInventoryWarehousesWarehouseIdRouteImport } from './rout
 import { Route as AuthedInventoryWarehousesNewRouteImport } from './routes/_authed/inventory/warehouses/new'
 import { Route as AuthedOrganizationsOrganizationIdEditRouteImport } from './routes/_authed/organizations/$organizationId.edit'
 import { Route as AuthedProcurementPurchaseOrdersIndexRouteImport } from './routes/_authed/procurement/purchase-orders/index'
+import { Route as AuthedProcurementPurchaseOrdersNewRouteImport } from './routes/_authed/procurement/purchase-orders/new'
 import { Route as AuthedProcurementReceiptsIndexRouteImport } from './routes/_authed/procurement/receipts/index'
 import { Route as AuthedProcurementSuppliersIndexRouteImport } from './routes/_authed/procurement/suppliers/index'
+import { Route as AuthedProcurementSuppliersSupplierIdRouteImport } from './routes/_authed/procurement/suppliers/$supplierId'
 import { Route as AuthedProjectsBastIndexRouteImport } from './routes/_authed/projects/bast/index'
 import { Route as AuthedProjectsTicketsIndexRouteImport } from './routes/_authed/projects/tickets/index'
 import { Route as AuthedReportsMonthlyArchivesIndexRouteImport } from './routes/_authed/reports/monthly-archives/index'
@@ -105,6 +107,9 @@ import { Route as AuthedInventoryStockAdjustmentsIndexRouteImport } from './rout
 import { Route as AuthedInventoryStockAdjustmentsAdjustmentIdRouteImport } from './routes/_authed/inventory/stock/adjustments/$adjustmentId'
 import { Route as AuthedInventoryWarehousesWarehouseIdEditRouteImport } from './routes/_authed/inventory/warehouses/$warehouseId.edit'
 import { Route as AuthedOrganizationsOrganizationIdMembersNewRouteImport } from './routes/_authed/organizations/$organizationId.members.new'
+import { Route as AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRouteImport } from './routes/_authed/procurement/purchase-orders/$purchaseOrderId/index'
+import { Route as AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRouteImport } from './routes/_authed/procurement/purchase-orders/$purchaseOrderId/edit'
+import { Route as AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRouteImport } from './routes/_authed/procurement/purchase-orders/$purchaseOrderId/print'
 import { Route as AuthedSalesInvoicesInvoiceIdIndexRouteImport } from './routes/_authed/sales/invoices/$invoiceId/index'
 import { Route as AuthedSalesInvoicesInvoiceIdPrintRouteImport } from './routes/_authed/sales/invoices/$invoiceId/print'
 import { Route as AuthedSalesQuotesQuotationIdIndexRouteImport } from './routes/_authed/sales/quotes/$quotationId/index'
@@ -502,6 +507,12 @@ const AuthedProcurementPurchaseOrdersIndexRoute =
     path: '/procurement/purchase-orders/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedProcurementPurchaseOrdersNewRoute =
+  AuthedProcurementPurchaseOrdersNewRouteImport.update({
+    id: '/procurement/purchase-orders/new',
+    path: '/procurement/purchase-orders/new',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedProcurementReceiptsIndexRoute =
   AuthedProcurementReceiptsIndexRouteImport.update({
     id: '/procurement/receipts/',
@@ -512,6 +523,12 @@ const AuthedProcurementSuppliersIndexRoute =
   AuthedProcurementSuppliersIndexRouteImport.update({
     id: '/procurement/suppliers/',
     path: '/procurement/suppliers/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedProcurementSuppliersSupplierIdRoute =
+  AuthedProcurementSuppliersSupplierIdRouteImport.update({
+    id: '/procurement/suppliers/$supplierId',
+    path: '/procurement/suppliers/$supplierId',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedProjectsBastIndexRoute = AuthedProjectsBastIndexRouteImport.update({
@@ -648,6 +665,24 @@ const AuthedOrganizationsOrganizationIdMembersNewRoute =
     path: '/members/new',
     getParentRoute: () => AuthedOrganizationsOrganizationIdRoute,
   } as any)
+const AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute =
+  AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRouteImport.update({
+    id: '/procurement/purchase-orders/$purchaseOrderId/',
+    path: '/procurement/purchase-orders/$purchaseOrderId/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute =
+  AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRouteImport.update({
+    id: '/procurement/purchase-orders/$purchaseOrderId/edit',
+    path: '/procurement/purchase-orders/$purchaseOrderId/edit',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute =
+  AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRouteImport.update({
+    id: '/procurement/purchase-orders/$purchaseOrderId/print',
+    path: '/procurement/purchase-orders/$purchaseOrderId/print',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedSalesInvoicesInvoiceIdIndexRoute =
   AuthedSalesInvoicesInvoiceIdIndexRouteImport.update({
     id: '/sales/invoices/$invoiceId/',
@@ -721,6 +756,8 @@ export interface FileRoutesByFullPath {
   '/inventory/warehouses/$warehouseId': typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   '/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
+  '/procurement/purchase-orders/new': typeof AuthedProcurementPurchaseOrdersNewRoute
+  '/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/admin/audit/': typeof AuthedAdminAuditIndexRoute
@@ -774,6 +811,8 @@ export interface FileRoutesByFullPath {
   '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/inventory/warehouses/$warehouseId/edit': typeof AuthedInventoryWarehousesWarehouseIdEditRoute
   '/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
+  '/procurement/purchase-orders/$purchaseOrderId/edit': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute
+  '/procurement/purchase-orders/$purchaseOrderId/print': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute
   '/sales/invoices/$invoiceId/print': typeof AuthedSalesInvoicesInvoiceIdPrintRoute
   '/sales/quotes/$quotationId/edit': typeof AuthedSalesQuotesQuotationIdEditRoute
   '/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
@@ -784,6 +823,7 @@ export interface FileRoutesByFullPath {
   '/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
   '/finance/tax/withholding/': typeof AuthedFinanceTaxWithholdingIndexRoute
   '/inventory/stock/adjustments/': typeof AuthedInventoryStockAdjustmentsIndexRoute
+  '/procurement/purchase-orders/$purchaseOrderId/': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute
   '/sales/invoices/$invoiceId/': typeof AuthedSalesInvoicesInvoiceIdIndexRoute
   '/sales/quotes/$quotationId/': typeof AuthedSalesQuotesQuotationIdIndexRoute
   '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
@@ -822,6 +862,8 @@ export interface FileRoutesByTo {
   '/inventory/warehouses/$warehouseId': typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   '/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
+  '/procurement/purchase-orders/new': typeof AuthedProcurementPurchaseOrdersNewRoute
+  '/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/admin/audit': typeof AuthedAdminAuditIndexRoute
@@ -875,6 +917,8 @@ export interface FileRoutesByTo {
   '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/inventory/warehouses/$warehouseId/edit': typeof AuthedInventoryWarehousesWarehouseIdEditRoute
   '/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
+  '/procurement/purchase-orders/$purchaseOrderId/edit': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute
+  '/procurement/purchase-orders/$purchaseOrderId/print': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute
   '/sales/invoices/$invoiceId/print': typeof AuthedSalesInvoicesInvoiceIdPrintRoute
   '/sales/quotes/$quotationId/edit': typeof AuthedSalesQuotesQuotationIdEditRoute
   '/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
@@ -885,6 +929,7 @@ export interface FileRoutesByTo {
   '/finance/tax/types': typeof AuthedFinanceTaxTypesIndexRoute
   '/finance/tax/withholding': typeof AuthedFinanceTaxWithholdingIndexRoute
   '/inventory/stock/adjustments': typeof AuthedInventoryStockAdjustmentsIndexRoute
+  '/procurement/purchase-orders/$purchaseOrderId': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute
   '/sales/invoices/$invoiceId': typeof AuthedSalesInvoicesInvoiceIdIndexRoute
   '/sales/quotes/$quotationId': typeof AuthedSalesQuotesQuotationIdIndexRoute
   '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
@@ -927,6 +972,8 @@ export interface FileRoutesById {
   '/_authed/inventory/warehouses/$warehouseId': typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   '/_authed/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/_authed/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
+  '/_authed/procurement/purchase-orders/new': typeof AuthedProcurementPurchaseOrdersNewRoute
+  '/_authed/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
   '/_authed/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/_authed/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/_authed/admin/audit/': typeof AuthedAdminAuditIndexRoute
@@ -980,6 +1027,8 @@ export interface FileRoutesById {
   '/_authed/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/_authed/inventory/warehouses/$warehouseId/edit': typeof AuthedInventoryWarehousesWarehouseIdEditRoute
   '/_authed/organizations/$organizationId/members/new': typeof AuthedOrganizationsOrganizationIdMembersNewRoute
+  '/_authed/procurement/purchase-orders/$purchaseOrderId/edit': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute
+  '/_authed/procurement/purchase-orders/$purchaseOrderId/print': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute
   '/_authed/sales/invoices/$invoiceId/print': typeof AuthedSalesInvoicesInvoiceIdPrintRoute
   '/_authed/sales/quotes/$quotationId/edit': typeof AuthedSalesQuotesQuotationIdEditRoute
   '/_authed/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
@@ -990,6 +1039,7 @@ export interface FileRoutesById {
   '/_authed/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
   '/_authed/finance/tax/withholding/': typeof AuthedFinanceTaxWithholdingIndexRoute
   '/_authed/inventory/stock/adjustments/': typeof AuthedInventoryStockAdjustmentsIndexRoute
+  '/_authed/procurement/purchase-orders/$purchaseOrderId/': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute
   '/_authed/sales/invoices/$invoiceId/': typeof AuthedSalesInvoicesInvoiceIdIndexRoute
   '/_authed/sales/quotes/$quotationId/': typeof AuthedSalesQuotesQuotationIdIndexRoute
   '/_authed/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
@@ -1032,6 +1082,8 @@ export interface FileRouteTypes {
     | '/inventory/warehouses/$warehouseId'
     | '/inventory/warehouses/new'
     | '/organizations/$organizationId/edit'
+    | '/procurement/purchase-orders/new'
+    | '/procurement/suppliers/$supplierId'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
     | '/admin/audit/'
@@ -1085,6 +1137,8 @@ export interface FileRouteTypes {
     | '/inventory/stock/adjustments/$adjustmentId'
     | '/inventory/warehouses/$warehouseId/edit'
     | '/organizations/$organizationId/members/new'
+    | '/procurement/purchase-orders/$purchaseOrderId/edit'
+    | '/procurement/purchase-orders/$purchaseOrderId/print'
     | '/sales/invoices/$invoiceId/print'
     | '/sales/quotes/$quotationId/edit'
     | '/sales/quotes/$quotationId/print'
@@ -1095,6 +1149,7 @@ export interface FileRouteTypes {
     | '/finance/tax/types/'
     | '/finance/tax/withholding/'
     | '/inventory/stock/adjustments/'
+    | '/procurement/purchase-orders/$purchaseOrderId/'
     | '/sales/invoices/$invoiceId/'
     | '/sales/quotes/$quotationId/'
     | '/organizations/$organizationId/members/$memberId/edit'
@@ -1133,6 +1188,8 @@ export interface FileRouteTypes {
     | '/inventory/warehouses/$warehouseId'
     | '/inventory/warehouses/new'
     | '/organizations/$organizationId/edit'
+    | '/procurement/purchase-orders/new'
+    | '/procurement/suppliers/$supplierId'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
     | '/admin/audit'
@@ -1186,6 +1243,8 @@ export interface FileRouteTypes {
     | '/inventory/stock/adjustments/$adjustmentId'
     | '/inventory/warehouses/$warehouseId/edit'
     | '/organizations/$organizationId/members/new'
+    | '/procurement/purchase-orders/$purchaseOrderId/edit'
+    | '/procurement/purchase-orders/$purchaseOrderId/print'
     | '/sales/invoices/$invoiceId/print'
     | '/sales/quotes/$quotationId/edit'
     | '/sales/quotes/$quotationId/print'
@@ -1196,6 +1255,7 @@ export interface FileRouteTypes {
     | '/finance/tax/types'
     | '/finance/tax/withholding'
     | '/inventory/stock/adjustments'
+    | '/procurement/purchase-orders/$purchaseOrderId'
     | '/sales/invoices/$invoiceId'
     | '/sales/quotes/$quotationId'
     | '/organizations/$organizationId/members/$memberId/edit'
@@ -1237,6 +1297,8 @@ export interface FileRouteTypes {
     | '/_authed/inventory/warehouses/$warehouseId'
     | '/_authed/inventory/warehouses/new'
     | '/_authed/organizations/$organizationId/edit'
+    | '/_authed/procurement/purchase-orders/new'
+    | '/_authed/procurement/suppliers/$supplierId'
     | '/_authed/sales/orders/$orderId'
     | '/_authed/sales/quotes/new'
     | '/_authed/admin/audit/'
@@ -1290,6 +1352,8 @@ export interface FileRouteTypes {
     | '/_authed/inventory/stock/adjustments/$adjustmentId'
     | '/_authed/inventory/warehouses/$warehouseId/edit'
     | '/_authed/organizations/$organizationId/members/new'
+    | '/_authed/procurement/purchase-orders/$purchaseOrderId/edit'
+    | '/_authed/procurement/purchase-orders/$purchaseOrderId/print'
     | '/_authed/sales/invoices/$invoiceId/print'
     | '/_authed/sales/quotes/$quotationId/edit'
     | '/_authed/sales/quotes/$quotationId/print'
@@ -1300,6 +1364,7 @@ export interface FileRouteTypes {
     | '/_authed/finance/tax/types/'
     | '/_authed/finance/tax/withholding/'
     | '/_authed/inventory/stock/adjustments/'
+    | '/_authed/procurement/purchase-orders/$purchaseOrderId/'
     | '/_authed/sales/invoices/$invoiceId/'
     | '/_authed/sales/quotes/$quotationId/'
     | '/_authed/organizations/$organizationId/members/$memberId/edit'
@@ -1811,6 +1876,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProcurementPurchaseOrdersIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/procurement/purchase-orders/new': {
+      id: '/_authed/procurement/purchase-orders/new'
+      path: '/procurement/purchase-orders/new'
+      fullPath: '/procurement/purchase-orders/new'
+      preLoaderRoute: typeof AuthedProcurementPurchaseOrdersNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/procurement/receipts/': {
       id: '/_authed/procurement/receipts/'
       path: '/procurement/receipts'
@@ -1823,6 +1895,13 @@ declare module '@tanstack/react-router' {
       path: '/procurement/suppliers'
       fullPath: '/procurement/suppliers/'
       preLoaderRoute: typeof AuthedProcurementSuppliersIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/procurement/suppliers/$supplierId': {
+      id: '/_authed/procurement/suppliers/$supplierId'
+      path: '/procurement/suppliers/$supplierId'
+      fullPath: '/procurement/suppliers/$supplierId'
+      preLoaderRoute: typeof AuthedProcurementSuppliersSupplierIdRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/projects/bast/': {
@@ -1986,6 +2065,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedOrganizationsOrganizationIdMembersNewRouteImport
       parentRoute: typeof AuthedOrganizationsOrganizationIdRoute
     }
+    '/_authed/procurement/purchase-orders/$purchaseOrderId/': {
+      id: '/_authed/procurement/purchase-orders/$purchaseOrderId/'
+      path: '/procurement/purchase-orders/$purchaseOrderId'
+      fullPath: '/procurement/purchase-orders/$purchaseOrderId/'
+      preLoaderRoute: typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/procurement/purchase-orders/$purchaseOrderId/edit': {
+      id: '/_authed/procurement/purchase-orders/$purchaseOrderId/edit'
+      path: '/procurement/purchase-orders/$purchaseOrderId/edit'
+      fullPath: '/procurement/purchase-orders/$purchaseOrderId/edit'
+      preLoaderRoute: typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/procurement/purchase-orders/$purchaseOrderId/print': {
+      id: '/_authed/procurement/purchase-orders/$purchaseOrderId/print'
+      path: '/procurement/purchase-orders/$purchaseOrderId/print'
+      fullPath: '/procurement/purchase-orders/$purchaseOrderId/print'
+      preLoaderRoute: typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/sales/invoices/$invoiceId/': {
       id: '/_authed/sales/invoices/$invoiceId/'
       path: '/sales/invoices/$invoiceId'
@@ -2138,6 +2238,8 @@ interface AuthedRouteChildren {
   AuthedInventoryStockMovementsRoute: typeof AuthedInventoryStockMovementsRoute
   AuthedInventoryWarehousesWarehouseIdRoute: typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   AuthedInventoryWarehousesNewRoute: typeof AuthedInventoryWarehousesNewRoute
+  AuthedProcurementPurchaseOrdersNewRoute: typeof AuthedProcurementPurchaseOrdersNewRoute
+  AuthedProcurementSuppliersSupplierIdRoute: typeof AuthedProcurementSuppliersSupplierIdRoute
   AuthedSalesOrdersOrderIdRoute: typeof AuthedSalesOrdersOrderIdRoute
   AuthedSalesQuotesNewRoute: typeof AuthedSalesQuotesNewRoute
   AuthedAdminAuditIndexRoute: typeof AuthedAdminAuditIndexRoute
@@ -2188,6 +2290,8 @@ interface AuthedRouteChildren {
   AuthedSubscriptionActivationsIndexRoute: typeof AuthedSubscriptionActivationsIndexRoute
   AuthedSubscriptionApiKeysIndexRoute: typeof AuthedSubscriptionApiKeysIndexRoute
   AuthedInventoryStockAdjustmentsAdjustmentIdRoute: typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
+  AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute: typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute
+  AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute: typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute
   AuthedSalesInvoicesInvoiceIdPrintRoute: typeof AuthedSalesInvoicesInvoiceIdPrintRoute
   AuthedSalesQuotesQuotationIdEditRoute: typeof AuthedSalesQuotesQuotationIdEditRoute
   AuthedSalesQuotesQuotationIdPrintRoute: typeof AuthedSalesQuotesQuotationIdPrintRoute
@@ -2198,6 +2302,7 @@ interface AuthedRouteChildren {
   AuthedFinanceTaxTypesIndexRoute: typeof AuthedFinanceTaxTypesIndexRoute
   AuthedFinanceTaxWithholdingIndexRoute: typeof AuthedFinanceTaxWithholdingIndexRoute
   AuthedInventoryStockAdjustmentsIndexRoute: typeof AuthedInventoryStockAdjustmentsIndexRoute
+  AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute: typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute
   AuthedSalesInvoicesInvoiceIdIndexRoute: typeof AuthedSalesInvoicesInvoiceIdIndexRoute
   AuthedSalesQuotesQuotationIdIndexRoute: typeof AuthedSalesQuotesQuotationIdIndexRoute
 }
@@ -2232,6 +2337,10 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedInventoryWarehousesWarehouseIdRoute:
     AuthedInventoryWarehousesWarehouseIdRouteWithChildren,
   AuthedInventoryWarehousesNewRoute: AuthedInventoryWarehousesNewRoute,
+  AuthedProcurementPurchaseOrdersNewRoute:
+    AuthedProcurementPurchaseOrdersNewRoute,
+  AuthedProcurementSuppliersSupplierIdRoute:
+    AuthedProcurementSuppliersSupplierIdRoute,
   AuthedSalesOrdersOrderIdRoute: AuthedSalesOrdersOrderIdRoute,
   AuthedSalesQuotesNewRoute: AuthedSalesQuotesNewRoute,
   AuthedAdminAuditIndexRoute: AuthedAdminAuditIndexRoute,
@@ -2287,6 +2396,10 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSubscriptionApiKeysIndexRoute: AuthedSubscriptionApiKeysIndexRoute,
   AuthedInventoryStockAdjustmentsAdjustmentIdRoute:
     AuthedInventoryStockAdjustmentsAdjustmentIdRoute,
+  AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute:
+    AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute,
+  AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute:
+    AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute,
   AuthedSalesInvoicesInvoiceIdPrintRoute:
     AuthedSalesInvoicesInvoiceIdPrintRoute,
   AuthedSalesQuotesQuotationIdEditRoute: AuthedSalesQuotesQuotationIdEditRoute,
@@ -2302,6 +2415,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedFinanceTaxWithholdingIndexRoute: AuthedFinanceTaxWithholdingIndexRoute,
   AuthedInventoryStockAdjustmentsIndexRoute:
     AuthedInventoryStockAdjustmentsIndexRoute,
+  AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute:
+    AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute,
   AuthedSalesInvoicesInvoiceIdIndexRoute:
     AuthedSalesInvoicesInvoiceIdIndexRoute,
   AuthedSalesQuotesQuotationIdIndexRoute:

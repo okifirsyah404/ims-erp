@@ -99,11 +99,16 @@ Last synced: 2026-11-06.
 ### planned
 - Inventory movement boundaries / valuation + GL reconciliation — ERP-0014
   (re-scoped into S1–S4; valuation deferred, OPEN-3).
-- Suppliers, purchase orders, goods receipt, payables — T07, ERP-0012.
-  Evidence: dbml `procurement` only.
+- Goods receipt, payables — T07, ERP-0012 / ERP-0035. Evidence: dbml
+  `procurement` only (goods receipts are step 4b).
 - HPP / stock value via finance summary — T07. Evidence: none.
 
 ### implemented
+- Suppliers (bank details restricted) and purchase orders with one-level
+  approval and the company's PO print — T07, ERP-0035. Evidence:
+  `apps/backend/src/app/procurement`, `test/unit/procurement.service.test.ts`,
+  `/procurement/suppliers`, `/procurement/purchase-orders`, `progress.md`
+  2026-11-06 (ADR-0011 step 4a). Gaps: real-PG integration tests, e2e.
 - Stock ledger S3 — ERP-0028. Evidence:
   `apps/backend/src/app/inventory/services/stock.service.ts`,
   `test/unit/stock.service.test.ts` (22 tests), UI

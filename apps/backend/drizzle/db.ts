@@ -5,6 +5,7 @@ import { authRelations } from './schemas/auth.schema';
 import { auditLogRelations } from './schemas/audit.schema';
 import { crmRelations } from './schemas/crm.schema';
 import { financeRelations } from './schemas/finance.schema';
+import { procurementRelations } from './schemas/procurement.schema';
 import { inventoryRelations } from './schemas/inventory.schema';
 import { locationRelations } from './schemas/location.schema';
 import { roleRelations } from './schemas/role.schema';
@@ -23,6 +24,7 @@ export const drizzleDB = drizzle({
 		...inventoryRelations,
 		...crmRelations,
 		...financeRelations,
+		...procurementRelations,
 	},
 });
 

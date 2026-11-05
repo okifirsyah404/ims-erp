@@ -12,6 +12,103 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — ADR-0011 port step 4a: suppliers and purchase orders, 2026-11-06
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner). Step 4 is
+split: 4a suppliers + purchase orders with the PO print, 4b goods receipts +
+moving-average cost (ADR-0011 §5).
+
+Gate 1 (read): docs.dbml Procurement module (`suppliers`, `supplier_contacts`,
+`supplier_addresses`, `purchase_orders`, `purchase_order_items`,
+`goods_receipts`, `goods_receipt_items`); the old branch's owner-approved
+purchasing (`purchasing.schema.ts`, `purchase-order.service.ts`,
+`po-totals.ts`, contracts); ADR-0011 §5 and §12 (module name `procurement`,
+cost on the ledger); numbering (`PURCHASE_ORDER_PATTERN`
+`{TYPE}/{COMPANY}-{SUPPLIER}/{CATEGORY}/{MM}{YY}/{SEQ:3}`); role grants
+(`supplier:*` incl. `read_bank`, `purchase_order:*`); the private PO sample.
+Skipped: purchase requests and returns (not in the approved scope).
+
+Gate 2 (manual grilling pass):
+- Ownership: new **Procurement** module (`app/procurement`, schema
+  `procurement`), company-wide (no `organization_id`, ADR-0011).
+- Suppliers: DBML columns plus the owner-approved ones (`website`,
+  `address_line`, `village_id` → Location contract, `postal_code`,
+  `pic_name/phone/email/title` printed on the PO, `payment_term_note`);
+  `code` upper-case letters/digits (it is `{SUPPLIER}` in the PO number),
+  unique among live rows; statuses `active | inactive` (DBML `blocked`
+  dropped); `owner_user_id` dropped. Bank details only reach holders of
+  `supplier:read_bank` (dynamic resolver); others neither see nor overwrite
+  them. `supplier_contacts` / `supplier_addresses` stay unbuilt (one PIC and
+  one address are printed).
+- Purchase orders: `draft → submitted → approved → sent`, rejection returns
+  to `draft` with the reason; `partially_received / received` come with 4b;
+  `draft | submitted | approved | sent → cancelled` with a reason while
+  nothing was received. One-level approval with `purchase_order:approve`,
+  never by the PO's creator. Numbered on approval from the order date with
+  the supplier code and the category code (`HW | SW | JS | LN`). Only drafts
+  are editable.
+- PO columns: DBML names (`code`, `supplier_id`, `status`, `order_date`,
+  `expected_delivery_date`, `subtotal`, `tax_total`, `grand_total`,
+  `currency_code`, `submitted_at`, `approved_by/at`, `sent_at`,
+  `cancelled_reason`) plus `supplier_snapshot`, `category`, `subject`,
+  `supplier_quote_ref/date`, `project_name`, `buyer_pic_name`, `vat_mode`
+  (`none | included | added`, the sample's "PPN Included") and
+  `vat_rate_bps`, `payment_terms`, `terms`, `notes`, `rejection_reason`,
+  `created_by`, `submitted_by`, `sent_by`, `cancelled_by/at`, `deleted_at`.
+  Dropped: `purchase_request_id`, `shipping_total`, `payment_terms_days`,
+  `ship_to_address_text`, `closed_at`.
+- PO items: `item_id` → `inventory.items` (active items only, validated
+  through `ItemService.getActiveItems`); sku / name / specification / unit
+  snapshot; `quantity numeric(18,3)`; `unit_price` defaults to the item's
+  purchase price; `line_total = round(quantity × unit_price)`;
+  `quantity_received` for 4b. Dropped: `tax_amount`, `unit_id`,
+  `quantity_rejected` (VAT is per PO; units are a fixed list).
+- Money: bigint minor units; VAT `added` = on top, `included` = derived
+  from the total (DPP = total × 10000 / (10000 + rate)), half-up BigInt.
+- Print: exactly the company's PO sample. No PO approval history table
+  (statuses carry who/when).
+- Web: `/procurement/suppliers` (list, form, detail), `/procurement/purchase-orders`
+  (list, form, detail with submit / approve / reject / send / cancel,
+  print).
+
+What landed:
+- docs.dbml first (`procurement.suppliers`, `purchase_orders`,
+  `purchase_order_items` company-wide; the stale `purchase_request_id` ref
+  removed); `gen-logical-references.ts` → 498 refs; `validate-dbml.ts` → OK.
+- Migration `20261105180613_procurement_suppliers_purchase_orders`
+  (`CREATE SCHEMA procurement`, 3 tables, partial unique codes, checks), read
+  and applied to `ims_erp_sync`.
+- Backend: new module `app/procurement` (`SupplierService` with bank
+  masking, `PurchaseOrderService`, repositories, `utils/po-totals.ts`,
+  `errors/procurement.errors.ts`, controllers `/suppliers`,
+  `/purchase-orders`), registered in `src/index.ts`, mounted in
+  `app/app.ts`; `procurement.*` API keys (en + id).
+- Web: `lib/procurement-api.ts`, `components/procurement/{supplier-form-dialog,
+  purchase-order-form, purchase-order-document}.tsx`, supplier and PO routes,
+  breadcrumb labels, `procurement` locale namespace (en + id).
+
+Verification (2026-11-06):
+- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` → 619 pass
+  (`test/unit/procurement.service.test.ts`, 7 tests).
+- Web `bun run build` OK, `bunx tsc -b` clean, `bun test` → 45 pass; locales
+  → 54 pass; lint: no warnings in new files.
+- Browser (temporary Playwright script, deleted): `purchasing.seed` creates a
+  supplier with bank details in the UI; `auditor.seed` reads it with the bank
+  columns null (`bankVisible: false`); `purchasing.seed` creates a PO from
+  an inventory item (33 × Rp 1.900.000, PPN included), submits it and gets
+  no approve button; the owner approves → `PO/DEV-HIT9ND3/HW/1126/001`;
+  purchasing marks it sent. PO printed to PDF and compared with the sample
+  (header, teal bar, facts grid, buyer/supplier blocks, navy item table,
+  subtotal / PPN Included* / TOTAL PURCHASE ORDER, terbilang, numbered terms
+  with bold titles, notes, signatures, footer line). The company profile
+  used for the print was restored.
+- Test data left in the dev DB: supplier `HIT9ND3` and its PO.
+
+Next: step 4b — goods receipts against sent POs (warehouse, serials),
+`unit_cost` on stock movements and `average_cost` / `total_value` on
+balances (ADR-0011 §5, programmer A reviews the stock-service change).
+
 ## Completed — ADR-0011 port step 3d-2: invoices, DP and receipts, 2026-11-06
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A

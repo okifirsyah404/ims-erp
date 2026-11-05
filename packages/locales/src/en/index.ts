@@ -10,6 +10,7 @@ import settings from './settings';
 import crm from './crm';
 import sales from './sales';
 import finance from './finance';
+import procurement from './procurement';
 
 /**
  * English resources, grouped by namespace. This bundle is the source of
@@ -28,6 +29,7 @@ export const en = {
 	crm,
 	sales,
 	finance,
+	procurement,
 } as const;
 
 export type Namespace = keyof typeof en;
