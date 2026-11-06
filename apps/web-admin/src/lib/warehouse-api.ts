@@ -28,6 +28,8 @@ export type TWarehouse = {
 	responsibleEmployeeId: string | null;
 	isDefault: boolean;
 	isActive: boolean;
+	/** Optional display image URL for the warehouse card. */
+	imageUrl: string | null;
 	createdAt: string;
 	updatedAt: string | null;
 	deletedAt: string | null;
@@ -63,7 +65,7 @@ export type TWarehouseStorage = {
 export type TWarehouseWithCounts = TWarehouse & {
 	productsCount: number;
 	materialsCount: number;
-	toolsCount: number;
+	equipmentsCount: number;
 	storagesCount: number;
 };
 
@@ -95,6 +97,8 @@ export type TWarehouseCreateInput = {
 	responsibleEmployeeId?: string | null;
 	isDefault: boolean;
 	isActive: boolean;
+	/** Optional display image URL for the warehouse card. */
+	imageUrl?: string | null;
 	address?: TWarehouseAddressInput;
 };
 
@@ -104,6 +108,8 @@ export type TWarehouseUpdateInput = {
 	responsibleEmployeeId?: string | null;
 	isDefault?: boolean;
 	isActive?: boolean;
+	/** Optional display image URL for the warehouse card. */
+	imageUrl?: string | null;
 };
 
 /**

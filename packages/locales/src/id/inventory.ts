@@ -111,6 +111,7 @@ const inventory = {
 	'warehouses.active': 'Aktif',
 	'warehouses.products': 'Produk',
 	'warehouses.materials': 'Bahan',
+	'warehouses.equipments': 'Peralatan',
 	'warehouses.storageTab': 'Penyimpanan',
 	'warehouses.capacity': 'Kapasitas',
 	'warehouses.state': 'Keadaan',

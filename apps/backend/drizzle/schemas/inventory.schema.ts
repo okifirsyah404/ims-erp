@@ -210,6 +210,8 @@ export const warehouses = inventorySchema.table(
 		responsibleEmployeeId: uuid('responsible_employee_id'),
 		isDefault: boolean('is_default').notNull().default(false),
 		isActive: boolean('is_active').notNull().default(true),
+		/** Optional display image URL for the warehouse card. */
+		imageUrl: text('image_url'),
 		...softDeleteTimestamps,
 	},
 	(table) => [

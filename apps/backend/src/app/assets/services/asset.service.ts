@@ -81,6 +81,19 @@ export class AssetService {
 		return this.assetRepository.paginate(request);
 	}
 
+	/**
+	 * Counts alive assets grouped by warehouse, optionally filtered to one
+	 * asset type (e.g. `equipment`). Published for cross-module decoration of
+	 * warehouse rows — the inventory module consumes this via
+	 * {@link ASSET_SERVICE_TOKEN} (service-to-service, per module rules).
+	 */
+	countByWarehouse(
+		warehouseIds: string[],
+		assetType?: string,
+	): ReturnType<IAssetRepository['countByWarehouse']> {
+		return this.assetRepository.countByWarehouse(warehouseIds, assetType);
+	}
+
 	async getAsset(id: string): Promise<TAssetSelect> {
 		return this.requireAsset(id);
 	}

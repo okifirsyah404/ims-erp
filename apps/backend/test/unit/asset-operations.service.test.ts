@@ -119,6 +119,9 @@ function buildWorld() {
 	} as never;
 
 	const assetRepository: IAssetRepository = {
+		async countByWarehouse() {
+			return [];
+		},
 		async paginate() {
 			return {
 				meta: { page: 1, limit: 20, total: assets.length, totalPages: 1 },

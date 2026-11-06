@@ -110,4 +110,15 @@ export interface IAssetRepository {
 	 * the database enforces that one itself.
 	 */
 	countReferences(id: string): Promise<{ borrowings: number; maintenances: number }>;
+
+	/**
+	 * Counts alive assets grouped by warehouse, optionally restricted to one
+	 * asset type. Used by the inventory module (via {@link AssetService}) to
+	 * decorate warehouses with equipment counts. Unallocated rows come back
+	 * with `warehouseId: null` and are ignored by the caller.
+	 */
+	countByWarehouse(
+		warehouseIds: string[],
+		assetType?: string,
+	): Promise<Array<{ warehouseId: string | null; value: number }>>;
 }

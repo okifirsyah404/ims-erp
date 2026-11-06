@@ -186,7 +186,7 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 				warehouseId,
 				productsCount: 0,
 				materialsCount: 0,
-				toolsCount: 0,
+				equipmentsCount: 0,
 				storagesCount: 0,
 			}));
 		},
@@ -259,6 +259,8 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 		new AuditWriterDouble(),
 		// ERP-0031: no borrowings in these tests — the guard never blocks.
 		{ async countOpenBorrowings() { return 0; } },
+		// No assets in these tests — equipment counts resolve to zero.
+		{ countByWarehouse: async () => [] } as never,
 	);
 
 	return { service, rows, links, clearDefaultCalls, warehouseRepository };

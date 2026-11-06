@@ -318,7 +318,7 @@ function fakeWarehouses(): IWarehouseRepository {
 				warehouseId,
 				productsCount: 0,
 				materialsCount: 0,
-				toolsCount: 0,
+				equipmentsCount: 0,
 				storagesCount: 0,
 			}));
 		},

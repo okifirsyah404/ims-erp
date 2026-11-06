@@ -28,6 +28,8 @@ import {
 	WAREHOUSE_REPOSITORY_TOKEN,
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 } from '../constants/di';
+import { ASSET_SERVICE_TOKEN } from '@app/assets/constants/di';
+import type { AssetService } from '@app/assets/services/asset.service';
 import {
 	InventoryRuleViolationError,
 	StorageCodeTakenError,
@@ -61,6 +63,7 @@ export type TWarehouseUpdateInput = {
 	responsibleEmployeeId?: string | null;
 	isDefault?: boolean;
 	isActive?: boolean;
+	imageUrl?: string | null;
 };
 
 /**
@@ -101,6 +104,9 @@ export class WarehouseService {
 		 */
 		@inject(WAREHOUSE_BORROWING_GUARD_TOKEN)
 		private readonly borrowingGuard: IWarehouseBorrowingGuard,
+		/** Equipment counts come from the assets module — service-to-service. */
+		@inject(ASSET_SERVICE_TOKEN)
+		private readonly assetService: AssetService,
 	) {}
 
 	/** Fetches one filtered page of warehouses, decorated with kind counts. */
@@ -122,7 +128,8 @@ export class WarehouseService {
 		const counts = await this.warehouseRepository.countKinds(
 			result.data.map((warehouse) => warehouse.id),
 		);
-		const byWarehouse = new Map(counts.map((row) => [row.warehouseId, row]));
+		const decorated = await this.withEquipmentCounts(counts);
+		const byWarehouse = new Map(decorated.map((row) => [row.warehouseId, row]));
 		return {
 			...result,
 			data: result.data.map((warehouse) => ({
@@ -145,15 +152,46 @@ export class WarehouseService {
 			this.storageRepository.listByWarehouse(id),
 			this.warehouseRepository.countKinds([id]),
 		]);
+		const [decorated] = await this.withEquipmentCounts([counts]);
 		return {
 			...warehouse,
 			address,
 			storages,
-			productsCount: counts.productsCount,
-			materialsCount: counts.materialsCount,
-			toolsCount: counts.toolsCount,
-			storagesCount: counts.storagesCount,
+			productsCount: decorated.productsCount,
+			materialsCount: decorated.materialsCount,
+			equipmentsCount: decorated.equipmentsCount,
+			storagesCount: decorated.storagesCount,
 		};
+	}
+
+	/**
+	 * Merges alive equipment-asset counts (from the assets module) into the
+	 * inventory-computed kind counts, per warehouse.
+	 *
+	 * @remarks
+	 * Equipment is an asset (`assets.assets`, `assetType = 'equipment'`), not an
+	 * inventory item kind, so the count crosses the module boundary as a
+	 * service-to-service call per the module rules — the inventory module never
+	 * queries the assets schema directly.
+	 */
+	private async withEquipmentCounts(
+		counts: TWarehouseKindCounts[],
+	): Promise<TWarehouseKindCounts[]> {
+		if (counts.length === 0) return [];
+		const warehouseIds = counts.map((row) => row.warehouseId);
+		const equipmentRows = await this.assetService.countByWarehouse(
+			warehouseIds,
+			'equipment',
+		);
+		const equipmentByWarehouse = new Map(
+			equipmentRows.flatMap((row) =>
+				row.warehouseId === null ? [] : [[row.warehouseId, row.value]],
+			),
+		);
+		return counts.map((row) => ({
+			...row,
+			equipmentsCount: equipmentByWarehouse.get(row.warehouseId) ?? 0,
+		}));
 	}
 
 	/**
@@ -240,12 +278,14 @@ export class WarehouseService {
 					responsibleEmployeeId: current.responsibleEmployeeId,
 					isDefault: current.isDefault,
 					isActive: current.isActive,
+					imageUrl: current.imageUrl,
 				},
 				{
 					name: updated.name,
 					responsibleEmployeeId: updated.responsibleEmployeeId,
 					isDefault: updated.isDefault,
 					isActive: updated.isActive,
+					imageUrl: updated.imageUrl,
 				},
 			),
 		});

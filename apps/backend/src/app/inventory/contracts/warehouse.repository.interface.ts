@@ -42,7 +42,8 @@ export type TWarehouseKindCounts = {
 	warehouseId: string;
 	productsCount: number;
 	materialsCount: number;
-	toolsCount: number;
+	/** Alive `equipment`-typed assets currently located in the warehouse. */
+	equipmentsCount: number;
 	storagesCount: number;
 };
 

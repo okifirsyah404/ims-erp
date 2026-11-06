@@ -293,7 +293,7 @@ export class WarehouseRepository implements IWarehouseRepository {
 					warehouseId,
 					productsCount: 0,
 					materialsCount: 0,
-					toolsCount: 0,
+					equipmentsCount: 0,
 					storagesCount: 0,
 				},
 			]),
@@ -306,8 +306,6 @@ export class WarehouseRepository implements IWarehouseRepository {
 				target.productsCount += row.value;
 			} else if (row.itemKind === 'material') {
 				target.materialsCount += row.value;
-			} else if (row.itemKind === 'tool') {
-				target.toolsCount += row.value;
 			}
 		}
 		for (const row of storageRows) {

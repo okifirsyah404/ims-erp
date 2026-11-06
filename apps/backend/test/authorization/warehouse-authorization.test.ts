@@ -182,7 +182,7 @@ beforeAll(async () => {
 				warehouseId,
 				productsCount: 0,
 				materialsCount: 0,
-				toolsCount: 0,
+				equipmentsCount: 0,
 				storagesCount: 0,
 			}));
 		},
@@ -265,6 +265,9 @@ beforeAll(async () => {
 		'../../src/app/inventory/controllers/warehouse.controller'
 	);
 	const { sessionGuard } = await import('../../src/authorization/elysia-auth');
+	const { ASSET_SERVICE_TOKEN } = await import(
+		'../../src/app/assets/constants/di'
+	);
 
 	container.register(WAREHOUSE_REPOSITORY_TOKEN, {
 		useValue: warehouseRepository,
@@ -281,6 +284,10 @@ beforeAll(async () => {
 	// ERP-0031: the unlink guard port — noop here (no borrowings under test).
 	container.register(WAREHOUSE_BORROWING_GUARD_TOKEN, {
 		useValue: { async countOpenBorrowings() { return 0; } },
+	});
+	// Equipment counts come from the assets module — noop here (no assets).
+	container.register(ASSET_SERVICE_TOKEN, {
+		useValue: { async countByWarehouse() { return []; } } as never,
 	});
 	container.register(WAREHOUSE_SERVICE_TOKEN, { useClass: WarehouseService });
 

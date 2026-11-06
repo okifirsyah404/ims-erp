@@ -1,6 +1,6 @@
 import { inject, injectable } from 'tsyringe';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, count, eq, ilike, isNull, or } from 'drizzle-orm';
+import { and, count, eq, ilike, inArray, isNull, or } from 'drizzle-orm';
 import type { TPaginationResult } from '@ims-erp/common';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import {
@@ -180,6 +180,28 @@ export class AssetRepository implements IAssetRepository {
 			borrowings: borrowingRow.value,
 			maintenances: maintenanceRow.value,
 		};
+	}
+
+	/** @inheritdoc */
+	async countByWarehouse(
+		warehouseIds: string[],
+		assetType?: string,
+	): Promise<Array<{ warehouseId: string | null; value: number }>> {
+		if (warehouseIds.length === 0) return [];
+		return this.database
+			.select({
+				warehouseId: assets.warehouseId,
+				value: count(),
+			})
+			.from(assets)
+			.where(
+				and(
+					assetType ? eq(assets.assetType, assetType) : undefined,
+					isNull(assets.deletedAt),
+					inArray(assets.warehouseId, warehouseIds),
+				),
+			)
+			.groupBy(assets.warehouseId);
 	}
 }
 

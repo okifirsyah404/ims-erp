@@ -123,6 +123,7 @@ const inventory = {
 	'warehouses.active': 'Active',
 	'warehouses.products': 'Products',
 	'warehouses.materials': 'Materials',
+	'warehouses.equipments': 'Equipments',
 	'warehouses.storageTab': 'Storage',
 	'warehouses.capacity': 'Capacity',
 	'warehouses.state': 'State',
