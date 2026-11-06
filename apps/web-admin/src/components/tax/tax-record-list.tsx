@@ -29,6 +29,10 @@ const routeApi = getRouteApi('/_authed/finance/tax/records/');
 
 const PAGE_SIZE = 20;
 
+/** Default period = current month, computed once at module load. */
+const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_MONTH = new Date().getMonth() + 1;
+
 /** Known filing statuses, mirroring the backend state machine. */
 const FILING_STATUSES = ['draft', 'verified', 'filed', 'corrected'] as const;
 type TFilingStatus = (typeof FILING_STATUSES)[number];
@@ -54,8 +58,8 @@ export function TaxRecordList() {
 	const canVerify = usePermission('tax.verify');
 
 	const [taxTypeId, setTaxTypeId] = useState('');
-	const [periodYear, setPeriodYear] = useState(new Date().getFullYear());
-	const [periodMonth, setPeriodMonth] = useState(new Date().getMonth() + 1);
+	const [periodYear, setPeriodYear] = useState(CURRENT_YEAR);
+	const [periodMonth, setPeriodMonth] = useState(CURRENT_MONTH);
 	const [taxableBase, setTaxableBase] = useState('');
 	const [preview, setPreview] = useState<string | null>(null);
 

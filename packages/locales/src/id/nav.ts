@@ -61,6 +61,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.tax': 'Pajak',
 	'item.taxTypes': 'Jenis & Tarif Pajak',
 	'item.taxRecap': 'Rekap Pajak',
+	'item.taxRecords': 'Catatan Pajak',
 	'item.taxWithholding': 'Pemotongan Pajak',
 	'item.taxCorrections': 'Koreksi & Bukti',
 	'item.investors': 'Bonus & Investor',

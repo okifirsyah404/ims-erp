@@ -14,10 +14,14 @@ import {
 } from '@/lib/tax-api';
 import { usePermission } from '@/lib/use-permission';
 
-/** The route API for `/finance/tax` (validated search params). */
-const routeApi = getRouteApi('/_authed/finance/tax/');
+/** The route API for `/finance/tax/recap` (validated search params). */
+const routeApi = getRouteApi('/_authed/finance/tax/recap/');
 
 const MONTHS = Array.from({ length: 12 }, (_, index) => index + 1);
+
+/** Default period = current month, computed once at module load. */
+const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_MONTH = new Date().getMonth() + 1;
 
 /** Known filing statuses, mirroring the backend state machine. */
 const FILING_STATUSES = ['draft', 'verified', 'filed', 'corrected'] as const;
@@ -41,9 +45,8 @@ export function TaxRecap() {
 	const search = routeApi.useSearch();
 	const canExport = usePermission('tax.export');
 
-	const now = new Date();
-	const [year, setYear] = useState(search.year ?? now.getFullYear());
-	const [month, setMonth] = useState(search.month ?? now.getMonth() + 1);
+	const [year, setYear] = useState(search.year ?? CURRENT_YEAR);
+	const [month, setMonth] = useState(search.month ?? CURRENT_MONTH);
 
 	const { data, isPending, isError, error } = useQuery({
 		...recapQueryOptions(year, month),

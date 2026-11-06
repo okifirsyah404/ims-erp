@@ -1,15 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ReceiptText } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { TaxRecap } from '@/components/tax/tax-recap';
 
+/** Search params for the recap page. */
+type TRecapSearch = {
+	year?: number;
+	month?: number;
+};
+
+/** `/finance/tax/recap` - period recap with CSV/XLSX export (Phase 2, ERP-0016). */
 export const Route = createFileRoute('/_authed/finance/tax/recap/')({
-	component: ComingSoonStubPage,
+	validateSearch: (search: Record<string, unknown>): TRecapSearch => ({
+		year: search.year ? Number(search.year) || undefined : undefined,
+		month: search.month ? Number(search.month) || undefined : undefined,
+	}),
+	component: TaxRecap,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.taxRecap')} icon={ReceiptText} />;
-}

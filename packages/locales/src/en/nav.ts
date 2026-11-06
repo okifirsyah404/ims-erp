@@ -62,6 +62,7 @@ const nav = {
 	'item.tax': 'Tax',
 	'item.taxTypes': 'Tax Types & Rates',
 	'item.taxRecap': 'Tax Recap',
+	'item.taxRecords': 'Tax Records',
 	'item.taxWithholding': 'Withholding',
 	'item.taxCorrections': 'Corrections & Evidence',
 	'item.investors': 'Investors',

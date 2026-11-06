@@ -2617,6 +2617,27 @@ Gates:
 Still open: finance gates D12 (CSV/XLSX columns), D14 (rounding), D18
 (placeholder rates). Nothing is marked verified without finance review.
 
+## 2026-11-07 - Fix: tax recap route placement and missing nav entry
+
+Corrects a Phase 2 miss: the `ComingSoonPage` stub at
+`routes/_authed/finance/tax/recap/` was never replaced — the recap component
+had been mounted on the index route `/finance/tax` instead, while the sidebar
+still linked "Tax Recap" to the stub.
+
+- `TaxRecap` (with its `validateSearch` year/month) moved to
+  `/finance/tax/recap`, matching the sidebar; `/finance/tax` index is now a
+  `beforeLoad` redirect to the recap so there is exactly one canonical URL for
+  the active period (no duplicate render, no divergent `?year=&month=`).
+- Sidebar: added the missing "Tax Records" item (`/finance/tax/records`,
+  `item.taxRecords` en + id) — the page existed but was unreachable from nav.
+- Also cleared the three `react(purity)` lint warnings introduced in Phase 2
+  (`new Date()` during render in `tax-recap.tsx` / `tax-record-list.tsx`;
+  now computed once at module load). Web-admin warnings back at the 9
+  pre-existing baseline.
+
+Gates: web-admin build green (route tree regenerated), `bun run lint` 0
+errors, locale tests 42 pass (new `item.taxRecords` key mirrored in en/id).
+
 ## Next executable task
 
 **Finance review of the tax slice (D12/D14/D18)** — column list, rounding
