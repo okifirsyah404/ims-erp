@@ -1,15 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Wrench } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { AssetServiceRecordList } from '@/components/assets/asset-service-record-list';
 
+/** Search params for the service-records page. */
+type TServiceRecordsSearch = {
+	page?: number;
+};
+
+/** `/assets/service-records` — maintenance history (Phase A-4). */
 export const Route = createFileRoute('/_authed/assets/service-records/')({
-	component: ComingSoonStubPage,
+	validateSearch: (search: Record<string, unknown>): TServiceRecordsSearch => ({
+		page: search.page ? Number(search.page) || 1 : undefined,
+	}),
+	component: AssetServiceRecordList,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.serviceRecords')} icon={Wrench} />;
-}

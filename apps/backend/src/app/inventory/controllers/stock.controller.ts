@@ -115,6 +115,7 @@ export class StockController {
 				'/receipts',
 				async ({ body, erp, status }) => {
 					const parsed = receiptSchema.parse(body);
+					await assertWarehouseAccessible(stockService, parsed.warehouseId, erp);
 					const result = await stockService.postMovement({
 						actorOrganizationId: erp.organizationId,
 						warehouseId: parsed.warehouseId,
@@ -141,6 +142,7 @@ export class StockController {
 				'/issues',
 				async ({ body, erp, status }) => {
 					const parsed = issueSchema.parse(body);
+					await assertWarehouseAccessible(stockService, parsed.warehouseId, erp);
 					const result = await stockService.postMovement({
 						actorOrganizationId: erp.organizationId,
 						warehouseId: parsed.warehouseId,
@@ -260,4 +262,19 @@ function resolveRecomputeScope(
  */
 function isApplicationAdmin(erp: ErpContext): boolean {
 	return erp.session.user.role === 'admin';
+}
+
+/**
+ * ERP-0031 gate for actor-driven stock writes: the caller's organization must
+ * be linked to the named warehouse. A global admin bypasses (manages every
+ * scope); everyone else gets a 404 for unlinked warehouses so ids cannot be
+ * probed.
+ */
+async function assertWarehouseAccessible(
+	stockService: StockService,
+	warehouseId: string,
+	erp: ErpContext,
+): Promise<void> {
+	if (isApplicationAdmin(erp)) return;
+	await stockService.assertWarehouseLinkedFor(warehouseId, erp.organizationId);
 }

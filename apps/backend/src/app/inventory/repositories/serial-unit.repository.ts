@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import {
 	TSerialTrackedItemSelect,
@@ -12,7 +13,6 @@ import type {
 	TUnitCreateData,
 	TUnitPaginationRequest,
 } from '../contracts/serial-unit.repository.interface';
-import type { TTx } from '@drizzle/types';
 
 /**
  * Drizzle implementation of {@link ISerialUnitRepository}.
@@ -144,106 +144,6 @@ export class SerialUnitRepository implements ISerialUnitRepository {
 			.set({ status })
 			.where(
 				and(eq(serialTrackedItems.id, id), isNull(serialTrackedItems.deletedAt)),
-			)
-			.returning();
-		return row ?? null;
-	}
-
-	/**
-	 * Moves a unit's custody to a borrower, ref-ing the line it went out on.
-	 *
-	 * @remarks
-	 * Guarded on `status = 'in_stock'` **inside** the update, so a unit cannot
-	 * be issued twice even if two borrowing flows race: the second update
-	 * matches no row and returns `null`. `warehouse_id`/`bin_id` are cleared
-	 * because custody has left the warehouse — a tool in a technician's van is
-	 * not warehouse stock.
-	 */
-	async issueToBorrower(
-		id: string,
-		borrowingLineId: string,
-		tx?: TTx,
-	): Promise<TSerialTrackedItemSelect | null> {
-		const handle = tx ?? this.database;
-		const [row] = await handle
-			.update(serialTrackedItems)
-			.set({
-				status: 'borrowed',
-				warehouseId: null,
-				binId: null,
-				currentBorrowingLineId: borrowingLineId,
-			})
-			.where(
-				and(
-					eq(serialTrackedItems.id, id),
-					isNull(serialTrackedItems.deletedAt),
-					eq(serialTrackedItems.status, 'in_stock'),
-				),
-			)
-			.returning();
-		return row ?? null;
-	}
-
-	/**
-	 * Returns a unit from custody to a warehouse.
-	 *
-	 * @remarks
-	 * Guarded on `status = 'borrowed'`. The warehouse and bin are restored from
-	 * the line's `origin_warehouse_id`, which the issuance snapshotted.
-	 */
-	async returnFromBorrower(
-		id: string,
-		warehouseId: string,
-		binId: string | null,
-		tx?: TTx,
-	): Promise<TSerialTrackedItemSelect | null> {
-		const handle = tx ?? this.database;
-		const [row] = await handle
-			.update(serialTrackedItems)
-			.set({
-				status: 'in_stock',
-				warehouseId,
-				binId,
-				currentBorrowingLineId: null,
-			})
-			.where(
-				and(
-					eq(serialTrackedItems.id, id),
-					isNull(serialTrackedItems.deletedAt),
-					eq(serialTrackedItems.status, 'borrowed'),
-				),
-			)
-			.returning();
-		return row ?? null;
-	}
-
-	/**
-	 * Marks a borrowed unit lost.
-	 *
-	 * @remarks
-	 * The warehouse is **not** restored: the unit is gone from stock, which is
-	 * why the loss flow also writes an `adjustment_out` movement against the
-	 * line's origin warehouse.
-	 */
-	async markLost(
-		id: string,
-		tx?: TTx,
-	): Promise<TSerialTrackedItemSelect | null> {
-		const handle = tx ?? this.database;
-		const [row] = await handle
-			.update(serialTrackedItems)
-			.set({
-				status: 'lost',
-				warehouseId: null,
-				binId: null,
-				currentBorrowingLineId: null,
-			})
-			.where(
-				and(
-					eq(serialTrackedItems.id, id),
-					isNull(serialTrackedItems.deletedAt),
-					eq(serialTrackedItems.status, 'borrowed'),
-				),
 			)
 			.returning();
 		return row ?? null;

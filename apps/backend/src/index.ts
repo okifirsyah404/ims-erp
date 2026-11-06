@@ -8,6 +8,7 @@ import { registerProcurement } from '@app/procurement';
 import { registerProjects } from '@app/projects';
 import { registerAftersales } from '@app/aftersales';
 import { registerLicensing } from '@app/licensing';
+import { registerAssets } from '@app/assets';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
 import { cors } from '@elysiajs/cors';
@@ -37,7 +38,15 @@ import { registerAuthorization } from './authorization/container';
 registerProvider(container);
 registerLocation(container);
 registerSales(container);
+// Organization first: its NumberingService (the one numbering authority,
+// ERP-0009) is injected into the document services of every module.
+registerOrganization(container);
+// Audit before the modules that resolve AUDIT_SERVICE_TOKEN eagerly
+// (registerInventory builds the shared InventoryAuditWriter at
+// registration time; registerAssets documents the same expectation).
+registerAudit(container);
 registerInventory(container);
+registerAssets(container);
 registerCrm(container);
 registerFinance(container);
 registerProcurement(container);
@@ -45,8 +54,6 @@ registerProjects(container);
 registerAftersales(container);
 registerLicensing(container);
 registerUser(container);
-registerOrganization(container);
-registerAudit(container);
 registerAuthorization(container);
 
 /**

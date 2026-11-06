@@ -73,6 +73,12 @@ export const DOCUMENT_TYPES = [
 	'warranty',
 	'service_ticket',
 	'license_contract',
+	'stock_movement',
+	'asset',
+	'asset_maintenance',
+	'asset_disposal',
+	'asset_tool_set',
+	'asset_borrowing',
 ] as const;
 export type TDocumentType = (typeof DOCUMENT_TYPES)[number];
 

@@ -3,6 +3,7 @@ import {
 	items,
 	serialTrackedItems,
 	warehouseAddresses,
+	warehouseOrganizations,
 	warehouseStorages,
 	warehouses,
 } from '@drizzle/schemas/inventory.schema';
@@ -13,6 +14,7 @@ import {
 	asc,
 	count,
 	eq,
+	getTableColumns,
 	ilike,
 	inArray,
 	isNull,
@@ -112,6 +114,131 @@ export class WarehouseRepository implements IWarehouseRepository {
 	}
 
 	/**
+	 * Whether an alive link row exists between the warehouse and the org
+	 * (ERP-0031). Soft-deleted links do not count — unlinking must cut access
+	 * immediately.
+	 */
+	async isLinked(
+		warehouseId: string,
+		organizationId: string,
+	): Promise<boolean> {
+		const [row] = await this.database
+			.select({ id: warehouseOrganizations.id })
+			.from(warehouseOrganizations)
+			.where(
+				and(
+					eq(warehouseOrganizations.warehouseId, warehouseId),
+					eq(warehouseOrganizations.organizationId, organizationId),
+					isNull(warehouseOrganizations.deletedAt),
+				),
+			)
+			.limit(1);
+		return row !== undefined;
+	}
+
+	/** Alive warehouses linked to one organization, newest link first. */
+	async listLinked(
+		organizationId: string,
+	): Promise<TWarehouseSelect[]> {
+		return this.database
+			.select({ ...getTableColumns(warehouses) })
+			.from(warehouseOrganizations)
+			.innerJoin(
+				warehouses,
+				eq(warehouses.id, warehouseOrganizations.warehouseId),
+			)
+			.where(
+				and(
+					eq(warehouseOrganizations.organizationId, organizationId),
+					isNull(warehouseOrganizations.deletedAt),
+					isNull(warehouses.deletedAt),
+				),
+			)
+			.orderBy(asc(warehouses.name));
+	}
+
+	/** Alive organizations linked to one warehouse, ordered by link age. */
+	async listOrganizations(
+		warehouseId: string,
+	): Promise<Array<{ organizationId: string; createdAt: Date }>> {
+		return this.database
+			.select({
+				organizationId: warehouseOrganizations.organizationId,
+				createdAt: warehouseOrganizations.createdAt,
+			})
+			.from(warehouseOrganizations)
+			.where(
+				and(
+					eq(warehouseOrganizations.warehouseId, warehouseId),
+					isNull(warehouseOrganizations.deletedAt),
+				),
+			)
+			.orderBy(asc(warehouseOrganizations.createdAt));
+	}
+
+	/**
+	 * Creates an alive link, reviving a soft-deleted one for the same pair.
+	 *
+	 * @remarks
+	 * Idempotent: an already-alive link returns `{ created: false }` without a
+	 * write. The revival mirrors the seeder's `ensureWarehouseOrganizationLink`.
+	 */
+	async linkOrganization(
+		warehouseId: string,
+		organizationId: string,
+	): Promise<{ created: boolean }> {
+		const [existing] = await this.database
+			.select({
+				id: warehouseOrganizations.id,
+				deletedAt: warehouseOrganizations.deletedAt,
+			})
+			.from(warehouseOrganizations)
+			.where(
+				and(
+					eq(warehouseOrganizations.warehouseId, warehouseId),
+					eq(warehouseOrganizations.organizationId, organizationId),
+				),
+			)
+			.limit(1);
+
+		if (existing && existing.deletedAt === null) return { created: false };
+
+		if (existing) {
+			await this.database
+				.update(warehouseOrganizations)
+				.set({ deletedAt: null, updatedAt: new Date() })
+				.where(eq(warehouseOrganizations.id, existing.id));
+			return { created: true };
+		}
+
+		await this.database.insert(warehouseOrganizations).values({
+			warehouseId,
+			organizationId,
+			createdAt: new Date(),
+		});
+		return { created: true };
+	}
+
+	/** Soft-deletes the alive link for the pair, if any. */
+	async unlinkOrganization(
+		warehouseId: string,
+		organizationId: string,
+	): Promise<boolean> {
+		const deleted = await this.database
+			.update(warehouseOrganizations)
+			.set({ deletedAt: new Date(), updatedAt: new Date() })
+			.where(
+				and(
+					eq(warehouseOrganizations.warehouseId, warehouseId),
+					eq(warehouseOrganizations.organizationId, organizationId),
+					isNull(warehouseOrganizations.deletedAt),
+				),
+			)
+			.returning({ id: warehouseOrganizations.id });
+		return deleted.length > 0;
+	}
+
+	/**
 	 * Counts items by kind and storages for a set of warehouses.
 	 *
 	 * @remarks
@@ -166,7 +293,7 @@ export class WarehouseRepository implements IWarehouseRepository {
 					warehouseId,
 					productsCount: 0,
 					materialsCount: 0,
-					toolsCount: 0,
+					equipmentsCount: 0,
 					storagesCount: 0,
 				},
 			]),
@@ -179,8 +306,6 @@ export class WarehouseRepository implements IWarehouseRepository {
 				target.productsCount += row.value;
 			} else if (row.itemKind === 'material') {
 				target.materialsCount += row.value;
-			} else if (row.itemKind === 'tool') {
-				target.toolsCount += row.value;
 			}
 		}
 		for (const row of storageRows) {
@@ -264,6 +389,17 @@ export class WarehouseRepository implements IWarehouseRepository {
 			.where(and(eq(warehouses.id, id), isNull(warehouses.deletedAt)))
 			.returning();
 		return row ?? null;
+	}
+
+	/** @inheritdoc */
+	async findNamesByIds(
+		ids: string[],
+	): Promise<Array<{ id: string; name: string }>> {
+		if (ids.length === 0) return [];
+		return this.database
+			.select({ id: warehouses.id, name: warehouses.name })
+			.from(warehouses)
+			.where(and(inArray(warehouses.id, ids), isNull(warehouses.deletedAt)));
 	}
 
 	/**

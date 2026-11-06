@@ -33,6 +33,12 @@ export const DOCUMENT_TYPE_CODES: Record<DocumentType, string> = {
 	warranty: 'SG-GARANSI',
 	service_ticket: 'TKT',
 	license_contract: 'LIC',
+	stock_movement: 'MV',
+	asset: 'AST',
+	asset_maintenance: 'MNT',
+	asset_disposal: 'DSP',
+	asset_tool_set: 'TST',
+	asset_borrowing: 'BRW',
 };
 
 /** Module that owns each document type (`document_sequences.module`). */
@@ -53,6 +59,12 @@ export const DOCUMENT_TYPE_MODULES: Record<DocumentType, string> = {
 	warranty: 'aftersales',
 	service_ticket: 'aftersales',
 	license_contract: 'licensing',
+	stock_movement: 'inventory',
+	asset: 'assets',
+	asset_maintenance: 'assets',
+	asset_disposal: 'assets',
+	asset_tool_set: 'assets',
+	asset_borrowing: 'assets',
 };
 
 export const DEFAULT_PATTERN = '{SEQ:4}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YY}';
@@ -65,8 +77,24 @@ export const BAST_PATTERN = '{SEQ:3}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YYYY}';
 /** Warranty certificate format, e.g. `001/SG-GARANSI/IMS-APP/2025`. */
 export const WARRANTY_PATTERN = '{SEQ:3}/{TYPE}/{COMPANY}-{CUSTOMER}/{YYYY}';
 
+/**
+ * Inventory and asset codes keep the shape they had under ERP-0009
+ * (`MV-202611-000042`, `AST-000123`, `BRW-202611-0001`), now as patterns of
+ * the one numbering service.
+ */
+const INVENTORY_PATTERNS: Partial<Record<DocumentType, { pattern: string; reset: ResetPolicy }>> = {
+	stock_movement: { pattern: '{TYPE}-{YYYY}{MM}-{SEQ:6}', reset: 'never' },
+	asset: { pattern: '{TYPE}-{SEQ:6}', reset: 'never' },
+	asset_maintenance: { pattern: '{TYPE}-{YYYY}-{SEQ:5}', reset: 'yearly' },
+	asset_disposal: { pattern: '{TYPE}-{YYYY}-{SEQ:5}', reset: 'yearly' },
+	asset_tool_set: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
+	asset_borrowing: { pattern: '{TYPE}-{YYYY}{MM}-{SEQ:4}', reset: 'monthly' },
+};
+
 /** Default pattern per document type (used until the owner overrides it). */
 export function defaultPattern(documentType: DocumentType): string {
+	const inventory = INVENTORY_PATTERNS[documentType];
+	if (inventory) return inventory.pattern;
 	if (documentType === 'purchase_order') return PURCHASE_ORDER_PATTERN;
 	if (documentType === 'bast') return BAST_PATTERN;
 	if (documentType === 'warranty') return WARRANTY_PATTERN;
@@ -75,6 +103,8 @@ export function defaultPattern(documentType: DocumentType): string {
 
 /** Default reset policy per document type (PO sequences restart monthly). */
 export function defaultResetPolicy(documentType: DocumentType): ResetPolicy {
+	const inventory = INVENTORY_PATTERNS[documentType];
+	if (inventory) return inventory.reset;
 	return documentType === 'purchase_order' ? 'monthly' : 'yearly';
 }
 

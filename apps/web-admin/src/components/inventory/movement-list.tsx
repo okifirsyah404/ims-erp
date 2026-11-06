@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -159,7 +160,19 @@ function MovementRow({
 					defaultValue: row.movementType,
 				})}
 			</TableCell>
-			<TableCell className='font-mono text-xs'>{row.itemId}</TableCell>
+			<TableCell>
+				<Link
+					to='/inventory/items/$itemId'
+					params={{ itemId: row.itemId }}
+					className='hover:underline'
+				>
+					{row.itemName ?? (
+						<span className='font-mono text-xs text-muted-foreground'>
+							{row.itemId}
+						</span>
+					)}
+				</Link>
+			</TableCell>
 			<TableCell className='text-right font-mono'>
 				{outbound ? '−' : '+'}
 				{row.quantity}

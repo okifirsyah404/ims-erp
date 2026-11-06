@@ -99,6 +99,23 @@ export interface IAdjustmentRepository {
 		tx?: TTx,
 	): Promise<TStockAdjustmentSelect | null>;
 
+	/**
+	 * Atomically claims a document for posting.
+	 *
+	 * @param id - The document id
+	 * @param tx - The posting transaction; the claim commits with it
+	 * @returns The claimed row, or `null` when the document is absent,
+	 *   soft-deleted, not `approved`, or already claimed/posted
+	 * @remarks
+	 * A conditional `UPDATE … WHERE status = 'approved' AND posted_at IS NULL`
+	 * (mirrors the movement repository's `claimForReversal`): of two concurrent
+	 * posts exactly one wins and the other gets `null`, so a retried request
+	 * can never double-post (hardening plan Phase I-4 / D5 territory). The
+	 * claim lives INSIDE the posting transaction — a rollback of any
+	 * subsequent movement returns the document to `approved` and re-postable.
+	 */
+	claimForPost(id: string, tx: TTx): Promise<TStockAdjustmentSelect | null>;
+
 	/** Lists the alive lines of a document. */
 	listLines(adjustmentId: string): Promise<TStockAdjustmentItemSelect[]>;
 

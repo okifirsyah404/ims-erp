@@ -87,7 +87,7 @@ export function WarehouseList() {
 	const pagination = data?.pagination;
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<div className='flex flex-wrap items-start justify-between gap-4'>
 				<div>
 					<h1 className='text-2xl font-bold'>
@@ -164,7 +164,7 @@ export function WarehouseList() {
 					}
 				/>
 			) : (
-				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
 					{isPending
 						? Array.from({ length: 6 }, (_, index) => (
 								<WarehouseCard key={index} busy={false} />
@@ -250,7 +250,7 @@ function WarehouseCard({
 	const stats: Array<[string, number]> = [
 		[t('inventory:warehouses.products'), warehouse.productsCount],
 		[t('inventory:warehouses.materials'), warehouse.materialsCount],
-		[t('inventory:warehouses.tools'), warehouse.toolsCount],
+		[t('inventory:warehouses.equipments'), warehouse.equipmentsCount],
 		[t('inventory:warehouses.storages'), warehouse.storagesCount],
 	];
 
@@ -261,6 +261,13 @@ function WarehouseCard({
 			className='group'
 		>
 			<Card className='h-full transition-shadow group-hover:shadow-md'>
+				{/* TODO: render `warehouse.imageUrl` once real image URLs exist; this is a static UI placeholder. */}
+				<img
+					src='https://picsum.photos/300/200'
+					alt={warehouse.name}
+					className='h-40 w-full object-cover'
+					loading='lazy'
+				/>
 				<CardHeader className='flex items-start justify-between gap-2 space-y-0'>
 					<div className='flex min-w-0 flex-col gap-0.5'>
 						<CardTitle className='truncate text-base'>
@@ -294,7 +301,9 @@ function WarehouseCard({
 					<div className='grid grid-cols-4 gap-2 text-center text-sm'>
 						{stats.map(([label, value]) => (
 							<div key={label} className='flex flex-col'>
-								<span className='font-semibold tabular-nums'>{value}</span>
+								<span className='font-semibold text-foreground tabular-nums'>
+									{value}
+								</span>
 								<span className='text-xs text-muted-foreground'>{label}</span>
 							</div>
 						))}

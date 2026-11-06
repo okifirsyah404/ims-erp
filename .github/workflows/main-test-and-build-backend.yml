@@ -130,10 +130,10 @@ jobs:
           require_tests: true
 
       - name: Setup LCOV
-        uses: hrishikesh-kadam/setup-lcov@v1
+        run: sudo apt-get update && sudo apt-get install -y lcov
 
       - name: Report code coverage
-        uses: zgosalvez/github-actions-report-lcov@v7.2.2
+        uses: zgosalvez/github-actions-report-lcov@v7.2.3
         if: (!cancelled())
         with:
           coverage-files: apps/backend/coverage/lcov.info

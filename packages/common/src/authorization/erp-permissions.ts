@@ -71,7 +71,7 @@ export const erpStatements = {
 	stock_adjustment: ['read', 'create', 'submit', 'approve', 'post'],
 	// Borrowing is request/issue separated: `issue` is the act of handing a
 	// unit over, `mark_lost` is restricted to owner/admin/operations_manager.
-	borrowing: [
+	asset_borrowing: [
 		'read',
 		'create',
 		'update',
@@ -270,7 +270,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		dashboard: ['read'],
 		employee: ['read'],
 		product: ['read'],
-		borrowing: [
+		asset_borrowing: [
 			'read',
 			'create',
 			'update',
@@ -286,6 +286,11 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		approval_rule: ['read'],
 		service_ticket: ['read', 'create', 'update', 'assign'],
 		asset: ['read'],
+		// ERP-0031: admins see the warehouse stock of warehouses their
+		// organization is linked to (read-only; receiving/issuing stays with the
+		// warehouse role).
+		stock: ['read', 'export'],
+		stock_adjustment: ['read'],
 		license: ['read'],
 		audit_log: ['read'],
 	},
@@ -318,7 +323,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		stock_adjustment: ['read', 'approve', 'post'],
 		employee: ['read'],
 		asset: ['read', 'create', 'update', 'assign', 'return', 'maintain', 'export'],
-		borrowing: [
+		asset_borrowing: [
 			'read',
 			'create',
 			'update',
@@ -336,7 +341,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 
 	sales_manager: {
 		ac: ['read'],
-		borrowing: ['read', 'create'],
+		asset_borrowing: ['read', 'create'],
 		dashboard: ['read'],
 		master_data: ['read'],
 		customer: ['read', 'create', 'update', 'archive', 'export'],
@@ -353,7 +358,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 
 	sales: {
 		ac: ['read'],
-		borrowing: ['read', 'create'],
+		asset_borrowing: ['read', 'create'],
 		dashboard: ['read'],
 		customer: ['read', 'create', 'update'],
 		lead: ['read', 'create', 'update'],
@@ -369,7 +374,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 
 	project_manager: {
 		ac: ['read'],
-		borrowing: ['read', 'create', 'approve'],
+		asset_borrowing: ['read', 'create', 'approve'],
 		dashboard: ['read'],
 		master_data: ['read'],
 		// Creates projects from deals and closes them after BAST (decision
@@ -392,7 +397,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 
 	technician: {
 		ac: ['read'],
-		borrowing: ['read', 'create'],
+		asset_borrowing: ['read', 'create'],
 		project: ['read'],
 		// Only tickets assigned to them (record rule in the ticket service).
 		service_ticket: ['read', 'update', 'resolve'],
@@ -437,7 +442,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		product: ['read'],
 		stock: ['read', 'receive', 'issue', 'transfer', 'export'],
 		stock_adjustment: ['read', 'create', 'submit'],
-		borrowing: [
+		asset_borrowing: [
 			'read',
 			'update',
 			'issue',
@@ -521,7 +526,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 
 	customer_service: {
 		ac: ['read'],
-		borrowing: ['read', 'create'],
+		asset_borrowing: ['read', 'create'],
 		dashboard: ['read'],
 		customer: ['read'],
 		project: ['read'],
@@ -595,7 +600,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		attendance: ['read', 'export'],
 		product: ['read', 'export'],
 		stock: ['read', 'export'],
-		borrowing: ['read', 'export'],
+		asset_borrowing: ['read', 'export'],
 		invoice: ['read', 'export'],
 		receipt: ['read', 'export'],
 		payment: ['read', 'export'],

@@ -20,14 +20,29 @@ import {
 	STOCK_SERVICE_TOKEN,
 } from '../constants/di';
 import type { StockService } from './stock.service';
+import type { TTx } from '@drizzle/types';
+import type { NumberingService } from '@app/organization/services/numbering.service';
+import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import {
-	AdjustmentCodeTakenError,
 	AdjustmentHasNoLinesError,
 	AdjustmentNotFoundError,
 	AdjustmentTransitionError,
 	ItemNotFoundError,
 	SelfApprovalForbiddenError,
 } from '../errors/inventory.errors';
+import { InventoryAuditWriter } from './inventory-audit.writer';
+import { SYSTEM_AUDIT_ACTOR } from '../constants/audit-actor';
+import type { TInventoryAuditActor } from '../constants/audit-actor';
+
+/**
+ * Adapts the route-layer {@link TAdjustmentActor} (permission flags, no
+ * request context) to the audit actor shape. The controller supplies
+ * email/ip/user-agent via {@link TInventoryAuditActor} on methods that take
+ * one directly; transitions only need the user id.
+ */
+function actorAuditActor(actor: TAdjustmentActor): TInventoryAuditActor {
+	return { userId: actor.actorUserId ?? 'system' };
+}
 
 /**
  * Legal status edges for an adjustment document.
@@ -137,6 +152,14 @@ export class AdjustmentService {
 		private readonly itemRepository: IItemRepository,
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stockService: StockService,
+		/**
+		 * ERP-0009 numbering authority: adjustment codes are sequence-allocated
+		 * inside the creating transaction (hardening plan D4).
+		 */
+		@inject(NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<NumberingService, 'next'>,
+		/** Fire-and-forget audit writer (hardening plan D3). */
+		private readonly audit: InventoryAuditWriter,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 	) {}
 
@@ -189,10 +212,15 @@ export class AdjustmentService {
 		// Validates the warehouse exists and is alive before anything is written.
 		await this.stockService.resolveScope(data.warehouseId);
 
-		const code = await this.allocateCode(organizationId);
 		const now = new Date();
 
 		return this.database.transaction(async (tx) => {
+			// Sequence-allocated code (ERP-0009, hardening plan D4) — inside the
+			// transaction, so a rollback releases the number (accepted gap) and
+			// concurrent creates get strictly distinct codes with no retry loop.
+			// Replaces the former time-stamp + random-suffix + collision-retry
+			// scheme.
+			const code = await this.adjustmentCode(tx, organizationId);
 			const adjustment = await this.adjustmentRepository.create(
 				{
 					organizationId,
@@ -220,6 +248,20 @@ export class AdjustmentService {
 			);
 
 			return { adjustment, lines };
+		}).then(async (detail) => {
+			await this.audit.record({
+				actor: actorAuditActor(actor),
+				action: 'stock_adjustment.created',
+				targetType: 'stock_adjustment',
+				targetId: detail.adjustment.id,
+				organizationId,
+				meta: {
+					code: detail.adjustment.code,
+					adjustmentType: detail.adjustment.adjustmentType,
+					lineCount: detail.lines.length,
+				},
+			});
+			return detail;
 		});
 	}
 
@@ -257,8 +299,9 @@ export class AdjustmentService {
 	async submit(
 		id: string,
 		organizationId: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TStockAdjustmentSelect> {
-		return this.transition(id, organizationId, 'submitted', {});
+		return this.transition(id, organizationId, 'submitted', {}, actor);
 	}
 
 	/**
@@ -286,25 +329,27 @@ export class AdjustmentService {
 			throw new SelfApprovalForbiddenError();
 		}
 		return this.transition(id, organizationId, 'approved', {
-			approvedBy: actor.actorUserId,
+			approvedBy: actorAuditActor(actor).userId,
 			approvedAt: new Date(),
-		});
+		}, actorAuditActor(actor));
 	}
 
 	/** Moves `submitted → rejected`. */
 	async reject(
 		id: string,
 		organizationId: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TStockAdjustmentSelect> {
-		return this.transition(id, organizationId, 'rejected', {});
+		return this.transition(id, organizationId, 'rejected', {}, actor);
 	}
 
 	/** Moves `draft|submitted → cancelled`. */
 	async cancel(
 		id: string,
 		organizationId: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TStockAdjustmentSelect> {
-		return this.transition(id, organizationId, 'cancelled', {});
+		return this.transition(id, organizationId, 'cancelled', {}, actor);
 	}
 
 	/**
@@ -315,9 +360,11 @@ export class AdjustmentService {
 	 * so a retried request cannot post its movements twice.
 	 *
 	 * Each line's movement and balance delta are written by
-	 * {@link StockService.postMovement}, which owns its own transaction. The
-	 * status flip happens **last**, so a failure anywhere leaves the document
-	 * `approved` and re-postable rather than half-posted.
+	 * {@link StockService.postMovement}, joining the posting transaction. The
+	 * status flip happens FIRST inside the transaction as an atomic
+	 * conditional claim: of two concurrent posts exactly one wins, and a
+	 * failure on any line rolls back the claim along with every movement, so
+	 * a half-posted document is impossible.
 	 *
 	 * A line whose `quantity_after` equals the live `quantity_before` writes
 	 * nothing — a recount that agrees is a valid outcome, and the document still
@@ -351,50 +398,74 @@ export class AdjustmentService {
 			adjustment.warehouseId,
 		);
 
-		for (const line of lines) {
-			// The live balance, not the stored snapshot: the snapshot is what the
-			// counter saw, but the movement must reflect reality now.
-			const current = await this.stockService.balanceFor(
-				scopeOrganizationId,
-				adjustment.warehouseId,
-				line.itemId,
-				line.binId,
-			);
+		// ONE transaction for the claim and every per-line movement (hardening
+		// plan Phase I-4): a failed line rolls back all prior lines AND the
+		// claim, so a partial posting of an approved adjustment is impossible.
+		// The status flip happens FIRST inside the transaction as an atomic
+		// conditional claim (`WHERE status = 'approved' AND posted_at IS
+		// NULL`): of two concurrent posts exactly one wins; the loser fails
+		// here rather than double-posting. A rollback of any movement returns
+		// the document to `approved` and re-postable — no compensating update.
+		const posted = await this.database.transaction(async (tx) => {
+			const claimed = await this.adjustmentRepository.claimForPost(id, tx);
+			if (!claimed) throw new AdjustmentTransitionError('approved', 'posted');
 
-			const before = Number(current?.quantityOnHand ?? '0');
-			const after = Number(line.quantityAfter);
-			const delta = after - before;
-			if (delta === 0) continue;
+			for (const line of lines) {
+				// The live balance, not the stored snapshot: the snapshot is what
+				// the counter saw, but the movement must reflect reality now.
+				const current = await this.stockService.balanceFor(
+					scopeOrganizationId,
+					adjustment.warehouseId,
+					line.itemId,
+					line.binId,
+				);
 
-			const movementType: MovementType =
-				delta > 0 ? 'adjustment_in' : 'adjustment_out';
+				const before = Number(current?.quantityOnHand ?? '0');
+				const after = Number(line.quantityAfter);
+				const delta = after - before;
+				if (delta === 0) continue;
 
-			await this.stockService.postMovement({
-				// The acting tenant is recorded on the ledger even when the
-				// warehouse is global and the balance is shared.
-				actorOrganizationId: organizationId,
-				warehouseId: adjustment.warehouseId,
-				binId: line.binId,
-				itemId: line.itemId,
-				movementType,
-				// postMovement takes an unsigned quantity; direction is the type.
-				quantity: Math.abs(delta).toFixed(3),
-				// An increase enters at the line's cost (opening stock); without
-				// one, and for every decrease, the moving average applies.
-				unitCost: delta > 0 ? line.unitCost : null,
-				referenceType: 'manual_adjustment',
-				referenceId: adjustment.id,
-				createdBy: actor.actorUserId,
-				notes: line.note ?? adjustment.notes ?? null,
-			});
-		}
+				const movementType: MovementType =
+					delta > 0 ? 'adjustment_in' : 'adjustment_out';
 
-		// Flip status only after every movement is committed.
-		const posted = await this.adjustmentRepository.update(id, {
-			status: 'posted',
-			postedAt: new Date(),
+				await this.stockService.postMovement(
+					{
+						// The acting tenant is recorded on the ledger even when the
+						// warehouse is global and the balance is shared.
+						actorOrganizationId: organizationId,
+						warehouseId: adjustment.warehouseId,
+						binId: line.binId,
+						itemId: line.itemId,
+						movementType,
+						// postMovement takes an unsigned quantity; direction is the type.
+						quantity: Math.abs(delta).toFixed(3),
+						// An increase enters at the line's cost (opening stock);
+						// without one, and for every decrease, the moving average
+						// applies.
+						unitCost: delta > 0 ? line.unitCost : null,
+						referenceType: 'manual_adjustment',
+						referenceId: adjustment.id,
+						createdBy: actor.actorUserId,
+						notes: line.note ?? adjustment.notes ?? null,
+					},
+					tx,
+				);
+			}
+
+			return claimed;
 		});
-		if (!posted) throw new AdjustmentNotFoundError();
+
+		await this.audit.record({
+			actor: actorAuditActor(actor),
+			action: 'stock_adjustment.posted',
+			targetType: 'stock_adjustment',
+			targetId: id,
+			organizationId,
+			meta: {
+				code: adjustment.code,
+				movementsPosted: lines.length,
+			},
+		});
 
 		return { adjustment: posted, lines };
 	}
@@ -412,6 +483,7 @@ export class AdjustmentService {
 		organizationId: string,
 		to: AdjustmentStatus,
 		extra: Partial<TStockAdjustmentSelect>,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TStockAdjustmentSelect> {
 		const adjustment = await this.requireDocument(id, organizationId);
 		if (!isLegalTransition(adjustment.status, to)) {
@@ -422,6 +494,21 @@ export class AdjustmentService {
 			...extra,
 		});
 		if (!updated) throw new AdjustmentNotFoundError();
+		// Financial-control event (hardening plan D3): every workflow edge is
+		// attributable. Fire-and-forget — an audit failure never fails the
+		// transition.
+		await this.audit.record({
+			actor,
+			action: `stock_adjustment.${to === 'cancelled' ? 'cancelled' : to}` as 'stock_adjustment.submitted',
+			targetType: 'stock_adjustment',
+			targetId: id,
+			organizationId,
+			meta: {
+				code: adjustment.code,
+				from: adjustment.status,
+				to,
+			},
+		});
 		return updated;
 	}
 
@@ -507,26 +594,19 @@ export class AdjustmentService {
 	}
 
 	/**
-	 * Allocates the next document code for a tenant.
+	 * Allocates and formats the next adjustment code (ERP-0009).
 	 *
-	 * @param organizationId - The raising tenant
-	 * @throws {AdjustmentCodeTakenError} After too many collisions
 	 * @remarks
-	 * ERP-0009 (document numbering) does not exist yet, so the code is
-	 * time-ordered plus a random suffix and retried on collision. Uniqueness is
-	 * ultimately enforced by the `(organization_id, code)` index.
+	 * Series `stock_adjustment` of the one numbering service (company-wide,
+	 * pattern set under document numbering), allocated inside the caller's
+	 * transaction.
+	 * Uniqueness follows from the sequence — no collision retry needed.
+	 * Must be called inside the document's transaction.
 	 */
-	private async allocateCode(organizationId: string): Promise<string> {
-		for (let attempt = 0; attempt < 5; attempt += 1) {
-			const stamp = new Date().toISOString().replace(/\D/g, '').slice(0, 14);
-			const random = Math.random().toString(36).slice(2, 6).toUpperCase();
-			const code = `ADJ-${stamp}-${random}`;
-			const existing = await this.adjustmentRepository.findByCode(
-				organizationId,
-				code,
-			);
-			if (!existing) return code;
-		}
-		throw new AdjustmentCodeTakenError();
+	private async adjustmentCode(
+		tx: TTx,
+		_organizationId: string,
+	): Promise<string> {
+		return this.numbering.next('stock_adjustment', { tx });
 	}
 }

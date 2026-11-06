@@ -14,6 +14,20 @@ import {
 import { documentImageFrom } from '@providers/s3/document-image';
 import { ITEM_IMAGE_SERVICE_TOKEN, ITEM_SERVICE_TOKEN } from '../constants/di';
 import type { ItemService } from '../services/item.service';
+import type { TInventoryAuditActor } from '../constants/audit-actor';
+
+/**
+ * Audit actor derived from the guard-resolved session and request headers,
+ * never from client input (house pattern — mirrors user-admin.controller).
+ */
+function auditActor(erp: ErpContext, request: Request): TInventoryAuditActor {
+	return {
+		userId: erp.session.user.id,
+		email: erp.session.user.email,
+		ip: request.headers.get('x-forwarded-for'),
+		userAgent: request.headers.get('user-agent'),
+	};
+}
 
 /**
  * REST controller for the item master and its serialized units.
@@ -65,15 +79,18 @@ export class ItemController {
 			)
 			.post(
 				'',
-				async ({ body, erp, status }) => {
+				async ({ body, erp, request, status }) => {
 					const parsed = createItemSchema.parse(body);
-					const row = await itemService.createItem({
-						...parsed,
-						// Tenant scope is the caller's organization; an
-						// application admin may create a global item.
-						organizationId: resolveOrganizationId(parsed.organizationId, erp),
-						createdBy: erp.session.user.id,
-					} as never);
+					const row = await itemService.createItem(
+						{
+							...parsed,
+							// Tenant scope is the caller's organization; an
+							// application admin may create a global item.
+							organizationId: resolveOrganizationId(parsed.organizationId, erp),
+							createdBy: erp.session.user.id,
+						} as never,
+						auditActor(erp, request),
+					);
 					return status(201, created(row));
 				},
 				{
@@ -83,11 +100,12 @@ export class ItemController {
 			)
 			.patch(
 				'/:id',
-				async ({ params, body }) => {
+				async ({ params, body, erp, request }) => {
 					const id = idParamSchema.parse(params).id;
 					const row = await itemService.updateItem(
 						id,
 						updateItemSchema.parse(body),
+						auditActor(erp, request),
 					);
 					return ok(row);
 				},
@@ -98,9 +116,9 @@ export class ItemController {
 			)
 			.delete(
 				'/:id',
-				async ({ params }) => {
+				async ({ params, erp, request }) => {
 					const id = idParamSchema.parse(params).id;
-					await itemService.archiveItem(id);
+					await itemService.archiveItem(id, auditActor(erp, request));
 					return noContent();
 				},
 				{

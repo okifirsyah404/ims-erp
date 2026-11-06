@@ -32,7 +32,7 @@ function AccountLayout() {
 		'/account';
 
 	return (
-		<div className='mx-auto flex w-full max-w-2xl flex-col gap-4 p-4 md:p-6'>
+		<div className='mx-auto flex w-full max-w-2xl flex-col gap-4'>
 			<Tabs
 				value={active}
 				onValueChange={(value) => navigate({ to: value as string })}

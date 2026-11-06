@@ -10,6 +10,7 @@ import type {
 	TBalanceKey,
 	TBalancePaginationRequest,
 } from '../contracts/balance.repository.interface';
+import { InsufficientStockError } from '../errors/inventory.errors';
 import type { TStockBalanceSelect } from '@drizzle/schemas/inventory.schema';
 import type { TTx } from '@drizzle/types';
 
@@ -112,6 +113,25 @@ export class BalanceRepository implements IBalanceRepository {
 	 * @param key - Which balance to touch
 	 * @param delta - Signed quantity and the movement time
 	 */
+	/**
+	 * Atomically adds a signed delta to a balance, creating it if absent.
+	 *
+	 * @remarks
+	 * The serialized mutation path (hardening plan Phase I-1 / D2). Sequence:
+	 * 1. `INSERT … ON CONFLICT DO NOTHING` — creates the row if absent; if it
+	 *    already exists this is a no-op.
+	 * 2. `SELECT … FOR UPDATE` — takes the row lock. Every concurrent poster
+	 *    on the same balance blocks here until the first commits, so the
+	 *    read-modify-write that follows is race-free (TOCTOU closed).
+	 * 3. Conditional `UPDATE … WHERE quantity_on_hand + delta >= 0` — the
+	 *    database refuses the write itself if the delta would go negative.
+	 *    The WHERE-clause guard runs under the lock, so unlike a pre-check it
+	 *    cannot race: it IS the enforcement, with the CHECK constraints
+	 *    (`stock_balances_on_hand_check`) as the last line of defense.
+	 *
+	 * `quantity_available` is maintained in the same statement (it is a CHECK
+	 * constraint: `available = on_hand - reserved`).
+	 */
 	async applyDelta(
 		key: TBalanceKey,
 		delta: TBalanceDelta,
@@ -120,7 +140,7 @@ export class BalanceRepository implements IBalanceRepository {
 		const now = new Date();
 		const db = tx ?? this.database;
 
-		const [row] = await db
+		await db
 			.insert(stockBalances)
 			.values({
 				organizationId: key.scopeOrganizationId,
@@ -128,26 +148,70 @@ export class BalanceRepository implements IBalanceRepository {
 				warehouseId: key.warehouseId,
 				binId: key.binId,
 				// A brand-new balance starts at the delta; available mirrors it
-				// because nothing can be reserved yet.
+				// because nothing can be reserved yet. A negative opening delta
+				// is refused by the CHECK constraints, which is correct: stock
+				// cannot start below zero either.
 				quantityOnHand: delta.quantity,
 				quantityReserved: '0',
 				quantityAvailable: delta.quantity,
 				lastMovementAt: delta.occurredAt,
 				createdAt: now,
 			})
-			.onConflictDoUpdate({
+			.onConflictDoNothing({
 				target: conflictTarget(key.scopeOrganizationId),
-				// The increment is done by the database, in one statement: this
-				// is the line that makes concurrent posts safe.
-				set: {
-					quantityOnHand: sql`${stockBalances.quantityOnHand} + ${delta.quantity}`,
-					quantityAvailable: sql`${stockBalances.quantityOnHand} + ${delta.quantity} - ${stockBalances.quantityReserved}`,
-					lastMovementAt: sql`greatest(coalesce(${stockBalances.lastMovementAt}, ${delta.occurredAt.getTime()}), ${delta.occurredAt.getTime()})`,
-					updatedAt: now,
-				},
-				targetWhere: scopePredicateFor(key.scopeOrganizationId),
+				// Index predicate of the partial unique index being targeted.
+				where: scopePredicateFor(key.scopeOrganizationId),
+			});
+
+		// Lock the row (ours if just created, someone else's if it existed).
+		const locked = await db
+			.select({ id: stockBalances.id })
+			.from(stockBalances)
+			.where(keyPredicate(key))
+			.for('update')
+			.limit(1);
+
+		if (locked.length === 0) {
+			// Unreachable in practice: the insert either created the row or
+			// found a conflict — a row with this key must exist. Throwing keeps
+			// the type honest and surfaces genuine corruption loudly.
+			throw new Error(
+				`stock_balances row disappeared after upsert: ${JSON.stringify(key)}`,
+			);
+		}
+
+		const [row] = await db
+			.update(stockBalances)
+			.set({
+				quantityOnHand: sql`${stockBalances.quantityOnHand} + ${delta.quantity}`,
+				quantityAvailable: sql`${stockBalances.quantityOnHand} + ${delta.quantity} - ${stockBalances.quantityReserved}`,
+				lastMovementAt: sql`greatest(coalesce(${stockBalances.lastMovementAt}, ${delta.occurredAt.getTime()}), ${delta.occurredAt.getTime()})`,
+				updatedAt: now,
 			})
+			// The enforcement: refuse the delta if it would drive the balance
+			// below zero. Runs under the FOR UPDATE lock, so it cannot race.
+			.where(
+				and(
+					keyPredicate(key),
+					sql`${stockBalances.quantityOnHand} + ${delta.quantity} >= 0`,
+				),
+			)
 			.returning();
+
+		if (!row) {
+			// The WHERE guard fired: the delta would overdraw the balance. We
+			// still hold the FOR UPDATE lock, so re-reading gives the exact
+			// balance the refused update saw — no race can change it now.
+			const [current] = await db
+				.select({ onHand: stockBalances.quantityOnHand })
+				.from(stockBalances)
+				.where(keyPredicate(key))
+				.limit(1);
+			throw new InsufficientStockError(
+				current?.onHand ?? '0',
+				Number(delta.quantity).toFixed(3),
+			);
+		}
 
 		return row;
 	}

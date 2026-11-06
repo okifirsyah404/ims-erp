@@ -40,8 +40,13 @@ export const warehouseListQuerySchema = inventoryPaginationSchema.extend({
 	isActive: booleanQuerySchema.optional(),
 });
 
-/** Address body, nested inside a warehouse create or sent to `PUT`. */
-export const warehouseAddressSchema = z
+/** Body for the warehouse↔organization link endpoints (ERP-0031). */
+export const warehouseLinkSchema = z.object({
+	/** Logical reference to `auth.organizations.id` — validated by the link write itself. */
+	organizationId: z.string().min(1).max(64),
+});
+
+/** Address body, nested inside a warehouse create or sent to `PUT`. */export const warehouseAddressSchema = z
 	.object({
 		label: z.string().max(255).nullable().optional(),
 		street: z.string().min(1),
@@ -84,6 +89,8 @@ export const createWarehouseSchema = z
 		responsibleEmployeeId: z.uuid().nullable().optional(),
 		isDefault: z.boolean().default(false),
 		isActive: z.boolean().default(true),
+		/** Optional display image URL for the warehouse card. */
+		imageUrl: z.url().max(2048).nullable().optional(),
 		address: warehouseAddressSchema.optional(),
 	})
 	.strict();
@@ -102,6 +109,8 @@ export const updateWarehouseSchema = z
 		responsibleEmployeeId: z.uuid().nullable().optional(),
 		isDefault: z.boolean().optional(),
 		isActive: z.boolean().optional(),
+		/** Optional display image URL for the warehouse card. */
+		imageUrl: z.url().max(2048).nullable().optional(),
 	})
 	.strict();
 
@@ -143,6 +152,11 @@ export const storageListQuerySchema = z.object({
 /** Path params for routes nested under a warehouse. */
 export const nestedIdParamSchema = idParamSchema.extend({
 	storageId: z.uuid(),
+});
+
+/** Path params for the warehouse↔organization link routes (ERP-0031). */
+export const warehouseLinkParamSchema = idParamSchema.extend({
+	organizationId: z.string().min(1).max(64),
 });
 
 export { idParamSchema };

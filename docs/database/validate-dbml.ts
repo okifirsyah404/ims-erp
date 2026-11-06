@@ -25,7 +25,8 @@ for (const schema of db.schemas) {
     tables.push({ schema: schema.name, name: t.name, fields: (t.fields ?? []).map(f => f.name) });
   }
 }
-console.log(`parsed: ${tables.length} tables, ${db.refs?.length ?? 0} standalone refs`);
+const allRefs = db.schemas.flatMap((s) => s.refs ?? []);
+console.log(`parsed: ${tables.length} tables, ${allRefs.length} refs`);
 
 // module mapping: schemas belonging to one module
 const moduleOf = (s) =>
@@ -49,14 +50,18 @@ for (const t of tables) {
 }
 
 let cross = 0;
-for (const r of db.refs ?? []) {
+for (const r of allRefs) {
   const [e1, e2] = r.endpoints;
-  const s1 = nameMap.get(e1.tableName), s2 = nameMap.get(e2.tableName);
+  const bare = (name) => (name.includes(".") ? name.split(".")[1] : name);
+  // `endpoint.schemaName` is authoritative; the bare-name map is only a
+  // fallback because `items` exists in both catalog and inventory.
+  const s1 = e1.schemaName || nameMap.get(bare(e1.tableName));
+  const s2 = e2.schemaName || nameMap.get(bare(e2.tableName));
   if (s1 === undefined || s2 === undefined) {
     console.error(`UNRESOLVED ref endpoint: ${e1.tableName} / ${e2.tableName}`); cross++; continue;
   }
   if (moduleOf(s1) !== moduleOf(s2)) {
-    console.error(`CROSS-MODULE FK: ${s1}.${e1.tableName} -> ${s2}.${e2.tableName}`); cross++;
+    console.error(`CROSS-MODULE FK: ${s1}.${bare(e1.tableName)} -> ${s2}.${bare(e2.tableName)}`); cross++;
   }
 }
 console.log(`cross-module refs: ${cross}`);
@@ -75,7 +80,7 @@ const TIMESTAMP_EXEMPT = new Set([
   // append-only ledger / history (deleted_at meaningless, documented in notes)
   "inventory.stock_movements", "ticket.ticket_status_history", "audit.audit_logs",
   // append-only business timeline (never edited, never soft-deleted)
-  "inventory.borrowing_events",
+  "assets.borrowing_events",
   // projection
   "inventory.stock_balances",
   // serial/lot rows are stock facts closed by disposition, not business entities

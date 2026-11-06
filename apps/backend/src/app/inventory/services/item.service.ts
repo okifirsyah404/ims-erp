@@ -1,5 +1,8 @@
 import type { TTx } from '@drizzle/types';
 import { inject, injectable } from 'tsyringe';
+import { InventoryAuditWriter } from './inventory-audit.writer';
+import { SYSTEM_AUDIT_ACTOR } from '../constants/audit-actor';
+import type { TInventoryAuditActor } from '../constants/audit-actor';
 import type { TPaginationResult } from '@ims-erp/common';
 import type {
 	ItemKind,
@@ -41,38 +44,16 @@ import {
  * @remarks
  * `UNIT_STATUS_TRANSITIONS` in the schema describes where a status may go.
  * This table describes which statuses a kind may hold **at all**:
- * - `tool` may only be borrowed (plus the states any unit passes through on
- *   its way in and out: pre-ordered, in stock, lost).
  * - `sold` and `applied_warranty` are product-only.
- * - The four consumable kinds additionally reach `sold`/`applied_warranty`.
+ * - Every consumable kind additionally reaches `sold`/`applied_warranty`.
+ *
+ * ERP-0036 removed `tool` and `service` as item kinds, and `borrowed` moved
+ * with the borrowing engine to `assets` (Slice 3).
  */
 const STATUSES_BY_KIND: Record<ItemKind, readonly UnitStatus[]> = {
-	product: [
-		'pre_order',
-		'in_stock',
-		'borrowed',
-		'lost',
-		'sold',
-		'applied_warranty',
-	],
-	component: [
-		'pre_order',
-		'in_stock',
-		'borrowed',
-		'lost',
-		'sold',
-		'applied_warranty',
-	],
-	material: [
-		'pre_order',
-		'in_stock',
-		'borrowed',
-		'lost',
-		'sold',
-		'applied_warranty',
-	],
-	tool: ['pre_order', 'in_stock', 'borrowed', 'lost'],
-	service: [],
+	product: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
+	component: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
+	material: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
 };
 
 /**
@@ -132,7 +113,6 @@ export function assertTransitionAllowed(
  * @remarks
  * Owns the cross-field rules the schema cannot express, because a unit row
  * does not know its item's kind without a join:
- * - A `service` item is never serialized and never stock-tracked.
  * - A non-serialized item has no units.
  * - A unit's status must be legal for its item's kind.
  * - A provisional serial is replaced exactly once.
@@ -146,6 +126,8 @@ export class ItemService {
 		private readonly serialUnitRepository: ISerialUnitRepository,
 		@inject(ITEM_CATEGORY_REPOSITORY_TOKEN)
 		private readonly categoryRepository: Pick<IItemCategoryRepository, 'findById'>,
+		/** Fire-and-forget audit writer (hardening plan D3). */
+		private readonly audit: InventoryAuditWriter,
 	) {}
 
 	/**
@@ -194,7 +176,10 @@ export class ItemService {
 	 * impossible (e.g. a serialized service)
 	 * @throws {ItemSkuTakenError} When the SKU is already used for this tenant
 	 */
-	async createItem(data: TItemCreateData): Promise<TItemSelect> {
+	async createItem(
+		data: TItemCreateData,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+	): Promise<TItemSelect> {
 		this.assertItemShape(data);
 		await this.assertCategory(data.categoryId);
 
@@ -204,7 +189,16 @@ export class ItemService {
 		);
 		if (existing) throw new ItemSkuTakenError();
 
-		return this.itemRepository.create(data);
+		const item = await this.itemRepository.create(data);
+		await this.audit.record({
+			actor,
+			action: 'item.created',
+			targetType: 'item',
+			targetId: item.id,
+			organizationId: item.organizationId,
+			meta: { sku: item.sku, name: item.name, itemKind: item.itemKind },
+		});
+		return item;
 	}
 
 	/**
@@ -221,6 +215,7 @@ export class ItemService {
 	async updateItem(
 		id: string,
 		data: TItemUpdateData,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TItemSelect> {
 		const current = await this.getItem(id);
 		await this.assertCategory(data.categoryId, current.categoryId);
@@ -234,6 +229,27 @@ export class ItemService {
 
 		const updated = await this.itemRepository.update(id, data);
 		if (!updated) throw new ItemNotFoundError();
+		await this.audit.record({
+			actor,
+			action: 'item.updated',
+			targetType: 'item',
+			targetId: id,
+			organizationId: updated.organizationId,
+			meta: InventoryAuditWriter.snapshot(
+				{
+					name: current.name,
+					purchasePrice: current.purchasePrice,
+					sellingPrice: current.sellingPrice,
+					description: current.description,
+				},
+				{
+					name: updated.name,
+					purchasePrice: updated.purchasePrice,
+					sellingPrice: updated.sellingPrice,
+					description: updated.description,
+				},
+			),
+		});
 		return updated;
 	}
 
@@ -243,7 +259,10 @@ export class ItemService {
 	 * @throws {ItemNotFoundError} When the item is absent or archived
 	 * @throws {ItemHasUnitsError} When live units still reference it
 	 */
-	async archiveItem(id: string): Promise<TItemSelect> {
+	async archiveItem(
+		id: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+	): Promise<TItemSelect> {
 		await this.getItem(id);
 
 		const units = await this.itemRepository.countUnits(id);
@@ -251,6 +270,14 @@ export class ItemService {
 
 		const archived = await this.itemRepository.archive(id);
 		if (!archived) throw new ItemNotFoundError();
+		await this.audit.record({
+			actor,
+			action: 'item.archived',
+			targetType: 'item',
+			targetId: id,
+			organizationId: archived.organizationId,
+			meta: { sku: archived.sku },
+		});
 		return archived;
 	}
 
@@ -449,13 +476,6 @@ export class ItemService {
 	 * @throws {InventoryRuleViolationError} When the shape is impossible
 	 */
 	private assertItemShape(data: TItemCreateData): void {
-		if (data.itemKind === 'service') {
-			if (data.isSerialized || data.isStockTracked) {
-				throw new InventoryRuleViolationError(
-					'A service is never serialized and never stock-tracked',
-				);
-			}
-		}
 		if (data.isSerialized && !data.isStockTracked) {
 			throw new InventoryRuleViolationError(
 				'A serialized item must be stock-tracked',

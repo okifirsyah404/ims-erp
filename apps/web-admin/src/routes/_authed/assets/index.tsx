@@ -1,15 +1,31 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Repeat } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { AssetRegisterList } from '@/components/assets/asset-register-list';
 
+/** Search params for the register list (URL-backed filters). */
+type TAssetsSearch = {
+	page?: number;
+	search?: string;
+	status?: string;
+	assetType?: string;
+	includeArchived?: boolean;
+};
+
+/** `/assets` — the asset register list (Phase A-4). */
 export const Route = createFileRoute('/_authed/assets/')({
-	component: ComingSoonStubPage,
+	validateSearch: (search: Record<string, unknown>): TAssetsSearch => ({
+		page: search.page ? Number(search.page) || 1 : undefined,
+		search:
+			typeof search.search === 'string' && search.search
+				? search.search
+				: undefined,
+		status: typeof search.status === 'string' ? search.status : undefined,
+		assetType:
+			typeof search.assetType === 'string' ? search.assetType : undefined,
+		includeArchived:
+			search.includeArchived === true || search.includeArchived === 'true'
+				? true
+				: undefined,
+	}),
+	component: AssetRegisterList,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.assets')} icon={Repeat} />;
-}

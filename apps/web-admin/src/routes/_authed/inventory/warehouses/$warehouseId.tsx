@@ -24,6 +24,7 @@ import { MapPin, PackageOpen } from 'lucide-react';
 import { AdminOnly } from '@/components/inventory/admin-only';
 import { StorageDialog, useArchiveStorage } from '@/components/inventory/storage-dialog';
 import { WarehouseItemTable } from '@/components/inventory/warehouse-item-table';
+import { WarehouseOrganizationsTab } from '@/components/inventory/warehouse-organizations-tab';
 import { EmptyState } from '@/components/empty-state';
 import { warehouseQueryOptions } from '@/lib/warehouse-api';
 
@@ -54,7 +55,6 @@ function WarehouseDetailPage() {
 	const stats: Array<[string, number]> = [
 		[t('inventory:warehouses.products'), warehouse.productsCount],
 		[t('inventory:warehouses.materials'), warehouse.materialsCount],
-		[t('inventory:warehouses.tools'), warehouse.toolsCount],
 		[t('inventory:warehouses.storages'), warehouse.storagesCount],
 	];
 
@@ -151,11 +151,11 @@ function WarehouseDetailPage() {
 						<TabsTrigger value='materials'>
 							{t('inventory:warehouses.materials')}
 						</TabsTrigger>
-						<TabsTrigger value='tools'>
-							{t('inventory:warehouses.tools')}
-						</TabsTrigger>
 						<TabsTrigger value='storage'>
 							{t('inventory:warehouses.storageTab')}
+						</TabsTrigger>
+						<TabsTrigger value='organizations'>
+							{t('inventory:warehouses.organizationsTab')}
 						</TabsTrigger>
 					</TabsList>
 					<TabsContent value='products'>
@@ -164,14 +164,14 @@ function WarehouseDetailPage() {
 					<TabsContent value='materials'>
 						<WarehouseItemTable warehouseId={warehouseId} itemKind='material' />
 					</TabsContent>
-					<TabsContent value='tools'>
-						<WarehouseItemTable warehouseId={warehouseId} itemKind='tool' />
-					</TabsContent>
 					<TabsContent value='storage'>
 						<StorageTab
 							warehouseId={warehouseId}
 							warehouseIsActive={warehouse.isActive}
 						/>
+					</TabsContent>
+					<TabsContent value='organizations'>
+						<WarehouseOrganizationsTab warehouseId={warehouseId} />
 					</TabsContent>
 				</Tabs>
 			</div>

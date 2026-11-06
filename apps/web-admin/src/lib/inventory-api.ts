@@ -16,13 +16,7 @@ import { queryOptions } from '@tanstack/react-query';
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 /** Item kinds, mirroring `ITEM_KINDS` in the backend schema. */
-export const ITEM_KINDS = [
-	'product',
-	'component',
-	'material',
-	'tool',
-	'service',
-] as const;
+export const ITEM_KINDS = ['product', 'component', 'material'] as const;
 export type TItemKind = (typeof ITEM_KINDS)[number];
 
 /** Fixed unit list (ADR-0011); mirrors `ITEM_UNITS` in the backend schema; not to be confused with `TItemUnit`, a serialized unit. */

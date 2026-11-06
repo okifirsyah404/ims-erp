@@ -1,4 +1,7 @@
 import { inject, injectable } from 'tsyringe';
+import { InventoryAuditWriter } from './inventory-audit.writer';
+import { SYSTEM_AUDIT_ACTOR } from '../constants/audit-actor';
+import type { TInventoryAuditActor } from '../constants/audit-actor';
 import type { TPaginationResult } from '@ims-erp/common';
 import type {
 	TWarehouseAddressSelect,
@@ -21,18 +24,22 @@ import type {
 } from '../contracts/warehouse-storage.repository.interface';
 import {
 	WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
+	WAREHOUSE_BORROWING_GUARD_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 } from '../constants/di';
-import {
+import { EXPORTED_ASSET_SERVICE_TOKEN } from '@app/assets/constants/di';
+import type { ExportedAssetService } from '@app/assets/services/exported-asset.service';import {
 	InventoryRuleViolationError,
 	StorageCodeTakenError,
 	StorageNotFoundError,
 	WarehouseCodeTakenError,
 	WarehouseHasUnitsError,
 	WarehouseInactiveError,
+	WarehouseLinkConflictError,
 	WarehouseNotFoundError,
 } from '../errors/inventory.errors';
+import type { IWarehouseBorrowingGuard } from '../contracts/warehouse-borrowing-guard.port';
 
 /** A warehouse with its 1:1 address, its bins, and its kind counts. */
 export type TWarehouseDetail = TWarehouseSelect & {
@@ -44,12 +51,18 @@ export type TWarehouseDetail = TWarehouseSelect & {
 export type TWarehouseWithCounts = TWarehouseSelect &
 	Omit<TWarehouseKindCounts, 'warehouseId'>;
 
+/** A warehouse linked to the caller's organization, with its bins (ERP-0031). */
+export type TWarehouseLinked = TWarehouseSelect & {
+	storages: TWarehouseStorageSelect[];
+};
+
 /** Input for updating a warehouse. `code`/`organizationId` already stripped. */
 export type TWarehouseUpdateInput = {
 	name?: string;
 	responsibleEmployeeId?: string | null;
 	isDefault?: boolean;
 	isActive?: boolean;
+	imageUrl?: string | null;
 };
 
 /**
@@ -81,7 +94,18 @@ export class WarehouseService {
 		private readonly addressRepository: IWarehouseAddressRepository,
 		@inject(WAREHOUSE_STORAGE_REPOSITORY_TOKEN)
 		private readonly storageRepository: IWarehouseStorageRepository,
-	) {}
+		/** Fire-and-forget audit writer (hardening plan D3). */
+		private readonly audit: InventoryAuditWriter,
+		/**
+		 * Open-borrowing guard port (ERP-0031). Optional by token: `registerAssets`
+		 * provides the real implementation; tests and asset-less compositions
+		 * register a noop.
+		 */
+		@inject(WAREHOUSE_BORROWING_GUARD_TOKEN)
+		private readonly borrowingGuard: IWarehouseBorrowingGuard,
+		/** Equipment counts come from the assets module via its export facade. */
+		@inject(EXPORTED_ASSET_SERVICE_TOKEN)
+		private readonly exportedAssetService: ExportedAssetService,	) {}
 
 	/** Fetches one filtered page of warehouses, decorated with kind counts. */
 	async paginate(request: {
@@ -102,7 +126,8 @@ export class WarehouseService {
 		const counts = await this.warehouseRepository.countKinds(
 			result.data.map((warehouse) => warehouse.id),
 		);
-		const byWarehouse = new Map(counts.map((row) => [row.warehouseId, row]));
+		const decorated = await this.withEquipmentCounts(counts);
+		const byWarehouse = new Map(decorated.map((row) => [row.warehouseId, row]));
 		return {
 			...result,
 			data: result.data.map((warehouse) => ({
@@ -125,15 +150,62 @@ export class WarehouseService {
 			this.storageRepository.listByWarehouse(id),
 			this.warehouseRepository.countKinds([id]),
 		]);
+		const [decorated] = await this.withEquipmentCounts([counts]);
 		return {
 			...warehouse,
 			address,
 			storages,
-			productsCount: counts.productsCount,
-			materialsCount: counts.materialsCount,
-			toolsCount: counts.toolsCount,
-			storagesCount: counts.storagesCount,
+			productsCount: decorated.productsCount,
+			materialsCount: decorated.materialsCount,
+			equipmentsCount: decorated.equipmentsCount,
+			storagesCount: decorated.storagesCount,
 		};
+	}
+
+	/**
+	 * Resolves alive warehouse names for the given ids.
+	 *
+	 * @remarks
+	 * Published for cross-module decoration (e.g. the assets module showing
+	 * where an asset is stored) — consumed via {@link WAREHOUSE_SERVICE_TOKEN}
+	 * as a service-to-service call. Unknown or archived ids are simply absent
+	 * from the returned map.
+	 */
+	async getNameMap(
+		ids: string[],
+	): Promise<Map<string, string>> {
+		const rows = await this.warehouseRepository.findNamesByIds(ids);
+		return new Map(rows.map((row) => [row.id, row.name]));
+	}
+
+	/**
+	 * Merges alive equipment-asset counts (from the assets module) into the
+	 * inventory-computed kind counts, per warehouse.
+	 *
+	 * @remarks
+	 * Equipment is an asset (`assets.assets`, `assetType = 'equipment'`), not an
+	 * inventory item kind, so the count crosses the module boundary as a
+	 * service-to-service call per the module rules — the inventory module never
+	 * queries the assets schema directly.
+	 */
+	private async withEquipmentCounts(
+		counts: TWarehouseKindCounts[],
+	): Promise<TWarehouseKindCounts[]> {
+		if (counts.length === 0) return [];
+		const warehouseIds = counts.map((row) => row.warehouseId);
+		const equipmentRows = await this.exportedAssetService.countByWarehouse(
+			warehouseIds,
+			'equipment',
+		);
+		const equipmentByWarehouse = new Map(
+			equipmentRows.flatMap((row) =>
+				row.warehouseId === null ? [] : [[row.warehouseId, row.value]],
+			),
+		);
+		return counts.map((row) => ({
+			...row,
+			equipmentsCount: equipmentByWarehouse.get(row.warehouseId) ?? 0,
+		}));
 	}
 
 	/**
@@ -144,8 +216,12 @@ export class WarehouseService {
 	 */
 	async createWarehouse(
 		input: TWarehouseCreateData,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TWarehouseDetail> {
-		const organizationId = input.organizationId ?? null;
+		// ERP-0031 (D1): every warehouse is global; organization access comes
+		// from `warehouse_organizations` links, so a client-supplied scope is
+		// dropped rather than stored. The column is frozen at NULL.
+		const organizationId = null;
 
 		const existing = await this.warehouseRepository.findByCode(
 			organizationId,
@@ -153,7 +229,10 @@ export class WarehouseService {
 		);
 		if (existing) throw new WarehouseCodeTakenError();
 
-		const warehouse = await this.warehouseRepository.create(input);
+		const warehouse = await this.warehouseRepository.create({
+			...input,
+			organizationId: null,
+		});
 
 		// D-A: a warehouse created as the default demotes its siblings.
 		if (warehouse.isDefault) {
@@ -162,6 +241,15 @@ export class WarehouseService {
 				warehouse.id,
 			);
 		}
+
+		await this.audit.record({
+			actor,
+			action: 'warehouse.created',
+			targetType: 'warehouse',
+			targetId: warehouse.id,
+			organizationId: warehouse.organizationId,
+			meta: { code: warehouse.code, name: warehouse.name, isDefault: warehouse.isDefault },
+		});
 
 		return this.getWarehouse(warehouse.id);
 	}
@@ -176,6 +264,7 @@ export class WarehouseService {
 	async updateWarehouse(
 		id: string,
 		input: TWarehouseUpdateInput,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TWarehouseDetail> {
 		const current = await this.requireWarehouse(id);
 		const updated = await this.warehouseRepository.update(id, input);
@@ -190,6 +279,30 @@ export class WarehouseService {
 				id,
 			);
 		}
+
+		await this.audit.record({
+			actor,
+			action: 'warehouse.updated',
+			targetType: 'warehouse',
+			targetId: id,
+			organizationId: updated.organizationId,
+			meta: InventoryAuditWriter.snapshot(
+				{
+					name: current.name,
+					responsibleEmployeeId: current.responsibleEmployeeId,
+					isDefault: current.isDefault,
+					isActive: current.isActive,
+					imageUrl: current.imageUrl,
+				},
+				{
+					name: updated.name,
+					responsibleEmployeeId: updated.responsibleEmployeeId,
+					isDefault: updated.isDefault,
+					isActive: updated.isActive,
+					imageUrl: updated.imageUrl,
+				},
+			),
+		});
 
 		return this.getWarehouse(id);
 	}
@@ -208,14 +321,25 @@ export class WarehouseService {
 	 * @throws {WarehouseNotFoundError} When absent or archived
 	 * @throws {WarehouseHasUnitsError} When live units still reference it
 	 */
-	async archiveWarehouse(id: string): Promise<TWarehouseSelect> {
-		await this.requireWarehouse(id);
+	async archiveWarehouse(
+		id: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+	): Promise<TWarehouseSelect> {
+		const current = await this.requireWarehouse(id);
 
 		const units = await this.warehouseRepository.countLiveUnits(id);
 		if (units > 0) throw new WarehouseHasUnitsError(units);
 
 		const archived = await this.warehouseRepository.archive(id);
 		if (!archived) throw new WarehouseNotFoundError();
+		await this.audit.record({
+			actor,
+			action: 'warehouse.archived',
+			targetType: 'warehouse',
+			targetId: id,
+			organizationId: archived.organizationId,
+			meta: { code: archived.code, name: current.name },
+		});
 		return archived;
 	}
 
@@ -271,6 +395,7 @@ export class WarehouseService {
 	async createStorage(
 		warehouseId: string,
 		input: Omit<TWarehouseStorageCreateData, 'warehouseId' | 'createdAt'>,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TWarehouseStorageSelect> {
 		const warehouse = await this.requireWarehouse(warehouseId);
 		this.requireActiveWarehouse(warehouse);
@@ -281,7 +406,16 @@ export class WarehouseService {
 		);
 		if (existing) throw new StorageCodeTakenError();
 
-		return this.storageRepository.create({ ...input, warehouseId });
+		const storage = await this.storageRepository.create({ ...input, warehouseId });
+		await this.audit.record({
+			actor,
+			action: 'storage.created',
+			targetType: 'warehouse_storage',
+			targetId: storage.id,
+			organizationId: warehouse.organizationId,
+			meta: { warehouseId, code: storage.code, name: storage.name },
+		});
+		return storage;
 	}
 
 	/**
@@ -296,12 +430,24 @@ export class WarehouseService {
 		warehouseId: string,
 		storageId: string,
 		input: TWarehouseStorageUpdateData,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TWarehouseStorageSelect> {
 		const warehouse = await this.requireWarehouse(warehouseId);
 		this.requireActiveWarehouse(warehouse);
 		const storage = await this.requireStorage(warehouseId, storageId);
 		const updated = await this.storageRepository.update(storage.id, input);
 		if (!updated) throw new StorageNotFoundError();
+		await this.audit.record({
+			actor,
+			action: 'storage.updated',
+			targetType: 'warehouse_storage',
+			targetId: storage.id,
+			organizationId: warehouse.organizationId,
+			meta: InventoryAuditWriter.snapshot(
+				{ name: storage.name, binType: storage.binType, capacity: storage.capacity, isActive: storage.isActive },
+				{ name: updated.name, binType: updated.binType, capacity: updated.capacity, isActive: updated.isActive },
+			),
+		});
 		return updated;
 	}
 
@@ -316,10 +462,20 @@ export class WarehouseService {
 	async archiveStorage(
 		warehouseId: string,
 		storageId: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TWarehouseStorageSelect> {
+		const warehouse = await this.requireWarehouse(warehouseId);
 		const storage = await this.requireStorage(warehouseId, storageId);
 		const archived = await this.storageRepository.archive(storage.id);
 		if (!archived) throw new StorageNotFoundError();
+		await this.audit.record({
+			actor,
+			action: 'storage.archived',
+			targetType: 'warehouse_storage',
+			targetId: storage.id,
+			organizationId: warehouse.organizationId,
+			meta: { warehouseId, code: storage.code },
+		});
 		return archived;
 	}
 
@@ -328,6 +484,154 @@ export class WarehouseService {
 		const warehouse = await this.warehouseRepository.findById(id);
 		if (!warehouse) throw new WarehouseNotFoundError();
 		return warehouse;
+	}
+
+	/**
+	 * Asserts a storage belongs to a warehouse.
+	 *
+	 * @param storageId - Storage (bin) id
+	 * @param warehouseId - Expected parent warehouse
+	 * @throws {StorageNotFoundError} When either row is absent in this pairing
+	 * @remarks
+	 * Cross-module contract method: Assets owns the asset rows but never reads
+	 * Inventory tables, so it validates locations through this port.
+	 */
+	async assertStorageInWarehouse(
+		storageId: string,
+		warehouseId: string,
+	): Promise<void> {
+		await this.requireStorage(warehouseId, storageId);
+	}
+
+	/**
+	 * Whether a warehouse is reachable from an organization (ERP-0031).
+	 *
+	 * @param warehouseId - Warehouse id
+	 * @param organizationId - Caller's tenant
+	 * @returns `true` when reachable; the caller turns a `false` into its own
+	 *   not-found semantics
+	 * @throws {WarehouseNotFoundError} When the warehouse does not exist
+	 * @remarks
+	 * A warehouse is reachable when an alive `warehouse_organizations` link
+	 * exists. The global-admin bypass lives at the controller/service boundary
+	 * that knows the caller's platform role, not here: this port only answers
+	 * the link question so the assets module can compose it with its own rules.
+	 */
+	async assertWarehouseReachableByOrg(
+		warehouseId: string,
+		organizationId: string,
+	): Promise<boolean> {
+		await this.requireWarehouse(warehouseId);
+		return this.warehouseRepository.isLinked(warehouseId, organizationId);
+	}
+
+	/**
+	 * Warehouses the active organization is linked to, each with its bins
+	 * (ERP-0031).
+	 *
+	 * @remarks
+	 * Storages ride along because the member-facing pickers (asset
+	 * place/transfer, stock operations) choose a bin; a separate
+	 * warehouse-detail call would hit the admin-only route.
+	 *
+	 * ponytail: one storage query per linked warehouse. A tenant links a
+	 * handful, not hundreds — batch it if that ever changes.
+	 *
+	 * @param organizationId - The caller's validated tenant from `erp`
+	 */
+	async listLinkedWarehouses(
+		organizationId: string,
+	): Promise<TWarehouseLinked[]> {
+		const rows = await this.warehouseRepository.listLinked(organizationId);
+		return Promise.all(
+			rows.map(async (warehouse) => ({
+				...warehouse,
+				storages: await this.storageRepository.listByWarehouse(warehouse.id),
+			})),
+		);
+	}
+
+	/**
+	 * Organizations linked to one warehouse (ERP-0031, admin view).
+	 *
+	 * @param warehouseId - Warehouse id
+	 * @throws {WarehouseNotFoundError} When the warehouse is absent or archived
+	 */
+	async listWarehouseOrganizations(warehouseId: string): Promise<
+		Array<{ organizationId: string; createdAt: Date }>
+	> {
+		await this.requireWarehouse(warehouseId);
+		return this.warehouseRepository.listOrganizations(warehouseId);
+	}
+
+	/**
+	 * Grants one organization access to a warehouse (ERP-0031, admin-only).
+	 *
+	 * @remarks
+	 * Idempotent: linking an already-linked pair is a success (audit records
+	 * `created: false` so the ledger distinguishes a real grant from a retry).
+	 *
+	 * @param warehouseId - Warehouse id
+	 * @param organizationId - Organization to grant
+	 * @param actor - The acting global admin
+	 * @throws {WarehouseNotFoundError} When the warehouse is absent or archived
+	 */
+	async linkOrganization(
+		warehouseId: string,
+		organizationId: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+	): Promise<{ created: boolean }> {
+		await this.requireWarehouse(warehouseId);
+		const result = await this.warehouseRepository.linkOrganization(
+			warehouseId,
+			organizationId,
+		);
+		await this.audit.record({
+			actor,
+			action: 'warehouse.linked',
+			targetType: 'warehouse',
+			targetId: warehouseId,
+			organizationId,
+			meta: { organizationId, created: result.created },
+		});
+		return result;
+	}
+
+	/**
+	 * Revokes one organization's access to a warehouse (ERP-0031, admin-only).
+	 *
+	 * @throws {WarehouseNotFoundError} When the warehouse is absent
+	 * @throws {WarehouseLinkConflictError} While the organization holds open
+	 *   borrowings originating in this warehouse — cutting the link would
+	 *   strand custody that can no longer be returned.
+	 */
+	async unlinkOrganization(
+		warehouseId: string,
+		organizationId: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+	): Promise<{ removed: boolean }> {
+		await this.requireWarehouse(warehouseId);
+		const openBorrowings = await this.borrowingGuard.countOpenBorrowings(
+			warehouseId,
+			organizationId,
+		);
+		if (openBorrowings > 0) throw new WarehouseLinkConflictError(openBorrowings);
+
+		const removed = await this.warehouseRepository.unlinkOrganization(
+			warehouseId,
+			organizationId,
+		);
+		if (removed) {
+			await this.audit.record({
+				actor,
+				action: 'warehouse.unlinked',
+				targetType: 'warehouse',
+				targetId: warehouseId,
+				organizationId,
+				meta: { organizationId },
+			});
+		}
+		return { removed };
 	}
 
 	/**

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { ItemService } from '../../src/app/inventory/services/item.service';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import {
 	InventoryRuleViolationError,
 	ItemCategoryUnavailableError,
@@ -133,6 +134,10 @@ function makeService(seed?: {
 			row.deletedAt = new Date();
 			return row;
 		},
+		findNamesByIds: async (ids) =>
+			items
+				.filter((i) => ids.includes(i.id) && i.deletedAt === null)
+				.map((i) => ({ id: i.id, name: i.name })),
 		countUnits: async (itemId) =>
 			units.filter((u) => u.itemId === itemId && u.deletedAt === null).length,
 	};
@@ -171,18 +176,17 @@ function makeService(seed?: {
 			row.status = status;
 			return row;
 		},
-		// Borrowing custody methods: unused by the item suite.
-		issueToBorrower: async () => null,
-		returnFromBorrower: async () => null,
-		markLost: async () => null,
 		listInStockSerials: async () => [],
 		sell: async () => [],
 	};
 
 	return {
-		service: new ItemService(itemRepository, serialUnitRepository, {
-			findById: async (id) => categories.get(id) ?? null,
-		}),
+		service: new ItemService(
+			itemRepository,
+			serialUnitRepository,
+			{ findById: async (id) => categories.get(id) ?? null },
+			new AuditWriterDouble(),
+		),
 		items,
 		units,
 	};
@@ -202,34 +206,6 @@ describe('ItemService — item shape rules', () => {
 
 		expect(created.sku).toBe('CTRL-01');
 		expect(items).toHaveLength(1);
-	});
-
-	test('rejects a service that is serialized', async () => {
-		const { service } = makeService();
-		await expect(
-			service.createItem({
-				organizationId: 'org-a',
-				sku: 'SVC-01',
-				name: 'Installation',
-				itemKind: 'service',
-				isSerialized: true,
-				isStockTracked: false,
-			} as TItemCreateData),
-		).rejects.toBeInstanceOf(InventoryRuleViolationError);
-	});
-
-	test('rejects a service that is stock-tracked', async () => {
-		const { service } = makeService();
-		await expect(
-			service.createItem({
-				organizationId: 'org-a',
-				sku: 'SVC-02',
-				name: 'Maintenance',
-				itemKind: 'service',
-				isSerialized: false,
-				isStockTracked: true,
-			} as TItemCreateData),
-		).rejects.toBeInstanceOf(InventoryRuleViolationError);
 	});
 
 	test('rejects a serialized item that is not stock-tracked', async () => {
@@ -379,19 +355,6 @@ describe('ItemService — units', () => {
 			}),
 		).rejects.toBeInstanceOf(InventoryRuleViolationError);
 	});
-
-	test('refuses a tool that is registered directly as sold', async () => {
-		const { service, items } = makeService({
-			items: [makeItem({ itemKind: 'tool' })],
-		});
-		await expect(
-			service.registerUnit(items[0]!.id, {
-				serialNumber: 'SN-9',
-				status: 'sold',
-				organizationId: 'org-a',
-			}),
-		).rejects.toBeInstanceOf(InventoryRuleViolationError);
-	});
 });
 
 describe('ItemService — provisional serial replacement', () => {
@@ -458,28 +421,18 @@ describe('ItemService — provisional serial replacement', () => {
 });
 
 describe('ItemService — unit transitions', () => {
-	test('moves a tool in_stock → borrowed → in_stock', async () => {
+	test('moves a product in_stock → applied_warranty → in_stock', async () => {
 		const { service, units, items } = makeService({
-			items: [makeItem({ itemKind: 'tool' })],
+			items: [makeItem({ itemKind: 'product' })],
 			units: [makeUnit()],
 		});
 		expect(items).toHaveLength(1);
 
-		await service.transitionUnit(units[0]!.id, 'borrowed');
-		expect(units[0]!.status).toBe('borrowed');
+		await service.transitionUnit(units[0]!.id, 'applied_warranty');
+		expect(units[0]!.status).toBe('applied_warranty');
 
 		await service.transitionUnit(units[0]!.id, 'in_stock');
 		expect(units[0]!.status).toBe('in_stock');
-	});
-
-	test('refuses to sell a tool', async () => {
-		const { service, units } = makeService({
-			items: [makeItem({ itemKind: 'tool' })],
-			units: [makeUnit()],
-		});
-		await expect(
-			service.transitionUnit(units[0]!.id, 'sold'),
-		).rejects.toBeInstanceOf(InventoryRuleViolationError);
 	});
 
 	test('sells a product', async () => {
@@ -491,13 +444,13 @@ describe('ItemService — unit transitions', () => {
 		expect(units[0]!.status).toBe('sold');
 	});
 
-	test('refuses an illegal edge (borrowed → sold)', async () => {
+	test('refuses an illegal edge (sold → in_stock)', async () => {
 		const { service, units } = makeService({
 			items: [makeItem({ itemKind: 'product' })],
-			units: [makeUnit({ status: 'borrowed' })],
+			units: [makeUnit({ status: 'sold' })],
 		});
 		await expect(
-			service.transitionUnit(units[0]!.id, 'sold'),
+			service.transitionUnit(units[0]!.id, 'in_stock'),
 		).rejects.toBeInstanceOf(InventoryRuleViolationError);
 	});
 });

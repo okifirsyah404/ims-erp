@@ -21,10 +21,12 @@ import type { IWarehouseRepository } from '../../src/app/inventory/contracts/war
 import type { IWarehouseAddressRepository } from '../../src/app/inventory/contracts/warehouse-address.repository.interface';
 import type { IWarehouseStorageRepository } from '../../src/app/inventory/contracts/warehouse-storage.repository.interface';
 import { WarehouseService } from '../../src/app/inventory/services/warehouse.service';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import {
 	StorageCodeTakenError,
 	StorageNotFoundError,
 	WarehouseCodeTakenError,
+	WarehouseLinkConflictError,
 	WarehouseHasUnitsError,
 	WarehouseInactiveError,
 	WarehouseNotFoundError,
@@ -64,6 +66,8 @@ function makeWarehouse(
  */
 function makeRepos(seed: TWarehouseSelect[] = []) {
 	const rows = [...seed];
+	/** Alive (warehouseId, organizationId) link pairs (ERP-0031). */
+	const links: Array<{ warehouseId: string; organizationId: string; deletedAt: Date | null }> = [];
 	const clearDefaultCalls: Array<{
 		organizationId: string | null;
 		exceptId: string;
@@ -78,6 +82,63 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 		},
 		async findById(id) {
 			return rows.find((row) => row.id === id) ?? null;
+		},
+		async isLinked(warehouseId, organizationId) {
+			return links.some(
+				(link) =>
+					link.warehouseId === warehouseId &&
+					link.organizationId === organizationId &&
+					link.deletedAt === null,
+			);
+		},
+		async listLinked(organizationId) {
+			const linkedIds = new Set(
+				links
+					.filter(
+						(link) =>
+							link.organizationId === organizationId &&
+							link.deletedAt === null,
+					)
+					.map((link) => link.warehouseId),
+			);
+			return rows.filter(
+				(row) => linkedIds.has(row.id) && row.deletedAt === null,
+			);
+		},
+		async listOrganizations(warehouseId) {
+			return links
+				.filter(
+					(link) => link.warehouseId === warehouseId && link.deletedAt === null,
+				)
+				.map((link) => ({
+					organizationId: link.organizationId,
+					createdAt: new Date(0),
+				}));
+		},
+		async linkOrganization(warehouseId, organizationId) {
+			const existing = links.find(
+				(link) =>
+					link.warehouseId === warehouseId &&
+					link.organizationId === organizationId,
+			);
+			if (existing && existing.deletedAt === null) return { created: false };
+			if (existing) {
+				existing.deletedAt = null;
+				return { created: true };
+			}
+			links.push({ warehouseId, organizationId, deletedAt: null });
+			return { created: true };
+		},
+		async unlinkOrganization(warehouseId, organizationId) {
+			const existing = links.find(
+				(link) =>
+					link.warehouseId === warehouseId &&
+					link.organizationId === organizationId &&
+					link.deletedAt === null,
+			);
+			if (!existing) return false;
+			existing.deletedAt = new Date();
+			return true;
 		},
 		async findByCode(organizationId, code) {
 			return (
@@ -109,6 +170,11 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 			row.deletedAt = new Date();
 			return row;
 		},
+		async findNamesByIds(ids) {
+			return rows
+				.filter((r) => ids.includes(r.id) && r.deletedAt === null)
+				.map((r) => ({ id: r.id, name: r.name }));
+		},
 		async clearDefaultExcept(organizationId, exceptId) {
 			clearDefaultCalls.push({ organizationId, exceptId });
 			for (const row of rows) {
@@ -125,7 +191,7 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 				warehouseId,
 				productsCount: 0,
 				materialsCount: 0,
-				toolsCount: 0,
+				equipmentsCount: 0,
 				storagesCount: 0,
 			}));
 		},
@@ -195,10 +261,159 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 		warehouseRepository,
 		addressRepository,
 		storageRepository,
+		new AuditWriterDouble(),
+		// ERP-0031: no borrowings in these tests — the guard never blocks.
+		{ async countOpenBorrowings() { return 0; } },
+		// No assets in these tests — equipment counts resolve to zero.
+		{ countByWarehouse: async () => [] } as never,
 	);
-
-	return { service, rows, clearDefaultCalls, warehouseRepository };
+	return { service, rows, links, clearDefaultCalls, warehouseRepository };
 }
+
+describe('warehouse↔organization links (ERP-0031 slice 3)', () => {
+	test('linkOrganization creates an alive link and audits it', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service, links } = makeRepos([warehouse]);
+
+		const result = await service.linkOrganization(warehouse.id, ORG_A);
+
+		expect(result).toEqual({ created: true });
+		expect(links).toContainEqual({
+			warehouseId: warehouse.id,
+			organizationId: ORG_A,
+			deletedAt: null,
+		});
+	});
+
+	test('linkOrganization is idempotent for an already-alive pair', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service, links } = makeRepos([warehouse]);
+		links.push({ warehouseId: warehouse.id, organizationId: ORG_A, deletedAt: null });
+
+		const result = await service.linkOrganization(warehouse.id, ORG_A);
+
+		expect(result).toEqual({ created: false });
+		expect(links).toHaveLength(1);
+	});
+
+	test('linkOrganization on a missing warehouse is a 404', async () => {
+		const { service } = makeRepos();
+
+		await expect(
+			service.linkOrganization('01920000-0000-7000-8000-999999999999', ORG_A),
+		).rejects.toBeInstanceOf(WarehouseNotFoundError);
+	});
+
+	test('unlinkOrganization removes an alive link and audits it', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service, links } = makeRepos([warehouse]);
+		links.push({ warehouseId: warehouse.id, organizationId: ORG_A, deletedAt: null });
+
+		const result = await service.unlinkOrganization(warehouse.id, ORG_A);
+
+		expect(result).toEqual({ removed: true });
+		expect(links[0].deletedAt).not.toBeNull();
+	});
+
+	test('unlinkOrganization with no alive link reports removed=false', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service } = makeRepos([warehouse]);
+
+		await expect(
+			service.unlinkOrganization(warehouse.id, ORG_A),
+		).resolves.toEqual({ removed: false });
+	});
+
+	test('unlinkOrganization is refused with 409 while open borrowings exist', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service, links } = makeRepos([warehouse]);
+		links.push({ warehouseId: warehouse.id, organizationId: ORG_A, deletedAt: null });
+
+		// Override the guard for this test: the org still holds custody.
+		const guarded = Object.assign(Object.create(Object.getPrototypeOf(service)), service, {});
+		Object.defineProperty(guarded, 'borrowingGuard', {
+			value: { async countOpenBorrowings() { return 2; } },
+		});
+
+		await expect(
+			guarded.unlinkOrganization(warehouse.id, ORG_A),
+		).rejects.toBeInstanceOf(WarehouseLinkConflictError);
+		// The link must survive a refused unlink.
+		expect(links[0].deletedAt).toBeNull();
+	});
+
+	test('listWarehouseOrganizations returns alive links only', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service, links } = makeRepos([warehouse]);
+		links.push({ warehouseId: warehouse.id, organizationId: ORG_A, deletedAt: null });
+		links.push({
+			warehouseId: warehouse.id,
+			organizationId: ORG_B,
+			deletedAt: new Date(),
+		});
+
+		const result = await service.listWarehouseOrganizations(warehouse.id);
+		expect(result.map((row) => row.organizationId)).toEqual([ORG_A]);
+	});
+});
+
+describe('warehouse reachability (ERP-0031)', () => {	test('a linked warehouse is reachable by the linked org', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service, links } = makeRepos([warehouse]);
+		links.push({ warehouseId: warehouse.id, organizationId: ORG_A, deletedAt: null });
+
+		await expect(
+			service.assertWarehouseReachableByOrg(warehouse.id, ORG_A),
+		).resolves.toBe(true);
+	});
+
+	test('an unlinked warehouse is NOT reachable — the org learns nothing', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service } = makeRepos([warehouse]);
+
+		await expect(
+			service.assertWarehouseReachableByOrg(warehouse.id, ORG_B),
+		).resolves.toBe(false);
+	});
+
+	test('a soft-deleted link does not restore access', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service, links } = makeRepos([warehouse]);
+		links.push({
+			warehouseId: warehouse.id,
+			organizationId: ORG_A,
+			deletedAt: new Date(),
+		});
+
+		await expect(
+			service.assertWarehouseReachableByOrg(warehouse.id, ORG_A),
+		).resolves.toBe(false);
+	});
+
+	test('a missing warehouse is a 404 before any link check', async () => {
+		const { service } = makeRepos();
+
+		await expect(
+			service.assertWarehouseReachableByOrg(
+				'01920000-0000-7000-8000-999999999999',
+				ORG_A,
+			),
+		).rejects.toBeInstanceOf(WarehouseNotFoundError);
+	});
+
+	test('listLinkedWarehouses returns only alive links of alive warehouses', async () => {
+		const linked = makeWarehouse({ code: 'LINKED' });
+		const archived = makeWarehouse({ code: 'ARCHIVED', deletedAt: new Date() });
+		const other = makeWarehouse({ code: 'OTHER' });
+		const { service, links } = makeRepos([linked, archived, other]);
+		links.push({ warehouseId: linked.id, organizationId: ORG_A, deletedAt: null });
+		links.push({ warehouseId: archived.id, organizationId: ORG_A, deletedAt: null });
+		links.push({ warehouseId: other.id, organizationId: ORG_B, deletedAt: null });
+
+		const result = await service.listLinkedWarehouses(ORG_A);
+		expect(result.map((row) => row.code)).toEqual(['LINKED']);
+	});
+});
 
 describe('createWarehouse — scope', () => {
 	test('omitting organizationId creates a GLOBAL warehouse (D-C)', async () => {
@@ -212,21 +427,20 @@ describe('createWarehouse — scope', () => {
 		expect(created.organizationId).toBeNull();
 	});
 
-	test('the same code may exist in a global scope and an organization scope', async () => {
-		const { service } = makeRepos();
+	test('ERP-0031 (D1): a client-supplied organizationId is dropped — every warehouse is global', async () => {
+		const { service, rows } = makeRepos();
 
-		await service.createWarehouse({ code: 'MAIN', name: 'Global' } as never);
-		// Would throw WarehouseCodeTakenError if scoping were ignored.
-		const orgWarehouse = await service.createWarehouse({
+		const created = await service.createWarehouse({
 			code: 'MAIN',
 			name: 'Org',
 			organizationId: ORG_A,
 		} as never);
 
-		expect(orgWarehouse.organizationId).toBe(ORG_A);
+		expect(created.organizationId).toBeNull();
+		expect(rows.find((r) => r.id === created.id)?.organizationId).toBeNull();
 	});
 
-	test('a duplicate code in the same scope is a 409', async () => {
+	test('a duplicate code is a 409 (single global scope)', async () => {
 		const { service } = makeRepos();
 
 		await service.createWarehouse({ code: 'MAIN', name: 'First' } as never);
@@ -235,30 +449,12 @@ describe('createWarehouse — scope', () => {
 			service.createWarehouse({ code: 'MAIN', name: 'Second' } as never),
 		).rejects.toBeInstanceOf(WarehouseCodeTakenError);
 	});
-
-	test('the same code in two different organizations is allowed', async () => {
-		const { service } = makeRepos();
-
-		await service.createWarehouse({
-			code: 'MAIN',
-			name: 'A',
-			organizationId: ORG_A,
-		} as never);
-
-		const other = await service.createWarehouse({
-			code: 'MAIN',
-			name: 'B',
-			organizationId: ORG_B,
-		} as never);
-
-		expect(other.organizationId).toBe(ORG_B);
-	});
 });
 
 describe('is_default — one per scope (D-A)', () => {
 	test('creating a default clears siblings in the same scope', async () => {
 		const existing = makeWarehouse({
-			organizationId: ORG_A,
+			organizationId: null,
 			code: 'OLD',
 			isDefault: true,
 		});
@@ -267,64 +463,37 @@ describe('is_default — one per scope (D-A)', () => {
 		const created = await service.createWarehouse({
 			code: 'NEW',
 			name: 'New',
-			organizationId: ORG_A,
 			isDefault: true,
 		} as never);
 
 		expect(clearDefaultCalls).toEqual([
-			{ organizationId: ORG_A, exceptId: created.id },
+			{ organizationId: null, exceptId: created.id },
 		]);
 		expect(rows.find((r) => r.id === existing.id)?.isDefault).toBe(false);
 	});
 
-	test('setting org A default does NOT clear the global default', async () => {
-		const globalDefault = makeWarehouse({
-			organizationId: null,
-			code: 'GLOBAL',
-			isDefault: true,
-		});
-		const { service, rows } = makeRepos([globalDefault]);
-
-		await service.createWarehouse({
-			code: 'ORG-MAIN',
-			name: 'Org main',
-			organizationId: ORG_A,
-			isDefault: true,
-		} as never);
-
-		// Cross-scope isolation: the global default must survive.
-		expect(rows.find((r) => r.id === globalDefault.id)?.isDefault).toBe(true);
-	});
-
 	test('promoting an existing warehouse clears siblings in its own scope', async () => {
 		const first = makeWarehouse({
-			organizationId: ORG_A,
+			organizationId: null,
 			code: 'A',
 			isDefault: true,
 		});
 		const second = makeWarehouse({
-			organizationId: ORG_A,
+			organizationId: null,
 			code: 'B',
 			isDefault: false,
 		});
-		const globalOne = makeWarehouse({
-			organizationId: null,
-			code: 'G',
-			isDefault: true,
-		});
-		const { service, rows } = makeRepos([first, second, globalOne]);
+		const { service, rows } = makeRepos([first, second]);
 
 		await service.updateWarehouse(second.id, { isDefault: true });
 
 		expect(rows.find((r) => r.id === second.id)?.isDefault).toBe(true);
 		expect(rows.find((r) => r.id === first.id)?.isDefault).toBe(false);
-		// Untouched: different scope.
-		expect(rows.find((r) => r.id === globalOne.id)?.isDefault).toBe(true);
 	});
 
 	test('demoting the only default leaves the scope with none', async () => {
 		const only = makeWarehouse({
-			organizationId: ORG_A,
+			organizationId: null,
 			code: 'ONLY',
 			isDefault: true,
 		});
@@ -339,7 +508,7 @@ describe('is_default — one per scope (D-A)', () => {
 	});
 
 	test('a non-default update never touches the default flags', async () => {
-		const current = makeWarehouse({ organizationId: ORG_A, isDefault: true });
+		const current = makeWarehouse({ organizationId: null, isDefault: true });
 		const { service, clearDefaultCalls } = makeRepos([current]);
 
 		await service.updateWarehouse(current.id, { name: 'Renamed' });
@@ -350,14 +519,14 @@ describe('is_default — one per scope (D-A)', () => {
 
 describe('updateWarehouse — immutability', () => {
 	test('organizationId is not accepted on update (D-C)', async () => {
-		const current = makeWarehouse({ organizationId: ORG_A });
+		const current = makeWarehouse({ organizationId: null });
 		const { service, rows } = makeRepos([current]);
 
 		// The zod schema rejects the key as unknown, so the service never sees
 		// it. Assert the row is unchanged even if a caller bypasses parsing.
 		await service.updateWarehouse(current.id, { name: 'Renamed' } as never);
 
-		expect(rows[0].organizationId).toBe(ORG_A);
+		expect(rows[0].organizationId).toBeNull();
 	});
 
 	test('updating a missing warehouse is a 404', async () => {

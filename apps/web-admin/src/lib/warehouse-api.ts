@@ -28,6 +28,8 @@ export type TWarehouse = {
 	responsibleEmployeeId: string | null;
 	isDefault: boolean;
 	isActive: boolean;
+	/** Optional display image URL for the warehouse card. */
+	imageUrl: string | null;
 	createdAt: string;
 	updatedAt: string | null;
 	deletedAt: string | null;
@@ -63,7 +65,7 @@ export type TWarehouseStorage = {
 export type TWarehouseWithCounts = TWarehouse & {
 	productsCount: number;
 	materialsCount: number;
-	toolsCount: number;
+	equipmentsCount: number;
 	storagesCount: number;
 };
 
@@ -95,6 +97,8 @@ export type TWarehouseCreateInput = {
 	responsibleEmployeeId?: string | null;
 	isDefault: boolean;
 	isActive: boolean;
+	/** Optional display image URL for the warehouse card. */
+	imageUrl?: string | null;
 	address?: TWarehouseAddressInput;
 };
 
@@ -104,7 +108,84 @@ export type TWarehouseUpdateInput = {
 	responsibleEmployeeId?: string | null;
 	isDefault?: boolean;
 	isActive?: boolean;
+	/** Optional display image URL for the warehouse card. */
+	imageUrl?: string | null;
 };
+
+/**
+ * One warehouse↔organization link, as returned by the admin endpoints
+ * (ERP-0031).
+ */
+export type TWarehouseOrganizationLink = {
+	organizationId: string;
+	createdAt: string;
+};
+
+/**
+ * Lists the organizations linked to a warehouse.
+ *
+ * Application-admin-only (`requireGlobalAdmin`), like every other warehouse
+ * write/read in this module.
+ */
+export async function listWarehouseOrganizations(warehouseId: string) {
+	const envelope = await request<TWarehouseOrganizationLink[]>(
+		`/warehouses/${warehouseId}/organizations`,
+	);
+	return envelope.data ?? [];
+}
+
+/**
+ * Grants an organization access to a warehouse (idempotent).
+ *
+ * @returns `created: true` when a new link was made, `false` on a retry.
+ */
+export async function linkWarehouseOrganization(
+	warehouseId: string,
+	organizationId: string,
+) {
+	const envelope = await request<{ created: boolean }>(
+		`/warehouses/${warehouseId}/organizations`,
+		{ method: 'POST', body: JSON.stringify({ organizationId }) },
+	);
+	if (!envelope.data) throw new Error('Empty response');
+	return envelope.data;
+}
+
+/**
+ * Revokes an organization's access to a warehouse.
+ *
+ * @throws Error carrying the backend message — a 409 (open borrowings) is
+ *   surfaced to the caller so the UI can show the conflict.
+ */
+export async function unlinkWarehouseOrganization(
+	warehouseId: string,
+	organizationId: string,
+) {
+	const envelope = await request<{ removed: boolean }>(
+		`/warehouses/${warehouseId}/organizations/${organizationId}`,
+		{ method: 'DELETE' },
+	);
+	if (!envelope.data) throw new Error('Empty response');
+	return envelope.data;
+}
+
+/** A warehouse linked to the caller's organization, with its bins (ERP-0031). */
+export type TWarehouseLinked = TWarehouse & {
+	storages: TWarehouseStorage[];
+};
+
+/**
+ * Lists warehouses linked to the caller's active organization.
+ *
+ * Organization-scoped (not admin-only): mounted on the `erp` guard and
+ * returns only the caller's own links. This is the picker source for
+ * member-facing flows (asset place/transfer, stock operations) — the admin
+ * warehouse list is not readable by organization roles.
+ */
+export async function listLinkedWarehouses() {
+	const envelope = await request<TWarehouseLinked[]>('/warehouses/linked');
+	return envelope.data ?? [];
+}
 
 async function request<T>(
 	path: string,
@@ -281,4 +362,18 @@ export const warehouseQueryOptions = (warehouseId: string) =>
 	queryOptions({
 		queryKey: ['warehouses', warehouseId],
 		queryFn: () => getWarehouse(warehouseId),
+	});
+
+/** Query options for a warehouse's organization links (admin). */
+export const warehouseOrganizationsQueryOptions = (warehouseId: string) =>
+	queryOptions({
+		queryKey: ['warehouses', warehouseId, 'organizations'],
+		queryFn: () => listWarehouseOrganizations(warehouseId),
+	});
+
+/** Query options for the caller's linked warehouses (org-scoped). */
+export const linkedWarehousesQueryOptions = () =>
+	queryOptions({
+		queryKey: ['warehouses', 'linked'],
+		queryFn: () => listLinkedWarehouses(),
 	});

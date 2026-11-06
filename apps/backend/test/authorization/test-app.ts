@@ -45,8 +45,7 @@ export type FixtureState = {
 	revoked: Set<string>;
 };
 
-const ORG_A = 'org-a';
-const ORG_B = 'org-b';
+export const ORG_A = 'org-a';const ORG_B = 'org-b';
 
 export const fixture = {
 	orgA: ORG_A,

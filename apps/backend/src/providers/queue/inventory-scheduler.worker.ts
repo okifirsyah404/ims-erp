@@ -3,8 +3,8 @@ import type { Job } from 'bullmq';
 import { appConfig } from '@config/providers/config';
 import { container } from 'tsyringe';
 import { queueConnection } from '@providers/queue/queue.connection';
-import { BORROWING_SERVICE_TOKEN } from '../../app/inventory/constants/di';
-import type { BorrowingService } from '../../app/inventory/services/borrowing.service';
+import { BORROWING_SERVICE_TOKEN } from '../../app/assets/constants/di';
+import type { BorrowingService } from '../../app/assets/services/borrowing.service';
 import {
 	GUEST_RETENTION_JOB,
 	INVENTORY_SCHEDULER_QUEUE,

@@ -55,7 +55,7 @@ export function DashboardPage() {
 	if (isError || !data) return null;
 
 	return (
-		<div className='flex flex-1 flex-col gap-4 p-4 pt-0'>
+		<div className='flex flex-1 flex-col gap-4'>
 			<SampleDataBanner />
 
 			<div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
@@ -410,7 +410,7 @@ function QuickLinksCard({ summary }: { summary: TDashboardSummary }) {
 /** Loading placeholder matching the dashboard's grid layout. */
 function DashboardSkeleton() {
 	return (
-		<div className='flex flex-1 flex-col gap-4 p-4 pt-0'>
+		<div className='flex flex-1 flex-col gap-4'>
 			<Skeleton className='h-11 rounded-xl' />
 			<div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
 				{Array.from({ length: 6 }, (_, index) => (

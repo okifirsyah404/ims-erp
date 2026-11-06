@@ -51,7 +51,7 @@ export function WarehouseItemTable({
 	itemKind,
 }: {
 	warehouseId: string;
-	itemKind: Extract<TItemKind, 'product' | 'component' | 'material' | 'tool'>;
+	itemKind: Extract<TItemKind, 'product' | 'component' | 'material'>;
 }) {
 	const { t } = useTranslation(['inventory', 'common']);
 	const [page, setPage] = useState(1);

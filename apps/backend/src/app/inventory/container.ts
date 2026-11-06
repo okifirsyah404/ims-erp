@@ -7,23 +7,24 @@ import { WarehouseStorageRepository } from './repositories/warehouse-storage.rep
 import { MovementRepository } from './repositories/movement.repository';
 import { BalanceRepository } from './repositories/balance.repository';
 import { AdjustmentRepository } from './repositories/adjustment.repository';
-import { BorrowingRepository } from './repositories/borrowing.repository';
+import { InventoryAuditWriter } from './services/inventory-audit.writer';
+import { NoopWarehouseBorrowingGuard } from './contracts/warehouse-borrowing-guard.port';
 import { ItemImageService } from './services/item-image.service';
 import { ItemService } from './services/item.service';
 import { ItemCategoryRepository } from './repositories/item-category.repository';
 import { ItemCategoryService } from './services/item-category.service';
+import { AUDIT_SERVICE_TOKEN } from '../audit/constants/di';
+import type { AuditService } from '../audit/services/audit.service';
 import { WarehouseService } from './services/warehouse.service';
+import { ExportedWarehouseService } from './services/exported-warehouse.service';
 import { StockService } from './services/stock.service';
 import { AdjustmentService } from './services/adjustment.service';
-import { BorrowingService } from './services/borrowing.service';
 import { StockValuationRepository } from './repositories/stock-valuation.repository';
 import { StockValuationService } from './services/stock-valuation.service';
 import {
 	ADJUSTMENT_REPOSITORY_TOKEN,
 	ADJUSTMENT_SERVICE_TOKEN,
 	BALANCE_REPOSITORY_TOKEN,
-	BORROWING_REPOSITORY_TOKEN,
-	BORROWING_SERVICE_TOKEN,
 	ITEM_CATEGORY_REPOSITORY_TOKEN,
 	ITEM_CATEGORY_SERVICE_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
@@ -33,11 +34,13 @@ import {
 	SERIAL_UNIT_REPOSITORY_TOKEN,
 	STOCK_SERVICE_TOKEN,
 	WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
+	WAREHOUSE_BORROWING_GUARD_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
 	WAREHOUSE_SERVICE_TOKEN,
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 	STOCK_VALUATION_REPOSITORY_TOKEN,
 	STOCK_VALUATION_SERVICE_TOKEN,
+	EXPORTED_WAREHOUSE_SERVICE_TOKEN,
 } from './constants/di';
 
 export * from './constants/di';
@@ -52,6 +55,16 @@ export * from './constants/di';
  * @param container - The tsyringe container to populate
  */
 export function registerInventory(container: DependencyContainer): void {
+	// Shared fire-and-forget audit adapter over the audit module's
+	// AuditService. Resolved eagerly here, which is safe: registerAudit runs
+	// before registerInventory at the composition root, and both the writer
+	// and the inner service are stateless.
+	const auditWriter = new InventoryAuditWriter(
+		container.resolve<AuditService>(AUDIT_SERVICE_TOKEN),
+	);
+	// One shared writer instance for every inventory service.
+	container.registerInstance(InventoryAuditWriter, auditWriter);
+
 	container.register(ITEM_REPOSITORY_TOKEN, { useClass: ItemRepository });
 	container.register(SERIAL_UNIT_REPOSITORY_TOKEN, {
 		useClass: SerialUnitRepository,
@@ -74,8 +87,18 @@ export function registerInventory(container: DependencyContainer): void {
 	container.register(WAREHOUSE_STORAGE_REPOSITORY_TOKEN, {
 		useClass: WarehouseStorageRepository,
 	});
+	// Noop default; registerAssets overrides with the real borrowing guard.
+	// Keeps inventory resolvable when assets is not registered (tests).
+	container.registerInstance(
+		WAREHOUSE_BORROWING_GUARD_TOKEN,
+		new NoopWarehouseBorrowingGuard(),
+	);
 	container.register(WAREHOUSE_SERVICE_TOKEN, {
 		useClass: WarehouseService,
+	});
+	// Cross-module export facade — repository-only, safe for other modules.
+	container.register(EXPORTED_WAREHOUSE_SERVICE_TOKEN, {
+		useClass: ExportedWarehouseService,
 	});
 
 	container.register(MOVEMENT_REPOSITORY_TOKEN, {
@@ -95,14 +118,5 @@ export function registerInventory(container: DependencyContainer): void {
 	container.register(STOCK_VALUATION_SERVICE_TOKEN, { useClass: StockValuationService });
 	container.register(ADJUSTMENT_SERVICE_TOKEN, {
 		useClass: AdjustmentService,
-	});
-
-	// Borrowing injects StockService (it posts movements inside its own
-	// transaction), so STOCK_SERVICE_TOKEN must already be registered above.
-	container.register(BORROWING_REPOSITORY_TOKEN, {
-		useClass: BorrowingRepository,
-	});
-	container.register(BORROWING_SERVICE_TOKEN, {
-		useClass: BorrowingService,
 	});
 }

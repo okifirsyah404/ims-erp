@@ -25,7 +25,9 @@ export default function MainLayout({ children }: React.ComponentProps<'div'>) {
 						<AppBreadcrumb />
 					</div>
 				</header>
-				{children}
+				<main className='flex flex-1 flex-col gap-4 p-4 pt-0 md:gap-6 md:p-6'>
+					{children}
+				</main>
 			</SidebarInset>
 		</SidebarProvider>
 	);

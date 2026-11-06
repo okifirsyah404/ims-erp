@@ -5,7 +5,6 @@ import Elysia from 'elysia';
 import { LocationController } from './location/controllers/location.controller';
 import {
 	AdjustmentController,
-	BorrowingController,
 	ItemCategoryController,
 	ItemController,
 	StockController,
@@ -13,6 +12,12 @@ import {
 	WarehouseController,
 } from './inventory';
 import { QuotationController } from './sales/controllers/quotation.controller';
+import {
+	AssetCategoryController,
+	AssetController,
+	AssetOperationsController,
+	BorrowingController,
+} from './assets';
 import { SalesController } from './sales/controllers/sales.controller';
 import { SalesOrderController } from './sales/controllers/sales-order.controller';
 import { DeliveryNoteController } from './sales/controllers/delivery-note.controller';
@@ -120,7 +125,7 @@ export function createApp() {
 			// admin plugins only for readability; the paths never overlap.
 			.use(InvitationClaimController.plugin())
 			.use(UsernameCheckController.plugin())
-			// Inventory (items, warehouses, stock, borrowing) rides `erp`- or
+			// Inventory (items, warehouses, stock, adjustments) rides `erp`- or
 			// `session`-guarded prefixes; mount order is irrelevant as none of its
 			// paths overlap the modules above.
 			.use(ItemController.plugin())
@@ -129,11 +134,21 @@ export function createApp() {
 			.use(LeadController.plugin())
 			// Server-to-server website API: API-key guard, no session.
 			.use(PublicWebsiteController.plugin())
+			// `/warehouses/linked` mounts before the admin CRUD: both prefixes
+			// start with `/warehouses`, and the linked read needs the `erp`
+			// guard, not the session guard. Static segments win, but mounting
+			// first keeps the intent obvious.
+			.use(WarehouseController.linkedPlugin())
 			.use(WarehouseController.plugin())
 			// Before StockController: a static path must not be shadowed by `/stock/:…`.
 			.use(StockValuationController.plugin())
 			.use(StockController.plugin())
 			.use(AdjustmentController.plugin())
+			// Assets owns equipment and borrowing (ERP-0036); `/borrowings`
+			// moved here from inventory.
+			.use(AssetController.plugin())
+			.use(AssetCategoryController.plugin())
+			.use(AssetOperationsController.plugin())
 			.use(BorrowingController.plugin())
 	);
 }

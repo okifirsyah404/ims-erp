@@ -70,6 +70,13 @@ export const DOCUMENT_TYPES = [
 	'warranty',
 	'service_ticket',
 	'license_contract',
+	// Inventory and assets (ERP-0009 sequences, merged 2026-11-06).
+	'stock_movement',
+	'asset',
+	'asset_maintenance',
+	'asset_disposal',
+	'asset_tool_set',
+	'asset_borrowing',
 ] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 

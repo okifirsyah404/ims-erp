@@ -11,10 +11,25 @@ import {
 	updateStorageSchema,
 	updateWarehouseSchema,
 	warehouseAddressSchema,
+	warehouseLinkParamSchema,
+	warehouseLinkSchema,
 	warehouseListQuerySchema,
 } from '../contracts/warehouse.contract';
 import { WAREHOUSE_SERVICE_TOKEN } from '../constants/di';
 import type { WarehouseService } from '../services/warehouse.service';
+import type { TInventoryAuditActor } from '../constants/audit-actor';
+
+/**
+ * Audit actor from the session (global-admin routes; no `erp` context).
+ */
+function auditActor(session: { user: { id: string; email?: string | null } }, request: Request): TInventoryAuditActor {
+	return {
+		userId: session.user.id,
+		email: session.user.email ?? null,
+		ip: request.headers.get('x-forwarded-for'),
+		userAgent: request.headers.get('user-agent'),
+	};
+}
 
 /**
  * REST controller for warehouses, their 1:1 addresses, and their storages.
@@ -75,10 +90,11 @@ export class WarehouseController {
 			)
 			.post(
 				'',
-				async ({ body, status }) => {
+				async ({ body, erp, request, status }) => {
 					const { address, ...rest } = createWarehouseSchema.parse(body);
 					const row = await warehouseService.createWarehouse(
 						address ? { ...rest, address } : rest,
+						auditActor(erp.session, request),
 					);
 					return status(201, created(row));
 				},
@@ -90,11 +106,12 @@ export class WarehouseController {
 			)
 			.patch(
 				'/:id',
-				async ({ params, body }) =>
+				async ({ params, body, erp, request }) =>
 					ok(
 						await warehouseService.updateWarehouse(
 							idParamSchema.parse(params).id,
 							updateWarehouseSchema.parse(body),
+							auditActor(erp.session, request),
 						),
 					),
 				adminRoute(
@@ -103,8 +120,11 @@ export class WarehouseController {
 			)
 			.delete(
 				'/:id',
-				async ({ params }) =>
-					ok(await warehouseService.archiveWarehouse(idParamSchema.parse(params).id)),
+				async ({ params, erp, request }) =>
+					ok(await warehouseService.archiveWarehouse(
+						idParamSchema.parse(params).id,
+						auditActor(erp.session, request),
+					)),
 				adminRoute('Archives a warehouse that holds no live units'),
 			)
 			// 1:1 address: PUT upserts, GET reads, DELETE removes. No POST —
@@ -153,13 +173,14 @@ export class WarehouseController {
 			)
 			.post(
 				'/:id/storages',
-				async ({ params, body, status }) =>
+				async ({ params, body, erp, request, status }) =>
 					status(
 						201,
 						created(
 							await warehouseService.createStorage(
 								idParamSchema.parse(params).id,
 								createStorageSchema.parse(body),
+								auditActor(erp.session, request),
 							),
 						),
 					),
@@ -167,13 +188,14 @@ export class WarehouseController {
 			)
 			.patch(
 				'/:id/storages/:storageId',
-				async ({ params, body }) => {
+				async ({ params, body, erp, request }) => {
 					const parsed = nestedIdParamSchema.parse(params);
 					return ok(
 						await warehouseService.updateStorage(
 							parsed.id,
 							parsed.storageId,
 							updateStorageSchema.parse(body),
+							auditActor(erp.session, request),
 						),
 					);
 				},
@@ -181,13 +203,111 @@ export class WarehouseController {
 			)
 			.delete(
 				'/:id/storages/:storageId',
-				async ({ params }) => {
+				async ({ params, erp, request }) => {
 					const parsed = nestedIdParamSchema.parse(params);
 					return ok(
-						await warehouseService.archiveStorage(parsed.id, parsed.storageId),
+						await warehouseService.archiveStorage(
+							parsed.id,
+							parsed.storageId,
+							auditActor(erp.session, request),
+						),
 					);
 				},
 				adminRoute('Archives a storage'),
+			)
+			/* ------------------- organization links (ERP-0031) ------------------- */
+			.get(
+				'/:id/organizations',
+				async ({ params }) =>
+					ok(
+						await warehouseService.listWarehouseOrganizations(
+							idParamSchema.parse(params).id,
+						),
+					),
+				adminRoute('Organizations linked to a warehouse (ERP-0031)'),
+			)
+			.post(
+				'/:id/organizations',
+				async ({ params, body, erp, request, status }) => {
+					const { organizationId } = warehouseLinkSchema.parse(body);
+					const result = await warehouseService.linkOrganization(
+						idParamSchema.parse(params).id,
+						organizationId,
+						auditActor(erp, request),
+					);
+					return status(result.created ? 201 : 200, created(result));
+				},
+				{
+					erpSession: { policy: requireGlobalAdmin },
+					body: warehouseLinkSchema,
+					detail: {
+						description:
+							'Grants an organization access to a warehouse (ERP-0031). Idempotent: 201 when created, 200 when already linked',
+					},
+				},
+			)
+			.delete(
+				'/:id/organizations/:organizationId',
+				async ({ params, erp, request }) => {
+					const parsed = warehouseLinkParamSchema.parse(params);
+					const result = await warehouseService.unlinkOrganization(
+						parsed.id,
+						parsed.organizationId,
+						auditActor(erp, request),
+					);
+					return ok(result);
+				},
+				{
+					erpSession: { policy: requireGlobalAdmin },
+					detail: {
+						description:
+							'Revokes an organization\u2019s access to a warehouse (ERP-0031). Refused with 409 while the organization holds open borrowings originating in the warehouse',
+					},
+				},
 			);
+	}
+
+	/**
+	 * Builds the Elysia plugin mounting `GET /warehouses/linked`.
+	 *
+	 * @returns An Elysia instance with the `erp` guard applied
+	 *
+	 * @remarks
+	 * Split from {@link WarehouseController.plugin} because the guards differ:
+	 * the admin CRUD rides `sessionGuard` (a global admin may have no
+	 * membership), while the linked read is an organization-scoped call that
+	 * needs the validated `erp.organizationId`. Mounted in the same class so
+	 * the service resolution and route ownership stay together.
+	 */
+	static linkedPlugin() {
+		const warehouseService = container.resolve<WarehouseService>(
+			WAREHOUSE_SERVICE_TOKEN,
+		);
+
+		return domainPlugin({
+			name: 'inventory-warehouses-linked',
+			prefix: '/warehouses/linked',
+			tags: ['Inventory'],
+			guards: 'erp',
+		}).get(
+			'',
+			async ({ erp }) =>
+				ok(await warehouseService.listLinkedWarehouses(erp.organizationId)),
+			{
+				// The `erp` macro resolves the session and the active
+				// organization; without it `erp` is undefined (500, fixed on
+				// the 2026-11-06 merge).
+				erp: {},
+				// No `warehouse:*` permission — no organization role holds one
+				// (ADR-0008), and the invariant test pins that. The response only
+				// ever contains warehouses already linked to the caller's own
+				// validated organization, so any authenticated member may read it;
+				// there is nothing here a non-admin could escalate to.
+				detail: {
+					description:
+						'Warehouses the active organization is linked to (ERP-0031). Any authenticated organization member; the list is scoped to the caller\u2019s own links',
+				},
+			},
+		);
 	}
 }
