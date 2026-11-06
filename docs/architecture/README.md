@@ -30,5 +30,9 @@ Database schema documentation lives in `docs/database/` (sibling folder):
 `logical-references`, `implementation-phases`), and the
 `gen-logical-references.ts` / `validate-dbml.ts` scripts.
 
+End-user documentation (how to use the web admin, English and Indonesian,
+with UML flow diagrams) lives in `docs/user-guide/`; update it in the same
+change when a user-visible flow, label or status changes.
+
 Any backend feature work reads that folder first and runs the `grill-me`
 design interview; see **Feature module lifecycle** in `../AGENTS.md`.

@@ -12,6 +12,28 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — user guide (EN + ID) and UML flow diagrams, 2026-11-06
+
+Status: **done** (documentation only; no code, migration or test change).
+Owner request: a user guide in English and Indonesian with notes, plus UML
+diagrams.
+
+- `docs/user-guide/en.md`, `docs/user-guide/id.md`: getting started, roles,
+  first-time setup, quotation → revision → Deal → sales order, invoices / DP
+  / receipts, PO → goods receipt → stock, opening stock and adjustments,
+  inventory value, delivery notes, projects, BAST, warranty, service
+  tickets, document numbering, and Notes (rules, required order, known
+  limitations). Labels were checked against the `en` / `id` locale bundles
+  and the statuses against the Drizzle schemas.
+- `docs/user-guide/diagrams.md`: 11 Mermaid diagrams (end-to-end activity,
+  sales / purchasing / delivery sequences, state machines of quotation,
+  sales order, invoice, PO, stock adjustment, delivery note, project, BAST,
+  ticket, serial unit, module contracts, cost flow). Verified by rendering
+  every block with Mermaid 11 in Chromium (temporary script outside the
+  repo): 11 diagrams, 0 failed.
+- `docs/user-guide/README.md` index; `docs/architecture/README.md` points
+  to it. Backlog: no `ERP-*` status change (documentation of ERP-0036).
+
 ## Completed — ADR-0011 port step 6c: service tickets with the warranty check, 2026-11-06
 
 Next executable task: the ADR-0011 port is complete (steps 1–6). Open the
