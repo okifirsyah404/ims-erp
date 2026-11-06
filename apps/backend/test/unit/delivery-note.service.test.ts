@@ -78,6 +78,7 @@ beforeEach(() => {
 			hasLiveNotes: async () => false,
 			shippedValues: async () => [],
 			shippedLines: async () => [],
+			findShipmentBySerial: async () => null,
 			async create(header, items) {
 				const note = {
 					...header,

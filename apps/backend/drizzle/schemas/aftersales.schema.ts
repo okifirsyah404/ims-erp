@@ -1,6 +1,6 @@
 /**
  * After-sales domain schema — owns the `aftersales` Postgres schema (M07,
- * ADR-0011 step 6b): warranty certificates; service tickets follow in 6c.
+ * ADR-0011 steps 6b–6c): warranty certificates and service tickets.
  *
  * House rules honoured here:
  * - **Company-wide, no `organization_id`** (ADR-0011 §2, ADR-0012).
@@ -9,7 +9,7 @@
  *   columns, validated through those modules' services.
  */
 import { sql } from 'drizzle-orm';
-import { check, date, index, integer, jsonb, pgSchema, text, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import { bigint, boolean, check, date, index, integer, jsonb, pgSchema, text, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { unixTimestamp, unixTimestampNullable } from '@drizzle/datatypes/unix-timestamp';
 import type { TDocumentItem } from './projects.schema';
 
@@ -71,5 +71,78 @@ export const warrantyCertificates = aftersalesSchema.table(
 	],
 );
 
+/* ------------------------------------------------------------------------ *
+ * aftersales.service_tickets (step 6c)
+ * ------------------------------------------------------------------------ */
+
+export const TICKET_STATUSES = ['new', 'in_progress', 'resolved', 'closed'] as const;
+export type TicketStatus = (typeof TICKET_STATUSES)[number];
+
+export const TICKET_CHANNELS = ['phone', 'whatsapp', 'email', 'web', 'onsite', 'other'] as const;
+export type TicketChannel = (typeof TICKET_CHANNELS)[number];
+
+/**
+ * Tiket servis. `new → in_progress → resolved → closed` (resolved may
+ * reopen); closing needs the customer's confirmation. The warranty check
+ * made at the report time is stored on the ticket.
+ */
+export const serviceTickets = aftersalesSchema.table(
+	'service_tickets',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		code: varchar('code', { length: 32 }).notNull(),
+		/** Logical reference to crm.customers.id. */
+		customerId: uuid('customer_id').notNull(),
+		customerName: text('customer_name').notNull(),
+		/** Logical reference to projects.projects.id; must belong to the customer. */
+		projectId: uuid('project_id'),
+		serialNumber: varchar('serial_number', { length: 100 }),
+		deviceDescription: varchar('device_description', { length: 300 }),
+		channel: text('channel').$type<TicketChannel>().notNull().default('phone'),
+		reporterName: varchar('reporter_name', { length: 200 }).notNull(),
+		reporterContact: varchar('reporter_contact', { length: 200 }),
+		complaint: text('complaint').notNull(),
+		reportedAt: unixTimestamp('reported_at').notNull(),
+		inWarranty: boolean('in_warranty').notNull().default(false),
+		warrantyEndsOn: date('warranty_ends_on'),
+		warrantyCode: varchar('warranty_code', { length: 80 }),
+		status: text('status').$type<TicketStatus>().notNull().default('new'),
+		/** Logical reference to auth.users.id; must hold `service_ticket:update`. */
+		assigneeUserId: text('assignee_user_id'),
+		resolution: text('resolution'),
+		serviceCost: bigint('service_cost', { mode: 'number' }).notNull().default(0),
+		resolvedBy: text('resolved_by'),
+		resolvedAt: unixTimestampNullable('resolved_at'),
+		confirmedByName: varchar('confirmed_by_name', { length: 200 }),
+		confirmationChannel: text('confirmation_channel').$type<TicketChannel>(),
+		confirmedAt: unixTimestampNullable('confirmed_at'),
+		closedBy: text('closed_by'),
+		closedAt: unixTimestampNullable('closed_at'),
+		createdBy: text('created_by'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('service_tickets_code_uq')
+			.on(table.code)
+			.where(sql`deleted_at IS NULL`),
+		index('service_tickets_customer_id_idx').on(table.customerId),
+		index('service_tickets_project_id_idx').on(table.projectId),
+		index('service_tickets_assignee_user_id_idx').on(table.assigneeUserId),
+		index('service_tickets_status_idx').on(table.status),
+		index('service_tickets_serial_number_idx').on(table.serialNumber),
+		check('service_tickets_status_check', sql`${table.status} IN ('new', 'in_progress', 'resolved', 'closed')`),
+		check('service_tickets_channel_check', sql`${table.channel} IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'other')`),
+		check(
+			'service_tickets_confirmation_channel_check',
+			sql`${table.confirmationChannel} IS NULL OR ${table.confirmationChannel} IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'other')`,
+		),
+		check('service_tickets_service_cost_check', sql`${table.serviceCost} >= 0`),
+	],
+);
+
 export type TWarrantyCertificateInsert = typeof warrantyCertificates.$inferInsert;
 export type TWarrantyCertificateSelect = typeof warrantyCertificates.$inferSelect;
+export type TServiceTicketInsert = typeof serviceTickets.$inferInsert;
+export type TServiceTicketSelect = typeof serviceTickets.$inferSelect;

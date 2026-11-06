@@ -5,6 +5,8 @@ import type { CompanyProfileService } from '@app/organization/services/company-p
 import type { NumberingService } from '@app/organization/services/numbering.service';
 import { HANDOVER_SERVICE_TOKEN } from '@app/projects/constants/di';
 import type { HandoverService } from '@app/projects/services/handover.service';
+import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/projects/constants/di';
+import type { ProjectLookupService } from '@app/projects/services/project-lookup.service';
 import type { TProjectContext } from '@app/projects/services/project.service';
 import { SALES_FULFILMENT_SERVICE_TOKEN } from '@app/sales/constants/di';
 import type { SalesFulfilmentService } from '@app/sales/services/sales-fulfilment.service';
@@ -26,6 +28,18 @@ import {
 	warrantyEndDate,
 } from '../utils/warranty';
 
+/** The result of a warranty check (service tickets). */
+export type TWarrantyCheck = {
+	/** Customer the serial was shipped to, when known. */
+	customerId: string | null;
+	projectId: string | null;
+	projectCode: string | null;
+	deviceDescription: string | null;
+	inWarranty: boolean;
+	warrantyEndsOn: string | null;
+	warrantyCode: string | null;
+};
+
 /** A new certificate's prefilled fields (not saved). */
 export type TWarrantyDraft = Omit<TWarrantyBodyRequest, 'bastId'> & { bastId: string | null };
 
@@ -44,10 +58,11 @@ export class WarrantyService {
 	constructor(
 		@inject(WARRANTY_REPOSITORY_TOKEN) private readonly certificates: IWarrantyRepository,
 		@inject(HANDOVER_SERVICE_TOKEN) private readonly projects: Pick<HandoverService, 'requireProject' | 'findBast'>,
-		@inject(SALES_FULFILMENT_SERVICE_TOKEN) private readonly sales: Pick<SalesFulfilmentService, 'shippedLines' | 'orderLines'>,
+		@inject(SALES_FULFILMENT_SERVICE_TOKEN) private readonly sales: Pick<SalesFulfilmentService, 'shippedLines' | 'orderLines' | 'findShipmentBySerial'>,
 		@inject(CUSTOMER_SERVICE_TOKEN) private readonly customers: Pick<CustomerService, 'get'>,
 		@inject(COMPANY_PROFILE_SERVICE_TOKEN) private readonly profile: Pick<CompanyProfileService, 'get'>,
 		@inject(NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(PROJECT_LOOKUP_SERVICE_TOKEN) private readonly lookup: Pick<ProjectLookupService, 'liveProjectOfOrder' | 'getProject'>,
 	) {}
 
 	/** The project's certificate, or `null`. */
@@ -121,5 +136,37 @@ export class WarrantyService {
 			if (isUniqueViolation(error)) throw new WarrantyExistsError();
 			throw error;
 		}
+	}
+
+	/**
+	 * Is a device under warranty on `on` (a Jakarta business date)? A serial
+	 * is traced to the delivery note that shipped it, its order's live
+	 * project and that project's certificate; without a serial, the given
+	 * project's certificate decides. No caller visibility: the ticket service
+	 * authorizes its callers.
+	 */
+	async check(query: { serialNumber?: string | null; projectId?: string | null }, on: string): Promise<TWarrantyCheck> {
+		let customerId: string | null = null;
+		let deviceDescription: string | null = null;
+		let project = null;
+		if (query.serialNumber) {
+			const shipment = await this.sales.findShipmentBySerial(query.serialNumber);
+			if (shipment) {
+				customerId = shipment.customerId;
+				deviceDescription = shipment.description;
+				project = await this.lookup.liveProjectOfOrder(shipment.salesOrderId);
+			}
+		}
+		if (!project && query.projectId) project = await this.lookup.getProject(query.projectId);
+		const certificate = project ? await this.certificates.findByProject(project.id) : null;
+		return {
+			customerId,
+			projectId: project?.id ?? null,
+			projectCode: project?.code ?? null,
+			deviceDescription,
+			inWarranty: !!certificate && on >= certificate.startDate && on <= certificate.endDate,
+			warrantyEndsOn: certificate?.endDate ?? null,
+			warrantyCode: certificate?.code ?? null,
+		};
 	}
 }

@@ -80,6 +80,7 @@ const nav = {
 	'item.inventoryValue': 'Inventory Value',
 	'breadcrumb.projectNew': 'New project',
 	'breadcrumb.bastNew': 'New BAST',
+	'breadcrumb.ticketNew': 'New ticket',
 	'breadcrumb.warranty': 'Warranty certificate',
 	'item.borrowings': 'Borrowings',
 	'item.items': 'Items',

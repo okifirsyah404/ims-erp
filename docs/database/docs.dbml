@@ -5215,8 +5215,8 @@ Ref: assets.asset_movements.asset_id > assets.assets.id [delete: cascade]
 // MODULE: After-Sales  (schema: aftersales)
 // Warranty, service tickets and work orders, maintenance plans and visits,
 // satisfaction surveys, spare parts, service contracts and SLA policies.
-// Tenant scoped, except warranty_certificates, which is company-wide
-// (ADR-0011 step 6b).
+// Tenant scoped, except warranty_certificates (step 6b) and service_tickets
+// (step 6c), which are company-wide (ADR-0011).
 // ---------------------------------------------------------------------------
 
 Table aftersales.warranty_policies {
@@ -5315,45 +5315,49 @@ Table aftersales.warranty_claims {
 }
 
 Table aftersales.service_tickets {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [not null, note: "Number from the numbering service (TKT). Unique among live rows (partial index in the Drizzle schema)."]
   customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract."]
-  asset_id uuid [note: "Logical reference to assets.assets.id. Cross-module FK intentionally omitted. Validated through the Assets module contract."]
-  service_type text [not null, default: 'repair']
-  subject text [not null]
-  description text
-  priority text [not null, default: 'normal']
-  status text [not null, default: 'open']
+  customer_name text [not null, note: "Snapshot of the customer name."]
+  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract; must belong to the customer."]
+  serial_number varchar(100)
+  device_description varchar(300)
   channel text [not null, default: 'phone']
-  assigned_to_employee_id uuid [note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
-  assigned_to_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  scheduled_for bigint
-  sla_due_at bigint
-  started_at bigint
+  reporter_name varchar(200) [not null]
+  reporter_contact varchar(200)
+  complaint text [not null]
+  reported_at bigint [not null]
+  in_warranty boolean [not null, default: false, note: "Warranty check at the report time (serial → shipped delivery note → project → warranty certificate)."]
+  warranty_ends_on date
+  warranty_code varchar(80)
+  status text [not null, default: 'new']
+  assignee_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Must hold service_ticket:update."]
+  resolution text
+  service_cost bigint [not null, default: 0, note: "IDR minor units."]
+  resolved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   resolved_at bigint
+  confirmed_by_name varchar(200) [note: "The customer who confirmed the fix (required to close)."]
+  confirmation_channel text
+  confirmed_at bigint
+  closed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   closed_at bigint
-  resolution_notes text
-  escalation_level smallint [not null, default: 0]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Service ticket, tiket servis. The SLA due date is derived from the SLA policy of the priority."
+  deleted_at bigint
+  Note: "Service ticket (tiket servis), company-wide (ADR-0011 step 6c). Stores the warranty check made when it is reported; closed only with the customer's confirmation."
   Indexes {
-    (organization_id, code) [unique, name: 'service_tickets_org_code_uq']
     customer_id [name: 'service_tickets_customer_id_idx']
-    assigned_to_employee_id [name: 'service_tickets_assigned_employee_id_idx']
+    project_id [name: 'service_tickets_project_id_idx']
+    assignee_user_id [name: 'service_tickets_assignee_user_id_idx']
     status [name: 'service_tickets_status_idx']
-    priority [name: 'service_tickets_priority_idx']
-    sla_due_at [name: 'service_tickets_sla_due_at_idx']
+    serial_number [name: 'service_tickets_serial_number_idx']
   }
   Checks {
-    `service_type IN ('repair', 'installation', 'maintenance', 'inspection', 'training', 'consulting')`
-    `priority IN ('low', 'normal', 'high', 'urgent')`
-    `status IN ('open', 'assigned', 'in_progress', 'on_hold', 'resolved', 'closed', 'cancelled')`
-    `channel IN ('phone', 'whatsapp', 'email', 'web', 'onsite')`
-    `escalation_level >= 0`
+    `status IN ('new', 'in_progress', 'resolved', 'closed')`
+    `channel IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'other')`
+    `confirmation_channel IS NULL OR confirmation_channel IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'other')`
+    `service_cost >= 0`
   }
 }
 

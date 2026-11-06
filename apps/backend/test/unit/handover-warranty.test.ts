@@ -101,10 +101,16 @@ beforeEach(() => {
 					{ salesOrderItemId: 'l1', name: 'Swing Gate', unit: 'unit', quantity: '1.000', serialNumbers: ['SG-2'] },
 				] as never,
 			orderLines: async () => [] as never,
+			findShipmentBySerial: async (serial: string) =>
+				serial.startsWith('SG-') ? { salesOrderId: 'so-1', customerId: 'cust-1', description: 'Swing Gate', deliveryNoteCode: 'SJ-1', shippedAt: new Date() } : null,
 		},
 		{ get: async () => ({ code: 'app' }) as never },
 		{ get: async () => ({ ...profileTexts }) as never },
 		numbering,
+		{
+			liveProjectOfOrder: async (orderId: string) => (orderId === project.salesOrderId ? project : null),
+			getProject: async (id: string) => (id === PROJECT ? project : null),
+		},
 	);
 });
 
@@ -158,3 +164,22 @@ describe('warranty certificate', () => {
 		expect((await warranty.draft(ctx, PROJECT)).coverage).toBe('Cacat pabrik\no Termasuk modul');
 	});
 });
+
+describe('warranty check', () => {
+	test('serial → shipment → project → certificate; in warranty up to the end date', async () => {
+		const bast = await handover.create(ctx, PROJECT, bastBody('2025-12-24'));
+		const draft = await warranty.draft(ctx, PROJECT);
+		await warranty.save(ctx, PROJECT, { ...draft, bastId: bast.id });
+		expect(await warranty.check({ serialNumber: 'SG-1' }, '2026-12-23')).toMatchObject({
+			customerId: 'cust-1',
+			projectId: PROJECT,
+			deviceDescription: 'Swing Gate',
+			inWarranty: true,
+			warrantyEndsOn: '2026-12-23',
+		});
+		expect((await warranty.check({ serialNumber: 'SG-1' }, '2026-12-24')).inWarranty).toBe(false);
+		expect(await warranty.check({ serialNumber: 'XX-9' }, '2026-01-01')).toMatchObject({ projectId: null, inWarranty: false });
+		expect((await warranty.check({ projectId: PROJECT }, '2026-06-01')).inWarranty).toBe(true);
+	});
+});
+

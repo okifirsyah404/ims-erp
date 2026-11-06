@@ -91,6 +91,8 @@ import { Route as AuthedProcurementSuppliersSupplierIdRouteImport } from './rout
 import { Route as AuthedProjectsProjectIdIndexRouteImport } from './routes/_authed/projects/$projectId/index'
 import { Route as AuthedProjectsBastIndexRouteImport } from './routes/_authed/projects/bast/index'
 import { Route as AuthedProjectsTicketsIndexRouteImport } from './routes/_authed/projects/tickets/index'
+import { Route as AuthedProjectsTicketsTicketIdRouteImport } from './routes/_authed/projects/tickets/$ticketId'
+import { Route as AuthedProjectsTicketsNewRouteImport } from './routes/_authed/projects/tickets/new'
 import { Route as AuthedReportsMonthlyArchivesIndexRouteImport } from './routes/_authed/reports/monthly-archives/index'
 import { Route as AuthedSalesDeliveriesIndexRouteImport } from './routes/_authed/sales/deliveries/index'
 import { Route as AuthedSalesDeliveriesNewRouteImport } from './routes/_authed/sales/deliveries/new'
@@ -585,6 +587,18 @@ const AuthedProjectsTicketsIndexRoute =
     path: '/projects/tickets/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedProjectsTicketsTicketIdRoute =
+  AuthedProjectsTicketsTicketIdRouteImport.update({
+    id: '/projects/tickets/$ticketId',
+    path: '/projects/tickets/$ticketId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedProjectsTicketsNewRoute =
+  AuthedProjectsTicketsNewRouteImport.update({
+    id: '/projects/tickets/new',
+    path: '/projects/tickets/new',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedReportsMonthlyArchivesIndexRoute =
   AuthedReportsMonthlyArchivesIndexRouteImport.update({
     id: '/reports/monthly-archives/',
@@ -859,6 +873,8 @@ export interface FileRoutesByFullPath {
   '/procurement/receipts/$receiptId': typeof AuthedProcurementReceiptsReceiptIdRoute
   '/procurement/receipts/new': typeof AuthedProcurementReceiptsNewRoute
   '/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
+  '/projects/tickets/$ticketId': typeof AuthedProjectsTicketsTicketIdRoute
+  '/projects/tickets/new': typeof AuthedProjectsTicketsNewRoute
   '/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
@@ -979,6 +995,8 @@ export interface FileRoutesByTo {
   '/procurement/receipts/$receiptId': typeof AuthedProcurementReceiptsReceiptIdRoute
   '/procurement/receipts/new': typeof AuthedProcurementReceiptsNewRoute
   '/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
+  '/projects/tickets/$ticketId': typeof AuthedProjectsTicketsTicketIdRoute
+  '/projects/tickets/new': typeof AuthedProjectsTicketsNewRoute
   '/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
@@ -1103,6 +1121,8 @@ export interface FileRoutesById {
   '/_authed/procurement/receipts/$receiptId': typeof AuthedProcurementReceiptsReceiptIdRoute
   '/_authed/procurement/receipts/new': typeof AuthedProcurementReceiptsNewRoute
   '/_authed/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
+  '/_authed/projects/tickets/$ticketId': typeof AuthedProjectsTicketsTicketIdRoute
+  '/_authed/projects/tickets/new': typeof AuthedProjectsTicketsNewRoute
   '/_authed/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
   '/_authed/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/_authed/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
@@ -1227,6 +1247,8 @@ export interface FileRouteTypes {
     | '/procurement/receipts/$receiptId'
     | '/procurement/receipts/new'
     | '/procurement/suppliers/$supplierId'
+    | '/projects/tickets/$ticketId'
+    | '/projects/tickets/new'
     | '/sales/deliveries/new'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
@@ -1347,6 +1369,8 @@ export interface FileRouteTypes {
     | '/procurement/receipts/$receiptId'
     | '/procurement/receipts/new'
     | '/procurement/suppliers/$supplierId'
+    | '/projects/tickets/$ticketId'
+    | '/projects/tickets/new'
     | '/sales/deliveries/new'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
@@ -1470,6 +1494,8 @@ export interface FileRouteTypes {
     | '/_authed/procurement/receipts/$receiptId'
     | '/_authed/procurement/receipts/new'
     | '/_authed/procurement/suppliers/$supplierId'
+    | '/_authed/projects/tickets/$ticketId'
+    | '/_authed/projects/tickets/new'
     | '/_authed/sales/deliveries/new'
     | '/_authed/sales/orders/$orderId'
     | '/_authed/sales/quotes/new'
@@ -2134,6 +2160,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProjectsTicketsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/projects/tickets/$ticketId': {
+      id: '/_authed/projects/tickets/$ticketId'
+      path: '/projects/tickets/$ticketId'
+      fullPath: '/projects/tickets/$ticketId'
+      preLoaderRoute: typeof AuthedProjectsTicketsTicketIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/projects/tickets/new': {
+      id: '/_authed/projects/tickets/new'
+      path: '/projects/tickets/new'
+      fullPath: '/projects/tickets/new'
+      preLoaderRoute: typeof AuthedProjectsTicketsNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/reports/monthly-archives/': {
       id: '/_authed/reports/monthly-archives/'
       path: '/reports/monthly-archives'
@@ -2523,6 +2563,8 @@ interface AuthedRouteChildren {
   AuthedProcurementReceiptsReceiptIdRoute: typeof AuthedProcurementReceiptsReceiptIdRoute
   AuthedProcurementReceiptsNewRoute: typeof AuthedProcurementReceiptsNewRoute
   AuthedProcurementSuppliersSupplierIdRoute: typeof AuthedProcurementSuppliersSupplierIdRoute
+  AuthedProjectsTicketsTicketIdRoute: typeof AuthedProjectsTicketsTicketIdRoute
+  AuthedProjectsTicketsNewRoute: typeof AuthedProjectsTicketsNewRoute
   AuthedSalesDeliveriesNewRoute: typeof AuthedSalesDeliveriesNewRoute
   AuthedSalesOrdersOrderIdRoute: typeof AuthedSalesOrdersOrderIdRoute
   AuthedSalesQuotesNewRoute: typeof AuthedSalesQuotesNewRoute
@@ -2639,6 +2681,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedProcurementReceiptsNewRoute: AuthedProcurementReceiptsNewRoute,
   AuthedProcurementSuppliersSupplierIdRoute:
     AuthedProcurementSuppliersSupplierIdRoute,
+  AuthedProjectsTicketsTicketIdRoute: AuthedProjectsTicketsTicketIdRoute,
+  AuthedProjectsTicketsNewRoute: AuthedProjectsTicketsNewRoute,
   AuthedSalesDeliveriesNewRoute: AuthedSalesDeliveriesNewRoute,
   AuthedSalesOrdersOrderIdRoute: AuthedSalesOrdersOrderIdRoute,
   AuthedSalesQuotesNewRoute: AuthedSalesQuotesNewRoute,

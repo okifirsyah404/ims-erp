@@ -1,7 +1,7 @@
 import type { TDeliveryNoteItemSelect, TSalesOrderItemSelect, TSalesOrderSelect } from '@drizzle/schemas/sales.schema';
 import { inject, injectable } from 'tsyringe';
 import { DELIVERY_NOTE_REPOSITORY_TOKEN, SALES_ORDER_REPOSITORY_TOKEN } from '../constants/di';
-import type { IDeliveryNoteRepository, TShippedNoteValue } from '../contracts/delivery-note.repository.interface';
+import type { IDeliveryNoteRepository, TSerialShipment, TShippedNoteValue } from '../contracts/delivery-note.repository.interface';
 import type { ISalesOrderRepository } from '../contracts/sales-order.repository.interface';
 
 /** Order states a project may run against (a live deal). */
@@ -24,7 +24,7 @@ export class SalesFulfilmentService {
 		@inject(SALES_ORDER_REPOSITORY_TOKEN)
 		private readonly orders: Pick<ISalesOrderRepository, 'findById' | 'findItems' | 'paginate'>,
 		@inject(DELIVERY_NOTE_REPOSITORY_TOKEN)
-		private readonly notes: Pick<IDeliveryNoteRepository, 'shippedValues' | 'shippedLines'>,
+		private readonly notes: Pick<IDeliveryNoteRepository, 'shippedValues' | 'shippedLines' | 'findShipmentBySerial'>,
 	) {}
 
 	/** A live (not cancelled) order, or `null`. */
@@ -61,5 +61,10 @@ export class SalesFulfilmentService {
 	/** Lines of the order's shipped / delivered notes with their serials (warranty defaults). */
 	shippedLines(salesOrderId: string): Promise<TDeliveryNoteItemSelect[]> {
 		return this.notes.shippedLines(salesOrderId);
+	}
+
+	/** Where a serial was shipped: order, customer, device (service tickets). */
+	findShipmentBySerial(serialNumber: string): Promise<TSerialShipment | null> {
+		return this.notes.findShipmentBySerial(serialNumber);
 	}
 }

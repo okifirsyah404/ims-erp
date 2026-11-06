@@ -178,8 +178,6 @@ Last synced: 2026-11-06.
 ## M07 Projects and After-Sales
 
 ### planned
-- Basic tickets + manual closure, warranty — T08. Evidence: dbml `ticket`,
-  `aftersales` only.
 - Portal: project/BAST status + own tickets — T26, ERP-0022. Evidence: none.
 
 ### implemented
@@ -197,6 +195,13 @@ Last synced: 2026-11-06.
   `/projects/$projectId/bast/*`, `/projects/$projectId/warranty*`,
   `/projects/bast`, `progress.md` 2026-11-06 (step 6b). Gaps: real-PG
   integration tests.
+- Service tickets with the warranty check by serial number (shipped device →
+  project → certificate), technician assignment, resolution with cost, and
+  closing with the customer's confirmation — T08, ERP-0036. Evidence:
+  `aftersales/services/service-ticket.service.ts`,
+  `test/unit/service-ticket.service.test.ts`, `/projects/tickets` pages,
+  `progress.md` 2026-11-06 (step 6c). Gaps: real-PG integration tests; SLA
+  and escalation not decided.
 
 ## M08 Employees and Attendance
 

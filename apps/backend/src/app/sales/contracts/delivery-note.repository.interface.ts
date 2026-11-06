@@ -65,6 +65,16 @@ export interface IDeliveryNoteRepository {
 	shippedValues(salesOrderId: string): Promise<TShippedNoteValue[]>;
 	/** Lines of the order's shipped / delivered notes, oldest first. */
 	shippedLines(salesOrderId: string): Promise<TDeliveryNoteItemSelect[]>;
+	/** The latest shipped / delivered line carrying this serial, with its order and customer. */
+	findShipmentBySerial(serialNumber: string): Promise<TSerialShipment | null>;
 }
+
+export type TSerialShipment = {
+	salesOrderId: string;
+	customerId: string;
+	description: string;
+	deliveryNoteCode: string;
+	shippedAt: Date | null;
+};
 
 export type TShippedNoteValue = { id: string; code: string; shippedAt: Date | null; value: number };

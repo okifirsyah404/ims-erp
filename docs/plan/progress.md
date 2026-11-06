@@ -12,11 +12,102 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — ADR-0011 port step 6c: service tickets with the warranty check, 2026-11-06
+
+Next executable task: the ADR-0011 port is complete (steps 1–6). Open the
+single pull request `merge/main-sync → main` for programmer A's review (the
+inventory changes flagged in steps 4b, 5a and 5b need his approval), after the
+owner's go; meanwhile the owner's acceptance walk-through of M02 / M05 / M07.
+
+Status: **implemented** (backend + web admin; not yet accepted by the owner).
+Step 6 (M07) is complete.
+
+What landed:
+- Migration `20261106083213_service_tickets` (generated, inspected, applied
+  to `ims_erp_sync`): `aftersales.service_tickets` (company-wide).
+- After-Sales: `ServiceTicketRepository`, `ServiceTicketService`,
+  `ServiceTicketController` (`/service-tickets`, `/warranty-check`,
+  `/technicians`, `/:id`, assign / start / resolve / reopen / close);
+  `WarrantyService.check` (serial → shipment → live project → certificate,
+  in warranty while the report date ≤ the end date). Errors with `api` keys
+  en + id.
+- Contracts: Sales `findShipmentBySerial` (delivery-note lines, jsonb
+  containment), Projects `liveProjectOfOrder` / `getProject`.
+- Web: `/projects/tickets` (list, filter, search; replaces the coming-soon
+  stub), `/projects/tickets/new` (serial first: customer, project, device and
+  the warranty badge fill in), `/projects/tickets/$ticketId` (assign, start,
+  resolve with cost, reopen, close with the customer's confirmation).
+
+Found while testing: a `${JSON.stringify([...])}::jsonb` parameter in a
+Drizzle `sql` template did not match (the value arrived encoded twice with
+bun-sql); `jsonb_build_array(${value}::text)` is used instead — worth
+remembering for any other jsonb containment query.
+
+Verification (2026-11-06):
+- `bun docs/database/gen-logical-references.ts` + `bun
+  docs/database/validate-dbml.ts` → `OK`. `docs/database/` updated
+  (`aftersales.service_tickets` rewritten, module note).
+- `NODE_ENV=development bun run drizzle:migrate` → applied.
+- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (warnings
+  pre-existing); `bun run test` → backend 655 pass (new
+  `service-ticket.service.test.ts`, warranty-check cases), web-admin 45,
+  locales 58, 0 fail; `bun run build` → built.
+- Browser + API check (temporary Playwright script, deleted): a serialized
+  unit received by a goods receipt, sold, shipped by a delivery note; project,
+  BAST and warranty (to 2027-11-05). Customer service typed the serial in the
+  new-ticket form: customer, project and device filled in and "Bergaransi"
+  showed; the ticket `0001/TKT/DEV/XI/26` stored the warranty code and end
+  date; an unknown serial is out of warranty; the technician got 404 before
+  assignment and 403 creating; after assignment the technician started and
+  resolved (Rp 150.000) through the UI, closing as technician 403; customer
+  service closed with the customer's confirmation (WhatsApp); no browser
+  errors.
+- Test data left in the dev DB: projects `0004`–`0006/PRJ/DEV/XI/26` with
+  their BAST / warranty, ticket `0001/TKT/DEV/XI/26`, serials `TK-…`.
+
+Gate 1 (read): docs.dbml `aftersales.service_tickets` (tenant-scoped scaffold:
+`open / assigned / in_progress / on_hold / resolved / closed / cancelled`,
+SLA, escalation, asset and employee references) and the Ticketing module
+note (customer-portal tickets are a different module, programmer A; they may
+escalate into an after-sales service ticket by logical reference);
+module-ownership §15; numbering type `service_ticket` (`TKT`); role catalog
+(`service_ticket:*` — customer service and project manager all, technician
+read / update / resolve, admin read / create / update / assign); the old
+branch's `service-ticket.service.ts` and tests (decisions of 2026-11-04);
+`aftersales.warranty_certificates` (step 6b); delivery-note lines carry the
+shipped serials. Skipped: `implementation-phases.md` (no unlanded dependency).
+
+Gate 2 (manual grilling pass):
+- `aftersales.service_tickets` rewritten to the decided model, company-wide
+  (ADR-0011/0012): `code` (TKT), `customer_id` (CRM contract: active
+  customer) + name snapshot, `project_id` (Projects contract; must belong to
+  the customer), `serial_number`, `device_description`, `channel` (`phone,
+  whatsapp, email, web, onsite, other`), reporter name / contact,
+  `complaint`, `reported_at`; the warranty check stored on the ticket
+  (`in_warranty`, `warranty_ends_on`, `warranty_code`); `status` `new →
+  in_progress → resolved → closed` (resolved may reopen); assignee (must hold
+  `service_ticket:update`, member of the caller's organization),
+  `resolution`, `service_cost` (IDR minor units), resolved by / at, the
+  customer's confirmation (name, channel, at) required to close, closed by /
+  at. SLA, escalation, priority, asset and employee columns of the scaffold
+  are dropped (not decided).
+- Warranty check (also a read endpoint for the form): serial → the shipped
+  delivery-note line carrying it (Sales contract `findShipmentBySerial`) →
+  the order's live project (Projects contract) → its warranty certificate;
+  in warranty when the report date ≤ the certificate's end date. Without a
+  serial, the given project's certificate. A serial delivered to another
+  customer → 422.
+- Visibility: holders of `service_ticket:assign` or `:close` see every
+  ticket; others only tickets assigned to them (404). Start / resolve /
+  reopen: the assignee or an assigner. Create `service_ticket:create`,
+  assign `:assign`, resolve `:resolve`, close `:close`.
+- Web: `/projects/tickets` (list), new (customer, project, serial with the
+  live warranty badge), detail with assign / start / resolve / reopen /
+  close; replaces the coming-soon stub.
+
 ## Completed — ADR-0011 port step 6b: BAST and warranty certificate, 2026-11-06
 
-Next executable task: ADR-0011 step 6c — service tickets with the warranty
-check by serial number (`aftersales.service_tickets`), then the single PR to
-main.
+Next executable task: step 6c (done, entry above).
 
 Status: **implemented** (backend + web admin; not yet accepted by the owner).
 

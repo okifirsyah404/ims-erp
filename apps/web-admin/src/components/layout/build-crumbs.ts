@@ -54,6 +54,8 @@ const LABELS: Record<string, NavKey> = {
 	'/projects': 'item.projects',
 	'/projects/new': 'breadcrumb.projectNew',
 	'/projects/bast': 'item.bast',
+	'/projects/tickets': 'item.tickets',
+	'/projects/tickets/new': 'breadcrumb.ticketNew',
 	'/projects/$projectId/bast/new': 'breadcrumb.bastNew',
 	'/projects/$projectId/bast/$bastId/print': 'breadcrumb.print',
 	'/projects/$projectId/warranty': 'breadcrumb.warranty',

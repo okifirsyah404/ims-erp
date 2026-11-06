@@ -17,6 +17,7 @@ import type {
 	TDeliveryNoteHeaderData,
 	TDeliveryNoteItemData,
 	TDeliveryNoteRow,
+	TSerialShipment,
 	TShippedNoteValue,
 } from '../contracts/delivery-note.repository.interface';
 
@@ -186,5 +187,30 @@ export class DeliveryNoteRepository implements IDeliveryNoteRepository {
 				),
 			)
 			.orderBy(asc(deliveryNotes.shippedAt), asc(deliveryNoteItems.sortOrder));
+	}
+
+	async findShipmentBySerial(serialNumber: string): Promise<TSerialShipment | null> {
+		const [row] = await this.database
+			.select({
+				salesOrderId: deliveryNotes.salesOrderId,
+				customerId: salesOrders.customerId,
+				description: deliveryNoteItems.name,
+				deliveryNoteCode: deliveryNotes.code,
+				shippedAt: deliveryNotes.shippedAt,
+			})
+			.from(deliveryNoteItems)
+			.innerJoin(deliveryNotes, eq(deliveryNotes.id, deliveryNoteItems.deliveryNoteId))
+			.innerJoin(salesOrders, eq(salesOrders.id, deliveryNotes.salesOrderId))
+			.where(
+				and(
+					sql`${deliveryNoteItems.serialNumbers} @> jsonb_build_array(${serialNumber}::text)`,
+					isNull(deliveryNoteItems.deletedAt),
+					isNull(deliveryNotes.deletedAt),
+					inArray(deliveryNotes.status, ['shipped', 'delivered']),
+				),
+			)
+			.orderBy(desc(deliveryNotes.shippedAt))
+			.limit(1);
+		return row ?? null;
 	}
 }

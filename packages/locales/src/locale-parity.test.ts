@@ -141,6 +141,8 @@ describe('locale values', () => {
 			'projects:evidenceKind.training',
 			'projects:costCategory.material',
 			'projects:costs.margin',
+			'projects:channel.whatsapp',
+			'projects:channel.email',
 			'projects:items.no',
 			'projects:bastList.title',
 			'projects:bastDoc.no',
