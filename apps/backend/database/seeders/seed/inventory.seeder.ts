@@ -9,6 +9,7 @@ import {
 	serialTrackedItems,
 	stockMovements,
 	warehouseAddresses,
+	warehouseOrganizations,
 	warehouseStorages,
 	warehouses,
 } from '../../../drizzle/schemas/inventory.schema';
@@ -186,8 +187,11 @@ export async function seedInventory(): Promise<void> {
 		villageId,
 	});
 
+	// ERP-0031 (D1): every warehouse is global; `organization_id` is frozen at
+	// NULL and organization access comes from the `warehouse_organizations`
+	// link, ensured below.
 	const orgWarehouse = await ensureWarehouse({
-		organizationId,
+		organizationId: null,
 		code: 'WH-MAIN',
 		name: 'Main warehouse',
 		// Only one default per scope, so the organization warehouse is NOT the
@@ -195,6 +199,10 @@ export async function seedInventory(): Promise<void> {
 		isDefault: false,
 		villageId,
 	});
+
+	if (organizationId !== null) {
+		await ensureWarehouseOrganizationLink(orgWarehouse, organizationId);
+	}
 
 	await ensureStorage(globalWarehouse, 'A1', 'Shelf A1');
 	await ensureStorage(globalWarehouse, 'A2', 'Shelf A2');
@@ -446,6 +454,48 @@ async function findWarehouse(
 		)
 		.limit(1);
 	return row?.id ?? null;
+}
+
+/**
+ * Ensures the warehouse↔organization link row exists (ERP-0031).
+ *
+ * @remarks
+ * Idempotent: an alive link for the same pair short-circuits. A soft-deleted
+ * one is revived rather than duplicated — the partial unique index
+ * `warehouse_organizations_uq` would reject a second alive row for the pair.
+ */
+async function ensureWarehouseOrganizationLink(
+	warehouseId: string,
+	organizationId: string,
+): Promise<void> {
+	const [existing] = await drizzleDB
+		.select({
+			id: warehouseOrganizations.id,
+			deletedAt: warehouseOrganizations.deletedAt,
+		})
+		.from(warehouseOrganizations)
+		.where(
+			sql`${warehouseOrganizations.warehouseId} = ${warehouseId} AND ${warehouseOrganizations.organizationId} = ${organizationId}`,
+		)
+		.limit(1);
+
+	if (existing?.deletedAt === null) return;
+
+	if (existing) {
+		await drizzleDB
+			.update(warehouseOrganizations)
+			.set({ deletedAt: null, updatedAt: new Date() })
+			.where(eq(warehouseOrganizations.id, existing.id));
+		logger.info({ warehouseId, organizationId }, 'Relinked warehouse to organization');
+		return;
+	}
+
+	await drizzleDB.insert(warehouseOrganizations).values({
+		warehouseId,
+		organizationId,
+		createdAt: new Date(),
+	});
+	logger.info({ warehouseId, organizationId }, 'Linked warehouse to organization');
 }
 
 /** Creates a storage (bin) when absent, keyed on `(warehouse_id, code)`. */

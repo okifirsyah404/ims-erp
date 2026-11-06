@@ -311,6 +311,46 @@ export const warehouseStorages = inventorySchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
+ * inventory.warehouse_organizations
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Many-to-many link granting an organization access to a global warehouse
+ * (ERP-0031, ADR-0010).
+ *
+ * Members act through their role in the active organization; there is no
+ * per-member assignment. Link writes are application-admin-only and audited;
+ * unlink is rejected while the organization has open borrowings in the
+ * warehouse (checked in the service, not here).
+ *
+ * `organization_id` is a logical reference to `auth.organizations.id` —
+ * cross-module FK intentionally omitted (house rule).
+ */
+export const warehouseOrganizations = inventorySchema.table(
+	'warehouse_organizations',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		warehouseId: uuid('warehouse_id')
+			.notNull()
+			.references(() => warehouses.id, { onDelete: 'cascade' }),
+		/** Logical reference to auth.organizations.id — cross-module FK omitted. */
+		organizationId: text('organization_id').notNull(),
+		...softDeleteTimestamps,
+	},
+	(table) => [
+		index('warehouse_organizations_warehouse_id_idx').on(table.warehouseId),
+		index('warehouse_organizations_organization_id_idx').on(
+			table.organizationId,
+		),
+		uniqueIndex('warehouse_organizations_uq')
+			.on(table.warehouseId, table.organizationId)
+			.where(sql`deleted_at IS NULL`),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
  * inventory.items
  * ------------------------------------------------------------------------ */
 

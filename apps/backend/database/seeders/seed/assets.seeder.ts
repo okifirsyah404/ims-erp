@@ -119,11 +119,12 @@ export async function seedAssets(): Promise<void> {
 
 	await ensureAssetTypes();
 
+	// ERP-0031 (D1): warehouses are global — look up by code alone.
 	const [warehouse] = await drizzleDB
 		.select({ id: warehouses.id })
 		.from(warehouses)
 		.where(
-			sql`${warehouses.organizationId} = ${organizationId} AND ${warehouses.code} = 'WH-MAIN' AND ${warehouses.deletedAt} IS NULL`,
+			sql`${warehouses.code} = 'WH-MAIN' AND ${warehouses.deletedAt} IS NULL`,
 		)
 		.limit(1);
 

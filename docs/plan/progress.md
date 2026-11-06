@@ -12,6 +12,45 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed (this session - ERP-0031 Slice 1 warehouse↔org link schema, 2026-11-06)
+
+Status: **implemented**. Slice 1 of ERP-0031 (warehouse↔organization links +
+scoped access); decisions D1 (keep + null `warehouses.organization_id`) and
+D2 (no WH-JKT/WH-SBY seeds — keep GLOBAL-MAIN/WH-MAIN) recorded.
+
+What landed:
+
+- `docs.dbml` already carried `inventory.warehouse_organizations` (Slice 0
+  contract) — verified, unchanged; `gen-logical-references.ts` and
+  `validate-dbml.ts` both OK (255 tables, 228 refs, 0 cross-module).
+- Drizzle table `warehouse_organizations` added to
+  `drizzle/schemas/inventory.schema.ts`: uuidv7 id, `warehouse_id` FK →
+  warehouses (cascade), `organization_id` (logical ref to auth.organizations,
+  cross-module FK omitted), soft-delete timestamps, partial unique
+  `(warehouse_id, organization_id) WHERE deleted_at IS NULL`, indexes on both
+  columns.
+- Migration `20261106062510_erp0031_warehouse_org_links`: generated DDL plus
+  hand-written backfill (one alive link per warehouse that still carries an
+  `organization_id`) and the freeze (`UPDATE warehouses SET organization_id =
+  NULL`). ASCII-only.
+- Seeder retargeted to D1: `WH-MAIN` is created **global**
+  (`organization_id: null`) and linked to the dev org through a new idempotent
+  `ensureWarehouseOrganizationLink` (revives soft-deleted links rather than
+  duplicating — the partial unique would reject a second alive row).
+  `assets.seeder.ts` looks `WH-MAIN` up by code alone. Note: the first
+  migrate+seed run silently re-scoped WH-MAIN because the seeder predated the
+  freeze — fixed in this slice, which is why the seeder change ships with the
+  migration (same pattern as ERP-0036 Slice 2).
+
+```text
+bun docs/database/gen-logical-references.ts → regenerated, OK
+bun docs/database/validate-dbml.ts          → 255 tables, 228 refs, 0 cross-module, OK
+drizzle:migrate + drizzle:seed run twice on ims_erp_local → clean
+DB end-state: WH-MAIN global (is_default false), 1 alive link to dev org,
+0 warehouses with non-null organization_id
+bun run lint / typecheck / test (root)      → green (backend 526 pass)
+```
+
 ## Completed (this session - web-admin page padding fix, 2026-11-06)
 
 Status: **implemented**. Layout fix, no module behavior change.
