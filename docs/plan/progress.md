@@ -12,6 +12,29 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed (this session - web-admin page padding fix, 2026-11-06)
+
+Status: **implemented**. Layout fix, no module behavior change.
+
+What landed:
+
+- `components/layout/main-layout.tsx` now owns page padding once: children
+  render inside `<main class='flex flex-1 flex-col gap-4 p-4 pt-0 md:gap-6
+  md:p-6'>` inside `SidebarInset`.
+- Asset screens (register, detail, categories, disposals, service records,
+  tool sets, depreciation, borrowings, forms) had **zero** page padding and sat
+  flush against the sidebar/header; they now get it from the layout.
+- Removed self-padding that would have double-padded: `p-6` from
+  `inventory/item-kind-list.tsx`, `inventory/item-form.tsx`,
+  `inventory/warehouse-list.tsx`, `inventory/warehouse-form.tsx`; `p-4 pt-0`
+  from the two dashboard containers; `p-4 md:p-6` from the account and
+  profiles path layouts.
+
+```text
+bun run build (apps/web-admin) → clean
+bun run lint  (apps/web-admin) → 0 errors (pre-existing warnings only)
+```
+
 ## Completed (this session - ERP-0036 Slice 5 UI/i18n/removals, 2026-11-06)
 
 Status: **implemented** in code; locale and type gates green. Slice 5 of

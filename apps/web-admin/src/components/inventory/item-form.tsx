@@ -93,7 +93,7 @@ export function ItemForm({
 	}
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<div>
 				<h1 className='text-2xl font-bold'>
 					{isEdit ? t('inventory:form.editItem') : t('inventory:form.newItem')}
