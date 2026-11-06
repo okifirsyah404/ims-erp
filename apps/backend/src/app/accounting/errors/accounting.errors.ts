@@ -92,6 +92,17 @@ export class WithholdingNotFoundError extends AppError {
 	}
 }
 
+/** Withholding rows are editable only while `recorded`. */
+export class WithholdingLockedError extends AppError {
+	constructor() {
+		super(
+			409,
+			'accounting.withholdingLocked',
+			'Withholding record is no longer editable',
+		);
+	}
+}
+
 export class WithholdingTransitionError extends AppError {
 	constructor() {
 		super(

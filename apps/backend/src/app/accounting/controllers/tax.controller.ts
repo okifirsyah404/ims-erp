@@ -6,20 +6,22 @@ import {
 	recapQuerySchema,
 	taxCorrectionCreateSchema,
 	taxIdParamSchema,
-	taxPreviewQuerySchema,
+	taxPreviewSchema,
 	taxRecordCreateSchema,
-	taxRecordFileSchema,
 	taxRecordListQuerySchema,
+	taxRecordTransitionSchema,
 	taxRecordUpdateSchema,
 	taxTypeCreateSchema,
 	taxTypeListQuerySchema,
 	taxTypeUpdateSchema,
 	withholdingCreateSchema,
 	withholdingListQuerySchema,
+	withholdingPatchSchema,
 	withholdingTransitionSchema,
 } from '../contracts/tax.contract';
 import { TAX_SERVICE_TOKEN } from '../constants/di';
 import type { TaxService } from '../services/tax.service';
+import { recapToCsv } from '../utils/tax-csv';
 
 /**
  * REST controller for the tax slice (ERP-0016).
@@ -60,22 +62,6 @@ export class TaxController {
 				{
 					erp: { permission: ['tax:read'] },
 					detail: { description: 'Paginated tax rate rows' },
-				},
-			)
-			// Static `/types/preview` must mount before `/types/:id`, or `:id`
-			// swallows it and the UUID check rejects the request.
-			.get(
-				'/types/preview',
-				async ({ query, erp }) =>
-					ok(
-						await tax.previewTax(
-							erp.organizationId,
-							taxPreviewQuerySchema.parse(query),
-						),
-					),
-				{
-					erp: { permission: ['tax:read'] },
-					detail: { description: 'Previews tax for a base on a date' },
 				},
 			)
 			.get(
@@ -140,6 +126,42 @@ export class TaxController {
 			)
 			/* ---------------- period records ---------------- */
 			.get(
+				'/recap',
+				async ({ query, erp }) => {
+					const { year, month } = recapQuerySchema.parse(query);
+					return ok(await tax.recap(erp.organizationId, year, month));
+				},
+				{
+					erp: { permission: ['tax:read'] },
+					detail: { description: 'Period recap with corrections and net payable' },
+				},
+			)
+			.get(
+				'/export.csv',
+				async ({ query, erp, set }) => {
+					const { year, month } = recapQuerySchema.parse(query);
+					const { lines } = await tax.recap(erp.organizationId, year, month);
+					set.status = 200;
+					set.headers['content-type'] = 'text/csv; charset=utf-8';
+					set.headers['content-disposition'] =
+						`attachment; filename="tax-recap-${year}-${String(month).padStart(2, '0')}.csv"`;
+					return recapToCsv(
+						lines.map((line) => ({
+							code: line.code,
+							taxableBase: line.taxableBase,
+							taxAmount: line.taxAmount,
+							correctionTotal: line.correctionTotal,
+							netPayable: line.netPayable,
+							filingStatus: line.filingStatus,
+						})),
+					);
+				},
+				{
+					erp: { permission: ['tax:export'] },
+					detail: { description: 'Period recap as CSV (placeholder columns, D12)' },
+				},
+			)
+			.get(
 				'/records',
 				async ({ query, erp }) => {
 					const { page, limit, year, month } = taxRecordListQuerySchema.parse(query);
@@ -156,15 +178,20 @@ export class TaxController {
 					detail: { description: 'Paginated period working papers' },
 				},
 			)
-			.get(
-				'/records/recap',
-				async ({ query, erp }) => {
-					const { year, month } = recapQuerySchema.parse(query);
-					return ok(await tax.recap(erp.organizationId, year, month));
-				},
+			// Static `/records/preview` must mount before `/records/:id`; it is a
+			// POST so it cannot clash with the GET param route, but keep it first.
+			.post(
+				'/records/preview',
+				async ({ body, erp }) =>
+					ok(
+						await tax.previewTax(
+							erp.organizationId,
+							taxPreviewSchema.parse(body),
+						),
+					),
 				{
 					erp: { permission: ['tax:read'] },
-					detail: { description: 'Period recap with corrections and net payable' },
+					detail: { description: 'Previews tax for a base on a date (no persistence)' },
 				},
 			)
 			.get(
@@ -228,35 +255,21 @@ export class TaxController {
 				},
 			)
 			.post(
-				'/records/:id/verify',
-				async ({ params, erp }) =>
-					ok(
+				'/records/:id/transition',
+				async ({ params, body, erp }) => {
+					const input = taxRecordTransitionSchema.parse(body);
+					return ok(
 						await tax.transitionTaxRecord(
 							taxIdParamSchema.parse(params).id,
-							'verified',
-							null,
+							input.to,
+							input.filedOn,
 							ctxOf(erp),
 						),
-					),
-				{
-					erp: { permission: ['tax:verify'] },
-					detail: { description: 'Moves a draft record to verified' },
+					);
 				},
-			)
-			.post(
-				'/records/:id/file',
-				async ({ params, body, erp }) =>
-					ok(
-						await tax.transitionTaxRecord(
-							taxIdParamSchema.parse(params).id,
-							'filed',
-							taxRecordFileSchema.parse(body ?? {}).filedOn ?? null,
-							ctxOf(erp),
-						),
-					),
 				{
 					erp: { permission: ['tax:verify'] },
-					detail: { description: 'Moves a verified record to filed' },
+					detail: { description: 'Moves a record draft → verified → filed' },
 				},
 			)
 			.post(
@@ -304,6 +317,21 @@ export class TaxController {
 				{
 					erp: { permission: ['tax:read'] },
 					detail: { description: 'One withholding record' },
+				},
+			)
+			.patch(
+				'/withholding/:id',
+				async ({ params, body, erp }) =>
+					ok(
+						await tax.updateWithholding(
+							taxIdParamSchema.parse(params).id,
+							withholdingPatchSchema.parse(body),
+							ctxOf(erp),
+						),
+					),
+				{
+					erp: { permission: ['tax:update'] },
+					detail: { description: 'Edits a recorded withholding row' },
 				},
 			)
 			.post(

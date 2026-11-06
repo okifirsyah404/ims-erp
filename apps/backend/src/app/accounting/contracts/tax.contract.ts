@@ -74,8 +74,9 @@ export const taxRecordUpdateSchema = z
 		message: 'At least one field is required',
 	});
 
-export const taxRecordFileSchema = z.object({
-	filedOn: isoDate.nullish(),
+export const taxRecordTransitionSchema = z.object({
+	to: z.enum(['verified', 'filed']),
+	filedOn: isoDate.nullish().transform((value) => value ?? null),
 });
 
 export const taxCorrectionCreateSchema = z.object({
@@ -94,9 +95,10 @@ export const recapQuerySchema = z.object({
 	month: z.coerce.number().int().min(1).max(12),
 });
 
-export const taxPreviewQuerySchema = z.object({
+/** Body of `POST /tax/records/preview`. Nothing is persisted. */
+export const taxPreviewSchema = z.object({
 	taxTypeId: z.string().uuid(),
-	taxableBase: z.coerce.number().int().nonnegative(),
+	taxableBase: minorAmount,
 	date: isoDate,
 });
 
@@ -115,5 +117,18 @@ export const withholdingCreateSchema = z.object({
 export const withholdingTransitionSchema = z.object({
 	to: z.enum(['verified', 'paid', 'reversed']),
 });
+
+/** Edits are allowed only while the row is `recorded`; checked in the service. */
+export const withholdingPatchSchema = z
+	.object({
+		counterpartyType: z.string().min(1).nullable().optional(),
+		counterpartyId: z.string().min(1).nullable().optional(),
+		baseAmount: minorAmount.optional(),
+		taxAmount: minorAmount.optional(),
+		transactionDate: isoDate.nullable().optional(),
+	})
+	.refine((data) => Object.keys(data).length > 0, {
+		message: 'At least one field is required',
+	});
 
 export const withholdingListQuerySchema = taxTypeListQuerySchema;

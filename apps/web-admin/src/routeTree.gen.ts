@@ -95,6 +95,7 @@ import { Route as AuthedFinanceInvestorsProfitSharingIndexRouteImport } from './
 import { Route as AuthedFinanceInvestorsRegistryIndexRouteImport } from './routes/_authed/finance/investors/registry/index'
 import { Route as AuthedFinanceTaxCorrectionsIndexRouteImport } from './routes/_authed/finance/tax/corrections/index'
 import { Route as AuthedFinanceTaxRecapIndexRouteImport } from './routes/_authed/finance/tax/recap/index'
+import { Route as AuthedFinanceTaxRecordsIndexRouteImport } from './routes/_authed/finance/tax/records/index'
 import { Route as AuthedFinanceTaxTypesIndexRouteImport } from './routes/_authed/finance/tax/types/index'
 import { Route as AuthedFinanceTaxWithholdingIndexRouteImport } from './routes/_authed/finance/tax/withholding/index'
 import { Route as AuthedInventoryItemsItemIdEditRouteImport } from './routes/_authed/inventory/items/$itemId.edit'
@@ -582,6 +583,12 @@ const AuthedFinanceTaxRecapIndexRoute =
     path: '/finance/tax/recap/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedFinanceTaxRecordsIndexRoute =
+  AuthedFinanceTaxRecordsIndexRouteImport.update({
+    id: '/finance/tax/records/',
+    path: '/finance/tax/records/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedFinanceTaxTypesIndexRoute =
   AuthedFinanceTaxTypesIndexRouteImport.update({
     id: '/finance/tax/types/',
@@ -721,6 +728,7 @@ export interface FileRoutesByFullPath {
   '/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
   '/finance/tax/recap/': typeof AuthedFinanceTaxRecapIndexRoute
+  '/finance/tax/records/': typeof AuthedFinanceTaxRecordsIndexRoute
   '/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
   '/finance/tax/withholding/': typeof AuthedFinanceTaxWithholdingIndexRoute
   '/inventory/stock/adjustments/': typeof AuthedInventoryStockAdjustmentsIndexRoute
@@ -814,6 +822,7 @@ export interface FileRoutesByTo {
   '/finance/investors/registry': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections': typeof AuthedFinanceTaxCorrectionsIndexRoute
   '/finance/tax/recap': typeof AuthedFinanceTaxRecapIndexRoute
+  '/finance/tax/records': typeof AuthedFinanceTaxRecordsIndexRoute
   '/finance/tax/types': typeof AuthedFinanceTaxTypesIndexRoute
   '/finance/tax/withholding': typeof AuthedFinanceTaxWithholdingIndexRoute
   '/inventory/stock/adjustments': typeof AuthedInventoryStockAdjustmentsIndexRoute
@@ -911,6 +920,7 @@ export interface FileRoutesById {
   '/_authed/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/_authed/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
   '/_authed/finance/tax/recap/': typeof AuthedFinanceTaxRecapIndexRoute
+  '/_authed/finance/tax/records/': typeof AuthedFinanceTaxRecordsIndexRoute
   '/_authed/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
   '/_authed/finance/tax/withholding/': typeof AuthedFinanceTaxWithholdingIndexRoute
   '/_authed/inventory/stock/adjustments/': typeof AuthedInventoryStockAdjustmentsIndexRoute
@@ -1008,6 +1018,7 @@ export interface FileRouteTypes {
     | '/finance/investors/registry/'
     | '/finance/tax/corrections/'
     | '/finance/tax/recap/'
+    | '/finance/tax/records/'
     | '/finance/tax/types/'
     | '/finance/tax/withholding/'
     | '/inventory/stock/adjustments/'
@@ -1101,6 +1112,7 @@ export interface FileRouteTypes {
     | '/finance/investors/registry'
     | '/finance/tax/corrections'
     | '/finance/tax/recap'
+    | '/finance/tax/records'
     | '/finance/tax/types'
     | '/finance/tax/withholding'
     | '/inventory/stock/adjustments'
@@ -1197,6 +1209,7 @@ export interface FileRouteTypes {
     | '/_authed/finance/investors/registry/'
     | '/_authed/finance/tax/corrections/'
     | '/_authed/finance/tax/recap/'
+    | '/_authed/finance/tax/records/'
     | '/_authed/finance/tax/types/'
     | '/_authed/finance/tax/withholding/'
     | '/_authed/inventory/stock/adjustments/'
@@ -1814,6 +1827,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedFinanceTaxRecapIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/finance/tax/records/': {
+      id: '/_authed/finance/tax/records/'
+      path: '/finance/tax/records'
+      fullPath: '/finance/tax/records/'
+      preLoaderRoute: typeof AuthedFinanceTaxRecordsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/finance/tax/types/': {
       id: '/_authed/finance/tax/types/'
       path: '/finance/tax/types'
@@ -2031,6 +2051,7 @@ interface AuthedRouteChildren {
   AuthedFinanceInvestorsRegistryIndexRoute: typeof AuthedFinanceInvestorsRegistryIndexRoute
   AuthedFinanceTaxCorrectionsIndexRoute: typeof AuthedFinanceTaxCorrectionsIndexRoute
   AuthedFinanceTaxRecapIndexRoute: typeof AuthedFinanceTaxRecapIndexRoute
+  AuthedFinanceTaxRecordsIndexRoute: typeof AuthedFinanceTaxRecordsIndexRoute
   AuthedFinanceTaxTypesIndexRoute: typeof AuthedFinanceTaxTypesIndexRoute
   AuthedFinanceTaxWithholdingIndexRoute: typeof AuthedFinanceTaxWithholdingIndexRoute
   AuthedInventoryStockAdjustmentsIndexRoute: typeof AuthedInventoryStockAdjustmentsIndexRoute
@@ -2124,6 +2145,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedFinanceInvestorsRegistryIndexRoute,
   AuthedFinanceTaxCorrectionsIndexRoute: AuthedFinanceTaxCorrectionsIndexRoute,
   AuthedFinanceTaxRecapIndexRoute: AuthedFinanceTaxRecapIndexRoute,
+  AuthedFinanceTaxRecordsIndexRoute: AuthedFinanceTaxRecordsIndexRoute,
   AuthedFinanceTaxTypesIndexRoute: AuthedFinanceTaxTypesIndexRoute,
   AuthedFinanceTaxWithholdingIndexRoute: AuthedFinanceTaxWithholdingIndexRoute,
   AuthedInventoryStockAdjustmentsIndexRoute:

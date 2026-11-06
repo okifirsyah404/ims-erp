@@ -7,6 +7,7 @@ import inventory_ from './inventory';
 import nav_ from './nav';
 import account_ from './account';
 import api_ from './api';
+import tax_ from './tax';
 
 /** Indonesian resources — same namespace/key shape as `en`. */
 export const id = {
@@ -19,4 +20,5 @@ export const id = {
 	inventory: inventory_,
 	dashboard: dashboard_,
 	api: api_,
+	tax: tax_,
 } as const;

@@ -13,8 +13,8 @@ Honest record. Nothing shipped yet.
 
 | Phase | State | Commit | Delivered |
 |---|---|---|---|
-| 1 | planned | — | DBML update, migration, backend domain (tax types, tax records, corrections, withholding), guards, tests |
-| 2 | planned | — | Frontend: tax types, period recap, tax records, corrections, withholding pages; i18n en + id; CSV export |
+| 1 | done | `229b668` | DBML update, migration, backend domain (tax types, tax records, corrections, withholding), guards, tests |
+| 2 | done | — | Backend: `GET /tax/recap`, `POST /tax/records/preview`, `POST /tax/records/:id/transition`, `PATCH /tax/withholding/:id`, `GET /tax/export.csv` (placeholder columns, D12 open). Frontend: recap (+CSV button), types, records, corrections, withholding pages; `tax` i18n namespace en + id; service + authorization tests |
 | 3 | planned | — | XLSX export via `exceljs`, separate dependency review |
 
 ## Grilling outcome — locked decisions

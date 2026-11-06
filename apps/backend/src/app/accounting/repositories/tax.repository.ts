@@ -484,6 +484,32 @@ export class TaxRepository implements TTaxRepository {
 		return created;
 	}
 
+	async updateRecordedWithholding(
+		organizationId: string,
+		id: string,
+		patch: Partial<{
+			counterpartyType: string | null;
+			counterpartyId: string | null;
+			baseAmount: number;
+			taxAmount: number;
+			transactionDate: string | null;
+		}>,
+	): Promise<TWithholdingTaxRecordSelect | null> {
+		const [row] = await this.database
+			.update(withholdingTaxRecords)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(withholdingTaxRecords.id, id),
+					eq(withholdingTaxRecords.organizationId, organizationId),
+					eq(withholdingTaxRecords.status, 'recorded'),
+					isNull(withholdingTaxRecords.deletedAt),
+				),
+			)
+			.returning();
+		return row ?? null;
+	}
+
 	async transitionWithholding(
 		organizationId: string,
 		id: string,

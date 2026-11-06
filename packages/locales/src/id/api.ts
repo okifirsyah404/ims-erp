@@ -166,6 +166,7 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.taxTransition':
 		'Perubahan status tersebut tidak diizinkan untuk catatan ini',
 	'accounting.withholdingNotFound': 'Catatan pemotongan pajak tidak ditemukan',
+	'accounting.withholdingLocked': 'Catatan pemotongan pajak tidak lagi dapat diubah',
 	'accounting.withholdingTransition':
 		'Perubahan status tersebut tidak diizinkan untuk catatan pemotongan ini',
 };

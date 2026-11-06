@@ -202,11 +202,14 @@ Last synced: 2026-11-06.
 ## M10 Tax
 
 ### in-progress
-- ERP-0016 Phase 1 backend: tax rate master (effective-dated), period working
-  papers (draft → verified → filed), corrections, withholding, recap. Evidence:
-  migration `20261106173111_erp0016_tax_slice1` applied to dev; `bun run test`
-  542/542; typecheck and lint clean; seed idempotent (2 runs). Not yet: web UI,
-  CSV/XLSX export, real rates (placeholders only, D18).
+- ERP-0016 Phases 1–2: backend (tax rate master, period working papers
+  draft → verified → filed, corrections, withholding, recap) plus web-admin UI
+  at `/finance/tax/*` (recap with CSV export, types, records, corrections,
+  withholding) and `GET /tax/export.csv`. Evidence: migration
+  `20261106173111_erp0016_tax_slice1` applied to dev; backend tests 629/629
+  (incl. 11 service + 76 authorization tests); web-admin build green; locales
+  en + id parity/dead-key green. Not yet: XLSX export (Phase 3), real rates
+  (placeholders only, D18).
 
 ### blocked
 - Final tax rates and rounding rule — finance gate (D14, D18). Placeholders

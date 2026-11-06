@@ -1,15 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Scale } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { TaxTypeList } from '@/components/tax/tax-type-list';
 
+/** Search params for the rate list. */
+type TTypesSearch = { page?: number };
+
+/** `/finance/tax/types` - effective-dated rate rows (Phase 2, ERP-0016). */
 export const Route = createFileRoute('/_authed/finance/tax/types/')({
-	component: ComingSoonStubPage,
+	validateSearch: (search: Record<string, unknown>): TTypesSearch => ({
+		page: search.page ? Number(search.page) || 1 : undefined,
+	}),
+	component: TaxTypeList,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.taxTypes')} icon={Scale} />;
-}

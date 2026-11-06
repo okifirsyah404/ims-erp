@@ -165,6 +165,19 @@ export type TTaxRepository = {
 		periodMonth: number | null;
 	}): Promise<TWithholdingTaxRecordSelect>;
 
+	/** Edits a withholding row only while it is still `recorded`. */
+	updateRecordedWithholding(
+		organizationId: string,
+		id: string,
+		patch: Partial<{
+			counterpartyType: string | null;
+			counterpartyId: string | null;
+			baseAmount: number;
+			taxAmount: number;
+			transactionDate: string | null;
+		}>,
+	): Promise<TWithholdingTaxRecordSelect | null>;
+
 	transitionWithholding(
 		organizationId: string,
 		id: string,

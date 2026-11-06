@@ -164,6 +164,7 @@ const api = {
 	'accounting.taxTransition':
 		'That status change is not allowed for this record',
 	'accounting.withholdingNotFound': 'Withholding record not found',
+	'accounting.withholdingLocked': 'Withholding record is no longer editable',
 	'accounting.withholdingTransition':
 		'That status change is not allowed for this withholding record',
 } as const;

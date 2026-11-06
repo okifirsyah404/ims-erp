@@ -17,6 +17,7 @@ import {
 	TaxTypeInUseError,
 	TaxTypeNotFoundError,
 	TaxTypeOverlapError,
+	WithholdingLockedError,
 	WithholdingNotFoundError,
 	WithholdingTransitionError,
 } from '../errors/accounting.errors';
@@ -438,6 +439,31 @@ export class TaxService {
 	): Promise<TWithholdingTaxRecordSelect> {
 		await this.getTaxType(ctx.organizationId, input.taxTypeId);
 		return this.repo.insertWithholding({ ...input, organizationId: ctx.organizationId });
+	}
+
+	/**
+	 * Edits a withholding row. Only `recorded` rows are editable; later states
+	 * are money already moved and change only through a transition.
+	 *
+	 * @throws WithholdingNotFoundError 404
+	 * @throws WithholdingLockedError 409
+	 */
+	async updateWithholding(
+		id: string,
+		patch: Partial<{
+			counterpartyType: string | null;
+			counterpartyId: string | null;
+			baseAmount: number;
+			taxAmount: number;
+			transactionDate: string | null;
+		}>,
+		ctx: TTaxActionContext,
+	): Promise<TWithholdingTaxRecordSelect> {
+		const current = await this.getWithholding(ctx.organizationId, id);
+		if (current.status !== 'recorded') throw new WithholdingLockedError();
+		const row = await this.repo.updateRecordedWithholding(ctx.organizationId, id, patch);
+		if (!row) throw new WithholdingLockedError();
+		return row;
 	}
 
 	/**
