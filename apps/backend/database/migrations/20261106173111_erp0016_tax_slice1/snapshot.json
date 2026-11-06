@@ -1,0 +1,1931 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "ce4acc77-5393-4438-b0ea-0a69bf312648",
+  "prevIds": [
+    "1295c064-651d-4a45-a345-9b071ec1f9c0"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "accounting"
+      ],
+      "writes": [
+        "s|sch|accounting",
+        "n|sch|accounting",
+        "e|sch|accounting"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "accounting",
+        "tax_corrections"
+      ],
+      "writes": [
+        "s|tbl|accounting.tax_corrections",
+        "n|tbl|accounting.tax_corrections",
+        "e|tbl|accounting.tax_corrections",
+        "n|rel|accounting.tax_corrections",
+        "n|type|accounting.tax_corrections",
+        "n|rel|accounting.tax_corrections_pkey"
+      ],
+      "reads": [
+        "n|sch|accounting"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "accounting",
+        "tax_records"
+      ],
+      "writes": [
+        "s|tbl|accounting.tax_records",
+        "n|tbl|accounting.tax_records",
+        "e|tbl|accounting.tax_records",
+        "n|rel|accounting.tax_records",
+        "n|type|accounting.tax_records",
+        "n|rel|accounting.tax_records_pkey"
+      ],
+      "reads": [
+        "n|sch|accounting"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "accounting",
+        "tax_types"
+      ],
+      "writes": [
+        "s|tbl|accounting.tax_types",
+        "n|tbl|accounting.tax_types",
+        "e|tbl|accounting.tax_types",
+        "n|rel|accounting.tax_types",
+        "n|type|accounting.tax_types",
+        "n|rel|accounting.tax_types_pkey"
+      ],
+      "reads": [
+        "n|sch|accounting"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "accounting",
+        "withholding_tax_records"
+      ],
+      "writes": [
+        "s|tbl|accounting.withholding_tax_records",
+        "n|tbl|accounting.withholding_tax_records",
+        "e|tbl|accounting.withholding_tax_records",
+        "n|rel|accounting.withholding_tax_records",
+        "n|type|accounting.withholding_tax_records",
+        "n|rel|accounting.withholding_tax_records_pkey"
+      ],
+      "reads": [
+        "n|sch|accounting"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "accounting",
+        "tax_corrections",
+        "tax_corrections_tax_record_id_idx"
+      ],
+      "writes": [
+        "s|idx|accounting.tax_corrections_tax_record_id_idx",
+        "n|idx|accounting.tax_corrections_tax_record_id_idx",
+        "e|idx|accounting.tax_corrections_tax_record_id_idx",
+        "n|rel|accounting.tax_corrections_tax_record_id_idx"
+      ],
+      "reads": [
+        "n|tbl|accounting.tax_corrections",
+        "n|sch|accounting",
+        "n|col|accounting.tax_corrections.tax_record_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "accounting",
+        "tax_corrections",
+        "tax_corrections_evidence_document_id_idx"
+      ],
+      "writes": [
+        "s|idx|accounting.tax_corrections_evidence_document_id_idx",
+        "n|idx|accounting.tax_corrections_evidence_document_id_idx",
+        "e|idx|accounting.tax_corrections_evidence_document_id_idx",
+        "n|rel|accounting.tax_corrections_evidence_document_id_idx"
+      ],
+      "reads": [
+        "n|tbl|accounting.tax_corrections",
+        "n|sch|accounting",
+        "n|col|accounting.tax_corrections.evidence_document_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "accounting",
+        "tax_records",
+        "tax_records_org_code_uq"
+      ],
+      "writes": [
+        "s|idx|accounting.tax_records_org_code_uq",
+        "n|idx|accounting.tax_records_org_code_uq",
+        "e|idx|accounting.tax_records_org_code_uq",
+        "n|rel|accounting.tax_records_org_code_uq"
+      ],
+      "reads": [
+        "n|tbl|accounting.tax_records",
+        "n|sch|accounting",
+        "n|col|accounting.tax_records.organization_id",
+        "n|col|accounting.tax_records.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "accounting",
+        "tax_records",
+        "tax_records_org_type_period_uq"
+      ],
+      "writes": [
+        "s|idx|accounting.tax_records_org_type_period_uq",
+        "n|idx|accounting.tax_records_org_type_period_uq",
+        "e|idx|accounting.tax_records_org_type_period_uq",
+        "n|rel|accounting.tax_records_org_type_period_uq"
+      ],
+      "reads": [
+        "n|tbl|accounting.tax_records",
+        "n|sch|accounting",
+        "n|col|accounting.tax_records.organization_id",
+        "n|col|accounting.tax_records.tax_type_id",
+        "n|col|accounting.tax_records.period_year",
+        "n|col|accounting.tax_records.period_month"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "accounting",
+        "tax_records",
+        "tax_records_tax_type_id_idx"
+      ],
+      "writes": [
+        "s|idx|accounting.tax_records_tax_type_id_idx",
+        "n|idx|accounting.tax_records_tax_type_id_idx",
+        "e|idx|accounting.tax_records_tax_type_id_idx",
+        "n|rel|accounting.tax_records_tax_type_id_idx"
+      ],
+      "reads": [
+        "n|tbl|accounting.tax_records",
+        "n|sch|accounting",
+        "n|col|accounting.tax_records.tax_type_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "accounting",
+        "tax_records",
+        "tax_records_period_idx"
+      ],
+      "writes": [
+        "s|idx|accounting.tax_records_period_idx",
+        "n|idx|accounting.tax_records_period_idx",
+        "e|idx|accounting.tax_records_period_idx",
+        "n|rel|accounting.tax_records_period_idx"
+      ],
+      "reads": [
+        "n|tbl|accounting.tax_records",
+        "n|sch|accounting",
+        "n|col|accounting.tax_records.organization_id",
+        "n|col|accounting.tax_records.period_year",
+        "n|col|accounting.tax_records.period_month"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "accounting",
+        "tax_types",
+        "tax_types_org_code_effective_uq"
+      ],
+      "writes": [
+        "s|idx|accounting.tax_types_org_code_effective_uq",
+        "n|idx|accounting.tax_types_org_code_effective_uq",
+        "e|idx|accounting.tax_types_org_code_effective_uq",
+        "n|rel|accounting.tax_types_org_code_effective_uq"
+      ],
+      "reads": [
+        "n|tbl|accounting.tax_types",
+        "n|sch|accounting",
+        "n|col|accounting.tax_types.organization_id",
+        "n|col|accounting.tax_types.code",
+        "n|col|accounting.tax_types.effective_from"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "accounting",
+        "tax_types",
+        "tax_types_effective_from_idx"
+      ],
+      "writes": [
+        "s|idx|accounting.tax_types_effective_from_idx",
+        "n|idx|accounting.tax_types_effective_from_idx",
+        "e|idx|accounting.tax_types_effective_from_idx",
+        "n|rel|accounting.tax_types_effective_from_idx"
+      ],
+      "reads": [
+        "n|tbl|accounting.tax_types",
+        "n|sch|accounting",
+        "n|col|accounting.tax_types.effective_from"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "accounting",
+        "withholding_tax_records",
+        "withholding_tax_records_org_code_uq"
+      ],
+      "writes": [
+        "s|idx|accounting.withholding_tax_records_org_code_uq",
+        "n|idx|accounting.withholding_tax_records_org_code_uq",
+        "e|idx|accounting.withholding_tax_records_org_code_uq",
+        "n|rel|accounting.withholding_tax_records_org_code_uq"
+      ],
+      "reads": [
+        "n|tbl|accounting.withholding_tax_records",
+        "n|sch|accounting",
+        "n|col|accounting.withholding_tax_records.organization_id",
+        "n|col|accounting.withholding_tax_records.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "accounting",
+        "withholding_tax_records",
+        "withholding_tax_records_tax_type_id_idx"
+      ],
+      "writes": [
+        "s|idx|accounting.withholding_tax_records_tax_type_id_idx",
+        "n|idx|accounting.withholding_tax_records_tax_type_id_idx",
+        "e|idx|accounting.withholding_tax_records_tax_type_id_idx",
+        "n|rel|accounting.withholding_tax_records_tax_type_id_idx"
+      ],
+      "reads": [
+        "n|tbl|accounting.withholding_tax_records",
+        "n|sch|accounting",
+        "n|col|accounting.withholding_tax_records.tax_type_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "accounting",
+        "withholding_tax_records",
+        "withholding_tax_records_counterparty_idx"
+      ],
+      "writes": [
+        "s|idx|accounting.withholding_tax_records_counterparty_idx",
+        "n|idx|accounting.withholding_tax_records_counterparty_idx",
+        "e|idx|accounting.withholding_tax_records_counterparty_idx",
+        "n|rel|accounting.withholding_tax_records_counterparty_idx"
+      ],
+      "reads": [
+        "n|tbl|accounting.withholding_tax_records",
+        "n|sch|accounting",
+        "n|col|accounting.withholding_tax_records.counterparty_type",
+        "n|col|accounting.withholding_tax_records.counterparty_id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "accounting",
+        "tax_corrections"
+      ],
+      "writes": [
+        "s|fk|accounting.tax_corrections.tax_corrections_tax_record_id_tax_records_id_fkey",
+        "n|fk|accounting.tax_corrections.tax_corrections_tax_record_id_tax_records_id_fkey",
+        "e|fk|accounting.tax_corrections.tax_corrections_tax_record_id_tax_records_id_fkey",
+        "n|con|accounting.tax_corrections.tax_corrections_tax_record_id_tax_records_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|accounting.tax_corrections",
+        "n|sch|accounting",
+        "n|tbl|accounting.tax_records",
+        "n|sch|accounting",
+        "n|col|accounting.tax_corrections.tax_record_id",
+        "n|col|accounting.tax_records.id",
+        "e|uniqueness|accounting.tax_records.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "accounting",
+        "tax_records"
+      ],
+      "writes": [
+        "s|fk|accounting.tax_records.tax_records_tax_type_id_tax_types_id_fkey",
+        "n|fk|accounting.tax_records.tax_records_tax_type_id_tax_types_id_fkey",
+        "e|fk|accounting.tax_records.tax_records_tax_type_id_tax_types_id_fkey",
+        "n|con|accounting.tax_records.tax_records_tax_type_id_tax_types_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|accounting.tax_records",
+        "n|sch|accounting",
+        "n|tbl|accounting.tax_types",
+        "n|sch|accounting",
+        "n|col|accounting.tax_records.tax_type_id",
+        "n|col|accounting.tax_types.id",
+        "e|uniqueness|accounting.tax_types.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "accounting",
+        "withholding_tax_records"
+      ],
+      "writes": [
+        "s|fk|accounting.withholding_tax_records.withholding_tax_records_tax_type_id_tax_types_id_fkey",
+        "n|fk|accounting.withholding_tax_records.withholding_tax_records_tax_type_id_tax_types_id_fkey",
+        "e|fk|accounting.withholding_tax_records.withholding_tax_records_tax_type_id_tax_types_id_fkey",
+        "n|con|accounting.withholding_tax_records.withholding_tax_records_tax_type_id_tax_types_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|accounting.withholding_tax_records",
+        "n|sch|accounting",
+        "n|tbl|accounting.tax_types",
+        "n|sch|accounting",
+        "n|col|accounting.withholding_tax_records.tax_type_id",
+        "n|col|accounting.tax_types.id",
+        "e|uniqueness|accounting.tax_types.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "accounting",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "name": "tax_corrections",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "name": "tax_records",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "name": "tax_types",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "name": "withholding_tax_records",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "tax_record_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "evidence_document_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "tax_type_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "period_year",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "period_month",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "taxable_base",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "tax_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "filing_status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'draft'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "filed_on",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "verified_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "tax_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "rate",
+        "type": "numeric(9,4)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'0'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "base_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'gross'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "is_inclusive",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "effective_from",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "effective_to",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "is_active",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "tax_type_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "counterparty_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "counterparty_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "base_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "tax_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "transaction_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "period_year",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "period_month",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'recorded'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "tax_corrections_tax_record_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "tax_record_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "tax_corrections_evidence_document_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "evidence_document_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "tax_records_org_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "tax_records_org_type_period_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "tax_type_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "period_year",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "period_month",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "tax_records_tax_type_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "tax_type_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "tax_records_period_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "period_year",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "period_month",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "tax_types_org_code_effective_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "effective_from",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "tax_types_effective_from_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "effective_from",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "withholding_tax_records_org_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "withholding_tax_records_tax_type_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "tax_type_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "withholding_tax_records_counterparty_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "counterparty_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "counterparty_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "tax_corrections_tax_record_id_tax_records_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "tax_record_id"
+        ],
+        "schemaTo": "accounting",
+        "tableTo": "tax_records",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "tax_records_tax_type_id_tax_types_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "tax_type_id"
+        ],
+        "schemaTo": "accounting",
+        "tableTo": "tax_types",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "withholding_tax_records_tax_type_id_tax_types_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "tax_type_id"
+        ],
+        "schemaTo": "accounting",
+        "tableTo": "tax_types",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "tax_corrections_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "tax_records_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "tax_types_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "withholding_tax_records_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "tax_corrections_amount_check",
+        "value": "amount <> 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_corrections",
+        "name": "tax_corrections_reason_check",
+        "value": "char_length(trim(reason)) > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "tax_records_period_month_check",
+        "value": "period_month BETWEEN 1 AND 12",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "tax_records_taxable_base_check",
+        "value": "taxable_base >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "tax_records_tax_amount_check",
+        "value": "tax_amount >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_records",
+        "name": "tax_records_filing_status_check",
+        "value": "filing_status IN ('draft', 'verified', 'filed', 'corrected')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "tax_types_tax_type_check",
+        "value": "tax_type IN ('ppn', 'pph', 'ppn_input', 'ppn_output', 'other')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "tax_types_base_type_check",
+        "value": "base_type IN ('gross', 'net', 'specific')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "tax_types_rate_check",
+        "value": "rate >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "tax_types",
+        "name": "tax_types_effective_range_check",
+        "value": "effective_to IS NULL OR effective_to >= effective_from",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "withholding_base_amount_check",
+        "value": "base_amount >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "withholding_tax_amount_check",
+        "value": "tax_amount >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "withholding_tax_records",
+        "name": "withholding_status_check",
+        "value": "status IN ('recorded', 'verified', 'paid', 'reversed')",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

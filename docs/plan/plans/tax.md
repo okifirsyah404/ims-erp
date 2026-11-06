@@ -29,7 +29,7 @@ Honest record. Nothing shipped yet.
 | D6 | Frontend in scope: tax types list + create/edit, period recap (read-only with drill-down), tax records, corrections, withholding; full en + id i18n. |
 | D7 | **Deviation from DBML:** `tax_types` unique changes from `(organization_id, code)` to `(organization_id, code, effective_from)`, plus a no-overlap guard per `(organization_id, code)` over effective ranges. Rate change = new effective-dated row. Requires `docs.dbml` edit before Drizzle. |
 | D8 | Corrections are a new table `accounting.tax_corrections`. Evidence uses the existing `documents` module via logical reference. |
-| D9 | Status transitions use existing permission `tax.configuration.update`. No new permission catalog entries. |
+| D9 | Uses the existing `tax` permission resource (`tax:read|create|update|verify|export`) from `erp-permissions.ts`. Mapping: `tax:read` view, `tax:update` create/edit and corrections, `tax:verify` status transitions, `tax:export` CSV/XLSX. No new catalog entries. |
 | D10 | `tax_records` input is manual, with a helper: entering base computes tax amount from the effective rate on the period/document date, still overridable. Derived/posted lines come later with M09. |
 | D11 | Withholding `counterparty_type` / `counterparty_id` are plain text, no cross-module validation. |
 | D12 | Export: CSV in phase 2; XLSX in phase 3 via `exceljs` (new dependency, version and advisory check at install time). |
@@ -47,7 +47,7 @@ Honest record. Nothing shipped yet.
 - `tax_records` has `filing_status` (`draft|verified|filed|corrected`), `filed_on`, `verified_by` (logical ref to `auth.users.id`), `notes`, `deleted_at`.
 - `withholding_tax_records.status`: `recorded|verified|paid|reversed`. `period_year/month` nullable.
 - Money: bigint minor units + `currency_code`. Datetimes: bigint unix ms (`effective_from` / `effective_to` / `filed_on` are `date` per DBML — keep as DBML says).
-- Permissions in matrix: `tax.configuration.view|update`, `tax.report.view`.
+- Permissions in matrix: `tax:read`, `tax:update`, `tax:verify`, `tax:export` (D9).
 - `exceljs` is not installed. No XLSX/CSV library in `package.json`.
 - Module shape reference: `apps/backend/src/app/sales/` (thinnest scaffold with state machines); ports pattern at `inventory/contracts/warehouse-borrowing-guard.port.ts`.
 - Warehouse hardening (`docs/plan/plans/warehouse-hardening.md`) is the format template.
@@ -81,7 +81,7 @@ Honest record. Nothing shipped yet.
    - `TaxInvalidStatusTransitionError` (409) — allowed: `draft→verified`, `verified→filed`, `corrected` set automatically when a correction exists, `verified→draft` not allowed.
    - `TaxCorrectionReasonRequiredError` (422/400 per validation convention).
    - `WithholdingTaxStatusTransitionError` (409) — `recorded→verified→paid`, `reversed` reachable from `verified`/`paid`.
-6. **Routes** under `/tax/*` (mounted in `src/app/app.ts` via `createApp()`); guards by permission: `tax.configuration.view|update`, `tax.report.view`. Ownership and permission enforced server-side for every endpoint, including CSV export.
+6. **Routes** under `/tax/*` (mounted in `src/app/app.ts` via `createApp()`); guards by permission: `tax:read`, `tax:update`, `tax:verify`, `tax:export`. Ownership and permission enforced server-side for every endpoint, including CSV export.
 7. **Endpoints (minimum)**:
    - `GET/POST /tax/types`, `GET/PATCH/DELETE /tax/types/:id` (soft delete).
    - `GET /tax/recap?year=&month=` — recomputed per tax type from `tax_records` + corrections (net payable).
@@ -96,11 +96,11 @@ Honest record. Nothing shipped yet.
 ## Phase 2 — Frontend + CSV (`apps/web-admin`)
 
 1. Routes under `_authed/tax/`:
-   - `tax/types/index.tsx` — list, active filter, create/edit route (`tax.configuration.update` gated).
+   - `tax/types/index.tsx` — list, active filter, create/edit route (`tax:update` gated).
    - `tax/recap/index.tsx` — period selector, per-type totals, net payable, drill-down to records.
    - `tax/records/index.tsx` + `$recordId.tsx` — list, detail, transitions, corrections panel (reason required, evidence via `documents`).
    - `tax/withholding/index.tsx` + `$recordId.tsx` — list, create/edit, transitions; counterparty as text + type select.
-   - Gates: `tax.configuration.*` / `tax.report.view` in UI are UX only; server enforces.
+   - Gates: `tax:*` in UI are UX only; server enforces.
 2. Rate helper UI on record create: enter base → preview tax amount (from `/tax/records/preview`), editable.
 3. CSV export button on recap page; file columns agreed at kickoff (placeholder: recap columns).
 4. i18n: all strings in a `tax` namespace (or existing `admin` if convention requires), en + id, satisfying `locale-parity.test.ts` and `locale-dead-keys.test.ts`.

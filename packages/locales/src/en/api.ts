@@ -150,6 +150,22 @@ const api = {
 		'A guest borrower is missing required identity data',
 	'assets.borrowingSelfApprovalForbidden':
 		'You cannot approve your own borrowing',
+
+	// Tax (ERP-0016)
+	'accounting.taxTypeNotFound': 'Tax type not found',
+	'accounting.taxTypeOverlap':
+		'Effective period overlaps an existing rate for this tax code',
+	'accounting.taxTypeInUse': 'Tax type is still in use',
+	'accounting.taxRateNotFound': 'No active tax rate covers this date',
+	'accounting.taxRecordNotFound': 'Tax record not found',
+	'accounting.taxRecordPeriodTaken':
+		'A tax record already exists for this type and period',
+	'accounting.taxRecordLocked': 'Tax record is no longer editable',
+	'accounting.taxTransition':
+		'That status change is not allowed for this record',
+	'accounting.withholdingNotFound': 'Withholding record not found',
+	'accounting.withholdingTransition':
+		'That status change is not allowed for this withholding record',
 } as const;
 
 export default api;

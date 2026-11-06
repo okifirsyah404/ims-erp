@@ -6,6 +6,7 @@ import { seedLocations } from './seed/location.seeder';
 import { seedAuth } from './seed/auth.seeder';
 import { seedInventory } from './seed/inventory.seeder';
 import { seedAssets } from './seed/assets.seeder';
+import { seedTax } from './seed/tax.seeder';
 import { seedOrganization } from './seed/organization.seeder';
 import { seedOrganizationMembers } from './seed/organization-members.seeder';
 import { seedOrganizationRoles } from './seed/organization-roles.seeder';
@@ -34,6 +35,7 @@ export async function runSeeders(): Promise<void> {
 	// warehouse/storage rows above; asset placements reference them.
 	await seedInventory();
 	await seedAssets();
+	await seedTax();
 
 	const finishedAt = DateTime.now();
 	const elapsed = Duration.fromObject({

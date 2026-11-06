@@ -189,6 +189,7 @@ TableGroup "Accounting" {
   accounting.accounting_periods
   accounting.tax_types
   accounting.tax_records
+  accounting.tax_corrections
   accounting.opening_balances
   accounting.account_balances
   accounting.bank_account_links
@@ -4420,9 +4421,9 @@ Table accounting.tax_types {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Effective dated tax rate, PPN or PPh. The rate is stored as a decimal percentage, not as a float amount."
+  Note: "Effective dated tax rate, PPN or PPh. The rate is stored as a decimal percentage, not as a float amount. A rate change is a new row with a new effective_from; ranges for the same code must not overlap (enforced in the service, not by a database constraint). Soft-deleted rows are excluded from the uniqueness rule."
   Indexes {
-    (organization_id, code) [unique, name: 'tax_types_org_code_uq']
+    (organization_id, code, effective_from) [unique, name: 'tax_types_org_code_effective_uq', note: 'WHERE deleted_at IS NULL']
     effective_from [name: 'tax_types_effective_from_idx']
   }
   Checks {
@@ -4450,9 +4451,10 @@ Table accounting.tax_records {
   notes text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Tax recap workpaper for a period. Filing itself stays outside the ERP."
+  Note: "Tax recap workpaper for a period. Filing itself stays outside the ERP. One recap per tax type per period. Corrections are separate rows in accounting.tax_corrections; tax_amount is never edited to reflect them."
   Indexes {
-    (organization_id, code) [unique, name: 'tax_records_org_code_uq']
+    (organization_id, code) [unique, name: 'tax_records_org_code_uq', note: 'WHERE deleted_at IS NULL']
+    (organization_id, tax_type_id, period_year, period_month) [unique, name: 'tax_records_org_type_period_uq', note: 'WHERE deleted_at IS NULL']
     tax_type_id [name: 'tax_records_tax_type_id_idx']
     (organization_id, period_year, period_month) [name: 'tax_records_period_idx']
   }
@@ -4461,6 +4463,29 @@ Table accounting.tax_records {
     `taxable_base >= 0`
     `tax_amount >= 0`
     `filing_status IN ('draft', 'verified', 'filed', 'corrected')`
+  }
+}
+
+Table accounting.tax_corrections {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  tax_record_id uuid [not null]
+  amount bigint [not null]
+  currency_code varchar(3) [not null, default: 'IDR']
+  reason text [not null]
+  evidence_document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  created_by text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Signed correction against a tax recap. The original tax_amount is kept unchanged. Net payable is recap plus the sum of active corrections, computed at read time."
+  Indexes {
+    tax_record_id [name: 'tax_corrections_tax_record_id_idx']
+    evidence_document_id [name: 'tax_corrections_evidence_document_id_idx']
+  }
+  Checks {
+    `amount <> 0`
+    `char_length(trim(reason)) > 0`
   }
 }
 
@@ -4597,6 +4622,7 @@ Ref: accounting.journal_entries.reversed_by_entry_id > accounting.journal_entrie
 Ref: accounting.journal_lines.journal_entry_id > accounting.journal_entries.id [delete: cascade]
 Ref: accounting.journal_lines.account_id > accounting.chart_of_accounts.id [delete: restrict]
 Ref: accounting.tax_records.tax_type_id > accounting.tax_types.id [delete: restrict]
+Ref: accounting.tax_corrections.tax_record_id > accounting.tax_records.id [delete: restrict]
 Ref: accounting.opening_balances.account_id > accounting.chart_of_accounts.id [delete: cascade]
 Ref: accounting.account_balances.account_id > accounting.chart_of_accounts.id [delete: cascade]
 Ref: accounting.account_balances.accounting_period_id > accounting.accounting_periods.id [delete: cascade]

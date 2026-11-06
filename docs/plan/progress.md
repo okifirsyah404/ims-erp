@@ -2512,7 +2512,42 @@ verified history in this file.
 - `architecture.md`: backend path fixed; `auth` schema bullet now documents
   the `auth:generate` regression caveat.
 
+## 2026-11-07 - ERP-0016 tax Phase 1 backend (in-progress)
+
+Implements `docs/plan/plans/tax.md` Phase 1: tax rate master, period working
+papers, corrections, withholding, recap. Routes under `/tax/*` (not `/admin`).
+Permissions use the existing `tax` resource (D9): `tax:read`, `tax:update`,
+`tax:verify`. CSV/XLSX export and the web UI are not started.
+
+- DBML: `accounting.tax_types` unique is now `(org, code, effective_from)`
+  partial on live rows; `tax_records` unique per `(org, tax_type, year, month)`;
+  new `accounting.tax_corrections`. `gen-logical-references` run;
+  `validate-dbml.ts` printed `OK` (256 tables, 0 cross-module refs, 0 gaps).
+- Migration `20261106173111_erp0016_tax_slice1` (only `accounting` schema)
+  applied to dev `POSTGRES_URL` via `bunx --bun drizzle-kit migrate`: success.
+- Code: `app/accounting/` (container, index, controller, service, repository,
+  contracts, errors, utils/tax-math). Mounted in `src/index.ts` and `app/app.ts`.
+  Locale keys `accounting.*` added to `en` and `id`.
+- Rounding: half-up to whole rupiah (100 minor units). Finance gate D14 still open.
+- Recap code is `TR-<yyyymm>-<random8>` (unique per record, not per tax code).
+- Seed: `database/seeders/seed/tax.seeder.ts`, placeholder PPN 11%, PPh 23 2%,
+  PPh 4(2) 10% (D18). `bun run drizzle:seed` run twice: inserted 3, then 0.
+- `bunx tsc --noEmit -p apps/backend/tsconfig.json`: exit 0.
+- `bun test test/accounting/tax-math.test.ts`: 6 pass, 0 fail.
+- `bun run lint`: 0 errors (9 pre-existing web-admin warnings).
+- `bun run test`: backend 542 pass, 0 fail; web-admin green.
+- Not done: service/state-machine tests, controller authorization tests,
+  web UI, CSV/XLSX export, `docs/architecture/modules/tax.md` (stale, says
+  `tax.configuration.*`), plan doc permission names still `tax.configuration.*`.
+- `docs/database/` reviewed as part of this change (updated).
+
 ## Next executable task
+
+**ERP-0016 tax Phase 1, remaining:** service/state-machine and `tax:*`
+authorization tests; then update `docs/architecture/modules/tax.md` and the
+plan doc permission names (D9). Then Phase 2 (CSV export).
+
+## Previous next task (still open)
 
 **Customer slice (ERP-0004/0005)** — the last unstarted dependency root:
 backend customer CRUD (`ERP-0004`) then the web-admin customer page

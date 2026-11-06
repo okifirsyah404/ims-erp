@@ -152,6 +152,22 @@ const api: Record<keyof typeof en, string> = {
 		'Peminjam tamu belum melengkapi data identitas wajib',
 	'assets.borrowingSelfApprovalForbidden':
 		'Anda tidak dapat menyetujui peminjaman Anda sendiri',
+
+	// Pajak (ERP-0016)
+	'accounting.taxTypeNotFound': 'Jenis pajak tidak ditemukan',
+	'accounting.taxTypeOverlap':
+		'Periode berlaku bertabrakan dengan tarif yang ada untuk kode pajak ini',
+	'accounting.taxTypeInUse': 'Jenis pajak masih digunakan',
+	'accounting.taxRateNotFound': 'Tidak ada tarif pajak aktif untuk tanggal ini',
+	'accounting.taxRecordNotFound': 'Catatan pajak tidak ditemukan',
+	'accounting.taxRecordPeriodTaken':
+		'Catatan pajak untuk jenis dan periode ini sudah ada',
+	'accounting.taxRecordLocked': 'Catatan pajak tidak lagi dapat diubah',
+	'accounting.taxTransition':
+		'Perubahan status tersebut tidak diizinkan untuk catatan ini',
+	'accounting.withholdingNotFound': 'Catatan pemotongan pajak tidak ditemukan',
+	'accounting.withholdingTransition':
+		'Perubahan status tersebut tidak diizinkan untuk catatan pemotongan ini',
 };
 
 export default api;
