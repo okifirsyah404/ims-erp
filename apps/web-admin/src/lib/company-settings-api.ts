@@ -72,6 +72,7 @@ export const DOCUMENT_TYPES = [
 	'bast',
 	'warranty',
 	'service_ticket',
+	'license_contract',
 ] as const;
 export type TDocumentType = (typeof DOCUMENT_TYPES)[number];
 

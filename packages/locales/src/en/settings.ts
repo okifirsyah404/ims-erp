@@ -76,6 +76,7 @@ const settings = {
 	'numbering.type.bast': 'Handover (BAST)',
 	'numbering.type.warranty': 'Warranty certificate',
 	'numbering.type.service_ticket': 'Service ticket',
+	'numbering.type.license_contract': 'License contract',
 	'companyProfile.section.images': 'Logo and signature',
 	'companyProfile.imagesHint': 'Printed on documents: the logo in the letterhead, the signature (with stamp) above the signatory name.',
 	'companyProfile.image.logo': 'Letterhead logo',

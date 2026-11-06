@@ -270,6 +270,24 @@ const api: Record<keyof typeof en, string> = {
 		'Peminjam tamu belum melengkapi data identitas wajib',
 	'inventory.borrowingSelfApprovalForbidden':
 		'Anda tidak dapat menyetujui peminjaman Anda sendiri',
+	'licensing.notFound.application': 'Aplikasi tidak ditemukan',
+	'licensing.notFound.contract': 'Kontrak lisensi tidak ditemukan',
+	'licensing.notFound.key': 'Kunci lisensi tidak ditemukan',
+	'licensing.applicationCodeTaken': 'Kode ini sudah dipakai aplikasi lain',
+	'licensing.contract.customer': 'Pelanggan tidak ada atau tidak aktif',
+	'licensing.contract.application': 'Aplikasi tidak ada atau sudah dipensiunkan',
+	'licensing.contract.order': 'Sales order tidak ada atau milik pelanggan lain',
+	'licensing.contract.dates': 'Tanggal berakhir sebelum tanggal mulai',
+	'licensing.contract.startRequired': 'Isi tanggal mulai sebelum mengaktifkan',
+	'licensing.state.edit': 'Hanya kontrak draf yang bisa diubah',
+	'licensing.state.activate': 'Hanya kontrak draf yang bisa diaktifkan',
+	'licensing.state.suspend': 'Hanya kontrak aktif yang bisa ditangguhkan',
+	'licensing.state.reactivate': 'Hanya kontrak yang ditangguhkan yang bisa diaktifkan kembali',
+	'licensing.state.terminate': 'Kontrak ini sudah dihentikan atau diperpanjang',
+	'licensing.state.renew': 'Hanya kontrak aktif yang bisa diperpanjang, satu kali',
+	'licensing.state.keys': 'Kunci hanya bisa ditambahkan ke kontrak draf, aktif, atau ditangguhkan',
+	'licensing.key.required': 'Ketik kunci dari vendor (aplikasi pihak ketiga)',
+	'licensing.key.taken': 'Kunci lisensi ini sudah terdaftar',
 };
 
 export default api;

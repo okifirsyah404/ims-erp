@@ -12,6 +12,7 @@ import sales from './sales';
 import finance from './finance';
 import procurement from './procurement';
 import projects from './projects';
+import licensing from './licensing';
 
 /**
  * English resources, grouped by namespace. This bundle is the source of
@@ -32,6 +33,7 @@ export const en = {
 	finance,
 	procurement,
 	projects,
+	licensing,
 } as const;
 
 export type Namespace = keyof typeof en;

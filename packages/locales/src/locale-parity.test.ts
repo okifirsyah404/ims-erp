@@ -137,6 +137,11 @@ describe('locale values', () => {
 			'sales:sj.email',
 			'sales:sj.serials',
 			// Project terms used verbatim in Indonesian.
+			// License terms used verbatim in Indonesian (M03).
+			'licensing:field.salesOrder',
+			'licensing:field.status',
+			'licensing:field.vendor',
+			'licensing:keys.source.vendor',
 			'projects:stage.training',
 			'projects:evidenceKind.training',
 			'projects:costCategory.material',

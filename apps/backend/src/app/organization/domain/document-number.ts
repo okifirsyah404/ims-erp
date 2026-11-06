@@ -32,6 +32,7 @@ export const DOCUMENT_TYPE_CODES: Record<DocumentType, string> = {
 	bast: 'BAST',
 	warranty: 'SG-GARANSI',
 	service_ticket: 'TKT',
+	license_contract: 'LIC',
 };
 
 /** Module that owns each document type (`document_sequences.module`). */
@@ -51,6 +52,7 @@ export const DOCUMENT_TYPE_MODULES: Record<DocumentType, string> = {
 	bast: 'projects',
 	warranty: 'aftersales',
 	service_ticket: 'aftersales',
+	license_contract: 'licensing',
 };
 
 export const DEFAULT_PATTERN = '{SEQ:4}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YY}';

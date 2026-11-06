@@ -120,7 +120,8 @@ export const erpStatements = {
 	promotion: ['read', 'create', 'update', 'publish', 'archive'],
 	commerce_order: ['read', 'update', 'process', 'cancel'],
 	automation: ['read', 'create', 'update', 'activate', 'execute', 'read_log'],
-	license: ['read', 'create', 'activate', 'extend', 'revoke'],
+	/** `read_key`: see license keys unmasked (M03; keys are handed to customers). */
+	license: ['read', 'create', 'activate', 'extend', 'revoke', 'read_key'],
 	integration: ['read', 'configure', 'rotate_secret', 'test'],
 	audit_log: ['read', 'export'],
 } as const satisfies Record<string, readonly string[]>;
@@ -340,6 +341,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		sales_discount: ['request', 'approve'],
 		sales_order: ['read', 'create', 'update', 'submit', 'approve', 'cancel', 'export'],
 		product: ['read'],
+		// M03 license register (decision 2026-11-06).
+		license: ['read', 'create', 'activate', 'extend', 'revoke', 'read_key'],
 		document: ['read', 'download'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
@@ -354,6 +357,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		sales_discount: ['request'],
 		sales_order: ['read', 'create', 'update', 'submit'],
 		product: ['read'],
+		// Registers licenses sold and starts renewals (M03, decision 2026-11-06).
+		license: ['read', 'create', 'extend', 'read_key'],
 		document: ['read', 'download'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
@@ -466,6 +471,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		// Supplier payments need the supplier's bank account (decision 2026-11-02).
 		supplier: ['read', 'read_bank'],
 		stock: ['read'],
+		license: ['read'],
 		investor: ['read'],
 		investor_report: ['read'],
 		document: ['read', 'download'],
@@ -517,6 +523,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		project: ['read'],
 		service_ticket: ['read', 'create', 'update', 'assign', 'resolve', 'close'],
 		warranty_claim: ['read', 'create', 'update', 'approve', 'reject', 'close'],
+		// Answers customers about their licenses (M03).
+		license: ['read', 'read_key'],
 		document: ['read', 'download'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},

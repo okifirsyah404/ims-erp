@@ -82,6 +82,7 @@ const settings: Record<keyof typeof en, string> = {
 	'numbering.type.bast': 'Berita acara serah terima (BAST)',
 	'numbering.type.warranty': 'Sertifikat garansi',
 	'numbering.type.service_ticket': 'Tiket servis',
+	'numbering.type.license_contract': 'Kontrak lisensi',
 	'companyProfile.section.images': 'Logo dan tanda tangan',
 	'companyProfile.imagesHint': 'Dicetak di dokumen: logo di kop surat, tanda tangan (beserta stempel) di atas nama penanda tangan.',
 	'companyProfile.image.logo': 'Logo kop surat',

@@ -82,9 +82,13 @@ Last synced: 2026-11-06.
 
 ## M03 Subscription and Licensing
 
-### planned
+### done
 - Contract + license key register, dates, status, due list — T09, ERP-0019.
-  Evidence: dbml `licensing` only.
+  Evidence: `progress.md` 2026-11-06 (M03 stage 1): `/licenses` API,
+  `/subscription` pages, dashboard widget; 10 unit tests, browser e2e.
+  Not yet accepted by the owner.
+
+### planned
 - API keys + validate/activate/renew, grace/suspend — T23, ERP-0019.
   Evidence: dbml only.
 

@@ -20,6 +20,7 @@ import { InvoiceController, ReceiptController } from './finance';
 import { GoodsReceiptController, PurchaseOrderController, SupplierController } from './procurement';
 import { ProjectController } from './projects';
 import { ServiceTicketController, WarrantyController } from './aftersales';
+import { LicensingController } from './licensing';
 import {
 	InvitationClaimController,
 	InvitationController,
@@ -95,6 +96,7 @@ export function createApp() {
 			.use(ProjectController.plugin())
 			.use(WarrantyController.plugin())
 			.use(ServiceTicketController.plugin())
+			.use(LicensingController.plugin())
 			.use(SalesController.plugin())
 			// Admin surfaces share the `/admin` prefix, so their routes no longer
 			// overlap the self-service `/users/*` routes: mount order is irrelevant

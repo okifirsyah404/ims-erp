@@ -87,6 +87,7 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/subscription',
 				icon: KeyRound,
 				items: [
+					{ titleKey: 'item.licenseApplications', url: '/subscription/applications' },
 					{ titleKey: 'item.apiKeys', url: '/subscription/api-keys' },
 					{ titleKey: 'item.activations', url: '/subscription/activations' },
 				],

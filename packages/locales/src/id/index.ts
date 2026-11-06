@@ -12,6 +12,7 @@ import sales_ from './sales';
 import finance_ from './finance';
 import procurement_ from './procurement';
 import projects_ from './projects';
+import licensing_ from './licensing';
 
 /** Indonesian resources — same namespace/key shape as `en`. */
 export const id = {
@@ -29,4 +30,5 @@ export const id = {
 	finance: finance_,
 	procurement: procurement_,
 	projects: projects_,
+	licensing: licensing_,
 } as const;

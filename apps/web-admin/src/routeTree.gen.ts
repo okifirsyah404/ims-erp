@@ -34,6 +34,7 @@ import { Route as AuthedProjectsNewRouteImport } from './routes/_authed/projects
 import { Route as AuthedReportsIndexRouteImport } from './routes/_authed/reports/index'
 import { Route as AuthedSalesIndexRouteImport } from './routes/_authed/sales/index'
 import { Route as AuthedSubscriptionIndexRouteImport } from './routes/_authed/subscription/index'
+import { Route as AuthedSubscriptionNewRouteImport } from './routes/_authed/subscription/new'
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
 import { Route as AuthedAdminRolesIndexRouteImport } from './routes/_authed/admin/roles/index'
 import { Route as AuthedAdminSettingsIndexRouteImport } from './routes/_authed/admin/settings/index'
@@ -103,8 +104,11 @@ import { Route as AuthedSalesOrdersOrderIdRouteImport } from './routes/_authed/s
 import { Route as AuthedSalesQuotesIndexRouteImport } from './routes/_authed/sales/quotes/index'
 import { Route as AuthedSalesQuotesNewRouteImport } from './routes/_authed/sales/quotes/new'
 import { Route as AuthedSalesReceiptsIndexRouteImport } from './routes/_authed/sales/receipts/index'
+import { Route as AuthedSubscriptionContractIdIndexRouteImport } from './routes/_authed/subscription/$contractId/index'
+import { Route as AuthedSubscriptionContractIdEditRouteImport } from './routes/_authed/subscription/$contractId/edit'
 import { Route as AuthedSubscriptionActivationsIndexRouteImport } from './routes/_authed/subscription/activations/index'
 import { Route as AuthedSubscriptionApiKeysIndexRouteImport } from './routes/_authed/subscription/api-keys/index'
+import { Route as AuthedSubscriptionApplicationsIndexRouteImport } from './routes/_authed/subscription/applications/index'
 import { Route as AuthedFinanceInvestorsProfitSharingIndexRouteImport } from './routes/_authed/finance/investors/profit-sharing/index'
 import { Route as AuthedFinanceInvestorsRegistryIndexRouteImport } from './routes/_authed/finance/investors/registry/index'
 import { Route as AuthedFinanceTaxCorrectionsIndexRouteImport } from './routes/_authed/finance/tax/corrections/index'
@@ -257,6 +261,11 @@ const AuthedSalesIndexRoute = AuthedSalesIndexRouteImport.update({
 const AuthedSubscriptionIndexRoute = AuthedSubscriptionIndexRouteImport.update({
   id: '/subscription/',
   path: '/subscription/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSubscriptionNewRoute = AuthedSubscriptionNewRouteImport.update({
+  id: '/subscription/new',
+  path: '/subscription/new',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAdminAuditIndexRoute = AuthedAdminAuditIndexRouteImport.update({
@@ -656,6 +665,18 @@ const AuthedSalesReceiptsIndexRoute =
     path: '/sales/receipts/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedSubscriptionContractIdIndexRoute =
+  AuthedSubscriptionContractIdIndexRouteImport.update({
+    id: '/subscription/$contractId/',
+    path: '/subscription/$contractId/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedSubscriptionContractIdEditRoute =
+  AuthedSubscriptionContractIdEditRouteImport.update({
+    id: '/subscription/$contractId/edit',
+    path: '/subscription/$contractId/edit',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedSubscriptionActivationsIndexRoute =
   AuthedSubscriptionActivationsIndexRouteImport.update({
     id: '/subscription/activations/',
@@ -666,6 +687,12 @@ const AuthedSubscriptionApiKeysIndexRoute =
   AuthedSubscriptionApiKeysIndexRouteImport.update({
     id: '/subscription/api-keys/',
     path: '/subscription/api-keys/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedSubscriptionApplicationsIndexRoute =
+  AuthedSubscriptionApplicationsIndexRouteImport.update({
+    id: '/subscription/applications/',
+    path: '/subscription/applications/',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedFinanceInvestorsProfitSharingIndexRoute =
@@ -844,6 +871,7 @@ export interface FileRoutesByFullPath {
   '/organizations/new': typeof AuthedOrganizationsNewRoute
   '/profiles/edit': typeof AuthedProfilesEditRoute
   '/projects/new': typeof AuthedProjectsNewRoute
+  '/subscription/new': typeof AuthedSubscriptionNewRoute
   '/account/': typeof AuthedAccountIndexRoute
   '/assets/': typeof AuthedAssetsIndexRoute
   '/crm/': typeof AuthedCrmIndexRoute
@@ -878,6 +906,7 @@ export interface FileRoutesByFullPath {
   '/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
+  '/subscription/$contractId/edit': typeof AuthedSubscriptionContractIdEditRoute
   '/admin/audit/': typeof AuthedAdminAuditIndexRoute
   '/admin/roles/': typeof AuthedAdminRolesIndexRoute
   '/admin/settings/': typeof AuthedAdminSettingsIndexRoute
@@ -925,8 +954,10 @@ export interface FileRoutesByFullPath {
   '/sales/orders/': typeof AuthedSalesOrdersIndexRoute
   '/sales/quotes/': typeof AuthedSalesQuotesIndexRoute
   '/sales/receipts/': typeof AuthedSalesReceiptsIndexRoute
+  '/subscription/$contractId/': typeof AuthedSubscriptionContractIdIndexRoute
   '/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
   '/subscription/api-keys/': typeof AuthedSubscriptionApiKeysIndexRoute
+  '/subscription/applications/': typeof AuthedSubscriptionApplicationsIndexRoute
   '/inventory/items/$itemId/edit': typeof AuthedInventoryItemsItemIdEditRoute
   '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/inventory/warehouses/$warehouseId/edit': typeof AuthedInventoryWarehousesWarehouseIdEditRoute
@@ -966,6 +997,7 @@ export interface FileRoutesByTo {
   '/organizations/new': typeof AuthedOrganizationsNewRoute
   '/profiles/edit': typeof AuthedProfilesEditRoute
   '/projects/new': typeof AuthedProjectsNewRoute
+  '/subscription/new': typeof AuthedSubscriptionNewRoute
   '/account': typeof AuthedAccountIndexRoute
   '/assets': typeof AuthedAssetsIndexRoute
   '/crm': typeof AuthedCrmIndexRoute
@@ -1000,6 +1032,7 @@ export interface FileRoutesByTo {
   '/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
+  '/subscription/$contractId/edit': typeof AuthedSubscriptionContractIdEditRoute
   '/admin/audit': typeof AuthedAdminAuditIndexRoute
   '/admin/roles': typeof AuthedAdminRolesIndexRoute
   '/admin/settings': typeof AuthedAdminSettingsIndexRoute
@@ -1047,8 +1080,10 @@ export interface FileRoutesByTo {
   '/sales/orders': typeof AuthedSalesOrdersIndexRoute
   '/sales/quotes': typeof AuthedSalesQuotesIndexRoute
   '/sales/receipts': typeof AuthedSalesReceiptsIndexRoute
+  '/subscription/$contractId': typeof AuthedSubscriptionContractIdIndexRoute
   '/subscription/activations': typeof AuthedSubscriptionActivationsIndexRoute
   '/subscription/api-keys': typeof AuthedSubscriptionApiKeysIndexRoute
+  '/subscription/applications': typeof AuthedSubscriptionApplicationsIndexRoute
   '/inventory/items/$itemId/edit': typeof AuthedInventoryItemsItemIdEditRoute
   '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/inventory/warehouses/$warehouseId/edit': typeof AuthedInventoryWarehousesWarehouseIdEditRoute
@@ -1092,6 +1127,7 @@ export interface FileRoutesById {
   '/_authed/organizations/new': typeof AuthedOrganizationsNewRoute
   '/_authed/profiles/edit': typeof AuthedProfilesEditRoute
   '/_authed/projects/new': typeof AuthedProjectsNewRoute
+  '/_authed/subscription/new': typeof AuthedSubscriptionNewRoute
   '/_authed/account/': typeof AuthedAccountIndexRoute
   '/_authed/assets/': typeof AuthedAssetsIndexRoute
   '/_authed/crm/': typeof AuthedCrmIndexRoute
@@ -1126,6 +1162,7 @@ export interface FileRoutesById {
   '/_authed/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
   '/_authed/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/_authed/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
+  '/_authed/subscription/$contractId/edit': typeof AuthedSubscriptionContractIdEditRoute
   '/_authed/admin/audit/': typeof AuthedAdminAuditIndexRoute
   '/_authed/admin/roles/': typeof AuthedAdminRolesIndexRoute
   '/_authed/admin/settings/': typeof AuthedAdminSettingsIndexRoute
@@ -1173,8 +1210,10 @@ export interface FileRoutesById {
   '/_authed/sales/orders/': typeof AuthedSalesOrdersIndexRoute
   '/_authed/sales/quotes/': typeof AuthedSalesQuotesIndexRoute
   '/_authed/sales/receipts/': typeof AuthedSalesReceiptsIndexRoute
+  '/_authed/subscription/$contractId/': typeof AuthedSubscriptionContractIdIndexRoute
   '/_authed/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
   '/_authed/subscription/api-keys/': typeof AuthedSubscriptionApiKeysIndexRoute
+  '/_authed/subscription/applications/': typeof AuthedSubscriptionApplicationsIndexRoute
   '/_authed/inventory/items/$itemId/edit': typeof AuthedInventoryItemsItemIdEditRoute
   '/_authed/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/_authed/inventory/warehouses/$warehouseId/edit': typeof AuthedInventoryWarehousesWarehouseIdEditRoute
@@ -1218,6 +1257,7 @@ export interface FileRouteTypes {
     | '/organizations/new'
     | '/profiles/edit'
     | '/projects/new'
+    | '/subscription/new'
     | '/account/'
     | '/assets/'
     | '/crm/'
@@ -1252,6 +1292,7 @@ export interface FileRouteTypes {
     | '/sales/deliveries/new'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
+    | '/subscription/$contractId/edit'
     | '/admin/audit/'
     | '/admin/roles/'
     | '/admin/settings/'
@@ -1299,8 +1340,10 @@ export interface FileRouteTypes {
     | '/sales/orders/'
     | '/sales/quotes/'
     | '/sales/receipts/'
+    | '/subscription/$contractId/'
     | '/subscription/activations/'
     | '/subscription/api-keys/'
+    | '/subscription/applications/'
     | '/inventory/items/$itemId/edit'
     | '/inventory/stock/adjustments/$adjustmentId'
     | '/inventory/warehouses/$warehouseId/edit'
@@ -1340,6 +1383,7 @@ export interface FileRouteTypes {
     | '/organizations/new'
     | '/profiles/edit'
     | '/projects/new'
+    | '/subscription/new'
     | '/account'
     | '/assets'
     | '/crm'
@@ -1374,6 +1418,7 @@ export interface FileRouteTypes {
     | '/sales/deliveries/new'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
+    | '/subscription/$contractId/edit'
     | '/admin/audit'
     | '/admin/roles'
     | '/admin/settings'
@@ -1421,8 +1466,10 @@ export interface FileRouteTypes {
     | '/sales/orders'
     | '/sales/quotes'
     | '/sales/receipts'
+    | '/subscription/$contractId'
     | '/subscription/activations'
     | '/subscription/api-keys'
+    | '/subscription/applications'
     | '/inventory/items/$itemId/edit'
     | '/inventory/stock/adjustments/$adjustmentId'
     | '/inventory/warehouses/$warehouseId/edit'
@@ -1465,6 +1512,7 @@ export interface FileRouteTypes {
     | '/_authed/organizations/new'
     | '/_authed/profiles/edit'
     | '/_authed/projects/new'
+    | '/_authed/subscription/new'
     | '/_authed/account/'
     | '/_authed/assets/'
     | '/_authed/crm/'
@@ -1499,6 +1547,7 @@ export interface FileRouteTypes {
     | '/_authed/sales/deliveries/new'
     | '/_authed/sales/orders/$orderId'
     | '/_authed/sales/quotes/new'
+    | '/_authed/subscription/$contractId/edit'
     | '/_authed/admin/audit/'
     | '/_authed/admin/roles/'
     | '/_authed/admin/settings/'
@@ -1546,8 +1595,10 @@ export interface FileRouteTypes {
     | '/_authed/sales/orders/'
     | '/_authed/sales/quotes/'
     | '/_authed/sales/receipts/'
+    | '/_authed/subscription/$contractId/'
     | '/_authed/subscription/activations/'
     | '/_authed/subscription/api-keys/'
+    | '/_authed/subscription/applications/'
     | '/_authed/inventory/items/$itemId/edit'
     | '/_authed/inventory/stock/adjustments/$adjustmentId'
     | '/_authed/inventory/warehouses/$warehouseId/edit'
@@ -1759,6 +1810,13 @@ declare module '@tanstack/react-router' {
       path: '/subscription'
       fullPath: '/subscription/'
       preLoaderRoute: typeof AuthedSubscriptionIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/subscription/new': {
+      id: '/_authed/subscription/new'
+      path: '/subscription/new'
+      fullPath: '/subscription/new'
+      preLoaderRoute: typeof AuthedSubscriptionNewRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/admin/audit/': {
@@ -2244,6 +2302,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSalesReceiptsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/subscription/$contractId/': {
+      id: '/_authed/subscription/$contractId/'
+      path: '/subscription/$contractId'
+      fullPath: '/subscription/$contractId/'
+      preLoaderRoute: typeof AuthedSubscriptionContractIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/subscription/$contractId/edit': {
+      id: '/_authed/subscription/$contractId/edit'
+      path: '/subscription/$contractId/edit'
+      fullPath: '/subscription/$contractId/edit'
+      preLoaderRoute: typeof AuthedSubscriptionContractIdEditRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/subscription/activations/': {
       id: '/_authed/subscription/activations/'
       path: '/subscription/activations'
@@ -2256,6 +2328,13 @@ declare module '@tanstack/react-router' {
       path: '/subscription/api-keys'
       fullPath: '/subscription/api-keys/'
       preLoaderRoute: typeof AuthedSubscriptionApiKeysIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/subscription/applications/': {
+      id: '/_authed/subscription/applications/'
+      path: '/subscription/applications'
+      fullPath: '/subscription/applications/'
+      preLoaderRoute: typeof AuthedSubscriptionApplicationsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/finance/investors/profit-sharing/': {
@@ -2537,6 +2616,7 @@ interface AuthedRouteChildren {
   AuthedOrganizationsOrganizationIdRoute: typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   AuthedOrganizationsNewRoute: typeof AuthedOrganizationsNewRoute
   AuthedProjectsNewRoute: typeof AuthedProjectsNewRoute
+  AuthedSubscriptionNewRoute: typeof AuthedSubscriptionNewRoute
   AuthedAssetsIndexRoute: typeof AuthedAssetsIndexRoute
   AuthedCrmIndexRoute: typeof AuthedCrmIndexRoute
   AuthedFinanceIndexRoute: typeof AuthedFinanceIndexRoute
@@ -2568,6 +2648,7 @@ interface AuthedRouteChildren {
   AuthedSalesDeliveriesNewRoute: typeof AuthedSalesDeliveriesNewRoute
   AuthedSalesOrdersOrderIdRoute: typeof AuthedSalesOrdersOrderIdRoute
   AuthedSalesQuotesNewRoute: typeof AuthedSalesQuotesNewRoute
+  AuthedSubscriptionContractIdEditRoute: typeof AuthedSubscriptionContractIdEditRoute
   AuthedAdminAuditIndexRoute: typeof AuthedAdminAuditIndexRoute
   AuthedAdminRolesIndexRoute: typeof AuthedAdminRolesIndexRoute
   AuthedAdminSettingsIndexRoute: typeof AuthedAdminSettingsIndexRoute
@@ -2615,8 +2696,10 @@ interface AuthedRouteChildren {
   AuthedSalesOrdersIndexRoute: typeof AuthedSalesOrdersIndexRoute
   AuthedSalesQuotesIndexRoute: typeof AuthedSalesQuotesIndexRoute
   AuthedSalesReceiptsIndexRoute: typeof AuthedSalesReceiptsIndexRoute
+  AuthedSubscriptionContractIdIndexRoute: typeof AuthedSubscriptionContractIdIndexRoute
   AuthedSubscriptionActivationsIndexRoute: typeof AuthedSubscriptionActivationsIndexRoute
   AuthedSubscriptionApiKeysIndexRoute: typeof AuthedSubscriptionApiKeysIndexRoute
+  AuthedSubscriptionApplicationsIndexRoute: typeof AuthedSubscriptionApplicationsIndexRoute
   AuthedInventoryStockAdjustmentsAdjustmentIdRoute: typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute: typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute
   AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute: typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute
@@ -2650,6 +2733,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedOrganizationsOrganizationIdRouteWithChildren,
   AuthedOrganizationsNewRoute: AuthedOrganizationsNewRoute,
   AuthedProjectsNewRoute: AuthedProjectsNewRoute,
+  AuthedSubscriptionNewRoute: AuthedSubscriptionNewRoute,
   AuthedAssetsIndexRoute: AuthedAssetsIndexRoute,
   AuthedCrmIndexRoute: AuthedCrmIndexRoute,
   AuthedFinanceIndexRoute: AuthedFinanceIndexRoute,
@@ -2686,6 +2770,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSalesDeliveriesNewRoute: AuthedSalesDeliveriesNewRoute,
   AuthedSalesOrdersOrderIdRoute: AuthedSalesOrdersOrderIdRoute,
   AuthedSalesQuotesNewRoute: AuthedSalesQuotesNewRoute,
+  AuthedSubscriptionContractIdEditRoute: AuthedSubscriptionContractIdEditRoute,
   AuthedAdminAuditIndexRoute: AuthedAdminAuditIndexRoute,
   AuthedAdminRolesIndexRoute: AuthedAdminRolesIndexRoute,
   AuthedAdminSettingsIndexRoute: AuthedAdminSettingsIndexRoute,
@@ -2736,9 +2821,13 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSalesOrdersIndexRoute: AuthedSalesOrdersIndexRoute,
   AuthedSalesQuotesIndexRoute: AuthedSalesQuotesIndexRoute,
   AuthedSalesReceiptsIndexRoute: AuthedSalesReceiptsIndexRoute,
+  AuthedSubscriptionContractIdIndexRoute:
+    AuthedSubscriptionContractIdIndexRoute,
   AuthedSubscriptionActivationsIndexRoute:
     AuthedSubscriptionActivationsIndexRoute,
   AuthedSubscriptionApiKeysIndexRoute: AuthedSubscriptionApiKeysIndexRoute,
+  AuthedSubscriptionApplicationsIndexRoute:
+    AuthedSubscriptionApplicationsIndexRoute,
   AuthedInventoryStockAdjustmentsAdjustmentIdRoute:
     AuthedInventoryStockAdjustmentsAdjustmentIdRoute,
   AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute:

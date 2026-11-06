@@ -267,6 +267,24 @@ const api = {
 		'A guest borrower is missing required identity data',
 	'inventory.borrowingSelfApprovalForbidden':
 		'You cannot approve your own borrowing',
+	'licensing.notFound.application': 'Application not found',
+	'licensing.notFound.contract': 'License contract not found',
+	'licensing.notFound.key': 'License key not found',
+	'licensing.applicationCodeTaken': 'Another application already uses this code',
+	'licensing.contract.customer': 'The customer is missing or inactive',
+	'licensing.contract.application': 'The application is missing or retired',
+	'licensing.contract.order': 'The sales order is missing or belongs to another customer',
+	'licensing.contract.dates': 'The end date is before the start date',
+	'licensing.contract.startRequired': 'Set the start date before activating',
+	'licensing.state.edit': 'Only a draft contract can be edited',
+	'licensing.state.activate': 'Only a draft contract can be activated',
+	'licensing.state.suspend': 'Only an active contract can be suspended',
+	'licensing.state.reactivate': 'Only a suspended contract can be reactivated',
+	'licensing.state.terminate': 'This contract is already terminated or renewed',
+	'licensing.state.renew': 'Only an active contract can be renewed, once',
+	'licensing.state.keys': 'Keys can only be added to a draft, active or suspended contract',
+	'licensing.key.required': 'Type the key from the vendor (third-party application)',
+	'licensing.key.taken': 'This license key is already registered',
 } as const;
 
 export default api;

@@ -287,6 +287,27 @@ Menu **Proyek**. Diagram:
    **Selesaikan** (tindakan perbaikan, biaya servis) — bisa **Buka lagi**.
 5. **Tutup Tiket** hanya dengan konfirmasi pelanggan (nama dan saluran).
 
+### 8.5 Lisensi dan langganan (M03)
+
+1. **Langganan & Lisensi → Aplikasi**: daftarkan setiap aplikasi yang
+   dilisensikan — produk **pihak ketiga** (kunci dari vendor) atau
+   **aplikasi sendiri** (kunci dibuat sistem).
+2. Jual lewat alur biasa (SPH → Deal → sales order → invoice).
+3. **Langganan & Lisensi → Kontrak baru**: pelanggan, aplikasi, paket, sales
+   order (opsional), tanggal mulai dan berakhir (berakhir kosong =
+   selamanya), siklus tagihan, dan nilai → **Simpan draf**.
+4. Di kontrak: **Tambah kunci** (ketik kunci dari vendor; untuk aplikasi
+   sendiri kosongkan agar dibuat otomatis), lalu **Aktifkan**.
+5. **Jatuh tempo perpanjangan (30 hari)** di daftar menampilkan kontrak aktif
+   yang segera berakhir atau sudah berakhir; dasbor menampilkan jumlah yang
+   sama.
+6. Untuk memperpanjang: **Buat SPH** untuk pelanggan dan tagih seperti biasa,
+   lalu **Perpanjang** di kontrak (draf periode berikutnya dengan ketentuan
+   sama) dan **Aktifkan** — kontrak lama menjadi **Diperpanjang**.
+7. **Tangguhkan / Aktifkan kembali**, **Hentikan** (dengan alasan), dan
+   **Cabut** kunci (dengan alasan) bila perlu. Finance melihat kunci
+   tersamar (4 karakter terakhir).
+
 ## 9. Dokumen cetak dan penomoran
 
 | Dokumen | Contoh nomor | Kapan bernomor | Cetak |

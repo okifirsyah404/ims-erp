@@ -27,6 +27,8 @@ import {
 	type TActivityEntry,
 	type TDashboardSummary,
 } from '@/lib/dashboard-api';
+import { licenseSummaryQueryOptions } from '@/lib/license-api';
+import { usePermission } from '@/lib/use-permission';
 
 /** A key in the `dashboard` namespace, typed against the `en` bundle. */
 type DashboardKey = NamespaceKey<'dashboard'>;
@@ -62,7 +64,7 @@ export function DashboardPage() {
 				<ProfitWidget summary={data} />
 				<InventoryWidget summary={data} />
 				<ProjectsWidget summary={data} />
-				<SubscriptionsWidget summary={data} />
+				<SubscriptionsWidget />
 			</div>
 
 			<div className='grid gap-4 lg:grid-cols-3'>
@@ -266,8 +268,11 @@ function ProjectsWidget({ summary }: { summary: TDashboardSummary }) {
 	);
 }
 
-function SubscriptionsWidget({ summary }: { summary: TDashboardSummary }) {
+/** Live figures from the license register (M03); the only widget off the mock. */
+function SubscriptionsWidget() {
 	const { t } = useTranslation('dashboard');
+	const canRead = usePermission('license.read');
+	const { data } = useQuery(licenseSummaryQueryOptions(canRead));
 	return (
 		<Widget
 			title={t('widget.subscriptions.title')}
@@ -276,11 +281,11 @@ function SubscriptionsWidget({ summary }: { summary: TDashboardSummary }) {
 		>
 			<Figure
 				label={t('widget.subscriptions.endingSoon')}
-				value={String(summary.subscriptions.endingWithin30Days)}
+				value={data ? String(data.endingSoon) : '—'}
 			/>
 			<Figure
 				label={t('widget.subscriptions.expired')}
-				value={String(summary.subscriptions.expired)}
+				value={data ? String(data.ended) : '—'}
 			/>
 		</Widget>
 	);

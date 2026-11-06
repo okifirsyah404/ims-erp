@@ -289,6 +289,26 @@ Menu **Projects**. Diagram:
 5. **Close ticket** only with the customer's confirmation (name and
    channel).
 
+### 8.5 Licenses and subscriptions (M03)
+
+1. **Subscription & Licensing → Applications**: register each application
+   you license — a **third-party** product (the vendor issues the key) or
+   the company's **own application** (the ERP generates the key).
+2. Sell it through the normal flow (SPH → Deal → sales order → invoice).
+3. **Subscription & Licensing → New contract**: customer, application,
+   package, the sales order (optional), start and end date (empty end =
+   perpetual), billing cycle and value → **Save draft**.
+4. On the contract: **Add key** (type the vendor's key; for an own
+   application leave it empty to generate one), then **Activate**.
+5. **Due for renewal (30 days)** on the list shows active contracts that end
+   soon or have ended; the dashboard shows the same counts.
+6. To renew: **Create SPH** for the customer and bill it as usual, then
+   **Renew** on the contract (a draft for the next period with the same
+   terms) and **Activate** it — the old contract becomes **Renewed**.
+7. **Suspend / Reactivate**, **Terminate** (with a reason) and **Revoke** a
+   key (with a reason) as needed. Finance sees keys masked (last 4
+   characters).
+
 ## 9. Printed documents and numbering
 
 | Document | Example number | Numbered when | Print |
