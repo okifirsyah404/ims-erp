@@ -20,9 +20,10 @@ import {
 	taxRecordsQueryOptions,
 	taxTypesQueryOptions,
 	transitionTaxRecord,
-	updateTaxRecord,
+	type TTaxRecord,
 } from '@/lib/tax-api';
 import { usePermission } from '@/lib/use-permission';
+import { TaxRecordEditDialog } from '@/components/tax/tax-record-edit-dialog';
 
 /** The route API for `/finance/tax/records` (validated search params). */
 const routeApi = getRouteApi('/_authed/finance/tax/records/');
@@ -62,6 +63,7 @@ export function TaxRecordList() {
 	const [periodMonth, setPeriodMonth] = useState(CURRENT_MONTH);
 	const [taxableBase, setTaxableBase] = useState('');
 	const [preview, setPreview] = useState<string | null>(null);
+	const [editing, setEditing] = useState<TTaxRecord | null>(null);
 
 	const page = search.page ?? 1;
 	const year = search.year;
@@ -111,16 +113,6 @@ export function TaxRecordList() {
 					date: result.effectiveFrom,
 				}),
 			);
-		},
-		onError: (mutationError: Error) => toast.error(mutationError.message),
-	});
-
-	const editDraft = useMutation({
-		mutationFn: (row: { id: string; taxableBase: number }) =>
-			updateTaxRecord(row.id, { taxableBase: row.taxableBase }),
-		onSuccess: async () => {
-			toast.success(t('tax:records.updated'));
-			await invalidate();
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
@@ -275,20 +267,7 @@ export function TaxRecordList() {
 														variant='outline'
 														size='sm'
 														className='mr-1'
-														disabled={editDraft.isPending}
-														onClick={() => {
-															const next = window.prompt(
-																t('tax:records.taxableBase'),
-																String(row.taxableBase / 100),
-															);
-															if (next === null) return;
-															const value = Number(next);
-															if (!Number.isFinite(value) || value < 0) return;
-															void editDraft.mutateAsync({
-																id: row.id,
-																taxableBase: Math.round(value * 100),
-															});
-														}}
+														onClick={() => setEditing(row)}
 													>
 														{t('common:action.edit')}
 													</Button>
@@ -340,6 +319,17 @@ export function TaxRecordList() {
 					/>
 				</>
 			)}
+
+			{editing ? (
+				<TaxRecordEditDialog
+					key={editing.id}
+					record={editing}
+					open
+					onOpenChange={(open) => {
+						if (!open) setEditing(null);
+					}}
+				/>
+			) : null}
 		</div>
 	);
 }

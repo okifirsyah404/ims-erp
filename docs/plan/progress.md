@@ -2638,6 +2638,28 @@ still linked "Tax Recap" to the stub.
 Gates: web-admin build green (route tree regenerated), `bun run lint` 0
 errors, locale tests 42 pass (new `item.taxRecords` key mirrored in en/id).
 
+## 2026-11-07 - Refactor: tax row edits use UI Dialog instead of window.prompt
+
+Replaces the prompt-based row edits from the Phase 2 UI with proper dialogs,
+following the `storage-dialog.tsx` pattern (Base UI Dialog from
+`packages/ui`):
+
+- New `components/tax/tax-record-edit-dialog.tsx`: edits a draft record's
+  taxable base (context line with code + period; invalidates `tax-records`
+  and the derived `tax-recap` on success).
+- New `components/tax/withholding-edit-dialog.tsx`: edits a recorded
+  withholding row's tax amount (backend still enforces recorded-only edits;
+  a late rejection surfaces as the `withholdingLocked` toast).
+- Both lists drop their inline edit mutation and `window.prompt`; the edit
+  button opens the dialog with the row. The dialogs mount only while a row is
+  being edited (`key={row.id}`), which avoids the `set-state-in-effect`
+  resync pattern and keeps oxlint at the 9-warning baseline.
+- Locale keys `tax:records.editTitle` and `tax:withholding.editTitle`
+  (en + id).
+
+Gates: web-admin build green, oxlint 9 warnings (pre-existing), locale tests
+42 pass.
+
 ## Next executable task
 
 **Finance review of the tax slice (D12/D14/D18)** — column list, rounding

@@ -18,10 +18,11 @@ import {
 	createWithholding,
 	taxTypesQueryOptions,
 	transitionWithholding,
-	updateWithholding,
 	withholdingQueryOptions,
+	type TWithholdingRecord,
 } from '@/lib/tax-api';
 import { usePermission } from '@/lib/use-permission';
+import { WithholdingEditDialog } from '@/components/tax/withholding-edit-dialog';
 
 /** The route API for `/finance/tax/withholding` (validated search params). */
 const routeApi = getRouteApi('/_authed/finance/tax/withholding/');
@@ -57,6 +58,7 @@ export function WithholdingList() {
 	const [counterparty, setCounterparty] = useState('');
 	const [baseAmount, setBaseAmount] = useState('');
 	const [taxAmount, setTaxAmount] = useState('');
+	const [editing, setEditing] = useState<TWithholdingRecord | null>(null);
 
 	const page = search.page ?? 1;
 	const { data, isPending, isError, error } = useQuery({
@@ -86,16 +88,6 @@ export function WithholdingList() {
 			setCounterparty('');
 			setBaseAmount('');
 			setTaxAmount('');
-			await invalidate();
-		},
-		onError: (mutationError: Error) => toast.error(mutationError.message),
-	});
-
-	const editRecorded = useMutation({
-		mutationFn: (row: { id: string; taxAmount: number }) =>
-			updateWithholding(row.id, { taxAmount: row.taxAmount }),
-		onSuccess: async () => {
-			toast.success(t('tax:withholding.updated'));
 			await invalidate();
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
@@ -242,20 +234,7 @@ export function WithholdingList() {
 														variant='outline'
 														size='sm'
 														className='mr-1'
-														disabled={editRecorded.isPending}
-														onClick={() => {
-															const next = window.prompt(
-																t('tax:withholding.taxAmount'),
-																String(row.taxAmount / 100),
-															);
-															if (next === null) return;
-															const value = Number(next);
-															if (!Number.isFinite(value) || value < 0) return;
-															void editRecorded.mutateAsync({
-																id: row.id,
-																taxAmount: Math.round(value * 100),
-															});
-														}}
+														onClick={() => setEditing(row)}
 													>
 														{t('common:action.edit')}
 													</Button>
@@ -323,6 +302,17 @@ export function WithholdingList() {
 					/>
 				</>
 			)}
+
+			{editing ? (
+				<WithholdingEditDialog
+					key={editing.id}
+					withholding={editing}
+					open
+					onOpenChange={(open) => {
+						if (!open) setEditing(null);
+					}}
+				/>
+			) : null}
 		</div>
 	);
 }
