@@ -12,6 +12,17 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed (this session - sidebar: Stock + Stock Adjustment under Items, 2026-11-06)
+
+Status: **implemented**. Nav-only reorg in `nav-config.ts`: the top-level
+Stock entry is gone; the Items group now holds Products, Components,
+Materials, **Stock** (`/inventory/stock`), **Stock Adjustment**
+(`/inventory/stock/adjustments`), and New Item. The old Item Movements nav
+entry was dropped and its `nav:item.itemMovements` key removed from both
+bundles (dead-key guard); movements stay reachable from the Stock page. No
+route or schema change — `routeTree.gen.ts` and `docs/database/` untouched.
+Gates: web-admin `tsc -b`, root lint + test green.
+
 ## Completed (this session - ERP-0031 Slice 3 admin link UI + member pickers, 2026-11-06)
 
 Status: **implemented**. Slice 3 closes ERP-0031: global admins can link and

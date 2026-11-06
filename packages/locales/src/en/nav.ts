@@ -80,7 +80,7 @@ const nav = {
 	'item.components': 'Components',
 	'item.materials': 'Materials',
 	'item.newItem': 'New item',
-	'item.itemMovements': 'Item Movements',
+	'item.stockAdjustments': 'Stock Adjustment',
 	'item.organizations': 'Organization',
 	'item.users': 'Users',
 	'item.auditLog': 'Audit Log',
