@@ -124,6 +124,8 @@ TableGroup "Projects" {
   projects.projects
   projects.project_phases
   projects.project_tasks
+  projects.project_evidence
+  projects.project_costs
   projects.project_task_dependencies
   projects.project_daily_reports
   projects.project_site_assignments
@@ -2784,7 +2786,8 @@ Ref: inventory.borrowing_events.borrowing_line_id > inventory.borrowing_lines.id
 // MODULE: Projects  (schema: projects)
 // Project master, phases, tasks and dependencies, daily reports, site
 // assignments, KPI, milestones, change orders, handover and work plans.
-// Tenant scoped.
+// Tenant scoped, except projects, project_tasks, project_evidence and
+// project_costs, which are company-wide (ADR-0011 step 6a).
 // ---------------------------------------------------------------------------
 
 Table projects.project_types {
@@ -2806,42 +2809,42 @@ Table projects.project_types {
 
 Table projects.projects {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  name text [not null]
-  customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  project_type_id uuid
-  branch_id uuid [note: "Logical reference to organization.branches.id. Cross-module FK intentionally omitted. Validated through the Organization module contract."]
-  sales_order_id uuid [note: "Logical reference to sales.sales_orders.id. Cross-module FK intentionally omitted. Validated through the Sales module contract."]
-  manager_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  status text [not null, default: 'planned']
-  start_date date
-  target_end_date date
-  actual_end_date date
-  budget_amount bigint [not null, default: 0]
-  contract_value bigint [not null, default: 0]
-  currency_code varchar(3) [not null, default: 'IDR']
-  progress_percent numeric(5,2) [not null, default: 0]
-  handover_status text [not null, default: 'not_started']
+  code varchar(32) [not null, note: "Number from the numbering service (PRJ). Unique among live rows (partial index in the Drizzle schema)."]
+  sales_order_id uuid [not null, note: "Logical reference to sales.sales_orders.id. Cross-module FK intentionally omitted. Validated through the Sales module contract. One live (not cancelled) project per order (partial unique index)."]
+  sales_order_code varchar(32) [not null, note: "Snapshot of the order number."]
+  quotation_code varchar(40) [note: "Snapshot of the SPH number."]
+  customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
+  customer_name text [not null, note: "Snapshot of the customer name."]
+  title text [not null]
+  site_name varchar(200) [note: "Project location (Lokasi proyek)."]
+  contract_value bigint [not null, default: 0, note: "The order's grand total incl. VAT at creation (IDR minor units)."]
+  pic_user_id text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Must hold project:update."]
+  target_start_date date [note: "Jakarta business date."]
+  target_end_date date [note: "Jakarta business date."]
+  stage text [not null, default: 'preparation']
+  status text [not null, default: 'active']
   notes text
+  closed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  closed_at bigint
+  cancelled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancelled_at bigint
+  cancel_reason text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Project header. Contract value and budget are exact integer minor units."
+  Note: "Project executing a deal (sales order), company-wide (ADR-0011). Closing needs function-test, training and signed-BAST evidence and moves the stage to warranty."
   Indexes {
-    (organization_id, code) [unique, name: 'projects_org_code_uq']
-    project_type_id [name: 'projects_project_type_id_idx']
+    sales_order_id [name: 'projects_sales_order_id_idx']
     customer_id [name: 'projects_customer_id_idx']
-    manager_user_id [name: 'projects_manager_user_id_idx']
+    pic_user_id [name: 'projects_pic_user_id_idx']
     status [name: 'projects_status_idx']
   }
   Checks {
-    `status IN ('planned', 'in_progress', 'on_hold', 'completed', 'cancelled')`
-    `handover_status IN ('not_started', 'in_progress', 'done')`
-    `budget_amount >= 0`
+    `status IN ('active', 'closed', 'cancelled')`
+    `stage IN ('preparation', 'delivery', 'installation', 'testing', 'training', 'handover', 'warranty')`
     `contract_value >= 0`
-    `progress_percent BETWEEN 0 AND 100`
-    `target_end_date IS NULL OR start_date IS NULL OR target_end_date >= start_date`
+    `target_end_date IS NULL OR target_start_date IS NULL OR target_end_date >= target_start_date`
   }
 }
 
@@ -2870,45 +2873,81 @@ Table projects.project_phases {
 }
 
 Table projects.project_tasks {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  project_id uuid [not null]
-  phase_id uuid
-  parent_task_id uuid
-  code varchar(32) [not null]
+  project_id uuid [not null, note: "Same-module reference to projects.projects.id; no FK by design (module-ownership §9), validated by the Projects service."]
+  position integer [not null, default: 0]
   title text [not null]
-  description text
-  assignee_employee_id uuid [note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
-  assignee_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  stage text [not null]
+  assignee_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Must hold task:update."]
+  due_date date [note: "Jakarta business date."]
   status text [not null, default: 'todo']
-  priority text [not null, default: 'normal']
-  planned_start date
-  planned_end date
-  actual_start date
-  actual_completed_at bigint
-  estimated_hours numeric(8,2) [not null, default: 0]
-  actual_hours numeric(8,2) [not null, default: 0]
-  progress_percent numeric(5,2) [not null, default: 0]
-  verified_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  verified_at bigint
+  done_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  done_at bigint
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  deleted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Work item of a project. The task tree is self referencing."
+  deleted_at bigint
+  Note: "Checklist task of a project; a new project gets one task per stage up to handover. Removed tasks are soft-deleted."
   Indexes {
-    project_id [name: 'project_tasks_project_id_idx']
-    phase_id [name: 'project_tasks_phase_id_idx']
-    parent_task_id [name: 'project_tasks_parent_task_id_idx']
-    (organization_id, code) [unique, name: 'project_tasks_org_code_uq']
-    assignee_employee_id [name: 'project_tasks_assignee_employee_id_idx']
-    status [name: 'project_tasks_status_idx']
+    (project_id, position) [name: 'project_tasks_project_position_idx']
+    assignee_user_id [name: 'project_tasks_assignee_user_id_idx']
   }
   Checks {
-    `status IN ('todo', 'in_progress', 'submitted', 'verified', 'rejected', 'done', 'cancelled')`
-    `priority IN ('low', 'normal', 'high', 'urgent')`
-    `progress_percent BETWEEN 0 AND 100`
-    `estimated_hours >= 0`
-    `actual_hours >= 0`
+    `status IN ('todo', 'in_progress', 'done')`
+    `stage IN ('preparation', 'delivery', 'installation', 'testing', 'training', 'handover', 'warranty')`
+  }
+}
+
+Table projects.project_evidence {
+  id uuid [pk, default: `uuidv7()`]
+  project_id uuid [not null, note: "Same-module reference to projects.projects.id; no FK by design (module-ownership §9), validated by the Projects service."]
+  task_id uuid [note: "Same-module reference to projects.project_tasks.id; no FK by design."]
+  kind text [not null]
+  storage_key text [not null, note: "Object storage key; files are read through short-lived presigned URLs."]
+  file_name varchar(200) [not null]
+  content_type varchar(100) [not null, note: "Detected from the file content (JPG, PNG, WebP, PDF)."]
+  size_bytes integer [not null]
+  note varchar(500)
+  uploaded_by text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  deleted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Evidence file of a project (function test, training, signed BAST, photo)."
+  Indexes {
+    (project_id, kind) [name: 'project_evidence_project_kind_idx']
+  }
+  Checks {
+    `kind IN ('testing', 'training', 'bast', 'photo', 'other')`
+    `size_bytes > 0`
+  }
+}
+
+Table projects.project_costs {
+  id uuid [pk, default: `uuidv7()`]
+  project_id uuid [not null, note: "Same-module reference to projects.projects.id; no FK by design (module-ownership §9), validated by the Projects service."]
+  category text [not null]
+  cost_date date [not null, note: "Jakarta business date."]
+  amount bigint [not null, note: "IDR minor units."]
+  description varchar(300) [not null]
+  receipt_storage_key text [note: "Optional receipt (nota) in object storage."]
+  receipt_file_name varchar(200)
+  receipt_content_type varchar(100)
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  voided_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  voided_at bigint
+  void_reason text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Direct cost of a project; visible only with project:read_cost. Corrected by voiding, never deleted."
+  Indexes {
+    (project_id, cost_date) [name: 'project_costs_project_date_idx']
+  }
+  Checks {
+    `category IN ('material', 'transport', 'accommodation', 'subcontract', 'other')`
+    `amount > 0`
   }
 }
 

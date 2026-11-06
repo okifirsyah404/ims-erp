@@ -11,6 +11,7 @@ import crm from './crm';
 import sales from './sales';
 import finance from './finance';
 import procurement from './procurement';
+import projects from './projects';
 
 /**
  * English resources, grouped by namespace. This bundle is the source of
@@ -30,6 +31,7 @@ export const en = {
 	sales,
 	finance,
 	procurement,
+	projects,
 } as const;
 
 export type Namespace = keyof typeof en;

@@ -61,4 +61,8 @@ export interface IDeliveryNoteRepository {
 	markDelivered(id: string, data: { receiverName: string; receivedAt: Date }): Promise<TDeliveryNoteSelect | null>;
 	/** `prepared → cancelled`. */
 	cancel(id: string, actorUserId: string, reason: string, tx: TTx): Promise<TDeliveryNoteSelect | null>;
+	/** Value of each shipped / delivered note of an order at its issue cost (IDR minor units). */
+	shippedValues(salesOrderId: string): Promise<TShippedNoteValue[]>;
 }
+
+export type TShippedNoteValue = { id: string; code: string; shippedAt: Date | null; value: number };

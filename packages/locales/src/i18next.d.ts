@@ -27,6 +27,7 @@ declare module 'i18next' {
 		sales: typeof en.sales;
 		finance: typeof en.finance;
 		procurement: typeof en.procurement;
+		projects: typeof en.projects;
 	}
 
 	interface CustomTypeOptions {

@@ -178,13 +178,19 @@ Last synced: 2026-11-06.
 ## M07 Projects and After-Sales
 
 ### planned
-- Projects: PIC, target, tasks, direct costs — T08, ERP-0015. Evidence: dbml
-  `projects` only.
-- Testing/training/BAST evidence — T08, ERP-0015. Evidence: dbml
-  `projects.project_handover` only.
+- BAST and warranty certificate documents with the company's prints — T08,
+  ERP-0015 / ERP-0036 (step 6b). Evidence: none yet.
 - Basic tickets + manual closure, warranty — T08. Evidence: dbml `ticket`,
   `aftersales` only.
 - Portal: project/BAST status + own tickets — T26, ERP-0022. Evidence: none.
+
+### implemented
+- Projects from a deal: PIC, targets, stage, default checklist with
+  assignees, testing / training / BAST evidence (closing rule), direct costs
+  with receipts, shipped material value and margin (cost-restricted) — T08,
+  ERP-0015 / ERP-0036. Evidence: `apps/backend/src/app/projects`,
+  `test/unit/project.service.test.ts`, `/projects` pages, `progress.md`
+  2026-11-06 (ADR-0011 step 6a). Gaps: real-PG integration tests.
 
 ## M08 Employees and Attendance
 

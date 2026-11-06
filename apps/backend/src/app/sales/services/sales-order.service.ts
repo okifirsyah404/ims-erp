@@ -2,6 +2,9 @@ import { INVOICE_LOOKUP_SERVICE_TOKEN } from '@app/finance/constants/di';
 import type { InvoiceLookupService } from '@app/finance/services/invoice-lookup.service';
 import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import type { NumberingService } from '@app/organization/services/numbering.service';
+import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/projects/constants/di';
+import { SalesOrderHasProjectError } from '@app/projects/errors/project.errors';
+import type { ProjectLookupService } from '@app/projects/services/project-lookup.service';
 import { USER_SERVICE_TOKEN } from '@app/user/constants/di';
 import type { UserService } from '@app/user/services/user.service';
 import { isUniqueViolation } from '@drizzle/errors';
@@ -72,6 +75,8 @@ export class SalesOrderService {
 		private readonly invoices: Pick<InvoiceLookupService, 'hasLiveInvoices'>,
 		@inject(DELIVERY_NOTE_REPOSITORY_TOKEN)
 		private readonly deliveries: Pick<IDeliveryNoteRepository, 'hasLiveNotes'>,
+		@inject(PROJECT_LOOKUP_SERVICE_TOKEN)
+		private readonly projects: Pick<ProjectLookupService, 'hasLiveProject'>,
 	) {}
 
 	private async requireVisible(ctx: TSalesOrderContext, id: string): Promise<TSalesOrderSelect> {
@@ -189,6 +194,8 @@ export class SalesOrderService {
 		if (await this.invoices.hasLiveInvoices(id)) throw new SalesOrderBilledError();
 		// Cancel the prepared delivery notes first; shipped goods keep the order.
 		if (await this.deliveries.hasLiveNotes(id)) throw new SalesOrderDeliveredError();
+		// Cancel the project first: a deal being executed stays.
+		if (await this.projects.hasLiveProject(id)) throw new SalesOrderHasProjectError();
 		const cancelled = await this.orders.cancel(id, ctx.actorUserId, reason);
 		if (!cancelled) throw new SalesOrderNotCancellableError();
 		return cancelled;

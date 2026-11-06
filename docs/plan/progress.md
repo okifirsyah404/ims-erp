@@ -12,10 +12,114 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — ADR-0011 port step 6a: projects (M07 part 1), 2026-11-06
+
+Next executable task: ADR-0011 step 6b — BAST and the warranty certificate
+(`projects` BAST document, `aftersales` warranty certificate) printed in the
+private sample's layouts, then 6c service tickets, then the PR to main.
+
+Status: **implemented** (backend + web admin; not yet accepted by the owner).
+Step 6 is split: 6a projects (from a deal, checklist tasks, evidence files,
+direct costs, close / cancel), 6b BAST and warranty certificate with the
+private samples' prints, 6c service tickets with the warranty check.
+
+What landed:
+- Migration `20261106071435_projects_core` (generated, inspected, applied to
+  `ims_erp_sync`): schema `projects` with `projects`, `project_tasks`,
+  `project_evidence`, `project_costs` (company-wide, no intra-module FKs).
+- Module `src/app/projects`: `ProjectRepository`, `ProjectService`,
+  `ProjectLookupService` (contract for Sales), `ProjectController`
+  (`/projects`, `/open-deals`, `/staff`, `/:id`, close / cancel, tasks,
+  evidence (multipart), costs (multipart, void)); errors with `api` keys en +
+  id; `utils/project-files.ts` (type by magic bytes, 15 MB).
+- Sales: `SalesFulfilmentService` (live deals, shipped material value from
+  `DeliveryNoteRepository.shippedValues`); cancelling an order with a live
+  project → 422 `sales.orderHasProject`.
+- Web: `/projects` (list, filter, search), `/projects/new` (deal picker,
+  PIC), `/projects/$projectId` (stage stepper, edit, close, cancel, checklist
+  with assignee / state per task, evidence upload and gallery, direct costs
+  with receipts, materials and margin). New locale namespace `projects`
+  (en + id).
+
+Verification (2026-11-06):
+- `bun docs/database/gen-logical-references.ts` + `bun
+  docs/database/validate-dbml.ts` → `OK` (260 tables). `docs/database/`
+  updated (projects rewritten, evidence and costs added, module note).
+- `NODE_ENV=development bun run drizzle:migrate` → applied.
+- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (warnings
+  pre-existing); `bun run test` → backend 646 pass (new
+  `project.service.test.ts`, sales-order guard), web-admin 45, locales 58,
+  0 fail; `bun run build` (web-admin) → built.
+- Browser + API check (temporary Playwright script, deleted): deal by sales /
+  owner; the project manager created `0001/PRJ/DEV/XI/26` through the UI
+  (stage "Persiapan", six default tasks), a second project on the deal 409;
+  the technician got 404 until the PM assigned "Uji fungsi sistem", then
+  marked it done, could not move another task, uploaded a test photo (a fake
+  PNG was refused with the Indonesian message) and saw no costs or close
+  button; the PM recorded Rp 750.000 with a receipt (margin Rp 110.250.000
+  against Rp 111.000.000); close stayed disabled until training and BAST
+  evidence existed, then closed → `closed / warranty`; finance reads costs
+  but recording one is 403; cancelling the order → 422; no browser errors.
+- Test data left in the dev DB: SPH / SO `Proyek uji …`, project
+  `0001/PRJ/DEV/XI/26` and its files in object storage.
+
+Gate 1 (read): docs.dbml MODULE Projects (scaffold: tenant-scoped
+`projects.projects` with `planned / in_progress / on_hold / completed /
+cancelled`, `project_tasks`, `project_handover`, no evidence or cost tables)
+and After-Sales (`warranty_policies`, `warranty_claims`, `service_tickets`);
+`module-ownership.md` §9 (Projects: zero intra-module foreign keys by design,
+the service validates its own hierarchy) and §15; the old branch's M07
+implementation (`feat/m05-inventory-purchasing`: `project.schema.ts`,
+`project.service.ts`, `handover.service.ts`, `service-ticket.service.ts`,
+tests, e2e spec — decisions of 2026-11-04); numbering type `project` (`PRJ`);
+role catalog (`project:*` incl. `read_cost`, `task:*`; project manager,
+technician, finance); `OBJECT_STORAGE_TOKEN`; the BAST / warranty sample.
+Skipped: `implementation-phases.md` (no unlanded dependency).
+
+Gate 2 (manual grilling pass):
+- Ownership: new module `projects` (schema `projects`, programmer B, ADR-0011
+  §13). Company-wide like the deals it comes from (ADR-0011/0012): no
+  `organization_id`. Following module-ownership §9, no foreign keys inside the
+  module either; the project service validates task / evidence / cost
+  parents.
+- `projects.projects` rewritten to the decided model: one live project per
+  sales order (partial unique index), snapshot of order code, quotation code,
+  customer id + name, title and contract value (the order's grand total incl.
+  VAT); `site_name`; PIC (`pic_user_id`, must hold `project:update`);
+  target start / end (Jakarta business dates); `stage` (`preparation,
+  delivery, installation, testing, training, handover, warranty`) and
+  `status` (`active, closed, cancelled`). The scaffold's budget, progress,
+  handover status, type and branch columns are dropped (not decided).
+- `project_tasks` rewritten: position, title, stage, assignee (must hold
+  `task:update`), due date, `todo / in_progress / done`, done by / at; soft
+  removal. A new project gets the six default tasks (one per stage up to
+  handover).
+- New `project_evidence` (function test, training, signed BAST, photo,
+  other; JPG/PNG/WebP/PDF by magic bytes, 15 MB) and `project_costs`
+  (material, transport, accommodation, subcontract, other; amount in IDR
+  minor units, optional receipt; voided with a reason, never deleted).
+- Rules (old branch, decided 2026-11-04): visibility — holders of
+  `project:assign|read_cost|export` or `service_ticket:assign` see every
+  project, others only projects they lead or have a task in (404). Only an
+  active project changes. Close needs testing, training and BAST evidence and
+  moves the stage to `warranty`; cancel needs a reason and frees the deal.
+  Task status: the assignee, or a `task:assign` holder. Costs only with
+  `project:read_cost`; the cost card adds the material value shipped by the
+  order's delivery notes (at average cost) and compares with the contract
+  value.
+- Cross-module contracts: Sales exports `SalesFulfilmentService` (live
+  orders for the deal picker, one order, shipped material value); Projects
+  exports `ProjectLookupService.hasLiveProject(orderId)` so cancelling an
+  order with a live project is refused (422 `sales.orderHasProject`), the
+  same lookup pattern as Finance. Staff pickers list members of the caller's
+  organization holding the permission (as leads do).
+- Web: `/projects` list, new (deal picker), detail with stage, tasks,
+  evidence and costs; replaces the coming-soon stub. BAST and tickets stay
+  stubs until 6b / 6c.
+
 ## Completed — ADR-0011 port step 5b: adjustment cost, opening stock, inventory value, 2026-11-06
 
-Next executable task: ADR-0011 step 6 — M07 projects (BAST and warranty
-certificate with the private samples' layouts), then the single PR to main.
+Next executable task: step 6a (done, entry above).
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
 or accepted by the owner). Step 5 (5a + 5b) is complete. Touches programmer

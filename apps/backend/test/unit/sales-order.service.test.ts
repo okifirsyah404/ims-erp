@@ -25,6 +25,7 @@ import {
 	SalesOrderNotFoundError,
 	SalesOrderQuotationNotReadyError,
 } from '../../src/app/sales/errors/sales-order.errors';
+import { SalesOrderHasProjectError } from '../../src/app/projects/errors/project.errors';
 import { SalesOrderDeliveredError } from '../../src/app/sales/errors/delivery-note.errors';
 import { SalesOrderService, type TSalesOrderContext } from '../../src/app/sales/services/sales-order.service';
 
@@ -117,6 +118,7 @@ const finance: TSalesOrderContext = { actorUserId: 'finance', canViewAll: true, 
 let orders: FakeOrders;
 let billed: Set<string>;
 let delivering: Set<string>;
+let executing: Set<string>;
 let service: SalesOrderService;
 const create = (ctx: TSalesOrderContext, extra: Record<string, unknown> = {}) =>
 	service.create(ctx, createSalesOrderSchema.parse({ quotationId: Q, ...extra }));
@@ -125,6 +127,7 @@ beforeEach(() => {
 	quotations = new Map();
 	billed = new Set();
 	delivering = new Set();
+	executing = new Set();
 	orders = new FakeOrders();
 	service = new SalesOrderService(
 		orders,
@@ -139,6 +142,7 @@ beforeEach(() => {
 		{ getUser: async (id: string) => ({ id, name: `User ${id}` }) as never },
 		{ hasLiveInvoices: async (id: string) => billed.has(id) },
 		{ hasLiveNotes: async (id: string) => delivering.has(id) },
+		{ hasLiveProject: async (id: string) => executing.has(id) },
 	);
 });
 
@@ -223,6 +227,13 @@ describe('cancelling', () => {
 		billed.add(order.id);
 		await expect(service.cancel(manager, order.id, 'batal')).rejects.toBeInstanceOf(SalesOrderBilledError);
 		expect(quotations.get(Q)!.status).toBe('won');
+	});
+
+	test('an order with a live project cannot be cancelled', async () => {
+		quotations.set(Q, quotation('approved'));
+		const order = await create(sales);
+		executing.add(order.id);
+		await expect(service.cancel(manager, order.id, 'batal')).rejects.toBeInstanceOf(SalesOrderHasProjectError);
 	});
 
 	test('an order with live delivery notes cannot be cancelled', async () => {

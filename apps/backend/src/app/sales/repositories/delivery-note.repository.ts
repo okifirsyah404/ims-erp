@@ -8,7 +8,7 @@ import {
 } from '@drizzle/schemas/sales.schema';
 import { likePattern } from '@drizzle/search';
 import type { TPaginationResult } from '@ims-erp/common';
-import { and, asc, count, desc, eq, getTableColumns, ilike, isNull, ne, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, getTableColumns, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import type { TDeliveryNoteListQuery } from '../contracts/delivery-note.contract';
@@ -17,6 +17,7 @@ import type {
 	TDeliveryNoteHeaderData,
 	TDeliveryNoteItemData,
 	TDeliveryNoteRow,
+	TShippedNoteValue,
 } from '../contracts/delivery-note.repository.interface';
 
 /** Drizzle implementation of {@link IDeliveryNoteRepository}. */
@@ -143,5 +144,31 @@ export class DeliveryNoteRepository implements IDeliveryNoteRepository {
 			.where(and(this.live(id), eq(deliveryNotes.status, 'prepared')))
 			.returning();
 		return note ?? null;
+	}
+
+	async shippedValues(salesOrderId: string): Promise<TShippedNoteValue[]> {
+		const rows = await this.database
+			.select({
+				id: deliveryNotes.id,
+				code: deliveryNotes.code,
+				shippedAt: deliveryNotes.shippedAt,
+				// Each line at the cost its issue movement took, half-up per line.
+				value: sql<string>`coalesce(sum(round(${deliveryNoteItems.quantity} * coalesce(${deliveryNoteItems.unitCost}, 0))), 0)`,
+			})
+			.from(deliveryNotes)
+			.leftJoin(
+				deliveryNoteItems,
+				and(eq(deliveryNoteItems.deliveryNoteId, deliveryNotes.id), isNull(deliveryNoteItems.deletedAt)),
+			)
+			.where(
+				and(
+					eq(deliveryNotes.salesOrderId, salesOrderId),
+					isNull(deliveryNotes.deletedAt),
+					inArray(deliveryNotes.status, ['shipped', 'delivered']),
+				),
+			)
+			.groupBy(deliveryNotes.id, deliveryNotes.code, deliveryNotes.shippedAt)
+			.orderBy(asc(deliveryNotes.shippedAt));
+		return rows.map((row) => ({ ...row, value: Number(row.value) }));
 	}
 }

@@ -77,6 +77,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.warehouses': 'Gudang',
 	'item.stock': 'Stok',
 	'item.inventoryValue': 'Nilai Persediaan',
+	'breadcrumb.projectNew': 'Buat proyek',
 	'item.borrowings': 'Peminjaman',
 	'item.items': 'Barang',
 	'item.products': 'Produk',

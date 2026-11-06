@@ -136,6 +136,11 @@ describe('locale values', () => {
 			'sales:sj.qty',
 			'sales:sj.email',
 			'sales:sj.serials',
+			// Project terms used verbatim in Indonesian.
+			'projects:stage.training',
+			'projects:evidenceKind.training',
+			'projects:costCategory.material',
+			'projects:costs.margin',
 			'sales:delivery.status',
 			'inventory:address.rt',
 			'inventory:address.rw',

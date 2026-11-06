@@ -22,6 +22,7 @@ import type { SalesBillingService } from '../services/sales-billing.service';
 import type { TPaymentRepository } from '../contracts/payment.repository.interface';
 import type { IDeliveryNoteRepository } from '../contracts/delivery-note.repository.interface';
 import type { DeliveryNoteService } from '../services/delivery-note.service';
+import type { SalesFulfilmentService } from '../services/sales-fulfilment.service';
 
 /** Token resolving to the {@link SalesService} implementation. */
 export const SALES_SERVICE_TOKEN: InjectionToken<SalesService> = Symbol(
@@ -53,3 +54,6 @@ export const DELIVERY_NOTE_REPOSITORY_TOKEN: InjectionToken<IDeliveryNoteReposit
 
 /** Token resolving to the {@link DeliveryNoteService} implementation. */
 export const DELIVERY_NOTE_SERVICE_TOKEN: InjectionToken<DeliveryNoteService> = Symbol('DELIVERY_NOTE_SERVICE_TOKEN');
+
+/** Token resolving to the {@link SalesFulfilmentService} (Sales contract for Projects). */
+export const SALES_FULFILMENT_SERVICE_TOKEN: InjectionToken<SalesFulfilmentService> = Symbol('SALES_FULFILMENT_SERVICE_TOKEN');

@@ -110,6 +110,11 @@ const DYNAMIC_PREFIXES = [
 	'method.',
 	'sales.quotationState.',
 	'deliveryStatus.',
+	'projects:status.',
+	'projects:stage.',
+	'projects:taskStatus.',
+	'projects:evidenceKind.',
+	'projects:costCategory.',
 	// Finance errors compose `finance.term.${problem}` / `finance.invoiceState.${kind}`.
 	'finance.term.',
 	'finance.invoiceState.',
@@ -117,6 +122,11 @@ const DYNAMIC_PREFIXES = [
 	'procurement.receiptLine.',
 	'sales.deliveryLine.',
 	'sales.deliveryState.',
+	'projects.deal.',
+	'projects.staff.',
+	'projects.childNotFound.',
+	'projects.forbidden.',
+	'projects.file.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {
