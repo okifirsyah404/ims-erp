@@ -120,8 +120,12 @@ export const erpStatements = {
 	promotion: ['read', 'create', 'update', 'publish', 'archive'],
 	commerce_order: ['read', 'update', 'process', 'cancel'],
 	automation: ['read', 'create', 'update', 'activate', 'execute', 'read_log'],
-	/** `read_key`: see license keys unmasked (M03; keys are handed to customers). */
-	license: ['read', 'create', 'activate', 'extend', 'revoke', 'read_key'],
+	/**
+	 * `read_key`: see license keys unmasked (M03; keys are handed to customers).
+	 * `manage_api`: issue and revoke the machine keys own applications use for
+	 * the license API (M03 stage 2).
+	 */
+	license: ['read', 'create', 'activate', 'extend', 'revoke', 'read_key', 'manage_api'],
 	integration: ['read', 'configure', 'rotate_secret', 'test'],
 	audit_log: ['read', 'export'],
 } as const satisfies Record<string, readonly string[]>;
@@ -341,8 +345,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		sales_discount: ['request', 'approve'],
 		sales_order: ['read', 'create', 'update', 'submit', 'approve', 'cancel', 'export'],
 		product: ['read'],
-		// M03 license register (decision 2026-11-06).
-		license: ['read', 'create', 'activate', 'extend', 'revoke', 'read_key'],
+		// M03 license register and its API keys (decisions 2026-11-06).
+		license: ['read', 'create', 'activate', 'extend', 'revoke', 'read_key', 'manage_api'],
 		document: ['read', 'download'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},

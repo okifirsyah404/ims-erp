@@ -18,6 +18,7 @@ const VENDOR_APP = '0190a1b2-0000-7000-8000-00000000a001';
 const OWN_APP = '0190a1b2-0000-7000-8000-00000000a002';
 const RETIRED_APP = '0190a1b2-0000-7000-8000-00000000a003';
 const ORDER = '0190a1b2-0000-7000-8000-00000000d001';
+const RENEWAL_ORDER = '0190a1b2-0000-7000-8000-00000000d002';
 
 const manager: TLicenseContext = { actorUserId: 'manager', canReadKeys: true };
 const finance: TLicenseContext = { actorUserId: 'finance', canReadKeys: false };
@@ -26,6 +27,8 @@ let applications: TLicensableApplicationSelect[];
 let contracts: TLicenseContractSelect[];
 let keys: TLicenseKeySelect[];
 let numbers: number;
+let paid: Record<string, number>;
+let events: { eventType: string; licenseContractId?: string | null; actorUserId?: string | null; description?: string | null }[];
 let service: LicensingService;
 
 const app = (id: string, source: 'own' | 'third_party', status: 'active' | 'retired' = 'active') =>
@@ -41,6 +44,8 @@ beforeEach(() => {
 	contracts = [];
 	keys = [];
 	numbers = 0;
+	paid = {};
+	events = [];
 	service = new LicensingService(
 		{
 			listApplications: async () => applications,
@@ -77,15 +82,43 @@ beforeEach(() => {
 				keys.push(created);
 				return created;
 			},
+			listRenewalCandidates: async (from) =>
+				contracts.filter(
+					(item) =>
+						item.status === 'draft' &&
+						item.renewedFromContractId &&
+						(!from || item.renewedFromContractId === from) &&
+						item.salesOrderId &&
+						item.startDate,
+				),
+			async moveKeys(from, to, oldEnd, newEnd) {
+				const moved = keys.filter((key) => key.licenseContractId === from);
+				for (const key of moved) {
+					if (oldEnd && key.expiresOn === oldEnd) key.expiresOn = newEnd;
+					key.licenseContractId = to;
+				}
+				return moved.map((key) => key.id);
+			},
 			async revokeKey(contractId, keyId, actor, reason) {
 				const found = keys.find((key) => key.id === keyId && key.licenseContractId === contractId && key.status === 'active');
 				return found ? Object.assign(found, { status: 'revoked', revokedBy: actor, revokeReason: reason }) : null;
 			},
 		},
 		{ getActiveCustomer: async (id: string) => (id === CUSTOMER || id === OTHER ? ({ id, name: `Customer ${id.slice(-4)}` } as never) : null) },
-		{ getLiveOrder: async (id: string) => (id === ORDER ? ({ id, customerId: CUSTOMER } as never) : null) },
+		{
+			getLiveOrder: async (id: string) =>
+				id === ORDER || id === RENEWAL_ORDER ? ({ id, code: `SO-${id.slice(-4)}`, customerId: CUSTOMER, grandTotal: 1_000_000_00 } as never) : null,
+		},
 		{ next: async () => `${String(++numbers).padStart(4, '0')}/LIC/IMS/XI/26` },
 		{ run: (work) => work({} as never) },
+		{
+			insertEvent: async (data) => {
+				events.push(data);
+			},
+			listActivations: async () => [],
+			paginateEvents: async () => ({ meta: { page: 1, limit: 30, total: 0, totalPages: 0 }, data: [] }),
+		},
+		{ paidTotal: async (orderId: string) => paid[orderId] ?? 0 },
 	);
 });
 
@@ -121,12 +154,47 @@ describe('license contracts', () => {
 		expect((await service.activate(manager, id)).status).toBe('active');
 		await expect(service.update(id, contractBodySchema.parse({ customerId: CUSTOMER, licensableApplicationId: VENDOR_APP, billingCycle: 'annual', contractValue: 0 }))).rejects.toBeInstanceOf(ContractStateError);
 		await expect(service.activate(manager, id)).rejects.toBeInstanceOf(ContractStateError);
-		expect((await service.suspend(id)).status).toBe('suspended');
-		await expect(service.suspend(id)).rejects.toBeInstanceOf(ContractStateError);
-		expect((await service.reactivate(id)).status).toBe('active');
+		expect((await service.suspend(manager, id, 'Unpaid')).status).toBe('suspended');
+		await expect(service.suspend(manager, id, null)).rejects.toBeInstanceOf(ContractStateError);
+		expect((await service.reactivate(manager, id)).status).toBe('active');
 		const terminated = await service.terminate(manager, id, 'Customer stopped');
 		expect(terminated).toMatchObject({ status: 'terminated', terminationReason: 'Customer stopped' });
 		await expect(service.terminate(manager, id, 'again')).rejects.toBeInstanceOf(ContractStateError);
+		// Every staff override is logged with the actor.
+		expect(events.map((event) => [event.eventType, event.actorUserId, event.description])).toEqual([
+			['suspended', 'manager', 'Unpaid'],
+			['reactivated', 'manager', null],
+			['terminated', 'manager', 'Customer stopped'],
+		]);
+	});
+
+	test('a renewal paid in full activates by itself, once, and takes the keys over', async () => {
+		const old = await draft();
+		await service.addKey(manager, old.id, keyBodySchema.parse({ licenseKey: 'VENDOR-KEY-0009' }));
+		await service.activate(manager, old.id);
+		const renewal = await service.renew(manager, old.id);
+		await service.update(
+			renewal.id,
+			contractBodySchema.parse({
+				customerId: CUSTOMER,
+				licensableApplicationId: VENDOR_APP,
+				salesOrderId: RENEWAL_ORDER,
+				startDate: renewal.startDate,
+				endDate: renewal.endDate,
+				billingCycle: 'annual',
+				contractValue: 1_000_000_00,
+			}),
+		);
+		paid[RENEWAL_ORDER] = 400_000_00; // DP only
+		expect(await service.activatePaidRenewals()).toBe(0);
+		expect(contracts.find((item) => item.id === renewal.id)?.status).toBe('draft');
+		paid[RENEWAL_ORDER] = 1_000_000_00;
+		const detail = await service.get(manager, old.id); // reading the register runs the check
+		expect(detail.status).toBe('renewed');
+		expect(contracts.find((item) => item.id === renewal.id)).toMatchObject({ status: 'active', activatedBy: null });
+		expect(keys[0]).toMatchObject({ licenseContractId: renewal.id, expiresOn: '2027-12-31' });
+		expect(await service.activatePaidRenewals()).toBe(0);
+		expect(events.filter((event) => event.eventType === 'renewed')).toHaveLength(1);
 	});
 
 	test('activation needs a start date', async () => {

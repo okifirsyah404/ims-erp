@@ -7196,8 +7196,10 @@ Ref: automation.notifications.notification_template_id > automation.notification
 // MODULE: Licensing  (schema: licensing)
 // Licensed applications, packages, contracts, keys, activations, entitlements
 // and usages, subscription schedules and events. Tenant scoped, except
-// licensable_applications, license_contracts and license_keys, which are
-// company-wide (M03 stage 1).
+// licensable_applications, license_contracts, license_keys (M03 stage 1),
+// license_activations, license_events and application_api_keys (stage 2),
+// which are company-wide. Grace period after end_date: 7 days (owner
+// decision 2026-11-06), derived, never stored.
 // ---------------------------------------------------------------------------
 
 Table licensing.licensable_applications {
@@ -7301,7 +7303,7 @@ Table licensing.license_keys {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "License key issued under a contract (M03 stage 1). Activations and the hashed validation path come with stage 2."
+  Note: "License key issued under a contract (M03 stage 1). Moves to the renewal contract when that is activated (stage 2)."
   Indexes {
     license_contract_id [name: 'license_keys_contract_id_idx']
   }
@@ -7313,28 +7315,26 @@ Table licensing.license_keys {
 }
 
 Table licensing.license_activations {
+  id uuid [pk, default: `uuidv7()`]
+  license_key_id uuid [not null]
+  instance_id varchar(200) [not null, note: "Installation / device id sent by the application."]
+  device_name varchar(200)
+  activated_at bigint [not null]
+  last_seen_at bigint [not null]
+  last_ip text
+  status text [not null, default: 'active']
+  deactivated_at bigint
+  deactivated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null when the application released the seat."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  license_key_id uuid [not null]
-  activation_code text [not null]
-  device_fingerprint text
-  activated_on date [not null]
-  expires_on date
-  last_seen_at bigint
-  ip_address text
-  status text [not null, default: 'active']
-  deactivated_at bigint
-  Note: "Activation of a license key on one device."
+  Note: "One seat of a license key taken by an installation (M03 stage 2, company-wide). Active seats never exceed the key's max_activations."
   Indexes {
     license_key_id [name: 'license_activations_key_id_idx']
-    (license_key_id, device_fingerprint) [unique, name: 'license_activations_device_uq']
-    status [name: 'license_activations_status_idx']
+    (license_key_id, instance_id) [unique, name: 'license_activations_active_uq', note: "Live active rows only (partial index in the Drizzle schema)."]
   }
   Checks {
-    `status IN ('active', 'expired', 'deactivated', 'revoked')`
+    `status IN ('active', 'deactivated')`
   }
 }
 
@@ -7407,24 +7407,52 @@ Table licensing.subscription_schedules {
 }
 
 Table licensing.license_events {
+  id uuid [pk, default: `uuidv7()`]
+  license_key_id uuid [note: "Null when the call named an unknown key."]
+  license_contract_id uuid
+  application_api_key_id uuid [note: "The application key that made the call; null for staff actions."]
+  event_type text [not null]
+  result text [not null, note: "ok, grace, or the rejection code (unknown, revoked, suspended, terminated, expired, not_started, seat_limit, not_activated)."]
+  instance_id varchar(200)
+  ip_address text
+  actor_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Set for staff actions."]
+  description text
+  event_at bigint [not null]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  license_key_id uuid [not null]
-  event_type text [not null]
-  event_at bigint [not null]
-  payload text
-  description text
-  actor_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  Note: "Append only event log of a license key."
+  Note: "Append-only log of license API calls and staff overrides (M03 stage 2, company-wide)."
   Indexes {
     license_key_id [name: 'license_events_key_id_idx']
+    license_contract_id [name: 'license_events_contract_id_idx']
     event_at [name: 'license_events_event_at_idx']
   }
   Checks {
-    `event_type IN ('issued', 'activated', 'deactivated', 'suspended', 'revoked', 'expired', 'renewed')`
+    `event_type IN ('validated', 'activated', 'deactivated', 'renewed', 'suspended', 'reactivated', 'terminated', 'key_revoked')`
+  }
+}
+
+Table licensing.application_api_keys {
+  id uuid [pk, default: `uuidv7()`]
+  licensable_application_id uuid [not null]
+  api_key_id text [not null, note: "Logical reference to auth.apikeys.id (config licensing, prefix elk_). Cross-module FK intentionally omitted. Validated through the Identity module contract. The secret is hashed by Better Auth and shown once."]
+  name varchar(100) [not null]
+  key_start varchar(20) [note: "First characters of the key, for recognising it."]
+  status text [not null, default: 'active']
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  revoked_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  revoked_at bigint
+  last_used_at bigint
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Machine key an own application uses to call the license API (M03 stage 2). It can only validate, activate and deactivate keys of its own application."
+  Indexes {
+    licensable_application_id [name: 'application_api_keys_application_id_idx']
+    api_key_id [unique, name: 'application_api_keys_api_key_id_uq']
+  }
+  Checks {
+    `status IN ('active', 'revoked')`
   }
 }
 
@@ -7432,12 +7460,15 @@ Ref: licensing.license_packages.licensable_application_id > licensing.licensable
 Ref: licensing.license_contracts.licensable_application_id > licensing.licensable_applications.id [delete: restrict]
 Ref: licensing.license_contracts.renewed_from_contract_id > licensing.license_contracts.id [delete: set null]
 Ref: licensing.license_keys.license_contract_id > licensing.license_contracts.id [delete: restrict]
-Ref: licensing.license_activations.license_key_id > licensing.license_keys.id [delete: cascade]
+Ref: licensing.license_activations.license_key_id > licensing.license_keys.id [delete: restrict]
 Ref: licensing.license_entitlements.license_package_id > licensing.license_packages.id [delete: cascade]
 Ref: licensing.license_entitlement_usages.license_entitlement_id > licensing.license_entitlements.id [delete: cascade]
 Ref: licensing.license_entitlement_usages.license_key_id > licensing.license_keys.id [delete: cascade]
 Ref: licensing.subscription_schedules.license_contract_id > licensing.license_contracts.id [delete: cascade]
-Ref: licensing.license_events.license_key_id > licensing.license_keys.id [delete: cascade]
+Ref: licensing.license_events.license_key_id > licensing.license_keys.id [delete: restrict]
+Ref: licensing.license_events.license_contract_id > licensing.license_contracts.id [delete: restrict]
+Ref: licensing.license_events.application_api_key_id > licensing.application_api_keys.id [delete: restrict]
+Ref: licensing.application_api_keys.licensable_application_id > licensing.licensable_applications.id [delete: restrict]
 
 // ---------------------------------------------------------------------------
 // MODULE: Ticketing  (schema: ticket)

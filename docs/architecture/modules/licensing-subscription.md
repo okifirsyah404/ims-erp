@@ -1,53 +1,94 @@
-> 2026-10-28: content below describes the deleted NestJS backend (apps/backend-nest). Domains listed as modules/ stubs do not exist in apps/backend-elysia (which has only user, organization, location). Treat as historical audit; re-verify against backend-elysia before acting.
+# Licensing & Subscription Module (M03)
 
-# Licensing & Subscription Module (owner to be created)
+Code: `apps/backend/src/app/licensing/` (schema `licensing`, company-wide),
+web `apps/web-admin/src/routes/_authed/subscription/`. Status: stage 1
+(register, T09) and stage 2 (license API, T23) **implemented 2026-11-06, not
+yet accepted by the owner**; pilot integration (T24) **blocked** until the
+pilot application's source is available. Evidence: `docs/plan/progress.md`.
+
+> The 2026-10-25 audit text that stood here described the deleted NestJS
+> backend; it is replaced by this file.
 
 ## Purpose and boundary
 
-Software subscription contracts and the licensing API: packages, contracts,
-activation/renewal, validation, grace period/suspension. v5.1 M03 limits:
-**one pilot application**; excludes all-app/device coverage, offline
-licensing, and specialized anti-piracy protection. Stage 1 is a manual
-register (contract/key register, start/end status, due-date list, admin
-updates — T09); stage 2 adds the API (T23–T24).
+Which customer licenses which application, for how long, with which keys;
+and the machine API the company's own application calls to check and
+activate its licenses. Owner decisions (2026-11-06): both third-party
+(vendor keys typed in) and own applications (keys generated); billing stays
+in the sales flow (SPH → SO → invoice); reminders are the due list and the
+dashboard; grace period 7 days; a draft renewal activates by itself once its
+sales order is paid in full. Out of scope (v5.1): offline licensing,
+anti-piracy beyond an instance id, usage metering, all applications.
 
-## Current state (audit, 2026-10-25)
+## Data (see `docs/database/docs.dbml`, MODULE Licensing)
 
-**Absent — no module directory.** Subscription packages are master data in
-`../domain-map.md` (#11–12); product linkage exists conceptually via the
-product catalog. No tables yet.
+| Table | Role |
+|---|---|
+| `licensable_applications` | applications licensed (`third_party` / `own`) |
+| `license_contracts` | customer, application, period, value, sales order, status, renewal link |
+| `license_keys` | keys of a contract, seats (`max_activations`), expiry |
+| `license_activations` | seats taken by installations (`instance_id`) |
+| `license_events` | append-only log of API calls and staff overrides |
+| `application_api_keys` | machine keys of own applications (secret hashed in `auth.apikeys`, config `licensing`, prefix `elk_`) |
 
-## Planned ownership (stage 1 register in Phase 3; API in Stage 2)
+Status `draft → active ⇄ suspended → terminated`; `active → renewed` when
+its renewal activates (keys and seats move to the renewal). "Due", "grace"
+and "expired" are derived from the effective end date (the earlier of the
+contract end and the key expiry), never stored; no background job.
 
-- `erp.subscription_packages` — software/product ref (product catalog),
-  duration, price (minor units), renewal policy.
-- `erp.subscriptions` (contracts) — customer ref, package ref, start/end,
-  status (active/grace/suspended/expired), renewal history.
-- `erp.license_keys` — key, subscription ref, activation state,
-  activation/renewal events (replay-safe), validation endpoint audit trail.
+## Boundaries
 
-## Behavior targets
+- CRM: `CustomerService.getActiveCustomer`. Sales:
+  `SalesFulfilmentService.getLiveOrder`. Finance:
+  `InvoiceLookupService.paidTotal` (receipts are verified when recorded;
+  reversed receipts are already taken out). Organization: numbering
+  (`license_contract`, `LIC`), `listMembers` (the owner issues machine keys
+  in Better Auth on the ERP's behalf).
+- Better Auth API keys are reached only through
+  `adapters/better-auth-api-keys.ts`.
+- Paid renewals are checked when the register is read (list, detail,
+  summary) and when a key is validated, activated or released. Activation is
+  guarded on `draft`, so one payment renews once.
 
-- Stage 1 (T09): manual register with admin updates; due-date list feeding
-  the dashboard (M01).
-- Stage 2 (T23–T24): API keys + validation for the pilot application;
-  activation/renewal tied to **verified business events** (valid payment per
-  S04: valid payment → activation/renewal → application validation →
-  grace/suspension → authorized override); expiry/suspend rules; replay-safe
-  processing; refund/reversal consequences defined **before** implementation
-  (per `../data-model.md` invariants).
-- Authorized overrides are permission-gated and audited.
+## Permissions
 
-## Dependencies and rules
+`license:read | create | activate | extend | revoke | read_key | manage_api`.
+Owner and sales manager: all. Sales: read, create, extend, read_key.
+Customer service: read, read_key. Finance, admin, auditor: read. Keys are
+masked (last 4) without `read_key`.
 
-- Consumes product (packages), customer (subscriber), payment (verified
-  payment events — via contracts, never trusting redirects), notification
-  (expiry/suspension notices). License state changes must be idempotent;
-  events after local commit only.
+## License API — integration note for the pilot application
+
+Base URL: the ERP backend, prefix `/licensing/v1`. Server-to-server or from
+the installed application; every request sends
+`Authorization: Bearer elk_…` (issued under **Subscription & Licensing →
+API Keys**, shown once). Rate limit: 120 calls per minute per key (429). A
+key only reaches licenses of its own application; others look unknown.
+JSON bodies; responses use the ERP envelope `{ success, message, data }`.
+
+| Call | Body | Answer |
+|---|---|---|
+| `POST /validate` | `{ licenseKey, instanceId? }` | 200 always: `data.valid`, `data.status` |
+| `POST /activate` | `{ licenseKey, instanceId, deviceName? }` | 200 with the validation; 403 refused, 404 unknown, 409 no seat left |
+| `POST /deactivate` | `{ licenseKey, instanceId }` | 200 `{ released: true }`; 404 not activated / unknown |
+
+`status`: `ok`; `grace` (still valid — show a warning; `graceEndsOn`);
+`expired`, `not_started`, `suspended`, `terminated`, `revoked`, `unknown`,
+`not_activated` (an `instanceId` was sent but holds no seat). The answer also
+carries `endsOn`, `daysLeft`, `maxActivations`, the application, the
+customer name and the seat (`activation`). `activate` is idempotent per
+`instanceId`.
+
+Suggested client behaviour: activate once at install time with a stable
+`instanceId`; validate on start-up and then daily; keep running while
+`valid` is true and warn during `grace`; on `valid: false` stop the licensed
+features; deactivate when the installation is removed. Bad API key → 401.
 
 ## Tests
 
-- None exist. Required: replay-safe activation (duplicate event = one
-  state change), grace/suspension transitions, validation against verified
-  payment only, refund/reversal path once defined, pilot-app contract
-  tests against the sandbox.
+`apps/backend/test/unit/licensing.service.test.ts` (register, renewal, paid
+auto-renewal idempotency, keys, masking, overrides logged) and
+`license-api.service.test.ts` (state at each boundary: end date, end + 7
+days; 401 / 429; foreign keys unknown; seats; refusals; API keys). Browser
+e2e 2026-11-06 recorded in `progress.md`. Open: real-PG integration tests;
+the pilot application's own contract tests (T24).

@@ -308,6 +308,17 @@ Menu **Projects**. Diagram:
 7. **Suspend / Reactivate**, **Terminate** (with a reason) and **Revoke** a
    key (with a reason) as needed. Finance sees keys masked (last 4
    characters).
+8. **Own application (license API)**: under **API Keys** create a key for
+   the application (copy it at once — it is shown only once) and give it to
+   the application's developer with the integration note
+   (`docs/architecture/modules/licensing-subscription.md`). The application
+   activates each installation (a seat), validates on start-up, and keeps
+   working for **7 days after the end date** with a warning, then stops.
+   Seats and every call appear on the contract and under **Validation &
+   Activation**; a seat can be **Released** (for example a replaced PC).
+9. **Renewal paid**: link the new sales order to the draft renewal. Once
+   finance records full payment, the draft activates by itself and the keys
+   continue on the new period.
 
 ## 9. Printed documents and numbering
 

@@ -59,3 +59,56 @@ export function contractTiming(contract: { status: string; endDate: string | nul
 	const active = contract.status === 'active';
 	return { isExpired: active && daysLeft < 0, isDue: active && daysLeft <= withinDays, daysLeft };
 }
+
+/** Days an ended license keeps working, with a warning (owner decision 2026-11-06). */
+export const GRACE_DAYS = 7;
+
+export type TLicenseResult =
+	| 'ok'
+	| 'grace'
+	| 'expired'
+	| 'not_started'
+	| 'suspended'
+	| 'terminated'
+	| 'revoked'
+	| 'unknown';
+
+export type TLicenseState = {
+	result: TLicenseResult;
+	/** The application may run (`ok` or `grace`). */
+	valid: boolean;
+	/** Effective end: the earlier of the contract end and the key's expiry; null = perpetual. */
+	endsOn: string | null;
+	graceEndsOn: string | null;
+	daysLeft: number | null;
+};
+
+/**
+ * What a license key allows on `today` (pure, clock injected).
+ *
+ * @remarks
+ * Revoked keys and suspended / terminated contracts are refused; a draft is
+ * not started yet. An active contract runs until the effective end, then
+ * `GRACE_DAYS` more with `grace`, then `expired`.
+ */
+export function licenseState(
+	contract: { status: string; startDate: string | null; endDate: string | null },
+	key: { status: string; expiresOn: string | null },
+	today: string,
+	graceDays = GRACE_DAYS,
+): TLicenseState {
+	const ends = [contract.endDate, key.expiresOn].filter((value): value is string => !!value).sort();
+	const endsOn = ends[0] ?? null;
+	const graceEndsOn = endsOn ? addDays(endsOn, graceDays) : null;
+	const daysLeft = endsOn ? periodDays(today, endsOn) - 1 : null;
+	const refuse = (result: TLicenseResult): TLicenseState => ({ result, valid: false, endsOn, graceEndsOn, daysLeft });
+	if (key.status !== 'active') return refuse('revoked');
+	if (contract.status === 'suspended') return refuse('suspended');
+	if (contract.status === 'terminated') return refuse('terminated');
+	// A renewed contract's keys move to the renewal; one left behind is over.
+	if (contract.status === 'renewed') return refuse('expired');
+	if (contract.status !== 'active' || (contract.startDate && today < contract.startDate)) return refuse('not_started');
+	if (!endsOn || today <= endsOn) return { result: 'ok', valid: true, endsOn, graceEndsOn, daysLeft };
+	if (graceEndsOn && today <= graceEndsOn) return { result: 'grace', valid: true, endsOn, graceEndsOn, daysLeft };
+	return refuse('expired');
+}

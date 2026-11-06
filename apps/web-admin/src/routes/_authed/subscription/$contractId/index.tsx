@@ -12,13 +12,15 @@ import { Input } from '@ims-erp/ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { ContractBadges } from '@/components/licensing/contract-badges';
+import { EventTable } from '@/components/licensing/event-table';
 import { toast } from '@/components/toast';
-import { formatBusinessDate, formatIdr } from '@/lib/format';
+import { formatBusinessDate, formatDateTime, formatIdr } from '@/lib/format';
 import {
 	activateContract,
 	addLicenseKey,
 	contractQueryOptions,
 	reactivateContract,
+	releaseSeat,
 	renewContract,
 	revokeLicenseKey,
 	suspendContract,
@@ -40,7 +42,7 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
 	);
 }
 
-type TDialog = { kind: 'terminate' } | { kind: 'revoke'; keyId: string } | { kind: 'key' } | null;
+type TDialog = { kind: 'terminate' } | { kind: 'suspend' } | { kind: 'revoke'; keyId: string } | { kind: 'key' } | null;
 
 function ContractDetailPage() {
 	const { t, i18n } = useTranslation(['licensing', 'common']);
@@ -148,7 +150,7 @@ function ContractDetailPage() {
 						</Button>
 					)}
 					{data.status === 'active' && canActivate && (
-						<Button variant='outline' disabled={busy} onClick={() => void run(() => suspendContract(contractId), t('licensing:done.suspended'))}>
+						<Button variant='outline' disabled={busy} onClick={() => openDialog({ kind: 'suspend' })}>
 							{t('licensing:action.suspend')}
 						</Button>
 					)}
@@ -277,11 +279,66 @@ function ContractDetailPage() {
 											)}
 										</TableCell>
 									</TableRow>
-								))}
+								)).flatMap((row, index) => {
+									const key = data.keys[index];
+									if (!key || key.activations.length === 0) return [row];
+									return [
+										row,
+										<TableRow key={`${key.id}-seats`} className='bg-muted/40 hover:bg-muted/40'>
+											<TableCell colSpan={6} className='py-2'>
+												<div className='mb-1 text-xs font-medium text-muted-foreground'>
+													{t('licensing:seats.title', {
+														used: key.activations.filter((seat) => seat.status === 'active').length,
+														max: key.maxActivations,
+													})}
+												</div>
+												<ul className='flex flex-col gap-1 text-sm'>
+													{key.activations.map((seat) => (
+														<li key={seat.id} className='flex flex-wrap items-center gap-x-3 gap-y-1'>
+															<code className='font-mono text-xs'>{seat.instanceId}</code>
+															{seat.deviceName && <span>{seat.deviceName}</span>}
+															<span className='text-xs text-muted-foreground'>
+																{t('licensing:seats.lastSeen', { at: formatDateTime(seat.lastSeenAt, i18n.language) })}
+															</span>
+															{seat.status === 'active' ? (
+																canRevoke && (
+																	<Button
+																		size='sm'
+																		variant='ghost'
+																		className='h-7'
+																		disabled={busy}
+																		onClick={() => void run(() => releaseSeat(contractId, seat.id), t('licensing:done.seatReleased'))}
+																	>
+																		{t('licensing:action.release')}
+																	</Button>
+																)
+															) : (
+																<Badge variant='outline'>{t('licensing:seats.released')}</Badge>
+															)}
+														</li>
+													))}
+												</ul>
+											</TableCell>
+										</TableRow>,
+									];
+								})}
 							</TableBody>
 						</Table>
 					)}
 					{anyMasked && <p className='px-6 py-3 text-xs text-muted-foreground'>{t('licensing:keys.masked')}</p>}
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('licensing:events.title')}</CardTitle>
+				</CardHeader>
+				<CardContent className='p-0'>
+					{data.events.length === 0 ? (
+						<p className='px-6 pb-6 text-sm text-muted-foreground'>{t('licensing:events.empty')}</p>
+					) : (
+						<EventTable events={data.events} showContract={false} />
+					)}
 				</CardContent>
 			</Card>
 
@@ -290,7 +347,9 @@ function ContractDetailPage() {
 					<form
 						onSubmit={(event) => {
 							event.preventDefault();
-							if (dialog?.kind === 'terminate') {
+							if (dialog?.kind === 'suspend') {
+								void run(() => suspendContract(contractId, reason.trim()), t('licensing:done.suspended'));
+							} else if (dialog?.kind === 'terminate') {
 								void run(() => terminateContract(contractId, reason.trim()), t('licensing:done.terminated'));
 							} else if (dialog?.kind === 'revoke') {
 								void run(() => revokeLicenseKey(contractId, dialog.keyId, reason.trim()), t('licensing:done.keyRevoked'));
@@ -310,7 +369,9 @@ function ContractDetailPage() {
 					>
 						<DialogHeader>
 							<DialogTitle>
-								{dialog?.kind === 'terminate'
+								{dialog?.kind === 'suspend'
+									? t('licensing:reason.suspendTitle')
+									: dialog?.kind === 'terminate'
 									? t('licensing:reason.terminateTitle')
 									: dialog?.kind === 'revoke'
 										? t('licensing:reason.revokeTitle')
@@ -373,7 +434,9 @@ function ContractDetailPage() {
 								variant={dialog?.kind === 'key' ? 'default' : 'destructive'}
 								disabled={busy || (dialog?.kind === 'key' ? !own && !keyValue.trim() : !reason.trim())}
 							>
-								{dialog?.kind === 'terminate'
+								{dialog?.kind === 'suspend'
+									? t('licensing:action.suspend')
+									: dialog?.kind === 'terminate'
 									? t('licensing:action.terminate')
 									: dialog?.kind === 'revoke'
 										? t('licensing:action.revoke')

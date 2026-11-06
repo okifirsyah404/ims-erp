@@ -288,6 +288,21 @@ const api: Record<keyof typeof en, string> = {
 	'licensing.state.keys': 'Kunci hanya bisa ditambahkan ke kontrak draf, aktif, atau ditangguhkan',
 	'licensing.key.required': 'Ketik kunci dari vendor (aplikasi pihak ketiga)',
 	'licensing.key.taken': 'Kunci lisensi ini sudah terdaftar',
+	'licensing.api.missing': 'Kunci API lisensi wajib dikirim',
+	'licensing.api.invalid': 'Kunci API lisensi tidak valid',
+	'licensing.api.rateLimited': 'Terlalu banyak panggilan API lisensi; coba lagi semenit lagi',
+	'licensing.refused.unknown': 'Kunci lisensi tidak dikenal',
+	'licensing.refused.expired': 'Lisensi sudah kedaluwarsa',
+	'licensing.refused.not_started': 'Lisensi belum aktif',
+	'licensing.refused.suspended': 'Lisensi sedang ditangguhkan',
+	'licensing.refused.terminated': 'Lisensi sudah dihentikan',
+	'licensing.refused.revoked': 'Kunci lisensi sudah dicabut',
+	'licensing.refused.seat_limit': 'Semua aktivasi kunci ini sudah terpakai',
+	'licensing.refused.not_activated': 'Instalasi ini belum diaktivasi',
+	'licensing.apiKey.ownOnly': 'Kunci API hanya untuk aplikasi milik perusahaan yang aktif',
+	'licensing.apiKey.noOwner': 'Organisasi tidak punya owner untuk menerbitkan kunci',
+	'licensing.apiKey.notFound': 'Kunci API tidak ditemukan',
+	'licensing.activationNotFound': 'Aktivasi tidak ditemukan atau sudah dilepas',
 };
 
 export default api;

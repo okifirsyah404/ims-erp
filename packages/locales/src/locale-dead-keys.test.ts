@@ -123,6 +123,8 @@ const DYNAMIC_PREFIXES = [
 	'licensing:source.',
 	'licensing:keys.source.',
 	'licensing:keys.status.',
+	'licensing:events.kind.',
+	'licensing:result.',
 	// Finance errors compose `finance.term.${problem}` / `finance.invoiceState.${kind}`.
 	'finance.term.',
 	'finance.invoiceState.',
@@ -141,6 +143,9 @@ const DYNAMIC_PREFIXES = [
 	'licensing.contract.',
 	'licensing.state.',
 	'licensing.key.',
+	'licensing.api.',
+	'licensing.refused.',
+	'licensing.apiKey.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

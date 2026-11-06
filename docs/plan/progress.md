@@ -12,6 +12,107 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — M03 subscription & licensing, stage 2 (license API, T23), 2026-11-06
+
+Status: **implemented** (backend + web admin; not yet accepted by the
+owner). Backlog ERP-0019 (stages 1–2; T24 pilot integration blocked).
+
+Gate 1 (read): docs.dbml MODULE Licensing (`license_activations`,
+`license_events`, `license_entitlements` / `usages`, `subscription_schedules`
+scaffolds; `auth.apikeys` for the application key);
+`docs/plan/erp-module-plans/m03-subscription-licensing.md` stage 2 (validate
+/ activate endpoints with a per-application API key, grace then suspension,
+renewal on verified payment, idempotent, every call logged, rate-limited,
+DoD tests at each boundary); the existing website key pattern
+(`public-api-auth.ts`, config `website`). Skipped: `implementation-phases.md`
+(no dependency on an unlanded step).
+
+Owner decisions (2026-11-06):
+1. **Grace period 7 days**: after the end date validation still passes with
+   a warning for 7 days, then it is refused.
+2. **Renewal on full payment**: a draft renewal linked to a sales order
+   activates by itself when that order is paid in full.
+3. **Pilot source not available**: T23 only (API, keys, documentation);
+   T24 stays blocked.
+
+Gate 2 (manual grilling pass):
+- Machine key: Better Auth API key plugin, new config `licensing` (prefix
+  `elk_`, organization-owned, 120 calls / minute), created through an
+  adapter on behalf of the organization owner (Better Auth checks the
+  creator's organization permission); the ERP checks `license:manage_api`
+  (new; owner, sales manager). `licensing.application_api_keys` maps the key
+  to one **own** application; a key cannot reach another application's
+  licenses (they look unknown). No second auth system.
+- State (pure, clock injected): effective end = earlier of contract end and
+  key expiry; `ok` until it, `grace` up to end + 7, then `expired`; revoked
+  key, suspended, terminated, draft / not started are refused; a `renewed`
+  contract's leftover key is `expired`. Derived, never stored.
+- Seats: `license_activations` per (key, `instance_id`), active seats ≤
+  `max_activations`, taken under a row lock on the key; activate is
+  idempotent per installation; deactivate releases; staff can release.
+- Renewal on payment: Finance `InvoiceLookupService.paidTotal(order)` (live
+  invoices' paid total; receipts are verified when recorded, reversals
+  already deducted) ≥ order grand total → the draft renewal activates (guard
+  `draft`, so a payment renews once), the old contract becomes `renewed`, its
+  keys (and seats) move to the renewal and keys that expired with the old
+  contract get the new end. Checked when the register is read and when a key
+  is validated / activated / released — no background job. A receipt reversed
+  after that does not undo the renewal (staff suspend if needed).
+- Log: `license_events` (append-only) for every machine call (result code,
+  instance, IP, API key) and staff overrides (suspend with optional reason,
+  reactivate, terminate, key revoke, seat release, renewal) with the actor.
+  The M12 audit log is not extended (its action vocabulary belongs to the
+  user module); the license log is the override trail.
+- Validate always answers 200 with `valid` / `status`; activate / deactivate
+  refuse with 403 / 404 / 409; bad API key 401, rate limit 429.
+- Not built (out of v5.1 scope / not decided): entitlements and usage
+  metering, subscription schedules, offline tokens, packages.
+
+What landed:
+- `docs/database/docs.dbml`: `license_activations` and `license_events`
+  rewritten (company-wide), new `application_api_keys`, refs; header note
+  (grace 7 days). `gen-logical-references.ts` re-run; `validate-dbml.ts` → OK.
+- Drizzle schema + migration `20261106161026_licensing_api` (generated,
+  inspected, applied to `ims_erp_sync`).
+- Backend: `LicenseApiRepository`, `LicenseApiService`,
+  `LicenseApiController` (`/licensing/v1/validate | activate | deactivate`),
+  adapter `adapters/better-auth-api-keys.ts`, `utils/license.ts`
+  `licenseState` / `GRACE_DAYS`; `LicensingService` gains paid auto-renewal,
+  key move, override events, seats and log on the detail; staff endpoints
+  `/licenses/applications/:id/api-keys` (list / issue / revoke),
+  `/licenses/events`, `/licenses/:id/activations/:activationId/release`;
+  Finance `InvoiceLookupService.paidTotal`; permission `license:manage_api`
+  (`packages/common` rebuilt; `refresh-role-grants.ts` → 2 role rows).
+- Web: `/subscription/api-keys` (own applications, issue with the secret
+  shown once, revoke; replaces the stub), `/subscription/activations` (the
+  validation & activation log; replaces the stub), contract detail with seats
+  per key (release), activity log, grace badge, suspend with a reason;
+  locales en + id (`licensing`, `api`).
+- Docs: `docs/architecture/modules/licensing-subscription.md` rewritten,
+  with the endpoint documentation and the pilot integration note (T32).
+
+Verification:
+- `bun run typecheck` (apps/backend) → clean.
+- `NODE_ENV=test bun test` (apps/backend) → 678 pass, 0 fail (new
+  `license-api.service.test.ts` 12 tests; `licensing.service.test.ts` 11).
+- `bun run build` / `bun run lint` / `bun test` (apps/web-admin) → OK, no new
+  lint findings, 45 pass; `bun test` (packages/locales) → 62 pass.
+- e2e (Playwright + HTTP, dev servers): issued an `elk_` key on the API Keys
+  screen (shown once); no key → 401, wrong key → 401; contract ended 3 days
+  ago → `grace` with warning; activate PC-001 → seat; PC-002 → 409 (1 seat);
+  validate with PC-002 → `not_activated`; unknown key → `unknown`; renewal
+  draft linked to SO 0012, finance invoiced the remainder, issued it and
+  recorded the full receipt → next validate returned `ok` until 2027-11-04
+  (renewal activated by payment, key moved, old contract `renewed`);
+  deactivate PC-001 then PC-002 activates. Screens checked: detail (seats,
+  log), activation log, API keys. The two test API keys were revoked after
+  the run; the test applications / contracts / invoice stay in the dev DB.
+- `docs/database/` updated in this change (above).
+
+Next executable task: resolve the merge conflicts of PR #58
+(`merge/main-sync → main`), then M08 employees & attendance (gate 1 and 2
+with the owner).
+
 ## Completed — M03 subscription & licensing, stage 1 (register), 2026-11-06
 
 Status: **implemented** (backend + web admin; not yet accepted by the

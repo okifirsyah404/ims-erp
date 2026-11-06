@@ -110,6 +110,17 @@ export interface ILicensingRepository {
 	findOpenRenewal(contractId: string): Promise<TLicenseContractSelect | null>;
 	/** Active contracts: ending on/after `today` up to `until`, and already ended. */
 	countDue(today: string, until: string): Promise<{ endingSoon: number; ended: number }>;
+	/**
+	 * Draft renewals linked to a sales order and with a start date: the ones
+	 * full payment can activate. Narrowed to the renewal of one contract when
+	 * `renewedFromContractId` is given.
+	 */
+	listRenewalCandidates(renewedFromContractId?: string): Promise<TLicenseContractSelect[]>;
+	/**
+	 * Moves the live keys of a renewed contract to its renewal; a key that
+	 * expired with the old contract gets the new end.
+	 */
+	moveKeys(fromContractId: string, toContractId: string, oldEnd: string | null, newEnd: string | null, tx: TTx): Promise<string[]>;
 
 	listKeys(contractId: string): Promise<TLicenseKeySelect[]>;
 	findKeyByValue(licenseKey: string): Promise<TLicenseKeySelect | null>;

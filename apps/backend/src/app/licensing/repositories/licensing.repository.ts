@@ -167,6 +167,36 @@ export class LicensingRepository implements ILicensingRepository {
 		return { endingSoon: soon.value, ended: ended.value };
 	}
 
+	listRenewalCandidates(renewedFromContractId?: string) {
+		return this.database
+			.select()
+			.from(licenseContracts)
+			.where(
+				and(
+					isNull(licenseContracts.deletedAt),
+					eq(licenseContracts.status, 'draft'),
+					renewedFromContractId
+						? eq(licenseContracts.renewedFromContractId, renewedFromContractId)
+						: isNotNull(licenseContracts.renewedFromContractId),
+					isNotNull(licenseContracts.salesOrderId),
+					isNotNull(licenseContracts.startDate),
+				),
+			);
+	}
+
+	async moveKeys(fromContractId: string, toContractId: string, oldEnd: string | null, newEnd: string | null, tx: TTx) {
+		const live = and(eq(licenseKeys.licenseContractId, fromContractId), isNull(licenseKeys.deletedAt));
+		const now = new Date();
+		// A key without expiry already follows the contract end.
+		if (oldEnd) await tx.update(licenseKeys).set({ expiresOn: newEnd, updatedAt: now }).where(and(live, eq(licenseKeys.expiresOn, oldEnd)));
+		const moved = await tx
+			.update(licenseKeys)
+			.set({ licenseContractId: toContractId, updatedAt: now })
+			.where(live)
+			.returning({ id: licenseKeys.id });
+		return moved.map((row) => row.id);
+	}
+
 	// Keys -------------------------------------------------------------------
 
 	listKeys(contractId: string) {

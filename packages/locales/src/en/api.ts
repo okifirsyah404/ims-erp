@@ -285,6 +285,21 @@ const api = {
 	'licensing.state.keys': 'Keys can only be added to a draft, active or suspended contract',
 	'licensing.key.required': 'Type the key from the vendor (third-party application)',
 	'licensing.key.taken': 'This license key is already registered',
+	'licensing.api.missing': 'License API key required',
+	'licensing.api.invalid': 'Invalid license API key',
+	'licensing.api.rateLimited': 'Too many license API calls; try again in a minute',
+	'licensing.refused.unknown': 'Unknown license key',
+	'licensing.refused.expired': 'The license has expired',
+	'licensing.refused.not_started': 'The license is not active yet',
+	'licensing.refused.suspended': 'The license is suspended',
+	'licensing.refused.terminated': 'The license is terminated',
+	'licensing.refused.revoked': 'The license key is revoked',
+	'licensing.refused.seat_limit': 'Every activation of this key is in use',
+	'licensing.refused.not_activated': 'This installation is not activated',
+	'licensing.apiKey.ownOnly': 'API keys are only for the company’s own, active applications',
+	'licensing.apiKey.noOwner': 'The organization has no owner to issue the key',
+	'licensing.apiKey.notFound': 'API key not found',
+	'licensing.activationNotFound': 'Activation not found or already released',
 } as const;
 
 export default api;

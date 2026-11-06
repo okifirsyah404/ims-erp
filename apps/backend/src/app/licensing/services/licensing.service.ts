@@ -1,15 +1,25 @@
 import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
 import type { CustomerService } from '@app/crm/services/customer.service';
+import { INVOICE_LOOKUP_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { InvoiceLookupService } from '@app/finance/services/invoice-lookup.service';
 import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import type { NumberingService } from '@app/organization/services/numbering.service';
 import { SALES_FULFILMENT_SERVICE_TOKEN } from '@app/sales/constants/di';
 import type { SalesFulfilmentService } from '@app/sales/services/sales-fulfilment.service';
 import { isUniqueViolation } from '@drizzle/errors';
-import type { TLicensableApplicationSelect, TLicenseKeySelect } from '@drizzle/schemas/licensing.schema';
+import type {
+	LicenseEventType,
+	TLicensableApplicationSelect,
+	TLicenseActivationSelect,
+	TLicenseContractSelect,
+	TLicenseKeySelect,
+} from '@drizzle/schemas/licensing.schema';
 import { businessDateOf, type TPaginationResult } from '@ims-erp/common';
 import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
+import { pinoLogger } from '@providers/logger/logger';
 import { inject, injectable } from 'tsyringe';
-import { LICENSING_REPOSITORY_TOKEN } from '../constants/di';
+import { LICENSE_API_REPOSITORY_TOKEN, LICENSING_REPOSITORY_TOKEN } from '../constants/di';
+import type { ILicenseApiRepository, TEventRow } from '../contracts/license-api.contract';
 import type {
 	ILicensingRepository,
 	TApplicationBody,
@@ -25,7 +35,15 @@ import {
 	LicenseKeyError,
 	LicensingNotFoundError,
 } from '../errors/licensing.errors';
-import { addDays, contractTiming, generateLicenseKey, maskLicenseKey, renewalPeriod, type TContractTiming } from '../utils/license';
+import {
+	addDays,
+	contractTiming,
+	GRACE_DAYS,
+	generateLicenseKey,
+	maskLicenseKey,
+	renewalPeriod,
+	type TContractTiming,
+} from '../utils/license';
 
 /** Server-derived caller context (see the controller). */
 export type TLicenseContext = {
@@ -34,12 +52,13 @@ export type TLicenseContext = {
 	canReadKeys: boolean;
 };
 
-export type TContractView = TContractRow & TContractTiming;
-export type TKeyView = TLicenseKeySelect & { masked: boolean };
+export type TContractView = TContractRow & TContractTiming & { graceEndsOn: string | null };
+export type TKeyView = TLicenseKeySelect & { masked: boolean; activations: TLicenseActivationSelect[] };
 export type TContractDetail = TContractView & {
 	keys: TKeyView[];
 	renewedFrom: { id: string; code: string } | null;
-	renewal: { id: string; code: string; status: string } | null;
+	renewal: { id: string; code: string; status: string; salesOrderId: string | null } | null;
+	events: TEventRow[];
 };
 export type TLicenseSummary = { endingWithinDays: number; endingSoon: number; ended: number };
 
@@ -47,7 +66,7 @@ export type TLicenseSummary = { endingWithinDays: number; endingSoon: number; en
 export const DUE_WITHIN_DAYS = 30;
 
 /**
- * The license register (M03 stage 1, decisions of 2026-11-06).
+ * The license register (M03, decisions of 2026-11-06).
  *
  * @remarks
  * A contract records what a customer licenses (a third-party vendor's or
@@ -55,7 +74,12 @@ export const DUE_WITHIN_DAYS = 30;
  * the sales flow (SPH → SO → invoice); a contract may point to its sales
  * order. `draft → active ⇄ suspended → terminated`; renewing creates a
  * draft for the next period, and activating it marks the old contract
- * `renewed`. "Due" and "expired" are derived from the end date.
+ * `renewed` and moves its keys (with their seats) to the renewal. A draft
+ * renewal whose sales order is paid in full activates by itself (stage 2):
+ * checked whenever the register is read and whenever its key is validated,
+ * so no background job is needed. "Due", "expired" and the grace period are
+ * derived from the end date. Staff overrides are written to the license
+ * event log with the actor.
  */
 @injectable()
 export class LicensingService {
@@ -65,12 +89,21 @@ export class LicensingService {
 		@inject(SALES_FULFILMENT_SERVICE_TOKEN) private readonly sales: Pick<SalesFulfilmentService, 'getLiveOrder'>,
 		@inject(NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<NumberingService, 'next'>,
 		@inject(TRANSACTION_RUNNER_TOKEN) private readonly transactions: ITransactionRunner,
+		@inject(LICENSE_API_REPOSITORY_TOKEN)
+		private readonly api: Pick<ILicenseApiRepository, 'insertEvent' | 'listActivations' | 'paginateEvents'>,
+		@inject(INVOICE_LOOKUP_SERVICE_TOKEN) private readonly invoices: Pick<InvoiceLookupService, 'paidTotal'>,
 	) {}
 
 	// Applications -----------------------------------------------------------
 
 	listApplications(includeRetired = false): Promise<TLicensableApplicationSelect[]> {
 		return this.repository.listApplications(includeRetired);
+	}
+
+	async getApplication(id: string): Promise<TLicensableApplicationSelect> {
+		const application = await this.repository.findApplication(id);
+		if (!application) throw new LicensingNotFoundError('application');
+		return application;
 	}
 
 	async createApplication(ctx: TLicenseContext, body: TApplicationBody): Promise<TLicensableApplicationSelect> {
@@ -103,11 +136,13 @@ export class LicensingService {
 	// Contracts --------------------------------------------------------------
 
 	private timed(row: TContractRow, today = businessDateOf()): TContractView {
-		return { ...row, ...contractTiming(row, today, DUE_WITHIN_DAYS) };
+		const timing = contractTiming(row, today, DUE_WITHIN_DAYS);
+		return { ...row, ...timing, graceEndsOn: row.endDate ? addDays(row.endDate, GRACE_DAYS) : null };
 	}
 
-	private keyView(ctx: TLicenseContext, key: TLicenseKeySelect): TKeyView {
-		return ctx.canReadKeys ? { ...key, masked: false } : { ...key, licenseKey: maskLicenseKey(key.licenseKey), masked: true };
+	private keyView(ctx: TLicenseContext, key: TLicenseKeySelect, activations: TLicenseActivationSelect[] = []): TKeyView {
+		const shown = ctx.canReadKeys ? key : { ...key, licenseKey: maskLicenseKey(key.licenseKey) };
+		return { ...shown, masked: !ctx.canReadKeys, activations };
 	}
 
 	private async require(id: string): Promise<TContractRow> {
@@ -116,7 +151,26 @@ export class LicensingService {
 		return contract;
 	}
 
+	private event(
+		type: LicenseEventType,
+		contractId: string,
+		actorUserId: string | null,
+		description: string | null,
+		licenseKeyId: string | null = null,
+	) {
+		return this.api.insertEvent({
+			eventType: type,
+			result: 'ok',
+			licenseContractId: contractId,
+			licenseKeyId,
+			actorUserId,
+			description,
+			eventAt: new Date(),
+		});
+	}
+
 	async list(query: TContractListQuery): Promise<TPaginationResult<TContractView>> {
+		await this.activatePaidRenewals();
 		const today = businessDateOf();
 		const dueBefore = query.dueWithinDays === undefined ? undefined : addDays(today, query.dueWithinDays);
 		const result = await this.repository.paginateContracts({ ...query, dueBefore });
@@ -124,22 +178,35 @@ export class LicensingService {
 	}
 
 	async get(ctx: TLicenseContext, id: string): Promise<TContractDetail> {
+		const before = await this.require(id);
+		// Its own renewal, or itself when it is a paid draft renewal.
+		await this.activatePaidRenewals(before.status === 'draft' && before.renewedFromContractId ? before.renewedFromContractId : id);
 		const contract = await this.require(id);
-		const [keys, renewal, renewedFrom] = await Promise.all([
+		const [keys, renewal, renewedFrom, events] = await Promise.all([
 			this.repository.listKeys(id),
 			this.repository.findOpenRenewal(id),
 			contract.renewedFromContractId ? this.repository.findContract(contract.renewedFromContractId) : null,
+			this.api.paginateEvents({ page: 1, limit: 30, contractId: id }),
 		]);
+		const activations = await this.api.listActivations(keys.map((key) => key.id));
 		return {
 			...this.timed(contract),
-			keys: keys.map((key) => this.keyView(ctx, key)),
+			keys: keys.map((key) =>
+				this.keyView(
+					ctx,
+					key,
+					activations.filter((activation) => activation.licenseKeyId === key.id),
+				),
+			),
 			renewedFrom: renewedFrom ? { id: renewedFrom.id, code: renewedFrom.code } : null,
-			renewal: renewal ? { id: renewal.id, code: renewal.code, status: renewal.status } : null,
+			renewal: renewal ? { id: renewal.id, code: renewal.code, status: renewal.status, salesOrderId: renewal.salesOrderId } : null,
+			events: events.data,
 		};
 	}
 
 	/** Counts for the dashboard widget. */
 	async summary(): Promise<TLicenseSummary> {
+		await this.activatePaidRenewals();
 		const today = businessDateOf();
 		const counts = await this.repository.countDue(today, addDays(today, DUE_WITHIN_DAYS));
 		return { endingWithinDays: DUE_WITHIN_DAYS, ...counts };
@@ -193,33 +260,79 @@ export class LicensingService {
 		return this.timed(await this.require(id));
 	}
 
-	/** Draft → active; a renewal also closes the contract it renews. */
-	async activate(ctx: TLicenseContext, id: string): Promise<TContractView> {
-		const current = await this.require(id);
+	/**
+	 * Draft → active in one transaction; a renewal also marks the contract it
+	 * renews `renewed` and takes over its keys. `actorUserId` null = activated
+	 * by full payment.
+	 */
+	private async activateDraft(current: TLicenseContractSelect, actorUserId: string | null, description: string | null) {
 		if (current.status !== 'draft') throw new ContractStateError('activate');
 		if (!current.startDate) throw new ContractInvalidError('startRequired');
 		await this.transactions.run(async (tx) => {
 			const activated = await this.repository.transition(
-				id,
+				current.id,
 				['draft'],
-				{ status: 'active', activatedBy: ctx.actorUserId, activatedAt: new Date() },
+				{ status: 'active', activatedBy: actorUserId, activatedAt: new Date() },
 				tx,
 			);
 			if (!activated) throw new ContractStateError('activate');
-			if (current.renewedFromContractId) {
-				await this.repository.transition(current.renewedFromContractId, ['active', 'suspended'], { status: 'renewed' }, tx);
-			}
+			if (!current.renewedFromContractId) return;
+			const old = await this.repository.transition(current.renewedFromContractId, ['active', 'suspended'], { status: 'renewed' }, tx);
+			if (!old) return;
+			const moved = await this.repository.moveKeys(old.id, current.id, old.endDate, current.endDate, tx);
+			await this.api.insertEvent(
+				{
+					eventType: 'renewed',
+					result: 'ok',
+					licenseContractId: current.id,
+					actorUserId,
+					description: `${description ?? 'Renewal activated'}: renews ${old.code}, ${moved.length} key(s) moved`,
+					eventAt: new Date(),
+				},
+				tx,
+			);
 		});
+	}
+
+	async activate(ctx: TLicenseContext, id: string): Promise<TContractView> {
+		const current = await this.require(id);
+		await this.activateDraft(current, ctx.actorUserId, null);
 		return this.timed(await this.require(id));
 	}
 
-	async suspend(id: string): Promise<TContractView> {
+	/**
+	 * Activates draft renewals whose sales order is paid in full (owner
+	 * decision 2026-11-06). Idempotent: activation is guarded on `draft`, so
+	 * a payment renews once however often this runs. Failures are logged and
+	 * never break the read that triggered the check.
+	 */
+	async activatePaidRenewals(renewedFromContractId?: string): Promise<number> {
+		const candidates = await this.repository.listRenewalCandidates(renewedFromContractId);
+		let activated = 0;
+		for (const draft of candidates) {
+			try {
+				const order = await this.sales.getLiveOrder(draft.salesOrderId!);
+				if (!order || order.customerId !== draft.customerId || order.grandTotal <= 0) continue;
+				const paid = await this.invoices.paidTotal(order.id);
+				if (paid < order.grandTotal) continue;
+				await this.activateDraft(draft, null, `Paid in full (${order.code})`);
+				activated += 1;
+			} catch (error) {
+				pinoLogger.warn({ err: error, contractId: draft.id }, 'license renewal auto-activation skipped');
+			}
+		}
+		return activated;
+	}
+
+	async suspend(ctx: TLicenseContext, id: string, reason: string | null): Promise<TContractView> {
 		if (!(await this.repository.transition(id, ['active'], { status: 'suspended' }))) throw await this.stateError(id, 'suspend');
+		await this.event('suspended', id, ctx.actorUserId, reason);
 		return this.timed(await this.require(id));
 	}
 
-	async reactivate(id: string): Promise<TContractView> {
+	async reactivate(ctx: TLicenseContext, id: string): Promise<TContractView> {
 		if (!(await this.repository.transition(id, ['suspended'], { status: 'active' }))) throw await this.stateError(id, 'reactivate');
+		await this.event('reactivated', id, ctx.actorUserId, null);
 		return this.timed(await this.require(id));
 	}
 
@@ -231,6 +344,7 @@ export class LicensingService {
 			terminationReason: reason,
 		});
 		if (!updated) throw await this.stateError(id, 'terminate');
+		await this.event('terminated', id, ctx.actorUserId, reason);
 		return this.timed(await this.require(id));
 	}
 
@@ -292,10 +406,17 @@ export class LicensingService {
 		}
 	}
 
+	/** Ids of the contract's live keys (seat release checks ownership). */
+	async contractKeyIds(contractId: string): Promise<string[]> {
+		await this.require(contractId);
+		return (await this.repository.listKeys(contractId)).map((key) => key.id);
+	}
+
 	async revokeKey(ctx: TLicenseContext, contractId: string, keyId: string, reason: string): Promise<TKeyView> {
 		await this.require(contractId);
 		const key = await this.repository.revokeKey(contractId, keyId, ctx.actorUserId, reason);
 		if (!key) throw new LicensingNotFoundError('key');
+		await this.event('key_revoked', contractId, ctx.actorUserId, reason, keyId);
 		return this.keyView(ctx, key);
 	}
 }

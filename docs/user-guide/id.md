@@ -307,6 +307,17 @@ Menu **Proyek**. Diagram:
 7. **Tangguhkan / Aktifkan kembali**, **Hentikan** (dengan alasan), dan
    **Cabut** kunci (dengan alasan) bila perlu. Finance melihat kunci
    tersamar (4 karakter terakhir).
+8. **Aplikasi sendiri (API lisensi)**: di **Kunci API** buat kunci untuk
+   aplikasinya (langsung salin — hanya ditampilkan sekali) dan berikan ke
+   developer aplikasi bersama catatan integrasi
+   (`docs/architecture/modules/licensing-subscription.md`). Aplikasi
+   mengaktivasi setiap instalasi (satu kursi), memvalidasi saat dibuka, dan
+   tetap berjalan **7 hari setelah tanggal berakhir** dengan peringatan, lalu
+   berhenti. Kursi dan setiap panggilan tampil di kontrak dan di **Validasi
+   & Aktivasi**; kursi bisa **Dilepas** (misalnya PC diganti).
+9. **Perpanjangan dibayar**: tautkan sales order baru ke draf perpanjangan.
+   Begitu finance mencatat pelunasan, draf aktif sendiri dan kunci berlanjut
+   ke periode baru.
 
 ## 9. Dokumen cetak dan penomoran
 

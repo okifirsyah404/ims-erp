@@ -37,6 +37,24 @@ export type KeySource = (typeof KEY_SOURCES)[number];
 export const KEY_STATUSES = ['active', 'revoked'] as const;
 export type KeyStatus = (typeof KEY_STATUSES)[number];
 
+export const ACTIVATION_STATUSES = ['active', 'deactivated'] as const;
+export type ActivationStatus = (typeof ACTIVATION_STATUSES)[number];
+
+export const LICENSE_EVENT_TYPES = [
+	'validated',
+	'activated',
+	'deactivated',
+	'renewed',
+	'suspended',
+	'reactivated',
+	'terminated',
+	'key_revoked',
+] as const;
+export type LicenseEventType = (typeof LICENSE_EVENT_TYPES)[number];
+
+export const API_KEY_STATUSES = ['active', 'revoked'] as const;
+export type ApiKeyStatus = (typeof API_KEY_STATUSES)[number];
+
 const timestamps = {
 	createdAt: unixTimestamp('created_at').notNull(),
 	updatedAt: unixTimestamp('updated_at')
@@ -171,9 +189,113 @@ export const licenseKeys = licensingSchema.table(
 	],
 );
 
+/* ------------------------------------------------------------------------ *
+ * licensing.application_api_keys (stage 2)
+ * ------------------------------------------------------------------------ */
+
+export const applicationApiKeys = licensingSchema.table(
+	'application_api_keys',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		licensableApplicationId: uuid('licensable_application_id')
+			.notNull()
+			.references(() => licensableApplications.id, { onDelete: 'restrict' }),
+		/** Logical reference to auth.apikeys.id (config `licensing`); the secret lives hashed there. */
+		apiKeyId: text('api_key_id').notNull(),
+		name: varchar('name', { length: 100 }).notNull(),
+		keyStart: varchar('key_start', { length: 20 }),
+		status: text('status').$type<ApiKeyStatus>().notNull().default('active'),
+		createdBy: text('created_by'),
+		revokedBy: text('revoked_by'),
+		revokedAt: unixTimestampNullable('revoked_at'),
+		lastUsedAt: unixTimestampNullable('last_used_at'),
+		...timestamps,
+	},
+	(table) => [
+		index('application_api_keys_application_id_idx').on(table.licensableApplicationId),
+		uniqueIndex('application_api_keys_api_key_id_uq').on(table.apiKeyId),
+		check('application_api_keys_status_check', sql`${table.status} IN ('active', 'revoked')`),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * licensing.license_activations (stage 2)
+ * ------------------------------------------------------------------------ */
+
+export const licenseActivations = licensingSchema.table(
+	'license_activations',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		licenseKeyId: uuid('license_key_id')
+			.notNull()
+			.references(() => licenseKeys.id, { onDelete: 'restrict' }),
+		instanceId: varchar('instance_id', { length: 200 }).notNull(),
+		deviceName: varchar('device_name', { length: 200 }),
+		activatedAt: unixTimestamp('activated_at').notNull(),
+		lastSeenAt: unixTimestamp('last_seen_at').notNull(),
+		lastIp: text('last_ip'),
+		status: text('status').$type<ActivationStatus>().notNull().default('active'),
+		deactivatedAt: unixTimestampNullable('deactivated_at'),
+		/** Null when the application released the seat itself. */
+		deactivatedBy: text('deactivated_by'),
+		...timestamps,
+	},
+	(table) => [
+		index('license_activations_key_id_idx').on(table.licenseKeyId),
+		uniqueIndex('license_activations_active_uq')
+			.on(table.licenseKeyId, table.instanceId)
+			.where(sql`status = 'active' AND deleted_at IS NULL`),
+		check('license_activations_status_check', sql`${table.status} IN ('active', 'deactivated')`),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * licensing.license_events (stage 2, append-only)
+ * ------------------------------------------------------------------------ */
+
+export const licenseEvents = licensingSchema.table(
+	'license_events',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		licenseKeyId: uuid('license_key_id').references(() => licenseKeys.id, { onDelete: 'restrict' }),
+		licenseContractId: uuid('license_contract_id').references(() => licenseContracts.id, { onDelete: 'restrict' }),
+		applicationApiKeyId: uuid('application_api_key_id').references(() => applicationApiKeys.id, { onDelete: 'restrict' }),
+		eventType: text('event_type').$type<LicenseEventType>().notNull(),
+		/** `ok`, `grace`, or the rejection code. */
+		result: text('result').notNull(),
+		instanceId: varchar('instance_id', { length: 200 }),
+		ipAddress: text('ip_address'),
+		actorUserId: text('actor_user_id'),
+		description: text('description'),
+		eventAt: unixTimestamp('event_at').notNull(),
+		...timestamps,
+	},
+	(table) => [
+		index('license_events_key_id_idx').on(table.licenseKeyId),
+		index('license_events_contract_id_idx').on(table.licenseContractId),
+		index('license_events_event_at_idx').on(table.eventAt),
+		check(
+			'license_events_event_type_check',
+			sql`${table.eventType} IN ('validated', 'activated', 'deactivated', 'renewed', 'suspended', 'reactivated', 'terminated', 'key_revoked')`,
+		),
+	],
+);
+
 export type TLicensableApplicationInsert = typeof licensableApplications.$inferInsert;
 export type TLicensableApplicationSelect = typeof licensableApplications.$inferSelect;
 export type TLicenseContractInsert = typeof licenseContracts.$inferInsert;
 export type TLicenseContractSelect = typeof licenseContracts.$inferSelect;
 export type TLicenseKeyInsert = typeof licenseKeys.$inferInsert;
 export type TLicenseKeySelect = typeof licenseKeys.$inferSelect;
+export type TApplicationApiKeySelect = typeof applicationApiKeys.$inferSelect;
+export type TApplicationApiKeyInsert = typeof applicationApiKeys.$inferInsert;
+export type TLicenseActivationSelect = typeof licenseActivations.$inferSelect;
+export type TLicenseActivationInsert = typeof licenseActivations.$inferInsert;
+export type TLicenseEventSelect = typeof licenseEvents.$inferSelect;
+export type TLicenseEventInsert = typeof licenseEvents.$inferInsert;

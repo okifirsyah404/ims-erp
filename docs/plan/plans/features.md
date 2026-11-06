@@ -87,10 +87,10 @@ Last synced: 2026-11-06.
   Evidence: `progress.md` 2026-11-06 (M03 stage 1): `/licenses` API,
   `/subscription` pages, dashboard widget; 10 unit tests, browser e2e.
   Not yet accepted by the owner.
-
-### planned
 - API keys + validate/activate/renew, grace/suspend — T23, ERP-0019.
-  Evidence: dbml only.
+  Evidence: `progress.md` 2026-11-06 (M03 stage 2): `/licensing/v1`,
+  `/subscription/api-keys`, `/subscription/activations`; 12 + 11 unit tests,
+  e2e. Not yet accepted by the owner.
 
 ### blocked
 - Pilot application licensing integration — T24. Needs pilot app source access.

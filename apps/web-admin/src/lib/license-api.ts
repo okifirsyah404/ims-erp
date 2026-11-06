@@ -21,6 +21,9 @@ export type TApplicationSource = (typeof APPLICATION_SOURCES)[number];
 /** Days ahead the due list looks (the server's default window). */
 export const DUE_WITHIN_DAYS = 30;
 
+/** Days an ended license keeps working with a warning (owner decision, M03 stage 2). */
+export const GRACE_DAYS = 7;
+
 export const CONTRACT_STATUS_VARIANT: Record<TContractStatus, 'default' | 'secondary' | 'outline' | 'destructive'> = {
 	draft: 'outline',
 	active: 'default',
@@ -64,6 +67,47 @@ export type TLicenseContract = {
 	isExpired: boolean;
 	isDue: boolean;
 	daysLeft: number | null;
+	/** End date + the grace days; null when perpetual. */
+	graceEndsOn: string | null;
+};
+
+export type TLicenseActivation = {
+	id: string;
+	licenseKeyId: string;
+	instanceId: string;
+	deviceName: string | null;
+	activatedAt: string;
+	lastSeenAt: string;
+	lastIp: string | null;
+	status: 'active' | 'deactivated';
+	deactivatedAt: string | null;
+};
+
+export type TLicenseEvent = {
+	id: string;
+	eventType: 'validated' | 'activated' | 'deactivated' | 'renewed' | 'suspended' | 'reactivated' | 'terminated' | 'key_revoked';
+	result: string;
+	licenseKeyId: string | null;
+	licenseContractId: string | null;
+	contractCode: string | null;
+	customerName: string | null;
+	applicationApiKeyId: string | null;
+	instanceId: string | null;
+	ipAddress: string | null;
+	actorUserId: string | null;
+	description: string | null;
+	eventAt: string;
+};
+
+export type TApplicationApiKey = {
+	id: string;
+	licensableApplicationId: string;
+	name: string;
+	keyStart: string | null;
+	status: 'active' | 'revoked';
+	createdAt: string;
+	revokedAt: string | null;
+	lastUsedAt: string | null;
 };
 
 export type TLicenseKey = {
@@ -77,12 +121,14 @@ export type TLicenseKey = {
 	status: 'active' | 'revoked';
 	notes: string | null;
 	revokeReason: string | null;
+	activations: TLicenseActivation[];
 };
 
 export type TLicenseContractDetail = TLicenseContract & {
 	keys: TLicenseKey[];
 	renewedFrom: { id: string; code: string } | null;
-	renewal: { id: string; code: string; status: TContractStatus } | null;
+	renewal: { id: string; code: string; status: TContractStatus; salesOrderId: string | null } | null;
+	events: TLicenseEvent[];
 };
 
 export type TContractInput = {
@@ -156,6 +202,34 @@ export function licenseSummaryQueryOptions(enabled: boolean) {
 	});
 }
 
+export function eventsQueryOptions(params: { page?: number; contractId?: string }) {
+	return queryOptions({
+		queryKey: ['licenses', 'events', params] as const,
+		queryFn: async () => {
+			const search = new URLSearchParams();
+			for (const [key, value] of Object.entries(params)) {
+				if (value !== undefined && value !== '') search.set(key, String(value));
+			}
+			const envelope = (await request<TLicenseEvent[]>(`/licenses/events${search.size ? `?${search}` : ''}`)) as TApiPaginatedResponse<TLicenseEvent>;
+			return { rows: envelope.data, pagination: envelope.pagination };
+		},
+	});
+}
+
+export function apiKeysQueryOptions(applicationId: string) {
+	return queryOptions({
+		queryKey: ['licenses', 'api-keys', applicationId] as const,
+		queryFn: async () => (await request<TApplicationApiKey[]>(`/licenses/applications/${applicationId}/api-keys`)).data as TApplicationApiKey[],
+	});
+}
+
+export const issueApiKey = (applicationId: string, name: string) =>
+	send<{ apiKey: TApplicationApiKey; secret: string }>(`/licenses/applications/${applicationId}/api-keys`, 'POST', { name });
+export const revokeApiKey = (applicationId: string, apiKeyId: string) =>
+	send<TApplicationApiKey>(`/licenses/applications/${applicationId}/api-keys/${apiKeyId}/revoke`, 'POST');
+export const releaseSeat = (contractId: string, activationId: string) =>
+	send<TLicenseActivation>(`/licenses/${contractId}/activations/${activationId}/release`, 'POST');
+
 export const createApplication = (input: TApplicationInput) => send<TLicensableApplication>('/licenses/applications', 'POST', input);
 export const updateApplication = (id: string, input: TApplicationInput) => send<TLicensableApplication>(`/licenses/applications/${id}`, 'PUT', input);
 export const retireApplication = (id: string) => send<TLicensableApplication>(`/licenses/applications/${id}/retire`, 'POST');
@@ -164,7 +238,7 @@ export const restoreApplication = (id: string) => send<TLicensableApplication>(`
 export const createContract = (input: TContractInput) => send<TLicenseContract>('/licenses', 'POST', input);
 export const updateContract = (id: string, input: TContractInput) => send<TLicenseContract>(`/licenses/${id}`, 'PUT', input);
 export const activateContract = (id: string) => send<TLicenseContract>(`/licenses/${id}/activate`, 'POST');
-export const suspendContract = (id: string) => send<TLicenseContract>(`/licenses/${id}/suspend`, 'POST');
+export const suspendContract = (id: string, reason: string) => send<TLicenseContract>(`/licenses/${id}/suspend`, 'POST', { reason });
 export const reactivateContract = (id: string) => send<TLicenseContract>(`/licenses/${id}/reactivate`, 'POST');
 export const terminateContract = (id: string, reason: string) => send<TLicenseContract>(`/licenses/${id}/terminate`, 'POST', { reason });
 export const renewContract = (id: string) => send<TLicenseContract>(`/licenses/${id}/renew`, 'POST');
