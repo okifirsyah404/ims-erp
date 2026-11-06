@@ -66,3 +66,18 @@ export function terbilangRupiah(minor: number): string {
 	return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+
+const capitalize = (words: string) => words.replace(/(^|\s)\S/g, (letter) => letter.toUpperCase());
+
+/**
+ * A business date (`YYYY-MM-DD`, Asia/Jakarta) written out as in the BAST
+ * sample: "Rabu Tanggal Dua Puluh Empat Bulan Desember tahun Dua Ribu Dua
+ * Puluh Lima".
+ */
+export function dateInWords(businessDate: string): string {
+	const date = new Date(`${businessDate}T12:00:00+07:00`);
+	const part = (options: Intl.DateTimeFormatOptions) => date.toLocaleDateString('id-ID', { ...options, timeZone: 'Asia/Jakarta' });
+	const day = Number(part({ day: 'numeric' }));
+	const year = Number(part({ year: 'numeric' }));
+	return `${part({ weekday: 'long' })} Tanggal ${capitalize(numberToWords(day))} Bulan ${part({ month: 'long' })} tahun ${capitalize(numberToWords(year))}`;
+}

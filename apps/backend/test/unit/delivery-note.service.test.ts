@@ -77,6 +77,7 @@ beforeEach(() => {
 			findItems: async (id: string) => findNote(id)?.items ?? [],
 			hasLiveNotes: async () => false,
 			shippedValues: async () => [],
+			shippedLines: async () => [],
 			async create(header, items) {
 				const note = {
 					...header,

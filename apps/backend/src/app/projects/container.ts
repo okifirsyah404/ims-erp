@@ -1,5 +1,13 @@
 import type { DependencyContainer } from 'tsyringe';
-import { PROJECT_LOOKUP_SERVICE_TOKEN, PROJECT_REPOSITORY_TOKEN, PROJECT_SERVICE_TOKEN } from './constants/di';
+import {
+	HANDOVER_REPOSITORY_TOKEN,
+	HANDOVER_SERVICE_TOKEN,
+	PROJECT_LOOKUP_SERVICE_TOKEN,
+	PROJECT_REPOSITORY_TOKEN,
+	PROJECT_SERVICE_TOKEN,
+} from './constants/di';
+import { HandoverRepository } from './repositories/handover.repository';
+import { HandoverService } from './services/handover.service';
 import { ProjectRepository } from './repositories/project.repository';
 import { ProjectLookupService } from './services/project-lookup.service';
 import { ProjectService } from './services/project.service';
@@ -15,4 +23,6 @@ export function registerProjects(container: DependencyContainer): void {
 	container.register(PROJECT_REPOSITORY_TOKEN, { useClass: ProjectRepository });
 	container.register(PROJECT_SERVICE_TOKEN, { useClass: ProjectService });
 	container.register(PROJECT_LOOKUP_SERVICE_TOKEN, { useClass: ProjectLookupService });
+	container.register(HANDOVER_REPOSITORY_TOKEN, { useClass: HandoverRepository });
+	container.register(HANDOVER_SERVICE_TOKEN, { useClass: HandoverService });
 }

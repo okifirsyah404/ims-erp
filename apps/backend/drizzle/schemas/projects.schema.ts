@@ -14,7 +14,7 @@
  *   columns, validated through those modules' services.
  */
 import { sql } from 'drizzle-orm';
-import { bigint, check, date, index, integer, pgSchema, text, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import { bigint, check, date, index, integer, jsonb, pgSchema, text, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { unixTimestamp, unixTimestampNullable } from '@drizzle/datatypes/unix-timestamp';
 
 export const projectsSchema = pgSchema('projects');
@@ -205,6 +205,56 @@ export const projectCosts = projectsSchema.table(
 	],
 );
 
+/* ------------------------------------------------------------------------ *
+ * projects.project_handover (BAST, step 6b)
+ * ------------------------------------------------------------------------ */
+
+export const BAST_STATUSES = ['issued', 'cancelled'] as const;
+export type BastStatus = (typeof BAST_STATUSES)[number];
+
+/** One handed-over or covered row (BAST and warranty tables). */
+export type TDocumentItem = { description: string; volume: string; remarks: string };
+
+/**
+ * Berita Acara Serah Terima. Several per project (owner decision
+ * 2026-11-06: one per contract or work package).
+ */
+export const projectHandover = projectsSchema.table(
+	'project_handover',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		projectId: uuid('project_id').notNull(),
+		code: varchar('code', { length: 32 }).notNull(),
+		/** Jakarta business date, printed in words. */
+		bastDate: date('bast_date').notNull(),
+		firstPartyCompany: varchar('first_party_company', { length: 200 }).notNull(),
+		firstPartyName: varchar('first_party_name', { length: 120 }).notNull(),
+		firstPartyTitle: varchar('first_party_title', { length: 120 }).notNull(),
+		secondPartyCompany: varchar('second_party_company', { length: 200 }).notNull(),
+		secondPartyName: varchar('second_party_name', { length: 120 }).notNull(),
+		secondPartyTitle: varchar('second_party_title', { length: 120 }).notNull(),
+		contractNumber: varchar('contract_number', { length: 120 }),
+		workTitle: varchar('work_title', { length: 300 }).notNull(),
+		projectName: varchar('project_name', { length: 200 }),
+		items: jsonb('items').$type<TDocumentItem[]>().notNull(),
+		scope: jsonb('scope').$type<string[]>().notNull(),
+		status: text('status').$type<BastStatus>().notNull().default('issued'),
+		createdBy: text('created_by'),
+		cancelledBy: text('cancelled_by'),
+		cancelledAt: unixTimestampNullable('cancelled_at'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('project_handover_code_uq')
+			.on(table.code)
+			.where(sql`deleted_at IS NULL`),
+		index('project_handover_project_id_idx').on(table.projectId),
+		check('project_handover_status_check', sql`${table.status} IN ('issued', 'cancelled')`),
+	],
+);
+
 export type TProjectInsert = typeof projects.$inferInsert;
 export type TProjectSelect = typeof projects.$inferSelect;
 export type TProjectTaskInsert = typeof projectTasks.$inferInsert;
@@ -213,3 +263,5 @@ export type TProjectEvidenceInsert = typeof projectEvidence.$inferInsert;
 export type TProjectEvidenceSelect = typeof projectEvidence.$inferSelect;
 export type TProjectCostInsert = typeof projectCosts.$inferInsert;
 export type TProjectCostSelect = typeof projectCosts.$inferSelect;
+export type TProjectHandoverInsert = typeof projectHandover.$inferInsert;
+export type TProjectHandoverSelect = typeof projectHandover.$inferSelect;

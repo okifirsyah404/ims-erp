@@ -12,11 +12,122 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — ADR-0011 port step 6b: BAST and warranty certificate, 2026-11-06
+
+Next executable task: ADR-0011 step 6c — service tickets with the warranty
+check by serial number (`aftersales.service_tickets`), then the single PR to
+main.
+
+Status: **implemented** (backend + web admin; not yet accepted by the owner).
+
+What landed:
+- Migration `20261106075940_bast_warranty_certificates` (generated,
+  inspected, applied to `ims_erp_sync`): `projects.project_handover` (BAST)
+  and schema `aftersales` with `warranty_certificates`.
+- Projects: `HandoverRepository` / `HandoverService` (BAST create, edit,
+  cancel, draft from the deal; Projects contract `requireProject` /
+  `findBast` for After-Sales), routes `/projects/basts` (all visible),
+  `/projects/:id/basts[/draft|/:bastId|/:bastId/cancel]`;
+  `utils/project-context.ts` shared by both controllers.
+- New module `src/app/aftersales`: `WarrantyRepository`, `WarrantyService`
+  (one per project, start at the chosen issued BAST, end the day before the
+  same date `months` later, number with the customer code, texts from the
+  profile or the sample), `WarrantyController`
+  (`/warranty-certificates/projects/:projectId[/draft]`).
+- Sales fulfilment contract: `getOrder`, `orderLines`, `shippedLines`
+  (`DeliveryNoteRepository.shippedLines`).
+- Web: project page "Dokumen serah terima" card (BAST list with print / edit
+  / cancel, warranty status), `/projects/$projectId/bast/new`,
+  `/bast/$bastId` (edit), `/bast/$bastId/print`, `/warranty` (form),
+  `/warranty/print`, `/projects/bast` (all BASTs, replaces the coming-soon
+  stub); prints `bast-document.tsx` and `warranty-document.tsx` in the
+  sample's layouts (Letter, Times; BAST date in words via
+  `lib/terbilang.ts dateInWords`; warranty terms with "o" sub-items and bold
+  phrases via `lib/document-terms.ts`). The project detail route moved to
+  `$projectId/index.tsx` for the nested routes.
+
+Verification (2026-11-06):
+- `bun docs/database/gen-logical-references.ts` + `bun
+  docs/database/validate-dbml.ts` → `OK`. `docs/database/` updated (BAST
+  table rewritten, `aftersales.warranty_certificates` added, module notes).
+- `NODE_ENV=development bun run drizzle:migrate` → applied.
+- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (warnings
+  pre-existing); `bun run test` → backend 650 pass (new
+  `handover-warranty.test.ts`: period arithmetic, several BASTs, numbering,
+  frozen after close, warranty needs an issued BAST, customer code, profile
+  texts), web-admin 45, locales 58, 0 fail; `bun run build` → built.
+- Browser + API check (temporary Playwright script, deleted): deal shipped by
+  a delivery note, project by the PM; the first BAST issued through the form
+  (prefilled contract number from the customer PO, customer, "Project
+  Manager") → `002/BAST/DEV/XII/2025` dated 2025-12-24; a second BAST for
+  another contract → two on the project; the warranty form prefilled the
+  shipped device and the sample's texts with sub-items; saved →
+  `001/SG-GARANSI/DEV-SPHSKL8P/2026`, 2025-12-24 → 2026-12-23; a warranty on
+  the cancelled second BAST → 422; the technician issuing a BAST → 403; the
+  BAST list shows them; no browser errors. Both prints rendered to PDF and
+  compared with the sample: BAST on one Letter page (title, number, date in
+  words, parties, contract line, table, scope with bold, closing, two
+  signatures), warranty on two pages (letterhead, number / date, company,
+  statement, project, A table, B period, page 2 C ✅ / ❌ lists with "o"
+  sub-items, D, closing, signatory). The dev company profile was filled for
+  the print and restored afterwards.
+- Test data left in the dev DB: projects `0002`–`0003/PRJ/DEV/XI/26`, BASTs
+  `001`–`003/BAST/DEV/XII/2025`, warranty `001/SG-GARANSI/DEV-SPHSKL8P/2026`.
+
+Owner decisions (2026-11-06, asked during this step): a project may have
+**several BASTs** (the sample has two for one project, one per contract);
+the network topology page of the sample is **not** built into the system.
+
+Gate 1 (read): docs.dbml `projects.project_handover` (scaffold: tenant
+scoped, `draft / scheduled / completed / cancelled`, no content columns) and
+After-Sales (no certificate table; `warranty_policies` / `warranty_claims` are
+a different concept); module-ownership §9 / §15 (warranty belongs to
+After-Sales, BAST to Projects; numbering map `bast → projects`,
+`warranty → aftersales`); numbering patterns `{SEQ:3}/BAST/{COMPANY}/{MM_ROMAN}/{YYYY}`
+and `{SEQ:3}/SG-GARANSI/{COMPANY}-{CUSTOMER}/{YYYY}`; company profile
+(legal name, address, phone, email, logo, signature image, signatory,
+warranty coverage / exclusions / service terms); the old branch's
+`handover.service.ts` / `domain/handover.ts` defaults; the private sample
+(US Letter: BAST without letterhead, Times, date in words; warranty with the
+letterhead, sections A–D with sub-bullets and bold phrases, signature).
+Skipped: `implementation-phases.md` (no unlanded dependency).
+
+Gate 2 (manual grilling pass):
+- `projects.project_handover` rewritten as the BAST document (Projects,
+  company-wide, no intra-module FK): `project_id`, `code` (numbered on
+  creation by the BAST date), `bast_date`, first party (company, name,
+  title), second party (company, name, title), `contract_number`,
+  `work_title`, `project_name`, `items` (jsonb: description, volume,
+  remarks), `scope` (jsonb list), `status` `issued / cancelled`. Several per
+  project. Created, edited and cancelled only while the project is active
+  (`project:update`); read with `project:read` and project visibility.
+- New module `aftersales` (programmer B, M07) with
+  `aftersales.warranty_certificates`: one live certificate per project;
+  `project_id` and `bast_id` are logical references validated through the
+  Projects contract (`ProjectHandoverContract`), `customer_id` through CRM
+  (customer code in the number). Start = the chosen BAST's date; end = the
+  day before the same date `months` later (clamped to month end); `months`
+  1–120 (default 12). Snapshot of product summary, project name / location /
+  owner, items, and the coverage / exclusions / service-terms texts (from the
+  company profile, else the sample's texts). Text syntax: one item per line,
+  a line starting with `o ` or `- ` is a sub-item of the previous one,
+  `**…**` prints bold — needed to print the sample exactly. Editable while
+  the project is not cancelled (also after closing).
+- Defaults: BAST from the order (lines with "Telah selesai terpasang dan
+  berfungsi dengan baik", attention, customer PO as contract number), the
+  company and the PIC; warranty items from the shipped delivery-note lines
+  with their serials (Sales fulfilment contract).
+- Prints (Letter): the BAST copies the sample (Times, centered title, the
+  day and date in words, the parties, "Dan berdasarkan kepada", the table, the
+  scope list, the closing, two signature blocks); the BAST number is added
+  under the title (the sample has none) as on the surat jalan. The warranty
+  copies sample pages 3–4 (letterhead, A–D, ✅ / ❌ headings, sub-bullets,
+  bold phrases, "Hormat kami," with the signature image and signatory). The
+  sample's period sentence is printed as is.
+
 ## Completed — ADR-0011 port step 6a: projects (M07 part 1), 2026-11-06
 
-Next executable task: ADR-0011 step 6b — BAST and the warranty certificate
-(`projects` BAST document, `aftersales` warranty certificate) printed in the
-private sample's layouts, then 6c service tickets, then the PR to main.
+Next executable task: step 6b (done, entry above).
 
 Status: **implemented** (backend + web admin; not yet accepted by the owner).
 Step 6 is split: 6a projects (from a deal, checklist tasks, evidence files,

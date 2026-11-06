@@ -221,6 +221,7 @@ TableGroup "Assets" {
 
 TableGroup "After-Sales" {
   aftersales.warranty_policies
+  aftersales.warranty_certificates
   aftersales.warranty_claims
   aftersales.service_tickets
   aftersales.service_ticket_comments
@@ -2786,8 +2787,9 @@ Ref: inventory.borrowing_events.borrowing_line_id > inventory.borrowing_lines.id
 // MODULE: Projects  (schema: projects)
 // Project master, phases, tasks and dependencies, daily reports, site
 // assignments, KPI, milestones, change orders, handover and work plans.
-// Tenant scoped, except projects, project_tasks, project_evidence and
-// project_costs, which are company-wide (ADR-0011 step 6a).
+// Tenant scoped, except projects, project_tasks, project_evidence,
+// project_costs (step 6a) and project_handover (BAST, step 6b), which are
+// company-wide (ADR-0011).
 // ---------------------------------------------------------------------------
 
 Table projects.project_types {
@@ -3137,27 +3139,34 @@ Table projects.project_changes {
 }
 
 Table projects.project_handover {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  project_id uuid [not null]
-  customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  handover_date date
-  received_by_name text
-  received_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
-  status text [not null, default: 'draft']
-  notes text
+  project_id uuid [not null, note: "Same-module reference to projects.projects.id; no FK by design (module-ownership §9). Several BASTs per project (owner decision 2026-11-06)."]
+  code varchar(32) [not null, note: "BAST number, assigned on creation by the BAST date. Unique among live rows (partial index in the Drizzle schema)."]
+  bast_date date [not null, note: "Jakarta business date, printed in words."]
+  first_party_company varchar(200) [not null, note: "PIHAK PERTAMA (the customer)."]
+  first_party_name varchar(120) [not null]
+  first_party_title varchar(120) [not null]
+  second_party_company varchar(200) [not null, note: "PIHAK KEDUA (the company)."]
+  second_party_name varchar(120) [not null]
+  second_party_title varchar(120) [not null]
+  contract_number varchar(120)
+  work_title varchar(300) [not null]
+  project_name varchar(200)
+  items jsonb [not null, note: "Handed-over items: description, volume, remarks."]
+  scope jsonb [not null, note: "Numbered list of the work handed over."]
+  status text [not null, default: 'issued']
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancelled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancelled_at bigint
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Project handover, BAST in Indonesian practice."
+  deleted_at bigint
+  Note: "Project handover (Berita Acara Serah Terima, BAST), company-wide (ADR-0011 step 6b). Edited or cancelled only while the project is active."
   Indexes {
-    (organization_id, code) [unique, name: 'project_handover_org_code_uq']
     project_id [name: 'project_handover_project_id_idx']
   }
   Checks {
-    `status IN ('draft', 'scheduled', 'completed', 'cancelled')`
+    `status IN ('issued', 'cancelled')`
   }
 }
 
@@ -5206,7 +5215,8 @@ Ref: assets.asset_movements.asset_id > assets.assets.id [delete: cascade]
 // MODULE: After-Sales  (schema: aftersales)
 // Warranty, service tickets and work orders, maintenance plans and visits,
 // satisfaction surveys, spare parts, service contracts and SLA policies.
-// Tenant scoped.
+// Tenant scoped, except warranty_certificates, which is company-wide
+// (ADR-0011 step 6b).
 // ---------------------------------------------------------------------------
 
 Table aftersales.warranty_policies {
@@ -5230,6 +5240,39 @@ Table aftersales.warranty_policies {
   Checks {
     `coverage_type IN ('warranty', 'extended_warranty', 'service_plan', 'none')`
     `duration_months >= 0`
+  }
+}
+
+Table aftersales.warranty_certificates {
+  id uuid [pk, default: `uuidv7()`]
+  code varchar(80) [not null, note: "Number from the numbering service (SG-GARANSI, with the customer code). Unique among live rows (partial index in the Drizzle schema)."]
+  project_id uuid [not null, note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract. One live certificate per project."]
+  bast_id uuid [not null, note: "Logical reference to projects.project_handover.id. Cross-module FK intentionally omitted. Validated through the Projects module contract. The warranty starts at its BAST date."]
+  customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
+  issue_date date [not null]
+  start_date date [not null, note: "The BAST date."]
+  months integer [not null, default: 12]
+  end_date date [not null, note: "The day before the same date `months` later (clamped to the month end); the last covered day."]
+  product_summary varchar(300) [not null]
+  project_name varchar(300) [not null]
+  project_location varchar(200)
+  project_owner varchar(200) [not null]
+  items jsonb [not null, note: "Covered devices: description, volume, remarks."]
+  coverage text [not null, note: "Snapshot; one item per line, 'o ' / '- ' lines are sub-items, **…** prints bold."]
+  exclusions text [not null]
+  service_terms text [not null]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Warranty certificate (Surat Keterangan Garansi) of a project, company-wide (ADR-0011 step 6b). Service tickets check serials against it."
+  Indexes {
+    project_id [name: 'warranty_certificates_project_id_idx']
+    customer_id [name: 'warranty_certificates_customer_id_idx']
+  }
+  Checks {
+    `months BETWEEN 1 AND 120`
+    `end_date >= start_date`
   }
 }
 

@@ -115,6 +115,7 @@ const DYNAMIC_PREFIXES = [
 	'projects:taskStatus.',
 	'projects:evidenceKind.',
 	'projects:costCategory.',
+	'projects:bast.party',
 	// Finance errors compose `finance.term.${problem}` / `finance.invoiceState.${kind}`.
 	'finance.term.',
 	'finance.invoiceState.',

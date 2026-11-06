@@ -1,4 +1,4 @@
-import type { TSalesOrderSelect } from '@drizzle/schemas/sales.schema';
+import type { TDeliveryNoteItemSelect, TSalesOrderItemSelect, TSalesOrderSelect } from '@drizzle/schemas/sales.schema';
 import { inject, injectable } from 'tsyringe';
 import { DELIVERY_NOTE_REPOSITORY_TOKEN, SALES_ORDER_REPOSITORY_TOKEN } from '../constants/di';
 import type { IDeliveryNoteRepository, TShippedNoteValue } from '../contracts/delivery-note.repository.interface';
@@ -22,9 +22,9 @@ const LIVE_STATUSES = ['confirmed', 'in_progress', 'delivered', 'completed'] as 
 export class SalesFulfilmentService {
 	constructor(
 		@inject(SALES_ORDER_REPOSITORY_TOKEN)
-		private readonly orders: Pick<ISalesOrderRepository, 'findById' | 'paginate'>,
+		private readonly orders: Pick<ISalesOrderRepository, 'findById' | 'findItems' | 'paginate'>,
 		@inject(DELIVERY_NOTE_REPOSITORY_TOKEN)
-		private readonly notes: Pick<IDeliveryNoteRepository, 'shippedValues'>,
+		private readonly notes: Pick<IDeliveryNoteRepository, 'shippedValues' | 'shippedLines'>,
 	) {}
 
 	/** A live (not cancelled) order, or `null`. */
@@ -46,5 +46,20 @@ export class SalesFulfilmentService {
 	/** Shipped / delivered notes of an order at their issue cost. */
 	shippedMaterials(salesOrderId: string): Promise<TShippedNoteValue[]> {
 		return this.notes.shippedValues(salesOrderId);
+	}
+
+	/** Any order (also cancelled), for document defaults of an existing project. */
+	getOrder(id: string): Promise<TSalesOrderSelect | null> {
+		return this.orders.findById(id);
+	}
+
+	/** The order's lines (BAST defaults). */
+	orderLines(salesOrderId: string): Promise<TSalesOrderItemSelect[]> {
+		return this.orders.findItems(salesOrderId);
+	}
+
+	/** Lines of the order's shipped / delivered notes with their serials (warranty defaults). */
+	shippedLines(salesOrderId: string): Promise<TDeliveryNoteItemSelect[]> {
+		return this.notes.shippedLines(salesOrderId);
 	}
 }

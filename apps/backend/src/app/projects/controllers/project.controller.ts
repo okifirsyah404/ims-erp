@@ -1,11 +1,12 @@
 import type { ErpContext } from '@authorization/elysia-auth';
 import { type IPermissionResolver, PERMISSION_RESOLVER_TOKEN } from '@authorization/permission-resolver';
-import type { ErpPermissionRequest } from '@ims-erp/common';
 import { container } from 'tsyringe';
 import { z } from 'zod';
 import { domainPlugin } from '@http/plugin';
 import { created, ok, okPaginated } from '@http/response';
-import { PROJECT_SERVICE_TOKEN } from '../constants/di';
+import { HANDOVER_SERVICE_TOKEN, PROJECT_SERVICE_TOKEN } from '../constants/di';
+import { bastBodySchema, bastParamSchema } from '../contracts/handover.contract';
+import { projectContextFor } from '../utils/project-context';
 import {
 	costBodySchema,
 	createProjectSchema,
@@ -35,27 +36,8 @@ export class ProjectController {
 		const service = container.resolve(PROJECT_SERVICE_TOKEN);
 		const permissions = container.resolve<IPermissionResolver>(PERMISSION_RESOLVER_TOKEN);
 
-		const context = async (erp: ErpContext): Promise<TProjectContext> => {
-			const roles = erp.member.role.split(',').map((role) => role.trim());
-			const can = (request: ErpPermissionRequest) => permissions.hasPermission(erp.organizationId, roles, request);
-			const [assign, readCost, exportAll, ticketAssign, taskAssign, update] = await Promise.all([
-				can({ project: ['assign'] }),
-				can({ project: ['read_cost'] }),
-				can({ project: ['export'] }),
-				// Ticket managers (customer service) need every project.
-				can({ service_ticket: ['assign'] }),
-				can({ task: ['assign'] }),
-				can({ project: ['update'] }),
-			]);
-			return {
-				organizationId: erp.organizationId,
-				actorUserId: erp.session.user.id,
-				canViewAll: assign || readCost || exportAll || ticketAssign,
-				canSeeCost: readCost,
-				canAssignTasks: taskAssign,
-				canManage: update,
-			};
-		};
+		const handover = container.resolve(HANDOVER_SERVICE_TOKEN);
+		const context = (erp: ErpContext): Promise<TProjectContext> => projectContextFor(permissions, erp);
 		const id = (params: unknown) => projectIdParamSchema.parse(params).id;
 		const child = (params: unknown) => projectChildParamSchema.parse(params);
 
@@ -94,6 +76,61 @@ export class ProjectController {
 				'/:id/cancel',
 				async ({ params, body, erp }) => ok(await service.cancel(await context(erp), id(params), reasonSchema.parse(body).reason)),
 				{ erp: { permission: ['project:close'] }, detail: { description: 'Cancels the project; the deal is freed' } },
+			)
+			.get(
+				'/basts',
+				async ({ query, erp }) =>
+					okPaginated(
+						await handover.listAll(
+							await context(erp),
+							z
+								.object({
+									page: z.coerce.number().int().min(1).default(1),
+									limit: z.coerce.number().int().min(1).max(100).default(20),
+									search: z.string().trim().max(100).optional(),
+								})
+								.parse(query),
+						),
+					),
+				{ erp: { permission: ['project:read'] }, detail: { description: 'BASTs of the projects visible to the caller' } },
+			)
+			.get('/:id/basts', async ({ params, erp }) => ok(await handover.list(await context(erp), id(params))), {
+				erp: { permission: ['project:read'] },
+				detail: { description: 'BAST documents of a project (cancelled included)' },
+			})
+			.get('/:id/basts/draft', async ({ params, erp }) => ok(await handover.draft(await context(erp), id(params))), {
+				erp: { permission: ['project:update'] },
+				detail: { description: 'Prefilled fields of a new BAST' },
+			})
+			.get(
+				'/:id/basts/:bastId',
+				async ({ params, erp }) => {
+					const { id: projectId, bastId } = bastParamSchema.parse(params);
+					return ok(await handover.get(await context(erp), projectId, bastId));
+				},
+				{ erp: { permission: ['project:read'] }, detail: { description: 'One BAST document' } },
+			)
+			.post(
+				'/:id/basts',
+				async ({ params, body, erp, status }) =>
+					status(201, created(await handover.create(await context(erp), id(params), bastBodySchema.parse(body)))),
+				{ erp: { permission: ['project:update'] }, detail: { description: 'Issues (and numbers) a BAST' } },
+			)
+			.put(
+				'/:id/basts/:bastId',
+				async ({ params, body, erp }) => {
+					const { id: projectId, bastId } = bastParamSchema.parse(params);
+					return ok(await handover.update(await context(erp), projectId, bastId, bastBodySchema.parse(body)));
+				},
+				{ erp: { permission: ['project:update'] }, detail: { description: 'Edits a BAST while the project is active' } },
+			)
+			.post(
+				'/:id/basts/:bastId/cancel',
+				async ({ params, erp }) => {
+					const { id: projectId, bastId } = bastParamSchema.parse(params);
+					return ok(await handover.cancel(await context(erp), projectId, bastId));
+				},
+				{ erp: { permission: ['project:update'] }, detail: { description: 'Cancels a BAST while the project is active' } },
 			)
 			.post(
 				'/:id/tasks',

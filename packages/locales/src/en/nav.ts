@@ -79,6 +79,8 @@ const nav = {
 	'item.stock': 'Stock',
 	'item.inventoryValue': 'Inventory Value',
 	'breadcrumb.projectNew': 'New project',
+	'breadcrumb.bastNew': 'New BAST',
+	'breadcrumb.warranty': 'Warranty certificate',
 	'item.borrowings': 'Borrowings',
 	'item.items': 'Items',
 	'item.products': 'Products',

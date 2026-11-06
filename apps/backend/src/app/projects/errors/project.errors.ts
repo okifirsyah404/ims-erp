@@ -84,6 +84,13 @@ export class ProjectCostVoidedError extends AppError {
 	}
 }
 
+/** The BAST is not part of this project, or it is cancelled. */
+export class BastNotFoundError extends AppError {
+	constructor() {
+		super(404, 'projects.bastNotFound', 'BAST not found');
+	}
+}
+
 /** Sales side: an order with a live project cannot be cancelled. */
 export class SalesOrderHasProjectError extends AppError {
 	constructor() {

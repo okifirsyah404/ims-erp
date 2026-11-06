@@ -17,6 +17,7 @@ import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { ProjectCostsCard } from '@/components/projects/project-costs-card';
+import { ProjectDocumentsCard } from '@/components/projects/project-documents-card';
 import { ProjectEvidenceCard } from '@/components/projects/project-evidence-card';
 import { ProjectTasksCard } from '@/components/projects/project-tasks-card';
 import { toast } from '@/components/toast';
@@ -36,7 +37,7 @@ import {
 import { usePermission } from '@/lib/use-permission';
 
 /** `/projects/$projectId` — one project: stages, tasks, evidence, costs. */
-export const Route = createFileRoute('/_authed/projects/$projectId')({
+export const Route = createFileRoute('/_authed/projects/$projectId/')({
 	component: ProjectDetailPage,
 });
 
@@ -256,6 +257,7 @@ function ProjectDetailPage() {
 
 			<ProjectTasksCard project={data} actorUserId={session?.user.id} />
 			<ProjectEvidenceCard project={data} actorUserId={session?.user.id} />
+			<ProjectDocumentsCard project={data} />
 			{data.costs && <ProjectCostsCard project={{ ...data, costs: data.costs }} />}
 
 			<Dialog open={dialog !== null} onOpenChange={(open) => !open && setDialog(null)}>

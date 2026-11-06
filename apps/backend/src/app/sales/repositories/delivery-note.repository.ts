@@ -171,4 +171,20 @@ export class DeliveryNoteRepository implements IDeliveryNoteRepository {
 			.orderBy(asc(deliveryNotes.shippedAt));
 		return rows.map((row) => ({ ...row, value: Number(row.value) }));
 	}
+
+	shippedLines(salesOrderId: string): Promise<TDeliveryNoteItemSelect[]> {
+		return this.database
+			.select(getTableColumns(deliveryNoteItems))
+			.from(deliveryNoteItems)
+			.innerJoin(deliveryNotes, eq(deliveryNotes.id, deliveryNoteItems.deliveryNoteId))
+			.where(
+				and(
+					eq(deliveryNotes.salesOrderId, salesOrderId),
+					isNull(deliveryNotes.deletedAt),
+					isNull(deliveryNoteItems.deletedAt),
+					inArray(deliveryNotes.status, ['shipped', 'delivered']),
+				),
+			)
+			.orderBy(asc(deliveryNotes.shippedAt), asc(deliveryNoteItems.sortOrder));
+	}
 }

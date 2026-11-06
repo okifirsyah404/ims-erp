@@ -63,6 +63,8 @@ export interface IDeliveryNoteRepository {
 	cancel(id: string, actorUserId: string, reason: string, tx: TTx): Promise<TDeliveryNoteSelect | null>;
 	/** Value of each shipped / delivered note of an order at its issue cost (IDR minor units). */
 	shippedValues(salesOrderId: string): Promise<TShippedNoteValue[]>;
+	/** Lines of the order's shipped / delivered notes, oldest first. */
+	shippedLines(salesOrderId: string): Promise<TDeliveryNoteItemSelect[]>;
 }
 
 export type TShippedNoteValue = { id: string; code: string; shippedAt: Date | null; value: number };

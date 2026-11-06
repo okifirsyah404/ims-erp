@@ -178,8 +178,6 @@ Last synced: 2026-11-06.
 ## M07 Projects and After-Sales
 
 ### planned
-- BAST and warranty certificate documents with the company's prints — T08,
-  ERP-0015 / ERP-0036 (step 6b). Evidence: none yet.
 - Basic tickets + manual closure, warranty — T08. Evidence: dbml `ticket`,
   `aftersales` only.
 - Portal: project/BAST status + own tickets — T26, ERP-0022. Evidence: none.
@@ -191,6 +189,14 @@ Last synced: 2026-11-06.
   ERP-0015 / ERP-0036. Evidence: `apps/backend/src/app/projects`,
   `test/unit/project.service.test.ts`, `/projects` pages, `progress.md`
   2026-11-06 (ADR-0011 step 6a). Gaps: real-PG integration tests.
+- BAST documents (several per project) and the warranty certificate (one per
+  project, from a BAST date, serials of shipped devices, profile texts),
+  printed in the company's exact layouts — T08, ERP-0015 / ERP-0036.
+  Evidence: `projects/services/handover.service.ts`,
+  `apps/backend/src/app/aftersales`, `test/unit/handover-warranty.test.ts`,
+  `/projects/$projectId/bast/*`, `/projects/$projectId/warranty*`,
+  `/projects/bast`, `progress.md` 2026-11-06 (step 6b). Gaps: real-PG
+  integration tests.
 
 ## M08 Employees and Attendance
 
