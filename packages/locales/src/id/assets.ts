@@ -23,6 +23,9 @@ const assets = {
 	'register.bookValue': 'Nilai buku',
 	'register.serialNumber': 'Nomor seri',
 	'register.location': 'Lokasi',
+	'register.storedIn': 'Disimpan di',
+	'register.custodian': 'Penanggung jawab',
+	'register.borrowedSince': 'Dipinjam sejak',
 	'register.type': 'Tipe',
 	'register.acquisitionCost': 'Biaya perolehan',
 

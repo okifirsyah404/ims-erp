@@ -402,6 +402,8 @@ export const assets = assetsSchema.table(
 		purchaseOrderId: uuid('purchase_order_id'),
 		/** Logical reference to documents.documents.id — FK omitted (D19). */
 		documentId: uuid('document_id'),
+		/** Optional display image URL for the asset card. */
+		imageUrl: text('image_url'),
 		...softDeleteTimestamps,
 	},
 	(table) => [

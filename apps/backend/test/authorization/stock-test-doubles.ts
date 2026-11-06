@@ -252,6 +252,9 @@ export function installStockDoubles(): void {
 		async archive() {
 			return null;
 		},
+		async findNamesByIds() {
+			return [];
+		},
 		async clearDefaultExcept() {},
 		async countLiveUnits() {
 			return 0;

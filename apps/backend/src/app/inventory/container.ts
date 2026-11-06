@@ -13,6 +13,7 @@ import { ItemService } from './services/item.service';
 import { AUDIT_SERVICE_TOKEN } from '../audit/constants/di';
 import type { AuditService } from '../audit/services/audit.service';
 import { WarehouseService } from './services/warehouse.service';
+import { ExportedWarehouseService } from './services/exported-warehouse.service';
 import { StockService } from './services/stock.service';
 import { AdjustmentService } from './services/adjustment.service';
 import {
@@ -29,6 +30,7 @@ import {
 	WAREHOUSE_REPOSITORY_TOKEN,
 	WAREHOUSE_SERVICE_TOKEN,
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
+	EXPORTED_WAREHOUSE_SERVICE_TOKEN,
 } from './constants/di';
 
 export * from './constants/di';
@@ -76,6 +78,10 @@ export function registerInventory(container: DependencyContainer): void {
 	);
 	container.register(WAREHOUSE_SERVICE_TOKEN, {
 		useClass: WarehouseService,
+	});
+	// Cross-module export facade — repository-only, safe for other modules.
+	container.register(EXPORTED_WAREHOUSE_SERVICE_TOKEN, {
+		useClass: ExportedWarehouseService,
 	});
 
 	container.register(MOVEMENT_REPOSITORY_TOKEN, {

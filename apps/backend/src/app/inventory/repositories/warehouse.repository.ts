@@ -391,6 +391,17 @@ export class WarehouseRepository implements IWarehouseRepository {
 		return row ?? null;
 	}
 
+	/** @inheritdoc */
+	async findNamesByIds(
+		ids: string[],
+	): Promise<Array<{ id: string; name: string }>> {
+		if (ids.length === 0) return [];
+		return this.database
+			.select({ id: warehouses.id, name: warehouses.name })
+			.from(warehouses)
+			.where(and(inArray(warehouses.id, ids), isNull(warehouses.deletedAt)));
+	}
+
 	/**
 	 * Clears `is_default` on every other alive warehouse in the same scope.
 	 *

@@ -6,7 +6,8 @@ import type {
 } from '@drizzle/schemas/asset.schema';
 import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
-import type { IAssetRepository } from '../contracts/asset.repository.interface';
+import { EXPORTED_WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import type { ExportedWarehouseService } from '@app/inventory/services/exported-warehouse.service';import type { IAssetRepository } from '../contracts/asset.repository.interface';
 import type { TAssetCreateData } from '../contracts/asset.repository.interface';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
@@ -50,6 +51,12 @@ export const ASSET_STATUS_TRANSITIONS: Record<AssetStatus, AssetStatus[]> = {
 /** The actor context for custody/lifecycle operations. */
 export type TAssetActor = TInventoryAuditActor;
 
+/** One asset row decorated with its storage warehouse's name. */
+export type TAssetWithLocation = TAssetSelect & {
+	/** Resolved `inventory.warehouses.name`; `null` when unallocated. */
+	warehouseName: string | null;
+};
+
 /**
  * Application service for the asset register (Phase A-3).
  *
@@ -72,35 +79,64 @@ export class AssetService {
 		private readonly numbering: DocumentNumberingService,
 		/** Fire-and-forget audit writer, shared with the inventory module. */
 		private readonly audit: InventoryAuditWriter,
+		/** Storage-location name resolution via inventory's export facade. */
+		@inject(EXPORTED_WAREHOUSE_SERVICE_TOKEN)
+		private readonly exportedWarehouseService: ExportedWarehouseService,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 	) {}
 
 	paginate(
 		request: Parameters<IAssetRepository['paginate']>[0],
-	): Promise<TPaginationResult<TAssetSelect>> {
-		return this.assetRepository.paginate(request);
+	): Promise<TPaginationResult<TAssetWithLocation>> {
+		return this.paginateWithLocation(request);
 	}
 
-	/**
-	 * Counts alive assets grouped by warehouse, optionally filtered to one
-	 * asset type (e.g. `equipment`). Published for cross-module decoration of
-	 * warehouse rows — the inventory module consumes this via
-	 * {@link ASSET_SERVICE_TOKEN} (service-to-service, per module rules).
-	 */
-	countByWarehouse(
-		warehouseIds: string[],
-		assetType?: string,
-	): ReturnType<IAssetRepository['countByWarehouse']> {
-		return this.assetRepository.countByWarehouse(warehouseIds, assetType);
-	}
-
-	async getAsset(id: string): Promise<TAssetSelect> {
-		return this.requireAsset(id);
+	async getAsset(id: string): Promise<TAssetWithLocation> {
+		const asset = await this.requireAsset(id);
+		const [withLocation] = await this.withWarehouseNames([asset]);
+		return withLocation;
 	}
 
 	/** Active asset types (lookup table, global reference data). */
 	listTypes(): ReturnType<IAssetRepository['listTypes']> {
 		return this.assetRepository.listTypes();
+	}
+
+	/**
+	 * Decorates asset rows with the storage warehouse's name.
+	 *
+	 * @remarks
+	 * `warehouseId` is a logical reference to `inventory.warehouses.id`, so the
+	 * name crosses the module boundary as a service-to-service call per the
+	 * module rules — this module never queries the inventory schema directly.
+	 */
+	private async withWarehouseNames(
+		assets: TAssetSelect[],
+	): Promise<TAssetWithLocation[]> {
+		const warehouseIds = [
+			...new Set(
+				assets.flatMap((asset) => (asset.warehouseId ? [asset.warehouseId] : [])),
+			),
+		];
+		const nameMap =
+			warehouseIds.length > 0
+				? await this.exportedWarehouseService.getNameMap(warehouseIds)
+				: new Map<string, string>();
+		return assets.map((asset) => ({
+			...asset,
+			warehouseName:
+				(asset.warehouseId ? nameMap.get(asset.warehouseId) : undefined) ?? null,
+		}));
+	}
+
+	private async paginateWithLocation(
+		request: Parameters<IAssetRepository['paginate']>[0],
+	): Promise<TPaginationResult<TAssetWithLocation>> {
+		const result = await this.assetRepository.paginate(request);
+		return {
+			...result,
+			data: await this.withWarehouseNames(result.data),
+		};
 	}
 
 	/**
@@ -185,6 +221,7 @@ export class AssetService {
 						description: current.description,
 						categoryId: current.categoryId,
 						locationDescription: current.locationDescription,
+						imageUrl: current.imageUrl,
 						acquisitionCost: current.acquisitionCost,
 					},
 					{
@@ -192,6 +229,7 @@ export class AssetService {
 						description: updated.description,
 						categoryId: updated.categoryId,
 						locationDescription: updated.locationDescription,
+						imageUrl: updated.imageUrl,
 						acquisitionCost: updated.acquisitionCost,
 					},
 				),

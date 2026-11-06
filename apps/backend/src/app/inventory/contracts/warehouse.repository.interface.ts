@@ -177,6 +177,16 @@ export interface IWarehouseRepository {
 	archive(id: string): Promise<TWarehouseSelect | null>;
 
 	/**
+	 * Fetches alive warehouses by id, returning `{ id, name }` pairs.
+	 *
+	 * @remarks
+	 * Published for cross-module name resolution (e.g. the assets module
+	 * decorating asset rows with a storage location), via
+	 * `WarehouseService` — service-to-service only.
+	 */
+	findNamesByIds(ids: string[]): Promise<Array<{ id: string; name: string }>>;
+
+	/**
 	 * Clears `is_default` on every alive warehouse in a scope, except one.
 	 *
 	 * @remarks

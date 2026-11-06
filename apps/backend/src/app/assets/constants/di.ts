@@ -14,6 +14,7 @@ import type { IAssetOperationsRepository } from '../contracts/asset-operations.r
 import type { AssetOperationsService } from '../services/asset-operations.service';
 import type { IBorrowingRepository } from '../contracts/borrowing.repository.interface';
 import type { BorrowingService } from '../services/borrowing.service';
+import type { ExportedAssetService } from '../services/exported-asset.service';
 
 export const ASSET_CATEGORY_REPOSITORY_TOKEN: InjectionToken<IAssetCategoryRepository> =
 	Symbol('ASSET_CATEGORY_REPOSITORY');
@@ -31,3 +32,10 @@ export const BORROWING_REPOSITORY_TOKEN: InjectionToken<IBorrowingRepository> =
 	Symbol('BORROWING_REPOSITORY');
 export const BORROWING_SERVICE_TOKEN: InjectionToken<BorrowingService> =
 	Symbol('BORROWING_SERVICE');
+/**
+ * Cross-module export facade over asset reads (equipment counts for
+ * warehouse decoration). Depends only on the asset repository, so consumers
+ * (inventory) cannot form a service-to-service cycle.
+ */
+export const EXPORTED_ASSET_SERVICE_TOKEN: InjectionToken<ExportedAssetService> =
+	Symbol('EXPORTED_ASSET_SERVICE');

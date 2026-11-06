@@ -26,6 +26,9 @@ const assets = {
 	'register.bookValue': 'Book value',
 	'register.serialNumber': 'Serial number',
 	'register.location': 'Location',
+	'register.storedIn': 'Stored in',
+	'register.custodian': 'Custodian',
+	'register.borrowedSince': 'Borrowed since',
 	'register.type': 'Type',
 	'register.acquisitionCost': 'Acquisition cost',
 

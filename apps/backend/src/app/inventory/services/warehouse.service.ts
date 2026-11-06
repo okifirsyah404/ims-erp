@@ -28,9 +28,8 @@ import {
 	WAREHOUSE_REPOSITORY_TOKEN,
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 } from '../constants/di';
-import { ASSET_SERVICE_TOKEN } from '@app/assets/constants/di';
-import type { AssetService } from '@app/assets/services/asset.service';
-import {
+import { EXPORTED_ASSET_SERVICE_TOKEN } from '@app/assets/constants/di';
+import type { ExportedAssetService } from '@app/assets/services/exported-asset.service';import {
 	InventoryRuleViolationError,
 	StorageCodeTakenError,
 	StorageNotFoundError,
@@ -104,10 +103,9 @@ export class WarehouseService {
 		 */
 		@inject(WAREHOUSE_BORROWING_GUARD_TOKEN)
 		private readonly borrowingGuard: IWarehouseBorrowingGuard,
-		/** Equipment counts come from the assets module — service-to-service. */
-		@inject(ASSET_SERVICE_TOKEN)
-		private readonly assetService: AssetService,
-	) {}
+		/** Equipment counts come from the assets module via its export facade. */
+		@inject(EXPORTED_ASSET_SERVICE_TOKEN)
+		private readonly exportedAssetService: ExportedAssetService,	) {}
 
 	/** Fetches one filtered page of warehouses, decorated with kind counts. */
 	async paginate(request: {
@@ -165,6 +163,22 @@ export class WarehouseService {
 	}
 
 	/**
+	 * Resolves alive warehouse names for the given ids.
+	 *
+	 * @remarks
+	 * Published for cross-module decoration (e.g. the assets module showing
+	 * where an asset is stored) — consumed via {@link WAREHOUSE_SERVICE_TOKEN}
+	 * as a service-to-service call. Unknown or archived ids are simply absent
+	 * from the returned map.
+	 */
+	async getNameMap(
+		ids: string[],
+	): Promise<Map<string, string>> {
+		const rows = await this.warehouseRepository.findNamesByIds(ids);
+		return new Map(rows.map((row) => [row.id, row.name]));
+	}
+
+	/**
 	 * Merges alive equipment-asset counts (from the assets module) into the
 	 * inventory-computed kind counts, per warehouse.
 	 *
@@ -179,7 +193,7 @@ export class WarehouseService {
 	): Promise<TWarehouseKindCounts[]> {
 		if (counts.length === 0) return [];
 		const warehouseIds = counts.map((row) => row.warehouseId);
-		const equipmentRows = await this.assetService.countByWarehouse(
+		const equipmentRows = await this.exportedAssetService.countByWarehouse(
 			warehouseIds,
 			'equipment',
 		);

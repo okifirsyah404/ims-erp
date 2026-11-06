@@ -219,6 +219,13 @@ export function AssetRegisterList() {
 				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 					{data.rows.map((asset) => (
 						<Card key={asset.id} className='flex flex-col'>
+							{/* TODO: render `asset.imageUrl` once real image URLs exist; this is a static UI placeholder. */}
+							<img
+								src='https://picsum.photos/300/200'
+								alt={asset.name}
+								className='h-40 w-full object-cover'
+								loading='lazy'
+							/>
 							<CardHeader className='pb-2'>
 								<div className='flex items-start justify-between gap-2'>
 									<CardTitle className='text-base'>
@@ -257,6 +264,41 @@ export function AssetRegisterList() {
 									</span>
 									{formatMoney(asset.bookValue, asset.currencyCode)}
 								</p>
+								{asset.status === 'borrowed' ? (
+									<>
+										{asset.borrowedSince ? (
+											<p>
+												<span className='text-muted-foreground'>
+													{t('assets:register.borrowedSince')}:{' '}
+												</span>
+												{new Date(asset.borrowedSince).toLocaleDateString()}
+											</p>
+										) : null}
+										{/* TODO: resolve the custodian's name once the HR module exists. */}
+										{asset.custodianEmployeeId ? (
+											<p className='truncate'>
+												<span className='text-muted-foreground'>
+													{t('assets:register.custodian')}:{' '}
+												</span>
+												<code className='text-xs'>{asset.custodianEmployeeId}</code>
+											</p>
+										) : null}
+									</>
+								) : asset.warehouseName ? (
+									<p>
+										<span className='text-muted-foreground'>
+											{t('assets:register.storedIn')}:{' '}
+										</span>
+										{asset.warehouseName}
+									</p>
+								) : asset.locationDescription ? (
+									<p>
+										<span className='text-muted-foreground'>
+											{t('assets:register.location')}:{' '}
+										</span>
+										{asset.locationDescription}
+									</p>
+								) : null}
 								{asset.serialNumber ? (
 									<p className='truncate text-xs text-muted-foreground'>
 										{t('assets:register.serialNumber')}: {asset.serialNumber}

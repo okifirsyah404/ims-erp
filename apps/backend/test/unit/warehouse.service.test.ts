@@ -170,6 +170,11 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 			row.deletedAt = new Date();
 			return row;
 		},
+		async findNamesByIds(ids) {
+			return rows
+				.filter((r) => ids.includes(r.id) && r.deletedAt === null)
+				.map((r) => ({ id: r.id, name: r.name }));
+		},
 		async clearDefaultExcept(organizationId, exceptId) {
 			clearDefaultCalls.push({ organizationId, exceptId });
 			for (const row of rows) {
@@ -262,7 +267,6 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 		// No assets in these tests — equipment counts resolve to zero.
 		{ countByWarehouse: async () => [] } as never,
 	);
-
 	return { service, rows, links, clearDefaultCalls, warehouseRepository };
 }
 

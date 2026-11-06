@@ -173,6 +173,9 @@ beforeAll(async () => {
 		async archive(id) {
 			return id === seed.id ? seed : null;
 		},
+		async findNamesByIds(ids) {
+			return ids.includes(seed.id) ? [{ id: seed.id, name: seed.name }] : [];
+		},
 		async clearDefaultExcept() {},
 		async countLiveUnits() {
 			return 0;
@@ -265,7 +268,7 @@ beforeAll(async () => {
 		'../../src/app/inventory/controllers/warehouse.controller'
 	);
 	const { sessionGuard } = await import('../../src/authorization/elysia-auth');
-	const { ASSET_SERVICE_TOKEN } = await import(
+	const { EXPORTED_ASSET_SERVICE_TOKEN } = await import(
 		'../../src/app/assets/constants/di'
 	);
 
@@ -285,8 +288,8 @@ beforeAll(async () => {
 	container.register(WAREHOUSE_BORROWING_GUARD_TOKEN, {
 		useValue: { async countOpenBorrowings() { return 0; } },
 	});
-	// Equipment counts come from the assets module — noop here (no assets).
-	container.register(ASSET_SERVICE_TOKEN, {
+	// Equipment counts come from the assets module's export facade — noop here.
+	container.register(EXPORTED_ASSET_SERVICE_TOKEN, {
 		useValue: { async countByWarehouse() { return []; } } as never,
 	});
 	container.register(WAREHOUSE_SERVICE_TOKEN, { useClass: WarehouseService });

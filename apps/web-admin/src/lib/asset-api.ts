@@ -77,6 +77,10 @@ export type TAsset = {
 	depreciationStartedOn: string | null;
 	condition: TAssetCondition;
 	status: TAssetStatus;
+	/** Optional display image URL for the asset card. */
+	imageUrl: string | null;
+	/** Resolved storage warehouse name; `null` when unallocated or unknown. */
+	warehouseName: string | null;
 	deactivationReason: string | null;
 	locationDescription: string | null;
 	warehouseId: string | null;
