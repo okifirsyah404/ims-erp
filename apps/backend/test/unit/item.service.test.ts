@@ -117,6 +117,10 @@ function makeService(seed?: {
 			row.deletedAt = new Date();
 			return row;
 		},
+		findNamesByIds: async (ids) =>
+			items
+				.filter((i) => ids.includes(i.id) && i.deletedAt === null)
+				.map((i) => ({ id: i.id, name: i.name })),
 		countUnits: async (itemId) =>
 			units.filter((u) => u.itemId === itemId && u.deletedAt === null).length,
 	};

@@ -40,6 +40,7 @@ import type {
 import type { IWarehouseRepository } from '../../src/app/inventory/contracts/warehouse.repository.interface';
 import {
 	BALANCE_REPOSITORY_TOKEN,
+	ITEM_REPOSITORY_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
 	STOCK_SERVICE_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
@@ -369,6 +370,7 @@ beforeEach(() => {
 		container.resolve(MOVEMENT_REPOSITORY_TOKEN),
 		container.resolve(BALANCE_REPOSITORY_TOKEN),
 		container.resolve(WAREHOUSE_REPOSITORY_TOKEN),
+		container.resolve(ITEM_REPOSITORY_TOKEN),
 		createNumberingDouble(),
 		new AuditWriterDouble(),
 		database,

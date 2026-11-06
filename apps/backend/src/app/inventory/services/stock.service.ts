@@ -18,9 +18,11 @@ import type {
 	TBalanceKey,
 	TBalancePaginationRequest,
 } from '../contracts/balance.repository.interface';
+import type { IItemRepository } from '../contracts/item.repository.interface';
 import type { IWarehouseRepository } from '../contracts/warehouse.repository.interface';
 import {
 	BALANCE_REPOSITORY_TOKEN,
+	ITEM_REPOSITORY_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
 } from '../constants/di';
@@ -33,6 +35,20 @@ import type { TTx } from '@drizzle/types';
 import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
 import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import { InventoryAuditWriter } from './inventory-audit.writer';
+
+/** One balance row decorated with readable item and warehouse names. */
+export type TStockBalanceWithNames = TStockBalanceSelect & {
+	/** Resolved item name; `null` when the item is archived or unknown. */
+	itemName: string | null;
+	/** Resolved warehouse name; `null` when the warehouse is archived or unknown. */
+	warehouseName: string | null;
+};
+
+/** One movement row decorated with readable item and warehouse names. */
+export type TStockMovementWithNames = TStockMovementSelect & {
+	itemName: string | null;
+	warehouseName: string | null;
+};
 
 /** Movement types that decrease stock. Every other type increases it. */
 export { isOutbound } from '../constants/movement-direction';
@@ -97,6 +113,9 @@ export class StockService {
 		private readonly balanceRepository: IBalanceRepository,
 		@inject(WAREHOUSE_REPOSITORY_TOKEN)
 		private readonly warehouseRepository: IWarehouseRepository,
+		/** Name resolution for stock-row decoration (items and warehouses). */
+		@inject(ITEM_REPOSITORY_TOKEN)
+		private readonly itemRepository: IItemRepository,
 		/**
 		 * ERP-0009 numbering authority: movement codes are sequence-allocated
 		 * inside the posting transaction (hardening plan D4), replacing the
@@ -117,18 +136,62 @@ export class StockService {
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 	) {}
 
-	/** Fetches one page of the movement ledger. */
-	paginateMovements(
+	/** Fetches one page of the movement ledger, with item/warehouse names. */
+	async paginateMovements(
 		request: TMovementPaginationRequest,
-	): Promise<TPaginationResult<TStockMovementSelect>> {
-		return this.movementRepository.paginate(request);
+	): Promise<TPaginationResult<TStockMovementWithNames>> {
+		const result = await this.movementRepository.paginate(request);
+		const names = await this.resolveNames(
+			result.data.flatMap((row) => [row.itemId, row.warehouseId]),
+		);
+		return {
+			...result,
+			data: result.data.map((row) => ({
+				...row,
+				itemName: names.items.get(row.itemId) ?? null,
+				warehouseName: names.warehouses.get(row.warehouseId) ?? null,
+			})),
+		};
 	}
 
-	/** Fetches one page of balances. */
-	paginateBalances(
+	/** Fetches one page of balances, with item/warehouse names. */
+	async paginateBalances(
 		request: TBalancePaginationRequest,
-	): Promise<TPaginationResult<TStockBalanceSelect>> {
-		return this.balanceRepository.paginate(request);
+	): Promise<TPaginationResult<TStockBalanceWithNames>> {
+		const result = await this.balanceRepository.paginate(request);
+		const names = await this.resolveNames(
+			result.data.flatMap((row) => [row.itemId, row.warehouseId]),
+		);
+		return {
+			...result,
+			data: result.data.map((row) => ({
+				...row,
+				itemName: names.items.get(row.itemId) ?? null,
+				warehouseName: names.warehouses.get(row.warehouseId) ?? null,
+			})),
+		};
+	}
+
+	/**
+	 * Batch-resolves item and warehouse names for the given ids, in two
+	 * queries regardless of page size. Unknown ids are absent from the maps.
+	 */
+	private async resolveNames(ids: string[]): Promise<{
+		items: Map<string, string>;
+		warehouses: Map<string, string>;
+	}> {
+		const unique = [...new Set(ids)];
+		if (unique.length === 0) {
+			return { items: new Map(), warehouses: new Map() };
+		}
+		const [itemRows, warehouseRows] = await Promise.all([
+			this.itemRepository.findNamesByIds(unique),
+			this.warehouseRepository.findNamesByIds(unique),
+		]);
+		return {
+			items: new Map(itemRows.map((row) => [row.id, row.name])),
+			warehouses: new Map(warehouseRows.map((row) => [row.id, row.name])),
+		};
 	}
 
 	/**

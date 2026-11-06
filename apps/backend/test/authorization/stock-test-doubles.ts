@@ -313,6 +313,7 @@ export function installStockDoubles(): void {
 			movements,
 			balances,
 			warehouses,
+			items,
 			createNumberingDouble(),
 			new AuditWriterDouble(),
 			database,

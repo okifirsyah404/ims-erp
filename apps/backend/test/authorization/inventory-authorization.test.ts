@@ -118,6 +118,9 @@ beforeAll(async () => {
 		async countUnits() {
 			return 0;
 		},
+		async findNamesByIds() {
+			return [];
+		},
 	};
 
 	const serialUnitRepository: ISerialUnitRepository = {
