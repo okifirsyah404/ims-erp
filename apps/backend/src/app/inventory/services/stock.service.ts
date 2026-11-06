@@ -132,6 +132,34 @@ export class StockService {
 	}
 
 	/**
+	 * Rejects a client-supplied warehouse the caller's organization is not
+	 * linked to (ERP-0031).
+	 *
+	 * @param warehouseId - The warehouse the request names
+	 * @param actorOrganizationId - The validated tenant from `erp`
+	 * @throws {WarehouseNotFoundError} When absent, archived, **or unlinked** —
+	 *   not-found rather than forbidden, so warehouse ids cannot be probed
+	 *
+	 * @remarks
+	 * Called from the controller for the actor-driven flows (receipt, issue,
+	 * adjustment posting). Internal writers — the borrowing engine moving a
+	 * unit back to `line.origin_warehouse_id`, seeded opening stock — skip
+	 * this on purpose: they act on custody the system itself set up.
+	 */
+	async assertWarehouseLinkedFor(
+		warehouseId: string,
+		actorOrganizationId: string,
+	): Promise<void> {
+		const warehouse = await this.warehouseRepository.findById(warehouseId);
+		if (!warehouse) throw new WarehouseNotFoundError();
+		const linked = await this.warehouseRepository.isLinked(
+			warehouseId,
+			actorOrganizationId,
+		);
+		if (!linked) throw new WarehouseNotFoundError();
+	}
+
+	/**
 	 * Resolves the balance scope a warehouse belongs to.
 	 *
 	 * @param warehouseId - The warehouse being moved in or out of

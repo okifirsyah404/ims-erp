@@ -12,6 +12,55 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed (this session - ERP-0031 Slice 2 enforcement + grants, 2026-11-06)
+
+Status: **implemented**. Slice 2 of ERP-0031: the ERP-0036 reachability stub
+(`assertWarehouseReachableByOrg`) now answers the real link question, and the
+stock flows are gated.
+
+What landed:
+
+- Repository: `warehouse.repository.isLinked(warehouseId, organizationId)` and
+  `listLinked(organizationId)` (alive links, alive warehouses, ordered by
+  name); both added to `IWarehouseRepository`.
+- Service: `assertWarehouseReachableByOrg` body swapped — warehouse must exist
+  (404) and have an alive link (boolean, caller maps false→404). Signature
+  narrowed: the org param is no longer nullable. `listLinkedWarehouses` added.
+  `createWarehouse` forces `organizationId: null` (D1 freeze at the service
+  boundary too).
+- Assets: `assertLocation` throws `WarehouseNotFoundError` when the warehouse
+  is unlinked (404, not 403 — ids cannot be probed).
+- Routes: `GET /warehouses/linked` via a new `WarehouseController.linkedPlugin()`
+  (`erp` guard, `warehouse:read`), mounted in `app.ts` **before** the admin
+  `.plugin()` because the guards differ (session+admin vs erp).
+- Stock: `StockService.assertWarehouseLinkedFor(warehouseId, actorOrganizationId)`
+  called from the stock controller (`receipts`, `issues`) and the adjustment
+  controller (create) via an `assertWarehouseAccessible` helper. Global-admin
+  bypass lives at the controller boundary (`session.user.role === 'admin'`).
+  Internal writers (borrowing engine returning to `origin_warehouse_id`, seeded
+  opening stock) intentionally skip the check — system-established custody.
+- Grants: `erpRoleGrants.admin` gains `stock: ['read','export']` and
+  `stock_adjustment: ['read']`; common rebuilt. Data-only migration
+  `20261106065700_erp0031_slice2_admin_stock_grants` (hand-written, no schema
+  change) syncs already-seeded system `admin` roles in `auth.roles.permissions`.
+  Lesson: `permissions -> 'stock' ? 'read'` is NULL (not false) when the key is
+  missing — the WHERE needed `COALESCE(..., false)`; the first run silently
+  matched zero rows and was caught only by verifying the DB end-state.
+- Seeder: both `GLOBAL-MAIN` and `WH-MAIN` are linked to the dev org.
+- Tests: `warehouse.service.test.ts` scope/is_default tests rewritten for D1
+  (creation always global) plus a new "warehouse reachability (ERP-0031)"
+  block (linked/unlinked/soft-deleted link/missing warehouse/listLinked);
+  warehouse and stock test doubles gained `isLinked`/`listLinked`.
+
+```text
+bun run test          → 529 pass, 0 fail (was 526)
+bun run lint/typecheck (root) → green
+migrate+seed twice on ims_erp_local → clean
+DB end-state: GLOBAL-MAIN + WH-MAIN each linked to dev org; 0 warehouses with
+non-null organization_id; system admin roles carry stock [read,export],
+stock_adjustment [read]
+```
+
 ## Completed (this session - ERP-0031 Slice 1 warehouse↔org link schema, 2026-11-06)
 
 Status: **implemented**. Slice 1 of ERP-0031 (warehouse↔organization links +

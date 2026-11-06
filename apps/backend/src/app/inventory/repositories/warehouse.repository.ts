@@ -3,6 +3,7 @@ import {
 	items,
 	serialTrackedItems,
 	warehouseAddresses,
+	warehouseOrganizations,
 	warehouseStorages,
 	warehouses,
 } from '@drizzle/schemas/inventory.schema';
@@ -13,6 +14,7 @@ import {
 	asc,
 	count,
 	eq,
+	getTableColumns,
 	ilike,
 	inArray,
 	isNull,
@@ -109,6 +111,50 @@ export class WarehouseRepository implements IWarehouseRepository {
 			.where(and(eq(warehouses.id, id), isNull(warehouses.deletedAt)))
 			.limit(1);
 		return row ?? null;
+	}
+
+	/**
+	 * Whether an alive link row exists between the warehouse and the org
+	 * (ERP-0031). Soft-deleted links do not count — unlinking must cut access
+	 * immediately.
+	 */
+	async isLinked(
+		warehouseId: string,
+		organizationId: string,
+	): Promise<boolean> {
+		const [row] = await this.database
+			.select({ id: warehouseOrganizations.id })
+			.from(warehouseOrganizations)
+			.where(
+				and(
+					eq(warehouseOrganizations.warehouseId, warehouseId),
+					eq(warehouseOrganizations.organizationId, organizationId),
+					isNull(warehouseOrganizations.deletedAt),
+				),
+			)
+			.limit(1);
+		return row !== undefined;
+	}
+
+	/** Alive warehouses linked to one organization, newest link first. */
+	async listLinked(
+		organizationId: string,
+	): Promise<TWarehouseSelect[]> {
+		return this.database
+			.select({ ...getTableColumns(warehouses) })
+			.from(warehouseOrganizations)
+			.innerJoin(
+				warehouses,
+				eq(warehouses.id, warehouseOrganizations.warehouseId),
+			)
+			.where(
+				and(
+					eq(warehouseOrganizations.organizationId, organizationId),
+					isNull(warehouseOrganizations.deletedAt),
+					isNull(warehouses.deletedAt),
+				),
+			)
+			.orderBy(asc(warehouses.name));
 	}
 
 	/**

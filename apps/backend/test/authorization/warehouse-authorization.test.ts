@@ -143,6 +143,13 @@ beforeAll(async () => {
 		async findById(id) {
 			return id === seed.id ? seed : null;
 		},
+		// ERP-0031: linked only to the fixture's member org.
+		async isLinked(warehouseId, organizationId) {
+			return warehouseId === seed.id && organizationId === fixture.orgA;
+		},
+		async listLinked(organizationId) {
+			return organizationId === fixture.orgA ? [seed] : [];
+		},
 		async findByCode() {
 			return null;
 		},

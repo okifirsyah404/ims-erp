@@ -151,7 +151,10 @@ export class WarehouseService {
 		input: TWarehouseCreateData,
 		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TWarehouseDetail> {
-		const organizationId = input.organizationId ?? null;
+		// ERP-0031 (D1): every warehouse is global; organization access comes
+		// from `warehouse_organizations` links, so a client-supplied scope is
+		// dropped rather than stored. The column is frozen at NULL.
+		const organizationId = null;
 
 		const existing = await this.warehouseRepository.findByCode(
 			organizationId,
@@ -159,7 +162,10 @@ export class WarehouseService {
 		);
 		if (existing) throw new WarehouseCodeTakenError();
 
-		const warehouse = await this.warehouseRepository.create(input);
+		const warehouse = await this.warehouseRepository.create({
+			...input,
+			organizationId: null,
+		});
 
 		// D-A: a warehouse created as the default demotes its siblings.
 		if (warehouse.isDefault) {
@@ -429,25 +435,36 @@ export class WarehouseService {
 	}
 
 	/**
-	 * Whether a warehouse is reachable from an organization.
+	 * Whether a warehouse is reachable from an organization (ERP-0031).
 	 *
 	 * @param warehouseId - Warehouse id
-	 * @param organizationId - Caller's tenant, or `null` for a global caller
-	 * @returns Always `true` today
+	 * @param organizationId - Caller's tenant
+	 * @returns `true` when reachable; the caller turns a `false` into its own
+	 *   not-found semantics
 	 * @throws {WarehouseNotFoundError} When the warehouse does not exist
 	 * @remarks
-	 * **Stub (B1).** No warehouse→organization link exists until ERP-0031 adds
-	 * `inventory.warehouse_organizations`, so every alive warehouse is
-	 * reachable. The call site is real so that follow-up is a body swap,
-	 * not a refactor.
+	 * A warehouse is reachable when an alive `warehouse_organizations` link
+	 * exists. The global-admin bypass lives at the controller/service boundary
+	 * that knows the caller's platform role, not here: this port only answers
+	 * the link question so the assets module can compose it with its own rules.
 	 */
 	async assertWarehouseReachableByOrg(
 		warehouseId: string,
-		organizationId: string | null,
+		organizationId: string,
 	): Promise<boolean> {
 		await this.requireWarehouse(warehouseId);
-		void organizationId;
-		return true;
+		return this.warehouseRepository.isLinked(warehouseId, organizationId);
+	}
+
+	/**
+	 * Warehouses the active organization is linked to (ERP-0031).
+	 *
+	 * @param organizationId - The caller's validated tenant from `erp`
+	 */
+	async listLinkedWarehouses(
+		organizationId: string,
+	): Promise<TWarehouseSelect[]> {
+		return this.warehouseRepository.listLinked(organizationId);
 	}
 
 	/**

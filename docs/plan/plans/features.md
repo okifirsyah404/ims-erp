@@ -108,9 +108,11 @@ Last synced: 2026-11-06.
 - Warehouse↔organization links + scoped access — ERP-0031. Evidence:
   `docs.dbml` `inventory.warehouse_organizations`; Slice 1 landed 2026-11-06
   (Drizzle table + migration `20261106062510_erp0031_warehouse_org_links`
-  backfill-and-freeze, seeder retargeted — see `progress.md`). Enforcement
-  (`assertWarehouseLinked` + `EXISTS` filters, `/warehouses/linked`, grants,
-  denial tests) and web-admin UI remain.
+  backfill-and-freeze, seeder retargeted); Slice 2 landed 2026-11-06
+  (`assertWarehouseReachableByOrg` real, `GET /warehouses/linked`, stock
+  receive/issue + adjustment create gated — unlinked→404, global-admin bypass,
+  admin stock grants + data migration). Web-admin link/unlink UI remains —
+  see `progress.md`.
 - Stock transfers (warehouse→warehouse, storage→storage) — ERP-0032.
 - Tracking views (per-storage balances, movement filters, unit location) —
   ERP-0033.

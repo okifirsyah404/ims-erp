@@ -107,6 +107,15 @@ export interface IWarehouseRepository {
 	findById(id: string): Promise<TWarehouseSelect | null>;
 
 	/**
+	 * Whether an alive `warehouse_organizations` link row exists for the pair
+	 * (ERP-0031).
+	 */
+	isLinked(warehouseId: string, organizationId: string): Promise<boolean>;
+
+	/** Alive warehouses linked to one organization, ordered by name. */
+	listLinked(organizationId: string): Promise<TWarehouseSelect[]>;
+
+	/**
 	 * Fetches one alive warehouse by scope + code.
 	 *
 	 * @param organizationId - `null` matches global rows only

@@ -280,6 +280,14 @@ function fakeWarehouses(): IWarehouseRepository {
 		async findById(id) {
 			return WAREHOUSES.find((row) => row.id === id) ?? null;
 		},
+		// ERP-0031: service-level link assert — link every fake warehouse to a
+		// test org so internal flows pass.
+		async isLinked(warehouseId, organizationId) {
+			return organizationId === 'org-a';
+		},
+		async listLinked(organizationId) {
+			return organizationId === 'org-a' ? WAREHOUSES : [];
+		},
 		async findByCode() {
 			return null;
 		},

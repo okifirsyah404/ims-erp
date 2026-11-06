@@ -41,6 +41,7 @@ import {
 	AssetTransitionError,
 } from '../errors/asset.errors';
 import { InventoryAuditWriter } from '../../inventory/services/inventory-audit.writer';
+import { WarehouseNotFoundError } from '../../inventory/errors/inventory.errors';
 import { SYSTEM_AUDIT_ACTOR } from '../../inventory/constants/audit-actor';
 import type { TInventoryAuditActor } from '../../inventory/constants/audit-actor';
 
@@ -368,16 +369,19 @@ export class AssetOperationsService {
 		return movement;
 	}
 
-	/** Inventory contract: the warehouse exists and the storage belongs to it. */
+	/** Inventory contract: the warehouse exists, is linked, and the storage belongs to it. */
 	private async assertLocation(
 		warehouseId: string,
 		storageId: string | null,
 		organizationId: string,
 	): Promise<void> {
-		await this.warehouses.assertWarehouseReachableByOrg(
+		const reachable = await this.warehouses.assertWarehouseReachableByOrg(
 			warehouseId,
 			organizationId,
 		);
+		// Unlinked is reported as not-found rather than forbidden, so a tenant
+		// cannot probe which warehouse ids exist (ERP-0031 acceptance).
+		if (!reachable) throw new WarehouseNotFoundError();
 		if (storageId) {
 			await this.warehouses.assertStorageInWarehouse(storageId, warehouseId);
 		}

@@ -278,6 +278,11 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		approval_rule: ['read'],
 		service_ticket: ['read', 'create', 'update', 'assign'],
 		asset: ['read'],
+		// ERP-0031: admins see the warehouse stock of warehouses their
+		// organization is linked to (read-only; receiving/issuing stays with the
+		// warehouse role).
+		stock: ['read', 'export'],
+		stock_adjustment: ['read'],
 		license: ['read'],
 		audit_log: ['read'],
 	},

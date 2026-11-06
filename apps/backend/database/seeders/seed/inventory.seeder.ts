@@ -201,6 +201,10 @@ export async function seedInventory(): Promise<void> {
 	});
 
 	if (organizationId !== null) {
+		// Both seeded warehouses are linked to the dev org (ERP-0031): the
+		// global one stays the default and its balances stay shared, but the
+		// org can now act in it through the link.
+		await ensureWarehouseOrganizationLink(globalWarehouse, organizationId);
 		await ensureWarehouseOrganizationLink(orgWarehouse, organizationId);
 	}
 

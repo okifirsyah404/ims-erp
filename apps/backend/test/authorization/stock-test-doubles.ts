@@ -46,6 +46,7 @@ import { StockService } from '../../src/app/inventory/services/stock.service';
 import { AdjustmentService } from '../../src/app/inventory/services/adjustment.service';
 import { createNumberingDouble } from '../helpers/numbering-double';
 import { AuditWriterDouble } from '../helpers/audit-writer-double';
+import { ORG_A } from './test-app';
 
 /** An adjustment row, writable by the test between requests. */
 export type IStockAdjustmentSelectLike = TStockAdjustmentSelect;
@@ -211,6 +212,14 @@ export function installStockDoubles(): void {
 		},
 		async findById(id) {
 			return id === WAREHOUSE.id ? WAREHOUSE : null;
+		},
+		// ERP-0031: the test warehouse is linked to ORG_A (the fixture's member
+		// org), so actor-driven stock writes pass the controller link gate.
+		async isLinked(warehouseId, organizationId) {
+			return warehouseId === WAREHOUSE.id && organizationId === ORG_A;
+		},
+		async listLinked(organizationId) {
+			return organizationId === ORG_A ? [WAREHOUSE] : [];
 		},
 		async findByCode() {
 			return null;

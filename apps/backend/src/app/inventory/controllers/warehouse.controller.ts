@@ -214,4 +214,40 @@ export class WarehouseController {
 				adminRoute('Archives a storage'),
 			);
 	}
+
+	/**
+	 * Builds the Elysia plugin mounting `GET /warehouses/linked`.
+	 *
+	 * @returns An Elysia instance with the `erp` guard applied
+	 *
+	 * @remarks
+	 * Split from {@link WarehouseController.plugin} because the guards differ:
+	 * the admin CRUD rides `sessionGuard` (a global admin may have no
+	 * membership), while the linked read is an organization-scoped call that
+	 * needs the validated `erp.organizationId`. Mounted in the same class so
+	 * the service resolution and route ownership stay together.
+	 */
+	static linkedPlugin() {
+		const warehouseService = container.resolve<WarehouseService>(
+			WAREHOUSE_SERVICE_TOKEN,
+		);
+
+		return domainPlugin({
+			name: 'inventory-warehouses-linked',
+			prefix: '/warehouses/linked',
+			tags: ['Inventory'],
+			guards: 'erp',
+		}).get(
+			'',
+			async ({ erp }) =>
+				ok(await warehouseService.listLinkedWarehouses(erp.organizationId)),
+			{
+				erp: { permission: ['warehouse:read'] },
+				detail: {
+					description:
+						'Warehouses the active organization is linked to (ERP-0031)',
+				},
+			},
+		);
+	}
 }

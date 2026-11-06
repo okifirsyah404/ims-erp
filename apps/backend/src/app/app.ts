@@ -101,6 +101,11 @@ export function createApp() {
 			// `session`-guarded prefixes; mount order is irrelevant as none of its
 			// paths overlap the modules above.
 			.use(ItemController.plugin())
+			// `/warehouses/linked` mounts before the admin CRUD: both prefixes
+			// start with `/warehouses`, and the linked read needs the `erp`
+			// guard, not the session guard. Static segments win, but mounting
+			// first keeps the intent obvious.
+			.use(WarehouseController.linkedPlugin())
 			.use(WarehouseController.plugin())
 			.use(StockController.plugin())
 			.use(AdjustmentController.plugin())
