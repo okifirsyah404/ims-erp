@@ -22,6 +22,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { container } from 'tsyringe';
 import type {
+	TItemSelect,
 	TStockBalanceSelect,
 	TStockMovementSelect,
 	TWarehouseSelect,
@@ -37,6 +38,7 @@ import type {
 	TBalanceKey,
 	TBalancePaginationRequest,
 } from '../../src/app/inventory/contracts/balance.repository.interface';
+import type { IItemRepository } from '../../src/app/inventory/contracts/item.repository.interface';
 import type { IWarehouseRepository } from '../../src/app/inventory/contracts/warehouse.repository.interface';
 import {
 	BALANCE_REPOSITORY_TOKEN,
@@ -270,6 +272,38 @@ function fakeBalances(store: BalanceStore): IBalanceRepository {
 }
 
 /** Minimal warehouse repository: `findById` is all the service uses. */
+function fakeItems(): IItemRepository {
+	return {
+		async paginate() {
+			return {
+				meta: { page: 1, limit: 20, total: 0, totalPages: 0 },
+				data: [],
+			};
+		},
+		async findById() {
+			return null;
+		},
+		async findBySku() {
+			return null;
+		},
+		async create(data) {
+			return data as TItemSelect;
+		},
+		async update() {
+			return null;
+		},
+		async archive() {
+			return null;
+		},
+		async findNamesByIds() {
+			return [];
+		},
+		async countUnits() {
+			return 0;
+		},
+	};
+}
+
 function fakeWarehouses(): IWarehouseRepository {
 	return {
 		async paginate() {
@@ -365,6 +399,9 @@ beforeEach(() => {
 	});
 	container.register(WAREHOUSE_REPOSITORY_TOKEN, {
 		useValue: fakeWarehouses(),
+	});
+	container.register(ITEM_REPOSITORY_TOKEN, {
+		useValue: fakeItems(),
 	});
 	container.register(STOCK_SERVICE_TOKEN, { useValue: new StockService(
 		container.resolve(MOVEMENT_REPOSITORY_TOKEN),
