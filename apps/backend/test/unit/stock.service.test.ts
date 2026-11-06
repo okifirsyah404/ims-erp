@@ -288,6 +288,15 @@ function fakeWarehouses(): IWarehouseRepository {
 		async listLinked(organizationId) {
 			return organizationId === 'org-a' ? WAREHOUSES : [];
 		},
+		async listOrganizations() {
+			return [];
+		},
+		async linkOrganization() {
+			return { created: true };
+		},
+		async unlinkOrganization() {
+			return false;
+		},
 		async findByCode() {
 			return null;
 		},

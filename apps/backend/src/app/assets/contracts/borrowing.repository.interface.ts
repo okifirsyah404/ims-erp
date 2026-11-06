@@ -85,6 +85,19 @@ export interface IBorrowingRepository {
 		request: TBorrowingPaginationRequest,
 	): Promise<TPaginationResult<TBorrowingSelect>>;
 
+	/**
+	 * Counts unreturned borrowing lines originating in one warehouse for one
+	 * organization (ERP-0031 unlink guard).
+	 *
+	 * @remarks
+	 * "Open" = the header is `issued` or `partially_returned` (custody has
+	 * left, not fully back) and the line has no `returned_at` / loss mark.
+	 */
+	countOpenByOriginWarehouse(
+		warehouseId: string,
+		organizationId: string,
+	): Promise<number>;
+
 	/** Fetches one alive borrowing by id, scoped to its tenant. */
 	findById(
 		id: string,

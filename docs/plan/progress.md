@@ -12,6 +12,80 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed (this session - ERP-0031 Slice 3 admin link UI + member pickers, 2026-11-06)
+
+Status: **implemented**. Slice 3 closes ERP-0031: global admins can link and
+unlink organizations from a warehouse, unlinking is refused while custody is
+out, and member-facing pickers now read the organization-scoped warehouse list
+instead of the application-admin-only one.
+
+What landed:
+
+- Audit vocabulary: `warehouse.linked` / `warehouse.unlinked` added to
+  `AUDIT_ACTIONS` (TS-only — the column is text, so no migration).
+- Port: `inventory/contracts/warehouse-borrowing-guard.port.ts`
+  (`IWarehouseBorrowingGuard` + `NoopWarehouseBorrowingGuard`). Inventory
+  cannot import Assets (the dependency points the other way), so the
+  open-borrowing question is a port registered by `registerAssets` as
+  `WarehouseBorrowingGuard` over
+  `IBorrowingRepository.countOpenByOriginWarehouse(warehouseId,
+  organizationId)` ("open" = header `issued`/`partially_returned`, line not
+  returned, not marked lost). Inventory registers the noop, so the module
+  stays usable standalone and in tests.
+- Repository: `listOrganizations`, `linkOrganization` (idempotent; revives a
+  soft-deleted pair because the partial unique forbids a second row) and
+  `unlinkOrganization` (soft delete).
+- Service: `listWarehouseOrganizations`, `linkOrganization`,
+  `unlinkOrganization` — the last throws `WarehouseLinkConflictError` (409,
+  key `inventory.warehouseLinkConflict`, locale bundles updated en+id) while
+  open borrowings exist, and writes no link change when it refuses. Both link
+  and unlink audit with the acting admin.
+- Routes (admin plugin, `requireGlobalAdmin`): `GET/POST
+  /warehouses/:id/organizations`, `DELETE
+  /warehouses/:id/organizations/:organizationId`. New
+  `warehouseLinkSchema` + `warehouseLinkParamSchema`.
+- `GET /warehouses/linked` now returns each linked warehouse **with its
+  storages** (`TWarehouseLinked`) so member pickers can choose a bin without
+  the admin-only detail route. It carries **no** `warehouse:*` permission: the
+  invariant test pins "no organization role holds a warehouse action"
+  (ADR-0008), and the response is already scoped to the caller's own links, so
+  the `erp` guard plus organization scope is sufficient. A `warehouse:read`
+  grant was written, found to break that invariant test, and reverted together
+  with its data migration — nothing shipped.
+- Web admin: new "Organizations" tab on `/inventory/warehouses/$warehouseId`
+  (`components/inventory/warehouse-organizations-tab.tsx`) — org picker from
+  the organization API, link/unlink with confirmation, 409 surfaced as an
+  error toast. API client gained the three link calls and
+  `linkedWarehousesQueryOptions`. Asset place/transfer (`asset-detail.tsx`)
+  and the adjustment form now source warehouses from the linked endpoint —
+  they previously called the admin-only list and failed for organization
+  users.
+- Tests: 7 new cases in `warehouse.service.test.ts` (link creates + audits,
+  idempotent retry, missing warehouse 404, unlink removes + audits, no-link
+  `removed:false`, 409 refusal leaves the link alive, list returns alive links
+  only). Test doubles updated for the widened repository interface and the
+  new constructor dependency.
+
+```text
+bun run test (root)              → 536 pass, 0 fail, 993 expect (was 529)
+bun run lint (root)              → 0 errors (6 pre-existing warnings)
+bun run typecheck (root)         → green; web-admin `bunx tsc -b` green
+drizzle:migrate x2               → applied successfully (no new migration)
+drizzle:seed x2                  → clean, idempotent
+DB end-state: GLOBAL-MAIN + WH-MAIN each linked to the dev org; 0 warehouses
+with non-null organization_id; system admin roles still carry stock
+[read,export] / stock_adjustment [read]
+```
+
+`docs/database/` reviewed: Slice 3 changes no table, column, index,
+constraint, status vocabulary, or cross-module reference (the audit action
+list is a TS union over a text column, and the borrowing count is a query over
+existing columns), so `docs.dbml` is unchanged.
+
+Still open for ERP-0031 acceptance: browser walk-through of the new tab and
+the member pickers, and reviewer sign-off before the Slice 1 migration is
+applied to any non-local database.
+
 ## Completed (this session - ERP-0031 Slice 2 enforcement + grants, 2026-11-06)
 
 Status: **implemented**. Slice 2 of ERP-0031: the ERP-0036 reachability stub
@@ -31,8 +105,9 @@ What landed:
 - Assets: `assertLocation` throws `WarehouseNotFoundError` when the warehouse
   is unlinked (404, not 403 — ids cannot be probed).
 - Routes: `GET /warehouses/linked` via a new `WarehouseController.linkedPlugin()`
-  (`erp` guard, `warehouse:read`), mounted in `app.ts` **before** the admin
-  `.plugin()` because the guards differ (session+admin vs erp).
+  (`erp` guard; the permission check was dropped in Slice 3 — see below),
+  mounted in `app.ts` **before** the admin `.plugin()` because the guards
+  differ (session+admin vs erp).
 - Stock: `StockService.assertWarehouseLinkedFor(warehouseId, actorOrganizationId)`
   called from the stock controller (`receipts`, `issues`) and the adjustment
   controller (create) via an `assertWarehouseAccessible` helper. Global-admin
@@ -660,9 +735,11 @@ bun docs/database/validate-dbml.ts          → 255 tables, 0 cross-module refs,
                                               0 timestamp gaps, OK
 ```
 
-**Next executable task:** ERP-0031. First step: query dev DB for warehouses
-with non-null `organization_id` (decides whether backfill needs
-`recomputeFromLedger`).
+**Next executable task:** ERP-0032 (stock transfers) — ERP-0031 is now
+implemented in full, so its dependency is satisfied. Start by reading the
+transfer requirements in `backlog.md` and the `inventory` tables in
+`docs/database/docs.dbml`; ERP-0031's remaining work is acceptance only
+(browser walk-through, reviewer confirmation before a non-local migration).
 
 ## Completed — v5.1 per-module plans (2026-11-04)
 

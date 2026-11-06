@@ -24,6 +24,7 @@ import { MapPin, PackageOpen } from 'lucide-react';
 import { AdminOnly } from '@/components/inventory/admin-only';
 import { StorageDialog, useArchiveStorage } from '@/components/inventory/storage-dialog';
 import { WarehouseItemTable } from '@/components/inventory/warehouse-item-table';
+import { WarehouseOrganizationsTab } from '@/components/inventory/warehouse-organizations-tab';
 import { EmptyState } from '@/components/empty-state';
 import { warehouseQueryOptions } from '@/lib/warehouse-api';
 
@@ -153,6 +154,9 @@ function WarehouseDetailPage() {
 						<TabsTrigger value='storage'>
 							{t('inventory:warehouses.storageTab')}
 						</TabsTrigger>
+						<TabsTrigger value='organizations'>
+							{t('inventory:warehouses.organizationsTab')}
+						</TabsTrigger>
 					</TabsList>
 					<TabsContent value='products'>
 						<WarehouseItemTable warehouseId={warehouseId} itemKind='product' />
@@ -165,6 +169,9 @@ function WarehouseDetailPage() {
 							warehouseId={warehouseId}
 							warehouseIsActive={warehouse.isActive}
 						/>
+					</TabsContent>
+					<TabsContent value='organizations'>
+						<WarehouseOrganizationsTab warehouseId={warehouseId} />
 					</TabsContent>
 				</Tabs>
 			</div>

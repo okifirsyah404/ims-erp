@@ -116,6 +116,37 @@ export interface IWarehouseRepository {
 	listLinked(organizationId: string): Promise<TWarehouseSelect[]>;
 
 	/**
+	 * Alive organizations linked to one warehouse, ordered by name.
+	 *
+	 * @remarks
+	 * Rows are `{ organizationId, createdAt }` only — resolving names is the
+	 * caller's job (the admin UI joins against the organization API), so this
+	 * module never reads `auth.organizations`.
+	 */
+	listOrganizations(
+		warehouseId: string,
+	): Promise<Array<{ organizationId: string; createdAt: Date }>>;
+
+	/**
+	 * Creates an alive link, reviving a soft-deleted one for the same pair.
+	 *
+	 * @remarks
+	 * Idempotent: an already-alive link is left untouched (`created=false`).
+	 * The partial unique `warehouse_organizations_uq` would otherwise reject
+	 * the second insert for a pair.
+	 */
+	linkOrganization(
+		warehouseId: string,
+		organizationId: string,
+	): Promise<{ created: boolean }>;
+
+	/** Soft-deletes the alive link for the pair. `false` when none exists. */
+	unlinkOrganization(
+		warehouseId: string,
+		organizationId: string,
+	): Promise<boolean>;
+
+	/**
 	 * Fetches one alive warehouse by scope + code.
 	 *
 	 * @param organizationId - `null` matches global rows only

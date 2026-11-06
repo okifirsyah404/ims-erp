@@ -7,6 +7,7 @@ import { AssetCategoryService } from './services/asset-category.service';
 import { AssetService } from './services/asset.service';
 import { AssetOperationsService } from './services/asset-operations.service';
 import { BorrowingService } from './services/borrowing.service';
+import { WarehouseBorrowingGuard } from './services/warehouse-borrowing-guard';
 import {
 	ASSET_CATEGORY_REPOSITORY_TOKEN,
 	ASSET_CATEGORY_SERVICE_TOKEN,
@@ -17,6 +18,7 @@ import {
 	BORROWING_REPOSITORY_TOKEN,
 	BORROWING_SERVICE_TOKEN,
 } from './constants/di';
+import { WAREHOUSE_BORROWING_GUARD_TOKEN } from '@app/inventory/constants/di';
 
 export * from './constants/di';
 export { ASSET_DOC_TYPES } from './constants/doc-types';
@@ -55,5 +57,11 @@ export function registerAssets(container: DependencyContainer): void {
 	});
 	container.register(BORROWING_SERVICE_TOKEN, {
 		useClass: BorrowingService,
+	});
+	// Inventory's unlink guard port (ERP-0031): assets answers the
+	// open-borrowings question because custody state lives here. Runs after
+	// BORROWING_REPOSITORY_TOKEN above.
+	container.register(WAREHOUSE_BORROWING_GUARD_TOKEN, {
+		useClass: WarehouseBorrowingGuard,
 	});
 }

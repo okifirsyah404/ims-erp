@@ -13,6 +13,7 @@ import {
 	desc,
 	eq,
 	ilike,
+	inArray,
 	isNotNull,
 	isNull,
 	lt,
@@ -258,8 +259,37 @@ export class BorrowingRepository implements IBorrowingRepository {
 	 * concurrency: two workers may both read a line, but only one update
 	 * matches.
 	 */
-	async findDueLines(now: Date, limit: number): Promise<TDueBorrowingLine[]> {
-		const rows = await this.database
+	/**
+	 * Counts unreturned borrowing lines originating in one warehouse for one
+	 * organization (ERP-0031 unlink guard).
+	 *
+	 * @remarks
+	 * Joins the header for the status filter rather than trusting the line:
+	 * a `returned` header with one late-marked line must not block.
+	 */
+	async countOpenByOriginWarehouse(
+		warehouseId: string,
+		organizationId: string,
+	): Promise<number> {
+		const [row] = await this.database
+			.select({ value: count() })
+			.from(borrowingLines)
+			.innerJoin(borrowings, eq(borrowingLines.borrowingId, borrowings.id))
+			.where(
+				and(
+					isNull(borrowingLines.deletedAt),
+					isNull(borrowings.deletedAt),
+					eq(borrowings.organizationId, organizationId),
+					eq(borrowingLines.originWarehouseId, warehouseId),
+					inArray(borrowings.status, ['issued', 'partially_returned']),
+					isNull(borrowingLines.returnedAt),
+					isNull(borrowingLines.markedLostAt),
+				),
+			);
+		return row?.value ?? 0;
+	}
+
+	async findDueLines(now: Date, limit: number): Promise<TDueBorrowingLine[]> {		const rows = await this.database
 			.select({
 				line: borrowingLines,
 				borrowingId: borrowings.id,

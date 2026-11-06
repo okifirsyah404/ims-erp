@@ -206,6 +206,9 @@ export function installStockDoubles(): void {
 		},
 	};
 
+	/** Simulates the single alive link row of the fake (ERP-0031). */
+	let linkRow = true;
+
 	const warehouses: IWarehouseRepository = {
 		async paginate() {
 			return emptyPage(1, 20);
@@ -220,6 +223,22 @@ export function installStockDoubles(): void {
 		},
 		async listLinked(organizationId) {
 			return organizationId === ORG_A ? [WAREHOUSE] : [];
+		},
+		async listOrganizations(warehouseId) {
+			return warehouseId === WAREHOUSE.id && linkRow
+				? [{ organizationId: ORG_A, createdAt: new Date(0) }]
+				: [];
+		},
+		async linkOrganization(warehouseId, organizationId) {
+			if (warehouseId === WAREHOUSE.id && organizationId === ORG_A && linkRow)
+				return { created: false };
+			linkRow = true;
+			return { created: true };
+		},
+		async unlinkOrganization(warehouseId, organizationId) {
+			const matched = warehouseId === WAREHOUSE.id && organizationId === ORG_A && linkRow;
+			linkRow = false;
+			return matched;
 		},
 		async findByCode() {
 			return null;

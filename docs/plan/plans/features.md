@@ -103,16 +103,18 @@ Last synced: 2026-11-06.
   `plans/warehouse-hardening.md` phases 1/2/2b done, UI
   `/inventory/warehouses/*`. Note: multi-warehouse rebaselined by ADR-0010
   (proposed 2026-11-04, owner sign-off pending).
+- Warehouse↔organization links + scoped access — ERP-0031. Evidence:
+  `inventory.warehouse_organizations` (Drizzle + migration
+  `20261106062510_erp0031_warehouse_org_links`), real
+  `assertWarehouseReachableByOrg`, `GET /warehouses/linked` (with storages),
+  stock receive/issue + adjustment create gated (unlinked→404, global-admin
+  bypass), assets `assertLocation` 404 on unlinked, admin link/unlink endpoints
+  with audit and a 409 open-borrowing guard, Organizations tab on the
+  warehouse detail, member pickers on the linked endpoint; 536 backend tests.
+  Remaining: browser walk-through, reviewer sign-off before a non-local
+  migration. See `progress.md` (2026-11-06).
 
 ### planned (ADR-0010)
-- Warehouse↔organization links + scoped access — ERP-0031. Evidence:
-  `docs.dbml` `inventory.warehouse_organizations`; Slice 1 landed 2026-11-06
-  (Drizzle table + migration `20261106062510_erp0031_warehouse_org_links`
-  backfill-and-freeze, seeder retargeted); Slice 2 landed 2026-11-06
-  (`assertWarehouseReachableByOrg` real, `GET /warehouses/linked`, stock
-  receive/issue + adjustment create gated — unlinked→404, global-admin bypass,
-  admin stock grants + data migration). Web-admin link/unlink UI remains —
-  see `progress.md`.
 - Stock transfers (warehouse→warehouse, storage→storage) — ERP-0032.
 - Tracking views (per-storage balances, movement filters, unit location) —
   ERP-0033.

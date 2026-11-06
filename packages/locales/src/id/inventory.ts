@@ -132,6 +132,20 @@ const inventory = {
 	'warehouses.storageCreated': 'Penyimpanan dibuat',
 	'warehouses.storageUpdated': 'Penyimpanan diperbarui',
 	'warehouses.storageArchived': 'Penyimpanan diarsipkan',
+	'warehouses.organizationsTab': 'Organisasi',
+	'warehouses.linkedOrganizations': 'Organisasi tertaut',
+	'warehouses.linkedOrganizationsHint':
+		'Organisasi yang boleh menyimpan stok dan aset di gudang ini.',
+	'warehouses.selectOrganization': 'Pilih organisasi',
+	'warehouses.linkAction': 'Tautkan',
+	'warehouses.unlinkAction': 'Putuskan',
+	'warehouses.unlinkConfirm':
+		'Putuskan akses organisasi ini ke gudang?',
+	'warehouses.linkCreated': 'Organisasi ditautkan',
+	'warehouses.linkAlreadyExists': 'Organisasi sudah tertaut',
+	'warehouses.linkRemoved': 'Tautan organisasi diputus',
+	'warehouses.noLinkedOrganizations': 'Belum ada organisasi yang tertaut.',
+	'warehouses.linkedSince': 'Tertaut sejak',
 
 	// Warehouse create / edit form.
 	'warehouseForm.new': 'Gudang baru',

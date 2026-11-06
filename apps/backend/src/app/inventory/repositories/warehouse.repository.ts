@@ -157,6 +157,87 @@ export class WarehouseRepository implements IWarehouseRepository {
 			.orderBy(asc(warehouses.name));
 	}
 
+	/** Alive organizations linked to one warehouse, ordered by link age. */
+	async listOrganizations(
+		warehouseId: string,
+	): Promise<Array<{ organizationId: string; createdAt: Date }>> {
+		return this.database
+			.select({
+				organizationId: warehouseOrganizations.organizationId,
+				createdAt: warehouseOrganizations.createdAt,
+			})
+			.from(warehouseOrganizations)
+			.where(
+				and(
+					eq(warehouseOrganizations.warehouseId, warehouseId),
+					isNull(warehouseOrganizations.deletedAt),
+				),
+			)
+			.orderBy(asc(warehouseOrganizations.createdAt));
+	}
+
+	/**
+	 * Creates an alive link, reviving a soft-deleted one for the same pair.
+	 *
+	 * @remarks
+	 * Idempotent: an already-alive link returns `{ created: false }` without a
+	 * write. The revival mirrors the seeder's `ensureWarehouseOrganizationLink`.
+	 */
+	async linkOrganization(
+		warehouseId: string,
+		organizationId: string,
+	): Promise<{ created: boolean }> {
+		const [existing] = await this.database
+			.select({
+				id: warehouseOrganizations.id,
+				deletedAt: warehouseOrganizations.deletedAt,
+			})
+			.from(warehouseOrganizations)
+			.where(
+				and(
+					eq(warehouseOrganizations.warehouseId, warehouseId),
+					eq(warehouseOrganizations.organizationId, organizationId),
+				),
+			)
+			.limit(1);
+
+		if (existing && existing.deletedAt === null) return { created: false };
+
+		if (existing) {
+			await this.database
+				.update(warehouseOrganizations)
+				.set({ deletedAt: null, updatedAt: new Date() })
+				.where(eq(warehouseOrganizations.id, existing.id));
+			return { created: true };
+		}
+
+		await this.database.insert(warehouseOrganizations).values({
+			warehouseId,
+			organizationId,
+			createdAt: new Date(),
+		});
+		return { created: true };
+	}
+
+	/** Soft-deletes the alive link for the pair, if any. */
+	async unlinkOrganization(
+		warehouseId: string,
+		organizationId: string,
+	): Promise<boolean> {
+		const deleted = await this.database
+			.update(warehouseOrganizations)
+			.set({ deletedAt: new Date(), updatedAt: new Date() })
+			.where(
+				and(
+					eq(warehouseOrganizations.warehouseId, warehouseId),
+					eq(warehouseOrganizations.organizationId, organizationId),
+					isNull(warehouseOrganizations.deletedAt),
+				),
+			)
+			.returning({ id: warehouseOrganizations.id });
+		return deleted.length > 0;
+	}
+
 	/**
 	 * Counts items by kind and storages for a set of warehouses.
 	 *

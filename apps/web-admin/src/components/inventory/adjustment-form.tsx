@@ -24,7 +24,7 @@ import {
 } from '@/lib/adjustment-api';
 import { itemsQueryOptions } from '@/lib/inventory-api';
 import { balancesQueryOptions } from '@/lib/stock-api';
-import { warehousesQueryOptions } from '@/lib/warehouse-api';
+import { linkedWarehousesQueryOptions } from '@/lib/warehouse-api';
 
 /** One editable line row. `key` is React's, so removing a row cannot reuse state. */
 type TLineDraft = {
@@ -70,7 +70,7 @@ export function AdjustmentForm() {
 	const [notes, setNotes] = useState('');
 	const [lines, setLines] = useState<TLineDraft[]>([blankLine()]);
 
-	const warehouses = useQuery(warehousesQueryOptions({ limit: 100, isActive: true }));
+	const warehouses = useQuery(linkedWarehousesQueryOptions());
 	const items = useQuery(itemsQueryOptions({}));
 	// The system's belief, so the counter sees what they are counting against.
 	// Only meaningful once a warehouse is chosen: a balance is per warehouse.
@@ -132,7 +132,7 @@ export function AdjustmentForm() {
 		});
 	}
 
-	const warehouseRows = warehouses.data?.rows ?? [];
+	const warehouseRows = warehouses.data ?? [];
 	const itemRows = items.data?.rows ?? [];
 	const balanceRows = balances.data?.rows ?? [];
 

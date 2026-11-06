@@ -24,6 +24,7 @@ import type {
 } from '../contracts/warehouse-storage.repository.interface';
 import {
 	WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
+	WAREHOUSE_BORROWING_GUARD_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 } from '../constants/di';
@@ -34,8 +35,10 @@ import {
 	WarehouseCodeTakenError,
 	WarehouseHasUnitsError,
 	WarehouseInactiveError,
+	WarehouseLinkConflictError,
 	WarehouseNotFoundError,
 } from '../errors/inventory.errors';
+import type { IWarehouseBorrowingGuard } from '../contracts/warehouse-borrowing-guard.port';
 
 /** A warehouse with its 1:1 address, its bins, and its kind counts. */
 export type TWarehouseDetail = TWarehouseSelect & {
@@ -46,6 +49,11 @@ export type TWarehouseDetail = TWarehouseSelect & {
 /** A list-page warehouse row decorated with kind counts. */
 export type TWarehouseWithCounts = TWarehouseSelect &
 	Omit<TWarehouseKindCounts, 'warehouseId'>;
+
+/** A warehouse linked to the caller's organization, with its bins (ERP-0031). */
+export type TWarehouseLinked = TWarehouseSelect & {
+	storages: TWarehouseStorageSelect[];
+};
 
 /** Input for updating a warehouse. `code`/`organizationId` already stripped. */
 export type TWarehouseUpdateInput = {
@@ -86,6 +94,13 @@ export class WarehouseService {
 		private readonly storageRepository: IWarehouseStorageRepository,
 		/** Fire-and-forget audit writer (hardening plan D3). */
 		private readonly audit: InventoryAuditWriter,
+		/**
+		 * Open-borrowing guard port (ERP-0031). Optional by token: `registerAssets`
+		 * provides the real implementation; tests and asset-less compositions
+		 * register a noop.
+		 */
+		@inject(WAREHOUSE_BORROWING_GUARD_TOKEN)
+		private readonly borrowingGuard: IWarehouseBorrowingGuard,
 	) {}
 
 	/** Fetches one filtered page of warehouses, decorated with kind counts. */
@@ -457,14 +472,112 @@ export class WarehouseService {
 	}
 
 	/**
-	 * Warehouses the active organization is linked to (ERP-0031).
+	 * Warehouses the active organization is linked to, each with its bins
+	 * (ERP-0031).
+	 *
+	 * @remarks
+	 * Storages ride along because the member-facing pickers (asset
+	 * place/transfer, stock operations) choose a bin; a separate
+	 * warehouse-detail call would hit the admin-only route.
+	 *
+	 * ponytail: one storage query per linked warehouse. A tenant links a
+	 * handful, not hundreds — batch it if that ever changes.
 	 *
 	 * @param organizationId - The caller's validated tenant from `erp`
 	 */
 	async listLinkedWarehouses(
 		organizationId: string,
-	): Promise<TWarehouseSelect[]> {
-		return this.warehouseRepository.listLinked(organizationId);
+	): Promise<TWarehouseLinked[]> {
+		const rows = await this.warehouseRepository.listLinked(organizationId);
+		return Promise.all(
+			rows.map(async (warehouse) => ({
+				...warehouse,
+				storages: await this.storageRepository.listByWarehouse(warehouse.id),
+			})),
+		);
+	}
+
+	/**
+	 * Organizations linked to one warehouse (ERP-0031, admin view).
+	 *
+	 * @param warehouseId - Warehouse id
+	 * @throws {WarehouseNotFoundError} When the warehouse is absent or archived
+	 */
+	async listWarehouseOrganizations(warehouseId: string): Promise<
+		Array<{ organizationId: string; createdAt: Date }>
+	> {
+		await this.requireWarehouse(warehouseId);
+		return this.warehouseRepository.listOrganizations(warehouseId);
+	}
+
+	/**
+	 * Grants one organization access to a warehouse (ERP-0031, admin-only).
+	 *
+	 * @remarks
+	 * Idempotent: linking an already-linked pair is a success (audit records
+	 * `created: false` so the ledger distinguishes a real grant from a retry).
+	 *
+	 * @param warehouseId - Warehouse id
+	 * @param organizationId - Organization to grant
+	 * @param actor - The acting global admin
+	 * @throws {WarehouseNotFoundError} When the warehouse is absent or archived
+	 */
+	async linkOrganization(
+		warehouseId: string,
+		organizationId: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+	): Promise<{ created: boolean }> {
+		await this.requireWarehouse(warehouseId);
+		const result = await this.warehouseRepository.linkOrganization(
+			warehouseId,
+			organizationId,
+		);
+		await this.audit.record({
+			actor,
+			action: 'warehouse.linked',
+			targetType: 'warehouse',
+			targetId: warehouseId,
+			organizationId,
+			meta: { organizationId, created: result.created },
+		});
+		return result;
+	}
+
+	/**
+	 * Revokes one organization's access to a warehouse (ERP-0031, admin-only).
+	 *
+	 * @throws {WarehouseNotFoundError} When the warehouse is absent
+	 * @throws {WarehouseLinkConflictError} While the organization holds open
+	 *   borrowings originating in this warehouse — cutting the link would
+	 *   strand custody that can no longer be returned.
+	 */
+	async unlinkOrganization(
+		warehouseId: string,
+		organizationId: string,
+		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+	): Promise<{ removed: boolean }> {
+		await this.requireWarehouse(warehouseId);
+		const openBorrowings = await this.borrowingGuard.countOpenBorrowings(
+			warehouseId,
+			organizationId,
+		);
+		if (openBorrowings > 0) throw new WarehouseLinkConflictError(openBorrowings);
+
+		const removed = await this.warehouseRepository.unlinkOrganization(
+			warehouseId,
+			organizationId,
+		);
+		if (removed) {
+			await this.audit.record({
+				actor,
+				action: 'warehouse.unlinked',
+				targetType: 'warehouse',
+				targetId: warehouseId,
+				organizationId,
+				meta: { organizationId },
+			});
+		}
+		return { removed };
 	}
 
 	/**

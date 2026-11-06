@@ -150,6 +150,17 @@ beforeAll(async () => {
 		async listLinked(organizationId) {
 			return organizationId === fixture.orgA ? [seed] : [];
 		},
+		async listOrganizations(warehouseId) {
+			return warehouseId === seed.id
+				? [{ organizationId: fixture.orgA, createdAt: new Date(0) }]
+				: [];
+		},
+		async linkOrganization(warehouseId, organizationId) {
+			return { created: warehouseId !== seed.id || organizationId !== fixture.orgA };
+		},
+		async unlinkOrganization(warehouseId, organizationId) {
+			return warehouseId === seed.id && organizationId === fixture.orgA;
+		},
 		async findByCode() {
 			return null;
 		},
@@ -240,6 +251,7 @@ beforeAll(async () => {
 	const {
 		WAREHOUSE_REPOSITORY_TOKEN,
 		WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
+	WAREHOUSE_BORROWING_GUARD_TOKEN,
 		WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 		WAREHOUSE_SERVICE_TOKEN,
 	} = await import('../../src/app/inventory/constants/di');
@@ -265,6 +277,10 @@ beforeAll(async () => {
 	});
 	container.register(InventoryAuditWriter, {
 		useValue: new AuditWriterDouble(),
+	});
+	// ERP-0031: the unlink guard port — noop here (no borrowings under test).
+	container.register(WAREHOUSE_BORROWING_GUARD_TOKEN, {
+		useValue: { async countOpenBorrowings() { return 0; } },
 	});
 	container.register(WAREHOUSE_SERVICE_TOKEN, { useClass: WarehouseService });
 

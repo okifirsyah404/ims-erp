@@ -11,6 +11,8 @@ import {
 	updateStorageSchema,
 	updateWarehouseSchema,
 	warehouseAddressSchema,
+	warehouseLinkParamSchema,
+	warehouseLinkSchema,
 	warehouseListQuerySchema,
 } from '../contracts/warehouse.contract';
 import { WAREHOUSE_SERVICE_TOKEN } from '../constants/di';
@@ -212,6 +214,56 @@ export class WarehouseController {
 					);
 				},
 				adminRoute('Archives a storage'),
+			)
+			/* ------------------- organization links (ERP-0031) ------------------- */
+			.get(
+				'/:id/organizations',
+				async ({ params }) =>
+					ok(
+						await warehouseService.listWarehouseOrganizations(
+							idParamSchema.parse(params).id,
+						),
+					),
+				adminRoute('Organizations linked to a warehouse (ERP-0031)'),
+			)
+			.post(
+				'/:id/organizations',
+				async ({ params, body, erp, request, status }) => {
+					const { organizationId } = warehouseLinkSchema.parse(body);
+					const result = await warehouseService.linkOrganization(
+						idParamSchema.parse(params).id,
+						organizationId,
+						auditActor(erp, request),
+					);
+					return status(result.created ? 201 : 200, created(result));
+				},
+				{
+					erpSession: { policy: requireGlobalAdmin },
+					body: warehouseLinkSchema,
+					detail: {
+						description:
+							'Grants an organization access to a warehouse (ERP-0031). Idempotent: 201 when created, 200 when already linked',
+					},
+				},
+			)
+			.delete(
+				'/:id/organizations/:organizationId',
+				async ({ params, erp, request }) => {
+					const parsed = warehouseLinkParamSchema.parse(params);
+					const result = await warehouseService.unlinkOrganization(
+						parsed.id,
+						parsed.organizationId,
+						auditActor(erp, request),
+					);
+					return ok(result);
+				},
+				{
+					erpSession: { policy: requireGlobalAdmin },
+					detail: {
+						description:
+							'Revokes an organization\u2019s access to a warehouse (ERP-0031). Refused with 409 while the organization holds open borrowings originating in the warehouse',
+					},
+				},
 			);
 	}
 
@@ -242,10 +294,14 @@ export class WarehouseController {
 			async ({ erp }) =>
 				ok(await warehouseService.listLinkedWarehouses(erp.organizationId)),
 			{
-				erp: { permission: ['warehouse:read'] },
+				// No `warehouse:*` permission — no organization role holds one
+				// (ADR-0008), and the invariant test pins that. The response only
+				// ever contains warehouses already linked to the caller's own
+				// validated organization, so any authenticated member may read it;
+				// there is nothing here a non-admin could escalate to.
 				detail: {
 					description:
-						'Warehouses the active organization is linked to (ERP-0031)',
+						'Warehouses the active organization is linked to (ERP-0031). Any authenticated organization member; the list is scoped to the caller\u2019s own links',
 				},
 			},
 		);

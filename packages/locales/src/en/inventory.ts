@@ -144,6 +144,20 @@ const inventory = {
 	'warehouses.storageCreated': 'Storage created',
 	'warehouses.storageUpdated': 'Storage updated',
 	'warehouses.storageArchived': 'Storage archived',
+	'warehouses.organizationsTab': 'Organizations',
+	'warehouses.linkedOrganizations': 'Linked organizations',
+	'warehouses.linkedOrganizationsHint':
+		'Organizations that may store stock and assets in this warehouse.',
+	'warehouses.selectOrganization': 'Select an organization',
+	'warehouses.linkAction': 'Link',
+	'warehouses.unlinkAction': 'Unlink',
+	'warehouses.unlinkConfirm':
+		'Revoke this organization\u2019s access to the warehouse?',
+	'warehouses.linkCreated': 'Organization linked',
+	'warehouses.linkAlreadyExists': 'Organization already linked',
+	'warehouses.linkRemoved': 'Organization unlinked',
+	'warehouses.noLinkedOrganizations': 'No organizations linked yet.',
+	'warehouses.linkedSince': 'Linked since',
 
 	// Warehouse create / edit form.
 	'warehouseForm.new': 'New warehouse',

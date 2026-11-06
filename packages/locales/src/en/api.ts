@@ -36,6 +36,8 @@ const api = {
 		'A warehouse with this code already exists in this scope',
 	'inventory.warehouseHasUnits':
 		'Cannot archive a warehouse that still holds {{count}} live unit(s)',
+	'inventory.warehouseLinkConflict':
+		'Cannot unlink while the organization holds {{count}} open borrowing(s) originating in this warehouse',
 	'inventory.storageNotFound': 'Storage not found',
 	'inventory.storageCodeTaken':
 		'A storage with this code already exists in this warehouse',

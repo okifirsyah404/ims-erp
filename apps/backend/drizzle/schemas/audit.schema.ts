@@ -68,6 +68,8 @@ export const AUDIT_ACTIONS = [
 	'warehouse.created',
 	'warehouse.updated',
 	'warehouse.archived',
+	'warehouse.linked',
+	'warehouse.unlinked',
 	'storage.created',
 	'storage.updated',
 	'storage.archived',

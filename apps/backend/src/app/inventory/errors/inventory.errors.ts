@@ -102,6 +102,24 @@ export class WarehouseHasUnitsError extends AppError {
 }
 
 /**
+ * A warehouse↔organization link cannot be cut (ERP-0031).
+ *
+ * @remarks
+ * 409, not 422: the conflict is with concurrent custody state (open
+ * borrowings), and the caller can retry once those are returned.
+ */
+export class WarehouseLinkConflictError extends AppError {
+	constructor(count: number) {
+		super(
+			409,
+			'inventory.warehouseLinkConflict',
+			`Cannot unlink while the organization holds ${count} open borrowing(s) originating in this warehouse`,
+			{ count },
+		);
+	}
+}
+
+/**
  * A storage cannot be written into an inactive warehouse.
  *
  * @remarks

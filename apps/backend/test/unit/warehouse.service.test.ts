@@ -26,6 +26,7 @@ import {
 	StorageCodeTakenError,
 	StorageNotFoundError,
 	WarehouseCodeTakenError,
+	WarehouseLinkConflictError,
 	WarehouseHasUnitsError,
 	WarehouseInactiveError,
 	WarehouseNotFoundError,
@@ -103,6 +104,41 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 			return rows.filter(
 				(row) => linkedIds.has(row.id) && row.deletedAt === null,
 			);
+		},
+		async listOrganizations(warehouseId) {
+			return links
+				.filter(
+					(link) => link.warehouseId === warehouseId && link.deletedAt === null,
+				)
+				.map((link) => ({
+					organizationId: link.organizationId,
+					createdAt: new Date(0),
+				}));
+		},
+		async linkOrganization(warehouseId, organizationId) {
+			const existing = links.find(
+				(link) =>
+					link.warehouseId === warehouseId &&
+					link.organizationId === organizationId,
+			);
+			if (existing && existing.deletedAt === null) return { created: false };
+			if (existing) {
+				existing.deletedAt = null;
+				return { created: true };
+			}
+			links.push({ warehouseId, organizationId, deletedAt: null });
+			return { created: true };
+		},
+		async unlinkOrganization(warehouseId, organizationId) {
+			const existing = links.find(
+				(link) =>
+					link.warehouseId === warehouseId &&
+					link.organizationId === organizationId &&
+					link.deletedAt === null,
+			);
+			if (!existing) return false;
+			existing.deletedAt = new Date();
+			return true;
 		},
 		async findByCode(organizationId, code) {
 			return (
@@ -221,13 +257,101 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 		addressRepository,
 		storageRepository,
 		new AuditWriterDouble(),
+		// ERP-0031: no borrowings in these tests — the guard never blocks.
+		{ async countOpenBorrowings() { return 0; } },
 	);
 
 	return { service, rows, links, clearDefaultCalls, warehouseRepository };
 }
 
-describe('warehouse reachability (ERP-0031)', () => {
-	test('a linked warehouse is reachable by the linked org', async () => {
+describe('warehouse↔organization links (ERP-0031 slice 3)', () => {
+	test('linkOrganization creates an alive link and audits it', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service, links } = makeRepos([warehouse]);
+
+		const result = await service.linkOrganization(warehouse.id, ORG_A);
+
+		expect(result).toEqual({ created: true });
+		expect(links).toContainEqual({
+			warehouseId: warehouse.id,
+			organizationId: ORG_A,
+			deletedAt: null,
+		});
+	});
+
+	test('linkOrganization is idempotent for an already-alive pair', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service, links } = makeRepos([warehouse]);
+		links.push({ warehouseId: warehouse.id, organizationId: ORG_A, deletedAt: null });
+
+		const result = await service.linkOrganization(warehouse.id, ORG_A);
+
+		expect(result).toEqual({ created: false });
+		expect(links).toHaveLength(1);
+	});
+
+	test('linkOrganization on a missing warehouse is a 404', async () => {
+		const { service } = makeRepos();
+
+		await expect(
+			service.linkOrganization('01920000-0000-7000-8000-999999999999', ORG_A),
+		).rejects.toBeInstanceOf(WarehouseNotFoundError);
+	});
+
+	test('unlinkOrganization removes an alive link and audits it', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service, links } = makeRepos([warehouse]);
+		links.push({ warehouseId: warehouse.id, organizationId: ORG_A, deletedAt: null });
+
+		const result = await service.unlinkOrganization(warehouse.id, ORG_A);
+
+		expect(result).toEqual({ removed: true });
+		expect(links[0].deletedAt).not.toBeNull();
+	});
+
+	test('unlinkOrganization with no alive link reports removed=false', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service } = makeRepos([warehouse]);
+
+		await expect(
+			service.unlinkOrganization(warehouse.id, ORG_A),
+		).resolves.toEqual({ removed: false });
+	});
+
+	test('unlinkOrganization is refused with 409 while open borrowings exist', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service, links } = makeRepos([warehouse]);
+		links.push({ warehouseId: warehouse.id, organizationId: ORG_A, deletedAt: null });
+
+		// Override the guard for this test: the org still holds custody.
+		const guarded = Object.assign(Object.create(Object.getPrototypeOf(service)), service, {});
+		Object.defineProperty(guarded, 'borrowingGuard', {
+			value: { async countOpenBorrowings() { return 2; } },
+		});
+
+		await expect(
+			guarded.unlinkOrganization(warehouse.id, ORG_A),
+		).rejects.toBeInstanceOf(WarehouseLinkConflictError);
+		// The link must survive a refused unlink.
+		expect(links[0].deletedAt).toBeNull();
+	});
+
+	test('listWarehouseOrganizations returns alive links only', async () => {
+		const warehouse = makeWarehouse({ code: 'MAIN' });
+		const { service, links } = makeRepos([warehouse]);
+		links.push({ warehouseId: warehouse.id, organizationId: ORG_A, deletedAt: null });
+		links.push({
+			warehouseId: warehouse.id,
+			organizationId: ORG_B,
+			deletedAt: new Date(),
+		});
+
+		const result = await service.listWarehouseOrganizations(warehouse.id);
+		expect(result.map((row) => row.organizationId)).toEqual([ORG_A]);
+	});
+});
+
+describe('warehouse reachability (ERP-0031)', () => {	test('a linked warehouse is reachable by the linked org', async () => {
 		const warehouse = makeWarehouse({ code: 'MAIN' });
 		const { service, links } = makeRepos([warehouse]);
 		links.push({ warehouseId: warehouse.id, organizationId: ORG_A, deletedAt: null });

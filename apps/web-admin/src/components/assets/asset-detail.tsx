@@ -30,10 +30,7 @@ import {
 	transferAsset,
 	type TAsset,
 } from '@/lib/asset-api';
-import {
-	warehouseQueryOptions,
-	warehousesQueryOptions,
-} from '@/lib/warehouse-api';
+import { linkedWarehousesQueryOptions } from '@/lib/warehouse-api';
 import { usePermission } from '@/lib/use-permission';
 
 /**
@@ -215,18 +212,17 @@ function LocationCard({
 }) {
 	const { t } = useTranslation(['assets', 'common']);
 	const [mode, setMode] = useState<'place' | 'transfer' | null>(null);
+	// ERP-0031: linked warehouses are the member-facing source — the admin
+	// warehouse list is application-admin-only.
 	const warehouses = useQuery({
-		...warehousesQueryOptions({ limit: 100, isActive: true }),
+		...linkedWarehousesQueryOptions(),
 		enabled: canUpdate,
 	});
-	const warehouse = useQuery({
-		...warehouseQueryOptions(asset.warehouseId ?? ''),
-		enabled: canUpdate && asset.warehouseId !== null,
-	});
-	const warehouseName =
-		warehouse.data?.name ??
-		warehouses.data?.rows.find((row) => row.id === asset.warehouseId)?.name;
-	const storageName = warehouse.data?.storages.find(
+	const current = (warehouses.data ?? []).find(
+		(row) => row.id === asset.warehouseId,
+	);
+	const warehouseName = current?.name ?? asset.warehouseId ?? undefined;
+	const storageName = current?.storages.find(
 		(row) => row.id === asset.storageId,
 	)?.name;
 
@@ -291,13 +287,12 @@ function LocationDialog({
 }) {
 	const { t } = useTranslation(['assets', 'common']);
 	const queryClient = useQueryClient();
-	const warehouses = useQuery(warehousesQueryOptions({ limit: 100, isActive: true }));
+	const warehouses = useQuery(linkedWarehousesQueryOptions());
 	const [warehouseId, setWarehouseId] = useState(defaultWarehouseId);
 	const [storageId, setStorageId] = useState('');
-	const warehouse = useQuery({
-		...warehouseQueryOptions(warehouseId),
-		enabled: warehouseId !== '',
-	});
+	const current = (warehouses.data ?? []).find(
+		(row) => row.id === warehouseId,
+	);
 
 	const save = useMutation({
 		mutationFn: () =>
@@ -342,7 +337,7 @@ function LocationDialog({
 						}}
 					>
 						<option value=''>{t('assets:detail.selectWarehouse')}</option>
-						{(warehouses.data?.rows ?? []).map((row) => (
+						{(warehouses.data ?? []).map((row) => (
 							<option key={row.id} value={row.id}>
 								{row.code} · {row.name}
 							</option>
@@ -353,7 +348,7 @@ function LocationDialog({
 						onChange={(event) => setStorageId(event.target.value)}
 					>
 						<option value=''>{t('assets:detail.selectStorage')}</option>
-						{(warehouse.data?.storages ?? []).map((row) => (
+						{(current?.storages ?? []).map((row) => (
 							<option key={row.id} value={row.id}>
 								{row.code} · {row.name}
 							</option>

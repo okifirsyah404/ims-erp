@@ -80,6 +80,24 @@ class FakeBorrowingRepository implements IBorrowingRepository {
 		return row;
 	}
 
+	/** ERP-0031 unlink guard: counts open lines by origin warehouse. */
+	async countOpenByOriginWarehouse(
+		warehouseId: string,
+		organizationId: string,
+	) {
+		return [...this.lines.values()].filter((line) => {
+			const header = this.borrowings.get(line.borrowingId);
+			return (
+				header !== undefined &&
+				header.organizationId === organizationId &&
+				line.originWarehouseId === warehouseId &&
+				(header.status === 'issued' || header.status === 'partially_returned') &&
+				line.returnedAt === null &&
+				line.markedLostAt === null
+			);
+		}).length;
+	}
+
 	async findByCode(organizationId: string, code: string) {
 		return (
 			[...this.borrowings.values()].find(

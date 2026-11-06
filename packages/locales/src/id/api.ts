@@ -32,6 +32,8 @@ const api: Record<keyof typeof en, string> = {
 		'Gudang dengan kode ini sudah ada pada cakupan ini',
 	'inventory.warehouseHasUnits':
 		'Gudang tidak dapat diarsipkan karena masih menyimpan {{count}} unit aktif',
+	'inventory.warehouseLinkConflict':
+		'Tautan tidak dapat diputus selama organisasi masih memiliki {{count}} peminjaman aktif yang berasal dari gudang ini',
 	'inventory.storageNotFound': 'Penyimpanan tidak ditemukan',
 	'inventory.storageCodeTaken':
 		'Penyimpanan dengan kode ini sudah ada di gudang ini',

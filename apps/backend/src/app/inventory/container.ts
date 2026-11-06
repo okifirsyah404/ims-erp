@@ -8,6 +8,7 @@ import { MovementRepository } from './repositories/movement.repository';
 import { BalanceRepository } from './repositories/balance.repository';
 import { AdjustmentRepository } from './repositories/adjustment.repository';
 import { InventoryAuditWriter } from './services/inventory-audit.writer';
+import { NoopWarehouseBorrowingGuard } from './contracts/warehouse-borrowing-guard.port';
 import { ItemService } from './services/item.service';
 import { AUDIT_SERVICE_TOKEN } from '../audit/constants/di';
 import type { AuditService } from '../audit/services/audit.service';
@@ -24,6 +25,7 @@ import {
 	SERIAL_UNIT_REPOSITORY_TOKEN,
 	STOCK_SERVICE_TOKEN,
 	WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
+	WAREHOUSE_BORROWING_GUARD_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
 	WAREHOUSE_SERVICE_TOKEN,
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
@@ -66,6 +68,12 @@ export function registerInventory(container: DependencyContainer): void {
 	container.register(WAREHOUSE_STORAGE_REPOSITORY_TOKEN, {
 		useClass: WarehouseStorageRepository,
 	});
+	// Noop default; registerAssets overrides with the real borrowing guard.
+	// Keeps inventory resolvable when assets is not registered (tests).
+	container.registerInstance(
+		WAREHOUSE_BORROWING_GUARD_TOKEN,
+		new NoopWarehouseBorrowingGuard(),
+	);
 	container.register(WAREHOUSE_SERVICE_TOKEN, {
 		useClass: WarehouseService,
 	});
