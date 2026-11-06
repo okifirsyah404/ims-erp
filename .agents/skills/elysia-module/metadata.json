@@ -1,7 +1,7 @@
 {
   "name": "elysia-module",
-  "version": "1.4.0",
-  "description": "Modular monolith boundary convention — one Postgres schema per module via drizzle/schemas/<module>.schema.ts, no cross-schema foreign keys, cross-module access restricted to schema types and public DI tokens, external systems behind contract ports, module-owned queues writing through the module repository, and the Better Auth exception for user/organization modules with a declared write-surface invariant.",
+  "version": "1.5.0",
+  "description": "Modular monolith boundary convention — one Postgres schema per module via drizzle/schemas/<module>.schema.ts, no cross-schema foreign keys, cross-module access restricted to schema types and public DI tokens, service-to-service communication with cycles broken by repository-only Exported<Module>Service facades, external systems behind contract ports, module-owned queues writing through the module repository, and the Better Auth exception for user/organization modules with a declared write-surface invariant.",
   "author": "OpenAgentic",
   "date": "2026-10",
   "dependsOn": ["elysia-layered-architecture"],

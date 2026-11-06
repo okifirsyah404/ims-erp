@@ -10,11 +10,12 @@ import {
 	setAdjustmentLinesSchema,
 } from '../contracts/adjustment.contract';
 import { idParamSchema } from '../contracts/item.contract';
-import { ADJUSTMENT_SERVICE_TOKEN } from '../constants/di';
+import { ADJUSTMENT_SERVICE_TOKEN, STOCK_SERVICE_TOKEN } from '../constants/di';
 import type {
 	AdjustmentService,
 	TAdjustmentActor,
 } from '../services/adjustment.service';
+import type { StockService } from '../services/stock.service';
 
 /**
  * REST controller for the stock adjustment document workflow.
@@ -40,6 +41,11 @@ export class AdjustmentController {
 		const adjustmentService = container.resolve<AdjustmentService>(
 			ADJUSTMENT_SERVICE_TOKEN,
 		);
+		// ERP-0031: link check for the create route. Same module, so reusing the
+		// stock service's assert avoids teaching AdjustmentService the rule.
+		const stockServiceForLinks = container.resolve<StockService>(
+			STOCK_SERVICE_TOKEN,
+		);
 		const resolver = container.resolve<IPermissionResolver>(
 			PERMISSION_RESOLVER_TOKEN,
 		);
@@ -62,6 +68,14 @@ export class AdjustmentController {
 				erp.member.role.split(',').map((role) => role.trim()),
 				{ stock_adjustment: ['approve'] },
 			),
+		});
+
+		/** Full audit actor from the session + request headers. */
+		const auditActor = (erp: ErpContext, request: Request) => ({
+			userId: erp.session.user.id,
+			email: erp.session.user.email,
+			ip: request.headers.get('x-forwarded-for'),
+			userAgent: request.headers.get('user-agent'),
 		});
 
 		return domainPlugin({
@@ -102,6 +116,15 @@ export class AdjustmentController {
 				'',
 				async ({ body, erp, status }) => {
 					const parsed = createAdjustmentSchema.parse(body);
+					// ERP-0031: the target warehouse must be linked to the caller's
+					// organization. A global admin bypasses; unlinked is a 404 so
+					// warehouse ids cannot be probed.
+					if (erp.session.user.role !== 'admin') {
+						await stockServiceForLinks.assertWarehouseLinkedFor(
+							parsed.warehouseId,
+							erp.organizationId,
+						);
+					}
 					const detail = await adjustmentService.create(
 						erp.organizationId,
 						parsed,
@@ -133,11 +156,12 @@ export class AdjustmentController {
 			)
 			.post(
 				'/:id/submit',
-				async ({ params, erp }) =>
+				async ({ params, erp, request }) =>
 					ok(
 						await adjustmentService.submit(
 							idParamSchema.parse(params).id,
 							erp.organizationId,
+							auditActor(erp, request),
 						),
 					),
 				{
@@ -165,11 +189,12 @@ export class AdjustmentController {
 			)
 			.post(
 				'/:id/reject',
-				async ({ params, erp }) =>
+				async ({ params, erp, request }) =>
 					ok(
 						await adjustmentService.reject(
 							idParamSchema.parse(params).id,
 							erp.organizationId,
+							auditActor(erp, request),
 						),
 					),
 				{
@@ -179,11 +204,12 @@ export class AdjustmentController {
 			)
 			.post(
 				'/:id/cancel',
-				async ({ params, erp }) =>
+				async ({ params, erp, request }) =>
 					ok(
 						await adjustmentService.cancel(
 							idParamSchema.parse(params).id,
 							erp.organizationId,
+							auditActor(erp, request),
 						),
 					),
 				{

@@ -95,6 +95,13 @@ describe('locale values', () => {
 			'inventory:warehouses.global',
 			// "Total" is the same word in Indonesian.
 			'dashboard:widget.cash.total',
+			// Status/label column headers read the same in both locales.
+			'assets:register.status',
+			'assets:disposals.status',
+			'assets:service.status',
+			'assets:toolSets.status',
+			// "Transfer" is a loanword in Indonesian.
+			'assets:disposalMethod.transfer',
 		]);
 
 		const untranslated = Object.entries(en_).flatMap(([namespace, bundle]) =>

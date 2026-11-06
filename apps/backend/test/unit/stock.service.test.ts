@@ -22,6 +22,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { container } from 'tsyringe';
 import type {
+	TItemSelect,
 	TStockBalanceSelect,
 	TStockMovementSelect,
 	TWarehouseSelect,
@@ -37,15 +38,19 @@ import type {
 	TBalanceKey,
 	TBalancePaginationRequest,
 } from '../../src/app/inventory/contracts/balance.repository.interface';
+import type { IItemRepository } from '../../src/app/inventory/contracts/item.repository.interface';
 import type { IWarehouseRepository } from '../../src/app/inventory/contracts/warehouse.repository.interface';
 import {
 	BALANCE_REPOSITORY_TOKEN,
+	ITEM_REPOSITORY_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
 	STOCK_SERVICE_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
 } from '../../src/app/inventory/constants/di';
 import { StockService } from '../../src/app/inventory/services/stock.service';
 import { signedContribution } from '../../src/app/inventory/repositories/movement.repository';
+import { createNumberingDouble } from '../helpers/numbering-double';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import {
 	InsufficientStockError,
 	MovementAlreadyReversedError,
@@ -201,6 +206,11 @@ function fakeBalances(store: BalanceStore): IBalanceRepository {
 		async applyDelta(key, delta: TBalanceDelta) {
 			const existing = store.get(keyOf(key));
 			if (!existing) {
+				// Mirror the repository: a negative opening delta is refused
+				// (the CHECK constraints would reject it in the database).
+				if (Number(delta.quantity) < 0) {
+					throw new InsufficientStockError('0.000', delta.quantity);
+				}
 				const created = {
 					id: `balance-${store.size}`,
 					organizationId: key.scopeOrganizationId,
@@ -217,8 +227,16 @@ function fakeBalances(store: BalanceStore): IBalanceRepository {
 				store.set(keyOf(key), created);
 				return created;
 			}
-			// Accumulate — the whole point of the atomic upsert.
+			// Accumulate — the whole point of the serialized upsert-then-lock
+			// path. Mirrors the repository's conditional UPDATE: a delta that
+			// would overdraw the balance is refused, not applied.
 			const onHand = Number(existing.quantityOnHand) + Number(delta.quantity);
+			if (onHand < 0) {
+				throw new InsufficientStockError(
+					existing.quantityOnHand,
+					delta.quantity,
+				);
+			}
 			existing.quantityOnHand = onHand.toFixed(3);
 			existing.quantityAvailable = onHand.toFixed(3);
 			existing.lastMovementAt = delta.occurredAt;
@@ -254,6 +272,38 @@ function fakeBalances(store: BalanceStore): IBalanceRepository {
 }
 
 /** Minimal warehouse repository: `findById` is all the service uses. */
+function fakeItems(): IItemRepository {
+	return {
+		async paginate() {
+			return {
+				meta: { page: 1, limit: 20, total: 0, totalPages: 0 },
+				data: [],
+			};
+		},
+		async findById() {
+			return null;
+		},
+		async findBySku() {
+			return null;
+		},
+		async create(data) {
+			return data as TItemSelect;
+		},
+		async update() {
+			return null;
+		},
+		async archive() {
+			return null;
+		},
+		async findNamesByIds() {
+			return [];
+		},
+		async countUnits() {
+			return 0;
+		},
+	};
+}
+
 function fakeWarehouses(): IWarehouseRepository {
 	return {
 		async paginate() {
@@ -264,6 +314,23 @@ function fakeWarehouses(): IWarehouseRepository {
 		},
 		async findById(id) {
 			return WAREHOUSES.find((row) => row.id === id) ?? null;
+		},
+		// ERP-0031: service-level link assert — link every fake warehouse to a
+		// test org so internal flows pass.
+		async isLinked(warehouseId, organizationId) {
+			return organizationId === 'org-a';
+		},
+		async listLinked(organizationId) {
+			return organizationId === 'org-a' ? WAREHOUSES : [];
+		},
+		async listOrganizations() {
+			return [];
+		},
+		async linkOrganization() {
+			return { created: true };
+		},
+		async unlinkOrganization() {
+			return false;
 		},
 		async findByCode() {
 			return null;
@@ -277,6 +344,9 @@ function fakeWarehouses(): IWarehouseRepository {
 		async archive() {
 			return null;
 		},
+		async findNamesByIds() {
+			return [];
+		},
 		async clearDefaultExcept() {},
 		async countLiveUnits() {
 			return 0;
@@ -286,7 +356,7 @@ function fakeWarehouses(): IWarehouseRepository {
 				warehouseId,
 				productsCount: 0,
 				materialsCount: 0,
-				toolsCount: 0,
+				equipmentsCount: 0,
 				storagesCount: 0,
 			}));
 		},
@@ -330,10 +400,16 @@ beforeEach(() => {
 	container.register(WAREHOUSE_REPOSITORY_TOKEN, {
 		useValue: fakeWarehouses(),
 	});
+	container.register(ITEM_REPOSITORY_TOKEN, {
+		useValue: fakeItems(),
+	});
 	container.register(STOCK_SERVICE_TOKEN, { useValue: new StockService(
 		container.resolve(MOVEMENT_REPOSITORY_TOKEN),
 		container.resolve(BALANCE_REPOSITORY_TOKEN),
 		container.resolve(WAREHOUSE_REPOSITORY_TOKEN),
+		container.resolve(ITEM_REPOSITORY_TOKEN),
+		createNumberingDouble(),
+		new AuditWriterDouble(),
 		database,
 	) });
 	service = container.resolve<StockService>(STOCK_SERVICE_TOKEN);

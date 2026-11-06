@@ -28,7 +28,7 @@ export function ItemKindList({
 	kind,
 	title,
 }: {
-	kind: Extract<TItemKind, 'product' | 'component' | 'material' | 'tool'>;
+	kind: Extract<TItemKind, 'product' | 'component' | 'material'>;
 	title: string;
 }) {
 	const { t } = useTranslation(['inventory', 'common']);
@@ -59,7 +59,7 @@ export function ItemKindList({
 	const rows = data?.rows ?? [];
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<div>
 				<h1 className='text-2xl font-bold'>{title}</h1>
 				<p className='text-sm text-muted-foreground'>

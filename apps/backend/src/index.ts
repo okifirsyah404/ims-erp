@@ -2,6 +2,7 @@
 // is missing, and this project has `emitDecoratorMetadata: true`. Must stay the
 // first import — before `tsyringe` itself is pulled in.
 import { registerInventory } from '@app/inventory';
+import { registerAssets } from '@app/assets';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
 import { cors } from '@elysiajs/cors';
@@ -31,10 +32,16 @@ import { registerAuthorization } from './authorization/container';
 registerProvider(container);
 registerLocation(container);
 registerSales(container);
-registerInventory(container);
-registerUser(container);
+// Organization first: its DocumentNumberingService (ERP-0009) is injected
+// into inventory services (stock/adjustment/borrowing).
 registerOrganization(container);
+// Audit before the modules that resolve AUDIT_SERVICE_TOKEN eagerly
+// (registerInventory builds the shared InventoryAuditWriter at
+// registration time; registerAssets documents the same expectation).
 registerAudit(container);
+registerInventory(container);
+registerAssets(container);
+registerUser(container);
 registerAuthorization(container);
 
 /**

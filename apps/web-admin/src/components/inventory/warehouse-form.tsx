@@ -101,7 +101,7 @@ export function WarehouseForm({
 	}
 
 	return (
-		<form className='flex flex-col gap-6 p-6' onSubmit={handleSubmit}>
+		<form className='flex flex-col gap-6' onSubmit={handleSubmit}>
 			<div>
 				<h1 className='text-2xl font-bold'>
 					{isEdit ? t('inventory:warehouseForm.edit') : t('inventory:warehouseForm.new')}

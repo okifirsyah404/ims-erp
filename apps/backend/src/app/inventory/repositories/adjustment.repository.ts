@@ -142,6 +142,35 @@ export class AdjustmentRepository implements IAdjustmentRepository {
 		return row ?? null;
 	}
 
+	/**
+	 * Atomically claims a document for posting.
+	 *
+	 * @remarks
+	 * Conditional update: `WHERE status = 'approved' AND posted_at IS NULL`.
+	 * Exactly one concurrent poster matches; every other gets `null`. The
+	 * claim is written inside the caller's transaction, so a rollback
+	 * (insufficient stock, serialization failure) automatically releases it —
+	 * the document stays re-postable with no compensating update.
+	 */
+	async claimForPost(
+		id: string,
+		tx: TTx,
+	): Promise<TStockAdjustmentSelect | null> {
+		const [row] = await tx
+			.update(stockAdjustments)
+			.set({ status: 'posted', postedAt: new Date(), updatedAt: new Date() })
+			.where(
+				and(
+					eq(stockAdjustments.id, id),
+					isNull(stockAdjustments.deletedAt),
+					eq(stockAdjustments.status, 'approved'),
+					isNull(stockAdjustments.postedAt),
+				),
+			)
+			.returning();
+		return row ?? null;
+	}
+
 	/** Lists the alive lines of a document. */
 	async listLines(
 		adjustmentId: string,

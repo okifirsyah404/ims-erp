@@ -3,12 +3,13 @@ import pino from 'pino';
 import { faker } from '@faker-js/faker';
 import { seedSafeText } from './faker-content';
 import { drizzleDB } from '../../../drizzle/db';
+import { BalanceRepository } from '../../../src/app/inventory/repositories/balance.repository';
 import {
 	items,
 	serialTrackedItems,
-	stockBalances,
 	stockMovements,
 	warehouseAddresses,
+	warehouseOrganizations,
 	warehouseStorages,
 	warehouses,
 } from '../../../drizzle/schemas/inventory.schema';
@@ -43,7 +44,7 @@ const ITEMS_PER_KIND = 4;
 type TSeedItem = {
 	sku: string;
 	name: string;
-	itemKind: 'product' | 'component' | 'material' | 'tool' | 'service';
+	itemKind: 'product' | 'component' | 'material';
 	category: string | null;
 	unitLabel: string | null;
 	isSerialized: boolean;
@@ -59,16 +60,14 @@ type TSeedItem = {
  * Generates the item master with faker, deterministically.
  *
  * @remarks
- * Covers every kind, because the kind drives the unit status matrix
- * (`assertTransitionAllowed`) and the S1 seeder step was never delivered —
- * without this, a fresh database has no items and the tool borrowing flow of
- * S4 has nothing to borrow.
+ * Covers every remaining kind. ERP-0036 moved physical tools to `assets` and
+ * deleted `service`, so only consumables are seeded here; asset equipment is
+ * seeded by the assets seeder.
  *
- * Kind invariants preserved from the curated fixture set:
- * - `tool` items are serialized, not stock-tracked, and not sellable.
+ * Kind invariants:
  * - `material` items are quantity-tracked, not serialized, and use unit
  *   labels (m, kg, ...).
- * - `service` items are neither serialized nor tracked and have no unit.
+ * - `product`/`component` are stocked; even-indexed products are serialized.
  *
  * Money is integer IDR (rupiah) per ADR-0002 — faker money helpers are float
  * based and are NOT used for amounts.
@@ -80,18 +79,11 @@ function generateSeedItems(): TSeedItem[] {
 	faker.seed(FAKER_SEED);
 
 	const safeName = () => seedSafeText(faker.commerce.productName());
-	const safeAdjective = () => seedSafeText(faker.commerce.productAdjective());
 	const safeMaterial = () => seedSafeText(faker.commerce.productMaterial());
 	const safeCategory = (pool: readonly string[]) =>
 		seedSafeText(faker.helpers.arrayElement(pool));
 
-	const kinds: TSeedItem['itemKind'][] = [
-		'product',
-		'component',
-		'material',
-		'tool',
-		'service',
-	];
+	const kinds: TSeedItem['itemKind'][] = ['product', 'component', 'material'];
 
 	const items: TSeedItem[] = [];
 	let index = 0;
@@ -100,26 +92,6 @@ function generateSeedItems(): TSeedItem[] {
 		for (let i = 0; i < ITEMS_PER_KIND; i++) {
 			index += 1;
 			const sku = `ITEM-${String(index).padStart(3, '0')}`;
-
-			if (itemKind === 'tool') {
-				items.push({
-					sku,
-					name: safeName(),
-					itemKind,
-					category: safeCategory(['Tools', 'Instruments']),
-					unitLabel: 'pcs',
-					isSerialized: true,
-					isStockTracked: false,
-					minStockQty: '0.000',
-					// Tools are internal equipment: not sellable.
-					sellingPrice: 0,
-					purchasePrice: faker.number.int({ min: 500_000, max: 5_000_000 }),
-					serials: Array.from({ length: 3 }, (_, n) =>
-						`${sku}-S${String(n + 1).padStart(3, '0')}`,
-					),
-				});
-				continue;
-			}
 
 			if (itemKind === 'material') {
 				items.push({
@@ -135,22 +107,6 @@ function generateSeedItems(): TSeedItem[] {
 						.toFixed(3),
 					sellingPrice: faker.number.int({ min: 5_000, max: 100_000 }),
 					purchasePrice: faker.number.int({ min: 2_500, max: 60_000 }),
-				});
-				continue;
-			}
-
-			if (itemKind === 'service') {
-				items.push({
-					sku,
-					name: `${safeAdjective()} installation service`,
-					itemKind,
-					category: null,
-					unitLabel: null,
-					isSerialized: false,
-					isStockTracked: false,
-					minStockQty: '0.000',
-					sellingPrice: faker.number.int({ min: 250_000, max: 2_500_000 }),
-					purchasePrice: 0,
 				});
 				continue;
 			}
@@ -194,7 +150,7 @@ const SEED_ITEMS: readonly TSeedItem[] = generateSeedItems();
 /**
  * Seeds the inventory module: a global default warehouse, an
  * organization-scoped warehouse, their addresses and bins, and the item
- * master with a serialized tool set and a quantity-tracked material set.
+ * master (consumables only since ERP-0036).
  *
  * @remarks
  * Idempotent: every insert is guarded by a lookup on the natural key
@@ -231,8 +187,11 @@ export async function seedInventory(): Promise<void> {
 		villageId,
 	});
 
+	// ERP-0031 (D1): every warehouse is global; `organization_id` is frozen at
+	// NULL and organization access comes from the `warehouse_organizations`
+	// link, ensured below.
 	const orgWarehouse = await ensureWarehouse({
-		organizationId,
+		organizationId: null,
 		code: 'WH-MAIN',
 		name: 'Main warehouse',
 		// Only one default per scope, so the organization warehouse is NOT the
@@ -240,6 +199,14 @@ export async function seedInventory(): Promise<void> {
 		isDefault: false,
 		villageId,
 	});
+
+	if (organizationId !== null) {
+		// Both seeded warehouses are linked to the dev org (ERP-0031): the
+		// global one stays the default and its balances stay shared, but the
+		// org can now act in it through the link.
+		await ensureWarehouseOrganizationLink(globalWarehouse, organizationId);
+		await ensureWarehouseOrganizationLink(orgWarehouse, organizationId);
+	}
 
 	await ensureStorage(globalWarehouse, 'A1', 'Shelf A1');
 	await ensureStorage(globalWarehouse, 'A2', 'Shelf A2');
@@ -355,6 +322,8 @@ async function ensureOpeningStock(input: {
 	const itemId = await findItemId(itemOrganizationId, sku);
 	if (!itemId) return;
 
+	const balanceRepository = new BalanceRepository(drizzleDB);
+
 	// Idempotency guard. Keyed on the warehouse scope, not the caller: the
 	// opening receipt belongs to whichever scope owns the warehouse (data-model
 	// "scope rule"), so a re-run finds exactly the row it would otherwise write.
@@ -385,43 +354,24 @@ async function ensureOpeningStock(input: {
 			createdAt: occurredAt,
 		});
 
-		// Balances mirror the movement: same scope, same quantity. Reservations
-		// are unbuilt, so available equals on-hand.
-		//
-		// The lookup is scoped by organization as well as warehouse. Matching on
-		// warehouse alone would find the *shared* row of a global warehouse, or a
-		// sibling tenant's row, and add this quantity to it.
-		const [balance] = await tx
-			.select({ id: stockBalances.id })
-			.from(stockBalances)
-			.where(
-				sql`${stockBalances.organizationId} IS NOT DISTINCT FROM ${scopeOrganizationId} AND ${stockBalances.warehouseId} = ${warehouseId} AND ${stockBalances.itemId} = ${itemId} AND ${stockBalances.binId} IS NULL`,
-			)
-			.limit(1);
-
-		if (balance) {
-			await tx
-				.update(stockBalances)
-				.set({
-					quantityOnHand: sql`${stockBalances.quantityOnHand} + ${quantity}`,
-					quantityAvailable: sql`${stockBalances.quantityOnHand} + ${quantity} - ${stockBalances.quantityReserved}`,
-					lastMovementAt: occurredAt,
-					updatedAt: occurredAt,
-				})
-				.where(eq(stockBalances.id, balance.id));
-			return;
-		}
-
-		await tx.insert(stockBalances).values({
-			organizationId: scopeOrganizationId,
-			itemId,
-			warehouseId,
-			quantityOnHand: quantity,
-			quantityReserved: '0',
-			quantityAvailable: quantity,
-			lastMovementAt: occurredAt,
-			createdAt: occurredAt,
-		});
+		// Balance mirrors the movement — through `applyDelta`, the same
+		// serialized path every other writer uses (hardening plan D7). The
+		// hand-rolled select-then-update/insert previously here violated the
+		// "applyDelta is the ONLY way" contract and would silently diverge if
+		// the locking/enforcement logic in the repository ever changed.
+		// The lookup is scoped by organization as well as warehouse: matching
+		// on warehouse alone would find the *shared* row of a global
+		// warehouse, or a sibling tenant's row, and add this quantity to it.
+		await balanceRepository.applyDelta(
+			{
+				scopeOrganizationId,
+				itemId,
+				warehouseId,
+				binId: null,
+			},
+			{ quantity, occurredAt },
+			tx,
+		);
 	});
 
 	logger.info({ sku, warehouseId, quantity }, 'Seeded opening stock');
@@ -508,6 +458,48 @@ async function findWarehouse(
 		)
 		.limit(1);
 	return row?.id ?? null;
+}
+
+/**
+ * Ensures the warehouse↔organization link row exists (ERP-0031).
+ *
+ * @remarks
+ * Idempotent: an alive link for the same pair short-circuits. A soft-deleted
+ * one is revived rather than duplicated — the partial unique index
+ * `warehouse_organizations_uq` would reject a second alive row for the pair.
+ */
+async function ensureWarehouseOrganizationLink(
+	warehouseId: string,
+	organizationId: string,
+): Promise<void> {
+	const [existing] = await drizzleDB
+		.select({
+			id: warehouseOrganizations.id,
+			deletedAt: warehouseOrganizations.deletedAt,
+		})
+		.from(warehouseOrganizations)
+		.where(
+			sql`${warehouseOrganizations.warehouseId} = ${warehouseId} AND ${warehouseOrganizations.organizationId} = ${organizationId}`,
+		)
+		.limit(1);
+
+	if (existing?.deletedAt === null) return;
+
+	if (existing) {
+		await drizzleDB
+			.update(warehouseOrganizations)
+			.set({ deletedAt: null, updatedAt: new Date() })
+			.where(eq(warehouseOrganizations.id, existing.id));
+		logger.info({ warehouseId, organizationId }, 'Relinked warehouse to organization');
+		return;
+	}
+
+	await drizzleDB.insert(warehouseOrganizations).values({
+		warehouseId,
+		organizationId,
+		createdAt: new Date(),
+	});
+	logger.info({ warehouseId, organizationId }, 'Linked warehouse to organization');
 }
 
 /** Creates a storage (bin) when absent, keyed on `(warehouse_id, code)`. */

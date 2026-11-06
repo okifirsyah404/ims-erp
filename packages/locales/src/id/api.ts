@@ -32,6 +32,8 @@ const api: Record<keyof typeof en, string> = {
 		'Gudang dengan kode ini sudah ada pada cakupan ini',
 	'inventory.warehouseHasUnits':
 		'Gudang tidak dapat diarsipkan karena masih menyimpan {{count}} unit aktif',
+	'inventory.warehouseLinkConflict':
+		'Tautan tidak dapat diputus selama organisasi masih memiliki {{count}} peminjaman aktif yang berasal dari gudang ini',
 	'inventory.storageNotFound': 'Penyimpanan tidak ditemukan',
 	'inventory.storageCodeTaken':
 		'Penyimpanan dengan kode ini sudah ada di gudang ini',
@@ -51,6 +53,25 @@ const api: Record<keyof typeof en, string> = {
 		'Anda tidak dapat menyetujui penyesuaian stok Anda sendiri',
 	'inventory.adjustmentHasNoLines':
 		'Penyesuaian stok harus memiliki minimal satu baris',
+
+	'assets.assetNotFound': 'Aset tidak ditemukan',
+	'assets.categoryNotFound': 'Kategori aset tidak ditemukan',
+	'assets.categoryCodeTaken': 'Kategori aset dengan kode ini sudah ada',
+	'assets.ruleViolation': 'Aturan aset tidak mengizinkan: {{rule}}',
+	'assets.illegalTransition':
+		'Aset tidak dapat berpindah dari "{{from}}" ke "{{to}}"',
+	'assets.assetHasHistory':
+		'Tidak dapat mengarsipkan aset dengan riwayat peminjaman atau pemeliharaan',
+	'assets.placeBlocked':
+		'Aset tidak dapat ditempatkan pada status saat ini',
+	'assets.transferBlocked':
+		'Aset tidak dapat dipindahkan pada status saat ini',
+	'assets.periodAlreadyDepreciated':
+		'Aset ini sudah memiliki entri penyusutan untuk {{period}}',
+	'assets.depreciationExceedsBookValue':
+		'Penyusutan tidak boleh melebihi nilai buku tersisa',
+	'assets.toolSetNotEmpty':
+		'Tidak dapat mengarsipkan set perkakas yang masih berisi item',
 
 	'user.notFound': 'Pengguna tidak ditemukan',
 	'user.emailInUse': 'Email sudah digunakan',
@@ -114,22 +135,22 @@ const api: Record<keyof typeof en, string> = {
 	'auth.roleNotGrantable': 'Peran tidak dapat diberikan: {{roles}}',
 
 	// Borrowing (S4)
-	'inventory.borrowingNotFound': 'Peminjaman tidak ditemukan',
-	'inventory.borrowingLineNotFound': 'Baris peminjaman tidak ditemukan',
-	'inventory.unitNotOnBorrowing':
-		'Unit tersebut tidak dipinjamkan pada peminjaman ini',
-	'inventory.borrowingTransition':
+	'assets.borrowingNotFound': 'Peminjaman tidak ditemukan',
+	'assets.borrowingLineNotFound': 'Baris peminjaman tidak ditemukan',
+	'assets.unitNotOnBorrowing':
+		'Aset tersebut tidak dipinjamkan pada peminjaman ini',
+	'assets.borrowingTransition':
 		'Perubahan status tersebut tidak diizinkan untuk peminjaman ini',
-	'inventory.borrowingCodeTaken':
+	'assets.borrowingCodeTaken':
 		'Tidak dapat membuat kode peminjaman yang unik',
-	'inventory.borrowingHasNoLines':
+	'assets.borrowingHasNoLines':
 		'Peminjaman harus memiliki minimal satu baris',
-	'inventory.unitNotAvailable': 'Unit tersebut tidak dapat dipinjamkan',
-	'inventory.borrowerIdentity':
+	'assets.unitNotAvailable': 'Aset tersebut tidak dapat dipinjamkan',
+	'assets.borrowerIdentity':
 		'Identitas peminjam tidak sesuai dengan tipe peminjam',
-	'inventory.guestIdentityIncomplete':
+	'assets.guestIdentityIncomplete':
 		'Peminjam tamu belum melengkapi data identitas wajib',
-	'inventory.borrowingSelfApprovalForbidden':
+	'assets.borrowingSelfApprovalForbidden':
 		'Anda tidak dapat menyetujui peminjaman Anda sendiri',
 };
 

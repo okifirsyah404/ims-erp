@@ -52,7 +52,11 @@ export type TStockMovement = {
 	code: string;
 	movementType: TMovementType;
 	itemId: string;
+	/** Resolved item name; `null` when archived or unknown. */
+	itemName: string | null;
 	warehouseId: string;
+	/** Resolved warehouse name; `null` when archived or unknown. */
+	warehouseName: string | null;
 	binId: string | null;
 	targetWarehouseId: string | null;
 	/** Unsigned; direction comes from `movementType`. */
@@ -72,7 +76,11 @@ export type TStockBalance = {
 	id: string;
 	organizationId: string | null;
 	itemId: string;
+	/** Resolved item name; `null` when archived or unknown. */
+	itemName: string | null;
 	warehouseId: string;
+	/** Resolved warehouse name; `null` when archived or unknown. */
+	warehouseName: string | null;
 	binId: string | null;
 	quantityOnHand: string;
 	quantityReserved: string;

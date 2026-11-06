@@ -12,7 +12,592 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
-## Completed (this session — dummy dashboard view, 2026-11-06)
+## Completed (this session - sidebar: Stock + Stock Adjustment under Items, 2026-11-06)
+
+Status: **implemented**. Nav-only reorg in `nav-config.ts`: the top-level
+Stock entry is gone; the Items group now holds Products, Components,
+Materials, **Stock** (`/inventory/stock`), **Stock Adjustment**
+(`/inventory/stock/adjustments`), and New Item. The old Item Movements nav
+entry was dropped and its `nav:item.itemMovements` key removed from both
+bundles (dead-key guard); movements stay reachable from the Stock page. No
+route or schema change — `routeTree.gen.ts` and `docs/database/` untouched.
+Gates: web-admin `tsc -b`, root lint + test green.
+
+## Completed (this session - ERP-0031 Slice 3 admin link UI + member pickers, 2026-11-06)
+
+Status: **implemented**. Slice 3 closes ERP-0031: global admins can link and
+unlink organizations from a warehouse, unlinking is refused while custody is
+out, and member-facing pickers now read the organization-scoped warehouse list
+instead of the application-admin-only one.
+
+What landed:
+
+- Audit vocabulary: `warehouse.linked` / `warehouse.unlinked` added to
+  `AUDIT_ACTIONS` (TS-only — the column is text, so no migration).
+- Port: `inventory/contracts/warehouse-borrowing-guard.port.ts`
+  (`IWarehouseBorrowingGuard` + `NoopWarehouseBorrowingGuard`). Inventory
+  cannot import Assets (the dependency points the other way), so the
+  open-borrowing question is a port registered by `registerAssets` as
+  `WarehouseBorrowingGuard` over
+  `IBorrowingRepository.countOpenByOriginWarehouse(warehouseId,
+  organizationId)` ("open" = header `issued`/`partially_returned`, line not
+  returned, not marked lost). Inventory registers the noop, so the module
+  stays usable standalone and in tests.
+- Repository: `listOrganizations`, `linkOrganization` (idempotent; revives a
+  soft-deleted pair because the partial unique forbids a second row) and
+  `unlinkOrganization` (soft delete).
+- Service: `listWarehouseOrganizations`, `linkOrganization`,
+  `unlinkOrganization` — the last throws `WarehouseLinkConflictError` (409,
+  key `inventory.warehouseLinkConflict`, locale bundles updated en+id) while
+  open borrowings exist, and writes no link change when it refuses. Both link
+  and unlink audit with the acting admin.
+- Routes (admin plugin, `requireGlobalAdmin`): `GET/POST
+  /warehouses/:id/organizations`, `DELETE
+  /warehouses/:id/organizations/:organizationId`. New
+  `warehouseLinkSchema` + `warehouseLinkParamSchema`.
+- `GET /warehouses/linked` now returns each linked warehouse **with its
+  storages** (`TWarehouseLinked`) so member pickers can choose a bin without
+  the admin-only detail route. It carries **no** `warehouse:*` permission: the
+  invariant test pins "no organization role holds a warehouse action"
+  (ADR-0008), and the response is already scoped to the caller's own links, so
+  the `erp` guard plus organization scope is sufficient. A `warehouse:read`
+  grant was written, found to break that invariant test, and reverted together
+  with its data migration — nothing shipped.
+- Web admin: new "Organizations" tab on `/inventory/warehouses/$warehouseId`
+  (`components/inventory/warehouse-organizations-tab.tsx`) — org picker from
+  the organization API, link/unlink with confirmation, 409 surfaced as an
+  error toast. API client gained the three link calls and
+  `linkedWarehousesQueryOptions`. Asset place/transfer (`asset-detail.tsx`)
+  and the adjustment form now source warehouses from the linked endpoint —
+  they previously called the admin-only list and failed for organization
+  users.
+- Tests: 7 new cases in `warehouse.service.test.ts` (link creates + audits,
+  idempotent retry, missing warehouse 404, unlink removes + audits, no-link
+  `removed:false`, 409 refusal leaves the link alive, list returns alive links
+  only). Test doubles updated for the widened repository interface and the
+  new constructor dependency.
+
+```text
+bun run test (root)              → 536 pass, 0 fail, 993 expect (was 529)
+bun run lint (root)              → 0 errors (6 pre-existing warnings)
+bun run typecheck (root)         → green; web-admin `bunx tsc -b` green
+drizzle:migrate x2               → applied successfully (no new migration)
+drizzle:seed x2                  → clean, idempotent
+DB end-state: GLOBAL-MAIN + WH-MAIN each linked to the dev org; 0 warehouses
+with non-null organization_id; system admin roles still carry stock
+[read,export] / stock_adjustment [read]
+```
+
+`docs/database/` reviewed: Slice 3 changes no table, column, index,
+constraint, status vocabulary, or cross-module reference (the audit action
+list is a TS union over a text column, and the borrowing count is a query over
+existing columns), so `docs.dbml` is unchanged.
+
+Still open for ERP-0031 acceptance: browser walk-through of the new tab and
+the member pickers, and reviewer sign-off before the Slice 1 migration is
+applied to any non-local database.
+
+## Completed (this session - ERP-0031 Slice 2 enforcement + grants, 2026-11-06)
+
+Status: **implemented**. Slice 2 of ERP-0031: the ERP-0036 reachability stub
+(`assertWarehouseReachableByOrg`) now answers the real link question, and the
+stock flows are gated.
+
+What landed:
+
+- Repository: `warehouse.repository.isLinked(warehouseId, organizationId)` and
+  `listLinked(organizationId)` (alive links, alive warehouses, ordered by
+  name); both added to `IWarehouseRepository`.
+- Service: `assertWarehouseReachableByOrg` body swapped — warehouse must exist
+  (404) and have an alive link (boolean, caller maps false→404). Signature
+  narrowed: the org param is no longer nullable. `listLinkedWarehouses` added.
+  `createWarehouse` forces `organizationId: null` (D1 freeze at the service
+  boundary too).
+- Assets: `assertLocation` throws `WarehouseNotFoundError` when the warehouse
+  is unlinked (404, not 403 — ids cannot be probed).
+- Routes: `GET /warehouses/linked` via a new `WarehouseController.linkedPlugin()`
+  (`erp` guard; the permission check was dropped in Slice 3 — see below),
+  mounted in `app.ts` **before** the admin `.plugin()` because the guards
+  differ (session+admin vs erp).
+- Stock: `StockService.assertWarehouseLinkedFor(warehouseId, actorOrganizationId)`
+  called from the stock controller (`receipts`, `issues`) and the adjustment
+  controller (create) via an `assertWarehouseAccessible` helper. Global-admin
+  bypass lives at the controller boundary (`session.user.role === 'admin'`).
+  Internal writers (borrowing engine returning to `origin_warehouse_id`, seeded
+  opening stock) intentionally skip the check — system-established custody.
+- Grants: `erpRoleGrants.admin` gains `stock: ['read','export']` and
+  `stock_adjustment: ['read']`; common rebuilt. Data-only migration
+  `20261106065700_erp0031_slice2_admin_stock_grants` (hand-written, no schema
+  change) syncs already-seeded system `admin` roles in `auth.roles.permissions`.
+  Lesson: `permissions -> 'stock' ? 'read'` is NULL (not false) when the key is
+  missing — the WHERE needed `COALESCE(..., false)`; the first run silently
+  matched zero rows and was caught only by verifying the DB end-state.
+- Seeder: both `GLOBAL-MAIN` and `WH-MAIN` are linked to the dev org.
+- Tests: `warehouse.service.test.ts` scope/is_default tests rewritten for D1
+  (creation always global) plus a new "warehouse reachability (ERP-0031)"
+  block (linked/unlinked/soft-deleted link/missing warehouse/listLinked);
+  warehouse and stock test doubles gained `isLinked`/`listLinked`.
+
+```text
+bun run test          → 529 pass, 0 fail (was 526)
+bun run lint/typecheck (root) → green
+migrate+seed twice on ims_erp_local → clean
+DB end-state: GLOBAL-MAIN + WH-MAIN each linked to dev org; 0 warehouses with
+non-null organization_id; system admin roles carry stock [read,export],
+stock_adjustment [read]
+```
+
+## Completed (this session - ERP-0031 Slice 1 warehouse↔org link schema, 2026-11-06)
+
+Status: **implemented**. Slice 1 of ERP-0031 (warehouse↔organization links +
+scoped access); decisions D1 (keep + null `warehouses.organization_id`) and
+D2 (no WH-JKT/WH-SBY seeds — keep GLOBAL-MAIN/WH-MAIN) recorded.
+
+What landed:
+
+- `docs.dbml` already carried `inventory.warehouse_organizations` (Slice 0
+  contract) — verified, unchanged; `gen-logical-references.ts` and
+  `validate-dbml.ts` both OK (255 tables, 228 refs, 0 cross-module).
+- Drizzle table `warehouse_organizations` added to
+  `drizzle/schemas/inventory.schema.ts`: uuidv7 id, `warehouse_id` FK →
+  warehouses (cascade), `organization_id` (logical ref to auth.organizations,
+  cross-module FK omitted), soft-delete timestamps, partial unique
+  `(warehouse_id, organization_id) WHERE deleted_at IS NULL`, indexes on both
+  columns.
+- Migration `20261106062510_erp0031_warehouse_org_links`: generated DDL plus
+  hand-written backfill (one alive link per warehouse that still carries an
+  `organization_id`) and the freeze (`UPDATE warehouses SET organization_id =
+  NULL`). ASCII-only.
+- Seeder retargeted to D1: `WH-MAIN` is created **global**
+  (`organization_id: null`) and linked to the dev org through a new idempotent
+  `ensureWarehouseOrganizationLink` (revives soft-deleted links rather than
+  duplicating — the partial unique would reject a second alive row).
+  `assets.seeder.ts` looks `WH-MAIN` up by code alone. Note: the first
+  migrate+seed run silently re-scoped WH-MAIN because the seeder predated the
+  freeze — fixed in this slice, which is why the seeder change ships with the
+  migration (same pattern as ERP-0036 Slice 2).
+
+```text
+bun docs/database/gen-logical-references.ts → regenerated, OK
+bun docs/database/validate-dbml.ts          → 255 tables, 228 refs, 0 cross-module, OK
+drizzle:migrate + drizzle:seed run twice on ims_erp_local → clean
+DB end-state: WH-MAIN global (is_default false), 1 alive link to dev org,
+0 warehouses with non-null organization_id
+bun run lint / typecheck / test (root)      → green (backend 526 pass)
+```
+
+## Completed (this session - web-admin page padding fix, 2026-11-06)
+
+Status: **implemented**. Layout fix, no module behavior change.
+
+What landed:
+
+- `components/layout/main-layout.tsx` now owns page padding once: children
+  render inside `<main class='flex flex-1 flex-col gap-4 p-4 pt-0 md:gap-6
+  md:p-6'>` inside `SidebarInset`.
+- Asset screens (register, detail, categories, disposals, service records,
+  tool sets, depreciation, borrowings, forms) had **zero** page padding and sat
+  flush against the sidebar/header; they now get it from the layout.
+- Removed self-padding that would have double-padded: `p-6` from
+  `inventory/item-kind-list.tsx`, `inventory/item-form.tsx`,
+  `inventory/warehouse-list.tsx`, `inventory/warehouse-form.tsx`; `p-4 pt-0`
+  from the two dashboard containers; `p-4 md:p-6` from the account and
+  profiles path layouts.
+
+```text
+bun run build (apps/web-admin) → clean
+bun run lint  (apps/web-admin) → 0 errors (pre-existing warnings only)
+```
+
+## Completed (this session - ERP-0036 Slice 5 UI/i18n/removals, 2026-11-06)
+
+Status: **implemented** in code; locale and type gates green. Slice 5 of
+`docs/plan/plans/assets-equipment-location-and-borrowing.md`.
+
+What landed:
+
+- Borrowing screens moved from `inventory` to `assets`: routes
+  `/assets/borrowings`, `/assets/borrowings/new`,
+  `/assets/borrowings/$borrowingId`, components under
+  `components/assets/borrowing-*.tsx`. Links, query keys (`['assets',
+  'borrowings']`), and translation namespaces re-pointed.
+- `apps/web-admin/src/lib/borrowing-api.ts` retargeted to the ported engine:
+  `TBorrowingLine.assetId`/`originStorageId`, `TBorrowingEvent.assetMovementId`,
+  `TBorrowingLineInput.assetId`, `toolSetId` on create. `toDetail` now unwraps
+  the flat service view (`{...borrowing, lines, events}`), which the previous
+  nested-shape guess silently dropped.
+- New read endpoint `GET /assets/types` (`asset.repository.listTypes` →
+  `AssetService.listTypes`, guarded `asset:read`) returns active types ordered
+  by name. Register list gained an `assetType` filter and renders the lookup
+  `name`; the register form and category list load the same options; `ASSET_TYPES`
+  and `assets:type.*` are gone.
+- `ASSET_STATUSES` in the client fixed to `ready|borrowed|maintenance|inactive|
+  disposed|lost`; movement types extended to the D3 vocabulary and rendered via
+  `assets:movementType.*`.
+- Asset detail: custody/assign/return UI removed (`asset_assignments` is gone),
+  replaced by a location card with the place/transfer dialog (warehouse →
+  storage picker over `/warehouses`), and a "Borrow" shortcut to
+  `/assets/borrowings/new`.
+- Removals: `routes/_authed/inventory/tools/index.tsx`,
+  `routes/_authed/inventory/borrowings/*`, `routes/_authed/assets/loans/index.tsx`,
+  `components/assets/asset-loan-list.tsx`; warehouse Tools tab/stat; nav
+  `item.tools`; `ITEM_KINDS` trimmed to `product|component|material` (item form
+  service branch dropped).
+- Locales (en + id): borrowing copy moved `inventory:` → `assets:`;
+  `inventory:tools.*`, `inventory:borrowings.*`, `assets:type.*`, `assets:loans.*`,
+  `inventory:kind.tool`, `inventory:kind.service`, `inventory:form.serviceHint`,
+  `inventory:warehouses.tools` and `nav:item.tools` deleted; new
+  `assets:register.filterAllTypes|type`, `assets:detail.{place,transfer,placed,
+  transferred,noWarehouse,locationDescription,selectWarehouse,selectStorage,borrow}`
+  and `assets:movementType.*` added. `DYNAMIC_PREFIXES` re-keyed to
+  `assets:borrowing*`, `assets:type.` dropped, `assets:movementType.` added.
+
+```text
+bun run test (packages/locales)          → 38 pass, 0 fail (parity + dead keys)
+bun run build (apps/web-admin)           → tsc -b clean; vite build OK; routeTree
+                                          regenerated (no inventory/borrowings,
+                                          no inventory/tools, no assets/loans)
+bun run typecheck (root)                 → clean (backend + locales + ui)
+bun run lint (root)                      → 0 errors (6 pre-existing backend warnings)
+bun run test (root)                      → backend 526 pass, 0 fail; all workspaces green
+bun docs/database/validate-dbml.ts       → 255 tables, 228 refs, 0 cross-module,
+                                          0 timestamp gaps, OK
+```
+
+No schema change in this slice, so no migration was generated. `docs/database/`
+was reviewed and is unchanged (the new `/assets/types` endpoint reads an
+existing table). `drizzle:migrate` + `drizzle:seed` run-twice evidence remains the
+Slice 4 run; the destructive migration still needs reviewer confirmation of the
+target `POSTGRES_URL` before it is applied outside the local database.
+
+## Completed (this session - ERP-0036 Slice 4 permissions + seed, 2026-11-06)
+
+Status: **verified** on the local database; **implemented** in code. Slice 4 of
+`docs/plan/plans/assets-equipment-location-and-borrowing.md`.
+
+What landed:
+
+- `packages/common/src/authorization/erp-permissions.ts`: permission resource
+  `borrowing` renamed `asset_borrowing` in all 10 role blocks that held it, with
+  the same ten actions (`read/create/update/approve/issue/return/extend/
+  mark_late/mark_lost/export`) — B6, nothing added or removed.
+- Backend route guards plus the borrowing controller's `actorFor` capability
+  probes use `asset_borrowing`; the same rename went into the service JSDoc.
+- `ASSET_DOC_TYPES.borrowing = 'asset_borrowing'`; `BorrowingService` allocates
+  through it and keeps the `BRW-YYYYMM-####` format (D14). `AssetService`
+  allocates asset codes on the **global** (`null` → `''`) sequence (D13) so the
+  globally-unique `assets.code` index cannot collide across scopes.
+- Migration `20261105223616_erp0036_slice4_permission_rename` (custom,
+  data-only, snapshot unchanged): idempotently moves `auth.roles.permissions`
+  `borrowing` → `asset_borrowing`, and renames the
+  `organization.document_sequences` row so an allocated BRW number is kept, not
+  restarted (a pre-existing target row deletes the stale source instead of
+  violating the unique key).
+- New `database/seeders/seed/assets.seeder.ts`, wired after `seedInventory()` in
+  `database/seeders/index.ts`: six `asset_types` upserts, six assets with
+  warehouse/storage placement and `receipt` movements, the `TS-SEED-01` tool set
+  with two members, and three borrowings (out, returned, out + `marked_lost`).
+  All anchors are fixed codes/notes and fixed dates — re-runs are no-ops.
+- `inventory-authorization.test.ts` retargeted to `asset_borrowing`.
+
+```text
+bun run build (packages/common)         → clean (dist rebuilt; tests import dist)
+bun run typecheck                       → clean
+bun test (backend)                      → 526 pass, 0 fail (979 expects)
+bun run drizzle:migrate                 → migrations applied successfully
+bun run drizzle:seed                    → complete (run 1)
+bun run drizzle:seed                    → complete (run 2, idempotent)
+bun docs/database/validate-dbml.ts      → 255 tables, 228 refs, 0 cross-module,
+                                          0 timestamp gaps, OK
+```
+
+Post-migration DB checks (`ims_erp_local`): 19 `auth.roles` rows carry
+`asset_borrowing` and 0 carry `borrowing`; 6 assets (`AST-SEED-001..006`) with
+one `borrowed`, one `lost`, four `ready`; movements 5 `receipt` + 3
+`borrow_out` + 1 `borrow_return` + 1 `lost`; 3 borrowings with one line each;
+every physical borrowing event carries `asset_movement_id` and
+`requested`/`approved` carry none; `TS-SEED-01` has 2 members.
+`docs/database/` reviewed — no change required (permission and numbering keys
+are not part of the persistence contract).
+
+Note: the migration comment must stay ASCII-only — a `→` in a comment aborted
+the run with `character with byte sequence 0xe2 0x86 0x92 ... has no
+equivalent in encoding "WIN1252"`.
+
+## Completed (this session - ERP-0036 Slice 3 borrowing port, 2026-11-06)
+
+Status: **verified** on the local database; **implemented** in code. Slice 3 of
+`docs/plan/plans/assets-equipment-location-and-borrowing.md`.
+
+What landed:
+
+- Borrowing engine moved from `inventory` to `assets` (`git mv` of service,
+  repository, controller, contracts and both test suites); DI tokens, container
+  registration, `app.ts` mounts and the asset `index.ts` export retargeted.
+- `inventory` borrowing trio and `assets.asset_assignments` **dropped**, with
+  their services, contracts, repository methods and routes. `BorrowingService`
+  writes `asset_movements` through `AssetOperationsService`, and the event
+  CHECK tying `issued|returned|marked_lost` to a movement id holds.
+- `AssetOperationsService` gained `reconcileStatus` (D7), `syncCustody` (D8),
+  `place` (`receipt`), `transfer` (`transfer` + source cleared), plus
+  `borrowOut`, `borrowReturn`, `markAssetLost`, `setToolSetStatus`,
+  `toolSetAssetIds` and a private `assertLocation`.
+- Inventory exposes `assertStorageInWarehouse` (real) and
+  `assertWarehouseReachableByOrg` (returns `true`; ERP-0031 stub with the call
+  site kept real) through `WarehouseService`; Assets holds no inventory
+  repository.
+- Tool-set lending expands to N lines and flips `tool_sets.status`
+  `available ↔ lent`; guest PII, approval chain and both sweeps unchanged.
+- Locale keys re-keyed `inventory:borrowing.*` → `assets:*` (en + id); audit
+  actions are `asset.borrowed|returned|lost|moved|placed|transferred|disposed`.
+- Migration `20261105221923_erp0036_slice3_borrowing_engine` hand-edited:
+  drop the manually-created
+  `serial_tracked_items_current_borrowing_line_id_borrowing_lines_id_fkey`
+  **before** `borrowing_lines`, since it never existed in Drizzle metadata.
+  `serial_tracked_items.current_borrowing_line_id` stays superseded (D17).
+- Tests retargeted asset-shaped (borrowing service + authorization, asset
+  operations custody/location, kind×status matrix, item/inventory suites), and
+  `verify-inventory-constraints.ts` now probes `assets.borrowing*` plus `ready`.
+
+```text
+bun run typecheck                      → clean
+bun run test                           → 526 pass, 0 fail (27 files, 979 expects)
+bun run lint                           → 0 errors (6 pre-existing warnings)
+bunx --bun drizzle-kit generate --hints-file … 
+  → 20261105221923_erp0036_slice3_borrowing_engine
+bun run drizzle:migrate                → migrations applied successfully
+bun run drizzle:seed                   → complete (run 1)
+bun run drizzle:seed                   → complete (run 2, idempotent)
+bun docs/database/validate-dbml.ts     → 255 tables, 228 refs, 0 cross-module,
+                                         0 timestamp gaps, OK
+```
+
+Post-migration DB checks (`ims_erp_local`): only `assets.borrowing_events`,
+`assets.borrowing_lines`, `assets.borrowings` remain; `tool_set_id` exists;
+the old manual FK is gone; `serial_tracked_items_status_check` is
+`pre_order|in_stock|lost|sold|applied_warranty`. `docs/database/` reviewed —
+no change required (no table/column/link/vocabulary moved in Slice 3).
+
+## Completed (this session - ERP-0036 Slice 2 schema + destructive migration, 2026-11-05)
+
+Status: **verified** on the local database; **implemented** in code. Slice 2 of
+`docs/plan/plans/assets-equipment-location-and-borrowing.md`.
+
+What landed:
+
+- `apps/backend/database/cleanup-tool-items.ts` — one-shot, `--dry-run` first,
+  refuses on mixed borrowings or adjustment lines, deletes `tool`/`service`
+  items + units and their ledger rows behind a transaction, writing audit rows.
+  Dry run on the old DB: `items: 8, byKind {tool: 4, service: 4}, units: 12,
+  borrowings: 0, stockMovements: 0, stockBalances: 0`; then `--apply` succeeded.
+- `apps/backend/drizzle/schemas/asset.schema.ts` rewritten to the 14-table
+  contract: `asset_types` lookup + FKs, `assets` location columns,
+  `borrowed_since`, nullable org, `ready|borrowed|...` status, global code
+  unique, expression serial unique; `asset_movements` location ids + new
+  vocabulary; the borrowing trio ported to `assets`.
+- `apps/backend/drizzle/schemas/inventory.schema.ts`: `ITEM_KINDS` is
+  `product|component|material`, the service CHECK is gone, the kind CHECK and
+  item seeder shrink accordingly.
+- `apps/backend/database/seeders/seed/inventory.seeder.ts`: tool/service blocks
+  deleted, kinds trimmed, faker doc rewritten.
+- `item.service.ts`, `asset.service.ts`, `asset-operations.service.ts`,
+  `asset.repository.interface.ts`: status/vocabulary moves (`in_stock`→`ready`,
+  `in_use`→`borrowed`, `loan`→`borrow_out`, `return`→`borrow_return`,
+  `assigned_at`→`borrowed_since`).
+- Tests updated: seeder data, kind×status matrix, item/asset operation suites,
+  and the manual `verify-inventory-constraints.ts` verifier.
+- New migration `20261105123204_faulty_ikaris`, hand-edited per plan: asset-type
+  seed inserts before the FK adds, old status/movement CHECKs dropped before the
+  backfills and re-added after, idempotent `in_stock→ready` / `in_use→borrowed`
+  and `loan/return` backfills.
+
+**Deviations from the plan, recorded deliberately:**
+
+1. **The inventory borrowing trio and `assets.asset_assignments` stay until
+   Slice 3.** Removing them in Slice 2 makes the live borrowing service and
+   assignment endpoints reference dropped tables, so that commit could not
+   compile or run. Their code moves in Slice 3 and the `DROP TABLE`s ride that
+   migration. Same reason `serial_tracked_items.borrowed` and its CHECK stay for
+   one more slice. The contract (`docs.dbml`) still describes the target state.
+2. `database/seeders/index.ts` now imports `reflect-metadata` first. Both
+   `drizzle:seed` and `drizzle:migrate-reset` crashed under Bun 1.4.4 with
+   “tsyringe requires a reflect polyfill” before this; the backend entrypoint
+   already imported it, the seeder entrypoint did not.
+3. `docs.dbml` nullable-org/scoped-unique fixes for the eight asset tables and
+   three index pairs landed here (they were drafted after the Slice 1 commit).
+
+```text
+bun run typecheck                      → clean
+bun run test                           → 530 pass, 0 fail (27 files, 981 expects)
+bun run lint                           → 0 errors (6 pre-existing warnings)
+bun docs/database/gen-logical-references.ts
+  → regenerated: 513 refs across 37 targets, 228 intra-module refs
+bun docs/database/validate-dbml.ts
+  → parsed: 255 tables, 228 refs; cross-module refs: 0; timestamp gaps: 0; OK
+bun run database/cleanup-tool-items.ts --apply
+  → items 8 (tool 4, service 4), units 12 deleted; Cleanup applied.
+bun run drizzle:migrate-reset          → migrations + seed complete
+bun run drizzle:migrate                → migrations applied successfully
+bun run drizzle:seed                   → complete (second run, idempotent)
+```
+
+Post-migration DB checks (`ims_erp_local`): item kinds are exactly
+`product|component|material` (4 each), units all `in_stock` (4), six
+`asset_types` rows, `assets` schema 15 tables (11 old + asset_types + borrowing
+trio, assignments pending Slice 3), `inventory` still 12 tables (trio pending
+Slice 3), and the three CHECK definitions match the new vocabularies.
+
+## Completed (this session - ERP-0036 Slice 1 contract, 2026-11-05)
+
+Status: **implemented** for the contract only (`docs/database/` + plan docs); no
+Drizzle schema, migration, seeder, service or UI touched yet.
+
+`docs/database/docs.dbml` is now the target contract for ERP-0036:
+
+- **Assets block rewritten** (now 14 tables). New `assets.asset_types` (global
+  lookup, no `organization_id`, unique `code`); `assets.asset_categories` and
+  `assets.assets` gain a real `Ref` to `assets.asset_types.code` and lose their
+  `asset_type IN (...)` CHECKs; `assets.assets` gains `warehouse_id` /
+  `storage_id` (logical refs into `inventory`), renames `assigned_at` →
+  `borrowed_since`, drops `organization_id NOT NULL`, and switches the status
+  CHECK to `ready|borrowed|maintenance|inactive|disposed|lost`.
+- **Uniqueness settled** (Stage 0 B5 / D13): `assets.code` is a single global
+  unique index (codes allocate on the global sequence); serials are unique per
+  scope via an expression index on `(coalesce(organization_id,''), serial_number)
+  WHERE serial_number IS NOT NULL AND deleted_at IS NULL`.
+- `assets.asset_movements`: four location id columns, new vocabulary
+  `receipt|transfer|borrow_out|borrow_return|project_site|disposal|lost`,
+  location/type indexes.
+- `assets.borrowings` / `borrowing_lines` / `borrowing_events` added (ported
+  from inventory, `asset_id` and `asset_movement_id`, plus `origin_storage_id`),
+  with intra-module FKs. `assets.asset_assignments` deleted (D6).
+- **Inventory block**: borrowing trio + its 5 refs deleted (13 tables left);
+  `item_kind` is `product|component|material` and the service clause is gone;
+  `serial_tracked_items.status` drops `borrowed` and gains the superseded
+  `current_borrowing_line_id` column + index for the later cleanup;
+  `stock_movements` borrowing vocabulary annotated as superseded (D17).
+- TableGroups updated for both modules (`inventory.borrowing*` out,
+  `assets.asset_types` + `assets.borrowing*` in, `assets.asset_assignments` out).
+- `module-ownership.md`: Inventory 16→13 tables / 24→19 FKs / 31→12 logical
+  refs; Assets 11→14 / 11→16 / 26→33; module profiles rewritten (Inventory no
+  longer owns borrowing, Assets owns it, placement asserts listed with the
+  ERP-0031 stub called out); the nullable-org carve-out now covers Inventory
+  **and** Assets, not Inventory alone.
+- `data-dictionary.md`: nullable-org rule, the `assets.assets.code`
+  global-uniqueness exception, `assets.borrowing_events` added to the
+  no-`deleted_at` list, new scope-split/expression index conventions,
+  `warehouse_id`/`storage_id` generic columns, Assets glossary rewritten
+  (assignment → borrowing, location, movement, derived status).
+
+```text
+bun docs/database/gen-logical-references.ts
+  → regenerated: 513 refs across 37 targets, 228 intra-module refs
+bun docs/database/validate-dbml.ts
+  → parsed: 255 tables, 228 refs
+    cross-module refs: 0
+    timestamp gaps: 0
+    OK
+```
+
+Two gate defects were found and fixed rather than worked around:
+
+1. **`docs.dbml` at `HEAD` did not parse.** `assets.assets.status` carried a
+   `[note: …]` setting on a `Checks` entry; `@dbml/core` rejects it with
+   `Unknown check setting 'note'`. The same construct existed in three other
+   checks I touched. All check-level notes were moved into table `Note:`
+   strings; the file parses again.
+2. **The cross-module check was vacuous.** `validate-dbml.ts` iterated
+   `db.refs`, which `@dbml/core` v11 leaves undefined — the parse result keeps
+   all 228 refs on `schema.refs`. It now reads every ref and prefers
+   `endpoint.schemaName` over the bare-name map (which is ambiguous because
+   `items` exists in both `catalog` and `inventory`). First real run reported
+   11 false positives from that ambiguity, then 0.
+
+Also noted for later slices: `gen-logical-references.ts` anchors its regex at
+the start of a column note, so any cross-module note must **begin** with
+`Logical reference to …` or it is silently uncounted.
+
+`docs/database/` **was** changed (this is the contract slice).
+`docs/plan/plans/assets-equipment-location-and-borrowing.md` Slice 1 marked
+DONE with these deviations.
+
+## Completed (this session - assets/equipment Stage 0 review, 2026-11-05)
+
+Status: **in-progress** (plan doc amended; still no code, schema, migration or
+seed touched).
+
+- Ran an execution review (`Stage 0`) of
+  `docs/plan/plans/assets-equipment-location-and-borrowing.md` against the
+  actual code before writing anything. Design holds; the plan as written was
+  not executable. Nine defects found, six blocking:
+  - **B1** D11's reachability rule needs `inventory.warehouse_organizations`,
+    which exists only in `docs.dbml:2268` — not in Drizzle, not migrated; it is
+    backlog **ERP-0031**, still `planned`. Resolved by keeping global assets but
+    stubbing `assertWarehouseReachableByOrg` to return `true` (all warehouses
+    are global today), with a real call site so ERP-0031 is a body swap.
+  - **B2** Slice order broke the migration: the tightened `item_kind` CHECK
+    would fail while seeded `tool`/`service` rows exist, and the cleanup script
+    sat in Slice 4. Cleanup + seeder trim moved into Slice 2, before
+    `drizzle:generate`.
+  - **B3** The `borrowing` → `asset_borrowing` rename would silently revoke
+    every role's access: grants are jsonb (`role.schema.ts:73`) and
+    `organization-roles.seeder.ts` is insert-only. Added an idempotent jsonb
+    key-rename data migration in the same slice.
+  - **B4** D11's `document_sequences.organization_id` nullable change was wrong:
+    the service already writes a `''` sentinel
+    (`document-numbering.service.ts:62`) and `NULL` never conflicts in
+    `ON CONFLICT (organization_id, doc_type)`, so it would have minted
+    duplicate sequences. Clause dropped; no schema change.
+  - **B5** Acceptance said a global asset and an org asset cannot share a code,
+    but `(org, code)` unique plus code-unique-where-org-is-null does not deliver
+    it. Ruling: `assets.code` globally unique, codes allocate from the global
+    sequence; serials unique on `(coalesce(organization_id,''), serial_number)`.
+  - **B6** D15 said "eight actions"; the real grant has ten (adds `mark_late`,
+    `export`). Rename only, keep ten.
+- Non-blocking defects (B7-B9) recorded and folded into the slices: the
+  borrowing port needs `origin_storage_id`, the `asset_movement_id` FK policy,
+  movement rows for disposal/maintenance and the `asset_types` seed before the
+  FK is added; `reconcileStatus` needed explicit source rules; and the
+  scheduler worker, warehouse `toolsCount`, borrowing errors living in
+  `inventory.errors.ts`, asset-type endpoints, the `in_stock→ready` backfill and
+  the affected tests were missing from the plan.
+- Migrations will need one **hand edit**: the
+  `serial_tracked_items.current_borrowing_line_id` FK exists in the database and
+  in `20261102174836_colorful_rattler` but not in Drizzle metadata, so
+  `drizzle:generate` cannot emit its `DROP CONSTRAINT`.
+- `docs/database/` was reviewed and is **unchanged** so far; it changes in
+  Slice 1. `bun docs/database/validate-dbml.ts` not run (no edits yet).
+- Verified: nothing executed — reading only (`git status`, `Read`, ripgrep).
+
+## Completed (this session - assets/equipment design plan, 2026-11-05)
+
+Status: **design only** (no code, schema, migration or seed touched;
+`docs/database/` reviewed but not yet edited - it changes in slice 1).
+
+- **7-round grilling session** resolved the "tools are equipment" question and
+  the follow-up "equipment movements must be tracked between warehouses /
+  warehouse storages". Output: `docs/plan/plans/assets-equipment-location-and-borrowing.md`
+  (D1-D20, five slices, acceptance criteria, accepted risks).
+- Key calls: the **asset row is the physical unit**; assets gain
+  `warehouse_id`/`storage_id` plus location ids on `asset_movements`; the
+  **borrowing engine moves into `assets`** (guest PII, approval chain, sweeps
+  retained, ported by `git mv`) and the inventory trio is dropped;
+  `asset_assignments` is dropped because borrowing becomes the only custody;
+  asset status becomes `ready|borrowed|maintenance|inactive|disposed|lost`
+  derived by one reconcile; `item_kind` shrinks to
+  `product|component|material`; `asset_type` becomes a seeded lookup table;
+  asset tables go nullable-org (app-admin write, org read); `borrowing`
+  permission renamed `asset_borrowing`.
+- New backlog item **ERP-0036** (planned); `features.md` M06 updated in the
+  same change.
+- Destructive step accepted on the basis that **no production database
+  exists**: one migration drops `inventory.borrowings`/`borrowing_lines`/
+  `borrowing_events` and `assets.asset_assignments`, and a `--dry-run`-first
+  script hard-deletes tool items and serial units. Must not run against any
+  `POSTGRES_URL` the author cannot name.
+- Verified: nothing (design only). No commands run beyond reading files.
+
+## Completed (this session - dummy dashboard view, 2026-11-06)
 
 Status: **implemented** (UI mock only; no backend, schema, migration, or seed
 touched — `docs/database/` reviewed, unchanged).
@@ -161,9 +746,11 @@ bun docs/database/validate-dbml.ts          → 255 tables, 0 cross-module refs,
                                               0 timestamp gaps, OK
 ```
 
-**Next executable task:** ERP-0031. First step: query dev DB for warehouses
-with non-null `organization_id` (decides whether backfill needs
-`recomputeFromLedger`).
+**Next executable task:** ERP-0032 (stock transfers) — ERP-0031 is now
+implemented in full, so its dependency is satisfied. Start by reading the
+transfer requirements in `backlog.md` and the `inventory` tables in
+`docs/database/docs.dbml`; ERP-0031's remaining work is acceptance only
+(browser walk-through, reviewer confirmation before a non-local migration).
 
 ## Completed — v5.1 per-module plans (2026-11-04)
 

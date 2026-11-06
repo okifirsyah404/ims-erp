@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-05.
+Last synced: 2026-11-06.
 
 > **Sidebar shell note (2026-11-05):** the web-admin sidebar now renders the
 > full M01–M12 nav map (see `progress.md`, "UI — full ERP sidebar shell").
@@ -103,10 +103,18 @@ Last synced: 2026-11-05.
   `plans/warehouse-hardening.md` phases 1/2/2b done, UI
   `/inventory/warehouses/*`. Note: multi-warehouse rebaselined by ADR-0010
   (proposed 2026-11-04, owner sign-off pending).
+- Warehouse↔organization links + scoped access — ERP-0031. Evidence:
+  `inventory.warehouse_organizations` (Drizzle + migration
+  `20261106062510_erp0031_warehouse_org_links`), real
+  `assertWarehouseReachableByOrg`, `GET /warehouses/linked` (with storages),
+  stock receive/issue + adjustment create gated (unlinked→404, global-admin
+  bypass), assets `assertLocation` 404 on unlinked, admin link/unlink endpoints
+  with audit and a 409 open-borrowing guard, Organizations tab on the
+  warehouse detail, member pickers on the linked endpoint; 536 backend tests.
+  Remaining: browser walk-through, reviewer sign-off before a non-local
+  migration. See `progress.md` (2026-11-06).
 
 ### planned (ADR-0010)
-- Warehouse↔organization links + scoped access — ERP-0031. Evidence:
-  `docs.dbml` `inventory.warehouse_organizations` only.
 - Stock transfers (warehouse→warehouse, storage→storage) — ERP-0032.
 - Tracking views (per-storage balances, movement filters, unit location) —
   ERP-0033.
@@ -119,17 +127,43 @@ Last synced: 2026-11-05.
 ## M06 Assets and Equipment
 
 ### planned
+
 - Asset register: value, PIC, condition, service notes — T07, ERP-0015.
   Evidence: dbml `assets` only.
 - Depreciation as manual journal — T07, ERP-0015. Evidence: none.
 
 ### implemented
+- Location tracking + borrowing ownership — ERP-0036. Evidence: contract
+  shipped 2026-11-05 (`docs/database/docs.dbml`: assets 14 tables incl.
+  `asset_types` + borrowing trio, inventory 13 tables, `validate-dbml.ts`
+  prints `OK`; plan `plans/assets-equipment-location-and-borrowing.md` Slice 1
+  done); Slice 2 shipped 2026-11-05 (asset schema rewritten, cleanup script
+  applied, migration `20261105123204_faulty_ikaris`, reset + migrate + seed
+  twice, 530 tests, DB CHECKs verified — see `progress.md`); Slice 3 shipped
+  2026-11-06 (borrowing engine moved to `assets`,
+  `inventory/services/borrowing.service.ts` and `assets.asset_assignments`
+  gone, migration `20261105221923_erp0036_slice3_borrowing_engine`, migrate +
+  seed twice, 526 tests); Slice 4 shipped 2026-11-06 (`borrowing` →
+  `asset_borrowing` in all 10 roles, data-only migration
+  `20261105223616_erp0036_slice4_permission_rename`, global asset-code
+  sequence, `seed/assets.seeder.ts`, migrate + seed twice, 526 tests); Slice 5
+  shipped 2026-11-06 (borrowing screens moved to `/assets/borrowings`,
+  `GET /assets/types` added for the register filter + forms, asset detail gained
+  place/transfer with warehouse→storage picker, inventory tools page + warehouse
+  tools tab + `asset_assignments` UI gone, locale keys re-homed to
+  `assets:borrowing*`; locale parity/dead-key guards green, web-admin build,
+  root lint/typecheck/test, `validate-dbml.ts` all green). All five slices
+  landed; browser walk-through pending.
+  Stage 0 execution review resolved all blocking defects (global assets with
+  stubbed warehouse reachability, global unique asset code, no
+  `document_sequences` change, jsonb permission migration).
 - Tool borrowing/return (S4) — T07, ERP-0029 (backlog "shipped" → mapped
-  `implemented`). Evidence: `inventory/services/borrowing.service.ts`, 60 tests,
-  late-return + guest-PII retention sweeps on BullMQ; UI
-  `/inventory/borrowings/*`. Pending: browser walk-through; worker still in API
-  process. Note: lives in `inventory`; covers the M06 loan register
-  (ADR-0010, proposed).
+  `implemented`). Engine **moved to `assets`** by ERP-0036 Slice 3
+  (2026-11-06): `assets/services/borrowing.service.ts`, 526 backend tests
+  green; late-return + guest-PII retention sweeps on BullMQ. UI moved to
+  `/assets/borrowings/*` by ERP-0036 Slice 5 (2026-11-06). Pending: browser
+  walk-through; worker still in API process. Note: covers the M06 loan
+  register (ADR-0010, proposed).
 
 ## M07 Projects and After-Sales
 

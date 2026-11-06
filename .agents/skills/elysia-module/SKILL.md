@@ -1,6 +1,6 @@
 ---
 name: elysia-module
-description: Modular monolith boundaries for this project's Elysia backend - each module under src/app/<module>/ owns exactly one Postgres schema via drizzle/schemas/<module>.schema.ts, no foreign keys across schemas (plain id columns instead), and cross-module communication is strictly service-to-service (AService -> B2Service via DI tokens). Modules calling external systems define contract ports first; module-owned BullMQ jobs live in queues/ and write through the module repository. Exception- user and organization modules live beside Better Auth in the auth schema because Better Auth owns those tables, and their repositories write a declared column subset only (user deletedAt; everything else via the Better Auth gateway). Use when creating a new module, deciding where a table belongs, adding cross-module references, wiring cross-module communication, or reviewing schema/module coupling in apps/backend. Does NOT cover intra-module layering (use elysia-layered-architecture) or DI mechanics (use elysia-tsyringe).
+description: Modular monolith boundaries for this project's Elysia backend - each module under src/app/<module>/ owns exactly one Postgres schema via drizzle/schemas/<module>.schema.ts, no foreign keys across schemas (plain id columns instead), and cross-module communication is strictly service-to-service (AService -> B2Service via DI tokens), with service cycles broken by repository-only Exported<Module>Service facades consumed via DI tokens. Modules calling external systems define contract ports first; module-owned BullMQ jobs live in queues/ and write through the module repository. Exception- user and organization modules live beside Better Auth in the auth schema because Better Auth owns those tables, and their repositories write a declared column subset only (user deletedAt; everything else via the Better Auth gateway). Use when creating a new module, deciding where a table belongs, adding cross-module references, wiring cross-module communication, breaking circular DI between modules, or reviewing schema/module coupling in apps/backend. Does NOT cover intra-module layering (use elysia-layered-architecture) or DI mechanics (use elysia-tsyringe).
 license: MIT
 metadata:
   author: OpenAgentic
@@ -114,8 +114,13 @@ Forbidden:
 
 `AService` → `B2Service` via B's DI token is the only sanctioned
 cross-module call — never controller → foreign service, never
-repository → foreign repository. Direction rules, error translation, and
-cycle avoidance are detailed in rule 3.5's reference file.
+repository → foreign repository. `A → B → A` service cycles are
+forbidden (tsyringe cannot construct them): when two modules need each
+other's data, add an **exported service** pair — `Exported<B>Service`
+in B depends only on B's repository and is consumed by A via a token
+(and symmetrically for B reading A). Direction rules, error
+translation, and the cycle fix are detailed in rule 3.5's reference
+file.
 
 ### 3.6 New module checklist — MEDIUM
 
@@ -166,6 +171,11 @@ cycle avoidance are detailed in rule 3.5's reference file.
 - A module queue worker writing `drizzleDB` directly instead of through
   the module repository — loses cache invalidation and soft-delete
   filtering (fixed in `user/queues/avatar.worker.ts`).
+- `WarehouseService` injecting `AssetService` while `AssetService`
+  injects `WarehouseService` (real case: equipment counts + warehouse
+  names) — tsyringe cannot construct either; break it with the
+  `ExportedAssetService`/`ExportedWarehouseService` repository-only
+  facades (rule 3.5).
 
 ## References
 

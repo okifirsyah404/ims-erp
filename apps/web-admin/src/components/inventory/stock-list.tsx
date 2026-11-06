@@ -161,11 +161,31 @@ export function StockList() {
 							<TableBody>
 								{rows.map((row) => (
 									<TableRow key={row.id}>
-										<TableCell className='font-mono text-xs'>
-											{row.itemId}
+										<TableCell>
+											<Link
+												to='/inventory/items/$itemId'
+												params={{ itemId: row.itemId }}
+												className='hover:underline'
+											>
+												{row.itemName ?? (
+													<span className='font-mono text-xs text-muted-foreground'>
+														{row.itemId}
+													</span>
+												)}
+											</Link>
 										</TableCell>
-										<TableCell className='font-mono text-xs'>
-											{row.warehouseId}
+										<TableCell>
+											<Link
+												to='/inventory/warehouses/$warehouseId'
+												params={{ warehouseId: row.warehouseId }}
+												className='hover:underline'
+											>
+												{row.warehouseName ?? (
+													<span className='font-mono text-xs text-muted-foreground'>
+														{row.warehouseId}
+													</span>
+												)}
+											</Link>
 										</TableCell>
 										<TableCell>
 											{row.binId === null ? (

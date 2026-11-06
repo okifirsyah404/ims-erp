@@ -13,6 +13,7 @@ import {
 	eq,
 	getTableColumns,
 	ilike,
+	inArray,
 	isNull,
 	or,
 	sql,
@@ -197,6 +198,17 @@ export class ItemRepository implements IItemRepository {
 			.where(and(eq(items.id, id), isNull(items.deletedAt)))
 			.returning();
 		return row ?? null;
+	}
+
+	/** @inheritdoc */
+	async findNamesByIds(
+		ids: string[],
+	): Promise<Array<{ id: string; name: string }>> {
+		if (ids.length === 0) return [];
+		return this.database
+			.select({ id: items.id, name: items.name })
+			.from(items)
+			.where(and(inArray(items.id, ids), isNull(items.deletedAt)));
 	}
 
 	/** Counts alive units of an item, used before archive. */

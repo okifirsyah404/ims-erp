@@ -15,12 +15,12 @@ import type { IWarehouseStorageRepository } from '../contracts/warehouse-storage
 import type { IMovementRepository } from '../contracts/movement.repository.interface';
 import type { IBalanceRepository } from '../contracts/balance.repository.interface';
 import type { IAdjustmentRepository } from '../contracts/adjustment.repository.interface';
-import type { IBorrowingRepository } from '../contracts/borrowing.repository.interface';
+import type { IWarehouseBorrowingGuard } from '../contracts/warehouse-borrowing-guard.port';
 import type { ItemService } from '../services/item.service';
 import type { WarehouseService } from '../services/warehouse.service';
+import type { ExportedWarehouseService } from '../services/exported-warehouse.service';
 import type { StockService } from '../services/stock.service';
 import type { AdjustmentService } from '../services/adjustment.service';
-import type { BorrowingService } from '../services/borrowing.service';
 
 export const ITEM_REPOSITORY_TOKEN: InjectionToken<IItemRepository> =
 	Symbol('ITEM_REPOSITORY');
@@ -37,6 +37,19 @@ export const WAREHOUSE_STORAGE_REPOSITORY_TOKEN: InjectionToken<IWarehouseStorag
 	Symbol('WAREHOUSE_STORAGE_REPOSITORY');
 export const WAREHOUSE_SERVICE_TOKEN: InjectionToken<WarehouseService> =
 	Symbol('WAREHOUSE_SERVICE');
+/**
+ * Cross-module export facade over warehouse reads (name resolution for
+ * storage-location display). Depends only on the warehouse repository, so
+ * consumers (assets) cannot form a service-to-service cycle.
+ */
+export const EXPORTED_WAREHOUSE_SERVICE_TOKEN: InjectionToken<ExportedWarehouseService> =
+	Symbol('EXPORTED_WAREHOUSE_SERVICE');
+/**
+ * Port to the asset module's open-borrowing state (ERP-0031). Implemented by
+ * `registerAssets`; a noop fallback keeps inventory usable standalone.
+ */
+export const WAREHOUSE_BORROWING_GUARD_TOKEN: InjectionToken<IWarehouseBorrowingGuard> =
+	Symbol('WAREHOUSE_BORROWING_GUARD');
 
 export const MOVEMENT_REPOSITORY_TOKEN: InjectionToken<IMovementRepository> =
 	Symbol('MOVEMENT_REPOSITORY');
@@ -48,8 +61,3 @@ export const STOCK_SERVICE_TOKEN: InjectionToken<StockService> =
 	Symbol('STOCK_SERVICE');
 export const ADJUSTMENT_SERVICE_TOKEN: InjectionToken<AdjustmentService> =
 	Symbol('ADJUSTMENT_SERVICE');
-
-export const BORROWING_REPOSITORY_TOKEN: InjectionToken<IBorrowingRepository> =
-	Symbol('BORROWING_REPOSITORY');
-export const BORROWING_SERVICE_TOKEN: InjectionToken<BorrowingService> =
-	Symbol('BORROWING_SERVICE');

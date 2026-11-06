@@ -18,7 +18,23 @@ export type TAuditTargetType =
 	| 'user'
 	| 'role'
 	| 'member'
-	| 'organization';
+	| 'organization'
+	| 'stock_adjustment'
+	| 'borrowing'
+	| 'stock_movement'
+	| 'item'
+	| 'warehouse'
+	| 'warehouse_storage'
+	| 'asset'
+	| 'asset_category'
+	| 'asset_assignment'
+	| 'asset_movement'
+	| 'asset_condition_check'
+	| 'asset_maintenance'
+	| 'asset_depreciation'
+	| 'asset_disposal'
+	| 'asset_document'
+	| 'tool_set';
 
 /** One audited action (mirrors the `audit.audit_logs.action` enum). */
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];

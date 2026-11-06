@@ -9,10 +9,9 @@
  * `drizzle:seed` on a fresh database.
  *
  * The constraints mirrored here are from `inventory.schema.ts`:
- * - `inventory_items_kind_check` — the five kinds.
+ * - `inventory_items_kind_check` — the three consumable kinds.
  * - `inventory_items_prices_check` — prices >= 0.
  * - `inventory_items_min_stock_check` — `min_stock_qty >= 0`.
- * - `inventory_items_service_check` — a service is never serialized or stocked.
  */
 import { describe, expect, test } from 'bun:test';
 import { ITEM_KINDS, UNIT_STATUSES } from '@drizzle/schemas/inventory.schema';
@@ -57,26 +56,6 @@ const SEED_ITEMS = [
 		purchasePrice: 7_500,
 		serials: [],
 	},
-	{
-		sku: 'TOOL-DRILL-01',
-		itemKind: 'tool',
-		isSerialized: true,
-		isStockTracked: false,
-		minStockQty: '0.000',
-		sellingPrice: 0,
-		purchasePrice: 3_200_000,
-		serials: ['RH-0001', 'RH-0002', 'RH-0003'],
-	},
-	{
-		sku: 'SVC-INSTALL',
-		itemKind: 'service',
-		isSerialized: false,
-		isStockTracked: false,
-		minStockQty: '0.000',
-		sellingPrice: 750_000,
-		purchasePrice: 0,
-		serials: [],
-	},
 ] as const;
 
 describe('seeded items satisfy the schema CHECK constraints', () => {
@@ -86,7 +65,7 @@ describe('seeded items satisfy the schema CHECK constraints', () => {
 		}
 	});
 
-	test('all five kinds are represented', () => {
+	test('every consumable kind is represented', () => {
 		// The seed exists to give every kind a row, because kind drives the
 		// unit status matrix.
 		expect(new Set(SEED_ITEMS.map((i) => i.itemKind)).size).toBe(
@@ -108,13 +87,6 @@ describe('seeded items satisfy the schema CHECK constraints', () => {
 		}
 	});
 
-	test('a service is never serialized and never stock-tracked', () => {
-		for (const item of SEED_ITEMS.filter((i) => i.itemKind === 'service')) {
-			expect(item.isSerialized).toBe(false);
-			expect(item.isStockTracked).toBe(false);
-		}
-	});
-
 	test('SKUs are unique', () => {
 		expect(new Set(SEED_ITEMS.map((i) => i.sku)).size).toBe(SEED_ITEMS.length);
 	});
@@ -122,17 +94,6 @@ describe('seeded items satisfy the schema CHECK constraints', () => {
 	test('only serialized items carry serial numbers', () => {
 		for (const item of SEED_ITEMS) {
 			if (!item.isSerialized) expect(item.serials).toHaveLength(0);
-		}
-	});
-
-	test('tools are the serialized, non-sellable set the borrow flow needs', () => {
-		const tools = SEED_ITEMS.filter((i) => i.itemKind === 'tool');
-		// S4 borrowing needs units to borrow; without them the flow is untestable
-		// on a fresh database.
-		expect(tools.length).toBeGreaterThan(0);
-		for (const tool of tools) {
-			expect(tool.isSerialized).toBe(true);
-			expect(tool.serials.length).toBeGreaterThan(0);
 		}
 	});
 });

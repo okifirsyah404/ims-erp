@@ -83,6 +83,15 @@ export interface IItemRepository {
 	/** Soft-deletes an alive item. */
 	archive(id: string): Promise<TItemSelect | null>;
 
+	/**
+	 * Fetches alive items by id, returning `{ id, name }` pairs.
+	 *
+	 * @remarks
+	 * Used to decorate stock rows with human-readable item names — balances
+	 * and movements otherwise carry only the raw `itemId`.
+	 */
+	findNamesByIds(ids: string[]): Promise<Array<{ id: string; name: string }>>;
+
 	/** Counts alive units of an item, used before archive. */
 	countUnits(itemId: string): Promise<number>;
 }

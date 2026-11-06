@@ -1,4 +1,5 @@
 import admin from './admin';
+import assets from './assets';
 import auth from './auth';
 import common from './common';
 import dashboard from './dashboard';
@@ -17,6 +18,7 @@ export const en = {
 	auth,
 	account,
 	admin,
+	assets,
 	inventory,
 	dashboard,
 	api,

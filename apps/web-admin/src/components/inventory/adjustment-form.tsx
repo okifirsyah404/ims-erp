@@ -2,6 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+	createAdjustment,
+	type TAdjustmentLineInput,
+	type TAdjustmentType,
+} from '@/lib/adjustment-api';
+import { itemsQueryOptions } from '@/lib/inventory-api';
+import { balancesQueryOptions } from '@/lib/stock-api';
+import { linkedWarehousesQueryOptions } from '@/lib/warehouse-api';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
@@ -11,20 +19,22 @@ import {
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import {
-	Field,
-	FieldGroup,
-	FieldLabel,
-} from '@ims-erp/ui/components/field';
+	Combobox,
+	ComboboxContent,
+	ComboboxEmpty,
+	ComboboxInput,
+	ComboboxItem,
+	ComboboxList,
+} from '@ims-erp/ui/components/combobox';
+import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
-import { NativeSelect } from '@ims-erp/ui/components/native-select';
 import {
-	createAdjustment,
-	type TAdjustmentLineInput,
-	type TAdjustmentType,
-} from '@/lib/adjustment-api';
-import { itemsQueryOptions } from '@/lib/inventory-api';
-import { balancesQueryOptions } from '@/lib/stock-api';
-import { warehousesQueryOptions } from '@/lib/warehouse-api';
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 
 /** One editable line row. `key` is React's, so removing a row cannot reuse state. */
 type TLineDraft = {
@@ -45,6 +55,9 @@ const blankLine = (): TLineDraft => ({
 	quantityAfter: '',
 	note: '',
 });
+
+/** One combobox choice; `searchText` is what client-side filtering matches. */
+type TOption = { value: string; label: string; searchText: string };
 
 /**
  * The adjustment create form.
@@ -70,7 +83,7 @@ export function AdjustmentForm() {
 	const [notes, setNotes] = useState('');
 	const [lines, setLines] = useState<TLineDraft[]>([blankLine()]);
 
-	const warehouses = useQuery(warehousesQueryOptions({ limit: 100, isActive: true }));
+	const warehouses = useQuery(linkedWarehousesQueryOptions());
 	const items = useQuery(itemsQueryOptions({}));
 	// The system's belief, so the counter sees what they are counting against.
 	// Only meaningful once a warehouse is chosen: a balance is per warehouse.
@@ -132,9 +145,23 @@ export function AdjustmentForm() {
 		});
 	}
 
-	const warehouseRows = warehouses.data?.rows ?? [];
+	const warehouseRows = warehouses.data ?? [];
 	const itemRows = items.data?.rows ?? [];
 	const balanceRows = balances.data?.rows ?? [];
+
+	/** Warehouse choices: searchable by code and name. */
+	const warehouseOptions: TOption[] = warehouseRows.map((warehouse) => ({
+		value: warehouse.id,
+		label: `${warehouse.code} — ${warehouse.name}`,
+		searchText: `${warehouse.code} ${warehouse.name}`,
+	}));
+
+	/** Item choices: searchable by SKU and name. */
+	const itemOptions: TOption[] = itemRows.map((item) => ({
+		value: item.id,
+		label: `${item.sku} — ${item.name}`,
+		searchText: `${item.sku} ${item.name}`,
+	}));
 
 	/** The system's on-hand for an item in the chosen warehouse, or `null`. */
 	function systemQuantity(itemId: string, binId: string): string | null {
@@ -178,47 +205,69 @@ export function AdjustmentForm() {
 			</div>
 
 			<Card>
-				<CardContent className='pt-6'>
+				<CardContent>
 					<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 						<Field>
 							<FieldLabel htmlFor='adjustment-warehouse'>
 								{t('inventory:adjustmentForm.warehouse')}
 							</FieldLabel>
-							<NativeSelect
-								id='adjustment-warehouse'
-								value={warehouseId}
-								required
-								onChange={(event) => setWarehouseId(event.target.value)}
+							<Combobox
+								items={warehouseOptions}
+								value={
+									warehouseOptions.find((o) => o.value === warehouseId) ?? null
+								}
+								onValueChange={(next) =>
+									setWarehouseId((next as TOption | null)?.value ?? '')
+								}
+								isItemEqualToValue={(item: TOption, candidate: TOption) =>
+									item.value === candidate.value
+								}
+								filter={(item: TOption, query: string) =>
+									item.searchText.toLowerCase().includes(query.toLowerCase())
+								}
 							>
-								<option value='' />
-								{warehouseRows.map((warehouse) => (
-									<option key={warehouse.id} value={warehouse.id}>
-										{warehouse.code} — {warehouse.name}
-									</option>
-								))}
-							</NativeSelect>
+								<ComboboxInput
+									id='adjustment-warehouse'
+									placeholder={t('inventory:adjustmentForm.warehouse')}
+									showClear
+								/>
+								<ComboboxContent>
+									<ComboboxList>
+										<ComboboxEmpty>{t('common:state.noResults')}</ComboboxEmpty>
+										{warehouseOptions.map((option) => (
+											<ComboboxItem key={option.value} value={option}>
+												{option.label}
+											</ComboboxItem>
+										))}
+									</ComboboxList>
+								</ComboboxContent>
+							</Combobox>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='adjustment-type'>
 								{t('inventory:adjustmentForm.type')}
 							</FieldLabel>
-							<NativeSelect
-								id='adjustment-type'
+							<Select
 								value={adjustmentType}
-								onChange={(event) =>
-									setAdjustmentType(event.target.value as TAdjustmentType)
-								}
+								onValueChange={(value: string | null) => {
+									if (value !== null) setAdjustmentType(value as TAdjustmentType);
+								}}
 							>
-								<option value='recount'>
-									{t('inventory:adjustments.type.recount')}
-								</option>
-								<option value='increase'>
-									{t('inventory:adjustments.type.increase')}
-								</option>
-								<option value='decrease'>
-									{t('inventory:adjustments.type.decrease')}
-								</option>
-							</NativeSelect>
+								<SelectTrigger id='adjustment-type' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='recount'>
+										{t('inventory:adjustments.type.recount')}
+									</SelectItem>
+									<SelectItem value='increase'>
+										{t('inventory:adjustments.type.increase')}
+									</SelectItem>
+									<SelectItem value='decrease'>
+										{t('inventory:adjustments.type.decrease')}
+									</SelectItem>
+								</SelectContent>
+							</Select>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='adjustment-reason'>
@@ -263,20 +312,41 @@ export function AdjustmentForm() {
 								<FieldLabel htmlFor={`line-item-${line.key}`}>
 									{t('inventory:adjustmentForm.item')}
 								</FieldLabel>
-								<NativeSelect
-									id={`line-item-${line.key}`}
-									value={line.itemId}
-									onChange={(event) =>
-										updateLine(line.key, { itemId: event.target.value })
+								<Combobox
+									items={itemOptions}
+									value={
+										itemOptions.find((o) => o.value === line.itemId) ?? null
+									}
+									onValueChange={(next) =>
+										updateLine(line.key, {
+											itemId: (next as TOption | null)?.value ?? '',
+										})
+									}
+									isItemEqualToValue={(item: TOption, candidate: TOption) =>
+										item.value === candidate.value
+									}
+									filter={(item: TOption, query: string) =>
+										item.searchText.toLowerCase().includes(query.toLowerCase())
 									}
 								>
-									<option value='' />
-									{itemRows.map((item) => (
-										<option key={item.id} value={item.id}>
-											{item.sku} — {item.name}
-										</option>
-									))}
-								</NativeSelect>
+									<ComboboxInput
+										id={`line-item-${line.key}`}
+										placeholder={t('inventory:adjustmentForm.item')}
+										showClear
+									/>
+									<ComboboxContent>
+										<ComboboxList>
+											<ComboboxEmpty>
+												{t('common:state.noResults')}
+											</ComboboxEmpty>
+											{itemOptions.map((option) => (
+												<ComboboxItem key={option.value} value={option}>
+													{option.label}
+												</ComboboxItem>
+											))}
+										</ComboboxList>
+									</ComboboxContent>
+								</Combobox>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor={`line-bin-${line.key}`}>

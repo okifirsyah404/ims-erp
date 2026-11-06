@@ -14,6 +14,7 @@ import type { InjectionToken } from 'tsyringe';
 import type { IOrganizationRepository } from '../contracts/organization.repository.interface';
 import type { IOrganizationAuthGateway } from '../contracts/organization-auth.gateway.interface';
 import type { OrganizationService } from '../services/organization.service';
+import type { DocumentNumberingService } from '../services/document-numbering.service';
 
 /** Token resolving to the {@link IOrganizationRepository} implementation. */
 export const ORGANIZATION_REPOSITORY_TOKEN: InjectionToken<IOrganizationRepository> =
@@ -26,3 +27,7 @@ export const ORGANIZATION_AUTH_GATEWAY_TOKEN: InjectionToken<IOrganizationAuthGa
 /** Token resolving to the {@link OrganizationService} implementation. */
 export const ORGANIZATION_SERVICE_TOKEN: InjectionToken<OrganizationService> =
 	Symbol('ORGANIZATION_SERVICE_TOKEN');
+
+/** Token resolving to the ERP-0009 {@link DocumentNumberingService}. */
+export const DOCUMENT_NUMBERING_SERVICE_TOKEN: InjectionToken<DocumentNumberingService> =
+	Symbol('DOCUMENT_NUMBERING_SERVICE_TOKEN');

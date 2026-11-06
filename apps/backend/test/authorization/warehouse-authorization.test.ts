@@ -16,6 +16,7 @@
  */
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { Elysia } from 'elysia';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import { container } from 'tsyringe';
 import type { TWarehouseSelect } from '@drizzle/schemas/inventory.schema';
 import {
@@ -142,6 +143,24 @@ beforeAll(async () => {
 		async findById(id) {
 			return id === seed.id ? seed : null;
 		},
+		// ERP-0031: linked only to the fixture's member org.
+		async isLinked(warehouseId, organizationId) {
+			return warehouseId === seed.id && organizationId === fixture.orgA;
+		},
+		async listLinked(organizationId) {
+			return organizationId === fixture.orgA ? [seed] : [];
+		},
+		async listOrganizations(warehouseId) {
+			return warehouseId === seed.id
+				? [{ organizationId: fixture.orgA, createdAt: new Date(0) }]
+				: [];
+		},
+		async linkOrganization(warehouseId, organizationId) {
+			return { created: warehouseId !== seed.id || organizationId !== fixture.orgA };
+		},
+		async unlinkOrganization(warehouseId, organizationId) {
+			return warehouseId === seed.id && organizationId === fixture.orgA;
+		},
 		async findByCode() {
 			return null;
 		},
@@ -154,6 +173,9 @@ beforeAll(async () => {
 		async archive(id) {
 			return id === seed.id ? seed : null;
 		},
+		async findNamesByIds(ids) {
+			return ids.includes(seed.id) ? [{ id: seed.id, name: seed.name }] : [];
+		},
 		async clearDefaultExcept() {},
 		async countLiveUnits() {
 			return 0;
@@ -163,7 +185,7 @@ beforeAll(async () => {
 				warehouseId,
 				productsCount: 0,
 				materialsCount: 0,
-				toolsCount: 0,
+				equipmentsCount: 0,
 				storagesCount: 0,
 			}));
 		},
@@ -232,16 +254,23 @@ beforeAll(async () => {
 	const {
 		WAREHOUSE_REPOSITORY_TOKEN,
 		WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
+	WAREHOUSE_BORROWING_GUARD_TOKEN,
 		WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 		WAREHOUSE_SERVICE_TOKEN,
 	} = await import('../../src/app/inventory/constants/di');
 	const { WarehouseService } = await import(
 		'../../src/app/inventory/services/warehouse.service'
 	);
+	const { InventoryAuditWriter } = await import(
+		'../../src/app/inventory/services/inventory-audit.writer'
+	);
 	const { WarehouseController } = await import(
 		'../../src/app/inventory/controllers/warehouse.controller'
 	);
 	const { sessionGuard } = await import('../../src/authorization/elysia-auth');
+	const { EXPORTED_ASSET_SERVICE_TOKEN } = await import(
+		'../../src/app/assets/constants/di'
+	);
 
 	container.register(WAREHOUSE_REPOSITORY_TOKEN, {
 		useValue: warehouseRepository,
@@ -251,6 +280,17 @@ beforeAll(async () => {
 	});
 	container.register(WAREHOUSE_STORAGE_REPOSITORY_TOKEN, {
 		useValue: storageRepository,
+	});
+	container.register(InventoryAuditWriter, {
+		useValue: new AuditWriterDouble(),
+	});
+	// ERP-0031: the unlink guard port — noop here (no borrowings under test).
+	container.register(WAREHOUSE_BORROWING_GUARD_TOKEN, {
+		useValue: { async countOpenBorrowings() { return 0; } },
+	});
+	// Equipment counts come from the assets module's export facade — noop here.
+	container.register(EXPORTED_ASSET_SERVICE_TOKEN, {
+		useValue: { async countByWarehouse() { return []; } } as never,
 	});
 	container.register(WAREHOUSE_SERVICE_TOKEN, { useClass: WarehouseService });
 

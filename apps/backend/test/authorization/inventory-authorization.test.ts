@@ -13,6 +13,7 @@
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { Elysia } from 'elysia';
 import { container } from 'tsyringe';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import { erpRoleGrants, erpStatements } from '@ims-erp/common';
 import {
 	fixture,
@@ -117,6 +118,9 @@ beforeAll(async () => {
 		async countUnits() {
 			return 0;
 		},
+		async findNamesByIds() {
+			return [];
+		},
 	};
 
 	const serialUnitRepository: ISerialUnitRepository = {
@@ -141,17 +145,6 @@ beforeAll(async () => {
 		async updateStatus() {
 			return null;
 		},
-		// Borrowing custody methods: unused by this suite, but the contract
-		// requires them so the compiler keeps the mock honest.
-		async issueToBorrower() {
-			return null;
-		},
-		async returnFromBorrower() {
-			return null;
-		},
-		async markLost() {
-			return null;
-		},
 	};
 
 	// Import after mocks are installed (bun mock.module is hoist-sensitive).
@@ -163,6 +156,9 @@ beforeAll(async () => {
 	const { ItemService } = await import(
 		'../../src/app/inventory/services/item.service'
 	);
+	const { InventoryAuditWriter } = await import(
+		'../../src/app/inventory/services/inventory-audit.writer'
+	);
 	const { ItemController } = await import(
 		'../../src/app/inventory/controllers/item.controller'
 	);
@@ -171,6 +167,9 @@ beforeAll(async () => {
 	container.register(ITEM_REPOSITORY_TOKEN, { useValue: itemRepository });
 	container.register(SERIAL_UNIT_REPOSITORY_TOKEN, {
 		useValue: serialUnitRepository,
+	});
+	container.register(InventoryAuditWriter, {
+		useValue: new AuditWriterDouble(),
 	});
 	container.register(ITEM_SERVICE_TOKEN, { useClass: ItemService });
 
@@ -310,8 +309,8 @@ describe('warehouse access is application-admin-only', () => {
 		const roles = ['technician', 'sales', 'sales_manager', 'warehouse'] as const;
 		for (const role of roles) {
 			const grants = erpRoleGrants[role] as Record<string, readonly string[]>;
-			expect(grants.borrowing).toBeDefined();
-			expect(grants.borrowing).toContain('read');
+			expect(grants.asset_borrowing).toBeDefined();
+			expect(grants.asset_borrowing).toContain('read');
 		}
 	});
 
@@ -320,19 +319,19 @@ describe('warehouse access is application-admin-only', () => {
 			string,
 			readonly string[]
 		>;
-		expect(technician.borrowing).toContain('create');
-		expect(technician.borrowing).not.toContain('issue');
+		expect(technician.asset_borrowing).toContain('create');
+		expect(technician.asset_borrowing).not.toContain('issue');
 	});
 
 	test('only management roles may mark a unit lost', () => {
 		for (const role of ['owner', 'admin', 'operations_manager'] as const) {
 			const grants = erpRoleGrants[role] as Record<string, readonly string[]>;
-			expect(grants.borrowing).toContain('mark_lost');
+			expect(grants.asset_borrowing).toContain('mark_lost');
 		}
 		const technician = erpRoleGrants.technician as Record<
 			string,
 			readonly string[]
 		>;
-		expect(technician.borrowing).not.toContain('mark_lost');
+		expect(technician.asset_borrowing).not.toContain('mark_lost');
 	});
 });

@@ -36,6 +36,8 @@ const api = {
 		'A warehouse with this code already exists in this scope',
 	'inventory.warehouseHasUnits':
 		'Cannot archive a warehouse that still holds {{count}} live unit(s)',
+	'inventory.warehouseLinkConflict':
+		'Cannot unlink while the organization holds {{count}} open borrowing(s) originating in this warehouse',
 	'inventory.storageNotFound': 'Storage not found',
 	'inventory.storageCodeTaken':
 		'A storage with this code already exists in this warehouse',
@@ -55,6 +57,26 @@ const api = {
 		'You cannot approve your own stock adjustment',
 	'inventory.adjustmentHasNoLines':
 		'A stock adjustment must have at least one line',
+
+	'assets.assetNotFound': 'Asset not found',
+	'assets.categoryNotFound': 'Asset category not found',
+	'assets.categoryCodeTaken':
+		'An asset category with this code already exists',
+	'assets.ruleViolation': 'This asset rule does not allow it: {{rule}}',
+	'assets.illegalTransition':
+		'An asset cannot move from "{{from}}" to "{{to}}"',
+	'assets.assetHasHistory':
+		'Cannot archive an asset with custody or maintenance history',
+	'assets.placeBlocked':
+		'This asset cannot be placed in its current status',
+	'assets.transferBlocked':
+		'This asset cannot be transferred in its current status',
+	'assets.periodAlreadyDepreciated':
+		'This asset already has a depreciation entry for {{period}}',
+	'assets.depreciationExceedsBookValue':
+		'Depreciation cannot exceed the remaining book value',
+	'assets.toolSetNotEmpty':
+		'Cannot archive a tool set that still holds items',
 
 	'user.notFound': 'User not found',
 	'user.emailInUse': 'Email already in use',
@@ -114,19 +136,19 @@ const api = {
 	'auth.roleNotGrantable': 'Role not grantable: {{roles}}',
 
 	// Borrowing (S4)
-	'inventory.borrowingNotFound': 'Borrowing not found',
-	'inventory.borrowingLineNotFound': 'Borrowing line not found',
-	'inventory.unitNotOnBorrowing': 'That unit is not issued on this borrowing',
-	'inventory.borrowingTransition':
+	'assets.borrowingNotFound': 'Borrowing not found',
+	'assets.borrowingLineNotFound': 'Borrowing line not found',
+	'assets.unitNotOnBorrowing': 'That asset is not issued on this borrowing',
+	'assets.borrowingTransition':
 		'That status change is not allowed for this borrowing',
-	'inventory.borrowingCodeTaken': 'Could not allocate a unique borrowing code',
-	'inventory.borrowingHasNoLines': 'A borrowing must have at least one line',
-	'inventory.unitNotAvailable': 'That unit cannot be issued',
-	'inventory.borrowerIdentity':
+	'assets.borrowingCodeTaken': 'Could not allocate a unique borrowing code',
+	'assets.borrowingHasNoLines': 'A borrowing must have at least one line',
+	'assets.unitNotAvailable': 'That asset cannot be issued',
+	'assets.borrowerIdentity':
 		'The borrower identity does not match the borrower type',
-	'inventory.guestIdentityIncomplete':
+	'assets.guestIdentityIncomplete':
 		'A guest borrower is missing required identity data',
-	'inventory.borrowingSelfApprovalForbidden':
+	'assets.borrowingSelfApprovalForbidden':
 		'You cannot approve your own borrowing',
 } as const;
 

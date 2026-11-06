@@ -44,6 +44,9 @@ import {
 } from '../../src/app/inventory/constants/di';
 import { StockService } from '../../src/app/inventory/services/stock.service';
 import { AdjustmentService } from '../../src/app/inventory/services/adjustment.service';
+import { createNumberingDouble } from '../helpers/numbering-double';
+import { AuditWriterDouble } from '../helpers/audit-writer-double';
+import { ORG_A } from './test-app';
 
 /** An adjustment row, writable by the test between requests. */
 export type IStockAdjustmentSelectLike = TStockAdjustmentSelect;
@@ -179,6 +182,19 @@ export function installStockDoubles(): void {
 			capture.adjustment = { ...capture.adjustment, ...data };
 			return capture.adjustment;
 		},
+		async claimForPost(id: string, _tx: unknown) {
+			const row = capture.adjustment;
+			if (
+				!row ||
+				row.id !== id ||
+				row.status !== 'approved' ||
+				row.postedAt !== null
+			) {
+				return null;
+			}
+			capture.adjustment = { ...row, status: 'posted', postedAt: new Date() };
+			return capture.adjustment;
+		},
 		async listLines() {
 			return [];
 		},
@@ -190,12 +206,39 @@ export function installStockDoubles(): void {
 		},
 	};
 
+	/** Simulates the single alive link row of the fake (ERP-0031). */
+	let linkRow = true;
+
 	const warehouses: IWarehouseRepository = {
 		async paginate() {
 			return emptyPage(1, 20);
 		},
 		async findById(id) {
 			return id === WAREHOUSE.id ? WAREHOUSE : null;
+		},
+		// ERP-0031: the test warehouse is linked to ORG_A (the fixture's member
+		// org), so actor-driven stock writes pass the controller link gate.
+		async isLinked(warehouseId, organizationId) {
+			return warehouseId === WAREHOUSE.id && organizationId === ORG_A;
+		},
+		async listLinked(organizationId) {
+			return organizationId === ORG_A ? [WAREHOUSE] : [];
+		},
+		async listOrganizations(warehouseId) {
+			return warehouseId === WAREHOUSE.id && linkRow
+				? [{ organizationId: ORG_A, createdAt: new Date(0) }]
+				: [];
+		},
+		async linkOrganization(warehouseId, organizationId) {
+			if (warehouseId === WAREHOUSE.id && organizationId === ORG_A && linkRow)
+				return { created: false };
+			linkRow = true;
+			return { created: true };
+		},
+		async unlinkOrganization(warehouseId, organizationId) {
+			const matched = warehouseId === WAREHOUSE.id && organizationId === ORG_A && linkRow;
+			linkRow = false;
+			return matched;
 		},
 		async findByCode() {
 			return null;
@@ -209,6 +252,9 @@ export function installStockDoubles(): void {
 		async archive() {
 			return null;
 		},
+		async findNamesByIds() {
+			return [];
+		},
 		async clearDefaultExcept() {},
 		async countLiveUnits() {
 			return 0;
@@ -218,7 +264,7 @@ export function installStockDoubles(): void {
 				warehouseId,
 				productsCount: 0,
 				materialsCount: 0,
-				toolsCount: 0,
+				equipmentsCount: 0,
 				storagesCount: 0,
 			}));
 		},
@@ -263,9 +309,24 @@ export function installStockDoubles(): void {
 	container.register(WAREHOUSE_REPOSITORY_TOKEN, { useValue: warehouses });
 	container.register(ITEM_REPOSITORY_TOKEN, { useValue: items });
 	container.register(STOCK_SERVICE_TOKEN, {
-		useValue: new StockService(movements, balances, warehouses, database),
+		useValue: new StockService(
+			movements,
+			balances,
+			warehouses,
+			items,
+			createNumberingDouble(),
+			new AuditWriterDouble(),
+			database,
+		),
 	});
 	container.register(ADJUSTMENT_SERVICE_TOKEN, {
-		useValue: new AdjustmentService(adjustments, items, container.resolve(STOCK_SERVICE_TOKEN), database),
+		useValue: new AdjustmentService(
+			adjustments,
+			items,
+			container.resolve(STOCK_SERVICE_TOKEN),
+			createNumberingDouble(),
+			new AuditWriterDouble(),
+			database,
+		),
 	});
 }
