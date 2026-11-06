@@ -23,6 +23,7 @@ declare module 'i18next' {
 		assets: typeof en.assets;
 		dashboard: typeof en.dashboard;
 		api: typeof en.api;
+		tax: typeof en.tax;
 	}
 
 	interface CustomTypeOptions {

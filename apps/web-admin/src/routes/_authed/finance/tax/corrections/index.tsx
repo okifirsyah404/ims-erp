@@ -1,15 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { FileDiff } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { TaxCorrections } from '@/components/tax/tax-corrections';
 
+/** Search params: the record whose corrections are shown. */
+type TCorrectionsSearch = { recordId?: string };
+
+/** `/finance/tax/corrections` - signed corrections (Phase 2, ERP-0016). */
 export const Route = createFileRoute('/_authed/finance/tax/corrections/')({
-	component: ComingSoonStubPage,
+	validateSearch: (search: Record<string, unknown>): TCorrectionsSearch => ({
+		recordId:
+			typeof search.recordId === 'string' && search.recordId
+				? search.recordId
+				: undefined,
+	}),
+	component: TaxCorrections,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.taxCorrections')} icon={FileDiff} />;
-}

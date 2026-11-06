@@ -16,6 +16,7 @@ import {
 	BorrowingController,
 } from './assets';
 import { SalesController } from './sales/controllers/sales.controller';
+import { TaxController } from './accounting';
 import {
 	InvitationClaimController,
 	InvitationController,
@@ -115,5 +116,6 @@ export function createApp() {
 			.use(AssetCategoryController.plugin())
 			.use(AssetOperationsController.plugin())
 			.use(BorrowingController.plugin())
+			.use(TaxController.plugin())
 	);
 }

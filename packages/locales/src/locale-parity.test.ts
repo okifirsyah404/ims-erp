@@ -100,6 +100,9 @@ describe('locale values', () => {
 			'assets:disposals.status',
 			'assets:service.status',
 			'assets:toolSets.status',
+			'tax:recap.column.filingStatus',
+			'tax:records.status',
+			'tax:withholding.status',
 			// "Transfer" is a loanword in Indonesian.
 			'assets:disposalMethod.transfer',
 		]);

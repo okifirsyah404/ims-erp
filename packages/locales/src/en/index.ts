@@ -7,6 +7,7 @@ import inventory from './inventory';
 import nav from './nav';
 import account from './account';
 import api from './api';
+import tax from './tax';
 
 /**
  * English resources, grouped by namespace. This bundle is the source of
@@ -22,6 +23,7 @@ export const en = {
 	inventory,
 	dashboard,
 	api,
+	tax,
 } as const;
 
 export type Namespace = keyof typeof en;

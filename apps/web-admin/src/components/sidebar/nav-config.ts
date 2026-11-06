@@ -207,6 +207,7 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				icon: Scale,
 				items: [
 					{ titleKey: 'item.taxTypes', url: '/finance/tax/types' },
+					{ titleKey: 'item.taxRecords', url: '/finance/tax/records' },
 					{ titleKey: 'item.taxRecap', url: '/finance/tax/recap' },
 					{ titleKey: 'item.taxWithholding', url: '/finance/tax/withholding' },
 					{ titleKey: 'item.taxCorrections', url: '/finance/tax/corrections' },
