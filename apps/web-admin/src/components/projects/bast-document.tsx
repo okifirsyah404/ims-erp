@@ -45,8 +45,8 @@ export function BastDocument({ bast }: { bast: TBast }) {
 	const subject = [bast.workTitle.toUpperCase(), bast.projectName].filter(Boolean).join(', ');
 
 	return (
-		<article className="bg-white font-['Times_New_Roman',_Times,_serif] text-[12pt] leading-snug text-black">
-			<style>{'@page { size: letter; margin: 16mm 18mm 12mm 22mm; }'}</style>
+		<article className="bg-white [-webkit-print-color-adjust:exact] [print-color-adjust:exact] font-['Times_New_Roman',_Times,_serif] text-[12pt] leading-snug text-black">
+			<style>{'@page { size: letter; margin: 18mm 20mm 15mm 22mm; }'}</style>
 			<h1 className='text-center text-[13pt] font-bold'>{t('bastDoc.heading')}</h1>
 			<div className='text-center text-[11pt]'>
 				{t('bastDoc.number')} : {bast.code}

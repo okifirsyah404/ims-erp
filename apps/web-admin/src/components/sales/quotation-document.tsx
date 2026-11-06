@@ -85,8 +85,8 @@ export function QuotationDocument({
 	];
 
 	return (
-		<article className='bg-white font-[Arial,Helvetica,sans-serif] text-[10.5pt] leading-snug text-black'>
-			<style>{'@page { size: A4; margin: 10mm 12mm; }'}</style>
+		<article className='bg-white [-webkit-print-color-adjust:exact] [print-color-adjust:exact] font-[Arial,Helvetica,sans-serif] text-[10.5pt] leading-snug text-black'>
+			<style>{'@page { size: A4; margin: 16mm 18mm; }'}</style>
 			{/* A table header repeats on every printed page: that is the letterhead. */}
 			<table className='w-full border-collapse'>
 				<thead>
@@ -147,7 +147,7 @@ export function QuotationDocument({
 													{t('doc.inWords')} : {inWords(quotation.grandTotal)}.
 												</td>
 											)}
-											<td className={`${cell} text-center`} colSpan={2}>
+											<td className={`${cell} whitespace-nowrap text-center`} colSpan={2}>
 												{row.label}
 											</td>
 											<td className={cell}>

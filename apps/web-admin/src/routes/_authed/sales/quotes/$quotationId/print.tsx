@@ -35,7 +35,7 @@ function PrintQuotationPage() {
 			{quotation.isError ? (
 				<p className='text-sm text-destructive'>{quotation.error.message}</p>
 			) : quotation.data && !profile.isPending ? (
-				<div className='mx-auto w-full max-w-4xl rounded-md border p-8 print:max-w-none print:border-0 print:p-0'>
+				<div className='mx-auto w-full max-w-4xl rounded-md border p-12 print:max-w-none print:border-0 print:p-0'>
 					<QuotationDocument quotation={quotation.data} profile={profile.data} />
 				</div>
 			) : null}

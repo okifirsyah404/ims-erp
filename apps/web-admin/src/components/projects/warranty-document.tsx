@@ -42,8 +42,8 @@ export function WarrantyDocument({ warranty, profile }: { warranty: TWarranty; p
 	const signer = (profile?.tradingName ?? profile?.legalName ?? '').replace(/^(CV|PT)\.?\s+/i, '').toUpperCase();
 
 	return (
-		<article className="bg-white font-['Times_New_Roman',_Times,_serif] text-[12pt] leading-[1.2] text-black">
-			<style>{'@page { size: letter; margin: 12mm 20mm 12mm 22mm; }'}</style>
+		<article className="bg-white [-webkit-print-color-adjust:exact] [print-color-adjust:exact] font-['Times_New_Roman',_Times,_serif] text-[12pt] leading-[1.2] text-black">
+			<style>{'@page { size: letter; margin: 15mm 20mm 15mm 22mm; }'}</style>
 			<Letterhead profile={profile} />
 			<h1 className='mt-3 text-center font-bold'>{t('warrantyDoc.heading')}</h1>
 

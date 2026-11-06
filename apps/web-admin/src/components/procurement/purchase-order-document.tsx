@@ -50,9 +50,9 @@ export function PurchaseOrderDocument({ order, profile }: { order: TPurchaseOrde
 	const words = terbilangRupiah(order.grandTotal).toLowerCase().replace(/^\S/, (letter) => letter.toUpperCase());
 
 	return (
-		<article className='bg-white font-serif text-[9.5pt] leading-snug text-[#2b2b2b]'>
+		<article className='bg-white [-webkit-print-color-adjust:exact] [print-color-adjust:exact] font-serif text-[9.5pt] leading-snug text-[#2b2b2b]'>
 			<style>
-				{`@page { size: A4; margin: 14mm 14mm 18mm; @bottom-center { content: "${footer.replace(/"/g, '')}"; font: 8pt Georgia, serif; color: #555; } }`}
+				{`@page { size: A4; margin: 16mm 18mm 20mm; @bottom-center { content: "${footer.replace(/"/g, '')}"; font: 8pt Georgia, serif; color: #555; } }`}
 			</style>
 
 			<header className='flex items-start justify-between gap-6'>

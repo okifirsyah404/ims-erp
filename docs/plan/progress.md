@@ -12,6 +12,29 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — print margins of every document (owner feedback), 2026-11-06
+
+Status: **implemented** (web admin only; owner feedback on the acceptance
+walk-through: "mepet, tidak ada padding" on every printed document).
+
+- `@page` margins widened to at least 18 mm left/right and 15–16 mm top
+  (SPH 16/18 mm, invoice and PO 16/18/20 mm, surat jalan 15/18 mm, BAST
+  18/20/15/22 mm, warranty 15/20/15/22 mm); the on-screen sheet preview
+  uses `p-12`.
+- Every document root sets `print-color-adjust: exact`: with the browser's
+  default "Background graphics" off, the SPH amber bar, the PO teal / navy
+  bars and the invoice table headers used to disappear.
+- Surat jalan spacing tightened so it stays on one page; SPH totals labels
+  no longer wrap.
+- Verified by rendering the six prints to PDF with the print dialog's
+  defaults (CSS page size, background graphics off; temporary script,
+  deleted): SPH 1 page, invoice 2 (as the sample), PO 1, surat jalan 1, BAST
+  1, warranty 2; colours present. `bun run lint` 0 errors, web-admin build
+  and tests pass.
+- Dev data: a failed 6b test run had left the private sample's address,
+  phone and email in the dev company profile; they were cleared (dev DB
+  only, never committed).
+
 ## Completed — user guide (EN + ID) and UML flow diagrams, 2026-11-06
 
 Status: **done** (documentation only; no code, migration or test change).

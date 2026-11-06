@@ -56,9 +56,9 @@ export function InvoiceDocument({ invoice, profile }: { invoice: TInvoiceDetail;
 		.join(' | ');
 
 	return (
-		<article className='bg-white font-[Arial,Helvetica,sans-serif] text-[9.5pt] leading-snug text-black'>
+		<article className='bg-white [-webkit-print-color-adjust:exact] [print-color-adjust:exact] font-[Arial,Helvetica,sans-serif] text-[9.5pt] leading-snug text-black'>
 			<style>
-				{`@page { size: A4; margin: 12mm 14mm 16mm; @bottom-right { content: "${t('doc.page')} " counter(page) " ${t('doc.of')} " counter(pages); font: 8pt Arial, sans-serif; color: #888; } }`}
+				{`@page { size: A4; margin: 16mm 18mm 20mm; @bottom-right { content: "${t('doc.page')} " counter(page) " ${t('doc.of')} " counter(pages); font: 8pt Arial, sans-serif; color: #888; } }`}
 			</style>
 
 			<header className='mb-6'>

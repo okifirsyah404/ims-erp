@@ -56,8 +56,8 @@ export function DeliveryNoteDocument({ note, profile }: { note: TDeliveryNoteDet
 	const cell = 'border-[1.5px] border-black px-1.5 py-1';
 
 	return (
-		<article className="bg-white font-['Arial',_'Helvetica',_sans-serif] text-[11pt] leading-snug text-black">
-			<style>{'@page { size: letter; margin: 10mm 14mm 12mm; }'}</style>
+		<article className="bg-white [-webkit-print-color-adjust:exact] [print-color-adjust:exact] font-['Arial',_'Helvetica',_sans-serif] text-[11pt] leading-snug text-black">
+			<style>{'@page { size: letter; margin: 15mm 18mm 15mm; }'}</style>
 
 			<header className='flex items-start gap-8'>
 				<div className='w-[52mm] shrink-0'>
@@ -85,25 +85,25 @@ export function DeliveryNoteDocument({ note, profile }: { note: TDeliveryNoteDet
 			</div>
 			<div className='border-b-2 border-black' />
 
-			<section className='mt-5 flex flex-col gap-1 px-1'>
+			<section className='mt-4 flex flex-col gap-0.5 px-1'>
 				<Field label={t('sj.number')} value={note.code} />
 				<Field label={t('sj.date')} value={formatBusinessDate(note.deliveryDate, 'id')} />
 				<Field label={t('sj.project')} value={note.projectName} />
 				<Field label={t('sj.location')} value={note.projectLocation} />
 
-				<div className='mt-5 font-bold'>{t('sj.sender')}</div>
+				<div className='mt-3 font-bold'>{t('sj.sender')}</div>
 				<Field label={t('sj.company')} value={profile?.legalName} />
 				<Field label={t('sj.address')} value={companyAddress} />
 				<Field label={t('sj.contact')} value={companyContact} />
 
-				<div className='mt-5 font-bold'>{t('sj.recipient')}</div>
+				<div className='mt-3 font-bold'>{t('sj.recipient')}</div>
 				<Field label={t('sj.recipientName')} value={note.recipientName} />
 				<Field label={t('sj.projectAddress')} value={note.recipientAddress} />
 				<Field label={t('sj.pic')} value={note.recipientPic} />
 				<Field label={t('sj.contact')} value={note.recipientContact} />
 			</section>
 
-			<table className='mt-6 w-full table-fixed border-collapse'>
+			<table className='mt-4 w-full table-fixed border-collapse'>
 				<colgroup>
 					<col className='w-[6.3%]' />
 					<col className='w-[29.8%]' />
@@ -147,18 +147,18 @@ export function DeliveryNoteDocument({ note, profile }: { note: TDeliveryNoteDet
 				</tbody>
 			</table>
 
-			<section className='mt-6 border-2 border-black px-1.5 py-1 [break-inside:avoid]'>
+			<section className='mt-4 border-2 border-black px-1.5 py-1 [break-inside:avoid]'>
 				<div className='font-bold'>{t('sj.notes')}</div>
 				<div className='min-h-[12mm] whitespace-pre-line'>{note.notes ?? ''}</div>
 			</section>
 
-			<section className='mt-6 grid grid-cols-3 [break-inside:avoid]'>
+			<section className='mt-4 grid grid-cols-3 [break-inside:avoid]'>
 				{[
 					[t('sj.driver'), note.driverName],
 					[t('sj.shipper'), null],
 					[t('sj.receiver'), note.receiverName],
 				].map(([label, name]) => (
-					<div key={label} className='flex flex-col items-center gap-[20mm]'>
+					<div key={label} className='flex flex-col items-center gap-[16mm]'>
 						<div>{label}</div>
 						<SignatureLine name={name} />
 					</div>

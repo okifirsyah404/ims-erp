@@ -35,7 +35,7 @@ function PrintPurchaseOrderPage() {
 			{order.isError ? (
 				<p className='text-sm text-destructive'>{order.error.message}</p>
 			) : order.data && !profile.isPending ? (
-				<div className='mx-auto w-full max-w-4xl rounded-md border p-8 print:max-w-none print:border-0 print:p-0'>
+				<div className='mx-auto w-full max-w-4xl rounded-md border p-12 print:max-w-none print:border-0 print:p-0'>
 					<PurchaseOrderDocument order={order.data} profile={profile.data} />
 				</div>
 			) : null}
