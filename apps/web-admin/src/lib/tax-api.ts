@@ -124,6 +124,11 @@ export function recapCsvUrl(year: number, month: number): string {
 	return `${API_URL}/tax/export.csv?year=${year}&month=${month}`;
 }
 
+/** Builds the XLSX download URL (phase 3). */
+export function recapXlsxUrl(year: number, month: number): string {
+	return `${API_URL}/tax/export.xlsx?year=${year}&month=${month}`;
+}
+
 /* ------------------------------ records -------------------------------- */
 
 export type TTaxRecord = {

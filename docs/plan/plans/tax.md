@@ -15,7 +15,7 @@ Honest record. Nothing shipped yet.
 |---|---|---|---|
 | 1 | done | `229b668` | DBML update, migration, backend domain (tax types, tax records, corrections, withholding), guards, tests |
 | 2 | done | — | Backend: `GET /tax/recap`, `POST /tax/records/preview`, `POST /tax/records/:id/transition`, `PATCH /tax/withholding/:id`, `GET /tax/export.csv` (placeholder columns, D12 open). Frontend: recap (+CSV button), types, records, corrections, withholding pages; `tax` i18n namespace en + id; service + authorization tests |
-| 3 | planned | — | XLSX export via `exceljs`, separate dependency review |
+| 3 | done | — | XLSX export via `exceljs` 4.4.0 (write-only use), `GET /tax/export.xlsx`, recap-page button, tests. Advisory note below. |
 
 ## Grilling outcome — locked decisions
 
@@ -32,7 +32,7 @@ Honest record. Nothing shipped yet.
 | D9 | Uses the existing `tax` permission resource (`tax:read|create|update|verify|export`) from `erp-permissions.ts`. Mapping: `tax:read` view, `tax:update` create/edit and corrections, `tax:verify` status transitions, `tax:export` CSV/XLSX. No new catalog entries. |
 | D10 | `tax_records` input is manual, with a helper: entering base computes tax amount from the effective rate on the period/document date, still overridable. Derived/posted lines come later with M09. |
 | D11 | Withholding `counterparty_type` / `counterparty_id` are plain text, no cross-module validation. |
-| D12 | Export: CSV in phase 2; XLSX in phase 3 via `exceljs` (new dependency, version and advisory check at install time). |
+| D12 | Export: CSV in phase 2; XLSX in phase 3 via `exceljs` (new dependency, version and advisory check at install time). **Installed `exceljs@4.4.0` (2026-11-07): four unpatched advisories, all on the read/parse path (`xlsx.load`, images, notes, exceljs CSV writer) that this module never calls — the export is write-only. Two transitive moderates (minimatch via archiver, uuid). Column list still needs finance sign-off.** |
 | D13 | Unique `(organization_id, tax_type_id, period_year, period_month)` on `tax_records`, in addition to the existing `(organization_id, code)`. Corrections never duplicate recap rows. |
 | D14 | Rounding: half-up to the nearest rupiah as a documented default. Marked as a finance gate in Definition of Done (finance may change it before UAT). |
 | D15 | Corrections do not change the original `tax_amount`. Net payable = recap + sum of corrections, computed at read time. Correction amount is signed bigint, `reason` required, `evidence_document_id` optional logical reference. |

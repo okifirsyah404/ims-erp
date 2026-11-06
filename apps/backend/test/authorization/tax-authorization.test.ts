@@ -68,6 +68,7 @@ const ROUTES: ReadonlyArray<{
 	{ method: 'DELETE', path: `/tax/types/${TAX_TYPE_ID}` },
 	{ method: 'GET', path: '/tax/recap', body: undefined },
 	{ method: 'GET', path: '/tax/export.csv' },
+	{ method: 'GET', path: '/tax/export.xlsx' },
 	{ method: 'GET', path: '/tax/records' },
 	{ method: 'GET', path: `/tax/records/${TAX_RECORD_ID}` },
 	{

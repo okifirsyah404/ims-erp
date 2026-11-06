@@ -31,6 +31,7 @@ const tax = {
 	'recap.month': 'Month',
 	'recap.totalNetPayable': 'Total net payable',
 	'recap.exportCsv': 'Export CSV',
+	'recap.exportXlsx': 'Export XLSX',
 	'recap.empty': 'No records for this period.',
 	'recap.column.code': 'Tax code',
 	'recap.column.taxableBase': 'Taxable base',

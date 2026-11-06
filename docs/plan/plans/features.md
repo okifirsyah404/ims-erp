@@ -202,13 +202,14 @@ Last synced: 2026-11-06.
 ## M10 Tax
 
 ### in-progress
-- ERP-0016 Phases 1–2: backend (tax rate master, period working papers
-  draft → verified → filed, corrections, withholding, recap) plus web-admin UI
-  at `/finance/tax/*` (recap with CSV export, types, records, corrections,
-  withholding) and `GET /tax/export.csv`. Evidence: migration
-  `20261106173111_erp0016_tax_slice1` applied to dev; backend tests 629/629
-  (incl. 11 service + 76 authorization tests); web-admin build green; locales
-  en + id parity/dead-key green. Not yet: XLSX export (Phase 3), real rates
+- ERP-0016 Phases 1–3: backend (tax rate master, period working papers
+  draft → verified → filed, corrections, withholding, recap), web-admin UI
+  at `/finance/tax/*` (recap with CSV/XLSX export, types, records, corrections,
+  withholding), `GET /tax/export.csv`, and `GET /tax/export.xlsx` via
+  `exceljs` 4.4.0 (write-only; advisory note in the plan doc). Evidence:
+  migration `20261106173111_erp0016_tax_slice1` applied to dev; backend tests
+  632/632 (incl. 11 service + 80 authorization + 3 xlsx); web-admin build
+  green; locales en + id parity/dead-key green. Not yet: real rates
   (placeholders only, D18).
 
 ### blocked

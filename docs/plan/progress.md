@@ -2588,11 +2588,40 @@ Still open: finance gates D12 (CSV columns), D14 (rounding), D18 (placeholder
 rates); Phase 3 XLSX via `exceljs`. Nothing is marked verified without finance
 review.
 
+## 2026-11-07 - ERP-0016 tax Phase 3 (XLSX export) — implemented
+
+Closes the tax slice delivery (Phases 1–3). Dependency review first, per D12:
+
+- **Dependency:** `exceljs@4.4.0` added to `apps/backend`. Advisory check:
+  four unpatched 2026 advisories (decompression DoS, prototype pollution via
+  cell notes, path traversal via `addImage`, CSV formula injection) — all on
+  the **read/parse path this module never calls**; the export is write-only.
+  Two transitive moderates ride along (minimatch via archiver, uuid). Choice
+  to use upstream over the `exceljs-hardened` fork confirmed with the user;
+  recorded in the plan doc (D12).
+- Code: `utils/tax-xlsx.ts` (`recapToXlsx` — headers, numeric rupiah rows
+  divided from minor units, bold TOTAL footer, `#,##0.00` money formats) and
+  `GET /tax/export.xlsx?year=&month=` under `tax:export`, mirroring the CSV
+  route. Column layout still the placeholder set; **D12 sign-off still open**.
+- UI: `Export XLSX` button on the recap page next to the CSV button
+  (`recapXlsxUrl` in `tax-api.ts`; `tax:recap.exportXlsx` en + id).
+- Tests: `test/accounting/tax-xlsx.test.ts` (3 tests: content round-trip via
+  exceljs load of our own output, empty-period TOTAL, number formats) and the
+  XLSX route added to the authorization matrix (80 cases now).
+
+Gates:
+- `bunx tsc --noEmit -p apps/backend/tsconfig.json`: exit 0.
+- `cd apps/web-admin && bun run build`: green.
+- `bun test` targeted: authorization 80 pass; locales 42 pass; xlsx 3 pass.
+
+Still open: finance gates D12 (CSV/XLSX columns), D14 (rounding), D18
+(placeholder rates). Nothing is marked verified without finance review.
+
 ## Next executable task
 
-**ERP-0016 tax Phase 3:** XLSX export (`exceljs` — check the version and
-advisories at install), `GET /tax/export.xlsx`, tests, and a recap-page
-button. Then the finance review of D12/D14/D18.
+**Finance review of the tax slice (D12/D14/D18)** — column list, rounding
+rule, and real rates. Then ERP-0016's other half: P&L, balance sheet, cash
+flow (T11).
 
 ## Previous next task (still open)
 

@@ -22,6 +22,7 @@ import {
 import { TAX_SERVICE_TOKEN } from '../constants/di';
 import type { TaxService } from '../services/tax.service';
 import { recapToCsv } from '../utils/tax-csv';
+import { recapToXlsx } from '../utils/tax-xlsx';
 
 /**
  * REST controller for the tax slice (ERP-0016).
@@ -159,6 +160,34 @@ export class TaxController {
 				{
 					erp: { permission: ['tax:export'] },
 					detail: { description: 'Period recap as CSV (placeholder columns, D12)' },
+				},
+			)
+			.get(
+				'/export.xlsx',
+				async ({ query, erp, set }) => {
+					const { year, month } = recapQuerySchema.parse(query);
+					const { lines } = await tax.recap(erp.organizationId, year, month);
+					const buffer = await recapToXlsx(
+						lines.map((line) => ({
+							code: line.code,
+							taxableBase: line.taxableBase,
+							taxAmount: line.taxAmount,
+							correctionTotal: line.correctionTotal,
+							netPayable: line.netPayable,
+							filingStatus: line.filingStatus,
+						})),
+						{ year, month },
+					);
+					set.status = 200;
+					set.headers['content-type'] =
+						'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+					set.headers['content-disposition'] =
+						`attachment; filename="tax-recap-${year}-${String(month).padStart(2, '0')}.xlsx"`;
+					return buffer;
+				},
+				{
+					erp: { permission: ['tax:export'] },
+					detail: { description: 'Period recap as XLSX (placeholder columns, D12)' },
 				},
 			)
 			.get(

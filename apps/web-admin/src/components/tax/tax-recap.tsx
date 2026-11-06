@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/empty-state';
 import {
 	recapCsvUrl,
 	recapQueryOptions,
+	recapXlsxUrl,
 } from '@/lib/tax-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -96,6 +97,17 @@ export function TaxRecap() {
 					>
 						<Download className='size-4' data-icon='inline-start' />
 						{t('tax:recap.exportCsv')}
+					</Button>
+				) : null}
+				{canExport ? (
+					<Button
+						variant='outline'
+						onClick={() => {
+							window.location.href = recapXlsxUrl(year, month);
+						}}
+					>
+						<Download className='size-4' data-icon='inline-start' />
+						{t('tax:recap.exportXlsx')}
 					</Button>
 				) : null}
 			</div>

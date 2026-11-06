@@ -31,6 +31,7 @@ const tax = {
 	'recap.month': 'Bulan',
 	'recap.totalNetPayable': 'Total neto terutang',
 	'recap.exportCsv': 'Ekspor CSV',
+	'recap.exportXlsx': 'Ekspor XLSX',
 	'recap.empty': 'Tidak ada catatan untuk periode ini.',
 	'recap.column.code': 'Kode pajak',
 	'recap.column.taxableBase': 'Dasar pengenaan',
