@@ -1,15 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { FileBarChart } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { ReportsPage } from '@/components/finance/reports-page';
 
+/** `/finance/reports` - P&L / balance sheet / cash flow (M09 F6). */
 export const Route = createFileRoute('/_authed/finance/reports/')({
-	component: ComingSoonStubPage,
+	component: ReportsPage,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.financialReports')} icon={FileBarChart} />;
-}

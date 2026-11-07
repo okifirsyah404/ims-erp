@@ -3,6 +3,7 @@ import assets_ from './assets';
 import auth_ from './auth';
 import common_ from './common';
 import dashboard_ from './dashboard';
+import finance_ from './finance';
 import inventory_ from './inventory';
 import nav_ from './nav';
 import account_ from './account';
@@ -18,6 +19,7 @@ export const id = {
 	admin: admin_,
 	assets: assets_,
 	inventory: inventory_,
+	finance: finance_,
 	dashboard: dashboard_,
 	api: api_,
 	tax: tax_,

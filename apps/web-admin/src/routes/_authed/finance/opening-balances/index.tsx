@@ -1,15 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { BookOpen } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { OpeningBalancePage } from '@/components/finance/opening-balance-page';
 
+/** `/finance/opening-balances` - draft batch + one-shot post (M09 F3). */
 export const Route = createFileRoute('/_authed/finance/opening-balances/')({
-	component: ComingSoonStubPage,
+	component: OpeningBalancePage,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.openingBalances')} icon={BookOpen} />;
-}
