@@ -8,6 +8,7 @@ import { registerProjects } from '@app/projects';
 import { registerAftersales } from '@app/aftersales';
 import { registerHr } from '@app/hr';
 import { registerLicensing } from '@app/licensing';
+import { registerCatalog } from '@app/catalog';
 import { registerAssets } from '@app/assets';
 import { registerAccounting } from '@app/accounting';
 import { appConfig } from '@config/providers/config';
@@ -56,6 +57,7 @@ registerAftersales(container);
 registerHr(container);
 registerLicensing(container);
 registerAccounting(container);
+registerCatalog(container);
 registerUser(container);
 registerAuthorization(container);
 

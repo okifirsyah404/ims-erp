@@ -57,6 +57,7 @@ TableGroup "CRM" {
 }
 
 TableGroup "Catalog" {
+  catalog.web_listings
   catalog.item_categories
   catalog.units
   catalog.items
@@ -1256,8 +1257,39 @@ Table crm.customer_credit_limits {
 // MODULE: Catalog  (schema: catalog)
 // Unified goods and service master: categories, units, items, variants,
 // conversions, bundles, attributes, documents, price lists and prices.
-// Tenant scoped. Item prices are exact integer minor units.
+// Tenant scoped. Item prices are exact integer minor units. The item master
+// itself moved to inventory.items (ADR-0011); the scaffold tables here are
+// target-only. web_listings (M04 stage 1, company-wide) is built: what the
+// public website shows of an inventory item.
 // ---------------------------------------------------------------------------
+
+Table catalog.web_listings {
+  id uuid [pk, default: `uuidv7()`]
+  item_id uuid [note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Nullable per ADR-0014; required by the catalog service. One live listing per item."]
+  slug varchar(120) [not null, note: "Website product slug. Unique among live rows (partial index in the Drizzle schema)."]
+  is_published boolean [not null, default: false]
+  published_at bigint
+  specs varchar(400) [note: "Short specification line for the product card; empty uses the item specification."]
+  price_mode text [not null, default: 'list', note: "list: the item selling price is shown; rfq: no price, the website asks for a quotation."]
+  price_caption varchar(120)
+  out_of_stock_mode text [not null, default: 'request', note: "Shown when nothing is available: out, preorder or request."]
+  lead_time_label varchar(60)
+  applications jsonb [not null, default: `'[]'`, note: "Use-case tags (string array)."]
+  popularity integer [not null, default: 0, note: "Manual weight for the popular sort."]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "What the public website shows of an inventory item (M04 stage 1, company-wide). Name, category, price, photo and stock come from inventory at read time."
+  Indexes {
+    is_published [name: 'web_listings_published_idx']
+  }
+  Checks {
+    `price_mode IN ('list', 'rfq')`
+    `out_of_stock_mode IN ('out', 'preorder', 'request')`
+    `popularity >= 0`
+  }
+}
 
 Table catalog.item_categories {
   id uuid [pk, default: `uuidv7()`]

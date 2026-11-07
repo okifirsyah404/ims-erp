@@ -403,6 +403,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		sales_discount: ['request', 'approve'],
 		sales_order: ['read', 'create', 'update', 'submit', 'approve', 'cancel', 'export'],
 		product: ['read'],
+		// Website catalog listings with marketing (M04, decision 2026-11-07).
+		catalog: ['read', 'create', 'update', 'publish', 'archive'],
 		// M03 license register and its API keys (decisions 2026-11-06).
 		license: ['read', 'create', 'activate', 'extend', 'revoke', 'read_key', 'manage_api'],
 		document: ['read', 'download'],

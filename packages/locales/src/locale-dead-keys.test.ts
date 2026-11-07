@@ -124,6 +124,8 @@ const DYNAMIC_PREFIXES = [
 	'licensing:keys.status.',
 	'licensing:events.kind.',
 	'licensing:result.',
+	'integrations:catalog.priceMode.',
+	'integrations:catalog.outOfStock.',
 	// Finance errors compose `finance.term.${problem}` / `finance.invoiceState.${kind}`.
 	'finance.term.',
 	'finance.invoiceState.',
@@ -145,6 +147,8 @@ const DYNAMIC_PREFIXES = [
 	'licensing.api.',
 	'licensing.refused.',
 	'licensing.apiKey.',
+	'catalog.notFound.',
+	'catalog.listing.',
 	// Borrowing workflow (ERP-0036): status, purpose, condition, and event
 	// type all arrive as server values, so the label key has to be composed.
 	'assets:borrowingStatus.',

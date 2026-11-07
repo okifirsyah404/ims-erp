@@ -12,6 +12,86 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## In progress — M04 n8n, WhatsApp, website: gate 1 and decisions, 2026-11-07
+
+Status: **in progress** (gate 1 and owner decisions done; no code yet).
+Branch `feat/m04-integrations` (from `merge/main-sync`, so PR #58 stays as
+reviewed).
+
+Gate 1 (read): `docs/plan/erp-module-plans/m04-n8n-whatsapp-website.md`
+(stage 1: public catalog + profile, requirements form → lead, one ERP event
+to n8n with outbox log and manual retry; stage 2: WhatsApp AI on FAQ +
+catalog, notifications, handoff to an admin, logs; the AI must never grant
+discounts or transact — enforced by what it can call); docs.dbml MODULE
+Catalog / Commerce / Automation (scaffolds; the automation workflow engine
+is beyond baseline because n8n is the engine); the website repo
+`entragate-platform` (`CatalogSource` contract: list / get / categories /
+facets / stock / pricing / solutions / search / price cart, ERP routes
+still empty); the website form → lead API already built in M02
+(`/public/v1`, ADR-0011 step 3b).
+
+Owner decisions (2026-11-07):
+1. **WhatsApp via WAHA** (self-hosted WhatsApp HTTP API, not the official
+   Business API): no template approval, but a risk of the number being
+   banned — a dedicated number and a sandbox number first.
+2. **No n8n yet**; n8n and WAHA are not added to the dev docker compose
+   for now — the ERP side is built and tested against a fake receiver.
+3. **Events**: stage 1 `lead.created` (n8n notifies the sales admin);
+   stage 2 `invoice.issued`, `receipt.recorded`, `license.due`,
+   `service_ticket.updated`; one outbox with send log, manual retry and an
+   event id the receiver dedupes on.
+4. **AI in scope (stage 2), logic in the ERP**: WAHA → n8n → an ERP endpoint
+   that reads the FAQ and published catalog, asks the AI, answers or hands
+   off, and logs the conversation; n8n only relays. **AI provider not chosen
+   yet**: the ERP gets a provider-neutral port; with no provider configured
+   every message is handed off to an admin.
+5. **Routing (2026-11-07, refines 4)**: WAHA runs separately from the ERP.
+   Customer chat goes WAHA → the ERP's inbound webhook directly (HMAC
+   verified, deduped on the WhatsApp message id, answered at once and
+   processed on the BullMQ queue), and replies go back through a WAHA
+   adapter. n8n is used for the business events (the outbox): ERP → n8n →
+   WAHA / email.
+
+### 4a — website catalog API (implemented 2026-11-07)
+
+- `docs/database/docs.dbml` MODULE Catalog: header (item master moved to
+  inventory; scaffold target-only) + new `catalog.web_listings`
+  (company-wide); `validate-dbml.ts` → OK. Drizzle
+  `drizzle/schemas/catalog.schema.ts`; migration
+  `20261107092348_catalog_web_listings` (generated, inspected, applied).
+- Inventory contract `ItemCatalogService` (`ITEM_CATALOG_SERVICE_TOKEN`:
+  live items with category, available stock over every warehouse —
+  new `BalanceRepository.availableByItems` —, photo URL); test doubles of
+  the balance repository extended.
+- Module `src/app/catalog`: admin `/catalog/listings` (`catalog:read |
+  create | update | publish | archive`; sales manager gains `catalog`,
+  marketing had it) and public `/public/v1/catalog` (website key):
+  `products`, `products/:slug`, `products/:slug/image` (no key; 302 to a
+  short-lived photo URL; the link is only given when `APP_URL` is https),
+  `categories`, `facets`, `stock`, `pricing`, `solutions` (own licensable
+  applications, M03), `search`, `cart/price`. Whole-rupiah money; quotation
+  listings have no price and are not purchasable in the cart; untracked
+  items are "request"; stock is "ready" when available > 0, else the
+  listing's out-of-stock mode. Repeated query keys (`?slug=a&slug=b`) are
+  read as arrays (bug found in e2e, fixed).
+- Web `/integrations/website-catalog` (list, publish / hide, edit, remove,
+  item picker with slug suggestion); locale namespace `integrations`.
+- Website route map for `entragate-platform` (`apps/web/src/lib/server/
+  catalog/index.ts`): `listProducts: /public/v1/catalog/products`,
+  `getProduct: /public/v1/catalog/products/:slug`, `listCategories:
+  /public/v1/catalog/categories`, `getFacets: /public/v1/catalog/facets`,
+  `getStock: /public/v1/catalog/stock`, `getPricing:
+  /public/v1/catalog/pricing`, `listSolutions:
+  /public/v1/catalog/solutions`, `search: /public/v1/catalog/search`,
+  `priceCart: /public/v1/catalog/cart/price` (envelope: `unwrap` data).
+- Verification: backend 688 pass (new `catalog.service.test.ts` 7),
+  typecheck / lint clean, web build OK, locales 70 pass; e2e: listing
+  created and published on the screen (sales manager), a quotation listing
+  and a hidden one via the API; public API with a temporary website key
+  (disabled afterwards): no key 401, hidden product 404, products / product
+  / categories / facets / stock / pricing / search / cart as expected.
+
+## Completed — merge of main into merge/main-sync (PR #58 conflicts), 2026-11-06/07
 ## 2026-11-10 - ERP-0034: minimal HR employees + warehouse PIC (slices 1-8)
 
 Status: implemented and browser-verified (create → list → detail; seeder;

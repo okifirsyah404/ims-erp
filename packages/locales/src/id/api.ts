@@ -404,6 +404,12 @@ const api: Record<keyof typeof en, string> = {
 	'sales.receiptReversed': 'Kwitansi sudah dibatalkan',
 	'sales.invoiceNotPayable':
 		'Hanya faktur berstatus terbit atau sebagian dibayar yang dapat menerima pembayaran',
+	'catalog.notFound.listing': 'Listing tidak ditemukan',
+	'catalog.notFound.product': 'Produk tidak ditemukan',
+	'catalog.listing.slug': 'Slug ini sudah dipakai listing lain',
+	'catalog.listing.item': 'Barang ini sudah punya listing',
+	'catalog.listing.itemUnavailable': 'Barang sudah diarsipkan atau tidak aktif',
+	'catalog.listing.noPrice': 'Barang belum punya harga jual; gunakan harga lewat penawaran',
 };
 
 export default api;

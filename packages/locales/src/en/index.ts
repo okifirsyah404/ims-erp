@@ -18,6 +18,7 @@ import licensing from './licensing';
 import tax from './tax';
 import hr from './hr';
 import claim from './claim';
+import integrations from './integrations';
 
 /**
  * English resources, grouped by namespace. This bundle is the source of
@@ -44,6 +45,7 @@ export const en = {
 	tax,
 	hr,
 	claim,
+	integrations,
 } as const;
 
 export type Namespace = keyof typeof en;

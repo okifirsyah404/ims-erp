@@ -21,6 +21,7 @@ import { StockService } from './services/stock.service';
 import { AdjustmentService } from './services/adjustment.service';
 import { StockValuationRepository } from './repositories/stock-valuation.repository';
 import { StockValuationService } from './services/stock-valuation.service';
+import { ItemCatalogService } from './services/item-catalog.service';
 import {
 	ADJUSTMENT_REPOSITORY_TOKEN,
 	ADJUSTMENT_SERVICE_TOKEN,
@@ -40,6 +41,7 @@ import {
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 	STOCK_VALUATION_REPOSITORY_TOKEN,
 	STOCK_VALUATION_SERVICE_TOKEN,
+	ITEM_CATALOG_SERVICE_TOKEN,
 	EXPORTED_WAREHOUSE_SERVICE_TOKEN,
 } from './constants/di';
 
@@ -116,6 +118,7 @@ export function registerInventory(container: DependencyContainer): void {
 	container.register(STOCK_SERVICE_TOKEN, { useClass: StockService });
 	container.register(STOCK_VALUATION_REPOSITORY_TOKEN, { useClass: StockValuationRepository });
 	container.register(STOCK_VALUATION_SERVICE_TOKEN, { useClass: StockValuationService });
+	container.register(ITEM_CATALOG_SERVICE_TOKEN, { useClass: ItemCatalogService });
 	container.register(ADJUSTMENT_SERVICE_TOKEN, {
 		useClass: AdjustmentService,
 	});
