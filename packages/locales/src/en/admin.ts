@@ -119,7 +119,7 @@ const admin = {
 	'orgs.details': 'Organization details',
 	'orgs.slugDescription': 'The slug is permanent and used in URLs and API contexts.',
 	'orgs.stats.members': 'Members',
-	'orgs.stats.roles': 'Roles',
+	'orgs.stats.warehouses': 'Warehouses',
 	'orgs.stats.projects': 'Projects',
 
 	'orgDetail.created': 'Created',

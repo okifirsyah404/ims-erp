@@ -26,7 +26,7 @@ export type TMemberPaginationRequest = TPaginationRequest & {
  */
 export type TOrganizationWithCounts = TOrganizationSelect & {
 	membersCount: number;
-	rolesCount: number;
+	warehousesCount: number;
 	projectCount: number;
 };
 

@@ -122,10 +122,10 @@ function OrganizationsPage() {
 										</div>
 										<div className='flex flex-col'>
 											<span className='font-semibold text-foreground tabular-nums'>
-												{org.rolesCount ?? '—'}
+												{org.warehousesCount ?? '—'}
 											</span>
 											<span className='text-xs text-muted-foreground'>
-												{t('orgs.stats.roles')}
+												{t('orgs.stats.warehouses')}
 											</span>
 										</div>
 										<div className='flex flex-col'>

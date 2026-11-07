@@ -123,7 +123,7 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgs.slugDescription':
 		'Slug bersifat permanen dan dipakai di URL serta konteks API.',
 	'orgs.stats.members': 'Anggota',
-	'orgs.stats.roles': 'Peran',
+	'orgs.stats.warehouses': 'Gudang',
 	'orgs.stats.projects': 'Proyek',
 
 	'orgDetail.created': 'Dibuat',
