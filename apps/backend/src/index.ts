@@ -9,7 +9,7 @@ import { registerProjects } from '@app/projects';
 import { registerAftersales } from '@app/aftersales';
 import { registerLicenseDueSchedule, registerLicensing, startLicenseDueWorker } from '@app/licensing';
 import { registerCatalog } from '@app/catalog';
-import { registerAutomation, startOutboxWorker } from '@app/automation';
+import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
 import { registerAssets } from '@app/assets';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
@@ -125,7 +125,7 @@ const bootstrap = new Elysia()
 // `startLicenseDueWorker` is `null` unless `scheduler.enabled` (M04 reminders).
 const licenseDueWorker = startLicenseDueWorker();
 startWorkers(
-	[startAvatarWorker(), startOutboxWorker(), ...(licenseDueWorker ? [licenseDueWorker] : [])],
+	[startAvatarWorker(), startOutboxWorker(), startWhatsappWorker(), ...(licenseDueWorker ? [licenseDueWorker] : [])],
 	(error) => pinoLogger.error({ err: error }, 'background worker error'),
 );
 if (licenseDueWorker) {

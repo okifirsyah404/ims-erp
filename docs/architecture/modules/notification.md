@@ -14,9 +14,11 @@ owner decisions of 2026-11-07 in `docs/plan/progress.md`):
   saved; n8n is the workflow engine that turns an event into a WhatsApp
   (through WAHA) or email message. The ERP never sends those messages
   itself and stores no templates.
-- **WhatsApp assistant** (planned, M04 4d): WAHA posts customer chats
+- **WhatsApp assistant** (implemented, M04 4d): WAHA posts customer chats
   straight to an ERP webhook; FAQ base, provider-neutral AI port, handoff
   queue, conversation log. The AI never grants discounts or transacts.
+  Same module (`automation`), tables `faq_entries`,
+  `whatsapp_conversations`, `whatsapp_messages`.
 - Auth OTP/magic-link delivery is not here yet (still Better Auth's own
   senders).
 
@@ -45,6 +47,7 @@ Amounts are integer IDR minor units (divide by 100 for rupiah). Topics:
 | `invoice.issued` | Finance: invoice issued | `invoiceId`, `code`, `title`, `customer{id,code,name,email,phone,whatsapp}`, `salesOrderCode`, `issueDate`, `dueDate`, `grandTotal`, `outstandingTotal`, `currencyCode` |
 | `receipt.recorded` | Finance: receipt recorded | `receiptId`, `code`, `receivedDate`, `amount`, `method`, `invoice{id,code,status,grandTotal,paidTotal,outstandingTotal}`, `customer{…}` |
 | `service_ticket.updated` | After-sales: every ticket change | `ticketId`, `code`, `change` (`created / assigned / started / resolved / reopened / closed`), `status`, `customer{id,name,phone,whatsapp,email}`, `reporterName`, `reporterContact`, `assignee{userId,name}`, `resolution`, `serviceCost` |
+| `whatsapp.handoff` | WhatsApp assistant: chat handed to an admin | `conversationId`, `phone`, `contactName`, `reason` (`no_provider / not_found / human_requested / restricted / error`), `question` |
 | `license.due` | Licensing: daily job | `contractId`, `code`, `threshold` (30 / 7 / 0), `stage` (`ending / ended`), `daysLeft`, `endDate`, `graceEndsOn`, `application{code,name}`, `customer{…}` |
 
 `license.due` runs from the BullMQ queue `licensing-due` (cron
@@ -53,11 +56,62 @@ Amounts are integer IDR minor units (divide by 100 for rupiah). Topics:
 once (`outbox_messages.dedupe_key`), so a re-run or a missed day never
 duplicates a reminder.
 
+## WhatsApp assistant
+
+Flow: WAHA → `POST /integrations/whatsapp/webhook` (no session; WAHA's
+`X-Webhook-Hmac` = hex HMAC-SHA512 of the raw body with
+`WAHA_WEBHOOK_SECRET`, compared in constant time; refused with 503 when the
+key is not configured, 401 when wrong). Only `message` events from personal
+chats are used (our own messages, groups, status and channels are ignored).
+The message is stored once — unique `(direction, external_id)` on the
+WhatsApp message id — and queued on BullMQ `whatsapp-inbound` (3 attempts);
+WAHA gets 200 at once.
+
+`AssistantService.process`, in this order:
+
+1. Chat with an admin (`handoff`) → the assistant stays silent.
+2. Empty or media-only message → handoff `not_found`.
+3. Discount, special price, payment, order or refund words
+   (`utils/assistant.ts` `isRestricted`) → handoff `restricted` with a
+   refusal reply; the AI is not called.
+4. Asking for a person → handoff `human_requested`.
+5. No AI provider configured → handoff `no_provider`.
+6. The model gets a fixed system prompt with only the matching active FAQ
+   entries (word overlap) and published catalog products
+   (`CatalogService.matchProducts`), plus the last turns. It answers or
+   says it is unsure (→ handoff `not_found`); an answer that itself
+   mentions discounts/payments is not sent (→ handoff `restricted`); a
+   provider error → handoff `error`.
+
+A handoff sends one holding reply, marks the chat `handoff` and publishes
+`whatsapp.handoff` to n8n so someone is alerted. An admin reply takes the
+chat over (assigned to the admin); **resume** gives it back to the
+assistant; **close** ends it and the next customer message reopens it with
+the assistant. Every inbound and outbound message is logged with its
+status; a failed send can be resent.
+
+The model port (`IAssistantModel`) is provider-neutral; the one adapter is
+an OpenAI-compatible `POST <AI_BASE_URL>/chat/completions` (text only, no
+tools) — not yet tried against a real provider. The model cannot change
+ERP data whatever the prompt says: it has no tools, and its text is checked
+again before sending.
+
+Endpoints: `/automation/whatsapp/status | conversations | conversations/:id
+| …/reply | …/resume | …/close | messages/:id/retry` and `/automation/faq`.
+Permissions `whatsapp:read | reply | manage_faq` (admin all; sales manager
+and customer service read + reply; marketing read + FAQ). Web:
+`/integrations/whatsapp-ai`, `…/$conversationId`, `…/faq`.
+
 ## Configuration
 
 `N8N_WEBHOOK_URL`, `N8N_WEBHOOK_SECRET` (min 16 chars) — both optional;
 without them events stay `pending` with "not configured" and can be sent
-from the log once set. Never logged; the adapter never echoes the URL.
+from the log once set. `WAHA_URL`, `WAHA_API_KEY`, `WAHA_SESSION` (default
+`default`), `WAHA_WEBHOOK_SECRET` (min 16) for WhatsApp; `AI_BASE_URL`,
+`AI_API_KEY`, `AI_MODEL` for the optional AI provider. In WAHA, point the
+session's webhook at `<APP_URL>/integrations/whatsapp/webhook`, event
+`message`, with the HMAC key = `WAHA_WEBHOOK_SECRET`. None of these is ever
+logged; adapters never echo URLs or keys.
 
 ## Rules
 
@@ -69,9 +123,11 @@ from the log once set. Never logged; the adapter never echoes the URL.
 
 ## Tests
 
-`outbox.service.test.ts` (publish/queue, dedupe key, delivery outcomes,
+`whatsapp-assistant.test.ts` (signature, parsing, dedupe, guards incl.
+injection attempts, no provider, unsure / failing / risky answers, admin
+takeover, resend); `outbox.service.test.ts` (publish/queue, dedupe key, delivery outcomes,
 signature and headers, no URL leak); event assertions in
 `lead.service.test.ts`, `invoice.service.test.ts`,
 `service-ticket.service.test.ts`, `licensing.service.test.ts` (thresholds,
 once per threshold). E2E against a local fake receiver: see `progress.md`
-(M04 4b, 4c).
+(M04 4b, 4c, 4d).

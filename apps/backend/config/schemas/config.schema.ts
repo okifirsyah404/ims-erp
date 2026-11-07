@@ -113,6 +113,16 @@ export const SchedulerConfigSchema = z.object({
 export const IntegrationsConfigSchema = z.object({
 	n8nWebhookUrl: z.url().nullable(),
 	n8nWebhookSecret: z.string().min(16).nullable(),
+	/** WAHA (self-hosted WhatsApp HTTP API) base URL, API key and session name. */
+	wahaUrl: z.url().nullable(),
+	wahaApiKey: z.string().min(1).nullable(),
+	wahaSession: z.string().min(1),
+	/** HMAC key WAHA signs its webhooks with (`X-Webhook-Hmac`, sha512). */
+	wahaWebhookSecret: z.string().min(16).nullable(),
+	/** OpenAI-compatible chat completions endpoint for the assistant; none = every chat goes to an admin. */
+	aiBaseUrl: z.url().nullable(),
+	aiApiKey: z.string().min(1).nullable(),
+	aiModel: z.string().min(1).nullable(),
 });
 
 export const EnvConfigSchema = z.object({

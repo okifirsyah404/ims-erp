@@ -106,17 +106,22 @@ Last synced: 2026-11-06.
   Evidence: `progress.md` 2026-11-07 (M04 4b): `src/app/automation`,
   `outbox.service.test.ts`, e2e with a fake receiver (signature, retry,
   manual send). Not yet accepted by the owner.
-
 - Stage 2 notifications as n8n events (invoice issued, payment received,
   ticket updated, license ending — daily, once per threshold) — T28,
   ERP-0021. Evidence: `progress.md` 2026-11-07 (M04 4c), event contract in
   `docs/architecture/modules/notification.md`. Not yet accepted by the owner.
+- WhatsApp AI on FAQ + catalog through WAHA, handoff queue, WhatsApp logs,
+  admin replies, FAQ base — T27/T28, ERP-0021, M04 stage 2. Evidence:
+  `progress.md` 2026-11-07 (M04 4d): `whatsapp-assistant.test.ts`, e2e with
+  fake WAHA and a fake OpenAI-compatible model. Not yet accepted by the
+  owner; live use is blocked until WAHA, a dedicated number and an AI
+  provider exist (sandbox first).
+- Requirements form → lead — T15. Built in M02 (`/public/v1`, ADR-0011
+  step 3b); the WA button is website-side.
 
 ### planned
-- Requirements form → lead (done in M02 `/public/v1`); WA button is website-side — T15.
-  Evidence: none.
-- AI FAQ + n8n integration — T27, ERP-0021. Evidence: none.
-- Human handoff, WhatsApp logs — T28, ERP-0021 (M04 4d). Evidence: none.
+- Live WhatsApp/n8n go-live: WAHA instance and sandbox number, n8n flows
+  for the events, AI provider choice — owner/infra, outside the code.
 
 ## M05 Inventory and Purchasing
 

@@ -120,6 +120,15 @@ export function loadEnvConfig(
 			// secret of its HMAC signature. Server config only; never logged.
 			n8nWebhookUrl: process.env.N8N_WEBHOOK_URL || null,
 			n8nWebhookSecret: process.env.N8N_WEBHOOK_SECRET || null,
+			// M04 stage 2: WAHA posts chats to the ERP and sends the replies;
+			// the AI provider is optional (none = hand every chat to an admin).
+			wahaUrl: process.env.WAHA_URL || null,
+			wahaApiKey: process.env.WAHA_API_KEY || null,
+			wahaSession: process.env.WAHA_SESSION || 'default',
+			wahaWebhookSecret: process.env.WAHA_WEBHOOK_SECRET || null,
+			aiBaseUrl: process.env.AI_BASE_URL || null,
+			aiApiKey: process.env.AI_API_KEY || null,
+			aiModel: process.env.AI_MODEL || null,
 		},
 
 		scheduler: {

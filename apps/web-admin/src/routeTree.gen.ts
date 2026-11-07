@@ -74,6 +74,9 @@ import { Route as AuthedHrOvertimeIndexRouteImport } from './routes/_authed/hr/o
 import { Route as AuthedHrPayrollIndexRouteImport } from './routes/_authed/hr/payroll/index'
 import { Route as AuthedIntegrationsWebhooksIndexRouteImport } from './routes/_authed/integrations/webhooks/index'
 import { Route as AuthedIntegrationsWebsiteCatalogIndexRouteImport } from './routes/_authed/integrations/website-catalog/index'
+import { Route as AuthedIntegrationsWhatsappAiIndexRouteImport } from './routes/_authed/integrations/whatsapp-ai/index'
+import { Route as AuthedIntegrationsWhatsappAiConversationIdRouteImport } from './routes/_authed/integrations/whatsapp-ai/$conversationId'
+import { Route as AuthedIntegrationsWhatsappAiFaqRouteImport } from './routes/_authed/integrations/whatsapp-ai/faq'
 import { Route as AuthedInventoryCategoriesIndexRouteImport } from './routes/_authed/inventory/categories/index'
 import { Route as AuthedInventoryComponentsIndexRouteImport } from './routes/_authed/inventory/components/index'
 import { Route as AuthedInventoryItemsItemIdRouteImport } from './routes/_authed/inventory/items/$itemId'
@@ -493,6 +496,24 @@ const AuthedIntegrationsWebsiteCatalogIndexRoute =
   AuthedIntegrationsWebsiteCatalogIndexRouteImport.update({
     id: '/integrations/website-catalog/',
     path: '/integrations/website-catalog/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedIntegrationsWhatsappAiIndexRoute =
+  AuthedIntegrationsWhatsappAiIndexRouteImport.update({
+    id: '/integrations/whatsapp-ai/',
+    path: '/integrations/whatsapp-ai/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedIntegrationsWhatsappAiConversationIdRoute =
+  AuthedIntegrationsWhatsappAiConversationIdRouteImport.update({
+    id: '/integrations/whatsapp-ai/$conversationId',
+    path: '/integrations/whatsapp-ai/$conversationId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedIntegrationsWhatsappAiFaqRoute =
+  AuthedIntegrationsWhatsappAiFaqRouteImport.update({
+    id: '/integrations/whatsapp-ai/faq',
+    path: '/integrations/whatsapp-ai/faq',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedInventoryCategoriesIndexRoute =
@@ -932,6 +953,8 @@ export interface FileRoutesByFullPath {
   '/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
+  '/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
+  '/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -982,6 +1005,7 @@ export interface FileRoutesByFullPath {
   '/hr/payroll/': typeof AuthedHrPayrollIndexRoute
   '/integrations/webhooks/': typeof AuthedIntegrationsWebhooksIndexRoute
   '/integrations/website-catalog/': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
+  '/integrations/whatsapp-ai/': typeof AuthedIntegrationsWhatsappAiIndexRoute
   '/inventory/categories/': typeof AuthedInventoryCategoriesIndexRoute
   '/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
@@ -1064,6 +1088,8 @@ export interface FileRoutesByTo {
   '/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
+  '/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
+  '/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -1114,6 +1140,7 @@ export interface FileRoutesByTo {
   '/hr/payroll': typeof AuthedHrPayrollIndexRoute
   '/integrations/webhooks': typeof AuthedIntegrationsWebhooksIndexRoute
   '/integrations/website-catalog': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
+  '/integrations/whatsapp-ai': typeof AuthedIntegrationsWhatsappAiIndexRoute
   '/inventory/categories': typeof AuthedInventoryCategoriesIndexRoute
   '/inventory/components': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials': typeof AuthedInventoryMaterialsIndexRoute
@@ -1200,6 +1227,8 @@ export interface FileRoutesById {
   '/_authed/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/_authed/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/_authed/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
+  '/_authed/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
+  '/_authed/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/_authed/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/_authed/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/_authed/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -1250,6 +1279,7 @@ export interface FileRoutesById {
   '/_authed/hr/payroll/': typeof AuthedHrPayrollIndexRoute
   '/_authed/integrations/webhooks/': typeof AuthedIntegrationsWebhooksIndexRoute
   '/_authed/integrations/website-catalog/': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
+  '/_authed/integrations/whatsapp-ai/': typeof AuthedIntegrationsWhatsappAiIndexRoute
   '/_authed/inventory/categories/': typeof AuthedInventoryCategoriesIndexRoute
   '/_authed/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/_authed/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
@@ -1336,6 +1366,8 @@ export interface FileRouteTypes {
     | '/assets/register/new'
     | '/crm/customers/$customerId'
     | '/crm/leads/$leadId'
+    | '/integrations/whatsapp-ai/$conversationId'
+    | '/integrations/whatsapp-ai/faq'
     | '/inventory/items/$itemId'
     | '/inventory/items/new'
     | '/inventory/stock/adjust'
@@ -1386,6 +1418,7 @@ export interface FileRouteTypes {
     | '/hr/payroll/'
     | '/integrations/webhooks/'
     | '/integrations/website-catalog/'
+    | '/integrations/whatsapp-ai/'
     | '/inventory/categories/'
     | '/inventory/components/'
     | '/inventory/materials/'
@@ -1468,6 +1501,8 @@ export interface FileRouteTypes {
     | '/assets/register/new'
     | '/crm/customers/$customerId'
     | '/crm/leads/$leadId'
+    | '/integrations/whatsapp-ai/$conversationId'
+    | '/integrations/whatsapp-ai/faq'
     | '/inventory/items/$itemId'
     | '/inventory/items/new'
     | '/inventory/stock/adjust'
@@ -1518,6 +1553,7 @@ export interface FileRouteTypes {
     | '/hr/payroll'
     | '/integrations/webhooks'
     | '/integrations/website-catalog'
+    | '/integrations/whatsapp-ai'
     | '/inventory/categories'
     | '/inventory/components'
     | '/inventory/materials'
@@ -1603,6 +1639,8 @@ export interface FileRouteTypes {
     | '/_authed/assets/register/new'
     | '/_authed/crm/customers/$customerId'
     | '/_authed/crm/leads/$leadId'
+    | '/_authed/integrations/whatsapp-ai/$conversationId'
+    | '/_authed/integrations/whatsapp-ai/faq'
     | '/_authed/inventory/items/$itemId'
     | '/_authed/inventory/items/new'
     | '/_authed/inventory/stock/adjust'
@@ -1653,6 +1691,7 @@ export interface FileRouteTypes {
     | '/_authed/hr/payroll/'
     | '/_authed/integrations/webhooks/'
     | '/_authed/integrations/website-catalog/'
+    | '/_authed/integrations/whatsapp-ai/'
     | '/_authed/inventory/categories/'
     | '/_authed/inventory/components/'
     | '/_authed/inventory/materials/'
@@ -2167,6 +2206,27 @@ declare module '@tanstack/react-router' {
       path: '/integrations/website-catalog'
       fullPath: '/integrations/website-catalog/'
       preLoaderRoute: typeof AuthedIntegrationsWebsiteCatalogIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/integrations/whatsapp-ai/': {
+      id: '/_authed/integrations/whatsapp-ai/'
+      path: '/integrations/whatsapp-ai'
+      fullPath: '/integrations/whatsapp-ai/'
+      preLoaderRoute: typeof AuthedIntegrationsWhatsappAiIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/integrations/whatsapp-ai/$conversationId': {
+      id: '/_authed/integrations/whatsapp-ai/$conversationId'
+      path: '/integrations/whatsapp-ai/$conversationId'
+      fullPath: '/integrations/whatsapp-ai/$conversationId'
+      preLoaderRoute: typeof AuthedIntegrationsWhatsappAiConversationIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/integrations/whatsapp-ai/faq': {
+      id: '/_authed/integrations/whatsapp-ai/faq'
+      path: '/integrations/whatsapp-ai/faq'
+      fullPath: '/integrations/whatsapp-ai/faq'
+      preLoaderRoute: typeof AuthedIntegrationsWhatsappAiFaqRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/inventory/categories/': {
@@ -2753,6 +2813,8 @@ interface AuthedRouteChildren {
   AuthedAssetsRegisterNewRoute: typeof AuthedAssetsRegisterNewRoute
   AuthedCrmCustomersCustomerIdRoute: typeof AuthedCrmCustomersCustomerIdRoute
   AuthedCrmLeadsLeadIdRoute: typeof AuthedCrmLeadsLeadIdRoute
+  AuthedIntegrationsWhatsappAiConversationIdRoute: typeof AuthedIntegrationsWhatsappAiConversationIdRoute
+  AuthedIntegrationsWhatsappAiFaqRoute: typeof AuthedIntegrationsWhatsappAiFaqRoute
   AuthedInventoryItemsItemIdRoute: typeof AuthedInventoryItemsItemIdRouteWithChildren
   AuthedInventoryItemsNewRoute: typeof AuthedInventoryItemsNewRoute
   AuthedInventoryStockAdjustRoute: typeof AuthedInventoryStockAdjustRoute
@@ -2802,6 +2864,7 @@ interface AuthedRouteChildren {
   AuthedHrPayrollIndexRoute: typeof AuthedHrPayrollIndexRoute
   AuthedIntegrationsWebhooksIndexRoute: typeof AuthedIntegrationsWebhooksIndexRoute
   AuthedIntegrationsWebsiteCatalogIndexRoute: typeof AuthedIntegrationsWebsiteCatalogIndexRoute
+  AuthedIntegrationsWhatsappAiIndexRoute: typeof AuthedIntegrationsWhatsappAiIndexRoute
   AuthedInventoryCategoriesIndexRoute: typeof AuthedInventoryCategoriesIndexRoute
   AuthedInventoryComponentsIndexRoute: typeof AuthedInventoryComponentsIndexRoute
   AuthedInventoryMaterialsIndexRoute: typeof AuthedInventoryMaterialsIndexRoute
@@ -2877,6 +2940,9 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAssetsRegisterNewRoute: AuthedAssetsRegisterNewRoute,
   AuthedCrmCustomersCustomerIdRoute: AuthedCrmCustomersCustomerIdRoute,
   AuthedCrmLeadsLeadIdRoute: AuthedCrmLeadsLeadIdRoute,
+  AuthedIntegrationsWhatsappAiConversationIdRoute:
+    AuthedIntegrationsWhatsappAiConversationIdRoute,
+  AuthedIntegrationsWhatsappAiFaqRoute: AuthedIntegrationsWhatsappAiFaqRoute,
   AuthedInventoryItemsItemIdRoute: AuthedInventoryItemsItemIdRouteWithChildren,
   AuthedInventoryItemsNewRoute: AuthedInventoryItemsNewRoute,
   AuthedInventoryStockAdjustRoute: AuthedInventoryStockAdjustRoute,
@@ -2932,6 +2998,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedIntegrationsWebhooksIndexRoute: AuthedIntegrationsWebhooksIndexRoute,
   AuthedIntegrationsWebsiteCatalogIndexRoute:
     AuthedIntegrationsWebsiteCatalogIndexRoute,
+  AuthedIntegrationsWhatsappAiIndexRoute:
+    AuthedIntegrationsWhatsappAiIndexRoute,
   AuthedInventoryCategoriesIndexRoute: AuthedInventoryCategoriesIndexRoute,
   AuthedInventoryComponentsIndexRoute: AuthedInventoryComponentsIndexRoute,
   AuthedInventoryMaterialsIndexRoute: AuthedInventoryMaterialsIndexRoute,

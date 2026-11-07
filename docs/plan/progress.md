@@ -14,8 +14,15 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 ## In progress — M04 n8n, WhatsApp, website: gate 1 and decisions, 2026-11-07
 
-Status: **in progress** (4a catalog API, 4b outbox to n8n and 4c stage 2
-events implemented; 4d WhatsApp AI next).
+Status: **implemented** (4a catalog API, 4b outbox to n8n, 4c stage 2
+events, 4d WhatsApp assistant), not yet accepted by the owner. Live use
+needs WAHA, a dedicated WhatsApp number (sandbox first), n8n flows and an
+AI provider — none exist yet.
+
+Next executable task: owner review of M04 on `feat/m04-integrations` (PR
+with base `merge/main-sync`); then the go-live checklist in
+`docs/architecture/modules/notification.md` (WAHA webhook + HMAC key, n8n
+flows per event, AI provider) on a sandbox number.
 Branch `feat/m04-integrations` (from `merge/main-sync`, so PR #58 stays as
 reviewed).
 
@@ -168,6 +175,75 @@ Owner decisions (2026-11-07):
   `service_ticket.updated` (`created`) and one `license.due` (threshold
   30) across several scheduler runs, all signed and `published`. E2E data
   (customer `E2E-4C` and its documents) stays in the dev database.
+
+### 4d — WhatsApp assistant (implemented 2026-11-07)
+
+Gate 1: `docs.dbml` MODULE Automation (no conversation/FAQ tables existed;
+`notifications` / `notification_templates` stay target-only because n8n
+sends the messages), `module-ownership.md` §21 (automation owns
+notifications/integrations; queues stay in the Redis worker), M04 plan
+stage 2 + controls (AI cannot discount or transact, enforced by what it can
+call; inbound webhooks verified; secrets in server config). Skipped
+`implementation-phases.md` (no dependency on an unlanded step).
+
+Gate 2 (manual fallback; `grilling` is not installed) — answers:
+- Ownership: `automation` schema (this module), tables `faq_entries`,
+  `whatsapp_conversations`, `whatsapp_messages`; catalog data through the
+  catalog contract (`CatalogService.matchProducts`), never its tables.
+- Tenant: company-wide (ADR-0012), no `organization_id`.
+- Soft delete: `deleted_at` on all three; FAQ removal is a soft delete;
+  chats and messages are a log, never deleted by feature code.
+- Types: unix-ms timestamps; no money or quantity columns.
+- Logical references: only `auth.users.id` (`created_by`, `updated_by`,
+  `assigned_user_id`, `sent_by_user_id`) with the standard note. No link to
+  a CRM customer or lead yet (deferred: an admin creates the lead).
+- Vocabularies: conversation `assistant | handoff | closed`; handoff reason
+  `no_provider | not_found | human_requested | restricted | error`;
+  message direction `inbound | outbound`, author `customer | assistant |
+  admin | system`, status `received | processed | pending | sent | failed`.
+- Dedupe: unique `(direction, external_id)`; one conversation per
+  `chat_id` (unique), a closed chat reopens with the assistant.
+- Deferred: per-chat rate limit, media handling (media = handoff), CRM
+  lead/customer linking, OTP delivery.
+
+Built:
+- `docs.dbml` (3 tables + 2 intra-module refs) → gen-logical-references +
+  validate-dbml OK; Drizzle in `automation.schema.ts`; migration
+  `20261107095923_whatsapp_assistant` (generated, inspected, applied).
+- `src/app/automation`: `WhatsappService` (receive, send, handoff, inbox),
+  `AssistantService` (guards → AI → re-check), `FaqService`;
+  `adapters/waha.ts` (sendText), `adapters/openai-compatible.ts` (optional
+  model, text only); `utils/assistant.ts` (HMAC-SHA512 check, WAHA parsing,
+  restricted / human patterns, FAQ ranking, holding replies); queue
+  `whatsapp-inbound` + worker; controllers `/integrations/whatsapp/webhook`
+  (public, signed), `/automation/whatsapp/*`, `/automation/faq`; outbox
+  topic `whatsapp.handoff`. Config `WAHA_URL`, `WAHA_API_KEY`,
+  `WAHA_SESSION`, `WAHA_WEBHOOK_SECRET`, `AI_BASE_URL`, `AI_API_KEY`,
+  `AI_MODEL` (names in `.env.example`).
+- Permissions: statement `whatsapp: read | reply | manage_faq`; admin all,
+  sales manager + customer service read/reply, marketing read/FAQ;
+  `packages/common` rebuilt; `bun scripts/refresh-role-grants.ts` → 5 roles.
+- Web: `/integrations/whatsapp-ai` (status alerts, tabs with counts,
+  search), `/$conversationId` (log, admin reply, resend, hand back, close),
+  `/faq` (CRUD); locale keys en/id; the dead "Notifications" nav item
+  (no page existed; notifications are n8n events) removed with its key.
+- User guide 8.7 (en/id; 8.6 is HR on its branch); module doc
+  `notification.md` updated.
+- Verification: backend 709 pass (`whatsapp-assistant.test.ts` 12),
+  `bun run typecheck` / `bun run lint` clean (no new warnings), web build
+  OK, locales 70 pass. E2E with temporary `.env` entries (removed), a fake
+  WAHA and a fake OpenAI-compatible model: FAQ created by marketing
+  (customer service gets 403); FAQ question → assistant reply sent through
+  WAHA with the FAQ in the model's context; the same webhook twice → one
+  reply; bad signature → 401; discount request → refusal + handoff
+  `restricted`, model not called; off-FAQ question → handoff `not_found`;
+  admin reply sent and the chat assigned; two `whatsapp.handoff` outbox
+  events; sales → 403 on the inbox; screenshots of list, chat and FAQ
+  pages checked. E2E chats and FAQ entries stay in the dev database.
+- Not verified: a real WAHA instance, a real AI provider, n8n flows.
+
+`docs/database/` updated (3 tables, Automation header); the
+`whatsapp.handoff` topic needs no schema change.
 
 ## Completed — merge of main into merge/main-sync (PR #58 conflicts), 2026-11-06/07
 
