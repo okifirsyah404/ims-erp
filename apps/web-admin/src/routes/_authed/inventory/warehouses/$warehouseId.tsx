@@ -1,6 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { createFileRoute, Link, useParams } from '@tanstack/react-router';
+import {
+	createFileRoute,
+	Link,
+	Outlet,
+	useMatches,
+	useParams,
+} from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -34,6 +40,17 @@ export const Route = createFileRoute('/_authed/inventory/warehouses/$warehouseId
 });
 
 function WarehouseDetailPage() {
+	// Child route (edit) renders instead of the detail page; compare the last
+	// match's routeId — `useChildMatches` also counts this route's own match.
+	const matches = useMatches();
+	const isChildActive = matches.at(-1)?.routeId !== Route.id;
+	if (isChildActive) {
+		return <Outlet />;
+	}
+	return <WarehouseDetail />;
+}
+
+function WarehouseDetail() {
 	const { t } = useTranslation(['inventory', 'common']);
 	const { warehouseId } = useParams({ from: Route.id });
 	const { data: warehouse, isPending, isError } = useQuery(
