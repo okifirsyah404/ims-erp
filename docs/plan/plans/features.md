@@ -189,15 +189,30 @@ Last synced: 2026-11-06.
 
 ## M09 Finance
 
-### planned
-- Opening balances, COA, journals, reversals — T04, ERP-0010. Evidence: dbml
-  `accounting` only.
-- Cash/bank, receivables, payables, reconciliation — T06, ERP-0012/0013.
-  Evidence: dbml `finance` only.
-- Expense entry + journal posting — ERP-0013. Evidence: none.
-- P&L, balance sheet, cash flow, drill-down — T11, ERP-0016. Evidence: none.
-- Month-end close + reopen — T11, ERP-0017. Evidence: none.
-- Payroll + gateway postings (Stage 2) — T20, T22. Evidence: none.
+### done (Stage 1 - F1..F9, commits 7a44dbd..<f9>)
+- Ledger core: `accounting` pg-schema (COA, journal entries/lines, periods,
+  opening balances), posting engine with single tx-aware `post` gateway,
+  append-only reversals, document-sequence codes, idempotency keys,
+  open-period gate, close/lock/reopen (audited, owner-only). Evidence:
+  backend tests (686 pass), migration applied to dev.
+- Cash & bank: finance.cash_bank_accounts/transactions with GL links
+  (required at first movement) and per-movement JE posting.
+- Receivables/payables: sales invoices post AR through the finance mirror
+  sub-ledger (`accounting.ar_open_items` / `ap_open_items`), finance.payments
+  workflow draft→submitted→approved→executed with allocations, void +
+  void-executed append-only reversal, finance.supplier_bills
+  draft→approved→partially_paid→paid. AR/AP aging computed on demand.
+- Reports: P&L, balance sheet, cash flow computed on demand from posted
+  journal lines (never stored snapshots); bank reconciliation workflow
+  draft→in_progress→reconciled→closed with exact statement=book gate.
+- Month-end close: advisory pre-close checklist; period transitions.
+- Web-admin UI: 9 finance routes + finance-api typed client (F8).
+
+### planned (Stage 2)
+- Expense entry + journal posting - ERP-0013. Evidence: none.
+- Payroll + gateway postings (Stage 2) - T20, T22. Evidence: none.
+- Final COA seed list from finance/owner (provisional codes
+  `1-1300`/`1-1100`/`4-1000`/`2-1000`/`2-1100`/`5-1000`/`1-1800` in use).
 
 ## M10 Tax
 
