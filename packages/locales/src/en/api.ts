@@ -230,6 +230,10 @@ const api = {
 	'accounting.billNotFound': 'Supplier bill not found',
 	'accounting.billNotDraft':
 		'Only draft supplier bills can be modified or recorded',
+	'accounting.bankReconciliationNotFound': 'Bank reconciliation not found',
+	'accounting.bankReconciliationState':
+		'That reconciliation action is not allowed for this document',
+	'accounting.reportPeriodInvalid': 'Report date range is invalid',
 
 	// Invoices (F4) — sales keys
 	'sales.invoiceNotFound': 'Invoice not found',

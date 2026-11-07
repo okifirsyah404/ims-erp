@@ -87,6 +87,63 @@ export const arAgingQuerySchema = z.object({
 	customerId: z.string().uuid().optional(),
 });
 
+/* ----------------------------- reports (F6) ----------------------------- */
+
+export const profitAndLossQuerySchema = z
+	.object({
+		startDate: isoDate,
+		endDate: isoDate,
+	})
+	.refine((q) => q.startDate <= q.endDate, {
+		message: 'startDate must not be after endDate',
+	});
+
+export const balanceSheetQuerySchema = z.object({
+	asOfDate: isoDate,
+});
+
+export const cashFlowQuerySchema = z
+	.object({
+		startDate: isoDate,
+		endDate: isoDate,
+	})
+	.refine((q) => q.startDate <= q.endDate, {
+		message: 'startDate must not be after endDate',
+	});
+
+/* ----------------------------- bank reconciliation (F6) ----------------------------- */
+
+export const reconciliationCreateSchema = z.object({
+	cashBankAccountId: z.string().uuid(),
+	reconciliationDate: isoDate,
+	statementBalance: minorAmount,
+	notes: z.string().nullish().transform((v) => v ?? null),
+});
+
+export const reconciliationListQuerySchema = z.object({
+	page: z.coerce.number().int().positive().default(1),
+	limit: z.coerce.number().int().positive().max(100).default(20),
+	cashBankAccountId: z.string().uuid().optional(),
+	status: z
+		.enum(['draft', 'in_progress', 'reconciled', 'closed'])
+		.optional(),
+});
+
+export const reconciliationItemSchema = z.object({
+	cashBankTransactionId: z.string().uuid().nullish().transform((v) => v ?? null),
+	statementReference: z.string().nullish().transform((v) => v ?? null),
+	statementAmount: minorAmount.nullish().transform((v) => v ?? null),
+	notes: z.string().nullish().transform((v) => v ?? null),
+});
+
+export const reconciliationItemsSchema = z.object({
+	items: z.array(reconciliationItemSchema).min(1).max(500),
+});
+
+export const reconciliationMatchSchema = z.object({
+	cashBankTransactionId: z.string().uuid().nullish().transform((v) => v ?? null),
+});
+
 export const paymentVoidSchema = z.object({
 	reason: z.string().min(1),
 });

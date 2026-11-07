@@ -232,6 +232,12 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.billNotFound': 'Tagihan pemasok tidak ditemukan',
 	'accounting.billNotDraft':
 		'Hanya tagihan pemasok berstatus draf yang dapat diubah atau dicatat',
+	'accounting.bankReconciliationNotFound':
+		'Rekonsiliasi bank tidak ditemukan',
+	'accounting.bankReconciliationState':
+		'Tindakan rekonsiliasi tersebut tidak diizinkan untuk dokumen ini',
+	'accounting.reportPeriodInvalid':
+		'Rentang tanggal laporan tidak valid',
 
 	// Faktur (F4) — kunci sales
 	'sales.invoiceNotFound': 'Faktur tidak ditemukan',

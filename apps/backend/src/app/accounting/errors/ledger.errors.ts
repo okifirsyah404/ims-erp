@@ -332,3 +332,32 @@ export class BillNotDraftError extends AppError {
 		super(409, 'accounting.billNotDraft', 'Only draft supplier bills can be modified or recorded');
 	}
 }
+
+/* ----------------------------- bank reconciliation (F6) ----------------------------- */
+
+export class BankReconciliationNotFoundError extends AppError {
+	constructor() {
+		super(404, 'accounting.bankReconciliationNotFound', 'Bank reconciliation not found');
+	}
+}
+
+/** The reconciliation workflow refused the transition or closing condition. */
+export class BankReconciliationStateError extends AppError {
+	constructor(detail?: string) {
+		super(
+			409,
+			'accounting.bankReconciliationState',
+			detail
+				? `That reconciliation action is not allowed: ${detail}`
+				: 'That reconciliation action is not allowed for this document',
+		);
+	}
+}
+
+/* ----------------------------- reports (F6) ----------------------------- */
+
+export class ReportPeriodInvalidError extends AppError {
+	constructor() {
+		super(422, 'accounting.reportPeriodInvalid', 'Report date range is invalid');
+	}
+}

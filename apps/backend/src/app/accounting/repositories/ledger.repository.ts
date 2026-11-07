@@ -19,6 +19,8 @@ import {
 import {
 	apOpenItems,
 	arOpenItems,
+	bankReconciliationItems,
+	bankReconciliations,
 	cashBankAccounts,
 	cashBankTransactions,
 	paymentAllocations,
@@ -1413,6 +1415,231 @@ export class LedgerRepository {
 				totalPages: Math.ceil(total / pagination.limit) || 1,
 			},
 		};
+	}
+
+	/** Id-keyed account map for report builders (F6). */
+	async listAccountsMap(
+		organizationId: string,
+		tx?: TTx,
+	): Promise<Map<string, TChartOfAccountSelect>> {
+		const db = tx ?? this.database;
+		const rows = await db
+			.select()
+			.from(chartOfAccounts)
+			.where(
+				and(
+					eq(chartOfAccounts.organizationId, organizationId),
+					isNull(chartOfAccounts.deletedAt),
+				),
+			);
+		return new Map(rows.map((row) => [row.id, row]));
+	}
+
+	/* ----------------------------- reports (F6) ----------------------------- */
+
+	/**
+	 * Aggregated journal activity per account between two dates (inclusive).
+	 *
+	 * @remarks
+	 * The single query every financial report builds on (D7): posted entries
+	 * only, grouped by account. Reversal entries participate as normal rows —
+	 * their debits/credits naturally offset the original.
+	 */
+	async listAccountActivity(
+		organizationId: string,
+		startDate: string,
+		endDate: string,
+		tx?: TTx,
+	): Promise<
+		Array<{ accountId: string; debit: number; credit: number }>
+	> {
+		const db = tx ?? this.database;
+		return db
+			.select({
+				accountId: journalLines.accountId,
+				debit: sql<number>`coalesce(sum(${journalLines.debit}), 0)::bigint`,
+				credit: sql<number>`coalesce(sum(${journalLines.credit}), 0)::bigint`,
+			})
+			.from(journalLines)
+			.innerJoin(
+				journalEntries,
+				eq(journalLines.journalEntryId, journalEntries.id),
+			)
+			.where(
+				and(
+					eq(journalEntries.organizationId, organizationId),
+					eq(journalEntries.status, 'posted'),
+					isNull(journalEntries.deletedAt),
+					sql`${journalEntries.entryDate} >= ${startDate}`,
+					sql`${journalEntries.entryDate} <= ${endDate}`,
+				),
+			)
+			.groupBy(journalLines.accountId);
+	}
+
+	/* ----------------------------- bank reconciliation (F6) ----------------------------- */
+
+	async insertBankReconciliation(
+		row: {
+			organizationId: string;
+			code: string;
+			cashBankAccountId: string;
+			reconciliationDate: string;
+			statementBalance: number;
+			bookBalance: number;
+			difference: number;
+			status: string;
+			notes: string | null;
+		},
+		tx?: TTx,
+	): Promise<unknown> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [created] = await db
+			.insert(bankReconciliations)
+			.values({ ...row, createdAt: now, updatedAt: now })
+			.returning();
+		return created;
+	}
+
+	async findBankReconciliationById(
+		organizationId: string,
+		id: string,
+		tx?: TTx,
+	): Promise<unknown | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(bankReconciliations)
+			.where(
+				and(
+					eq(bankReconciliations.id, id),
+					eq(bankReconciliations.organizationId, organizationId),
+					isNull(bankReconciliations.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async listBankReconciliations(
+		organizationId: string,
+		filters: { cashBankAccountId?: string; status?: string },
+		pagination: { page: number; limit: number },
+	): Promise<TPaginationResult<unknown>> {
+		const conditions = [
+			eq(bankReconciliations.organizationId, organizationId),
+			isNull(bankReconciliations.deletedAt),
+		];
+		if (filters.cashBankAccountId) {
+			conditions.push(
+				eq(bankReconciliations.cashBankAccountId, filters.cashBankAccountId),
+			);
+		}
+		if (filters.status) {
+			conditions.push(eq(bankReconciliations.status, filters.status));
+		}
+		const where = and(...conditions);
+		const [{ value: total }] = await this.database
+			.select({ value: count() })
+			.from(bankReconciliations)
+			.where(where);
+		const data = await this.database
+			.select()
+			.from(bankReconciliations)
+			.where(where)
+			.orderBy(desc(bankReconciliations.reconciliationDate))
+			.limit(pagination.limit)
+			.offset((pagination.page - 1) * pagination.limit);
+		return {
+			data,
+			meta: {
+				page: pagination.page,
+				limit: pagination.limit,
+				total,
+				totalPages: Math.ceil(total / pagination.limit) || 1,
+			},
+		};
+	}
+
+	async updateBankReconciliation(
+		organizationId: string,
+		id: string,
+		patch: Record<string, unknown>,
+		tx?: TTx,
+	): Promise<unknown | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(bankReconciliations)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(bankReconciliations.id, id),
+					eq(bankReconciliations.organizationId, organizationId),
+					isNull(bankReconciliations.deletedAt),
+				),
+			)
+			.returning();
+		return updated ?? null;
+	}
+
+	async insertBankReconciliationItems(
+		rows: Array<{
+			organizationId: string;
+			bankReconciliationId: string;
+			cashBankTransactionId: string | null;
+			statementReference: string | null;
+			statementAmount: number | null;
+			isMatched: boolean;
+			notes: string | null;
+		}>,
+		tx?: TTx,
+	): Promise<unknown[]> {
+		if (rows.length === 0) return [];
+		const db = tx ?? this.database;
+		const now = new Date();
+		return db
+			.insert(bankReconciliationItems)
+			.values(rows.map((row) => ({ ...row, createdAt: now, updatedAt: now })))
+			.returning();
+	}
+
+	async listBankReconciliationItems(
+		organizationId: string,
+		bankReconciliationId: string,
+		tx?: TTx,
+	): Promise<unknown[]> {
+		const db = tx ?? this.database;
+		return db
+			.select()
+			.from(bankReconciliationItems)
+			.where(
+				and(
+					eq(bankReconciliationItems.organizationId, organizationId),
+					eq(bankReconciliationItems.bankReconciliationId, bankReconciliationId),
+					isNull(bankReconciliationItems.deletedAt),
+				),
+			);
+	}
+
+	async updateBankReconciliationItem(
+		organizationId: string,
+		id: string,
+		patch: Record<string, unknown>,
+		tx?: TTx,
+	): Promise<unknown | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(bankReconciliationItems)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(bankReconciliationItems.id, id),
+					eq(bankReconciliationItems.organizationId, organizationId),
+				),
+			)
+			.returning();
+		return updated ?? null;
 	}
 
 	/* ----------------------------- account balances (close snapshot) ----------------------------- */

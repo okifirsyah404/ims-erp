@@ -3,6 +3,8 @@ import * as accountingTokens from './di';
 import type { ArAccountResolverService } from '../services/ar-account-resolver.service';
 import type { PaymentService } from '../services/payment.service';
 import type { SupplierBillService } from '../services/supplier-bill.service';
+import type { ReportService } from '../services/report.service';
+import type { BankReconciliationService } from '../services/bank-reconciliation.service';
 import type { TInvoiceRepository } from '@app/sales/contracts/invoice.repository.interface';
 
 /**
@@ -25,3 +27,8 @@ export const INVOICE_REPOSITORY_TOKEN: InjectionToken<TInvoiceRepository> =
 	Symbol('INVOICE_REPOSITORY_TOKEN');
 export const SUPPLIER_BILL_SERVICE_TOKEN: InjectionToken<SupplierBillService> =
 	Symbol('SUPPLIER_BILL_SERVICE_TOKEN');
+export const REPORT_SERVICE_TOKEN: InjectionToken<ReportService> = Symbol(
+	'REPORT_SERVICE_TOKEN',
+);
+export const BANK_RECONCILIATION_SERVICE_TOKEN: InjectionToken<BankReconciliationService> =
+	Symbol('BANK_RECONCILIATION_SERVICE_TOKEN');

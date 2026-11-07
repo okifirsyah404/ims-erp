@@ -22,9 +22,13 @@ import { CashBankService } from './services/cash-bank.service';
 import { ArAccountResolverService } from './services/ar-account-resolver.service';
 import { PaymentService } from './services/payment.service';
 import { SupplierBillService } from './services/supplier-bill.service';
+import { ReportService } from './services/report.service';
+import { BankReconciliationService } from './services/bank-reconciliation.service';
 import {
 	AR_ACCOUNT_RESOLVER_TOKEN,
+	BANK_RECONCILIATION_SERVICE_TOKEN,
 	PAYMENT_SERVICE_TOKEN,
+	REPORT_SERVICE_TOKEN,
 	SUPPLIER_BILL_SERVICE_TOKEN,
 } from './constants/ar-di';
 
@@ -59,5 +63,9 @@ export function registerAccounting(container: DependencyContainer): void {
 	container.register(PAYMENT_SERVICE_TOKEN, { useClass: PaymentService });
 	container.register(SUPPLIER_BILL_SERVICE_TOKEN, {
 		useClass: SupplierBillService,
+	});
+	container.register(REPORT_SERVICE_TOKEN, { useClass: ReportService });
+	container.register(BANK_RECONCILIATION_SERVICE_TOKEN, {
+		useClass: BankReconciliationService,
 	});
 }

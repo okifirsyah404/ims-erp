@@ -6,18 +6,32 @@ import {
 	AGING_BUCKETS,
 	apAgingQuerySchema,
 	arAgingQuerySchema,
+	balanceSheetQuerySchema,
+	cashFlowQuerySchema,
 	paymentAllocationsSchema,
 	paymentCreateSchema,
 	paymentListQuerySchema,
 	paymentVoidSchema,
+	profitAndLossQuerySchema,
+	reconciliationCreateSchema,
+	reconciliationItemsSchema,
+	reconciliationListQuerySchema,
+	reconciliationMatchSchema,
 	supplierBillCreateSchema,
 	supplierBillListQuerySchema,
 	type TAgingBucket,
 } from '../contracts/payment.contract';
 import { ledgerIdParamSchema } from '../contracts/ledger.contract';
-import { PAYMENT_SERVICE_TOKEN, SUPPLIER_BILL_SERVICE_TOKEN } from '../constants/ar-di';
+import {
+	BANK_RECONCILIATION_SERVICE_TOKEN,
+	PAYMENT_SERVICE_TOKEN,
+	REPORT_SERVICE_TOKEN,
+	SUPPLIER_BILL_SERVICE_TOKEN,
+} from '../constants/ar-di';
 import type { PaymentService } from '../services/payment.service';
 import type { SupplierBillService } from '../services/supplier-bill.service';
+import type { ReportService } from '../services/report.service';
+import type { BankReconciliationService } from '../services/bank-reconciliation.service';
 import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
 import type { LedgerRepository } from '../repositories/ledger.repository';
 
@@ -37,6 +51,11 @@ export class PaymentController {
 		const bills = container.resolve<SupplierBillService>(
 			SUPPLIER_BILL_SERVICE_TOKEN,
 		);
+		const reports = container.resolve<ReportService>(REPORT_SERVICE_TOKEN);
+		const reconciliations =
+			container.resolve<BankReconciliationService>(
+				BANK_RECONCILIATION_SERVICE_TOKEN,
+			);
 		const ledgerRepo = container.resolve<LedgerRepository>(
 			LEDGER_REPOSITORY_TOKEN,
 		);
@@ -373,6 +392,185 @@ export class PaymentController {
 						description:
 							'AP aging buckets computed on demand from the sub-ledger (D7)',
 					},
+				},
+			)
+			/* ---------------- financial reports (F6) ---------------- */
+			.get(
+				'/reports/profit-and-loss',
+				async ({ query, erp }) => {
+					const { startDate, endDate } = profitAndLossQuerySchema.parse(query);
+					return ok(
+						await reports.profitAndLoss(
+							{ organizationId: erp.organizationId },
+							startDate,
+							endDate,
+						),
+					);
+				},
+				{
+					erp: { permission: ['financial_report:read'] },
+					detail: {
+						description:
+							'Income statement computed on demand from posted journal lines (D7)',
+					},
+				},
+			)
+			.get(
+				'/reports/balance-sheet',
+				async ({ query, erp }) => {
+					const { asOfDate } = balanceSheetQuerySchema.parse(query);
+					return ok(
+						await reports.balanceSheet(
+							{ organizationId: erp.organizationId },
+							asOfDate,
+						),
+					);
+				},
+				{
+					erp: { permission: ['financial_report:read'] },
+					detail: {
+						description:
+							'Balance sheet as of a date; current earnings close into equity',
+					},
+				},
+			)
+			.get(
+				'/reports/cash-flow',
+				async ({ query, erp }) => {
+					const { startDate, endDate } = cashFlowQuerySchema.parse(query);
+					return ok(
+						await reports.cashFlow(
+							{ organizationId: erp.organizationId },
+							startDate,
+							endDate,
+						),
+					);
+				},
+				{
+					erp: { permission: ['financial_report:read'] },
+					detail: {
+						description:
+							'Direct-method cash flow classified by cash_flow_category (D11)',
+					},
+				},
+			)
+			/* ---------------- bank reconciliation (F6) ---------------- */
+			.get(
+				'/bank-reconciliations',
+				async ({ query, erp }) =>
+					okPaginated(
+						await reconciliations.list(
+							erp.organizationId,
+							reconciliationListQuerySchema.parse(query),
+							reconciliationListQuerySchema.parse(query),
+						),
+					),
+				{
+					erp: { permission: ['cash_bank:read'] },
+					detail: { description: 'Paginated bank reconciliation list' },
+				},
+			)
+			.get(
+				'/bank-reconciliations/:id',
+				async ({ params, erp }) =>
+					ok(
+						await reconciliations.get(
+							erp.organizationId,
+							ledgerIdParamSchema.parse(params).id,
+						),
+					),
+				{
+					erp: { permission: ['cash_bank:read'] },
+					detail: { description: 'One bank reconciliation' },
+				},
+			)
+			.post(
+				'/bank-reconciliations',
+				async ({ body, erp, status }) =>
+					status(
+						201,
+						created(
+							await reconciliations.create(
+								ctxOf(erp),
+								reconciliationCreateSchema.parse(body),
+							),
+						),
+					),
+				{
+					erp: { permission: ['cash_bank:reconcile'] },
+					detail: {
+						description:
+							'Opens a draft reconciliation; book balance snapshot taken from the cash account',
+					},
+				},
+			)
+			.post(
+				'/bank-reconciliations/:id/items',
+				async ({ params, body, erp }) => {
+					const { items } = reconciliationItemsSchema.parse(body);
+					return ok(
+						await reconciliations.addItems(
+							ctxOf(erp),
+							ledgerIdParamSchema.parse(params).id,
+							items,
+						),
+					);
+				},
+				{
+					erp: { permission: ['cash_bank:reconcile'] },
+					detail: { description: 'Appends statement lines to a draft reconciliation' },
+				},
+			)
+			.post(
+				'/bank-reconciliations/:id/items/:itemId/match',
+				async ({ params, body, erp }) => {
+					const { cashBankTransactionId } =
+						reconciliationMatchSchema.parse(body);
+					return ok(
+						await reconciliations.matchItem(
+							ctxOf(erp),
+							ledgerIdParamSchema.parse(params).id,
+							ledgerIdParamSchema.parse({ id: params.itemId }).id,
+							cashBankTransactionId,
+						),
+					);
+				},
+				{
+					erp: { permission: ['cash_bank:reconcile'] },
+					detail: {
+						description: 'Matches a statement item (moves draft → in_progress)',
+					},
+				},
+			)
+			.post(
+				'/bank-reconciliations/:id/reconcile',
+				async ({ params, erp }) =>
+					ok(
+						await reconciliations.reconcile(
+							ctxOf(erp),
+							ledgerIdParamSchema.parse(params).id,
+						),
+					),
+				{
+					erp: { permission: ['cash_bank:reconcile'] },
+					detail: {
+						description:
+							'Marks reconciled: all items matched and statement = book balance',
+					},
+				},
+			)
+			.post(
+				'/bank-reconciliations/:id/close',
+				async ({ params, erp }) =>
+					ok(
+						await reconciliations.close(
+							ctxOf(erp),
+							ledgerIdParamSchema.parse(params).id,
+						),
+					),
+				{
+					erp: { permission: ['cash_bank:reconcile'] },
+					detail: { description: 'reconciled → closed (terminal)' },
 				},
 			);
 	}
