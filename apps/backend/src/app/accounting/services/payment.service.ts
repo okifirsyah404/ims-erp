@@ -31,8 +31,8 @@ export type TPaymentActionContext = {
 };
 
 export type TCreatePaymentInput = {
-	paymentType: 'customer_payment';
-	counterpartyType: 'customer' | null;
+	paymentType: 'customer_payment' | 'supplier_payment';
+	counterpartyType: 'customer' | 'supplier' | null;
 	counterpartyId: string | null;
 	amount: number;
 	paymentMethod: 'bank_transfer' | 'cash' | 'cheque' | 'virtual_account';
@@ -43,8 +43,15 @@ export type TCreatePaymentInput = {
 };
 
 export type TAllocationInput = {
-	salesInvoiceId: string;
+	salesInvoiceId?: string;
+	supplierBillId?: string;
 	amount: number;
+};
+
+/** Which side of the ledger a payment type settles. */
+const PAYMENT_SIDE: Record<TCreatePaymentInput['paymentType'], 'receivable' | 'payable'> = {
+	customer_payment: 'receivable',
+	supplier_payment: 'payable',
 };
 
 /**
@@ -109,7 +116,7 @@ export class PaymentService {
 					organizationId: ctx.organizationId,
 					code,
 					paymentType: input.paymentType,
-					direction: 'in',
+					direction: PAYMENT_SIDE[input.paymentType] === 'payable' ? 'out' : 'in',
 					counterpartyType: input.counterpartyType,
 					counterpartyId: input.counterpartyId,
 					amount: input.amount,
@@ -142,14 +149,14 @@ export class PaymentService {
 		return this.database.transaction(async (tx) => {
 			const payment = await this.mustFind(ctx.organizationId, id, tx);
 			if (payment.status !== 'draft') throw new PaymentInvalidTransitionError();
-			await this.validateAllocations(ctx.organizationId, payment.amount, allocations, tx);
+			await this.validateAllocations(ctx.organizationId, payment.paymentType as TCreatePaymentInput['paymentType'], payment.amount, allocations, tx);
 			await this.repo.insertPaymentAllocations(
 				allocations.map((a) => ({
 					organizationId: ctx.organizationId,
 					paymentId: payment.id,
-					targetType: 'sales_invoice',
-					salesInvoiceId: a.salesInvoiceId,
-					supplierBillId: null,
+					targetType: a.supplierBillId ? 'supplier_bill' : 'sales_invoice',
+					salesInvoiceId: a.salesInvoiceId ?? null,
+					supplierBillId: a.supplierBillId ?? null,
 					amount: a.amount,
 				})),
 				tx,
@@ -206,58 +213,57 @@ export class PaymentService {
 
 			await this.validateAllocations(
 				ctx.organizationId,
+				payment.paymentType as TCreatePaymentInput['paymentType'],
 				payment.amount,
-				allocations.map((a) => ({ salesInvoiceId: a.salesInvoiceId!, amount: a.amount })),
+				allocations.map((a) =>
+					a.salesInvoiceId
+						? { salesInvoiceId: a.salesInvoiceId, amount: a.amount }
+						: { supplierBillId: a.supplierBillId!, amount: a.amount },
+				),
 				tx,
 			);
 
 			// Apply each allocation to both mirrors.
 			for (const allocation of allocations) {
-				const item = await this.repo.findArOpenItemByInvoice(
+				if (allocation.supplierBillId) {
+					await this.applyBillAllocation(
+						ctx.organizationId,
+						allocation.supplierBillId,
+						allocation.amount,
+						allocation.id,
+						tx,
+					);
+					continue;
+				}
+				await this.applyInvoiceAllocation(
 					ctx.organizationId,
 					allocation.salesInvoiceId!,
-					tx,
-				);
-				if (!item) throw new PaymentTargetNotIssuedError();
-				const paidAmount = item.paidAmount + allocation.amount;
-				const outstandingAmount = item.originalAmount - paidAmount;
-				const status = outstandingAmount === 0 ? 'paid' : 'partially_paid';
-				await this.repo.updateArOpenItem(
-					ctx.organizationId,
-					allocation.salesInvoiceId!,
-					{ paidAmount, outstandingAmount, status },
-					tx,
-				);
-				await this.repo.updateSalesInvoiceTotals(
-					ctx.organizationId,
-					allocation.salesInvoiceId!,
-					{
-						paidTotal: paidAmount,
-						outstandingTotal: outstandingAmount,
-						status,
-					},
-					tx,
-				);
-				await this.repo.markAllocationExecuted(
-					ctx.organizationId,
+					allocation.amount,
 					allocation.id,
 					tx,
 				);
 			}
 
 			// Money movement through the shared cash path, joining this tx (D9):
-			// auto-journal = DR cash GL / CR AR.
-			const arAccountId = await this.arResolver.resolve(ctx.organizationId, 'ar');
+			// customer_payment: cash in  = DR cash GL / CR AR
+			// supplier_payment:  cash out = DR AP / CR cash GL
+			const isPayable =
+				PAYMENT_SIDE[payment.paymentType as TCreatePaymentInput['paymentType']] ===
+				'payable';
+			const counterAccountId = await this.arResolver.resolve(
+				ctx.organizationId,
+				isPayable ? 'ap' : 'ar',
+			);
 			await this.cashBank.postMovement(
 				ctx,
 				{
 					cashBankAccountId: payment.cashBankAccountId,
 					transactionDate: payment.paymentDate ?? new Date().toISOString().slice(0, 10),
-					direction: 'in',
+					direction: isPayable ? 'out' : 'in',
 					amount: payment.amount,
 					description: `Payment ${payment.code}`,
 					referenceNumber: payment.code,
-					counterpartAccountId: arAccountId,
+					counterpartAccountId: counterAccountId,
 					sourceType: 'payment',
 					sourceId: payment.id,
 				},
@@ -307,28 +313,106 @@ export class PaymentService {
 		return updated ?? payment;
 	}
 
-	/** Σ = amount and every target invoice issued/partially_paid with room left. */
+	/** Σ = amount and every target (invoice or bill) open with room left. */
 	private async validateAllocations(
 		organizationId: string,
+		paymentType: TCreatePaymentInput['paymentType'],
 		amount: number,
 		allocations: TAllocationInput[],
 		tx?: TTx,
 	): Promise<void> {
 		const total = allocations.reduce((s, a) => s + a.amount, 0);
 		if (total !== amount) throw new PaymentAllocationMismatchError();
+		const expectsPayable = PAYMENT_SIDE[paymentType] === 'payable';
 		for (const allocation of allocations) {
-			const invoice = await this.repo.findSalesInvoiceById(
-				organizationId,
-				allocation.salesInvoiceId,
-				tx,
-			);
-			if (!invoice) throw new PaymentTargetNotIssuedError();
-			if (invoice.status !== 'issued' && invoice.status !== 'partially_paid') {
+			if (expectsPayable !== Boolean(allocation.supplierBillId)) {
 				throw new PaymentTargetNotIssuedError();
 			}
-			if (allocation.amount > invoice.outstandingTotal) {
-				throw new PaymentOverAllocationError();
+			if (allocation.salesInvoiceId) {
+				const invoice = await this.repo.findSalesInvoiceById(
+					organizationId,
+					allocation.salesInvoiceId,
+					tx,
+				);
+				if (!invoice) throw new PaymentTargetNotIssuedError();
+				if (invoice.status !== 'issued' && invoice.status !== 'partially_paid') {
+					throw new PaymentTargetNotIssuedError();
+				}
+				if (allocation.amount > invoice.outstandingTotal) {
+					throw new PaymentOverAllocationError();
+				}
+			} else {
+				const bill = await this.repo.findSupplierBillById(
+					organizationId,
+					allocation.supplierBillId!,
+					tx,
+				);
+				if (!bill) throw new PaymentTargetNotIssuedError();
+				if (
+					bill.status !== 'approved' &&
+					bill.status !== 'partially_paid'
+				) {
+					throw new PaymentTargetNotIssuedError();
+				}
+				if (allocation.amount > bill.outstandingTotal) {
+					throw new PaymentOverAllocationError();
+				}
 			}
 		}
+	}
+
+	/** Updates `ar_open_items` + `sales.invoices` for one settled allocation. */
+	private async applyInvoiceAllocation(
+		organizationId: string,
+		invoiceId: string,
+		amount: number,
+		allocationId: string,
+		tx: TTx,
+	): Promise<void> {
+		const item = await this.repo.findArOpenItemByInvoice(organizationId, invoiceId, tx);
+		if (!item) throw new PaymentTargetNotIssuedError();
+		const paidAmount = item.paidAmount + amount;
+		const outstandingAmount = item.originalAmount - paidAmount;
+		const status = outstandingAmount === 0 ? 'paid' : 'partially_paid';
+		await this.repo.updateArOpenItem(organizationId, invoiceId, {
+			paidAmount,
+			outstandingAmount,
+			status,
+		}, tx);
+		await this.repo.updateSalesInvoiceTotals(organizationId, invoiceId, {
+			paidTotal: paidAmount,
+			outstandingTotal: outstandingAmount,
+			status,
+		}, tx);
+		await this.repo.markAllocationExecuted(organizationId, allocationId, tx);
+	}
+
+	/** Updates `ap_open_items` + `finance.supplier_bills` for one settled allocation (F5). */
+	private async applyBillAllocation(
+		organizationId: string,
+		billId: string,
+		amount: number,
+		allocationId: string,
+		tx: TTx,
+	): Promise<void> {
+		const item = (await this.repo.findApOpenItemByBill(organizationId, billId, tx)) as {
+			paidAmount: number;
+			originalAmount: number;
+		} | null;
+		if (!item) throw new PaymentTargetNotIssuedError();
+		const paidAmount = item.paidAmount + amount;
+		const outstandingAmount = item.originalAmount - paidAmount;
+		const status = outstandingAmount === 0 ? 'paid' : 'partially_paid';
+		await this.repo.updateApOpenItem(organizationId, billId, {
+			paidAmount,
+			outstandingAmount,
+			status,
+		}, tx);
+		await this.repo.updateSupplierBill(organizationId, billId, {
+			paidTotal: paidAmount,
+			outstandingTotal: outstandingAmount,
+			status,
+		}, tx);
+		await this.repo.markAllocationExecuted(organizationId, allocationId, tx);
 	}
 }

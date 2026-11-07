@@ -229,6 +229,9 @@ const api: Record<keyof typeof en, string> = {
 		'Alokasi hanya boleh menarget faktur berstatus terbit atau sebagian dibayar',
 	'accounting.paymentCashAccountRequired':
 		'Akun kas/bank diperlukan untuk mengeksekusi pembayaran ini',
+	'accounting.billNotFound': 'Tagihan pemasok tidak ditemukan',
+	'accounting.billNotDraft':
+		'Hanya tagihan pemasok berstatus draf yang dapat diubah atau dicatat',
 
 	// Faktur (F4) — kunci sales
 	'sales.invoiceNotFound': 'Faktur tidak ditemukan',

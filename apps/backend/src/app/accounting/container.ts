@@ -21,9 +21,11 @@ import { OpeningBalanceService } from './services/opening-balance.service';
 import { CashBankService } from './services/cash-bank.service';
 import { ArAccountResolverService } from './services/ar-account-resolver.service';
 import { PaymentService } from './services/payment.service';
+import { SupplierBillService } from './services/supplier-bill.service';
 import {
 	AR_ACCOUNT_RESOLVER_TOKEN,
 	PAYMENT_SERVICE_TOKEN,
+	SUPPLIER_BILL_SERVICE_TOKEN,
 } from './constants/ar-di';
 
 /**
@@ -55,4 +57,7 @@ export function registerAccounting(container: DependencyContainer): void {
 		useClass: ArAccountResolverService,
 	});
 	container.register(PAYMENT_SERVICE_TOKEN, { useClass: PaymentService });
+	container.register(SUPPLIER_BILL_SERVICE_TOKEN, {
+		useClass: SupplierBillService,
+	});
 }

@@ -33,14 +33,31 @@ export class ArAccountResolverService {
 		return account.id;
 	}
 
-	/** Resolves all three roles in one round of lookups. */
+	/** Resolves all invoice-side roles in one round of lookups. */
 	async resolveAll(organizationId: string): Promise<
-		Record<TArPostingRole, string>
+		Record<'ar' | 'revenue' | 'taxPayable', string>
 	> {
-		const roles: TArPostingRole[] = ['ar', 'revenue', 'taxPayable'];
+		const roles = ['ar', 'revenue', 'taxPayable'] as const;
 		const entries = await Promise.all(
 			roles.map(async (role) => [role, await this.resolve(organizationId, role)] as const),
 		);
-		return Object.fromEntries(entries) as Record<TArPostingRole, string>;
+		return Object.fromEntries(entries) as Record<
+			'ar' | 'revenue' | 'taxPayable',
+			string
+		>;
+	}
+
+	/** Resolves all bill-side roles in one round of lookups (F5). */
+	async resolveAllBill(organizationId: string): Promise<
+		Record<'ap' | 'expense' | 'taxInput', string>
+	> {
+		const roles = ['ap', 'expense', 'taxInput'] as const;
+		const entries = await Promise.all(
+			roles.map(async (role) => [role, await this.resolve(organizationId, role)] as const),
+		);
+		return Object.fromEntries(entries) as Record<
+			'ap' | 'expense' | 'taxInput',
+			string
+		>;
 	}
 }

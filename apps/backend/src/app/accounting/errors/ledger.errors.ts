@@ -317,3 +317,18 @@ export class PaymentCashAccountRequiredError extends AppError {
 		super(422, 'accounting.paymentCashAccountRequired', 'A cash/bank account is required to execute this payment');
 	}
 }
+
+/* ----------------------------- supplier bills (F5) ----------------------------- */
+
+export class BillNotFoundError extends AppError {
+	constructor() {
+		super(404, 'accounting.billNotFound', 'Supplier bill not found');
+	}
+}
+
+/** The action requires a draft bill (record, cancel). */
+export class BillNotDraftError extends AppError {
+	constructor() {
+		super(409, 'accounting.billNotDraft', 'Only draft supplier bills can be modified or recorded');
+	}
+}

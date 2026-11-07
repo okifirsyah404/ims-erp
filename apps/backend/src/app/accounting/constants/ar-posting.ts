@@ -1,5 +1,5 @@
 /**
- * Provisional AR-posting account codes (finance plan F4, decision 1c).
+ * Provisional posting account codes (finance plan F4/F5, decision 1c).
  *
  * @remarks
  * Defaults resolved by `chart_of_accounts.code` until the business gate
@@ -15,6 +15,12 @@ export const AR_POSTING_DEFAULT_CODES = {
 	revenue: '4-1000',
 	/** Output tax payable (liability, credit). */
 	taxPayable: '2-1000',
+	/** Trade payables control account (liability, credit) — F5. */
+	ap: '2-1100',
+	/** Default expense account for supplier bills (expense, debit) — F5. */
+	expense: '5-1000',
+	/** Input tax receivable (asset, debit) — F5. */
+	taxInput: '1-1800',
 } as const;
 
 export type TArPostingRole = keyof typeof AR_POSTING_DEFAULT_CODES;

@@ -2,6 +2,7 @@ import type { InjectionToken } from 'tsyringe';
 import * as accountingTokens from './di';
 import type { ArAccountResolverService } from '../services/ar-account-resolver.service';
 import type { PaymentService } from '../services/payment.service';
+import type { SupplierBillService } from '../services/supplier-bill.service';
 import type { TInvoiceRepository } from '@app/sales/contracts/invoice.repository.interface';
 
 /**
@@ -22,3 +23,5 @@ export const PAYMENT_SERVICE_TOKEN: InjectionToken<PaymentService> = Symbol(
 );
 export const INVOICE_REPOSITORY_TOKEN: InjectionToken<TInvoiceRepository> =
 	Symbol('INVOICE_REPOSITORY_TOKEN');
+export const SUPPLIER_BILL_SERVICE_TOKEN: InjectionToken<SupplierBillService> =
+	Symbol('SUPPLIER_BILL_SERVICE_TOKEN');

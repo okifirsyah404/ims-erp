@@ -227,6 +227,9 @@ const api = {
 		'Allocations may only target issued or partially paid invoices',
 	'accounting.paymentCashAccountRequired':
 		'A cash/bank account is required to execute this payment',
+	'accounting.billNotFound': 'Supplier bill not found',
+	'accounting.billNotDraft':
+		'Only draft supplier bills can be modified or recorded',
 
 	// Invoices (F4) — sales keys
 	'sales.invoiceNotFound': 'Invoice not found',

@@ -4,16 +4,20 @@ import { domainPlugin } from '@http/plugin';
 import { created, ok, okPaginated } from '@http/response';
 import {
 	AGING_BUCKETS,
+	apAgingQuerySchema,
 	arAgingQuerySchema,
 	paymentAllocationsSchema,
 	paymentCreateSchema,
 	paymentListQuerySchema,
 	paymentVoidSchema,
+	supplierBillCreateSchema,
+	supplierBillListQuerySchema,
 	type TAgingBucket,
 } from '../contracts/payment.contract';
 import { ledgerIdParamSchema } from '../contracts/ledger.contract';
-import { PAYMENT_SERVICE_TOKEN } from '../constants/ar-di';
+import { PAYMENT_SERVICE_TOKEN, SUPPLIER_BILL_SERVICE_TOKEN } from '../constants/ar-di';
 import type { PaymentService } from '../services/payment.service';
+import type { SupplierBillService } from '../services/supplier-bill.service';
 import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
 import type { LedgerRepository } from '../repositories/ledger.repository';
 
@@ -30,6 +34,9 @@ export class PaymentController {
 	/** Builds the Elysia plugin mounting `/payments` and `/ar`. */
 	static plugin() {
 		const payments = container.resolve<PaymentService>(PAYMENT_SERVICE_TOKEN);
+		const bills = container.resolve<SupplierBillService>(
+			SUPPLIER_BILL_SERVICE_TOKEN,
+		);
 		const ledgerRepo = container.resolve<LedgerRepository>(
 			LEDGER_REPOSITORY_TOKEN,
 		);
@@ -232,6 +239,139 @@ export class PaymentController {
 					detail: {
 						description:
 							'AR aging buckets (current/1-30/31-60/61-90/90+) computed on demand from the sub-ledger (D7)',
+					},
+				},
+			)
+			/* ---------------- supplier bills (F5) ---------------- */
+			.get(
+				'/bills',
+				async ({ query, erp }) =>
+					okPaginated(
+						await bills.list(
+							erp.organizationId,
+							supplierBillListQuerySchema.parse(query),
+							supplierBillListQuerySchema.parse(query),
+						),
+					),
+				{
+					erp: { permission: ['bill:read'] },
+					detail: { description: 'Paginated supplier bill list' },
+				},
+			)
+			.get(
+				'/bills/:id',
+				async ({ params, erp }) =>
+					ok(
+						await bills.get(
+							erp.organizationId,
+							ledgerIdParamSchema.parse(params).id,
+						),
+					),
+				{
+					erp: { permission: ['bill:read'] },
+					detail: { description: 'One supplier bill' },
+				},
+			)
+			.post(
+				'/bills',
+				async ({ body, erp, status }) =>
+					status(
+						201,
+						created(
+							await bills.create(
+								ctxOf(erp),
+								supplierBillCreateSchema.parse(body),
+							),
+						),
+					),
+				{
+					erp: { permission: ['bill:create'] },
+					detail: { description: 'Creates a draft supplier bill' },
+				},
+			)
+			.post(
+				'/bills/:id/cancel',
+				async ({ params, erp }) =>
+					ok(
+						await bills.cancel(
+							ctxOf(erp),
+							ledgerIdParamSchema.parse(params).id,
+						),
+					),
+				{
+					erp: { permission: ['bill:create'] },
+					detail: { description: 'Voids a draft supplier bill (no journal impact)' },
+				},
+			)
+			.post(
+				'/bills/:id/record',
+				async ({ params, erp }) =>
+					ok(
+						await bills.record(
+							ctxOf(erp),
+							ledgerIdParamSchema.parse(params).id,
+						),
+					),
+				{
+					erp: { permission: ['bill:record'] },
+					detail: {
+						description:
+							'draft → approved: posts DR expense / DR input tax / CR AP and opens the AP sub-ledger row',
+					},
+				},
+			)
+			.get(
+				'/ap/aging',
+				async ({ query, erp }) => {
+					const { asOfDate, supplierId } = apAgingQuerySchema.parse(query);
+					const asOf = asOfDate ?? new Date().toISOString().slice(0, 10);
+					const items = (await ledgerRepo.listApOpenItemsForAging(
+						erp.organizationId,
+						supplierId,
+					)) as Array<{
+						supplierId: string | null;
+						dueDate: string | null;
+						outstandingAmount: number;
+					}>;
+					const bySupplier = new Map<
+						string,
+						{
+							supplierId: string | null;
+							buckets: Record<TAgingBucket, number>;
+							total: number;
+						}
+					>();
+					for (const item of items) {
+						const key = item.supplierId ?? 'none';
+						const entry = bySupplier.get(key) ?? {
+							supplierId: item.supplierId,
+							buckets: {
+								current: 0,
+								d1_30: 0,
+								d31_60: 0,
+								d61_90: 0,
+								d90plus: 0,
+							},
+							total: 0,
+						};
+						const bucket = agingBucketOf(item.dueDate, asOf);
+						entry.buckets[bucket] += item.outstandingAmount;
+						entry.total += item.outstandingAmount;
+						bySupplier.set(key, entry);
+					}
+					const rows = [...bySupplier.values()];
+					return ok({
+						asOfDate: asOf,
+						buckets: AGING_BUCKETS,
+						rows,
+						grandTotal: rows.reduce((s, r) => s + r.total, 0),
+					});
+				},
+				{
+					erp: { permission: ['bill:read'] },
+					detail: {
+						description:
+							'AP aging buckets computed on demand from the sub-ledger (D7)',
 					},
 				},
 			);
