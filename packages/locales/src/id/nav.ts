@@ -69,7 +69,6 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.profitSharing': 'Bagi Hasil',
 	'item.reports': 'Laporan',
 	'item.monthlyArchives': 'Arsip Bulanan',
-	'item.roles': 'Peran',
 	'item.comingSoon': 'Segera hadir',
 
 	'item.warehouses': 'Gudang',

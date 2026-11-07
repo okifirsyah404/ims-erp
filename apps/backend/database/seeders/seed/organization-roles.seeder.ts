@@ -1,12 +1,6 @@
 import { drizzleDB } from '../../../drizzle/db';
-import {
-	organizations,
-} from '../../../drizzle/schemas/auth.schema';
-import {
-	roles as rolesTable,
-} from '../../../drizzle/schemas/role.schema';
-import { erpRoleGrants, erpRoleNames } from '@ims-erp/common';
-import { and, eq, isNull } from 'drizzle-orm';
+import { erpRoleNames } from '@ims-erp/common';
+import { sql } from 'drizzle-orm';
 import pino from 'pino';
 
 const logger = pino({
@@ -17,161 +11,56 @@ const logger = pino({
 });
 
 /**
- * Escalation-guard ranks for the seeded system roles. Custom roles created
- * at runtime must rank below their creator's role rank (enforced in the
- * user-management module).
- */
-export const SYSTEM_ROLE_RANKS: Record<string, number> = {
-	owner: 100,
-	admin: 80,
-	hr: 60,
-	member: 10,
-};
-
-const DEFAULT_CATALOG_RANK = 50;
-
-/**
- * Idempotent per-organization role seeder: materializes the shared role
- * catalog (`erpRoleNames` / `erpRoleGrants` from @ims-erp/common) as
- * `auth.roles` master data for every organization.
+ * Guardian for the closed organization-role Postgres enum type
+ * (`auth.organization_role`).
  *
- * - Existence check is the live (non-soft-deleted) `(orgId, name)` row
- *   itself: missing rows are inserted, existing rows are left untouched
- *   (re-runs never overwrite admin-edited permissions).
- * - `isSystem = true`: catalog roles cannot be deleted through the role
- *   management API; permissions remain editable by owner/app admin.
- * - Role semantics stay single-sourced in the shared catalog; this seeder
- *   only copies them into per-org master data (role-as-master-data, so
- *   invitation role validation is a DB lookup, not a code constant).
+ * Roles are a closed enum: the 19 values of `erpRoleNames` from
+ * `@ims-erp/common`, stored as a native Postgres enum (see
+ * `drizzle/schemas/role.schema.ts` and the migration that created it).
+ * There is no per-organization role master data to seed any more.
+ *
+ * This seeder's only job is to keep the database enum type in sync with the
+ * code catalog:
+ * - Creates the type when it is missing (`CREATE TYPE` has no
+ *   `IF NOT EXISTS`, hence the guarded `DO` block).
+ * - Adds any catalog value the type does not have yet
+ *   (`ALTER TYPE ... ADD VALUE IF NOT EXISTS`), so adding a role to
+ *   `erpRoleNames` needs no hand-written migration.
  */
 export async function seedOrganizationRoles(): Promise<void> {
-	const orgs = await drizzleDB
-		.select({ id: organizations.id, name: organizations.name })
-		.from(organizations);
+	// Enum labels are catalog constants, not user input: quote+escape them
+	// inline (Postgres does not accept bind parameters in DDL).
+	const label = (value: string): string => `'${value.replaceAll("'", "''")}'`;
+	const labels = erpRoleNames.map(label).join(', ');
 
-	if (orgs.length === 0) {
-		logger.info('No organizations; skipping role seeding');
-		return;
-	}
+	await drizzleDB.execute(
+		sql.raw(`
+			DO $$
+			BEGIN
+				IF NOT EXISTS (
+					SELECT 1
+					FROM pg_type t
+					JOIN pg_namespace n ON n.oid = t.typnamespace
+					WHERE t.typname = 'organization_role'
+					  AND n.nspname = 'auth'
+				) THEN
+					CREATE TYPE "auth"."organization_role" AS ENUM (${labels});
+				END IF;
+			END
+			$$;
+		`),
+	);
 
-	let inserted = 0;
-	for (const org of orgs) {
-		inserted += await seedRolesForOrganization(org.id);
+	for (const role of erpRoleNames) {
+		await drizzleDB.execute(
+			sql.raw(
+				`ALTER TYPE "auth"."organization_role" ADD VALUE IF NOT EXISTS ${label(role)}`,
+			),
+		);
 	}
 
 	logger.info(
-		{ organizations: orgs.length, rolesInserted: inserted },
-		'Organization role seeding complete',
+		{ roles: erpRoleNames.length },
+		'organization_role enum type verified',
 	);
-}
-
-/**
- * Materializes the shared role catalog as `auth.roles` master data for ONE
- * organization.
- *
- * @param organizationId - Target organization
- * @returns number of role rows inserted (0 when the organization already has
- * the full live catalog)
- *
- * @remarks
- * Insert-only and idempotent: existing live `(orgId, name)` rows are left
- * untouched so admin-edited permissions survive re-runs. Extracted from the
- * seeder so organization creation can provision a new organization's roles
- * without duplicating the catalog logic (ADR-0007).
- */
-export async function seedRolesForOrganization(
-	organizationId: string,
-): Promise<number> {
-	let inserted = 0;
-	for (const roleName of erpRoleNames) {
-		const [existing] = await drizzleDB
-			.select({ id: rolesTable.id })
-			.from(rolesTable)
-			.where(
-				and(
-					eq(rolesTable.organizationId, organizationId),
-					eq(rolesTable.name, roleName),
-					isNull(rolesTable.deletedAt),
-				),
-			)
-			.limit(1);
-
-		if (existing) continue;
-
-		await drizzleDB.insert(rolesTable).values({
-			id: crypto.randomUUID(),
-			organizationId,
-			name: roleName,
-			rank: SYSTEM_ROLE_RANKS[roleName] ?? DEFAULT_CATALOG_RANK,
-			permissions: erpRoleGrants[roleName],
-			isSystem: true,
-		});
-		inserted += 1;
-	}
-	return inserted;
-}
-
-/**
- * Re-syncs EXISTING catalog (system) role rows with the shared catalog
- * grants. Used when the catalog itself changed (e.g. the built-in
- * organization statements were merged into it) and already-seeded
- * organizations must pick the new grants up.
- *
- * Deliberately separate from the seeder: the seeder never overwrites
- * existing rows, because system-role permissions stay admin-editable.
- * Custom roles (names outside the catalog) are never touched.
- *
- * @returns number of rows updated
- */
-export async function refreshSystemRoleGrants(): Promise<number> {
-	let updated = 0;
-
-	for (const roleName of erpRoleNames) {
-		const grants = erpRoleGrants[roleName];
-		const rows = await drizzleDB
-			.select({ id: rolesTable.id, permissions: rolesTable.permissions })
-			.from(rolesTable)
-			.where(
-				and(
-					eq(rolesTable.name, roleName),
-					eq(rolesTable.isSystem, true),
-					isNull(rolesTable.deletedAt),
-				),
-			);
-
-		for (const row of rows) {
-			if (sameGrants(row.permissions, grants)) continue;
-			await drizzleDB
-				.update(rolesTable)
-				.set({ permissions: grants })
-				.where(eq(rolesTable.id, row.id));
-			updated += 1;
-		}
-	}
-
-	logger.info({ rolesUpdated: updated }, 'System role grants refreshed');
-	return updated;
-}
-
-/** Compares two grant maps ignoring action order. */
-function sameGrants(
-	a: Record<string, readonly string[]> | null | undefined,
-	b: Record<string, readonly string[]>,
-): boolean {
-	// A double-encoded or otherwise non-object value (e.g. a JSON string
-	// stored through an extra JSON.stringify) is never "the same": treat it
-	// as drift so `refreshSystemRoleGrants` rewrites it back to an object.
-	if (!a || typeof a !== 'object' || Array.isArray(a)) return false;
-	const aKeys = Object.keys(a).sort();
-	const bKeys = Object.keys(b).sort();
-	if (aKeys.length !== bKeys.length) return false;
-	if (aKeys.some((key, index) => key !== bKeys[index])) return false;
-	return aKeys.every((key) => {
-		const left = [...(a[key] ?? [])].sort();
-		const right = [...(b[key] ?? [])].sort();
-		return (
-			left.length === right.length &&
-			left.every((action, index) => action === right[index])
-		);
-	});
 }

@@ -1,7 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
 import type { TUserSelect } from '../../drizzle/schemas/auth.schema';
-import type { TRoleSelect } from '../../drizzle/schemas/role.schema';
-import type { IRoleRepository } from '../../src/app/user/contracts/role.repository.interface';
 import type {
 	IUserManagementRepository,
 } from '../../src/app/user/contracts/user-management.repository.interface';
@@ -57,7 +55,6 @@ function makeService(options: {
 	user?: TUserSelect | null;
 	anyUser?: TUserSelect | null;
 	memberships?: Array<{ id: string; name: string; role: string }>;
-	holderRole?: TRoleSelect | null;
 	paginate?: {
 		data: Array<{ user: TUserSelect; organizations: TAdminUserRow['organizations'] }>;
 		meta: { page: number; limit: number; total: number; totalPages: number };
@@ -82,18 +79,14 @@ function makeService(options: {
 			),
 		),	};
 	const gateway = { revokeSessions: mock(() => Promise.resolve()) };
-	const roles = {
-		findByName: mock(() => Promise.resolve(options.holderRole ?? null)),
-	};
 	const audit = { record: mock(() => Promise.resolve()) };
 
 	const service = new UserAdminService(
 		users as unknown as IUserManagementRepository,
 		gateway as unknown as IUserManagementAuthGateway,
-		roles as unknown as IRoleRepository,
 		audit as unknown as AuditService,
 	);
-	return { service, users, gateway, roles, audit };
+	return { service, users, gateway, audit };
 }
 
 describe('UserAdminService.list', () => {
@@ -215,17 +208,6 @@ describe('UserAdminService.deactivate', () => {
 		const { service, gateway } = makeService({
 			user: makeUser(),
 			memberships: [{ id: ORG, name: 'Entragate', role: 'owner' }],
-			holderRole: {
-				id: 'r-owner',
-				organizationId: ORG,
-				name: 'owner',
-				rank: 100,
-				permissions: {},
-				isSystem: true,
-				deletedAt: null,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			},
 		});
 
 		await expect(
@@ -238,17 +220,6 @@ describe('UserAdminService.deactivate', () => {
 		const { service, users } = makeService({
 			user: makeUser(),
 			memberships: [{ id: ORG, name: 'Entragate', role: 'member' }],
-			holderRole: {
-				id: 'r-member',
-				organizationId: ORG,
-				name: 'member',
-				rank: 10,
-				permissions: {},
-				isSystem: true,
-				deletedAt: null,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			},
 		});
 
 		await service.deactivate('user-1', 80, ACTOR);
@@ -307,17 +278,6 @@ describe('UserAdminService.remove', () => {
 		const { service, users } = makeService({
 			user: makeUser(),
 			memberships: [{ id: ORG, name: 'Entragate', role: 'admin' }],
-			holderRole: {
-				id: 'r-admin',
-				organizationId: ORG,
-				name: 'admin',
-				rank: 80,
-				permissions: {},
-				isSystem: true,
-				deletedAt: null,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			},
 		});
 
 		await expect(service.remove('user-1', 80, ACTOR)).rejects.toBeInstanceOf(

@@ -5,7 +5,7 @@ import {
 	users,
 	organizations,
 } from '@drizzle/schemas/auth.schema';
-import { roles as rolesTable } from '@drizzle/schemas/role.schema';
+import { erpRoleNames } from '@ims-erp/common';
 import { TPaginationResult } from '@ims-erp/common';
 import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
@@ -103,17 +103,17 @@ export class OrganizationRepository implements IOrganizationRepository {
 	/**
 	 * Enriches a page of organization rows with aggregate counts.
 	 *
-	 * Two grouped queries limited to the page's org ids (no N+1):
-	 * live member rows and live role rows (role master data from the
-	 * user-management schema, soft-deleted roles excluded). `projectCount`
-	 * is a reserved placeholder (0) until a projects concept exists.
+	 * Grouped query limited to the page's org ids (no N+1): live member rows.
+	 * `rolesCount` is the closed ERP role catalog (19 fixed enum values,
+	 * shared by every organization); `projectCount` is a reserved
+	 * placeholder (0) until a projects concept exists.
 	 */
 	private async attachCounts(
 		rows: TOrganizationSelect[],
 	): Promise<TOrganizationWithCounts[]> {
 		const ids = rows.map((row) => row.id);
 		const membersCount = new Map<string, number>();
-		const rolesCount = new Map<string, number>();
+		const rolesCount = erpRoleNames.length;
 
 		if (ids.length > 0) {
 			const memberRows = await this.db
@@ -127,29 +127,12 @@ export class OrganizationRepository implements IOrganizationRepository {
 			for (const row of memberRows) {
 				membersCount.set(row.organizationId, Number(row.value));
 			}
-
-			const roleRows = await this.db
-				.select({
-					organizationId: rolesTable.organizationId,
-					value: count(),
-				})
-				.from(rolesTable)
-				.where(
-					and(
-						inArray(rolesTable.organizationId, ids),
-						isNull(rolesTable.deletedAt),
-					),
-				)
-				.groupBy(rolesTable.organizationId);
-			for (const row of roleRows) {
-				rolesCount.set(row.organizationId, Number(row.value));
-			}
 		}
 
 		return rows.map((row) => ({
 			...row,
 			membersCount: membersCount.get(row.id) ?? 0,
-			rolesCount: rolesCount.get(row.id) ?? 0,
+			rolesCount,
 			projectCount: 0,
 		}));
 	}

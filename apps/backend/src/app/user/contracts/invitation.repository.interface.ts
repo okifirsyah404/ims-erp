@@ -50,7 +50,7 @@ export type TInvitationCreate = {
 	email: string;
 	name: string | null;
 	organizationId: string | null;
-	roleId: string | null;
+	orgRole: TUserInvitationSelect['orgRole'];
 	tokenHash: string;
 	invitedBy: string;
 	expiresAt: Date;

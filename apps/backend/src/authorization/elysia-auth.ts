@@ -198,9 +198,8 @@ async function guardResolve(
 			if (!parsed) {
 				throw new ErpAuthError(403, 'Invalid permission requirement');
 			}
-			// Dynamic `auth.roles` grants first (union across the member's
-			// roles); falls back to the static shared catalog when the org
-			// has no matching live role rows (legacy/pre-seed members).
+			// Static closed catalog grants (`erpRoleGrants`), union across the
+			// member's roles via the permission resolver seam.
 			const allowed = await permissionResolver.hasPermission(
 				organizationId,
 				roleNames,

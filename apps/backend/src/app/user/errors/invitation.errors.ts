@@ -49,13 +49,13 @@ export class InvitationNotPendingError extends UserManagementError {
 	}
 }
 
-/** Org invite missing organizationId/roleId, or unknown roleId. */
+/** Org invite missing organizationId/organizationRole, or an invalid role. */
 export class InvalidInvitationError extends UserManagementError {
 	constructor() {
 		super(
 			422,
 			'invitation.invalidPayload',
-			'Organization invites require both organizationId and roleId',
+			'Organization invites require both organizationId and a valid organizationRole',
 		);
 	}
 
@@ -172,15 +172,8 @@ export class ClaimStateError extends UserManagementError {
 	}
 }
 
-/** Role name not in the organization's master data (single invite path). */
-export class RoleNotFoundError extends UserManagementError {
-	constructor(readonly roleNameOrId: string) {
-		super(422, 'role.notFound', `Role not found: ${roleNameOrId}`);
-	}
-}
-
 // ---------------------------------------------------------------------------
-// Phase 4 — account lifecycle, role CRUD, escalation guard
+// Phase 4 — account lifecycle, escalation guard
 // ---------------------------------------------------------------------------
 
 export class UserNotFoundError extends UserManagementError {

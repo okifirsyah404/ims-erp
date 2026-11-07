@@ -2,13 +2,11 @@ import { inject, injectable } from 'tsyringe';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { TAdminUser, TUserQuery } from '../contracts/admin.contract';
 import {
-	ROLE_REPOSITORY_TOKEN,
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
 } from '../constants/di';
 import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
 import type { IUserManagementAuthGateway } from '../contracts/user-management-auth.gateway.interface';
-import type { IRoleRepository } from '../contracts/role.repository.interface';
 import { AUDIT_SERVICE_TOKEN } from '../../audit/constants/di';
 import type { AuditService } from '../../audit/services/audit.service';
 import { presignObjectUrl } from '@providers/s3/s3';
@@ -18,6 +16,22 @@ import {
 	UserNotFoundError,
 	UserStateError,
 } from '../errors/invitation.errors';
+
+/**
+ * Static escalation ranks for the closed ERP organization role enum.
+ * Roles outside this map (should be impossible — the catalog is closed)
+ * rank as 0. The caller's ceiling is the highest rank THEY hold.
+ */
+const ERP_ROLE_RANKS: Record<string, number> = {
+	owner: 100,
+	admin: 80,
+	hr: 60,
+	member: 10,
+};
+
+function rankOf(roleName: string): number {
+	return ERP_ROLE_RANKS[roleName] ?? 0;
+}
 
 /**
  * Account lifecycle administration (phase 4).
@@ -38,8 +52,6 @@ export class UserAdminService {
 		private readonly users: IUserManagementRepository,
 		@inject(USER_MANAGEMENT_AUTH_GATEWAY_TOKEN)
 		private readonly gateway: IUserManagementAuthGateway,
-		@inject(ROLE_REPOSITORY_TOKEN)
-		private readonly roles: IRoleRepository,
 		@inject(AUDIT_SERVICE_TOKEN) private readonly audit: AuditService,
 	) {}
 
@@ -198,12 +210,11 @@ export class UserAdminService {
 		const memberships = await this.users.listMemberships(userId);
 
 		for (const membership of memberships) {
-			const role = await this.roles.findByName(
-				membership.id,
-				membership.role,
-			);
-			if (role && role.rank >= callerRank) {
-				throw RankGuardError.targetTooHigh(role.name, role.rank);
+			if (rankOf(membership.role) >= callerRank) {
+				throw RankGuardError.targetTooHigh(
+					membership.role,
+					rankOf(membership.role),
+				);
 			}
 		}
 	}

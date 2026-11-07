@@ -1,5 +1,5 @@
 /**
- * Phase-4 live smoke test: users / roles / audit / invitations.
+ * Phase-4 live smoke test: users / audit / invitations.
  *
  * Run from `apps/backend` (config loads only there):
  *   bun run scripts/smoke-admin-api.ts
@@ -83,30 +83,13 @@ check(
 	`${missingOrgs.length} row(s) missing organizations`,
 );
 
-// ---- roles ---------------------------------------------------------------
-const roles = await call(admin, 'GET', `/admin/roles?organizationId=${ORG}`);
+// ---- closed role enum: dynamic role CRUD is gone -------------------------
+const removedRoles = await call(admin, 'GET', '/admin/roles');
 check(
-	'GET /admin/roles as owner',
-	roles.status === 200,
-	`${roles.status} ${roles.json?.message ?? ''}`,
+	'GET /admin/roles is gone (404)',
+	removedRoles.status === 404,
+	`${removedRoles.status}`,
 );
-const roleRows = (roles.json as { data?: Array<{ name: string; rank: number }> } | null)
-	?.data;
-const ownerRank = roleRows?.find((role) => role.name === 'owner')?.rank;
-check('seed owner role present (rank 100)', ownerRank === 100, String(ownerRank));
-
-const catalog = await call(admin, 'GET', '/admin/roles/permissions');
-const catalogRows = (catalog.json as { data?: Array<{ resource: string }> } | null)
-	?.data;
-check(
-	'GET /admin/roles/permissions',
-	catalog.status === 200 && (catalogRows?.length ?? 0) > 0,
-	`${catalog.status}`,
-);
-
-const memberRoleId = (
-	roles.json as { data?: Array<{ id: string; name: string }> } | null
-)?.data?.find((role) => role.name === 'member')?.id;
 
 // ---- audit ---------------------------------------------------------------
 const audit = await call(admin, 'GET', '/admin/audit?limit=5');
@@ -124,65 +107,17 @@ check(
 	`${invitations.status} ${invitations.json?.message ?? ''}`,
 );
 
-// ---- rank guard: owner cannot grant rank 100 -----------------------------
-const escalation = await call(admin, 'POST', '/admin/roles', {
+// ---- org invite with an invalid role is rejected -------------------------
+const invalidRole = await call(admin, 'POST', '/admin/invitations', {
+	email: `smoke-invalid-role-${Date.now()}@entragate.test`,
 	organizationId: ORG,
-	name: 'smoke_escalation',
-	rank: 100,
-	permissions: { quotation: ['read'] },
+	organizationRole: 'not_a_role',
 });
 check(
-	'escalation guard rejects rank 100 (owner ceiling)',
-	escalation.status === 403,
-	`${escalation.status} ${escalation.json?.message ?? ''}`,
+	'org invite with unknown organizationRole is rejected (4xx)',
+	invalidRole.status >= 400 && invalidRole.status < 500,
+	`${invalidRole.status} ${invalidRole.json?.message ?? ''}`,
 );
-
-// ---- create + delete a custom role ---------------------------------------
-// Make the run repeatable: a leftover role from a previous aborted run would
-// otherwise make this POST a 409 and mask the real assertions.
-const existingRoles = (
-	roles.json as { data?: Array<{ id: string; name: string }> } | null
-)?.data;
-for (const stale of existingRoles ?? []) {
-	if (stale.name.startsWith('smoke_')) {
-		await call(admin, 'DELETE', `/admin/roles/${stale.id}`);
-	}
-}
-
-const created = await call(admin, 'POST', '/admin/roles', {
-	organizationId: ORG,
-	name: 'smoke_temp_role',
-	rank: 20,
-	permissions: { quotation: ['read'] },
-});
-check(
-	'POST /admin/roles creates a low-rank custom role',
-	created.status === 201,
-	`${created.status} ${created.json?.message ?? ''}`,
-);
-const createdId = (created.json as { data?: { id: string } } | null)?.data?.id;
-
-if (createdId) {
-	const removed = await call(admin, 'DELETE', `/admin/roles/${createdId}`);
-	check(
-		'DELETE /admin/roles/:id soft-deletes an unused custom role',
-		removed.status === 200,
-		`${removed.status} ${removed.json?.message ?? ''}`,
-	);
-}
-
-// ---- system role cannot be deleted --------------------------------------
-const ownerRoleId = (
-	roles.json as { data?: Array<{ id: string; name: string }> } | null
-)?.data?.find((role) => role.name === 'member')?.id;
-if (ownerRoleId) {
-	const systemDelete = await call(admin, 'DELETE', `/admin/roles/${ownerRoleId}`);
-	check(
-		'system role delete is refused (409)',
-		systemDelete.status === 409,
-		`${systemDelete.status} ${systemDelete.json?.message ?? ''}`,
-	);
-}
 
 // ---- member is denied the admin surfaces --------------------------------
 const member = await signIn('member.seed@entragate.local', 'member123456');
@@ -197,12 +132,6 @@ check(
 	'member denied GET /admin/audit (403)',
 	memberAudit.status === 403,
 	`${memberAudit.status}`,
-);
-const memberRoles = await call(member, 'GET', '/admin/roles');
-check(
-	'member denied GET /admin/roles (403)',
-	memberRoles.status === 403,
-	`${memberRoles.status}`,
 );
 
 // ---- id lookup is global-admin only -------------------------------------
@@ -225,13 +154,6 @@ check(
 	'admin allowed GET /users/:userId (200)',
 	adminProfile.status === 200,
 	`${adminProfile.status}`,
-);
-
-// ---- fixture sanity ------------------------------------------------------
-check(
-	'role master data resolves (member role id)',
-	Boolean(memberRoleId),
-	String(memberRoleId),
 );
 
 console.log(results.join('\n'));

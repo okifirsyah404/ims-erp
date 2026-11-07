@@ -1,26 +1,14 @@
 import type { ErpContext } from '@authorization/elysia-auth';
 import { container } from 'tsyringe';
-import { builtInOrgStatements, erpStatements, portalStatements } from '@ims-erp/common';
 import { translator, type ApiKey } from '@providers/i18n/translator';
 import { domainPlugin } from '@http/plugin';
-import { created, errorEnvelope, ok, okPaginated } from '@http/response';
+import { errorEnvelope, ok, okPaginated } from '@http/response';
 import {
-	createRoleSchema,
-	permissionCatalog,
-	roleIdParamsSchema,
-	roleQuerySchema,
-	updateRoleSchema,
 	userIdParamsSchema,
 	userQuerySchema,
 } from '../contracts/admin.contract';
-import {
-	ROLE_MANAGEMENT_SERVICE_TOKEN,
-	ROLE_REPOSITORY_TOKEN,
-	USER_ADMIN_SERVICE_TOKEN,
-} from '../constants/di';
-import type { RoleManagementService } from '../../user/services/role-management.service';
+import { USER_ADMIN_SERVICE_TOKEN } from '../constants/di';
 import type { UserAdminService } from '../../user/services/user-admin.service';
-import type { IRoleRepository } from '../contracts/role.repository.interface';
 import { UserManagementError } from '../errors/invitation.errors';
 import type { TActor } from '../../user/services/invitation.service';
 
@@ -36,26 +24,28 @@ function actorFrom(erp: ErpContext, request: Request): TActor {
 
 /**
  * Highest role rank the caller holds in the validated organization — the
- * ceiling for the escalation guard (D5). A global app admin who is also an
- * organization owner gets the owner ceiling; a caller with no live role row
- * falls back to the shared catalog value for their role names.
+ * ceiling for the escalation guard. Ranks come from the static closed
+ * catalog (owner=100, admin=80, hr=60, member=10; everything else 0).
  */
-async function callerRank(
-	erp: ErpContext,
-	roleRepository: IRoleRepository,
-): Promise<number> {
+function callerRank(erp: ErpContext): number {
 	const roleNames = erp.member.role
 		.split(',')
 		.map((name) => name.trim())
 		.filter(Boolean);
 
+	const RANKS: Record<string, number> = {
+		owner: 100,
+		admin: 80,
+		hr: 60,
+		member: 10,
+	};
 	let highest = 0;
 	for (const name of roleNames) {
-		const role = await roleRepository.findByName(erp.organizationId, name);
-		if (role && role.rank > highest) highest = role.rank;
+		const rank = RANKS[name] ?? 0;
+		if (rank > highest) highest = rank;
 	}
 
-	// Global app admin acting in an org where they hold no dynamic role row:
+	// Global app admin acting in an org where they hold no privileged role:
 	// treat them as the org administrator ceiling, never the owner's.
 	if (highest === 0 && erp.session.user.role === 'admin') return 80;
 	return highest;
@@ -75,34 +65,25 @@ function mapAdminError(
 }
 
 /**
- * Phase-4 administration controller: account lifecycle (`/admin/users`) and
- * dynamic role CRUD (`/admin/roles`).
+ * Phase-4 administration controller: account lifecycle (`/admin/users`).
  *
  * @remarks
  * HTTP concerns only — parsing, envelope/status mapping. Every business rule
- * (escalation guard, grant validation, session revocation) lives in the
- * services. Both surfaces ride the `erp` guard, so they require a validated
- * organization context and the matching dynamic permission.
+ * (escalation guard, session revocation) lives in the service. The surface
+ * rides the `erp` guard, so it requires a validated organization context and
+ * the matching permission.
+ *
+ * The `/admin/roles` CRUD surface (dynamic role master data) was removed:
+ * organization roles are a closed enum (`erpRoleNames` in
+ * `@ims-erp/common`) with no per-organization rows to manage.
  *
  * The audit trail moved to `AuditController` (`@app/audit`) in W6 — see
  * `src/app/audit/controllers/audit.controller.ts`.
- *
- * The `/admin` prefix is what keeps these routes distinct from the
- * self-service `/users/*` routes on
- * {@link import('../../user/controllers/user.controller').UserController}:
- * before the split, both modules registered `GET /users` and
- * `GET /users/:userId`, and which handler answered depended on mount order.
  */
 export class UserAdminController {
 	static plugin() {
 		const userAdmin = container.resolve<UserAdminService>(
 			USER_ADMIN_SERVICE_TOKEN,
-		);
-		const roleManagement = container.resolve<RoleManagementService>(
-			ROLE_MANAGEMENT_SERVICE_TOKEN,
-		);
-		const roleRepository = container.resolve<IRoleRepository>(
-			ROLE_REPOSITORY_TOKEN,
 		);
 
 		return domainPlugin({
@@ -139,7 +120,7 @@ export class UserAdminController {
 					const { userId } = userIdParamsSchema.parse(params);
 					await userAdmin.deactivate(
 						userId,
-						await callerRank(erp, roleRepository),
+						callerRank(erp),
 						actorFrom(erp, request),
 					);
 					return ok(null);
@@ -161,77 +142,7 @@ export class UserAdminController {
 					const { userId } = userIdParamsSchema.parse(params);
 					await userAdmin.remove(
 						userId,
-						await callerRank(erp, roleRepository),
-						actorFrom(erp, request),
-					);
-					return ok(null);
-				},
-				{ erp: { permission: ['member:delete'] } },
-			)
-
-			// ---------------------------------------------------------------
-			// Roles
-			// ---------------------------------------------------------------
-			.get(
-				'/roles',
-				async ({ query }) => {
-					const parsed = roleQuerySchema.parse(query);
-					const rows = await roleManagement.list(
-						parsed.organizationId,
-						parsed.includeDeleted,
-					);
-					return ok(rows);
-				},
-				{ erp: { permission: ['member:read'] } },
-			)
-			.get(
-				'/roles/permissions',
-				async () =>
-					ok(
-						permissionCatalog({
-							...builtInOrgStatements,
-							...erpStatements,
-							...portalStatements,
-						}),
-					),
-				{ erp: { permission: ['member:read'] } },
-			)
-			.post(
-				'/roles',
-				async ({ body, erp, request, status }) => {
-					const parsed = createRoleSchema.parse(body);
-					const row = await roleManagement.create(
-						parsed,
-						await callerRank(erp, roleRepository),
-						actorFrom(erp, request),
-					);
-					return status(201, created(row));
-				},
-				{ erp: { permission: ['member:create'] } },
-			)
-			.patch(
-				'/roles/:roleId',
-				async ({ params, body, erp, request }) => {
-					const { roleId } = roleIdParamsSchema.parse(params);
-					const row = await roleManagement.update(
-						roleId,
-						erp.organizationId,
-						updateRoleSchema.parse(body),
-						await callerRank(erp, roleRepository),
-						actorFrom(erp, request),
-					);
-					return ok(row);
-				},
-				{ erp: { permission: ['member:update'] } },
-			)
-			.delete(
-				'/roles/:roleId',
-				async ({ params, erp, request }) => {
-					const { roleId } = roleIdParamsSchema.parse(params);
-					await roleManagement.remove(
-						roleId,
-						erp.organizationId,
-						await callerRank(erp, roleRepository),
+						callerRank(erp),
 						actorFrom(erp, request),
 					);
 					return ok(null);
@@ -240,5 +151,7 @@ export class UserAdminController {
 			);
 		// `GET /admin/audit` moved to `AuditController` (@app/audit) in W6 —
 		// the ledger is a cross-cutting module, not a user-management concern.
+		// `/admin/roles/*` (dynamic role CRUD) was removed with the closed
+		// role enum.
 	}
 }

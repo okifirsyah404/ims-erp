@@ -111,21 +111,6 @@ const api: Record<keyof typeof en, string> = {
 	'claim.phoneInUse': 'Nomor telepon sudah digunakan',
 	'claim.alreadyInUse': 'Nama pengguna atau email sudah digunakan',
 
-	'role.notFound': 'Peran tidak ditemukan',
-	'role.nameTaken': 'Peran bernama "{{name}}" sudah ada di organisasi ini',
-	'role.inUse': 'Peran ini tidak dapat dihapus: peran sistem atau masih dipakai',
-	'role.systemRole': '"{{role}}" adalah peran sistem dan tidak dapat dihapus',
-	'role.stillAssigned':
-		'{{count}} anggota masih memakai "{{role}}"; pindahkan mereka terlebih dahulu',
-	'role.invalidPermission': 'Pemberian izin di luar katalog',
-	'role.unknownResource': '{{label}}: sumber daya "{{resource}}" tidak dikenal',
-	'role.unknownAction':
-		'{{label}}: "{{resource}}" tidak memiliki aksi "{{action}}"',
-	'role.rankExceeded':
-		'Anda tidak dapat memberikan peran setara atau di atas peringkat Anda',
-	'role.targetRankExceeded':
-		'Target memegang "{{role}}" (peringkat {{rank}}) di organisasi Anda',
-
 	'userAdmin.accountAlreadyActive': 'Akun sudah aktif',
 	'userAdmin.cannotDeactivate':
 		'Tidak dapat menonaktifkan akun yang tidak berstatus aktif',

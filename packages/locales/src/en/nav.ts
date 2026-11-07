@@ -70,7 +70,6 @@ const nav = {
 	'item.profitSharing': 'Profit Sharing',
 	'item.reports': 'Reports',
 	'item.monthlyArchives': 'Monthly Archives',
-	'item.roles': 'Roles',
 	'item.comingSoon': 'Coming soon',
 
 	'item.warehouses': 'Warehouses',

@@ -49,7 +49,8 @@ export type TClaimTarget = {
 		id: string;
 		type: 'app' | 'org';
 		organizationId: string | null;
-		roleId: string | null;
+		/** Closed ERP organization role (org path); null on the app path. */
+		organizationRole: string | null;
 	};
 	user: Pick<TUserSelect, 'id' | 'name' | 'email' | 'status'>;
 };

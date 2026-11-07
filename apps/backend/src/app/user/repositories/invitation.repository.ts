@@ -119,7 +119,7 @@ export class InvitationRepository implements IInvitationRepository {
 				email: input.email,
 				name: input.name,
 				organizationId: input.organizationId,
-				roleId: input.roleId,
+				orgRole: input.orgRole,
 				tokenHash: input.tokenHash,
 				status: 'pending',
 				invitedBy: input.invitedBy,
