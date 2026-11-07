@@ -3,7 +3,7 @@ import {
 	createFileRoute,
 	Link,
 	Outlet,
-	useChildMatches,
+	useMatches,
 	useNavigate,
 	useParams,
 } from '@tanstack/react-router';
@@ -65,10 +65,12 @@ function OrganizationDetailPage() {
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [deleting, setDeleting] = useState(false);
 
-	// Child routes (edit, members/new, members/$memberId/edit) render via the
-	// Outlet; the detail page must yield so the child page displays full-page.
-	const childMatches = useChildMatches();
-	const isChildActive = childMatches.length > 0;
+	// Child routes (edit, members/new, members/$memberId/edit) render instead
+	// of the detail page. The last match's routeId tells us which page is the
+	// active leaf; `useChildMatches` can't be used here because it also counts
+	// this route's own match.
+	const matches = useMatches();
+	const isChildActive = matches.at(-1)?.routeId !== Route.id;
 
 	if (isChildActive) {
 		return <Outlet />;
