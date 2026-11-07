@@ -5,6 +5,7 @@ import type { PaymentService } from '../services/payment.service';
 import type { SupplierBillService } from '../services/supplier-bill.service';
 import type { ReportService } from '../services/report.service';
 import type { BankReconciliationService } from '../services/bank-reconciliation.service';
+import type { MonthEndCloseService } from '../services/month-end-close.service';
 import type { TInvoiceRepository } from '@app/sales/contracts/invoice.repository.interface';
 
 /**
@@ -32,3 +33,5 @@ export const REPORT_SERVICE_TOKEN: InjectionToken<ReportService> = Symbol(
 );
 export const BANK_RECONCILIATION_SERVICE_TOKEN: InjectionToken<BankReconciliationService> =
 	Symbol('BANK_RECONCILIATION_SERVICE_TOKEN');
+export const MONTH_END_CLOSE_SERVICE_TOKEN: InjectionToken<MonthEndCloseService> =
+	Symbol('MONTH_END_CLOSE_SERVICE_TOKEN');

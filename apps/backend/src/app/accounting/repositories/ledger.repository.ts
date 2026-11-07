@@ -40,7 +40,7 @@ import {
 } from '@drizzle/schemas/sales.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 
 /**
@@ -1640,6 +1640,126 @@ export class LedgerRepository {
 			)
 			.returning();
 		return updated ?? null;
+	}
+
+	/* ----------------------------- month-end close (F7) ----------------------------- */
+
+	/** Distinct counts for the close checklist, all inside one cheap pass. */
+	async closeChecklistCounts(
+		organizationId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<{
+		draftInvoicesInRange: number;
+		postedInPeriod: number;
+		draftPayments: number;
+		draftBills: number;
+		unreconciledReconciliations: number;
+	}> {
+		const rangeDraftInvoices = await this.database
+			.select({ value: count() })
+			.from(invoices)
+			.where(
+				and(
+					eq(invoices.organizationId, organizationId),
+					isNull(invoices.deletedAt),
+					eq(invoices.status, 'draft'),
+					gte(invoices.createdAt, new Date(`${startDate}T00:00:00Z`)),
+					lte(invoices.createdAt, new Date(`${endDate}T23:59:59Z`)),
+				),
+			);
+		void endDate;
+		const posted = await this.database
+			.select({ value: count() })
+			.from(journalEntries)
+			.where(
+				and(
+					eq(journalEntries.organizationId, organizationId),
+					eq(journalEntries.status, 'posted'),
+					isNull(journalEntries.deletedAt),
+					sql`${journalEntries.entryDate} >= ${startDate}`,
+					sql`${journalEntries.entryDate} <= ${endDate}`,
+				),
+			);
+		const draftPayments = await this.database
+			.select({ value: count() })
+			.from(payments)
+			.where(
+				and(
+					eq(payments.organizationId, organizationId),
+					isNull(payments.deletedAt),
+					inArray(payments.status, ['draft', 'submitted', 'approved']),
+				),
+			);
+		const draftBills = await this.database
+			.select({ value: count() })
+			.from(supplierBills)
+			.where(
+				and(
+					eq(supplierBills.organizationId, organizationId),
+					isNull(supplierBills.deletedAt),
+					eq(supplierBills.status, 'draft'),
+				),
+			);
+		const unrec = await this.database
+			.select({ value: count() })
+			.from(bankReconciliations)
+			.where(
+				and(
+					eq(bankReconciliations.organizationId, organizationId),
+					isNull(bankReconciliations.deletedAt),
+					inArray(bankReconciliations.status, ['draft', 'in_progress']),
+				),
+			);
+		return {
+			draftInvoicesInRange: Number(rangeDraftInvoices[0]?.value ?? 0),
+			postedInPeriod: Number(posted[0]?.value ?? 0),
+			draftPayments: Number(draftPayments[0]?.value ?? 0),
+			draftBills: Number(draftBills[0]?.value ?? 0),
+			unreconciledReconciliations: Number(unrec[0]?.value ?? 0),
+		};
+	}
+
+	/** Executed allocations of a payment, for the void-executed reversal (F7). */
+	async listExecutedAllocations(
+		organizationId: string,
+		paymentId: string,
+		tx?: TTx,
+	): Promise<TPaymentAllocationSelect[]> {
+		const db = tx ?? this.database;
+		return db
+			.select()
+			.from(paymentAllocations)
+			.where(
+				and(
+					eq(paymentAllocations.organizationId, organizationId),
+					eq(paymentAllocations.paymentId, paymentId),
+				),
+			);
+	}
+
+	/** The reversal JE for a posted movement, by idempotency key (F7). */
+	async findPostedEntryBySourceTypeAndId(
+		organizationId: string,
+		sourceType: string,
+		sourceId: string,
+		tx?: TTx,
+	): Promise<TJournalEntrySelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(journalEntries)
+			.where(
+				and(
+					eq(journalEntries.organizationId, organizationId),
+					eq(journalEntries.sourceType, sourceType),
+					eq(journalEntries.sourceId, sourceId),
+					isNull(journalEntries.deletedAt),
+				),
+			)
+			.orderBy(desc(journalEntries.createdAt))
+			.limit(1);
+		return row ?? null;
 	}
 
 	/* ----------------------------- account balances (close snapshot) ----------------------------- */

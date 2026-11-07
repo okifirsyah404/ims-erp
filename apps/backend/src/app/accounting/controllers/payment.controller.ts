@@ -17,6 +17,7 @@ import {
 	reconciliationItemsSchema,
 	reconciliationListQuerySchema,
 	reconciliationMatchSchema,
+	closeChecklistQuerySchema,
 	supplierBillCreateSchema,
 	supplierBillListQuerySchema,
 	type TAgingBucket,
@@ -24,6 +25,7 @@ import {
 import { ledgerIdParamSchema } from '../contracts/ledger.contract';
 import {
 	BANK_RECONCILIATION_SERVICE_TOKEN,
+	MONTH_END_CLOSE_SERVICE_TOKEN,
 	PAYMENT_SERVICE_TOKEN,
 	REPORT_SERVICE_TOKEN,
 	SUPPLIER_BILL_SERVICE_TOKEN,
@@ -32,6 +34,7 @@ import type { PaymentService } from '../services/payment.service';
 import type { SupplierBillService } from '../services/supplier-bill.service';
 import type { ReportService } from '../services/report.service';
 import type { BankReconciliationService } from '../services/bank-reconciliation.service';
+import type { MonthEndCloseService } from '../services/month-end-close.service';
 import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
 import type { LedgerRepository } from '../repositories/ledger.repository';
 
@@ -56,6 +59,9 @@ export class PaymentController {
 			container.resolve<BankReconciliationService>(
 				BANK_RECONCILIATION_SERVICE_TOKEN,
 			);
+		const close = container.resolve<MonthEndCloseService>(
+			MONTH_END_CLOSE_SERVICE_TOKEN,
+		);
 		const ledgerRepo = container.resolve<LedgerRepository>(
 			LEDGER_REPOSITORY_TOKEN,
 		);
@@ -206,7 +212,26 @@ export class PaymentController {
 				{
 					erp: { permission: ['payment:approve'] },
 					detail: {
-						description: 'Voids a not-yet-executed payment (executed ones need an F7 adjustment)',
+						description:
+							'Voids a not-yet-executed payment; executed payments go through /close/payment-void (F7 reversal)',
+					},
+				},
+			)
+			.post(
+				'/payments/:id/void-executed',
+				async ({ params, body, erp }) =>
+					ok(
+						await close.voidExecutedPayment(
+							ctxOf(erp),
+							ledgerIdParamSchema.parse(params).id,
+							paymentVoidSchema.parse(body),
+						),
+					),
+				{
+					erp: { permission: ['payment:approve'] },
+					detail: {
+						description:
+							'Reverses an executed payment: mirrored JE + cash movement + open-item rollback (append-only, D4)',
 					},
 				},
 			)
@@ -451,6 +476,28 @@ export class PaymentController {
 					detail: {
 						description:
 							'Direct-method cash flow classified by cash_flow_category (D11)',
+					},
+				},
+			)
+			/* ---------------- month-end close (F7) ---------------- */
+			.get(
+				'/close/checklist',
+				async ({ query, erp }) => {
+					const { periodYear, periodMonth } =
+						closeChecklistQuerySchema.parse(query);
+					return ok(
+						await close.checklist(
+							erp.organizationId,
+							periodYear,
+							periodMonth,
+						),
+					);
+				},
+				{
+					erp: { permission: ['accounting_period:close'] },
+					detail: {
+						description:
+							'Pre-close checklist computed on demand (D7): drafts, pending payments, open reconciliations',
 					},
 				},
 			)

@@ -144,6 +144,13 @@ export const reconciliationMatchSchema = z.object({
 	cashBankTransactionId: z.string().uuid().nullish().transform((v) => v ?? null),
 });
 
+/* ----------------------------- month-end close (F7) ----------------------------- */
+
+export const closeChecklistQuerySchema = z.object({
+	periodYear: z.coerce.number().int().min(2000).max(2100),
+	periodMonth: z.coerce.number().int().min(1).max(12),
+});
+
 export const paymentVoidSchema = z.object({
 	reason: z.string().min(1),
 });

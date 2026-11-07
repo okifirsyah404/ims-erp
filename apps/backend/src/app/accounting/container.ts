@@ -24,9 +24,11 @@ import { PaymentService } from './services/payment.service';
 import { SupplierBillService } from './services/supplier-bill.service';
 import { ReportService } from './services/report.service';
 import { BankReconciliationService } from './services/bank-reconciliation.service';
+import { MonthEndCloseService } from './services/month-end-close.service';
 import {
 	AR_ACCOUNT_RESOLVER_TOKEN,
 	BANK_RECONCILIATION_SERVICE_TOKEN,
+	MONTH_END_CLOSE_SERVICE_TOKEN,
 	PAYMENT_SERVICE_TOKEN,
 	REPORT_SERVICE_TOKEN,
 	SUPPLIER_BILL_SERVICE_TOKEN,
@@ -67,5 +69,8 @@ export function registerAccounting(container: DependencyContainer): void {
 	container.register(REPORT_SERVICE_TOKEN, { useClass: ReportService });
 	container.register(BANK_RECONCILIATION_SERVICE_TOKEN, {
 		useClass: BankReconciliationService,
+	});
+	container.register(MONTH_END_CLOSE_SERVICE_TOKEN, {
+		useClass: MonthEndCloseService,
 	});
 }
