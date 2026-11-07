@@ -58,6 +58,7 @@ const LABELS: Record<string, NavKey> = {
 	'/projects/tickets/new': 'breadcrumb.ticketNew',
 	'/subscription': 'item.subscription',
 	'/integrations/website-catalog': 'item.websiteCatalog',
+	'/integrations/webhooks': 'item.webhooks',
 	'/subscription/new': 'breadcrumb.contractNew',
 	'/subscription/applications': 'item.licenseApplications',
 	'/subscription/$contractId/edit': 'breadcrumb.quotationEdit',

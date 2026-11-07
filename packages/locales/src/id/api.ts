@@ -324,6 +324,7 @@ const api: Record<keyof typeof en, string> = {
 	'licensing.apiKey.noOwner': 'Organisasi tidak punya owner untuk menerbitkan kunci',
 	'licensing.apiKey.notFound': 'Kunci API tidak ditemukan',
 	'licensing.activationNotFound': 'Aktivasi tidak ditemukan atau sudah dilepas',
+	'automation.outboxNotFound': 'Event tidak ditemukan',
 	'catalog.notFound.listing': 'Listing tidak ditemukan',
 	'catalog.notFound.product': 'Produk tidak ditemukan',
 	'catalog.listing.slug': 'Slug ini sudah dipakai listing lain',

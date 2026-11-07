@@ -9,6 +9,7 @@ import { registerProjects } from '@app/projects';
 import { registerAftersales } from '@app/aftersales';
 import { registerLicensing } from '@app/licensing';
 import { registerCatalog } from '@app/catalog';
+import { registerAutomation, startOutboxWorker } from '@app/automation';
 import { registerAssets } from '@app/assets';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
@@ -48,6 +49,8 @@ registerOrganization(container);
 registerAudit(container);
 registerInventory(container);
 registerAssets(container);
+// Automation before the modules that publish events (CRM, …).
+registerAutomation(container);
 registerCrm(container);
 registerFinance(container);
 registerProcurement(container);
@@ -119,7 +122,7 @@ const bootstrap = new Elysia()
 // worker is started through the shared registry, so adding a queue means one
 // entry in this array — not a new handle and a new shutdown branch. Non-fatal
 // at boot: a Redis outage must not take the API down.
-startWorkers([startAvatarWorker()], (error) =>
+startWorkers([startAvatarWorker(), startOutboxWorker()], (error) =>
 	pinoLogger.error({ err: error }, 'background worker error'),
 );
 

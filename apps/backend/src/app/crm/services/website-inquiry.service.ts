@@ -4,6 +4,9 @@ import { isUniqueViolation } from '@drizzle/errors';
 import type { LeadChannel } from '@drizzle/schemas/crm.schema';
 import type { DocumentType } from '@drizzle/schemas/organization.schema';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
+import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
+import { leadCreatedEvent } from '../utils/lead-event';
+import type { OutboxService } from '@app/automation/services/outbox.service';
 import { inject, injectable } from 'tsyringe';
 import { LEAD_REPOSITORY_TOKEN } from '../constants/di';
 import type {
@@ -117,6 +120,8 @@ export class WebsiteInquiryService {
 		private readonly numbering: Pick<NumberingService, 'next'>,
 		@inject(OBJECT_STORAGE_TOKEN)
 		private readonly storage: Pick<IObjectStorage, 'put'>,
+		@inject(OUTBOX_SERVICE_TOKEN)
+		private readonly outbox: Pick<OutboxService, 'publish'>,
 	) {}
 
 	async submitRfq(submission: TRfqSubmission, files: File[], idempotencyKey: string | null) {
@@ -184,7 +189,9 @@ export class WebsiteInquiryService {
 		const attachments = await this.upload(files);
 		const reference = await this.numbering.next(REFERENCE_TYPE[lead.channel]);
 		try {
-			await this.leads.createInquiry({ ...lead, reference, idempotencyKey }, attachments);
+			const created = await this.leads.createInquiry({ ...lead, reference, idempotencyKey }, attachments);
+			// n8n notifies the sales admin (M04); never fails the submission.
+			await this.outbox.publish('lead.created', { type: 'lead', id: created.id }, leadCreatedEvent(created));
 		} catch (error) {
 			if (idempotencyKey && isUniqueViolation(error)) {
 				// A concurrent retry with the same key won the insert.

@@ -6949,6 +6949,8 @@ Ref: commerce.commerce_order_items.commerce_order_id > commerce.commerce_orders.
 // Integrations and encrypted credentials, workflows and steps, workflow runs,
 // scheduled jobs and executions, outbox, notification templates and
 // notifications. Tenant scoped. Secrets are never stored in clear text.
+// M04 stage 1 builds outbox_messages only, company-wide (ADR-0012); n8n is
+// the workflow engine, so the workflow tables here stay target-only.
 // ---------------------------------------------------------------------------
 
 Table automation.integrations {
@@ -7155,28 +7157,28 @@ Table automation.job_executions {
 }
 
 Table automation.outbox_messages {
-  updated_at bigint [not null]
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  topic text [not null]
-  aggregate_type text
+  id uuid [pk, default: `uuidv7()`, note: "Also the event id the receiver (n8n) dedupes on."]
+  topic varchar(64) [not null, note: "Event type, e.g. lead.created."]
+  aggregate_type varchar(64)
   aggregate_id text
-  payload text
+  payload jsonb [not null]
   status text [not null, default: 'pending']
   attempts smallint [not null, default: 0]
-  available_at bigint
+  last_attempt_at bigint
   published_at bigint
-  error_message text
+  response_status smallint [note: "HTTP status of the last attempt, if any."]
+  error_message varchar(500) [note: "Last failure, without secrets."]
   created_at bigint [not null]
-  Note: "Transactional outbox. The event is written in the same transaction as the business change, then published after the commit."
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "ERP events delivered to the n8n webhook (M04 stage 1, company-wide): written when the business change is saved, then POSTed with the event id and an HMAC signature; retried by the queue and by hand."
   Indexes {
     status [name: 'outbox_messages_status_idx']
-    available_at [name: 'outbox_messages_available_at_idx']
+    topic [name: 'outbox_messages_topic_idx']
     (aggregate_type, aggregate_id) [name: 'outbox_messages_aggregate_idx']
   }
   Checks {
-    `status IN ('pending', 'published', 'failed', 'dead')`
+    `status IN ('pending', 'published', 'failed')`
     `attempts >= 0`
   }
 }

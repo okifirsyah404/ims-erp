@@ -322,6 +322,7 @@ const api = {
 	'licensing.apiKey.noOwner': 'The organization has no owner to issue the key',
 	'licensing.apiKey.notFound': 'API key not found',
 	'licensing.activationNotFound': 'Activation not found or already released',
+	'automation.outboxNotFound': 'Event not found',
 	'catalog.notFound.listing': 'Listing not found',
 	'catalog.notFound.product': 'Product not found',
 	'catalog.listing.slug': 'Another listing already uses this slug',

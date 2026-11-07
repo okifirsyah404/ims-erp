@@ -137,6 +137,8 @@ describe('locale values', () => {
 			'sales:sj.email',
 			'sales:sj.serials',
 			// Project terms used verbatim in Indonesian.
+			// Integration terms used verbatim in Indonesian (M04).
+			'integrations:outbox.event',
 			// License terms used verbatim in Indonesian (M03).
 			'licensing:field.salesOrder',
 			'licensing:field.status',

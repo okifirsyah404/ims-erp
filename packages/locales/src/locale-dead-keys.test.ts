@@ -121,6 +121,8 @@ const DYNAMIC_PREFIXES = [
 	'licensing:result.',
 	'integrations:catalog.priceMode.',
 	'integrations:catalog.outOfStock.',
+	'integrations:outbox.status.',
+	'integrations:outbox.topic.',
 	// Finance errors compose `finance.term.${problem}` / `finance.invoiceState.${kind}`.
 	'finance.term.',
 	'finance.invoiceState.',

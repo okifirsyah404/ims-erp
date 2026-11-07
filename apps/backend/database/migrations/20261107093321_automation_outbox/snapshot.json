@@ -1,0 +1,457 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "904078a6-7a1a-49c9-98fd-b4537d701c7b",
+  "prevIds": [
+    "a7b8694a-ae6d-4802-9ddf-518eae13d8e3"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "automation"
+      ],
+      "writes": [
+        "s|sch|automation",
+        "n|sch|automation",
+        "e|sch|automation"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "automation",
+        "outbox_messages"
+      ],
+      "writes": [
+        "s|tbl|automation.outbox_messages",
+        "n|tbl|automation.outbox_messages",
+        "e|tbl|automation.outbox_messages",
+        "n|rel|automation.outbox_messages",
+        "n|type|automation.outbox_messages",
+        "n|rel|automation.outbox_messages_pkey"
+      ],
+      "reads": [
+        "n|sch|automation"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "automation",
+        "outbox_messages",
+        "outbox_messages_status_idx"
+      ],
+      "writes": [
+        "s|idx|automation.outbox_messages_status_idx",
+        "n|idx|automation.outbox_messages_status_idx",
+        "e|idx|automation.outbox_messages_status_idx",
+        "n|rel|automation.outbox_messages_status_idx"
+      ],
+      "reads": [
+        "n|tbl|automation.outbox_messages",
+        "n|sch|automation",
+        "n|col|automation.outbox_messages.status"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "automation",
+        "outbox_messages",
+        "outbox_messages_topic_idx"
+      ],
+      "writes": [
+        "s|idx|automation.outbox_messages_topic_idx",
+        "n|idx|automation.outbox_messages_topic_idx",
+        "e|idx|automation.outbox_messages_topic_idx",
+        "n|rel|automation.outbox_messages_topic_idx"
+      ],
+      "reads": [
+        "n|tbl|automation.outbox_messages",
+        "n|sch|automation",
+        "n|col|automation.outbox_messages.topic"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "automation",
+        "outbox_messages",
+        "outbox_messages_aggregate_idx"
+      ],
+      "writes": [
+        "s|idx|automation.outbox_messages_aggregate_idx",
+        "n|idx|automation.outbox_messages_aggregate_idx",
+        "e|idx|automation.outbox_messages_aggregate_idx",
+        "n|rel|automation.outbox_messages_aggregate_idx"
+      ],
+      "reads": [
+        "n|tbl|automation.outbox_messages",
+        "n|sch|automation",
+        "n|col|automation.outbox_messages.aggregate_type",
+        "n|col|automation.outbox_messages.aggregate_id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "automation",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "name": "outbox_messages",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "topic",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "aggregate_type",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "aggregate_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "payload",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'pending'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "attempts",
+        "type": "smallint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "last_attempt_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "published_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "response_status",
+        "type": "smallint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "error_message",
+        "type": "varchar(500)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "outbox_messages_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "outbox_messages_topic_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "topic",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "outbox_messages_aggregate_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "aggregate_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "aggregate_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "outbox_messages_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "outbox_messages_status_check",
+        "value": "\"status\" IN ('pending', 'published', 'failed')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "outbox_messages_attempts_check",
+        "value": "\"attempts\" >= 0",
+        "entityType": "checks"
+      }
+    }
+  ]
+}
