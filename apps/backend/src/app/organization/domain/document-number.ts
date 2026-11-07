@@ -39,6 +39,7 @@ export const DOCUMENT_TYPE_CODES: Record<DocumentType, string> = {
 	asset_disposal: 'DSP',
 	asset_tool_set: 'TST',
 	asset_borrowing: 'BRW',
+	employee: 'EMP',
 };
 
 /** Module that owns each document type (`document_sequences.module`). */
@@ -65,6 +66,7 @@ export const DOCUMENT_TYPE_MODULES: Record<DocumentType, string> = {
 	asset_disposal: 'assets',
 	asset_tool_set: 'assets',
 	asset_borrowing: 'assets',
+	employee: 'hr',
 };
 
 export const DEFAULT_PATTERN = '{SEQ:4}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YY}';
@@ -89,6 +91,8 @@ const INVENTORY_PATTERNS: Partial<Record<DocumentType, { pattern: string; reset:
 	asset_disposal: { pattern: '{TYPE}-{YYYY}-{SEQ:5}', reset: 'yearly' },
 	asset_tool_set: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
 	asset_borrowing: { pattern: '{TYPE}-{YYYY}{MM}-{SEQ:4}', reset: 'monthly' },
+	// Employee codes (M08): `EMP-0001`, never restarting.
+	employee: { pattern: '{TYPE}-{SEQ:4}', reset: 'never' },
 };
 
 /** Default pattern per document type (used until the owner overrides it). */

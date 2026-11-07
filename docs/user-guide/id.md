@@ -319,6 +319,35 @@ Menu **Proyek**. Diagram:
    Begitu finance mencatat pelunasan, draf aktif sendiri dan kunci berlanjut
    ke periode baru.
 
+### 8.6 Karyawan, absensi, cuti, dan gaji (M08)
+
+1. **HR & Absensi → Karyawan → Karyawan baru**: nama, jabatan, NIK, tanggal
+   masuk, kontak, dan gaji pokok (hanya HR / finance / owner). Kode
+   `EMP-####` diberikan sistem. Di halaman karyawan tambahkan **rekening
+   gaji**; karyawan yang keluar **Ditandai keluar** (riwayat tetap). Role
+   lain melihat NIK dan nomor rekening sebagian tersembunyi dan tidak
+   melihat gaji.
+2. **Absensi**: pilih tanggal, isi status tiap karyawan (hadir, izin, sakit,
+   cuti, alpa, libur) dan jam masuk / pulang bila perlu, lalu **Simpan hari
+   ini** ("Isi baris kosong dengan Hadir" mempercepat). Atau **Impor**: unduh
+   template, isi di Excel, unggah. Jika ada baris yang salah tidak ada yang
+   diimpor dan baris yang salah ditampilkan. **Rekap bulanan** menghitung
+   status per karyawan.
+3. **Cuti**: HR **mencatat cuti** karyawan (jenis, dari, sampai); hari
+   Minggu tidak dihitung dan cuti tahunan tidak boleh melebihi 12 hari
+   setahun (pengajuan yang menunggu ikut dihitung). Orang lain selain
+   pencatat (atasan / owner) **Menyetujui** atau **Menolak**; hari yang
+   disetujui otomatis masuk absensi. **Batalkan** mengembalikan jatahnya.
+4. **Lembur**: HR mencatat tanggal dan jam; orang lain yang menyetujui. Jam
+   yang disetujui tampil di samping karyawan pada ringkasan gaji.
+5. **Tugas**: tugas sederhana untuk karyawan dengan tenggat; tandai
+   **Selesai** atau **Batalkan**.
+6. **Penggajian (ringkasan gaji)**: pilih bulan, **Isi dari gaji pokok**,
+   lalu ubah baris (tunjangan, uang lembur, bonus, potongan; gaji bersih
+   dihitung) atau **Impor** file. Owner **Menyetujui bulan ini** sehingga
+   terkunci. Belum ada perhitungan gaji otomatis, slip gaji, atau jurnal
+   (tahap 2 menunggu aturan penggajian dari finance).
+
 ## 9. Dokumen cetak dan penomoran
 
 | Dokumen | Contoh nomor | Kapan bernomor | Cetak |

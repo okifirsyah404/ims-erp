@@ -243,9 +243,14 @@ Last synced: 2026-11-06.
 
 ## M08 Employees and Attendance
 
+### done
+- Employees, manual + imported attendance, leave (12-day quota), overtime,
+  employee tasks, monthly salary summary approved by the owner — T10,
+  ERP-0034 / ERP-0038. Evidence: `progress.md` 2026-11-07 (M08 stage 1):
+  `src/app/hr`, `/hr/*` pages, `hr.service.test.ts`, browser e2e. Not yet
+  accepted by the owner.
+
 ### planned
-- Employees, manual attendance, leave, overtime, salary/bonus summary — T10,
-  ERP-0008. Evidence: dbml `hr` only.
 - Payslips, approval, payroll journals — T20, ERP-0018. Evidence: none.
 
 ### blocked

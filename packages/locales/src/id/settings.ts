@@ -89,6 +89,7 @@ const settings: Record<keyof typeof en, string> = {
 	'numbering.type.asset_disposal': 'Pelepasan aset',
 	'numbering.type.asset_tool_set': 'Set peralatan',
 	'numbering.type.asset_borrowing': 'Peminjaman aset',
+	'numbering.type.employee': 'Karyawan',
 	'companyProfile.section.images': 'Logo dan tanda tangan',
 	'companyProfile.imagesHint': 'Dicetak di dokumen: logo di kop surat, tanda tangan (beserta stempel) di atas nama penanda tangan.',
 	'companyProfile.image.logo': 'Logo kop surat',

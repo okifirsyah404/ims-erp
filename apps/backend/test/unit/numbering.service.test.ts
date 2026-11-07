@@ -161,7 +161,7 @@ describe('NumberingService', () => {
 	test('listSettings shows every type with defaults until overridden', async () => {
 		const settings = await service.listSettings();
 		const quotation = settings.find((s) => s.documentType === 'quotation');
-		expect(settings).toHaveLength(22);
+		expect(settings).toHaveLength(23);
 		expect(quotation).toMatchObject({ typeCode: 'QT', isDefault: true, resetPolicy: 'yearly' });
 		expect(settings.find((s) => s.documentType === 'purchase_order')?.resetPolicy).toBe('monthly');
 	});

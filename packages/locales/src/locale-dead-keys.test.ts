@@ -119,6 +119,13 @@ const DYNAMIC_PREFIXES = [
 	'licensing:keys.status.',
 	'licensing:events.kind.',
 	'licensing:result.',
+	'hr:status.',
+	'hr:employmentStatus.',
+	'hr:request.status.',
+	'hr:request.done.',
+	'hr:import.error.',
+	'hr:taskStatus.',
+	'hr:salary.state.',
 	// Finance errors compose `finance.term.${problem}` / `finance.invoiceState.${kind}`.
 	'finance.term.',
 	'finance.invoiceState.',
@@ -140,6 +147,13 @@ const DYNAMIC_PREFIXES = [
 	'licensing.api.',
 	'licensing.refused.',
 	'licensing.apiKey.',
+	'hr.notFound.',
+	'hr.employee.',
+	'hr.employeeState.',
+	'hr.leave.',
+	'hr.requestState.',
+	'hr.salary.',
+	'hr.import.',
 	// Borrowing workflow (ERP-0036): status, purpose, condition, and event
 	// type all arrive as server values, so the label key has to be composed.
 	'assets:borrowingStatus.',

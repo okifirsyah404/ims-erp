@@ -12,6 +12,124 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed — M08 employees & attendance, stage 1 (T10), 2026-11-07
+
+Status: **implemented** (backend + web admin; not yet accepted by the
+owner). Branch `feat/m08-employees-attendance` (from `merge/main-sync`,
+so PR #58 stays as reviewed). Backlog ERP-0034 (employees) and T10; ERP-0018
+(payroll automation, stage 2) stays planned / blocked.
+
+Gate 1 (read): `docs/plan/erp-module-plans/m08-employees-attendance.md`
+(stage 1 T10: employees, manual attendance, tasks, leave / overtime, salary
+and bonus summary entered or imported then approved; stage 2 T19/T20
+payroll is blocked until finance supplies the component rules);
+docs.dbml MODULE HR (16 tenant-scoped scaffold tables: employees,
+employment_contracts, attendance_records / corrections, leave_types /
+requests, bank_accounts, …; no overtime table) and MODULE Payroll (stage 2,
+not built); asset columns already referencing `hr.employees`
+(`custodian_employee_id`, `performed_by_employee_id`); ERP-0034 (minimal
+employees + warehouse PIC). Skipped: `implementation-phases.md`.
+
+Owner decisions (2026-11-07):
+1. **Attendance**: entered by HR/admin per day (present, permit, sick,
+   leave, absent, holiday; optional in/out times) or imported from an
+   Excel/CSV template; every row validated, one bad row imports nothing.
+2. **Leave and overtime** are recorded by HR/admin on the employee's behalf
+   and approved by a manager/owner; no employee self-service (M12 limit).
+3. **Annual leave quota** is tracked: 12 days a year by default (per leave
+   type), a request beyond the balance is refused; sick and permit do not
+   use the quota.
+4. **Monthly salary summary**: HR/finance enter or import base, allowances,
+   overtime, bonus, deductions and net per employee per period; the owner
+   approves; approved summaries are locked. Salary data is visible to HR,
+   finance and the owner only (server-side, exports included).
+
+Gate 2 (manual grilling pass, within the owner decisions):
+- Module `hr` (schema `hr`, company-wide per ADR-0012). Stage 1 rewrites
+  `employees`, `bank_accounts`, `attendance_records`, `leave_types`,
+  `leave_requests` and adds `overtime_requests`, `employee_tasks`,
+  `salary_summaries` (all soft-deleted, uuid ids, unix-ms timestamps,
+  Jakarta `date`s, IDR minor units); the other HR scaffold tables stay
+  target-only. Payroll (`payroll.*`, stage 2) is not built.
+- Employees: `EMP-####` from `NumberingService` (new type `employee`,
+  never resets); NIK unique when set (16 digits); optional login unique;
+  base salary on the employee as the summary default; leaving =
+  `inactive` + `inactive_since`, never deleted.
+- Private data: new `employee:read_private` (HR, finance, owner); others
+  get NIK / bank masked and no salary, and masked values are never written
+  back.
+- Attendance: unique (employee, date); statuses present / permit / sick /
+  leave / absent / holiday; optional in / out times; source manual / import
+  / leave; new `attendance:record` (HR, admin). Import template columns
+  `kode_karyawan, tanggal, status, jam_masuk, jam_pulang, catatan`
+  (Indonesian status words accepted).
+- Leave: days = dates in the range except Sundays (company works
+  Monday–Saturday; public holidays as `holiday` attendance); quota types
+  count approved + pending days by start-date year; overlapping live
+  requests refused; recorder ≠ decider; approval writes attendance in the
+  same transaction, cancelling an approved leave removes it.
+- Overtime: new statement `overtime` (read / create / approve / reject /
+  cancel); hours in quarter hours up to 24; recorder ≠ decider.
+- Tasks: `task:read | create | update` (HR gains it); open / done /
+  cancelled.
+- Salary summaries: unique (period, employee); net computed and checked
+  in the database; negative net refused; generate drafts from base
+  salaries; import in rupiah (all or nothing); `payroll:approve` (owner)
+  locks the whole month. Finance gains `payroll:read, create, update` and
+  `employee:read, read_private` (the old matrix test "finance has no HR
+  access" is updated to the decision).
+
+What landed:
+- `docs/database/docs.dbml` MODULE HR (header, eight tables, refs,
+  TableGroup); `gen-logical-references.ts`; `validate-dbml.ts` → OK.
+- Drizzle `drizzle/schemas/hr.schema.ts`; migration
+  `20261107070055_hr_core` (generated, inspected, applied to
+  `ims_erp_sync`); seeder `hr.seeder.ts` (leave types in every environment;
+  dev employees `EMP-0001…0006` with faker, series moved past them).
+- Backend module `src/app/hr/` (contracts, five repositories, services
+  employee / attendance / leave (with overtime) / task / salary, errors with
+  `api` keys en + id, controllers `/hr/employees`, `/hr/attendance`,
+  `/hr/leave*` + `/hr/overtime`, `/hr/tasks`, `/hr/salary`, utils `hr.ts`,
+  `spreadsheet.ts` (exceljs, new dependency), `import-file.ts`); registered
+  in `src/index.ts`, mounted in `src/app/app.ts`; permissions in
+  `packages/common` (rebuilt; `refresh-role-grants.ts` → 4 role rows).
+- Web: `/hr` → employees; `/hr/employees` (list, new, detail with bank
+  account, leave balance, mark as left / reactivate), `/hr/attendance`
+  (day sheet, monthly recap, import), `/hr/leave`, `/hr/overtime`,
+  `/hr/tasks` (new nav item), `/hr/payroll` (salary summary: generate,
+  edit, import, approve); locale namespace `hr` en + id; numbering type
+  `employee` in settings.
+
+Found while testing: an import date like `2026-11-31` passed the format
+check and reached the query (500); dates are now checked as real calendar
+dates (`isBusinessDate`, unit-tested).
+
+Verification:
+- `bun run typecheck` (root) → 3/3; `bun run test` (root) → backend 692,
+  web-admin 45, locales 70 pass; lint: no errors; web build OK;
+  `validate-dbml.ts` → OK.
+- New `test/unit/hr.service.test.ts` (11 tests).
+- `drizzle:seed` twice → leave types 4 then 0, dev employees 6 then 0.
+- e2e (Playwright + HTTP, dev servers; `hr`, `admin`, `sales` seed accounts
+  and the initial admin as owner): employee created through the form
+  (`EMP-0007`), bank account saved; admin sees NIK / account masked and no
+  salary, salary endpoint 403; sales `/hr/employees` 403; day sheet "mark
+  present" + save (8 rows); import with errors → nothing imported, rows 3
+  and 4 listed (Indonesian screen checked); good file → 2 rows `import`;
+  annual leave 4 days recorded, HR approving it → 403, an 11-day request →
+  "8 day(s) left, 11 requested"; owner approved on screen → the days became
+  `leave` attendance, balance 8 left; overtime 3 h approved by the owner;
+  task created; salary: generated from base salaries, row edited (net Rp
+  7,050,000), HR approving → 403, owner approved → locked, later edit → "is
+  approved and locked"; `.xlsx` templates downloaded and imported back
+  (attendance 2 rows, salary 1 row). The test employees, attendance, leave,
+  overtime, task and salary rows stay in the dev DB `ims_erp_sync`.
+- `docs/database/` updated in this change.
+
+Next executable task: the owner's acceptance walk-through of M08 stage 1
+and M03; programmer A's review of PR #58; then M04 (n8n, WhatsApp,
+website) gate 1, or M08 stage 2 once finance supplies the payroll rules.
+
 ## Completed — merge of main into merge/main-sync (PR #58 conflicts), 2026-11-06/07
 
 Status: **implemented** (merge commit on `merge/main-sync`; not merged into

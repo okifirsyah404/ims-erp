@@ -1,15 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { GraduationCap } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
-
+/** `/hr` — the HR area opens on the employee list (M08). */
 export const Route = createFileRoute('/_authed/hr/')({
-	component: ComingSoonStubPage,
+	beforeLoad: () => {
+		throw redirect({ to: '/hr/employees' });
+	},
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.hr')} icon={GraduationCap} />;
-}

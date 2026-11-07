@@ -77,6 +77,8 @@ export const DOCUMENT_TYPES = [
 	'asset_disposal',
 	'asset_tool_set',
 	'asset_borrowing',
+	// HR (M08).
+	'employee',
 ] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 

@@ -137,6 +137,14 @@ describe('locale values', () => {
 			'sales:sj.email',
 			'sales:sj.serials',
 			// Project terms used verbatim in Indonesian.
+			// HR terms used verbatim in Indonesian (M08).
+			'hr:field.nik',
+			'hr:field.email',
+			'hr:field.status',
+			'hr:bank.name',
+			'hr:import.file',
+			'hr:salary.bonus',
+			'hr:salary.total',
 			// License terms used verbatim in Indonesian (M03).
 			'licensing:field.salesOrder',
 			'licensing:field.status',

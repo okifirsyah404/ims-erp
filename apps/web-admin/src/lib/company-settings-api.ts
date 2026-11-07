@@ -79,6 +79,7 @@ export const DOCUMENT_TYPES = [
 	'asset_disposal',
 	'asset_tool_set',
 	'asset_borrowing',
+	'employee',
 ] as const;
 export type TDocumentType = (typeof DOCUMENT_TYPES)[number];
 

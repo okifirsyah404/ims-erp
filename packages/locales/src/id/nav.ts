@@ -50,6 +50,8 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.attendance': 'Absensi',
 	'item.leave': 'Cuti',
 	'item.overtime': 'Lembur',
+	'item.hrTasks': 'Tugas',
+	'breadcrumb.employeeNew': 'Karyawan baru',
 	'item.payroll': 'Penggajian',
 	'item.finance': 'Keuangan',
 	'item.accounts': 'Daftar Akun',

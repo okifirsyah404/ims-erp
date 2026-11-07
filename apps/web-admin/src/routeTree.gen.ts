@@ -69,9 +69,12 @@ import { Route as AuthedFinanceReportsIndexRouteImport } from './routes/_authed/
 import { Route as AuthedFinanceTaxIndexRouteImport } from './routes/_authed/finance/tax/index'
 import { Route as AuthedHrAttendanceIndexRouteImport } from './routes/_authed/hr/attendance/index'
 import { Route as AuthedHrEmployeesIndexRouteImport } from './routes/_authed/hr/employees/index'
+import { Route as AuthedHrEmployeesEmployeeIdRouteImport } from './routes/_authed/hr/employees/$employeeId'
+import { Route as AuthedHrEmployeesNewRouteImport } from './routes/_authed/hr/employees/new'
 import { Route as AuthedHrLeaveIndexRouteImport } from './routes/_authed/hr/leave/index'
 import { Route as AuthedHrOvertimeIndexRouteImport } from './routes/_authed/hr/overtime/index'
 import { Route as AuthedHrPayrollIndexRouteImport } from './routes/_authed/hr/payroll/index'
+import { Route as AuthedHrTasksIndexRouteImport } from './routes/_authed/hr/tasks/index'
 import { Route as AuthedInventoryCategoriesIndexRouteImport } from './routes/_authed/inventory/categories/index'
 import { Route as AuthedInventoryComponentsIndexRouteImport } from './routes/_authed/inventory/components/index'
 import { Route as AuthedInventoryItemsItemIdRouteImport } from './routes/_authed/inventory/items/$itemId'
@@ -466,6 +469,17 @@ const AuthedHrEmployeesIndexRoute = AuthedHrEmployeesIndexRouteImport.update({
   path: '/hr/employees/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedHrEmployeesEmployeeIdRoute =
+  AuthedHrEmployeesEmployeeIdRouteImport.update({
+    id: '/hr/employees/$employeeId',
+    path: '/hr/employees/$employeeId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedHrEmployeesNewRoute = AuthedHrEmployeesNewRouteImport.update({
+  id: '/hr/employees/new',
+  path: '/hr/employees/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedHrLeaveIndexRoute = AuthedHrLeaveIndexRouteImport.update({
   id: '/hr/leave/',
   path: '/hr/leave/',
@@ -479,6 +493,11 @@ const AuthedHrOvertimeIndexRoute = AuthedHrOvertimeIndexRouteImport.update({
 const AuthedHrPayrollIndexRoute = AuthedHrPayrollIndexRouteImport.update({
   id: '/hr/payroll/',
   path: '/hr/payroll/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHrTasksIndexRoute = AuthedHrTasksIndexRouteImport.update({
+  id: '/hr/tasks/',
+  path: '/hr/tasks/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedInventoryCategoriesIndexRoute =
@@ -918,6 +937,8 @@ export interface FileRoutesByFullPath {
   '/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
+  '/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
+  '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -966,6 +987,7 @@ export interface FileRoutesByFullPath {
   '/hr/leave/': typeof AuthedHrLeaveIndexRoute
   '/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
   '/hr/payroll/': typeof AuthedHrPayrollIndexRoute
+  '/hr/tasks/': typeof AuthedHrTasksIndexRoute
   '/inventory/categories/': typeof AuthedInventoryCategoriesIndexRoute
   '/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
@@ -1048,6 +1070,8 @@ export interface FileRoutesByTo {
   '/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
+  '/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
+  '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -1096,6 +1120,7 @@ export interface FileRoutesByTo {
   '/hr/leave': typeof AuthedHrLeaveIndexRoute
   '/hr/overtime': typeof AuthedHrOvertimeIndexRoute
   '/hr/payroll': typeof AuthedHrPayrollIndexRoute
+  '/hr/tasks': typeof AuthedHrTasksIndexRoute
   '/inventory/categories': typeof AuthedInventoryCategoriesIndexRoute
   '/inventory/components': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials': typeof AuthedInventoryMaterialsIndexRoute
@@ -1182,6 +1207,8 @@ export interface FileRoutesById {
   '/_authed/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/_authed/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/_authed/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
+  '/_authed/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
+  '/_authed/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/_authed/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/_authed/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/_authed/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -1230,6 +1257,7 @@ export interface FileRoutesById {
   '/_authed/hr/leave/': typeof AuthedHrLeaveIndexRoute
   '/_authed/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
   '/_authed/hr/payroll/': typeof AuthedHrPayrollIndexRoute
+  '/_authed/hr/tasks/': typeof AuthedHrTasksIndexRoute
   '/_authed/inventory/categories/': typeof AuthedInventoryCategoriesIndexRoute
   '/_authed/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/_authed/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
@@ -1316,6 +1344,8 @@ export interface FileRouteTypes {
     | '/assets/register/new'
     | '/crm/customers/$customerId'
     | '/crm/leads/$leadId'
+    | '/hr/employees/$employeeId'
+    | '/hr/employees/new'
     | '/inventory/items/$itemId'
     | '/inventory/items/new'
     | '/inventory/stock/adjust'
@@ -1364,6 +1394,7 @@ export interface FileRouteTypes {
     | '/hr/leave/'
     | '/hr/overtime/'
     | '/hr/payroll/'
+    | '/hr/tasks/'
     | '/inventory/categories/'
     | '/inventory/components/'
     | '/inventory/materials/'
@@ -1446,6 +1477,8 @@ export interface FileRouteTypes {
     | '/assets/register/new'
     | '/crm/customers/$customerId'
     | '/crm/leads/$leadId'
+    | '/hr/employees/$employeeId'
+    | '/hr/employees/new'
     | '/inventory/items/$itemId'
     | '/inventory/items/new'
     | '/inventory/stock/adjust'
@@ -1494,6 +1527,7 @@ export interface FileRouteTypes {
     | '/hr/leave'
     | '/hr/overtime'
     | '/hr/payroll'
+    | '/hr/tasks'
     | '/inventory/categories'
     | '/inventory/components'
     | '/inventory/materials'
@@ -1579,6 +1613,8 @@ export interface FileRouteTypes {
     | '/_authed/assets/register/new'
     | '/_authed/crm/customers/$customerId'
     | '/_authed/crm/leads/$leadId'
+    | '/_authed/hr/employees/$employeeId'
+    | '/_authed/hr/employees/new'
     | '/_authed/inventory/items/$itemId'
     | '/_authed/inventory/items/new'
     | '/_authed/inventory/stock/adjust'
@@ -1627,6 +1663,7 @@ export interface FileRouteTypes {
     | '/_authed/hr/leave/'
     | '/_authed/hr/overtime/'
     | '/_authed/hr/payroll/'
+    | '/_authed/hr/tasks/'
     | '/_authed/inventory/categories/'
     | '/_authed/inventory/components/'
     | '/_authed/inventory/materials/'
@@ -2108,6 +2145,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedHrEmployeesIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/hr/employees/$employeeId': {
+      id: '/_authed/hr/employees/$employeeId'
+      path: '/hr/employees/$employeeId'
+      fullPath: '/hr/employees/$employeeId'
+      preLoaderRoute: typeof AuthedHrEmployeesEmployeeIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/employees/new': {
+      id: '/_authed/hr/employees/new'
+      path: '/hr/employees/new'
+      fullPath: '/hr/employees/new'
+      preLoaderRoute: typeof AuthedHrEmployeesNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/hr/leave/': {
       id: '/_authed/hr/leave/'
       path: '/hr/leave'
@@ -2127,6 +2178,13 @@ declare module '@tanstack/react-router' {
       path: '/hr/payroll'
       fullPath: '/hr/payroll/'
       preLoaderRoute: typeof AuthedHrPayrollIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/tasks/': {
+      id: '/_authed/hr/tasks/'
+      path: '/hr/tasks'
+      fullPath: '/hr/tasks/'
+      preLoaderRoute: typeof AuthedHrTasksIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/inventory/categories/': {
@@ -2713,6 +2771,8 @@ interface AuthedRouteChildren {
   AuthedAssetsRegisterNewRoute: typeof AuthedAssetsRegisterNewRoute
   AuthedCrmCustomersCustomerIdRoute: typeof AuthedCrmCustomersCustomerIdRoute
   AuthedCrmLeadsLeadIdRoute: typeof AuthedCrmLeadsLeadIdRoute
+  AuthedHrEmployeesEmployeeIdRoute: typeof AuthedHrEmployeesEmployeeIdRoute
+  AuthedHrEmployeesNewRoute: typeof AuthedHrEmployeesNewRoute
   AuthedInventoryItemsItemIdRoute: typeof AuthedInventoryItemsItemIdRouteWithChildren
   AuthedInventoryItemsNewRoute: typeof AuthedInventoryItemsNewRoute
   AuthedInventoryStockAdjustRoute: typeof AuthedInventoryStockAdjustRoute
@@ -2760,6 +2820,7 @@ interface AuthedRouteChildren {
   AuthedHrLeaveIndexRoute: typeof AuthedHrLeaveIndexRoute
   AuthedHrOvertimeIndexRoute: typeof AuthedHrOvertimeIndexRoute
   AuthedHrPayrollIndexRoute: typeof AuthedHrPayrollIndexRoute
+  AuthedHrTasksIndexRoute: typeof AuthedHrTasksIndexRoute
   AuthedInventoryCategoriesIndexRoute: typeof AuthedInventoryCategoriesIndexRoute
   AuthedInventoryComponentsIndexRoute: typeof AuthedInventoryComponentsIndexRoute
   AuthedInventoryMaterialsIndexRoute: typeof AuthedInventoryMaterialsIndexRoute
@@ -2835,6 +2896,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAssetsRegisterNewRoute: AuthedAssetsRegisterNewRoute,
   AuthedCrmCustomersCustomerIdRoute: AuthedCrmCustomersCustomerIdRoute,
   AuthedCrmLeadsLeadIdRoute: AuthedCrmLeadsLeadIdRoute,
+  AuthedHrEmployeesEmployeeIdRoute: AuthedHrEmployeesEmployeeIdRoute,
+  AuthedHrEmployeesNewRoute: AuthedHrEmployeesNewRoute,
   AuthedInventoryItemsItemIdRoute: AuthedInventoryItemsItemIdRouteWithChildren,
   AuthedInventoryItemsNewRoute: AuthedInventoryItemsNewRoute,
   AuthedInventoryStockAdjustRoute: AuthedInventoryStockAdjustRoute,
@@ -2887,6 +2950,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedHrLeaveIndexRoute: AuthedHrLeaveIndexRoute,
   AuthedHrOvertimeIndexRoute: AuthedHrOvertimeIndexRoute,
   AuthedHrPayrollIndexRoute: AuthedHrPayrollIndexRoute,
+  AuthedHrTasksIndexRoute: AuthedHrTasksIndexRoute,
   AuthedInventoryCategoriesIndexRoute: AuthedInventoryCategoriesIndexRoute,
   AuthedInventoryComponentsIndexRoute: AuthedInventoryComponentsIndexRoute,
   AuthedInventoryMaterialsIndexRoute: AuthedInventoryMaterialsIndexRoute,

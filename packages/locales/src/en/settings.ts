@@ -83,6 +83,7 @@ const settings = {
 	'numbering.type.asset_disposal': 'Asset disposal',
 	'numbering.type.asset_tool_set': 'Tool set',
 	'numbering.type.asset_borrowing': 'Asset borrowing',
+	'numbering.type.employee': 'Employee',
 	'companyProfile.section.images': 'Logo and signature',
 	'companyProfile.imagesHint': 'Printed on documents: the logo in the letterhead, the signature (with stamp) above the signatory name.',
 	'companyProfile.image.logo': 'Letterhead logo',

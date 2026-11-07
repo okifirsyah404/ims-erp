@@ -1,50 +1,73 @@
-> 2026-10-28: content below describes the deleted NestJS backend (apps/backend-nest). Domains listed as modules/ stubs do not exist in apps/backend-elysia (which has only user, organization, location). Treat as historical audit; re-verify against backend-elysia before acting.
+# HR Module — Employees & Attendance (M08)
 
-# Employee Module
+Code: `apps/backend/src/app/hr/` (schema `hr`, company-wide, ADR-0012), web
+`apps/web-admin/src/routes/_authed/hr/`. Status: stage 1 (T10) **implemented
+2026-11-07, not yet accepted by the owner**; stage 2 payroll automation
+(T19/T20, ERP-0018) **blocked** until finance supplies the salary component
+rules. Evidence: `docs/plan/progress.md`.
+
+> The 2026-10-25 audit text that stood here described the deleted NestJS
+> backend; it is replaced by this file.
 
 ## Purpose and boundary
 
-Employee master data: code, name, position, contact, joining date, status,
-and links from user identity to employee. Salary/bank details are sensitive
-and **restricted access** (masked in list responses; permission-gated reads).
-Payroll flows are a later-stage user of this data (v5.1 M08; tasks T10,
-T19–T20).
+Employees, attendance, leave, overtime, simple employee tasks and the
+monthly salary summary. Owner decisions (2026-11-07): attendance entered by
+HR/admin or imported from an Excel/CSV template (all rows or none); HR
+records leave and overtime on the employee's behalf and someone else
+approves; annual leave quota 12 days tracked (pending requests count);
+salary summaries entered or imported by HR/finance and approved by the
+owner, then locked. No employee self-service, no attendance machine, no
+payroll engine, no journal (M09).
 
-## Current state (audit, 2026-10-25)
+## Data (`docs/database/docs.dbml`, MODULE HR)
 
-**Scaffold only:**
+| Table | Role |
+|---|---|
+| `employees` | `EMP-####`, NIK, position, contact, hire date, status, base salary, optional login |
+| `bank_accounts` | one salary account per employee |
+| `attendance_records` | one status per employee per day (`manual`, `import`, `leave`) |
+| `leave_types` | seeded: annual (12, quota), special, sick, permit |
+| `leave_requests` | days = dates in the range except Sundays; approval writes attendance |
+| `overtime_requests` | hours per date; approved hours shown on the salary summary |
+| `employee_tasks` | simple tasks outside projects |
+| `salary_summaries` | per month and employee; net = base + allowances + overtime + bonus − deductions |
 
-- `modules/employee/{module, controllers, services, repositories}` — empty
-  classes; module registered in `app.module.ts`.
-- Pre-written unit specs (controller/service) exist for the stubs.
+The other `hr.*` tables in the DBML are target-only.
 
-## Data ownership (planned table, Phase 3 — commercial T03/T10)
+## Rules
 
-- `erp.employees` — code (unique alive), name, position, contact, joining
-  date, status, salary bank details (restricted), user identity link
-  (`auth.users.id`, nullable, ON DELETE SET NULL to audit-safe references).
-- Attendance/payroll inputs are commercial M08 — attendance is manual
-  entry/import in this package; do not promise attendance machines, GPS, or
-  complex shifts (contractual limit).
+- Private data: NIK and the bank account are masked (last 4) and the base
+  salary hidden for callers without `employee:read_private` (HR, finance,
+  owner); masked values are never written back.
+- Inactive employees keep their history; new attendance, leave, overtime
+  and tasks need an active employee working on that date.
+- Days of an approved leave belong to it: the day sheet and the import do
+  not overwrite them; cancelling the leave removes them.
+- Whoever recorded a leave or overtime request cannot approve or reject it.
+- Approving a salary month (`payroll:approve`, owner) locks every row.
+- Imports (`.xlsx` / `.csv`, ≤ 2 MB, ≤ 2000 rows) validate every row first;
+  any error imports nothing and the errors come back by spreadsheet row.
 
-## Behavior targets
+## Permissions
 
-- CRUD + deactivate (soft) with permission gates (`hr.employee.*`).
-- Bank-detail reads masked by default; full detail requires a dedicated
-  permission (finance/owner-class roles) and is audited.
-- Link resolution used by payroll (approve payslips per employee) —
-  establishes post stage-2 integration surface only as contracts, not repo
-  imports.
+`employee:read | create | update | archive | read_private`, `attendance:read
+| record`, `leave:read | create | approve | reject | cancel`, `overtime:read
+| create | approve | reject | cancel`, `task:read | create | update`,
+`payroll:read | create | update | approve`. HR: all except
+`payroll:approve`; finance: `employee:read, read_private`, `payroll:read,
+create, update`; admin: `employee:read`, `attendance:read, record`; owner:
+everything.
 
-## Dependencies and rules
+## Boundaries
 
-- Authorization + session context; identity linking consumes `user`/auth
-  contracts. Next user of this data (Stage 2 payroll, tasks T19–T20) will
-  read via this module's exported service — keep its API shape narrow.
+Organization: `NumberingService.next('employee')`. User: `UserService.getUser`
+for the optional login link. `EmployeeService` is the HR contract other
+modules use (assets' custodian, projects' staff — not wired yet, ERP-0034).
 
 ## Tests
 
-- Existing pre-written stub specs — replace with real coverage on
-  implementation: permission-denial (bank details), ownership/linking
-  invariant (one employee row per user id where linked), soft-delete
-  filtering, cache-free list correctness.
+`apps/backend/test/unit/hr.service.test.ts` (rules, masking, quota,
+overlap, no self-decision, leave → attendance, imports all-or-nothing,
+salary lock and import); `test/authorization/permission-matrix.test.ts`
+(finance and HR grants). Browser e2e 2026-11-07 in `progress.md`.

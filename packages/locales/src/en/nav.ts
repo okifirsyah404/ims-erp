@@ -52,6 +52,8 @@ const nav = {
 	'item.leave': 'Leave',
 	'item.overtime': 'Overtime',
 	'item.payroll': 'Payroll',
+	'item.hrTasks': 'Tasks',
+	'breadcrumb.employeeNew': 'New employee',
 	'item.finance': 'Finance',
 	'item.accounts': 'Chart of Accounts',
 	'item.journal': 'Journal',
