@@ -167,6 +167,49 @@ const api = {
 	'accounting.withholdingLocked': 'Withholding record is no longer editable',
 	'accounting.withholdingTransition':
 		'That status change is not allowed for this withholding record',
+
+	// Ledger (M09 F2)
+	'accounting.accountNotFound': 'Chart of account not found',
+	'accounting.accountCodeTaken': 'Account code already exists',
+	'accounting.accountInUse':
+		'Account is still referenced and cannot be deactivated',
+	'accounting.accountNotPostable': 'Journal lines require a postable account',
+	'accounting.accountInactive': 'Account is inactive',
+	'accounting.periodNotFound': 'Accounting period not found',
+	'accounting.periodTaken':
+		'An accounting period for this month already exists',
+	'accounting.periodLocked': 'The accounting period for this date is closed',
+	'accounting.periodTransition':
+		'That status change is not allowed for this period',
+	'accounting.journalEntryNotFound': 'Journal entry not found',
+	'accounting.journalUnbalanced':
+		'Journal entry is not balanced: debits must equal credits',
+	'accounting.journalLineSide':
+		'Each journal line must carry exactly one of debit or credit',
+	'accounting.journalDuplicate':
+		'A posted journal entry with this idempotency key already exists',
+	'accounting.journalTransition':
+		'That status change is not allowed for this journal entry',
+	'accounting.journalAlreadyReversed':
+		'Journal entry has already been reversed',
+	'accounting.reversalPeriodLocked':
+		'The reversal would fall in a closed period; reopen it first',
+
+	// Ledger F3
+	'accounting.openingBalanceAlreadyPosted':
+		'Opening balances were already posted and cannot be changed; correct through a journal reversal',
+	'accounting.openingBalanceLocked':
+		'Opening balance row not found or not editable',
+	'accounting.cashBankAccountNotFound': 'Cash/bank account not found',
+	'accounting.cashBankAccountCodeTaken':
+		'Cash/bank account code already exists',
+	'accounting.cashBankAccountInactive': 'Cash/bank account is inactive',
+	'accounting.cashBankLinkRequired':
+		'Cash/bank account has no general-ledger account link; add one before posting movements',
+	'accounting.cashBankTransactionNotFound':
+		'Cash/bank transaction not found',
+	'accounting.cashBankInsufficientFunds':
+		'Insufficient balance on the cash/bank account',
 } as const;
 
 export default api;

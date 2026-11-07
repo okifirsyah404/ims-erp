@@ -169,6 +169,49 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.withholdingLocked': 'Catatan pemotongan pajak tidak lagi dapat diubah',
 	'accounting.withholdingTransition':
 		'Perubahan status tersebut tidak diizinkan untuk catatan pemotongan ini',
+
+	// Buku besar (M09 F2)
+	'accounting.accountNotFound': 'Akun bagan akun tidak ditemukan',
+	'accounting.accountCodeTaken': 'Kode akun sudah digunakan',
+	'accounting.accountInUse':
+		'Akun masih direferensikan dan tidak dapat dinonaktifkan',
+	'accounting.accountNotPostable':
+		'Baris jurnal memerlukan akun yang dapat diposting',
+	'accounting.accountInactive': 'Akun tidak aktif',
+	'accounting.periodNotFound': 'Periode akuntansi tidak ditemukan',
+	'accounting.periodTaken': 'Periode akuntansi untuk bulan ini sudah ada',
+	'accounting.periodLocked':
+		'Periode akuntansi untuk tanggal ini sudah ditutup',
+	'accounting.periodTransition':
+		'Perubahan status tersebut tidak diizinkan untuk periode ini',
+	'accounting.journalEntryNotFound': 'Entri jurnal tidak ditemukan',
+	'accounting.journalUnbalanced':
+		'Entri jurnal tidak seimbang: debit harus sama dengan kredit',
+	'accounting.journalLineSide':
+		'Setiap baris jurnal harus memuat salah satu dari debit atau kredit',
+	'accounting.journalDuplicate':
+		'Entri jurnal terposting dengan kunci idempotensi ini sudah ada',
+	'accounting.journalTransition':
+		'Perubahan status tersebut tidak diizinkan untuk entri jurnal ini',
+	'accounting.journalAlreadyReversed': 'Entri jurnal sudah pernah dibalik',
+	'accounting.reversalPeriodLocked':
+		'Pembalikan akan jatuh pada periode yang sudah ditutup; buka kembali terlebih dahulu',
+
+	// Buku besar F3
+	'accounting.openingBalanceAlreadyPosted':
+		'Saldo awal sudah pernah diposting dan tidak dapat diubah; lakukan koreksi melalui pembalikan jurnal',
+	'accounting.openingBalanceLocked':
+		'Baris saldo awal tidak ditemukan atau tidak dapat diubah',
+	'accounting.cashBankAccountNotFound': 'Akun kas/bank tidak ditemukan',
+	'accounting.cashBankAccountCodeTaken':
+		'Kode akun kas/bank sudah digunakan',
+	'accounting.cashBankAccountInactive': 'Akun kas/bank tidak aktif',
+	'accounting.cashBankLinkRequired':
+		'Akun kas/bank belum ditautkan ke akun buku besar; tambahkan tautan sebelum mencatat pergerakan',
+	'accounting.cashBankTransactionNotFound':
+		'Transaksi kas/bank tidak ditemukan',
+	'accounting.cashBankInsufficientFunds':
+		'Saldo akun kas/bank tidak mencukupi',
 };
 
 export default api;
