@@ -1,7 +1,7 @@
 /**
  * ERP events to n8n (M04 4b): publish records the event and queues it (a
  * queue outage never fails the caller), delivery outcomes are logged,
- * retryable vs final failures, the manual send, an unconfigured webhook,
+ * a repeated dedupe key, retryable vs final failures, the manual send, an unconfigured webhook,
  * and the adapter's HMAC signature and headers.
  */
 import { createHmac } from 'node:crypto';
@@ -21,6 +21,7 @@ function service(configured = true) {
 	return new OutboxService(
 		{
 			create: async (data) => {
+				if (data.dedupeKey && rows.some((row) => row.dedupeKey === data.dedupeKey)) return null;
 				const row = { ...data, id: crypto.randomUUID(), attempts: 0, createdAt: new Date('2026-11-07T01:00:00Z') } as TOutboxSelect;
 				rows.push(row);
 				return row;
@@ -62,6 +63,14 @@ describe('outbox', () => {
 		const message = await service().publish('lead.created', { type: 'lead', id: 'L1' }, { name: 'Budi' });
 		expect(message).toMatchObject({ topic: 'lead.created', status: 'pending', aggregateId: 'L1', payload: { name: 'Budi' } });
 		expect(queued).toEqual([message!.id]);
+	});
+
+	test('a repeated dedupe key is recorded and queued once', async () => {
+		const first = await service().publish('license.due', { type: 'license_contract', id: 'C1' }, {}, { dedupeKey: 'license.due:C1:2026-12-20:30' });
+		const again = await service().publish('license.due', { type: 'license_contract', id: 'C1' }, {}, { dedupeKey: 'license.due:C1:2026-12-20:30' });
+		expect(first?.dedupeKey).toBe('license.due:C1:2026-12-20:30');
+		expect(again).toBeNull();
+		expect(queued).toEqual([first!.id]);
 	});
 
 	test('a queue outage never fails the caller; the event waits for a manual send', async () => {

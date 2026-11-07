@@ -1,3 +1,5 @@
+import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
+import type { OutboxService } from '@app/automation/services/outbox.service';
 import { COMPANY_PROFILE_SERVICE_TOKEN, NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import type { CompanyProfileService } from '@app/organization/services/company-profile.service';
 import type { NumberingService } from '@app/organization/services/numbering.service';
@@ -37,6 +39,7 @@ import {
 	type TPlannedTerm,
 	type TTermAmounts,
 } from '../utils/invoice-terms';
+import { invoiceIssuedEvent, receiptRecordedEvent } from '../utils/finance-events';
 
 /** Amounts of an order as billing sees them. */
 function amountsOf(order: TSalesOrderSelect): TOrderAmounts {
@@ -93,7 +96,8 @@ export type TInvoiceDetail = TInvoiceSelect & {
  * corrected by reversal. Every amount rule that could race runs again in
  * the repository. No journals are posted here (accounting consumes these
  * documents later). Company-wide; `invoice:*` / `receipt:*` grants decide
- * who may call.
+ * who may call. Issuing an invoice and recording a receipt publish
+ * `invoice.issued` / `receipt.recorded` to n8n (M04 stage 2).
  */
 @injectable()
 export class InvoiceService {
@@ -106,6 +110,8 @@ export class InvoiceService {
 		private readonly numbering: Pick<NumberingService, 'next'>,
 		@inject(COMPANY_PROFILE_SERVICE_TOKEN)
 		private readonly company: Pick<CompanyProfileService, 'get'>,
+		@inject(OUTBOX_SERVICE_TOKEN)
+		private readonly outbox: Pick<OutboxService, 'publish'>,
 	) {}
 
 	private async requireInvoice(id: string): Promise<TInvoiceSelect> {
@@ -266,6 +272,7 @@ export class InvoiceService {
 		const code = await this.numbering.next('invoice', { date: new Date(`${issueDate}T12:00:00+07:00`) });
 		const issued = await this.invoices.issue(id, { code, issueDate, dueDate, issuedBy: actorUserId });
 		if (!issued) throw new InvoiceStateError('notDraft');
+		await this.outbox.publish('invoice.issued', { type: 'invoice', id: issued.id }, invoiceIssuedEvent(issued));
 		return issued;
 	}
 
@@ -296,6 +303,8 @@ export class InvoiceService {
 			receivedBy: actorUserId,
 		});
 		if (!receipt) throw new ReceiptExceedsOutstandingError();
+		const paid = (await this.invoices.findById(invoiceId)) ?? invoice;
+		await this.outbox.publish('receipt.recorded', { type: 'receipt', id: receipt.id }, receiptRecordedEvent(receipt, paid));
 		return receipt;
 	}
 

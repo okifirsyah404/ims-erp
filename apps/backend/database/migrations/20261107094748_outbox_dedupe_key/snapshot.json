@@ -1,0 +1,91 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "c3ad968a-4c53-4bef-9d7f-5541cd353a06",
+  "prevIds": [
+    "904078a6-7a1a-49c9-98fd-b4537d701c7b"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "automation",
+        "outbox_messages",
+        "dedupe_key"
+      ],
+      "writes": [
+        "s|col|automation.outbox_messages.dedupe_key",
+        "n|col|automation.outbox_messages.dedupe_key",
+        "e|col|automation.outbox_messages.dedupe_key"
+      ],
+      "reads": [
+        "n|tbl|automation.outbox_messages",
+        "n|sch|automation"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "automation",
+        "outbox_messages",
+        "outbox_messages_dedupe_key_key"
+      ],
+      "writes": [
+        "s|idx|automation.outbox_messages_dedupe_key_key",
+        "n|idx|automation.outbox_messages_dedupe_key_key",
+        "e|idx|automation.outbox_messages_dedupe_key_key",
+        "n|rel|automation.outbox_messages_dedupe_key_key"
+      ],
+      "reads": [
+        "n|tbl|automation.outbox_messages",
+        "n|sch|automation",
+        "n|col|automation.outbox_messages.dedupe_key"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "dedupe_key",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "automation",
+        "table": "outbox_messages",
+        "name": "outbox_messages_dedupe_key_key",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "dedupe_key",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+ALTER TABLE "automation"."outbox_messages" ADD COLUMN "dedupe_key" varchar(200);--> statement-breakpoint
+CREATE UNIQUE INDEX "outbox_messages_dedupe_key_key" ON "automation"."outbox_messages" ("dedupe_key");

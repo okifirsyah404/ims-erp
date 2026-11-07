@@ -15,8 +15,9 @@ export class OutboxRepository implements IOutboxRepository {
 		const [row] = await this.database
 			.insert(outboxMessages)
 			.values({ ...data, createdAt: now, updatedAt: now })
+			.onConflictDoNothing({ target: outboxMessages.dedupeKey })
 			.returning();
-		return row;
+		return row ?? null;
 	}
 
 	async findById(id: string) {

@@ -132,6 +132,8 @@ export function loadEnvConfig(
 			lateSweepCron: process.env.SCHEDULER_LATE_SWEEP_CRON ?? '*/15 * * * *',
 			retentionSweepCron:
 				process.env.SCHEDULER_RETENTION_SWEEP_CRON ?? '0 3 * * *',
+			// M04: daily license.due reminders, Asia/Jakarta clock (08:00 WIB).
+			licenseDueCron: process.env.SCHEDULER_LICENSE_DUE_CRON ?? '0 8 * * *',
 			guestPiiRetentionMonths:
 				process.env.GUEST_PII_RETENTION_MONTHS == null
 					? 24

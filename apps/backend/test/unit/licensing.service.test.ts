@@ -10,7 +10,7 @@ import { businessDateOf } from '@ims-erp/common';
 import { contractBodySchema, keyBodySchema, type TContractRow } from '../../src/app/licensing/contracts/licensing.contract';
 import { ContractInvalidError, ContractStateError, LicenseKeyError } from '../../src/app/licensing/errors/licensing.errors';
 import { LicensingService, type TLicenseContext } from '../../src/app/licensing/services/licensing.service';
-import { addDays, contractTiming, generateLicenseKey, maskLicenseKey, renewalPeriod } from '../../src/app/licensing/utils/license';
+import { addDays, contractTiming, dueNoticeThreshold, generateLicenseKey, maskLicenseKey, renewalPeriod } from '../../src/app/licensing/utils/license';
 
 const CUSTOMER = '0190a1b2-0000-7000-8000-00000000c001';
 const OTHER = '0190a1b2-0000-7000-8000-00000000c002';
@@ -30,6 +30,8 @@ let numbers: number;
 let paid: Record<string, number>;
 let events: { eventType: string; licenseContractId?: string | null; actorUserId?: string | null; description?: string | null }[];
 let service: LicensingService;
+let notices: { data: Record<string, unknown>; dedupeKey?: string }[];
+let dedupeKeys: Set<string>;
 
 const app = (id: string, source: 'own' | 'third_party', status: 'active' | 'retired' = 'active') =>
 	({ id, code: id.slice(-4), name: `App ${id.slice(-4)}`, source, status }) as TLicensableApplicationSelect;
@@ -46,6 +48,8 @@ beforeEach(() => {
 	numbers = 0;
 	paid = {};
 	events = [];
+	notices = [];
+	dedupeKeys = new Set();
 	service = new LicensingService(
 		{
 			listApplications: async () => applications,
@@ -119,6 +123,14 @@ beforeEach(() => {
 			paginateEvents: async () => ({ meta: { page: 1, limit: 30, total: 0, totalPages: 0 }, data: [] }),
 		},
 		{ paidTotal: async (orderId: string) => paid[orderId] ?? 0 },
+		{
+			publish: async (_topic, _aggregate, data, options) => {
+				if (options?.dedupeKey && dedupeKeys.has(options.dedupeKey)) return null;
+				if (options?.dedupeKey) dedupeKeys.add(options.dedupeKey);
+				notices.push({ data, dedupeKey: options?.dedupeKey });
+				return {} as never;
+			},
+		},
 	);
 });
 
@@ -259,5 +271,31 @@ describe('license rules', () => {
 	test('generated keys avoid look-alike characters; masking keeps the last four', () => {
 		for (let i = 0; i < 50; i++) expect(generateLicenseKey()).not.toMatch(/[01OI]/);
 		expect(maskLicenseKey('ABCDE-FGHJK-LMNPQ-RSTUV')).toBe('••••-STUV');
+	});
+});
+
+describe('license.due reminders (M04)', () => {
+	test('thresholds: 30 days, 7 days (today included), ended within grace, nothing else', () => {
+		expect([31, 30, 8, 7, 0, -1, -7, -8].map(dueNoticeThreshold)).toEqual([null, 30, 30, 7, 7, 0, 0, null]);
+		expect(dueNoticeThreshold(null)).toBeNull();
+	});
+
+	test('each contract, end date and threshold is reminded once; drafts and far ends never', async () => {
+		const ending = (await draft({ endDate: '2026-12-20' })).id;
+		await service.activate(manager, ending);
+		await draft({ endDate: '2026-12-10' });
+		const far = (await draft({ endDate: '2027-06-30' })).id;
+		await service.activate(manager, far);
+		expect(await service.publishDueNotices('2026-11-25')).toEqual({ processed: 1, skipped: 2 });
+		expect(notices[0]).toMatchObject({
+			dedupeKey: `license.due:${ending}:2026-12-20:30`,
+			data: { threshold: 30, stage: 'ending', daysLeft: 25, endDate: '2026-12-20', customer: { id: CUSTOMER } },
+		});
+		// The next day sends nothing new; a week before the end sends the 7-day one.
+		expect((await service.publishDueNotices('2026-11-26')).processed).toBe(0);
+		expect((await service.publishDueNotices('2026-12-14')).processed).toBe(1);
+		expect((await service.publishDueNotices('2026-12-22')).processed).toBe(1);
+		expect(notices.map((notice) => notice.data.stage)).toEqual(['ending', 'ending', 'ended']);
+		expect((await service.publishDueNotices('2026-12-29')).processed).toBe(0);
 	});
 });

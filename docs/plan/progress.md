@@ -14,8 +14,8 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 ## In progress — M04 n8n, WhatsApp, website: gate 1 and decisions, 2026-11-07
 
-Status: **in progress** (4a catalog API and 4b outbox to n8n implemented;
-4c notifications and 4d WhatsApp AI next).
+Status: **in progress** (4a catalog API, 4b outbox to n8n and 4c stage 2
+events implemented; 4d WhatsApp AI next).
 Branch `feat/m04-integrations` (from `merge/main-sync`, so PR #58 stays as
 reviewed).
 
@@ -130,6 +130,44 @@ Owner decisions (2026-11-07):
   `published`; resending a published event sends nothing; screenshot of the
   log screen checked. Note: two stale dev stacks were running at once and
   answered with an old env — stop ports 3000/5173/5174 before restarting.
+
+### 4c — stage 2 events to n8n (implemented 2026-11-07)
+
+- `docs/database/docs.dbml`: `automation.outbox_messages.dedupe_key`
+  (varchar 200, unique) for once-per-fact events; gen-logical-references +
+  validate-dbml → OK. Migration `20261107094748_outbox_dedupe_key`
+  (generated, inspected: one column + unique index; applied).
+  `OutboxService.publish(..., { dedupeKey })` skips a repeated key
+  (`onConflictDoNothing`), nothing queued.
+- Publishers (payload builders are pure utils): Finance `invoice.issued`
+  (on issue) and `receipt.recorded` (with the invoice after the payment) —
+  `finance/utils/finance-events.ts`; After-sales `service_ticket.updated` on
+  every change (`created / assigned / started / resolved / reopened /
+  closed`, customer contact via the CRM contract) —
+  `aftersales/utils/ticket-event.ts`; Licensing `license.due` from
+  `LicensingService.publishDueNotices` (thresholds 30 / 7 days / ended in
+  grace, `dueNoticeThreshold` in `utils/license.ts`; dedupe key
+  `license.due:<contract>:<end date>:<threshold>`; paid renewals activated
+  first).
+- Daily job: BullMQ queue `licensing-due` (`licensing/queues/`), scheduler
+  `license-due-notices`, cron `SCHEDULER_LICENSE_DUE_CRON` (default
+  `0 8 * * *`, tz Asia/Jakarta), only with `SCHEDULER_ENABLED=true`;
+  schedule registration failure is logged, not fatal.
+- Event contract for whoever builds the n8n flows:
+  `docs/architecture/modules/notification.md` (rewritten; the old NestJS
+  text was stale).
+- Verification: `NODE_ENV=test bun test` (apps/backend) → 697 pass (new:
+  outbox dedupe, `license.due` thresholds + once-per-threshold, event
+  assertions in invoice and ticket tests); `bun run typecheck` /
+  `bun run lint` clean. E2E (dev DB, fake receiver checking the HMAC,
+  temporary `.env` entries with `SCHEDULER_ENABLED=true` and a per-minute
+  cron, all removed afterwards; the temporary job scheduler removed from
+  Redis): customer → quotation → approval → sales order → invoice issued →
+  receipt → ticket → license contract ending in 10 days; the receiver got
+  `invoice.issued`, `receipt.recorded` (status `partially_paid`),
+  `service_ticket.updated` (`created`) and one `license.due` (threshold
+  30) across several scheduler runs, all signed and `published`. E2E data
+  (customer `E2E-4C` and its documents) stays in the dev database.
 
 ## Completed — merge of main into merge/main-sync (PR #58 conflicts), 2026-11-06/07
 

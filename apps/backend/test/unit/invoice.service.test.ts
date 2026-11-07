@@ -130,6 +130,7 @@ let repo: FakeInvoices;
 let current: TSalesOrderSelect;
 let service: InvoiceService;
 let sequence: number;
+let published: { topic: string; data: Record<string, unknown> }[];
 const draft = (term: unknown, extra: Record<string, unknown> = {}) =>
 	service.createDraft('finance', createInvoiceSchema.parse({ salesOrderId: ORDER, term, ...extra }));
 
@@ -137,6 +138,7 @@ beforeEach(() => {
 	repo = new FakeInvoices();
 	current = order();
 	sequence = 0;
+	published = [];
 	service = new InvoiceService(
 		repo,
 		{
@@ -146,6 +148,12 @@ beforeEach(() => {
 		},
 		{ next: async (type: string) => `000${++sequence}/${type === 'invoice' ? 'INV' : 'KW'}/IMS/XI/26` },
 		{ get: async () => ({ defaultInvoiceTerms: '1. Garansi 1 tahun' }) as never },
+		{
+			publish: async (topic, _aggregate, data) => {
+				published.push({ topic, data });
+				return null;
+			},
+		},
 	);
 });
 
@@ -237,6 +245,11 @@ describe('issuing, voiding, receipts', () => {
 		await service.addReceipt('finance', invoice.id, createReceiptSchema.parse({ amount: 100_000_000, method: 'cash' }));
 		expect((await repo.findById(invoice.id))!).toMatchObject({ status: 'paid', outstandingTotal: 0 });
 		await expect(service.void('finance', invoice.id, 'x')).rejects.toBeInstanceOf(InvoiceStateError);
+		// n8n events (M04): one on issue, one per receipt with the invoice after it.
+		expect(published.map((event) => event.topic)).toEqual(['invoice.issued', 'receipt.recorded', 'receipt.recorded']);
+		expect(published[0].data).toMatchObject({ code: '0001/INV/IMS/XI/26', customer: { code: 'PT-MAJU', name: 'PT Maju' } });
+		expect(published[1].data).toMatchObject({ code: '0002/KW/IMS/XI/26', amount: 11_000_001, invoice: { status: 'partially_paid' } });
+		expect(published[2].data).toMatchObject({ invoice: { status: 'paid', outstandingTotal: 0 } });
 	});
 
 	test('reversing a receipt restores the outstanding amount; twice is refused', async () => {

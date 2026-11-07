@@ -103,6 +103,8 @@ export const SchedulerConfigSchema = z.object({
 	lateSweepCron: z.string().min(1),
 	/** Cron for the guest-PII retention sweep; daily by default (§11). */
 	retentionSweepCron: z.string().min(1),
+	/** Cron (Asia/Jakarta) for the `license.due` reminders to n8n; daily 08:00 by default (M04). */
+	licenseDueCron: z.string().min(1),
 	/** Guest PII is nulled this many months after `closed_at`. */
 	guestPiiRetentionMonths: z.number().int().min(1),
 });

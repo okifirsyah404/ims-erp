@@ -7,7 +7,7 @@ import { registerFinance } from '@app/finance';
 import { registerProcurement } from '@app/procurement';
 import { registerProjects } from '@app/projects';
 import { registerAftersales } from '@app/aftersales';
-import { registerLicensing } from '@app/licensing';
+import { registerLicenseDueSchedule, registerLicensing, startLicenseDueWorker } from '@app/licensing';
 import { registerCatalog } from '@app/catalog';
 import { registerAutomation, startOutboxWorker } from '@app/automation';
 import { registerAssets } from '@app/assets';
@@ -122,9 +122,18 @@ const bootstrap = new Elysia()
 // worker is started through the shared registry, so adding a queue means one
 // entry in this array — not a new handle and a new shutdown branch. Non-fatal
 // at boot: a Redis outage must not take the API down.
-startWorkers([startAvatarWorker(), startOutboxWorker()], (error) =>
-	pinoLogger.error({ err: error }, 'background worker error'),
+// `startLicenseDueWorker` is `null` unless `scheduler.enabled` (M04 reminders).
+const licenseDueWorker = startLicenseDueWorker();
+startWorkers(
+	[startAvatarWorker(), startOutboxWorker(), ...(licenseDueWorker ? [licenseDueWorker] : [])],
+	(error) => pinoLogger.error({ err: error }, 'background worker error'),
 );
+if (licenseDueWorker) {
+	await registerLicenseDueSchedule().then(
+		() => pinoLogger.info('license.due reminder schedule registered'),
+		(error: unknown) => pinoLogger.error({ err: error }, 'license.due schedule not registered'),
+	);
+}
 
 // Recurring sweeps (S4): late returns and guest-PII retention. `null` when
 // `scheduler.enabled` is false, which is the default for tests and scripts, so

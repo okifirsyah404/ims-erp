@@ -7168,14 +7168,16 @@ Table automation.outbox_messages {
   published_at bigint
   response_status smallint [note: "HTTP status of the last attempt, if any."]
   error_message varchar(500) [note: "Last failure, without secrets."]
+  dedupe_key varchar(200) [note: "Set for events that must be published once per business fact (e.g. license.due:<contract>:<end date>:<threshold>); a repeat publish is skipped."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "ERP events delivered to the n8n webhook (M04 stage 1, company-wide): written when the business change is saved, then POSTed with the event id and an HMAC signature; retried by the queue and by hand."
+  Note: "ERP events delivered to the n8n webhook (M04 stages 1-2, company-wide: lead.created, invoice.issued, receipt.recorded, license.due, service_ticket.updated): written when the business change is saved, then POSTed with the event id and an HMAC signature; retried by the queue and by hand."
   Indexes {
     status [name: 'outbox_messages_status_idx']
     topic [name: 'outbox_messages_topic_idx']
     (aggregate_type, aggregate_id) [name: 'outbox_messages_aggregate_idx']
+    dedupe_key [unique, name: 'outbox_messages_dedupe_key_key']
   }
   Checks {
     `status IN ('pending', 'published', 'failed')`

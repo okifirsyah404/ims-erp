@@ -50,7 +50,8 @@ export interface IOutboxDispatcher {
 
 /** Persistence port of `automation.outbox_messages`. */
 export interface IOutboxRepository {
-	create(data: Omit<TOutboxInsert, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>): Promise<TOutboxSelect>;
+	/** `null` when a row with the same `dedupeKey` already exists. */
+	create(data: Omit<TOutboxInsert, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>): Promise<TOutboxSelect | null>;
 	findById(id: string): Promise<TOutboxSelect | null>;
 	paginate(query: TOutboxListQuery): Promise<TPaginationResult<TOutboxSelect>>;
 	/** Counts the attempt and stores its outcome. */
