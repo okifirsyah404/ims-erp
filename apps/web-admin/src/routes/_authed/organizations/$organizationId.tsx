@@ -67,7 +67,8 @@ function OrganizationDetailPage() {
 
 	// Child routes (edit, members/new, members/$memberId/edit) render via the
 	// Outlet; the detail page must yield so the child page displays full-page.
-	const isChildActive = useChildMatches();
+	const childMatches = useChildMatches();
+	const isChildActive = childMatches.length > 0;
 
 	if (isChildActive) {
 		return <Outlet />;
