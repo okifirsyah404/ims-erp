@@ -1,0 +1,1847 @@
+import { DRIZZLE_TOKEN } from '@di/provider';
+import type { TTx } from '@drizzle/types';
+import {
+	accountBalances,
+	accountingPeriods,
+	bankAccountLinks,
+	chartOfAccounts,
+	journalEntries,
+	journalLines,
+	openingBalances,
+	type TAccountingPeriodSelect,
+	type TAccountBalanceSelect,
+	type TBankAccountLinkSelect,
+	type TChartOfAccountSelect,
+	type TJournalEntrySelect,
+	type TJournalLineSelect,
+	type TOpeningBalanceSelect,
+} from '@drizzle/schemas/accounting.schema';
+import {
+	apOpenItems,
+	arOpenItems,
+	bankReconciliationItems,
+	bankReconciliations,
+	cashBankAccounts,
+	cashBankTransactions,
+	paymentAllocations,
+	payments,
+	supplierBills,
+	type TApOpenItemSelect,
+	type TArOpenItemSelect,
+	type TCashBankAccountSelect,
+	type TCashBankTransactionSelect,
+	type TPaymentAllocationSelect,
+	type TPaymentSelect,
+	type TSupplierBillSelect,
+} from '@drizzle/schemas/finance.schema';
+import {
+	invoices,
+	type TInvoiceSelect,
+} from '@drizzle/schemas/sales.schema';
+import type { TPaginationResult } from '@ims-erp/common';
+import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { inject, injectable } from 'tsyringe';
+
+/**
+ * Drizzle implementation of the ledger repository (M09 F2).
+ *
+ * @remarks
+ * Tenant scope on every query. Soft-deleted rows excluded. Every method takes
+ * an optional transaction handle so the posting service can compose everything
+ * inside the caller's transaction (architecture.md §Transactions ownership).
+ */
+@injectable()
+export class LedgerRepository {
+	constructor(
+		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
+	) {}
+
+	/* ----------------------------- chart of accounts ----------------------------- */
+
+	async findAccountById(
+		organizationId: string,
+		id: string,
+		tx?: TTx,
+	): Promise<TChartOfAccountSelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(chartOfAccounts)
+			.where(
+				and(
+					eq(chartOfAccounts.id, id),
+					eq(chartOfAccounts.organizationId, organizationId),
+					isNull(chartOfAccounts.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async findAccountByCode(
+		organizationId: string,
+		code: string,
+		tx?: TTx,
+	): Promise<TChartOfAccountSelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(chartOfAccounts)
+			.where(
+				and(
+					eq(chartOfAccounts.code, code),
+					eq(chartOfAccounts.organizationId, organizationId),
+					isNull(chartOfAccounts.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async findAccountsByCodes(
+		organizationId: string,
+		codes: string[],
+		tx?: TTx,
+	): Promise<Map<string, TChartOfAccountSelect>> {
+		const db = tx ?? this.database;
+		const rows = await db
+			.select()
+			.from(chartOfAccounts)
+			.where(
+				and(
+					eq(chartOfAccounts.organizationId, organizationId),
+					inArray(chartOfAccounts.code, codes),
+					isNull(chartOfAccounts.deletedAt),
+				),
+			);
+		return new Map(rows.map((row) => [row.code, row]));
+	}
+
+	async listAccounts(
+		organizationId: string,
+		pagination: { page: number; limit: number },
+		filters: { accountType?: string; isActive?: boolean } = {},
+	): Promise<TPaginationResult<TChartOfAccountSelect>> {
+		const conditions = [
+			eq(chartOfAccounts.organizationId, organizationId),
+			isNull(chartOfAccounts.deletedAt),
+		];
+		if (filters.accountType) {
+			conditions.push(eq(chartOfAccounts.accountType, filters.accountType));
+		}
+		if (filters.isActive !== undefined) {
+			conditions.push(eq(chartOfAccounts.isActive, filters.isActive));
+		}
+		const where = and(...conditions);
+		const [{ value: total }] = await this.database
+			.select({ value: count() })
+			.from(chartOfAccounts)
+			.where(where);
+		const data = await this.database
+			.select()
+			.from(chartOfAccounts)
+			.where(where)
+			.orderBy(asc(chartOfAccounts.code))
+			.limit(pagination.limit)
+			.offset((pagination.page - 1) * pagination.limit);
+		return {
+			data,
+			meta: {
+				page: pagination.page,
+				limit: pagination.limit,
+				total,
+				totalPages: Math.ceil(total / pagination.limit) || 1,
+			},
+		};
+	}
+
+	async insertAccount(
+		row: {
+			organizationId: string;
+			code: string;
+			name: string;
+			accountType: string;
+			normalBalance: string;
+			parentAccountId: string | null;
+			level: number;
+			isPostable: boolean;
+			isSystem: boolean;
+			isActive: boolean;
+			cashFlowCategory: string | null;
+			description: string | null;
+		},
+		tx?: TTx,
+	): Promise<TChartOfAccountSelect> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [created] = await db
+			.insert(chartOfAccounts)
+			.values({ ...row, createdAt: now, updatedAt: now })
+			.returning();
+		return created;
+	}
+
+	async updateAccount(
+		organizationId: string,
+		id: string,
+		patch: {
+			name?: string;
+			isPostable?: boolean;
+			isActive?: boolean;
+			cashFlowCategory?: string | null;
+			description?: string | null;
+		},
+		tx?: TTx,
+	): Promise<TChartOfAccountSelect | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(chartOfAccounts)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(chartOfAccounts.id, id),
+					eq(chartOfAccounts.organizationId, organizationId),
+					isNull(chartOfAccounts.deletedAt),
+				),
+			)
+			.returning();
+		return updated ?? null;
+	}
+
+	/** True when at least one non-void journal line references the account. */
+	async accountHasJournalLines(
+		organizationId: string,
+		accountId: string,
+	): Promise<boolean> {
+		const [row] = await this.database
+			.select({ value: count() })
+			.from(journalLines)
+			.where(
+				and(
+					eq(journalLines.organizationId, organizationId),
+					eq(journalLines.accountId, accountId),
+					isNull(journalLines.deletedAt),
+				),
+			)
+			.limit(1);
+		return row.value > 0;
+	}
+
+	/* ----------------------------- accounting periods ----------------------------- */
+
+	async findPeriodByMonth(
+		organizationId: string,
+		year: number,
+		month: number,
+		tx?: TTx,
+	): Promise<TAccountingPeriodSelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(accountingPeriods)
+			.where(
+				and(
+					eq(accountingPeriods.organizationId, organizationId),
+					eq(accountingPeriods.periodYear, year),
+					eq(accountingPeriods.periodMonth, month),
+					isNull(accountingPeriods.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async findPeriodById(
+		organizationId: string,
+		id: string,
+	): Promise<TAccountingPeriodSelect | null> {
+		const [row] = await this.database
+			.select()
+			.from(accountingPeriods)
+			.where(
+				and(
+					eq(accountingPeriods.id, id),
+					eq(accountingPeriods.organizationId, organizationId),
+					isNull(accountingPeriods.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async listPeriods(
+		organizationId: string,
+		pagination: { page: number; limit: number },
+	): Promise<TPaginationResult<TAccountingPeriodSelect>> {
+		const where = and(
+			eq(accountingPeriods.organizationId, organizationId),
+			isNull(accountingPeriods.deletedAt),
+		);
+		const [{ value: total }] = await this.database
+			.select({ value: count() })
+			.from(accountingPeriods)
+			.where(where);
+		const data = await this.database
+			.select()
+			.from(accountingPeriods)
+			.where(where)
+			.orderBy(desc(accountingPeriods.periodYear), desc(accountingPeriods.periodMonth))
+			.limit(pagination.limit)
+			.offset((pagination.page - 1) * pagination.limit);
+		return {
+			data,
+			meta: {
+				page: pagination.page,
+				limit: pagination.limit,
+				total,
+				totalPages: Math.ceil(total / pagination.limit) || 1,
+			},
+		};
+	}
+
+	async insertPeriod(
+		row: {
+			organizationId: string;
+			code: string;
+			periodYear: number;
+			periodMonth: number;
+			startDate: string;
+			endDate: string;
+			status: string;
+		},
+		tx?: TTx,
+	): Promise<TAccountingPeriodSelect> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [created] = await db
+			.insert(accountingPeriods)
+			.values({ ...row, createdAt: now, updatedAt: now })
+			.returning();
+		return created;
+	}
+
+	async updatePeriodStatus(
+		organizationId: string,
+		id: string,
+		patch: {
+			status?: string;
+			closedBy?: string | null;
+			closedAt?: Date | null;
+			reopenedBy?: string | null;
+			reopenedAt?: Date | null;
+		},
+		tx?: TTx,
+	): Promise<TAccountingPeriodSelect | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(accountingPeriods)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(accountingPeriods.id, id),
+					eq(accountingPeriods.organizationId, organizationId),
+					isNull(accountingPeriods.deletedAt),
+				),
+			)
+			.returning();
+		return updated ?? null;
+	}
+
+	/* ----------------------------- journal entries ----------------------------- */
+
+	async findEntryById(
+		organizationId: string,
+		id: string,
+		tx?: TTx,
+	): Promise<TJournalEntrySelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(journalEntries)
+			.where(
+				and(
+					eq(journalEntries.id, id),
+					eq(journalEntries.organizationId, organizationId),
+					isNull(journalEntries.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async findPostedEntryByIdempotencyKey(
+		organizationId: string,
+		idempotencyKey: string,
+		tx?: TTx,
+	): Promise<TJournalEntrySelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(journalEntries)
+			.where(
+				and(
+					eq(journalEntries.organizationId, organizationId),
+					eq(journalEntries.idempotencyKey, idempotencyKey),
+					isNull(journalEntries.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async listEntries(
+		organizationId: string,
+		pagination: { page: number; limit: number },
+		filters: { year?: number; month?: number; status?: string } = {},
+	): Promise<TPaginationResult<TJournalEntrySelect>> {
+		const conditions = [
+			eq(journalEntries.organizationId, organizationId),
+			isNull(journalEntries.deletedAt),
+		];
+		if (filters.year && filters.month) {
+			const start = `${filters.year}-${String(filters.month).padStart(2, '0')}-01`;
+			const endDate = new Date(
+				Date.UTC(filters.year, filters.month, 0),
+			).toISOString().slice(0, 10);
+			conditions.push(sql`${journalEntries.entryDate} >= ${start}`);
+			conditions.push(sql`${journalEntries.entryDate} <= ${endDate}`);
+		}
+		if (filters.status) {
+			conditions.push(eq(journalEntries.status, filters.status));
+		}
+		const where = and(...conditions);
+		const [{ value: total }] = await this.database
+			.select({ value: count() })
+			.from(journalEntries)
+			.where(where);
+		const data = await this.database
+			.select()
+			.from(journalEntries)
+			.where(where)
+			.orderBy(desc(journalEntries.entryDate), desc(journalEntries.createdAt))
+			.limit(pagination.limit)
+			.offset((pagination.page - 1) * pagination.limit);
+		return {
+			data,
+			meta: {
+				page: pagination.page,
+				limit: pagination.limit,
+				total,
+				totalPages: Math.ceil(total / pagination.limit) || 1,
+			},
+		};
+	}
+
+	async insertEntry(
+		row: {
+			organizationId: string;
+			code: string;
+			accountingPeriodId: string;
+			entryDate: string;
+			description: string | null;
+			sourceType: string | null;
+			sourceId: string | null;
+			idempotencyKey: string | null;
+			sourceModule: string;
+			status: string;
+			totalDebit: number;
+			totalCredit: number;
+			currencyCode: string;
+			postedBy: string | null;
+			postedAt: Date | null;
+		},
+		tx?: TTx,
+	): Promise<TJournalEntrySelect> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [created] = await db
+			.insert(journalEntries)
+			.values({ ...row, preparedBy: row.postedBy, createdAt: now, updatedAt: now })
+			.returning();
+		return created;
+	}
+
+	async insertLines(
+		rows: Array<{
+			organizationId: string;
+			journalEntryId: string;
+			lineNo: number;
+			accountId: string;
+			debit: number;
+			credit: number;
+			currencyCode: string;
+			description: string | null;
+			costCenterId: string | null;
+			projectId: string | null;
+			partyType: string | null;
+			partyId: string | null;
+		}>,
+		tx?: TTx,
+	): Promise<TJournalLineSelect[]> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		return db
+			.insert(journalLines)
+			.values(rows.map((row) => ({ ...row, createdAt: now, updatedAt: now })))
+			.returning();
+	}
+
+	async findLinesByEntryId(
+		organizationId: string,
+		entryId: string,
+		tx?: TTx,
+	): Promise<TJournalLineSelect[]> {
+		const db = tx ?? this.database;
+		return db
+			.select()
+			.from(journalLines)
+			.where(
+				and(
+					eq(journalLines.journalEntryId, entryId),
+					eq(journalLines.organizationId, organizationId),
+					isNull(journalLines.deletedAt),
+				),
+			)
+			.orderBy(asc(journalLines.lineNo));
+	}
+
+	/** Stamps `posted_by` on a manually-posted entry (HTTP actor). */
+	async stampPostedBy(
+		organizationId: string,
+		entryId: string,
+		postedBy: string,
+		tx?: TTx,
+	): Promise<void> {
+		const db = tx ?? this.database;
+		await db
+			.update(journalEntries)
+			.set({ postedBy, updatedAt: new Date() })
+			.where(
+				and(
+					eq(journalEntries.id, entryId),
+					eq(journalEntries.organizationId, organizationId),
+				),
+			);
+	}
+
+	/** Marks the entry `reversed` and stamps the mirrored entry. */	async markReversed(
+		organizationId: string,
+		entryId: string,
+		reversedByEntryId: string,
+		tx?: TTx,
+	): Promise<void> {
+		const db = tx ?? this.database;
+		await db
+			.update(journalEntries)
+			.set({
+				status: 'reversed',
+				reversedByEntryId,
+				updatedAt: new Date(),
+			})
+			.where(
+				and(
+					eq(journalEntries.id, entryId),
+					eq(journalEntries.organizationId, organizationId),
+				),
+			);
+	}
+
+	/* ----------------------------- opening balances ----------------------------- */
+
+	async listOpeningBalances(
+		organizationId: string,
+	): Promise<TOpeningBalanceSelect[]> {
+		return this.database
+			.select()
+			.from(openingBalances)
+			.where(
+				and(
+					eq(openingBalances.organizationId, organizationId),
+					isNull(openingBalances.deletedAt),
+				),
+			)
+			.orderBy(asc(openingBalances.asOfDate));
+	}
+
+	async findOpeningBalanceByAccountAndDate(
+		organizationId: string,
+		accountId: string,
+		asOfDate: string,
+	): Promise<TOpeningBalanceSelect | null> {
+		const [row] = await this.database
+			.select()
+			.from(openingBalances)
+			.where(
+				and(
+					eq(openingBalances.organizationId, organizationId),
+					eq(openingBalances.accountId, accountId),
+					eq(openingBalances.asOfDate, asOfDate),
+					isNull(openingBalances.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async insertOpeningBalance(
+		row: {
+			organizationId: string;
+			accountId: string;
+			asOfDate: string;
+			debitBalance: number;
+			creditBalance: number;
+			currencyCode: string;
+			description: string | null;
+		},
+		tx?: TTx,
+	): Promise<TOpeningBalanceSelect> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [created] = await db
+			.insert(openingBalances)
+			.values({ ...row, createdAt: now, updatedAt: now })
+			.returning();
+		return created;
+	}
+
+	async updateOpeningBalance(
+		organizationId: string,
+		id: string,
+		patch: {
+			debitBalance?: number;
+			creditBalance?: number;
+			description?: string | null;
+		},
+		tx?: TTx,
+	): Promise<TOpeningBalanceSelect | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(openingBalances)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(openingBalances.id, id),
+					eq(openingBalances.organizationId, organizationId),
+					isNull(openingBalances.deletedAt),
+				),
+			)
+			.returning();
+		return updated ?? null;
+	}
+
+	/** Stamps `posted_at` once an opening-balance batch has been posted. */
+	async stampOpeningBalancePosted(
+		organizationId: string,
+		id: string,
+		tx?: TTx,
+	): Promise<void> {
+		const db = tx ?? this.database;
+		await db
+			.update(openingBalances)
+			.set({ postedAt: new Date(), updatedAt: new Date() })
+			.where(
+				and(
+					eq(openingBalances.id, id),
+					eq(openingBalances.organizationId, organizationId),
+				),
+			);
+	}
+
+	async deleteOpeningBalance(		organizationId: string,
+		id: string,
+		tx?: TTx,
+	): Promise<boolean> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(openingBalances)
+			.set({ deletedAt: new Date(), updatedAt: new Date() })
+			.where(
+				and(
+					eq(openingBalances.id, id),
+					eq(openingBalances.organizationId, organizationId),
+					isNull(openingBalances.deletedAt),
+				),
+			)
+			.returning();
+		return Boolean(updated);
+	}
+
+	/* ----------------------------- bank account links ----------------------------- */
+
+	async findBankAccountLinkByCashAccount(
+		organizationId: string,
+		cashBankAccountId: string,
+	): Promise<TBankAccountLinkSelect | null> {
+		const [row] = await this.database
+			.select()
+			.from(bankAccountLinks)
+			.where(
+				and(
+					eq(bankAccountLinks.organizationId, organizationId),
+					eq(bankAccountLinks.cashBankAccountId, cashBankAccountId),
+					eq(bankAccountLinks.isActive, true),
+					isNull(bankAccountLinks.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async upsertBankAccountLink(
+		row: {
+			organizationId: string;
+			cashBankAccountId: string;
+			chartOfAccountId: string;
+			isActive: boolean;
+		},
+		tx?: TTx,
+	): Promise<TBankAccountLinkSelect> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [created] = await db
+			.insert(bankAccountLinks)
+			.values({ ...row, createdAt: now, updatedAt: now })
+			.onConflictDoUpdate({
+				target: bankAccountLinks.cashBankAccountId,
+				set: {
+					chartOfAccountId: row.chartOfAccountId,
+					isActive: row.isActive,
+					deletedAt: null,
+					updatedAt: now,
+				},
+			})
+			.returning();
+		return created;
+	}
+
+	async deactivateBankAccountLink(
+		organizationId: string,
+		cashBankAccountId: string,
+	): Promise<void> {
+		await this.database
+			.update(bankAccountLinks)
+			.set({ isActive: false, updatedAt: new Date() })
+			.where(
+				and(
+					eq(bankAccountLinks.organizationId, organizationId),
+					eq(bankAccountLinks.cashBankAccountId, cashBankAccountId),
+				),
+			);
+	}
+
+	/* ----------------------------- cash/bank accounts & movements (F3) ----------------------------- */
+
+	async findCashBankAccountByCode(
+		organizationId: string,
+		code: string,
+		tx?: TTx,
+	): Promise<TCashBankAccountSelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(cashBankAccounts)
+			.where(
+				and(
+					eq(cashBankAccounts.code, code),
+					eq(cashBankAccounts.organizationId, organizationId),
+					isNull(cashBankAccounts.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async findCashBankAccountById(		organizationId: string,
+		id: string,
+		tx?: TTx,
+	): Promise<TCashBankAccountSelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(cashBankAccounts)
+			.where(
+				and(
+					eq(cashBankAccounts.id, id),
+					eq(cashBankAccounts.organizationId, organizationId),
+					isNull(cashBankAccounts.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async listCashBankAccounts(
+		organizationId: string,
+	): Promise<TCashBankAccountSelect[]> {
+		return this.database
+			.select()
+			.from(cashBankAccounts)
+			.where(
+				and(
+					eq(cashBankAccounts.organizationId, organizationId),
+					isNull(cashBankAccounts.deletedAt),
+				),
+			)
+			.orderBy(asc(cashBankAccounts.code));
+	}
+
+	async insertCashBankAccount(
+		row: {
+			organizationId: string;
+			code: string;
+			name: string;
+			accountType: string;
+			bankName: string | null;
+			accountNumber: string | null;
+			accountHolder: string | null;
+			openingBalance: number;
+			currentBalance: number;
+		},
+		tx?: TTx,
+	): Promise<TCashBankAccountSelect> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [created] = await db
+			.insert(cashBankAccounts)
+			.values({ ...row, createdAt: now, updatedAt: now })
+			.returning();
+		return created;
+	}
+
+	async updateCashBankAccount(
+		organizationId: string,
+		id: string,
+		patch: {
+			name?: string;
+			bankName?: string | null;
+			accountNumber?: string | null;
+			accountHolder?: string | null;
+			isActive?: boolean;
+			currentBalance?: number;
+		},
+		tx?: TTx,
+	): Promise<TCashBankAccountSelect | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(cashBankAccounts)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(cashBankAccounts.id, id),
+					eq(cashBankAccounts.organizationId, organizationId),
+					isNull(cashBankAccounts.deletedAt),
+				),
+			)
+			.returning();
+		return updated ?? null;
+	}
+
+	async insertCashBankTransaction(
+		row: {
+			organizationId: string;
+			code: string;
+			cashBankAccountId: string;
+			transactionDate: string;
+			direction: string;
+			amount: number;
+			description: string | null;
+			referenceNumber: string | null;
+			status: string;
+			balanceAfter: number;
+			postedBy: string | null;
+			postedAt: Date | null;
+		},
+		tx?: TTx,
+	): Promise<TCashBankTransactionSelect> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [created] = await db
+			.insert(cashBankTransactions)
+			.values({ ...row, createdAt: now, updatedAt: now })
+			.returning();
+		return created;
+	}
+
+	async listCashBankTransactions(
+		organizationId: string,
+		cashBankAccountId: string | undefined,
+		pagination: { page: number; limit: number },
+	): Promise<TPaginationResult<TCashBankTransactionSelect>> {
+		const conditions = [
+			eq(cashBankTransactions.organizationId, organizationId),
+			isNull(cashBankTransactions.deletedAt),
+		];
+		if (cashBankAccountId) {
+			conditions.push(
+				eq(cashBankTransactions.cashBankAccountId, cashBankAccountId),
+			);
+		}
+		const where = and(...conditions);
+		const [{ value: total }] = await this.database
+			.select({ value: count() })
+			.from(cashBankTransactions)
+			.where(where);
+		const data = await this.database
+			.select()
+			.from(cashBankTransactions)
+			.where(where)
+			.orderBy(desc(cashBankTransactions.transactionDate), desc(cashBankTransactions.createdAt))
+			.limit(pagination.limit)
+			.offset((pagination.page - 1) * pagination.limit);
+		return {
+			data,
+			meta: {
+				page: pagination.page,
+				limit: pagination.limit,
+				total,
+				totalPages: Math.ceil(total / pagination.limit) || 1,
+			},
+		};
+	}
+
+	/** Runs a balance-recalculation sanity check (used by tests/ops). */
+	async cashBankAccountBalance(
+		organizationId: string,
+		id: string,
+	): Promise<number> {
+		const [row] = await this.database
+			.select({
+				sum: sql<number>`coalesce(sum(CASE WHEN ${cashBankTransactions.direction} = 'in' THEN ${cashBankTransactions.amount} ELSE -${cashBankTransactions.amount} END), 0)::bigint`,
+			})
+			.from(cashBankTransactions)
+			.where(
+				and(
+					eq(cashBankTransactions.organizationId, organizationId),
+					eq(cashBankTransactions.cashBankAccountId, id),
+					eq(cashBankTransactions.status, 'posted'),
+					isNull(cashBankTransactions.deletedAt),
+				),
+			);
+		return Number(row.sum);
+	}
+
+	/* ----------------------------- AR sub-ledger & payments (F4) ----------------------------- */
+
+	async insertArOpenItem(
+		row: {
+			organizationId: string;
+			salesInvoiceId: string;
+			customerId: string | null;
+			invoiceDate: string | null;
+			dueDate: string | null;
+			originalAmount: number;
+			paidAmount: number;
+			outstandingAmount: number;
+			currencyCode: string;
+			status: string;
+		},
+		tx?: TTx,
+	): Promise<TArOpenItemSelect> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [created] = await db
+			.insert(arOpenItems)
+			.values({ ...row, createdAt: now, updatedAt: now })
+			.returning();
+		return created;
+	}
+
+	async findArOpenItemByInvoice(
+		organizationId: string,
+		salesInvoiceId: string,
+		tx?: TTx,
+	): Promise<TArOpenItemSelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(arOpenItems)
+			.where(
+				and(
+					eq(arOpenItems.organizationId, organizationId),
+					eq(arOpenItems.salesInvoiceId, salesInvoiceId),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async updateArOpenItem(
+		organizationId: string,
+		salesInvoiceId: string,
+		patch: {
+			paidAmount?: number;
+			outstandingAmount?: number;
+			status?: string;
+		},
+		tx?: TTx,
+	): Promise<TArOpenItemSelect | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(arOpenItems)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(arOpenItems.organizationId, organizationId),
+					eq(arOpenItems.salesInvoiceId, salesInvoiceId),
+				),
+			)
+			.returning();
+		return updated ?? null;
+	}
+
+	/** AR aging buckets source: open + partially-paid items, optionally per customer. */
+	async listArOpenItemsForAging(
+		organizationId: string,
+		customerId?: string,
+		tx?: TTx,
+	): Promise<TArOpenItemSelect[]> {
+		const db = tx ?? this.database;
+		const conditions = [
+			eq(arOpenItems.organizationId, organizationId),
+			inArray(arOpenItems.status, ['open', 'partially_paid']),
+		];
+		if (customerId) conditions.push(eq(arOpenItems.customerId, customerId));
+		return db
+			.select()
+			.from(arOpenItems)
+			.where(and(...conditions))
+			.orderBy(asc(arOpenItems.dueDate));
+	}
+
+	async insertPayment(
+		row: {
+			organizationId: string;
+			code: string;
+			paymentType: string;
+			direction: string;
+			counterpartyType: string | null;
+			counterpartyId: string | null;
+			amount: number;
+			currencyCode: string;
+			paymentMethod: string;
+			paymentDate: string | null;
+			status: string;
+			requestedBy: string | null;
+			requestedAt: Date | null;
+			submittedAt: Date | null;
+			approvedBy: string | null;
+			approvedAt: Date | null;
+			executedBy: string | null;
+			executedAt: Date | null;
+			cashBankAccountId: string | null;
+			referenceNumber: string | null;
+			notes: string | null;
+		},
+		tx?: TTx,
+	): Promise<TPaymentSelect> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [created] = await db
+			.insert(payments)
+			.values({ ...row, createdAt: now, updatedAt: now })
+			.returning();
+		return created;
+	}
+
+	async updatePayment(
+		organizationId: string,
+		id: string,
+		patch: Record<string, unknown>,
+		tx?: TTx,
+	): Promise<TPaymentSelect | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(payments)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(payments.id, id),
+					eq(payments.organizationId, organizationId),
+					isNull(payments.deletedAt),
+				),
+			)
+			.returning();
+		return updated ?? null;
+	}
+
+	async findPaymentById(
+		organizationId: string,
+		id: string,
+		tx?: TTx,
+	): Promise<TPaymentSelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(payments)
+			.where(
+				and(
+					eq(payments.id, id),
+					eq(payments.organizationId, organizationId),
+					isNull(payments.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async listPayments(
+		organizationId: string,
+		filters: { status?: string; paymentType?: string },
+		pagination: { page: number; limit: number },
+	): Promise<TPaginationResult<TPaymentSelect>> {
+		const conditions = [
+			eq(payments.organizationId, organizationId),
+			isNull(payments.deletedAt),
+		];
+		if (filters.status) conditions.push(eq(payments.status, filters.status));
+		if (filters.paymentType) {
+			conditions.push(eq(payments.paymentType, filters.paymentType));
+		}
+		const where = and(...conditions);
+		const [{ value: total }] = await this.database
+			.select({ value: count() })
+			.from(payments)
+			.where(where);
+		const data = await this.database
+			.select()
+			.from(payments)
+			.where(where)
+			.orderBy(desc(payments.createdAt))
+			.limit(pagination.limit)
+			.offset((pagination.page - 1) * pagination.limit);
+		return {
+			data,
+			meta: {
+				page: pagination.page,
+				limit: pagination.limit,
+				total,
+				totalPages: Math.ceil(total / pagination.limit) || 1,
+			},
+		};
+	}
+
+	async insertPaymentAllocations(
+		rows: Array<{
+			organizationId: string;
+			paymentId: string;
+			targetType: string;
+			salesInvoiceId: string | null;
+			supplierBillId: string | null;
+			amount: number;
+		}>,
+		tx?: TTx,
+	): Promise<TPaymentAllocationSelect[]> {
+		if (rows.length === 0) return [];
+		const db = tx ?? this.database;
+		const now = new Date();
+		return db
+			.insert(paymentAllocations)
+			.values(rows.map((row) => ({ ...row, createdAt: now, updatedAt: now })))
+			.returning();
+	}
+
+	async listPaymentAllocations(
+		organizationId: string,
+		paymentId: string,
+		tx?: TTx,
+	): Promise<TPaymentAllocationSelect[]> {
+		const db = tx ?? this.database;
+		return db
+			.select()
+			.from(paymentAllocations)
+			.where(
+				and(
+					eq(paymentAllocations.organizationId, organizationId),
+					eq(paymentAllocations.paymentId, paymentId),
+				),
+			);
+	}
+
+	/** Direct update of the sales-side mirror totals (kept transactional with the payment). */
+	async updateSalesInvoiceTotals(
+		organizationId: string,
+		invoiceId: string,
+		patch: {
+			paidTotal?: number;
+			outstandingTotal?: number;
+			status?: string;
+		},
+		tx?: TTx,
+	): Promise<TInvoiceSelect | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(invoices)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(invoices.id, invoiceId),
+					eq(invoices.organizationId, organizationId),
+					isNull(invoices.deletedAt),
+				),
+			)
+			.returning();
+		return updated ?? null;
+	}
+
+	/** Stamps the allocation as settled at execute time (via notes-free updatedAt bump). */
+	async markAllocationExecuted(
+		organizationId: string,
+		allocationId: string,
+		tx?: TTx,
+	): Promise<void> {
+		const db = tx ?? this.database;
+		await db
+			.update(paymentAllocations)
+			.set({ updatedAt: new Date() })
+			.where(
+				and(
+					eq(paymentAllocations.id, allocationId),
+					eq(paymentAllocations.organizationId, organizationId),
+				),
+			);
+	}
+
+	/** Reads a sales invoice for allocation validation (cross-schema mirror write path). */
+	async findSalesInvoiceById(
+		organizationId: string,
+		invoiceId: string,
+		tx?: TTx,
+	): Promise<TInvoiceSelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(invoices)
+			.where(
+				and(
+					eq(invoices.id, invoiceId),
+					eq(invoices.organizationId, organizationId),
+					isNull(invoices.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	/* ----------------------------- AP sub-ledger & supplier bills (F5) ----------------------------- */
+
+	async insertApOpenItem(
+		row: {
+			organizationId: string;
+			supplierBillId: string;
+			supplierId: string | null;
+			billDate: string | null;
+			dueDate: string | null;
+			originalAmount: number;
+			paidAmount: number;
+			outstandingAmount: number;
+			currencyCode: string;
+			status: string;
+		},
+		tx?: TTx,
+	): Promise<TApOpenItemSelect> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [created] = await db
+			.insert(apOpenItems)
+			.values({ ...row, createdAt: now, updatedAt: now })
+			.returning();
+		return created;
+	}
+
+	async findApOpenItemByBill(
+		organizationId: string,
+		supplierBillId: string,
+		tx?: TTx,
+	): Promise<TApOpenItemSelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(apOpenItems)
+			.where(
+				and(
+					eq(apOpenItems.organizationId, organizationId),
+					eq(apOpenItems.supplierBillId, supplierBillId),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async updateApOpenItem(
+		organizationId: string,
+		supplierBillId: string,
+		patch: {
+			paidAmount?: number;
+			outstandingAmount?: number;
+			status?: string;
+		},
+		tx?: TTx,
+	): Promise<TApOpenItemSelect | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(apOpenItems)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(apOpenItems.organizationId, organizationId),
+					eq(apOpenItems.supplierBillId, supplierBillId),
+				),
+			)
+			.returning();
+		return updated ?? null;
+	}
+
+	/** AP aging buckets source: open + partially-paid items, optionally per supplier. */
+	async listApOpenItemsForAging(
+		organizationId: string,
+		supplierId?: string,
+		tx?: TTx,
+	): Promise<TApOpenItemSelect[]> {
+		const db = tx ?? this.database;
+		const conditions = [
+			eq(apOpenItems.organizationId, organizationId),
+			inArray(apOpenItems.status, ['open', 'partially_paid']),
+		];
+		if (supplierId) conditions.push(eq(apOpenItems.supplierId, supplierId));
+		return db
+			.select()
+			.from(apOpenItems)
+			.where(and(...conditions))
+			.orderBy(asc(apOpenItems.dueDate));
+	}
+
+	async insertSupplierBill(
+		row: {
+			organizationId: string;
+			code: string;
+			supplierId: string;
+			purchaseOrderId: string | null;
+			billDate: string | null;
+			dueDate: string | null;
+			subtotal: number;
+			taxTotal: number;
+			grandTotal: number;
+			paidTotal: number;
+			outstandingTotal: number;
+			currencyCode: string;
+			status: string;
+			approvedBy: string | null;
+			approvedAt: Date | null;
+		},
+		tx?: TTx,
+	): Promise<TSupplierBillSelect> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [created] = await db
+			.insert(supplierBills)
+			.values({ ...row, createdAt: now, updatedAt: now })
+			.returning();
+		return created;
+	}
+
+	async findSupplierBillById(
+		organizationId: string,
+		id: string,
+		tx?: TTx,
+	): Promise<TSupplierBillSelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(supplierBills)
+			.where(
+				and(
+					eq(supplierBills.id, id),
+					eq(supplierBills.organizationId, organizationId),
+					isNull(supplierBills.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async updateSupplierBill(
+		organizationId: string,
+		id: string,
+		patch: Record<string, unknown>,
+		tx?: TTx,
+	): Promise<TSupplierBillSelect | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(supplierBills)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(supplierBills.id, id),
+					eq(supplierBills.organizationId, organizationId),
+					isNull(supplierBills.deletedAt),
+				),
+			)
+			.returning();
+		return updated ?? null;
+	}
+
+	async listSupplierBills(
+		organizationId: string,
+		filters: { status?: string; supplierId?: string },
+		pagination: { page: number; limit: number },
+	): Promise<TPaginationResult<TSupplierBillSelect>> {
+		const conditions = [
+			eq(supplierBills.organizationId, organizationId),
+			isNull(supplierBills.deletedAt),
+		];
+		if (filters.status) conditions.push(eq(supplierBills.status, filters.status));
+		if (filters.supplierId) {
+			conditions.push(eq(supplierBills.supplierId, filters.supplierId));
+		}
+		const where = and(...conditions);
+		const [{ value: total }] = await this.database
+			.select({ value: count() })
+			.from(supplierBills)
+			.where(where);
+		const data = await this.database
+			.select()
+			.from(supplierBills)
+			.where(where)
+			.orderBy(desc(supplierBills.createdAt))
+			.limit(pagination.limit)
+			.offset((pagination.page - 1) * pagination.limit);
+		return {
+			data,
+			meta: {
+				page: pagination.page,
+				limit: pagination.limit,
+				total,
+				totalPages: Math.ceil(total / pagination.limit) || 1,
+			},
+		};
+	}
+
+	/** Id-keyed account map for report builders (F6). */
+	async listAccountsMap(
+		organizationId: string,
+		tx?: TTx,
+	): Promise<Map<string, TChartOfAccountSelect>> {
+		const db = tx ?? this.database;
+		const rows = await db
+			.select()
+			.from(chartOfAccounts)
+			.where(
+				and(
+					eq(chartOfAccounts.organizationId, organizationId),
+					isNull(chartOfAccounts.deletedAt),
+				),
+			);
+		return new Map(rows.map((row) => [row.id, row]));
+	}
+
+	/* ----------------------------- reports (F6) ----------------------------- */
+
+	/**
+	 * Aggregated journal activity per account between two dates (inclusive).
+	 *
+	 * @remarks
+	 * The single query every financial report builds on (D7): posted entries
+	 * only, grouped by account. Reversal entries participate as normal rows —
+	 * their debits/credits naturally offset the original.
+	 */
+	async listAccountActivity(
+		organizationId: string,
+		startDate: string,
+		endDate: string,
+		tx?: TTx,
+	): Promise<
+		Array<{ accountId: string; debit: number; credit: number }>
+	> {
+		const db = tx ?? this.database;
+		return db
+			.select({
+				accountId: journalLines.accountId,
+				debit: sql<number>`coalesce(sum(${journalLines.debit}), 0)::bigint`,
+				credit: sql<number>`coalesce(sum(${journalLines.credit}), 0)::bigint`,
+			})
+			.from(journalLines)
+			.innerJoin(
+				journalEntries,
+				eq(journalLines.journalEntryId, journalEntries.id),
+			)
+			.where(
+				and(
+					eq(journalEntries.organizationId, organizationId),
+					eq(journalEntries.status, 'posted'),
+					isNull(journalEntries.deletedAt),
+					sql`${journalEntries.entryDate} >= ${startDate}`,
+					sql`${journalEntries.entryDate} <= ${endDate}`,
+				),
+			)
+			.groupBy(journalLines.accountId);
+	}
+
+	/* ----------------------------- bank reconciliation (F6) ----------------------------- */
+
+	async insertBankReconciliation(
+		row: {
+			organizationId: string;
+			code: string;
+			cashBankAccountId: string;
+			reconciliationDate: string;
+			statementBalance: number;
+			bookBalance: number;
+			difference: number;
+			status: string;
+			notes: string | null;
+		},
+		tx?: TTx,
+	): Promise<unknown> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [created] = await db
+			.insert(bankReconciliations)
+			.values({ ...row, createdAt: now, updatedAt: now })
+			.returning();
+		return created;
+	}
+
+	async findBankReconciliationById(
+		organizationId: string,
+		id: string,
+		tx?: TTx,
+	): Promise<unknown | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(bankReconciliations)
+			.where(
+				and(
+					eq(bankReconciliations.id, id),
+					eq(bankReconciliations.organizationId, organizationId),
+					isNull(bankReconciliations.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async listBankReconciliations(
+		organizationId: string,
+		filters: { cashBankAccountId?: string; status?: string },
+		pagination: { page: number; limit: number },
+	): Promise<TPaginationResult<unknown>> {
+		const conditions = [
+			eq(bankReconciliations.organizationId, organizationId),
+			isNull(bankReconciliations.deletedAt),
+		];
+		if (filters.cashBankAccountId) {
+			conditions.push(
+				eq(bankReconciliations.cashBankAccountId, filters.cashBankAccountId),
+			);
+		}
+		if (filters.status) {
+			conditions.push(eq(bankReconciliations.status, filters.status));
+		}
+		const where = and(...conditions);
+		const [{ value: total }] = await this.database
+			.select({ value: count() })
+			.from(bankReconciliations)
+			.where(where);
+		const data = await this.database
+			.select()
+			.from(bankReconciliations)
+			.where(where)
+			.orderBy(desc(bankReconciliations.reconciliationDate))
+			.limit(pagination.limit)
+			.offset((pagination.page - 1) * pagination.limit);
+		return {
+			data,
+			meta: {
+				page: pagination.page,
+				limit: pagination.limit,
+				total,
+				totalPages: Math.ceil(total / pagination.limit) || 1,
+			},
+		};
+	}
+
+	async updateBankReconciliation(
+		organizationId: string,
+		id: string,
+		patch: Record<string, unknown>,
+		tx?: TTx,
+	): Promise<unknown | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(bankReconciliations)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(bankReconciliations.id, id),
+					eq(bankReconciliations.organizationId, organizationId),
+					isNull(bankReconciliations.deletedAt),
+				),
+			)
+			.returning();
+		return updated ?? null;
+	}
+
+	async insertBankReconciliationItems(
+		rows: Array<{
+			organizationId: string;
+			bankReconciliationId: string;
+			cashBankTransactionId: string | null;
+			statementReference: string | null;
+			statementAmount: number | null;
+			isMatched: boolean;
+			notes: string | null;
+		}>,
+		tx?: TTx,
+	): Promise<unknown[]> {
+		if (rows.length === 0) return [];
+		const db = tx ?? this.database;
+		const now = new Date();
+		return db
+			.insert(bankReconciliationItems)
+			.values(rows.map((row) => ({ ...row, createdAt: now, updatedAt: now })))
+			.returning();
+	}
+
+	async listBankReconciliationItems(
+		organizationId: string,
+		bankReconciliationId: string,
+		tx?: TTx,
+	): Promise<unknown[]> {
+		const db = tx ?? this.database;
+		return db
+			.select()
+			.from(bankReconciliationItems)
+			.where(
+				and(
+					eq(bankReconciliationItems.organizationId, organizationId),
+					eq(bankReconciliationItems.bankReconciliationId, bankReconciliationId),
+					isNull(bankReconciliationItems.deletedAt),
+				),
+			);
+	}
+
+	async updateBankReconciliationItem(
+		organizationId: string,
+		id: string,
+		patch: Record<string, unknown>,
+		tx?: TTx,
+	): Promise<unknown | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(bankReconciliationItems)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(bankReconciliationItems.id, id),
+					eq(bankReconciliationItems.organizationId, organizationId),
+				),
+			)
+			.returning();
+		return updated ?? null;
+	}
+
+	/* ----------------------------- month-end close (F7) ----------------------------- */
+
+	/** Distinct counts for the close checklist, all inside one cheap pass. */
+	async closeChecklistCounts(
+		organizationId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<{
+		draftInvoicesInRange: number;
+		postedInPeriod: number;
+		draftPayments: number;
+		draftBills: number;
+		unreconciledReconciliations: number;
+	}> {
+		const rangeDraftInvoices = await this.database
+			.select({ value: count() })
+			.from(invoices)
+			.where(
+				and(
+					eq(invoices.organizationId, organizationId),
+					isNull(invoices.deletedAt),
+					eq(invoices.status, 'draft'),
+					gte(invoices.createdAt, new Date(`${startDate}T00:00:00Z`)),
+					lte(invoices.createdAt, new Date(`${endDate}T23:59:59Z`)),
+				),
+			);
+		void endDate;
+		const posted = await this.database
+			.select({ value: count() })
+			.from(journalEntries)
+			.where(
+				and(
+					eq(journalEntries.organizationId, organizationId),
+					eq(journalEntries.status, 'posted'),
+					isNull(journalEntries.deletedAt),
+					sql`${journalEntries.entryDate} >= ${startDate}`,
+					sql`${journalEntries.entryDate} <= ${endDate}`,
+				),
+			);
+		const draftPayments = await this.database
+			.select({ value: count() })
+			.from(payments)
+			.where(
+				and(
+					eq(payments.organizationId, organizationId),
+					isNull(payments.deletedAt),
+					inArray(payments.status, ['draft', 'submitted', 'approved']),
+				),
+			);
+		const draftBills = await this.database
+			.select({ value: count() })
+			.from(supplierBills)
+			.where(
+				and(
+					eq(supplierBills.organizationId, organizationId),
+					isNull(supplierBills.deletedAt),
+					eq(supplierBills.status, 'draft'),
+				),
+			);
+		const unrec = await this.database
+			.select({ value: count() })
+			.from(bankReconciliations)
+			.where(
+				and(
+					eq(bankReconciliations.organizationId, organizationId),
+					isNull(bankReconciliations.deletedAt),
+					inArray(bankReconciliations.status, ['draft', 'in_progress']),
+				),
+			);
+		return {
+			draftInvoicesInRange: Number(rangeDraftInvoices[0]?.value ?? 0),
+			postedInPeriod: Number(posted[0]?.value ?? 0),
+			draftPayments: Number(draftPayments[0]?.value ?? 0),
+			draftBills: Number(draftBills[0]?.value ?? 0),
+			unreconciledReconciliations: Number(unrec[0]?.value ?? 0),
+		};
+	}
+
+	/** Executed allocations of a payment, for the void-executed reversal (F7). */
+	async listExecutedAllocations(
+		organizationId: string,
+		paymentId: string,
+		tx?: TTx,
+	): Promise<TPaymentAllocationSelect[]> {
+		const db = tx ?? this.database;
+		return db
+			.select()
+			.from(paymentAllocations)
+			.where(
+				and(
+					eq(paymentAllocations.organizationId, organizationId),
+					eq(paymentAllocations.paymentId, paymentId),
+				),
+			);
+	}
+
+	/** The reversal JE for a posted movement, by idempotency key (F7). */
+	async findPostedEntryBySourceTypeAndId(
+		organizationId: string,
+		sourceType: string,
+		sourceId: string,
+		tx?: TTx,
+	): Promise<TJournalEntrySelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(journalEntries)
+			.where(
+				and(
+					eq(journalEntries.organizationId, organizationId),
+					eq(journalEntries.sourceType, sourceType),
+					eq(journalEntries.sourceId, sourceId),
+					isNull(journalEntries.deletedAt),
+				),
+			)
+			.orderBy(desc(journalEntries.createdAt))
+			.limit(1);
+		return row ?? null;
+	}
+
+	/* ----------------------------- account balances (close snapshot) ----------------------------- */
+
+	async upsertAccountBalance(
+		row: {
+			organizationId: string;
+			accountId: string;
+			accountingPeriodId: string;
+			balanceDate: string;
+			debitTotal: number;
+			creditTotal: number;
+			closingBalance: number;
+			currencyCode: string;
+			calculatedAt: Date;
+		},
+		tx?: TTx,
+	): Promise<TAccountBalanceSelect> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		const [snapshot] = await db
+			.insert(accountBalances)
+			.values({ ...row, createdAt: now, updatedAt: now })
+			.onConflictDoUpdate({
+				target: [accountBalances.accountId, accountBalances.accountingPeriodId],
+				set: {
+					debitTotal: row.debitTotal,
+					creditTotal: row.creditTotal,
+					closingBalance: row.closingBalance,
+					calculatedAt: row.calculatedAt,
+					updatedAt: now,
+				},
+			})
+			.returning();
+		return snapshot;
+	}
+
+	/** Per-account debit/credit totals of posted entries inside a period. */
+	async accountTotalsForPeriod(
+		organizationId: string,
+		periodId: string,
+	): Promise<Array<{ accountId: string; debit: number; credit: number }>> {
+		return this.database
+			.select({
+				accountId: journalLines.accountId,
+				debit: sql<number>`coalesce(sum(${journalLines.debit}), 0)::bigint`,
+				credit: sql<number>`coalesce(sum(${journalLines.credit}), 0)::bigint`,
+			})
+			.from(journalLines)
+			.innerJoin(
+				journalEntries,
+				eq(journalLines.journalEntryId, journalEntries.id),
+			)
+			.where(
+				and(
+					eq(journalLines.organizationId, organizationId),
+					eq(journalEntries.accountingPeriodId, periodId),
+					eq(journalEntries.status, 'posted'),
+					isNull(journalLines.deletedAt),
+					isNull(journalEntries.deletedAt),
+				),
+			)
+			.groupBy(journalLines.accountId);
+	}
+
+	/** True when the period still has posted journal rows. */
+	async periodHasPostedEntries(
+		organizationId: string,
+		periodId: string,
+	): Promise<boolean> {
+		const [row] = await this.database
+			.select({ value: count() })
+			.from(journalEntries)
+			.where(
+				and(
+					eq(journalEntries.organizationId, organizationId),
+					eq(journalEntries.accountingPeriodId, periodId),
+					eq(journalEntries.status, 'posted'),
+					isNull(journalEntries.deletedAt),
+				),
+			)
+			.limit(1);
+		return row.value > 0;
+	}
+}

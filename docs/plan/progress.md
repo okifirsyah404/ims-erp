@@ -12,6 +12,35 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed (this session - M09 Finance Stage 1, F1..F9, 2026-11-07)
+
+Status: **implemented** (Stage 1). Master plan `docs/plan/plans/finance.md`,
+phases F1–F9 across commits `7a44dbd`, `06a1080`, `83ea8ad`, `903db39`,
+`12a8dd4`, `509743c` (+ this docs commit). Decisions D1–D12 pinned in the
+plan after a grilling session.
+
+- F1 schema/migration, F2 posting engine + COA + periods
+  (close→locked + audited owner-only reopen), F3 opening balances (batch
+  draft + one-shot post) + cash/bank with GL links, F4 sales-invoice AR
+  postings + payments workflow + AR sub-ledger + aging, F5 supplier bills +
+  AP sub-ledger + aging, F6 on-demand reports (P&L / balance sheet /
+  cash flow) + bank reconciliation with exact statement=book gate, F7
+  month-end close checklist (advisory) + void-executed append-only payment
+  reversal, F8 web-admin UI (9 routes, finance-api typed client, finance
+  i18n namespace, `bill:*` permissions added to the shared erpStatements
+  catalog).
+- F9 docs sync: `docs/architecture/modules/finance.md` rewritten (the
+  NestJS-era "historical audit" warning removed — the module is implemented),
+  `features.md` M09 planned→done (Stage 1) with Stage-2 remainder,
+  this progress entry.
+- Money everywhere is exact integer minor units; corrections are append-only
+  reversals; reports are computed from posted journal lines, never stored.
+- Gates at each phase: backend typecheck/lint/tests (686 pass), locales
+  tests (46 pass), web-admin `tsc -b` build + oxlint, plan table updated.
+- Open business item (not a code blocker): final COA seed list from
+  finance/owner; provisional codes `1-1300`/`1-1100`/`4-1000`/`2-1000`/
+  `2-1100`/`5-1000`/`1-1800` in use.
+
 ## Completed (this session - sidebar: Stock + Stock Adjustment under Items, 2026-11-06)
 
 Status: **implemented**. Nav-only reorg in `nav-config.ts`: the top-level

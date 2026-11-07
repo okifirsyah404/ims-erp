@@ -1,15 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ArrowDownLeft } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { ReceivablesPage } from '@/components/finance/receivables-page';
 
+/** Search params for the AR aging view. */
+type TReceivablesSearch = { asOf?: string };
+
+/** `/finance/receivables` - AR aging on demand (M09 F4). */
 export const Route = createFileRoute('/_authed/finance/receivables/')({
-	component: ComingSoonStubPage,
+	validateSearch: (search: Record<string, unknown>): TReceivablesSearch => ({
+		asOf: typeof search.asOf === 'string' ? search.asOf : undefined,
+	}),
+	component: ReceivablesPage,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.receivables')} icon={ArrowDownLeft} />;
-}

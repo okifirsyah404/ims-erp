@@ -167,6 +167,81 @@ const api = {
 	'accounting.withholdingLocked': 'Withholding record is no longer editable',
 	'accounting.withholdingTransition':
 		'That status change is not allowed for this withholding record',
+
+	// Ledger (M09 F2)
+	'accounting.accountNotFound': 'Chart of account not found',
+	'accounting.accountCodeTaken': 'Account code already exists',
+	'accounting.accountInUse':
+		'Account is still referenced and cannot be deactivated',
+	'accounting.accountNotPostable': 'Journal lines require a postable account',
+	'accounting.accountInactive': 'Account is inactive',
+	'accounting.periodNotFound': 'Accounting period not found',
+	'accounting.periodTaken':
+		'An accounting period for this month already exists',
+	'accounting.periodLocked': 'The accounting period for this date is closed',
+	'accounting.periodTransition':
+		'That status change is not allowed for this period',
+	'accounting.journalEntryNotFound': 'Journal entry not found',
+	'accounting.journalUnbalanced':
+		'Journal entry is not balanced: debits must equal credits',
+	'accounting.journalLineSide':
+		'Each journal line must carry exactly one of debit or credit',
+	'accounting.journalDuplicate':
+		'A posted journal entry with this idempotency key already exists',
+	'accounting.journalTransition':
+		'That status change is not allowed for this journal entry',
+	'accounting.journalAlreadyReversed':
+		'Journal entry has already been reversed',
+	'accounting.reversalPeriodLocked':
+		'The reversal would fall in a closed period; reopen it first',
+
+	// Ledger F3
+	'accounting.openingBalanceAlreadyPosted':
+		'Opening balances were already posted and cannot be changed; correct through a journal reversal',
+	'accounting.openingBalanceLocked':
+		'Opening balance row not found or not editable',
+	'accounting.cashBankAccountNotFound': 'Cash/bank account not found',
+	'accounting.cashBankAccountCodeTaken':
+		'Cash/bank account code already exists',
+	'accounting.cashBankAccountInactive': 'Cash/bank account is inactive',
+	'accounting.cashBankLinkRequired':
+		'Cash/bank account has no general-ledger account link; add one before posting movements',
+	'accounting.cashBankTransactionNotFound':
+		'Cash/bank transaction not found',
+	'accounting.cashBankInsufficientFunds':
+		'Insufficient balance on the cash/bank account',
+
+	// Invoices & AR (F4)
+	'accounting.arAccountNotConfigured':
+		'No active general-ledger account is configured for this posting role; set up the chart of accounts first',
+	'accounting.paymentNotFound': 'Payment not found',
+	'accounting.paymentInvalidTransition':
+		'That status change is not allowed for this payment',
+	'accounting.paymentVoidNotAllowed':
+		'Executed payments cannot be voided here; correct through a period-end adjustment instead',
+	'accounting.paymentAllocationMismatch':
+		'Allocations must add up exactly to the payment amount',
+	'accounting.paymentOverAllocation':
+		'Allocation exceeds the invoice outstanding amount',
+	'accounting.paymentTargetNotIssued':
+		'Allocations may only target issued or partially paid invoices',
+	'accounting.paymentCashAccountRequired':
+		'A cash/bank account is required to execute this payment',
+	'accounting.billNotFound': 'Supplier bill not found',
+	'accounting.billNotDraft':
+		'Only draft supplier bills can be modified or recorded',
+	'accounting.bankReconciliationNotFound': 'Bank reconciliation not found',
+	'accounting.bankReconciliationState':
+		'That reconciliation action is not allowed for this document',
+	'accounting.reportPeriodInvalid': 'Report date range is invalid',
+
+	// Invoices (F4) — sales keys
+	'sales.invoiceNotFound': 'Invoice not found',
+	'sales.invoiceNotDraft': 'Only draft invoices can be modified or issued',
+	'sales.invoiceNoItems':
+		'Invoices need at least one line item to be issued',
+	'sales.invoiceDueBeforeIssue':
+		'Due date cannot be before the issue date',
 } as const;
 
 export default api;

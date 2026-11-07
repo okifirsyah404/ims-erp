@@ -105,6 +105,18 @@ describe('locale values', () => {
 			'tax:withholding.status',
 			// "Transfer" is a loanword in Indonesian.
 			'assets:disposalMethod.transfer',
+			// Standard accounting vocabulary is identical in Indonesian.
+			'finance:normalBalance.debit',
+			'finance:normalBalance.credit',
+			'finance:journal.debit',
+			'finance:journal.credit',
+			'finance:journal.totalDebit',
+			'finance:journal.totalCredit',
+			'finance:accountType.bank',
+			'finance:payments.method.virtual_account',
+			'finance:closing.item.pass',
+			// The em-dash placeholder is locale-neutral.
+			'finance:common.none',
 		]);
 
 		const untranslated = Object.entries(en_).flatMap(([namespace, bundle]) =>

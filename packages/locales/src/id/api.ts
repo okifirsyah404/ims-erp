@@ -169,6 +169,84 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.withholdingLocked': 'Catatan pemotongan pajak tidak lagi dapat diubah',
 	'accounting.withholdingTransition':
 		'Perubahan status tersebut tidak diizinkan untuk catatan pemotongan ini',
+
+	// Buku besar (M09 F2)
+	'accounting.accountNotFound': 'Akun bagan akun tidak ditemukan',
+	'accounting.accountCodeTaken': 'Kode akun sudah digunakan',
+	'accounting.accountInUse':
+		'Akun masih direferensikan dan tidak dapat dinonaktifkan',
+	'accounting.accountNotPostable':
+		'Baris jurnal memerlukan akun yang dapat diposting',
+	'accounting.accountInactive': 'Akun tidak aktif',
+	'accounting.periodNotFound': 'Periode akuntansi tidak ditemukan',
+	'accounting.periodTaken': 'Periode akuntansi untuk bulan ini sudah ada',
+	'accounting.periodLocked':
+		'Periode akuntansi untuk tanggal ini sudah ditutup',
+	'accounting.periodTransition':
+		'Perubahan status tersebut tidak diizinkan untuk periode ini',
+	'accounting.journalEntryNotFound': 'Entri jurnal tidak ditemukan',
+	'accounting.journalUnbalanced':
+		'Entri jurnal tidak seimbang: debit harus sama dengan kredit',
+	'accounting.journalLineSide':
+		'Setiap baris jurnal harus memuat salah satu dari debit atau kredit',
+	'accounting.journalDuplicate':
+		'Entri jurnal terposting dengan kunci idempotensi ini sudah ada',
+	'accounting.journalTransition':
+		'Perubahan status tersebut tidak diizinkan untuk entri jurnal ini',
+	'accounting.journalAlreadyReversed': 'Entri jurnal sudah pernah dibalik',
+	'accounting.reversalPeriodLocked':
+		'Pembalikan akan jatuh pada periode yang sudah ditutup; buka kembali terlebih dahulu',
+
+	// Buku besar F3
+	'accounting.openingBalanceAlreadyPosted':
+		'Saldo awal sudah pernah diposting dan tidak dapat diubah; lakukan koreksi melalui pembalikan jurnal',
+	'accounting.openingBalanceLocked':
+		'Baris saldo awal tidak ditemukan atau tidak dapat diubah',
+	'accounting.cashBankAccountNotFound': 'Akun kas/bank tidak ditemukan',
+	'accounting.cashBankAccountCodeTaken':
+		'Kode akun kas/bank sudah digunakan',
+	'accounting.cashBankAccountInactive': 'Akun kas/bank tidak aktif',
+	'accounting.cashBankLinkRequired':
+		'Akun kas/bank belum ditautkan ke akun buku besar; tambahkan tautan sebelum mencatat pergerakan',
+	'accounting.cashBankTransactionNotFound':
+		'Transaksi kas/bank tidak ditemukan',
+	'accounting.cashBankInsufficientFunds':
+		'Saldo akun kas/bank tidak mencukupi',
+
+	// Faktur & Piutang (F4)
+	'accounting.arAccountNotConfigured':
+		'Belum ada akun buku besar aktif untuk peran posting ini; lengkapi bagan akun terlebih dahulu',
+	'accounting.paymentNotFound': 'Pembayaran tidak ditemukan',
+	'accounting.paymentInvalidTransition':
+		'Perubahan status tersebut tidak diizinkan untuk pembayaran ini',
+	'accounting.paymentVoidNotAllowed':
+		'Pembayaran yang sudah dieksekusi tidak dapat dibatalkan di sini; lakukan koreksi melalui penyesuaian akhir periode',
+	'accounting.paymentAllocationMismatch':
+		'Jumlah alokasi harus sama persis dengan nilai pembayaran',
+	'accounting.paymentOverAllocation':
+		'Alokasi melebihi sisa tagihan faktur',
+	'accounting.paymentTargetNotIssued':
+		'Alokasi hanya boleh menarget faktur berstatus terbit atau sebagian dibayar',
+	'accounting.paymentCashAccountRequired':
+		'Akun kas/bank diperlukan untuk mengeksekusi pembayaran ini',
+	'accounting.billNotFound': 'Tagihan pemasok tidak ditemukan',
+	'accounting.billNotDraft':
+		'Hanya tagihan pemasok berstatus draf yang dapat diubah atau dicatat',
+	'accounting.bankReconciliationNotFound':
+		'Rekonsiliasi bank tidak ditemukan',
+	'accounting.bankReconciliationState':
+		'Tindakan rekonsiliasi tersebut tidak diizinkan untuk dokumen ini',
+	'accounting.reportPeriodInvalid':
+		'Rentang tanggal laporan tidak valid',
+
+	// Faktur (F4) — kunci sales
+	'sales.invoiceNotFound': 'Faktur tidak ditemukan',
+	'sales.invoiceNotDraft':
+		'Hanya faktur berstatus draf yang dapat diubah atau diterbitkan',
+	'sales.invoiceNoItems':
+		'Faktur memerlukan minimal satu baris item untuk diterbitkan',
+	'sales.invoiceDueBeforeIssue':
+		'Tanggal jatuh tempo tidak boleh sebelum tanggal terbit',
 };
 
 export default api;

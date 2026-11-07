@@ -1,15 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { BookCheck } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { ReconciliationPage } from '@/components/finance/reconciliation-page';
 
+/** `/finance/reconciliation` - bank reconciliation workflow (M09 F6). */
 export const Route = createFileRoute('/_authed/finance/reconciliation/')({
-	component: ComingSoonStubPage,
+	component: ReconciliationPage,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.reconciliation')} icon={BookCheck} />;
-}

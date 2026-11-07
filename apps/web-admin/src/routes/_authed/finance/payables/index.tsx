@@ -1,15 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ArrowUpRight } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { PayablesPage } from '@/components/finance/payables-page';
 
+/** Search params for the AP aging view. */
+type TPayablesSearch = { asOf?: string };
+
+/** `/finance/payables` - AP aging + supplier bills (M09 F5). */
 export const Route = createFileRoute('/_authed/finance/payables/')({
-	component: ComingSoonStubPage,
+	validateSearch: (search: Record<string, unknown>): TPayablesSearch => ({
+		asOf: typeof search.asOf === 'string' ? search.asOf : undefined,
+	}),
+	component: PayablesPage,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.payables')} icon={ArrowUpRight} />;
-}

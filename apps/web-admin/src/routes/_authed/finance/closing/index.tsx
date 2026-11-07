@@ -1,15 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Lock } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { ClosingPage } from '@/components/finance/closing-page';
 
+/** Search params for the closing page. */
+type TClosingSearch = { year?: number; month?: number };
+
+/** `/finance/closing` - checklist + period close/lock (M09 F2/F7). */
 export const Route = createFileRoute('/_authed/finance/closing/')({
-	component: ComingSoonStubPage,
+	validateSearch: (search: Record<string, unknown>): TClosingSearch => ({
+		year: search.year ? Number(search.year) || undefined : undefined,
+		month: search.month ? Number(search.month) || undefined : undefined,
+	}),
+	component: ClosingPage,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.periodClosing')} icon={Lock} />;
-}

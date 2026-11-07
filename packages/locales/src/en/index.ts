@@ -3,6 +3,7 @@ import assets from './assets';
 import auth from './auth';
 import common from './common';
 import dashboard from './dashboard';
+import finance from './finance';
 import inventory from './inventory';
 import nav from './nav';
 import account from './account';
@@ -21,6 +22,7 @@ export const en = {
 	admin,
 	assets,
 	inventory,
+	finance,
 	dashboard,
 	api,
 	tax,
