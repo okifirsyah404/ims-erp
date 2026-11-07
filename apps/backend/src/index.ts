@@ -8,6 +8,7 @@ import { registerProcurement } from '@app/procurement';
 import { registerProjects } from '@app/projects';
 import { registerAftersales } from '@app/aftersales';
 import { registerLicensing } from '@app/licensing';
+import { registerCatalog } from '@app/catalog';
 import { registerAssets } from '@app/assets';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
@@ -53,6 +54,7 @@ registerProcurement(container);
 registerProjects(container);
 registerAftersales(container);
 registerLicensing(container);
+registerCatalog(container);
 registerUser(container);
 registerAuthorization(container);
 

@@ -1,0 +1,42 @@
+import type en from '../en/integrations';
+
+/** M04 integrasi: katalog website, event n8n, WhatsApp. */
+const integrations: Record<keyof typeof en, string> = {
+	'catalog.title': 'Katalog website',
+	'catalog.description': 'Barang yang ditampilkan di website publik. Nama, kategori, harga, foto, dan stok selalu diambil dari data barang.',
+	'catalog.new': 'Tampilkan barang',
+	'catalog.edit': 'Ubah listing',
+	'catalog.empty': 'Belum ada barang yang ditampilkan.',
+	'catalog.item': 'Barang',
+	'catalog.pickItem': 'Cari dan pilih barang',
+	'catalog.slug': 'Alamat di website (slug)',
+	'catalog.slugHint': 'Huruf kecil, angka, dan tanda strip, mis. kamera-cctv-2mp.',
+	'catalog.specs': 'Spesifikasi di kartu produk',
+	'catalog.specsHint': 'Satu baris singkat; kosong memakai spesifikasi barang.',
+	'catalog.priceMode': 'Harga di website',
+	'catalog.priceMode.list': 'Tampilkan harga jual',
+	'catalog.priceMode.rfq': 'Minta penawaran (tanpa harga)',
+	'catalog.priceCaption': 'Keterangan harga',
+	'catalog.outOfStock': 'Saat stok habis',
+	'catalog.outOfStock.out': 'Tampilkan "stok habis"',
+	'catalog.outOfStock.preorder': 'Boleh pre-order',
+	'catalog.outOfStock.request': 'Tersedia atas permintaan',
+	'catalog.leadTime': 'Label waktu tunggu',
+	'catalog.applications': 'Kegunaan',
+	'catalog.applicationsHint': 'Pisahkan dengan koma, mis. Perkantoran, Perumahan.',
+	'catalog.popularity': 'Bobot popularitas',
+	'catalog.price': 'Harga',
+	'catalog.quotation': 'Penawaran',
+	'catalog.status': 'Di website',
+	'catalog.published': 'Tampil',
+	'catalog.hidden': 'Tersembunyi',
+	'catalog.publish': 'Tampilkan',
+	'catalog.hide': 'Sembunyikan',
+	'catalog.remove': 'Hapus',
+	'catalog.saved': 'Listing disimpan',
+	'catalog.publishedDone': 'Listing tampil di website',
+	'catalog.hiddenDone': 'Listing disembunyikan dari website',
+	'catalog.removed': 'Listing dihapus',
+};
+
+export default integrations;

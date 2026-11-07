@@ -97,10 +97,16 @@ Last synced: 2026-11-06.
 
 ## M04 n8n, WhatsApp, Website
 
+### done
+- Public catalog API for the website (`CatalogSource`) and the website
+  listing screen — T15, M04 stage 1. Evidence: `progress.md` 2026-11-07
+  (M04 4a): `src/app/catalog`, `catalog.service.test.ts`, e2e. Profile page
+  stays static on the website. Not yet accepted by the owner.
+
 ### planned
 - One ERP event → n8n webhook (outbox, log, manual retry) — T14. Evidence:
   dbml `automation` only.
-- Public catalog + IMS profile page, requirements form, WA button — T15.
+- Requirements form → lead (done in M02 `/public/v1`); WA button is website-side — T15.
   Evidence: none.
 - AI FAQ + n8n integration — T27, ERP-0021. Evidence: none.
 - Notifications, human handoff, WhatsApp logs — T28, ERP-0021. Evidence: none.

@@ -26,6 +26,7 @@ import type { IItemCategoryRepository } from '../contracts/item-category.reposit
 import type { ItemCategoryService } from '../services/item-category.service';
 import type { IStockValuationRepository } from '../contracts/stock-valuation.contract';
 import type { StockValuationService } from '../services/stock-valuation.service';
+import type { ItemCatalogService } from '../services/item-catalog.service';
 
 export const ITEM_REPOSITORY_TOKEN: InjectionToken<IItemRepository> =
 	Symbol('ITEM_REPOSITORY');
@@ -79,3 +80,6 @@ export const STOCK_VALUATION_REPOSITORY_TOKEN: InjectionToken<IStockValuationRep
 
 /** Token resolving to the {@link StockValuationService}. */
 export const STOCK_VALUATION_SERVICE_TOKEN: InjectionToken<StockValuationService> = Symbol('STOCK_VALUATION_SERVICE_TOKEN');
+
+/** Token resolving to the {@link ItemCatalogService} — the Inventory contract of the website catalog (M04). */
+export const ITEM_CATALOG_SERVICE_TOKEN: InjectionToken<ItemCatalogService> = Symbol('ITEM_CATALOG_SERVICE_TOKEN');

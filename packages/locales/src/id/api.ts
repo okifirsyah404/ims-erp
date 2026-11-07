@@ -324,6 +324,12 @@ const api: Record<keyof typeof en, string> = {
 	'licensing.apiKey.noOwner': 'Organisasi tidak punya owner untuk menerbitkan kunci',
 	'licensing.apiKey.notFound': 'Kunci API tidak ditemukan',
 	'licensing.activationNotFound': 'Aktivasi tidak ditemukan atau sudah dilepas',
+	'catalog.notFound.listing': 'Listing tidak ditemukan',
+	'catalog.notFound.product': 'Produk tidak ditemukan',
+	'catalog.listing.slug': 'Slug ini sudah dipakai listing lain',
+	'catalog.listing.item': 'Barang ini sudah punya listing',
+	'catalog.listing.itemUnavailable': 'Barang sudah diarsipkan atau tidak aktif',
+	'catalog.listing.noPrice': 'Barang belum punya harga jual; gunakan harga lewat penawaran',
 };
 
 export default api;

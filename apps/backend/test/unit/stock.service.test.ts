@@ -294,6 +294,9 @@ function fakeBalances(store: BalanceStore): IBalanceRepository {
 		async remove(key) {
 			return store.delete(keyOf(key));
 		},
+		async availableByItems() {
+			return [];
+		},
 	};
 }
 

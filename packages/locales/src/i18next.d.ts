@@ -30,6 +30,7 @@ declare module 'i18next' {
 		procurement: typeof en.procurement;
 		projects: typeof en.projects;
 		licensing: typeof en.licensing;
+		integrations: typeof en.integrations;
 	}
 
 	interface CustomTypeOptions {

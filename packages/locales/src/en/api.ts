@@ -322,6 +322,12 @@ const api = {
 	'licensing.apiKey.noOwner': 'The organization has no owner to issue the key',
 	'licensing.apiKey.notFound': 'API key not found',
 	'licensing.activationNotFound': 'Activation not found or already released',
+	'catalog.notFound.listing': 'Listing not found',
+	'catalog.notFound.product': 'Product not found',
+	'catalog.listing.slug': 'Another listing already uses this slug',
+	'catalog.listing.item': 'This item already has a listing',
+	'catalog.listing.itemUnavailable': 'The item is archived or inactive',
+	'catalog.listing.noPrice': 'The item has no selling price; use quotation pricing',
 } as const;
 
 export default api;
