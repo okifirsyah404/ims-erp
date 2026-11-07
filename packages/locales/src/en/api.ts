@@ -210,6 +210,31 @@ const api = {
 		'Cash/bank transaction not found',
 	'accounting.cashBankInsufficientFunds':
 		'Insufficient balance on the cash/bank account',
+
+	// Invoices & AR (F4)
+	'accounting.arAccountNotConfigured':
+		'No active general-ledger account is configured for this posting role; set up the chart of accounts first',
+	'accounting.paymentNotFound': 'Payment not found',
+	'accounting.paymentInvalidTransition':
+		'That status change is not allowed for this payment',
+	'accounting.paymentVoidNotAllowed':
+		'Executed payments cannot be voided here; correct through a period-end adjustment instead',
+	'accounting.paymentAllocationMismatch':
+		'Allocations must add up exactly to the payment amount',
+	'accounting.paymentOverAllocation':
+		'Allocation exceeds the invoice outstanding amount',
+	'accounting.paymentTargetNotIssued':
+		'Allocations may only target issued or partially paid invoices',
+	'accounting.paymentCashAccountRequired':
+		'A cash/bank account is required to execute this payment',
+
+	// Invoices (F4) — sales keys
+	'sales.invoiceNotFound': 'Invoice not found',
+	'sales.invoiceNotDraft': 'Only draft invoices can be modified or issued',
+	'sales.invoiceNoItems':
+		'Invoices need at least one line item to be issued',
+	'sales.invoiceDueBeforeIssue':
+		'Due date cannot be before the issue date',
 } as const;
 
 export default api;

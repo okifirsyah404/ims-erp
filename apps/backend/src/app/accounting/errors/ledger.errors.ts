@@ -214,3 +214,106 @@ export class CashBankInsufficientFundsError extends AppError {
 		);
 	}
 }
+
+/* ----------------------------- AR posting (F4) ----------------------------- */
+
+/**
+ * No active, postable account exists under the provisional default code for
+ * the requested posting role (business gate for the final COA is pending).
+ */
+export class ArAccountNotConfiguredError extends AppError {
+	constructor(code: string, role: string) {
+		super(
+			422,
+			'accounting.arAccountNotConfigured',
+			`No active account with code ${code} is configured for the ${role} posting role`,
+		);
+	}
+}
+
+/* ----------------------------- invoices (F4) ----------------------------- */
+
+export class InvoiceNotFoundError extends AppError {
+	constructor() {
+		super(404, 'sales.invoiceNotFound', 'Invoice not found');
+	}
+}
+
+/** The action requires a draft invoice (edits, cancellation, issue). */
+export class InvoiceNotDraftError extends AppError {
+	constructor() {
+		super(409, 'sales.invoiceNotDraft', 'Only draft invoices can be modified or issued');
+	}
+}
+
+/** An invoice cannot be issued without at least one line item. */
+export class InvoiceNoItemsError extends AppError {
+	constructor() {
+		super(422, 'sales.invoiceNoItems', 'Invoices need at least one line item to be issued');
+	}
+}
+
+/** Due date earlier than issue date. */
+export class InvoiceDueBeforeIssueError extends AppError {
+	constructor() {
+		super(422, 'sales.invoiceDueBeforeIssue', 'Due date cannot be before the issue date');
+	}
+}
+
+/* ----------------------------- payments (F4) ----------------------------- */
+
+export class PaymentNotFoundError extends AppError {
+	constructor() {
+		super(404, 'accounting.paymentNotFound', 'Payment not found');
+	}
+}
+
+/** A workflow transition that the draft→submitted→approved→executed machine forbids. */
+export class PaymentInvalidTransitionError extends AppError {
+	constructor() {
+		super(409, 'accounting.paymentInvalidTransition', 'That status change is not allowed for this payment');
+	}
+}
+
+/** Only payments that have not been executed can be voided in F4 (decision 4a). */
+export class PaymentVoidNotAllowedError extends AppError {
+	constructor() {
+		super(
+			409,
+			'accounting.paymentVoidNotAllowed',
+			'Executed payments cannot be voided here; correct through a period-end adjustment instead',
+		);
+	}
+}
+
+/** Σ allocations must equal the payment amount (keeps the JE balanced). */
+export class PaymentAllocationMismatchError extends AppError {
+	constructor() {
+		super(
+			422,
+			'accounting.paymentAllocationMismatch',
+			'Allocations must add up exactly to the payment amount',
+		);
+	}
+}
+
+/** An allocation exceeds the invoice's outstanding amount. */
+export class PaymentOverAllocationError extends AppError {
+	constructor() {
+		super(422, 'accounting.paymentOverAllocation', 'Allocation exceeds the invoice outstanding amount');
+	}
+}
+
+/** Allocations target invoices that are not issued (or already void/cancelled). */
+export class PaymentTargetNotIssuedError extends AppError {
+	constructor() {
+		super(422, 'accounting.paymentTargetNotIssued', 'Allocations may only target issued or partially paid invoices');
+	}
+}
+
+/** Executing requires the payment to carry a cash/bank account. */
+export class PaymentCashAccountRequiredError extends AppError {
+	constructor() {
+		super(422, 'accounting.paymentCashAccountRequired', 'A cash/bank account is required to execute this payment');
+	}
+}

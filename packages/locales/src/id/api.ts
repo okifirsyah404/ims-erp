@@ -212,6 +212,32 @@ const api: Record<keyof typeof en, string> = {
 		'Transaksi kas/bank tidak ditemukan',
 	'accounting.cashBankInsufficientFunds':
 		'Saldo akun kas/bank tidak mencukupi',
+
+	// Faktur & Piutang (F4)
+	'accounting.arAccountNotConfigured':
+		'Belum ada akun buku besar aktif untuk peran posting ini; lengkapi bagan akun terlebih dahulu',
+	'accounting.paymentNotFound': 'Pembayaran tidak ditemukan',
+	'accounting.paymentInvalidTransition':
+		'Perubahan status tersebut tidak diizinkan untuk pembayaran ini',
+	'accounting.paymentVoidNotAllowed':
+		'Pembayaran yang sudah dieksekusi tidak dapat dibatalkan di sini; lakukan koreksi melalui penyesuaian akhir periode',
+	'accounting.paymentAllocationMismatch':
+		'Jumlah alokasi harus sama persis dengan nilai pembayaran',
+	'accounting.paymentOverAllocation':
+		'Alokasi melebihi sisa tagihan faktur',
+	'accounting.paymentTargetNotIssued':
+		'Alokasi hanya boleh menarget faktur berstatus terbit atau sebagian dibayar',
+	'accounting.paymentCashAccountRequired':
+		'Akun kas/bank diperlukan untuk mengeksekusi pembayaran ini',
+
+	// Faktur (F4) — kunci sales
+	'sales.invoiceNotFound': 'Faktur tidak ditemukan',
+	'sales.invoiceNotDraft':
+		'Hanya faktur berstatus draf yang dapat diubah atau diterbitkan',
+	'sales.invoiceNoItems':
+		'Faktur memerlukan minimal satu baris item untuk diterbitkan',
+	'sales.invoiceDueBeforeIssue':
+		'Tanggal jatuh tempo tidak boleh sebelum tanggal terbit',
 };
 
 export default api;

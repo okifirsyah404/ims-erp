@@ -1,0 +1,46 @@
+import { inject, injectable } from 'tsyringe';
+import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
+import { AR_POSTING_DEFAULT_CODES, type TArPostingRole } from '../constants/ar-posting';
+import type { LedgerRepository } from '../repositories/ledger.repository';
+import { ArAccountNotConfiguredError } from '../errors/ledger.errors';
+
+/**
+ * Resolves the GL accounts the invoice/payment flows post against (F4, 1c).
+ *
+ * @remarks
+ * Resolution is by `chart_of_accounts.code` using the provisional default
+ * codes in `AR_POSTING_DEFAULT_CODES`. Deliberately a tiny seam: once
+ * `accounting.accounting_settings` enters the drizzle schema, a settings
+ * lookup overrides the defaults here and callers stay untouched.
+ */
+@injectable()
+export class ArAccountResolverService {
+	constructor(
+		@inject(LEDGER_REPOSITORY_TOKEN)
+		private readonly repo: LedgerRepository,
+	) {}
+
+	/** Resolves one role to a postable, active COA account id. */
+	async resolve(
+		organizationId: string,
+		role: TArPostingRole,
+	): Promise<string> {
+		const code = AR_POSTING_DEFAULT_CODES[role];
+		const account = await this.repo.findAccountByCode(organizationId, code);
+		if (!account || !account.isActive || !account.isPostable) {
+			throw new ArAccountNotConfiguredError(code, role);
+		}
+		return account.id;
+	}
+
+	/** Resolves all three roles in one round of lookups. */
+	async resolveAll(organizationId: string): Promise<
+		Record<TArPostingRole, string>
+	> {
+		const roles: TArPostingRole[] = ['ar', 'revenue', 'taxPayable'];
+		const entries = await Promise.all(
+			roles.map(async (role) => [role, await this.resolve(organizationId, role)] as const),
+		);
+		return Object.fromEntries(entries) as Record<TArPostingRole, string>;
+	}
+}

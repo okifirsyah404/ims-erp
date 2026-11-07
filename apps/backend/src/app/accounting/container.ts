@@ -19,6 +19,12 @@ import { PostingService } from './services/posting.service';
 import { TaxService } from './services/tax.service';
 import { OpeningBalanceService } from './services/opening-balance.service';
 import { CashBankService } from './services/cash-bank.service';
+import { ArAccountResolverService } from './services/ar-account-resolver.service';
+import { PaymentService } from './services/payment.service';
+import {
+	AR_ACCOUNT_RESOLVER_TOKEN,
+	PAYMENT_SERVICE_TOKEN,
+} from './constants/ar-di';
 
 /**
  * Registers the accounting module (tax + ledger slices) in the composition
@@ -45,4 +51,8 @@ export function registerAccounting(container: DependencyContainer): void {
 		useClass: OpeningBalanceService,
 	});
 	container.register(CASH_BANK_SERVICE_TOKEN, { useClass: CashBankService });
+	container.register(AR_ACCOUNT_RESOLVER_TOKEN, {
+		useClass: ArAccountResolverService,
+	});
+	container.register(PAYMENT_SERVICE_TOKEN, { useClass: PaymentService });
 }

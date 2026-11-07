@@ -3,6 +3,7 @@ import type {
 	TCashBankTransactionSelect,
 } from '@drizzle/schemas/finance.schema';
 import type { TPaginationResult } from '@ims-erp/common';
+import type { TTx } from '@drizzle/types';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { DRIZZLE_TOKEN } from '@di/provider';
@@ -58,6 +59,13 @@ export type TCashBankMovementInput = {
 	 * counterpart of the cash movement. Required on manual movements.
 	 */
 	counterpartAccountId: string;
+	/**
+	 * Journal provenance override: executed `finance.payments` (F4) pass
+	 * `sourceType: 'payment'` (+ `sourceId`) so the JE points back at the
+	 * payment document. Manual movements keep the default.
+	 */
+	sourceType?: string;
+	sourceId?: string | null;
 };
 
 /**
@@ -162,15 +170,17 @@ export class CashBankService {
 	/* ----------------------------- movements ----------------------------- */
 
 	/**
-	 * Posts one cash/bank movement with its auto-journal in ONE transaction:
-	 * cash ledger row + journal entry (via the posting service) + balance
-	 * update. A rollback undoes all three together.
+	 * Posts one cash/bank movement with its auto-journal, following the
+	 * caller-tx contract (D9): pass a transaction to join it, or none to run
+	 * in its own. Everything — cash ledger row, journal entry (via the
+	 * posting service), balance update — commits or rolls back together.
 	 */
 	async postMovement(
 		ctx: TCashBankActionContext,
 		input: TCashBankMovementInput,
+		outerTx?: TTx,
 	): Promise<TCashBankTransactionSelect> {
-		return this.database.transaction(async (tx) => {
+		const run = async (tx: TTx): Promise<TCashBankTransactionSelect> => {
 			const account = await this.repo.findCashBankAccountById(
 				ctx.organizationId,
 				input.cashBankAccountId,
@@ -210,7 +220,8 @@ export class CashBankService {
 				organizationId: ctx.organizationId,
 				entryDate: input.transactionDate,
 				sourceModule: 'finance',
-				sourceType: 'cash_bank_transaction',
+				sourceType: input.sourceType ?? 'cash_bank_transaction',
+				sourceId: input.sourceId ?? null,
 				idempotencyKey: `cb:${account.id}:${code}`,
 				description:
 					input.description ?? `${isCashDebit ? 'Cash in' : 'Cash out'} ${account.name}`,
@@ -253,7 +264,8 @@ export class CashBankService {
 				tx,
 			);
 			return movement;
-		});
+		};
+		return outerTx ? run(outerTx) : this.database.transaction(run);
 	}
 
 	async listMovements(

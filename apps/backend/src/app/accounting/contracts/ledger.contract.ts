@@ -8,9 +8,15 @@ import {
 /** Shared `:id` param. */
 export const ledgerIdParamSchema = z.object({ id: z.string().uuid() });
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD');
+export const isoDate = z
+	.string()
+	.regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD');
 
-const minorAmount = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
+export const minorAmount = z
+	.number()
+	.int()
+	.nonnegative()
+	.max(Number.MAX_SAFE_INTEGER);
 
 /* ----------------------------- chart of accounts ----------------------------- */
 
