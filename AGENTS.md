@@ -63,6 +63,12 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
   needs data it does not have, add a repository method, not a query.
   Cross-module access goes through the owning module's exported contract or
   service via DI token, never another module's repository.
+- **Cross-module references are nullable.** A column that points at another
+  module's table (including `auth`) is a plain nullable id column - no
+  cross-schema foreign key, no `NOT NULL` (ADR-0014, the `elysia-module` rule
+  3.2 set). Presence is a service-layer fact, checked by the owning module's
+  `resolve*`/`assert*` contract before the write. Intra-module foreign keys
+  stay real foreign keys and keep their own nullability.
 - **Auth and ownership are server-side facts.** Every endpoint enforces
   role permissions and record ownership, including exports. Frontend permission
   checks are UX only.

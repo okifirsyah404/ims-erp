@@ -40,6 +40,10 @@ Table crm.customers {
 2. **The target must be the primary key** of a table in the owning module.
 3. **Nullability follows the business rule.** `not null` means the link is
    mandatory for the record to be valid; nullable means the link is optional.
+   ADR-0014 makes every cross-module reference nullable: presence is a
+   service-layer fact, enforced by the owning module's contract method, not
+   by the database. The `not null` form is the pre-ADR-0014 state and is
+   removed by ERP-0037.
 4. **Tenant match is mandatory.** The referring row and the referenced row
    must have the same `organization_id`. This is enforced by the owning
    module's assert method, not by a foreign key.
@@ -751,7 +755,9 @@ call before writing a row that carries the reference.
 
 ### Tenant scope (`organization_id`)
 
-- Every tenant scoped table has `organization_id text NOT NULL`.
+- Every tenant scoped table carries `organization_id`, nullable per
+  ADR-0014 (ERP-0037 performs the flip; the shipped schema is still
+  `NOT NULL`).
 - Every read query filters on `organization_id`, always. A missing filter is
   a bug, not a warning.
 - Every write sets `organization_id` from the request context, never from
@@ -759,7 +765,8 @@ call before writing a row that carries the reference.
 - The composite tenant foreign key in the Drizzle schemas closes
   the gap **inside** a module: `(organization_id, parent_id)` must match
   `(organization_id, id)` of the parent. Cross-module the same guarantee is
-  provided by the contract call.
+  provided by the contract call. The composite FK is `MATCH SIMPLE`, so a
+  `NULL` `organization_id` skips that check (ADR-0014).
 
 ### Actor scope (`*_by`, `*_by_user_id`, `requested_by`, `approved_by`)
 

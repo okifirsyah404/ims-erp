@@ -33,16 +33,26 @@ must never be edited. Any column that references `auth.users.id` or
 |---|---|
 | Name | `organization_id` |
 | Type | `text` |
-| Nullable | `NOT NULL` on every tenant scoped table |
+| Nullable | nullable on every table that carries it (ADR-0014) |
 | Logical target | `auth.organizations.id` |
 
-`organization_id` is always present on tenant scoped tables, never nullable
-(except `audit.audit_logs`, which may record a global admin action outside
-any organization, and the modules that carry an explicit global scope:
-`inventory.*` since ADR-0008 and `assets.*` since ERP-0036 D11, where `NULL`
-means "company-wide", not "missing"). It is the first filter in every query;
-for a nullable-org module the filter is `organization_id IS NULL OR
-organization_id = $1`.
+`organization_id` is a plain nullable logical reference to
+`auth.organizations.id` on every table that carries it (ADR-0014). Presence
+is a service-layer fact: the owning module's contract validates it before the
+write, and the database does not enforce it. It is the first filter in every
+query; for a nullable-org module the filter is `organization_id IS NULL OR
+organization_id = $1`. A row without an organization is not visible to an
+organization-scoped query, so an unlinked row reads as absent rather than as
+another organization's data.
+
+**Scope carve-out.** The modules that define an explicit global scope
+(`inventory.*` since ADR-0008, `assets.*` since ERP-0036 D11) read `NULL` as
+"company-wide", not "missing", and `audit.audit_logs` may record a global admin
+action outside any organization. Everywhere else `NULL` means "not linked".
+
+**Implementation status.** ADR-0014 is accepted; the column flip in
+`docs.dbml` and its append-only migration are tracked as ERP-0037. Until that
+lands, `organization_id` is still `NOT NULL` in the shipped schema.
 
 **Scope note (ADR-0007).** These tenant-scoped ERP tables are part of the
 target data model and are **not yet built** — the shipped schema has no
@@ -126,6 +136,12 @@ Percentages use `numeric(9,4)` and rates `numeric(18,6)`.
 
 Codes are the human reference of a document (`SPH-2026-0001`, `PO-2026-0007`)
 and are allocated from `organization.document_sequences`, never generated ad hoc.
+
+**Nullable `organization_id` and codes.** A unique index ignores `NULL`, so
+`(organization_id, code)` alone lets two rows without an organization share a
+code. A table whose `organization_id` is nullable therefore uses the ADR-0008
+pair: `(organization_id, code) WHERE organization_id IS NOT NULL` plus
+`(code) WHERE organization_id IS NULL`.
 
 **Exception — `assets.assets.code` is globally unique** (ERP-0036 D13), not
 per organization: an org-scoped asset and a global asset must never share a

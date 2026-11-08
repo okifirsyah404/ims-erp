@@ -103,18 +103,12 @@ Last synced: 2026-11-06.
   `plans/warehouse-hardening.md` phases 1/2/2b done, UI
   `/inventory/warehouses/*`. Note: multi-warehouse rebaselined by ADR-0010
   (proposed 2026-11-04, owner sign-off pending).
-- Warehouse↔organization links + scoped access — ERP-0031. Evidence:
-  `inventory.warehouse_organizations` (Drizzle + migration
-  `20261106062510_erp0031_warehouse_org_links`), real
-  `assertWarehouseReachableByOrg`, `GET /warehouses/linked` (with storages),
-  stock receive/issue + adjustment create gated (unlinked→404, global-admin
-  bypass), assets `assertLocation` 404 on unlinked, admin link/unlink endpoints
-  with audit and a 409 open-borrowing guard, Organizations tab on the
-  warehouse detail, member pickers on the linked endpoint; 536 backend tests.
-  Remaining: browser walk-through, reviewer sign-off before a non-local
-  migration. See `progress.md` (2026-11-06).
-
-### planned (ADR-0010)
+### proposed (ADR-0010)
+- Warehouse↔organization links + scoped access — ERP-0031. Code landed
+  2026-11-06 (migration `20261106062510_erp0031_warehouse_org_links`, link
+  endpoints, 536 backend tests), but downgraded 2026-11-08: ADR-0010 is still
+  `proposed`, so the design basis is not accepted. Evidence in `progress.md`
+  (2026-11-06). Remaining: browser walk-through, reviewer sign-off.
 - Stock transfers (warehouse→warehouse, storage→storage) — ERP-0032.
 - Tracking views (per-storage balances, movement filters, unit location) —
   ERP-0033.
@@ -277,6 +271,7 @@ Last synced: 2026-11-06.
 - ERP-0009 Document numbering service.
 - ERP-0024 UAT, reconciliation, backup drill.
 - ERP-0025 Release preparation.
+- ERP-0037 Nullable cross-module references (ADR-0014 schema flip).
 
 ### implemented
 - ERP-0030 Faker seeders + `faker` skill. Evidence: `apps/backend/database/

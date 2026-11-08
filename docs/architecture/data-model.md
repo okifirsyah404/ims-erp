@@ -125,7 +125,7 @@ Schema, keys, constraints, and conventions. Current declarations:
   (`SET NULL` for audit-like actor refs; `CASCADE` only for auth-owned child
   tables; `RESTRICT` for financial-linked master data).
 
-## Organization/member semantics (ADR-0001, ADR-0007)
+## Organization/member semantics (ADR-0001, ADR-0007, ADR-0012)
 
 One company; `auth.organizations`/`members` model internal structure
 (departments/teams/portal identity). Multiple organizations may exist inside
@@ -136,12 +136,22 @@ data stays company-wide. If true multi-company arrives later this is a data
 migration plus repo-layer scoping change — recorded as the migration path in
 ADR-0001 and deliberately unbuilt (ADR-0007).
 
+A **transaction document** records the organization that issued it in a
+nullable `organization_id` logical reference (`sales.invoices` is the first,
+ADR-0012). Every cross-module reference is nullable (ADR-0014), so the column
+states no presence rule: the owning module's contract validates it before the
+write.
+
 ## Index policy (initial)
 
 - FK columns indexed (existing convention: `accounts_userId_idx`,
   `audit_logs_actorId_idx`, …).
 - Status columns indexed where filtered (existing for the three erp tables).
 - Business code columns get unique partial indexes.
+- A unique index that includes a nullable `organization_id` uses the
+  ADR-0008 pair: `(organization_id, code) WHERE organization_id IS NOT NULL`
+  plus `(code) WHERE organization_id IS NULL`, because a unique index ignores
+  `NULL`.
 - Timestamps used for ordering/filter (e.g., `created_at` on user/customer
   lists) get plain indexes when a query proves the need; do not blanket-index.
 

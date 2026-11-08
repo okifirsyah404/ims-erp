@@ -2725,6 +2725,31 @@ following the `storage-dialog.tsx` pattern (Base UI Dialog from
 Gates: web-admin build green, oxlint 9 warnings (pre-existing), locale tests
 42 pass.
 
+## 2026-11-08 - Docs: nullable cross-module references (ADR-0014) and ADR-0012 multi-org
+
+Status: implemented (docs only, branch `fix/docs-consistency`). No code, no
+migrations, no seeders touched. `docs/database/` reviewed and updated.
+
+- ADR-0014 added (accepted): every cross-module logical reference is nullable;
+  presence is a service-layer fact. ADR-0012 rewritten as multi-org with a
+  nullable issuing `organization_id` and per-org codes. ADR-0007/0008 headers
+  cross-reference both.
+- `AGENTS.md`: hard rule "Cross-module references are nullable" added.
+- Companion docs aligned: `data-dictionary.md` (§1.2, §1.6),
+  `integrity-and-consistency.md` (§3.3, §3.5, §5.1), `logical-references.md`
+  (rules 3, tenant scope, code uniqueness), `module-ownership.md` (counts,
+  obligation 4), `implementation-phases.md`, `architecture.md`,
+  `data-model.md`.
+- Backlog: ERP-0031..0034 moved to `proposed` (ADR-0010 still `proposed`);
+  `backlog.md` status legend gained `proposed`. ERP-0037 added (ADR-0014 schema
+  flip, `planned`). `features.md` moved to match.
+- Verified: `bun docs/database/gen-logical-references.ts` → `522 refs across 39
+  targets, 226 intra-module refs`. `bun docs/database/validate-dbml.ts` →
+  `258 tables, 226 refs, 0 cross-module, 0 timestamp gaps, OK`.
+- Not verified: no code test run (none expected for docs). Git wrapper reported
+  a clean tree while these edits exist on disk; commit state unconfirmed.
+- Schema still `NOT NULL` in shipped DB until ERP-0037 lands.
+
 ## Next executable task
 
 **Finance review of the tax slice (D12/D14/D18)** — column list, rounding

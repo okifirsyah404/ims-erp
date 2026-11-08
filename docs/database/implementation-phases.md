@@ -103,8 +103,9 @@ anywhere; every other module references `auth.users.id` /
 
 **Column rules that apply here.**
 
-- `id uuid [pk, default: uuidv7()]` — PostgreSQL 18 native, time ordered.
-- `organization_id text NOT NULL`, logical reference to `auth.organizations.id`.
+- `id uuid [pk, default: uuidv7()]` - PostgreSQL 18 native, time ordered.
+- `organization_id text`, nullable logical reference to
+  `auth.organizations.id` (ADR-0014; ERP-0037 performs the column flip).
 - `created_at` / `updated_at` `bigint NOT NULL`, unix milliseconds.
 - `deleted_at bigint` nullable on every master table.
 - No native enum. Status columns are `text` with a `Checks` block.
@@ -124,9 +125,10 @@ anywhere; every other module references `auth.users.id` /
    development seeder is skipped in production, where organizations are
    created through the API by an application admin.
 
-**Tests.** Every table in the step: `id` default is a uuidv7, `organization_id`
-is required, the `CHECK` rejects an unknown status value, a soft delete sets
-`deleted_at` and hides the row from a default list.
+**Tests.** Every table in the step: `id` default is a uuidv7, the `CHECK`
+rejects an unknown status value, a soft delete sets `deleted_at` and hides
+the row from a default list. The `organization_id` presence check lives in
+the Identity contract, not in a `NOT NULL` constraint (ADR-0014).
 
 **Exit criteria.**
 
