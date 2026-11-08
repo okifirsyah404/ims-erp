@@ -46,7 +46,8 @@ Open items (not done):
   conflicts with ADR-0012 here and is dropped during that merge.
 - `sales.invoices.organization_id` stays under ADR-0012. Removing it is not
   planned.
-- `finance.receipts` has two designs (M09 vs merge). Resolve in that merge.
+- `finance.receipts` resolved 2026-11-08: moved to `sales.receipts` (kwitansi
+  owned by Sales); `payment_id` is a logical reference to `finance.payments`.
 
 ## Completed (this session - M09 Finance Stage 1, F1..F9, 2026-11-07)
 
