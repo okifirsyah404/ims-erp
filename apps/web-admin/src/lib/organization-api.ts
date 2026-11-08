@@ -21,7 +21,7 @@ export type TOrganization = {
 	createdAt: string;
 	deletedAt: string | null;
 	membersCount?: number;
-	rolesCount?: number;
+	warehousesCount?: number;
 	projectCount?: number;
 };
 

@@ -7,7 +7,7 @@
  * - `finance` (read + export only) can view and export but cannot edit,
  *   verify, or delete;
  * - `sales` (no tax grants) is 403 on everything;
- * - `accountant` (full tax:*) passes the guard for all of them.
+ * - `accountant`/owner (full tax:*) passes the guard for all of them.
  */
 import 'reflect-metadata';
 import { beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
@@ -17,10 +17,11 @@ import {
 	installAuthMock,
 	installPermissionResolverMock,
 	resetFixture,
-	setRoleGrants,
 } from './test-app';
 
-const ACCOUNTANT = 'warehouse'; // fixture user; its role grants are overridden below to full tax:*
+void fixture;
+
+const ACCOUNTANT = 'owner'; // fixture user with full grants (owner); proves the full tax:* grant set passes the guard
 const FINANCE = 'finance';
 const SALES = 'sales';
 
@@ -118,12 +119,6 @@ const ROUTES: ReadonlyArray<{
 beforeAll(async () => {
 	installAuthMock();
 	installPermissionResolverMock();
-	// A role holding the full `tax` grant set, mirroring the catalog's
-	// `accountant` role (no accountant fixture user exists, so the warehouse
-	// user's role grants are overridden instead).
-	setRoleGrants('warehouse', {
-		tax: ['read', 'create', 'update', 'verify', 'export'],
-	});
 
 	const { container } = await import('tsyringe');
 	const { TAX_SERVICE_TOKEN } = await import(
@@ -207,14 +202,8 @@ describe('tax routes — sales has no tax grants at all', () => {
 });
 
 describe('tax routes — full tax:* passes the guard', () => {
-	beforeEach(() => {
-		// resetFixture() cleared role grants; restore the full-grant role.
-		setRoleGrants('warehouse', {
-			tax: ['read', 'create', 'update', 'verify', 'export'],
-		});
-	});
 	test.each(ROUTES)(
-		'$method $path as accountant reaches the service (no 401/403)',
+		'$method $path as owner reaches the service (no 401/403)',
 		async ({ method, path, body }) => {
 			const response = await app.handle(jsonRequest(method, path, ACCOUNTANT, body));
 			expect([401, 403]).not.toContain(response.status);

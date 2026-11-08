@@ -5,7 +5,7 @@ import {
 	users,
 	organizations,
 } from '@drizzle/schemas/auth.schema';
-import { roles as rolesTable } from '@drizzle/schemas/role.schema';
+import { warehouseOrganizations } from '@drizzle/schemas/inventory.schema';
 import { TPaginationResult } from '@ims-erp/common';
 import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
@@ -103,17 +103,16 @@ export class OrganizationRepository implements IOrganizationRepository {
 	/**
 	 * Enriches a page of organization rows with aggregate counts.
 	 *
-	 * Two grouped queries limited to the page's org ids (no N+1):
-	 * live member rows and live role rows (role master data from the
-	 * user-management schema, soft-deleted roles excluded). `projectCount`
-	 * is a reserved placeholder (0) until a projects concept exists.
+	 * Grouped queries limited to the page's org ids (no N+1): live member rows
+	 * and live warehouse links (`warehouseOrganizations`). `projectCount` is
+	 * a reserved placeholder (0) until a projects concept exists.
 	 */
 	private async attachCounts(
 		rows: TOrganizationSelect[],
 	): Promise<TOrganizationWithCounts[]> {
 		const ids = rows.map((row) => row.id);
 		const membersCount = new Map<string, number>();
-		const rolesCount = new Map<string, number>();
+		const warehousesCount = new Map<string, number>();
 
 		if (ids.length > 0) {
 			const memberRows = await this.db
@@ -128,28 +127,28 @@ export class OrganizationRepository implements IOrganizationRepository {
 				membersCount.set(row.organizationId, Number(row.value));
 			}
 
-			const roleRows = await this.db
+			const warehouseRows = await this.db
 				.select({
-					organizationId: rolesTable.organizationId,
+					organizationId: warehouseOrganizations.organizationId,
 					value: count(),
 				})
-				.from(rolesTable)
+				.from(warehouseOrganizations)
 				.where(
 					and(
-						inArray(rolesTable.organizationId, ids),
-						isNull(rolesTable.deletedAt),
+						inArray(warehouseOrganizations.organizationId, ids),
+						isNull(warehouseOrganizations.deletedAt),
 					),
 				)
-				.groupBy(rolesTable.organizationId);
-			for (const row of roleRows) {
-				rolesCount.set(row.organizationId, Number(row.value));
+				.groupBy(warehouseOrganizations.organizationId);
+			for (const row of warehouseRows) {
+				warehousesCount.set(row.organizationId, Number(row.value));
 			}
 		}
 
 		return rows.map((row) => ({
 			...row,
 			membersCount: membersCount.get(row.id) ?? 0,
-			rolesCount: rolesCount.get(row.id) ?? 0,
+			warehousesCount: warehousesCount.get(row.id) ?? 0,
 			projectCount: 0,
 		}));
 	}

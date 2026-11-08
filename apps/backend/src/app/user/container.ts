@@ -2,20 +2,16 @@ import type { DependencyContainer } from 'tsyringe';
 import { UserRepository } from './repositories/user.repository';
 import { InvitationRepository } from './repositories/invitation.repository';
 import { UserManagementRepository } from './repositories/user-management.repository';
-import { RoleRepository } from './repositories/role.repository';
 import { BetterAuthUserGateway } from './adapters/better-auth-user';
 import { BetterAuthUserManagementGateway } from './adapters/better-auth-user-management';
 import { LoggerInvitationMailer } from './adapters/logger-mailer';
 import { UserService } from './services/user.service';
 import { InvitationService } from './services/invitation.service';
-import { RoleManagementService } from './services/role-management.service';
 import { UserAdminService } from './services/user-admin.service';
 import {
 	INVITATION_MAILER_TOKEN,
 	INVITATION_REPOSITORY_TOKEN,
 	INVITATION_SERVICE_TOKEN,
-	ROLE_MANAGEMENT_SERVICE_TOKEN,
-	ROLE_REPOSITORY_TOKEN,
 	USER_ADMIN_SERVICE_TOKEN,
 	USER_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
@@ -28,7 +24,7 @@ export * from './constants/di';
 
 /**
  * Registers the user module: self-service (repository, Better Auth gateway,
- * service, avatar queue) plus the admin half — invitations, roles and user
+ * service, avatar queue) plus the admin half — invitations and user
  * administration — merged from the former `user-management` module.
  *
  * @remarks
@@ -60,15 +56,11 @@ export function registerUser(container: DependencyContainer): void {
 	container.register(USER_MANAGEMENT_REPOSITORY_TOKEN, {
 		useClass: UserManagementRepository,
 	});
-	container.register(ROLE_REPOSITORY_TOKEN, { useClass: RoleRepository });
 	container.register(USER_MANAGEMENT_AUTH_GATEWAY_TOKEN, {
 		useClass: BetterAuthUserManagementGateway,
 	});
 	container.register(INVITATION_MAILER_TOKEN, {
 		useClass: LoggerInvitationMailer,
-	});
-	container.register(ROLE_MANAGEMENT_SERVICE_TOKEN, {
-		useClass: RoleManagementService,
 	});
 	container.register(USER_ADMIN_SERVICE_TOKEN, { useClass: UserAdminService });
 	container.register(INVITATION_SERVICE_TOKEN, {

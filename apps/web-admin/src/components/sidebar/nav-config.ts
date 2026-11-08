@@ -16,7 +16,6 @@ import {
 	Scale,
 	ScrollText,
 	Settings,
-	ShieldCheck,
 	Truck,
 	Users,
 	Wallet,
@@ -247,7 +246,6 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		items: [
 			{ titleKey: 'item.organizations', url: '/organizations', icon: Building2 },
 			{ titleKey: 'item.users', url: '/admin/users', icon: Users },
-			{ titleKey: 'item.roles', url: '/admin/roles', icon: ShieldCheck },
 			{ titleKey: 'item.auditLog', url: '/admin/audit', icon: ScrollText },
 			{ titleKey: 'item.settings', url: '/admin/settings', icon: Settings },
 		],

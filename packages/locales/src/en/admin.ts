@@ -46,7 +46,6 @@ const admin = {
 	'invite.namePlaceholder': 'Prefills the claim form',
 	'invite.role': 'Role',
 	'invite.rolePlaceholder': 'Select a role',
-	'invite.roleOption': '{{name}} (rank {{rank}})',
 	'invite.defaultRole': 'Default role (optional)',
 	'invite.defaultRolePlaceholder': 'Used when a row omits role',
 	'invite.rows': 'Rows ({{max}} max)',
@@ -59,7 +58,6 @@ const admin = {
 	'invite.sentBulk': '{{count}} invitation(s) sent',
 	'invite.sentMixed': '{{succeeded}} sent, {{failed}} failed',
 	'invite.emailRequired': 'Email is required',
-	'invite.roleRequired': 'Choose a role',
 
 	'invitations.title': 'Pending invitations',
 	'invitations.description':
@@ -78,42 +76,6 @@ const admin = {
 	'invitations.cancelled': 'Invitation cancelled',
 	'invitations.deleted': 'Invitation deleted',
 	'invitations.empty': 'No pending invitations.',
-
-	'roles.title': 'Roles',
-	'roles.description':
-		'Dynamic per-organization roles. You can only create or edit roles ranked below your own.',
-	'roles.masterData': 'Role master data',
-	'roles.masterDataDescription':
-		'{{count}} role(s). System roles cannot be deleted; roles held by members must be reassigned first.',
-	'roles.role': 'Role',
-	'roles.members': 'Members',
-	'roles.grants': 'Grants',
-	'roles.systemBadge': 'system',
-	'roles.loading': 'Loading roles…',
-	'roles.noGrants': 'no grants',
-	'roles.deleteTitle': 'Delete role "{{name}}"?',
-	'roles.deleteBlocked':
-		'{{count}} member(s) still hold this role — reassign them first.',
-	'roles.deleteOk': 'The role is soft-deleted and its name can be reused later.',
-	'roles.editNamed': 'Edit "{{name}}"',
-	'roles.rankHint':
-		'Rank must be strictly below your own rank. Existing custom roles rank at most {{maxRank}}; owner is {{ownerRank}}.',
-	'roles.nameHint': 'Lowercase letters, numbers and underscores.',
-	'roles.rankDescription':
-		'1–100. Higher rank wins; you cannot grant at or above your own.',
-	'roles.rankInvalid': 'Rank must be a whole number between 1 and 100',
-	'roles.created': 'Role created',
-	'roles.updated': 'Role updated',
-	'roles.deleted': 'Role deleted',
-	'roles.empty': 'No roles found',
-	'roles.new': 'New role',
-	'roles.rank': 'Rank',
-	'roles.actions': 'Actions',
-	'roles.createRole': 'Create role',
-	'roles.saveChanges': 'Save changes',
-	'roles.name': 'Name',
-	'roles.namePlaceholder': 'sales_lead',
-	'roles.permissions': 'Permissions',
 
 	'audit.title': 'Audit log',
 	'audit.description':
@@ -157,7 +119,7 @@ const admin = {
 	'orgs.details': 'Organization details',
 	'orgs.slugDescription': 'The slug is permanent and used in URLs and API contexts.',
 	'orgs.stats.members': 'Members',
-	'orgs.stats.roles': 'Roles',
+	'orgs.stats.warehouses': 'Warehouses',
 	'orgs.stats.projects': 'Projects',
 
 	'orgDetail.created': 'Created',
@@ -167,13 +129,11 @@ const admin = {
 	'orgDetail.info': 'Info',
 	'orgDetail.details': 'Details',
 	'orgDetail.membersDescription': 'People with access to this organization.',
+	'orgDetail.membersEmpty': 'No members yet.',
 	'orgDetail.name': 'Name',
 	'orgDetail.slug': 'Slug',
-	'orgDetail.memberEmail': 'Email',
-	'orgDetail.memberName': 'Name',
 	'orgDetail.memberRole': 'Role',
 	'orgDetail.memberJoined': 'Joined',
-	'orgDetail.memberActions': 'Actions',
 	'orgDetail.notFound': 'Organization not found (or you lack access).',
 	'orgDetail.backToList': 'Back to organizations',
 	'orgDetail.createdOn': '{{slug}} · created {{date}}',

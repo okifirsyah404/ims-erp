@@ -78,7 +78,6 @@ describe('locale values', () => {
 			'admin:invitations.email',
 			'admin:invitations.status',
 			'account:sessions.status',
-			'admin:orgDetail.memberEmail',
 			'admin:audit.metadata',
 			'admin:roles.rank',
 			'admin:roles.namePlaceholder',

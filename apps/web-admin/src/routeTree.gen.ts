@@ -34,7 +34,6 @@ import { Route as AuthedReportsIndexRouteImport } from './routes/_authed/reports
 import { Route as AuthedSalesIndexRouteImport } from './routes/_authed/sales/index'
 import { Route as AuthedSubscriptionIndexRouteImport } from './routes/_authed/subscription/index'
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
-import { Route as AuthedAdminRolesIndexRouteImport } from './routes/_authed/admin/roles/index'
 import { Route as AuthedAdminSettingsIndexRouteImport } from './routes/_authed/admin/settings/index'
 import { Route as AuthedAdminUsersIndexRouteImport } from './routes/_authed/admin/users/index'
 import { Route as AuthedAssetsBorrowingsIndexRouteImport } from './routes/_authed/assets/borrowings/index'
@@ -229,11 +228,6 @@ const AuthedSubscriptionIndexRoute = AuthedSubscriptionIndexRouteImport.update({
 const AuthedAdminAuditIndexRoute = AuthedAdminAuditIndexRouteImport.update({
   id: '/admin/audit/',
   path: '/admin/audit/',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedAdminRolesIndexRoute = AuthedAdminRolesIndexRouteImport.update({
-  id: '/admin/roles/',
-  path: '/admin/roles/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAdminSettingsIndexRoute =
@@ -674,7 +668,6 @@ export interface FileRoutesByFullPath {
   '/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/admin/audit/': typeof AuthedAdminAuditIndexRoute
-  '/admin/roles/': typeof AuthedAdminRolesIndexRoute
   '/admin/settings/': typeof AuthedAdminSettingsIndexRoute
   '/admin/users/': typeof AuthedAdminUsersIndexRoute
   '/assets/borrowings/': typeof AuthedAssetsBorrowingsIndexRoute
@@ -768,7 +761,6 @@ export interface FileRoutesByTo {
   '/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/admin/audit': typeof AuthedAdminAuditIndexRoute
-  '/admin/roles': typeof AuthedAdminRolesIndexRoute
   '/admin/settings': typeof AuthedAdminSettingsIndexRoute
   '/admin/users': typeof AuthedAdminUsersIndexRoute
   '/assets/borrowings': typeof AuthedAssetsBorrowingsIndexRoute
@@ -866,7 +858,6 @@ export interface FileRoutesById {
   '/_authed/inventory/warehouses/new': typeof AuthedInventoryWarehousesNewRoute
   '/_authed/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/_authed/admin/audit/': typeof AuthedAdminAuditIndexRoute
-  '/_authed/admin/roles/': typeof AuthedAdminRolesIndexRoute
   '/_authed/admin/settings/': typeof AuthedAdminSettingsIndexRoute
   '/_authed/admin/users/': typeof AuthedAdminUsersIndexRoute
   '/_authed/assets/borrowings/': typeof AuthedAssetsBorrowingsIndexRoute
@@ -964,7 +955,6 @@ export interface FileRouteTypes {
     | '/inventory/warehouses/new'
     | '/organizations/$organizationId/edit'
     | '/admin/audit/'
-    | '/admin/roles/'
     | '/admin/settings/'
     | '/admin/users/'
     | '/assets/borrowings/'
@@ -1058,7 +1048,6 @@ export interface FileRouteTypes {
     | '/inventory/warehouses/new'
     | '/organizations/$organizationId/edit'
     | '/admin/audit'
-    | '/admin/roles'
     | '/admin/settings'
     | '/admin/users'
     | '/assets/borrowings'
@@ -1155,7 +1144,6 @@ export interface FileRouteTypes {
     | '/_authed/inventory/warehouses/new'
     | '/_authed/organizations/$organizationId/edit'
     | '/_authed/admin/audit/'
-    | '/_authed/admin/roles/'
     | '/_authed/admin/settings/'
     | '/_authed/admin/users/'
     | '/_authed/assets/borrowings/'
@@ -1398,13 +1386,6 @@ declare module '@tanstack/react-router' {
       path: '/admin/audit'
       fullPath: '/admin/audit/'
       preLoaderRoute: typeof AuthedAdminAuditIndexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/admin/roles/': {
-      id: '/_authed/admin/roles/'
-      path: '/admin/roles'
-      fullPath: '/admin/roles/'
-      preLoaderRoute: typeof AuthedAdminRolesIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/admin/settings/': {
@@ -2000,7 +1981,6 @@ interface AuthedRouteChildren {
   AuthedInventoryWarehousesWarehouseIdRoute: typeof AuthedInventoryWarehousesWarehouseIdRouteWithChildren
   AuthedInventoryWarehousesNewRoute: typeof AuthedInventoryWarehousesNewRoute
   AuthedAdminAuditIndexRoute: typeof AuthedAdminAuditIndexRoute
-  AuthedAdminRolesIndexRoute: typeof AuthedAdminRolesIndexRoute
   AuthedAdminSettingsIndexRoute: typeof AuthedAdminSettingsIndexRoute
   AuthedAdminUsersIndexRoute: typeof AuthedAdminUsersIndexRoute
   AuthedAssetsBorrowingsIndexRoute: typeof AuthedAssetsBorrowingsIndexRoute
@@ -2087,7 +2067,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedInventoryWarehousesWarehouseIdRouteWithChildren,
   AuthedInventoryWarehousesNewRoute: AuthedInventoryWarehousesNewRoute,
   AuthedAdminAuditIndexRoute: AuthedAdminAuditIndexRoute,
-  AuthedAdminRolesIndexRoute: AuthedAdminRolesIndexRoute,
   AuthedAdminSettingsIndexRoute: AuthedAdminSettingsIndexRoute,
   AuthedAdminUsersIndexRoute: AuthedAdminUsersIndexRoute,
   AuthedAssetsBorrowingsIndexRoute: AuthedAssetsBorrowingsIndexRoute,

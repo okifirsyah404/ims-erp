@@ -1,7 +1,7 @@
 import { inject, injectable } from 'tsyringe';
 import type { TOrganizationSelect } from '@drizzle/schemas/auth.schema';
 import { TPaginationResult } from '@ims-erp/common';
-import { seedRolesForOrganization } from '../../../../database/seeders/seed/organization-roles.seeder';
+import { seedOrganizationRoles } from '../../../../database/seeders/seed/organization-roles.seeder';
 import type {
 	IOrganizationAuthGateway,
 	TGatewayFullOrganization,
@@ -57,7 +57,7 @@ export class OrganizationService {
 	) {}
 
 	/**
-	 * Creates an organization and materializes its role catalog.
+	 * Creates an organization and verifies the closed role enum.
 	 *
 	 * @param headers - Caller headers; Better Auth enforces
 	 * `allowUserToCreateOrganization` (application admin) and activates the
@@ -66,11 +66,10 @@ export class OrganizationService {
 	 * `owner`
 	 *
 	 * @remarks
-	 * Role seeding is best-effort: a failure there must not orphan an
-	 * organization that Better Auth has already created. Until the roles
-	 * exist the permission resolver falls back to the static shared catalog,
-	 * so the organization stays usable and `refreshSystemRoleGrants`/a seed
-	 * re-run can repair it.
+	 * Enum verification is best-effort: a failure there must not orphan an
+	 * organization that Better Auth has already created. Roles are a closed
+	 * code catalog (`erpRoleNames`/`erpRoleGrants` in `@ims-erp/common`), so
+	 * no per-organization provisioning is required.
 	 */
 	async createOrganization(
 		headers: Headers,
@@ -92,21 +91,20 @@ export class OrganizationService {
 	}
 
 	/**
-	 * Materializes the per-organization role catalog for a new organization.
+	 * Verifies the closed organization-role enum type for a new organization.
 	 *
 	 * @remarks
 	 * Best-effort by design: a failure here must not orphan an organization
-	 * that Better Auth has already created. Until the rows exist the
-	 * permission resolver falls back to the static shared catalog, so the
-	 * organization stays usable and a seed re-run / `refreshSystemRoleGrants`
-	 * can repair it.
+	 * that Better Auth has already created. Roles are a closed enum; the
+	 * guardian seeder only ensures the Postgres enum type
+	 * `auth.organization_role` exists and carries every catalog value.
 	 */
 	private async provisionRoles(organizationId: string): Promise<void> {
 		try {
-			await seedRolesForOrganization(organizationId);
+			await seedOrganizationRoles();
 		} catch (error) {
 			console.error(
-				`[organization] role provisioning failed for ${organizationId}`,
+				`[organization] role enum provisioning failed for ${organizationId}`,
 				error,
 			);
 		}

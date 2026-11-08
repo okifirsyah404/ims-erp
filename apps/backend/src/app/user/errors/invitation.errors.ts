@@ -49,13 +49,13 @@ export class InvitationNotPendingError extends UserManagementError {
 	}
 }
 
-/** Org invite missing organizationId/roleId, or unknown roleId. */
+/** Org invite missing organizationId/organizationRole, or an invalid role. */
 export class InvalidInvitationError extends UserManagementError {
 	constructor() {
 		super(
 			422,
 			'invitation.invalidPayload',
-			'Organization invites require both organizationId and roleId',
+			'Organization invites require both organizationId and a valid organizationRole',
 		);
 	}
 
@@ -172,15 +172,8 @@ export class ClaimStateError extends UserManagementError {
 	}
 }
 
-/** Role name not in the organization's master data (single invite path). */
-export class RoleNotFoundError extends UserManagementError {
-	constructor(readonly roleNameOrId: string) {
-		super(422, 'role.notFound', `Role not found: ${roleNameOrId}`);
-	}
-}
-
 // ---------------------------------------------------------------------------
-// Phase 4 — account lifecycle, role CRUD, escalation guard
+// Phase 4 — account lifecycle, escalation guard
 // ---------------------------------------------------------------------------
 
 export class UserNotFoundError extends UserManagementError {
@@ -209,8 +202,8 @@ export class UserStateError extends UserManagementError {
 }
 
 /**
- * Escalation guard (D5): a caller can never grant or touch a rank at or
- * above their own. Enforced server-side on every role/member write.
+ * Escalation guard: a caller can never deactivate or delete a user who holds
+ * a role ranked at or above their own in any organization.
  */
 export class RankGuardError extends UserManagementError {
 	constructor() {
@@ -227,86 +220,6 @@ export class RankGuardError extends UserManagementError {
 			'role.targetRankExceeded',
 			`Target holds "${roleName}" (rank ${rank})`,
 			{ role: roleName, rank },
-		);
-	}
-}
-
-/** Role exists in this organization's live master data. */
-export class RoleNameTakenError extends UserManagementError {
-	constructor(name: string) {
-		super(
-			409,
-			'role.nameTaken',
-			`A role named "${name}" already exists in this organization`,
-			{ name },
-		);
-	}
-}
-
-/**
- * Role cannot be deleted or renamed: it is a seeded system role, or live
- * members still hold it.
- */
-export class RoleInUseError extends UserManagementError {
-	constructor() {
-		super(
-			409,
-			'role.inUse',
-			'This role cannot be removed: it is a system role or still assigned',
-		);
-	}
-
-	/** The role is seeded/master data and may not be deleted. */
-	static system(roleName: string): RoleInUseError {
-		return new RoleInUseError().withKey(
-			'role.systemRole',
-			`"${roleName}" is a system role and cannot be deleted`,
-			{ role: roleName },
-		);
-	}
-
-	/** Members still hold the role; they must be reassigned first. */
-	static heldBy(roleName: string, holders: number): RoleInUseError {
-		return new RoleInUseError().withKey(
-			'role.stillAssigned',
-			`${holders} member(s) still hold "${roleName}"`,
-			{ role: roleName, count: holders },
-		);
-	}
-}
-
-/** Permission grant references a resource/action outside the catalog. */
-export class InvalidPermissionGrantError extends UserManagementError {
-	constructor() {
-		super(
-			422,
-			'role.invalidPermission',
-			'Permission grant is outside the catalog',
-		);
-	}
-
-	/** The resource itself is not in the permission catalog. */
-	static unknownResource(
-		label: string,
-		resource: string,
-	): InvalidPermissionGrantError {
-		return new InvalidPermissionGrantError().withKey(
-			'role.unknownResource',
-			`${label}: unknown resource "${resource}"`,
-			{ label, resource },
-		);
-	}
-
-	/** The resource exists but does not expose the requested action. */
-	static unknownAction(
-		label: string,
-		resource: string,
-		action: string,
-	): InvalidPermissionGrantError {
-		return new InvalidPermissionGrantError().withKey(
-			'role.unknownAction',
-			`${label}: "${resource}" has no action "${action}"`,
-			{ label, resource, action },
 		);
 	}
 }

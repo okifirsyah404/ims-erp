@@ -1,37 +1,48 @@
 /**
  * User management schema extension (auth schema, ERP-owned tables).
  *
- * Owns the dynamic organization role catalog and the unified invitation
- * queue for the closed (invitation-only) user lifecycle:
+ * Owns the unified invitation queue for the closed (invitation-only) user
+ * lifecycle:
  *
- * - `auth.roles` — per-organization role master data. System roles
- *   (owner/admin/hr and the shared ERP catalog roles) are seeded per org;
- *   app/owner admins may create additional custom roles at runtime.
- *   Permissions are stored as jsonb `{ resource: action[] }` matching the
- *   shared catalog vocabulary (`@ims-erp/common` erpStatements).
  * - `auth.user_invitations` — single invitation pipeline for both the
  *   application-admin path (name + email, no organization) and the
- *   organization path (email + role). Users are pre-created at invite time
- *   (status `pending`); the invitation row holds the single-use, hashed,
- *   3-day claim token. Named `user_invitations` because Better Auth owns
- *   `auth.invitations` (organization plugin) — that table stays untouched.
+ *   organization path (email + `org_role`). Users are pre-created at invite
+ *   time (status `pending`); the invitation row holds the single-use,
+ *   hashed, 3-day claim token. Named `user_invitations` because Better Auth
+ *   owns `auth.invitations` (organization plugin) — that table stays
+ *   untouched.
  *
- * Escalation rules (rank comparison) are enforced server-side in the
- * user-management module, not in the schema.
+ * Organization roles are a CLOSED enum: the 19 values of
+ * `@ims-erp/common erpRoleNames`, stored as the Postgres enum type
+ * `organization_role` (`org_role` column, NULL on app-path invites).
+ * There is no per-organization dynamic role table.
  */
-import { defineRelationsPart, sql } from 'drizzle-orm';
+import { defineRelationsPart } from 'drizzle-orm';
 import {
 	boolean,
 	integer,
 	index,
-	jsonb,
-	pgSchema,
+	pgEnum,
 	text,
 	timestamp,
 	uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import type { ErpPermissionRequest } from '@ims-erp/common';
+import { erpRoleNames } from '@ims-erp/common';
 import { authSchema, organizations, users } from './auth.schema';
+
+/**
+ * Postgres enum for the closed ERP organization role catalog (lives in the
+ * `auth` schema). Values mirror `erpRoleNames`; the guardian seeder keeps
+ * the type in sync with the catalog (`CREATE TYPE` + `ADD VALUE IF NOT
+ * EXISTS`).
+ */
+export const organizationRole = pgEnum(
+	'auth.organization_role',
+	erpRoleNames,
+);
+
+/** The Postgres enum name (used by the migration + guardian seeder). */
+export const ORGANIZATION_ROLE_ENUM = 'auth.organization_role' as const;
 
 /**
  * Invitation kind. `app` = application-admin invite (no organization),
@@ -55,41 +66,6 @@ export const USER_INVITATION_STATUSES = [
 export type UserInvitationStatus = (typeof USER_INVITATION_STATUSES)[number];
 
 /**
- * Per-organization role. `rank` drives the escalation guard server-side
- * (owner=100, admin=80, hr=60, member=10; custom roles rank below their
- * creator's rank). `permissions` is a plain-data permission grant
- * (`{ resource: action[] }`, deny-by-default) using the shared catalog
- * vocabulary. `isSystem` marks seeded roles that cannot be deleted.
- */
-export const roles = authSchema.table(
-	'roles',
-	{
-		id: text('id').primaryKey(),
-		organizationId: text('organization_id')
-			.notNull()
-			.references(() => organizations.id, { onDelete: 'cascade' }),
-		name: text('name').notNull(),
-		rank: integer('rank').notNull(),
-		permissions: jsonb('permissions').$type<ErpPermissionRequest>().notNull(),
-		isSystem: boolean('is_system').default(false).notNull(),
-		// Soft-delete marker (business table; partial unique index below
-		// excludes soft-deleted rows so a name can be reused after deletion).
-		deletedAt: timestamp('deleted_at'),
-		createdAt: timestamp('created_at').defaultNow().notNull(),
-		updatedAt: timestamp('updated_at')
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
-	},
-	(table) => [
-		uniqueIndex('roles_org_name_live_idx')
-			.on(table.organizationId, table.name)
-			.where(sql`deleted_at IS NULL`),
-		index('roles_organizationId_idx').on(table.organizationId),
-	],
-);
-
-/**
  * Unified invitation row. `tokenHash` is a SHA-256 of the emailed token —
  * the raw token never touches the database. On resend the hash and expiry
  * are replaced (old token dies) and `resentCount` increments.
@@ -108,9 +84,9 @@ export const userInvitations = authSchema.table(
 		organizationId: text('organization_id').references(() => organizations.id, {
 			onDelete: 'cascade',
 		}),
-		roleId: text('role_id').references(() => roles.id, {
-			onDelete: 'set null',
-		}),
+		// Org path only: the closed ERP organization role (Postgres enum
+		// `organization_role`). NULL on the app-admin path.
+		orgRole: organizationRole('org_role'),
 		tokenHash: text('token_hash').notNull(),
 		status: text('status', { enum: USER_INVITATION_STATUSES })
 			.default('pending')
@@ -141,22 +117,12 @@ export const userInvitations = authSchema.table(
 );
 
 export const roleRelations = defineRelationsPart(
-	{ roles, userInvitations, organizations, users },
+	{ userInvitations, organizations, users },
 	(r) => ({
-		roles: {
-			organization: r.one.organizations({
-				from: r.roles.organizationId,
-				to: r.organizations.id,
-			}),
-		},
 		userInvitations: {
 			organization: r.one.organizations({
 				from: r.userInvitations.organizationId,
 				to: r.organizations.id,
-			}),
-			role: r.one.roles({
-				from: r.userInvitations.roleId,
-				to: r.roles.id,
 			}),
 			inviter: r.one.users({
 				from: r.userInvitations.invitedBy,
@@ -166,7 +132,5 @@ export const roleRelations = defineRelationsPart(
 	}),
 );
 
-export type TRoleSelect = typeof roles.$inferSelect;
-export type TRoleInsert = typeof roles.$inferInsert;
 export type TUserInvitationSelect = typeof userInvitations.$inferSelect;
 export type TUserInvitationInsert = typeof userInvitations.$inferInsert;

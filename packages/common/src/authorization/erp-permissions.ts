@@ -10,13 +10,14 @@
  *
  * Deny-by-default: a permission that is not granted explicitly is denied.
  * Adding a resource/action here does not grant it to anyone - role grants
- * live in `apps/common/src/authorization/roles.ts` (also explicit).
+ * live in the same module (`erpRoleGrants`, also explicit).
  *
  * Note: catalog entries describe the *intended* vocabulary for the whole ERP.
  * Modules that do not exist yet are still registered so routes can be
  * protected consistently as they are built (see security-and-access.md,
  * "integration gaps").
  */
+import { z } from 'zod';
 
 export const erpStatements = {
 	// Organization settings
@@ -205,6 +206,14 @@ export const erpRoleNames = [
 ] as const;
 
 export type ErpRoleName = (typeof erpRoleNames)[number];
+
+/**
+ * Zod schema for the closed ERP organization role enum. Invite payloads and
+ * any other wire surface that carries an organization role validate against
+ * this — unknown role names are a hard parse error (no dynamic roles).
+ */
+export const organizationRoleSchema = z.enum(erpRoleNames);
+export type TOrganizationRole = ErpRoleName;
 
 /**
  * Every ERP statement granted to a role that holds all of them (the owner

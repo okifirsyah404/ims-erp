@@ -115,16 +115,8 @@ const api = {
 	'claim.phoneInUse': 'Phone number is already in use',
 	'claim.alreadyInUse': 'Username or email already in use',
 
-	'role.notFound': 'Role not found',
-	'role.nameTaken': 'A role named "{{name}}" already exists in this organization',
-	'role.inUse': 'This role cannot be removed: it is a system role or still assigned',
-	'role.systemRole': '"{{role}}" is a system role and cannot be deleted',
-	'role.stillAssigned':
-		'{{count}} member(s) still hold "{{role}}"; reassign them first',
-	'role.invalidPermission': 'Permission grant is outside the catalog',
-	'role.unknownResource': '{{label}}: unknown resource "{{resource}}"',
-	'role.unknownAction': '{{label}}: "{{resource}}" has no action "{{action}}"',
-	'role.rankExceeded': 'You cannot grant a role at or above your own rank',
+	'role.rankExceeded':
+		'You cannot act on a user holding a role at or above your own rank',
 	'role.targetRankExceeded':
 		'Target holds "{{role}}" (rank {{rank}}) in your organization',
 

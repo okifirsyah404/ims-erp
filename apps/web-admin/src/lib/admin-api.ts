@@ -1,19 +1,20 @@
-import type {
-	TApiPaginatedResponse,
-	TApiResponse,
+import {
+	erpRoleNames,
+	type TApiPaginatedResponse,
+	type TApiResponse,
 } from '@ims-erp/common';
 import { queryOptions } from '@tanstack/react-query';
 import type { Permission } from './permissions';
 
 /**
  * API client for the phase-4 administration endpoints: account lifecycle
- * (`/admin/users`), dynamic role CRUD (`/admin/roles`) and the audit trail (`/admin/audit`).
+ * (`/admin/users`), invitations (`/admin/invitations`) and the audit trail (`/admin/audit`).
  *
  * @remarks
  * Every request carries the `x-organization-id` header because the backend
- * guard validates membership + the dynamic permission against an explicit
- * organization context. The session cookie carries identity — no token is
- * ever read or stored by this module.
+ * guard validates membership + the static catalog permission against an
+ * explicit organization context. The session cookie carries identity — no
+ * token is ever read or stored by this module.
  */
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
@@ -130,76 +131,6 @@ export async function deleteUser(organizationId: string, userId: string) {
 // ---------------------------------------------------------------------------
 
 /** Grant map `{ resource: action[] }` using the shared catalog vocabulary. */
-export type TPermissionGrant = Record<string, string[]>;
-
-export type TAdminRole = {
-	id: string;
-	organizationId: string;
-	name: string;
-	rank: number;
-	permissions: TPermissionGrant;
-	isSystem: boolean;
-	deletedAt: string | null;
-	createdAt: string;
-	updatedAt: string;
-	memberCount: number;
-};
-
-export type TPermissionCatalogEntry = {
-	resource: string;
-	actions: string[];
-};
-
-export async function listRoles(organizationId: string, includeDeleted = false) {
-	const query = includeDeleted ? '?includeDeleted=true' : '';
-	const envelope = await request<TAdminRole[]>(
-		`/admin/roles${query}`,
-		{ organizationId },
-	);
-	return envelope.data;
-}
-
-export async function permissionCatalog(organizationId: string) {
-	const envelope = await request<TPermissionCatalogEntry[]>(
-		'/admin/roles/permissions',
-		{ organizationId },
-	);
-	return envelope.data;
-}
-
-export async function createRole(
-	organizationId: string,
-	input: { name: string; rank: number; permissions: TPermissionGrant },
-) {
-	const envelope = await request<TAdminRole>('/admin/roles', {
-		method: 'POST',
-		organizationId,
-		body: JSON.stringify(input),
-	});
-	return envelope.data;
-}
-
-export async function updateRole(
-	organizationId: string,
-	roleId: string,
-	input: {
-		name?: string;
-		rank?: number;
-		permissions?: TPermissionGrant;
-	},
-) {
-	const envelope = await request<TAdminRole>(`/admin/roles/${roleId}`, {
-		method: 'PATCH',
-		organizationId,
-		body: JSON.stringify(input),
-	});
-	return envelope.data;
-}
-
-export async function deleteRole(organizationId: string, roleId: string) {
-	await request(`/admin/roles/${roleId}`, { method: 'DELETE', organizationId });
-}
-
 // ---------------------------------------------------------------------------
 // Audit
 // ---------------------------------------------------------------------------
@@ -269,7 +200,8 @@ export type TInvitation = {
 	type: 'app' | 'org';
 	status: TInvitationStatus;
 	organizationId: string | null;
-	roleId: string | null;
+	/** Closed ERP organization role (org path); null on the app path. */
+	organizationRole: string | null;
 	invitedBy: string;
 	expiresAt: string;
 	acceptedAt: string | null;
@@ -328,12 +260,12 @@ export async function sendInvitations(
 	return envelope.data;
 }
 
-/** Input row for the invite dialog. Org invites need `roleId`. */
+/** Input row for the invite dialog. Org invites carry the role *name*. */
 export type TInviteInput = {
 	email: string;
 	name?: string;
 	organizationId?: string;
-	roleId?: string;
+	organizationRole?: string;
 };
 
 export async function resendInvitation(
@@ -355,21 +287,19 @@ export const BULK_INVITE_LIMIT = 100;
  * @remarks
  * One row per line, comma-separated: `email[, name[, role]]`. Rows may also
  * be a bare email list. `role` is matched case-insensitively against the
- * organization's role names and resolved to its id — the backend contract
- * takes `roleId`, not a name.
+ * fixed `erpRoleNames` enum — the backend contract takes `organizationRole`,
+ * not a role id.
  *
  * Unknown role names are deliberately NOT dropped here: the row is sent
- * without a `roleId` (or with the default), and the backend's typo fallback
- * to `member` applies. Blank lines are skipped.
+ * without an `organizationRole` (or with the default), and the backend's
+ * fallback to `member` applies. Blank lines are skipped.
  */
 export function parseBulkInviteRows(
 	pasted: string,
 	options: {
 		organizationId: string;
 		/** Role used when a row does not specify one. */
-		roleId?: string;
-		/** Live role id → name map for name resolution. */
-		roleNamesById?: Map<string, string>;
+		organizationRole?: string;
 	},
 ): { rows: TInviteInput[]; error: string | null } {
 	const lines = pasted
@@ -397,27 +327,23 @@ export function parseBulkInviteRows(
 			email: rawEmail,
 			name: rawName || undefined,
 			organizationId: options.organizationId,
-			// Role names are not sent: the backend resolves the row's role by
-			// id and falls back to `member` for anything it cannot match.
-			roleId: resolveRoleId(rawRole, options),
+			organizationRole: resolveOrganizationRole(rawRole, options),
 		});
 	}
 	return { rows, error: null };
 }
 
-/** Maps a pasted role name (or id) onto a role id, if one is known. */
-function resolveRoleId(
+/**
+ * Maps a pasted role name onto the fixed enum, case-insensitively. Empty
+ * input falls back to the dialog default.
+ */
+function resolveOrganizationRole(
 	value: string | undefined,
-	options: { roleId?: string; roleNamesById?: Map<string, string> },
+	options: { organizationRole?: string },
 ): string | undefined {
-	if (!value) return options.roleId;
-	for (const [id, name] of options.roleNamesById ?? []) {
-		if (name.toLowerCase() === value.toLowerCase()) return id;
-		if (id === value) return id;
-	}
-	// Unrecognized: let the backend apply its member fallback by sending
-	// no role id at all.
-	return undefined;
+	if (!value) return options.organizationRole;
+	const lowered = value.toLowerCase();
+	return erpRoleNames.find((name) => name === lowered);
 }
 
 export async function cancelInvitation(
@@ -469,25 +395,6 @@ export const usersQueryOptions = (
 		queryKey: ['admin-users', organizationId, params],
 		queryFn: () => listUsers(organizationId, params),
 		staleTime: 15 * 1000,
-	});
-
-/** Roles of the active organization, with live member counts. */
-export const rolesQueryOptions = (organizationId: string) =>
-	queryOptions({
-		queryKey: ['admin-roles', organizationId],
-		queryFn: () => listRoles(organizationId),
-		staleTime: 30 * 1000,
-	});
-
-/**
- * Permission catalog for the role editor. Static for the life of a build
- * (it mirrors the shared `@ims-erp/common` catalog), so it is cached hard.
- */
-export const permissionCatalogQueryOptions = (organizationId: string) =>
-	queryOptions({
-		queryKey: ['admin-permission-catalog', organizationId],
-		queryFn: () => permissionCatalog(organizationId),
-		staleTime: Infinity,
 	});
 
 /** Audit trail query, keyed by filters. */
