@@ -2787,6 +2787,10 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
   `progress.md` still need reconciling by hand. Code conflicts (apps/,
   packages/) are out of scope for this change.
 
+- Correction (2026-11-08): the 2026-11-07 M09 entry and `plans/finance.md` F9
+  said `features.md` M09 moved to done. Reverted to in-progress. M09 stays
+  in-progress until ERP-0010..0013 are decided in `backlog.md`; Stage 2 is open.
+
 ## Next executable task
 
 **Docs merge: bring `merge/main-sync` docs into `fix/docs-consistency`**
