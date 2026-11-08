@@ -43,7 +43,7 @@ Last synced: 2026-11-06.
 - Leads, follow-ups/surveys, customers — T05, ERP-0004/0005. Evidence: dbml
   `crm` only.
 - Invoice, DP (customer advance), receipt — T05, ERP-0011. Evidence: dbml
-  `finance.invoices`/`receipts` only.
+  `sales.invoices` only; receipts/allocations belong to the finance ledger.
 - One template per document — T05. Evidence: dbml `documents` only.
 - Checkout / online orders — T21, ERP-0020. Evidence: dbml `commerce` only.
 - Payment gateway callbacks + reconciliation — T22, ERP-0020. Evidence: none

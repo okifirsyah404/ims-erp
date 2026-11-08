@@ -737,7 +737,7 @@ call before writing a row that carries the reference.
 | `organization.departments.id` | `resolveDepartment(id, orgId)` | Department must be active. |
 | `organization.positions.id` | `resolvePosition(id, orgId)` | Position must be active. |
 | `organization.cost_centers.id` | `resolveCostCenter(id, orgId)` | Cost centre must be active. |
-| `finance.invoices.id` | `resolveInvoice(id, orgId)` | Invoice must not be void. |
+| `sales.invoices.id` | `resolveInvoice(id, orgId)` | Invoice must not be void. |
 | `finance.payments.id` | `resolvePayment(id, orgId)` | Payment must be executed. |
 | `finance.cash_bank_accounts.id` | `resolveCashBankAccount(id, orgId)` | Account must be active. |
 | `finance.cash_bank_transactions.id` | `resolveCashBankTransaction(id, orgId)` | Transaction must be posted. |

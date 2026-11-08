@@ -1885,7 +1885,7 @@ Table sales.invoices {
   notes text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Customer invoice, faktur. Owned by the Sales module (finance plan D2). Finance mirrors AR open items in finance.ar_open_items and receives journals via the posting service. Voiding is an append only mark, the invoice is never deleted."
+  Note: "Customer invoice, faktur. Owned by the Sales module (finance plan D2). organization_id is the issuing organization (ADR-0012). Finance mirrors AR open items in finance.ar_open_items and receives journals via the posting service. Voiding is an append only mark, the invoice is never deleted."
   Indexes {
     (organization_id, code) [unique, name: 'invoices_org_code_uq']
     customer_id [name: 'invoices_customer_id_idx']

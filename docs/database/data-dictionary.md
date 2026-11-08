@@ -642,7 +642,7 @@ reconcile.
 | PR (Purchase Request) | `procurement.purchase_requests` |
 | GR (Goods Receipt) | `procurement.goods_receipts` |
 | surat jalan | `sales.delivery_notes` |
-| faktur | `finance.invoices` |
+| faktur | `sales.invoices` |
 | kwitansi | `finance.receipts` |
 | BAST (Berita Acceptance Serah Terima) | `projects.project_handover` |
 | lapangan (daily report) | `projects.project_daily_reports` |

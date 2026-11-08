@@ -221,7 +221,8 @@ portal.
 
 ### 12. Finance — `finance`
 
-- **Owns** invoices and invoice items, **the single payment ledger**
+- Sales owns invoices and invoice items (`sales.invoices`, plan D2); finance
+  owns **the single payment ledger**
   (`finance.payments`), receipts, supplier bills, payment terms, expense
   claims, employee advances, expense settlements, cash and bank accounts,
   cash bank transactions, bank reconciliations, credit memos, payment

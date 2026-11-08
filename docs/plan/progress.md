@@ -12,6 +12,42 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-08 - docs consistency: invoices owned by Sales, ADR-0012
+
+Status: **docs-only, not code.** Branch `fix/docs-consistency` from `main`.
+No backend or web-admin change. Merge of `merge/main-sync` is not done; it was
+aborted and split (see the open items below).
+
+- Invoices are owned by Sales (`sales.invoices`, plan D2). Updated
+  `data-dictionary.md`, `implementation-phases.md`, `logical-references.md`
+  (`sales.invoices.id` → `resolveInvoice`), `module-ownership.md` (Finance no
+  longer owns invoices), `erp-module-plans/m02-crm-sales.md`,
+  `erp-module-plans/m09-finance.md`, `plans/features.md`.
+- `ADR-0012-multi-organization.md` added: multiple organizations inside one
+  company (ADR-0007 §1), master data company-wide, transaction documents record
+  the issuing organization. `sales.invoices.organization_id` stays
+  `NOT NULL`, and `docs.dbml` says so in its note.
+- Commands and outcomes:
+  - `bun docs/database/gen-logical-references.ts` → `regenerated: 522 refs
+    across 39 targets, 226 intra-module refs` (exit 0)
+  - `bun docs/database/validate-dbml.ts` → `parsed: 258 tables, 226 refs`,
+    `cross-module refs: 0`, `timestamp gaps: 0`, `OK` (exit 0)
+- Not verified: the rest of `docs/` against code. `plans/finance.md` still
+  names `finance.invoices` in D2 and step 1 on purpose: those lines record the
+  move, not the current state.
+
+Open items (not done):
+
+- Merge `merge/main-sync` into `feat/merge-main-sync-to-main` still needs
+  the finance and invoice reconciliation. `origin/merge/main-sync` contains
+  migration `20261106110700_finance_invoices_receipts`, which conflicts with M09
+  `20261106221731` on `finance.receipts`.
+- Draft `ADR-0012` (single organization) exists only on `merge/main-sync`. It
+  conflicts with ADR-0012 here and is dropped during that merge.
+- `sales.invoices.organization_id` stays under ADR-0012. Removing it is not
+  planned.
+- `finance.receipts` has two designs (M09 vs merge). Resolve in that merge.
+
 ## Completed (this session - M09 Finance Stage 1, F1..F9, 2026-11-07)
 
 Status: **implemented** (Stage 1). Master plan `docs/plan/plans/finance.md`,

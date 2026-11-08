@@ -351,8 +351,8 @@ the old `sales.payments.amount` overflowed at Rp 21.4 million.
 - `accounting.chart_of_accounts` is hierarchical and self referencing. Only
   postable accounts accept a journal line.
 
-**Cross-module links.** `finance.invoices.customer_id` →
-`crm.customers.id` (logical). `finance.invoices.sales_order_id` →
+**Cross-module links.** `sales.invoices.customer_id` →
+`crm.customers.id` (logical). `sales.invoices.sales_order_id` →
 `sales.sales_orders.id` (logical). `accounting.journal_lines.project_id` →
 `projects.projects.id` (logical, the module does not exist yet, the column
 still does). `finance.payments.approved_by` → `auth.users.id` (logical).
