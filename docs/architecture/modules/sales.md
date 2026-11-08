@@ -18,15 +18,19 @@ approvals or fully automated CRM.
 
 ## Data ownership (planned, Phase 4 — commercial T05)
 
-- `erp.quotations` (SPH) — customer ref, lines (item/unit/qty/price minor
+- `sales.quotations` (SPH) — customer ref, lines (item/unit/qty/price minor
   units), status (draft → price approval → PDF → sent manually per S02),
   doc number (numbering service).
-- `erp.invoices` — quotation/order ref, lines, status, DP terms, doc number.
-- `erp.orders` (as needed by checkout stage 2, T21).
+- `sales.invoices` — quotation/order ref, lines, status, DP terms, doc number.
+- `sales.sales_orders` (as needed by checkout stage 2, T21).
 - Documents snapshot customer/item/price data at creation (financial
   correctness; catalog prices may change later).
-- Receipts/settlements are **payment module** transactions; this module only
-  references them (S03 chain: invoice → payment → verification → receipt).
+- `sales.receipts` — kwitansi, the customer-facing proof of a payment. Owned
+  by Sales since 2026-11-08 (moved from `finance.receipts`). `sales_invoice_id`
+  references `sales.invoices` inside the module; `payment_id` is a nullable
+  logical reference to `finance.payments.id`, validated through the Finance
+  contract (`resolvePayment`). The money movement stays in `finance.payments`
+  (S03 chain: invoice → payment → verification → receipt).
 
 ## Behavior targets
 

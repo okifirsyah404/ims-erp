@@ -390,7 +390,7 @@ split by ownership, with one side authoritative.
 |---|---|---|
 | Stock quantity | `inventory.stock_movements` | `inventory.stock_balances` |
 | Item price | `catalog.item_prices` | `catalog.items.selling_price` is the default only |
-| Money movement | `finance.payments` | `finance.receipts`, `finance.cash_bank_transactions`, `payroll.payroll_payments` |
+| Money movement | `finance.payments` | `sales.receipts`, `finance.cash_bank_transactions`, `payroll.payroll_payments` |
 | Employee advances | `finance.employee_advances` | — |
 | Expense settlement | `finance.expense_settlements` | — |
 | Goods and services | `catalog.items` | — |

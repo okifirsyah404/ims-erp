@@ -659,7 +659,7 @@ reconcile.
 | GR (Goods Receipt) | `procurement.goods_receipts` |
 | surat jalan | `sales.delivery_notes` |
 | faktur | `sales.invoices` |
-| kwitansi | `finance.receipts` |
+| kwitansi | `sales.receipts` |
 | BAST (Berita Acceptance Serah Terima) | `projects.project_handover` |
 | lapangan (daily report) | `projects.project_daily_reports` |
 | NPWP | `organization.company_profiles.tax_id` |

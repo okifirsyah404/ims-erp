@@ -308,8 +308,8 @@ New tables: `quotation_items`, `quotation_status_history`, `sales_orders`,
 ## S4 — Money: finance and accounting
 
 **The single ledger rule.** `finance.payments` is the **only** table in the
-ERP that records a money movement. `finance.receipts` is a customer facing
-proof, `finance.credit_memos` is a credit note, `finance.cash_bank_transactions`
+ERP that records a money movement. `sales.receipts` is a customer facing
+proof (kwitansi, owned by Sales since 2026-11-08), `finance.credit_memos` is a credit note, `finance.cash_bank_transactions`
 is a movement on an operational account, `payroll.payroll_payments` is a
 payroll batch. None of them is a second payment ledger.
 

@@ -131,7 +131,7 @@ Common DoD in [README.md](README.md), plus:
 |---|---|---|
 | Leads, follow-ups, customers | `crm` (10 tables: customers, leads, lead_activities, segments, credit limits…) | none |
 | SPH | `sales.quotations`, `quotation_items`, `quotation_status_history`, `discount_requests` | `apps/backend/src/app/sales`: quotations create/list/get/update/submit/decision. `quotation_items` not in the Drizzle schema. No UI route. |
-| Invoice, receipt, DP | `sales.invoices`, `sales.invoice_items`; `finance.receipts`, `payment_allocations` (plan D2: invoices owned by Sales) | `sales.invoices` + invoice items in the Drizzle schema and `apps/backend/src/app/sales`; finance-side receipts/allocations pending M09 reconciliation |
+| Invoice, receipt, DP | `sales.invoices`, `sales.invoice_items`, `sales.receipts`; `payment_allocations` (plan D2: invoices owned by Sales; receipts moved to Sales 2026-11-08) | `sales.invoices` + invoice items in the Drizzle schema and `apps/backend/src/app/sales`; finance-side receipts/allocations pending M09 reconciliation |
 | Payment | `finance.payments` **and** `sales.payments` | `sales` module: payments create/get/approve/execute |
 | Documents/templates | `documents` (8 tables) | none |
 | Checkout | `commerce.commerce_orders`, `commerce_order_items` | none |

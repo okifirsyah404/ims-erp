@@ -2750,7 +2750,49 @@ migrations, no seeders touched. `docs/database/` reviewed and updated.
   a clean tree while these edits exist on disk; commit state unconfirmed.
 - Schema still `NOT NULL` in shipped DB until ERP-0037 lands.
 
+## 2026-11-08 - Docs: receipts moved to Sales; merge-main-sync docs planning (not committed)
+
+Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
+`merge/main-sync` was not touched. No code, migration, or seeder changed.
+
+- `finance.receipts` moved to `sales.receipts` (kwitansi is issued against a
+  sales invoice). `sales_invoice_id` stays an intra-module reference to
+  `sales.invoices`. `payment_id` became a nullable logical reference to
+  `finance.payments.id` (contract `resolvePayment`); the former `Ref` is gone.
+  `sales.receipts` added to the Sales TableGroup.
+- Docs references updated: `data-dictionary.md`, `implementation-phases.md`,
+  `integrity-and-consistency.md`, `plans/finance.md` (D6), `m02-crm-sales.md`.
+  Historical entries in this file are left as written.
+- `module-ownership.md` recounted from `docs.dbml`: Sales 15 tables / 11 FK /
+  47 logical refs; Finance 16 / 14 / 46; total 258 / 225 / 523 / 25 schemas
+  incl. empty `public`.
+- Verified: `bun docs/database/gen-logical-references.ts` → `523 refs across 39
+  targets, 225 intra-module refs`. `bun docs/database/validate-dbml.ts` →
+  `258 tables, 225 refs, 0 cross-module, 0 timestamp gaps, OK`.
+- Merge planning decisions (2026-11-08): base is `fix/docs-consistency`;
+  `sales.invoices` is the only invoice table; ERP-0031..0034 stay `proposed`;
+  `finance.md` and `tax.md` restored; `docs/user-guide/` comes from merge.
+- Kept from fix-only: `accounting.tax_corrections`, `finance.ap_open_items`,
+  `finance.ar_open_items` (their plan docs were dropped on the merge side).
+- Dropped from merge: `finance.invoices`, `finance.invoice_items`.
+- Deferred to a separate docs merge (not in this change): merge-only tables
+  `aftersales.warranty_certificates`, `crm.lead_attachments`,
+  `inventory.item_categories`, `licensing.application_api_keys`,
+  `projects.project_costs`, `projects.project_evidence`,
+  `sales.delivery_note_items`. The DBML is therefore not yet a superset of
+  `merge/main-sync`.
+- Not yet done: git merge of `merge/main-sync` into `fix/docs-consistency`
+  (ADR-0011, ADR-0013, `docs/user-guide/`, `architecture/README.md`,
+  `modules/*`). Conflicts in `docs/plan/backlog.md`, `features.md`, and
+  `progress.md` still need reconciling by hand. Code conflicts (apps/,
+  packages/) are out of scope for this change.
+
 ## Next executable task
+
+**Docs merge: bring `merge/main-sync` docs into `fix/docs-consistency`**
+(see the entry above). Then decide the 7 deferred tables.
+
+## Previous next task (still open)
 
 **Finance review of the tax slice (D12/D14/D18)** — column list, rounding
 rule, and real rates. Then ERP-0016's other half: P&L, balance sheet, cash

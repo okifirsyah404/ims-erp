@@ -42,13 +42,13 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 | 3 | Organization | `organization` | 9 | 6 | 15 |
 | 4 | CRM | `crm` | 10 | 9 | 21 |
 | 5 | Catalog | `catalog` | 12 | 16 | 15 |
-| 6 | Sales | `sales` | 14 | 11 | 44 |
+| 6 | Sales | `sales` | 15 | 11 | 47 |
 | 7 | Procurement | `procurement` | 11 | 13 | 30 |
 | 8 | Inventory | `inventory` | 13 | 19 | 12 |
 | 9 | Projects | `projects` | 13 | 0 | 33 |
 | 10 | HR | `hr` | 16 | 17 | 44 |
 | 11 | Payroll | `payroll` | 11 | 10 | 28 |
-| 12 | Finance | `finance` | 17 | 15 | 48 |
+| 12 | Finance | `finance` | 16 | 14 | 46 |
 | 13 | Accounting | `accounting` | 13 | 12 | 24 |
 | 14 | Assets | `assets` | 14 | 16 | 33 |
 | 15 | After-Sales | `aftersales` | 15 | 0 | 39 |
@@ -61,7 +61,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 | 22 | Licensing | `licensing` | 9 | 11 | 11 |
 | 23 | Ticketing | `ticket` | 5 | 5 | 14 |
 | 24 | Audit | `audit` | 1 | 0 | 1 |
-| | **Total** | **24 schemas** | **258** | **226** | **522** |
+| | **Total** | **24 schemas** | **258** | **225** | **523** |
 
 Counts are re-derived from `docs.dbml` on every validation run. The parser
 also reports an empty `public` schema (0 tables); it is not a module.

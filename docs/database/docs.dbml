@@ -84,6 +84,7 @@ TableGroup "Sales" {
   sales.delivery_notes
   sales.invoices
   sales.invoice_items
+  sales.receipts
 }
 
 TableGroup "Procurement" {
@@ -166,7 +167,6 @@ TableGroup "Payroll" {
 
 TableGroup "Finance" {
   finance.payments
-  finance.receipts
   finance.expense_settlements
   finance.expense_settlement_items
   finance.employee_advances
@@ -1933,6 +1933,38 @@ Table sales.invoice_items {
     `discount_amount >= 0`
     `tax_amount >= 0`
     `line_total >= 0`
+  }
+}
+
+Table sales.receipts {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [not null]
+  sales_invoice_id uuid
+  payment_id uuid [note: "Logical reference to finance.payments.id. Cross-module FK intentionally omitted. Validated through the Finance module contract."]
+  received_date date
+  amount bigint [not null, default: 0]
+  currency_code varchar(3) [not null, default: 'IDR']
+  method text [not null, default: 'bank_transfer']
+  status text [not null, default: 'draft']
+  received_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  posted_at bigint
+  reversed_at bigint
+  reversal_reason text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Cash receipt register, kwitansi. It is the customer facing proof of a payment, the money movement stays in finance.payments. Moved from finance.receipts to Sales (2026-11-08): the receipt is issued against a sales invoice."
+  Indexes {
+    (organization_id, code) [unique, name: 'receipts_org_code_uq']
+    sales_invoice_id [name: 'receipts_sales_invoice_id_idx']
+    payment_id [name: 'receipts_payment_id_idx']
+    status [name: 'receipts_status_idx']
+  }
+  Checks {
+    `status IN ('draft', 'verified', 'posted', 'reversed', 'void')`
+    `amount > 0`
+    `method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque')`
   }
 }
 
@@ -3860,38 +3892,6 @@ Table finance.payments {
   }
 }
 
-Table finance.receipts {
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  sales_invoice_id uuid
-  payment_id uuid
-  received_date date
-  amount bigint [not null, default: 0]
-  currency_code varchar(3) [not null, default: 'IDR']
-  method text [not null, default: 'bank_transfer']
-  status text [not null, default: 'draft']
-  received_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  posted_at bigint
-  reversed_at bigint
-  reversal_reason text
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  Note: "Cash receipt register, kwitansi. It is the customer facing proof of a payment, the money movement stays in finance.payments."
-  Indexes {
-    (organization_id, code) [unique, name: 'receipts_org_code_uq']
-    sales_invoice_id [name: 'receipts_sales_invoice_id_idx']
-    payment_id [name: 'receipts_payment_id_idx']
-    status [name: 'receipts_status_idx']
-  }
-  Checks {
-    `status IN ('draft', 'verified', 'posted', 'reversed', 'void')`
-    `amount > 0`
-    `method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque')`
-  }
-}
-
 Table finance.expense_settlements {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
@@ -4329,14 +4329,12 @@ Table finance.credit_memos {
 }
 
 Ref: sales.invoice_items.invoice_id > sales.invoices.id [delete: cascade]
-// finance.payments.sales_invoice_id, finance.receipts.sales_invoice_id,
-// finance.payment_allocations.sales_invoice_id and
+// finance.payments.sales_invoice_id, finance.payment_allocations.sales_invoice_id and
 // finance.credit_memos.sales_invoice_id are logical references to
 // sales.invoices.id — cross-module refs are intentionally FK-free.
 Ref: finance.payments.supplier_bill_id > finance.supplier_bills.id [delete: restrict]
 Ref: finance.payments.employee_advance_id > finance.employee_advances.id [delete: restrict]
 Ref: finance.payments.cash_bank_account_id > finance.cash_bank_accounts.id [delete: restrict]
-Ref: finance.receipts.payment_id > finance.payments.id [delete: set null]
 Ref: finance.expense_settlements.employee_advance_id > finance.employee_advances.id [delete: set null]
 Ref: finance.expense_settlement_items.expense_settlement_id > finance.expense_settlements.id [delete: cascade]
 Ref: finance.employee_advances.payment_id > finance.payments.id [delete: set null]

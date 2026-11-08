@@ -7,7 +7,8 @@
 Money in / money out events against sales documents: cash/bank recording,
 receivables settlement, supplier payments (via purchasing contracts), and —
 stage 2 — checkout with **one gateway** (tasks T21–T22). Owns payment
-transactions, gateway callback validation, and gateway reconciliation data.
+gateway callback validation and gateway reconciliation data. Payment
+transactions are recorded in `finance.payments`, which Finance owns.
 Revenue recognition stays with sales/finance rules; this module never
 creates revenue by settling receivables (deposits are liabilities until
 delivery).
@@ -21,7 +22,8 @@ delivery).
 
 ## Data ownership (planned; Phase 4 for cash/receivables, Stage 2 for gateway)
 
-- `erp.payments` — payment type (customer receipt / supplier payment /
+- `finance.payments` (owned by Finance, the single money-movement ledger;
+  this module adds no second ledger) — payment type (customer receipt / supplier payment /
   refund), business date, amount (**integer IDR minor units**), cash/bank
   account ref (finance-owned master), source document refs (invoice/bill),
   unique posting reference, journal ref (via finance posting), status.
@@ -32,9 +34,10 @@ delivery).
 
 ## Behavior targets
 
-- Stage 1 (T06): record receipts/payments against receivables/payables with
-  unique references; settlement never double-posts revenue; DP-before-
-  delivery stays a liability (S03).
+- Stage 1 (T06): record payments against receivables/payables in
+  `finance.payments` with unique references. The kwitansi document is Sales
+  (`sales.receipts`), not payment. Settlement never double-posts revenue;
+  DP-before-delivery stays a liability (S03).
 - Stage 2 (T21–T22): checkout linked to order/invoice; valid callback
   (signature-verified) with **amount/currency/order checks, uniqueness,
   idempotency, retry/out-of-order safety**; browser redirect is never proof
@@ -42,8 +45,8 @@ delivery).
 
 ## Dependencies and rules
 
-- Finance owns posting + cash/bank master; sales owns invoices (this module
-  references them); purchasing owns bills. External effects (gateway calls)
+- Finance owns posting, cash/bank master and the payment ledger; sales owns
+  invoices and receipts (this module references them); purchasing owns bills. External effects (gateway calls)
   only after local commit. Idempotency mandatory on callback processing
   (duplicate events are safe).
 
