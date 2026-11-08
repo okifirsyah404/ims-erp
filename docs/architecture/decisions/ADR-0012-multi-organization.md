@@ -1,4 +1,4 @@
-# ADR-0012 - Multiple Organizations, Company-Wide Master Data
+# ADR-0012 — Multiple Organizations, Company-Wide Master Data
 
 - **Status:** accepted (2026-11-08). Applies ADR-0007 to transaction documents
   that record the organization which issued them. Does not supersede ADR-0007

@@ -32,7 +32,7 @@ Honest record. Nothing shipped yet.
 | # | Decision |
 |---|---|
 | D1 | Scope = Stage 1 full. The posting service contract is designed from day one so Stage 2 (payroll, gateway) and other modules only ever call it — no payroll/gateway implementation now. |
-| D2 | **Invoices belong to Sales.** Tables move from `finance.invoices`/`finance.invoice_items` (DBML lines 3727–3802) to `sales.invoices`/`sales.invoice_items` (DBML + `sales.schema.ts`). Finance owns no invoice table. |
+| D2 | **Invoices belong to Sales.** Tables move from `finance.invoices`/`finance.invoice_items` to `sales.invoices`/`sales.invoice_items` (DBML + `sales.schema.ts`). Finance owns no invoice table. |
 | D3 | AR/AP tracked via a **sub-ledger mirror** in finance (`finance.ar_open_items`, `finance.ap_open_items` — new tables, to be added to docs.dbml), updated through the posting flow. Not computed from journal lines alone. |
 | D4 | Bottom-up, ledger-first order. Backend-first per sub-domain; all frontend collected in a single final phase. |
 | D5 | `finance.payments` = single payment ledger with workflow `draft → submitted → approved → executed`, one approver role (no multi-level approval matrix). |
