@@ -115,6 +115,11 @@ const api = {
 	'claim.phoneInUse': 'Phone number is already in use',
 	'claim.alreadyInUse': 'Username or email already in use',
 
+	'role.rankExceeded':
+		'You cannot act on a user holding a role at or above your own rank',
+	'role.targetRankExceeded':
+		'Target holds "{{role}}" (rank {{rank}}) in your organization',
+
 	'userAdmin.accountAlreadyActive': 'Account is already active',
 	'userAdmin.cannotDeactivate':
 		'Cannot deactivate an account that is not active',

@@ -111,6 +111,11 @@ const api: Record<keyof typeof en, string> = {
 	'claim.phoneInUse': 'Nomor telepon sudah digunakan',
 	'claim.alreadyInUse': 'Nama pengguna atau email sudah digunakan',
 
+	'role.rankExceeded':
+		'Anda tidak dapat bertindak pada pengguna yang memegang peran setara atau di atas peringkat Anda',
+	'role.targetRankExceeded':
+		'Target memegang "{{role}}" (peringkat {{rank}}) di organisasi Anda',
+
 	'userAdmin.accountAlreadyActive': 'Akun sudah aktif',
 	'userAdmin.cannotDeactivate':
 		'Tidak dapat menonaktifkan akun yang tidak berstatus aktif',
