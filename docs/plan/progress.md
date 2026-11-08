@@ -12,6 +12,43 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-08 - docs consistency: invoices owned by Sales, ADR-0012
+
+Status: **docs-only, not code.** Branch `fix/docs-consistency` from `main`.
+No backend or web-admin change. Merge of `merge/main-sync` is not done; it was
+aborted and split (see the open items below).
+
+- Invoices are owned by Sales (`sales.invoices`, plan D2). Updated
+  `data-dictionary.md`, `implementation-phases.md`, `logical-references.md`
+  (`sales.invoices.id` → `resolveInvoice`), `module-ownership.md` (Finance no
+  longer owns invoices), `erp-module-plans/m02-crm-sales.md`,
+  `erp-module-plans/m09-finance.md`, `plans/features.md`.
+- `ADR-0012-multi-organization.md` added: multiple organizations inside one
+  company (ADR-0007 §1), master data company-wide, transaction documents record
+  the issuing organization. `sales.invoices.organization_id` stays
+  `NOT NULL`, and `docs.dbml` says so in its note.
+- Commands and outcomes:
+  - `bun docs/database/gen-logical-references.ts` → `regenerated: 522 refs
+    across 39 targets, 226 intra-module refs` (exit 0)
+  - `bun docs/database/validate-dbml.ts` → `parsed: 258 tables, 226 refs`,
+    `cross-module refs: 0`, `timestamp gaps: 0`, `OK` (exit 0)
+- Not verified: the rest of `docs/` against code. `plans/finance.md` still
+  names `finance.invoices` in D2 and step 1 on purpose: those lines record the
+  move, not the current state.
+
+Open items (not done):
+
+- Merge `merge/main-sync` into `feat/merge-main-sync-to-main` still needs
+  the finance and invoice reconciliation. `origin/merge/main-sync` contains
+  migration `20261106110700_finance_invoices_receipts`, which conflicts with M09
+  `20261106221731` on `finance.receipts`.
+- Draft `ADR-0012` (single organization) exists only on `merge/main-sync`. It
+  conflicts with ADR-0012 here and is dropped during that merge.
+- `sales.invoices.organization_id` stays under ADR-0012. Removing it is not
+  planned.
+- `finance.receipts` resolved 2026-11-08: moved to `sales.receipts` (kwitansi
+  owned by Sales); `payment_id` is a logical reference to `finance.payments`.
+
 ## Completed (this session - M09 Finance Stage 1, F1..F9, 2026-11-07)
 
 Status: **implemented** (Stage 1). Master plan `docs/plan/plans/finance.md`,
@@ -2689,7 +2726,78 @@ following the `storage-dialog.tsx` pattern (Base UI Dialog from
 Gates: web-admin build green, oxlint 9 warnings (pre-existing), locale tests
 42 pass.
 
+## 2026-11-08 - Docs: nullable cross-module references (ADR-0014) and ADR-0012 multi-org
+
+Status: implemented (docs only, branch `fix/docs-consistency`). No code, no
+migrations, no seeders touched. `docs/database/` reviewed and updated.
+
+- ADR-0014 added (accepted): every cross-module logical reference is nullable;
+  presence is a service-layer fact. ADR-0012 rewritten as multi-org with a
+  nullable issuing `organization_id` and per-org codes. ADR-0007/0008 headers
+  cross-reference both.
+- `AGENTS.md`: hard rule "Cross-module references are nullable" added.
+- Companion docs aligned: `data-dictionary.md` (§1.2, §1.6),
+  `integrity-and-consistency.md` (§3.3, §3.5, §5.1), `logical-references.md`
+  (rules 3, tenant scope, code uniqueness), `module-ownership.md` (counts,
+  obligation 4), `implementation-phases.md`, `architecture.md`,
+  `data-model.md`.
+- Backlog: ERP-0031..0034 moved to `proposed` (ADR-0010 still `proposed`);
+  `backlog.md` status legend gained `proposed`. ERP-0037 added (ADR-0014 schema
+  flip, `planned`). `features.md` moved to match.
+- Verified: `bun docs/database/gen-logical-references.ts` → `522 refs across 39
+  targets, 226 intra-module refs`. `bun docs/database/validate-dbml.ts` →
+  `258 tables, 226 refs, 0 cross-module, 0 timestamp gaps, OK`.
+- Not verified: no code test run (none expected for docs). Git wrapper reported
+  a clean tree while these edits exist on disk; commit state unconfirmed.
+- Schema still `NOT NULL` in shipped DB until ERP-0037 lands.
+
+## 2026-11-08 - Docs: receipts moved to Sales; merge-main-sync docs planning (not committed)
+
+Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
+`merge/main-sync` was not touched. No code, migration, or seeder changed.
+
+- `finance.receipts` moved to `sales.receipts` (kwitansi is issued against a
+  sales invoice). `sales_invoice_id` stays an intra-module reference to
+  `sales.invoices`. `payment_id` became a nullable logical reference to
+  `finance.payments.id` (contract `resolvePayment`); the former `Ref` is gone.
+  `sales.receipts` added to the Sales TableGroup.
+- Docs references updated: `data-dictionary.md`, `implementation-phases.md`,
+  `integrity-and-consistency.md`, `plans/finance.md` (D6), `m02-crm-sales.md`.
+  Historical entries in this file are left as written.
+- `module-ownership.md` recounted from `docs.dbml`: Sales 15 tables / 11 FK /
+  47 logical refs; Finance 16 / 14 / 46; total 258 / 225 / 523 / 25 schemas
+  incl. empty `public`.
+- Verified: `bun docs/database/gen-logical-references.ts` → `523 refs across 39
+  targets, 225 intra-module refs`. `bun docs/database/validate-dbml.ts` →
+  `258 tables, 225 refs, 0 cross-module, 0 timestamp gaps, OK`.
+- Merge planning decisions (2026-11-08): base is `fix/docs-consistency`;
+  `sales.invoices` is the only invoice table; ERP-0031..0034 stay `proposed`;
+  `finance.md` and `tax.md` restored; `docs/user-guide/` comes from merge.
+- Kept from fix-only: `accounting.tax_corrections`, `finance.ap_open_items`,
+  `finance.ar_open_items` (their plan docs were dropped on the merge side).
+- Dropped from merge: `finance.invoices`, `finance.invoice_items`.
+- Deferred to a separate docs merge (not in this change): merge-only tables
+  `aftersales.warranty_certificates`, `crm.lead_attachments`,
+  `inventory.item_categories`, `licensing.application_api_keys`,
+  `projects.project_costs`, `projects.project_evidence`,
+  `sales.delivery_note_items`. The DBML is therefore not yet a superset of
+  `merge/main-sync`.
+- Not yet done: git merge of `merge/main-sync` into `fix/docs-consistency`
+  (ADR-0011, ADR-0013, `docs/user-guide/`, `architecture/README.md`,
+  `modules/*`). Conflicts in `docs/plan/backlog.md`, `features.md`, and
+  `progress.md` still need reconciling by hand. Code conflicts (apps/,
+  packages/) are out of scope for this change.
+
+- Correction (2026-11-08): the 2026-11-07 M09 entry and `plans/finance.md` F9
+  said `features.md` M09 moved to done. Reverted to in-progress. M09 stays
+  in-progress until ERP-0010..0013 are decided in `backlog.md`; Stage 2 is open.
+
 ## Next executable task
+
+**Docs merge: bring `merge/main-sync` docs into `fix/docs-consistency`**
+(see the entry above). Then decide the 7 deferred tables.
+
+## Previous next task (still open)
 
 **Finance review of the tax slice (D12/D14/D18)** — column list, rounding
 rule, and real rates. Then ERP-0016's other half: P&L, balance sheet, cash

@@ -147,7 +147,7 @@ Common DoD in [README.md](README.md), plus:
 |---|---|---|
 | COA, journals, periods, opening | `accounting.chart_of_accounts`, `journal_entries`, `journal_lines`, `accounting_periods`, `opening_balances`, `account_balances` | none |
 | Cash/bank | `finance.cash_bank_accounts`, `cash_bank_transactions`, `organization.company_bank_accounts` | none |
-| AR / AP | `finance.invoices`, `payments`, `receipts`, `payment_allocations`, `supplier_bills`, `credit_memos` | none (`sales.payments` exists; see M02) |
+| AR / AP | `sales.invoices` (owned by Sales, plan D2), `sales.receipts` (kwitansi, owned by Sales), `payments`, `payment_allocations`, `supplier_bills`, `credit_memos` | none (`sales.payments` exists; see M02) |
 | Reconciliation | `finance.bank_reconciliations`, `bank_reconciliation_items` | none |
 
 - Status: **planned**. This is the most important gap: the plan's whole

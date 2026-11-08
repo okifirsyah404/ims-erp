@@ -1,4 +1,4 @@
-# Finance Module (M09 — implemented, Stage 1)
+# Finance Module (M09 — in-progress: Stage 1 built, Stage 2 open)
 
 ## Purpose and boundary
 

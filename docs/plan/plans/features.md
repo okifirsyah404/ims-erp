@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-06.
+Last synced: 2026-11-08.
 
 > **Sidebar shell note (2026-11-05):** the web-admin sidebar now renders the
 > full M01–M12 nav map (see `progress.md`, "UI — full ERP sidebar shell").
@@ -43,11 +43,13 @@ Last synced: 2026-11-06.
 - Leads, follow-ups/surveys, customers — T05, ERP-0004/0005. Evidence: dbml
   `crm` only.
 - Invoice, DP (customer advance), receipt — T05, ERP-0011. Evidence: dbml
-  `finance.invoices`/`receipts` only.
+  `sales.invoices` and `sales.receipts` (kwitansi, owned by Sales); payment
+  allocations stay in finance.
 - One template per document — T05. Evidence: dbml `documents` only.
 - Checkout / online orders — T21, ERP-0020. Evidence: dbml `commerce` only.
 - Payment gateway callbacks + reconciliation — T22, ERP-0020. Evidence: none
-  (see `sales.payments` under Outside the plan).
+  (payment ledger is `finance.payments`, M09; `sales.payments` is scheduled
+  for removal at step S7 in `docs/database/implementation-phases.md`).
 
 ### in-progress
 - SPH (quotation) + simple price approval — T05, ERP-0011 (`planned` in
@@ -103,18 +105,13 @@ Last synced: 2026-11-06.
   `plans/warehouse-hardening.md` phases 1/2/2b done, UI
   `/inventory/warehouses/*`. Note: multi-warehouse rebaselined by ADR-0010
   (proposed 2026-11-04, owner sign-off pending).
-- Warehouse↔organization links + scoped access — ERP-0031. Evidence:
-  `inventory.warehouse_organizations` (Drizzle + migration
-  `20261106062510_erp0031_warehouse_org_links`), real
-  `assertWarehouseReachableByOrg`, `GET /warehouses/linked` (with storages),
-  stock receive/issue + adjustment create gated (unlinked→404, global-admin
-  bypass), assets `assertLocation` 404 on unlinked, admin link/unlink endpoints
-  with audit and a 409 open-borrowing guard, Organizations tab on the
-  warehouse detail, member pickers on the linked endpoint; 536 backend tests.
-  Remaining: browser walk-through, reviewer sign-off before a non-local
-  migration. See `progress.md` (2026-11-06).
 
-### planned (ADR-0010)
+### proposed (ADR-0010)
+- Warehouse↔organization links + scoped access — ERP-0031. Code landed
+  2026-11-06 (migration `20261106062510_erp0031_warehouse_org_links`, link
+  endpoints, 536 backend tests), but downgraded 2026-11-08: ADR-0010 is still
+  `proposed`, so the design basis is not accepted. Evidence in `progress.md`
+  (2026-11-06). Remaining: browser walk-through, reviewer sign-off.
 - Stock transfers (warehouse→warehouse, storage→storage) — ERP-0032.
 - Tracking views (per-storage balances, movement filters, unit location) —
   ERP-0033.
@@ -157,8 +154,7 @@ Last synced: 2026-11-06.
   Stage 0 execution review resolved all blocking defects (global assets with
   stubbed warehouse reachability, global unique asset code, no
   `document_sequences` change, jsonb permission migration).
-- Tool borrowing/return (S4) — T07, ERP-0029 (backlog "shipped" → mapped
-  `implemented`). Engine **moved to `assets`** by ERP-0036 Slice 3
+- Tool borrowing/return (S4) — T07, ERP-0029 (backlog `implemented`). Engine **moved to `assets`** by ERP-0036 Slice 3
   (2026-11-06): `assets/services/borrowing.service.ts`, 526 backend tests
   green; late-return + guest-PII retention sweeps on BullMQ. UI moved to
   `/assets/borrowings/*` by ERP-0036 Slice 5 (2026-11-06). Pending: browser
@@ -189,7 +185,7 @@ Last synced: 2026-11-06.
 
 ## M09 Finance
 
-### done (Stage 1 - F1..F9, commits 7a44dbd..<f9>)
+### in-progress (Stage 1 - F1..F9, commits 7a44dbd..<f9>; backlog mismatch, see note)
 - Ledger core: `accounting` pg-schema (COA, journal entries/lines, periods,
   opening balances), posting engine with single tx-aware `post` gateway,
   append-only reversals, document-sequence codes, idempotency keys,
@@ -207,6 +203,10 @@ Last synced: 2026-11-06.
   draft→in_progress→reconciled→closed with exact statement=book gate.
 - Month-end close: advisory pre-close checklist; period transitions.
 - Web-admin UI: 9 finance routes + finance-api typed client (F8).
+- Backlog mismatch: ERP-0010 (accounting foundations) and ERP-0011..0013 are
+  still `planned` in `backlog.md`, so this section stays `in-progress` here
+  until the backlog is decided. Code evidence is in `main` (accounting schema,
+  migrations, tests).
 
 ### planned (Stage 2)
 - Expense entry + journal posting - ERP-0013. Evidence: none.
@@ -277,6 +277,7 @@ Last synced: 2026-11-06.
 - ERP-0009 Document numbering service.
 - ERP-0024 UAT, reconciliation, backup drill.
 - ERP-0025 Release preparation.
+- ERP-0037 Nullable cross-module references (ADR-0014 schema flip).
 
 ### implemented
 - ERP-0030 Faker seeders + `faker` skill. Evidence: `apps/backend/database/

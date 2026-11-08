@@ -2,7 +2,9 @@
 
 - **Status:** accepted (2026-11-02). Supersedes the single-organization
   reading of ADR-0001. §2 (no `organization_id` on master tables) is amended
-  for the `inventory` module by **ADR-0008**.
+  for the `inventory` module by **ADR-0008**. Transaction documents that
+  record the issuing organization are covered by **ADR-0012**; the
+  `organization_id` reference itself is nullable per **ADR-0014**.
 - **Context:** ADR-0001 decided this deployment serves **one company** and that
   Better Auth organizations model *internal* structure. The implemented code
   then went further and enforced a literal single-organization invariant

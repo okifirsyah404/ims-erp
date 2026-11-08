@@ -102,7 +102,10 @@ Two properties of the SQL standard matter here:
 - The default match type is `MATCH SIMPLE`: **if any referencing column is
   NULL, the constraint is satisfied without a check.** So the composite
   foreign key only bites once `organization_id` is `NOT NULL` and the parent
-  id is `NOT NULL`. Both are the case for every tenant-scoped table.
+  id is `NOT NULL`. Both are the case for every tenant-scoped table today.
+  Once ADR-0014 flips the tenant column to nullable, a row without an
+  organization drops out of this backstop and relies on the owning module's
+  contract method instead.
 
 ### 3.4 The database backstop, across modules
 
@@ -123,8 +126,16 @@ only takes an id is not sufficient.
 |---|---|
 | `audit.audit_logs.organization_id` | a global admin action can happen outside any organization |
 | `location.*` | global reference data, not tenant scoped |
+| `inventory.*` | company-wide scope (ADR-0008) |
+| `assets.*` | company-wide scope (ERP-0036 D11) |
 
-Every other table has `organization_id text NOT NULL`.
+Every other table that carries the column has `organization_id text NOT NULL`
+today. ADR-0014 flips the cross-module reference columns to nullable
+everywhere, tenant column included; the flip is tracked as ERP-0037 and the
+contract method, not the constraint, becomes the presence check.
+
+Scope carve-out: `NULL` means "company-wide" only on the modules listed
+above. Everywhere else `NULL` means "not (yet) linked" (ADR-0014).
 
 ## 4. Soft delete consistency
 
@@ -167,6 +178,11 @@ CREATE UNIQUE INDEX customers_org_code_uq
   ON crm.customers (organization_id, code)
   WHERE deleted_at IS NULL;
 ```
+
+A unique index ignores `NULL`, so a nullable `organization_id` (ADR-0014)
+would let two unlinked rows share a code. Those tables use the ADR-0008 pair:
+`(organization_id, code) WHERE organization_id IS NOT NULL` plus
+`(code) WHERE organization_id IS NULL`.
 
 ### 5.2 Global reference data
 
@@ -374,7 +390,7 @@ split by ownership, with one side authoritative.
 |---|---|---|
 | Stock quantity | `inventory.stock_movements` | `inventory.stock_balances` |
 | Item price | `catalog.item_prices` | `catalog.items.selling_price` is the default only |
-| Money movement | `finance.payments` | `finance.receipts`, `finance.cash_bank_transactions`, `payroll.payroll_payments` |
+| Money movement | `finance.payments` | `sales.receipts`, `finance.cash_bank_transactions`, `payroll.payroll_payments` |
 | Employee advances | `finance.employee_advances` | — |
 | Expense settlement | `finance.expense_settlements` | — |
 | Goods and services | `catalog.items` | — |

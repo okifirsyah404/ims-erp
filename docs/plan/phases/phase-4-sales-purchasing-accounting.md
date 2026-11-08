@@ -14,8 +14,9 @@
    state changes, idempotent postings, traceable corrections (no in-place
    mutation), period checks, subledger → control-account reconciliation
    points.
-2. ERP-0011 sales: quotation (SPH) → approval → invoice → DP/partial payment →
-   settlement → receipts; receivables lifecycle; revenue-recognition timing
+2. ERP-0011 sales: quotation (SPH) → approval → invoice (`sales.invoices`) →
+   DP/partial payment → settlement → receipts (`sales.receipts`, kwitansi
+   owned by Sales); receivables lifecycle; revenue-recognition timing
    explicit (deposits are liabilities until delivery event).
 3. ERP-0012 purchasing: supplier bills, payables, supplier payments; payment
    terms; restricted bank-detail visibility.
