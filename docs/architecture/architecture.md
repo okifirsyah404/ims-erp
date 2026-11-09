@@ -44,11 +44,12 @@ drizzle/                      Drizzle client + schemas (code-owned)
   `tsyringe` skill (`.agents/skills/tsyringe/`).
 - **Cross-domain access** — export a narrow service/contract from the owning
   domain. Importing another domain's repository is prohibited.
-- **Cross-domain data isolation (modular monolith)** — a domain never touches
+- **Cross-domain data isolation (modular monolith)** - a domain never touches
   another domain's data at the DB level: no cross-domain FK constraints, joins,
   or Drizzle relations, and no importing another domain's table objects. Each
   domain owns a Postgres schema named after it; cross-domain references are
-  loose ID columns with integrity enforced in the owning service.
+  loose, nullable ID columns with presence enforced in the owning service
+  (ADR-0014).
   Exception: `auth.schema.ts` tables are Better Auth-managed shared
   infrastructure.
 - **Cache discipline** — cache only suitable read paths; keys must be scoped by

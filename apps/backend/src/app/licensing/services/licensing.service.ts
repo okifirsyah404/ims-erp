@@ -1,7 +1,7 @@
 import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
 import type { CustomerService } from '@app/crm/services/customer.service';
-import { INVOICE_LOOKUP_SERVICE_TOKEN } from '@app/finance/constants/di';
-import type { InvoiceLookupService } from '@app/finance/services/invoice-lookup.service';
+import { INVOICE_LOOKUP_SERVICE_TOKEN } from '@app/sales/constants/di';
+import type { InvoiceLookupService } from '@app/sales/services/invoice-lookup.service';
 import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import type { NumberingService } from '@app/organization/services/numbering.service';
 import { SALES_FULFILMENT_SERVICE_TOKEN } from '@app/sales/constants/di';
@@ -14,7 +14,8 @@ import type {
 	TLicenseContractSelect,
 	TLicenseKeySelect,
 } from '@drizzle/schemas/licensing.schema';
-import { businessDateOf, type TPaginationResult } from '@ims-erp/common';
+import { businessDateOf } from '@utils/business-date.util';
+import type { TPaginationResult } from '@ims-erp/common';
 import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { pinoLogger } from '@providers/logger/logger';
 import { inject, injectable } from 'tsyringe';

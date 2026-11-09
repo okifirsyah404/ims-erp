@@ -9,7 +9,7 @@
  * balance takes exactly the remaining value, so `total_value` never drifts
  * away from zero stock.
  */
-import { divHalfUpToNumber, quantityTimesPrice, quantityToMilli } from '@ims-erp/common';
+import { divHalfUpToNumber, quantityTimesPrice, quantityToMilli } from '@utils/money.util';
 
 export type TCostState = {
 	/** `quantity_on_hand` before the movement. */

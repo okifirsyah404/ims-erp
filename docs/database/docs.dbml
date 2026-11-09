@@ -84,6 +84,9 @@ TableGroup "Sales" {
   sales.sales_returns
   sales.delivery_notes
   sales.delivery_note_items
+  sales.invoices
+  sales.invoice_items
+  sales.receipts
 }
 
 TableGroup "Procurement" {
@@ -168,10 +171,7 @@ TableGroup "Payroll" {
 }
 
 TableGroup "Finance" {
-  finance.invoices
-  finance.invoice_items
   finance.payments
-  finance.receipts
   finance.expense_settlements
   finance.expense_settlement_items
   finance.employee_advances
@@ -185,6 +185,8 @@ TableGroup "Finance" {
   finance.expense_claim_items
   finance.payment_allocations
   finance.credit_memos
+  finance.ar_open_items
+  finance.ap_open_items
 }
 
 TableGroup "Accounting" {
@@ -194,6 +196,7 @@ TableGroup "Accounting" {
   accounting.accounting_periods
   accounting.tax_types
   accounting.tax_records
+  accounting.tax_corrections
   accounting.opening_balances
   accounting.account_balances
   accounting.bank_account_links
@@ -1938,6 +1941,137 @@ Table sales.delivery_note_items {
   Checks {
     `quantity > 0`
     `unit_price >= 0`
+  }
+}
+
+Table sales.invoices {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [note: "Allocated from the numbering authority (INV-<YYYYMM>-<#5>). Nullable: a draft may exist without a code. Unique per organization."]
+  invoice_type text [not null, default: 'sales']
+  term_kind text [note: "down_payment = first live invoice of its order that does not settle it; settlement = the one that settles it; installment otherwise. Null when the invoice is not billed against an order term."]
+  customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
+  customer_snapshot jsonb [note: "Customer data copied from the sales order. Null when the invoice has no order."]
+  sales_order_id uuid [note: "Plain id of a row in sales.sales_orders (same module). Nullable: proforma and recurring invoices may have no order."]
+  sales_order_code varchar(32)
+  quotation_code varchar(40) [note: "The SPH number printed as No. Ref."]
+  title text [note: "Subject (Perihal), from the order."]
+  description text [note: "Term label, e.g. DP 30% or Pelunasan."]
+  percentage_bps integer [note: "Share of the order tax base when billed by percentage."]
+  payment_term_id uuid [note: "Logical reference to finance.payment_terms.id. Cross-module FK intentionally omitted. Validated through the Finance module contract."]
+  issue_date date
+  due_date date
+  vat_enabled boolean [not null, default: true]
+  vat_rate_bps integer [not null, default: 0]
+  subtotal bigint [not null, default: 0, note: "Tax base (DPP) of this term."]
+  discount_total bigint [not null, default: 0]
+  tax_total bigint [not null, default: 0]
+  grand_total bigint [not null, default: 0]
+  paid_total bigint [not null, default: 0]
+  outstanding_total bigint [not null, default: 0]
+  currency_code varchar(3) [not null, default: 'IDR']
+  status text [not null, default: 'draft']
+  terms text [note: "Terms and conditions printed on the invoice, copied from the company profile."]
+  notes text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  issued_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  issued_at bigint
+  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  approved_at bigint
+  voided_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  voided_at bigint
+  void_reason text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Customer invoice (faktur) for one billing term, company-wide per ADR-0012: organization_id is the issuing organization. Free terms: the invoices of an order never exceed its total and the settling term takes the exact remainder. draft -> issued -> partially_paid -> paid; unpaid draft or issued -> void; draft -> cancelled. Overdue is shown from due_date, never stored. Voiding is an append only mark, the invoice is never deleted. Finance mirrors AR open items in finance.ar_open_items."
+  Indexes {
+    (organization_id, code) [unique, name: 'invoices_org_code_uq']
+    customer_id [name: 'invoices_customer_id_idx']
+    sales_order_id [name: 'invoices_sales_order_id_idx']
+    status [name: 'invoices_status_idx']
+    due_date [name: 'invoices_due_date_idx']
+    term_kind [name: 'invoices_term_kind_idx']
+  }
+  Checks {
+    `invoice_type IN ('sales', 'proforma', 'recurring')`
+    `term_kind IS NULL OR term_kind IN ('down_payment', 'installment', 'settlement')`
+    `status IN ('draft', 'issued', 'partially_paid', 'paid', 'void', 'cancelled')`
+    `vat_rate_bps >= 0 AND vat_rate_bps <= 10000`
+    `subtotal >= 0`
+    `discount_total >= 0`
+    `tax_total >= 0`
+    `grand_total >= 0`
+    `paid_total >= 0 AND paid_total <= grand_total`
+    `outstanding_total >= 0`
+    `due_date IS NULL OR issue_date IS NULL OR due_date >= issue_date`
+  }
+}
+
+Table sales.invoice_items {
+  updated_at bigint [not null]
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  invoice_id uuid [not null]
+  item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
+  item_variant_id uuid [note: "Logical reference to catalog.item_variants.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
+  unit_id uuid [note: "Logical reference to catalog.units.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
+  description text
+  quantity numeric(18,4) [not null, default: 0]
+  unit_price bigint [not null, default: 0]
+  discount_amount bigint [not null, default: 0]
+  tax_amount bigint [not null, default: 0]
+  line_total bigint [not null, default: 0]
+  sort_order integer [not null, default: 0]
+  currency_code varchar(3) [not null, default: 'IDR']
+  created_at bigint [not null]
+  Note: "Line of a sales invoice."
+  Indexes {
+    invoice_id [name: 'invoice_items_invoice_id_idx']
+    item_id [name: 'invoice_items_item_id_idx']
+  }
+  Checks {
+    `quantity >= 0`
+    `unit_price >= 0`
+    `discount_amount >= 0`
+    `tax_amount >= 0`
+    `line_total >= 0`
+  }
+}
+
+Table sales.receipts {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [not null]
+  sales_invoice_id uuid [not null, note: "Plain id of a row in sales.invoices (same module)."]
+  payment_id uuid [note: "Logical reference to finance.payments.id. Cross-module FK intentionally omitted. Validated through the Finance module contract."]
+  received_date date
+  amount bigint [not null, default: 0]
+  currency_code varchar(3) [not null, default: 'IDR']
+  method text [not null, default: 'bank_transfer']
+  reference varchar(100) [note: "Transfer reference or similar."]
+  notes text
+  status text [not null, default: 'draft']
+  received_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  posted_at bigint
+  reversed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  reversed_at bigint
+  reversal_reason text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Cash receipt register, kwitansi. It is the customer facing proof of a payment, the money movement stays in finance.payments. Owned by Sales (moved from finance.receipts, 2026-11-08). Issued against a sales invoice; never more than the invoice's outstanding amount."
+  Indexes {
+    (organization_id, code) [unique, name: 'receipts_org_code_uq']
+    sales_invoice_id [name: 'receipts_sales_invoice_id_idx']
+    payment_id [name: 'receipts_payment_id_idx']
+    status [name: 'receipts_status_idx']
+  }
+  Checks {
+    `status IN ('draft', 'verified', 'posted', 'reversed', 'void')`
+    `amount > 0`
+    `method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque')`
   }
 }
 
@@ -3893,100 +4027,16 @@ Ref: payroll.payslip_acknowledgements.payslip_id > payroll.payslips.id [delete: 
 
 // ---------------------------------------------------------------------------
 // MODULE: Finance  (schema: finance)
-// Single payment ledger (finance.payments), invoices and credit memos,
-// receipts, supplier bills, expense claims, employee advances and expense
-// settlements, cash and bank accounts, reconciliation, payment terms.
-// Tenant scoped, except finance.invoices and finance.receipts, which are
-// company-wide (ADR-0011).
+// Single payment ledger (finance.payments), credit memos, receipts, supplier
+// bills, expense claims, employee advances and expense settlements, cash and
+// bank accounts, reconciliation, payment terms.
+// Customer invoices moved to sales.invoices (finance plan D2).
+// Tenant scoped.
 // ---------------------------------------------------------------------------
 
-Table finance.invoices {
-  id uuid [pk, default: `uuidv7()`]
-  code varchar(32) [note: "Assigned on issue (no gaps); null while draft. Unique among live rows (partial index in the Drizzle schema)."]
-  invoice_type text [not null, default: 'sales']
-  term_kind text [not null, note: "down_payment = first live invoice of its order that does not settle it; settlement = the one that settles it; installment otherwise."]
-  customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  customer_snapshot jsonb [not null, note: "Customer data copied from the sales order."]
-  sales_order_id uuid [not null, note: "Logical reference to sales.sales_orders.id. Cross-module FK intentionally omitted. Validated through the Sales module contract."]
-  sales_order_code varchar(32) [not null]
-  quotation_code varchar(40) [not null, note: "The SPH number printed as No. Ref."]
-  title text [not null, note: "Subject (Perihal), from the order."]
-  description text [not null, note: "Term label, e.g. DP 30% or Pelunasan."]
-  percentage_bps integer [note: "Share of the order tax base when billed by percentage."]
-  issue_date date
-  due_date date
-  vat_enabled boolean [not null]
-  vat_rate_bps integer [not null, default: 0]
-  subtotal bigint [not null, default: 0, note: "Tax base (DPP) of this term."]
-  discount_total bigint [not null, default: 0]
-  tax_total bigint [not null, default: 0]
-  grand_total bigint [not null, default: 0]
-  paid_total bigint [not null, default: 0]
-  outstanding_total bigint [not null, default: 0]
-  currency_code varchar(3) [not null, default: 'IDR']
-  status text [not null, default: 'draft']
-  terms text [note: "Terms and conditions printed on the invoice, copied from the company profile."]
-  notes text
-  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  issued_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  issued_at bigint
-  voided_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  voided_at bigint
-  void_reason text
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
-  Note: "Customer invoice (faktur) for one billing term of a sales order, company-wide (ADR-0011): no organization_id. Free terms: the invoices of an order never exceed its total and the settling term takes the exact remainder. draft -> issued -> partially_paid -> paid; unpaid draft or issued -> void. Overdue is shown from due_date, never stored. Voiding is an append only mark, the invoice is never deleted."
-  Indexes {
-    customer_id [name: 'invoices_customer_id_idx']
-    sales_order_id [name: 'invoices_sales_order_id_idx']
-    status [name: 'invoices_status_idx']
-    due_date [name: 'invoices_due_date_idx']
-    term_kind [name: 'invoices_term_kind_idx']
-  }
-  Checks {
-    `invoice_type IN ('sales')`
-    `term_kind IN ('down_payment', 'installment', 'settlement')`
-    `status IN ('draft', 'issued', 'partially_paid', 'paid', 'void')`
-    `vat_rate_bps >= 0 AND vat_rate_bps <= 10000`
-    `subtotal >= 0`
-    `discount_total >= 0`
-    `tax_total >= 0`
-    `grand_total > 0`
-    `paid_total >= 0 AND paid_total <= grand_total`
-    `outstanding_total >= 0`
-    `due_date IS NULL OR issue_date IS NULL OR due_date >= issue_date`
-  }
-}
-
-Table finance.invoice_items {
-  updated_at bigint [not null]
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  invoice_id uuid [not null]
-  item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  description text
-  quantity numeric(18,3) [not null, default: 1]
-  unit_id uuid [note: "Logical reference to catalog.units.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  unit_price bigint [not null, default: 0]
-  discount_amount bigint [not null, default: 0]
-  tax_amount bigint [not null, default: 0]
-  line_total bigint [not null, default: 0]
-  sort_order integer [not null, default: 0]
-  created_at bigint [not null]
-  Note: "Line of an invoice."
-  Indexes {
-    invoice_id [name: 'invoice_items_invoice_id_idx']
-  }
-  Checks {
-    `quantity > 0`
-    `unit_price >= 0`
-    `discount_amount >= 0`
-    `tax_amount >= 0`
-    `line_total >= 0`
-  }
-}
+// Finance plan D6: finance.expense_settlements(_items),
+// finance.expense_claims(_items), finance.employee_advances and
+// finance.credit_memos are DEFERRED (not built in Stage 1).
 
 Table finance.payments {
   deleted_at bigint
@@ -3997,7 +4047,7 @@ Table finance.payments {
   direction text [not null]
   counterparty_type text
   counterparty_id text
-  invoice_id uuid
+  sales_invoice_id uuid [note: "Logical reference to sales.invoices.id. Cross-module FK intentionally omitted. Validated through the Sales module contract."]
   supplier_bill_id uuid
   employee_advance_id uuid
   amount bigint [not null, default: 0]
@@ -4022,7 +4072,7 @@ Table finance.payments {
   Note: "THE single payment ledger of the ERP. Receipts and disbursements both live here. A payment can settle at most one invoice, one supplier bill and one employee advance. Execution requires approval and is not allowed by the requester."
   Indexes {
     (organization_id, code) [unique, name: 'payments_org_code_uq']
-    invoice_id [name: 'payments_invoice_id_idx']
+    sales_invoice_id [name: 'payments_sales_invoice_id_idx']
     supplier_bill_id [name: 'payments_supplier_bill_id_idx']
     employee_advance_id [name: 'payments_employee_advance_id_idx']
     status [name: 'payments_status_idx']
@@ -4035,36 +4085,6 @@ Table finance.payments {
     `status IN ('draft', 'submitted', 'approved', 'executed', 'reversed', 'void', 'cancelled')`
     `amount > 0`
     `payment_method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque', 'offset')`
-  }
-}
-
-Table finance.receipts {
-  id uuid [pk, default: `uuidv7()`]
-  code varchar(32) [not null, note: "Assigned on creation. Unique among live rows (partial index in the Drizzle schema)."]
-  invoice_id uuid [not null]
-  received_date date [not null]
-  amount bigint [not null]
-  currency_code varchar(3) [not null, default: 'IDR']
-  method text [not null, default: 'bank_transfer']
-  reference varchar(100) [note: "Transfer reference or similar."]
-  notes text
-  status text [not null, default: 'posted']
-  received_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  reversed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  reversed_at bigint
-  reversal_reason text
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
-  Note: "Cash receipt register, kwitansi, company-wide. Valid on creation (no second verification); mistakes are reversed, never deleted. Never more than the invoice's outstanding amount. Linked to finance.payments once the single payment ledger lands (S7)."
-  Indexes {
-    invoice_id [name: 'receipts_invoice_id_idx']
-    status [name: 'receipts_status_idx']
-  }
-  Checks {
-    `status IN ('posted', 'reversed')`
-    `amount > 0`
-    `method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque')`
   }
 }
 
@@ -4394,18 +4414,85 @@ Table finance.payment_allocations {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   payment_id uuid [not null]
-  invoice_id uuid [not null]
+  target_type text [not null]
+  sales_invoice_id uuid
+  supplier_bill_id uuid
   allocated_amount bigint [not null]
   currency_code varchar(3) [not null, default: 'IDR']
   allocated_at bigint [not null]
   created_at bigint [not null]
-  Note: "Allocation of one payment to one invoice, for invoices settled in several instalments."
+  Note: "Allocation of one payment to one target document (a sales invoice or a supplier bill), for documents settled in several instalments."
   Indexes {
-    (payment_id, invoice_id) [unique, name: 'payment_allocations_uq']
-    invoice_id [name: 'payment_allocations_invoice_id_idx']
+    (payment_id, target_type, sales_invoice_id, supplier_bill_id) [unique, name: 'payment_allocations_uq']
+    sales_invoice_id [name: 'payment_allocations_sales_invoice_id_idx']
+    supplier_bill_id [name: 'payment_allocations_supplier_bill_id_idx']
   }
   Checks {
+    `target_type IN ('sales_invoice', 'supplier_bill')`
+    `(target_type = 'sales_invoice' AND sales_invoice_id IS NOT NULL) OR (target_type = 'supplier_bill' AND supplier_bill_id IS NOT NULL)`
     `allocated_amount > 0`
+  }
+}
+
+Table finance.ar_open_items {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  sales_invoice_id uuid [not null, note: "Logical reference to sales.invoices.id. Cross-module FK intentionally omitted. Validated through the Sales module contract."]
+  customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
+  invoice_date date
+  due_date date
+  original_amount bigint [not null]
+  paid_amount bigint [not null, default: 0]
+  outstanding_amount bigint [not null]
+  currency_code varchar(3) [not null, default: 'IDR']
+  status text [not null, default: 'open']
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Accounts receivable open-item sub-ledger. Finance's own mirror of what is still owed per issued invoice, updated through the posting flow. Never computed by reading sales tables. Aging reports are built on this table."
+  Indexes {
+    (organization_id, sales_invoice_id) [unique, name: 'ar_open_items_org_invoice_uq']
+    customer_id [name: 'ar_open_items_customer_id_idx']
+    status [name: 'ar_open_items_status_idx']
+    due_date [name: 'ar_open_items_due_date_idx']
+  }
+  Checks {
+    `status IN ('open', 'partially_paid', 'paid', 'void')`
+    `original_amount >= 0`
+    `paid_amount >= 0`
+    `outstanding_amount >= 0`
+    `outstanding_amount = original_amount - paid_amount`
+  }
+}
+
+Table finance.ap_open_items {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  supplier_bill_id uuid [not null, note: "Logical reference to finance.supplier_bills.id."]
+  supplier_id uuid [note: "Logical reference to procurement.suppliers.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
+  bill_date date
+  due_date date
+  original_amount bigint [not null]
+  paid_amount bigint [not null, default: 0]
+  outstanding_amount bigint [not null]
+  currency_code varchar(3) [not null, default: 'IDR']
+  status text [not null, default: 'open']
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Accounts payable open-item sub-ledger, the AP twin of finance.ar_open_items."
+  Indexes {
+    (organization_id, supplier_bill_id) [unique, name: 'ap_open_items_org_bill_uq']
+    supplier_id [name: 'ap_open_items_supplier_id_idx']
+    status [name: 'ap_open_items_status_idx']
+    due_date [name: 'ap_open_items_due_date_idx']
+  }
+  Checks {
+    `status IN ('open', 'partially_paid', 'paid', 'void')`
+    `original_amount >= 0`
+    `paid_amount >= 0`
+    `outstanding_amount >= 0`
+    `outstanding_amount = original_amount - paid_amount`
   }
 }
 
@@ -4414,7 +4501,7 @@ Table finance.credit_memos {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
-  invoice_id uuid
+  sales_invoice_id uuid
   customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
   memo_date date
   amount bigint [not null, default: 0]
@@ -4428,7 +4515,7 @@ Table finance.credit_memos {
   Note: "Credit note against an invoice. It reduces the receivable, it is not a payment."
   Indexes {
     (organization_id, code) [unique, name: 'credit_memos_org_code_uq']
-    invoice_id [name: 'credit_memos_invoice_id_idx']
+    sales_invoice_id [name: 'credit_memos_sales_invoice_id_idx']
     status [name: 'credit_memos_status_idx']
   }
   Checks {
@@ -4437,12 +4524,13 @@ Table finance.credit_memos {
   }
 }
 
-Ref: finance.invoice_items.invoice_id > finance.invoices.id [delete: cascade]
-Ref: finance.payments.invoice_id > finance.invoices.id [delete: restrict]
+Ref: sales.invoice_items.invoice_id > sales.invoices.id [delete: cascade]
+// finance.payments.sales_invoice_id, finance.payment_allocations.sales_invoice_id and
+// finance.credit_memos.sales_invoice_id are logical references to
+// sales.invoices.id — cross-module refs are intentionally FK-free.
 Ref: finance.payments.supplier_bill_id > finance.supplier_bills.id [delete: restrict]
 Ref: finance.payments.employee_advance_id > finance.employee_advances.id [delete: restrict]
 Ref: finance.payments.cash_bank_account_id > finance.cash_bank_accounts.id [delete: restrict]
-Ref: finance.receipts.invoice_id > finance.invoices.id [delete: restrict]
 Ref: finance.expense_settlements.employee_advance_id > finance.employee_advances.id [delete: set null]
 Ref: finance.expense_settlement_items.expense_settlement_id > finance.expense_settlements.id [delete: cascade]
 Ref: finance.employee_advances.payment_id > finance.payments.id [delete: set null]
@@ -4453,8 +4541,9 @@ Ref: finance.bank_reconciliation_items.cash_bank_transaction_id > finance.cash_b
 Ref: finance.expense_claims.payment_id > finance.payments.id [delete: set null]
 Ref: finance.expense_claim_items.expense_claim_id > finance.expense_claims.id [delete: cascade]
 Ref: finance.payment_allocations.payment_id > finance.payments.id [delete: cascade]
-Ref: finance.payment_allocations.invoice_id > finance.invoices.id [delete: cascade]
-Ref: finance.credit_memos.invoice_id > finance.invoices.id [delete: set null]
+Ref: finance.ap_open_items.supplier_bill_id > finance.supplier_bills.id [delete: restrict]
+// finance.ar_open_items.sales_invoice_id is a logical reference to
+// sales.invoices.id — cross-module refs are intentionally FK-free.
 
 // ---------------------------------------------------------------------------
 // MODULE: Accounting  (schema: accounting)
@@ -4475,6 +4564,7 @@ Table accounting.chart_of_accounts {
   is_postable boolean [not null, default: true]
   is_system boolean [not null, default: false]
   is_active boolean [not null, default: true]
+  cash_flow_category text [note: "Direct-method cash-flow mapping (finance plan D11). Only set for accounts whose movement feeds the cash-flow statement."]
   description text
   created_at bigint [not null]
   updated_at bigint [not null]
@@ -4488,6 +4578,7 @@ Table accounting.chart_of_accounts {
   Checks {
     `account_type IN ('asset', 'liability', 'equity', 'revenue', 'expense')`
     `normal_balance IN ('debit', 'credit')`
+    `cash_flow_category IS NULL OR cash_flow_category IN ('operating', 'investing', 'financing')`
     `level >= 1`
   }
 }
@@ -4530,6 +4621,8 @@ Table accounting.journal_entries {
   description text
   source_type text
   source_id text
+  idempotency_key text [note: "Posting-service idempotency: a second posted entry with the same (organization_id, idempotency_key) is refused. Null keys skip the rule."]
+  source_module text [not null, default: 'accounting', note: "Producing module, guarded by the posting service. Other modules never write journal rows directly."]
   status text [not null, default: 'draft']
   total_debit bigint [not null, default: 0]
   total_credit bigint [not null, default: 0]
@@ -4551,12 +4644,14 @@ Table accounting.journal_entries {
     entry_date [name: 'journal_entries_entry_date_idx']
     source_type [name: 'journal_entries_source_type_idx']
     source_id [name: 'journal_entries_source_id_idx']
+    (organization_id, idempotency_key) [unique, name: 'journal_entries_idempotency_uq', note: "WHERE idempotency_key IS NOT NULL AND status <> 'void'"]
   }
   Checks {
     `status IN ('draft', 'submitted', 'approved', 'posted', 'reversed', 'void')`
     `total_debit >= 0`
     `total_credit >= 0`
     `total_debit = total_credit`
+    `source_module IN ('accounting', 'finance', 'sales', 'procurement', 'inventory', 'assets', 'payroll', 'organization')`
   }
 }
 
@@ -4605,9 +4700,9 @@ Table accounting.tax_types {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Effective dated tax rate, PPN or PPh. The rate is stored as a decimal percentage, not as a float amount."
+  Note: "Effective dated tax rate, PPN or PPh. The rate is stored as a decimal percentage, not as a float amount. A rate change is a new row with a new effective_from; ranges for the same code must not overlap (enforced in the service, not by a database constraint). Soft-deleted rows are excluded from the uniqueness rule."
   Indexes {
-    (organization_id, code) [unique, name: 'tax_types_org_code_uq']
+    (organization_id, code, effective_from) [unique, name: 'tax_types_org_code_effective_uq', note: 'WHERE deleted_at IS NULL']
     effective_from [name: 'tax_types_effective_from_idx']
   }
   Checks {
@@ -4635,9 +4730,10 @@ Table accounting.tax_records {
   notes text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Tax recap workpaper for a period. Filing itself stays outside the ERP."
+  Note: "Tax recap workpaper for a period. Filing itself stays outside the ERP. One recap per tax type per period. Corrections are separate rows in accounting.tax_corrections; tax_amount is never edited to reflect them."
   Indexes {
-    (organization_id, code) [unique, name: 'tax_records_org_code_uq']
+    (organization_id, code) [unique, name: 'tax_records_org_code_uq', note: 'WHERE deleted_at IS NULL']
+    (organization_id, tax_type_id, period_year, period_month) [unique, name: 'tax_records_org_type_period_uq', note: 'WHERE deleted_at IS NULL']
     tax_type_id [name: 'tax_records_tax_type_id_idx']
     (organization_id, period_year, period_month) [name: 'tax_records_period_idx']
   }
@@ -4646,6 +4742,29 @@ Table accounting.tax_records {
     `taxable_base >= 0`
     `tax_amount >= 0`
     `filing_status IN ('draft', 'verified', 'filed', 'corrected')`
+  }
+}
+
+Table accounting.tax_corrections {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  tax_record_id uuid [not null]
+  amount bigint [not null]
+  currency_code varchar(3) [not null, default: 'IDR']
+  reason text [not null]
+  evidence_document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  created_by text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Signed correction against a tax recap. The original tax_amount is kept unchanged. Net payable is recap plus the sum of active corrections, computed at read time."
+  Indexes {
+    tax_record_id [name: 'tax_corrections_tax_record_id_idx']
+    evidence_document_id [name: 'tax_corrections_evidence_document_id_idx']
+  }
+  Checks {
+    `amount <> 0`
+    `char_length(trim(reason)) > 0`
   }
 }
 
@@ -4782,6 +4901,7 @@ Ref: accounting.journal_entries.reversed_by_entry_id > accounting.journal_entrie
 Ref: accounting.journal_lines.journal_entry_id > accounting.journal_entries.id [delete: cascade]
 Ref: accounting.journal_lines.account_id > accounting.chart_of_accounts.id [delete: restrict]
 Ref: accounting.tax_records.tax_type_id > accounting.tax_types.id [delete: restrict]
+Ref: accounting.tax_corrections.tax_record_id > accounting.tax_records.id [delete: restrict]
 Ref: accounting.opening_balances.account_id > accounting.chart_of_accounts.id [delete: cascade]
 Ref: accounting.account_balances.account_id > accounting.chart_of_accounts.id [delete: cascade]
 Ref: accounting.account_balances.accounting_period_id > accounting.accounting_periods.id [delete: cascade]
@@ -5306,7 +5426,7 @@ Table aftersales.warranty_claims {
   customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
   item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
   serial_number text
-  invoice_id uuid [note: "Logical reference to finance.invoices.id. Cross-module FK intentionally omitted. Validated through the Finance module contract."]
+  invoice_id uuid [note: "Logical reference to sales.invoices.id. Cross-module FK intentionally omitted. Validated through the Sales module contract."]
   sales_order_id uuid [note: "Logical reference to sales.sales_orders.id. Cross-module FK intentionally omitted. Validated through the Sales module contract."]
   claim_type text [not null, default: 'defect']
   fault_description text
@@ -7683,5 +7803,4 @@ Table sales.payments {
     `status IN ('pending', 'approved', 'executed')`
   }
 }
-
 

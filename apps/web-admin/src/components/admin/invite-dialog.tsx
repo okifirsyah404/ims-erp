@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { toast } from '@/components/toast';
@@ -27,11 +27,11 @@ import {
 } from '@ims-erp/ui/components/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { erpRoleNames } from '@ims-erp/common';
 import {
 	BULK_INVITE_LIMIT,
 	parseBulkInviteRows,
 	sendInvitations,
-	rolesQueryOptions,
 	type TBulkInviteResult,
 	type TInviteInput,
 } from '@/lib/admin-api';
@@ -40,11 +40,12 @@ import { humanizeIdentifier } from '@/lib/format';
 /**
  * Invitation dialog with two paths (locked decisions D2/D13):
  *
- * - **Single**: `email` + optional `name` + a role from the organization's
- *   live role master data. A typo'd role is rejected by the backend.
+ * - **Single**: `email` + optional `name` + a role from the fixed
+ *   `erpRoleNames` enum (default `member`). The role is submitted as its
+ *   name (`organizationRole`) — dynamic roles no longer exist.
  * - **Bulk**: paste up to 100 rows, `email[,name[,role]]` per line. Per-row
- *   isolation — an unapproved role falls back to `member` server-side and
- *   every failure is reported back for that row only.
+ *   isolation — an unrecognized role falls back to the dialog default (or
+ *   `member` server-side) and every failure is reported back for that row.
  *
  * The dialog is UX only; the backend re-validates every row.
  */
@@ -61,21 +62,10 @@ export function InviteDialog({
 }) {
 	const [email, setEmail] = useState('');
 	const [name, setName] = useState('');
-	const [roleId, setRoleId] = useState<string | undefined>();
+	const [organizationRole, setOrganizationRole] = useState<string>('member');
 	const [bulk, setBulk] = useState('');
 	const [report, setReport] = useState<string[] | null>(null);
 	const { t } = useTranslation(['admin', 'common']);
-
-	// Only live, non-system-bound roles are offered. Ordering comes from the
-	// backend (ascending rank) so the last item is the highest grantable role.
-	const { data: roles } = useQuery({
-		...rolesQueryOptions(organizationId),
-		enabled: open,
-	});
-	const assignable = (roles ?? []).filter((role) => !role.deletedAt);
-	const roleNamesById = new Map(
-		assignable.map((role) => [role.id, role.name] as const),
-	);
 
 	const send = useMutation({
 		mutationFn: (input: TInviteInput | TInviteInput[]) =>
@@ -121,7 +111,7 @@ export function InviteDialog({
 	function reset() {
 		setEmail('');
 		setName('');
-		setRoleId(undefined);
+		setOrganizationRole('member');
 		setBulk('');
 	}
 
@@ -130,24 +120,19 @@ export function InviteDialog({
 			toast.error(t('invite.emailRequired'));
 			return;
 		}
-		if (!roleId) {
-			toast.error(t('invite.roleRequired'));
-			return;
-		}
 		setReport(null);
 		send.mutate({
 			email: email.trim(),
 			name: name.trim() || undefined,
 			organizationId,
-			roleId,
+			organizationRole,
 		});
 	}
 
 	function submitBulk() {
 		const { rows, error } = parseBulkInviteRows(bulk, {
 			organizationId,
-			roleId,
-			roleNamesById,
+			organizationRole,
 		});
 		if (error) {
 			setReport([error]);
@@ -197,17 +182,14 @@ export function InviteDialog({
 							</Field>
 							<Field>
 								<FieldLabel>{t('invite.role')}</FieldLabel>
-								<Select value={roleId ?? null} onValueChange={(value) => setRoleId(value ?? undefined)}>
+								<Select value={organizationRole} onValueChange={(value) => setOrganizationRole(value ?? 'member')}>
 									<SelectTrigger>
 										<SelectValue placeholder={t('invite.rolePlaceholder')} />
 									</SelectTrigger>
 									<SelectContent>
-										{assignable.map((role) => (
-											<SelectItem key={role.id} value={role.id}>
-												{t('invite.roleOption', {
-													name: humanizeIdentifier(role.name),
-													rank: role.rank,
-												})}
+										{erpRoleNames.map((roleName) => (
+											<SelectItem key={roleName} value={roleName}>
+												{humanizeIdentifier(roleName)}
 											</SelectItem>
 										))}
 									</SelectContent>
@@ -251,17 +233,14 @@ export function InviteDialog({
 							</Field>
 							<Field>
 								<FieldLabel>{t('invite.defaultRole')}</FieldLabel>
-								<Select value={roleId ?? null} onValueChange={(value) => setRoleId(value ?? undefined)}>
+								<Select value={organizationRole} onValueChange={(value) => setOrganizationRole(value ?? 'member')}>
 									<SelectTrigger>
 										<SelectValue placeholder={t('invite.defaultRolePlaceholder')} />
 									</SelectTrigger>
 									<SelectContent>
-										{assignable.map((role) => (
-											<SelectItem key={role.id} value={role.id}>
-												{t('invite.roleOption', {
-													name: humanizeIdentifier(role.name),
-													rank: role.rank,
-												})}
+										{erpRoleNames.map((roleName) => (
+											<SelectItem key={roleName} value={roleName}>
+												{humanizeIdentifier(roleName)}
 											</SelectItem>
 										))}
 									</SelectContent>

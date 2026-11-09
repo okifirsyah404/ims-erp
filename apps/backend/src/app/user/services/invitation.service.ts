@@ -5,7 +5,6 @@ import type { TPaginationResult } from '@ims-erp/common';
 import {
 	INVITATION_MAILER_TOKEN,
 	INVITATION_REPOSITORY_TOKEN,
-	ROLE_REPOSITORY_TOKEN,
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
 } from '../constants/di';
@@ -13,9 +12,6 @@ import type {
 	IInvitationRepository,
 	TInvitationListRequest,
 } from '../contracts/invitation.repository.interface';
-import type {
-	IRoleRepository,
-} from '../contracts/role.repository.interface';
 import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
 import type { TClaimTarget } from '../contracts/user-management-auth.gateway.interface';
 import type { IInvitationMailer } from '../contracts/invitation-mailer.gateway.interface';
@@ -36,7 +32,6 @@ import {
 	InvitationNotPendingError,
 	InvitationNotFoundError,
 	InvitationPendingExistsError,
-	RoleNotFoundError,
 } from '../errors/invitation.errors';
 
 /** Actor context extracted from the guarded request. */
@@ -96,14 +91,13 @@ export class InvitationService {
 		private readonly authGateway: IUserManagementAuthGateway,
 		@inject(INVITATION_MAILER_TOKEN)
 		private readonly mailer: IInvitationMailer,
-		@inject(ROLE_REPOSITORY_TOKEN)
-		private readonly roles: IRoleRepository,
 		private readonly audit: AuditService,
 	) {}
 
 	/**
 	 * Creates one invitation. App path requires `name`; org path requires
-	 * `organizationId` + `roleId` (existing role in that org's master data).
+	 * `organizationId` (the role is the closed-enum `organizationRole`,
+	 * defaulting to `member` when omitted).
 	 *
 	 * Overwrite rule: a pending invitation for the same email is reused —
 	 * same user row, new token, old token invalidated, counts resent.
@@ -112,24 +106,17 @@ export class InvitationService {
 		input: TCreateInvitationInput,
 		actor: TActor,
 	): Promise<TInviteResult> {
-		const isOrgPath = Boolean(input.roleId || input.organizationId);
-		if (isOrgPath && (!input.organizationId || !input.roleId)) {
+		const isOrgPath = Boolean(input.organizationRole || input.organizationId);
+		if (isOrgPath && !input.organizationId) {
 			throw new InvalidInvitationError();
 		}
 		if (!isOrgPath && !input.name) {
 			throw InvalidInvitationError.requiresName();
 		}
 
-		let roleName: string | null = null;
-		if (isOrgPath) {
-			// `findById` + org ownership check: the single-invite path rejects
-			// typos; the bulk path falls back to `member` upstream.
-			const role = await this.roles.findById(input.roleId!);
-			if (!role || role.organizationId !== input.organizationId) {
-				throw new RoleNotFoundError(input.roleId!);
-			}
-			roleName = role.name;
-		}
+		const organizationRole = isOrgPath
+			? (input.organizationRole ?? 'member')
+			: null;
 
 		// Overwrite rule: reuse the pending invitation + pre-created user.
 		const existingPending = await this.invitations.findPendingByEmail(
@@ -157,7 +144,7 @@ export class InvitationService {
 			if (!existingUser) {
 				throw ClaimStateError.invitedUserMissing();
 			}
-			await this.deliver(updated!, token, actor);
+			await this.deliver(updated!, token);
 			return {
 				invitation: updated!,
 				userId: existingUser.id,
@@ -211,7 +198,7 @@ export class InvitationService {
 			email: input.email,
 			name: input.name ?? null,
 			organizationId: input.organizationId ?? null,
-			roleId: input.roleId ?? null,
+			orgRole: organizationRole,
 			tokenHash,
 			invitedBy: actor.userId,
 			expiresAt: new Date(Date.now() + INVITATION_TTL_MS),
@@ -224,17 +211,17 @@ export class InvitationService {
 			targetType: 'invitation',
 			targetId: invitation.id,
 			organizationId: input.organizationId ?? null,
-			meta: { email: input.email, roleName },
+			meta: { email: input.email, organizationRole },
 			request: { ip: actor.ip, userAgent: actor.userAgent },
 		});
-		await this.deliver(invitation, token, actor);
+		await this.deliver(invitation, token);
 		return { invitation, userId, overwritten: false };
 	}
 
 	/**
-	 * Bulk invite: per-row isolation. A typo'd/unapproved role in an org row
-	 * falls back to that org's `member` role (locked decision); other errors
-	 * fail only their row. Result order matches input order.
+	 * Bulk invite: per-row isolation. Roles are the closed enum (validated by
+	 * Zod at the boundary), so any row-level error fails only its row.
+	 * Result order matches input order.
 	 */
 	async inviteBulk(
 		inputs: TCreateInvitationInput[],
@@ -249,30 +236,6 @@ export class InvitationService {
 				const prepared = await this.prepare(input);
 				results.push({ ok: true, row: await this.invite(prepared, actor) });
 			} catch (error) {
-				// Bulk role fallback: unknown role in an org row → member.
-				if (input.roleId && input.organizationId && isRoleNotFound(error)) {
-					const memberRole =
-						await this.roles.findMemberRole(input.organizationId);
-					if (memberRole) {
-						try {
-							results.push({
-								ok: true,
-								row: await this.invite(
-									{ ...input, roleId: memberRole.id },
-									actor,
-								),
-							});
-							continue;
-						} catch (fallbackError) {
-							results.push({
-								ok: false,
-								email: input.email,
-								error: String(fallbackError),
-							});
-							continue;
-						}
-					}
-				}
 				results.push({
 					ok: false,
 					email: input.email,
@@ -313,7 +276,7 @@ export class InvitationService {
 			organizationId: invitation.organizationId,
 			request: { ip: actor.ip, userAgent: actor.userAgent },
 		});
-		await this.deliver(updated!, token, actor);
+		await this.deliver(updated!, token);
 	}
 
 	/** Cancel: pending → cancelled. Terminal states are final. */
@@ -391,7 +354,7 @@ export class InvitationService {
 				id: invitation.id,
 				type: invitation.type,
 				organizationId: invitation.organizationId,
-				roleId: invitation.roleId,
+				organizationRole: invitation.orgRole,
 			},
 			user: {
 				id: user.id,
@@ -438,13 +401,10 @@ export class InvitationService {
 		// user is active but the invitation stays pending).
 		let organizationName: string | null = null;
 		if (invitation.type === 'org' && invitation.organizationId) {
-			const role = invitation.roleId
-				? await this.roles.findById(invitation.roleId)
-				: await this.roles.findMemberRole(invitation.organizationId);
 			organizationName = await this.authGateway.attachMembership({
 				userId: user.id,
 				organizationId: invitation.organizationId,
-				roleName: role?.name ?? 'member',
+				roleName: target.invitation.organizationRole ?? 'member',
 			});
 		}
 
@@ -465,9 +425,9 @@ export class InvitationService {
 	// -- internals ------------------------------------------------------------
 
 	/**
-	 * Bulk path preparation: for org rows with an unknown role id, fall back
-	 * to the org's `member` role. Single rows pass through unchanged (the
-	 * strict error is desired there).
+	 * Bulk path preparation seam: rows pass through unchanged (role validity
+	 * is enforced by the Zod enum at the boundary). Kept for symmetry with
+	 * the single path.
 	 */
 	private async prepare(
 		input: TCreateInvitationInput,
@@ -496,7 +456,6 @@ export class InvitationService {
 	private async deliver(
 		invitation: TUserInvitationSelect,
 		rawToken: string,
-		actor: TActor,
 	): Promise<void> {
 		try {
 			let organizationName: string | null = null;
@@ -504,11 +463,7 @@ export class InvitationService {
 			if (invitation.organizationId) {
 				const org = await this.organizationNameFor(invitation.organizationId);
 				organizationName = org;
-				if (invitation.roleId) {
-					roleName =
-						(await this.roles.findById(invitation.roleId))?.name ??
-						null;
-				}
+				roleName = invitation.orgRole ?? null;
 			}
 			await this.mailer.sendInvite({
 				to: invitation.email,
@@ -558,6 +513,3 @@ export class InvitationService {
 	}
 }
 
-function isRoleNotFound(error: unknown): boolean {
-	return error instanceof Error && error.name === 'RoleNotFoundError';
-}

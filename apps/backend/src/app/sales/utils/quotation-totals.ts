@@ -3,7 +3,7 @@
  * (ADR-0002); products and VAT use BigInt and round half-up, so large totals
  * never lose precision.
  */
-import { bpsShare, quantityTimesPrice } from '@ims-erp/common';
+import { bpsShare, quantityTimesPrice } from '@utils/money.util';
 
 /** Default VAT rate: 11% effective (12% × DPP 11/12), owner decision 2026-10-31. */
 export const DEFAULT_VAT_RATE_BPS = 1100;

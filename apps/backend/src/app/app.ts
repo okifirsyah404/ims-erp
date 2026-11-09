@@ -21,11 +21,14 @@ import {
 import { SalesController } from './sales/controllers/sales.controller';
 import { SalesOrderController } from './sales/controllers/sales-order.controller';
 import { DeliveryNoteController } from './sales/controllers/delivery-note.controller';
-import { InvoiceController, ReceiptController } from './finance';
 import { GoodsReceiptController, PurchaseOrderController, SupplierController } from './procurement';
 import { ProjectController } from './projects';
 import { ServiceTicketController, WarrantyController } from './aftersales';
 import { LicenseApiController, LicensingController } from './licensing';
+import { TaxController, LedgerController } from './accounting';
+import { PaymentController } from './accounting/controllers/payment.controller';
+import { InvoiceController } from './sales/controllers/invoice.controller';
+import { ReceiptController } from './sales/controllers/receipt.controller';
 import {
 	InvitationClaimController,
 	InvitationController,
@@ -94,7 +97,7 @@ export function createApp() {
 			.use(SalesOrderController.plugin())
 			.use(DeliveryNoteController.plugin())
 			.use(InvoiceController.plugin())
-			.use(ReceiptController.plugin())
+	.use(ReceiptController.plugin())
 			.use(SupplierController.plugin())
 			.use(PurchaseOrderController.plugin())
 			.use(GoodsReceiptController.plugin())
@@ -150,5 +153,8 @@ export function createApp() {
 			.use(AssetCategoryController.plugin())
 			.use(AssetOperationsController.plugin())
 			.use(BorrowingController.plugin())
+			.use(TaxController.plugin())
+			.use(LedgerController.plugin())
+.use(PaymentController.plugin())
 	);
 }

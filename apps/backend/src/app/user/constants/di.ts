@@ -1,13 +1,11 @@
 import { InjectionToken } from 'tsyringe';
 import type { IInvitationRepository } from '../contracts/invitation.repository.interface';
 import type { IInvitationMailer } from '../contracts/invitation-mailer.gateway.interface';
-import type { IRoleRepository } from '../contracts/role.repository.interface';
 import type {
 	IUserManagementAuthGateway,
 } from '../contracts/user-management-auth.gateway.interface';
 import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
 import type { InvitationService } from '../services/invitation.service';
-import type { RoleManagementService } from '../services/role-management.service';
 import type { UserAdminService } from '../services/user-admin.service';
 import type { IUserRepository } from '../contracts/user.repository.interface';
 import type { IUserAuthGateway } from '../contracts/user-auth.gateway.interface';
@@ -15,7 +13,7 @@ import type { UserService } from '../services/user.service';
 
 /**
  * Injection tokens for the user module's repository, auth gateway, and
- * service, plus the admin half (invitations, roles, user administration)
+ * service, plus the admin half (invitations, user administration)
  * merged from `user-management` — no token collisions existed, so names are
  * kept verbatim.
  *
@@ -44,11 +42,6 @@ export const INVITATION_MAILER_TOKEN: InjectionToken<IInvitationMailer> =
 	Symbol('INVITATION_MAILER');
 export const INVITATION_SERVICE_TOKEN: InjectionToken<InvitationService> =
 	Symbol('INVITATION_SERVICE');
-export const ROLE_REPOSITORY_TOKEN: InjectionToken<IRoleRepository> = Symbol(
-	'ROLE_REPOSITORY',
-);
-export const ROLE_MANAGEMENT_SERVICE_TOKEN: InjectionToken<RoleManagementService> =
-	Symbol('ROLE_MANAGEMENT_SERVICE');
 export const USER_ADMIN_SERVICE_TOKEN: InjectionToken<UserAdminService> = Symbol(
 	'USER_ADMIN_SERVICE',
 );

@@ -12,7 +12,62 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
-## Completed — merge of main into merge/main-sync (PR #58 conflicts), 2026-11-06/07
+## Completed - merge of main into merge/main-sync, stage 2 (Sales owns AR), 2026-11-09
+
+Branch `merge/main-into-main-sync` (from `merge/main-sync` @ `0efffe1`),
+`git merge main --no-commit --no-ff`; PR targets `main`.
+
+Owner decisions (2026-11-09): invoice + receipt are owned by Sales with the
+full terms model (term_kind, customer_snapshot, vat_enabled/vat_rate_bps,
+terms, created_by, voided_by, paid/outstanding totals) merged into
+`sales.invoices`; `code` nullable (draft may exist without a code); statuses
+`draft|issued|partially_paid|paid|void|cancelled` (overdue is never stored);
+`sales.receipts` uses main's statuses (`draft|verified|posted|reversed|void`)
+with `sales_invoice_id` NOT NULL plus HEAD's `reference`/`notes`/`reversed_by`;
+`payment_id` is a logical (nullable) ref to `finance.payments`; numbering
+follows ADR-0013 option A (company-wide counters, `NumberingService.next` as
+the only path, `DocumentNumberingService` fully removed); `sales_invoice` is
+the single DocumentType (renamed from `invoice`; new types
+`bank_reconciliation`, `cash_bank_transaction`, `payment`, `journal_entry`,
+`supplier_bill`; codes INV/REC/CB/PAY/JE/SB).
+
+What changed:
+- Numbering: all 13 `allocate`/`format` call sites (accounting services,
+  invoice service) converted to `NumberingService.next(type, { date, tx })`;
+  `DOCUMENT_NUMBERING_SERVICE_TOKEN` and its registration removed everywhere;
+  6 test doubles in `test/accounting/*` re-pointed to `next`.
+- Helpers: `apps/backend/src/utils/money.util.ts` + `business-date.util.ts`
+  (alias `@utils/*`); `packages/common/src/domain/` deleted.
+- Sales: `InvoiceLookupService` + token moved to `sales`; repository gained
+  `listByOrder`/`hasLiveInvoices`; receipt write path ported from the finance
+  module (`findReceipt`, `listReceipts`, `paginateReceipts`, `addReceipt`,
+  `reverseReceipt` + `paymentStatus` util, receipt zod schemas, receipt
+  errors as `sales.*`, `ReceiptController` mounted at `/receipts` and
+  `POST /invoices/:id/receipts`).
+- `src/app/finance/` (12 files, the merge-side invoice module) deleted;
+  `registerFinance` import dropped from `src/index.ts`; licensing and
+  sales-order services import the lookup from `@app/sales`.
+- Schemas: `sales.invoices` completed to the DBML terms model (term_kind,
+  customer_snapshot, sales_order_code, quotation_code, title, description,
+  percentage_bps, vat_enabled, vat_rate_bps, terms, created_by, voided_by,
+  `code` nullable, term_kind index + checks); `finance.schema` invoice/receipt
+  types removed; `db.ts` financeRelations removed.
+- Migrations (append-only): `20261106170000_drop_merge_side_finance_receipts`
+  (merge-reconciliation: the joined history had two finance.receipts
+  definitions, main's survives) and `20261109090000_sales_owns_invoice_receipt`
+  (sales.invoices terms columns + checks, sales.receipts created,
+  finance.invoices/invoice_items/receipts dropped).
+
+Verification (all green):
+- `bun install` OK; lint: warnings only (pre-existing); typecheck: 0 errors.
+- `bun test`: 799 pass, 0 fail (53 files); 3 fixed assertion updates for the
+  `next`-based mock codes and the 27-type DOCUMENT_TYPES list.
+- `drizzle:migrate-reset` (fresh DB `ims_erp_local`): migrate + seed OK.
+- `drizzle:seed` second run: idempotent (all "already exists/skipping").
+- `bun docs/database/validate-dbml.ts`: OK (265 tables, 231 refs, 0
+  cross-module).
+
+## Completed - merge of main into merge/main-sync (PR #58 conflicts), 2026-11-06/07
 
 Status: **implemented** (merge commit on `merge/main-sync`; not merged into
 main — PR #58 awaits programmer A's review). Backlog: ERP-0037 (the port,
@@ -1836,6 +1891,72 @@ Porting starts on `merge/main-sync`.
   starts on `merge/main-sync` in the order the ADR lists.
 
 ## Completed (this session — dummy dashboard view, 2026-11-06)
+## 2026-11-08 - docs consistency: invoices owned by Sales, ADR-0012
+
+Status: **docs-only, not code.** Branch `fix/docs-consistency` from `main`.
+No backend or web-admin change. Merge of `merge/main-sync` is not done; it was
+aborted and split (see the open items below).
+
+- Invoices are owned by Sales (`sales.invoices`, plan D2). Updated
+  `data-dictionary.md`, `implementation-phases.md`, `logical-references.md`
+  (`sales.invoices.id` → `resolveInvoice`), `module-ownership.md` (Finance no
+  longer owns invoices), `erp-module-plans/m02-crm-sales.md`,
+  `erp-module-plans/m09-finance.md`, `plans/features.md`.
+- `ADR-0012-multi-organization.md` added: multiple organizations inside one
+  company (ADR-0007 §1), master data company-wide, transaction documents record
+  the issuing organization. `sales.invoices.organization_id` stays
+  `NOT NULL`, and `docs.dbml` says so in its note.
+- Commands and outcomes:
+  - `bun docs/database/gen-logical-references.ts` → `regenerated: 522 refs
+    across 39 targets, 226 intra-module refs` (exit 0)
+  - `bun docs/database/validate-dbml.ts` → `parsed: 258 tables, 226 refs`,
+    `cross-module refs: 0`, `timestamp gaps: 0`, `OK` (exit 0)
+- Not verified: the rest of `docs/` against code. `plans/finance.md` still
+  names `finance.invoices` in D2 and step 1 on purpose: those lines record the
+  move, not the current state.
+
+Open items (not done):
+
+- Merge `merge/main-sync` into `feat/merge-main-sync-to-main` still needs
+  the finance and invoice reconciliation. `origin/merge/main-sync` contains
+  migration `20261106110700_finance_invoices_receipts`, which conflicts with M09
+  `20261106221731` on `finance.receipts`.
+- Draft `ADR-0012` (single organization) exists only on `merge/main-sync`. It
+  conflicts with ADR-0012 here and is dropped during that merge.
+- `sales.invoices.organization_id` stays under ADR-0012. Removing it is not
+  planned.
+- `finance.receipts` resolved 2026-11-08: moved to `sales.receipts` (kwitansi
+  owned by Sales); `payment_id` is a logical reference to `finance.payments`.
+
+## Completed (this session - M09 Finance Stage 1, F1..F9, 2026-11-07)
+
+Status: **implemented** (Stage 1). Master plan `docs/plan/plans/finance.md`,
+phases F1–F9 across commits `7a44dbd`, `06a1080`, `83ea8ad`, `903db39`,
+`12a8dd4`, `509743c` (+ this docs commit). Decisions D1–D12 pinned in the
+plan after a grilling session.
+
+- F1 schema/migration, F2 posting engine + COA + periods
+  (close→locked + audited owner-only reopen), F3 opening balances (batch
+  draft + one-shot post) + cash/bank with GL links, F4 sales-invoice AR
+  postings + payments workflow + AR sub-ledger + aging, F5 supplier bills +
+  AP sub-ledger + aging, F6 on-demand reports (P&L / balance sheet /
+  cash flow) + bank reconciliation with exact statement=book gate, F7
+  month-end close checklist (advisory) + void-executed append-only payment
+  reversal, F8 web-admin UI (9 routes, finance-api typed client, finance
+  i18n namespace, `bill:*` permissions added to the shared erpStatements
+  catalog).
+- F9 docs sync: `docs/architecture/modules/finance.md` rewritten (the
+  NestJS-era "historical audit" warning removed — the module is implemented),
+  `features.md` M09 planned→done (Stage 1) with Stage-2 remainder,
+  this progress entry.
+- Money everywhere is exact integer minor units; corrections are append-only
+  reversals; reports are computed from posted journal lines, never stored.
+- Gates at each phase: backend typecheck/lint/tests (686 pass), locales
+  tests (46 pass), web-admin `tsc -b` build + oxlint, plan table updated.
+- Open business item (not a code blocker): final COA seed list from
+  finance/owner; provisional codes `1-1300`/`1-1100`/`4-1000`/`2-1000`/
+  `2-1100`/`5-1000`/`1-1800` in use.
+
 ## Completed (this session - sidebar: Stock + Stock Adjustment under Items, 2026-11-06)
 
 Status: **implemented**. Nav-only reorg in `nav-config.ts`: the top-level
@@ -4336,7 +4457,232 @@ verified history in this file.
 - `architecture.md`: backend path fixed; `auth` schema bullet now documents
   the `auth:generate` regression caveat.
 
+## 2026-11-07 - ERP-0016 tax Phase 1 backend (in-progress)
+
+Implements `docs/plan/plans/tax.md` Phase 1: tax rate master, period working
+papers, corrections, withholding, recap. Routes under `/tax/*` (not `/admin`).
+Permissions use the existing `tax` resource (D9): `tax:read`, `tax:update`,
+`tax:verify`. CSV/XLSX export and the web UI are not started.
+
+- DBML: `accounting.tax_types` unique is now `(org, code, effective_from)`
+  partial on live rows; `tax_records` unique per `(org, tax_type, year, month)`;
+  new `accounting.tax_corrections`. `gen-logical-references` run;
+  `validate-dbml.ts` printed `OK` (256 tables, 0 cross-module refs, 0 gaps).
+- Migration `20261106173111_erp0016_tax_slice1` (only `accounting` schema)
+  applied to dev `POSTGRES_URL` via `bunx --bun drizzle-kit migrate`: success.
+- Code: `app/accounting/` (container, index, controller, service, repository,
+  contracts, errors, utils/tax-math). Mounted in `src/index.ts` and `app/app.ts`.
+  Locale keys `accounting.*` added to `en` and `id`.
+- Rounding: half-up to whole rupiah (100 minor units). Finance gate D14 still open.
+- Recap code is `TR-<yyyymm>-<random8>` (unique per record, not per tax code).
+- Seed: `database/seeders/seed/tax.seeder.ts`, placeholder PPN 11%, PPh 23 2%,
+  PPh 4(2) 10% (D18). `bun run drizzle:seed` run twice: inserted 3, then 0.
+- `bunx tsc --noEmit -p apps/backend/tsconfig.json`: exit 0.
+- `bun test test/accounting/tax-math.test.ts`: 6 pass, 0 fail.
+- `bun run lint`: 0 errors (9 pre-existing web-admin warnings).
+- `bun run test`: backend 542 pass, 0 fail; web-admin green.
+- Not done: service/state-machine tests, controller authorization tests,
+  web UI, CSV/XLSX export, `docs/architecture/modules/tax.md` (stale, says
+  `tax.configuration.*`), plan doc permission names still `tax.configuration.*`.
+- `docs/database/` reviewed as part of this change (updated).
+
+## 2026-11-07 - ERP-0016 tax Phase 2 (frontend + CSV) — implemented
+
+Builds on the Phase 1 commit `229b668`. Plan endpoints aligned to
+`docs/plan/plans/tax.md`; CSV columns remain a finance gate (D12).
+
+Backend additions:
+- Route renames to plan names: `GET /tax/recap`, `POST /tax/records/preview`
+  (body, not query), `POST /tax/records/:id/transition` (replaces the separate
+  `/verify` and `/file` routes), plus the new `PATCH /tax/withholding/:id`
+  (editable only while `recorded`; new `accounting.withholdingLocked` key in
+  en + id).
+- New `GET /tax/export.csv?year=&month=` under `tax:export`, served with a
+  UTF-8 BOM so Excel opens it correctly. Placeholder columns: tax_code,
+  taxable_base, tax_amount, correction_total, net_payable, filing_status, plus
+  a TOTAL footer row. **D12 is still open** — the column list needs finance
+  sign-off.
+- Tests: `test/accounting/tax.service.test.ts` (11 tests: state machine,
+  draft-only edits, corrections, overlap, preview, foreign-tenant behavior)
+  and `test/authorization/tax-authorization.test.ts` (76 cases: 401 without a
+  session on all 19 routes; finance = read/export only, write 403; sales 403
+  everywhere; a full `tax:*` role passes the guard on all routes).
+
+Web-admin:
+- `lib/tax-api.ts` client (types, recap, records, preview, corrections,
+  withholding; CSV via a plain URL so the session cookie flows).
+- Components under `components/tax/`: recap (period picker + CSV button +
+  total row), rate rows with toggle/delete, records (create + preview +
+  verify/file), corrections (record picker + signed-amount table), withholding
+  (create/edit-while-recorded + verify/pay/reverse). Permission-gated
+  (`tax.read|update|verify|export` via `usePermission`).
+- Routes replaced the `ComingSoonPage` stubs under
+  `routes/_authed/finance/tax/` (index = recap, types, records, corrections,
+  withholding); `routeTree.gen.ts` regenerated by the vite build.
+- New `tax` locale namespace (en + id), registered in both `index.ts` files
+  and `i18next.d.ts`; dead-key + parity tests pass (three "Status" headers on
+  the parity allowlist).
+
+Gates:
+- `bunx tsc --noEmit -p apps/backend/tsconfig.json`: exit 0.
+- `cd apps/web-admin && bun run build`: green (route tree regenerated).
+- `bun run lint`: 0 errors (7 pre-existing backend warnings).
+- `bun run test`: backend 629 pass, 0 fail; locales 42 pass.
+
+Still open: finance gates D12 (CSV columns), D14 (rounding), D18 (placeholder
+rates); Phase 3 XLSX via `exceljs`. Nothing is marked verified without finance
+review.
+
+## 2026-11-07 - ERP-0016 tax Phase 3 (XLSX export) — implemented
+
+Closes the tax slice delivery (Phases 1–3). Dependency review first, per D12:
+
+- **Dependency:** `exceljs@4.4.0` added to `apps/backend`. Advisory check:
+  four unpatched 2026 advisories (decompression DoS, prototype pollution via
+  cell notes, path traversal via `addImage`, CSV formula injection) — all on
+  the **read/parse path this module never calls**; the export is write-only.
+  Two transitive moderates ride along (minimatch via archiver, uuid). Choice
+  to use upstream over the `exceljs-hardened` fork confirmed with the user;
+  recorded in the plan doc (D12).
+- Code: `utils/tax-xlsx.ts` (`recapToXlsx` — headers, numeric rupiah rows
+  divided from minor units, bold TOTAL footer, `#,##0.00` money formats) and
+  `GET /tax/export.xlsx?year=&month=` under `tax:export`, mirroring the CSV
+  route. Column layout still the placeholder set; **D12 sign-off still open**.
+- UI: `Export XLSX` button on the recap page next to the CSV button
+  (`recapXlsxUrl` in `tax-api.ts`; `tax:recap.exportXlsx` en + id).
+- Tests: `test/accounting/tax-xlsx.test.ts` (3 tests: content round-trip via
+  exceljs load of our own output, empty-period TOTAL, number formats) and the
+  XLSX route added to the authorization matrix (80 cases now).
+
+Gates:
+- `bunx tsc --noEmit -p apps/backend/tsconfig.json`: exit 0.
+- `cd apps/web-admin && bun run build`: green.
+- `bun test` targeted: authorization 80 pass; locales 42 pass; xlsx 3 pass.
+
+Still open: finance gates D12 (CSV/XLSX columns), D14 (rounding), D18
+(placeholder rates). Nothing is marked verified without finance review.
+
+## 2026-11-07 - Fix: tax recap route placement and missing nav entry
+
+Corrects a Phase 2 miss: the `ComingSoonPage` stub at
+`routes/_authed/finance/tax/recap/` was never replaced — the recap component
+had been mounted on the index route `/finance/tax` instead, while the sidebar
+still linked "Tax Recap" to the stub.
+
+- `TaxRecap` (with its `validateSearch` year/month) moved to
+  `/finance/tax/recap`, matching the sidebar; `/finance/tax` index is now a
+  `beforeLoad` redirect to the recap so there is exactly one canonical URL for
+  the active period (no duplicate render, no divergent `?year=&month=`).
+- Sidebar: added the missing "Tax Records" item (`/finance/tax/records`,
+  `item.taxRecords` en + id) — the page existed but was unreachable from nav.
+- Also cleared the three `react(purity)` lint warnings introduced in Phase 2
+  (`new Date()` during render in `tax-recap.tsx` / `tax-record-list.tsx`;
+  now computed once at module load). Web-admin warnings back at the 9
+  pre-existing baseline.
+
+Gates: web-admin build green (route tree regenerated), `bun run lint` 0
+errors, locale tests 42 pass (new `item.taxRecords` key mirrored in en/id).
+
+## 2026-11-07 - Refactor: tax row edits use UI Dialog instead of window.prompt
+
+Replaces the prompt-based row edits from the Phase 2 UI with proper dialogs,
+following the `storage-dialog.tsx` pattern (Base UI Dialog from
+`packages/ui`):
+
+- New `components/tax/tax-record-edit-dialog.tsx`: edits a draft record's
+  taxable base (context line with code + period; invalidates `tax-records`
+  and the derived `tax-recap` on success).
+- New `components/tax/withholding-edit-dialog.tsx`: edits a recorded
+  withholding row's tax amount (backend still enforces recorded-only edits;
+  a late rejection surfaces as the `withholdingLocked` toast).
+- Both lists drop their inline edit mutation and `window.prompt`; the edit
+  button opens the dialog with the row. The dialogs mount only while a row is
+  being edited (`key={row.id}`), which avoids the `set-state-in-effect`
+  resync pattern and keeps oxlint at the 9-warning baseline.
+- Locale keys `tax:records.editTitle` and `tax:withholding.editTitle`
+  (en + id).
+
+Gates: web-admin build green, oxlint 9 warnings (pre-existing), locale tests
+42 pass.
+
+## 2026-11-08 - Docs: nullable cross-module references (ADR-0014) and ADR-0012 multi-org
+
+Status: implemented (docs only, branch `fix/docs-consistency`). No code, no
+migrations, no seeders touched. `docs/database/` reviewed and updated.
+
+- ADR-0014 added (accepted): every cross-module logical reference is nullable;
+  presence is a service-layer fact. ADR-0012 rewritten as multi-org with a
+  nullable issuing `organization_id` and per-org codes. ADR-0007/0008 headers
+  cross-reference both.
+- `AGENTS.md`: hard rule "Cross-module references are nullable" added.
+- Companion docs aligned: `data-dictionary.md` (§1.2, §1.6),
+  `integrity-and-consistency.md` (§3.3, §3.5, §5.1), `logical-references.md`
+  (rules 3, tenant scope, code uniqueness), `module-ownership.md` (counts,
+  obligation 4), `implementation-phases.md`, `architecture.md`,
+  `data-model.md`.
+- Backlog: ERP-0031..0034 moved to `proposed` (ADR-0010 still `proposed`);
+  `backlog.md` status legend gained `proposed`. ERP-0037 added (ADR-0014 schema
+  flip, `planned`). `features.md` moved to match.
+- Verified: `bun docs/database/gen-logical-references.ts` → `522 refs across 39
+  targets, 226 intra-module refs`. `bun docs/database/validate-dbml.ts` →
+  `258 tables, 226 refs, 0 cross-module, 0 timestamp gaps, OK`.
+- Not verified: no code test run (none expected for docs). Git wrapper reported
+  a clean tree while these edits exist on disk; commit state unconfirmed.
+- Schema still `NOT NULL` in shipped DB until ERP-0037 lands.
+
+## 2026-11-08 - Docs: receipts moved to Sales; merge-main-sync docs planning (not committed)
+
+Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
+`merge/main-sync` was not touched. No code, migration, or seeder changed.
+
+- `finance.receipts` moved to `sales.receipts` (kwitansi is issued against a
+  sales invoice). `sales_invoice_id` stays an intra-module reference to
+  `sales.invoices`. `payment_id` became a nullable logical reference to
+  `finance.payments.id` (contract `resolvePayment`); the former `Ref` is gone.
+  `sales.receipts` added to the Sales TableGroup.
+- Docs references updated: `data-dictionary.md`, `implementation-phases.md`,
+  `integrity-and-consistency.md`, `plans/finance.md` (D6), `m02-crm-sales.md`.
+  Historical entries in this file are left as written.
+- `module-ownership.md` recounted from `docs.dbml`: Sales 15 tables / 11 FK /
+  47 logical refs; Finance 16 / 14 / 46; total 258 / 225 / 523 / 25 schemas
+  incl. empty `public`.
+- Verified: `bun docs/database/gen-logical-references.ts` → `523 refs across 39
+  targets, 225 intra-module refs`. `bun docs/database/validate-dbml.ts` →
+  `258 tables, 225 refs, 0 cross-module, 0 timestamp gaps, OK`.
+- Merge planning decisions (2026-11-08): base is `fix/docs-consistency`;
+  `sales.invoices` is the only invoice table; ERP-0031..0034 stay `proposed`;
+  `finance.md` and `tax.md` restored; `docs/user-guide/` comes from merge.
+- Kept from fix-only: `accounting.tax_corrections`, `finance.ap_open_items`,
+  `finance.ar_open_items` (their plan docs were dropped on the merge side).
+- Dropped from merge: `finance.invoices`, `finance.invoice_items`.
+- Deferred to a separate docs merge (not in this change): merge-only tables
+  `aftersales.warranty_certificates`, `crm.lead_attachments`,
+  `inventory.item_categories`, `licensing.application_api_keys`,
+  `projects.project_costs`, `projects.project_evidence`,
+  `sales.delivery_note_items`. The DBML is therefore not yet a superset of
+  `merge/main-sync`.
+- Not yet done: git merge of `merge/main-sync` into `fix/docs-consistency`
+  (ADR-0011, ADR-0013, `docs/user-guide/`, `architecture/README.md`,
+  `modules/*`). Conflicts in `docs/plan/backlog.md`, `features.md`, and
+  `progress.md` still need reconciling by hand. Code conflicts (apps/,
+  packages/) are out of scope for this change.
+
+- Correction (2026-11-08): the 2026-11-07 M09 entry and `plans/finance.md` F9
+  said `features.md` M09 moved to done. Reverted to in-progress. M09 stays
+  in-progress until ERP-0010..0013 are decided in `backlog.md`; Stage 2 is open.
+
 ## Next executable task
+
+**Docs merge: bring `merge/main-sync` docs into `fix/docs-consistency`**
+(see the entry above). Then decide the 7 deferred tables.
+
+## Previous next task (still open)
+
+**Finance review of the tax slice (D12/D14/D18)** — column list, rounding
+rule, and real rates. Then ERP-0016's other half: P&L, balance sheet, cash
+flow (T11).
+
+## Previous next task (still open)
 
 **Customer slice (ERP-0004/0005)** — the last unstarted dependency root:
 backend customer CRUD (`ERP-0004`) then the web-admin customer page

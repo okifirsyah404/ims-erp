@@ -10,13 +10,14 @@
  *
  * Deny-by-default: a permission that is not granted explicitly is denied.
  * Adding a resource/action here does not grant it to anyone - role grants
- * live in `apps/common/src/authorization/roles.ts` (also explicit).
+ * live in the same module (`erpRoleGrants`, also explicit).
  *
  * Note: catalog entries describe the *intended* vocabulary for the whole ERP.
  * Modules that do not exist yet are still registered so routes can be
  * protected consistently as they are built (see security-and-access.md,
  * "integration gaps").
  */
+import { z } from 'zod';
 
 export const erpStatements = {
 	// Organization settings
@@ -88,6 +89,7 @@ export const erpStatements = {
 	invoice: ['read', 'create', 'update', 'issue', 'void', 'export'],
 	receipt: ['read', 'create', 'verify', 'post', 'reverse', 'export'],
 	payment: ['read', 'create', 'submit', 'approve', 'execute', 'reverse', 'export'],
+	bill: ['read', 'create', 'record'],
 	cash_bank: ['read', 'create', 'update', 'reconcile', 'export'],
 	chart_of_account: ['read', 'create', 'update', 'archive'],
 	journal: ['read', 'create', 'update', 'submit', 'approve', 'post', 'reverse', 'export'],
@@ -212,6 +214,14 @@ export const erpRoleNames = [
 ] as const;
 
 export type ErpRoleName = (typeof erpRoleNames)[number];
+
+/**
+ * Zod schema for the closed ERP organization role enum. Invite payloads and
+ * any other wire surface that carries an organization role validate against
+ * this — unknown role names are a hard parse error (no dynamic roles).
+ */
+export const organizationRoleSchema = z.enum(erpRoleNames);
+export type TOrganizationRole = ErpRoleName;
 
 /**
  * Every ERP statement granted to a role that holds all of them (the owner
@@ -472,6 +482,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		sales_order: ['read'],
 		// Project direct costs, read only (decision 2026-11-04).
 		project: ['read', 'read_cost'],
+		bill: ['read', 'create', 'record'],
 		cash_bank: ['read', 'create', 'update', 'reconcile', 'export'],
 		payroll_payment: ['read', 'execute'],
 		financial_report: ['read', 'export'],
@@ -500,6 +511,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		invoice: ['read', 'export'],
 		receipt: ['read', 'export'],
 		payment: ['read', 'export'],
+		bill: ['read', 'create', 'record'],
 		cash_bank: ['read', 'reconcile', 'export'],
 		investor: ['read'],
 		investor_report: ['read', 'create', 'publish', 'export'],

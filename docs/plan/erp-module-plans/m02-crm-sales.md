@@ -131,8 +131,8 @@ Common DoD in [README.md](README.md), plus:
 |---|---|---|
 | Leads, follow-ups, customers | `crm` (10 tables: customers, leads, lead_activities, segments, credit limits…) | none |
 | SPH | `sales.quotations`, `quotation_items`, `quotation_status_history`, `discount_requests` | `apps/backend/src/app/sales`: quotations create/list/get/update/submit/decision. `quotation_items` not in the Drizzle schema. No UI route. |
-| Invoice, receipt, DP | `finance.invoices`, `invoice_items`, `receipts`, `payment_allocations` | none |
-| Payment | `finance.payments` **and** `sales.payments` | `sales` module: payments create/get/approve/execute |
+| Invoice, receipt, DP | `sales.invoices`, `sales.invoice_items`, `sales.receipts`; `payment_allocations` (plan D2: invoices owned by Sales; receipts moved to Sales 2026-11-08) | `sales.invoices` + invoice items in the Drizzle schema and `apps/backend/src/app/sales`; finance-side receipts/allocations pending M09 reconciliation |
+| Payment | `finance.payments` (ledger); `sales.payments` scheduled for removal at step S7 | `finance` module owns the ledger; `sales.payments` approve/execute is transitional |
 | Documents/templates | `documents` (8 tables) | none |
 | Checkout | `commerce.commerce_orders`, `commerce_order_items` | none |
 
@@ -144,6 +144,7 @@ Common DoD in [README.md](README.md), plus:
     control are not in v5.1.
   - `sales.sales_targets`, `sales_returns`, `contracts`, `delivery_notes`,
     `discount_requests` as a workflow.
-  - `sales.payments` with approve/execute duplicates `finance.payments`.
+  - `sales.payments` with approve/execute duplicates `finance.payments`;
+    scheduled for removal at step S7 (`docs/database/implementation-phases.md`).
     Ownership needs a decision: the plan puts payments under M09/T06.
   - The `commerce` promotions/promotion_rules tables. No promotions in v5.1.

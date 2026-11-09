@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { quantityToMilli } from '@ims-erp/common';
+import { quantityToMilli } from '@utils/money.util';
 import { ITEM_UNITS } from '@drizzle/schemas/inventory.schema';
 import { QUOTATION_LOST_REASONS, QUOTATION_STATUSES } from '@drizzle/schemas/sales.schema';
 

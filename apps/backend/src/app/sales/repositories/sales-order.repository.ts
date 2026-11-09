@@ -13,7 +13,8 @@ import {
 	type TSalesOrderSelect,
 } from '@drizzle/schemas/sales.schema';
 import { likePattern } from '@drizzle/search';
-import { quantityToMilli, type TPaginationResult } from '@ims-erp/common';
+import { quantityToMilli } from '@utils/money.util';
+import type { TPaginationResult } from '@ims-erp/common';
 import { and, asc, count, desc, eq, ilike, isNull, ne, or, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';

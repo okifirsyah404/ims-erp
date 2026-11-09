@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { quantityToMilli } from '@ims-erp/common';
+import { quantityToMilli } from '@utils/money.util';
 import {
 	PO_VAT_MODES,
 	PURCHASE_CATEGORIES,

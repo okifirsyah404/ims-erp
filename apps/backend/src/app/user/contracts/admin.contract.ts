@@ -1,16 +1,18 @@
 import { z } from 'zod';
 import { USER_INVITATION_STATUSES } from '@drizzle/schemas/role.schema';
-import { erpStatements } from '@ims-erp/common';
 
 /**
  * Request/response contracts for the user-management admin API (phase 4).
  *
  * @remarks
- * Three surfaces share this file, all under the `/admin` prefix so they
+ * Surfaces sharing this file, all under the `/admin` prefix so they
  * cannot collide with the self-service `/users/*` routes:
  * - `/admin/users/*` — account lifecycle (list, deactivate, restore, soft-delete).
- * - `/admin/roles/*` — per-organization role CRUD (owner/app-admin).
  * - `/admin/audit` — read-only audit trail.
+ *
+ * The `/admin/roles/*` CRUD contract was removed with the closed role
+ * enum (`erpRoleNames` in `@ims-erp/common`): there is no dynamic role
+ * master data to manage.
  *
  * Every schema is parsed at the controller boundary before any service call.
  */
@@ -87,124 +89,6 @@ export type TAdminUser = {
 	/** Active memberships, for the users table's organization column. */
 	organizations: Array<{ id: string; name: string; role: string }>;
 };
-
-// ---------------------------------------------------------------------------
-// Roles
-// ---------------------------------------------------------------------------
-
-/**
- * Role name: lowercase snake_case, 2-40 chars. System roles (`owner`,
- * `admin`, `member`, catalog names) already exist per org and collide on the
- * partial unique index.
- */
-export const roleNameSchema = z
-	.string()
-	.min(2)
-	.max(40)
-	.regex(
-		/^[a-z][a-z0-9_]*$/,
-		'Use lowercase letters, numbers and underscores',
-	);
-
-/**
- * Permission grant payload: `{ resource: action[] }` restricted to the
- * shared catalog vocabulary. Actions are validated against the resource's
- * statement list so a typo can never be persisted.
- */
-export const permissionGrantSchema = z.record(
-	z.string(),
-	z.array(z.string().min(1)),
-);
-export type TPermissionGrant = z.infer<typeof permissionGrantSchema>;
-
-/**
- * Body for creating a custom role in an organization.
- *
- * @remarks
- * `rank` accepts up to 100 (the owner rank) so the request reaches the
- * escalation guard in the service: validation must not silently cap below a
- * rank the guard is responsible for rejecting. The guard, not the schema, is
- * the authorization boundary.
- */
-export const createRoleSchema = z.object({
-	organizationId: z.string().min(1),
-	name: roleNameSchema,
-	/** Escalation guard: must be strictly below the caller's own rank. */
-	rank: z.coerce.number().int().min(1).max(100),
-	permissions: permissionGrantSchema,
-	/** Optional catalog role to copy grants from instead of `permissions`. */
-	copyFrom: z.string().min(1).optional(),
-});
-export type TCreateRole = z.infer<typeof createRoleSchema>;
-
-/** Body for updating a custom role. System roles reject permission edits. */
-export const updateRoleSchema = z
-	.object({
-		name: roleNameSchema.optional(),
-		rank: z.coerce.number().int().min(1).max(100).optional(),
-		permissions: permissionGrantSchema.optional(),
-	})
-	.refine(
-		(value) =>
-			value.name !== undefined ||
-			value.rank !== undefined ||
-			value.permissions !== undefined,
-		{ message: 'At least one field is required' },
-	);
-export type TUpdateRole = z.infer<typeof updateRoleSchema>;
-
-/** Path parameters identifying one role. */
-export const roleIdParamsSchema = z.object({
-	roleId: z.string().min(1),
-});
-export type TRoleIdParams = z.infer<typeof roleIdParamsSchema>;
-
-/** Org-scoped role listing query. */
-export const roleQuerySchema = z.object({
-	organizationId: z.string().min(1),
-	includeDeleted: z
-		.enum(['true', 'false'])
-		.transform((value) => value === 'true')
-		.optional(),
-});
-export type TRoleQuery = z.infer<typeof roleQuerySchema>;
-
-/** Admin-facing role row. */
-export type TAdminRole = {
-	id: string;
-	organizationId: string;
-	name: string;
-	rank: number;
-	permissions: TPermissionGrant;
-	isSystem: boolean;
-	deletedAt: Date | null;
-	createdAt: Date;
-	updatedAt: Date;
-	/** Live members currently holding this role (delete guard). */
-	memberCount: number;
-};
-
-/**
- * Permission catalog for the role editor: every resource and its valid
- * actions, straight from the shared catalog the backend enforces.
- */
-export type TPermissionCatalogEntry = {
-	resource: string;
-	actions: readonly string[];
-};
-
-/** Builds the permission catalog payload from the shared statement map. */
-export function permissionCatalog(
-	statements: Record<string, readonly string[]>,
-): TPermissionCatalogEntry[] {
-	return Object.entries(statements).map(([resource, actions]) => ({
-		resource,
-		actions,
-	}));
-}
-
-/** Resources known to the shared catalog (used for grant validation). */
-export const KNOWN_RESOURCES = Object.keys(erpStatements);
 
 // ---------------------------------------------------------------------------
 // Audit

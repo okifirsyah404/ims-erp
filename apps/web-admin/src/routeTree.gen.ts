@@ -36,7 +36,6 @@ import { Route as AuthedSalesIndexRouteImport } from './routes/_authed/sales/ind
 import { Route as AuthedSubscriptionIndexRouteImport } from './routes/_authed/subscription/index'
 import { Route as AuthedSubscriptionNewRouteImport } from './routes/_authed/subscription/new'
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
-import { Route as AuthedAdminRolesIndexRouteImport } from './routes/_authed/admin/roles/index'
 import { Route as AuthedAdminSettingsIndexRouteImport } from './routes/_authed/admin/settings/index'
 import { Route as AuthedAdminSettingsNumberingRouteImport } from './routes/_authed/admin/settings/numbering'
 import { Route as AuthedAdminUsersIndexRouteImport } from './routes/_authed/admin/users/index'
@@ -117,6 +116,7 @@ import { Route as AuthedFinanceInvestorsProfitSharingIndexRouteImport } from './
 import { Route as AuthedFinanceInvestorsRegistryIndexRouteImport } from './routes/_authed/finance/investors/registry/index'
 import { Route as AuthedFinanceTaxCorrectionsIndexRouteImport } from './routes/_authed/finance/tax/corrections/index'
 import { Route as AuthedFinanceTaxRecapIndexRouteImport } from './routes/_authed/finance/tax/recap/index'
+import { Route as AuthedFinanceTaxRecordsIndexRouteImport } from './routes/_authed/finance/tax/records/index'
 import { Route as AuthedFinanceTaxTypesIndexRouteImport } from './routes/_authed/finance/tax/types/index'
 import { Route as AuthedFinanceTaxWithholdingIndexRouteImport } from './routes/_authed/finance/tax/withholding/index'
 import { Route as AuthedInventoryItemsItemIdEditRouteImport } from './routes/_authed/inventory/items/$itemId.edit'
@@ -275,11 +275,6 @@ const AuthedSubscriptionNewRoute = AuthedSubscriptionNewRouteImport.update({
 const AuthedAdminAuditIndexRoute = AuthedAdminAuditIndexRouteImport.update({
   id: '/admin/audit/',
   path: '/admin/audit/',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedAdminRolesIndexRoute = AuthedAdminRolesIndexRouteImport.update({
-  id: '/admin/roles/',
-  path: '/admin/roles/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAdminSettingsIndexRoute =
@@ -746,6 +741,12 @@ const AuthedFinanceTaxRecapIndexRoute =
     path: '/finance/tax/recap/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedFinanceTaxRecordsIndexRoute =
+  AuthedFinanceTaxRecordsIndexRouteImport.update({
+    id: '/finance/tax/records/',
+    path: '/finance/tax/records/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedFinanceTaxTypesIndexRoute =
   AuthedFinanceTaxTypesIndexRouteImport.update({
     id: '/finance/tax/types/',
@@ -937,7 +938,6 @@ export interface FileRoutesByFullPath {
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/subscription/$contractId/edit': typeof AuthedSubscriptionContractIdEditRoute
   '/admin/audit/': typeof AuthedAdminAuditIndexRoute
-  '/admin/roles/': typeof AuthedAdminRolesIndexRoute
   '/admin/settings/': typeof AuthedAdminSettingsIndexRoute
   '/admin/users/': typeof AuthedAdminUsersIndexRoute
   '/assets/borrowings/': typeof AuthedAssetsBorrowingsIndexRoute
@@ -1005,6 +1005,7 @@ export interface FileRoutesByFullPath {
   '/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
   '/finance/tax/recap/': typeof AuthedFinanceTaxRecapIndexRoute
+  '/finance/tax/records/': typeof AuthedFinanceTaxRecordsIndexRoute
   '/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
   '/finance/tax/withholding/': typeof AuthedFinanceTaxWithholdingIndexRoute
   '/inventory/stock/adjustments/': typeof AuthedInventoryStockAdjustmentsIndexRoute
@@ -1067,7 +1068,6 @@ export interface FileRoutesByTo {
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/subscription/$contractId/edit': typeof AuthedSubscriptionContractIdEditRoute
   '/admin/audit': typeof AuthedAdminAuditIndexRoute
-  '/admin/roles': typeof AuthedAdminRolesIndexRoute
   '/admin/settings': typeof AuthedAdminSettingsIndexRoute
   '/admin/users': typeof AuthedAdminUsersIndexRoute
   '/assets/borrowings': typeof AuthedAssetsBorrowingsIndexRoute
@@ -1135,6 +1135,7 @@ export interface FileRoutesByTo {
   '/finance/investors/registry': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections': typeof AuthedFinanceTaxCorrectionsIndexRoute
   '/finance/tax/recap': typeof AuthedFinanceTaxRecapIndexRoute
+  '/finance/tax/records': typeof AuthedFinanceTaxRecordsIndexRoute
   '/finance/tax/types': typeof AuthedFinanceTaxTypesIndexRoute
   '/finance/tax/withholding': typeof AuthedFinanceTaxWithholdingIndexRoute
   '/inventory/stock/adjustments': typeof AuthedInventoryStockAdjustmentsIndexRoute
@@ -1201,7 +1202,6 @@ export interface FileRoutesById {
   '/_authed/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/_authed/subscription/$contractId/edit': typeof AuthedSubscriptionContractIdEditRoute
   '/_authed/admin/audit/': typeof AuthedAdminAuditIndexRoute
-  '/_authed/admin/roles/': typeof AuthedAdminRolesIndexRoute
   '/_authed/admin/settings/': typeof AuthedAdminSettingsIndexRoute
   '/_authed/admin/users/': typeof AuthedAdminUsersIndexRoute
   '/_authed/assets/borrowings/': typeof AuthedAssetsBorrowingsIndexRoute
@@ -1269,6 +1269,7 @@ export interface FileRoutesById {
   '/_authed/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/_authed/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
   '/_authed/finance/tax/recap/': typeof AuthedFinanceTaxRecapIndexRoute
+  '/_authed/finance/tax/records/': typeof AuthedFinanceTaxRecordsIndexRoute
   '/_authed/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
   '/_authed/finance/tax/withholding/': typeof AuthedFinanceTaxWithholdingIndexRoute
   '/_authed/inventory/stock/adjustments/': typeof AuthedInventoryStockAdjustmentsIndexRoute
@@ -1335,7 +1336,6 @@ export interface FileRouteTypes {
     | '/sales/quotes/new'
     | '/subscription/$contractId/edit'
     | '/admin/audit/'
-    | '/admin/roles/'
     | '/admin/settings/'
     | '/admin/users/'
     | '/assets/borrowings/'
@@ -1403,6 +1403,7 @@ export interface FileRouteTypes {
     | '/finance/investors/registry/'
     | '/finance/tax/corrections/'
     | '/finance/tax/recap/'
+    | '/finance/tax/records/'
     | '/finance/tax/types/'
     | '/finance/tax/withholding/'
     | '/inventory/stock/adjustments/'
@@ -1465,7 +1466,6 @@ export interface FileRouteTypes {
     | '/sales/quotes/new'
     | '/subscription/$contractId/edit'
     | '/admin/audit'
-    | '/admin/roles'
     | '/admin/settings'
     | '/admin/users'
     | '/assets/borrowings'
@@ -1533,6 +1533,7 @@ export interface FileRouteTypes {
     | '/finance/investors/registry'
     | '/finance/tax/corrections'
     | '/finance/tax/recap'
+    | '/finance/tax/records'
     | '/finance/tax/types'
     | '/finance/tax/withholding'
     | '/inventory/stock/adjustments'
@@ -1598,7 +1599,6 @@ export interface FileRouteTypes {
     | '/_authed/sales/quotes/new'
     | '/_authed/subscription/$contractId/edit'
     | '/_authed/admin/audit/'
-    | '/_authed/admin/roles/'
     | '/_authed/admin/settings/'
     | '/_authed/admin/users/'
     | '/_authed/assets/borrowings/'
@@ -1666,6 +1666,7 @@ export interface FileRouteTypes {
     | '/_authed/finance/investors/registry/'
     | '/_authed/finance/tax/corrections/'
     | '/_authed/finance/tax/recap/'
+    | '/_authed/finance/tax/records/'
     | '/_authed/finance/tax/types/'
     | '/_authed/finance/tax/withholding/'
     | '/_authed/inventory/stock/adjustments/'
@@ -1875,13 +1876,6 @@ declare module '@tanstack/react-router' {
       path: '/admin/audit'
       fullPath: '/admin/audit/'
       preLoaderRoute: typeof AuthedAdminAuditIndexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/admin/roles/': {
-      id: '/_authed/admin/roles/'
-      path: '/admin/roles'
-      fullPath: '/admin/roles/'
-      preLoaderRoute: typeof AuthedAdminRolesIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/admin/settings/': {
@@ -2444,6 +2438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedFinanceTaxRecapIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/finance/tax/records/': {
+      id: '/_authed/finance/tax/records/'
+      path: '/finance/tax/records'
+      fullPath: '/finance/tax/records/'
+      preLoaderRoute: typeof AuthedFinanceTaxRecordsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/finance/tax/types/': {
       id: '/_authed/finance/tax/types/'
       path: '/finance/tax/types'
@@ -2731,7 +2732,6 @@ interface AuthedRouteChildren {
   AuthedSalesQuotesNewRoute: typeof AuthedSalesQuotesNewRoute
   AuthedSubscriptionContractIdEditRoute: typeof AuthedSubscriptionContractIdEditRoute
   AuthedAdminAuditIndexRoute: typeof AuthedAdminAuditIndexRoute
-  AuthedAdminRolesIndexRoute: typeof AuthedAdminRolesIndexRoute
   AuthedAdminSettingsIndexRoute: typeof AuthedAdminSettingsIndexRoute
   AuthedAdminUsersIndexRoute: typeof AuthedAdminUsersIndexRoute
   AuthedAssetsBorrowingsIndexRoute: typeof AuthedAssetsBorrowingsIndexRoute
@@ -2796,6 +2796,7 @@ interface AuthedRouteChildren {
   AuthedFinanceInvestorsRegistryIndexRoute: typeof AuthedFinanceInvestorsRegistryIndexRoute
   AuthedFinanceTaxCorrectionsIndexRoute: typeof AuthedFinanceTaxCorrectionsIndexRoute
   AuthedFinanceTaxRecapIndexRoute: typeof AuthedFinanceTaxRecapIndexRoute
+  AuthedFinanceTaxRecordsIndexRoute: typeof AuthedFinanceTaxRecordsIndexRoute
   AuthedFinanceTaxTypesIndexRoute: typeof AuthedFinanceTaxTypesIndexRoute
   AuthedFinanceTaxWithholdingIndexRoute: typeof AuthedFinanceTaxWithholdingIndexRoute
   AuthedInventoryStockAdjustmentsIndexRoute: typeof AuthedInventoryStockAdjustmentsIndexRoute
@@ -2857,7 +2858,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSalesQuotesNewRoute: AuthedSalesQuotesNewRoute,
   AuthedSubscriptionContractIdEditRoute: AuthedSubscriptionContractIdEditRoute,
   AuthedAdminAuditIndexRoute: AuthedAdminAuditIndexRoute,
-  AuthedAdminRolesIndexRoute: AuthedAdminRolesIndexRoute,
   AuthedAdminSettingsIndexRoute: AuthedAdminSettingsIndexRoute,
   AuthedAdminUsersIndexRoute: AuthedAdminUsersIndexRoute,
   AuthedAssetsBorrowingsIndexRoute: AuthedAssetsBorrowingsIndexRoute,
@@ -2937,6 +2937,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedFinanceInvestorsRegistryIndexRoute,
   AuthedFinanceTaxCorrectionsIndexRoute: AuthedFinanceTaxCorrectionsIndexRoute,
   AuthedFinanceTaxRecapIndexRoute: AuthedFinanceTaxRecapIndexRoute,
+  AuthedFinanceTaxRecordsIndexRoute: AuthedFinanceTaxRecordsIndexRoute,
   AuthedFinanceTaxTypesIndexRoute: AuthedFinanceTaxTypesIndexRoute,
   AuthedFinanceTaxWithholdingIndexRoute: AuthedFinanceTaxWithholdingIndexRoute,
   AuthedInventoryStockAdjustmentsIndexRoute:

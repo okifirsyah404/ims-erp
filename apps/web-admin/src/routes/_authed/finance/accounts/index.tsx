@@ -1,15 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { BookOpen } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { AccountList } from '@/components/finance/account-list';
 
+/** Search params for the account list. */
+type TAccountsSearch = { page?: number };
+
+/** `/finance/accounts` - chart of accounts (M09 F2). */
 export const Route = createFileRoute('/_authed/finance/accounts/')({
-	component: ComingSoonStubPage,
+	validateSearch: (search: Record<string, unknown>): TAccountsSearch => ({
+		page: search.page ? Number(search.page) || 1 : undefined,
+	}),
+	component: AccountList,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.accounts')} icon={BookOpen} />;
-}

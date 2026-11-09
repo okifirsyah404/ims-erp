@@ -78,7 +78,6 @@ describe('locale values', () => {
 			'admin:invitations.email',
 			'admin:invitations.status',
 			'account:sessions.status',
-			'admin:orgDetail.memberEmail',
 			'admin:audit.metadata',
 			'admin:roles.rank',
 			'admin:roles.namePlaceholder',
@@ -177,8 +176,23 @@ describe('locale values', () => {
 			'assets:disposals.status',
 			'assets:service.status',
 			'assets:toolSets.status',
+			'tax:recap.column.filingStatus',
+			'tax:records.status',
+			'tax:withholding.status',
 			// "Transfer" is a loanword in Indonesian.
 			'assets:disposalMethod.transfer',
+			// Standard accounting vocabulary is identical in Indonesian.
+			'finance:normalBalance.debit',
+			'finance:normalBalance.credit',
+			'finance:journal.debit',
+			'finance:journal.credit',
+			'finance:journal.totalDebit',
+			'finance:journal.totalCredit',
+			'finance:accountType.bank',
+			'finance:payments.method.virtual_account',
+			'finance:closing.item.pass',
+			// The em-dash placeholder is locale-neutral.
+			'finance:common.none',
 		]);
 
 		const untranslated = Object.entries(en_).flatMap(([namespace, bundle]) =>

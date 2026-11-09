@@ -4,7 +4,8 @@
  * Repository and neighbour modules are in-memory fakes.
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { endOfBusinessDate, quantityTimesPrice } from '@ims-erp/common';
+import { endOfBusinessDate } from '@utils/business-date.util';
+import { quantityTimesPrice } from '@utils/money.util';
 import type {
 	QuotationStatus,
 	TQuotationItemSelect,

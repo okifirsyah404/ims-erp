@@ -1,7 +1,8 @@
 import { ORGANIZATION_SERVICE_TOKEN } from '@app/organization/constants/di';
 import type { OrganizationService } from '@app/organization/services/organization.service';
 import type { TApplicationApiKeySelect, TLicenseActivationSelect } from '@drizzle/schemas/licensing.schema';
-import { businessDateOf, type TPaginationResult } from '@ims-erp/common';
+import { businessDateOf } from '@utils/business-date.util';
+import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
 import type { IApiKeyIssuer } from '../adapters/better-auth-api-keys';
 import { API_KEY_ISSUER_TOKEN, LICENSE_API_REPOSITORY_TOKEN, LICENSING_SERVICE_TOKEN } from '../constants/di';

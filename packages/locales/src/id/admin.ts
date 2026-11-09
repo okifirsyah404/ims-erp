@@ -48,7 +48,6 @@ const admin_: Record<keyof typeof admin, string> = {
 	'invite.namePlaceholder': 'Mengisi otomatis formulir klaim',
 	'invite.role': 'Peran',
 	'invite.rolePlaceholder': 'Pilih peran',
-	'invite.roleOption': '{{name}} (peringkat {{rank}})',
 	'invite.defaultRole': 'Peran bawaan (opsional)',
 	'invite.defaultRolePlaceholder': 'Dipakai jika baris tanpa peran',
 	'invite.rows': 'Baris (maksimal {{max}})',
@@ -61,7 +60,6 @@ const admin_: Record<keyof typeof admin, string> = {
 	'invite.sentBulk': '{{count}} undangan terkirim',
 	'invite.sentMixed': '{{succeeded}} terkirim, {{failed}} gagal',
 	'invite.emailRequired': 'Email wajib diisi',
-	'invite.roleRequired': 'Pilih peran',
 
 	'invitations.title': 'Undangan tertunda',
 	'invitations.description':
@@ -81,41 +79,6 @@ const admin_: Record<keyof typeof admin, string> = {
 	'invitations.deleted': 'Undangan dihapus',
 	'invitations.empty': 'Tidak ada undangan tertunda.',
 
-	'roles.title': 'Peran',
-	'roles.description':
-		'Peran dinamis per organisasi. Anda hanya dapat membuat atau mengubah peran dengan peringkat di bawah peran Anda sendiri.',
-	'roles.masterData': 'Data induk peran',
-	'roles.masterDataDescription':
-		'{{count}} peran. Peran sistem tidak dapat dihapus; peran yang masih dipakai anggota harus dialihkan terlebih dahulu.',
-	'roles.role': 'Peran',
-	'roles.members': 'Anggota',
-	'roles.grants': 'Hibah',
-	'roles.systemBadge': 'sistem',
-	'roles.loading': 'Memuat peran…',
-	'roles.noGrants': 'tidak ada hibah',
-	'roles.deleteTitle': 'Hapus peran "{{name}}"?',
-	'roles.deleteBlocked':
-		'{{count}} anggota masih memegang peran ini — alihkan mereka terlebih dahulu.',
-	'roles.deleteOk': 'Peran dihapus secara lunak dan namanya dapat dipakai lagi nanti.',
-	'roles.editNamed': 'Ubah "{{name}}"',
-	'roles.rankHint':
-		'Peringkat harus di bawah peringkat Anda sendiri. Peran kustom yang ada maksimal {{maxRank}}; pemilik adalah {{ownerRank}}.',
-	'roles.nameHint': 'Huruf kecil, angka, dan garis bawah.',
-	'roles.rankDescription':
-		'1–100. Peringkat lebih tinggi menang; Anda tidak dapat memberi izin setara atau di atas peran Anda.',
-	'roles.rankInvalid': 'Peringkat harus bilangan bulat antara 1 dan 100',
-	'roles.created': 'Peran dibuat',
-	'roles.updated': 'Peran diperbarui',
-	'roles.deleted': 'Peran dihapus',
-	'roles.empty': 'Peran tidak ditemukan',
-	'roles.new': 'Peran baru',
-	'roles.rank': 'Peringkat',
-	'roles.actions': 'Tindakan',
-	'roles.createRole': 'Buat peran',
-	'roles.saveChanges': 'Simpan perubahan',
-	'roles.name': 'Nama',
-	'roles.namePlaceholder': 'sales_lead',
-	'roles.permissions': 'Izin',
 
 	'audit.title': 'Log audit',
 	'audit.description':
@@ -160,7 +123,7 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgs.slugDescription':
 		'Slug bersifat permanen dan dipakai di URL serta konteks API.',
 	'orgs.stats.members': 'Anggota',
-	'orgs.stats.roles': 'Peran',
+	'orgs.stats.warehouses': 'Gudang',
 	'orgs.stats.projects': 'Proyek',
 
 	'orgDetail.created': 'Dibuat',
@@ -170,13 +133,11 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgDetail.info': 'Info',
 	'orgDetail.details': 'Detail',
 	'orgDetail.membersDescription': 'Orang-orang yang memiliki akses ke organisasi ini.',
+	'orgDetail.membersEmpty': 'Belum ada anggota.',
 	'orgDetail.name': 'Nama',
 	'orgDetail.slug': 'Slug',
-	'orgDetail.memberEmail': 'Email',
-	'orgDetail.memberName': 'Nama',
 	'orgDetail.memberRole': 'Peran',
 	'orgDetail.memberJoined': 'Bergabung',
-	'orgDetail.memberActions': 'Tindakan',
 	'orgDetail.notFound': 'Organisasi tidak ditemukan (atau Anda tidak memiliki akses).',
 	'orgDetail.backToList': 'Kembali ke daftar organisasi',
 	'orgDetail.createdOn': '{{slug}} · dibuat {{date}}',
@@ -218,3 +179,4 @@ const admin_: Record<keyof typeof admin, string> = {
 };
 
 export default admin_;
+

@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-06.
+Last synced: 2026-11-08.
 
 > **Sidebar shell note (2026-11-05):** the web-admin sidebar now renders the
 > full M01–M12 nav map (see `progress.md`, "UI — full ERP sidebar shell").
@@ -40,10 +40,16 @@ Last synced: 2026-11-06.
 ## M02 CRM and Sales
 
 ### planned
+- Leads, follow-ups/surveys, customers — T05, ERP-0004/0005. Evidence: dbml
+  `crm` only.
+- Invoice, DP (customer advance), receipt — T05, ERP-0011. Evidence: dbml
+  `sales.invoices` and `sales.receipts` (kwitansi, owned by Sales); payment
+  allocations stay in finance.
 - One template per document — T05. Evidence: dbml `documents` only.
 - Checkout / online orders — T21, ERP-0020. Evidence: dbml `commerce` only.
 - Payment gateway callbacks + reconciliation — T22, ERP-0020. Evidence: none
-  (see `sales.payments` under Outside the plan).
+  (payment ledger is `finance.payments`, M09; `sales.payments` is scheduled
+  for removal at step S7 in `docs/database/implementation-phases.md`).
 
 ### implemented
 - Customers + contacts — T05, ERP-0004/0005. Evidence: `apps/backend/src/app/crm`,
@@ -151,18 +157,13 @@ Last synced: 2026-11-06.
   `plans/warehouse-hardening.md` phases 1/2/2b done, UI
   `/inventory/warehouses/*`. Note: multi-warehouse rebaselined by ADR-0010
   (proposed 2026-11-04, owner sign-off pending).
-- Warehouse↔organization links + scoped access — ERP-0031. Evidence:
-  `inventory.warehouse_organizations` (Drizzle + migration
-  `20261106062510_erp0031_warehouse_org_links`), real
-  `assertWarehouseReachableByOrg`, `GET /warehouses/linked` (with storages),
-  stock receive/issue + adjustment create gated (unlinked→404, global-admin
-  bypass), assets `assertLocation` 404 on unlinked, admin link/unlink endpoints
-  with audit and a 409 open-borrowing guard, Organizations tab on the
-  warehouse detail, member pickers on the linked endpoint; 536 backend tests.
-  Remaining: browser walk-through, reviewer sign-off before a non-local
-  migration. See `progress.md` (2026-11-06).
 
-### planned (ADR-0010)
+### proposed (ADR-0010)
+- Warehouse↔organization links + scoped access — ERP-0031. Code landed
+  2026-11-06 (migration `20261106062510_erp0031_warehouse_org_links`, link
+  endpoints, 536 backend tests), but downgraded 2026-11-08: ADR-0010 is still
+  `proposed`, so the design basis is not accepted. Evidence in `progress.md`
+  (2026-11-06). Remaining: browser walk-through, reviewer sign-off.
 - Stock transfers (warehouse→warehouse, storage→storage) — ERP-0032.
 - Tracking views (per-storage balances, movement filters, unit location) —
   ERP-0033.
@@ -205,8 +206,7 @@ Last synced: 2026-11-06.
   Stage 0 execution review resolved all blocking defects (global assets with
   stubbed warehouse reachability, global unique asset code, no
   `document_sequences` change, jsonb permission migration).
-- Tool borrowing/return (S4) — T07, ERP-0029 (backlog "shipped" → mapped
-  `implemented`). Engine **moved to `assets`** by ERP-0036 Slice 3
+- Tool borrowing/return (S4) — T07, ERP-0029 (backlog `implemented`). Engine **moved to `assets`** by ERP-0036 Slice 3
   (2026-11-06): `assets/services/borrowing.service.ts`, 526 backend tests
   green; late-return + guest-PII retention sweeps on BullMQ. UI moved to
   `/assets/borrowings/*` by ERP-0036 Slice 5 (2026-11-06). Pending: browser
@@ -254,24 +254,51 @@ Last synced: 2026-11-06.
 
 ## M09 Finance
 
-### planned
-- Opening balances, COA, journals, reversals — T04, ERP-0010. Evidence: dbml
-  `accounting` only.
-- Cash/bank, receivables, payables, reconciliation — T06, ERP-0012/0013.
-  Evidence: dbml `finance` only.
-- Expense entry + journal posting — ERP-0013. Evidence: none.
-- P&L, balance sheet, cash flow, drill-down — T11, ERP-0016. Evidence: none.
-- Month-end close + reopen — T11, ERP-0017. Evidence: none.
-- Payroll + gateway postings (Stage 2) — T20, T22. Evidence: none.
+### in-progress (Stage 1 - F1..F9, commits 7a44dbd..<f9>; backlog mismatch, see note)
+- Ledger core: `accounting` pg-schema (COA, journal entries/lines, periods,
+  opening balances), posting engine with single tx-aware `post` gateway,
+  append-only reversals, document-sequence codes, idempotency keys,
+  open-period gate, close/lock/reopen (audited, owner-only). Evidence:
+  backend tests (686 pass), migration applied to dev.
+- Cash & bank: finance.cash_bank_accounts/transactions with GL links
+  (required at first movement) and per-movement JE posting.
+- Receivables/payables: sales invoices post AR through the finance mirror
+  sub-ledger (`accounting.ar_open_items` / `ap_open_items`), finance.payments
+  workflow draft→submitted→approved→executed with allocations, void +
+  void-executed append-only reversal, finance.supplier_bills
+  draft→approved→partially_paid→paid. AR/AP aging computed on demand.
+- Reports: P&L, balance sheet, cash flow computed on demand from posted
+  journal lines (never stored snapshots); bank reconciliation workflow
+  draft→in_progress→reconciled→closed with exact statement=book gate.
+- Month-end close: advisory pre-close checklist; period transitions.
+- Web-admin UI: 9 finance routes + finance-api typed client (F8).
+- Backlog mismatch: ERP-0010 (accounting foundations) and ERP-0011..0013 are
+  still `planned` in `backlog.md`, so this section stays `in-progress` here
+  until the backlog is decided. Code evidence is in `main` (accounting schema,
+  migrations, tests).
+
+### planned (Stage 2)
+- Expense entry + journal posting - ERP-0013. Evidence: none.
+- Payroll + gateway postings (Stage 2) - T20, T22. Evidence: none.
+- Final COA seed list from finance/owner (provisional codes
+  `1-1300`/`1-1100`/`4-1000`/`2-1000`/`2-1100`/`5-1000`/`1-1800` in use).
 
 ## M10 Tax
 
-### planned
-- Period summaries, tax lines, withholding, corrections/evidence/paid status —
-  T12, ERP-0016. Evidence: dbml `accounting.tax_*` only.
+### in-progress
+- ERP-0016 Phases 1–3: backend (tax rate master, period working papers
+  draft → verified → filed, corrections, withholding, recap), web-admin UI
+  at `/finance/tax/*` (recap with CSV/XLSX export, types, records, corrections,
+  withholding), `GET /tax/export.csv`, and `GET /tax/export.xlsx` via
+  `exceljs` 4.4.0 (write-only; advisory note in the plan doc). Evidence:
+  migration `20261106173111_erp0016_tax_slice1` applied to dev; backend tests
+  632/632 (incl. 11 service + 80 authorization + 3 xlsx); web-admin build
+  green; locales en + id parity/dead-key green. Not yet: real rates
+  (placeholders only, D18).
 
 ### blocked
-- Tax types/rates configuration — T12. Needs rates from finance.
+- Final tax rates and rounding rule — finance gate (D14, D18). Placeholders
+  seeded until confirmed.
 
 ## M11 Bonuses and Investors
 
@@ -318,6 +345,7 @@ Last synced: 2026-11-06.
   packages, investors) — company profile part implemented, see below.
 - ERP-0024 UAT, reconciliation, backup drill.
 - ERP-0025 Release preparation.
+- ERP-0037 Nullable cross-module references (ADR-0014 schema flip).
 
 ### in-progress
 - ERP-0037 Port M02/M05/M07 onto main (ADR-0011): steps 1-2 implemented

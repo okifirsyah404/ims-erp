@@ -10,7 +10,7 @@ import type {
 	TPurchaseOrderItemSelect,
 	TPurchaseOrderSelect,
 } from '@drizzle/schemas/procurement.schema';
-import { quantityToMilli } from '@ims-erp/common';
+import { quantityToMilli } from '@utils/money.util';
 import { createGoodsReceiptSchema } from '../../src/app/procurement/contracts/goods-receipt.contract';
 import { GoodsReceiptBinError, GoodsReceiptLineError, GoodsReceiptOrderNotReceivableError } from '../../src/app/procurement/errors/procurement.errors';
 import { GoodsReceiptService } from '../../src/app/procurement/services/goods-receipt.service';

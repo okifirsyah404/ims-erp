@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
 	createFileRoute,
 	Link,
+	Outlet,
+	useMatches,
 	useNavigate,
 	useParams,
 } from '@tanstack/react-router';
@@ -30,14 +32,7 @@ import {
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@ims-erp/ui/components/tabs';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import { OrganizationMemberCard } from '@/components/organization';
 import {
 	deleteOrganization,
 	organizationMembersQueryOptions,
@@ -69,6 +64,17 @@ function OrganizationDetailPage() {
 
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [deleting, setDeleting] = useState(false);
+
+	// Child routes (edit, members/new, members/$memberId/edit) render instead
+	// of the detail page. The last match's routeId tells us which page is the
+	// active leaf; `useChildMatches` can't be used here because it also counts
+	// this route's own match.
+	const matches = useMatches();
+	const isChildActive = matches.at(-1)?.routeId !== Route.id;
+
+	if (isChildActive) {
+		return <Outlet />;
+	}
 
 	async function handleDelete() {
 		setDeleting(true);
@@ -239,52 +245,21 @@ function OrganizationDetailPage() {
 							)}
 						</CardHeader>
 						<CardContent>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('orgDetail.memberName')}</TableHead>
-										<TableHead>{t('orgDetail.memberEmail')}</TableHead>
-										<TableHead>{t('orgDetail.memberRole')}</TableHead>
-										<TableHead>{t('orgDetail.memberJoined')}</TableHead>
-										<TableHead className='text-right'>
-											{t('orgDetail.memberActions')}
-										</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
+							{(members?.rows?.length ?? 0) === 0 ? (
+								<p className='py-6 text-center text-sm text-muted-foreground'>
+									{t('orgDetail.membersEmpty')}
+								</p>
+							) : (
+								<div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
 									{(members?.rows ?? []).map((member) => (
-										<TableRow key={member.id}>
-											<TableCell className='font-medium'>
-												{member.user?.name ?? member.userId}
-											</TableCell>
-											<TableCell>{member.user?.email ?? '—'}</TableCell>
-											<TableCell>
-												<Badge variant='outline'>{member.role}</Badge>
-											</TableCell>
-											<TableCell>
-												{new Date(member.createdAt).toLocaleDateString()}
-											</TableCell>
-											<TableCell className='text-right'>
-												<Button
-													variant='ghost'
-													size='sm'
-													render={
-														<Link
-															to='/organizations/$organizationId/members/$memberId/edit'
-															params={{
-																organizationId,
-																memberId: member.id,
-															}}
-														/>
-													}
-												>
-													{t('common:action.edit')}
-												</Button>
-											</TableCell>
-										</TableRow>
+										<OrganizationMemberCard
+											key={member.id}
+											member={member}
+											organizationId={organizationId}
+										/>
 									))}
-								</TableBody>
-							</Table>
+								</div>
+							)}
 						</CardContent>
 					</Card>
 				</TabsContent>

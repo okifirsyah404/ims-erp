@@ -6,7 +6,7 @@
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { TApplicationApiKeySelect, TLicenseActivationSelect, TLicenseKeySelect } from '@drizzle/schemas/licensing.schema';
-import { businessDateOf } from '@ims-erp/common';
+import { businessDateOf } from '@utils/business-date.util';
 import type { TKeyWithContract } from '../../src/app/licensing/contracts/license-api.contract';
 import type { TContractRow } from '../../src/app/licensing/contracts/licensing.contract';
 import { ApiKeyIssueError, LicenseApiAuthError, LicenseRefusedError } from '../../src/app/licensing/errors/licensing.errors';

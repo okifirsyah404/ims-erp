@@ -42,19 +42,6 @@ const api: Record<keyof typeof en, string> = {
 	'procurement.receiptLine.over': 'Baris {{line}}: melebihi sisa yang belum diterima',
 	'procurement.receiptLine.serials': 'Baris {{line}}: isi satu nomor seri unik per unit',
 	'sales.orderBilled': 'Sales order ini sudah ditagih; batalkan (void) invoicenya dulu',
-	'finance.invoiceNotFound': 'Invoice tidak ditemukan',
-	'finance.receiptNotFound': 'Kwitansi tidak ditemukan',
-	'finance.orderUnavailable': 'Sales order tidak ditemukan atau sudah dibatalkan',
-	'finance.term.fullyInvoiced': 'Sales order sudah ditagih penuh',
-	'finance.term.empty': 'Nilai termin harus lebih dari nol',
-	'finance.term.exceeds': 'Termin melebihi sisa yang belum ditagih',
-	'finance.term.noPlannedTerm': 'Tidak ada termin rencana yang tersisa',
-	'finance.invoiceState.notDraft': 'Hanya invoice draf yang bisa diterbitkan',
-	'finance.invoiceState.notVoidable': 'Hanya invoice draf atau terbit yang belum dibayar yang bisa di-void (batalkan kwitansinya dulu)',
-	'finance.invoiceState.notPayable': 'Pembayaran hanya bisa dicatat pada invoice terbit yang belum lunas',
-	'finance.receiptExceeds': 'Pembayaran melebihi sisa tagihan',
-	'finance.receiptReversed': 'Kwitansi sudah dibatalkan',
-	'finance.dueBeforeIssue': 'Jatuh tempo tidak boleh sebelum tanggal terbit',
 	'sales.deliveryNoteNotFound': 'Surat jalan tidak ditemukan',
 	'sales.deliveryOrderNotDeliverable': 'Hanya sales order yang aktif atau sedang berjalan yang bisa dikirim',
 	'sales.deliveryLine.unknown': 'Baris {{line}}: bukan baris sales order ini',
@@ -250,18 +237,8 @@ const api: Record<keyof typeof en, string> = {
 	'claim.phoneInUse': 'Nomor telepon sudah digunakan',
 	'claim.alreadyInUse': 'Nama pengguna atau email sudah digunakan',
 
-	'role.notFound': 'Peran tidak ditemukan',
-	'role.nameTaken': 'Peran bernama "{{name}}" sudah ada di organisasi ini',
-	'role.inUse': 'Peran ini tidak dapat dihapus: peran sistem atau masih dipakai',
-	'role.systemRole': '"{{role}}" adalah peran sistem dan tidak dapat dihapus',
-	'role.stillAssigned':
-		'{{count}} anggota masih memakai "{{role}}"; pindahkan mereka terlebih dahulu',
-	'role.invalidPermission': 'Pemberian izin di luar katalog',
-	'role.unknownResource': '{{label}}: sumber daya "{{resource}}" tidak dikenal',
-	'role.unknownAction':
-		'{{label}}: "{{resource}}" tidak memiliki aksi "{{action}}"',
 	'role.rankExceeded':
-		'Anda tidak dapat memberikan peran setara atau di atas peringkat Anda',
+		'Anda tidak dapat bertindak pada pengguna yang memegang peran setara atau di atas peringkat Anda',
 	'role.targetRankExceeded':
 		'Target memegang "{{role}}" (peringkat {{rank}}) di organisasi Anda',
 
@@ -324,6 +301,107 @@ const api: Record<keyof typeof en, string> = {
 	'licensing.apiKey.noOwner': 'Organisasi tidak punya owner untuk menerbitkan kunci',
 	'licensing.apiKey.notFound': 'Kunci API tidak ditemukan',
 	'licensing.activationNotFound': 'Aktivasi tidak ditemukan atau sudah dilepas',
+
+	// Pajak (ERP-0016)
+	'accounting.taxTypeNotFound': 'Jenis pajak tidak ditemukan',
+	'accounting.taxTypeOverlap':
+		'Periode berlaku bertabrakan dengan tarif yang ada untuk kode pajak ini',
+	'accounting.taxTypeInUse': 'Jenis pajak masih digunakan',
+	'accounting.taxRateNotFound': 'Tidak ada tarif pajak aktif untuk tanggal ini',
+	'accounting.taxRecordNotFound': 'Catatan pajak tidak ditemukan',
+	'accounting.taxRecordPeriodTaken':
+		'Catatan pajak untuk jenis dan periode ini sudah ada',
+	'accounting.taxRecordLocked': 'Catatan pajak tidak lagi dapat diubah',
+	'accounting.taxTransition':
+		'Perubahan status tersebut tidak diizinkan untuk catatan ini',
+	'accounting.withholdingNotFound': 'Catatan pemotongan pajak tidak ditemukan',
+	'accounting.withholdingLocked': 'Catatan pemotongan pajak tidak lagi dapat diubah',
+	'accounting.withholdingTransition':
+		'Perubahan status tersebut tidak diizinkan untuk catatan pemotongan ini',
+
+	// Buku besar (M09 F2)
+	'accounting.accountNotFound': 'Akun bagan akun tidak ditemukan',
+	'accounting.accountCodeTaken': 'Kode akun sudah digunakan',
+	'accounting.accountInUse':
+		'Akun masih direferensikan dan tidak dapat dinonaktifkan',
+	'accounting.accountNotPostable':
+		'Baris jurnal memerlukan akun yang dapat diposting',
+	'accounting.accountInactive': 'Akun tidak aktif',
+	'accounting.periodNotFound': 'Periode akuntansi tidak ditemukan',
+	'accounting.periodTaken': 'Periode akuntansi untuk bulan ini sudah ada',
+	'accounting.periodLocked':
+		'Periode akuntansi untuk tanggal ini sudah ditutup',
+	'accounting.periodTransition':
+		'Perubahan status tersebut tidak diizinkan untuk periode ini',
+	'accounting.journalEntryNotFound': 'Entri jurnal tidak ditemukan',
+	'accounting.journalUnbalanced':
+		'Entri jurnal tidak seimbang: debit harus sama dengan kredit',
+	'accounting.journalLineSide':
+		'Setiap baris jurnal harus memuat salah satu dari debit atau kredit',
+	'accounting.journalDuplicate':
+		'Entri jurnal terposting dengan kunci idempotensi ini sudah ada',
+	'accounting.journalTransition':
+		'Perubahan status tersebut tidak diizinkan untuk entri jurnal ini',
+	'accounting.journalAlreadyReversed': 'Entri jurnal sudah pernah dibalik',
+	'accounting.reversalPeriodLocked':
+		'Pembalikan akan jatuh pada periode yang sudah ditutup; buka kembali terlebih dahulu',
+
+	// Buku besar F3
+	'accounting.openingBalanceAlreadyPosted':
+		'Saldo awal sudah pernah diposting dan tidak dapat diubah; lakukan koreksi melalui pembalikan jurnal',
+	'accounting.openingBalanceLocked':
+		'Baris saldo awal tidak ditemukan atau tidak dapat diubah',
+	'accounting.cashBankAccountNotFound': 'Akun kas/bank tidak ditemukan',
+	'accounting.cashBankAccountCodeTaken':
+		'Kode akun kas/bank sudah digunakan',
+	'accounting.cashBankAccountInactive': 'Akun kas/bank tidak aktif',
+	'accounting.cashBankLinkRequired':
+		'Akun kas/bank belum ditautkan ke akun buku besar; tambahkan tautan sebelum mencatat pergerakan',
+	'accounting.cashBankTransactionNotFound':
+		'Transaksi kas/bank tidak ditemukan',
+	'accounting.cashBankInsufficientFunds':
+		'Saldo akun kas/bank tidak mencukupi',
+
+	// Faktur & Piutang (F4)
+	'accounting.arAccountNotConfigured':
+		'Belum ada akun buku besar aktif untuk peran posting ini; lengkapi bagan akun terlebih dahulu',
+	'accounting.paymentNotFound': 'Pembayaran tidak ditemukan',
+	'accounting.paymentInvalidTransition':
+		'Perubahan status tersebut tidak diizinkan untuk pembayaran ini',
+	'accounting.paymentVoidNotAllowed':
+		'Pembayaran yang sudah dieksekusi tidak dapat dibatalkan di sini; lakukan koreksi melalui penyesuaian akhir periode',
+	'accounting.paymentAllocationMismatch':
+		'Jumlah alokasi harus sama persis dengan nilai pembayaran',
+	'accounting.paymentOverAllocation':
+		'Alokasi melebihi sisa tagihan faktur',
+	'accounting.paymentTargetNotIssued':
+		'Alokasi hanya boleh menarget faktur berstatus terbit atau sebagian dibayar',
+	'accounting.paymentCashAccountRequired':
+		'Akun kas/bank diperlukan untuk mengeksekusi pembayaran ini',
+	'accounting.billNotFound': 'Tagihan pemasok tidak ditemukan',
+	'accounting.billNotDraft':
+		'Hanya tagihan pemasok berstatus draf yang dapat diubah atau dicatat',
+	'accounting.bankReconciliationNotFound':
+		'Rekonsiliasi bank tidak ditemukan',
+	'accounting.bankReconciliationState':
+		'Tindakan rekonsiliasi tersebut tidak diizinkan untuk dokumen ini',
+	'accounting.reportPeriodInvalid':
+		'Rentang tanggal laporan tidak valid',
+
+	// Faktur (F4) — kunci sales
+	'sales.invoiceNotFound': 'Faktur tidak ditemukan',
+	'sales.invoiceNotDraft':
+		'Hanya faktur berstatus draf yang dapat diubah atau diterbitkan',
+	'sales.invoiceNoItems':
+		'Faktur memerlukan minimal satu baris item untuk diterbitkan',
+	'sales.invoiceDueBeforeIssue':
+		'Tanggal jatuh tempo tidak boleh sebelum tanggal terbit',
+	'sales.receiptNotFound': 'Kwitansi tidak ditemukan',
+	'sales.receiptExceeds':
+		'Pembayaran melebihi sisa tagihan',
+	'sales.receiptReversed': 'Kwitansi sudah dibatalkan',
+	'sales.invoiceNotPayable':
+		'Hanya faktur berstatus terbit atau sebagian dibayar yang dapat menerima pembayaran',
 };
 
 export default api;

@@ -103,8 +103,9 @@ anywhere; every other module references `auth.users.id` /
 
 **Column rules that apply here.**
 
-- `id uuid [pk, default: uuidv7()]` — PostgreSQL 18 native, time ordered.
-- `organization_id text NOT NULL`, logical reference to `auth.organizations.id`.
+- `id uuid [pk, default: uuidv7()]` - PostgreSQL 18 native, time ordered.
+- `organization_id text`, nullable logical reference to
+  `auth.organizations.id` (ADR-0014; ERP-0037 performs the column flip).
 - `created_at` / `updated_at` `bigint NOT NULL`, unix milliseconds.
 - `deleted_at bigint` nullable on every master table.
 - No native enum. Status columns are `text` with a `Checks` block.
@@ -124,9 +125,10 @@ anywhere; every other module references `auth.users.id` /
    development seeder is skipped in production, where organizations are
    created through the API by an application admin.
 
-**Tests.** Every table in the step: `id` default is a uuidv7, `organization_id`
-is required, the `CHECK` rejects an unknown status value, a soft delete sets
-`deleted_at` and hides the row from a default list.
+**Tests.** Every table in the step: `id` default is a uuidv7, the `CHECK`
+rejects an unknown status value, a soft delete sets `deleted_at` and hides
+the row from a default list. The `organization_id` presence check lives in
+the Identity contract, not in a `NOT NULL` constraint (ADR-0014).
 
 **Exit criteria.**
 
@@ -306,8 +308,8 @@ New tables: `quotation_items`, `quotation_status_history`, `sales_orders`,
 ## S4 — Money: finance and accounting
 
 **The single ledger rule.** `finance.payments` is the **only** table in the
-ERP that records a money movement. `finance.receipts` is a customer facing
-proof, `finance.credit_memos` is a credit note, `finance.cash_bank_transactions`
+ERP that records a money movement. `sales.receipts` is a customer facing
+proof (kwitansi, owned by Sales since 2026-11-08), `finance.credit_memos` is a credit note, `finance.cash_bank_transactions`
 is a movement on an operational account, `payroll.payroll_payments` is a
 payroll batch. None of them is a second payment ledger.
 
@@ -351,8 +353,8 @@ the old `sales.payments.amount` overflowed at Rp 21.4 million.
 - `accounting.chart_of_accounts` is hierarchical and self referencing. Only
   postable accounts accept a journal line.
 
-**Cross-module links.** `finance.invoices.customer_id` →
-`crm.customers.id` (logical). `finance.invoices.sales_order_id` →
+**Cross-module links.** `sales.invoices.customer_id` →
+`crm.customers.id` (logical). `sales.invoices.sales_order_id` →
 `sales.sales_orders.id` (logical). `accounting.journal_lines.project_id` →
 `projects.projects.id` (logical, the module does not exist yet, the column
 still does). `finance.payments.approved_by` → `auth.users.id` (logical).

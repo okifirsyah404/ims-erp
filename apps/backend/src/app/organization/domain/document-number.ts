@@ -19,7 +19,7 @@ export const BUSINESS_TIME_ZONE = 'Asia/Jakarta';
 export const DOCUMENT_TYPE_CODES: Record<DocumentType, string> = {
 	quotation: 'QT',
 	sales_order: 'SO',
-	invoice: 'INV',
+	sales_invoice: 'INV',
 	receipt: 'KW',
 	web_rfq: 'RFQ',
 	web_contact: 'MSG',
@@ -39,13 +39,18 @@ export const DOCUMENT_TYPE_CODES: Record<DocumentType, string> = {
 	asset_disposal: 'DSP',
 	asset_tool_set: 'TST',
 	asset_borrowing: 'BRW',
+	bank_reconciliation: 'REC',
+	cash_bank_transaction: 'CB',
+	payment: 'PAY',
+	journal_entry: 'JE',
+	supplier_bill: 'SB',
 };
 
 /** Module that owns each document type (`document_sequences.module`). */
 export const DOCUMENT_TYPE_MODULES: Record<DocumentType, string> = {
 	quotation: 'sales',
 	sales_order: 'sales',
-	invoice: 'sales',
+	sales_invoice: 'sales',
 	receipt: 'sales',
 	web_rfq: 'crm',
 	web_contact: 'crm',
@@ -65,6 +70,11 @@ export const DOCUMENT_TYPE_MODULES: Record<DocumentType, string> = {
 	asset_disposal: 'assets',
 	asset_tool_set: 'assets',
 	asset_borrowing: 'assets',
+	bank_reconciliation: 'accounting',
+	cash_bank_transaction: 'accounting',
+	payment: 'accounting',
+	journal_entry: 'accounting',
+	supplier_bill: 'accounting',
 };
 
 export const DEFAULT_PATTERN = '{SEQ:4}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YY}';

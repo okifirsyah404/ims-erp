@@ -34,7 +34,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Payments', to: '/payments', permission: 'payment.read' },
   { label: 'Reports', to: '/reports', permission: 'financial_report.read' },
   { label: 'Users', to: '/admin/users', permission: 'member.create' },
-  { label: 'Roles', to: '/admin/roles', permission: 'ac.read' },
   { label: 'Audit', to: '/admin/audit', permission: 'audit_log.read' },
 ]
 

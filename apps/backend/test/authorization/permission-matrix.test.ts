@@ -11,7 +11,7 @@ import {
 import { erpRoleNames } from '@ims-erp/common';
 
 describe('organization access control', () => {
-	test('defines all 18 ERP roles', () => {
+	test('defines all 19 ERP roles', () => {
 		for (const role of erpRoleNames) {
 			expect(erpRoles[role]).toBeDefined();
 		}

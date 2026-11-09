@@ -2,7 +2,8 @@
  * Sales domain schema — owns the `sales` Postgres schema.
  *
  * Quotations (SPH) with their items and status history (ADR-0011 port step
- * 3c), sales orders (step 3d), delivery notes (step 5a), plus the
+ * 3c), sales orders (step 3d), delivery notes (step 5a), customer invoices
+ * and their receipts (kwitansi, owned by Sales per finance plan D2), plus the
  * transitional `payments` scaffold.
  *
  * House rules honoured here:
@@ -13,6 +14,9 @@
  *   strings; operational timestamps are unix ms.
  * - References to other modules (`crm`, `inventory`, `auth`) are plain id
  *   columns with no FK, validated through those modules' services.
+ * Finance mirrors AR open items in `finance.ar_open_items` and receives
+ * journals via the posting service; other modules reference invoices by plain
+ * id (no cross-schema FKs, per modular-monolith rule).
  */
 import { defineRelationsPart, sql } from 'drizzle-orm';
 import {
@@ -31,10 +35,7 @@ import {
 	uuid,
 	varchar,
 } from 'drizzle-orm/pg-core';
-import {
-	unixTimestamp,
-	unixTimestampNullable,
-} from '@drizzle/datatypes/unix-timestamp';
+import { unixTimestamp, unixTimestampNullable } from '@drizzle/datatypes/unix-timestamp';
 
 export const salesSchema = pgSchema('sales');
 
@@ -106,6 +107,23 @@ const timestamps = {
 		.$onUpdate(() => new Date()),
 	deletedAt: unixTimestampNullable('deleted_at'),
 };
+
+/**
+ * Invoice states (finance plan D2). `overdue` is derived from due_date at read
+ * time, never stored (docs.dbml). Voiding is an append-only mark.
+ */
+export const INVOICE_TYPES = ['sales', 'proforma', 'recurring'] as const;
+export type InvoiceType = (typeof INVOICE_TYPES)[number];
+
+export const INVOICE_STATUSES = [
+	'draft',
+	'issued',
+	'partially_paid',
+	'paid',
+	'void',
+	'cancelled',
+] as const;
+export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
 
 /* ------------------------------------------------------------------------ *
  * sales.quotations
@@ -546,8 +564,223 @@ export const payments = salesSchema.table(
 	],
 );
 
+/* ------------------------------------------------------------------------ *
+ * sales.invoices — customer invoices (finance plan D2, moved from finance.*)
+ * ------------------------------------------------------------------------ */
+
+export const invoices = salesSchema.table(
+	'invoices',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		/** Logical ref to auth.organizations.id. No cross-schema FK. */
+		organizationId: text('organization_id').notNull(),
+		/** Numbering authority (INV-…). Nullable: a draft may exist without a code. */
+		code: varchar('code', { length: 32 }),
+		invoiceType: text('invoice_type').notNull().default('sales'),
+		/**
+		 * down_payment = first live invoice of its order that does not settle
+		 * it; settlement = the one that settles it; installment otherwise.
+		 * Null when the invoice is not billed against an order term.
+		 */
+		termKind: text('term_kind'),
+		/** Logical ref to crm.customers.id. Validated via the CRM contract. */
+		customerId: uuid('customer_id'),
+		/** Customer data copied from the sales order. Null when no order. */
+		customerSnapshot: jsonb('customer_snapshot').$type<TQuotationCustomerSnapshot | null>(),
+		/** Logical ref to sales.sales_orders.id. */
+		salesOrderId: uuid('sales_order_id'),
+		salesOrderCode: varchar('sales_order_code', { length: 32 }),
+		/** The SPH number printed as No. Ref. */
+		quotationCode: varchar('quotation_code', { length: 40 }),
+		/** Subject (Perihal), from the order. */
+		title: text('title'),
+		/** Term label, e.g. DP 30% or Pelunasan. */
+		description: text('description'),
+		/** Share of the order tax base when billed by percentage. */
+		percentageBps: integer('percentage_bps'),
+		/** Logical ref to finance.payment_terms.id. */
+		paymentTermId: uuid('payment_term_id'),
+		issueDate: date('issue_date', { mode: 'string' }),
+		dueDate: date('due_date', { mode: 'string' }),
+		vatEnabled: boolean('vat_enabled').notNull().default(true),
+		vatRateBps: integer('vat_rate_bps').notNull().default(0),
+		/** Exact integer IDR minor units (ADR-0002). */
+		subtotal: bigint('subtotal', { mode: 'number' }).notNull().default(0),
+		discountTotal: bigint('discount_total', { mode: 'number' })
+			.notNull()
+			.default(0),
+		taxTotal: bigint('tax_total', { mode: 'number' }).notNull().default(0),
+		grandTotal: bigint('grand_total', { mode: 'number' }).notNull().default(0),
+		paidTotal: bigint('paid_total', { mode: 'number' }).notNull().default(0),
+		outstandingTotal: bigint('outstanding_total', { mode: 'number' })
+			.notNull()
+			.default(0),
+		currencyCode: varchar('currency_code', { length: 3 })
+			.notNull()
+			.default('IDR'),
+		status: text('status').notNull().default('draft'),
+		/** Terms and conditions printed on the invoice, from company profile. */
+		terms: text('terms'),
+		notes: text('notes'),
+		/** Logical ref to auth.users.id. */
+		createdBy: text('created_by'),
+		issuedBy: text('issued_by'),
+		issuedAt: unixTimestampNullable('issued_at'),
+		approvedBy: text('approved_by'),
+		approvedAt: unixTimestampNullable('approved_at'),
+		/** Logical ref to auth.users.id. */
+		voidedBy: text('voided_by'),
+		voidedAt: unixTimestampNullable('voided_at'),
+		voidReason: text('void_reason'),
+		createdAt: unixTimestamp('created_at').notNull(),
+		updatedAt: unixTimestamp('updated_at')
+			.notNull()
+			.$onUpdate(() => new Date()),
+		deletedAt: unixTimestampNullable('deleted_at'),
+	},
+	(table) => [
+		uniqueIndex('invoices_org_code_uq').on(table.organizationId, table.code),
+		index('invoices_customer_id_idx').on(table.customerId),
+		index('invoices_sales_order_id_idx').on(table.salesOrderId),
+		index('invoices_status_idx').on(table.status),
+		index('invoices_due_date_idx').on(table.dueDate),
+		index('invoices_term_kind_idx').on(table.termKind),
+		check(
+			'invoices_type_check',
+			sql`invoice_type IN ('sales', 'proforma', 'recurring')`,
+		),
+		check(
+			'invoices_term_kind_check',
+			sql`term_kind IS NULL OR term_kind IN ('down_payment', 'installment', 'settlement')`,
+		),
+		check(
+			'invoices_status_check',
+			sql`status IN ('draft', 'issued', 'partially_paid', 'paid', 'void', 'cancelled')`,
+		),
+		check(
+			'invoices_vat_rate_check',
+			sql`vat_rate_bps >= 0 AND vat_rate_bps <= 10000`,
+		),
+		check('invoices_subtotal_check', sql`subtotal >= 0`),
+		check('invoices_discount_total_check', sql`discount_total >= 0`),
+		check('invoices_tax_total_check', sql`tax_total >= 0`),
+		check('invoices_grand_total_check', sql`grand_total >= 0`),
+		check(
+			'invoices_paid_total_check',
+			sql`paid_total >= 0 AND paid_total <= grand_total`,
+		),
+		check('invoices_outstanding_total_check', sql`outstanding_total >= 0`),
+		check(
+			'invoices_due_after_issue_check',
+			sql`due_date IS NULL OR issue_date IS NULL OR due_date >= issue_date`,
+		),
+	],
+);
+
+export const invoiceItems = salesSchema.table(
+	'invoice_items',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		organizationId: text('organization_id').notNull(),
+		invoiceId: uuid('invoice_id')
+			.notNull()
+			.references(() => invoices.id, { onDelete: 'cascade' }),
+		/** Logical refs, no cross-schema FKs. */
+		itemId: uuid('item_id'),
+		itemVariantId: uuid('item_variant_id'),
+		description: text('description'),
+		quantity: numeric('quantity', { precision: 18, scale: 4 })
+			.notNull()
+			.default('0'),
+		unitPrice: bigint('unit_price', { mode: 'number' }).notNull().default(0),
+		discountAmount: bigint('discount_amount', { mode: 'number' })
+			.notNull()
+			.default(0),
+		taxAmount: bigint('tax_amount', { mode: 'number' }).notNull().default(0),
+		lineTotal: bigint('line_total', { mode: 'number' }).notNull().default(0),
+		currencyCode: varchar('currency_code', { length: 3 })
+			.notNull()
+			.default('IDR'),
+		createdAt: unixTimestamp('created_at').notNull(),
+		updatedAt: unixTimestamp('updated_at')
+			.notNull()
+			.$onUpdate(() => new Date()),
+		deletedAt: unixTimestampNullable('deleted_at'),
+	},
+	(table) => [
+		index('invoice_items_invoice_id_idx').on(table.invoiceId),
+		index('invoice_items_item_id_idx').on(table.itemId),
+		check('invoice_items_quantity_check', sql`quantity >= 0`),
+		check('invoice_items_unit_price_check', sql`unit_price >= 0`),
+		check('invoice_items_discount_check', sql`discount_amount >= 0`),
+		check('invoice_items_tax_check', sql`tax_amount >= 0`),
+		check('invoice_items_line_total_check', sql`line_total >= 0`),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * sales.receipts (kwitansi, owned by Sales; moved from finance.receipts)
+ * ------------------------------------------------------------------------ */
+
+export const RECEIPT_STATUSES = ['draft', 'verified', 'posted', 'reversed', 'void'] as const;
+export type ReceiptStatus = (typeof RECEIPT_STATUSES)[number];
+
+export const RECEIPT_METHODS = ['bank_transfer', 'cash', 'card', 'e_wallet', 'cheque'] as const;
+export type ReceiptMethod = (typeof RECEIPT_METHODS)[number];
+
+export const receipts = salesSchema.table(
+	'receipts',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: text('organization_id').notNull(),
+		code: varchar('code', { length: 32 }).notNull(),
+		/** Plain id of a row in sales.invoices (same module). */
+		salesInvoiceId: uuid('sales_invoice_id').notNull(),
+		/** Logical reference to finance.payments.id; validated via the Finance contract. */
+		paymentId: uuid('payment_id'),
+		receivedDate: date('received_date', { mode: 'string' }),
+		amount: bigint('amount', { mode: 'number' }).notNull().default(0),
+		currencyCode: varchar('currency_code', { length: 3 }).notNull().default('IDR'),
+		method: text('method').notNull().default('bank_transfer'),
+		reference: varchar('reference', { length: 100 }),
+		notes: text('notes'),
+		status: text('status').notNull().default('draft'),
+		/** Logical reference to auth.users.id. */
+		receivedBy: text('received_by'),
+		postedAt: unixTimestampNullable('posted_at'),
+		/** Logical reference to auth.users.id. */
+		reversedBy: text('reversed_by'),
+		reversedAt: unixTimestampNullable('reversed_at'),
+		reversalReason: text('reversal_reason'),
+		createdAt: unixTimestamp('created_at').notNull(),
+		updatedAt: unixTimestamp('updated_at')
+			.notNull()
+			.$onUpdate(() => new Date()),
+		deletedAt: unixTimestampNullable('deleted_at'),
+	},
+	(table) => [
+		uniqueIndex('receipts_org_code_uq').on(table.organizationId, table.code),
+		index('receipts_sales_invoice_id_idx').on(table.salesInvoiceId),
+		index('receipts_payment_id_idx').on(table.paymentId),
+		index('receipts_status_idx').on(table.status),
+		check(
+			'receipts_status_check',
+			sql`status IN ('draft', 'verified', 'posted', 'reversed', 'void')`,
+		),
+		check('receipts_amount_check', sql`amount > 0`),
+		check(
+			'receipts_method_check',
+			sql`method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque')`,
+		),
+	],
+);
+
 export const salesRelations = defineRelationsPart(
-	{ quotations, quotationItems, quotationStatusHistory, salesOrders, salesOrderItems, orderStatusHistory, deliveryNotes, deliveryNoteItems },
+	{ quotations, quotationItems, quotationStatusHistory, salesOrders, salesOrderItems, orderStatusHistory, deliveryNotes, deliveryNoteItems, payments, invoices, invoiceItems, receipts },
 	(r) => ({
 		quotations: {
 			items: r.many.quotationItems({
@@ -589,6 +822,28 @@ export const salesRelations = defineRelationsPart(
 				to: r.quotations.id,
 			}),
 		},
+		invoices: {
+			items: r.many.invoiceItems({
+				from: r.invoices.id,
+				to: r.invoiceItems.invoiceId,
+			}),
+			receipts: r.many.receipts({
+				from: r.invoices.id,
+				to: r.receipts.salesInvoiceId,
+			}),
+		},
+		invoiceItems: {
+			invoice: r.one.invoices({
+				from: r.invoiceItems.invoiceId,
+				to: r.invoices.id,
+			}),
+		},
+		receipts: {
+			invoice: r.one.invoices({
+				from: r.receipts.salesInvoiceId,
+				to: r.invoices.id,
+			}),
+		},
 	}),
 );
 
@@ -608,3 +863,10 @@ export type TDeliveryNoteItemInsert = typeof deliveryNoteItems.$inferInsert;
 export type TDeliveryNoteItemSelect = typeof deliveryNoteItems.$inferSelect;
 export type TPaymentInsert = typeof payments.$inferInsert;
 export type TPaymentSelect = typeof payments.$inferSelect;
+export type TInvoiceInsert = typeof invoices.$inferInsert;
+
+export type TReceiptInsert = typeof receipts.$inferInsert;
+export type TReceiptSelect = typeof receipts.$inferSelect;
+export type TInvoiceSelect = typeof invoices.$inferSelect;
+export type TInvoiceItemInsert = typeof invoiceItems.$inferInsert;
+export type TInvoiceItemSelect = typeof invoiceItems.$inferSelect;

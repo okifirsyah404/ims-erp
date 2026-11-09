@@ -23,6 +23,15 @@ import type { TPaymentRepository } from '../contracts/payment.repository.interfa
 import type { IDeliveryNoteRepository } from '../contracts/delivery-note.repository.interface';
 import type { DeliveryNoteService } from '../services/delivery-note.service';
 import type { SalesFulfilmentService } from '../services/sales-fulfilment.service';
+import type { InvoiceLookupService } from '../services/invoice-lookup.service';
+
+/**
+ * Sales contract for other modules (licensing, paid totals): whether an order
+ * has been billed, and money received on its live invoices.
+ */
+export const INVOICE_LOOKUP_SERVICE_TOKEN: InjectionToken<InvoiceLookupService> = Symbol(
+	'INVOICE_LOOKUP_SERVICE',
+);
 
 /** Token resolving to the {@link SalesService} implementation. */
 export const SALES_SERVICE_TOKEN: InjectionToken<SalesService> = Symbol(

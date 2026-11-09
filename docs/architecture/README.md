@@ -36,3 +36,11 @@ change when a user-visible flow, label or status changes.
 
 Any backend feature work reads that folder first and runs the `grill-me`
 design interview; see **Feature module lifecycle** in `../AGENTS.md`.
+
+## Decision records (ADR index)
+
+| ADR | Title | Status |
+|---|---|---|
+| [ADR-0010](decisions/ADR-0010-department-orgs-warehouse-links.md) | Department Organizations and Warehouse Links | proposed |
+| [ADR-0012](decisions/ADR-0012-multi-organization.md) | Multiple Organizations, Company-Wide Master Data | accepted (2026-11-08) |
+| [ADR-0014](decisions/ADR-0014-nullable-cross-module-references.md) | Nullable Cross-Module References | accepted (2026-11-08) |

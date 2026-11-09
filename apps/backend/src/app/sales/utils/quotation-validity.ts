@@ -4,7 +4,7 @@
  * Expiry is informational only: it never changes the status, and a customer
  * may still accept an expired SPH.
  */
-import { endOfBusinessDate } from '@ims-erp/common';
+import { endOfBusinessDate } from '@utils/business-date.util';
 import type { QuotationStatus } from '@drizzle/schemas/sales.schema';
 
 /** Last millisecond of the `valid_until` Jakarta day; null = open-ended. */

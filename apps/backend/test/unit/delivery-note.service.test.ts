@@ -12,7 +12,7 @@ import type {
 	TSalesOrderItemSelect,
 	TSalesOrderSelect,
 } from '@drizzle/schemas/sales.schema';
-import { quantityToMilli } from '@ims-erp/common';
+import { quantityToMilli } from '@utils/money.util';
 import { createDeliveryNoteSchema } from '../../src/app/sales/contracts/delivery-note.contract';
 import type { TDeliveryNoteRow } from '../../src/app/sales/contracts/delivery-note.repository.interface';
 import {

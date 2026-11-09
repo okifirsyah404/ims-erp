@@ -6,7 +6,7 @@ import type { SalesFulfilmentService } from '@app/sales/services/sales-fulfilmen
 import { USER_SERVICE_TOKEN } from '@app/user/constants/di';
 import type { UserService } from '@app/user/services/user.service';
 import type { TProjectHandoverSelect, TProjectSelect } from '@drizzle/schemas/projects.schema';
-import { businessDateOf } from '@ims-erp/common';
+import { businessDateOf } from '@utils/business-date.util';
 import { inject, injectable } from 'tsyringe';
 import { HANDOVER_REPOSITORY_TOKEN, PROJECT_SERVICE_TOKEN } from '../constants/di';
 import type { TBastBodyRequest } from '../contracts/handover.contract';

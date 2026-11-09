@@ -46,19 +46,6 @@ const api = {
 	'procurement.receiptLine.over': 'Line {{line}}: more than is still open on the purchase order',
 	'procurement.receiptLine.serials': 'Line {{line}}: enter one unique serial number per unit',
 	'sales.orderBilled': 'This sales order has invoices; void them before cancelling',
-	'finance.invoiceNotFound': 'Invoice not found',
-	'finance.receiptNotFound': 'Receipt not found',
-	'finance.orderUnavailable': 'The sales order is not found or is cancelled',
-	'finance.term.fullyInvoiced': 'The sales order is fully invoiced',
-	'finance.term.empty': 'The term amount must be greater than zero',
-	'finance.term.exceeds': 'The term exceeds the amount left to invoice',
-	'finance.term.noPlannedTerm': 'No planned billing term is left',
-	'finance.invoiceState.notDraft': 'Only a draft invoice can be issued',
-	'finance.invoiceState.notVoidable': 'Only an unpaid draft or issued invoice can be voided (reverse its receipts first)',
-	'finance.invoiceState.notPayable': 'Payments can only be recorded on an issued, unpaid invoice',
-	'finance.receiptExceeds': 'The payment exceeds the outstanding amount',
-	'finance.receiptReversed': 'The receipt is already reversed',
-	'finance.dueBeforeIssue': 'The due date cannot be before the issue date',
 	'sales.deliveryNoteNotFound': 'Delivery note not found',
 	'sales.deliveryOrderNotDeliverable': 'Only a confirmed or in-progress sales order can be delivered',
 	'sales.deliveryLine.unknown': 'Line {{line}}: not a line of this sales order',
@@ -254,16 +241,8 @@ const api = {
 	'claim.phoneInUse': 'Phone number is already in use',
 	'claim.alreadyInUse': 'Username or email already in use',
 
-	'role.notFound': 'Role not found',
-	'role.nameTaken': 'A role named "{{name}}" already exists in this organization',
-	'role.inUse': 'This role cannot be removed: it is a system role or still assigned',
-	'role.systemRole': '"{{role}}" is a system role and cannot be deleted',
-	'role.stillAssigned':
-		'{{count}} member(s) still hold "{{role}}"; reassign them first',
-	'role.invalidPermission': 'Permission grant is outside the catalog',
-	'role.unknownResource': '{{label}}: unknown resource "{{resource}}"',
-	'role.unknownAction': '{{label}}: "{{resource}}" has no action "{{action}}"',
-	'role.rankExceeded': 'You cannot grant a role at or above your own rank',
+	'role.rankExceeded':
+		'You cannot act on a user holding a role at or above your own rank',
 	'role.targetRankExceeded':
 		'Target holds "{{role}}" (rank {{rank}}) in your organization',
 
@@ -322,6 +301,104 @@ const api = {
 	'licensing.apiKey.noOwner': 'The organization has no owner to issue the key',
 	'licensing.apiKey.notFound': 'API key not found',
 	'licensing.activationNotFound': 'Activation not found or already released',
+
+	// Tax (ERP-0016)
+	'accounting.taxTypeNotFound': 'Tax type not found',
+	'accounting.taxTypeOverlap':
+		'Effective period overlaps an existing rate for this tax code',
+	'accounting.taxTypeInUse': 'Tax type is still in use',
+	'accounting.taxRateNotFound': 'No active tax rate covers this date',
+	'accounting.taxRecordNotFound': 'Tax record not found',
+	'accounting.taxRecordPeriodTaken':
+		'A tax record already exists for this type and period',
+	'accounting.taxRecordLocked': 'Tax record is no longer editable',
+	'accounting.taxTransition':
+		'That status change is not allowed for this record',
+	'accounting.withholdingNotFound': 'Withholding record not found',
+	'accounting.withholdingLocked': 'Withholding record is no longer editable',
+	'accounting.withholdingTransition':
+		'That status change is not allowed for this withholding record',
+
+	// Ledger (M09 F2)
+	'accounting.accountNotFound': 'Chart of account not found',
+	'accounting.accountCodeTaken': 'Account code already exists',
+	'accounting.accountInUse':
+		'Account is still referenced and cannot be deactivated',
+	'accounting.accountNotPostable': 'Journal lines require a postable account',
+	'accounting.accountInactive': 'Account is inactive',
+	'accounting.periodNotFound': 'Accounting period not found',
+	'accounting.periodTaken':
+		'An accounting period for this month already exists',
+	'accounting.periodLocked': 'The accounting period for this date is closed',
+	'accounting.periodTransition':
+		'That status change is not allowed for this period',
+	'accounting.journalEntryNotFound': 'Journal entry not found',
+	'accounting.journalUnbalanced':
+		'Journal entry is not balanced: debits must equal credits',
+	'accounting.journalLineSide':
+		'Each journal line must carry exactly one of debit or credit',
+	'accounting.journalDuplicate':
+		'A posted journal entry with this idempotency key already exists',
+	'accounting.journalTransition':
+		'That status change is not allowed for this journal entry',
+	'accounting.journalAlreadyReversed':
+		'Journal entry has already been reversed',
+	'accounting.reversalPeriodLocked':
+		'The reversal would fall in a closed period; reopen it first',
+
+	// Ledger F3
+	'accounting.openingBalanceAlreadyPosted':
+		'Opening balances were already posted and cannot be changed; correct through a journal reversal',
+	'accounting.openingBalanceLocked':
+		'Opening balance row not found or not editable',
+	'accounting.cashBankAccountNotFound': 'Cash/bank account not found',
+	'accounting.cashBankAccountCodeTaken':
+		'Cash/bank account code already exists',
+	'accounting.cashBankAccountInactive': 'Cash/bank account is inactive',
+	'accounting.cashBankLinkRequired':
+		'Cash/bank account has no general-ledger account link; add one before posting movements',
+	'accounting.cashBankTransactionNotFound':
+		'Cash/bank transaction not found',
+	'accounting.cashBankInsufficientFunds':
+		'Insufficient balance on the cash/bank account',
+
+	// Invoices & AR (F4)
+	'accounting.arAccountNotConfigured':
+		'No active general-ledger account is configured for this posting role; set up the chart of accounts first',
+	'accounting.paymentNotFound': 'Payment not found',
+	'accounting.paymentInvalidTransition':
+		'That status change is not allowed for this payment',
+	'accounting.paymentVoidNotAllowed':
+		'Executed payments cannot be voided here; correct through a period-end adjustment instead',
+	'accounting.paymentAllocationMismatch':
+		'Allocations must add up exactly to the payment amount',
+	'accounting.paymentOverAllocation':
+		'Allocation exceeds the invoice outstanding amount',
+	'accounting.paymentTargetNotIssued':
+		'Allocations may only target issued or partially paid invoices',
+	'accounting.paymentCashAccountRequired':
+		'A cash/bank account is required to execute this payment',
+	'accounting.billNotFound': 'Supplier bill not found',
+	'accounting.billNotDraft':
+		'Only draft supplier bills can be modified or recorded',
+	'accounting.bankReconciliationNotFound': 'Bank reconciliation not found',
+	'accounting.bankReconciliationState':
+		'That reconciliation action is not allowed for this document',
+	'accounting.reportPeriodInvalid': 'Report date range is invalid',
+
+	// Invoices (F4) — sales keys
+	'sales.invoiceNotFound': 'Invoice not found',
+	'sales.invoiceNotDraft': 'Only draft invoices can be modified or issued',
+	'sales.invoiceNoItems':
+		'Invoices need at least one line item to be issued',
+	'sales.invoiceDueBeforeIssue':
+		'Due date cannot be before the issue date',
+	'sales.receiptNotFound': 'Receipt not found',
+	'sales.receiptExceeds':
+		'The payment exceeds the outstanding amount',
+	'sales.receiptReversed': 'The receipt is already reversed',
+	'sales.invoiceNotPayable':
+		'Only issued or partially paid invoices can receive payments',
 } as const;
 
 export default api;

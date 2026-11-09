@@ -10,7 +10,8 @@ import {
 	type TPurchaseOrderSelect,
 	type TSupplierSelect,
 } from '@drizzle/schemas/procurement.schema';
-import { businessDateOf, type TPaginationResult } from '@ims-erp/common';
+import { businessDateOf } from '@utils/business-date.util';
+import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
 import { PURCHASE_ORDER_REPOSITORY_TOKEN, SUPPLIER_SERVICE_TOKEN } from '../constants/di';
 import type {

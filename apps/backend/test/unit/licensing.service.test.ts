@@ -6,7 +6,7 @@
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { TLicensableApplicationSelect, TLicenseContractSelect, TLicenseKeySelect } from '@drizzle/schemas/licensing.schema';
-import { businessDateOf } from '@ims-erp/common';
+import { businessDateOf } from '@utils/business-date.util';
 import { contractBodySchema, keyBodySchema, type TContractRow } from '../../src/app/licensing/contracts/licensing.contract';
 import { ContractInvalidError, ContractStateError, LicenseKeyError } from '../../src/app/licensing/errors/licensing.errors';
 import { LicensingService, type TLicenseContext } from '../../src/app/licensing/services/licensing.service';

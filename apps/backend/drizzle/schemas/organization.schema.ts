@@ -56,7 +56,7 @@ export type BankAccountInvoiceUsage =
 export const DOCUMENT_TYPES = [
 	'quotation',
 	'sales_order',
-	'invoice',
+	'sales_invoice',
 	'receipt',
 	'web_rfq',
 	'web_contact',
@@ -77,6 +77,12 @@ export const DOCUMENT_TYPES = [
 	'asset_disposal',
 	'asset_tool_set',
 	'asset_borrowing',
+	// Accounting and sales documents from main (ADR-0011 port, step 3d-2 onward).
+	'bank_reconciliation',
+	'cash_bank_transaction',
+	'payment',
+	'journal_entry',
+	'supplier_bill',
 ] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 

@@ -156,6 +156,20 @@ const DYNAMIC_PREFIXES = [
 	'assets:maintenanceStatus.',
 	'assets:toolSetStatus.',
 	'assets:movementType.',
+	// Finance/accounting (M09): statuses, enum labels and report sections are
+	// server values, so the label keys are composed at runtime.
+	'finance:accountType.',
+	'finance:normalBalance.',
+	'finance:cashFlowCategory.',
+	'finance:periods.status.',
+	'finance:periods.transition.',
+	'finance:payments.status.',
+	'finance:payments.method.',
+	'finance:payments.type.',
+	'finance:bills.status.',
+	'finance:aging.bucket.',
+	'finance:reconciliation.status.',
+	'finance:closing.item.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

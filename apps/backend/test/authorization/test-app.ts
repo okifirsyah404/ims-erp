@@ -16,10 +16,9 @@ import {
 } from '../../src/app/sales/constants/di';
 import {
 	PERMISSION_RESOLVER_TOKEN,
-	grantsAllow,
 	type IPermissionResolver,
 } from '../../src/authorization/permission-resolver';
-import { erpRoleGrants, type ErpPermissionRequest, type ErpRoleName } from '@ims-erp/common';
+import type { ErpPermissionRequest } from '@ims-erp/common';
 
 export type TestUser = {
 	id: string;
@@ -141,44 +140,12 @@ export function resetFixture(): void {
 		users: { ...fixture.users },
 		revoked: new Set(['user-revoked']),
 	};
-	resetRoleGrants();
 }
 
 /**
- * In-memory stand-in for the per-organization `auth.roles` master data.
- * Defaults to the shared catalog grants (what the seeder materializes) and
- * can be overridden per test to prove that dynamic grants - not the static
- * catalog - decide access.
- */
-const roleGrants = new Map<string, ErpPermissionRequest>();
-
-/** Roles that always have a live row (the seeded catalog roles). */
-const SEEDED_ROLES: readonly ErpRoleName[] = [
-	'owner',
-	'admin',
-	'member',
-	'sales',
-	'technician',
-	'finance',
-];
-
-export function resetRoleGrants(): void {
-	roleGrants.clear();
-	for (const role of SEEDED_ROLES) roleGrants.set(role, erpRoleGrants[role]);
-}
-
-/** Registers live role grants for one role name (per org). */
-export function setRoleGrants(
-	roleName: string,
-	grants: ErpPermissionRequest,
-): void {
-	roleGrants.set(roleName, grants);
-}
-
-/**
- * Registers the mock permission resolver (the seam the guard uses). Mirrors
- * the production resolver: union the live grants of the member's roles, and
- * fall back to the static shared catalog when no live role row matches.
+ * Static closed-catalog permission resolver stub. The production resolver
+ * reads `erpRoleGrants` via `authorizeErpPermissions`; the mock mirrors it
+ * (roles are a closed enum — no dynamic grant rows exist any more).
  */
 export function installPermissionResolverMock(): void {
 	const resolver: IPermissionResolver = {
@@ -187,16 +154,10 @@ export function installPermissionResolverMock(): void {
 			roleNames: readonly string[],
 			request: ErpPermissionRequest,
 		): Promise<boolean> {
-			const live = roleNames
-				.map((name) => roleGrants.get(name))
-				.filter((g): g is ErpPermissionRequest => g !== undefined);
-			if (live.length === 0) {
-				const { authorizeErpPermissions } = await import(
-					'../../src/providers/better-auth/ac/organization-ac'
-				);
-				return authorizeErpPermissions(roleNames, request);
-			}
-			return grantsAllow(live, request);
+			const { authorizeErpPermissions } = await import(
+				'../../src/providers/better-auth/ac/organization-ac'
+			);
+			return authorizeErpPermissions(roleNames, request);
 		},
 	};
 	container.register(PERMISSION_RESOLVER_TOKEN, { useValue: resolver });

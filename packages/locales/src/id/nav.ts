@@ -65,6 +65,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.tax': 'Pajak',
 	'item.taxTypes': 'Jenis & Tarif Pajak',
 	'item.taxRecap': 'Rekap Pajak',
+	'item.taxRecords': 'Catatan Pajak',
 	'item.taxWithholding': 'Pemotongan Pajak',
 	'item.taxCorrections': 'Koreksi & Bukti',
 	'item.investors': 'Bonus & Investor',
@@ -72,7 +73,6 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.profitSharing': 'Bagi Hasil',
 	'item.reports': 'Laporan',
 	'item.monthlyArchives': 'Arsip Bulanan',
-	'item.roles': 'Peran',
 	'item.comingSoon': 'Segera hadir',
 
 	'item.warehouses': 'Gudang',

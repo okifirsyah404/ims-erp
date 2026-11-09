@@ -24,7 +24,7 @@ import type {
 	TReceivedQuantity,
 	TReceiveResult,
 } from '../contracts/goods-receipt.repository.interface';
-import { quantityToMilli } from '@ims-erp/common';
+import { quantityToMilli } from '@utils/money.util';
 
 /** Drizzle implementation of {@link IPurchaseOrderRepository}. */
 @injectable()

@@ -20,16 +20,17 @@ declare module 'i18next' {
 		account: typeof en.account;
 		admin: typeof en.admin;
 		inventory: typeof en.inventory;
+		finance: typeof en.finance;
 		assets: typeof en.assets;
 		dashboard: typeof en.dashboard;
 		api: typeof en.api;
 		settings: typeof en.settings;
 		crm: typeof en.crm;
 		sales: typeof en.sales;
-		finance: typeof en.finance;
 		procurement: typeof en.procurement;
 		projects: typeof en.projects;
 		licensing: typeof en.licensing;
+		tax: typeof en.tax;
 	}
 
 	interface CustomTypeOptions {

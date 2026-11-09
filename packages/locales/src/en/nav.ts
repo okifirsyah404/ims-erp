@@ -66,6 +66,7 @@ const nav = {
 	'item.tax': 'Tax',
 	'item.taxTypes': 'Tax Types & Rates',
 	'item.taxRecap': 'Tax Recap',
+	'item.taxRecords': 'Tax Records',
 	'item.taxWithholding': 'Withholding',
 	'item.taxCorrections': 'Corrections & Evidence',
 	'item.investors': 'Investors',
@@ -73,7 +74,6 @@ const nav = {
 	'item.profitSharing': 'Profit Sharing',
 	'item.reports': 'Reports',
 	'item.monthlyArchives': 'Monthly Archives',
-	'item.roles': 'Roles',
 	'item.comingSoon': 'Coming soon',
 
 	'item.warehouses': 'Warehouses',

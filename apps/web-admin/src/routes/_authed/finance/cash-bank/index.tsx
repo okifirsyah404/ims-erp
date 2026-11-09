@@ -1,15 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Landmark } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { CashBankPage } from '@/components/finance/cash-bank-page';
 
+/** Search params for the movement list. */
+type TCashBankSearch = { page?: number };
+
+/** `/finance/cash-bank` - cash/bank accounts + movements (M09 F3). */
 export const Route = createFileRoute('/_authed/finance/cash-bank/')({
-	component: ComingSoonStubPage,
+	validateSearch: (search: Record<string, unknown>): TCashBankSearch => ({
+		page: search.page ? Number(search.page) || 1 : undefined,
+	}),
+	component: CashBankPage,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.cashBank')} icon={Landmark} />;
-}

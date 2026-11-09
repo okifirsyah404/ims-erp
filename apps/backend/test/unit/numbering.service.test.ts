@@ -136,7 +136,7 @@ describe('NumberingService', () => {
 		expect(await service.next('quotation', { date: OCT })).toBe('0002/QT/IMS/X/26');
 		expect(await service.next('quotation', { date: NEW_YEAR_WIB })).toBe('0001/QT/IMS/I/27');
 		// Another type has its own series.
-		expect(await service.next('invoice', { date: OCT })).toBe('0001/INV/IMS/X/26');
+		expect(await service.next('sales_invoice', { date: OCT })).toBe('0001/INV/IMS/X/26');
 	});
 
 	test('purchase orders restart monthly and fill supplier/category from the document', async () => {
@@ -161,7 +161,7 @@ describe('NumberingService', () => {
 	test('listSettings shows every type with defaults until overridden', async () => {
 		const settings = await service.listSettings();
 		const quotation = settings.find((s) => s.documentType === 'quotation');
-		expect(settings).toHaveLength(22);
+		expect(settings).toHaveLength(27);
 		expect(quotation).toMatchObject({ typeCode: 'QT', isDefault: true, resetPolicy: 'yearly' });
 		expect(settings.find((s) => s.documentType === 'purchase_order')?.resetPolicy).toBe('monthly');
 	});

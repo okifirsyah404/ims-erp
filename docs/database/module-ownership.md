@@ -16,8 +16,8 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   single `auth` schema, shared by Better Auth's 9 core tables and the 6 ERP
   extension tables.
 - A **foreign key may only connect two tables of the same module**.
-  `docs.dbml` contains 228 `Ref:` declarations and **0 cross-module refs**
-  (`validate-dbml.ts` now checks all 228; before 2026-11-05 it read
+  `docs.dbml` contains 226 `Ref:` declarations and **0 cross-module refs**
+  (`validate-dbml.ts` now checks all 226; before 2026-11-05 it read
   `db.refs`, which `@dbml/core` v11 leaves empty, so the check passed vacuously).
 - A **cross-module link** is a plain id column plus a column note that **starts
   with** the sentence below — `gen-logical-references.ts` anchors its regex at
@@ -25,7 +25,10 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   silently not counted:
   `Logical reference to <target>.id. Cross-module FK intentionally omitted.
   Validated through the <Module> module contract.`
-- 513 such logical reference columns exist (target count re-verified on each validation run, see validate-dbml.ts).
+- 522 such logical reference columns exist (target count re-verified on each validation run, see validate-dbml.ts).
+- Every one of them is a **nullable** plain id column (ADR-0014); presence is
+  a service-layer fact, enforced by the owning module's contract method, not
+  by the database.
   Full list in `logical-references.md`.
 - Cross-module reads and writes go through the owning module's exported
   service contract. Another module's repository is never imported.
@@ -34,19 +37,19 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 
 | # | Module | Schema(s) | Tables | Intra-module FKs | Logical refs out |
 |---|---|---|---|---|---|
-| 1 | Identity | `auth` | 15 | 13 | 2 |
+| 1 | Identity | `auth` | 17 | 17 | 2 |
 | 2 | Location | `location` | 4 | 3 | 0 |
 | 3 | Organization | `organization` | 9 | 6 | 15 |
 | 4 | CRM | `crm` | 10 | 9 | 21 |
 | 5 | Catalog | `catalog` | 12 | 16 | 15 |
-| 6 | Sales | `sales` | 12 | 10 | 36 |
+| 6 | Sales | `sales` | 15 | 11 | 47 |
 | 7 | Procurement | `procurement` | 11 | 13 | 30 |
 | 8 | Inventory | `inventory` | 13 | 19 | 12 |
 | 9 | Projects | `projects` | 13 | 0 | 33 |
 | 10 | HR | `hr` | 16 | 17 | 44 |
 | 11 | Payroll | `payroll` | 11 | 10 | 28 |
-| 12 | Finance | `finance` | 17 | 19 | 50 |
-| 13 | Accounting | `accounting` | 12 | 11 | 21 |
+| 12 | Finance | `finance` | 16 | 14 | 46 |
+| 13 | Accounting | `accounting` | 13 | 12 | 24 |
 | 14 | Assets | `assets` | 14 | 16 | 33 |
 | 15 | After-Sales | `aftersales` | 15 | 0 | 39 |
 | 16 | Documents | `documents` | 8 | 8 | 14 |
@@ -56,9 +59,12 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 | 20 | Commerce | `commerce` | 9 | 6 | 16 |
 | 21 | Automation | `automation` | 11 | 7 | 16 |
 | 22 | Licensing | `licensing` | 9 | 11 | 11 |
-| 23 | Ticketing | `ticket` | 5 | 5 | 4 |
+| 23 | Ticketing | `ticket` | 5 | 5 | 14 |
 | 24 | Audit | `audit` | 1 | 0 | 1 |
-| | **Total** | **24 schemas** | **254** | **227** | - |
+| | **Total** | **24 schemas** | **258** | **225** | **523** |
+
+Counts are re-derived from `docs.dbml` on every validation run. The parser
+also reports an empty `public` schema (0 tables); it is not a module.
 
 There is no longer any two-schema module. The physical warehouse tables moved
 into `inventory` (ADR-0008): `inventory.warehouses`, `inventory.warehouse_addresses`
@@ -221,7 +227,8 @@ portal.
 
 ### 12. Finance — `finance`
 
-- **Owns** invoices and invoice items, **the single payment ledger**
+- Sales owns invoices and invoice items (`sales.invoices`, plan D2); finance
+  owns **the single payment ledger**
   (`finance.payments`), receipts, supplier bills, payment terms, expense
   claims, employee advances, expense settlements, cash and bank accounts,
   cash bank transactions, bank reconciliations, credit memos, payment
@@ -371,8 +378,10 @@ Every logical reference implies a promise by the owning module:
      interpret `NULL` as "any organization".
 3. **Lifecycle** — the target is soft deleted, not hard deleted, so a
    reference stays resolvable for history.
-4. **Nullability** — a nullable reference column means the link is optional
-   in the business flow; a not-null reference means the link is mandatory.
+4. **Nullability** - every cross-module reference is nullable (ADR-0014), so
+   the column itself never states whether the link is mandatory. That is a
+   business fact: the referring module's service decides whether the link is
+   required for the use case, and enforces it before the write.
 
 The service layer must call the owning module's assert method before writing
 a row that carries a logical reference. This is the replacement for the

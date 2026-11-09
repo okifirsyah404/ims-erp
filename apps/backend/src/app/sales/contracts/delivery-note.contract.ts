@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { quantityToMilli } from '@ims-erp/common';
+import { quantityToMilli } from '@utils/money.util';
 
 /**
  * Request schemas for delivery notes (`/delivery-notes`, ADR-0011 step 5a).

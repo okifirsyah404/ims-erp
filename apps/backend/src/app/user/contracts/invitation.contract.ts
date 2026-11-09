@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { organizationRoleSchema } from '@ims-erp/common';
 
 /**
  * Request/response contracts for the user-management invitation API.
@@ -8,8 +9,9 @@ import { z } from 'zod';
  * invitation pipeline covers both paths:
  * - app-admin invite: `{ name, email }` — pre-creates a user with no
  *   organization, app role `user`.
- * - org invite: `{ email, roleId }` — pre-creates a user and (on claim)
- *   attaches the organization membership with the chosen role.
+ * - org invite: `{ email, organizationRole }` — pre-creates a user and (on
+ *   claim) attaches the organization membership with the chosen role from
+ *   the closed ERP role enum (defaults to `member` when omitted).
  */
 
 /** Path parameter shared by all id-targeted invitation routes. */
@@ -27,11 +29,11 @@ const invitationInputBase = z.object({
 	email: z.email().max(320),
 	/** Prefills the pre-created user and the claim profile form. */
 	name: z.string().min(1).max(120).optional(),
-	/** Org path only: target organization. Required when roleId is set. */
+	/** Org path only: target organization. Required when organizationRole is set. */
 	organizationId: z.string().min(1).optional(),
-	/** Org path only: target role (master data lookup, typo → member fallback
-	 * is applied by the service for bulk, rejected for single). */
-	roleId: z.string().min(1).optional(),
+	/** Org path only: target role from the closed ERP role enum. Optional —
+	 * the service defaults to `member` on the org path. */
+	organizationRole: organizationRoleSchema.optional(),
 });
 
 export const createInvitationSchema = z.union([

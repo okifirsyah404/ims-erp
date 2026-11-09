@@ -13,7 +13,7 @@ import type { SalesFulfilmentService } from '@app/sales/services/sales-fulfilmen
 import { isUniqueViolation } from '@drizzle/errors';
 import type { TWarrantyCertificateSelect } from '@drizzle/schemas/aftersales.schema';
 import type { TDocumentItem } from '@drizzle/schemas/projects.schema';
-import { businessDateOf } from '@ims-erp/common';
+import { businessDateOf } from '@utils/business-date.util';
 import { inject, injectable } from 'tsyringe';
 import { WARRANTY_REPOSITORY_TOKEN } from '../constants/di';
 import type { IWarrantyRepository, TWarrantyBodyRequest } from '../contracts/warranty.contract';

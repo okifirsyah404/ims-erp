@@ -2,7 +2,7 @@
  * Purchase order totals (pure). Integer IDR minor units (ADR-0002); products
  * and divisions use BigInt half-up.
  */
-import { divHalfUp, quantityTimesPrice } from '@ims-erp/common';
+import { divHalfUp, quantityTimesPrice } from '@utils/money.util';
 import type { PoVatMode } from '@drizzle/schemas/procurement.schema';
 
 export const DEFAULT_PO_VAT_RATE_BPS = 1100;

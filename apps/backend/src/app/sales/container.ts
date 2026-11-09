@@ -8,6 +8,8 @@ import { SalesService } from './services/sales.service';
 import { DeliveryNoteRepository } from './repositories/delivery-note.repository';
 import { DeliveryNoteService } from './services/delivery-note.service';
 import { SalesFulfilmentService } from './services/sales-fulfilment.service';
+import { InvoiceRepository } from './repositories/invoice.repository';
+import { InvoiceService } from './services/invoice.service';
 import {
 	QUOTATION_REPOSITORY_TOKEN,
 	PAYMENT_REPOSITORY_TOKEN,
@@ -20,6 +22,11 @@ import {
 	DELIVERY_NOTE_SERVICE_TOKEN,
 	SALES_FULFILMENT_SERVICE_TOKEN,
 } from './constants/di';
+import {
+	INVOICE_REPOSITORY_TOKEN,
+	INVOICE_SERVICE_TOKEN,
+} from './constants/ar-di';
+
 import type { DependencyContainer } from 'tsyringe';
 
 export * from './constants/di';
@@ -40,6 +47,10 @@ export function registerSales(container: DependencyContainer): void {
 	container.register(PAYMENT_REPOSITORY_TOKEN, {
 		useClass: PaymentRepository,
 	});
+	container.register(INVOICE_REPOSITORY_TOKEN, {
+		useClass: InvoiceRepository,
+	});
+	container.register(INVOICE_SERVICE_TOKEN, { useClass: InvoiceService });
 	container.register(SALES_SERVICE_TOKEN, {
 		useClass: SalesService,
 	});
