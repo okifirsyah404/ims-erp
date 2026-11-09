@@ -30,7 +30,7 @@ function NewQuotationPage() {
 	const profile = useQuery(companyProfileQueryOptions());
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<h1 className='text-2xl font-bold'>{t('sales:quotations.new')}</h1>
 			{profile.isPending ? null : (
 				<QuotationForm

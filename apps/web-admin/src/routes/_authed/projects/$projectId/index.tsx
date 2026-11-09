@@ -138,7 +138,7 @@ function ProjectDetailPage() {
 	if (isPending) return null;
 	if (isError) {
 		return (
-			<div className='flex flex-col gap-4 p-6'>
+			<div className='flex flex-col gap-6'>
 				<p className='text-sm text-destructive'>{error.message}</p>
 				<Link to='/projects' className='text-sm hover:underline'>
 					{t('projects:detail.back')}
@@ -178,7 +178,7 @@ function ProjectDetailPage() {
 	const title = dialog === 'edit' ? t('projects:detail.edit') : dialog === 'close' ? t('projects:detail.close') : t('projects:detail.cancel');
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<Link to='/projects' className='text-sm text-muted-foreground hover:underline'>
 				{t('projects:detail.back')}
 			</Link>

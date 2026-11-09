@@ -109,13 +109,13 @@ function LeadDetailPage() {
 	}
 
 	if (isPending) return null;
-	if (isError || !lead) return <p className='p-6 text-sm text-muted-foreground'>{t('crm:leads.notFound')}</p>;
+	if (isError || !lead) return <p className='text-sm text-muted-foreground'>{t('crm:leads.notFound')}</p>;
 
 	const open = lead.status !== 'won';
 	const statusChoice = nextStatus || lead.status;
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<Link to='/crm/leads' className='text-sm text-muted-foreground hover:underline'>
 				← {t('crm:leads.back')}
 			</Link>

@@ -19,7 +19,7 @@ function NewPurchaseOrderPage() {
 	const [submitting, setSubmitting] = useState(false);
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<h1 className='text-2xl font-bold'>{t('procurement:pos.new')}</h1>
 			<PurchaseOrderForm
 				order={null}

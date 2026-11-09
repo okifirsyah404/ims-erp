@@ -12,6 +12,8 @@ import type {
 	IWarehouseRepository,
 	TWarehouseCreateData,
 	TWarehouseKindCounts,
+	TWarehouseSortField,
+	TWarehouseStatusFilter,
 } from '../contracts/warehouse.repository.interface';
 import type {
 	IWarehouseAddressRepository,
@@ -115,6 +117,9 @@ export class WarehouseService {
 		scope?: string;
 		includeArchived?: boolean;
 		isActive?: boolean;
+		status?: TWarehouseStatusFilter;
+		sortBy?: TWarehouseSortField;
+		sortDir?: 'asc' | 'desc';
 	}): Promise<TPaginationResult<TWarehouseWithCounts>> {
 		const { scope, ...rest } = request;
 		const result = await this.warehouseRepository.paginate({

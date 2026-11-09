@@ -17,7 +17,7 @@ function PrintBastPage() {
 	const bast = useQuery(bastQueryOptions(projectId, bastId));
 
 	return (
-		<div className='flex flex-col gap-4 p-6 print:p-0'>
+		<div className='flex flex-col gap-4'>
 			<div className='flex justify-between gap-2 print:hidden'>
 				<Button variant='outline' render={<Link to='/projects/$projectId' params={{ projectId }} />} nativeButton={false}>
 					{t('projects:documents.backToProject')}

@@ -19,7 +19,7 @@ function PrintPurchaseOrderPage() {
 	const profile = useQuery(companyProfileQueryOptions());
 
 	return (
-		<div className='flex flex-col gap-4 p-6 print:p-0'>
+		<div className='flex flex-col gap-4'>
 			<div className='flex justify-between gap-2 print:hidden'>
 				<Button
 					variant='outline'

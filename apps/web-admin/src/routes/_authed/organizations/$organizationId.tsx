@@ -102,14 +102,14 @@ function OrganizationDetailPage() {
 
 	if (isPending) {
 		return (
-			<div className='p-6 text-sm text-muted-foreground'>
+			<div className='text-sm text-muted-foreground'>
 				{t('common:state.loading')}
 			</div>
 		);
 	}
 	if (!organization) {
 		return (
-			<div className='flex flex-col gap-4 p-6'>
+			<div className='flex flex-col gap-6'>
 				<p className='text-sm text-muted-foreground'>
 					{t('orgDetail.notFound')}
 				</p>
@@ -125,7 +125,7 @@ function OrganizationDetailPage() {
 	}
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<div className='flex items-start justify-between gap-4'>
 				<div>
 					<div className='flex items-center gap-2'>

@@ -19,7 +19,7 @@ function ActivationLogPage() {
 	const { data, isPending, isError, error } = useQuery(eventsQueryOptions({ page }));
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<div>
 				<h1 className='text-2xl font-bold'>{t('licensing:events.pageTitle')}</h1>
 				<p className='text-sm text-muted-foreground'>{t('licensing:events.pageDescription', { days: GRACE_DAYS })}</p>

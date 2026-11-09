@@ -22,7 +22,7 @@ function EditQuotationPage() {
 	const back = () => void navigate({ to: '/sales/quotes/$quotationId', params: { quotationId } });
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<h1 className='text-2xl font-bold'>
 				{t('sales:quotations.edit')}
 				{data ? ` ${data.code}` : ''}

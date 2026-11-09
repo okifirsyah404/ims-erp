@@ -12,9 +12,26 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import { Checkbox } from '@ims-erp/ui/components/checkbox';
-import { Input } from '@ims-erp/ui/components/input';
-import { CircleAlert, Warehouse } from 'lucide-react';
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from '@ims-erp/ui/components/input-group';
+import {
+	Popover,
+	PopoverContent,
+	PopoverHeader,
+	PopoverTitle,
+	PopoverTrigger,
+} from '@ims-erp/ui/components/popover';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
+import { CircleAlert, Funnel, Plus, Search, Warehouse } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
@@ -30,6 +47,12 @@ const routeApi = getRouteApi('/_authed/inventory/warehouses/');
 
 /** Rows per page. A card grid is wider than a table, so fewer per page. */
 const PAGE_SIZE = 12;
+
+/** Lifecycle filter values. `all` hides archived rows. */
+type TStatusFilter = 'all' | 'active' | 'inactive' | 'archived';
+/** Sortable columns. */
+type TSortField = 'name' | 'code' | 'status';
+type TSortDir = 'asc' | 'desc';
 
 /**
  * The warehouse list.
@@ -55,7 +78,9 @@ export function WarehouseList() {
 			page,
 			limit: PAGE_SIZE,
 			search: search.search,
-			includeArchived: search.includeArchived,
+			status: search.status,
+			sortBy: search.sortBy,
+			sortDir: search.sortDir,
 		}),
 		placeholderData: (previous) => previous,
 	});
@@ -101,44 +126,57 @@ export function WarehouseList() {
 					render={<Link to='/inventory/warehouses/new' />}
 					className='shrink-0'
 				>
+					<Plus className='mr-2 size-4' aria-hidden='true' />
 					{t('inventory:warehouses.new')}
 				</Button>
 			</div>
 
 			{/* Filters ------------------------------------------------------ */}
 			<div className='flex flex-wrap items-center gap-3'>
-				<Input
-					className='w-64'
-					placeholder={t('inventory:warehouses.searchPlaceholder')}
-					value={searchDraft}
-					onChange={(event) => setSearchDraft(event.target.value)}
-					onKeyDown={(event) => {
-						if (event.key === 'Enter') {
-							void navigate({
-								search: (prev) => ({
-									...prev,
-									page: 1,
-									search: searchDraft || undefined,
-								}),
-							});
-						}
-					}}
-				/>
-				<label className='flex items-center gap-2 text-sm text-muted-foreground'>
-					<Checkbox
-						checked={search.includeArchived === true}
-						onCheckedChange={(checked) =>
-							void navigate({
-								search: (prev) => ({
-									...prev,
-									page: 1,
-									includeArchived: checked === true || undefined,
-								}),
-							})
-						}
+				<InputGroup className='w-64'>
+					<InputGroupAddon align='inline-start'>
+						<Search aria-hidden='true' />
+					</InputGroupAddon>
+					<InputGroupInput
+						type='search'
+						aria-label={t('inventory:warehouses.searchPlaceholder')}
+						placeholder={t('inventory:warehouses.searchPlaceholder')}
+						value={searchDraft}
+						onChange={(event) => setSearchDraft(event.target.value)}
+						onKeyDown={(event) => {
+							if (event.key === 'Enter') {
+								void navigate({
+									search: (prev) => ({
+										...prev,
+										page: 1,
+										search: searchDraft || undefined,
+									}),
+								});
+							}
+						}}
 					/>
-					{t('inventory:warehouses.includeArchived')}
-				</label>
+				</InputGroup>
+				<WarehouseFiltersPopover
+					status={search.status}
+					sortBy={search.sortBy}
+					sortDir={search.sortDir}
+					onApply={(filters) =>
+						void navigate({
+							search: (prev) => ({ ...prev, page: 1, ...filters }),
+						})
+					}
+					onReset={() =>
+						void navigate({
+							search: (prev) => ({
+								...prev,
+								page: 1,
+								status: undefined,
+								sortBy: undefined,
+								sortDir: undefined,
+							}),
+						})
+					}
+				/>
 			</div>
 
 			{/* Cards -------------------------------------------------------- */}
@@ -204,6 +242,168 @@ export function WarehouseList() {
 				/>
 			)}
 		</div>
+	);
+}
+
+/**
+ * Filter and sort popover for the warehouse list.
+ *
+ * @remarks
+ * Drafts accumulate while the popover is open and reach the URL only on
+ * Apply; closing without applying discards them. Drafts re-seed from the URL
+ * on open, so the URL stays the source of truth.
+ */
+function WarehouseFiltersPopover({
+	status,
+	sortBy,
+	sortDir,
+	onApply,
+	onReset,
+}: {
+	status?: TStatusFilter;
+	sortBy?: TSortField;
+	sortDir?: TSortDir;
+	onApply: (filters: {
+		status?: TStatusFilter;
+		sortBy?: TSortField;
+		sortDir?: TSortDir;
+	}) => void;
+	onReset: () => void;
+}) {
+	const { t } = useTranslation(['inventory', 'common']);
+	const [open, setOpen] = useState(false);
+	const [draftStatus, setDraftStatus] = useState<TStatusFilter | undefined>(status);
+	const [draftSortBy, setDraftSortBy] = useState<TSortField>(sortBy ?? 'name');
+	const [draftSortDir, setDraftSortDir] = useState<TSortDir>(sortDir ?? 'asc');
+
+	/** Re-seeds drafts from the URL whenever the popover opens. */
+	function handleOpenChange(nextOpen: boolean) {
+		if (nextOpen) {
+			setDraftStatus(status);
+			setDraftSortBy(sortBy ?? 'name');
+			setDraftSortDir(sortDir ?? 'asc');
+		}
+		setOpen(nextOpen);
+	}
+
+	return (
+		<Popover open={open} onOpenChange={handleOpenChange}>
+			<PopoverTrigger
+				render={
+					<Button variant={status ? 'default' : 'outline'}>
+						<Funnel className='mr-2 size-4' aria-hidden='true' />
+						{t('inventory:warehouses.filters')}
+					</Button>
+				}
+			/>
+			<PopoverContent align='start' className='w-72'>
+				<PopoverHeader>
+					<PopoverTitle>{t('inventory:warehouses.filtersTitle')}</PopoverTitle>
+				</PopoverHeader>
+				<div className='flex flex-col gap-3'>
+					<div className='flex flex-col gap-1'>
+						<span className='text-xs text-muted-foreground'>
+							{t('inventory:warehouses.filterStatus')}
+						</span>
+						<Select
+							value={draftStatus ?? 'all'}
+							onValueChange={(value) =>
+								setDraftStatus(
+									value === 'all' || value == null ? undefined : (value as TStatusFilter),
+								)
+							}
+						>
+							<SelectTrigger className='w-full'>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value='all'>
+									{t('inventory:warehouses.statusAll')}
+								</SelectItem>
+								<SelectItem value='active'>{t('common:status.active')}</SelectItem>
+								<SelectItem value='inactive'>
+									{t('common:status.inactive')}
+								</SelectItem>
+								<SelectItem value='archived'>
+									{t('inventory:warehouses.statusArchived')}
+								</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+					<div className='flex flex-col gap-1'>
+						<span className='text-xs text-muted-foreground'>
+							{t('inventory:warehouses.sortBy')}
+						</span>
+						<Select
+							value={draftSortBy}
+							onValueChange={(value) =>
+								setDraftSortBy((value ?? 'name') as TSortField)
+							}
+						>
+							<SelectTrigger className='w-full'>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value='name'>
+									{t('inventory:warehouses.sortName')}
+								</SelectItem>
+								<SelectItem value='code'>
+									{t('inventory:warehouses.sortCode')}
+								</SelectItem>
+								<SelectItem value='status'>
+									{t('inventory:warehouses.sortStatus')}
+								</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+					<div className='flex flex-col gap-1'>
+						<span className='text-xs text-muted-foreground'>
+							{t('inventory:warehouses.sortOrder')}
+						</span>
+						<Select
+							value={draftSortDir}
+							onValueChange={(value) => setDraftSortDir((value ?? 'asc') as TSortDir)}
+						>
+							<SelectTrigger className='w-full'>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value='asc'>{t('inventory:warehouses.sortAsc')}</SelectItem>
+								<SelectItem value='desc'>{t('inventory:warehouses.sortDesc')}</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+				</div>
+				<div className='mt-1 flex items-center justify-between gap-2'>
+					<Button
+						variant='ghost'
+						size='sm'
+						onClick={() => {
+							setDraftStatus(undefined);
+							setDraftSortBy('name');
+							setDraftSortDir('asc');
+							onReset();
+							setOpen(false);
+						}}
+					>
+						{t('inventory:warehouses.reset')}
+					</Button>
+					<Button
+						size='sm'
+						onClick={() => {
+							onApply({
+								status: draftStatus,
+								sortBy: draftSortBy,
+								sortDir: draftSortDir,
+							});
+							setOpen(false);
+						}}
+					>
+						{t('inventory:warehouses.apply')}
+					</Button>
+				</div>
+			</PopoverContent>
+		</Popover>
 	);
 }
 

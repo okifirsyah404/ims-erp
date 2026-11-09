@@ -57,7 +57,7 @@ function SalesOrderDetailPage() {
 	if (isPending) return null;
 	if (isError) {
 		return (
-			<div className='flex flex-col gap-4 p-6'>
+			<div className='flex flex-col gap-6'>
 				<p className='text-sm text-destructive'>{error.message}</p>
 				<Link to='/sales/orders' className='text-sm hover:underline'>
 					{t('sales:orders.back')}
@@ -70,7 +70,7 @@ function SalesOrderDetailPage() {
 	const language = i18n.language === 'en' ? 'en-GB' : 'id-ID';
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<Link to='/sales/orders' className='text-sm text-muted-foreground hover:underline'>
 				{t('sales:orders.back')}
 			</Link>

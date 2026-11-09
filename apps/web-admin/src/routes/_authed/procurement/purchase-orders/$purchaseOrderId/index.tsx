@@ -82,14 +82,14 @@ function PurchaseOrderDetailPage() {
 	}
 
 	if (isPending) return null;
-	if (isError) return <p className='p-6 text-sm text-destructive'>{error.message}</p>;
+	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
 
 	const own = data.createdBy === session?.user.id;
 	const supplier = data.supplierSnapshot;
 	const cancellable = ['draft', 'submitted', 'approved', 'sent'].includes(data.status);
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<Link to='/procurement/purchase-orders' className='text-sm text-muted-foreground hover:underline'>
 				{t('procurement:pos.back')}
 			</Link>

@@ -71,7 +71,7 @@ function TicketDetailPage() {
 	if (isPending) return null;
 	if (isError) {
 		return (
-			<div className='flex flex-col gap-4 p-6'>
+			<div className='flex flex-col gap-6'>
 				<p className='text-sm text-destructive'>{error.message}</p>
 				<Link to='/projects/tickets' className='text-sm hover:underline'>
 					{t('projects:tickets.back')}
@@ -97,7 +97,7 @@ function TicketDetailPage() {
 	const open = data.status === 'new' || data.status === 'in_progress';
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<Link to='/projects/tickets' className='text-sm text-muted-foreground hover:underline'>
 				{t('projects:tickets.back')}
 			</Link>

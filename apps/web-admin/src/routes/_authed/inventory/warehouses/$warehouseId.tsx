@@ -62,7 +62,7 @@ function WarehouseDetail() {
 	if (isError || !warehouse) {
 		return (
 			<AdminOnly>
-				<p className='p-6 text-sm text-muted-foreground'>
+				<p className='text-sm text-muted-foreground'>
 					{t('inventory:warehouses.notFound')}
 				</p>
 			</AdminOnly>
@@ -77,7 +77,7 @@ function WarehouseDetail() {
 
 	return (
 		<AdminOnly>
-			<div className='flex flex-col gap-6 p-6'>
+			<div className='flex flex-col gap-6'>
 				<div className='flex flex-wrap items-start justify-between gap-4'>
 					<div>
 						<h1 className='text-2xl font-bold'>{warehouse.name}</h1>
