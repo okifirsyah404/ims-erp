@@ -3,6 +3,7 @@ import { ItemService } from '../../src/app/inventory/services/item.service';
 import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import {
 	InventoryRuleViolationError,
+	ItemCategoryUnavailableError,
 	ItemHasUnitsError,
 	ItemNotFoundError,
 	ItemSkuTakenError,
@@ -15,6 +16,7 @@ import type {
 } from '../../src/app/inventory/contracts/item.repository.interface';
 import type { ISerialUnitRepository } from '../../src/app/inventory/contracts/serial-unit.repository.interface';
 import type {
+	TItemCategorySelect,
 	TItemSelect,
 	TSerialTrackedItemSelect,
 } from '@drizzle/schemas/inventory.schema';
@@ -29,7 +31,11 @@ function makeItem(overrides: Partial<TItemSelect> = {}): TItemSelect {
 		name: 'Door controller',
 		description: null,
 		itemKind: 'product',
-		category: null,
+		categoryId: null,
+		brand: null,
+		specification: null,
+		isActive: true,
+		createdBy: null,
 		unitLabel: 'pcs',
 		isSerialized: true,
 		isStockTracked: true,
@@ -85,6 +91,16 @@ type Harness = {
  * matches only a provisional unit in `pre_order`, so the concurrency
  * behaviour under test is not an artefact of the fake.
  */
+/** Categories known to the fake category repository (ADR-0011). */
+const ACTIVE_CATEGORY = '01920000-0000-7000-8000-00000000c001';
+const INACTIVE_CATEGORY = '01920000-0000-7000-8000-00000000c002';
+const categories = new Map<string, TItemCategorySelect>(
+	[
+		{ id: ACTIVE_CATEGORY, isActive: true },
+		{ id: INACTIVE_CATEGORY, isActive: false },
+	].map((row) => [row.id, { ...row, slug: row.id, name: row.id } as TItemCategorySelect]),
+);
+
 function makeService(seed?: {
 	items?: TItemSelect[];
 	units?: TSerialTrackedItemSelect[];
@@ -98,6 +114,7 @@ function makeService(seed?: {
 			data: items,
 		}),
 		findById: async (id) => items.find((i) => i.id === id) ?? null,
+		findActiveByIds: async (ids) => items.filter((i) => ids.includes(i.id) && i.isActive),
 		findBySku: async (org, sku) =>
 			items.find((i) => i.organizationId === org && i.sku === sku) ?? null,
 		create: async (data) => {
@@ -159,10 +176,17 @@ function makeService(seed?: {
 			row.status = status;
 			return row;
 		},
+		listInStockSerials: async () => [],
+		sell: async () => [],
 	};
 
 	return {
-		service: new ItemService(itemRepository, serialUnitRepository, new AuditWriterDouble()),
+		service: new ItemService(
+			itemRepository,
+			serialUnitRepository,
+			{ findById: async (id) => categories.get(id) ?? null },
+			new AuditWriterDouble(),
+		),
 		items,
 		units,
 	};
@@ -428,5 +452,43 @@ describe('ItemService — unit transitions', () => {
 		await expect(
 			service.transitionUnit(units[0]!.id, 'in_stock'),
 		).rejects.toBeInstanceOf(InventoryRuleViolationError);
+	});
+});
+
+describe('ItemService — categories (ADR-0011)', () => {
+	const base = {
+		organizationId: 'org-a',
+		name: 'Controller',
+		itemKind: 'product',
+		isSerialized: false,
+		isStockTracked: true,
+		minStockQty: '0.000',
+		sellingPrice: 0,
+		purchasePrice: 0,
+		currencyCode: 'IDR',
+		unitLabel: 'pcs',
+	} as const;
+
+	test('an active category is accepted; inactive or unknown ones are refused', async () => {
+		const { service } = makeService();
+		const created = await service.createItem({ ...base, sku: 'CAT-1', categoryId: ACTIVE_CATEGORY });
+		expect(created.categoryId).toBe(ACTIVE_CATEGORY);
+		await expect(
+			service.createItem({ ...base, sku: 'CAT-2', categoryId: INACTIVE_CATEGORY }),
+		).rejects.toBeInstanceOf(ItemCategoryUnavailableError);
+		await expect(
+			service.createItem({ ...base, sku: 'CAT-3', categoryId: '01920000-0000-7000-8000-00000000c0ff' }),
+		).rejects.toBeInstanceOf(ItemCategoryUnavailableError);
+	});
+
+	test('an item keeps a category that became inactive, but cannot move into one', async () => {
+		const keeper = makeItem({ categoryId: INACTIVE_CATEGORY });
+		const mover = makeItem({ id: '01920000-0000-7000-8000-0000000000aa', sku: 'MOVE', categoryId: null });
+		const { service } = makeService({ items: [keeper, mover] });
+		const renamed = await service.updateItem(keeper.id, { name: 'Renamed', categoryId: INACTIVE_CATEGORY });
+		expect(renamed.name).toBe('Renamed');
+		await expect(
+			service.updateItem(mover.id, { categoryId: INACTIVE_CATEGORY }),
+		).rejects.toBeInstanceOf(ItemCategoryUnavailableError);
 	});
 });

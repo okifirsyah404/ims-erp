@@ -31,6 +31,32 @@ const inventory = {
 	'items.purchasePrice': 'Purchase price',
 	'items.description_label': 'Description',
 	'items.barcode': 'Barcode',
+	'items.noCategory': 'No category',
+	'items.brand': 'Brand',
+	'items.specification': 'Specification',
+	'items.specificationHint': 'Printed on quotations. One point per line.',
+	'items.isActive': 'Active',
+	'items.isActiveHint': 'Inactive items stay listed but are not offered for new quotations or purchase orders.',
+	'items.inactive': 'Inactive',
+
+	'categories.title': 'Item categories',
+	'categories.description':
+		'One level, shared by the whole company. The slug matches the category on the public website.',
+	'categories.new': 'New category',
+	'categories.edit': 'Edit category',
+	'categories.empty': 'No categories yet.',
+	'categories.slug': 'Slug',
+	'categories.slugHint': 'Lower-case letters, digits and dashes, e.g. access-controllers. Cannot change later.',
+	'categories.name': 'Name',
+	'categories.shortName': 'Short name',
+	'categories.sortOrder': 'Order',
+	'categories.descriptionLabel': 'Description',
+	'categories.isActive': 'Active',
+	'categories.inactive': 'Inactive',
+	'categories.saved': 'Category saved',
+	'categories.archive': 'Archive',
+	'categories.archiveConfirm': 'Archive the category {{name}}? Categories still used by items cannot be archived; deactivate them instead.',
+	'categories.archived': 'Category archived',
 
 	// Kind labels.
 	'kind.product': 'Product',
@@ -325,6 +351,25 @@ const inventory = {
 	'adjustmentForm.created': 'Adjustment created',
 	'adjustmentForm.emptyLines': 'Add at least one line.',
 
+
+	'items.documentPhoto': 'Photo on documents',
+	'items.documentPhotoHint': 'Printed in the Gambar column of quotations. PNG, JPG or WebP, at most 2 MB. Quotations already issued keep their photo.',
+	'adjustmentForm.unitCost': 'Unit cost (Rp)',
+	'adjustmentForm.unitCostPlaceholder': 'Empty = average cost',
+	'adjustmentForm.reasonOpeningStock': 'Opening stock',
+	'value.title': 'Inventory value',
+	'value.description': 'Stock on hand at its moving-average cost (HPP), per item and warehouse. Receipts add at their cost; deliveries and decreases leave at the average.',
+	'value.total': 'Total inventory value',
+	'value.allWarehouses': 'All warehouses',
+	'value.balances': '{{count}} balances',
+	'value.search': 'Search SKU or item name…',
+	'value.empty': 'No stock on hand.',
+	'value.item': 'Item',
+	'value.warehouse': 'Warehouse',
+	'value.quantity': 'On hand',
+	'value.averageCost': 'Average cost',
+	'value.totalValue': 'Value',
+	'value.link': 'Inventory value',
 } as const;
 
 export default inventory;

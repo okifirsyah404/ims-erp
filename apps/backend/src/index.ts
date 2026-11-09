@@ -2,6 +2,11 @@
 // is missing, and this project has `emitDecoratorMetadata: true`. Must stay the
 // first import — before `tsyringe` itself is pulled in.
 import { registerInventory } from '@app/inventory';
+import { registerCrm } from '@app/crm';
+import { registerProcurement } from '@app/procurement';
+import { registerProjects } from '@app/projects';
+import { registerAftersales } from '@app/aftersales';
+import { registerLicensing } from '@app/licensing';
 import { registerAssets } from '@app/assets';
 import { registerAccounting } from '@app/accounting';
 import { appConfig } from '@config/providers/config';
@@ -33,8 +38,8 @@ import { registerAuthorization } from './authorization/container';
 registerProvider(container);
 registerLocation(container);
 registerSales(container);
-// Organization first: its DocumentNumberingService (ERP-0009) is injected
-// into inventory services (stock/adjustment/borrowing).
+// Organization first: its NumberingService (the one numbering authority,
+// ERP-0009) is injected into the document services of every module.
 registerOrganization(container);
 // Audit before the modules that resolve AUDIT_SERVICE_TOKEN eagerly
 // (registerInventory builds the shared InventoryAuditWriter at
@@ -42,6 +47,11 @@ registerOrganization(container);
 registerAudit(container);
 registerInventory(container);
 registerAssets(container);
+registerCrm(container);
+registerProcurement(container);
+registerProjects(container);
+registerAftersales(container);
+registerLicensing(container);
 registerAccounting(container);
 registerUser(container);
 registerAuthorization(container);

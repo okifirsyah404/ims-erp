@@ -7,8 +7,8 @@ import {
 	invoiceIdParamSchema,
 	invoiceListQuerySchema,
 	invoiceUpdateSchema,
+	createReceiptSchema,
 } from '../contracts/invoice.contract';
-import { INVOICE_REPOSITORY_TOKEN } from '../../accounting/constants/ar-di';
 import type { InvoiceService } from '../services/invoice.service';
 import { INVOICE_SERVICE_TOKEN } from '../constants/ar-di';
 
@@ -130,9 +130,24 @@ export class InvoiceController {
 							'draft → issued: posts DR AR / CR revenue (+ CR tax payable) and opens the AR sub-ledger row',
 					},
 				},
+			)
+			.post(
+				'/invoices/:id/receipts',
+				async ({ params, body, erp, status }) =>
+					status(
+						201,
+						created(
+							await invoices.addReceipt(
+								ctxOf(erp),
+								invoiceIdParamSchema.parse(params).id,
+								createReceiptSchema.parse(body),
+							),
+						),
+					),
+				{
+					erp: { permission: ['receipt:create'] },
+					detail: { description: 'Records money received (kwitansi)' },
+				},
 			);
 	}
 }
-
-// Keep the repository token import referenced for DI symmetry documentation.
-void INVOICE_REPOSITORY_TOKEN;

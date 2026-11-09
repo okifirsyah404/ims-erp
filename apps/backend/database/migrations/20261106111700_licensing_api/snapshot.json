@@ -1,0 +1,1337 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "8461de4b-3315-4715-ad41-158963f7dcd0",
+  "prevIds": [
+    "8aa87cb4-702a-4157-a05f-054b9835b6f7"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "licensing",
+        "application_api_keys"
+      ],
+      "writes": [
+        "s|tbl|licensing.application_api_keys",
+        "n|tbl|licensing.application_api_keys",
+        "e|tbl|licensing.application_api_keys",
+        "n|rel|licensing.application_api_keys",
+        "n|type|licensing.application_api_keys",
+        "n|rel|licensing.application_api_keys_pkey"
+      ],
+      "reads": [
+        "n|sch|licensing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "licensing",
+        "license_activations"
+      ],
+      "writes": [
+        "s|tbl|licensing.license_activations",
+        "n|tbl|licensing.license_activations",
+        "e|tbl|licensing.license_activations",
+        "n|rel|licensing.license_activations",
+        "n|type|licensing.license_activations",
+        "n|rel|licensing.license_activations_pkey"
+      ],
+      "reads": [
+        "n|sch|licensing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "licensing",
+        "license_events"
+      ],
+      "writes": [
+        "s|tbl|licensing.license_events",
+        "n|tbl|licensing.license_events",
+        "e|tbl|licensing.license_events",
+        "n|rel|licensing.license_events",
+        "n|type|licensing.license_events",
+        "n|rel|licensing.license_events_pkey"
+      ],
+      "reads": [
+        "n|sch|licensing"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "licensing",
+        "application_api_keys",
+        "application_api_keys_application_id_idx"
+      ],
+      "writes": [
+        "s|idx|licensing.application_api_keys_application_id_idx",
+        "n|idx|licensing.application_api_keys_application_id_idx",
+        "e|idx|licensing.application_api_keys_application_id_idx",
+        "n|rel|licensing.application_api_keys_application_id_idx"
+      ],
+      "reads": [
+        "n|tbl|licensing.application_api_keys",
+        "n|sch|licensing",
+        "n|col|licensing.application_api_keys.licensable_application_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "licensing",
+        "application_api_keys",
+        "application_api_keys_api_key_id_uq"
+      ],
+      "writes": [
+        "s|idx|licensing.application_api_keys_api_key_id_uq",
+        "n|idx|licensing.application_api_keys_api_key_id_uq",
+        "e|idx|licensing.application_api_keys_api_key_id_uq",
+        "n|rel|licensing.application_api_keys_api_key_id_uq"
+      ],
+      "reads": [
+        "n|tbl|licensing.application_api_keys",
+        "n|sch|licensing",
+        "n|col|licensing.application_api_keys.api_key_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "licensing",
+        "license_activations",
+        "license_activations_key_id_idx"
+      ],
+      "writes": [
+        "s|idx|licensing.license_activations_key_id_idx",
+        "n|idx|licensing.license_activations_key_id_idx",
+        "e|idx|licensing.license_activations_key_id_idx",
+        "n|rel|licensing.license_activations_key_id_idx"
+      ],
+      "reads": [
+        "n|tbl|licensing.license_activations",
+        "n|sch|licensing",
+        "n|col|licensing.license_activations.license_key_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "licensing",
+        "license_activations",
+        "license_activations_active_uq"
+      ],
+      "writes": [
+        "s|idx|licensing.license_activations_active_uq",
+        "n|idx|licensing.license_activations_active_uq",
+        "e|idx|licensing.license_activations_active_uq",
+        "n|rel|licensing.license_activations_active_uq"
+      ],
+      "reads": [
+        "n|tbl|licensing.license_activations",
+        "n|sch|licensing",
+        "n|col|licensing.license_activations.license_key_id",
+        "n|col|licensing.license_activations.instance_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "licensing",
+        "license_events",
+        "license_events_key_id_idx"
+      ],
+      "writes": [
+        "s|idx|licensing.license_events_key_id_idx",
+        "n|idx|licensing.license_events_key_id_idx",
+        "e|idx|licensing.license_events_key_id_idx",
+        "n|rel|licensing.license_events_key_id_idx"
+      ],
+      "reads": [
+        "n|tbl|licensing.license_events",
+        "n|sch|licensing",
+        "n|col|licensing.license_events.license_key_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "licensing",
+        "license_events",
+        "license_events_contract_id_idx"
+      ],
+      "writes": [
+        "s|idx|licensing.license_events_contract_id_idx",
+        "n|idx|licensing.license_events_contract_id_idx",
+        "e|idx|licensing.license_events_contract_id_idx",
+        "n|rel|licensing.license_events_contract_id_idx"
+      ],
+      "reads": [
+        "n|tbl|licensing.license_events",
+        "n|sch|licensing",
+        "n|col|licensing.license_events.license_contract_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "licensing",
+        "license_events",
+        "license_events_event_at_idx"
+      ],
+      "writes": [
+        "s|idx|licensing.license_events_event_at_idx",
+        "n|idx|licensing.license_events_event_at_idx",
+        "e|idx|licensing.license_events_event_at_idx",
+        "n|rel|licensing.license_events_event_at_idx"
+      ],
+      "reads": [
+        "n|tbl|licensing.license_events",
+        "n|sch|licensing",
+        "n|col|licensing.license_events.event_at"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "licensing",
+        "application_api_keys"
+      ],
+      "writes": [
+        "s|fk|licensing.application_api_keys.application_api_keys_o1w5iIa8QWO5_fkey",
+        "n|fk|licensing.application_api_keys.application_api_keys_o1w5iIa8QWO5_fkey",
+        "e|fk|licensing.application_api_keys.application_api_keys_o1w5iIa8QWO5_fkey",
+        "n|con|licensing.application_api_keys.application_api_keys_o1w5iIa8QWO5_fkey"
+      ],
+      "reads": [
+        "n|tbl|licensing.application_api_keys",
+        "n|sch|licensing",
+        "n|tbl|licensing.licensable_applications",
+        "n|sch|licensing",
+        "n|col|licensing.application_api_keys.licensable_application_id",
+        "n|col|licensing.licensable_applications.id",
+        "e|uniqueness|licensing.licensable_applications.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "licensing",
+        "license_activations"
+      ],
+      "writes": [
+        "s|fk|licensing.license_activations.license_activations_license_key_id_license_keys_id_fkey",
+        "n|fk|licensing.license_activations.license_activations_license_key_id_license_keys_id_fkey",
+        "e|fk|licensing.license_activations.license_activations_license_key_id_license_keys_id_fkey",
+        "n|con|licensing.license_activations.license_activations_license_key_id_license_keys_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|licensing.license_activations",
+        "n|sch|licensing",
+        "n|tbl|licensing.license_keys",
+        "n|sch|licensing",
+        "n|col|licensing.license_activations.license_key_id",
+        "n|col|licensing.license_keys.id",
+        "e|uniqueness|licensing.license_keys.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "licensing",
+        "license_events"
+      ],
+      "writes": [
+        "s|fk|licensing.license_events.license_events_license_key_id_license_keys_id_fkey",
+        "n|fk|licensing.license_events.license_events_license_key_id_license_keys_id_fkey",
+        "e|fk|licensing.license_events.license_events_license_key_id_license_keys_id_fkey",
+        "n|con|licensing.license_events.license_events_license_key_id_license_keys_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|licensing.license_events",
+        "n|sch|licensing",
+        "n|tbl|licensing.license_keys",
+        "n|sch|licensing",
+        "n|col|licensing.license_events.license_key_id",
+        "n|col|licensing.license_keys.id",
+        "e|uniqueness|licensing.license_keys.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "licensing",
+        "license_events"
+      ],
+      "writes": [
+        "s|fk|licensing.license_events.license_events_license_contract_id_license_contracts_id_fkey",
+        "n|fk|licensing.license_events.license_events_license_contract_id_license_contracts_id_fkey",
+        "e|fk|licensing.license_events.license_events_license_contract_id_license_contracts_id_fkey",
+        "n|con|licensing.license_events.license_events_license_contract_id_license_contracts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|licensing.license_events",
+        "n|sch|licensing",
+        "n|tbl|licensing.license_contracts",
+        "n|sch|licensing",
+        "n|col|licensing.license_events.license_contract_id",
+        "n|col|licensing.license_contracts.id",
+        "e|uniqueness|licensing.license_contracts.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "licensing",
+        "license_events"
+      ],
+      "writes": [
+        "s|fk|licensing.license_events.license_events_zNKYspG3nXkU_fkey",
+        "n|fk|licensing.license_events.license_events_zNKYspG3nXkU_fkey",
+        "e|fk|licensing.license_events.license_events_zNKYspG3nXkU_fkey",
+        "n|con|licensing.license_events.license_events_zNKYspG3nXkU_fkey"
+      ],
+      "reads": [
+        "n|tbl|licensing.license_events",
+        "n|sch|licensing",
+        "n|tbl|licensing.application_api_keys",
+        "n|sch|licensing",
+        "n|col|licensing.license_events.application_api_key_id",
+        "n|col|licensing.application_api_keys.id",
+        "e|uniqueness|licensing.application_api_keys.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "name": "application_api_keys",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "name": "license_activations",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "name": "license_events",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "licensable_application_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "api_key_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "name",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "key_start",
+        "type": "varchar(20)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'active'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "revoked_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "revoked_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "last_used_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "license_key_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "instance_id",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "device_name",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "activated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "last_seen_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "last_ip",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'active'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "deactivated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "deactivated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "license_key_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "license_contract_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "application_api_key_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "event_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "result",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "instance_id",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "ip_address",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "actor_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "event_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "application_api_keys_application_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "licensable_application_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "application_api_keys_api_key_id_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "api_key_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "license_activations_key_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "license_key_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "license_activations_active_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "license_key_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "instance_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "status = 'active' AND deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "license_events_key_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "license_key_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "license_events_contract_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "license_contract_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "license_events_event_at_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "event_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "application_api_keys_o1w5iIa8QWO5_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "licensable_application_id"
+        ],
+        "schemaTo": "licensing",
+        "tableTo": "licensable_applications",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "license_activations_license_key_id_license_keys_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "license_key_id"
+        ],
+        "schemaTo": "licensing",
+        "tableTo": "license_keys",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "license_events_license_key_id_license_keys_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "license_key_id"
+        ],
+        "schemaTo": "licensing",
+        "tableTo": "license_keys",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "license_events_license_contract_id_license_contracts_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "license_contract_id"
+        ],
+        "schemaTo": "licensing",
+        "tableTo": "license_contracts",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "license_events_zNKYspG3nXkU_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "application_api_key_id"
+        ],
+        "schemaTo": "licensing",
+        "tableTo": "application_api_keys",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "application_api_keys_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "license_activations_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "license_events_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "application_api_keys",
+        "name": "application_api_keys_status_check",
+        "value": "\"status\" IN ('active', 'revoked')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_activations",
+        "name": "license_activations_status_check",
+        "value": "\"status\" IN ('active', 'deactivated')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "licensing",
+        "table": "license_events",
+        "name": "license_events_event_type_check",
+        "value": "\"event_type\" IN ('validated', 'activated', 'deactivated', 'renewed', 'suspended', 'reactivated', 'terminated', 'key_revoked')",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

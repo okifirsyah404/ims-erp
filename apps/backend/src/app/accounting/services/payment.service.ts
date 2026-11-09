@@ -5,8 +5,8 @@ import type {
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { DRIZZLE_TOKEN } from '@di/provider';
-import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
+import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { NumberingService } from '@app/organization/services/numbering.service';
 import {
 	AR_ACCOUNT_RESOLVER_TOKEN,
 	CASH_BANK_SERVICE_TOKEN,
@@ -76,8 +76,8 @@ export class PaymentService {
 		@inject(CASH_BANK_SERVICE_TOKEN) private readonly cashBank: CashBankService,
 		@inject(AR_ACCOUNT_RESOLVER_TOKEN)
 		private readonly arResolver: ArAccountResolverService,
-		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: DocumentNumberingService,
+		@inject(NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: NumberingService,
 	) {}
 
 	async get(organizationId: string, id: string): Promise<TPaymentSelect> {
@@ -100,17 +100,10 @@ export class PaymentService {
 		_allocations: TAllocationInput[],
 	): Promise<TPaymentSelect> {
 		return this.database.transaction(async (tx) => {
-			const number = await this.numbering.allocate(
-				ctx.organizationId,
-				'payment',
+			const code = await this.numbering.next('payment', {
+				date: new Date(`${input.paymentDate}T12:00:00+07:00`),
 				tx,
-			);
-			const code = this.numbering.format(
-				'PAY',
-				input.paymentDate.replaceAll('-', '').slice(0, 6),
-				number,
-				5,
-			);
+			});
 			return this.repo.insertPayment(
 				{
 					organizationId: ctx.organizationId,

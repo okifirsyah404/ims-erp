@@ -19,6 +19,25 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 export const ITEM_KINDS = ['product', 'component', 'material'] as const;
 export type TItemKind = (typeof ITEM_KINDS)[number];
 
+/** Fixed unit list (ADR-0011); mirrors `ITEM_UNITS` in the backend schema; not to be confused with `TItemUnit`, a serialized unit. */
+export const ITEM_UNIT_LABELS = [
+	'pcs',
+	'unit',
+	'set',
+	'paket',
+	'titik',
+	'm',
+	'roll',
+	'kg',
+	'jam',
+	'bulan',
+	'tahun',
+	'lic',
+	'lot',
+	'pulau',
+] as const;
+export type TItemUnitLabel = (typeof ITEM_UNIT_LABELS)[number];
+
 /** Unit statuses, mirroring `UNIT_STATUSES`. The stored value for "ready" is `in_stock`. */
 export const UNIT_STATUSES = [
 	'pre_order',
@@ -38,8 +57,15 @@ export type TItem = {
 	name: string;
 	description: string | null;
 	itemKind: TItemKind;
-	category: string | null;
-	unitLabel: string | null;
+	/** Item category (ADR-0011); resolve the name via `useItemCategoryNames`. */
+	categoryId: string | null;
+	brand: string | null;
+	specification: string | null;
+	/** Short-lived URL of the document photo (detail endpoint only). */
+	imageUrl?: string | null;
+	unitLabel: TItemUnitLabel;
+	/** Inactive items are not offered for new documents. */
+	isActive: boolean;
 	isSerialized: boolean;
 	isStockTracked: boolean;
 	minStockQty: string;
@@ -47,6 +73,7 @@ export type TItem = {
 	sellingPrice: number;
 	purchasePrice: number;
 	currencyCode: string;
+	createdBy: string | null;
 	createdAt: string;
 	updatedAt: string | null;
 	deletedAt: string | null;
@@ -83,8 +110,11 @@ export type TItemCreateInput = {
 	name: string;
 	itemKind: TItemKind;
 	description?: string | null;
-	category?: string | null;
-	unitLabel?: string | null;
+	categoryId?: string | null;
+	brand?: string | null;
+	specification?: string | null;
+	unitLabel: TItemUnitLabel;
+	isActive: boolean;
 	isSerialized: boolean;
 	isStockTracked: boolean;
 	minStockQty: number;
@@ -122,6 +152,9 @@ export async function listItems(params?: {
 	limit?: number;
 	itemKind?: TItemKind;
 	search?: string;
+	categoryId?: string;
+	/** Only items offered for new documents. */
+	activeOnly?: boolean;
 	/** Only items with at least one live unit in this warehouse. */
 	warehouseId?: string;
 	includeArchived?: boolean;
@@ -131,6 +164,8 @@ export async function listItems(params?: {
 	if (params?.limit) search.set('limit', String(params.limit));
 	if (params?.itemKind) search.set('itemKind', params.itemKind);
 	if (params?.search) search.set('search', params.search);
+	if (params?.categoryId) search.set('categoryId', params.categoryId);
+	if (params?.activeOnly) search.set('activeOnly', 'true');
 	if (params?.warehouseId) search.set('warehouseId', params.warehouseId);
 	if (params?.includeArchived) search.set('includeArchived', 'true');
 	const query = search.toString();

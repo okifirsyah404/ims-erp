@@ -7,14 +7,14 @@ import type {
 	TInvoiceSelect,
 } from '@drizzle/schemas/sales.schema';
 import type { TPaginationResult } from '@ims-erp/common';
-import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
+import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { NumberingService } from '@app/organization/services/numbering.service';
 import {
-	INVOICE_REPOSITORY_TOKEN,
 	LEDGER_REPOSITORY_TOKEN,
 	POSTING_SERVICE_TOKEN,
 	AR_ACCOUNT_RESOLVER_TOKEN,
 } from '../../accounting/constants/ar-di';
+import { INVOICE_REPOSITORY_TOKEN } from '../constants/ar-di';
 import type { TInvoiceRepository } from '../contracts/invoice.repository.interface';
 import type {
 	TCreateInvoiceInput,
@@ -29,7 +29,17 @@ import {
 	InvoiceNoItemsError,
 	InvoiceNotDraftError,
 	InvoiceNotFoundError,
+	InvoiceNotPayableError,
+	ReceiptAlreadyReversedError,
+	ReceiptExceedsOutstandingError,
+	ReceiptNotFoundError,
 } from '../errors/invoice.errors';
+import { businessDateOf } from '@utils/business-date.util';
+import type {
+	TCreateReceiptInput,
+	TReceiptListQuery,
+} from '../contracts/invoice.contract';
+import type { TReceiptSelect } from '@drizzle/schemas/sales.schema';
 
 export type TInvoiceActionContext = {
 	organizationId: string;
@@ -58,8 +68,8 @@ export class InvoiceService {
 		@inject(POSTING_SERVICE_TOKEN) private readonly posting: PostingService,
 		@inject(AR_ACCOUNT_RESOLVER_TOKEN)
 		private readonly arResolver: ArAccountResolverService,
-		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: DocumentNumberingService,
+		@inject(NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: NumberingService,
 	) {}
 
 	async list(
@@ -87,20 +97,12 @@ export class InvoiceService {
 		this.validateDates(input.issueDate, input.dueDate);
 		return this.database.transaction(async (tx) => {
 			const totals = this.totalsOf(input.items);
-			const number = await this.numbering.allocate(
-				ctx.organizationId,
-				'sales_invoice',
-				tx as TTx,
-			);
-			const code = this.numbering.format(
-				'INV',
-				(input.issueDate ?? new Date().toISOString().slice(0, 10)).replaceAll(
-					'-',
-					'',
-				).slice(0, 6),
-				number,
-				5,
-			);
+			const code = await this.numbering.next('sales_invoice', {
+				date: input.issueDate
+					? new Date(`${input.issueDate}T12:00:00+07:00`)
+					: new Date(),
+				tx: tx as TTx,
+			});
 			const invoice = await this.repo.insert(
 				{
 					organizationId: ctx.organizationId,
@@ -337,6 +339,79 @@ export class InvoiceService {
 			})),
 			tx,
 		);
+	}
+
+	/* ---------------------------- receipts (AR) ---------------------------- */
+
+	/** One live invoice of this organization, or 404. */
+	private async requireInvoice(
+		organizationId: string,
+		id: string,
+	): Promise<TInvoiceSelect> {
+		const invoice = await this.repo.findById(organizationId, id);
+		if (!invoice) throw new InvoiceNotFoundError();
+		return invoice;
+	}
+
+	/** Paginated receipts joined with their invoice and customer. */
+	listReceipts(
+		organizationId: string,
+		query: TReceiptListQuery,
+	): Promise<
+		TPaginationResult<
+			TReceiptSelect & { invoiceCode: string | null; customerName: string }
+		>
+	> {
+		return this.repo.paginateReceipts(organizationId, query);
+	}
+
+	/** Records a payment against a live invoice and recomputes its status. */
+	async addReceipt(
+		ctx: TInvoiceActionContext,
+		invoiceId: string,
+		body: TCreateReceiptInput,
+	): Promise<TReceiptSelect> {
+		const invoice = await this.requireInvoice(ctx.organizationId, invoiceId);
+		if (invoice.status !== 'issued' && invoice.status !== 'partially_paid')
+			throw new InvoiceNotPayableError();
+		if (body.amount > invoice.outstandingTotal)
+			throw new ReceiptExceedsOutstandingError();
+		const receivedDate = body.receivedDate ?? businessDateOf();
+		const code = await this.numbering.next('receipt', {
+			date: new Date(`${receivedDate}T12:00:00+07:00`),
+		});
+		const receipt = await this.repo.addReceipt({
+			salesInvoiceId: invoiceId,
+			organizationId: ctx.organizationId,
+			code,
+			receivedDate,
+			amount: body.amount,
+			currencyCode: invoice.currencyCode,
+			method: body.method,
+			reference: body.reference,
+			notes: body.notes,
+			receivedBy: ctx.actorUserId,
+		});
+		if (!receipt) throw new ReceiptExceedsOutstandingError();
+		return receipt;
+	}
+
+	/** Reverses a posted receipt with a reason and restores the invoice. */
+	async reverseReceipt(
+		ctx: TInvoiceActionContext,
+		id: string,
+		reason: string,
+	): Promise<TReceiptSelect> {
+		if (!(await this.repo.findReceipt(ctx.organizationId, id)))
+			throw new ReceiptNotFoundError();
+		const reversed = await this.repo.reverseReceipt(
+			ctx.organizationId,
+			id,
+			ctx.actorUserId,
+			reason,
+		);
+		if (!reversed) throw new ReceiptAlreadyReversedError();
+		return reversed;
 	}
 }
 

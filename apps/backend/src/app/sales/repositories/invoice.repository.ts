@@ -3,13 +3,31 @@ import type { TTx } from '@drizzle/types';
 import {
 	invoiceItems,
 	invoices,
+	receipts,
 	type TInvoiceItemSelect,
 	type TInvoiceSelect,
+	type TReceiptSelect,
 } from '@drizzle/schemas/sales.schema';
-import { and, asc, count, desc, eq, isNull } from 'drizzle-orm';
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	ilike,
+	isNull,
+	ne,
+	or,
+	sql,
+} from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
+import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
 import type { TInvoiceRepository } from '../contracts/invoice.repository.interface';
+import type { TReceiptData } from '../contracts/invoice.repository.interface';
+import type { TReceiptListQuery } from '../contracts/invoice.contract';
+import { likePattern } from '@drizzle/search';
+import { paymentStatus } from '../utils/payment-status';
 
 /**
  * Drizzle implementation of the invoice repository (M09 F4).
@@ -181,5 +199,196 @@ export class InvoiceRepository implements TInvoiceRepository {
 				rows.map((row) => ({ ...row, createdAt: now, updatedAt: now })) as never,
 			)
 			.returning() as unknown as TInvoiceItemSelect[];
+	}
+
+	listByOrder(salesOrderId: string): Promise<TInvoiceSelect[]> {
+		return this.database
+			.select()
+			.from(invoices)
+			.where(and(eq(invoices.salesOrderId, salesOrderId), isNull(invoices.deletedAt)))
+			.orderBy(asc(invoices.createdAt), asc(invoices.id));
+	}
+
+	async hasLiveInvoices(salesOrderId: string): Promise<boolean> {
+		const [row] = await this.database
+			.select({ id: invoices.id })
+			.from(invoices)
+			.where(
+				and(
+					eq(invoices.salesOrderId, salesOrderId),
+					isNull(invoices.deletedAt),
+					ne(invoices.status, 'void'),
+				),
+			)
+			.limit(1);
+		return !!row;
+	}
+
+	async findReceipt(
+		organizationId: string,
+		id: string,
+	): Promise<TReceiptSelect | null> {
+		const [row] = await this.database
+			.select()
+			.from(receipts)
+			.where(
+				and(
+					eq(receipts.id, id),
+					eq(receipts.organizationId, organizationId),
+					isNull(receipts.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	listReceipts(
+		organizationId: string,
+		invoiceId: string,
+	): Promise<TReceiptSelect[]> {
+		return this.database
+			.select()
+			.from(receipts)
+			.where(
+				and(
+					eq(receipts.organizationId, organizationId),
+					eq(receipts.salesInvoiceId, invoiceId),
+					isNull(receipts.deletedAt),
+				),
+			)
+			.orderBy(asc(receipts.receivedDate), asc(receipts.id));
+	}
+
+	async paginateReceipts(
+		organizationId: string,
+		request: TReceiptListQuery,
+	): Promise<
+		TPaginationResult<
+			TReceiptSelect & { invoiceCode: string | null; customerName: string }
+		>
+	> {
+		const { page, limit, search, status } = request;
+		const where = and(
+			eq(receipts.organizationId, organizationId),
+			isNull(receipts.deletedAt),
+			status ? eq(receipts.status, status) : undefined,
+			search
+				? or(
+						ilike(receipts.code, likePattern(search)),
+						ilike(receipts.reference, likePattern(search)),
+						ilike(invoices.code, likePattern(search)),
+						ilike(sql`${invoices.customerSnapshot}->>'name'`, likePattern(search)),
+					)
+				: undefined,
+		);
+		const [{ value: total }] = await this.database
+			.select({ value: count() })
+			.from(receipts)
+			.innerJoin(invoices, eq(invoices.id, receipts.salesInvoiceId))
+			.where(where);
+		const rows = await this.database
+			.select({
+				receipt: receipts,
+				invoiceCode: invoices.code,
+				customerName: sql<string>`${invoices.customerSnapshot}->>'name'`,
+			})
+			.from(receipts)
+			.innerJoin(invoices, eq(invoices.id, receipts.salesInvoiceId))
+			.where(where)
+			.orderBy(desc(receipts.createdAt), desc(receipts.id))
+			.limit(limit)
+			.offset((page - 1) * limit);
+		return {
+			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+			data: rows.map(({ receipt, invoiceCode, customerName }) => ({
+				...receipt,
+				invoiceCode,
+				customerName,
+			})),
+		};
+	}
+
+	addReceipt(data: TReceiptData): Promise<TReceiptSelect | null> {
+		return this.database.transaction(async (tx) => {
+			const [invoice] = await tx
+				.select()
+				.from(invoices)
+				.where(
+					and(
+						eq(invoices.id, data.salesInvoiceId),
+						eq(invoices.organizationId, data.organizationId),
+						isNull(invoices.deletedAt),
+					),
+				)
+				.for('update');
+			if (
+				!invoice ||
+				(invoice.status !== 'issued' && invoice.status !== 'partially_paid')
+			)
+				return null;
+			if (data.amount > invoice.outstandingTotal) return null;
+			const now = new Date();
+			const [receipt] = await tx
+				.insert(receipts)
+				.values({ ...data, status: 'posted', createdAt: now, updatedAt: now })
+				.returning();
+			const paid = invoice.paidTotal + data.amount;
+			await tx
+				.update(invoices)
+				.set({
+					paidTotal: paid,
+					outstandingTotal: invoice.grandTotal - paid,
+					status: paymentStatus(invoice.grandTotal, paid),
+					updatedAt: now,
+				})
+				.where(eq(invoices.id, invoice.id));
+			return receipt;
+		});
+	}
+
+	reverseReceipt(
+		organizationId: string,
+		id: string,
+		actorUserId: string,
+		reason: string,
+	): Promise<TReceiptSelect | null> {
+		return this.database.transaction(async (tx) => {
+			const now = new Date();
+			const [receipt] = await tx
+				.update(receipts)
+				.set({
+					status: 'reversed',
+					reversedBy: actorUserId,
+					reversedAt: now,
+					reversalReason: reason,
+					updatedAt: now,
+				})
+				.where(
+					and(
+						eq(receipts.id, id),
+						eq(receipts.organizationId, organizationId),
+						isNull(receipts.deletedAt),
+						eq(receipts.status, 'posted'),
+					),
+				)
+				.returning();
+			if (!receipt) return null;
+			const [invoice] = await tx
+				.select()
+				.from(invoices)
+				.where(eq(invoices.id, receipt.salesInvoiceId))
+				.for('update');
+			const paid = invoice.paidTotal - receipt.amount;
+			await tx
+				.update(invoices)
+				.set({
+					paidTotal: paid,
+					outstandingTotal: invoice.grandTotal - paid,
+					status: paymentStatus(invoice.grandTotal, paid),
+					updatedAt: now,
+				})
+				.where(eq(invoices.id, invoice.id));
+			return receipt;
+		});
 	}
 }

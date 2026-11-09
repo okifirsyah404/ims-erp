@@ -4,8 +4,8 @@ import type {
 	AssetStatus,
 	TAssetSelect,
 } from '@drizzle/schemas/asset.schema';
-import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
+import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { NumberingService } from '@app/organization/services/numbering.service';
 import { EXPORTED_WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
 import type { ExportedWarehouseService } from '@app/inventory/services/exported-warehouse.service';import type { IAssetRepository } from '../contracts/asset.repository.interface';
 import type { TAssetCreateData } from '../contracts/asset.repository.interface';
@@ -75,8 +75,8 @@ export class AssetService {
 		@inject(ASSET_CATEGORY_REPOSITORY_TOKEN)
 		private readonly categoryRepository: IAssetCategoryRepository,
 		/** ERP-0009 numbering authority (D15). */
-		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: DocumentNumberingService,
+		@inject(NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<NumberingService, 'next'>,
 		/** Fire-and-forget audit writer, shared with the inventory module. */
 		private readonly audit: InventoryAuditWriter,
 		/** Storage-location name resolution via inventory's export facade. */
@@ -151,14 +151,9 @@ export class AssetService {
 		if (rest.categoryId) await this.requireCategory(rest.categoryId);
 
 		const created = await this.database.transaction(async (tx) => {
-			const number = await this.numbering.allocate(
-				// D13: one global `AST-…` space regardless of tenant, so the
-				// globally-unique code index can never collide across scopes.
-				null,
-				ASSET_DOC_TYPES.asset,
-				tx,
-			);
-			const code = this.numbering.format('AST', 'REG', number, 6);
+			// D13: one company-wide `AST-…` space, so the globally-unique code
+			// index can never collide across scopes.
+			const code = await this.numbering.next(ASSET_DOC_TYPES.asset, { tx });
 			return this.assetRepository.create(
 				{
 					...rest,

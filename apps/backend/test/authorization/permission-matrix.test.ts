@@ -134,3 +134,46 @@ describe('organization access control', () => {
 		expect(authorizeErpPermissions(['warehouse'], { supplier: ['create'] })).toBe(false);
 	});
 });
+
+// Grants ported from the M02/M05/M07 branch (ADR-0011).
+describe('sales, procurement and project grants (ADR-0011)', () => {
+	test('cost and bank fields are limited to the roles that need them', () => {
+		for (const role of ['owner', 'finance', 'purchasing'] as const) {
+			expect(authorizeErpPermissions([role], { product: ['read_cost'] })).toBe(true);
+			expect(authorizeErpPermissions([role], { supplier: ['read_bank'] })).toBe(true);
+		}
+		for (const role of ['sales', 'warehouse', 'technician'] as const) {
+			expect(authorizeErpPermissions([role], { product: ['read_cost'] })).toBe(false);
+			expect(authorizeErpPermissions([role], { supplier: ['read_bank'] })).toBe(false);
+		}
+		for (const role of ['owner', 'finance', 'project_manager'] as const) {
+			expect(authorizeErpPermissions([role], { project: ['read_cost'] })).toBe(true);
+		}
+		expect(authorizeErpPermissions(['technician'], { project: ['read_cost'] })).toBe(false);
+	});
+
+	test('finance reads deals to bill them but never edits sales documents', () => {
+		expect(authorizeErpPermissions(['finance'], { quotation: ['read'], sales_order: ['read'] })).toBe(true);
+		expect(authorizeErpPermissions(['finance'], { quotation: ['update'] })).toBe(false);
+		expect(authorizeErpPermissions(['finance'], { sales_order: ['create'] })).toBe(false);
+	});
+
+	test('project manager runs projects and tickets; technician only works tickets', () => {
+		expect(
+			authorizeErpPermissions(['project_manager'], {
+				project: ['create', 'close'],
+				service_ticket: ['assign', 'close'],
+				customer: ['read'],
+			}),
+		).toBe(true);
+		expect(authorizeErpPermissions(['technician'], { service_ticket: ['read', 'update', 'resolve'] })).toBe(true);
+		expect(authorizeErpPermissions(['technician'], { service_ticket: ['assign'] })).toBe(false);
+		expect(authorizeErpPermissions(['technician'], { service_ticket: ['close'] })).toBe(false);
+	});
+
+	test('purchasing prepares stock adjustments; operations manager approves them', () => {
+		expect(authorizeErpPermissions(['purchasing'], { stock_adjustment: ['create', 'submit'] })).toBe(true);
+		expect(authorizeErpPermissions(['purchasing'], { stock_adjustment: ['approve'] })).toBe(false);
+		expect(authorizeErpPermissions(['operations_manager'], { stock_adjustment: ['approve', 'post'] })).toBe(true);
+	});
+});

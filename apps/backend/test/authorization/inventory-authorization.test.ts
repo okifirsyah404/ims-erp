@@ -56,7 +56,11 @@ function seedRow(organizationId: string): TItemSelect {
 		name: 'Door controller',
 		description: null,
 		itemKind: 'product',
-		category: null,
+		categoryId: null,
+		brand: null,
+		specification: null,
+		isActive: true,
+		createdBy: null,
 		unitLabel: 'pcs',
 		isSerialized: true,
 		isStockTracked: true,
@@ -78,6 +82,9 @@ beforeAll(async () => {
 	const rows = [seedRow(fixture.orgA)];
 
 	const itemRepository: IItemRepository = {
+		async findActiveByIds() {
+			return [];
+		},
 		async paginate(r) {
 			return {
 				meta: {
@@ -145,13 +152,21 @@ beforeAll(async () => {
 		async updateStatus() {
 			return null;
 		},
+		async listInStockSerials() {
+			return [];
+		},
+		async sell() {
+			return [];
+		},
 	};
 
 	// Import after mocks are installed (bun mock.module is hoist-sensitive).
 	const {
+		ITEM_CATEGORY_REPOSITORY_TOKEN,
 		ITEM_REPOSITORY_TOKEN,
 		SERIAL_UNIT_REPOSITORY_TOKEN,
 		ITEM_SERVICE_TOKEN,
+		ITEM_IMAGE_SERVICE_TOKEN,
 	} = await import('../../src/app/inventory/constants/di');
 	const { ItemService } = await import(
 		'../../src/app/inventory/services/item.service'
@@ -168,10 +183,16 @@ beforeAll(async () => {
 	container.register(SERIAL_UNIT_REPOSITORY_TOKEN, {
 		useValue: serialUnitRepository,
 	});
+	// No category is involved in the authorization suite.
+	container.register(ITEM_CATEGORY_REPOSITORY_TOKEN, {
+		useValue: { findById: async () => null } as never,
+	});
 	container.register(InventoryAuditWriter, {
 		useValue: new AuditWriterDouble(),
 	});
 	container.register(ITEM_SERVICE_TOKEN, { useClass: ItemService });
+	// Photos are not part of the authorization suite.
+	container.register(ITEM_IMAGE_SERVICE_TOKEN, { useValue: { withImageUrl: (item: object) => ({ ...item, imageUrl: null }) } as never });
 
 	app = new Elysia().use(erpGuard()).use(ItemController.plugin());
 });

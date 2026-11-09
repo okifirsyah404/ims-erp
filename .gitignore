@@ -51,3 +51,9 @@ graphify-out/
 .logs/
 logs/
 *.log
+
+# Real customer documents (local reference only; never commit)
+.agents/samples-private/
+# Playwright output and local e2e state
+apps/web-admin/e2e/.results/
+apps/web-admin/e2e/.state/

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
 	ITEM_KINDS,
+	ITEM_UNITS,
 	UNIT_STATUSES,
 } from '@drizzle/schemas/inventory.schema';
 
@@ -22,7 +23,12 @@ export const inventoryPaginationSchema = z.object({
 export const itemListQuerySchema = inventoryPaginationSchema.extend({
 	search: z.string().min(1).optional(),
 	itemKind: z.enum(ITEM_KINDS).optional(),
-	category: z.string().min(1).optional(),
+	categoryId: z.uuid().optional(),
+	/** `true` = only items offered for new documents (pickers). */
+	activeOnly: z
+		.union([z.boolean(), z.enum(['true', 'false'])])
+		.transform((value) => value === true || value === 'true')
+		.optional(),
 	/**
 	 * Scope the list to items with at least one live unit in this warehouse.
 	 * Used by the warehouse detail page's kind tabs.
@@ -42,8 +48,11 @@ export const createItemSchema = z
 		name: z.string().min(1),
 		description: z.string().nullable().optional(),
 		itemKind: z.enum(ITEM_KINDS),
-		category: z.string().nullable().optional(),
-		unitLabel: z.string().max(32).nullable().optional(),
+		categoryId: z.uuid().nullable().optional(),
+		brand: z.string().trim().max(100).nullable().optional(),
+		specification: z.string().max(4000).nullable().optional(),
+		unitLabel: z.enum(ITEM_UNITS).default('pcs'),
+		isActive: z.boolean().default(true),
 		isSerialized: z.boolean().default(false),
 		isStockTracked: z.boolean().default(true),
 		/** Stored as `numeric(18,3)`, so the insert value is a decimal string. */
@@ -64,8 +73,11 @@ export const updateItemSchema = z
 	.object({
 		name: z.string().min(1).optional(),
 		description: z.string().nullable().optional(),
-		category: z.string().nullable().optional(),
-		unitLabel: z.string().max(32).nullable().optional(),
+		categoryId: z.uuid().nullable().optional(),
+		brand: z.string().trim().max(100).nullable().optional(),
+		specification: z.string().max(4000).nullable().optional(),
+		unitLabel: z.enum(ITEM_UNITS).optional(),
+		isActive: z.boolean().optional(),
 		isSerialized: z.boolean().optional(),
 		isStockTracked: z.boolean().optional(),
 		minStockQty: z.coerce

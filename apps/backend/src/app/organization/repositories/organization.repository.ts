@@ -303,6 +303,15 @@ export class OrganizationRepository implements IOrganizationRepository {
 	 * @returns The member with joined user identity, or `null` when the
 	 * member does not belong to the organization
 	 */
+	async findMemberRole(organizationId: string, userId: string): Promise<string | null> {
+		const [row] = await this.db
+			.select({ role: members.role })
+			.from(members)
+			.where(and(eq(members.organizationId, organizationId), eq(members.userId, userId)))
+			.limit(1);
+		return row?.role ?? null;
+	}
+
 	async findMemberById(
 		organizationId: string,
 		memberId: string,

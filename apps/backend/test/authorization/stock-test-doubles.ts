@@ -125,6 +125,9 @@ export function installStockDoubles(): void {
 		async claimForReversal() {
 			return null;
 		},
+		async ledgerRows() {
+			return [];
+		},
 		async ledgerTotals() {
 			return [];
 		},
@@ -138,6 +141,10 @@ export function installStockDoubles(): void {
 		async findByKey() {
 			return null;
 		},
+		async lockForCost() {
+			return { quantityOnHand: '0', averageCost: 0, totalValue: 0 };
+		},
+		async setCost() {},
 		async listByScope() {
 			return [];
 		},

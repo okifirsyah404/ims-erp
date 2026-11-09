@@ -49,6 +49,7 @@ TableGroup "CRM" {
   crm.customer_addresses
   crm.leads
   crm.lead_activities
+  crm.lead_attachments
   crm.customer_segments
   crm.customer_segment_members
   crm.customer_interactions
@@ -82,6 +83,7 @@ TableGroup "Sales" {
   sales.order_status_history
   sales.sales_returns
   sales.delivery_notes
+  sales.delivery_note_items
   sales.invoices
   sales.invoice_items
   sales.receipts
@@ -105,6 +107,7 @@ TableGroup "Inventory" {
   inventory.warehouses
   inventory.warehouse_addresses
   inventory.warehouse_storages
+  inventory.item_categories
   inventory.items
   inventory.stock_movements
   inventory.stock_balances
@@ -121,6 +124,8 @@ TableGroup "Projects" {
   projects.projects
   projects.project_phases
   projects.project_tasks
+  projects.project_evidence
+  projects.project_costs
   projects.project_task_dependencies
   projects.project_daily_reports
   projects.project_site_assignments
@@ -219,6 +224,7 @@ TableGroup "Assets" {
 
 TableGroup "After-Sales" {
   aftersales.warranty_policies
+  aftersales.warranty_certificates
   aftersales.warranty_claims
   aftersales.service_tickets
   aftersales.service_ticket_comments
@@ -766,38 +772,42 @@ Ref: location.villages.district_id > location.districts.id [delete: cascade]
 // MODULE: Organization  (schema: organization)
 // Company profile, branches, departments, positions, cost centres, bank
 // accounts, fiscal settings, document numbering, settings key value.
-// All tenant scoped by organization_id.
+// Tenant scoped by organization_id, except company_profiles,
+// company_bank_accounts and document_sequences, which are company-wide
+// (ADR-0011: one company, organizations are internal departments).
 // ---------------------------------------------------------------------------
 
 Table organization.company_profiles {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  legal_name text [not null]
-  trading_name text
-  tax_id text [note: "NPWP number of the company."]
-  business_type text
-  email text
-  phone text
-  website text
-  logo_object_key text
-  established_on date
-  address_line text
+  legal_name varchar(200) [not null]
+  trading_name varchar(200)
+  document_code varchar(16) [not null, note: "Company code in document numbers (the {COMPANY} token), upper-case letters and digits."]
+  tagline varchar(300)
+  tax_id varchar(32) [note: "NPWP number of the company."]
+  email varchar(200)
+  phone varchar(100)
+  website varchar(200)
+  logo_object_key text [note: "Object-storage key of the letterhead logo (PNG, JPG or WebP)."]
+  signature_object_key text [note: "Object-storage key of the signature and stamp image printed above the signatory name."]
+  address_line text [note: "Free-text address as printed on the letterhead."]
   address_village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
-  address_district_id uuid [note: "Logical reference to location.districts.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
-  address_regency_id uuid [note: "Logical reference to location.regencies.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
-  address_province_id uuid [note: "Logical reference to location.provinces.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
   postal_code varchar(10)
+  signatory_name varchar(200)
+  signatory_title varchar(100)
+  default_quotation_terms text
+  default_invoice_terms text
+  warranty_coverage text [note: "Warranty certificate section, one item per line; empty means the built-in text."]
+  warranty_exclusions text
+  warranty_service_terms text
   status text [not null, default: 'active']
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Legal and display profile of the company behind one Better Auth organization."
-  Indexes {
-    organization_id [unique, name: 'company_profiles_organization_id_uq']
-    tax_id [name: 'company_profiles_tax_id_idx']
-  }
+  Note: "Legal and display profile of the one company (letterhead, signatory, default terms). Company-wide, no organization_id (ADR-0011): organizations are internal departments. One live row, enforced by the partial unique index company_profiles_singleton_uq ON ((true)) WHERE deleted_at IS NULL in the Drizzle schema."
   Checks {
     `status IN ('active', 'inactive')`
+    `document_code ~ '^[A-Z0-9]+$'`
   }
 }
 
@@ -886,23 +896,25 @@ Table organization.cost_centers {
 
 Table organization.company_bank_accounts {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
-  bank_name text [not null]
+  bank_name varchar(100) [not null]
   bank_code varchar(20)
-  branch_name text
-  account_number text [not null]
-  account_holder text [not null]
+  branch_name varchar(100)
+  account_number varchar(50) [not null]
+  account_holder varchar(200) [not null]
   currency_code varchar(3) [not null, default: 'IDR']
+  invoice_usage text [note: "Account printed on invoices with VAT (vat) or without VAT (non_vat); null for other accounts."]
   is_primary boolean [not null, default: false]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Company owned bank account. Finance owns its own operational cash and bank accounts, this is the master reference."
+  Note: "Company owned bank account, company-wide (ADR-0011). Finance owns its own operational cash and bank accounts, this is the master reference. Partial unique indexes in the Drizzle schema: code and invoice_usage are unique among live rows."
   Indexes {
-    (organization_id, code) [unique, name: 'company_bank_accounts_org_code_uq']
     account_number [name: 'company_bank_accounts_account_number_idx']
+  }
+  Checks {
+    `invoice_usage IS NULL OR invoice_usage IN ('vat', 'non_vat')`
   }
 }
 
@@ -929,25 +941,20 @@ Table organization.fiscal_settings {
 }
 
 Table organization.document_sequences {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  module text [not null]
-  document_type text [not null]
-  prefix text [not null]
-  suffix text
-  padding smallint [not null, default: 4]
+  module varchar(32) [not null, note: "Owning module of the document type (sales, crm, procurement, inventory, assets, projects, aftersales, licensing)."]
+  document_type varchar(32) [not null]
+  pattern varchar(100) [note: "Token pattern, e.g. {SEQ:4}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YY}; null means the code default for the type."]
+  reset_policy text [note: "null means the code default for the type."]
+  period_key varchar(7) [not null, note: "Period the counter belongs to: 2026 (yearly), 2026-11 (monthly), all (never). A new period starts again at 1."]
   next_number bigint [not null, default: 1]
-  reset_policy text [not null, default: 'yearly']
-  last_reset_on date
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Numbering series per module and document type. The allocation is a locked row update in the owning service."
-  Indexes {
-    (organization_id, module, document_type) [unique, name: 'document_sequences_scope_uq']
-  }
+  deleted_at bigint
+  Note: "One numbering series per document type for the whole company (ADR-0011); the one numbering authority (ERP-0009) — main's per-organization sequences were merged into it on 2026-11-06 (migration merge_main_reconcile), inventory and asset codes keep their shape as default patterns. Allocation is one atomic INSERT ... ON CONFLICT DO UPDATE ... RETURNING in the owning repository. Partial unique index on document_type WHERE deleted_at IS NULL in the Drizzle schema."
   Checks {
-    `reset_policy IN ('never', 'yearly', 'monthly', 'daily')`
+    `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
     `next_number > 0`
   }
 }
@@ -985,40 +992,42 @@ Ref: organization.cost_centers.department_id > organization.departments.id [dele
 // ---------------------------------------------------------------------------
 // MODULE: CRM  (schema: crm)
 // Customer master, groups, contacts, addresses, leads, segments, interactions,
-// credit limit history. Tenant scoped.
+// credit limit history. Tenant scoped, except crm.customers,
+// crm.customer_contacts and the lead tables, which are company-wide
+// (ADR-0011).
 // ---------------------------------------------------------------------------
 
 Table crm.customers {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  customer_type text [not null, default: 'individual']
+  code varchar(32) [not null, note: "Upper-case; unique among live rows (partial index in the Drizzle schema)."]
+  customer_type text [not null, default: 'company']
   name text [not null]
   legal_name text
-  tax_id text
+  tax_id varchar(16) [note: "NPWP digits only, 15 or 16."]
   email text
-  phone text
-  whatsapp text
+  phone varchar(30)
+  whatsapp varchar(30)
+  address_line text [note: "Primary address, printed on documents. crm.customer_addresses (more addresses) is not built yet."]
+  village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
+  postal_code varchar(10)
   status text [not null, default: 'active']
-  customer_group_id uuid
   owner_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   portal_identity_id uuid [note: "Logical reference to auth.portal_identities.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   default_currency_code varchar(3) [not null, default: 'IDR']
   notes text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Customer master. One customer may have several addresses, contacts and credit limit versions."
+  Note: "Customer master, company-wide (ADR-0011): no organization_id. Contacts and documents reference it; documents also keep a snapshot. Inactive customers cannot be used on new documents."
   Indexes {
-    (organization_id, code) [unique, name: 'customers_org_code_uq']
-    customer_group_id [name: 'customers_customer_group_id_idx']
-    owner_user_id [name: 'customers_owner_user_id_idx']
-    (organization_id, name) [name: 'customers_org_name_idx']
+    name [name: 'customers_name_idx']
     tax_id [name: 'customers_tax_id_idx']
+    owner_user_id [name: 'customers_owner_user_id_idx']
   }
   Checks {
     `customer_type IN ('individual', 'company', 'government', 'partner')`
-    `status IN ('lead', 'prospect', 'active', 'inactive', 'blocked')`
+    `status IN ('active', 'inactive')`
   }
 }
 
@@ -1040,18 +1049,17 @@ Table crm.customer_groups {
 
 Table crm.customer_contacts {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   customer_id uuid [not null]
   name text [not null]
   position text
   email text
-  phone text
-  whatsapp text
+  phone varchar(30)
+  whatsapp varchar(30)
   is_primary boolean [not null, default: false]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Contact person of a customer."
+  Note: "Contact person of a customer, company-wide like its customer (ADR-0011). At most one primary contact per customer (kept by the repository)."
   Indexes {
     customer_id [name: 'customer_contacts_customer_id_idx']
   }
@@ -1087,59 +1095,74 @@ Table crm.customer_addresses {
 
 Table crm.leads {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
   name text [not null]
   company_name text
   email text
-  phone text
-  whatsapp text
-  source text [not null, default: 'other']
-  source_detail text
+  phone varchar(30)
+  whatsapp varchar(30)
+  source text [not null]
   status text [not null, default: 'new']
-  estimated_value bigint
+  needs text [note: "What the prospect asks for; website inquiries store a readable summary here."]
+  estimated_value bigint [note: "Exact integer IDR minor units (ADR-0002)."]
   currency_code varchar(3) [not null, default: 'IDR']
-  owner_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  customer_id uuid
-  expected_close_date date
+  owner_user_id text [note: "Assigned salesperson. Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  next_follow_up_at bigint
+  customer_id uuid [note: "Customer the lead was converted into (status won)."]
   converted_at bigint
   lost_reason text
+  channel text [note: "Website form that created the lead: rfq, contact or demo; null for manual leads."]
+  reference varchar(40) [note: "Public reference handed back to the website visitor (document numbering web_*)."]
+  submission jsonb [note: "The website payload as received, for audit."]
+  idempotency_key varchar(100) [note: "Website Idempotency-Key; a replay returns the original reference."]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Prospect before a customer record exists. estimated_value is exact integer minor units."
+  Note: "Prospect before a customer record exists, company-wide (ADR-0011): no organization_id. Statuses are the ones approved on the M02 branch (survey and quotation stages; won = converted). Visibility: holders of lead:assign see all leads, others only leads assigned to them (service rule). Partial unique indexes on reference and idempotency_key WHERE NOT NULL in the Drizzle schema."
   Indexes {
-    (organization_id, code) [unique, name: 'leads_org_code_uq']
     owner_user_id [name: 'leads_owner_user_id_idx']
     status [name: 'leads_status_idx']
+    next_follow_up_at [name: 'leads_next_follow_up_at_idx']
   }
   Checks {
-    `source IN ('referral', 'website', 'whatsapp', 'exhibition', 'call', 'other')`
-    `status IN ('new', 'contacted', 'qualified', 'proposal', 'won', 'lost')`
+    `source IN ('website', 'whatsapp', 'instagram', 'phone', 'referral', 'walk_in', 'other')`
+    `status IN ('new', 'contacted', 'survey', 'quotation', 'won', 'lost')`
+    `channel IS NULL OR channel IN ('rfq', 'contact', 'demo')`
   }
 }
 
 Table crm.lead_activities {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   lead_id uuid [not null]
   activity_type text [not null]
-  subject text
-  notes text
+  notes text [not null]
   occurred_at bigint [not null]
-  next_action_at bigint
-  next_action_note text
-  assigned_to_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_by text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Follow up log of a lead."
+  deleted_at bigint
+  Note: "Follow-up log of a lead (calls, visits, surveys), company-wide like its lead (ADR-0011)."
   Indexes {
-    lead_id [name: 'lead_activities_lead_id_idx']
-    assigned_to_user_id [name: 'lead_activities_assigned_to_user_id_idx']
+    (lead_id, occurred_at) [name: 'lead_activities_lead_id_idx']
   }
   Checks {
-    `activity_type IN ('call', 'email', 'whatsapp', 'meeting', 'visit', 'note')`
+    `activity_type IN ('call', 'whatsapp', 'email', 'meeting', 'survey', 'note')`
+  }
+}
+
+Table crm.lead_attachments {
+  id uuid [pk, default: `uuidv7()`]
+  lead_id uuid [not null]
+  file_name varchar(255) [not null]
+  content_type varchar(120) [not null]
+  size_bytes integer [not null]
+  storage_key text [not null, note: "Object-storage key; never sent to clients (downloads use short-lived presigned URLs)."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "File sent with a website RFQ (PDF, DWG, JPG, PNG; up to 10 files of 25 MB)."
+  Indexes {
+    lead_id [name: 'lead_attachments_lead_id_idx']
   }
 }
 
@@ -1247,7 +1270,7 @@ Table catalog.item_categories {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Item category tree. Hierarchy is self referencing."
+  Note: "SUPERSEDED by inventory.item_categories (ADR-0011): not built, do not build against it. Item category tree. Hierarchy is self referencing."
   Indexes {
     (organization_id, code) [unique, name: 'item_categories_org_code_uq']
     parent_category_id [name: 'item_categories_parent_category_id_idx']
@@ -1265,7 +1288,7 @@ Table catalog.units {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Unit of measure such as pcs, set, month or year."
+  Note: "SUPERSEDED by the fixed unit list on inventory.items.unit_label (ADR-0011): not built, do not build against it. Unit of measure such as pcs, set, month or year."
   Indexes {
     (organization_id, code) [unique, name: 'units_org_code_uq']
     base_unit_id [name: 'units_base_unit_id_idx']
@@ -1490,11 +1513,11 @@ Table catalog.item_cost_histories {
   }
 }
 
-Ref: crm.customers.customer_group_id > crm.customer_groups.id [delete: set null]
-Ref: crm.customer_contacts.customer_id > crm.customers.id [delete: cascade]
+Ref: crm.customer_contacts.customer_id > crm.customers.id [delete: restrict]
 Ref: crm.customer_addresses.customer_id > crm.customers.id [delete: cascade]
-Ref: crm.leads.customer_id > crm.customers.id [delete: set null]
-Ref: crm.lead_activities.lead_id > crm.leads.id [delete: cascade]
+Ref: crm.leads.customer_id > crm.customers.id [delete: restrict]
+Ref: crm.lead_activities.lead_id > crm.leads.id [delete: restrict]
+Ref: crm.lead_attachments.lead_id > crm.leads.id [delete: restrict]
 Ref: crm.customer_segment_members.segment_id > crm.customer_segments.id [delete: cascade]
 Ref: crm.customer_segment_members.customer_id > crm.customers.id [delete: cascade]
 Ref: crm.customer_interactions.customer_id > crm.customers.id [delete: cascade]
@@ -1520,48 +1543,69 @@ Ref: catalog.item_cost_histories.item_id > catalog.items.id [delete: cascade]
 // ---------------------------------------------------------------------------
 // MODULE: Sales  (schema: sales)
 // Quotation to order flow, contracts, targets, status history, returns and
-// delivery notes. Tenant scoped.
-// sales.quotations is shown in its TARGET shape. The scaffold table created by
-// migration 20261029044823_dear_living_lightning has a different shape and is
-// replaced, not altered, by the recreation migration in implementation-phases.md.
+// delivery notes. Tenant scoped, except the quotation, sales order and
+// delivery note tables, which are company-wide (ADR-0011).
+// The scaffold sales.quotations created by migration
+// 20261029044823_dear_living_lightning was replaced, not altered, by the
+// recreation migration of ADR-0011 step 3c (implementation-phases.md S3).
 // The transitional sales.payments table is documented in the Legacy group at
 // the end of this file.
 // ---------------------------------------------------------------------------
 
 Table sales.quotations {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  title text
+  code varchar(40) [not null, note: "Base number from the numbering service, plus -R<n> for revision n >= 1. Unique among live rows (partial index in the Drizzle schema)."]
+  base_code varchar(32) [not null, note: "Number shared by every revision of the same SPH."]
+  revision integer [not null, default: 0, note: "0 = original, 1..n = revisions."]
+  previous_revision_id uuid [note: "The revision this one replaced (now superseded)."]
+  title text [not null, note: "Subject (Perihal)."]
+  heading varchar(120) [note: "Title in the coloured bar of the printed SPH, e.g. QUOTATION SYSTEM AKSES KONTROL; null prints QUOTATION."]
   customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
   customer_contact_id uuid [note: "Logical reference to crm.customer_contacts.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  price_list_id uuid [note: "Logical reference to catalog.price_lists.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
+  customer_snapshot jsonb [not null, note: "Customer code, name, type, contacts, NPWP and address frozen at the last edit; printed instead of the live customer."]
+  lead_id uuid [note: "Logical reference to crm.leads.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
+  attention varchar(200) [note: "Attention person (Up)."]
   status text [not null, default: 'draft']
-  quotation_date date
-  valid_until date
+  quotation_date date [not null]
+  valid_until date [note: "Valid through the end of this Jakarta day. Expiry is shown, never a status."]
+  payment_terms varchar(300) [note: "Printed payment line, e.g. DP 50% - 50% BAST."]
+  payment_schedule jsonb [note: "Planned billing terms [{label, percentBps}], shares summing to 10000. Null = billed in one term."]
+  guarantee varchar(300)
+  vat_enabled boolean [not null, default: true, note: "VAT is decided per document (owner decision)."]
+  vat_rate_bps integer [not null, default: 0, note: "VAT rate snapshot in basis points (1100 = 11%); 0 when VAT is off."]
   subtotal bigint [not null, default: 0]
   discount_total bigint [not null, default: 0]
   tax_total bigint [not null, default: 0]
   grand_total bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
+  notes text
+  terms text
   created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   submitted_at bigint
   approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   approved_at bigint
-  sent_at bigint
   rejected_reason text
-  notes text
+  sent_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  sent_at bigint
+  closed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  closed_at bigint [note: "When the outcome was recorded (won via its sales order, or lost)."]
+  lost_reason text
+  lost_note text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Quotation header, SPH in Indonesian practice. Approval follows draft, submitted, approved or rejected. Self approval is rejected by the service layer."
+  deleted_at bigint
+  Note: "Quotation header (SPH), company-wide (ADR-0011): no organization_id. draft -> submitted -> approved or rejected; approved -> sent; any open status -> lost; won only by creating its sales order; revising marks the row superseded and creates the next revision. Self approval is rejected by the service layer. Totals are a cache of the items, recomputed by the service on every write."
   Indexes {
-    (organization_id, code) [unique, name: 'quotations_org_code_uq']
+    base_code [name: 'quotations_base_code_idx']
     customer_id [name: 'quotations_customer_id_idx']
     status [name: 'quotations_status_idx']
+    created_by [name: 'quotations_created_by_idx']
   }
   Checks {
-    `status IN ('draft', 'submitted', 'approved', 'rejected', 'sent', 'expired', 'cancelled')`
+    `status IN ('draft', 'submitted', 'approved', 'rejected', 'sent', 'superseded', 'won', 'lost')`
+    `lost_reason IS NULL OR lost_reason IN ('price', 'competitor', 'project_cancelled', 'no_response', 'other')`
+    `revision >= 0`
+    `vat_rate_bps >= 0 AND vat_rate_bps <= 10000`
     `subtotal >= 0`
     `discount_total >= 0`
     `tax_total >= 0`
@@ -1570,31 +1614,30 @@ Table sales.quotations {
 }
 
 Table sales.quotation_items {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   quotation_id uuid [not null]
-  item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  description text
+  item_id uuid [note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Null = custom line."]
+  sku varchar(64)
+  name text [not null, note: "Item name snapshot (printed bold)."]
+  specification text [note: "Multi-line specification printed under the name."]
+  image_object_key text [note: "Snapshot of the item's document photo when the line was priced (keys are never overwritten)."]
+  unit varchar(32) [not null, note: "One of the fixed item units."]
   quantity numeric(18,3) [not null, default: 1]
-  unit_id uuid [note: "Logical reference to catalog.units.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
   unit_price bigint [not null, default: 0]
   discount_amount bigint [not null, default: 0]
-  tax_amount bigint [not null, default: 0]
-  line_total bigint [not null, default: 0]
+  line_total bigint [not null, default: 0, note: "round(quantity x unit_price) - discount_amount."]
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Line of a quotation. Line total is derived, never trusted from the client."
+  deleted_at bigint
+  Note: "Line of a quotation, company-wide like its header. Prices and names are snapshots; line total is derived, never trusted from the client. Replaced as a whole while the quotation is a draft. VAT is per document, not per line."
   Indexes {
-    quotation_id [name: 'quotation_items_quotation_id_idx']
-    sort_order [name: 'quotation_items_sort_order_idx']
+    (quotation_id, sort_order) [name: 'quotation_items_quotation_sort_idx']
   }
   Checks {
     `quantity > 0`
     `unit_price >= 0`
     `discount_amount >= 0`
-    `tax_amount >= 0`
     `line_total >= 0`
   }
 }
@@ -1634,77 +1677,82 @@ Table sales.discount_requests {
 }
 
 Table sales.sales_orders {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  quotation_id uuid
+  code varchar(32) [not null, note: "Unique among live rows (partial index in the Drizzle schema)."]
+  quotation_id uuid [not null, note: "The SPH this order closed as Deal; one live order per SPH (partial unique index)."]
+  quotation_code varchar(40) [not null, note: "Number of that SPH revision, printed on later documents."]
   customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  customer_address_id uuid [note: "Logical reference to crm.customer_addresses.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  status text [not null, default: 'draft']
-  order_date date
+  customer_snapshot jsonb [not null, note: "Customer data copied from the SPH."]
+  customer_po_number varchar(100) [note: "The customer's purchase order number, when they issued one."]
+  title text [not null]
+  attention varchar(200)
+  status text [not null, default: 'confirmed']
+  order_date date [not null]
   delivery_date date
+  payment_terms varchar(300)
+  payment_schedule jsonb [note: "Planned billing terms copied from the SPH; null = one term."]
+  guarantee varchar(300)
+  vat_enabled boolean [not null]
+  vat_rate_bps integer [not null, default: 0]
   subtotal bigint [not null, default: 0]
   discount_total bigint [not null, default: 0]
   tax_total bigint [not null, default: 0]
-  shipping_total bigint [not null, default: 0]
   grand_total bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   sales_person_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  warehouse_id uuid [note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
-  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  approved_at bigint
+  notes text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancelled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   cancelled_at bigint
   cancellation_reason text
-  notes text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Confirmed customer order. Stock commitment is done by the Inventory module through a logical reservation."
+  deleted_at bigint
+  Note: "Confirmed customer order, company-wide (ADR-0011): no organization_id. Created only from an approved or sent quotation, which becomes won in the same transaction; cancelling it reopens the quotation. in_progress, delivered and completed are reserved for fulfilment. Stock commitment is done by the Inventory module through a logical reservation."
   Indexes {
-    (organization_id, code) [unique, name: 'sales_orders_org_code_uq']
     quotation_id [name: 'sales_orders_quotation_id_idx']
     customer_id [name: 'sales_orders_customer_id_idx']
     status [name: 'sales_orders_status_idx']
+    sales_person_user_id [name: 'sales_orders_sales_person_idx']
   }
   Checks {
-    `status IN ('draft', 'confirmed', 'in_progress', 'delivered', 'completed', 'cancelled')`
+    `status IN ('confirmed', 'in_progress', 'delivered', 'completed', 'cancelled')`
+    `vat_rate_bps >= 0 AND vat_rate_bps <= 10000`
     `subtotal >= 0`
     `discount_total >= 0`
     `tax_total >= 0`
-    `shipping_total >= 0`
     `grand_total >= 0`
   }
 }
 
 Table sales.sales_order_items {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   sales_order_id uuid [not null]
-  item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  quotation_item_id uuid
-  description text
+  quotation_item_id uuid [note: "The SPH line it was copied from."]
+  item_id uuid [note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Null = custom line."]
+  sku varchar(64)
+  name text [not null]
+  specification text
+  unit varchar(32) [not null]
   quantity numeric(18,3) [not null, default: 1]
-  unit_id uuid [note: "Logical reference to catalog.units.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
   unit_price bigint [not null, default: 0]
   discount_amount bigint [not null, default: 0]
-  tax_amount bigint [not null, default: 0]
   line_total bigint [not null, default: 0]
   quantity_delivered numeric(18,3) [not null, default: 0]
   fulfillment_status text [not null, default: 'pending']
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Line of a sales order."
+  deleted_at bigint
+  Note: "Line of a sales order, copied from its quotation line. Company-wide like its header."
   Indexes {
-    sales_order_id [name: 'sales_order_items_sales_order_id_idx']
+    (sales_order_id, sort_order) [name: 'sales_order_items_order_sort_idx']
     fulfillment_status [name: 'sales_order_items_fulfillment_status_idx']
   }
   Checks {
     `quantity > 0`
     `unit_price >= 0`
     `discount_amount >= 0`
-    `tax_amount >= 0`
     `line_total >= 0`
     `quantity_delivered >= 0`
     `fulfillment_status IN ('pending', 'reserved', 'partial', 'fulfilled', 'cancelled')`
@@ -1768,36 +1816,34 @@ Table sales.sales_targets {
 }
 
 Table sales.quotation_status_history {
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   quotation_id uuid [not null]
   from_status text
   to_status text [not null]
   changed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   changed_at bigint [not null]
   note text
-  Note: "Append only status history of a quotation."
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Append only status history of a quotation, company-wide. Written in the same transaction as the transition."
   Indexes {
     quotation_id [name: 'quotation_status_history_quotation_id_idx']
   }
 }
 
 Table sales.order_status_history {
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   sales_order_id uuid [not null]
   from_status text
   to_status text [not null]
   changed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   changed_at bigint [not null]
   note text
-  Note: "Append only status history of a sales order."
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Append only status history of a sales order, company-wide."
   Indexes {
     sales_order_id [name: 'order_status_history_sales_order_id_idx']
   }
@@ -1832,28 +1878,69 @@ Table sales.sales_returns {
 }
 
 Table sales.delivery_notes {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [not null, note: "Assigned on creation (SJ). Unique among live rows (partial index in the Drizzle schema)."]
   sales_order_id uuid [not null]
-  carrier text
-  tracking_number text
-  shipped_at bigint
-  received_at bigint
-  receiver_name text
-  receiver_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  warehouse_id uuid [not null, note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  bin_id uuid [note: "Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
   status text [not null, default: 'prepared']
-  notes text
+  delivery_date date [not null, note: "Jakarta business date printed as Tanggal."]
+  project_name text [note: "Nama Proyek; defaults to the order title."]
+  project_location text [note: "Lokasi Proyek."]
+  recipient_name text [not null, note: "Nama Perusahaan / Penerima; defaults to the order's customer."]
+  recipient_address text [note: "Alamat Proyek."]
+  recipient_pic varchar(200) [note: "PIC / Kontak."]
+  recipient_contact varchar(200) [note: "Telp/Email of the recipient."]
+  driver_name varchar(200) [note: "Printed under Tertanda Supir."]
+  vehicle_number varchar(32)
+  notes text [note: "Catatan box of the print."]
+  shipped_at bigint
+  shipped_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  received_at bigint
+  receiver_name text [note: "Who signed as Penerima."]
+  cancelled_at bigint
+  cancelled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancellation_reason text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Delivery note, surat jalan. Confirms physical handover of a sales order."
+  deleted_at bigint
+  Note: "Delivery note (surat jalan), company-wide (ADR-0011). Shipping posts one stock issue movement per stock-tracked line at the moving-average cost and marks the listed serial units sold, in one transaction through the Inventory module contract. Shipped notes are final; returns are sales_returns."
   Indexes {
-    (organization_id, code) [unique, name: 'delivery_notes_org_code_uq']
     sales_order_id [name: 'delivery_notes_sales_order_id_idx']
+    status [name: 'delivery_notes_status_idx']
   }
   Checks {
-    `status IN ('prepared', 'shipped', 'delivered', 'returned')`
+    `status IN ('prepared', 'shipped', 'delivered', 'cancelled')`
+  }
+}
+
+Table sales.delivery_note_items {
+  id uuid [pk, default: `uuidv7()`]
+  delivery_note_id uuid [not null]
+  sales_order_item_id uuid [not null]
+  item_id uuid [note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Null for a custom order line."]
+  sku varchar(64)
+  name text [not null]
+  unit varchar(32) [not null]
+  quantity numeric(18,3) [not null]
+  unit_price bigint [not null, default: 0, note: "Order unit price, printed as Harga (IDR minor units)."]
+  unit_cost bigint [note: "Moving-average cost the issue movement took (IDR minor units); null until shipped or for non-stock lines."]
+  serial_numbers jsonb [note: "One serial per unit for serialized items."]
+  remarks text [note: "Keterangan."]
+  stock_movement_id uuid [note: "Logical reference to inventory.stock_movements.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  sort_order integer [not null, default: 0]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Line of a delivery note, copied from a sales order line."
+  Indexes {
+    delivery_note_id [name: 'delivery_note_items_delivery_note_id_idx']
+    sales_order_item_id [name: 'delivery_note_items_sales_order_item_id_idx']
+  }
+  Checks {
+    `quantity > 0`
+    `unit_price >= 0`
   }
 }
 
@@ -1861,14 +1948,23 @@ Table sales.invoices {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [note: "Allocated from the numbering authority (INV-<YYYYMM>-<#5>). Nullable: a draft may exist without a code. Unique per organization."]
   invoice_type text [not null, default: 'sales']
+  term_kind text [note: "down_payment = first live invoice of its order that does not settle it; settlement = the one that settles it; installment otherwise. Null when the invoice is not billed against an order term."]
   customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  sales_order_id uuid [note: "Logical reference to sales.sales_orders.id."]
+  customer_snapshot jsonb [note: "Customer data copied from the sales order. Null when the invoice has no order."]
+  sales_order_id uuid [note: "Plain id of a row in sales.sales_orders (same module). Nullable: proforma and recurring invoices may have no order."]
+  sales_order_code varchar(32)
+  quotation_code varchar(40) [note: "The SPH number printed as No. Ref."]
+  title text [note: "Subject (Perihal), from the order."]
+  description text [note: "Term label, e.g. DP 30% or Pelunasan."]
+  percentage_bps integer [note: "Share of the order tax base when billed by percentage."]
   payment_term_id uuid [note: "Logical reference to finance.payment_terms.id. Cross-module FK intentionally omitted. Validated through the Finance module contract."]
   issue_date date
   due_date date
-  subtotal bigint [not null, default: 0]
+  vat_enabled boolean [not null, default: true]
+  vat_rate_bps integer [not null, default: 0]
+  subtotal bigint [not null, default: 0, note: "Tax base (DPP) of this term."]
   discount_total bigint [not null, default: 0]
   tax_total bigint [not null, default: 0]
   grand_total bigint [not null, default: 0]
@@ -1876,31 +1972,37 @@ Table sales.invoices {
   outstanding_total bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   status text [not null, default: 'draft']
+  terms text [note: "Terms and conditions printed on the invoice, copied from the company profile."]
+  notes text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   issued_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   issued_at bigint
   approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   approved_at bigint
+  voided_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   voided_at bigint
   void_reason text
-  notes text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Customer invoice, faktur. Owned by the Sales module (finance plan D2). organization_id is the issuing organization (ADR-0012). Finance mirrors AR open items in finance.ar_open_items and receives journals via the posting service. Voiding is an append only mark, the invoice is never deleted."
+  Note: "Customer invoice (faktur) for one billing term, company-wide per ADR-0012: organization_id is the issuing organization. Free terms: the invoices of an order never exceed its total and the settling term takes the exact remainder. draft -> issued -> partially_paid -> paid; unpaid draft or issued -> void; draft -> cancelled. Overdue is shown from due_date, never stored. Voiding is an append only mark, the invoice is never deleted. Finance mirrors AR open items in finance.ar_open_items."
   Indexes {
     (organization_id, code) [unique, name: 'invoices_org_code_uq']
     customer_id [name: 'invoices_customer_id_idx']
     sales_order_id [name: 'invoices_sales_order_id_idx']
     status [name: 'invoices_status_idx']
     due_date [name: 'invoices_due_date_idx']
+    term_kind [name: 'invoices_term_kind_idx']
   }
   Checks {
     `invoice_type IN ('sales', 'proforma', 'recurring')`
-    `status IN ('draft', 'issued', 'partially_paid', 'paid', 'overdue', 'void', 'cancelled')`
+    `term_kind IS NULL OR term_kind IN ('down_payment', 'installment', 'settlement')`
+    `status IN ('draft', 'issued', 'partially_paid', 'paid', 'void', 'cancelled')`
+    `vat_rate_bps >= 0 AND vat_rate_bps <= 10000`
     `subtotal >= 0`
     `discount_total >= 0`
     `tax_total >= 0`
     `grand_total >= 0`
-    `paid_total >= 0`
+    `paid_total >= 0 AND paid_total <= grand_total`
     `outstanding_total >= 0`
     `due_date IS NULL OR issue_date IS NULL OR due_date >= issue_date`
   }
@@ -1914,12 +2016,14 @@ Table sales.invoice_items {
   invoice_id uuid [not null]
   item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
   item_variant_id uuid [note: "Logical reference to catalog.item_variants.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
+  unit_id uuid [note: "Logical reference to catalog.units.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
   description text
   quantity numeric(18,4) [not null, default: 0]
   unit_price bigint [not null, default: 0]
   discount_amount bigint [not null, default: 0]
   tax_amount bigint [not null, default: 0]
   line_total bigint [not null, default: 0]
+  sort_order integer [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   created_at bigint [not null]
   Note: "Line of a sales invoice."
@@ -1941,20 +2045,23 @@ Table sales.receipts {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
-  sales_invoice_id uuid
+  sales_invoice_id uuid [not null, note: "Plain id of a row in sales.invoices (same module)."]
   payment_id uuid [note: "Logical reference to finance.payments.id. Cross-module FK intentionally omitted. Validated through the Finance module contract."]
   received_date date
   amount bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   method text [not null, default: 'bank_transfer']
+  reference varchar(100) [note: "Transfer reference or similar."]
+  notes text
   status text [not null, default: 'draft']
   received_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   posted_at bigint
+  reversed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   reversed_at bigint
   reversal_reason text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Cash receipt register, kwitansi. It is the customer facing proof of a payment, the money movement stays in finance.payments. Moved from finance.receipts to Sales (2026-11-08): the receipt is issued against a sales invoice."
+  Note: "Cash receipt register, kwitansi. It is the customer facing proof of a payment, the money movement stays in finance.payments. Owned by Sales (moved from finance.receipts, 2026-11-08). Issued against a sales invoice; never more than the invoice's outstanding amount."
   Indexes {
     (organization_id, code) [unique, name: 'receipts_org_code_uq']
     sales_invoice_id [name: 'receipts_sales_invoice_id_idx']
@@ -1971,39 +2078,48 @@ Table sales.receipts {
 // ---------------------------------------------------------------------------
 // MODULE: Procurement  (schema: procurement)
 // Supplier master, purchase requests, purchase orders, goods receipts and
-// purchase returns. Tenant scoped.
+// purchase returns. Tenant scoped, except suppliers, purchase orders and goods
+// receipts, which are company-wide (ADR-0011).
 // ---------------------------------------------------------------------------
 
 Table procurement.suppliers {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [not null, note: "Upper-case letters and digits; the {SUPPLIER} token of PO numbers. Unique among live rows (partial index in the Drizzle schema)."]
   name text [not null]
   legal_name text
   supplier_type text [not null, default: 'company']
-  tax_id text
+  tax_id varchar(16) [note: "NPWP digits only, 15 or 16."]
   email text
-  phone text
-  whatsapp text
-  payment_terms_days integer [not null, default: 30]
+  phone varchar(30)
+  whatsapp varchar(30)
+  website varchar(200)
+  address_line text [note: "Address printed on purchase orders."]
+  village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
+  postal_code varchar(10)
+  pic_name varchar(120) [note: "Supplier-side person in charge, printed on purchase orders."]
+  pic_title varchar(100)
+  pic_phone varchar(30)
+  pic_email text
+  payment_terms_days integer [not null, default: 0]
+  payment_term_note varchar(300) [note: "Default payment line of new purchase orders."]
   bank_name text
   bank_account_number text
   bank_account_holder text
   status text [not null, default: 'active']
-  owner_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   notes text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Supplier master. Bank details are restricted and never returned to the client without the supplier read permission."
+  Note: "Supplier master, company-wide (ADR-0011): no organization_id. Bank details are restricted and never returned to the client without supplier:read_bank. Inactive suppliers cannot be used on new purchase orders."
   Indexes {
-    (organization_id, code) [unique, name: 'suppliers_org_code_uq']
+    name [name: 'suppliers_name_idx']
     status [name: 'suppliers_status_idx']
     tax_id [name: 'suppliers_tax_id_idx']
   }
   Checks {
     `supplier_type IN ('company', 'individual', 'government')`
-    `status IN ('active', 'inactive', 'blocked')`
+    `status IN ('active', 'inactive')`
     `payment_terms_days >= 0`
   }
 }
@@ -2112,127 +2228,133 @@ Table procurement.purchase_request_items {
 }
 
 Table procurement.purchase_orders {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(40) [note: "Assigned on approval, e.g. PO/IMS-HIT/HW/1026/001; null before. Unique among live rows (partial index in the Drizzle schema)."]
   supplier_id uuid [not null]
-  purchase_request_id uuid
+  supplier_snapshot jsonb [not null, note: "Supplier name, address, NPWP and PIC printed on the PO."]
+  category text [not null, note: "{CATEGORY} token of the number: hardware HW, software SW, service JS, other LN."]
+  subject varchar(200) [not null, note: "Perihal."]
   status text [not null, default: 'draft']
-  order_date date
+  order_date date [not null]
   expected_delivery_date date
+  supplier_quote_ref varchar(100) [note: "The supplier's quotation number (Ref. Penawaran)."]
+  supplier_quote_date date
+  project_name varchar(200)
+  buyer_pic_name varchar(120)
+  vat_mode text [not null, default: 'none', note: "none, included (prices contain VAT) or added (VAT on top)."]
+  vat_rate_bps integer [not null, default: 0]
   subtotal bigint [not null, default: 0]
   tax_total bigint [not null, default: 0]
-  shipping_total bigint [not null, default: 0]
   grand_total bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
-  payment_terms_days integer [not null, default: 30]
-  ship_to_address_text text
+  payment_terms varchar(500) [note: "Printed as the first purchase term (Pembayaran)."]
+  terms text [note: "Further purchase terms, one per line."]
+  notes text
+  rejection_reason text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  submitted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   submitted_at bigint
   approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   approved_at bigint
+  sent_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   sent_at bigint
-  closed_at bigint
+  cancelled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancelled_at bigint
   cancelled_reason text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Purchase order to a supplier. The supplier bill and its payment stay in the Finance module."
+  deleted_at bigint
+  Note: "Purchase order to a supplier, company-wide (ADR-0011). draft -> submitted -> approved -> sent -> partially_received -> received; rejection returns to draft; cancelled while nothing was received. One-level approval, never by the creator. The supplier bill and its payment stay in the Finance module."
   Indexes {
-    (organization_id, code) [unique, name: 'purchase_orders_org_code_uq']
     supplier_id [name: 'purchase_orders_supplier_id_idx']
-    purchase_request_id [name: 'purchase_orders_purchase_request_id_idx']
     status [name: 'purchase_orders_status_idx']
   }
   Checks {
-    `status IN ('draft', 'submitted', 'approved', 'sent', 'partially_received', 'received', 'closed', 'cancelled')`
+    `status IN ('draft', 'submitted', 'approved', 'sent', 'partially_received', 'received', 'cancelled')`
+    `category IN ('hardware', 'software', 'service', 'other')`
+    `vat_mode IN ('none', 'included', 'added')`
+    `vat_rate_bps >= 0 AND vat_rate_bps <= 10000`
     `subtotal >= 0`
     `tax_total >= 0`
-    `shipping_total >= 0`
     `grand_total >= 0`
-    `payment_terms_days >= 0`
   }
 }
 
 Table procurement.purchase_order_items {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   purchase_order_id uuid [not null]
-  item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  description text
+  item_id uuid [not null, note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  sku varchar(64) [not null]
+  name text [not null]
+  specification text
+  unit varchar(32) [not null]
   quantity numeric(18,3) [not null, default: 1]
-  unit_id uuid [note: "Logical reference to catalog.units.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
   unit_price bigint [not null, default: 0]
-  tax_amount bigint [not null, default: 0]
-  line_total bigint [not null, default: 0]
+  line_total bigint [not null, default: 0, note: "round(quantity x unit_price)."]
   quantity_received numeric(18,3) [not null, default: 0]
-  quantity_rejected numeric(18,3) [not null, default: 0]
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Line of a purchase order."
+  deleted_at bigint
+  Note: "Line of a purchase order, company-wide like its header. VAT is per purchase order."
   Indexes {
-    purchase_order_id [name: 'purchase_order_items_purchase_order_id_idx']
+    (purchase_order_id, sort_order) [name: 'purchase_order_items_order_sort_idx']
   }
   Checks {
     `quantity > 0`
     `unit_price >= 0`
-    `tax_amount >= 0`
     `line_total >= 0`
     `quantity_received >= 0`
-    `quantity_rejected >= 0`
   }
 }
 
 Table procurement.goods_receipts {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [not null, note: "Assigned on creation (BPB). Unique among live rows (partial index in the Drizzle schema)."]
   purchase_order_id uuid [not null]
   warehouse_id uuid [not null, note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
-  status text [not null, default: 'draft']
-  receipt_date date
+  bin_id uuid [note: "Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  status text [not null, default: 'posted']
+  receipt_date date [not null]
+  supplier_delivery_ref varchar(100) [note: "The supplier's delivery note number."]
   received_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  received_at bigint
   notes text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Goods receipt note. Posting creates the stock movement inside the Inventory module."
+  deleted_at bigint
+  Note: "Goods receipt note, company-wide (ADR-0011). Posted on creation: the stock receipt movements (with unit cost) and serial units are written in the same transaction through the Inventory module contract. Immutable; corrections go through stock adjustments."
   Indexes {
-    (organization_id, code) [unique, name: 'goods_receipts_org_code_uq']
     purchase_order_id [name: 'goods_receipts_purchase_order_id_idx']
     warehouse_id [name: 'goods_receipts_warehouse_id_idx']
   }
   Checks {
-    `status IN ('draft', 'posted', 'cancelled')`
+    `status IN ('posted')`
   }
 }
 
 Table procurement.goods_receipt_items {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   goods_receipt_id uuid [not null]
-  purchase_order_item_id uuid
-  item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  quantity_accepted numeric(18,3) [not null, default: 0]
-  quantity_rejected numeric(18,3) [not null, default: 0]
-  rejection_reason text
-  unit_price bigint [not null, default: 0]
-  lot_number text
-  serial_numbers text
+  purchase_order_item_id uuid [not null]
+  item_id uuid [not null, note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  sku varchar(64) [not null]
+  name text [not null]
+  unit varchar(32) [not null]
+  quantity numeric(18,3) [not null]
+  unit_cost bigint [not null, default: 0, note: "Ex-VAT unit price booked into stock (IDR minor units)."]
+  serial_numbers jsonb [note: "One serial per unit for serialized items."]
+  stock_movement_id uuid [note: "Logical reference to inventory.stock_movements.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Line of a goods receipt. Accepted quantity becomes the stock movement."
+  deleted_at bigint
+  Note: "Line of a goods receipt; its quantity became the stock receipt movement."
   Indexes {
     goods_receipt_id [name: 'goods_receipt_items_goods_receipt_id_idx']
     purchase_order_item_id [name: 'goods_receipt_items_purchase_order_item_id_idx']
   }
   Checks {
-    `quantity_accepted >= 0`
-    `quantity_rejected >= 0`
-    `unit_price >= 0`
+    `quantity > 0`
+    `unit_cost >= 0`
   }
 }
 
@@ -2289,24 +2411,27 @@ Table procurement.purchase_return_items {
 }
 
 Ref: sales.quotation_items.quotation_id > sales.quotations.id [delete: cascade]
+Ref: sales.quotations.previous_revision_id > sales.quotations.id [delete: restrict]
 Ref: sales.discount_requests.quotation_id > sales.quotations.id [delete: cascade]
-Ref: sales.sales_orders.quotation_id > sales.quotations.id [delete: set null]
+Ref: sales.sales_orders.quotation_id > sales.quotations.id [delete: restrict]
+Ref: sales.sales_order_items.quotation_item_id > sales.quotation_items.id [delete: restrict]
 Ref: sales.sales_order_items.sales_order_id > sales.sales_orders.id [delete: cascade]
 Ref: sales.discount_requests.sales_order_id > sales.sales_orders.id [delete: cascade]
 Ref: sales.contracts.sales_order_id > sales.sales_orders.id [delete: set null]
 Ref: sales.quotation_status_history.quotation_id > sales.quotations.id [delete: cascade]
 Ref: sales.order_status_history.sales_order_id > sales.sales_orders.id [delete: cascade]
 Ref: sales.sales_returns.sales_order_id > sales.sales_orders.id [delete: cascade]
-Ref: sales.delivery_notes.sales_order_id > sales.sales_orders.id [delete: cascade]
+Ref: sales.delivery_notes.sales_order_id > sales.sales_orders.id [delete: restrict]
+Ref: sales.delivery_note_items.delivery_note_id > sales.delivery_notes.id [delete: cascade]
+Ref: sales.delivery_note_items.sales_order_item_id > sales.sales_order_items.id [delete: restrict]
 Ref: procurement.supplier_contacts.supplier_id > procurement.suppliers.id [delete: cascade]
 Ref: procurement.supplier_addresses.supplier_id > procurement.suppliers.id [delete: cascade]
 Ref: procurement.purchase_request_items.purchase_request_id > procurement.purchase_requests.id [delete: cascade]
 Ref: procurement.purchase_orders.supplier_id > procurement.suppliers.id [delete: restrict]
-Ref: procurement.purchase_orders.purchase_request_id > procurement.purchase_requests.id [delete: set null]
 Ref: procurement.purchase_order_items.purchase_order_id > procurement.purchase_orders.id [delete: cascade]
 Ref: procurement.goods_receipts.purchase_order_id > procurement.purchase_orders.id [delete: restrict]
 Ref: procurement.goods_receipt_items.goods_receipt_id > procurement.goods_receipts.id [delete: cascade]
-Ref: procurement.goods_receipt_items.purchase_order_item_id > procurement.purchase_order_items.id [delete: set null]
+Ref: procurement.goods_receipt_items.purchase_order_item_id > procurement.purchase_order_items.id [delete: restrict]
 Ref: procurement.purchase_returns.purchase_order_id > procurement.purchase_orders.id [delete: restrict]
 Ref: procurement.purchase_returns.supplier_id > procurement.suppliers.id [delete: restrict]
 Ref: procurement.purchase_return_items.purchase_return_id > procurement.purchase_returns.id [delete: cascade]
@@ -2400,8 +2525,12 @@ Table inventory.items {
   name text [not null]
   description text
   item_kind text [not null]
-  category text [note: "Free text until catalog.item_categories is adopted (OPEN-1)."]
-  unit_label varchar(32) [note: "Free text until catalog.units is adopted (OPEN-1)."]
+  category_id uuid [note: "Same-module reference to inventory.item_categories (ADR-0011); replaces the former free-text category."]
+  brand varchar(100)
+  specification text [note: "Technical specification printed on quotations."]
+  image_object_key text [note: "Object-storage key of the one photo printed on documents (quotation Gambar column). The website catalog gallery is separate (M04)."]
+  unit_label varchar(32) [not null, default: 'pcs', note: "Fixed unit list (ADR-0011), guarded by a CHECK; replaces free text."]
+  is_active boolean [not null, default: true, note: "Inactive items stay listed but are not offered for new documents. Not a status: status exists only on serialized units."]
   is_serialized boolean [not null, default: false]
   is_stock_tracked boolean [not null, default: true]
   min_stock_qty numeric(18,3) [not null, default: 0]
@@ -2409,6 +2538,7 @@ Table inventory.items {
   selling_price bigint [not null, default: 0, note: "Exact integer IDR minor units (ADR-0002). Never a float."]
   purchase_price bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
@@ -2424,7 +2554,22 @@ Table inventory.items {
     `item_kind IN ('product', 'component', 'material')`
     `selling_price >= 0 AND purchase_price >= 0`
     `min_stock_qty >= 0`
+    `unit_label IN ('pcs', 'unit', 'set', 'paket', 'titik', 'm', 'roll', 'kg', 'jam', 'bulan', 'tahun', 'lic', 'lot', 'pulau')`
   }
+}
+
+Table inventory.item_categories {
+  id uuid [pk, default: `uuidv7()`]
+  slug varchar(64) [not null, note: "Matches the public website's category slug."]
+  name varchar(120) [not null]
+  short_name varchar(60)
+  sort_order integer [not null, default: 0]
+  description text
+  is_active boolean [not null, default: true]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Item category, one level, company-wide (ADR-0011): no organization_id. Supersedes catalog.item_categories. Partial unique index on slug WHERE deleted_at IS NULL in the Drizzle schema; a category with live items cannot be archived."
 }
 
 Table inventory.stock_movements {
@@ -2437,7 +2582,8 @@ Table inventory.stock_movements {
   bin_id uuid
   target_warehouse_id uuid
   quantity numeric(18,3) [not null]
-  reference_type text [note: "e.g. manual_adjustment, borrowing, receipt."]
+  unit_cost bigint [not null, default: 0, note: "IDR minor units the movement was valued at (ADR-0011 moving average): the given cost for inbound moves, the balance average for outbound ones."]
+  reference_type text [note: "e.g. manual_adjustment, borrowing, receipt, goods_receipt."]
   reference_id text
   status text [not null, default: 'posted']
   occurred_at bigint [not null]
@@ -2471,13 +2617,15 @@ Table inventory.stock_balances {
   quantity_on_hand numeric(18,3) [not null, default: 0]
   quantity_reserved numeric(18,3) [not null, default: 0]
   quantity_available numeric(18,3) [not null, default: 0]
+  average_cost bigint [not null, default: 0, note: "Moving-average unit cost, IDR minor units (ADR-0011 §5). Restricted to product:read_cost."]
+  total_value bigint [not null, default: 0, note: "Value of quantity_on_hand at cost; the last unit out takes the exact remainder."]
   last_movement_at bigint
   created_at bigint [not null]
   updated_at bigint
-  Note: "Balance cache over stock_movements. Service-maintained inside the same transaction as the movement that caused it, never by a trigger; recomputeFromLedger is the repair operation (ADR-0008). No deleted_at. No valuation columns: average_cost/total_value were removed because they were guaranteed to hold 0 forever. Valuation is owned by the accounting module; the base price lives on items.selling_price / items.purchase_price (OPEN-3 closed). Scope rule: a balance's organization_id follows the WAREHOUSE scope, not the caller — a global warehouse (organization_id IS NULL) has ONE shared balance row visible to every organization."
+  Note: "Balance cache over stock_movements. Service-maintained inside the same transaction as the movement that caused it, never by a trigger; recomputeFromLedger is the repair operation (ADR-0008). No deleted_at. Moving-average valuation (ADR-0011 §5, supersedes OPEN-3 for the inventory value): average_cost and total_value are maintained with the quantity in the same transaction; the accounting journal still needs finance approval. Scope rule: a balance's organization_id follows the WAREHOUSE scope, not the caller — a global warehouse (organization_id IS NULL) has ONE shared balance row visible to every organization."
   Indexes {
-    (organization_id, warehouse_id, item_id, bin_id) [unique, name: 'stock_balances_org_scope_uq', note: 'WHERE organization_id IS NOT NULL']
-    (warehouse_id, item_id, bin_id) [unique, name: 'stock_balances_global_scope_uq', note: 'WHERE organization_id IS NULL']
+    (organization_id, warehouse_id, item_id, bin_id) [unique, name: 'stock_balances_org_scope_uq', note: 'NULLS NOT DISTINCT WHERE organization_id IS NOT NULL (a bin-less balance is one row)']
+    (warehouse_id, item_id, bin_id) [unique, name: 'stock_balances_global_scope_uq', note: 'NULLS NOT DISTINCT WHERE organization_id IS NULL']
     item_id [name: 'stock_balances_item_id_idx']
   }
   Checks {
@@ -2522,6 +2670,7 @@ Table inventory.stock_adjustment_items {
   bin_id uuid
   quantity_before numeric(18,3) [not null, default: 0]
   quantity_after numeric(18,3) [not null, default: 0]
+  unit_cost bigint [note: "Cost an increase enters stock at (IDR minor units; opening stock, ADR-0011 §6). Null = the current moving average. Ignored for decreases."]
   note text
   created_at bigint [not null]
   updated_at bigint [not null]
@@ -2533,6 +2682,7 @@ Table inventory.stock_adjustment_items {
   Checks {
     `quantity_before >= 0`
     `quantity_after >= 0`
+    `unit_cost IS NULL OR unit_cost >= 0`
   }
 }
 
@@ -2649,6 +2799,7 @@ Table inventory.serial_tracked_items {
 Ref: inventory.warehouse_addresses.warehouse_id > inventory.warehouses.id [delete: cascade]
 Ref: inventory.warehouse_storages.warehouse_id > inventory.warehouses.id [delete: cascade]
 Ref: inventory.warehouse_organizations.warehouse_id > inventory.warehouses.id [delete: cascade]
+Ref: inventory.items.category_id > inventory.item_categories.id [delete: restrict]
 Ref: inventory.stock_movements.item_id > inventory.items.id [delete: restrict]
 Ref: inventory.stock_movements.warehouse_id > inventory.warehouses.id [delete: restrict]
 Ref: inventory.stock_movements.bin_id > inventory.warehouse_storages.id [delete: set null]
@@ -2670,7 +2821,9 @@ Ref: inventory.serial_tracked_items.bin_id > inventory.warehouse_storages.id [de
 // MODULE: Projects  (schema: projects)
 // Project master, phases, tasks and dependencies, daily reports, site
 // assignments, KPI, milestones, change orders, handover and work plans.
-// Tenant scoped.
+// Tenant scoped, except projects, project_tasks, project_evidence,
+// project_costs (step 6a) and project_handover (BAST, step 6b), which are
+// company-wide (ADR-0011).
 // ---------------------------------------------------------------------------
 
 Table projects.project_types {
@@ -2692,42 +2845,42 @@ Table projects.project_types {
 
 Table projects.projects {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  name text [not null]
-  customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  project_type_id uuid
-  branch_id uuid [note: "Logical reference to organization.branches.id. Cross-module FK intentionally omitted. Validated through the Organization module contract."]
-  sales_order_id uuid [note: "Logical reference to sales.sales_orders.id. Cross-module FK intentionally omitted. Validated through the Sales module contract."]
-  manager_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  status text [not null, default: 'planned']
-  start_date date
-  target_end_date date
-  actual_end_date date
-  budget_amount bigint [not null, default: 0]
-  contract_value bigint [not null, default: 0]
-  currency_code varchar(3) [not null, default: 'IDR']
-  progress_percent numeric(5,2) [not null, default: 0]
-  handover_status text [not null, default: 'not_started']
+  code varchar(32) [not null, note: "Number from the numbering service (PRJ). Unique among live rows (partial index in the Drizzle schema)."]
+  sales_order_id uuid [not null, note: "Logical reference to sales.sales_orders.id. Cross-module FK intentionally omitted. Validated through the Sales module contract. One live (not cancelled) project per order (partial unique index)."]
+  sales_order_code varchar(32) [not null, note: "Snapshot of the order number."]
+  quotation_code varchar(40) [note: "Snapshot of the SPH number."]
+  customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
+  customer_name text [not null, note: "Snapshot of the customer name."]
+  title text [not null]
+  site_name varchar(200) [note: "Project location (Lokasi proyek)."]
+  contract_value bigint [not null, default: 0, note: "The order's grand total incl. VAT at creation (IDR minor units)."]
+  pic_user_id text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Must hold project:update."]
+  target_start_date date [note: "Jakarta business date."]
+  target_end_date date [note: "Jakarta business date."]
+  stage text [not null, default: 'preparation']
+  status text [not null, default: 'active']
   notes text
+  closed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  closed_at bigint
+  cancelled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancelled_at bigint
+  cancel_reason text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Project header. Contract value and budget are exact integer minor units."
+  Note: "Project executing a deal (sales order), company-wide (ADR-0011). Closing needs function-test, training and signed-BAST evidence and moves the stage to warranty."
   Indexes {
-    (organization_id, code) [unique, name: 'projects_org_code_uq']
-    project_type_id [name: 'projects_project_type_id_idx']
+    sales_order_id [name: 'projects_sales_order_id_idx']
     customer_id [name: 'projects_customer_id_idx']
-    manager_user_id [name: 'projects_manager_user_id_idx']
+    pic_user_id [name: 'projects_pic_user_id_idx']
     status [name: 'projects_status_idx']
   }
   Checks {
-    `status IN ('planned', 'in_progress', 'on_hold', 'completed', 'cancelled')`
-    `handover_status IN ('not_started', 'in_progress', 'done')`
-    `budget_amount >= 0`
+    `status IN ('active', 'closed', 'cancelled')`
+    `stage IN ('preparation', 'delivery', 'installation', 'testing', 'training', 'handover', 'warranty')`
     `contract_value >= 0`
-    `progress_percent BETWEEN 0 AND 100`
-    `target_end_date IS NULL OR start_date IS NULL OR target_end_date >= start_date`
+    `target_end_date IS NULL OR target_start_date IS NULL OR target_end_date >= target_start_date`
   }
 }
 
@@ -2756,45 +2909,81 @@ Table projects.project_phases {
 }
 
 Table projects.project_tasks {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  project_id uuid [not null]
-  phase_id uuid
-  parent_task_id uuid
-  code varchar(32) [not null]
+  project_id uuid [not null, note: "Same-module reference to projects.projects.id; no FK by design (module-ownership §9), validated by the Projects service."]
+  position integer [not null, default: 0]
   title text [not null]
-  description text
-  assignee_employee_id uuid [note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
-  assignee_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  stage text [not null]
+  assignee_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Must hold task:update."]
+  due_date date [note: "Jakarta business date."]
   status text [not null, default: 'todo']
-  priority text [not null, default: 'normal']
-  planned_start date
-  planned_end date
-  actual_start date
-  actual_completed_at bigint
-  estimated_hours numeric(8,2) [not null, default: 0]
-  actual_hours numeric(8,2) [not null, default: 0]
-  progress_percent numeric(5,2) [not null, default: 0]
-  verified_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  verified_at bigint
+  done_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  done_at bigint
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  deleted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Work item of a project. The task tree is self referencing."
+  deleted_at bigint
+  Note: "Checklist task of a project; a new project gets one task per stage up to handover. Removed tasks are soft-deleted."
   Indexes {
-    project_id [name: 'project_tasks_project_id_idx']
-    phase_id [name: 'project_tasks_phase_id_idx']
-    parent_task_id [name: 'project_tasks_parent_task_id_idx']
-    (organization_id, code) [unique, name: 'project_tasks_org_code_uq']
-    assignee_employee_id [name: 'project_tasks_assignee_employee_id_idx']
-    status [name: 'project_tasks_status_idx']
+    (project_id, position) [name: 'project_tasks_project_position_idx']
+    assignee_user_id [name: 'project_tasks_assignee_user_id_idx']
   }
   Checks {
-    `status IN ('todo', 'in_progress', 'submitted', 'verified', 'rejected', 'done', 'cancelled')`
-    `priority IN ('low', 'normal', 'high', 'urgent')`
-    `progress_percent BETWEEN 0 AND 100`
-    `estimated_hours >= 0`
-    `actual_hours >= 0`
+    `status IN ('todo', 'in_progress', 'done')`
+    `stage IN ('preparation', 'delivery', 'installation', 'testing', 'training', 'handover', 'warranty')`
+  }
+}
+
+Table projects.project_evidence {
+  id uuid [pk, default: `uuidv7()`]
+  project_id uuid [not null, note: "Same-module reference to projects.projects.id; no FK by design (module-ownership §9), validated by the Projects service."]
+  task_id uuid [note: "Same-module reference to projects.project_tasks.id; no FK by design."]
+  kind text [not null]
+  storage_key text [not null, note: "Object storage key; files are read through short-lived presigned URLs."]
+  file_name varchar(200) [not null]
+  content_type varchar(100) [not null, note: "Detected from the file content (JPG, PNG, WebP, PDF)."]
+  size_bytes integer [not null]
+  note varchar(500)
+  uploaded_by text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  deleted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Evidence file of a project (function test, training, signed BAST, photo)."
+  Indexes {
+    (project_id, kind) [name: 'project_evidence_project_kind_idx']
+  }
+  Checks {
+    `kind IN ('testing', 'training', 'bast', 'photo', 'other')`
+    `size_bytes > 0`
+  }
+}
+
+Table projects.project_costs {
+  id uuid [pk, default: `uuidv7()`]
+  project_id uuid [not null, note: "Same-module reference to projects.projects.id; no FK by design (module-ownership §9), validated by the Projects service."]
+  category text [not null]
+  cost_date date [not null, note: "Jakarta business date."]
+  amount bigint [not null, note: "IDR minor units."]
+  description varchar(300) [not null]
+  receipt_storage_key text [note: "Optional receipt (nota) in object storage."]
+  receipt_file_name varchar(200)
+  receipt_content_type varchar(100)
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  voided_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  voided_at bigint
+  void_reason text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Direct cost of a project; visible only with project:read_cost. Corrected by voiding, never deleted."
+  Indexes {
+    (project_id, cost_date) [name: 'project_costs_project_date_idx']
+  }
+  Checks {
+    `category IN ('material', 'transport', 'accommodation', 'subcontract', 'other')`
+    `amount > 0`
   }
 }
 
@@ -2984,27 +3173,34 @@ Table projects.project_changes {
 }
 
 Table projects.project_handover {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  project_id uuid [not null]
-  customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  handover_date date
-  received_by_name text
-  received_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
-  status text [not null, default: 'draft']
-  notes text
+  project_id uuid [not null, note: "Same-module reference to projects.projects.id; no FK by design (module-ownership §9). Several BASTs per project (owner decision 2026-11-06)."]
+  code varchar(32) [not null, note: "BAST number, assigned on creation by the BAST date. Unique among live rows (partial index in the Drizzle schema)."]
+  bast_date date [not null, note: "Jakarta business date, printed in words."]
+  first_party_company varchar(200) [not null, note: "PIHAK PERTAMA (the customer)."]
+  first_party_name varchar(120) [not null]
+  first_party_title varchar(120) [not null]
+  second_party_company varchar(200) [not null, note: "PIHAK KEDUA (the company)."]
+  second_party_name varchar(120) [not null]
+  second_party_title varchar(120) [not null]
+  contract_number varchar(120)
+  work_title varchar(300) [not null]
+  project_name varchar(200)
+  items jsonb [not null, note: "Handed-over items: description, volume, remarks."]
+  scope jsonb [not null, note: "Numbered list of the work handed over."]
+  status text [not null, default: 'issued']
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancelled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancelled_at bigint
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Project handover, BAST in Indonesian practice."
+  deleted_at bigint
+  Note: "Project handover (Berita Acara Serah Terima, BAST), company-wide (ADR-0011 step 6b). Edited or cancelled only while the project is active."
   Indexes {
-    (organization_id, code) [unique, name: 'project_handover_org_code_uq']
     project_id [name: 'project_handover_project_id_idx']
   }
   Checks {
-    `status IN ('draft', 'scheduled', 'completed', 'cancelled')`
+    `status IN ('issued', 'cancelled')`
   }
 }
 
@@ -5161,7 +5357,8 @@ Ref: assets.borrowing_events.borrowing_line_id > assets.borrowing_lines.id [dele
 // MODULE: After-Sales  (schema: aftersales)
 // Warranty, service tickets and work orders, maintenance plans and visits,
 // satisfaction surveys, spare parts, service contracts and SLA policies.
-// Tenant scoped.
+// Tenant scoped, except warranty_certificates (step 6b) and service_tickets
+// (step 6c), which are company-wide (ADR-0011).
 // ---------------------------------------------------------------------------
 
 Table aftersales.warranty_policies {
@@ -5185,6 +5382,39 @@ Table aftersales.warranty_policies {
   Checks {
     `coverage_type IN ('warranty', 'extended_warranty', 'service_plan', 'none')`
     `duration_months >= 0`
+  }
+}
+
+Table aftersales.warranty_certificates {
+  id uuid [pk, default: `uuidv7()`]
+  code varchar(80) [not null, note: "Number from the numbering service (SG-GARANSI, with the customer code). Unique among live rows (partial index in the Drizzle schema)."]
+  project_id uuid [not null, note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract. One live certificate per project."]
+  bast_id uuid [not null, note: "Logical reference to projects.project_handover.id. Cross-module FK intentionally omitted. Validated through the Projects module contract. The warranty starts at its BAST date."]
+  customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
+  issue_date date [not null]
+  start_date date [not null, note: "The BAST date."]
+  months integer [not null, default: 12]
+  end_date date [not null, note: "The day before the same date `months` later (clamped to the month end); the last covered day."]
+  product_summary varchar(300) [not null]
+  project_name varchar(300) [not null]
+  project_location varchar(200)
+  project_owner varchar(200) [not null]
+  items jsonb [not null, note: "Covered devices: description, volume, remarks."]
+  coverage text [not null, note: "Snapshot; one item per line, 'o ' / '- ' lines are sub-items, **…** prints bold."]
+  exclusions text [not null]
+  service_terms text [not null]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Warranty certificate (Surat Keterangan Garansi) of a project, company-wide (ADR-0011 step 6b). Service tickets check serials against it."
+  Indexes {
+    project_id [name: 'warranty_certificates_project_id_idx']
+    customer_id [name: 'warranty_certificates_customer_id_idx']
+  }
+  Checks {
+    `months BETWEEN 1 AND 120`
+    `end_date >= start_date`
   }
 }
 
@@ -5227,45 +5457,49 @@ Table aftersales.warranty_claims {
 }
 
 Table aftersales.service_tickets {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [not null, note: "Number from the numbering service (TKT). Unique among live rows (partial index in the Drizzle schema)."]
   customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract."]
-  asset_id uuid [note: "Logical reference to assets.assets.id. Cross-module FK intentionally omitted. Validated through the Assets module contract."]
-  service_type text [not null, default: 'repair']
-  subject text [not null]
-  description text
-  priority text [not null, default: 'normal']
-  status text [not null, default: 'open']
+  customer_name text [not null, note: "Snapshot of the customer name."]
+  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract; must belong to the customer."]
+  serial_number varchar(100)
+  device_description varchar(300)
   channel text [not null, default: 'phone']
-  assigned_to_employee_id uuid [note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
-  assigned_to_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  scheduled_for bigint
-  sla_due_at bigint
-  started_at bigint
+  reporter_name varchar(200) [not null]
+  reporter_contact varchar(200)
+  complaint text [not null]
+  reported_at bigint [not null]
+  in_warranty boolean [not null, default: false, note: "Warranty check at the report time (serial → shipped delivery note → project → warranty certificate)."]
+  warranty_ends_on date
+  warranty_code varchar(80)
+  status text [not null, default: 'new']
+  assignee_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Must hold service_ticket:update."]
+  resolution text
+  service_cost bigint [not null, default: 0, note: "IDR minor units."]
+  resolved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   resolved_at bigint
+  confirmed_by_name varchar(200) [note: "The customer who confirmed the fix (required to close)."]
+  confirmation_channel text
+  confirmed_at bigint
+  closed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   closed_at bigint
-  resolution_notes text
-  escalation_level smallint [not null, default: 0]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Service ticket, tiket servis. The SLA due date is derived from the SLA policy of the priority."
+  deleted_at bigint
+  Note: "Service ticket (tiket servis), company-wide (ADR-0011 step 6c). Stores the warranty check made when it is reported; closed only with the customer's confirmation."
   Indexes {
-    (organization_id, code) [unique, name: 'service_tickets_org_code_uq']
     customer_id [name: 'service_tickets_customer_id_idx']
-    assigned_to_employee_id [name: 'service_tickets_assigned_employee_id_idx']
+    project_id [name: 'service_tickets_project_id_idx']
+    assignee_user_id [name: 'service_tickets_assignee_user_id_idx']
     status [name: 'service_tickets_status_idx']
-    priority [name: 'service_tickets_priority_idx']
-    sla_due_at [name: 'service_tickets_sla_due_at_idx']
+    serial_number [name: 'service_tickets_serial_number_idx']
   }
   Checks {
-    `service_type IN ('repair', 'installation', 'maintenance', 'inspection', 'training', 'consulting')`
-    `priority IN ('low', 'normal', 'high', 'urgent')`
-    `status IN ('open', 'assigned', 'in_progress', 'on_hold', 'resolved', 'closed', 'cancelled')`
-    `channel IN ('phone', 'whatsapp', 'email', 'web', 'onsite')`
-    `escalation_level >= 0`
+    `status IN ('new', 'in_progress', 'resolved', 'closed')`
+    `channel IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'other')`
+    `confirmation_channel IS NULL OR confirmation_channel IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'other')`
+    `service_cost >= 0`
   }
 }
 
@@ -7103,28 +7337,28 @@ Ref: automation.notifications.notification_template_id > automation.notification
 // ---------------------------------------------------------------------------
 // MODULE: Licensing  (schema: licensing)
 // Licensed applications, packages, contracts, keys, activations, entitlements
-// and usages, subscription schedules and events. Tenant scoped.
+// and usages, subscription schedules and events. Tenant scoped, except
+// licensable_applications, license_contracts, license_keys (M03 stage 1),
+// license_activations, license_events and application_api_keys (stage 2),
+// which are company-wide. Grace period after end_date: 7 days (owner
+// decision 2026-11-06), derived, never stored.
 // ---------------------------------------------------------------------------
 
 Table licensing.licensable_applications {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [not null, note: "Unique among live rows (partial index in the Drizzle schema)."]
   name text [not null]
-  description text
   vendor text
-  license_model text [not null, default: 'perpetual']
+  source text [not null, default: 'third_party', note: "third_party: key typed in from the vendor; own: key generated by the ERP (validation API in stage 2)."]
+  description text
   status text [not null, default: 'active']
-  is_active boolean [not null, default: true]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Application that can be licensed. One integrated pilot application at the moment."
-  Indexes {
-    (organization_id, code) [unique, name: 'licensable_applications_org_code_uq']
-  }
+  Note: "Software that is licensed to customers, company-wide (M03 stage 1)."
   Checks {
-    `license_model IN ('perpetual', 'subscription', 'trial', 'usage')`
+    `source IN ('third_party', 'own')`
     `status IN ('active', 'retired')`
   }
 }
@@ -7156,91 +7390,93 @@ Table licensing.license_packages {
 }
 
 Table licensing.license_contracts {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [not null, note: "Number from the numbering service (LIC). Unique among live rows (partial index in the Drizzle schema)."]
   customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  license_package_id uuid [not null]
+  customer_name text [not null, note: "Snapshot of the customer name."]
+  licensable_application_id uuid [not null]
+  package_name varchar(200) [note: "Edition / plan as sold."]
+  sales_order_id uuid [note: "Logical reference to sales.sales_orders.id. Cross-module FK intentionally omitted. Validated through the Sales module contract. Billing stays in the sales flow."]
   start_date date
-  end_date date
-  billing_cycle text [not null, default: 'monthly']
-  contract_value bigint [not null, default: 0]
+  end_date date [note: "Null = perpetual. Expired and due are derived from it, never stored."]
+  billing_cycle text [not null, default: 'annual']
+  contract_value bigint [not null, default: 0, note: "IDR minor units."]
   currency_code varchar(3) [not null, default: 'IDR']
-  auto_renew boolean [not null, default: false]
   status text [not null, default: 'draft']
   renewed_from_contract_id uuid
+  notes text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  activated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  activated_at bigint
+  terminated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  terminated_at bigint
+  termination_reason text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Licensing contract with a customer, the source of the license keys."
+  deleted_at bigint
+  Note: "Licensing contract with a customer, company-wide (M03 stage 1). A renewal is a new draft contract; activating it marks the old one renewed."
   Indexes {
-    (organization_id, code) [unique, name: 'license_contracts_org_code_uq']
     customer_id [name: 'license_contracts_customer_id_idx']
-    license_package_id [name: 'license_contracts_package_id_idx']
+    licensable_application_id [name: 'license_contracts_application_id_idx']
     status [name: 'license_contracts_status_idx']
+    end_date [name: 'license_contracts_end_date_idx']
   }
   Checks {
     `billing_cycle IN ('monthly', 'quarterly', 'semi_annual', 'annual', 'one_time')`
-    `status IN ('draft', 'active', 'expired', 'suspended', 'terminated', 'renewed')`
+    `status IN ('draft', 'active', 'suspended', 'terminated', 'renewed')`
     `contract_value >= 0`
     `end_date IS NULL OR start_date IS NULL OR end_date >= start_date`
   }
 }
 
 Table licensing.license_keys {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  license_key text [not null]
-  license_package_id uuid [not null]
-  license_contract_id uuid
-  issued_on date
-  expires_on date
-  status text [not null, default: 'issued']
+  license_contract_id uuid [not null]
+  license_key text [not null, note: "Readable in stage 1 (vendor keys are handed to customers); masked for callers without license:read_key. Unique among live rows."]
+  key_source text [not null, default: 'vendor']
   max_activations integer [not null, default: 1]
-  activation_count integer [not null, default: 0]
-  is_transferable boolean [not null, default: false]
+  expires_on date [note: "Defaults to the contract end."]
+  status text [not null, default: 'active']
+  notes text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  revoked_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  revoked_at bigint
+  revoke_reason text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "License key issued under a contract. The key value is stored hashed for the customer facing read path."
+  deleted_at bigint
+  Note: "License key issued under a contract (M03 stage 1). Moves to the renewal contract when that is activated (stage 2)."
   Indexes {
-    (organization_id, license_key) [unique, name: 'license_keys_key_uq']
     license_contract_id [name: 'license_keys_contract_id_idx']
-    status [name: 'license_keys_status_idx']
-    expires_on [name: 'license_keys_expires_on_idx']
   }
   Checks {
-    `status IN ('issued', 'active', 'suspended', 'expired', 'revoked')`
+    `key_source IN ('vendor', 'generated')`
+    `status IN ('active', 'revoked')`
     `max_activations > 0`
-    `activation_count >= 0`
-    `activation_count <= max_activations`
-    `expires_on IS NULL OR issued_on IS NULL OR expires_on > issued_on`
   }
 }
 
 Table licensing.license_activations {
+  id uuid [pk, default: `uuidv7()`]
+  license_key_id uuid [not null]
+  instance_id varchar(200) [not null, note: "Installation / device id sent by the application."]
+  device_name varchar(200)
+  activated_at bigint [not null]
+  last_seen_at bigint [not null]
+  last_ip text
+  status text [not null, default: 'active']
+  deactivated_at bigint
+  deactivated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null when the application released the seat."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  license_key_id uuid [not null]
-  activation_code text [not null]
-  device_fingerprint text
-  activated_on date [not null]
-  expires_on date
-  last_seen_at bigint
-  ip_address text
-  status text [not null, default: 'active']
-  deactivated_at bigint
-  Note: "Activation of a license key on one device."
+  Note: "One seat of a license key taken by an installation (M03 stage 2, company-wide). Active seats never exceed the key's max_activations."
   Indexes {
     license_key_id [name: 'license_activations_key_id_idx']
-    (license_key_id, device_fingerprint) [unique, name: 'license_activations_device_uq']
-    status [name: 'license_activations_status_idx']
+    (license_key_id, instance_id) [unique, name: 'license_activations_active_uq', note: "Live active rows only (partial index in the Drizzle schema)."]
   }
   Checks {
-    `status IN ('active', 'expired', 'deactivated', 'revoked')`
+    `status IN ('active', 'deactivated')`
   }
 }
 
@@ -7313,38 +7549,68 @@ Table licensing.subscription_schedules {
 }
 
 Table licensing.license_events {
+  id uuid [pk, default: `uuidv7()`]
+  license_key_id uuid [note: "Null when the call named an unknown key."]
+  license_contract_id uuid
+  application_api_key_id uuid [note: "The application key that made the call; null for staff actions."]
+  event_type text [not null]
+  result text [not null, note: "ok, grace, or the rejection code (unknown, revoked, suspended, terminated, expired, not_started, seat_limit, not_activated)."]
+  instance_id varchar(200)
+  ip_address text
+  actor_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Set for staff actions."]
+  description text
+  event_at bigint [not null]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  license_key_id uuid [not null]
-  event_type text [not null]
-  event_at bigint [not null]
-  payload text
-  description text
-  actor_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  Note: "Append only event log of a license key."
+  Note: "Append-only log of license API calls and staff overrides (M03 stage 2, company-wide)."
   Indexes {
     license_key_id [name: 'license_events_key_id_idx']
+    license_contract_id [name: 'license_events_contract_id_idx']
     event_at [name: 'license_events_event_at_idx']
   }
   Checks {
-    `event_type IN ('issued', 'activated', 'deactivated', 'suspended', 'revoked', 'expired', 'renewed')`
+    `event_type IN ('validated', 'activated', 'deactivated', 'renewed', 'suspended', 'reactivated', 'terminated', 'key_revoked')`
+  }
+}
+
+Table licensing.application_api_keys {
+  id uuid [pk, default: `uuidv7()`]
+  licensable_application_id uuid [not null]
+  api_key_id text [not null, note: "Logical reference to auth.apikeys.id (config licensing, prefix elk_). Cross-module FK intentionally omitted. Validated through the Identity module contract. The secret is hashed by Better Auth and shown once."]
+  name varchar(100) [not null]
+  key_start varchar(20) [note: "First characters of the key, for recognising it."]
+  status text [not null, default: 'active']
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  revoked_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  revoked_at bigint
+  last_used_at bigint
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Machine key an own application uses to call the license API (M03 stage 2). It can only validate, activate and deactivate keys of its own application."
+  Indexes {
+    licensable_application_id [name: 'application_api_keys_application_id_idx']
+    api_key_id [unique, name: 'application_api_keys_api_key_id_uq']
+  }
+  Checks {
+    `status IN ('active', 'revoked')`
   }
 }
 
 Ref: licensing.license_packages.licensable_application_id > licensing.licensable_applications.id [delete: restrict]
-Ref: licensing.license_contracts.license_package_id > licensing.license_packages.id [delete: restrict]
+Ref: licensing.license_contracts.licensable_application_id > licensing.licensable_applications.id [delete: restrict]
 Ref: licensing.license_contracts.renewed_from_contract_id > licensing.license_contracts.id [delete: set null]
-Ref: licensing.license_keys.license_package_id > licensing.license_packages.id [delete: restrict]
-Ref: licensing.license_keys.license_contract_id > licensing.license_contracts.id [delete: set null]
-Ref: licensing.license_activations.license_key_id > licensing.license_keys.id [delete: cascade]
+Ref: licensing.license_keys.license_contract_id > licensing.license_contracts.id [delete: restrict]
+Ref: licensing.license_activations.license_key_id > licensing.license_keys.id [delete: restrict]
 Ref: licensing.license_entitlements.license_package_id > licensing.license_packages.id [delete: cascade]
 Ref: licensing.license_entitlement_usages.license_entitlement_id > licensing.license_entitlements.id [delete: cascade]
 Ref: licensing.license_entitlement_usages.license_key_id > licensing.license_keys.id [delete: cascade]
 Ref: licensing.subscription_schedules.license_contract_id > licensing.license_contracts.id [delete: cascade]
-Ref: licensing.license_events.license_key_id > licensing.license_keys.id [delete: cascade]
+Ref: licensing.license_events.license_key_id > licensing.license_keys.id [delete: restrict]
+Ref: licensing.license_events.license_contract_id > licensing.license_contracts.id [delete: restrict]
+Ref: licensing.license_events.application_api_key_id > licensing.application_api_keys.id [delete: restrict]
+Ref: licensing.application_api_keys.licensable_application_id > licensing.licensable_applications.id [delete: restrict]
 
 // ---------------------------------------------------------------------------
 // MODULE: Ticketing  (schema: ticket)
@@ -7537,5 +7803,4 @@ Table sales.payments {
     `status IN ('pending', 'approved', 'executed')`
   }
 }
-
 

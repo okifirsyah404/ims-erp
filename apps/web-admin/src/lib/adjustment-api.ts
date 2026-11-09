@@ -77,6 +77,8 @@ export type TStockAdjustmentItem = {
 	binId: string | null;
 	quantityBefore: string;
 	quantityAfter: string;
+	/** Cost of an increase (IDR minor units); null = moving average or hidden. */
+	unitCost: number | null;
 	note: string | null;
 	createdAt: string;
 	updatedAt: string | null;
@@ -95,6 +97,11 @@ export type TAdjustmentLineInput = {
 	binId?: string | null;
 	/** The counted total. */
 	quantityAfter: number;
+	/**
+	 * Cost of an increase, IDR minor units (opening stock, ADR-0011 §6);
+	 * null = the moving average. Only `product:read_cost` holders send it.
+	 */
+	unitCost?: number | null;
 	note?: string | null;
 };
 

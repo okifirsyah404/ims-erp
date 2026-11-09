@@ -32,8 +32,9 @@ import {
 	WarehouseNotFoundError,
 } from '../errors/inventory.errors';
 import type { TTx } from '@drizzle/types';
-import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
-import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import { applyMovementCost, type TCostState } from '../utils/moving-average';
+import type { NumberingService } from '@app/organization/services/numbering.service';
+import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import { InventoryAuditWriter } from './inventory-audit.writer';
 
 /** One balance row decorated with readable item and warehouse names. */
@@ -70,6 +71,12 @@ export type TPostMovementInput = {
 	notes?: string | null;
 	/** Required for transfer types by a schema CHECK. */
 	targetWarehouseId?: string | null;
+	/**
+	 * Inbound unit cost in IDR minor units (ADR-0011 §5). Omitted inbound
+	 * movements are valued at the current average; outbound movements always
+	 * leave at the average.
+	 */
+	unitCost?: number | null;
 };
 
 /** A movement plus the balance it produced. */
@@ -121,8 +128,8 @@ export class StockService {
 		 * inside the posting transaction (hardening plan D4), replacing the
 		 * former random-suffix scheme.
 		 */
-		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: DocumentNumberingService,
+		@inject(NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<NumberingService, 'next'>,
 		/** Fire-and-forget audit writer (hardening plan D3). */
 		private readonly audit: InventoryAuditWriter,
 		/**
@@ -299,13 +306,17 @@ export class StockService {
 		// that divergence is exactly what recomputeFromLedger would have to
 		// repair later.
 		const run = async (handle: TTx): Promise<TPostedMovement> => {
+			// The balance row is locked for the cost update (ADR-0011 §5).
 			// Negative stock is refused by `applyDelta` itself: the conditional
 			// UPDATE runs under a FOR UPDATE row lock, so the check cannot race
-			// (hardening plan Phase I-1 / D2). The old read-then-throw pre-check
-			// here was a TOCTOU window — two concurrent posts could both pass it
-			// and drive the balance negative. `applyDelta` now throws
-			// InsufficientStockError with the true on-hand figure, and this
-			// transaction rolls back, leaving no movement row behind.
+			// (hardening plan Phase I-1 / D2); InsufficientStockError rolls this
+			// transaction back, leaving no movement row behind.
+			const locked = await this.balanceRepository.lockForCost(key, handle);
+			const cost = applyMovementCost(costState(locked), {
+				outbound,
+				quantity: input.quantity,
+				unitCost: outbound ? null : input.unitCost,
+			});
 
 			// Sequence-allocated code (ERP-0009, hardening plan D4): allocated
 			// inside this transaction, so a rollback releases the number (an
@@ -323,6 +334,7 @@ export class StockService {
 					binId: input.binId ?? null,
 					targetWarehouseId: input.targetWarehouseId ?? null,
 					quantity: input.quantity,
+					unitCost: cost.unitCost,
 					referenceType: input.referenceType ?? null,
 					referenceId: input.referenceId ?? null,
 					status: 'posted',
@@ -341,8 +353,13 @@ export class StockService {
 				},
 				handle,
 			);
+			await this.balanceRepository.setCost(key, cost, handle);
 
-			return { movement, balance, scopeOrganizationId };
+			return {
+				movement,
+				balance: { ...balance, averageCost: cost.averageCost, totalValue: cost.totalValue },
+				scopeOrganizationId,
+			};
 		};
 
 		return (tx ? run(tx) : this.database.transaction(run)).then(
@@ -441,7 +458,17 @@ export class StockService {
 			// repair is to issue again or to adjust, not to invent negative
 			// stock. Enforcement lives in `applyDelta` (row-locked conditional
 			// update); the insufficient-stock error rolls this transaction back,
-			// which also releases the reversal claim (see comment above).
+			// which also releases the reversal claim (see comment above). The
+			// lock here reads the cost state the reversal restores.
+			const locked = await this.balanceRepository.lockForCost(key, tx);
+
+			// The reversal carries the original's cost, so the value it added
+			// (or took) comes back out (or in) exactly.
+			const cost = applyMovementCost(costState(locked), {
+				outbound: !originalOutbound,
+				quantity: original.quantity,
+				unitCost: original.unitCost,
+			});
 
 			const reversal = await this.movementRepository.create(
 				{
@@ -453,6 +480,7 @@ export class StockService {
 					binId: original.binId,
 					targetWarehouseId: null,
 					quantity: original.quantity,
+					unitCost: cost.unitCost,
 					referenceType: 'reversal',
 					referenceId: original.id,
 					status: 'posted',
@@ -473,8 +501,13 @@ export class StockService {
 				},
 				tx,
 			);
+			await this.balanceRepository.setCost(key, cost, tx);
 
-			return { movement: reversal, balance, scopeOrganizationId };
+			return {
+				movement: reversal,
+				balance: { ...balance, averageCost: cost.averageCost, totalValue: cost.totalValue },
+				scopeOrganizationId,
+			};
 		}).then(async (reversed) => {
 			await this.audit.record({
 				actor: { userId: createdBy ?? 'system' },
@@ -564,6 +597,27 @@ export class StockService {
 			}
 		}
 
+		// Cost is path-dependent, so it is replayed in posting order rather than
+		// summed (ADR-0011 §5).
+		const costs = new Map<string, TCostState & { key: TBalanceKey }>();
+		for (const row of await this.movementRepository.ledgerRows(scopeOrganizationId)) {
+			const id = keyOf(row.itemId, row.warehouseId, row.binId);
+			const state = costs.get(id) ?? {
+				key: { scopeOrganizationId, itemId: row.itemId, warehouseId: row.warehouseId, binId: row.binId },
+				quantity: '0',
+				averageCost: 0,
+				totalValue: 0,
+			};
+			const outbound = isOutbound(row.movementType);
+			const next = applyMovementCost(state, { outbound, quantity: row.quantity, unitCost: row.unitCost });
+			const quantity = Number(state.quantity) + (outbound ? -1 : 1) * Number(row.quantity);
+			costs.set(id, { ...state, ...next, quantity: normalizeQuantity(quantity) });
+		}
+		for (const [id, state] of costs) {
+			if (Number(byKey.get(id) ?? '0') === 0) continue;
+			await this.balanceRepository.setCost(state.key, state);
+		}
+
 		return { written, removed };
 	}
 
@@ -578,16 +632,15 @@ export class StockService {
 	 */
 	private async movementCode(
 		tx: TTx,
-		organizationId: string | null,
+		_organizationId: string | null,
 	): Promise<string> {
-		const number = await this.numbering.allocate(
-			organizationId,
-			'stock_movement',
-			tx,
-		);
-		const stamp = new Date().toISOString().replace(/\D/g, '').slice(0, 14);
-		return this.numbering.format('MV', stamp, number, 6);
+		return this.numbering.next('stock_movement', { tx });
 	}
+}
+
+/** The cost state of a locked balance. */
+function costState(locked: { quantityOnHand: string; averageCost: number; totalValue: number }): TCostState {
+	return { quantity: locked.quantityOnHand, averageCost: locked.averageCost, totalValue: locked.totalValue };
 }
 
 /** Key for grouping ledger totals and balance rows. */

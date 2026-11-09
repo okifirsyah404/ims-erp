@@ -9,18 +9,26 @@ import { BalanceRepository } from './repositories/balance.repository';
 import { AdjustmentRepository } from './repositories/adjustment.repository';
 import { InventoryAuditWriter } from './services/inventory-audit.writer';
 import { NoopWarehouseBorrowingGuard } from './contracts/warehouse-borrowing-guard.port';
+import { ItemImageService } from './services/item-image.service';
 import { ItemService } from './services/item.service';
+import { ItemCategoryRepository } from './repositories/item-category.repository';
+import { ItemCategoryService } from './services/item-category.service';
 import { AUDIT_SERVICE_TOKEN } from '../audit/constants/di';
 import type { AuditService } from '../audit/services/audit.service';
 import { WarehouseService } from './services/warehouse.service';
 import { ExportedWarehouseService } from './services/exported-warehouse.service';
 import { StockService } from './services/stock.service';
 import { AdjustmentService } from './services/adjustment.service';
+import { StockValuationRepository } from './repositories/stock-valuation.repository';
+import { StockValuationService } from './services/stock-valuation.service';
 import {
 	ADJUSTMENT_REPOSITORY_TOKEN,
 	ADJUSTMENT_SERVICE_TOKEN,
 	BALANCE_REPOSITORY_TOKEN,
+	ITEM_CATEGORY_REPOSITORY_TOKEN,
+	ITEM_CATEGORY_SERVICE_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
+	ITEM_IMAGE_SERVICE_TOKEN,
 	ITEM_SERVICE_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
 	SERIAL_UNIT_REPOSITORY_TOKEN,
@@ -30,6 +38,8 @@ import {
 	WAREHOUSE_REPOSITORY_TOKEN,
 	WAREHOUSE_SERVICE_TOKEN,
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
+	STOCK_VALUATION_REPOSITORY_TOKEN,
+	STOCK_VALUATION_SERVICE_TOKEN,
 	EXPORTED_WAREHOUSE_SERVICE_TOKEN,
 } from './constants/di';
 
@@ -60,6 +70,13 @@ export function registerInventory(container: DependencyContainer): void {
 		useClass: SerialUnitRepository,
 	});
 	container.register(ITEM_SERVICE_TOKEN, { useClass: ItemService });
+	container.register(ITEM_IMAGE_SERVICE_TOKEN, { useClass: ItemImageService });
+	container.register(ITEM_CATEGORY_REPOSITORY_TOKEN, {
+		useClass: ItemCategoryRepository,
+	});
+	container.register(ITEM_CATEGORY_SERVICE_TOKEN, {
+		useClass: ItemCategoryService,
+	});
 
 	container.register(WAREHOUSE_REPOSITORY_TOKEN, {
 		useClass: WarehouseRepository,
@@ -97,6 +114,8 @@ export function registerInventory(container: DependencyContainer): void {
 	// injects it, and tsyringe resolves lazily but the token must already exist
 	// for bootstrap to fail early rather than at first request.
 	container.register(STOCK_SERVICE_TOKEN, { useClass: StockService });
+	container.register(STOCK_VALUATION_REPOSITORY_TOKEN, { useClass: StockValuationRepository });
+	container.register(STOCK_VALUATION_SERVICE_TOKEN, { useClass: StockValuationService });
 	container.register(ADJUSTMENT_SERVICE_TOKEN, {
 		useClass: AdjustmentService,
 	});

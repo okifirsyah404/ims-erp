@@ -8,6 +8,12 @@ import inventory from './inventory';
 import nav from './nav';
 import account from './account';
 import api from './api';
+import settings from './settings';
+import crm from './crm';
+import sales from './sales';
+import procurement from './procurement';
+import projects from './projects';
+import licensing from './licensing';
 import tax from './tax';
 
 /**
@@ -25,6 +31,12 @@ export const en = {
 	finance,
 	dashboard,
 	api,
+	settings,
+	crm,
+	sales,
+	procurement,
+	projects,
+	licensing,
 	tax,
 } as const;
 

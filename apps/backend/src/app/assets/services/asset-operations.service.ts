@@ -25,8 +25,8 @@ import {
 	MOVEMENT_TYPES_ASSET,
 	TOOL_SET_STATUSES,
 } from '@drizzle/schemas/asset.schema';
-import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
+import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { NumberingService } from '@app/organization/services/numbering.service';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { ASSET_REPOSITORY_TOKEN, ASSET_OPERATIONS_REPOSITORY_TOKEN } from '../constants/di';
@@ -70,8 +70,8 @@ export class AssetOperationsService {
 		@inject(ASSET_OPERATIONS_REPOSITORY_TOKEN)
 		private readonly operations: IAssetOperationsRepository,
 		/** ERP-0009 numbering authority (D15). */
-		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: DocumentNumberingService,
+		@inject(NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<NumberingService, 'next'>,
 		/** Fire-and-forget audit writer, shared with the inventory module. */
 		private readonly audit: InventoryAuditWriter,
 		/** Inventory owns warehouses/storages; Assets validates through this port. */
@@ -557,15 +557,11 @@ export class AssetOperationsService {
 		await this.requireAssetInScope(assetId, organizationId);
 
 		const record = await this.database.transaction(async (tx) => {
-			const number = await this.numbering.allocate(
-				organizationId,
-				ASSET_DOC_TYPES.maintenance,
-				tx,
-			);
+			const code = await this.numbering.next(ASSET_DOC_TYPES.maintenance, { tx });
 			return this.operations.createMaintenance(
 				{
 					organizationId,
-					code: this.numbering.format('MNT', 'SVC', number, 5),
+					code,
 					assetId,
 					maintenanceType: data.maintenanceType ?? 'preventive',
 					scheduledDate: data.scheduledDate ?? null,
@@ -743,15 +739,11 @@ export class AssetOperationsService {
 		}
 
 		const disposal = await this.database.transaction(async (tx) => {
-			const number = await this.numbering.allocate(
-				organizationId,
-				ASSET_DOC_TYPES.disposal,
-				tx,
-			);
+			const code = await this.numbering.next(ASSET_DOC_TYPES.disposal, { tx });
 			return this.operations.createDisposal(
 				{
 					organizationId,
-					code: this.numbering.format('DSP', 'DSL', number, 5),
+					code,
 					assetId,
 					disposalDate: data.disposalDate ?? null,
 					disposalMethod: data.disposalMethod ?? 'scrap',
@@ -947,15 +939,11 @@ export class AssetOperationsService {
 		actor: TAssetOperationActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TToolSetSelect> {
 		const created = await this.database.transaction(async (tx) => {
-			const number = await this.numbering.allocate(
-				organizationId,
-				ASSET_DOC_TYPES.asset,
-				tx,
-			);
+			const code = await this.numbering.next(ASSET_DOC_TYPES.toolSet, { tx });
 			return this.operations.createToolSet(
 				{
 					organizationId,
-					code: this.numbering.format('TST', 'KIT', number, 5),
+					code,
 					name: data.name,
 					description: data.description ?? null,
 					custodianEmployeeId: data.custodianEmployeeId ?? null,

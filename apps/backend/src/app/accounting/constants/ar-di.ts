@@ -6,7 +6,6 @@ import type { SupplierBillService } from '../services/supplier-bill.service';
 import type { ReportService } from '../services/report.service';
 import type { BankReconciliationService } from '../services/bank-reconciliation.service';
 import type { MonthEndCloseService } from '../services/month-end-close.service';
-import type { TInvoiceRepository } from '@app/sales/contracts/invoice.repository.interface';
 
 /**
  * F4 tokens for the invoice/AR slice.
@@ -24,8 +23,6 @@ export const AR_ACCOUNT_RESOLVER_TOKEN: InjectionToken<ArAccountResolverService>
 export const PAYMENT_SERVICE_TOKEN: InjectionToken<PaymentService> = Symbol(
 	'PAYMENT_SERVICE_TOKEN',
 );
-export const INVOICE_REPOSITORY_TOKEN: InjectionToken<TInvoiceRepository> =
-	Symbol('INVOICE_REPOSITORY_TOKEN');
 export const SUPPLIER_BILL_SERVICE_TOKEN: InjectionToken<SupplierBillService> =
 	Symbol('SUPPLIER_BILL_SERVICE_TOKEN');
 export const REPORT_SERVICE_TOKEN: InjectionToken<ReportService> = Symbol(

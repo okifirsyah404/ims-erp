@@ -10,6 +10,8 @@ import { seedTax } from './seed/tax.seeder';
 import { seedOrganization } from './seed/organization.seeder';
 import { seedOrganizationMembers } from './seed/organization-members.seeder';
 import { seedOrganizationRoles } from './seed/organization-roles.seeder';
+import { seedCompanyProfile } from './seed/company-profile.seeder';
+import { seedItemCategories } from './seed/item-category.seeder';
 
 const logger = pino({
 	timestamp: false,
@@ -31,8 +33,11 @@ export async function runSeeders(): Promise<void> {
 	await seedOrganization();
 	await seedOrganizationMembers();
 	await seedOrganizationRoles();
-	// Needs the organization (scope), location (address village) and the
-	// warehouse/storage rows above; asset placements reference them.
+	await seedCompanyProfile();
+	await seedItemCategories();
+	// Needs the organization (scope), location (address village), the item
+	// category rows above; asset placements then reference the warehouse and
+	// storage rows it creates.
 	await seedInventory();
 	await seedAssets();
 	await seedTax();

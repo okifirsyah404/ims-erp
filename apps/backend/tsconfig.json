@@ -37,7 +37,8 @@
 			"@di/*": ["./src/di/*"],
 			"@http/*": ["./src/http/*"],
 			"@authorization/*": ["./src/authorization/*"],
-			"@app/*": ["./src/app/*"]
+			"@app/*": ["./src/app/*"],
+			"@utils/*": ["./src/utils/*"]
 		} /* Specify a set of entries that re-map imports to additional lookup locations. */,
 		// "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */
 		// "typeRoots": [],                                  /* Specify multiple folders that act like './node_modules/@types'. */

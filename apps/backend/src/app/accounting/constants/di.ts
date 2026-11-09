@@ -6,7 +6,6 @@
  * would make `container.resolve()` return `unknown`.
  */
 import type { InjectionToken } from 'tsyringe';
-import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
 import type { TTaxRepository } from '../contracts/tax.repository.interface';
 import type { TaxService } from '../services/tax.service';
 import type { LedgerRepository } from '../repositories/ledger.repository';
@@ -20,10 +19,6 @@ export const TAX_REPOSITORY_TOKEN: InjectionToken<TTaxRepository> =
 	Symbol('TAX_REPOSITORY');
 export const TAX_SERVICE_TOKEN: InjectionToken<TaxService> =
 	Symbol('TAX_SERVICE');
-
-/** ERP-0009 numbering authority, re-exported here for convenience. */
-export const DOCUMENT_NUMBERING_SERVICE_TOKEN: InjectionToken<DocumentNumberingService> =
-	Symbol('DOCUMENT_NUMBERING_SERVICE');
 
 export const LEDGER_REPOSITORY_TOKEN: InjectionToken<LedgerRepository> =
 	Symbol('LEDGER_REPOSITORY');

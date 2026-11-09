@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { isoDate, minorAmount } from '@app/accounting/contracts/ledger.contract';
 import { ledgerIdParamSchema } from '@app/accounting/contracts/ledger.contract';
+import { RECEIPT_METHODS, RECEIPT_STATUSES } from '@drizzle/schemas/sales.schema';
 
 /* ----------------------------- invoices (F4) ----------------------------- */
 
@@ -56,3 +57,29 @@ export const invoiceListQuerySchema = z.object({
 });
 
 export { ledgerIdParamSchema as invoiceIdParamSchema };
+
+/* ----------------------------- receipts (AR) ----------------------------- */
+
+export const reasonSchema = z.object({
+	reason: z.string().trim().min(1).max(1000),
+});
+
+export const createReceiptSchema = z.object({
+	amount: minorAmount,
+	/** Defaults to today (Jakarta). */
+	receivedDate: isoDate.nullish(),
+	method: z.enum(RECEIPT_METHODS),
+	reference: z.string().trim().max(100).nullish().transform((v) => v ?? null),
+	notes: z.string().trim().max(2000).nullish().transform((v) => v ?? null),
+});
+
+export const receiptListQuerySchema = z.object({
+	page: z.coerce.number().int().positive().default(1),
+	limit: z.coerce.number().int().positive().max(100).default(20),
+	status: z.enum(RECEIPT_STATUSES).optional(),
+	/** Free-text over receipt code, reference, invoice code and customer. */
+	search: z.string().trim().max(100).optional(),
+});
+
+export type TCreateReceiptInput = z.output<typeof createReceiptSchema>;
+export type TReceiptListQuery = z.output<typeof receiptListQuerySchema>;

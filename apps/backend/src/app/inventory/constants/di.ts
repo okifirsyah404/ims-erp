@@ -17,10 +17,15 @@ import type { IBalanceRepository } from '../contracts/balance.repository.interfa
 import type { IAdjustmentRepository } from '../contracts/adjustment.repository.interface';
 import type { IWarehouseBorrowingGuard } from '../contracts/warehouse-borrowing-guard.port';
 import type { ItemService } from '../services/item.service';
+import type { ItemImageService } from '../services/item-image.service';
 import type { WarehouseService } from '../services/warehouse.service';
 import type { ExportedWarehouseService } from '../services/exported-warehouse.service';
 import type { StockService } from '../services/stock.service';
 import type { AdjustmentService } from '../services/adjustment.service';
+import type { IItemCategoryRepository } from '../contracts/item-category.repository.interface';
+import type { ItemCategoryService } from '../services/item-category.service';
+import type { IStockValuationRepository } from '../contracts/stock-valuation.contract';
+import type { StockValuationService } from '../services/stock-valuation.service';
 
 export const ITEM_REPOSITORY_TOKEN: InjectionToken<IItemRepository> =
 	Symbol('ITEM_REPOSITORY');
@@ -28,6 +33,10 @@ export const SERIAL_UNIT_REPOSITORY_TOKEN: InjectionToken<ISerialUnitRepository>
 	Symbol('SERIAL_UNIT_REPOSITORY');
 export const ITEM_SERVICE_TOKEN: InjectionToken<ItemService> =
 	Symbol('ITEM_SERVICE');
+export const ITEM_CATEGORY_REPOSITORY_TOKEN: InjectionToken<IItemCategoryRepository> =
+	Symbol('ITEM_CATEGORY_REPOSITORY');
+export const ITEM_CATEGORY_SERVICE_TOKEN: InjectionToken<ItemCategoryService> =
+	Symbol('ITEM_CATEGORY_SERVICE');
 
 export const WAREHOUSE_REPOSITORY_TOKEN: InjectionToken<IWarehouseRepository> =
 	Symbol('WAREHOUSE_REPOSITORY');
@@ -61,3 +70,12 @@ export const STOCK_SERVICE_TOKEN: InjectionToken<StockService> =
 	Symbol('STOCK_SERVICE');
 export const ADJUSTMENT_SERVICE_TOKEN: InjectionToken<AdjustmentService> =
 	Symbol('ADJUSTMENT_SERVICE');
+
+/** Token resolving to the {@link ItemImageService} (document photo of an item). */
+export const ITEM_IMAGE_SERVICE_TOKEN: InjectionToken<ItemImageService> = Symbol('ITEM_IMAGE_SERVICE_TOKEN');
+
+/** Token resolving to the inventory value repository (ADR-0011 step 5b). */
+export const STOCK_VALUATION_REPOSITORY_TOKEN: InjectionToken<IStockValuationRepository> = Symbol('STOCK_VALUATION_REPOSITORY_TOKEN');
+
+/** Token resolving to the {@link StockValuationService}. */
+export const STOCK_VALUATION_SERVICE_TOKEN: InjectionToken<StockValuationService> = Symbol('STOCK_VALUATION_SERVICE_TOKEN');

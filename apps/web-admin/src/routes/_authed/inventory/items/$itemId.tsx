@@ -34,14 +34,19 @@ import {
 } from '@ims-erp/ui/components/alert-dialog';
 import { Input } from '@ims-erp/ui/components/input';
 import { AdminOnly } from '@/components/inventory/admin-only';
+import { useItemCategoryNames } from '@/lib/item-category-api';
 import {
 	archiveItem,
 	itemQueryOptions,
 	itemUnitsQueryOptions,
 	registerUnit,
 	replaceProvisionalSerial,
+	type TItem,
 	type TItemUnit,
 } from '@/lib/inventory-api';
+import { DocumentImageField } from '@/components/documents/document-image-field';
+import { removeDocumentImage, uploadDocumentImage } from '@/lib/document-image-api';
+import { usePermission } from '@/lib/use-permission';
 
 /** `/inventory/items/$itemId` — item detail plus its serialized units. */
 export const Route = createFileRoute('/_authed/inventory/items/$itemId')({
@@ -50,6 +55,7 @@ export const Route = createFileRoute('/_authed/inventory/items/$itemId')({
 
 function ItemDetailPage() {
 	const { t } = useTranslation(['inventory', 'common']);
+	const categoryNames = useItemCategoryNames();
 	const { itemId } = useParams({ from: Route.id });
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
@@ -58,6 +64,8 @@ function ItemDetailPage() {
 	const { data: units } = useQuery(itemUnitsQueryOptions(itemId));
 
 	const [archiving, setArchiving] = useState(false);
+	const canUpdate = usePermission('product.update');
+	const setItem = (saved: TItem) => queryClient.setQueryData(itemQueryOptions(itemId).queryKey, saved);
 
 	if (isPending) return null;
 
@@ -142,7 +150,15 @@ function ItemDetailPage() {
 
 				<Card>
 					<CardContent className='grid grid-cols-2 gap-4 p-4 text-sm sm:grid-cols-4'>
-						<Detail label={t('inventory:items.category')} value={item.category} />
+						<Detail
+							label={t('inventory:items.category')}
+							value={item.categoryId ? (categoryNames.get(item.categoryId) ?? null) : null}
+						/>
+						<Detail label={t('inventory:items.brand')} value={item.brand} />
+						<Detail
+							label={t('inventory:items.isActive')}
+							value={item.isActive ? t('inventory:items.isActive') : t('inventory:items.inactive')}
+						/>
 						<Detail label={t('inventory:items.unitLabel')} value={item.unitLabel} />
 						<Detail label={t('inventory:items.barcode')} value={item.barcode} />
 						<Detail
@@ -168,6 +184,32 @@ function ItemDetailPage() {
 						<Detail
 							label={t('inventory:items.description_label')}
 							value={item.description}
+						/>
+					</CardContent>
+				</Card>
+
+				{item.specification && (
+					<Card>
+						<CardContent className='p-4 text-sm'>
+							<div className='text-muted-foreground'>{t('inventory:items.specification')}</div>
+							<p className='mt-1 whitespace-pre-line'>{item.specification}</p>
+						</CardContent>
+					</Card>
+				)}
+
+				<Card>
+					<CardContent className='p-4'>
+						<DocumentImageField
+							label={t('inventory:items.documentPhoto')}
+							hint={t('inventory:items.documentPhotoHint')}
+							imageUrl={item.imageUrl}
+							disabled={!canUpdate}
+							onUpload={async (file) => {
+								setItem(await uploadDocumentImage<TItem>(`/items/${itemId}/image`, file));
+							}}
+							onRemove={async () => {
+								setItem(await removeDocumentImage<TItem>(`/items/${itemId}/image`));
+							}}
 						/>
 					</CardContent>
 				</Card>

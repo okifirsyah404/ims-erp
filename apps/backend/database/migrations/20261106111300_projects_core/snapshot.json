@@ -1,0 +1,1880 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "b036d6d4-fe6f-4d42-a19c-fff6a0a2b7e3",
+  "prevIds": [
+    "d3ff84c7-9ba1-41b5-970a-f81deb1fb669"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "projects"
+      ],
+      "writes": [
+        "s|sch|projects",
+        "n|sch|projects",
+        "e|sch|projects"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "projects",
+        "project_costs"
+      ],
+      "writes": [
+        "s|tbl|projects.project_costs",
+        "n|tbl|projects.project_costs",
+        "e|tbl|projects.project_costs",
+        "n|rel|projects.project_costs",
+        "n|type|projects.project_costs",
+        "n|rel|projects.project_costs_pkey"
+      ],
+      "reads": [
+        "n|sch|projects"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "projects",
+        "project_evidence"
+      ],
+      "writes": [
+        "s|tbl|projects.project_evidence",
+        "n|tbl|projects.project_evidence",
+        "e|tbl|projects.project_evidence",
+        "n|rel|projects.project_evidence",
+        "n|type|projects.project_evidence",
+        "n|rel|projects.project_evidence_pkey"
+      ],
+      "reads": [
+        "n|sch|projects"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "projects",
+        "project_tasks"
+      ],
+      "writes": [
+        "s|tbl|projects.project_tasks",
+        "n|tbl|projects.project_tasks",
+        "e|tbl|projects.project_tasks",
+        "n|rel|projects.project_tasks",
+        "n|type|projects.project_tasks",
+        "n|rel|projects.project_tasks_pkey"
+      ],
+      "reads": [
+        "n|sch|projects"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "projects",
+        "projects"
+      ],
+      "writes": [
+        "s|tbl|projects.projects",
+        "n|tbl|projects.projects",
+        "e|tbl|projects.projects",
+        "n|rel|projects.projects",
+        "n|type|projects.projects",
+        "n|rel|projects.projects_pkey"
+      ],
+      "reads": [
+        "n|sch|projects"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "projects",
+        "project_costs",
+        "project_costs_project_date_idx"
+      ],
+      "writes": [
+        "s|idx|projects.project_costs_project_date_idx",
+        "n|idx|projects.project_costs_project_date_idx",
+        "e|idx|projects.project_costs_project_date_idx",
+        "n|rel|projects.project_costs_project_date_idx"
+      ],
+      "reads": [
+        "n|tbl|projects.project_costs",
+        "n|sch|projects",
+        "n|col|projects.project_costs.project_id",
+        "n|col|projects.project_costs.cost_date"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "projects",
+        "project_evidence",
+        "project_evidence_project_kind_idx"
+      ],
+      "writes": [
+        "s|idx|projects.project_evidence_project_kind_idx",
+        "n|idx|projects.project_evidence_project_kind_idx",
+        "e|idx|projects.project_evidence_project_kind_idx",
+        "n|rel|projects.project_evidence_project_kind_idx"
+      ],
+      "reads": [
+        "n|tbl|projects.project_evidence",
+        "n|sch|projects",
+        "n|col|projects.project_evidence.project_id",
+        "n|col|projects.project_evidence.kind"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "projects",
+        "project_tasks",
+        "project_tasks_project_position_idx"
+      ],
+      "writes": [
+        "s|idx|projects.project_tasks_project_position_idx",
+        "n|idx|projects.project_tasks_project_position_idx",
+        "e|idx|projects.project_tasks_project_position_idx",
+        "n|rel|projects.project_tasks_project_position_idx"
+      ],
+      "reads": [
+        "n|tbl|projects.project_tasks",
+        "n|sch|projects",
+        "n|col|projects.project_tasks.project_id",
+        "n|col|projects.project_tasks.position"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "projects",
+        "project_tasks",
+        "project_tasks_assignee_user_id_idx"
+      ],
+      "writes": [
+        "s|idx|projects.project_tasks_assignee_user_id_idx",
+        "n|idx|projects.project_tasks_assignee_user_id_idx",
+        "e|idx|projects.project_tasks_assignee_user_id_idx",
+        "n|rel|projects.project_tasks_assignee_user_id_idx"
+      ],
+      "reads": [
+        "n|tbl|projects.project_tasks",
+        "n|sch|projects",
+        "n|col|projects.project_tasks.assignee_user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "projects",
+        "projects",
+        "projects_code_uq"
+      ],
+      "writes": [
+        "s|idx|projects.projects_code_uq",
+        "n|idx|projects.projects_code_uq",
+        "e|idx|projects.projects_code_uq",
+        "n|rel|projects.projects_code_uq"
+      ],
+      "reads": [
+        "n|tbl|projects.projects",
+        "n|sch|projects",
+        "n|col|projects.projects.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "projects",
+        "projects",
+        "projects_live_sales_order_uq"
+      ],
+      "writes": [
+        "s|idx|projects.projects_live_sales_order_uq",
+        "n|idx|projects.projects_live_sales_order_uq",
+        "e|idx|projects.projects_live_sales_order_uq",
+        "n|rel|projects.projects_live_sales_order_uq"
+      ],
+      "reads": [
+        "n|tbl|projects.projects",
+        "n|sch|projects",
+        "n|col|projects.projects.sales_order_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "projects",
+        "projects",
+        "projects_sales_order_id_idx"
+      ],
+      "writes": [
+        "s|idx|projects.projects_sales_order_id_idx",
+        "n|idx|projects.projects_sales_order_id_idx",
+        "e|idx|projects.projects_sales_order_id_idx",
+        "n|rel|projects.projects_sales_order_id_idx"
+      ],
+      "reads": [
+        "n|tbl|projects.projects",
+        "n|sch|projects",
+        "n|col|projects.projects.sales_order_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "projects",
+        "projects",
+        "projects_customer_id_idx"
+      ],
+      "writes": [
+        "s|idx|projects.projects_customer_id_idx",
+        "n|idx|projects.projects_customer_id_idx",
+        "e|idx|projects.projects_customer_id_idx",
+        "n|rel|projects.projects_customer_id_idx"
+      ],
+      "reads": [
+        "n|tbl|projects.projects",
+        "n|sch|projects",
+        "n|col|projects.projects.customer_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "projects",
+        "projects",
+        "projects_pic_user_id_idx"
+      ],
+      "writes": [
+        "s|idx|projects.projects_pic_user_id_idx",
+        "n|idx|projects.projects_pic_user_id_idx",
+        "e|idx|projects.projects_pic_user_id_idx",
+        "n|rel|projects.projects_pic_user_id_idx"
+      ],
+      "reads": [
+        "n|tbl|projects.projects",
+        "n|sch|projects",
+        "n|col|projects.projects.pic_user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "projects",
+        "projects",
+        "projects_status_idx"
+      ],
+      "writes": [
+        "s|idx|projects.projects_status_idx",
+        "n|idx|projects.projects_status_idx",
+        "e|idx|projects.projects_status_idx",
+        "n|rel|projects.projects_status_idx"
+      ],
+      "reads": [
+        "n|tbl|projects.projects",
+        "n|sch|projects",
+        "n|col|projects.projects.status"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "projects",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "name": "project_costs",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "name": "project_evidence",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "name": "project_tasks",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "name": "projects",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "project_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "category",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "cost_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "description",
+        "type": "varchar(300)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "receipt_storage_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "receipt_file_name",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "receipt_content_type",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "voided_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "voided_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "void_reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "project_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "task_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "kind",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "storage_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "file_name",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "content_type",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "size_bytes",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "note",
+        "type": "varchar(500)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "uploaded_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "deleted_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "project_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "position",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "title",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "stage",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "assignee_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "due_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'todo'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "done_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "done_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "deleted_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "sales_order_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "sales_order_code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "quotation_code",
+        "type": "varchar(40)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "customer_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "customer_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "title",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "site_name",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "contract_value",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "pic_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "target_start_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "target_end_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "stage",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'preparation'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'active'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "closed_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "closed_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "cancelled_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "cancelled_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "cancel_reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "project_costs_project_date_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "project_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "cost_date",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "project_evidence_project_kind_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "project_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "kind",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "project_tasks_project_position_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "project_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "position",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "project_tasks_assignee_user_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "assignee_user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "projects_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "projects_live_sales_order_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "sales_order_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL AND status <> 'cancelled'",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "projects_sales_order_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "sales_order_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "projects_customer_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "customer_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "projects_pic_user_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "pic_user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "projects_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "project_costs_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "project_evidence_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "project_tasks_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "projects_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "project_costs_category_check",
+        "value": "\"category\" IN ('material', 'transport', 'accommodation', 'subcontract', 'other')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_costs",
+        "name": "project_costs_amount_check",
+        "value": "\"amount\" > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "project_evidence_kind_check",
+        "value": "\"kind\" IN ('testing', 'training', 'bast', 'photo', 'other')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_evidence",
+        "name": "project_evidence_size_check",
+        "value": "\"size_bytes\" > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "project_tasks_status_check",
+        "value": "\"status\" IN ('todo', 'in_progress', 'done')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "project_tasks",
+        "name": "project_tasks_stage_check",
+        "value": "stage IN ('preparation', 'delivery', 'installation', 'testing', 'training', 'handover', 'warranty')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "projects_status_check",
+        "value": "\"status\" IN ('active', 'closed', 'cancelled')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "projects_stage_check",
+        "value": "stage IN ('preparation', 'delivery', 'installation', 'testing', 'training', 'handover', 'warranty')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "projects_contract_value_check",
+        "value": "\"contract_value\" >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "projects",
+        "table": "projects",
+        "name": "projects_dates_check",
+        "value": "\"target_end_date\" IS NULL OR \"target_start_date\" IS NULL OR \"target_end_date\" >= \"target_start_date\"",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

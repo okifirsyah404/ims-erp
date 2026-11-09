@@ -24,6 +24,12 @@ declare module 'i18next' {
 		assets: typeof en.assets;
 		dashboard: typeof en.dashboard;
 		api: typeof en.api;
+		settings: typeof en.settings;
+		crm: typeof en.crm;
+		sales: typeof en.sales;
+		procurement: typeof en.procurement;
+		projects: typeof en.projects;
+		licensing: typeof en.licensing;
 		tax: typeof en.tax;
 	}
 

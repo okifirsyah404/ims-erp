@@ -3,8 +3,8 @@ import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type { TTx } from '@drizzle/types';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import type { TPaginationResult } from '@ims-erp/common';
-import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
+import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { NumberingService } from '@app/organization/services/numbering.service';
 import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
 import type { LedgerRepository } from '../repositories/ledger.repository';
 import {
@@ -50,8 +50,8 @@ export class BankReconciliationService {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 		@inject(LEDGER_REPOSITORY_TOKEN) private readonly repo: LedgerRepository,
-		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: DocumentNumberingService,
+		@inject(NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: NumberingService,
 	) {}
 
 	async list(
@@ -83,17 +83,10 @@ export class BankReconciliationService {
 			);
 			if (!account) throw new CashBankAccountNotFoundError();
 
-			const number = await this.numbering.allocate(
-				ctx.organizationId,
-				'bank_reconciliation',
+			const code = await this.numbering.next('bank_reconciliation', {
+				date: new Date(`${input.reconciliationDate}T12:00:00+07:00`),
 				tx,
-			);
-			const code = this.numbering.format(
-				'REC',
-				input.reconciliationDate.replaceAll('-', '').slice(0, 6),
-				number,
-				5,
-			);
+			});
 			const bookBalance = account.currentBalance;
 			return this.repo.insertBankReconciliation(
 				{

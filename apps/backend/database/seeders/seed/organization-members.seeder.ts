@@ -10,6 +10,7 @@ import {
 } from '../../../drizzle/schemas/auth.schema';
 import { auth } from '../../../src/providers/better-auth/auth';
 import { seedSafeText } from './faker-content';
+import { isProductionEnv } from '../../../config/providers/env';
 
 const logger = pino({
 	timestamp: false,
@@ -160,6 +161,13 @@ function seedAccountContent(email: string): {
  *   abort the remaining seeders.
  */
 export async function seedOrganizationMembers(): Promise<void> {
+	// Dev-only: the accounts have guessable passwords (`<role>123456`). Since
+	// ADR-0012 the organization also exists in production, so the guard can no
+	// longer rely on a missing organization.
+	if (isProductionEnv()) {
+		logger.info('Production environment; skipping role accounts');
+		return;
+	}
 	const [organization] = await drizzleDB
 		.select({ id: organizations.id })
 		.from(organizations)

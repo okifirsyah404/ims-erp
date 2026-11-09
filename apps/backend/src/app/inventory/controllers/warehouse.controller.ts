@@ -294,6 +294,10 @@ export class WarehouseController {
 			async ({ erp }) =>
 				ok(await warehouseService.listLinkedWarehouses(erp.organizationId)),
 			{
+				// The `erp` macro resolves the session and the active
+				// organization; without it `erp` is undefined (500, fixed on
+				// the 2026-11-06 merge).
+				erp: {},
 				// No `warehouse:*` permission — no organization role holds one
 				// (ADR-0008), and the invariant test pins that. The response only
 				// ever contains warehouses already linked to the caller's own

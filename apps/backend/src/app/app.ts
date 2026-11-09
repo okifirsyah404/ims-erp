@@ -5,10 +5,13 @@ import Elysia from 'elysia';
 import { LocationController } from './location/controllers/location.controller';
 import {
 	AdjustmentController,
+	ItemCategoryController,
 	ItemController,
 	StockController,
+	StockValuationController,
 	WarehouseController,
 } from './inventory';
+import { QuotationController } from './sales/controllers/quotation.controller';
 import {
 	AssetCategoryController,
 	AssetController,
@@ -16,9 +19,16 @@ import {
 	BorrowingController,
 } from './assets';
 import { SalesController } from './sales/controllers/sales.controller';
+import { SalesOrderController } from './sales/controllers/sales-order.controller';
+import { DeliveryNoteController } from './sales/controllers/delivery-note.controller';
+import { GoodsReceiptController, PurchaseOrderController, SupplierController } from './procurement';
+import { ProjectController } from './projects';
+import { ServiceTicketController, WarrantyController } from './aftersales';
+import { LicenseApiController, LicensingController } from './licensing';
 import { TaxController, LedgerController } from './accounting';
 import { PaymentController } from './accounting/controllers/payment.controller';
 import { InvoiceController } from './sales/controllers/invoice.controller';
+import { ReceiptController } from './sales/controllers/receipt.controller';
 import {
 	InvitationClaimController,
 	InvitationController,
@@ -27,7 +37,10 @@ import {
 } from './user';
 import { UserController } from './user/controllers/user.controller';
 import { AuditController } from './audit';
+import { CustomerController, LeadController, PublicWebsiteController } from './crm';
 import {
+	CompanyProfileController,
+	NumberingController,
 	OrganizationBootstrapController,
 	OrganizationController,
 } from './organization';
@@ -80,6 +93,19 @@ export function createApp() {
 				}),
 			)
 			.use(LocationController.plugin())
+			.use(QuotationController.plugin())
+			.use(SalesOrderController.plugin())
+			.use(DeliveryNoteController.plugin())
+			.use(InvoiceController.plugin())
+	.use(ReceiptController.plugin())
+			.use(SupplierController.plugin())
+			.use(PurchaseOrderController.plugin())
+			.use(GoodsReceiptController.plugin())
+			.use(ProjectController.plugin())
+			.use(WarrantyController.plugin())
+			.use(ServiceTicketController.plugin())
+			.use(LicensingController.plugin())
+			.use(LicenseApiController.plugin())
 			.use(SalesController.plugin())
 			// Admin surfaces share the `/admin` prefix, so their routes no longer
 			// overlap the self-service `/users/*` routes: mount order is irrelevant
@@ -94,6 +120,8 @@ export function createApp() {
 			// Creation mounts separately: it must accept an application admin with no
 			// organization context (ADR-0007), so it cannot ride the org-scoped guard.
 			.use(OrganizationBootstrapController.plugin())
+			.use(CompanyProfileController.plugin())
+			.use(NumberingController.plugin())
 			.use(InvitationController.plugin())
 			// Public, sessionless claim flow: token-gated, deliberately outside
 			// `/admin`, so it must not inherit the admin guard. Mounted after the
@@ -104,12 +132,19 @@ export function createApp() {
 			// `session`-guarded prefixes; mount order is irrelevant as none of its
 			// paths overlap the modules above.
 			.use(ItemController.plugin())
+			.use(ItemCategoryController.plugin())
+			.use(CustomerController.plugin())
+			.use(LeadController.plugin())
+			// Server-to-server website API: API-key guard, no session.
+			.use(PublicWebsiteController.plugin())
 			// `/warehouses/linked` mounts before the admin CRUD: both prefixes
 			// start with `/warehouses`, and the linked read needs the `erp`
 			// guard, not the session guard. Static segments win, but mounting
 			// first keeps the intent obvious.
 			.use(WarehouseController.linkedPlugin())
 			.use(WarehouseController.plugin())
+			// Before StockController: a static path must not be shadowed by `/stock/:…`.
+			.use(StockValuationController.plugin())
 			.use(StockController.plugin())
 			.use(AdjustmentController.plugin())
 			// Assets owns equipment and borrowing (ERP-0036); `/borrowings`
@@ -121,6 +156,5 @@ export function createApp() {
 			.use(TaxController.plugin())
 			.use(LedgerController.plugin())
 .use(PaymentController.plugin())
-.use(InvoiceController.plugin())
 	);
 }

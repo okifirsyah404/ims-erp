@@ -14,6 +14,7 @@ import {
 } from '@ims-erp/ui/components/table';
 import { useQuery } from '@tanstack/react-query';
 import { itemsQueryOptions, type TItemKind } from '@/lib/inventory-api';
+import { useItemCategoryNames } from '@/lib/item-category-api';
 
 /**
  * The item list for one kind.
@@ -32,6 +33,7 @@ export function ItemKindList({
 	title: string;
 }) {
 	const { t } = useTranslation(['inventory', 'common']);
+	const categoryNames = useItemCategoryNames();
 	const { data, isPending, isError, error } = useQuery(
 		itemsQueryOptions({ itemKind: kind }),
 	);
@@ -104,7 +106,12 @@ export function ItemKindList({
 											</Link>
 										</TableCell>
 										<TableCell className='text-muted-foreground'>
-											{row.category ?? '—'}
+											{(row.categoryId && categoryNames.get(row.categoryId)) ?? '—'}
+											{!row.isActive && (
+												<Badge variant='outline' className='ml-2'>
+													{t('inventory:items.inactive')}
+												</Badge>
+											)}
 										</TableCell>
 										<TableCell>
 											{row.isSerialized ? (

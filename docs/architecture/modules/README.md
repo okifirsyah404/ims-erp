@@ -32,7 +32,7 @@ blocked`.
 | [finance](finance.md) | COA/journals/ledger/posting engine — owner to be created | T04, T06, T11 |
 | [tax](tax.md) | tax configuration/workpapers — owner to be created | T12 |
 | [asset-project](asset-project.md) | assets/equipment + projects — owner to be created | T07 (assets), T08 (projects) |
-| [licensing-subscription](licensing-subscription.md) | licensing API + subscription owner to be created | T09, T23–T24 |
+| [licensing-subscription](licensing-subscription.md) | `apps/backend/src/app/licensing` (register + license API) | T09, T23 implemented; T24 blocked |
 | [investor](investor.md) | `erp.investors` table exists; module absent | T13, T29–T30 |
 
 ## Cross-module rules (apply everywhere)

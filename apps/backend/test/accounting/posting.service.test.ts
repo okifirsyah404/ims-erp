@@ -8,7 +8,7 @@
  */
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
+import type { NumberingService } from '@app/organization/services/numbering.service';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type { LedgerRepository } from '../../src/app/accounting/repositories/ledger.repository';
 import { PostingService } from '../../src/app/accounting/services/posting.service';
@@ -163,10 +163,8 @@ function makeHarness() {
 	} as unknown as LedgerRepository;
 
 	const numbering = {
-		allocate: async () => ++allocSeq,
-		format: (prefix: string, middle: string, n: number, pad = 6) =>
-			`${prefix}-${middle}-${String(n).padStart(pad, '0')}`,
-	} as unknown as DocumentNumberingService;
+		next: async (type: string) => `${type}-${String(++allocSeq).padStart(6, '0')}`,
+	} as unknown as NumberingService;
 
 	const service = new PostingService(
 		{} as unknown as BunSQLDatabase, // unused by these rules; tx doubles cover I/O
@@ -197,7 +195,7 @@ describe('PostingService.post', () => {
 		});
 		expect(replayed).toBe(false);
 		expect(entry.status).toBe('posted');
-		expect(entry.code).toMatch(/^JE-202601-\d{5}$/);
+		expect(entry.code).toMatch(/^journal_entry-\d{6}$/);
 		expect(entry.totalDebit).toBe(1_100_000);
 		expect(entry.totalCredit).toBe(1_100_000);
 		expect(lines).toHaveLength(2);

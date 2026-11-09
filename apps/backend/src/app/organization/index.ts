@@ -8,3 +8,7 @@
 export * from './container';
 export * from './controllers/organization.controller';
 export * from './controllers/organization-bootstrap.controller';
+export * from './controllers/company-profile.controller';
+export * from './controllers/numbering.controller';
+export type { TNumberContext } from './domain/document-number';
+export type { NumberingService } from './services/numbering.service';

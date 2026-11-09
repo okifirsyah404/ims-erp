@@ -42,7 +42,7 @@ import {
 	AssetRuleViolationError,
 	AssetTransitionError,
 } from '../../src/app/assets/errors/asset.errors';
-import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '../../src/app/organization/constants/di';
+import { NUMBERING_SERVICE_TOKEN } from '../../src/app/organization/constants/di';
 
 const ORG_A = 'org-a';
 const ORG_B = 'org-b';
@@ -348,7 +348,7 @@ function buildWorld() {
 	container.register(ASSET_OPERATIONS_REPOSITORY_TOKEN, {
 		useValue: operations,
 	});
-	container.register(DOCUMENT_NUMBERING_SERVICE_TOKEN, {
+	container.register(NUMBERING_SERVICE_TOKEN, {
 		useValue: numbering,
 	});
 	container.register(ASSET_OPERATIONS_SERVICE_TOKEN, {
@@ -572,7 +572,7 @@ describe('asset operations — disposal (D21)', () => {
 			actor,
 		);
 		expect(disposal.status).toBe('draft');
-		expect(disposal.code).toMatch(/^DSP-DSL-\d{5}$/);
+		expect(disposal.code).toMatch(/^DSP-\d{4}-\d{5}$/);
 
 		await expect(
 			world.service.executeDisposal(disposal.id, ORG_A, actor),
@@ -640,7 +640,7 @@ describe('asset operations — maintenance & condition', () => {
 			{ maintenanceType: 'corrective', cost: 250_000 },
 			actor,
 		);
-		expect(record.code).toMatch(/^MNT-SVC-\d{5}$/);
+		expect(record.code).toMatch(/^MNT-\d{4}-\d{5}$/);
 		expect(record.maintenanceType).toBe('corrective');
 		expect(world.audit.forAction('asset.serviced')).toHaveLength(1);
 	});

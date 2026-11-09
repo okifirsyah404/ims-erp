@@ -3,8 +3,8 @@ import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { TSupplierBillSelect } from '@drizzle/schemas/finance.schema';
-import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
+import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { NumberingService } from '@app/organization/services/numbering.service';
 import {
 	AR_ACCOUNT_RESOLVER_TOKEN,
 	LEDGER_REPOSITORY_TOKEN,
@@ -55,8 +55,8 @@ export class SupplierBillService {
 		@inject(POSTING_SERVICE_TOKEN) private readonly posting: PostingService,
 		@inject(AR_ACCOUNT_RESOLVER_TOKEN)
 		private readonly accountResolver: ArAccountResolverService,
-		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: DocumentNumberingService,
+		@inject(NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: NumberingService,
 	) {}
 
 	async list(
@@ -79,17 +79,10 @@ export class SupplierBillService {
 		input: TCreateSupplierBillInput,
 	): Promise<TSupplierBillSelect> {
 		return this.database.transaction(async (tx) => {
-			const number = await this.numbering.allocate(
-				ctx.organizationId,
-				'supplier_bill',
+			const code = await this.numbering.next('supplier_bill', {
+				date: new Date(`${input.billDate}T12:00:00+07:00`),
 				tx,
-			);
-			const code = this.numbering.format(
-				'SB',
-				input.billDate.replaceAll('-', '').slice(0, 6),
-				number,
-				5,
-			);
+			});
 			return this.repo.insertSupplierBill(
 				{
 					organizationId: ctx.organizationId,

@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import {
 	TSerialTrackedItemSelect,
@@ -5,7 +6,7 @@ import {
 } from '@drizzle/schemas/inventory.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, asc, count, eq, isNull } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import type {
 	ISerialUnitRepository,
@@ -97,10 +98,12 @@ export class SerialUnitRepository implements ISerialUnitRepository {
 	/** Inserts a unit. */
 	async create(
 		data: TUnitCreateData,
+		tx?: TTx,
 	): Promise<TSerialTrackedItemSelect> {
-		const [row] = await this.database
+		const [row] = await (tx ?? this.database)
 			.insert(serialTrackedItems)
-			.values(data as never)
+			// `created_at` is NOT NULL without a database default (like items).
+			.values({ ...data, createdAt: new Date() } as never)
 			.returning();
 		return row;
 	}
@@ -146,4 +149,48 @@ export class SerialUnitRepository implements ISerialUnitRepository {
 		return row ?? null;
 	}
 
+	async listInStockSerials(itemId: string, warehouseId: string): Promise<string[]> {
+		const rows = await this.database
+			.select({ serialNumber: serialTrackedItems.serialNumber })
+			.from(serialTrackedItems)
+			.where(
+				and(
+					eq(serialTrackedItems.itemId, itemId),
+					eq(serialTrackedItems.warehouseId, warehouseId),
+					eq(serialTrackedItems.status, 'in_stock'),
+					isNull(serialTrackedItems.deletedAt),
+				),
+			)
+			.orderBy(asc(serialTrackedItems.serialNumber));
+		return rows.map((row) => row.serialNumber);
+	}
+
+	async sell(
+		itemId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; customerId: string | null; stockMovementId: string | null },
+		tx: TTx,
+	): Promise<string[]> {
+		if (serialNumbers.length === 0) return [];
+		const rows = await tx
+			.update(serialTrackedItems)
+			.set({
+				status: 'sold',
+				warehouseId: null,
+				binId: null,
+				customerId: data.customerId,
+				stockMovementId: data.stockMovementId,
+			})
+			.where(
+				and(
+					eq(serialTrackedItems.itemId, itemId),
+					inArray(serialTrackedItems.serialNumber, [...serialNumbers]),
+					eq(serialTrackedItems.warehouseId, data.warehouseId),
+					eq(serialTrackedItems.status, 'in_stock'),
+					isNull(serialTrackedItems.deletedAt),
+				),
+			)
+			.returning({ serialNumber: serialTrackedItems.serialNumber });
+		return rows.map((row) => row.serialNumber);
+	}
 }

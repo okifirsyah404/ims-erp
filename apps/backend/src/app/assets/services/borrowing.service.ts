@@ -21,8 +21,8 @@ import {
 	BORROWING_REPOSITORY_TOKEN,
 } from '../constants/di';
 import type { AssetOperationsService } from './asset-operations.service';
-import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
-import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { NumberingService } from '@app/organization/services/numbering.service';
+import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import { InventoryAuditWriter } from '@app/inventory/services/inventory-audit.writer';
 import { ASSET_DOC_TYPES } from '../constants/doc-types';
 import {
@@ -159,8 +159,8 @@ export class BorrowingService {
 		 * ERP-0009 numbering authority: borrowing codes are sequence-allocated
 		 * inside the creating transaction (hardening plan D4).
 		 */
-		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: DocumentNumberingService,
+		@inject(NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<NumberingService, 'next'>,
 		/** Fire-and-forget audit writer (hardening plan D3). */
 		private readonly audit: InventoryAuditWriter,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
@@ -1107,23 +1107,16 @@ export class BorrowingService {
 	 * Allocates and formats the next borrowing code (ERP-0009).
 	 *
 	 * @remarks
-	 * Format `BRW-<YYYYMM>-<#4>` per the plan, serial part sequence-allocated
-	 * per `(organization, 'asset_borrowing')` inside the caller's transaction.
+	 * Default format `BRW-<YYYYMM>-<#4>` (monthly series of the one numbering
+	 * service, company-wide), allocated inside the caller's transaction.
 	 * Uniqueness follows from the sequence — no collision retry needed.
 	 * Must be called inside the document's transaction.
 	 */
 	private async borrowingCode(
 		tx: TTx,
-		organizationId: string,
+		_organizationId: string,
 	): Promise<string> {
-		const number = await this.numbering.allocate(
-			organizationId,
-			ASSET_DOC_TYPES.borrowing,
-			tx,
-		);
-		const now = new Date();
-		const month = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-		return this.numbering.format('BRW', month, number, 4);
+		return this.numbering.next(ASSET_DOC_TYPES.borrowing, { tx });
 	}
 }
 

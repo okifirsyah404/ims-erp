@@ -21,8 +21,8 @@ import {
 } from '../constants/di';
 import type { StockService } from './stock.service';
 import type { TTx } from '@drizzle/types';
-import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
-import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { NumberingService } from '@app/organization/services/numbering.service';
+import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import {
 	AdjustmentHasNoLinesError,
 	AdjustmentNotFoundError,
@@ -156,8 +156,8 @@ export class AdjustmentService {
 		 * ERP-0009 numbering authority: adjustment codes are sequence-allocated
 		 * inside the creating transaction (hardening plan D4).
 		 */
-		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: DocumentNumberingService,
+		@inject(NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<NumberingService, 'next'>,
 		/** Fire-and-forget audit writer (hardening plan D3). */
 		private readonly audit: InventoryAuditWriter,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
@@ -439,6 +439,10 @@ export class AdjustmentService {
 						movementType,
 						// postMovement takes an unsigned quantity; direction is the type.
 						quantity: Math.abs(delta).toFixed(3),
+						// An increase enters at the line's cost (opening stock);
+						// without one, and for every decrease, the moving average
+						// applies.
+						unitCost: delta > 0 ? line.unitCost : null,
 						referenceType: 'manual_adjustment',
 						referenceId: adjustment.id,
 						createdBy: actor.actorUserId,
@@ -582,6 +586,7 @@ export class AdjustmentService {
 				binId: input.binId ?? null,
 				quantityBefore: current?.quantityOnHand ?? '0',
 				quantityAfter: input.quantityAfter,
+				unitCost: input.unitCost ?? null,
 				note: input.note ?? null,
 			});
 		}
@@ -592,21 +597,16 @@ export class AdjustmentService {
 	 * Allocates and formats the next adjustment code (ERP-0009).
 	 *
 	 * @remarks
-	 * Format `ADJ-<YYYYMMDDHHMMSS>-<#4>`, serial part sequence-allocated per
-	 * `(organization, 'stock_adjustment')` inside the caller's transaction.
+	 * Series `stock_adjustment` of the one numbering service (company-wide,
+	 * pattern set under document numbering), allocated inside the caller's
+	 * transaction.
 	 * Uniqueness follows from the sequence — no collision retry needed.
 	 * Must be called inside the document's transaction.
 	 */
 	private async adjustmentCode(
 		tx: TTx,
-		organizationId: string,
+		_organizationId: string,
 	): Promise<string> {
-		const number = await this.numbering.allocate(
-			organizationId,
-			'stock_adjustment',
-			tx,
-		);
-		const stamp = new Date().toISOString().replace(/\D/g, '').slice(0, 14);
-		return this.numbering.format('ADJ', stamp, number, 4);
+		return this.numbering.next('stock_adjustment', { tx });
 	}
 }

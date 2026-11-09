@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { inject, injectable } from 'tsyringe';
 import { InventoryAuditWriter } from './inventory-audit.writer';
 import { SYSTEM_AUDIT_ACTOR } from '../constants/audit-actor';
@@ -21,12 +22,15 @@ import type {
 	ISerialUnitRepository,
 	TUnitPaginationRequest,
 } from '../contracts/serial-unit.repository.interface';
+import type { IItemCategoryRepository } from '../contracts/item-category.repository.interface';
 import {
+	ITEM_CATEGORY_REPOSITORY_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
 	SERIAL_UNIT_REPOSITORY_TOKEN,
 } from '../constants/di';
 import {
 	InventoryRuleViolationError,
+	ItemCategoryUnavailableError,
 	ItemHasUnitsError,
 	ItemNotFoundError,
 	ItemSkuTakenError,
@@ -120,9 +124,23 @@ export class ItemService {
 		private readonly itemRepository: IItemRepository,
 		@inject(SERIAL_UNIT_REPOSITORY_TOKEN)
 		private readonly serialUnitRepository: ISerialUnitRepository,
+		@inject(ITEM_CATEGORY_REPOSITORY_TOKEN)
+		private readonly categoryRepository: Pick<IItemCategoryRepository, 'findById'>,
 		/** Fire-and-forget audit writer (hardening plan D3). */
 		private readonly audit: InventoryAuditWriter,
 	) {}
+
+	/**
+	 * A newly chosen category must exist and be active; an item may keep the
+	 * (now inactive) category it already has.
+	 *
+	 * @throws {ItemCategoryUnavailableError} When the category cannot be used
+	 */
+	private async assertCategory(categoryId: string | null | undefined, current?: string | null) {
+		if (!categoryId || categoryId === current) return;
+		const category = await this.categoryRepository.findById(categoryId);
+		if (!category?.isActive) throw new ItemCategoryUnavailableError();
+	}
 
 	/** Fetches one filtered page of items. */
 	paginate(
@@ -143,6 +161,15 @@ export class ItemService {
 	}
 
 	/**
+	 * Active items among `ids`, for modules putting items on new documents
+	 * (sales quotations). Missing, archived and inactive items are skipped;
+	 * the caller reports which ones it did not get back.
+	 */
+	getActiveItems(ids: string[]): Promise<TItemSelect[]> {
+		return this.itemRepository.findActiveByIds([...new Set(ids)]);
+	}
+
+	/**
 	 * Creates an item.
 	 *
 	 * @throws {InventoryRuleViolationError} When the kind/data combination is
@@ -154,6 +181,7 @@ export class ItemService {
 		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TItemSelect> {
 		this.assertItemShape(data);
+		await this.assertCategory(data.categoryId);
 
 		const existing = await this.itemRepository.findBySku(
 			data.organizationId ?? null,
@@ -190,6 +218,7 @@ export class ItemService {
 		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TItemSelect> {
 		const current = await this.getItem(id);
+		await this.assertCategory(data.categoryId, current.categoryId);
 
 		if (Object.keys(data).length > 0) {
 			this.assertItemShape({
@@ -283,7 +312,12 @@ export class ItemService {
 			acquiredOn?: string | null;
 			warrantyExpiresOn?: string | null;
 			notes?: string | null;
+			/** Procurement link of a received unit (ADR-0011 step 4b). */
+			purchaseOrderLineId?: string | null;
+			stockMovementId?: string | null;
 		},
+		/** Joins an outer transaction (a goods receipt posts units with its movements). */
+		tx?: TTx,
 	): Promise<TSerialTrackedItemSelect> {
 		const item = await this.getItem(itemId);
 
@@ -333,11 +367,11 @@ export class ItemService {
 			binId: data.binId ?? null,
 			acquiredOn: data.acquiredOn ?? null,
 			warrantyExpiresOn: data.warrantyExpiresOn ?? null,
-			purchaseOrderLineId: null,
+			purchaseOrderLineId: data.purchaseOrderLineId ?? null,
 			customerId: null,
-			stockMovementId: null,
+			stockMovementId: data.stockMovementId ?? null,
 			notes: data.notes ?? null,
-		});
+		}, tx);
 	}
 
 	/**
@@ -382,6 +416,31 @@ export class ItemService {
 			);
 		}
 		return updated;
+	}
+
+	/** Serials of an item in stock in one warehouse, for picking a delivery (step 5a). */
+	inStockSerials(itemId: string, warehouseId: string): Promise<string[]> {
+		return this.serialUnitRepository.listInStockSerials(itemId, warehouseId);
+	}
+
+	/**
+	 * Sells serialized units shipped on a delivery note (`in_stock → sold`,
+	 * ADR-0011 §4), inside the caller's transaction.
+	 *
+	 * @returns The serials that were not in stock in that warehouse (nothing
+	 * to roll back here: the caller fails its transaction when any are left)
+	 * @throws {InventoryRuleViolationError} When the item's kind cannot be sold
+	 */
+	async sellUnits(
+		itemId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; customerId: string | null; stockMovementId: string | null },
+		tx: TTx,
+	): Promise<string[]> {
+		const item = await this.getItem(itemId);
+		assertTransitionAllowed(item.itemKind as ItemKind, 'in_stock', 'sold');
+		const sold = await this.serialUnitRepository.sell(itemId, serialNumbers, data, tx);
+		return serialNumbers.filter((serial) => !sold.includes(serial));
 	}
 
 	/**

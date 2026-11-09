@@ -27,3 +27,31 @@ export class InvoiceDueBeforeIssueError extends AppError {
 		super(422, 'sales.invoiceDueBeforeIssue', 'Due date cannot be before the issue date');
 	}
 }
+
+/** The receipt does not exist or is archived. */
+export class ReceiptNotFoundError extends AppError {
+	constructor() {
+		super(404, 'sales.receiptNotFound', 'Receipt not found');
+	}
+}
+
+/** The receipt would overpay the invoice's outstanding amount. */
+export class ReceiptExceedsOutstandingError extends AppError {
+	constructor() {
+		super(422, 'sales.receiptExceeds', 'The payment exceeds the outstanding amount');
+	}
+}
+
+/** The receipt was already reversed. */
+export class ReceiptAlreadyReversedError extends AppError {
+	constructor() {
+		super(422, 'sales.receiptReversed', 'The receipt is already reversed');
+	}
+}
+
+/** The invoice is not in a payable state (must be issued / partially_paid). */
+export class InvoiceNotPayableError extends AppError {
+	constructor() {
+		super(409, 'sales.invoiceNotPayable', 'Only issued or partially paid invoices can receive payments');
+	}
+}

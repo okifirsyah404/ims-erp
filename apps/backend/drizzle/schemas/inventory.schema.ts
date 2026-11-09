@@ -28,6 +28,7 @@ import {
 	check,
 	date,
 	index,
+	integer,
 	numeric,
 	pgSchema,
 	text,
@@ -57,6 +58,28 @@ export const inventorySchema = pgSchema('inventory');
  */
 export const ITEM_KINDS = ['product', 'component', 'material'] as const;
 export type ItemKind = (typeof ITEM_KINDS)[number];
+
+/**
+ * Fixed unit list for `items.unit_label` (ADR-0011): the M02 catalog units
+ * plus the units used by the inventory seeder. A CHECK guards the column.
+ */
+export const ITEM_UNITS = [
+	'pcs',
+	'unit',
+	'set',
+	'paket',
+	'titik',
+	'm',
+	'roll',
+	'kg',
+	'jam',
+	'bulan',
+	'tahun',
+	'lic',
+	'lot',
+	'pulau',
+] as const;
+export type ItemUnit = (typeof ITEM_UNITS)[number];
 
 /**
  * Unit statuses.
@@ -313,6 +336,43 @@ export const warehouseStorages = inventorySchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
+ * inventory.item_categories
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Item category, one level, company-wide (ADR-0011): no `organization_id`.
+ *
+ * @remarks
+ * `slug` matches the public website's category slug. Supersedes the unbuilt
+ * `catalog.item_categories`; a category with live items cannot be archived
+ * (service rule; the FK from `items.category_id` is `RESTRICT`).
+ */
+export const itemCategories = inventorySchema.table(
+	'item_categories',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		slug: varchar('slug', { length: 64 }).notNull(),
+		name: varchar('name', { length: 120 }).notNull(),
+		shortName: varchar('short_name', { length: 60 }),
+		sortOrder: integer('sort_order').notNull().default(0),
+		description: text('description'),
+		isActive: boolean('is_active').notNull().default(true),
+		createdAt: unixTimestamp('created_at').notNull(),
+		updatedAt: unixTimestamp('updated_at')
+			.notNull()
+			.$onUpdate(() => new Date()),
+		deletedAt: unixTimestampNullable('deleted_at'),
+	},
+	(table) => [
+		uniqueIndex('item_categories_slug_uq')
+			.on(table.slug)
+			.where(sql`deleted_at IS NULL`),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
  * inventory.warehouse_organizations
  * ------------------------------------------------------------------------ */
 
@@ -373,10 +433,22 @@ export const items = inventorySchema.table(
 		name: text('name').notNull(),
 		description: text('description'),
 		itemKind: text('item_kind').notNull(),
-		/** Free text until `catalog.item_categories` is adopted (OPEN-1). */
-		category: text('category'),
-		/** Free text until `catalog.units` is adopted (OPEN-1). */
-		unitLabel: varchar('unit_label', { length: 32 }),
+		/** Same-module category (ADR-0011); replaces the former free text. */
+		categoryId: uuid('category_id').references(() => itemCategories.id, {
+			onDelete: 'restrict',
+		}),
+		brand: varchar('brand', { length: 100 }),
+		/** Technical specification printed on quotations. */
+		specification: text('specification'),
+		/** Object-storage key of the one photo printed on documents (M04 owns the catalog gallery). */
+		imageObjectKey: text('image_object_key'),
+		/** One of {@link ITEM_UNITS} (CHECK below). */
+		unitLabel: varchar('unit_label', { length: 32 }).notNull().default('pcs'),
+		/**
+		 * Inactive items stay listed but are not offered for new documents.
+		 * Not a status: status exists only on serialized units (ADR-0008).
+		 */
+		isActive: boolean('is_active').notNull().default(true),
 		isSerialized: boolean('is_serialized').notNull().default(false),
 		isStockTracked: boolean('is_stock_tracked').notNull().default(true),
 		minStockQty: numeric('min_stock_qty', { precision: 18, scale: 3 })
@@ -393,6 +465,8 @@ export const items = inventorySchema.table(
 		currencyCode: varchar('currency_code', { length: 3 })
 			.notNull()
 			.default('IDR'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		createdBy: text('created_by'),
 		...softDeleteTimestamps,
 	},
 	(table) => [
@@ -412,6 +486,11 @@ export const items = inventorySchema.table(
 			sql`selling_price >= 0 AND purchase_price >= 0`,
 		),
 		check('inventory_items_min_stock_check', sql`min_stock_qty >= 0`),
+		check(
+			'inventory_items_unit_label_check',
+			sql`unit_label IN ('pcs', 'unit', 'set', 'paket', 'titik', 'm', 'roll', 'kg', 'jam', 'bulan', 'tahun', 'lic', 'lot', 'pulau')`,
+		),
+		index('inventory_items_category_id_idx').on(table.categoryId),
 	],
 );
 
@@ -449,7 +528,12 @@ export const stockMovements = inventorySchema.table(
 			{ onDelete: 'restrict' },
 		),
 		quantity: numeric('quantity', { precision: 18, scale: 3 }).notNull(),
-		/** e.g. 'manual_adjustment' | 'borrowing' | 'receipt'. */
+		/**
+		 * IDR minor units the movement was valued at (ADR-0011 §5 moving
+		 * average): the given cost inbound, the balance average outbound.
+		 */
+		unitCost: bigint('unit_cost', { mode: 'number' }).notNull().default(0),
+		/** e.g. 'manual_adjustment' | 'borrowing' | 'receipt' | 'goods_receipt'. */
 		referenceType: text('reference_type'),
 		referenceId: text('reference_id'),
 		status: text('status').notNull().default('posted'),
@@ -506,11 +590,10 @@ export const stockMovements = inventorySchema.table(
  * caused it (ADR-0008) — no database triggers. `recomputeFromLedger` is the
  * repair operation.
  *
- * **No valuation.** `average_cost` / `total_value` / `currency_code` were
- * removed: they were guaranteed to hold `0` forever and a cost field that is
- * never written is worse than an absent one, because it invites trust.
- * Valuation is owned by the (future) accounting module; the base price lives
- * on `items.selling_price` / `items.purchase_price`. `quantity_reserved` stays
+ * **Moving-average valuation** (ADR-0011 §5, supersedes the earlier "no
+ * valuation" decision for the inventory value): `average_cost` and
+ * `total_value` are maintained by the stock service with the quantity, in
+ * the same transaction; the accounting journal still needs finance approval. `quantity_reserved` stays
  * 0 until reservations are built, so `quantity_available` equals
  * `quantity_on_hand` throughout.
  *
@@ -554,11 +637,18 @@ export const stockBalances = inventorySchema.table(
 		})
 			.notNull()
 			.default('0'),
+		/** Moving-average unit cost, IDR minor units (ADR-0011 §5). Restricted. */
+		averageCost: bigint('average_cost', { mode: 'number' }).notNull().default(0),
+		/** Value of `quantity_on_hand` at cost; the last unit out takes the remainder. */
+		totalValue: bigint('total_value', { mode: 'number' }).notNull().default(0),
 		lastMovementAt: unixTimestampNullable('last_movement_at'),
 		createdAt: unixTimestamp('created_at').notNull(),
 		updatedAt: unixTimestampNullable('updated_at').$onUpdate(() => new Date()),
 	},
 	(table) => [
+		// Both unique indexes are NULLS NOT DISTINCT in the database (migration
+		// 20261105185010, hand-written: Drizzle's index builder cannot express
+		// it), so a bin-less balance is one row and its upserts conflict.
 		uniqueIndex('stock_balances_org_scope_uq')
 			.on(
 				table.organizationId,
@@ -699,6 +789,11 @@ export const stockAdjustmentItems = inventorySchema.table(
 		quantityAfter: numeric('quantity_after', { precision: 18, scale: 3 })
 			.notNull()
 			.default('0'),
+		/**
+		 * Cost an increase enters stock at, IDR minor units (opening stock,
+		 * ADR-0011 §6). Null = the current moving average; ignored for decreases.
+		 */
+		unitCost: bigint('unit_cost', { mode: 'number' }),
 		note: text('note'),
 		...softDeleteTimestamps,
 	},
@@ -708,6 +803,7 @@ export const stockAdjustmentItems = inventorySchema.table(
 		),
 		check('stock_adjustment_items_before_check', sql`quantity_before >= 0`),
 		check('stock_adjustment_items_after_check', sql`quantity_after >= 0`),
+		check('stock_adjustment_items_unit_cost_check', sql`unit_cost IS NULL OR unit_cost >= 0`),
 	],
 );
 
@@ -819,6 +915,7 @@ export const inventoryRelations = defineRelationsPart(
 		warehouses,
 		warehouseAddresses,
 		warehouseStorages,
+		itemCategories,
 		items,
 		stockMovements,
 		stockBalances,
@@ -847,7 +944,17 @@ export const inventoryRelations = defineRelationsPart(
 				to: r.warehouses.id,
 			}),
 		},
+		itemCategories: {
+			items: r.many.items({
+				from: r.itemCategories.id,
+				to: r.items.categoryId,
+			}),
+		},
 		items: {
+			category: r.one.itemCategories({
+				from: r.items.categoryId,
+				to: r.itemCategories.id,
+			}),
 			units: r.many.serialTrackedItems({
 				from: r.items.id,
 				to: r.serialTrackedItems.itemId,
@@ -870,6 +977,7 @@ export const inventoryRelations = defineRelationsPart(
  * Inferred types
  * ------------------------------------------------------------------------ */
 
+export type TItemCategorySelect = typeof itemCategories.$inferSelect;
 export type TItemSelect = typeof items.$inferSelect;
 export type TItemInsert = typeof items.$inferInsert;
 

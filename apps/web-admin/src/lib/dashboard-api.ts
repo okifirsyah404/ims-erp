@@ -189,17 +189,5 @@ export const dashboardQueryOptions = () =>
 		queryFn: fetchDashboardSummary,
 	});
 
-/**
- * Formats integer IDR minor units for display: 123456789 → "Rp 1.234.567,89".
- *
- * @remarks
- * Pinned to `id-ID` on purpose: the ERP operates in rupiah regardless of UI
- * language, so switching the interface to English must not re-format money.
- */
-export function formatIdr(minor: MoneyMinor): string {
-	const formatter = new Intl.NumberFormat('id-ID', {
-		style: 'currency',
-		currency: 'IDR',
-	});
-	return formatter.format(minor / 100);
-}
+/** Moved to `format.ts` (shared by sales documents); re-exported for existing callers. */
+export { formatIdr } from './format';

@@ -12,6 +12,7 @@ import { mock } from 'bun:test';
 import {
 	QUOTATION_REPOSITORY_TOKEN,
 	PAYMENT_REPOSITORY_TOKEN,
+	SALES_ORDER_REPOSITORY_TOKEN,
 } from '../../src/app/sales/constants/di';
 import {
 	PERMISSION_RESOLVER_TOKEN,
@@ -226,67 +227,135 @@ export function installAuthMock(): void {
 	}));
 }
 
-import type { TPaginationResult } from '@ims-erp/common';
-import type { TQuotationRepository } from '../../src/app/sales/contracts/quotation.repository.interface';
+import type { IQuotationRepository } from '../../src/app/sales/contracts/quotation.repository.interface';
 import type { TPaymentRepository } from '../../src/app/sales/contracts/payment.repository.interface';
+import { CUSTOMER_SERVICE_TOKEN, LEAD_SERVICE_TOKEN } from '../../src/app/crm/constants/di';
+import { ITEM_SERVICE_TOKEN } from '../../src/app/inventory/constants/di';
+import { NUMBERING_SERVICE_TOKEN } from '../../src/app/organization/constants/di';
+import { USER_SERVICE_TOKEN } from '../../src/app/user/constants/di';
+import { OBJECT_STORAGE_TOKEN } from '../../src/providers/s3/object-storage';
 
-/** Registers mock repositories for the sales module (records calls). */
+export const TEST_CUSTOMER_ID = '0190a1b2-0000-7000-8000-000000000001';
+export const TEST_ITEM_ID = '0190a1b2-0000-7000-8000-000000000002';
+
+/** A valid quotation body: one active customer, one item line. */
+export function quotationBody(title = 'Penawaran access door') {
+	return {
+		customerId: TEST_CUSTOMER_ID,
+		title,
+		lines: [{ itemId: TEST_ITEM_ID, quantity: 2 }],
+	};
+}
+
+/** Registers mock repositories and neighbour services for the sales module. */
 export function installSalesMocks() {
 	const quotationStore = new Map<string, Record<string, unknown>>();
 	let sequence = 0;
 
 	/**
-	 * Typed as the real contract so the typed DI tokens accept it: a fake that
-	 * drifts from `TQuotationRepository` is now a compile error, not a
-	 * runtime surprise when the service calls a method that isn't there.
+	 * In-memory quotations, typed as the real contract so a fake that drifts
+	 * from `IQuotationRepository` is a compile error.
 	 */
-	const quotationRepository: TQuotationRepository = {
-		async create(input) {
-			const id = `q-${++sequence}`;
-			const row = { id, status: 'draft', ...input };
+	const quotationRepository: IQuotationRepository = {
+		async paginate(request) {
+			const all = [...quotationStore.values()].filter(
+				(row) => !request.createdBy || row.createdBy === request.createdBy,
+			);
+			const data = all.slice((request.page - 1) * request.limit, request.page * request.limit);
+			return {
+				data: data as never[],
+				meta: {
+					page: request.page,
+					limit: request.limit,
+					total: all.length,
+					totalPages: Math.ceil(all.length / request.limit) || 1,
+				},
+			};
+		},
+		async findById(id) {
+			return (quotationStore.get(id) ?? null) as never;
+		},
+		async findItems() {
+			return [];
+		},
+		async findRevisions(baseCode) {
+			return [...quotationStore.values()].filter((row) => row.baseCode === baseCode) as never[];
+		},
+		async findHistory() {
+			return [];
+		},
+		async create(header) {
+			const id = `0190a1b2-0000-7000-8000-${String(++sequence).padStart(12, '0')}`;
+			const row = { ...header, id, baseCode: header.code, revision: 0, status: 'draft', validUntil: null };
 			quotationStore.set(id, row);
 			return row as never;
 		},
-		async findById(organizationId, id) {
+		async replaceDraft(id, header) {
 			const row = quotationStore.get(id);
-			if (!row || row.organizationId !== organizationId) return null;
-			return row as never;
-		},
-		async list(organizationId, pagination) {
-			const all = [...quotationStore.values()].filter(
-				(r) => r.organizationId === organizationId,
-			);
-			const page = all.slice(
-				(pagination.page - 1) * pagination.limit,
-				pagination.page * pagination.limit,
-			);
-			const result: TPaginationResult<never> = {
-				data: page as never[],
-				meta: {
-					page: pagination.page,
-					limit: pagination.limit,
-					total: all.length,
-					totalPages: Math.ceil(all.length / pagination.limit) || 1,
-				},
-			};
-			return result;
-		},
-		async update(organizationId, id, patch) {
-			const row = quotationStore.get(id);
-			if (!row || row.organizationId !== organizationId) return null;
-			const updated = { ...row, ...patch };
+			if (!row || row.status !== 'draft') return null;
+			const updated = { ...row, ...header };
 			quotationStore.set(id, updated);
 			return updated as never;
 		},
-		async transitionStatus(organizationId, id, from, to) {
+		async transition(id, from, to, patch) {
 			const row = quotationStore.get(id);
-			if (!row || row.organizationId !== organizationId) return null;
-			if (row.status !== from) return null;
-			const updated = { ...row, status: to };
+			if (!row || !from.includes(row.status as never)) return null;
+			const updated = { ...row, ...patch, status: to };
 			quotationStore.set(id, updated);
 			return updated as never;
+		},
+		async createRevision() {
+			return null;
 		},
 	};
+
+	container.register(CUSTOMER_SERVICE_TOKEN, {
+		useValue: {
+			async getActiveCustomer(id: string) {
+				return id === TEST_CUSTOMER_ID
+					? {
+							id,
+							code: 'PT-UJI',
+							name: 'PT Uji',
+							customerType: 'company',
+							email: null,
+							phone: null,
+							whatsapp: null,
+							taxId: null,
+							addressLine: null,
+							postalCode: null,
+						}
+					: null;
+			},
+			async getContact() {
+				return null;
+			},
+		} as never,
+	});
+	container.register(LEAD_SERVICE_TOKEN, { useValue: { noteQuotation: async () => true } as never });
+	container.register(ITEM_SERVICE_TOKEN, {
+		useValue: {
+			async getActiveItems(ids: string[]) {
+				return ids.includes(TEST_ITEM_ID)
+					? [
+							{
+								id: TEST_ITEM_ID,
+								sku: 'SG-01',
+								name: 'Swing gate',
+								specification: null,
+								unitLabel: 'unit',
+								sellingPrice: 150_000_000,
+							},
+						]
+					: [];
+			},
+		} as never,
+	});
+	container.register(NUMBERING_SERVICE_TOKEN, {
+		useValue: { next: async () => `${sequence + 1}/QT/IMS/XI/26` } as never,
+	});
+	container.register(USER_SERVICE_TOKEN, { useValue: { getUser: async () => null } as never });
+	container.register(OBJECT_STORAGE_TOKEN, { useValue: { presignGet: () => '', put: async () => undefined } as never });
 
 	const payments: Record<string, Record<string, unknown>> = {};
 	let paySeq = 0;
@@ -330,14 +399,15 @@ export function installSalesMocks() {
 	};
 
 	container.register(QUOTATION_REPOSITORY_TOKEN, { useValue: quotationRepository });
+	container.register(SALES_ORDER_REPOSITORY_TOKEN, { useValue: { findLiveByQuotation: async () => null } as never });
 	container.register(PAYMENT_REPOSITORY_TOKEN, { useValue: paymentRepository });
 
 	return { quotationStore, payments };
 }
 
 /**
- * Builds the Elysia app: real erpGuard + real SalesController + real
- * SalesService over mocked repositories.
+ * Builds the Elysia app: real erpGuard + real quotation and payment
+ * controllers and services over mocked repositories and neighbours.
  */
 export async function buildTestApp() {
 	installSalesMocks();
@@ -352,9 +422,18 @@ export async function buildTestApp() {
 	const { SalesController } = await import(
 		'../../src/app/sales/controllers/sales.controller'
 	);
+	const { QuotationService } = await import('../../src/app/sales/services/quotation.service');
+	const { QuotationController } = await import(
+		'../../src/app/sales/controllers/quotation.controller'
+	);
 	const { erpGuard } = await import('../../src/authorization/elysia-auth');
 
+	const { QUOTATION_SERVICE_TOKEN } = await import('../../src/app/sales/constants/di');
 	container.register(SALES_SERVICE_TOKEN, { useClass: SalesService });
+	container.register(QUOTATION_SERVICE_TOKEN, { useClass: QuotationService });
 
-	return new Elysia().use(erpGuard()).use(SalesController.plugin());
+	return new Elysia()
+		.use(erpGuard())
+		.use(QuotationController.plugin())
+		.use(SalesController.plugin());
 }

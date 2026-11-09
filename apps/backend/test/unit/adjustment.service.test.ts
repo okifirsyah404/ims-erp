@@ -562,6 +562,34 @@ describe('adjustment — posting writes one movement per CHANGED line', () => {
 		});
 	});
 
+	test('opening stock: an increase enters at the line cost; a decrease at the average', async () => {
+		build({ [ITEM_ID]: '0.000' });
+		const detail = await service.create(
+			ORG_A,
+			{
+				warehouseId: WAREHOUSE_ID,
+				adjustmentType: 'increase',
+				reasonCode: 'opening_stock',
+				lines: [{ itemId: ITEM_ID, quantityAfter: '5.000', unitCost: 1_250_000 }],
+			},
+			actor(REQUESTER),
+		);
+		expect(detail.lines[0]).toMatchObject({ unitCost: 1_250_000 });
+		await approved(detail.adjustment.id);
+		await service.post(detail.adjustment.id, ORG_A, actor(APPROVER));
+		expect(stock.posted[0]).toMatchObject({ movementType: 'adjustment_in', quantity: '5.000', unitCost: 1_250_000 });
+
+		build({ [ITEM_ID]: '10.000' });
+		const down = await service.create(
+			ORG_A,
+			{ warehouseId: WAREHOUSE_ID, adjustmentType: 'decrease', lines: [{ itemId: ITEM_ID, quantityAfter: '8.000', unitCost: 99 }] },
+			actor(REQUESTER),
+		);
+		await approved(down.adjustment.id);
+		await service.post(down.adjustment.id, ORG_A, actor(APPROVER));
+		expect(stock.posted[0]).toMatchObject({ movementType: 'adjustment_out', unitCost: null });
+	});
+
 	test('a recount that agrees posts NOTHING but still reaches posted', async () => {
 		build({ [ITEM_ID]: '5.000' });
 		const id = await raise('5.000');

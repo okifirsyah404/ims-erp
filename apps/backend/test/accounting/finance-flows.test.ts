@@ -7,7 +7,7 @@
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
+import type { NumberingService } from '@app/organization/services/numbering.service';
 import type {
 	TAccountingPeriodSelect,
 	TBankAccountLinkSelect,
@@ -266,10 +266,8 @@ function makeHarness() {
 	} as unknown as LedgerRepository;
 
 	const numbering = {
-		allocate: async () => ++allocSeq,
-		format: (prefix: string, middle: string, n: number, pad = 6) =>
-			`${prefix}-${middle}-${String(n).padStart(pad, '0')}`,
-	} as unknown as DocumentNumberingService;
+		next: async (type: string) => `${type}-${String(++allocSeq).padStart(6, '0')}`,
+	} as unknown as NumberingService;
 
 	// A no-op "transaction" that just forwards to the fake repo.
 	const tx = new Proxy({} as never, {}) as never;
@@ -405,7 +403,7 @@ describe('CashBankService', () => {
 			counterpartAccountId: 'acc-capital',
 		});
 		expect(movement.balanceAfter).toBe(1_000_000);
-		expect(movement.code).toMatch(/^CB-202601-\d{5}$/);
+		expect(movement.code).toMatch(/^cash_bank_transaction-\d{6}$/);
 
 		// the auto-journal: DR cash GL, CR capital
 		const entry = [...h.entries.values()].find(

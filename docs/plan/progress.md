@@ -12,6 +12,1885 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## Completed - merge of main into merge/main-sync, stage 2 (Sales owns AR), 2026-11-09
+
+Branch `merge/main-into-main-sync` (from `merge/main-sync` @ `0efffe1`),
+`git merge main --no-commit --no-ff`; PR targets `main`.
+
+Owner decisions (2026-11-09): invoice + receipt are owned by Sales with the
+full terms model (term_kind, customer_snapshot, vat_enabled/vat_rate_bps,
+terms, created_by, voided_by, paid/outstanding totals) merged into
+`sales.invoices`; `code` nullable (draft may exist without a code); statuses
+`draft|issued|partially_paid|paid|void|cancelled` (overdue is never stored);
+`sales.receipts` uses main's statuses (`draft|verified|posted|reversed|void`)
+with `sales_invoice_id` NOT NULL plus HEAD's `reference`/`notes`/`reversed_by`;
+`payment_id` is a logical (nullable) ref to `finance.payments`; numbering
+follows ADR-0013 option A (company-wide counters, `NumberingService.next` as
+the only path, `DocumentNumberingService` fully removed); `sales_invoice` is
+the single DocumentType (renamed from `invoice`; new types
+`bank_reconciliation`, `cash_bank_transaction`, `payment`, `journal_entry`,
+`supplier_bill`; codes INV/REC/CB/PAY/JE/SB).
+
+What changed:
+- Numbering: all 13 `allocate`/`format` call sites (accounting services,
+  invoice service) converted to `NumberingService.next(type, { date, tx })`;
+  `DOCUMENT_NUMBERING_SERVICE_TOKEN` and its registration removed everywhere;
+  6 test doubles in `test/accounting/*` re-pointed to `next`.
+- Helpers: `apps/backend/src/utils/money.util.ts` + `business-date.util.ts`
+  (alias `@utils/*`); `packages/common/src/domain/` deleted.
+- Sales: `InvoiceLookupService` + token moved to `sales`; repository gained
+  `listByOrder`/`hasLiveInvoices`; receipt write path ported from the finance
+  module (`findReceipt`, `listReceipts`, `paginateReceipts`, `addReceipt`,
+  `reverseReceipt` + `paymentStatus` util, receipt zod schemas, receipt
+  errors as `sales.*`, `ReceiptController` mounted at `/receipts` and
+  `POST /invoices/:id/receipts`).
+- `src/app/finance/` (12 files, the merge-side invoice module) deleted;
+  `registerFinance` import dropped from `src/index.ts`; licensing and
+  sales-order services import the lookup from `@app/sales`.
+- Schemas: `sales.invoices` completed to the DBML terms model (term_kind,
+  customer_snapshot, sales_order_code, quotation_code, title, description,
+  percentage_bps, vat_enabled, vat_rate_bps, terms, created_by, voided_by,
+  `code` nullable, term_kind index + checks); `finance.schema` invoice/receipt
+  types removed; `db.ts` financeRelations removed.
+- Migrations (append-only): `20261106170000_drop_merge_side_finance_receipts`
+  (merge-reconciliation: the joined history had two finance.receipts
+  definitions, main's survives) and `20261109090000_sales_owns_invoice_receipt`
+  (sales.invoices terms columns + checks, sales.receipts created,
+  finance.invoices/invoice_items/receipts dropped).
+
+Verification (all green):
+- `bun install` OK; lint: warnings only (pre-existing); typecheck: 0 errors.
+- `bun test`: 799 pass, 0 fail (53 files); 3 fixed assertion updates for the
+  `next`-based mock codes and the 27-type DOCUMENT_TYPES list.
+- `drizzle:migrate-reset` (fresh DB `ims_erp_local`): migrate + seed OK.
+- `drizzle:seed` second run: idempotent (all "already exists/skipping").
+- `bun docs/database/validate-dbml.ts`: OK (265 tables, 231 refs, 0
+  cross-module).
+
+## Completed - merge of main into merge/main-sync (PR #58 conflicts), 2026-11-06/07
+
+Status: **implemented** (merge commit on `merge/main-sync`; not merged into
+main — PR #58 awaits programmer A's review). Backlog: ERP-0037 (the port,
+renumbered from ERP-0036, which main uses for assets).
+
+Owner decisions (2026-11-06): one numbering system, ours (ADR-0013); for
+inventory conflicts main (programmer A) is the base and the M05 additions
+are re-applied on top; merge `origin/main` into `merge/main-sync` (no push
+to main, no history rewrite).
+
+What changed besides the textual merge (30 main commits, 36 conflicting
+files):
+- Numbering (ADR-0013): `DocumentNumberingService` removed; stock movement,
+  adjustment, asset, maintenance, disposal, tool set and borrowing codes come
+  from `NumberingService.next` (new document types and default patterns,
+  settings page + locales en/id); test double renders the real patterns
+  (two asset tests' code regexes updated to `MNT-YYYY-#####` /
+  `DSP-YYYY-#####`).
+- Migrations: the 18 ported migrations renamed to `20261106110000…111700`
+  (same order; first snapshot's parent = main's leaf; it no longer creates
+  the `organization` schema or `document_sequences`); new
+  `20261106165521_merge_main_reconcile` (generated with rename hints,
+  hand-edited to keep counters). `drizzle-kit generate` afterwards: "No
+  schema changes".
+- Inventory: main's hardening kept (atomic non-negative `applyDelta`,
+  audit writer, warehouse links, combobox adjustment form, three item kinds
+  — tools are assets, services are not items); re-applied: item categories,
+  unit list and category index, moving-average cost (`lockForCost` + cost on
+  every movement and reversal), opening-stock unit cost on adjustments,
+  inventory value, serial sale for delivery notes, document photo. The
+  inventory borrowing code (moved to `assets` by main) and its locale keys
+  are dropped; seeded `tool` / `service` items are gone.
+- Fixed a main bug: `GET /warehouses/linked` had no `erp` macro option, so
+  `erp` was undefined (500) and the adjustment form could not load
+  warehouses; the route now opts in with `erp: {}`.
+
+Verification:
+- Fresh disposable DB `ims_erp_merge_check`: `drizzle:migrate` OK,
+  `drizzle:seed` twice OK (idempotent); dropped afterwards.
+- Upgrade check `ims_erp_upgrade_check`: main's 20 migrations applied first,
+  ERP-0009 rows inserted (two `stock_movement` rows 43 and 10, borrowing 5,
+  asset 7, adjustment 3), then the merged set: rows collapsed to one per
+  type, `stock_movement` continues at 43, borrowing period `2026-11`;
+  dropped afterwards.
+- Dev DB `ims_erp_sync` rebuilt (drop / create / migrate / seed twice /
+  `refresh-role-grants.ts`).
+- `bun run typecheck` (apps/backend) clean; `NODE_ENV=test bun test` → 681
+  pass, 0 fail; `bun run lint` no errors. Web: `bun run build` OK, lint no
+  errors, 45 pass. Locales: 66 pass. `validate-dbml.ts` → OK.
+- HTTP smoke as the initial admin: 19 list endpoints across sales, finance,
+  procurement, delivery, projects, tickets, licenses, stock, items, assets,
+  borrowings, numbering → 200; stock receipt → `MV-202611-000001`;
+  adjustment with opening cost → `0001/ADJ/DEV/XI/26`. Screens checked:
+  numbering settings (22 types), stock adjustment form, asset borrowings,
+  subscription.
+- `docs/database/`: `docs.dbml` merged (items checks, document_sequences
+  note), `gen-logical-references.ts` re-run, `validate-dbml.ts` OK.
+
+Next executable task: push `merge/main-sync`; programmer A reviews PR #58
+(ADR-0013, the inventory re-applications, the `/warehouses/linked` fix);
+then M08 employees & attendance (gate 1 and 2 with the owner).
+
+## Completed — M03 subscription & licensing, stage 2 (license API, T23), 2026-11-06
+
+Status: **implemented** (backend + web admin; not yet accepted by the
+owner). Backlog ERP-0019 (stages 1–2; T24 pilot integration blocked).
+
+Gate 1 (read): docs.dbml MODULE Licensing (`license_activations`,
+`license_events`, `license_entitlements` / `usages`, `subscription_schedules`
+scaffolds; `auth.apikeys` for the application key);
+`docs/plan/erp-module-plans/m03-subscription-licensing.md` stage 2 (validate
+/ activate endpoints with a per-application API key, grace then suspension,
+renewal on verified payment, idempotent, every call logged, rate-limited,
+DoD tests at each boundary); the existing website key pattern
+(`public-api-auth.ts`, config `website`). Skipped: `implementation-phases.md`
+(no dependency on an unlanded step).
+
+Owner decisions (2026-11-06):
+1. **Grace period 7 days**: after the end date validation still passes with
+   a warning for 7 days, then it is refused.
+2. **Renewal on full payment**: a draft renewal linked to a sales order
+   activates by itself when that order is paid in full.
+3. **Pilot source not available**: T23 only (API, keys, documentation);
+   T24 stays blocked.
+
+Gate 2 (manual grilling pass):
+- Machine key: Better Auth API key plugin, new config `licensing` (prefix
+  `elk_`, organization-owned, 120 calls / minute), created through an
+  adapter on behalf of the organization owner (Better Auth checks the
+  creator's organization permission); the ERP checks `license:manage_api`
+  (new; owner, sales manager). `licensing.application_api_keys` maps the key
+  to one **own** application; a key cannot reach another application's
+  licenses (they look unknown). No second auth system.
+- State (pure, clock injected): effective end = earlier of contract end and
+  key expiry; `ok` until it, `grace` up to end + 7, then `expired`; revoked
+  key, suspended, terminated, draft / not started are refused; a `renewed`
+  contract's leftover key is `expired`. Derived, never stored.
+- Seats: `license_activations` per (key, `instance_id`), active seats ≤
+  `max_activations`, taken under a row lock on the key; activate is
+  idempotent per installation; deactivate releases; staff can release.
+- Renewal on payment: Finance `InvoiceLookupService.paidTotal(order)` (live
+  invoices' paid total; receipts are verified when recorded, reversals
+  already deducted) ≥ order grand total → the draft renewal activates (guard
+  `draft`, so a payment renews once), the old contract becomes `renewed`, its
+  keys (and seats) move to the renewal and keys that expired with the old
+  contract get the new end. Checked when the register is read and when a key
+  is validated / activated / released — no background job. A receipt reversed
+  after that does not undo the renewal (staff suspend if needed).
+- Log: `license_events` (append-only) for every machine call (result code,
+  instance, IP, API key) and staff overrides (suspend with optional reason,
+  reactivate, terminate, key revoke, seat release, renewal) with the actor.
+  The M12 audit log is not extended (its action vocabulary belongs to the
+  user module); the license log is the override trail.
+- Validate always answers 200 with `valid` / `status`; activate / deactivate
+  refuse with 403 / 404 / 409; bad API key 401, rate limit 429.
+- Not built (out of v5.1 scope / not decided): entitlements and usage
+  metering, subscription schedules, offline tokens, packages.
+
+What landed:
+- `docs/database/docs.dbml`: `license_activations` and `license_events`
+  rewritten (company-wide), new `application_api_keys`, refs; header note
+  (grace 7 days). `gen-logical-references.ts` re-run; `validate-dbml.ts` → OK.
+- Drizzle schema + migration `20261106161026_licensing_api` (generated,
+  inspected, applied to `ims_erp_sync`).
+- Backend: `LicenseApiRepository`, `LicenseApiService`,
+  `LicenseApiController` (`/licensing/v1/validate | activate | deactivate`),
+  adapter `adapters/better-auth-api-keys.ts`, `utils/license.ts`
+  `licenseState` / `GRACE_DAYS`; `LicensingService` gains paid auto-renewal,
+  key move, override events, seats and log on the detail; staff endpoints
+  `/licenses/applications/:id/api-keys` (list / issue / revoke),
+  `/licenses/events`, `/licenses/:id/activations/:activationId/release`;
+  Finance `InvoiceLookupService.paidTotal`; permission `license:manage_api`
+  (`packages/common` rebuilt; `refresh-role-grants.ts` → 2 role rows).
+- Web: `/subscription/api-keys` (own applications, issue with the secret
+  shown once, revoke; replaces the stub), `/subscription/activations` (the
+  validation & activation log; replaces the stub), contract detail with seats
+  per key (release), activity log, grace badge, suspend with a reason;
+  locales en + id (`licensing`, `api`).
+- Docs: `docs/architecture/modules/licensing-subscription.md` rewritten,
+  with the endpoint documentation and the pilot integration note (T32).
+
+Verification:
+- `bun run typecheck` (apps/backend) → clean.
+- `NODE_ENV=test bun test` (apps/backend) → 678 pass, 0 fail (new
+  `license-api.service.test.ts` 12 tests; `licensing.service.test.ts` 11).
+- `bun run build` / `bun run lint` / `bun test` (apps/web-admin) → OK, no new
+  lint findings, 45 pass; `bun test` (packages/locales) → 62 pass.
+- e2e (Playwright + HTTP, dev servers): issued an `elk_` key on the API Keys
+  screen (shown once); no key → 401, wrong key → 401; contract ended 3 days
+  ago → `grace` with warning; activate PC-001 → seat; PC-002 → 409 (1 seat);
+  validate with PC-002 → `not_activated`; unknown key → `unknown`; renewal
+  draft linked to SO 0012, finance invoiced the remainder, issued it and
+  recorded the full receipt → next validate returned `ok` until 2027-11-04
+  (renewal activated by payment, key moved, old contract `renewed`);
+  deactivate PC-001 then PC-002 activates. Screens checked: detail (seats,
+  log), activation log, API keys. The two test API keys were revoked after
+  the run; the test applications / contracts / invoice stay in the dev DB.
+- `docs/database/` updated in this change (above).
+
+Next executable task: superseded by the merge entry above.
+
+## Completed — M03 subscription & licensing, stage 1 (register), 2026-11-06
+
+Status: **implemented** (backend + web admin; not yet accepted by the
+owner). Backlog ERP-0019 (stage 1 of 2).
+
+Gate 1 (read): docs.dbml MODULE Licensing (tenant-scoped scaffold:
+`licensable_applications` with `license_model`, `license_packages`
+(duration, price), `license_contracts` (customer, package, dates, billing
+cycle, value, auto-renew, `draft / active / expired / suspended / terminated
+/ renewed`, renewal link), `license_keys` (hashed key, max activations,
+`issued / active / suspended / expired / revoked`), activations,
+entitlements, `subscription_schedules`, events); the old branch's
+`licensing-subscription.md` (v5.1 M03: one pilot application, stage 1 manual
+register T09, stage 2 API T23–T24, activation tied to verified payments).
+
+Owner decisions (2026-11-06):
+1. **Both kinds of license**: third-party software sold to customers (key
+   typed in from the vendor, the ERP records and reminds) and the company's
+   own pilot application (key generated by the ERP; the activation /
+   validation API is stage 2, own application only).
+2. **Billing through the sales flow**: a contract comes from SPH → sales
+   order and is invoiced from the order; a renewal is a new SPH / order
+   started from the due list. No invoice directly from a contract.
+3. **Reminders in stage 1**: a due list (licenses ending in the next 30 days,
+   filterable) and a dashboard flag; no WhatsApp/email yet (M04).
+4. **Next module after M03**: M08 employees & attendance.
+
+Gate 2 (manual grilling pass, within the owner decisions):
+- New module `licensing` (schema `licensing`, programmer B), company-wide
+  (ADR-0011/0012). Stage 1 implements three tables; the other scaffold tables
+  (packages, activations, entitlements, usages, schedules, events) stay
+  target-only until stage 2.
+- `licensable_applications` rewritten: code, name, vendor, `source`
+  (`third_party` — key typed in from the vendor — or `own` — key generated by
+  the ERP), description, `active / retired`.
+- `license_contracts` rewritten: code (new numbering type `license_contract`,
+  `LIC`), customer (CRM contract, active customer) + name snapshot,
+  application, `package_name` (free text: edition / plan), optional
+  `sales_order_id` (the order that sold or renewed it — billing stays in the
+  sales flow), start / end dates (end null = perpetual), `billing_cycle`
+  (`monthly, quarterly, semi_annual, annual, one_time`, informative),
+  `contract_value` (IDR minor units), `renewed_from_contract_id`, notes.
+  Status `draft → active ⇄ suspended → terminated`; `active → renewed` when
+  its renewal is activated. "Expired" and "due" are derived from the end date
+  (active and ended / ending within N days), never a stored state, so no job
+  is needed. A package table and auto-renew are dropped (not decided).
+- `license_keys` rewritten: contract, `license_key`, `key_source`
+  (`vendor` typed in, or `generated` by the ERP for own applications:
+  `XXXXX-XXXXX-XXXXX-XXXXX`, crypto random), `max_activations` (seats),
+  `expires_on` (defaults to the contract end), notes, `active / revoked`
+  (revoked with a reason). Unique key among live rows. Stored readable in
+  stage 1 (vendor keys must be handed to customers); masked (last 4) for
+  everyone without the new `license:read_key`; stage 2 adds a hash for the
+  validation API.
+- Renewal: from an active (or ended) contract, `license:extend` creates a
+  draft renewal (same customer / application / package, starting the day
+  after the old end, same length) and the due list links to a new SPH for the
+  customer; activating the renewal marks the old contract `renewed`.
+- Permissions: `license:read | create | activate | extend | revoke` exist;
+  `read_key` is added to the shared catalog. Grants: owner all; sales
+  manager all; sales read / create / extend / read_key; customer service
+  read / read_key; finance, admin, auditor read. `create` = applications,
+  drafts, keys; `activate` = activate / suspend / reactivate; `revoke` =
+  terminate, revoke keys. Existing roles pick the grants up with
+  `bun scripts/refresh-role-grants.ts`.
+- Due list `GET /licenses/due?days=30` (active contracts ending within N
+  days plus ended-but-not-renewed); summary `GET /licenses/summary` (ending
+  within 30 days, ended) feeds the M01 dashboard's subscriptions widget (the
+  rest of that dummy dashboard is programmer A's and stays as is).
+- Web: `/subscription` (contracts list with "due" and status filters),
+  `/subscription/new`, `/subscription/$contractId` (detail, keys, actions),
+  `/subscription/applications`; the stage-2 stubs (API keys, activations)
+  stay.
+
+What landed (2026-11-06):
+- `docs/database/docs.dbml` MODULE Licensing: the three stage-1 tables
+  rewritten as above (company-wide), refs fixed; `gen-logical-references.ts`
+  re-run; `validate-dbml.ts` → OK.
+- Drizzle `drizzle/schemas/licensing.schema.ts`; migration
+  `20261106152004_licensing_register` (generated, inspected, applied to
+  `ims_erp_sync`).
+- Numbering type `license_contract` (`LIC`); permission `license:read_key`
+  plus the grants above (`packages/common` rebuilt;
+  `bun scripts/refresh-role-grants.ts` → 5 system role rows updated).
+- Backend module `apps/backend/src/app/licensing/` (contracts + zod,
+  `LicensingRepository`, `LicensingService`, errors with `api` keys en + id,
+  `LicensingController` at `/licenses`, `utils/license.ts`), registered in
+  `src/index.ts`, mounted in `src/app/app.ts`. CRM / Sales are reached only
+  through `CustomerService.getActiveCustomer` and
+  `SalesFulfilmentService.getLiveOrder`.
+- Deviation from the design: the due list is `GET /licenses?dueWithinDays=30`
+  (the list endpoint's filter; active contracts ending by then, ended ones
+  included) instead of a separate `/licenses/due`. Renewal is allowed from an
+  active contract (an ended contract stays `active` until renewed or
+  terminated, so that covers "ended").
+- Web: `/subscription` (list, status filter, "due for renewal (30 days)",
+  search by code / customer / application / key; replaces the coming-soon
+  stub), `/subscription/new`, `/subscription/$contractId` (terms, keys,
+  activate / suspend / reactivate / renew / terminate, add / copy / revoke
+  key, "Create SPH" → `/sales/quotes/new?customerId=`),
+  `/subscription/$contractId/edit` (drafts), `/subscription/applications`;
+  nav item and breadcrumbs; locale namespace `licensing` (en + id). The M01
+  dashboard's subscriptions widget now reads `GET /licenses/summary` (only
+  that widget; the rest of the dashboard stays dummy and keeps its banner).
+
+Verification:
+- `bun run typecheck` (root) → 3/3 tasks OK.
+- `NODE_ENV=test bun test` (apps/backend) → 665 pass, 0 fail (new
+  `test/unit/licensing.service.test.ts`, 10 tests; the numbering settings test
+  now expects 16 document types).
+- `bun run test` (root) → backend 665, web-admin 45, locales 62 pass.
+- `bun run build` (apps/web-admin) → OK; `bun run lint` → no new findings.
+- Browser (Playwright, Chromium, `sales_manager` and `finance` seed
+  accounts): created a third-party and an own application; a contract ending
+  in 20 days (badge "20 days left"), vendor key typed in, activated; renewed →
+  draft for the next period with the same terms, activated → the old one shows
+  `Renewed` with a link; own-application contract with a generated key, ended
+  5 days ago ("Expired", "Ended 5 days ago"); due list; dashboard widget
+  (0 ending soon, 1 expired); finance sees the key masked (`••••-XXXX`) and
+  no actions. The test applications and contracts stay in the dev database
+  `ims_erp_sync`.
+- `docs/database/` updated in this change (above).
+
+Next executable task: M08 employees & attendance — gate 1 (read
+`docs.dbml` MODULE HR) and gate 2 with the owner before code. Stage 2 of M03
+(activation / validation API for the own application) waits for the pilot
+application's source access (T24).
+
+## Completed — print margins of every document (owner feedback), 2026-11-06
+
+Status: **implemented** (web admin only; owner feedback on the acceptance
+walk-through: "mepet, tidak ada padding" on every printed document).
+
+- `@page` margins widened to at least 18 mm left/right and 15–16 mm top
+  (SPH 16/18 mm, invoice and PO 16/18/20 mm, surat jalan 15/18 mm, BAST
+  18/20/15/22 mm, warranty 15/20/15/22 mm); the on-screen sheet preview
+  uses `p-12`.
+- Every document root sets `print-color-adjust: exact`: with the browser's
+  default "Background graphics" off, the SPH amber bar, the PO teal / navy
+  bars and the invoice table headers used to disappear.
+- Surat jalan spacing tightened so it stays on one page; SPH totals labels
+  no longer wrap.
+- Verified by rendering the six prints to PDF with the print dialog's
+  defaults (CSS page size, background graphics off; temporary script,
+  deleted): SPH 1 page, invoice 2 (as the sample), PO 1, surat jalan 1, BAST
+  1, warranty 2; colours present. `bun run lint` 0 errors, web-admin build
+  and tests pass.
+- Dev data: a failed 6b test run had left the private sample's address,
+  phone and email in the dev company profile; they were cleared (dev DB
+  only, never committed).
+
+## Completed — user guide (EN + ID) and UML flow diagrams, 2026-11-06
+
+Status: **done** (documentation only; no code, migration or test change).
+Owner request: a user guide in English and Indonesian with notes, plus UML
+diagrams.
+
+- `docs/user-guide/en.md`, `docs/user-guide/id.md`: getting started, roles,
+  first-time setup, quotation → revision → Deal → sales order, invoices / DP
+  / receipts, PO → goods receipt → stock, opening stock and adjustments,
+  inventory value, delivery notes, projects, BAST, warranty, service
+  tickets, document numbering, and Notes (rules, required order, known
+  limitations). Labels were checked against the `en` / `id` locale bundles
+  and the statuses against the Drizzle schemas.
+- `docs/user-guide/diagrams.md`: 11 Mermaid diagrams (end-to-end activity,
+  sales / purchasing / delivery sequences, state machines of quotation,
+  sales order, invoice, PO, stock adjustment, delivery note, project, BAST,
+  ticket, serial unit, module contracts, cost flow). Verified by rendering
+  every block with Mermaid 11 in Chromium (temporary script outside the
+  repo): 11 diagrams, 0 failed.
+- `docs/user-guide/README.md` index; `docs/architecture/README.md` points
+  to it. Backlog: no `ERP-*` status change (documentation of ERP-0036).
+
+## Completed — ADR-0011 port step 6c: service tickets with the warranty check, 2026-11-06
+
+Next executable task: the ADR-0011 port is complete (steps 1–6). Open the
+single pull request `merge/main-sync → main` for programmer A's review (the
+inventory changes flagged in steps 4b, 5a and 5b need his approval), after the
+owner's go; meanwhile the owner's acceptance walk-through of M02 / M05 / M07.
+
+Status: **implemented** (backend + web admin; not yet accepted by the owner).
+Step 6 (M07) is complete.
+
+What landed:
+- Migration `20261106083213_service_tickets` (generated, inspected, applied
+  to `ims_erp_sync`): `aftersales.service_tickets` (company-wide).
+- After-Sales: `ServiceTicketRepository`, `ServiceTicketService`,
+  `ServiceTicketController` (`/service-tickets`, `/warranty-check`,
+  `/technicians`, `/:id`, assign / start / resolve / reopen / close);
+  `WarrantyService.check` (serial → shipment → live project → certificate,
+  in warranty while the report date ≤ the end date). Errors with `api` keys
+  en + id.
+- Contracts: Sales `findShipmentBySerial` (delivery-note lines, jsonb
+  containment), Projects `liveProjectOfOrder` / `getProject`.
+- Web: `/projects/tickets` (list, filter, search; replaces the coming-soon
+  stub), `/projects/tickets/new` (serial first: customer, project, device and
+  the warranty badge fill in), `/projects/tickets/$ticketId` (assign, start,
+  resolve with cost, reopen, close with the customer's confirmation).
+
+Found while testing: a `${JSON.stringify([...])}::jsonb` parameter in a
+Drizzle `sql` template did not match (the value arrived encoded twice with
+bun-sql); `jsonb_build_array(${value}::text)` is used instead — worth
+remembering for any other jsonb containment query.
+
+Verification (2026-11-06):
+- `bun docs/database/gen-logical-references.ts` + `bun
+  docs/database/validate-dbml.ts` → `OK`. `docs/database/` updated
+  (`aftersales.service_tickets` rewritten, module note).
+- `NODE_ENV=development bun run drizzle:migrate` → applied.
+- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (warnings
+  pre-existing); `bun run test` → backend 655 pass (new
+  `service-ticket.service.test.ts`, warranty-check cases), web-admin 45,
+  locales 58, 0 fail; `bun run build` → built.
+- Browser + API check (temporary Playwright script, deleted): a serialized
+  unit received by a goods receipt, sold, shipped by a delivery note; project,
+  BAST and warranty (to 2027-11-05). Customer service typed the serial in the
+  new-ticket form: customer, project and device filled in and "Bergaransi"
+  showed; the ticket `0001/TKT/DEV/XI/26` stored the warranty code and end
+  date; an unknown serial is out of warranty; the technician got 404 before
+  assignment and 403 creating; after assignment the technician started and
+  resolved (Rp 150.000) through the UI, closing as technician 403; customer
+  service closed with the customer's confirmation (WhatsApp); no browser
+  errors.
+- Test data left in the dev DB: projects `0004`–`0006/PRJ/DEV/XI/26` with
+  their BAST / warranty, ticket `0001/TKT/DEV/XI/26`, serials `TK-…`.
+
+Gate 1 (read): docs.dbml `aftersales.service_tickets` (tenant-scoped scaffold:
+`open / assigned / in_progress / on_hold / resolved / closed / cancelled`,
+SLA, escalation, asset and employee references) and the Ticketing module
+note (customer-portal tickets are a different module, programmer A; they may
+escalate into an after-sales service ticket by logical reference);
+module-ownership §15; numbering type `service_ticket` (`TKT`); role catalog
+(`service_ticket:*` — customer service and project manager all, technician
+read / update / resolve, admin read / create / update / assign); the old
+branch's `service-ticket.service.ts` and tests (decisions of 2026-11-04);
+`aftersales.warranty_certificates` (step 6b); delivery-note lines carry the
+shipped serials. Skipped: `implementation-phases.md` (no unlanded dependency).
+
+Gate 2 (manual grilling pass):
+- `aftersales.service_tickets` rewritten to the decided model, company-wide
+  (ADR-0011/0012): `code` (TKT), `customer_id` (CRM contract: active
+  customer) + name snapshot, `project_id` (Projects contract; must belong to
+  the customer), `serial_number`, `device_description`, `channel` (`phone,
+  whatsapp, email, web, onsite, other`), reporter name / contact,
+  `complaint`, `reported_at`; the warranty check stored on the ticket
+  (`in_warranty`, `warranty_ends_on`, `warranty_code`); `status` `new →
+  in_progress → resolved → closed` (resolved may reopen); assignee (must hold
+  `service_ticket:update`, member of the caller's organization),
+  `resolution`, `service_cost` (IDR minor units), resolved by / at, the
+  customer's confirmation (name, channel, at) required to close, closed by /
+  at. SLA, escalation, priority, asset and employee columns of the scaffold
+  are dropped (not decided).
+- Warranty check (also a read endpoint for the form): serial → the shipped
+  delivery-note line carrying it (Sales contract `findShipmentBySerial`) →
+  the order's live project (Projects contract) → its warranty certificate;
+  in warranty when the report date ≤ the certificate's end date. Without a
+  serial, the given project's certificate. A serial delivered to another
+  customer → 422.
+- Visibility: holders of `service_ticket:assign` or `:close` see every
+  ticket; others only tickets assigned to them (404). Start / resolve /
+  reopen: the assignee or an assigner. Create `service_ticket:create`,
+  assign `:assign`, resolve `:resolve`, close `:close`.
+- Web: `/projects/tickets` (list), new (customer, project, serial with the
+  live warranty badge), detail with assign / start / resolve / reopen /
+  close; replaces the coming-soon stub.
+
+## Completed — ADR-0011 port step 6b: BAST and warranty certificate, 2026-11-06
+
+Next executable task: step 6c (done, entry above).
+
+Status: **implemented** (backend + web admin; not yet accepted by the owner).
+
+What landed:
+- Migration `20261106075940_bast_warranty_certificates` (generated,
+  inspected, applied to `ims_erp_sync`): `projects.project_handover` (BAST)
+  and schema `aftersales` with `warranty_certificates`.
+- Projects: `HandoverRepository` / `HandoverService` (BAST create, edit,
+  cancel, draft from the deal; Projects contract `requireProject` /
+  `findBast` for After-Sales), routes `/projects/basts` (all visible),
+  `/projects/:id/basts[/draft|/:bastId|/:bastId/cancel]`;
+  `utils/project-context.ts` shared by both controllers.
+- New module `src/app/aftersales`: `WarrantyRepository`, `WarrantyService`
+  (one per project, start at the chosen issued BAST, end the day before the
+  same date `months` later, number with the customer code, texts from the
+  profile or the sample), `WarrantyController`
+  (`/warranty-certificates/projects/:projectId[/draft]`).
+- Sales fulfilment contract: `getOrder`, `orderLines`, `shippedLines`
+  (`DeliveryNoteRepository.shippedLines`).
+- Web: project page "Dokumen serah terima" card (BAST list with print / edit
+  / cancel, warranty status), `/projects/$projectId/bast/new`,
+  `/bast/$bastId` (edit), `/bast/$bastId/print`, `/warranty` (form),
+  `/warranty/print`, `/projects/bast` (all BASTs, replaces the coming-soon
+  stub); prints `bast-document.tsx` and `warranty-document.tsx` in the
+  sample's layouts (Letter, Times; BAST date in words via
+  `lib/terbilang.ts dateInWords`; warranty terms with "o" sub-items and bold
+  phrases via `lib/document-terms.ts`). The project detail route moved to
+  `$projectId/index.tsx` for the nested routes.
+
+Verification (2026-11-06):
+- `bun docs/database/gen-logical-references.ts` + `bun
+  docs/database/validate-dbml.ts` → `OK`. `docs/database/` updated (BAST
+  table rewritten, `aftersales.warranty_certificates` added, module notes).
+- `NODE_ENV=development bun run drizzle:migrate` → applied.
+- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (warnings
+  pre-existing); `bun run test` → backend 650 pass (new
+  `handover-warranty.test.ts`: period arithmetic, several BASTs, numbering,
+  frozen after close, warranty needs an issued BAST, customer code, profile
+  texts), web-admin 45, locales 58, 0 fail; `bun run build` → built.
+- Browser + API check (temporary Playwright script, deleted): deal shipped by
+  a delivery note, project by the PM; the first BAST issued through the form
+  (prefilled contract number from the customer PO, customer, "Project
+  Manager") → `002/BAST/DEV/XII/2025` dated 2025-12-24; a second BAST for
+  another contract → two on the project; the warranty form prefilled the
+  shipped device and the sample's texts with sub-items; saved →
+  `001/SG-GARANSI/DEV-SPHSKL8P/2026`, 2025-12-24 → 2026-12-23; a warranty on
+  the cancelled second BAST → 422; the technician issuing a BAST → 403; the
+  BAST list shows them; no browser errors. Both prints rendered to PDF and
+  compared with the sample: BAST on one Letter page (title, number, date in
+  words, parties, contract line, table, scope with bold, closing, two
+  signatures), warranty on two pages (letterhead, number / date, company,
+  statement, project, A table, B period, page 2 C ✅ / ❌ lists with "o"
+  sub-items, D, closing, signatory). The dev company profile was filled for
+  the print and restored afterwards.
+- Test data left in the dev DB: projects `0002`–`0003/PRJ/DEV/XI/26`, BASTs
+  `001`–`003/BAST/DEV/XII/2025`, warranty `001/SG-GARANSI/DEV-SPHSKL8P/2026`.
+
+Owner decisions (2026-11-06, asked during this step): a project may have
+**several BASTs** (the sample has two for one project, one per contract);
+the network topology page of the sample is **not** built into the system.
+
+Gate 1 (read): docs.dbml `projects.project_handover` (scaffold: tenant
+scoped, `draft / scheduled / completed / cancelled`, no content columns) and
+After-Sales (no certificate table; `warranty_policies` / `warranty_claims` are
+a different concept); module-ownership §9 / §15 (warranty belongs to
+After-Sales, BAST to Projects; numbering map `bast → projects`,
+`warranty → aftersales`); numbering patterns `{SEQ:3}/BAST/{COMPANY}/{MM_ROMAN}/{YYYY}`
+and `{SEQ:3}/SG-GARANSI/{COMPANY}-{CUSTOMER}/{YYYY}`; company profile
+(legal name, address, phone, email, logo, signature image, signatory,
+warranty coverage / exclusions / service terms); the old branch's
+`handover.service.ts` / `domain/handover.ts` defaults; the private sample
+(US Letter: BAST without letterhead, Times, date in words; warranty with the
+letterhead, sections A–D with sub-bullets and bold phrases, signature).
+Skipped: `implementation-phases.md` (no unlanded dependency).
+
+Gate 2 (manual grilling pass):
+- `projects.project_handover` rewritten as the BAST document (Projects,
+  company-wide, no intra-module FK): `project_id`, `code` (numbered on
+  creation by the BAST date), `bast_date`, first party (company, name,
+  title), second party (company, name, title), `contract_number`,
+  `work_title`, `project_name`, `items` (jsonb: description, volume,
+  remarks), `scope` (jsonb list), `status` `issued / cancelled`. Several per
+  project. Created, edited and cancelled only while the project is active
+  (`project:update`); read with `project:read` and project visibility.
+- New module `aftersales` (programmer B, M07) with
+  `aftersales.warranty_certificates`: one live certificate per project;
+  `project_id` and `bast_id` are logical references validated through the
+  Projects contract (`ProjectHandoverContract`), `customer_id` through CRM
+  (customer code in the number). Start = the chosen BAST's date; end = the
+  day before the same date `months` later (clamped to month end); `months`
+  1–120 (default 12). Snapshot of product summary, project name / location /
+  owner, items, and the coverage / exclusions / service-terms texts (from the
+  company profile, else the sample's texts). Text syntax: one item per line,
+  a line starting with `o ` or `- ` is a sub-item of the previous one,
+  `**…**` prints bold — needed to print the sample exactly. Editable while
+  the project is not cancelled (also after closing).
+- Defaults: BAST from the order (lines with "Telah selesai terpasang dan
+  berfungsi dengan baik", attention, customer PO as contract number), the
+  company and the PIC; warranty items from the shipped delivery-note lines
+  with their serials (Sales fulfilment contract).
+- Prints (Letter): the BAST copies the sample (Times, centered title, the
+  day and date in words, the parties, "Dan berdasarkan kepada", the table, the
+  scope list, the closing, two signature blocks); the BAST number is added
+  under the title (the sample has none) as on the surat jalan. The warranty
+  copies sample pages 3–4 (letterhead, A–D, ✅ / ❌ headings, sub-bullets,
+  bold phrases, "Hormat kami," with the signature image and signatory). The
+  sample's period sentence is printed as is.
+
+## Completed — ADR-0011 port step 6a: projects (M07 part 1), 2026-11-06
+
+Next executable task: step 6b (done, entry above).
+
+Status: **implemented** (backend + web admin; not yet accepted by the owner).
+Step 6 is split: 6a projects (from a deal, checklist tasks, evidence files,
+direct costs, close / cancel), 6b BAST and warranty certificate with the
+private samples' prints, 6c service tickets with the warranty check.
+
+What landed:
+- Migration `20261106071435_projects_core` (generated, inspected, applied to
+  `ims_erp_sync`): schema `projects` with `projects`, `project_tasks`,
+  `project_evidence`, `project_costs` (company-wide, no intra-module FKs).
+- Module `src/app/projects`: `ProjectRepository`, `ProjectService`,
+  `ProjectLookupService` (contract for Sales), `ProjectController`
+  (`/projects`, `/open-deals`, `/staff`, `/:id`, close / cancel, tasks,
+  evidence (multipart), costs (multipart, void)); errors with `api` keys en +
+  id; `utils/project-files.ts` (type by magic bytes, 15 MB).
+- Sales: `SalesFulfilmentService` (live deals, shipped material value from
+  `DeliveryNoteRepository.shippedValues`); cancelling an order with a live
+  project → 422 `sales.orderHasProject`.
+- Web: `/projects` (list, filter, search), `/projects/new` (deal picker,
+  PIC), `/projects/$projectId` (stage stepper, edit, close, cancel, checklist
+  with assignee / state per task, evidence upload and gallery, direct costs
+  with receipts, materials and margin). New locale namespace `projects`
+  (en + id).
+
+Verification (2026-11-06):
+- `bun docs/database/gen-logical-references.ts` + `bun
+  docs/database/validate-dbml.ts` → `OK` (260 tables). `docs/database/`
+  updated (projects rewritten, evidence and costs added, module note).
+- `NODE_ENV=development bun run drizzle:migrate` → applied.
+- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (warnings
+  pre-existing); `bun run test` → backend 646 pass (new
+  `project.service.test.ts`, sales-order guard), web-admin 45, locales 58,
+  0 fail; `bun run build` (web-admin) → built.
+- Browser + API check (temporary Playwright script, deleted): deal by sales /
+  owner; the project manager created `0001/PRJ/DEV/XI/26` through the UI
+  (stage "Persiapan", six default tasks), a second project on the deal 409;
+  the technician got 404 until the PM assigned "Uji fungsi sistem", then
+  marked it done, could not move another task, uploaded a test photo (a fake
+  PNG was refused with the Indonesian message) and saw no costs or close
+  button; the PM recorded Rp 750.000 with a receipt (margin Rp 110.250.000
+  against Rp 111.000.000); close stayed disabled until training and BAST
+  evidence existed, then closed → `closed / warranty`; finance reads costs
+  but recording one is 403; cancelling the order → 422; no browser errors.
+- Test data left in the dev DB: SPH / SO `Proyek uji …`, project
+  `0001/PRJ/DEV/XI/26` and its files in object storage.
+
+Gate 1 (read): docs.dbml MODULE Projects (scaffold: tenant-scoped
+`projects.projects` with `planned / in_progress / on_hold / completed /
+cancelled`, `project_tasks`, `project_handover`, no evidence or cost tables)
+and After-Sales (`warranty_policies`, `warranty_claims`, `service_tickets`);
+`module-ownership.md` §9 (Projects: zero intra-module foreign keys by design,
+the service validates its own hierarchy) and §15; the old branch's M07
+implementation (`feat/m05-inventory-purchasing`: `project.schema.ts`,
+`project.service.ts`, `handover.service.ts`, `service-ticket.service.ts`,
+tests, e2e spec — decisions of 2026-11-04); numbering type `project` (`PRJ`);
+role catalog (`project:*` incl. `read_cost`, `task:*`; project manager,
+technician, finance); `OBJECT_STORAGE_TOKEN`; the BAST / warranty sample.
+Skipped: `implementation-phases.md` (no unlanded dependency).
+
+Gate 2 (manual grilling pass):
+- Ownership: new module `projects` (schema `projects`, programmer B, ADR-0011
+  §13). Company-wide like the deals it comes from (ADR-0011/0012): no
+  `organization_id`. Following module-ownership §9, no foreign keys inside the
+  module either; the project service validates task / evidence / cost
+  parents.
+- `projects.projects` rewritten to the decided model: one live project per
+  sales order (partial unique index), snapshot of order code, quotation code,
+  customer id + name, title and contract value (the order's grand total incl.
+  VAT); `site_name`; PIC (`pic_user_id`, must hold `project:update`);
+  target start / end (Jakarta business dates); `stage` (`preparation,
+  delivery, installation, testing, training, handover, warranty`) and
+  `status` (`active, closed, cancelled`). The scaffold's budget, progress,
+  handover status, type and branch columns are dropped (not decided).
+- `project_tasks` rewritten: position, title, stage, assignee (must hold
+  `task:update`), due date, `todo / in_progress / done`, done by / at; soft
+  removal. A new project gets the six default tasks (one per stage up to
+  handover).
+- New `project_evidence` (function test, training, signed BAST, photo,
+  other; JPG/PNG/WebP/PDF by magic bytes, 15 MB) and `project_costs`
+  (material, transport, accommodation, subcontract, other; amount in IDR
+  minor units, optional receipt; voided with a reason, never deleted).
+- Rules (old branch, decided 2026-11-04): visibility — holders of
+  `project:assign|read_cost|export` or `service_ticket:assign` see every
+  project, others only projects they lead or have a task in (404). Only an
+  active project changes. Close needs testing, training and BAST evidence and
+  moves the stage to `warranty`; cancel needs a reason and frees the deal.
+  Task status: the assignee, or a `task:assign` holder. Costs only with
+  `project:read_cost`; the cost card adds the material value shipped by the
+  order's delivery notes (at average cost) and compares with the contract
+  value.
+- Cross-module contracts: Sales exports `SalesFulfilmentService` (live
+  orders for the deal picker, one order, shipped material value); Projects
+  exports `ProjectLookupService.hasLiveProject(orderId)` so cancelling an
+  order with a live project is refused (422 `sales.orderHasProject`), the
+  same lookup pattern as Finance. Staff pickers list members of the caller's
+  organization holding the permission (as leads do).
+- Web: `/projects` list, new (deal picker), detail with stage, tasks,
+  evidence and costs; replaces the coming-soon stub. BAST and tickets stay
+  stubs until 6b / 6c.
+
+## Completed — ADR-0011 port step 5b: adjustment cost, opening stock, inventory value, 2026-11-06
+
+Next executable task: step 6a (done, entry above).
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner). Step 5 (5a + 5b) is complete. Touches programmer
+A's adjustment workflow and inventory module: **review required** in the
+merge PR (ADR-0011 §6, §13) — `adjustment.service.ts` (`unitCost` kept on the
+line, increases post at it), `adjustment.controller.ts` (cost stripped in and
+out without `product:read_cost`), `adjustment-form.tsx` / `adjustment-detail.tsx`
+/ `stock-list.tsx` (cost field and column, value link), new
+`stock-valuation.*` files.
+
+What landed:
+- Migration `20261105192747_adjustment_item_unit_cost` (generated, inspected,
+  applied to `ims_erp_sync`): `stock_adjustment_items.unit_cost` + check.
+- Opening stock = an `increase` adjustment with reason `opening_stock` (form
+  suggestion) and a unit cost per line; null = moving average.
+- `GET /stock/valuation` (`stock:read` + `product:read_cost`):
+  `StockValuationRepository` / `Service` / `Controller`, mounted before
+  `StockController`. Web `/inventory/stock/value` (sidebar "Nilai
+  Persediaan", link on the stock page).
+
+Findings for programmer A (pre-existing, not changed here):
+- `adjustment-form.tsx` loads `/warehouses` (application-admin only,
+  ADR-0008), so the warehouse and purchasing roles get 403 and cannot pick a
+  warehouse — they cannot raise adjustments (or opening stock) from the UI.
+  The receipt and delivery forms use their own warehouse endpoints for this.
+- Dev seed balances carry no cost (valued at Rp0); real opening stock must
+  be entered through `opening_stock` adjustments. ITEM-013 (a serialized
+  `tool`, not stock-tracked) still got a stock movement from a 4b goods
+  receipt test, because goods receipts post for every line.
+
+Verification (2026-11-06):
+- `bun docs/database/gen-logical-references.ts` + `bun
+  docs/database/validate-dbml.ts` → `OK` (258 tables, 0 cross-module refs, 0
+  timestamp gaps). `docs/database/` updated (`stock_adjustment_items.unit_cost`).
+- `NODE_ENV=development bun run drizzle:migrate` → applied.
+- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (warnings
+  pre-existing); `bun run test` → backend 639 pass (new: opening-stock cost
+  test, `stock-valuation.service.test.ts`), web-admin 45, locales 54, 0 fail;
+  `bun run build` (web-admin) → built.
+- Browser + API check (temporary Playwright script, deleted): the owner
+  raised opening stock through the adjustment form (cost field shown, Rp
+  25.000 → `unit_cost` 2,500,000, reason `opening_stock`), submitted,
+  approved and posted → balance `10.000 @ 2,500,000 = 25,000,000` and the
+  grand total rose by exactly 25,000,000; the warehouse role sees no cost
+  field, a cost it sends is stored as null, `/stock/valuation` → 403; the
+  value page lists the balances with per-warehouse totals; only browser
+  errors: the two pre-existing `/warehouses` 403s above.
+- Test data left in the dev DB: opening-stock adjustments for ITEM-012 and
+  ITEM-006 (10 each at Rp 25.000), one cancelled warehouse adjustment.
+
+Gate 1 (read): docs.dbml `inventory.stock_adjustments` /
+`stock_adjustment_items` (no cost column), `stock_balances.average_cost` /
+`total_value` (step 4b); `AdjustmentService.create` / `buildLines` / `post`
+(posts `adjustment_in` / `adjustment_out` through `StockService.postMovement`,
+creator cannot approve — `SelfApprovalForbiddenError` already exists);
+`adjustment.controller.ts` grants (`stock_adjustment:create|approve|post`);
+role catalog (purchasing "prepares opening stock / adjustments with costs").
+Skipped: `logical-references.md` (no new cross-module link; same module),
+`implementation-phases.md` (no unlanded dependency).
+
+Gate 2 (manual grilling pass):
+- `inventory.stock_adjustment_items.unit_cost` (bigint, nullable, IDR minor
+  units): the cost an increase line enters stock at. Null = the current
+  moving average (a recount surplus). Ignored for decreases (they always
+  leave at the average). This is the opening-stock use of ADR-0011 §6: an
+  `increase` adjustment with reason code `opening_stock` and a cost per
+  line, through the existing approval chain (creator cannot approve). No
+  second table, no new adjustment type.
+- Cost visibility: only callers with `product:read_cost` may set or see
+  `unit_cost`; for others the controller strips it from the body and the
+  responses (the warehouse counts, purchasing/owner price).
+- Inventory value view: read-only `GET /stock/valuation` (inventory module,
+  `stock:read` + `product:read_cost`): non-zero balances with item SKU /
+  name / unit and warehouse code / name, quantity, average cost and value,
+  plus totals per warehouse and the grand total — computed in SQL from
+  `stock_balances` (the ledger-maintained truth). Web `/inventory/stock/value`.
+- No journal entries (accounting module not ported; ADR-0011 §5 covers the
+  inventory value only).
+
+## Completed — ADR-0011 port step 5a: delivery notes (surat jalan), 2026-11-06
+
+Next executable task: step 5b (done, entry above).
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner). Step 5 is split: 5a delivery notes with the surat
+jalan print, 5b adjustment cost / opening stock and the inventory value view.
+Touches programmer A's inventory contracts (review in the merge PR):
+`ItemService.inStockSerials` / `sellUnits` and
+`SerialUnitRepository.listInStockSerials` / `sell` (new, additive).
+
+What landed:
+- Migration `20261105190928_sales_delivery_notes` (generated, inspected,
+  applied to `ims_erp_sync`): `sales.delivery_notes` (company-wide, rewritten
+  per the DBML) and `sales.delivery_note_items`.
+- Sales: `DeliveryNoteRepository`, `DeliveryNoteService`,
+  `DeliveryNoteController` (`/delivery-notes`, `/warehouses`,
+  `/deliverable-orders`, `/serials`, `/:id/ship|deliver|cancel`);
+  `SalesOrderRepository.allocateDelivery` (row locks, open-quantity guard,
+  line fulfilment) and `markInProgress`; cancelling an order with live notes
+  → 422 `sales.orderDelivered`. Errors with `api` keys en + id.
+- Shipping: stock-tracked lines post `issue` at the moving average (cost kept
+  on the line, hidden without `product:read_cost`); serialized lines sell
+  their units (`in_stock → sold`, customer set; the item kind must allow
+  `sold`). The two item flags are handled independently: dev seed has
+  serialized tools that are not stock-tracked (ITEM-013..016), which
+  contradicts `assertItemShape` — flagged for programmer A.
+- Web: `/sales/deliveries` (list, new with `?salesOrderId`, detail with
+  ship / deliver / cancel, print), "Surat jalan" card on the sales order
+  page, sidebar entry; print `delivery-note-document.tsx` in the sample's
+  layout (Letter, Arial). Locale keys `deliveries.*`, `delivery.*`,
+  `deliveryStatus.*`, `sj.*` in en + id.
+
+Verification (2026-11-06):
+- `bun docs/database/gen-logical-references.ts` + `bun
+  docs/database/validate-dbml.ts` → `OK` (258 tables, 0 cross-module refs, 0
+  timestamp gaps). `docs/database/` updated (delivery notes rewritten, lines
+  added, sales header note).
+- `NODE_ENV=development bun run drizzle:migrate` → applied.
+- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (remaining warnings
+  pre-existing); `bun run test` → backend 637 pass, web-admin 45, locales 54,
+  0 fail; `bun run build` (web-admin) → built.
+- Browser + API check (temporary Playwright script, deleted): SPH by sales,
+  approved by the owner, sales order; two serialized units received by a
+  goods receipt; the warehouse role prepared a note through the UI (recipient
+  prefilled from the order, serials ticked from the in-stock list) →
+  `0005/SJ/DEV/XI/26`, order lines 3/4 partial, 2/2 and 1/1 fulfilled;
+  over-delivery 422; cancelling the order 422; sales role reads notes 200;
+  print rendered to PDF and compared with the sample (Letter, same blocks,
+  seven-row table, Catatan box, three signatures); ship through the UI →
+  balance `104.000 → 101.000`, value down exactly 3 × 7,272,727, both units
+  `sold`, line cost visible to the owner and null for the warehouse, order
+  `in_progress`; delivered with the receiver name; a second note cancelled
+  gave its quantity back; no browser errors.
+- Test data left in the dev DB: SPH/SO/PO `Uji SJ …`, notes
+  `0001`–`0006/SJ/DEV/XI/26`, serials `SJ-…`.
+
+Gate 1 (read): docs.dbml `sales.delivery_notes` (tenant-scoped scaffold, no
+lines, statuses `prepared / shipped / delivered / returned`),
+`sales.sales_orders` / `sales_order_items` (`quantity_delivered`,
+`fulfillment_status` already exist), `inventory.stock_movements` (no
+reference-type vocabulary except borrowing), `serial_tracked_items`
+(`status`, `warehouse_id`, `customer_id`, `stock_movement_id`); ADR-0011 §4
+(a shipped delivery note makes a unit `sold`), §5 (delivery notes post
+`issue` movements), §7 (every delivery document names its warehouse,
+storage optional); numbering type `delivery_note` (`SJ`); grants
+`stock:issue` / `stock:read`; the private surat jalan sample (Letter size).
+Skipped: `implementation-phases.md` (no dependency on an unlanded step).
+
+Gate 2 (manual grilling pass):
+- Ownership: `sales.delivery_notes` + new `sales.delivery_note_items`, owned
+  by the sales module (programmer B, ADR-0011 §13). Company-wide like the
+  orders (ADR-0011/0012): `organization_id` dropped. `warehouse_id`,
+  `bin_id`, `item_id`, `stock_movement_id` are logical references validated
+  through the inventory contracts (`StockService.resolveScope`,
+  `WarehouseService.getWarehouse`, `ItemService.getItem`).
+- Lifecycle: `prepared` (numbered `SJ` on creation so the driver's copy can
+  be printed) → `shipped` (posts one `issue` movement per stock-tracked line
+  at the moving average, records the cost on the line, marks the listed
+  serial units `sold` to the order's customer) → `delivered` (receiver name
+  and date). `prepared` may be `cancelled`; shipped notes are final
+  (returns are `sales.sales_returns`, later). `returned` dropped from the
+  vocabulary, `cancelled` added.
+- Quantities: a line ≤ what the order line still has open; open = ordered −
+  `quantity_delivered`, where `quantity_delivered` counts every live
+  (non-cancelled) note, updated under a row lock on create and given back on
+  cancel. Line fulfilment `partial` / `fulfilled`; the order goes
+  `confirmed → in_progress` on the first shipment. Custom lines (no item)
+  and non-stock items print but post no movement.
+- Serials: serialized lines need one serial per unit at creation; shipping
+  checks each unit is `in_stock` in that warehouse (atomic update guarded on
+  status and warehouse), else 422. New inventory contract method
+  `ItemService.sellUnits(itemId, serials, {warehouseId, customerId,
+  stockMovementId}, tx)`.
+- Unit of work: `TRANSACTION_RUNNER_TOKEN` (ship = movements + serials +
+  status in one transaction). No service injects `DRIZZLE_TOKEN`.
+- Print (sample, Letter): logo + company letterhead, "SURAT JALAN BARANG /
+  PROYEK / KONSTRUKSI", Tanggal / Nama Proyek / Lokasi Proyek, Data
+  Pengirim (company profile), Data Penerima (name, address, PIC, phone/email),
+  table No. / Nama Barang / QTY / Satuan / Harga / Keterangan (padded to the
+  sample's 7 rows; serials go in Keterangan), Catatan (defaults to the
+  sample's warranty sentence, editable), three signatures Supir / Pengirim /
+  Penerima. The sample has no number line; the SJ number is added as the
+  first field ("No. Surat Jalan") because the document must be traceable.
+- Permissions: create / ship / deliver / cancel with `stock:issue`
+  (warehouse, owner); read with `stock:read` or `sales_order:read`. Cost on
+  lines only with `product:read_cost`. Cancelling a sales order with live
+  delivery notes → 422.
+
+## Completed — ADR-0011 port step 4b: goods receipts and moving-average cost, 2026-11-06
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner). Touches programmer A's stock ledger: **review
+required** in the merge PR (ADR-0011 §5, §13) — `stock.service.ts`
+(`postMovement` cost, `reverseMovement`, `recomputeFromLedger` cost replay),
+`balance.repository.ts` (`lockForCost`, `setCost`), `movement.repository.ts`
+(`ledgerRows`, ledger scope), `serial-unit.repository.ts`, `stock.controller.ts`
+(cost hidden without `product:read_cost`).
+
+What landed:
+- Migration `20261105183351_stock_cost_goods_receipts` (generated, inspected,
+  applied to `ims_erp_sync`): `stock_movements.unit_cost`,
+  `stock_balances.average_cost` / `total_value`, `procurement.goods_receipts`
+  / `goods_receipt_items` per the rewritten DBML.
+- Inventory: `utils/moving-average.ts` (`applyMovementCost`,
+  `exVatUnitCost`), cost in `postMovement` under a `FOR UPDATE` balance lock,
+  reversal at the original cost, ledger replay in `recomputeFromLedger`;
+  `ItemService.registerUnit(…, tx)` with PO line / movement links.
+- `src/providers/database/transaction-runner.ts` (`TRANSACTION_RUNNER_TOKEN`)
+  — the receipt, PO progress, movements and serial units commit together.
+- Procurement: `GoodsReceiptService` / `GoodsReceiptController`
+  (`/goods-receipts`, `/goods-receipts/warehouses`,
+  `/goods-receipts/receivable-orders`), `PurchaseOrderRepository.receive`
+  (locks the PO, refuses over-receipt), errors with `api` locale keys.
+- Web: `/procurement/receipts` (list, new, detail), "Terima barang" on the PO
+  page; locale keys `receipts.*` / `receipt.*` in en + id.
+
+Pre-existing defects in programmer A's inventory code found and fixed here
+(flag in the review):
+1. `serial-unit.repository.create` never set `created_at` (NOT NULL, no
+   default) — every serial unit insert failed with 500. Now set on insert.
+2. The `stock_balances` unique indexes treated `bin_id IS NULL` as distinct,
+   so every `ON CONFLICT` upsert of a bin-less balance inserted a new row
+   (one row per movement). Custom migration
+   `20261105185010_stock_balances_nulls_not_distinct` (`drizzle-kit generate
+   --custom`, hand-written) merges duplicates into the oldest row and rebuilds
+   both partial indexes `NULLS NOT DISTINCT` (PostgreSQL 15+; dev runs 18.6).
+   Drizzle's index builder cannot express it, so the schema carries a comment;
+   `drizzle-kit generate` afterwards printed "No schema changes". DBML index
+   notes updated.
+3. `recomputeFromLedger` selected movements by the movement's own
+   `organization_id` (the poster), while balances are scoped by the
+   warehouse's organization — a tenant user receiving into a shared warehouse
+   was dropped from the recompute. `ledgerTotals` / `ledgerRows` now select by
+   the warehouse's scope (`balanceScopeFilter`).
+
+Verification (2026-11-06):
+- `bun docs/database/gen-logical-references.ts` + `bun
+  docs/database/validate-dbml.ts` → `OK` (257 tables, 0 cross-module refs, 0
+  timestamp gaps).
+- `NODE_ENV=development bun run drizzle:migrate` → applied (index definitions
+  checked with `pg_indexes`: `NULLS NOT DISTINCT`; 0 duplicate balance keys).
+- `bun run typecheck` → 3/3; `bun run lint` → 4/4; `bun run test` → backend
+  630 pass, web-admin 45 pass, locales 54 pass, 0 fail; `bun run build`
+  (web-admin) → built.
+- Browser + API check (temporary Playwright script, deleted): recompute of
+  the shared scope rebuilt `80.000 @ 5,000,000 = 400,000,000`; a partial
+  receipt through the UI as the warehouse role (BPB numbered
+  `0013/BPB/DEV/XI/26`, serials `in_stock`), over-receipt 422, the rest
+  received → PO `received`, cancel of a received PO 422; a second PO at
+  another price → one balance row `110.000 @ 7,272,727 = 800,000,000`
+  (expected value and average match); the warehouse role sees no cost fields;
+  no browser errors.
+- `docs/database/` updated (DBML cost columns, goods receipts, balance index
+  notes).
+- Test data left in the dev DB: several test POs `Uji BPB …` with their
+  receipts and serials `SN-…`.
+
+Next executable task: step 5a (done, entry above).
+
+Gate 1 (read): docs.dbml `inventory.stock_movements` / `stock_balances` (the
+note says valuation was removed, OPEN-3) and `procurement.goods_receipts` /
+`goods_receipt_items`; `StockService.postMovement` / `reverseMovement` /
+`recomputeFromLedger`, `BalanceRepository.applyDelta`, `ItemService.registerUnit`
+and the serial-unit columns `purchase_order_line_id` / `stock_movement_id`;
+the old branch's goods-receipt rules (posted on creation, immutable,
+corrections through adjustments; cost = ex-VAT unit price); numbering type
+`goods_receipt` (`BPB`); grants `stock:receive` (warehouse, owner).
+
+Gate 2 (manual grilling pass):
+- Cost (ADR-0011 §5 supersedes OPEN-3 for the inventory value; the journal
+  still waits for accounting): `stock_movements.unit_cost` (bigint, the cost
+  each movement was valued at) and `stock_balances.average_cost` /
+  `total_value` (bigint) per balance row. Inbound with a cost →
+  `value += round(qty × cost)`, `average = round(value / qty)`; inbound
+  without a cost takes the current average; outbound takes the average, and
+  the last unit out takes the exact remaining value (no drift). Reversals
+  use the original movement's cost. The balance row is locked (`FOR
+  UPDATE`) for the cost update; quantities keep the atomic `ON CONFLICT`
+  delta. `recomputeFromLedger` replays the ledger in order so cost is
+  rebuilt too (the test oracle). Cost columns reach the client only with
+  `product:read_cost`.
+- Cross-module unit of work: new provider `TRANSACTION_RUNNER_TOKEN`
+  (`run(work(tx))`) — the procurement service runs the receipt, its PO
+  progress, the stock movements (`postMovement(input, tx)`) and serial units
+  (`registerUnit(…, tx)`, new optional `tx`) in one transaction (the old
+  branch's ADR-0009 rule). No service injects `DRIZZLE_TOKEN`.
+- Goods receipts (`procurement.goods_receipts`, company-wide): only for
+  `sent` or `partially_received` POs; one warehouse (bin optional) per
+  receipt; posted on creation (status `posted`, DBML `draft / cancelled`
+  dropped), numbered `BPB` on creation, immutable (corrections are stock
+  adjustments); quantities ≤ what is still open per line; PO becomes
+  `partially_received` / `received`; `receipt_date` business date,
+  `supplier_delivery_ref` (supplier's surat jalan). Lines:
+  `purchase_order_item_id` (same-module FK), item snapshot, `quantity`,
+  `unit_cost` = ex-VAT unit price (VAT-included POs: price × 10000 /
+  (10000 + rate), half-up), `serial_numbers` (jsonb array; one per unit for
+  serialized items, which become `in_stock` units linked to the PO line and
+  the movement). DBML `quantity_rejected` / `rejection_reason` / `lot_number`
+  dropped (rejects are simply not received).
+- Permissions: create with `stock:receive` (warehouse, owner); read with
+  `stock:read` or `purchase_order:read`; receivable POs are listed through
+  the receipt controller so the warehouse needs no PO grant.
+- Web: `/procurement/receipts` (list, detail, new from a PO), "Terima barang"
+  on a sent PO. No print (no sample).
+
+## Completed — ADR-0011 port step 4a: suppliers and purchase orders, 2026-11-06
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner). Step 4 is
+split: 4a suppliers + purchase orders with the PO print, 4b goods receipts +
+moving-average cost (ADR-0011 §5).
+
+Gate 1 (read): docs.dbml Procurement module (`suppliers`, `supplier_contacts`,
+`supplier_addresses`, `purchase_orders`, `purchase_order_items`,
+`goods_receipts`, `goods_receipt_items`); the old branch's owner-approved
+purchasing (`purchasing.schema.ts`, `purchase-order.service.ts`,
+`po-totals.ts`, contracts); ADR-0011 §5 and §12 (module name `procurement`,
+cost on the ledger); numbering (`PURCHASE_ORDER_PATTERN`
+`{TYPE}/{COMPANY}-{SUPPLIER}/{CATEGORY}/{MM}{YY}/{SEQ:3}`); role grants
+(`supplier:*` incl. `read_bank`, `purchase_order:*`); the private PO sample.
+Skipped: purchase requests and returns (not in the approved scope).
+
+Gate 2 (manual grilling pass):
+- Ownership: new **Procurement** module (`app/procurement`, schema
+  `procurement`), company-wide (no `organization_id`, ADR-0011).
+- Suppliers: DBML columns plus the owner-approved ones (`website`,
+  `address_line`, `village_id` → Location contract, `postal_code`,
+  `pic_name/phone/email/title` printed on the PO, `payment_term_note`);
+  `code` upper-case letters/digits (it is `{SUPPLIER}` in the PO number),
+  unique among live rows; statuses `active | inactive` (DBML `blocked`
+  dropped); `owner_user_id` dropped. Bank details only reach holders of
+  `supplier:read_bank` (dynamic resolver); others neither see nor overwrite
+  them. `supplier_contacts` / `supplier_addresses` stay unbuilt (one PIC and
+  one address are printed).
+- Purchase orders: `draft → submitted → approved → sent`, rejection returns
+  to `draft` with the reason; `partially_received / received` come with 4b;
+  `draft | submitted | approved | sent → cancelled` with a reason while
+  nothing was received. One-level approval with `purchase_order:approve`,
+  never by the PO's creator. Numbered on approval from the order date with
+  the supplier code and the category code (`HW | SW | JS | LN`). Only drafts
+  are editable.
+- PO columns: DBML names (`code`, `supplier_id`, `status`, `order_date`,
+  `expected_delivery_date`, `subtotal`, `tax_total`, `grand_total`,
+  `currency_code`, `submitted_at`, `approved_by/at`, `sent_at`,
+  `cancelled_reason`) plus `supplier_snapshot`, `category`, `subject`,
+  `supplier_quote_ref/date`, `project_name`, `buyer_pic_name`, `vat_mode`
+  (`none | included | added`, the sample's "PPN Included") and
+  `vat_rate_bps`, `payment_terms`, `terms`, `notes`, `rejection_reason`,
+  `created_by`, `submitted_by`, `sent_by`, `cancelled_by/at`, `deleted_at`.
+  Dropped: `purchase_request_id`, `shipping_total`, `payment_terms_days`,
+  `ship_to_address_text`, `closed_at`.
+- PO items: `item_id` → `inventory.items` (active items only, validated
+  through `ItemService.getActiveItems`); sku / name / specification / unit
+  snapshot; `quantity numeric(18,3)`; `unit_price` defaults to the item's
+  purchase price; `line_total = round(quantity × unit_price)`;
+  `quantity_received` for 4b. Dropped: `tax_amount`, `unit_id`,
+  `quantity_rejected` (VAT is per PO; units are a fixed list).
+- Money: bigint minor units; VAT `added` = on top, `included` = derived
+  from the total (DPP = total × 10000 / (10000 + rate)), half-up BigInt.
+- Print: exactly the company's PO sample. No PO approval history table
+  (statuses carry who/when).
+- Web: `/procurement/suppliers` (list, form, detail), `/procurement/purchase-orders`
+  (list, form, detail with submit / approve / reject / send / cancel,
+  print).
+
+What landed:
+- docs.dbml first (`procurement.suppliers`, `purchase_orders`,
+  `purchase_order_items` company-wide; the stale `purchase_request_id` ref
+  removed); `gen-logical-references.ts` → 498 refs; `validate-dbml.ts` → OK.
+- Migration `20261105180613_procurement_suppliers_purchase_orders`
+  (`CREATE SCHEMA procurement`, 3 tables, partial unique codes, checks), read
+  and applied to `ims_erp_sync`.
+- Backend: new module `app/procurement` (`SupplierService` with bank
+  masking, `PurchaseOrderService`, repositories, `utils/po-totals.ts`,
+  `errors/procurement.errors.ts`, controllers `/suppliers`,
+  `/purchase-orders`), registered in `src/index.ts`, mounted in
+  `app/app.ts`; `procurement.*` API keys (en + id).
+- Web: `lib/procurement-api.ts`, `components/procurement/{supplier-form-dialog,
+  purchase-order-form, purchase-order-document}.tsx`, supplier and PO routes,
+  breadcrumb labels, `procurement` locale namespace (en + id).
+
+Verification (2026-11-06):
+- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` → 619 pass
+  (`test/unit/procurement.service.test.ts`, 7 tests).
+- Web `bun run build` OK, `bunx tsc -b` clean, `bun test` → 45 pass; locales
+  → 54 pass; lint: no warnings in new files.
+- Browser (temporary Playwright script, deleted): `purchasing.seed` creates a
+  supplier with bank details in the UI; `auditor.seed` reads it with the bank
+  columns null (`bankVisible: false`); `purchasing.seed` creates a PO from
+  an inventory item (33 × Rp 1.900.000, PPN included), submits it and gets
+  no approve button; the owner approves → `PO/DEV-HIT9ND3/HW/1126/001`;
+  purchasing marks it sent. PO printed to PDF and compared with the sample
+  (header, teal bar, facts grid, buyer/supplier blocks, navy item table,
+  subtotal / PPN Included* / TOTAL PURCHASE ORDER, terbilang, numbered terms
+  with bold titles, notes, signatures, footer line). The company profile
+  used for the print was restored.
+- Test data left in the dev DB: supplier `HIT9ND3` and its PO.
+
+Next: step 4b (done, entry above).
+
+## Completed — ADR-0011 port step 3d-2: invoices, DP and receipts, 2026-11-06
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner).
+
+Gate 1 (read): docs.dbml Finance module (`finance.invoices`,
+`invoice_items`, `payments`, `receipts`, `payment_allocations`); the old
+branch's owner-approved billing (`invoice.service.ts`, `invoice-terms.ts`,
+`payment-schedule.ts`: free terms, numbering on issue, receipts valid on
+creation, corrections by reversal); role grants `invoice:*` / `receipt:*`;
+the private invoice sample (layout). Skipped: `implementation-phases.md` S4
+detail beyond the finance tables (S4 is the finance step; this lands its
+invoice/receipt part only).
+
+Gate 2 (manual grilling pass):
+- Ownership: new **Finance** module (`app/finance`, schema `finance`):
+  `InvoiceService`, `ReceiptService`, controllers `/invoices`, `/receipts`.
+  Company-wide (no `organization_id`, ADR-0011).
+- Cross-module: Finance reads orders through a Sales contract
+  (`SalesBillingService.getOrderForBilling` / `listOrdersForBilling`, live
+  orders only); Sales asks Finance before cancelling an order
+  (`InvoiceLookupService.hasLiveInvoices`) — an order with live invoices
+  cannot be cancelled. Two small services, so no DI cycle.
+- Invoices (owner decisions 2026-10-31 / 2026-11-04): free billing terms per
+  invoice — percentage of the order tax base, a VAT-inclusive amount, the
+  remainder, or the next planned term; the term that reaches the order's tax
+  base takes the exact remaining VAT (no rounding drift); terms are computed
+  under a per-order advisory lock. `draft` (no number) → `issued` (numbered
+  on issue, no gaps) → `partially_paid` → `paid`; unpaid `draft|issued` →
+  `void` with a reason. `term_kind` is derived: the first live invoice of an
+  order that does not settle it is `down_payment` (the DP menu), the one
+  that settles it `settlement`, others `installment`. DBML `overdue` is
+  shown from `due_date`, never stored; `cancelled` dropped.
+- Receipts (kwitansi): valid on creation (no second verification, owner
+  2026-10-31), numbered on creation, never more than the outstanding
+  amount; corrections by `reversed` with a reason (no delete). The single
+  ledger `finance.payments` is not built yet (S7 retires `sales.payments`);
+  receipts carry no `payment_id` until then.
+- Columns: invoices keep DBML names (`code`, `invoice_type`, `customer_id`,
+  `sales_order_id`, `issue_date`, `due_date`, `subtotal` = the term's tax
+  base, `discount_total` = 0, `tax_total`, `grand_total`, `paid_total`,
+  `outstanding_total`, `status`, `issued_by/at`, `voided_at`, `void_reason`,
+  `notes`) plus `term_kind`, `description`, `percentage_bps`,
+  `customer_snapshot`, `sales_order_code`, `quotation_code`, `title`,
+  `vat_enabled`, `vat_rate_bps`, `terms` (snapshot of the company's default
+  invoice terms), `created_by`, `voided_by`, `deleted_at`; `approved_by/at`
+  dropped (no invoice approval). `finance.invoice_items` stays unbuilt: an
+  invoice bills a share of its order, and the print lists the order lines.
+- Print: exactly the company's invoice sample (company block, INVOICE,
+  Ditujukan kepada / Informasi invoice, Rincian barang, Ringkasan tagihan,
+  terbilang; page 2 "INVOICE - LANJUTAN" with the payment schedule, bank
+  accounts, signatures, terms; "Halaman x dari y"). No kwitansi sample
+  exists, so receipts get no print in this step.
+- Web: `/sales/invoices` (list + detail with issue / void / receipts /
+  print), `/sales/down-payments` (DP invoices), `/sales/receipts`; "Buat
+  invoice" with the billing summary on the sales order page.
+
+What landed:
+- docs.dbml first (`finance.invoices`, `finance.receipts` company-wide;
+  receipts → invoices `restrict`, the `payment_id` ref removed until
+  `finance.payments` exists); `gen-logical-references.ts` → 497 refs;
+  `validate-dbml.ts` → OK.
+- Migration `20261105173322_finance_invoices_receipts` (`CREATE SCHEMA
+  finance`, 2 tables, partial unique code indexes, checks), read and applied
+  to `ims_erp_sync`.
+- Backend: new module `app/finance` (`InvoiceRepository` with the per-order
+  advisory lock and atomic receipt / reversal updates, `InvoiceService`,
+  `InvoiceLookupService`, `InvoiceController` `/invoices` incl.
+  `/invoices/orders/:orderId/summary`, `ReceiptController` `/receipts`,
+  `utils/invoice-terms.ts`, `errors/finance.errors.ts`), registered in
+  `src/index.ts`, mounted in `app/app.ts`. Sales: `SalesBillingService`
+  (contract for Finance); cancelling an order with live invoices → 422
+  `sales.orderBilled`.
+- Web: `lib/invoice-api.ts`, `components/finance/{invoice-list,
+  billing-card, invoice-document}.tsx`, routes `/sales/invoices`,
+  `/sales/invoices/$invoiceId` (+ `/print`), `/sales/down-payments`,
+  `/sales/receipts`; billing card on the sales order page; `finance`
+  locale namespace (en + id).
+
+Verification (2026-11-06):
+- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` → 612 pass
+  (`test/unit/invoice.service.test.ts` 11 tests: odd-base 50/50 settles
+  exactly, VAT-inclusive split, planned terms, DP/installment/settlement
+  kinds, void frees the share, numbering on issue, due-before-issue,
+  partial/full/over payment, reversal; sales-order billed guard).
+- Web `bun run build` OK, `bunx tsc -b` clean, `bun test` → 45 pass; locales
+  → 50 pass; lint: no warnings in new files.
+- Browser (temporary Playwright script, deleted): SPH (DP 30% / BAST 70%) →
+  approved → order `0002/SO/DEV/XI/26`; `sales.seed` gets 403 on
+  `/invoices`; `finance.seed` creates the DP from the order page, issues it
+  (`0001/INV/DEV/XI/26`); the manager cannot cancel the billed order (422);
+  partial payment → `partially_paid`, overpayment → 422, rest → `paid`;
+  the next term is `settlement` and DP + settlement = order total exactly;
+  DP and receipt lists show them. Invoice printed to PDF (A4) and compared
+  with the sample: page 1 company block / INVOICE / Ditujukan kepada /
+  Informasi invoice / Rincian barang / Ringkasan tagihan / terbilang; page 2
+  INVOICE - LANJUTAN / Jadwal pembayaran / Informasi rekening / Tanda tangan
+  / Syarat dan ketentuan; "Halaman x dari 2". The company profile used for
+  the print was restored afterwards.
+- Test data left in the dev DB: SPH `0006/QT/DEV/XI/26`, order
+  `0002/SO/DEV/XI/26`, invoices `0001`–`0002/INV/DEV/XI/26`, two receipts.
+
+Deliberate differences from the invoice sample: table header text is white
+on the navy bar (the sample's dark text is unreadable); the terbilang is of
+the amount due (the sample's "sesuai dokumen asal" line spelled a
+different figure). No kwitansi print yet: there is no sample.
+
+Next executable task: ADR-0011 step 4 — procurement (suppliers, purchase
+orders with the PO sample print) and moving-average cost; then step 5
+(delivery notes with the surat jalan sample, adjustments, inventory value)
+and step 6 (M07), then the PR to main.
+
+## Completed — ADR-0011 port step 3d-1: sales orders (SPH → Deal), 2026-11-06
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner). Step 3d is split: 3d-1 sales orders (this), 3d-2
+invoices / DP / receipts with prints (next).
+
+Gate 1 (read): docs.dbml `sales.sales_orders`, `sales_order_items`,
+`order_status_history` and their refs; the old branch's owner-approved
+`sales-order.service.ts` / `billing.contract.ts`; role grants
+(`sales_order:*`); numbering type `sales_order` (`SO`). Skipped:
+`logical-references.md` beyond the generated tables (no new target module
+besides CRM/Inventory/Identity already documented in 3c).
+
+Gate 2 (manual grilling pass):
+- Ownership: Sales module, `SalesOrderService` / `SalesOrderController`
+  (`/sales/orders`). Company-wide like quotations (no `organization_id`).
+- Lifecycle (owner-approved 2026-11-04, mapped onto the DBML vocabulary):
+  an order is created only from an `approved` or `sent` SPH and is
+  `confirmed` (active) at once — no separate approval; creating it marks the
+  SPH `won` ("Deal") in the same transaction; `confirmed → cancelled` with a
+  reason reopens the SPH to `sent` (or `approved` if never sent).
+  `in_progress / delivered / completed` stay in the CHECK for steps 4–5.
+  One live order per SPH (partial unique index). Cancelling an order that
+  has live invoices is refused once invoices exist (3d-2 adds that guard
+  through the finance contract).
+- Columns: DBML names kept (`code`, `quotation_id`, `customer_id`, `status`,
+  `order_date`, `delivery_date`, money columns, `sales_person_user_id` =
+  the SPH owner, `cancelled_at`, `cancellation_reason`, `notes`); added for
+  the approved flow: `customer_snapshot`, `customer_po_number`, `title`,
+  `attention`, `payment_terms`, `payment_schedule`, `guarantee`,
+  `quotation_code`, `vat_enabled`, `vat_rate_bps`, `created_by`,
+  `cancelled_by`, `deleted_at`; dropped: `organization_id`,
+  `customer_address_id` (addresses not built), `shipping_total` (not in the
+  flow), `warehouse_id` (chosen on the delivery note, step 5),
+  `approved_by/at` (no order approval).
+- Items: copied from the SPH lines (`quotation_item_id` same-module FK,
+  `item_id` → `inventory.items` logical, sku/name/specification/unit
+  snapshot, numeric quantity, money); `quantity_delivered` and
+  `fulfillment_status` kept for delivery notes (step 5); `tax_amount` and
+  `unit_id` dropped (VAT per document, fixed units).
+- Visibility: holders of `sales_order:approve|export` or `invoice:read` see
+  all orders; others only orders of their own SPHs (`sales_person_user_id`).
+  Creating needs `sales_order:create` and a visible SPH; cancelling needs
+  `sales_order:cancel` (sales manager / owner).
+- Numbering: `NumberingService.next('sales_order')` on creation.
+- Web: `/sales/orders` list and detail; "Buat sales order" on an approved/sent
+  SPH; the SPH detail links its order. No print (no sample for orders).
+
+What landed:
+- docs.dbml first (three tables rewritten company-wide, refs to
+  `quotations` / `quotation_items` as `restrict`);
+  `gen-logical-references.ts` → 497 refs; `validate-dbml.ts` → OK.
+- Migration `20261105172403_sales_orders` (3 × `CREATE TABLE`, indexes incl.
+  the partial `sales_orders_live_quotation_uq`, FKs), read and applied to
+  `ims_erp_sync`; a second `drizzle:generate` → no changes.
+- Backend: `SalesOrderRepository` (create + SPH → `won`, cancel + SPH
+  reopened, each with both history rows in one transaction),
+  `SalesOrderService`, `SalesOrderController`, `errors/sales-order.errors.ts`
+  (`sales.order*` keys, en + id). Quotation detail returns its live
+  `salesOrder`; revising an SPH that has a live order is refused (409).
+- Web: `lib/sales-order-api.ts`, `components/sales/create-order-dialog.tsx`,
+  routes `/sales/orders` and `/sales/orders/$orderId`, nav "Sales order",
+  breadcrumb label; SPH page buttons "Buat sales order" / "Sales order <no>".
+
+Verification (2026-11-06):
+- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` → 600 pass
+  (`test/unit/sales-order.service.test.ts`, 7 tests).
+- Web `bun run build` OK, `bunx tsc -b` clean, `bun test` → 45 pass;
+  locales → 46 pass; lint: no warnings in new files.
+- Browser (temporary Playwright script, deleted): `sales.seed` creates an
+  SPH, `sales_manager.seed` approves; the salesperson creates the order from
+  the SPH page (`0001/SO/DEV/XI/26`, PO number kept, status Aktif, no cancel
+  button for sales); the SPH shows Deal with a link to the order; revising
+  it → 409, a second order → 409; the manager cancels with a reason; the
+  SPH is `approved` again with no order link; the list shows the order.
+- Test data left in the dev DB: SPH `0005/QT/DEV/XI/26` (approved) and its
+  cancelled order `0001/SO/DEV/XI/26`.
+
+## Completed — SPH print matches the company's sample; document images, 2026-11-06
+
+Status: **implemented** (module owner's request: "documentnya pakai yang ada di
+sample-private, contoh layoutnya harus dipersis"; not yet accepted by the
+owner on paper).
+
+Gate 1 (read): the private SPH and invoice samples
+(`.agents/samples-private/`, never committed); docs.dbml
+`organization.company_profiles` (`logo_object_key` existed, no upload),
+`inventory.items`, `sales.quotations` / `quotation_items`.
+
+Gate 2 (owner answers, AskUserQuestion 2026-11-06):
+- "Gambar" column: **one document photo per item** in the item master
+  (`inventory.items.image_object_key`), snapshotted onto the quotation line
+  (`sales.quotation_items.image_object_key`); custom lines have none. The
+  website catalog gallery stays in M04.
+- Coloured-bar title: **per-SPH field** `sales.quotations.heading`
+  (varchar 120, null prints "QUOTATION").
+- Signature: `organization.company_profiles.signature_object_key` (signature
+  with stamp above the signatory name), next to the existing logo key.
+- Images: PNG/JPG/WebP ≤ 2 MB, a fresh object key per upload so issued
+  documents keep their picture; inline presigned URLs (1 h).
+- No new cross-module link (the photo key is copied as a value, like the
+  other snapshot columns).
+
+What landed:
+- docs.dbml first (4 columns); `gen-logical-references.ts` → 502 refs;
+  `validate-dbml.ts` → OK. Migration `20261105170913_document_images`
+  (4 × `ADD COLUMN`, read and applied to `ims_erp_sync`); a second
+  `drizzle:generate` → no changes.
+- Backend: `providers/s3/document-image.ts` (validation, storage, URL);
+  `PUT|DELETE /company-profile/:kind` (`logo|signature`,
+  `company_setting:update`), profile view gains `logoUrl` / `signatureUrl`;
+  `ItemImageService` + `PUT|DELETE /items/:id/image` (`product:update`),
+  item detail gains `imageUrl`; quotation `heading`, line photo snapshot,
+  detail items carry `imageUrl`. Error `common.imageInvalid` (en + id).
+- Web: `components/documents/document-image-field.tsx`; logo/signature card
+  on `/admin/settings`; photo card on the item page; "Judul dokumen" in the
+  SPH form; `quotation-document.tsx` rewritten to the sample: logo + serif
+  name + tagline + double rule repeated on every page (table header),
+  amber heading bar, bold Kepada/Up/Telp/Hal and Date/Ref/Payment/Guaranty,
+  item table NO / DESCRIPTION / Gambar / PRICE / QTY (2) / SUBTOTAL with a
+  bold row per item and its specification + photo below, amounts as
+  "Rp 50,000,000", "Terbilang : … Rupiah." with Total in the last row (Sub
+  Total / Diskon / PPN rows only when they apply), Term of Condition and
+  "Hormat Kami," with the signature image. Sidebar and header are hidden
+  when printing.
+
+Verification (2026-11-06):
+- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` → 593
+  pass (company-profile image tests added; quotation photo snapshot test);
+  lint: 5 warnings, all pre-existing.
+- Web `bunx tsc -b` clean, `bun run build` OK, `bun test` → 45 pass;
+  locales `bun test` → 46 pass.
+- Browser (temporary Playwright script, deleted): logo and signature
+  uploaded on `/admin/settings`, photo on an item page; SPH printed to PDF
+  (A4) and compared with the sample: one-page and a 16-line three-page SPH —
+  letterhead repeats on each page, an item never splits from its
+  specification, VAT rows appear only with VAT. Test images removed from
+  the dev profile and items afterwards; test SPHs `0002`–`0004/QT/DEV/XI/26`
+  remain in the dev DB.
+
+Known differences from the sample, deliberate: the last row reads "Total"
+(the sample's "Total Jum" is a cut-off cell); a discount shows as its own
+"Diskon" row (the sample has none).
+
+## Completed — ADR-0011 port step 3c: quotations (SPH), 2026-11-05/06
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner). Sales orders, invoices and receipts are step 3d.
+
+Gate 1 (read): docs.dbml `sales.quotations`, `sales.quotation_items`,
+`sales.quotation_status_history`, legacy `sales.payments`;
+`implementation-phases.md` S3 (recreate, do not alter; empty
+`sales.payments` in the same migration; total = sum of items); main's
+scaffold sales module and `test/authorization/authorization.test.ts`
+(drives the scaffold through `/sales/quotations` and `/sales/payments`);
+the old branch's owner-approved SPH service, contract and domain helpers.
+`logical-references.md` read for the new sales → crm / inventory links.
+Skipped: `implementation-phases.md` steps other than S3 (nothing else is a
+prerequisite).
+
+Gate 2 (3c, manual grilling pass — `grilling` skill not installed):
+- Ownership: Sales module (`app/sales`), new `QuotationService` /
+  `QuotationController` (`/sales/quotations`). The scaffold quotation code is
+  replaced; the transitional payment endpoints (`/sales/payments`, approve /
+  execute separation of duties) stay until S7, now validating the quotation
+  through the new repository.
+- Tenant scope: none — quotations, items and status history are company-wide
+  like customers (ADR-0011 §2, ADR-0012). `sales.payments` keeps its
+  `organization_id` (transitional, "do not extend").
+- Statuses (owner-approved, replace DBML `expired` / `cancelled`): `draft →
+  submitted → approved | rejected`, `approved → sent`; any open status →
+  `lost` ("Batal", reason `price | competitor | project_cancelled |
+  no_response | other`, `other` needs a note); `won` ("Deal") is reached
+  only by creating its sales order (step 3d); revising a non-draft SPH marks
+  it `superseded` and creates draft revision `<base>-R<n>`. Expiry is shown
+  (end of the `valid_until` Jakarta day), never a status.
+- Separation of duties: the creator can never approve or reject their own
+  SPH; no amount limit (owner decision 2026-10-31) — main's scaffold
+  "approval limit configuration missing" denial is removed and its test
+  rewritten.
+- Visibility: holders of `quotation:approve` or `quotation:export` see all;
+  billing staff (`invoice:read`) also see `won` SPHs and their revisions;
+  everyone else only SPHs they created; anything else answers 404. Resolved
+  with the dynamic permission resolver.
+- Columns: DBML names kept where equivalent (`subtotal`, `discount_total`,
+  `tax_total`, `grand_total`, `approved_by/at`, `submitted_at`, `sent_at`,
+  `rejected_reason`, `customer_contact_id`, `quotation_date` /
+  `valid_until` as `date`). Added for the approved flow: `base_code`,
+  `revision`, `previous_revision_id`, `attention`, `payment_terms`,
+  `payment_schedule` (jsonb, shares in bps summing to 10000), `guarantee`,
+  `terms`, `customer_snapshot` (jsonb), `lead_id`, `vat_enabled`,
+  `vat_rate_bps` (VAT per document, default 1100), `sent_by`, `closed_by`,
+  `closed_at`, `lost_reason`, `lost_note`. Dropped: `price_list_id` (no
+  catalog module, ADR-0011), `organization_id`.
+- Items: `item_id` → `inventory.items.id` (logical reference, validated
+  through the new `ItemService.getActiveItems`); snapshot `sku`, `name`,
+  `specification`, `unit` (fixed unit list); `quantity numeric(18,3)`;
+  money bigint minor units; `line_total = round(quantity × unit_price) −
+  discount_amount`, recomputed by the service; per-line `tax_amount` and
+  `unit_id` dropped (VAT is per document, units are a fixed list). Custom
+  lines (no item) carry their own name, unit and price.
+- Logical references: `customer_id`, `customer_contact_id` → CRM
+  (`CustomerService.getActiveCustomer` / contact check); `lead_id` → CRM
+  (`LeadService.noteQuotation`: moves `new/contacted/survey` to
+  `quotation`); `item_id` → Inventory; user ids → Identity.
+- Numbering: `NumberingService.next('quotation')` at creation (gaps
+  accepted); revision codes append `-R<n>`. Code unique among live rows.
+- Status history: every transition appends a `quotation_status_history` row
+  in the same transaction (repository-owned).
+- Money/datetime: bigint IDR minor units; `quotation_date` / `valid_until`
+  are Jakarta business dates (`date`, `YYYY-MM-DD` strings); operational
+  timestamps unix ms.
+- Migration: one migration drops the scaffold `sales.quotations` (dev rows
+  are scaffold test data, no customer/items — discarded, as S3 allows),
+  creates the three tables and empties `sales.payments`.
+- Web: `/sales/quotes` list, new/edit form, detail with actions, print view
+  with the company profile; `sales` locale namespace (en + id).
+
+What landed:
+- `docs.dbml` first: `sales.quotations` / `quotation_items` /
+  `quotation_status_history` rewritten to the shape above, company-wide;
+  self-FK `previous_revision_id`. `bun docs/database/gen-logical-references.ts`
+  → 502 refs; `bun docs/database/validate-dbml.ts` → `OK` (257 tables,
+  0 cross-module refs, 0 timestamp gaps).
+- Migration `20261105164421_sales_quotations_target`: generated with
+  all-`create` hints, then hand-edited to the S3 procedure (`DELETE FROM
+  sales.payments`; `DROP TABLE sales.quotations`; `CREATE TABLE` target; two
+  child tables, indexes, checks). Scaffold tables were empty on
+  `ims_erp_sync` (0 quotations, 0 payments) before applying.
+  `bun run drizzle:migrate` applied; a second `drizzle:generate` → "No schema
+  changes". `drizzle:seed` run twice: both complete, unchanged.
+- `@ims-erp/common`: `domain/money.ts` (`bpsShare`, `quantityToMilli`,
+  `quantityTimesPrice`, BigInt half-up) and `domain/business-date.ts`
+  (`endOfBusinessDate`, `businessDateOf`), ported from the old branch.
+- Backend `app/sales`: `QuotationService` / `QuotationController`
+  (`/sales/quotations`: list, get, create, patch, submit, decision,
+  revisions, send, lost), repository-owned transactions with history rows,
+  `errors/quotation.errors.ts` (locale keys `sales.*`, en + id), `utils/`
+  (totals, validity, schedule). The scaffold `SalesService` /
+  `SalesController` keep only the transitional payments (`/sales/payments`).
+  Main's "approval limit configuration missing" denial is gone (owner
+  decision: no amount limit).
+- Contract methods for review: `ItemService.getActiveItems` (inventory),
+  `CustomerService.getContact` and `LeadService.noteQuotation` (CRM).
+- Programmer A's `test/authorization/*`: harness now builds the real
+  quotation controller/service over in-memory fakes; bodies use
+  `quotationBody()`; "scoped to org A" became "company-wide, no organization
+  column"; the owner-approves test now expects 200; the self-approval test
+  asserts the key `sales.selfApproval`.
+- Web: `lib/quotation-api.ts`, `components/sales/quotation-form.tsx` and
+  `quotation-document.tsx` (print labels from the `id` bundle via
+  `getFixedT`, the company's format), routes `/sales/quotes`, `/new`,
+  `/$quotationId`, `/edit`, `/print`; lead detail gets "Buat penawaran" for
+  converted leads; `formatIdr` moved to `lib/format.ts`; `lib/terbilang.ts`;
+  breadcrumb labels for sales routes.
+
+Verification (2026-11-06):
+- `apps/backend`: `bunx tsc --noEmit -p .` clean; `bun run lint` no new
+  warnings; `NODE_ENV=test bun test` → 590 pass, 0 fail (incl.
+  `test/unit/quotation.service.test.ts`, 17 tests).
+- `apps/web-admin`: `bun run build` OK; `bunx tsc -b` clean; `bun test` →
+  45 pass (incl. `test/unit/quotation-helpers.test.ts`); lint no new
+  warnings.
+- `packages/locales`: `bun test` → 46 pass (parity + dead keys).
+- Browser (Playwright, temporary script, deleted): owner creates an SPH from
+  an inventory item + a custom line (1.5 paket) with DP 30% / Terpasang 70%;
+  printed payment line derived; submit; creator sees no approve button and
+  the hint; `sales_manager.seed` approves; owner marks sent; history
+  Draf → Menunggu persetujuan → Disetujui → Terkirim; print view with
+  letterhead, PPN 11%, terbilang; another salesperson gets 404.
+- Live API on `ims_erp_sync`: revise sent → `-R1` draft with both lines,
+  original `superseded`; revising the superseded one 422; editing it 422;
+  reject without reason 400, with reason 200; lost `other` without note 400,
+  `price` 200; revise lost → `-R2`; list shows only `-R2`.
+- Test data left in the dev DB: customer `SPH-SKL8P` and SPH
+  `0001/QT/DEV/XI/26` (+R1, R2, all closed).
+
+Open (3c): breadcrumb shows the raw id on detail pages (same as customers
+and leads); real-PG integration tests and e2e; a sales-order link and the
+`won` transition arrive with 3d.
+
+Next executable task: ADR-0011 step 3d — prints follow the private samples
+(invoice sample read 2026-11-06) — sales orders (`sales.sales_orders`,
+`sales_order_items`, `order_status_history`; SPH → `won` by creating its
+order, cancelling reopens), then invoices / DP / receipts in the finance
+module per docs.dbml, with prints. Gate 1 starts at docs.dbml `sales.sales_*`
+and `finance.invoices` / `receipts`.
+
+## Completed — one company, one organization (ADR-0012), 2026-11-05
+
+Status: **implemented** (module owner's decision; programmer A to acknowledge
+in the merge PR).
+
+- Owner: "dibikin 1 organisasi aja", seed it, hide the add button once it
+  exists. ADR-0012 written (amends ADR-0007 §1 and ADR-0010).
+- Backend: `OrganizationService.createOrganization` / `restoreOrganization`
+  → 409 `organization.singleCompany` (en/id) when a live organization
+  exists. `test/unit/single-organization.test.ts` (3 tests).
+- Seeders: `organization.seeder.ts` runs in every environment and skips when
+  any live organization exists; `organization-members.seeder.ts` (role
+  accounts with `<role>123456` passwords) and `inventory.seeder.ts` (faker
+  sample data) are now explicitly dev-only. Verified on a disposable
+  `ims_erp_prodcheck` with `NODE_ENV=production`: 1 organization, 1 user
+  (initial admin), 0 items, 9 website categories, no role accounts; the
+  database was dropped afterwards. Dev seed run twice: unchanged.
+- Web admin: "new organization" hidden on `/organizations` and in the sidebar
+  switcher when a live organization exists.
+- Also tidied the misplaced doc comment from step 3b in
+  `organization.service.ts` (`getMemberRole` / `listMembers`).
+- docs/database reviewed: no structural change.
+
+## Completed — ADR-0011 port step 3b: leads, follow-ups, website API, 2026-11-05
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner).
+
+Gate 1 (read): docs.dbml `crm.leads`, `crm.lead_activities`, `auth.apikeys`;
+main's `@better-auth/api-key` plugin (default config only), `providers/s3`
+(`s3Client`, `presignObjectUrl`), the organization and user services, and the
+dynamic permission resolver (`PERMISSION_RESOLVER_TOKEN`, roles from
+`auth.roles`).
+
+Gate 2 (3b):
+- Ownership: CRM module (`app/crm`); the website endpoints are a separate
+  public controller in the same module (`/public/v1/rfq|contact|demo`).
+- Tenant scope: none — leads, activities and attachments are company-wide
+  (ADR-0011 §2). The website key still belongs to an organization (Better
+  Auth `references: 'organization'`), which only authenticates the website.
+- `crm.leads`: docs.dbml shape adapted to the owner-approved M02 rules —
+  statuses `new, contacted, survey, quotation, won, lost`; sources
+  `website, whatsapp, instagram, phone, referral, walk_in, other`;
+  `owner_user_id` = assigned salesperson; `customer_id` = converted
+  customer (same-module FK, `restrict`); website columns `channel`,
+  `reference`, `submission` (jsonb), `idempotency_key` (partial unique
+  indexes `WHERE NOT NULL`); `needs`, `next_follow_up_at`; DBML `code`,
+  `source_detail`, `expected_close_date` dropped (unused by the approved
+  flow).
+- `crm.lead_activities`: types `call, whatsapp, email, meeting, survey,
+  note`; `occurred_at`, `created_by`; DBML `subject` / `next_action_*` /
+  `assigned_to_user_id` dropped (the next follow-up lives on the lead).
+- New `crm.lead_attachments` (RFQ files: PDF/DWG/JPG/PNG, ≤10 × 25 MB;
+  storage key never leaves the server; downloads by 5-minute presigned URL).
+- Visibility: holders of `lead:assign` (resolved with the dynamic
+  permission resolver, not the static catalog) see all leads and may
+  assign; everyone else only leads assigned to them; others answer 404.
+  The assignee must be a member of the caller's organization holding
+  `lead:read` (new organization-service method `getMemberRole`, read-only,
+  for programmer A's review). Names of assignees/authors come from the user
+  service (they may sit in another department).
+- Conversion: links an active customer or creates one through
+  `CustomerService` (3a contract); the lead becomes `won` atomically
+  (409 on a race).
+- Website: `ewk_` keys (config `website`, 600 requests/minute) in the
+  Better Auth api-key plugin; `publicApiGuard` (Bearer key); numbering
+  `web_rfq|web_contact|web_demo` (step 1); `Idempotency-Key` replays return
+  the first reference; `scripts/create-website-api-key.ts`.
+- Money: `estimated_value` bigint minor units. Datetimes bigint ms.
+- Also fixed in this step: step 1's `canSeeBanks` used the static grant
+  catalog; it moves to the dynamic resolver like every new check.
+
+Implementation:
+- `docs.dbml` first (crm.leads / lead_activities as above, new
+  crm.lead_attachments, Refs `restrict`); generator 504 refs; validator OK.
+- `crm.schema.ts` leads, lead_activities, lead_attachments; migration
+  `20261105152712_massive_secret_warriors` (3 tables + FKs, additive),
+  applied to `ims_erp_sync`.
+- Backend `src/app/crm`: `LeadService` (visibility, assignment through
+  `OrganizationService.getMemberRole` + `PERMISSION_RESOLVER_TOKEN`, names
+  through `UserService.getUser`, conversion through `CustomerService`,
+  5-minute presigned attachment URLs), `WebsiteInquiryService` (ported
+  rules; `submitRfq` is async so size/type errors reject instead of
+  throwing synchronously), `LeadController` (`/leads`, `/:id`,
+  `/:id/attachments/:attachmentId/url`, `/:id/status|assign|activities|
+  convert`, archive), `PublicWebsiteController` (`/public/v1/rfq|contact|
+  demo`, JSON or multipart). `src/authorization/public-api-auth.ts`
+  (`publicApi` macro, `AppError` keys `publicApi.*`), website api-key
+  config (`website`, `ewk_`, 600/min), `providers/s3/object-storage.ts`
+  (`OBJECT_STORAGE_TOKEN`, registered in `di/provider.ts`),
+  `drizzle/search.ts` `likePattern` (shared with customers),
+  `scripts/create-website-api-key.ts`. Organization module: read-only
+  `findMemberRole` / `getMemberRole` (for programmer A's review).
+- Web admin: `/crm/leads` list (search incl. reference, status, source,
+  assigned filter for managers, follow-up due, pagination, create) replaces
+  the stub; `/crm/leads/$leadId` (details, website attachments download,
+  pipeline status with lost reason, assignee select for managers,
+  follow-up log, edit, convert to new/existing customer, archive);
+  `lib/lead-api.ts`; date helpers in `lib/format.ts`; `crm` locale keys.
+- Checks: `bun run test` — backend 570 (9 new: lead + website inquiry),
+  web-admin 41, locales 42; backend and web `tsc` clean; lint 0. Live
+  public API (dev key created with the script, kept out of logs): no key /
+  bad key → 401 (Indonesian), contact 201 `MSG-2026-00001`, same
+  Idempotency-Key replay 200 with the same reference, invalid payload 400,
+  RFQ multipart with a PDF 201 `RFQ-2026-00001` (file stored in MinIO).
+  Browser (Playwright, Chromium 1161, id-ID, owner): website RFQ listed
+  unassigned, attachment downloaded through a signed URL, manual lead with
+  value/follow-up/status, conversion to a new customer; no console errors.
+  Download changed from `window.open` to a link click (no popup blocker).
+  Test rows archived afterwards.
+- Behaviour change to tell the website team: invalid public payloads now
+  answer **400** with main's validation envelope (the M02 branch answered
+  422 with a per-field list).
+
+## Completed — ADR-0011 port step 3a: customers and contacts, 2026-11-05
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner).
+
+Step 3 (M02) is split: 3a customers/contacts, 3b leads + website API,
+3c quotations (SPH), 3d sales orders + invoices + receipts + prints. Module
+owner's answers 2026-11-05: invoices and receipts go to the **finance**
+module as in docs.dbml (not sales); lead and SPH statuses stay the ones the
+owner approved on the M02 branch (SPH deal/lost/revisions, expiry is not a
+status) and docs.dbml is updated to match.
+
+Gate 1 (read): docs.dbml CRM (`crm.customers`, `customer_contacts`,
+`customer_addresses`, `leads`, `lead_activities`), Sales (`quotations`,
+`quotation_items`, `sales_orders`, `delivery_notes`) and Finance
+(`invoices`, `receipts`, `payments`) modules; Location (`villages`) for the
+address reference. `implementation-phases.md` read for the sales scaffold
+note: the scaffold `sales.quotations` / `sales.payments` from
+`dear_living_lightning` are replaced, not altered.
+
+Gate 2 (3a):
+- Ownership: CRM module (`app/crm`, schema `crm`).
+- Tenant scope: none — company-wide (ADR-0011 §2); docs.dbml notes the
+  exception.
+- `crm.customers`: docs.dbml shape minus `organization_id` and
+  `customer_group_id` (customer groups are out of scope; Ref removed), plus
+  the primary address (`address_line`, `village_id`, `postal_code`) and
+  `created_by`. Status `active | inactive` (M02 rule: inactive customers
+  cannot be used on new documents); types as docs.dbml
+  (`individual | company | government | partner`). Code upper-case,
+  unique among live rows (partial index), race handled as 409.
+- `crm.customer_contacts`: docs.dbml shape minus `organization_id`; one
+  primary per customer kept by the repository; FK `RESTRICT` (soft deletes
+  only).
+- Cross-module refs: `village_id` validated through `LocationService.
+  getVillage`; `owner_user_id`, `created_by` from the session;
+  `portal_identity_id` stays null until the portal (M02 stage 2).
+- Soft delete on both; datetimes bigint ms; no money columns.
+- Permissions: existing `customer:read|create|update|archive`.
+- Exported contract for later steps: `CustomerService.getActiveCustomer`.
+
+Implementation:
+- `docs.dbml` first (crm.customers / customer_contacts as above; Ref to
+  customer_groups removed; contacts FK `restrict`); generator 506 refs;
+  validator OK.
+- `drizzle/schemas/crm.schema.ts`, migration `20261105150641_cold_sprite`
+  (inspected, additive), applied to `ims_erp_sync`; relations registered in
+  `drizzle/db.ts`. `drizzle/errors.ts` `isUniqueViolation` (from the M02
+  branch).
+- Backend `src/app/crm`: errors (`crm.customerNotFound`,
+  `customerCodeTaken`, `customerAlreadyActive|Inactive`, `villageNotFound`,
+  `contactNotFound`, en/id), contract (zod, strict), repositories (search
+  escapes `%`/`_`; one primary contact per customer in a transaction),
+  `CustomerService`, `CustomerController` (`/customers`, `/:id`,
+  `/:id/activate|deactivate`, `/:id/contacts[/:contactId]`); registered in
+  `src/index.ts`, mounted in `app/app.ts`.
+- Web admin: `lib/customer-api.ts`; `/crm/customers` list (search, status
+  filter, pagination, create) replaces the coming-soon stub;
+  `/crm/customers/$customerId` detail (edit, activate/deactivate, contacts
+  add/edit/remove with primary badge); dialogs reuse `LocationCascade`;
+  new `crm` locale namespace (en/id).
+- Checks: `bun run test` — backend 561 (5 new), web-admin 41, locales 42;
+  backend and web `tsc` clean; lint 0; seed run twice OK. Live HTTP with
+  `Accept-Language: id`: 404/409 messages in Indonesian. Browser
+  (Playwright, Chromium 1161, id-ID, owner): create (code upper-cased, NPWP
+  digits only), duplicate code refused with the Indonesian 409 message,
+  primary contact, deactivate. Fixed during the check: the code input's
+  `pattern` was invalid under the browser's `v` regex flag (now escapes
+  `/` and `-`). Test rows archived afterwards in `ims_erp_sync`.
+- Dev note: the dev backend does not watch `packages/locales`; after a
+  locale change, stop the processes on 3000/5173 and restart (a plain
+  restart once kept serving old bundles).
+
+## Completed — ADR-0011 port step 2: item extensions, 2026-11-05
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A
+or accepted by the owner).
+
+Gate 1 (read): `docs.dbml` Inventory (`inventory.items`) and Catalog
+(`catalog.item_categories`, `catalog.units`, `catalog.items` — superseded /
+unadopted) modules, Commerce (`commerce.catalog_publications`,
+`catalog_publication_items` — the website catalog's home). Skipped
+`implementation-phases.md` (no dependency on an unlanded phase step).
+
+Gate 2 (design pass; three answers from the module owner 2026-11-05):
+- Website catalog fields and item photos: **deferred to M04** (Commerce
+  module per docs.dbml) — owner's choice.
+- Active flag: **yes** — `inventory.items.is_active` (boolean, default
+  true). Not a `status` column: docs.dbml says status exists only on
+  serialized units (ADR-0008). Inactive items stay listed (filter) but are
+  not offered for new documents; archiving (`deleted_at`) is unchanged.
+- Categories: **flat** (one level) — owner's choice.
+- Ownership: inventory core belongs to programmer A; these extensions are
+  programmer B's under A's review (ADR-0011 §13).
+- New table `inventory.item_categories`: company-wide, no `organization_id`
+  (ADR-0011 §2); `slug` (unique among live rows), `name`, `short_name`,
+  `sort_order`, `description`, `is_active`, timestamps, `deleted_at`.
+  `inventory.items.category_id` → same-module FK (`ON DELETE RESTRICT`);
+  archiving a category with live items is refused (409). Replaces the
+  free-text `category` column (dropped; no production data) and makes
+  `catalog.item_categories` superseded.
+- Units: fixed list in code + CHECK on `inventory.items.unit_label`
+  (`pcs, unit, set, paket, titik, m, roll, kg, jam, bulan, tahun, lic, lot,
+  pulau` — the M02 list plus the units programmer A's seeder uses),
+  `NOT NULL DEFAULT 'pcs'`; `catalog.units` superseded.
+- New columns: `brand varchar(100)`, `specification text` (printed on
+  SPHs), `created_by text` (logical ref to auth.users, from the session).
+- Money/datetimes: unchanged (prices stay bigint minor units).
+- Permissions: categories read with `product:read`; create/update/archive
+  with `product:create` / `product:update` / `product:archive`.
+- Copy: `inventory` locale namespace (en/id).
+
+Implementation:
+- `docs.dbml` first: `inventory.items` (category_id, brand, specification,
+  unit_label NOT NULL + CHECK, is_active, created_by), new
+  `inventory.item_categories`, `catalog.item_categories` / `catalog.units`
+  marked superseded; `validate-dbml.ts` allows the `item_categories` bare
+  name twice (same precedent as `items`). `gen-logical-references.ts` →
+  506 refs; `validate-dbml.ts` → OK (256 tables, 0 cross-module refs,
+  0 timestamp gaps).
+- Migration `20261105142244_polite_betty_brant` (generated with explicit
+  `--hints` that the five columns are new, not renames of `category`),
+  inspected, plus a hand-added backfill so empty/free-text units become
+  `pcs` before `SET NOT NULL` and the CHECK; applied to `ims_erp_sync`
+  (4 empty units backfilled).
+- Backend `src/app/inventory`: `ItemCategoryRepository` / `Service` /
+  `Controller` (`GET|POST /item-categories`, `PATCH|DELETE
+  /item-categories/:id`); errors `inventory.categoryNotFound`,
+  `categorySlugTaken`, `categoryHasItems` (409 with count),
+  `categoryUnavailable` (422, en/id); `ItemService` checks the category
+  (a new choice must be active; an item may keep its now-inactive one);
+  item list filters `categoryId`, `activeOnly`, search also matches brand;
+  `createdBy` from the session.
+- Seeders: `item-category.seeder.ts` (the website's 9 categories in every
+  environment, `tools` / `cabling` dev-only, idempotent by slug);
+  `inventory.seeder.ts` picks category slugs and fixed units (services
+  `paket`).
+- Web admin: item form (category select incl. the item's own inactive
+  one, fixed unit select, brand, specification, active checkbox), item
+  list (category name + "Nonaktif" badge), item detail (category, brand,
+  active, specification); new `/inventory/categories` page (list, create /
+  edit dialog with fixed slug, archive confirm); sidebar "Barang → Kategori
+  barang"; `lib/item-category-api.ts`. The unit-of-measure type is
+  `TItemUnitLabel` / `ITEM_UNIT_LABELS` (`TItemUnit` already names a
+  serialized unit).
+- Checks: `bun run test` — backend 556 (5 new), web-admin 41, locales 38;
+  web `tsc -p tsconfig.app.json` and backend `tsc` clean;
+  `drizzle:migrate-reset` + `drizzle:seed` again → 11 categories, items
+  linked, second run inserted 0 (idempotent). Browser (Playwright,
+  Chromium 1161, id-ID, owner): category created; material item created
+  with category, unit `m`, brand, two-line specification, inactive; list
+  shows category + "Nonaktif"; detail shows all fields; archiving a used
+  category refused with the Indonesian 409 message. Test rows archived
+  afterwards in `ims_erp_sync`. Pre-existing console warning (not from this
+  change): Base UI `nativeButton` on link-buttons in the item detail page
+  and item list.
+- Deferred (owner's choice): website catalog fields and item photos → M04
+  (Commerce module per docs.dbml).
+
+## Completed — ADR-0011 port step 1: numbering, company profile, role grants, 2026-11-05
+
+Status: **implemented** (backend + web admin; not yet reviewed by programmer A or
+accepted by the owner).
+
+- `packages/common` role catalog: statements `product:read_cost`,
+  `supplier:read_bank`, `project:read_cost`; grants for project manager
+  (projects, tickets, customer read), technician (tickets), purchasing
+  (item master + purchase price, adjustments prepare), finance (deal SPHs
+  and sales orders read, project costs, purchase price, supplier bank),
+  operations manager (approve/post adjustments). Finance does NOT get
+  `stock_adjustment:read` (kept as programmer A's inventory tests expect;
+  revisit at port step 5). Dev roles refreshed with
+  `scripts/refresh-role-grants.ts`.
+- Schema `organization` (`drizzle/schemas/organization.schema.ts`, migration
+  `20261105131135_demonic_the_fallen`, inspected, applied to the disposable
+  `ims_erp_sync`): `company_profiles` (singleton), `company_bank_accounts`
+  (invoice usage vat/non_vat), `document_sequences` (one series per
+  document type, atomic allocation). Company-wide, no `organization_id`
+  (ADR-0011 §2). `docs.dbml` updated; `bun docs/database/validate-dbml.ts`
+  OK (255 tables, 0 cross-module refs, 0 timestamp gaps);
+  `logical-references.md` regenerated. Both scripts now resolve paths next
+  to themselves (they pointed at `B:/ims/erp/...`).
+- Backend (`src/app/organization`): `NumberingService` (`next(type, {date,
+  context, tx})`, settings list/preview/update), `CompanyProfileService`
+  (profile + invoice bank accounts in one transaction), routes
+  `GET|PUT /company-profile`, `GET /document-numbering`,
+  `POST /document-numbering/:type/preview`, `PUT /document-numbering/:type`.
+  Errors are `AppError` keys (`organization.companyProfileRequired`,
+  `numbering.*`) in en/id; `{COMPANY}` comes from the profile's
+  `document_code`. Dev seeder `company-profile.seeder.ts` (idempotent,
+  skipped in production).
+- Checks: `bun run test` — backend 549 pass (16 new), web-admin 41,
+  locales 34; `bun run lint` 0; `bun run build` 0; backend `tsc` clean;
+  seed run twice after `drizzle:migrate-reset` (idempotent). Live HTTP on
+  the dev server: profile required → 422 (id/en messages), save profile
+  200, numbering list 200 (`0001/QT/IMS/XI/26`), bad pattern 422 with the
+  translated token message, PO pattern preview. 50 concurrent `allocate`
+  calls against PostgreSQL returned 50 unique numbers; a new period
+  restarted at 1.
+- Bank accounts: `PUT /company-profile` ignores `bankAccounts` when omitted
+  or when the caller lacks `invoice:read` / `company_setting:read`, and the
+  response hides them from such callers (no blanking or overwriting what
+  they cannot see).
+- Web admin: `/admin/settings` (company profile form, replaces the
+  "coming soon" stub) and `/admin/settings/numbering` (series table + edit
+  dialog with a server-rendered live preview); sidebar "Settings" now has
+  both sub-items; breadcrumbs labelled. Copy in the new `settings` locale
+  namespace (en/id); API client `lib/company-settings-api.ts` sends
+  `Accept-Language`. Locale tests: dynamic prefixes for
+  `settings:numbering.type.` / `.reset.` / `numbering.pattern.`; five
+  business terms allowed identical in id (Email, Bank, Sales order,
+  Invoice, Purchase order).
+- Browser check (Playwright script against the dev server, Chromium 1161,
+  locale id-ID, owner): half-filled bank account refused; profile saved
+  (document code upper-cased to IMS); numbering table in Indonesian with
+  `0001/QT/IMS/XI/26`; invalid pattern shows "Token {FOO} tidak dikenal";
+  preview `SPH/IMS/2026/001`; saved. The test pattern was reset to the
+  default afterwards in `ims_erp_sync`.
+- Final checks: `bun run test` — backend 551, web-admin 41, locales 38;
+  `bun run lint` 0; `bun run build` 0; web `tsc -p tsconfig.app.json`
+  clean.
+- Local note: the agent's shell has `NODE_ENV=production`; seeders and
+  scripts were run with `NODE_ENV=development`. Logo upload for the
+  letterhead (`logo_object_key`) is not wired yet; it comes with the
+  printed documents in step 3.
+- Rules follow-up (same day, after re-reading main's AGENTS.md):
+  `CompanyProfileService` no longer injects `DRIZZLE_TOKEN` — the profile
+  and its invoice accounts are saved in one transaction inside
+  `CompanyProfileRepository.save`; `id/settings.ts` typed as
+  `Record<keyof typeof en, string>`; `backlog.md` (ERP-0008 in-progress,
+  ERP-0009 implemented, new ERP-0036) and `features.md` updated.
+- Gate 2 design pass for step 1, recorded after the fact (it should have
+  come before coding; the decisions themselves were made in ADR-0011):
+  ownership — `organization` module per docs.dbml; tenant scope — none,
+  company-wide (ADR-0011 §2); soft delete — `deleted_at` on all three tables
+  with partial unique indexes; money — none; datetimes — bigint ms;
+  cross-module refs — `address_village_id` (location, not accepted by the
+  API yet, so no contract call needed) and `updated_by` (auth.users, written
+  from the session only); status vocabularies — `status` active/inactive,
+  `reset_policy`, `invoice_usage`, all CHECK-guarded. `docs/database/`
+  updated and validated (see above).
+- Next: see step 2 above, then port step 3 (M02).
+
+## In progress — merge plan for M02/M05/M07 onto main (ADR-0011), 2026-11-05
+
+Status: **in-progress** (ADR-0011 accepted 2026-11-05 after discussion with
+programmer A and the owner, as reported by programmer B's module owner).
+Porting starts on `merge/main-sync`.
+
+- Trial merge of `feat/m05-inventory-purchasing` into main (dry run,
+  `git merge-tree`): 49 conflicting files; both branches define
+  `inventory.warehouses` / `stock_*` with different columns, two item
+  masters, two serial tables, two migration chains.
+- Decisions agreed with programmer B's module owner, recorded in
+  `docs/architecture/decisions/ADR-0011-merge-sales-inventory-onto-main.md`:
+  main is the base; one company (no tenant column on business data); one
+  item master `inventory.items` (extended); one serial model; one ledger
+  with moving-average cost; many warehouses (accept ADR-0010); borrowing in
+  M06; dynamic roles; uuid IDs; migrations rebuilt on main's chain; module
+  and docs names follow main; ownership per table.
+- Next: programmer A reviews ADR-0011; the owner signs the change-control
+  items (many warehouses + transfers, computed average HPP); then the port
+  starts on `merge/main-sync` in the order the ADR lists.
+
+## Completed (this session — dummy dashboard view, 2026-11-06)
 ## 2026-11-08 - docs consistency: invoices owned by Sales, ADR-0012
 
 Status: **docs-only, not code.** Branch `fix/docs-consistency` from `main`.

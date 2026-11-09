@@ -51,6 +51,8 @@ export type TAdjustmentLineInput = {
 	 * `quantityAfter - quantityBefore`.
 	 */
 	quantityAfter: string;
+	/** Cost of an increase (opening stock); null = the moving average. */
+	unitCost?: number | null;
 	note?: string | null;
 };
 

@@ -8,6 +8,12 @@ import inventory_ from './inventory';
 import nav_ from './nav';
 import account_ from './account';
 import api_ from './api';
+import settings_ from './settings';
+import crm_ from './crm';
+import sales_ from './sales';
+import procurement_ from './procurement';
+import projects_ from './projects';
+import licensing_ from './licensing';
 import tax_ from './tax';
 
 /** Indonesian resources — same namespace/key shape as `en`. */
@@ -22,5 +28,11 @@ export const id = {
 	finance: finance_,
 	dashboard: dashboard_,
 	api: api_,
+	settings: settings_,
+	crm: crm_,
+	sales: sales_,
+	procurement: procurement_,
+	projects: projects_,
+	licensing: licensing_,
 	tax: tax_,
 } as const;

@@ -14,6 +14,7 @@ import { ADJUSTMENT_SERVICE_TOKEN, STOCK_SERVICE_TOKEN } from '../constants/di';
 import type {
 	AdjustmentService,
 	TAdjustmentActor,
+	TAdjustmentDetail,
 } from '../services/adjustment.service';
 import type { StockService } from '../services/stock.service';
 
@@ -70,6 +71,24 @@ export class AdjustmentController {
 			),
 		});
 
+		/** Line costs (opening stock) are for `product:read_cost` holders only. */
+		const canSeeCost = (erp: ErpContext) =>
+			resolver.hasPermission(
+				erp.organizationId,
+				erp.member.role.split(',').map((role) => role.trim()),
+				{ product: ['read_cost'] },
+			);
+		const present = async (erp: ErpContext, detail: TAdjustmentDetail) =>
+			(await canSeeCost(erp))
+				? detail
+				: { ...detail, lines: detail.lines.map((line) => ({ ...line, unitCost: null })) };
+		const withoutCostInput = async <T extends { lines: { unitCost?: number | null }[] }>(
+			erp: ErpContext,
+			body: T,
+		): Promise<T> =>
+			(await canSeeCost(erp))
+				? body
+				: { ...body, lines: body.lines.map((line) => ({ ...line, unitCost: null })) };
 		/** Full audit actor from the session + request headers. */
 		const auditActor = (erp: ErpContext, request: Request) => ({
 			userId: erp.session.user.id,
@@ -102,9 +121,12 @@ export class AdjustmentController {
 				'/:id',
 				async ({ params, erp }) =>
 					ok(
-						await adjustmentService.findDetail(
-							idParamSchema.parse(params).id,
-							erp.organizationId,
+						await present(
+							erp,
+							await adjustmentService.findDetail(
+								idParamSchema.parse(params).id,
+								erp.organizationId,
+							),
 						),
 					),
 				{
@@ -115,7 +137,7 @@ export class AdjustmentController {
 			.post(
 				'',
 				async ({ body, erp, status }) => {
-					const parsed = createAdjustmentSchema.parse(body);
+					const parsed = await withoutCostInput(erp, createAdjustmentSchema.parse(body));
 					// ERP-0031: the target warehouse must be linked to the caller's
 					// organization. A global admin bypasses; unlinked is a 404 so
 					// warehouse ids cannot be probed.
@@ -130,7 +152,7 @@ export class AdjustmentController {
 						parsed,
 						await actorFor(erp),
 					);
-					return status(201, created(detail));
+					return status(201, created(await present(erp, detail)));
 				},
 				{
 					erp: { permission: ['stock_adjustment:create'] },
@@ -141,10 +163,13 @@ export class AdjustmentController {
 				'/:id/lines',
 				async ({ params, body, erp }) =>
 					ok(
-						await adjustmentService.setLines(
-							idParamSchema.parse(params).id,
-							erp.organizationId,
-							setAdjustmentLinesSchema.parse(body).lines,
+						await present(
+							erp,
+							await adjustmentService.setLines(
+								idParamSchema.parse(params).id,
+								erp.organizationId,
+								(await withoutCostInput(erp, setAdjustmentLinesSchema.parse(body))).lines,
+							),
 						),
 					),
 				{
@@ -223,10 +248,13 @@ export class AdjustmentController {
 				'/:id/post',
 				async ({ params, erp }) =>
 					ok(
-						await adjustmentService.post(
-							idParamSchema.parse(params).id,
-							erp.organizationId,
-							await actorFor(erp),
+						await present(
+							erp,
+							await adjustmentService.post(
+								idParamSchema.parse(params).id,
+								erp.organizationId,
+								await actorFor(erp),
+							),
 						),
 					),
 				{

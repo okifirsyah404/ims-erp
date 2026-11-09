@@ -29,9 +29,10 @@ import {
 	LastOwnerError,
 	MemberNotFoundError,
 	OrganizationAlreadyDeletedError,
-	OrganizationNotFoundError,
 	OrganizationNotDeletedError,
+	OrganizationNotFoundError,
 	OrganizationSlugTakenError,
+	SingleOrganizationError,
 } from '../errors/organization.errors';
 
 /**
@@ -75,6 +76,8 @@ export class OrganizationService {
 		headers: Headers,
 		input: TCreateOrganization & { creatorUserId?: string },
 	): Promise<TOrganizationSelect> {
+		// One company, one organization (ADR-0012).
+		if ((await this.repository.countActive()) > 0) throw new SingleOrganizationError();
 		const created = await this.gateway.createOrganization({
 			name: input.name,
 			slug: input.slug,
@@ -201,7 +204,20 @@ export class OrganizationService {
 		const row = await this.repository.findById(organizationId);
 		if (!row) throw new OrganizationNotFoundError();
 		if (!row.deletedAt) throw new OrganizationNotDeletedError();
+		// Restoring next to a live organization would make two (ADR-0012).
+		if ((await this.repository.countActive()) > 0) throw new SingleOrganizationError();
 		await this.repository.restore(row.id);
+	}
+
+	/**
+	 * Role string of a user's membership, or `null` when not a member.
+	 *
+	 * @remarks
+	 * Exported for other modules' record rules (ADR-0011 step 3b: a lead may
+	 * only be assigned to a member of the caller's organization).
+	 */
+	getMemberRole(organizationId: string, userId: string): Promise<string | null> {
+		return this.repository.findMemberRole(organizationId, userId);
 	}
 
 	/** Paginated member list joined with user identity fields. */

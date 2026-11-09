@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,16 +12,21 @@ import {
 } from '@ims-erp/ui/components/card';
 import {
 	Field,
+	FieldDescription,
 	FieldGroup,
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
+import { Textarea } from '@ims-erp/ui/components/textarea';
+import { itemCategoriesQueryOptions } from '@/lib/item-category-api';
 import {
 	ITEM_KINDS,
+	ITEM_UNIT_LABELS,
 	type TItem,
 	type TItemCreateInput,
 	type TItemKind,
+	type TItemUnitLabel,
 	type TItemUpdateInput,
 } from '@/lib/inventory-api';
 
@@ -54,8 +60,16 @@ export function ItemForm({
 	const [sku, setSku] = useState(item?.sku ?? '');
 	const [name, setName] = useState(item?.name ?? '');
 	const [itemKind, setItemKind] = useState<TItemKind>(item?.itemKind ?? 'product');
-	const [category, setCategory] = useState(item?.category ?? '');
-	const [unitLabel, setUnitLabel] = useState(item?.unitLabel ?? '');
+	const [categoryId, setCategoryId] = useState(item?.categoryId ?? '');
+	const [unitLabel, setUnitLabel] = useState<TItemUnitLabel>(item?.unitLabel ?? 'pcs');
+	const [brand, setBrand] = useState(item?.brand ?? '');
+	const [specification, setSpecification] = useState(item?.specification ?? '');
+	const [isActive, setIsActive] = useState(item?.isActive ?? true);
+	// Active categories for the picker, plus the item's own (maybe inactive).
+	const { data: allCategories = [] } = useQuery(itemCategoriesQueryOptions(true));
+	const categoryOptions = allCategories.filter(
+		(category) => category.isActive || category.id === item?.categoryId,
+	);
 	const [description, setDescription] = useState(item?.description ?? '');
 	const [barcode, setBarcode] = useState(item?.barcode ?? '');
 	const [isSerialized, setIsSerialized] = useState(item?.isSerialized ?? false);
@@ -75,8 +89,11 @@ export function ItemForm({
 		const shared = {
 			name,
 			description: description || null,
-			category: category || null,
-			unitLabel: unitLabel || null,
+			categoryId: categoryId || null,
+			unitLabel,
+			brand: brand.trim() || null,
+			specification: specification.trim() || null,
+			isActive,
 			isSerialized,
 			isStockTracked,
 			minStockQty: Number(minStockQty) || 0,
@@ -161,24 +178,61 @@ export function ItemForm({
 								<FieldLabel htmlFor='category'>
 									{t('inventory:items.category')}
 								</FieldLabel>
-								<Input
+								<select
 									id='category'
-									value={category}
-									onChange={(event) => setCategory(event.target.value)}
-								/>
+									className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
+									value={categoryId}
+									onChange={(event) => setCategoryId(event.target.value)}
+								>
+									<option value=''>{t('inventory:items.noCategory')}</option>
+									{categoryOptions.map((category) => (
+										<option key={category.id} value={category.id}>
+											{category.name}
+										</option>
+									))}
+								</select>
 							</Field>
 
 							<Field>
 								<FieldLabel htmlFor='unitLabel'>
 									{t('inventory:items.unitLabel')}
 								</FieldLabel>
-								<Input
+								<select
 									id='unitLabel'
+									className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
 									value={unitLabel}
-									maxLength={32}
-									placeholder='pcs'
-									onChange={(event) => setUnitLabel(event.target.value)}
+									onChange={(event) => setUnitLabel(event.target.value as TItemUnitLabel)}
+								>
+									{ITEM_UNIT_LABELS.map((unit) => (
+										<option key={unit} value={unit}>
+											{unit}
+										</option>
+									))}
+								</select>
+							</Field>
+
+							<Field>
+								<FieldLabel htmlFor='brand'>{t('inventory:items.brand')}</FieldLabel>
+								<Input
+									id='brand'
+									value={brand}
+									maxLength={100}
+									onChange={(event) => setBrand(event.target.value)}
 								/>
+							</Field>
+
+							<Field>
+								<FieldLabel htmlFor='specification'>
+									{t('inventory:items.specification')}
+								</FieldLabel>
+								<Textarea
+									id='specification'
+									rows={4}
+									maxLength={4000}
+									value={specification}
+									onChange={(event) => setSpecification(event.target.value)}
+								/>
+								<FieldDescription>{t('inventory:items.specificationHint')}</FieldDescription>
 							</Field>
 
 							<Field>
@@ -266,6 +320,17 @@ export function ItemForm({
 								/>
 								{t('inventory:items.quantityTracked')}
 							</label>
+
+							<label className='flex items-center gap-2 text-sm'>
+								<Checkbox
+									checked={isActive}
+									onCheckedChange={(checked) => setIsActive(checked === true)}
+								/>
+								{t('inventory:items.isActive')}
+							</label>
+							<p className='text-xs text-muted-foreground'>
+								{t('inventory:items.isActiveHint')}
+							</p>
 
 							<div className='flex gap-2'>
 								<Button type='submit' disabled={submitting || !name || !sku}>

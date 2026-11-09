@@ -182,17 +182,20 @@ export function OrganizationSwitcher() {
 								{t('organization.manage')}
 							</div>
 						</DropdownMenuItem>
-						<DropdownMenuItem
-							className='gap-2 p-2'
-							onClick={() => navigate({ to: '/organizations/new' })}
-						>
-							<div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
-								<Plus className='size-4' />
-							</div>
-							<div className='font-medium text-muted-foreground'>
-								{t('organization.new')}
-							</div>
-						</DropdownMenuItem>
+						{/* One company, one organization (ADR-0012). */}
+						{organizations_.length === 0 && (
+							<DropdownMenuItem
+								className='gap-2 p-2'
+								onClick={() => navigate({ to: '/organizations/new' })}
+							>
+								<div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
+									<Plus className='size-4' />
+								</div>
+								<div className='font-medium text-muted-foreground'>
+									{t('organization.new')}
+								</div>
+							</DropdownMenuItem>
+						)}
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</SidebarMenuItem>

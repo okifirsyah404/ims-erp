@@ -73,4 +73,11 @@ export interface IOrganizationRepository {
 
 	/** Counts active owners in an organization. */
 	countOwners(organizationId: string): Promise<number>;
+
+	/**
+	 * Role string of a user's membership in an organization, or `null` when
+	 * the user is not a member (read-only; used by other modules' record
+	 * rules, e.g. lead assignment).
+	 */
+	findMemberRole(organizationId: string, userId: string): Promise<string | null>;
 }

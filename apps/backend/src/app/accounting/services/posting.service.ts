@@ -7,8 +7,8 @@ import {
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { DRIZZLE_TOKEN } from '@di/provider';
-import { DOCUMENT_NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { DocumentNumberingService } from '@app/organization/services/document-numbering.service';
+import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { NumberingService } from '@app/organization/services/numbering.service';
 import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
 import type { LedgerRepository } from '../repositories/ledger.repository';
 import {
@@ -90,8 +90,8 @@ export class PostingService {
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 		@inject(LEDGER_REPOSITORY_TOKEN)
 		private readonly repo: LedgerRepository,
-		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: DocumentNumberingService,
+		@inject(NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: NumberingService,
 	) {}
 
 	/**
@@ -149,17 +149,10 @@ export class PostingService {
 			throw new JournalUnbalancedError();
 		}
 
-		const number = await this.numbering.allocate(
-			input.organizationId,
-			'journal_entry',
+		const code = await this.numbering.next('journal_entry', {
+			date: new Date(`${input.entryDate}T12:00:00+07:00`),
 			tx,
-		);
-		const code = this.numbering.format(
-			'JE',
-			input.entryDate.replaceAll('-', '').slice(0, 6),
-			number,
-			5,
-		);
+		});
 
 		const entry = await this.repo.insertEntry(
 			{

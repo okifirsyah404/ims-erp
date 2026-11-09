@@ -8,6 +8,7 @@ import {
 	GraduationCap,
 	HandCoins,
 	KeyRound,
+	Calculator,
 	LayoutDashboard,
 	MessageSquare,
 	Package,
@@ -65,6 +66,8 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				icon: ReceiptText,
 				items: [
 					{ titleKey: 'item.quotes', url: '/sales/quotes' },
+					{ titleKey: 'item.salesOrders', url: '/sales/orders' },
+					{ titleKey: 'item.deliveryNotes', url: '/sales/deliveries' },
 					{ titleKey: 'item.invoices', url: '/sales/invoices' },
 					{ titleKey: 'item.downPayments', url: '/sales/down-payments' },
 					{ titleKey: 'item.receipts', url: '/sales/receipts' },
@@ -82,6 +85,7 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/subscription',
 				icon: KeyRound,
 				items: [
+					{ titleKey: 'item.licenseApplications', url: '/subscription/applications' },
 					{ titleKey: 'item.apiKeys', url: '/subscription/api-keys' },
 					{ titleKey: 'item.activations', url: '/subscription/activations' },
 				],
@@ -107,6 +111,7 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		labelKey: 'section.inventory',
 		items: [
 			{ titleKey: 'item.warehouses', url: '/inventory/warehouses', icon: Warehouse },
+			{ titleKey: 'item.inventoryValue', url: '/inventory/stock/value', icon: Calculator },
 			{
 				titleKey: 'item.items',
 				icon: Package,
@@ -117,6 +122,8 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 					{ titleKey: 'item.stock', url: '/inventory/stock' },
 					{ titleKey: 'item.stockAdjustments', url: '/inventory/stock/adjustments' },
 					{ titleKey: 'item.newItem', url: '/inventory/items/new' },
+					{ titleKey: 'item.itemCategories', url: '/inventory/categories' },
+					{ titleKey: 'item.itemMovements', url: '/inventory/stock/movements' },
 				],
 			},
 			{
@@ -247,7 +254,16 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 			{ titleKey: 'item.organizations', url: '/organizations', icon: Building2 },
 			{ titleKey: 'item.users', url: '/admin/users', icon: Users },
 			{ titleKey: 'item.auditLog', url: '/admin/audit', icon: ScrollText },
-			{ titleKey: 'item.settings', url: '/admin/settings', icon: Settings },
+			{
+				titleKey: 'item.settings',
+				url: '/admin/settings',
+				icon: Settings,
+				// Company-wide settings (ADR-0011).
+				items: [
+					{ titleKey: 'item.companyProfile', url: '/admin/settings' },
+					{ titleKey: 'item.documentNumbering', url: '/admin/settings/numbering' },
+				],
+			},
 		],
 	},
 ];

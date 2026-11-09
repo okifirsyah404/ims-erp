@@ -2,12 +2,18 @@ import type { DependencyContainer } from 'tsyringe';
 import { OrganizationRepository } from './repositories/organization.repository';
 import { BetterAuthOrganizationGateway } from './adapters/better-auth-organization';
 import { OrganizationService } from './services/organization.service';
-import { DocumentNumberingService } from './services/document-numbering.service';
+import { CompanyProfileRepository } from './repositories/company-profile.repository';
+import { DocumentSequenceRepository } from './repositories/document-sequence.repository';
+import { CompanyProfileService } from './services/company-profile.service';
+import { NumberingService } from './services/numbering.service';
 import {
-	DOCUMENT_NUMBERING_SERVICE_TOKEN,
 	ORGANIZATION_AUTH_GATEWAY_TOKEN,
 	ORGANIZATION_REPOSITORY_TOKEN,
 	ORGANIZATION_SERVICE_TOKEN,
+	COMPANY_PROFILE_REPOSITORY_TOKEN,
+	COMPANY_PROFILE_SERVICE_TOKEN,
+	DOCUMENT_SEQUENCE_REPOSITORY_TOKEN,
+	NUMBERING_SERVICE_TOKEN,
 } from './constants/di';
 
 export * from './constants/di';
@@ -31,9 +37,16 @@ export function registerOrganization(container: DependencyContainer): void {
 	container.register(ORGANIZATION_SERVICE_TOKEN, {
 		useClass: OrganizationService,
 	});
-	// ERP-0009 numbering authority. Inventory (and later assets) inject this
-	// to mint document codes from per-org sequences.
-	container.register(DOCUMENT_NUMBERING_SERVICE_TOKEN, {
-		useClass: DocumentNumberingService,
+
+	// Company profile and document numbering (company-wide, ADR-0011).
+	container.register(COMPANY_PROFILE_REPOSITORY_TOKEN, {
+		useClass: CompanyProfileRepository,
 	});
+	container.register(COMPANY_PROFILE_SERVICE_TOKEN, {
+		useClass: CompanyProfileService,
+	});
+	container.register(DOCUMENT_SEQUENCE_REPOSITORY_TOKEN, {
+		useClass: DocumentSequenceRepository,
+	});
+	container.register(NUMBERING_SERVICE_TOKEN, { useClass: NumberingService });
 }

@@ -3,7 +3,7 @@
  *
  * The single payment ledger (`finance.payments`), payment allocations,
  * cash/bank accounts and their transaction ledger, bank reconciliation,
- * supplier bills, payment terms, a minimal receipts (kwitansi) stub, and the
+ * supplier bills, payment terms (receipts/kwitansi live in `sales`), and the
  * AR/AP open-item sub-ledgers.
  *
  * House rules honoured here:
@@ -126,24 +126,6 @@ export const SUPPLIER_BILL_STATUSES = [
 export type SupplierBillStatus = (typeof SUPPLIER_BILL_STATUSES)[number];
 
 /** Receipt (kwitansi) lifecycle — minimal stub for this slice. */
-export const RECEIPT_STATUSES = [
-	'draft',
-	'verified',
-	'posted',
-	'reversed',
-	'void',
-] as const;
-export type ReceiptStatus = (typeof RECEIPT_STATUSES)[number];
-
-export const RECEIPT_METHODS = [
-	'bank_transfer',
-	'cash',
-	'card',
-	'e_wallet',
-	'cheque',
-] as const;
-export type ReceiptMethod = (typeof RECEIPT_METHODS)[number];
-
 /** AR/AP open-item lifecycle (sub-ledger mirror, finance plan D3). */
 export const OPEN_ITEM_STATUSES = [
 	'open',
@@ -400,52 +382,6 @@ export const paymentAllocations = financeSchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
- * finance.receipts — minimal kwitansi stub (finance plan D6)
- * ------------------------------------------------------------------------ */
-
-export const receipts = financeSchema.table(
-	'receipts',
-	{
-		id: uuid('id').primaryKey().default(sql`uuidv7()`),
-		organizationId: organizationId(),
-		code: varchar('code', { length: 32 }).notNull(),
-		salesInvoiceId: uuid('sales_invoice_id'),
-		paymentId: uuid('payment_id').references(() => payments.id, {
-			onDelete: 'set null',
-		}),
-		receivedDate: date('received_date'),
-		amount: moneyAmount('amount'),
-		currencyCode: currencyCode(),
-		method: text('method').notNull().default('bank_transfer'),
-		status: text('status').notNull().default('draft'),
-		receivedBy: text('received_by'),
-		postedAt: unixTimestampNullable('posted_at'),
-		reversedAt: unixTimestampNullable('reversed_at'),
-		reversalReason: text('reversal_reason'),
-		createdAt: unixTimestamp('created_at').notNull(),
-		updatedAt: unixTimestamp('updated_at')
-			.notNull()
-			.$onUpdate(() => new Date()),
-		deletedAt: unixTimestampNullable('deleted_at'),
-	},
-	(table) => [
-		uniqueIndex('receipts_org_code_uq').on(table.organizationId, table.code),
-		index('receipts_sales_invoice_id_idx').on(table.salesInvoiceId),
-		index('receipts_payment_id_idx').on(table.paymentId),
-		index('receipts_status_idx').on(table.status),
-		check(
-			'receipts_status_check',
-			sql`status IN ('draft', 'verified', 'posted', 'reversed', 'void')`,
-		),
-		check('receipts_amount_check', sql`amount > 0`),
-		check(
-			'receipts_method_check',
-			sql`method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque')`,
-		),
-	],
-);
-
-/* ------------------------------------------------------------------------ *
  * finance.bank_reconciliations + items
  * ------------------------------------------------------------------------ */
 
@@ -680,8 +616,6 @@ export type TPaymentSelect = typeof payments.$inferSelect;
 export type TPaymentInsert = typeof payments.$inferInsert;
 export type TPaymentAllocationSelect = typeof paymentAllocations.$inferSelect;
 export type TPaymentAllocationInsert = typeof paymentAllocations.$inferInsert;
-export type TReceiptSelect = typeof receipts.$inferSelect;
-export type TReceiptInsert = typeof receipts.$inferInsert;
 export type TBankReconciliationSelect =
 	typeof bankReconciliations.$inferSelect;
 export type TBankReconciliationInsert =

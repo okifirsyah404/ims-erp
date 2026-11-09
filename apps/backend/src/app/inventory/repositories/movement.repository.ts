@@ -1,8 +1,8 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
-import { stockMovements } from '@drizzle/schemas/inventory.schema';
+import { stockMovements, warehouses } from '@drizzle/schemas/inventory.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, count, desc, eq, gte, isNull, lte, ne, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lte, ne, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import {
 	OUTBOUND_TYPES,
@@ -200,7 +200,23 @@ export class MovementRepository implements IMovementRepository {
 		return row ?? null;
 	}
 
-	/** Sums signed quantities per `(item, warehouse, bin)` scope. */
+	/** Every posted movement of one balance scope, in posting order. */
+	ledgerRows(scopeOrganizationId: string | null) {
+		return this.database
+			.select({
+				itemId: stockMovements.itemId,
+				warehouseId: stockMovements.warehouseId,
+				binId: stockMovements.binId,
+				movementType: stockMovements.movementType,
+				quantity: stockMovements.quantity,
+				unitCost: stockMovements.unitCost,
+			})
+			.from(stockMovements)
+			.where(and(balanceScopeFilter(scopeOrganizationId), ne(stockMovements.status, 'draft')))
+			.orderBy(asc(stockMovements.occurredAt), asc(stockMovements.createdAt), asc(stockMovements.id));
+	}
+
+	/** Sums signed quantities per `(item, warehouse, bin)` of one balance scope. */
 	async ledgerTotals(
 		scopeOrganizationId: string | null,
 	): Promise<
@@ -221,7 +237,7 @@ export class MovementRepository implements IMovementRepository {
 			.from(stockMovements)
 			.where(
 				and(
-					...scopeFilter(scopeOrganizationId),
+					balanceScopeFilter(scopeOrganizationId),
 					// A draft movement was never posted, so it must not appear in
 					// the ledger's totals at all.
 					ne(stockMovements.status, 'draft'),
@@ -247,4 +263,27 @@ function scopeFilter(scopeOrganizationId: string | null | undefined) {
 			? isNull(stockMovements.organizationId)
 			: eq(stockMovements.organizationId, scopeOrganizationId),
 	];
+}
+
+/**
+ * Movements that feed the balances of one scope.
+ *
+ * @remarks
+ * A balance's scope is its **warehouse's** organization (see
+ * `StockService.resolveScope`), while a movement's `organization_id` records
+ * who posted it. A member of an organization receiving into a shared warehouse
+ * therefore writes a tenant-attributed movement into a shared balance, so the
+ * ledger must be selected by the warehouse, not by the movement's own column.
+ *
+ * @param scopeOrganizationId - `null` = shared warehouses
+ */
+function balanceScopeFilter(scopeOrganizationId: string | null) {
+	return inArray(
+		stockMovements.warehouseId,
+		sql`(select ${warehouses.id} from ${warehouses} where ${
+			scopeOrganizationId === null
+				? isNull(warehouses.organizationId)
+				: eq(warehouses.organizationId, scopeOrganizationId)
+		})`,
+	);
 }

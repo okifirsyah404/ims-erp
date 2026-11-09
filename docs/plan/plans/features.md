@@ -51,19 +51,52 @@ Last synced: 2026-11-08.
   (payment ledger is `finance.payments`, M09; `sales.payments` is scheduled
   for removal at step S7 in `docs/database/implementation-phases.md`).
 
-### in-progress
-- SPH (quotation) + simple price approval — T05, ERP-0011 (`planned` in
-  backlog). Evidence: `apps/backend/src/app/sales` create/list/get/update/
-  submit/decision; `test/authorization/authorization.test.ts`. Gaps:
-  `quotation_items` not in Drizzle, no UI route.
+### implemented
+- Customers + contacts — T05, ERP-0004/0005. Evidence: `apps/backend/src/app/crm`,
+  `test/unit/customer.service.test.ts`, `/crm/customers` pages, `progress.md`
+  2026-11-05 (ADR-0011 step 3a). Gaps: real-PG integration tests, e2e.
+- Leads, follow-ups/surveys, website RFQ/contact/demo intake — T05.
+  Evidence: `apps/backend/src/app/crm` (leads, public website API),
+  `test/unit/lead.service.test.ts`, `/crm/leads` pages, `progress.md`
+  2026-11-05 (ADR-0011 step 3b). Gaps: real-PG integration tests, e2e.
+- SPH (quotation) + approval (no self-approval, no amount limit), revisions,
+  lost ("Batal"), planned billing, print in the company's exact SPH layout
+  (logo, signature, item photos) — T05, ERP-0011 (backlog
+  `in-progress`: orders/invoices open). Evidence: `apps/backend/src/app/sales`
+  (quotations), `test/unit/quotation.service.test.ts`,
+  `test/authorization/authorization.test.ts`, `/sales/quotes` pages,
+  `progress.md` 2026-11-06 (ADR-0011 step 3c). Gaps: real-PG integration
+  tests, e2e.
+- Sales orders from an approved or sent SPH (SPH becomes Deal; cancelling
+  reopens it) — T05, ERP-0011. Evidence: `apps/backend/src/app/sales`
+  (sales orders), `test/unit/sales-order.service.test.ts`, `/sales/orders`
+  pages, `progress.md` 2026-11-06 (ADR-0011 step 3d-1). Gaps: real-PG
+  integration tests, e2e.
+- Delivery notes (surat jalan): prepared against an order (partial
+  deliveries), shipped out of stock at average cost with serial units sold,
+  delivered with the receiver; print in the company's exact layout — T05/T07,
+  ERP-0011 / ERP-0037. Evidence: `apps/backend/src/app/sales` (delivery
+  notes), `test/unit/delivery-note.service.test.ts`, `/sales/deliveries`
+  pages, `progress.md` 2026-11-06 (ADR-0011 step 5a). Gaps: programmer A's
+  review of the serial-unit contract, real-PG integration tests, returns.
+- Invoices with free billing terms, DP, receipts (kwitansi), invoice print
+  in the company's exact layout — T05, ERP-0011. Evidence:
+  `apps/backend/src/app/finance`, `test/unit/invoice.service.test.ts`,
+  `/sales/invoices`, `/sales/down-payments`, `/sales/receipts`,
+  `progress.md` 2026-11-06 (ADR-0011 step 3d-2). Gaps: real-PG integration
+  tests, e2e, kwitansi print (no sample), `finance.payments` ledger (S7).
 
 ## M03 Subscription and Licensing
 
-### planned
+### done
 - Contract + license key register, dates, status, due list — T09, ERP-0019.
-  Evidence: dbml `licensing` only.
+  Evidence: `progress.md` 2026-11-06 (M03 stage 1): `/licenses` API,
+  `/subscription` pages, dashboard widget; 10 unit tests, browser e2e.
+  Not yet accepted by the owner.
 - API keys + validate/activate/renew, grace/suspend — T23, ERP-0019.
-  Evidence: dbml only.
+  Evidence: `progress.md` 2026-11-06 (M03 stage 2): `/licensing/v1`,
+  `/subscription/api-keys`, `/subscription/activations`; 12 + 11 unit tests,
+  e2e. Not yet accepted by the owner.
 
 ### blocked
 - Pilot application licensing integration — T24. Needs pilot app source access.
@@ -83,11 +116,30 @@ Last synced: 2026-11-08.
 ### planned
 - Inventory movement boundaries / valuation + GL reconciliation — ERP-0014
   (re-scoped into S1–S4; valuation deferred, OPEN-3).
-- Suppliers, purchase orders, goods receipt, payables — T07, ERP-0012.
-  Evidence: dbml `procurement` only.
-- HPP / stock value via finance summary — T07. Evidence: none.
+- Payables (supplier invoices) — T07, ERP-0012 / ERP-0035. Evidence: none.
+- Stock value in the GL (journals) — T07, ERP-0014. Evidence: none (the
+  value view exists, see implemented).
 
 ### implemented
+- Suppliers (bank details restricted) and purchase orders with one-level
+  approval and the company's PO print — T07, ERP-0035. Evidence:
+  `apps/backend/src/app/procurement`, `test/unit/procurement.service.test.ts`,
+  `/procurement/suppliers`, `/procurement/purchase-orders`, `progress.md`
+  2026-11-06 (ADR-0011 step 4a). Gaps: real-PG integration tests, e2e.
+- Goods receipts (BPB) against sent POs with serials, and moving-average
+  HPP per stock balance — T07, ERP-0035 / ERP-0014. Evidence:
+  `procurement/services/goods-receipt.service.ts`,
+  `inventory/utils/moving-average.ts`, `test/unit/goods-receipt.service.test.ts`,
+  `test/unit/moving-average.test.ts`, `/procurement/receipts`, `progress.md`
+  2026-11-06 (step 4b). Gaps: programmer A's review of the stock-service
+  change, real-PG integration tests.
+- Opening stock / adjustments with unit cost, and the inventory value view
+  (stock at average cost per item and warehouse, totals) — T07, ERP-0014 /
+  ERP-0037. Evidence: `inventory/services/adjustment.service.ts`,
+  `inventory/services/stock-valuation.service.ts`,
+  `test/unit/adjustment.service.test.ts`, `test/unit/stock-valuation.service.test.ts`,
+  `/inventory/stock/value`, `progress.md` 2026-11-06 (step 5b). Gaps:
+  programmer A's review; the adjustment form's warehouse list is admin-only.
 - Stock ledger S3 — ERP-0028. Evidence:
   `apps/backend/src/app/inventory/services/stock.service.ts`,
   `test/unit/stock.service.test.ts` (22 tests), UI
@@ -118,8 +170,8 @@ Last synced: 2026-11-08.
 - Minimal HR employees + warehouse PIC (display-only) — ERP-0034.
 
 ### blocked
-- Procurement (suppliers, PO, receipts) — ERP-0035. Needs M09 payables
-  (ERP-0012).
+- Supplier payables and the M09 payable handoff of receipts — ERP-0035.
+  Suppliers, PO and receipts are implemented (see "implemented"); needs M09 payables.
 
 ## M06 Assets and Equipment
 
@@ -164,13 +216,30 @@ Last synced: 2026-11-08.
 ## M07 Projects and After-Sales
 
 ### planned
-- Projects: PIC, target, tasks, direct costs — T08, ERP-0015. Evidence: dbml
-  `projects` only.
-- Testing/training/BAST evidence — T08, ERP-0015. Evidence: dbml
-  `projects.project_handover` only.
-- Basic tickets + manual closure, warranty — T08. Evidence: dbml `ticket`,
-  `aftersales` only.
 - Portal: project/BAST status + own tickets — T26, ERP-0022. Evidence: none.
+
+### implemented
+- Projects from a deal: PIC, targets, stage, default checklist with
+  assignees, testing / training / BAST evidence (closing rule), direct costs
+  with receipts, shipped material value and margin (cost-restricted) — T08,
+  ERP-0015 / ERP-0037. Evidence: `apps/backend/src/app/projects`,
+  `test/unit/project.service.test.ts`, `/projects` pages, `progress.md`
+  2026-11-06 (ADR-0011 step 6a). Gaps: real-PG integration tests.
+- BAST documents (several per project) and the warranty certificate (one per
+  project, from a BAST date, serials of shipped devices, profile texts),
+  printed in the company's exact layouts — T08, ERP-0015 / ERP-0037.
+  Evidence: `projects/services/handover.service.ts`,
+  `apps/backend/src/app/aftersales`, `test/unit/handover-warranty.test.ts`,
+  `/projects/$projectId/bast/*`, `/projects/$projectId/warranty*`,
+  `/projects/bast`, `progress.md` 2026-11-06 (step 6b). Gaps: real-PG
+  integration tests.
+- Service tickets with the warranty check by serial number (shipped device →
+  project → certificate), technician assignment, resolution with cost, and
+  closing with the customer's confirmation — T08, ERP-0037. Evidence:
+  `aftersales/services/service-ticket.service.ts`,
+  `test/unit/service-ticket.service.test.ts`, `/projects/tickets` pages,
+  `progress.md` 2026-11-06 (step 6c). Gaps: real-PG integration tests; SLA
+  and escalation not decided.
 
 ## M08 Employees and Attendance
 
@@ -272,14 +341,26 @@ Last synced: 2026-11-08.
 - ERP-0001 Repo housekeeping.
 - ERP-0006 Address reference model + lookup API (lookup API itself exists; see
   Outside the plan).
-- ERP-0008 Remaining master data (company profile, suppliers, catalog, COA,
-  cash/bank, packages, investors).
-- ERP-0009 Document numbering service.
+- ERP-0008 Remaining master data (suppliers, catalog, COA, cash/bank,
+  packages, investors) — company profile part implemented, see below.
 - ERP-0024 UAT, reconciliation, backup drill.
 - ERP-0025 Release preparation.
 - ERP-0037 Nullable cross-module references (ADR-0014 schema flip).
 
+### in-progress
+- ERP-0037 Port M02/M05/M07 onto main (ADR-0011): steps 1-2 implemented
+  2026-11-05 (numbering, company profile, role grants; item categories,
+  fixed units, brand/specification/active on items) and 3a (customers +
+  contacts, `/crm/customers`) and 3b (leads, follow-ups, website API);
+  3c-3d and 4-6 planned.
+  Evidence: `progress.md` 2026-11-05, `test/unit/item-category.service.test.ts`.
+
 ### implemented
+- ERP-0009 Document numbering (company-wide series, settings page).
+  Evidence: `apps/backend/src/app/organization`, `test/unit/numbering.service.test.ts`,
+  `progress.md` 2026-11-05.
+- ERP-0008 (part) Company profile + invoice bank accounts. Evidence:
+  `test/unit/company-profile.service.test.ts`, `progress.md` 2026-11-05.
 - ERP-0030 Faker seeders + `faker` skill. Evidence: `apps/backend/database/
   seeders`, `test/unit/inventory-seeder.data.test.ts`,
   `member-seed-config.test.ts`; run-twice verified 2026-11-03.
