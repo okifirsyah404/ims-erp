@@ -12,6 +12,15 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-09 - warehouse form: address section layout
+
+- `packages/locales` `inventory:address.street`: en "Street" → "Address", id "Jalan" → "Alamat". Key unchanged.
+- `apps/web-admin/src/components/inventory/warehouse-form.tsx`: label field moved into its own group, separated from the rest of the address by `Separator` (`@ims-erp/ui/components/separator`). Street input is now `Textarea` (`rows={3}`), spanning all three grid columns (`sm:col-span-3`). rt, rw, postal code stay in the grid below. `id` and `htmlFor` unchanged.
+- Backend unchanged: `street` is still a plain string, multi-line values are stored as typed.
+- Verified: `bun run test` in `packages/locales` 70 pass / 0 fail (run after the label change). `bunx tsc -b` clean in `apps/web-admin` after the separator and column-span change. `bun test` in `apps/web-admin` 45 pass / 0 fail (run after the textarea change, before the layout change).
+- Verified in browser (Firefox via `firefox-devtools-mcp`, `--connect-existing`, logged-in profile, 1920×947 viewport): `/inventory/warehouses/new` renders the Label field, a separator, then the full-width Address textarea (1584×64 px, `TEXTAREA`), then RT, RW, Postal code, Province, Regency, District, Village. English only. Not checked: Indonesian locale, filled-in values, edit form `/inventory/warehouses/$id/edit`.
+- `docs/database/` not changed (UI only). Backlog: no `ERP-*` status change.
+
 ## 2026-11-09 - warehouse list: status filter and sort (name, code, status)
 
 - Backend `inventory`: `warehouseListQuerySchema` gained `status` (`all | active | inactive | archived`), `sortBy` (`name | code | status`), `sortDir` (`asc | desc`). `status` overrides the legacy `includeArchived` / `isActive` flags when present.

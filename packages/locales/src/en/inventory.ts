@@ -225,7 +225,7 @@ const inventory = {
 
 	// Address fields and the location cascade.
 	'address.label': 'Label',
-	'address.street': 'Street',
+	'address.street': 'Address',
 	'address.rt': 'RT',
 	'address.rw': 'RW',
 	'address.postalCode': 'Postal code',
