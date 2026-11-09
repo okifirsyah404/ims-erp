@@ -314,7 +314,11 @@ function SalesChartCard({ summary }: { summary: TDashboardSummary }) {
 			</CardHeader>
 			<CardContent>
 				<ChartContainer
-					config={{ invoiced: { label: t('chart.monthly') } } satisfies ChartConfig}
+					config={
+						{
+							invoiced: { label: t('chart.monthly'), color: 'var(--chart-1)' },
+						} satisfies ChartConfig
+					}
 					className='h-48 w-full'
 				>
 					<BarChart data={data}>

@@ -12,6 +12,14 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-09 - dashboard: revenue chart bars rendered black
+
+- Cause: `ChartContainer` config for `invoiced` had only `label`, so `--color-invoiced` was never defined and `fill='var(--color-invoiced)'` fell back to black.
+- `apps/web-admin/src/components/dashboard/dashboard-page.tsx`: added `color: 'var(--chart-1)'` to the `invoiced` config entry.
+- Verified: `bunx tsc -b` clean in `apps/web-admin`. `bun test` in `apps/web-admin` 45 pass / 0 fail. Firefox on `/`: 6 bars, computed fill `oklch(0.7156 0.0605 248.685)` (= `--chart-1`). Screenshot did not capture the page, so visual check is not done.
+- Not applied: tweakcn theme `cmc45c7oo000f04jvfpbo2gf9`. The page did not expose its CSS variables; needs the export values.
+- `docs/database/` not changed (UI only). Backlog: no `ERP-*` status change.
+
 ## 2026-11-09 - warehouse form: address section layout
 
 - `packages/locales` `inventory:address.street`: en "Street" → "Address", id "Jalan" → "Alamat". Key unchanged.
