@@ -151,5 +151,3 @@ export class InvoiceController {
 			);
 	}
 }
-
-

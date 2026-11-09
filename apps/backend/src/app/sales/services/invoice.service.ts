@@ -362,7 +362,7 @@ export class InvoiceService {
 			TReceiptSelect & { invoiceCode: string | null; customerName: string }
 		>
 	> {
-		return this.repo.paginateReceipts(query);
+		return this.repo.paginateReceipts(organizationId, query);
 	}
 
 	/** Records a payment against a live invoice and recomputes its status. */
@@ -402,8 +402,14 @@ export class InvoiceService {
 		id: string,
 		reason: string,
 	): Promise<TReceiptSelect> {
-		if (!(await this.repo.findReceipt(id))) throw new ReceiptNotFoundError();
-		const reversed = await this.repo.reverseReceipt(id, ctx.actorUserId, reason);
+		if (!(await this.repo.findReceipt(ctx.organizationId, id)))
+			throw new ReceiptNotFoundError();
+		const reversed = await this.repo.reverseReceipt(
+			ctx.organizationId,
+			id,
+			ctx.actorUserId,
+			reason,
+		);
 		if (!reversed) throw new ReceiptAlreadyReversedError();
 		return reversed;
 	}

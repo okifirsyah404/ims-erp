@@ -224,24 +224,43 @@ export class InvoiceRepository implements TInvoiceRepository {
 		return !!row;
 	}
 
-	async findReceipt(id: string): Promise<TReceiptSelect | null> {
+	async findReceipt(
+		organizationId: string,
+		id: string,
+	): Promise<TReceiptSelect | null> {
 		const [row] = await this.database
 			.select()
 			.from(receipts)
-			.where(and(eq(receipts.id, id), isNull(receipts.deletedAt)))
+			.where(
+				and(
+					eq(receipts.id, id),
+					eq(receipts.organizationId, organizationId),
+					isNull(receipts.deletedAt),
+				),
+			)
 			.limit(1);
 		return row ?? null;
 	}
 
-	listReceipts(invoiceId: string): Promise<TReceiptSelect[]> {
+	listReceipts(
+		organizationId: string,
+		invoiceId: string,
+	): Promise<TReceiptSelect[]> {
 		return this.database
 			.select()
 			.from(receipts)
-			.where(and(eq(receipts.salesInvoiceId, invoiceId), isNull(receipts.deletedAt)))
+			.where(
+				and(
+					eq(receipts.organizationId, organizationId),
+					eq(receipts.salesInvoiceId, invoiceId),
+					isNull(receipts.deletedAt),
+				),
+			)
 			.orderBy(asc(receipts.receivedDate), asc(receipts.id));
 	}
 
 	async paginateReceipts(
+		organizationId: string,
 		request: TReceiptListQuery,
 	): Promise<
 		TPaginationResult<
@@ -250,6 +269,7 @@ export class InvoiceRepository implements TInvoiceRepository {
 	> {
 		const { page, limit, search, status } = request;
 		const where = and(
+			eq(receipts.organizationId, organizationId),
 			isNull(receipts.deletedAt),
 			status ? eq(receipts.status, status) : undefined,
 			search
@@ -293,7 +313,13 @@ export class InvoiceRepository implements TInvoiceRepository {
 			const [invoice] = await tx
 				.select()
 				.from(invoices)
-				.where(and(eq(invoices.id, data.salesInvoiceId), isNull(invoices.deletedAt)))
+				.where(
+					and(
+						eq(invoices.id, data.salesInvoiceId),
+						eq(invoices.organizationId, data.organizationId),
+						isNull(invoices.deletedAt),
+					),
+				)
 				.for('update');
 			if (
 				!invoice ||
@@ -321,6 +347,7 @@ export class InvoiceRepository implements TInvoiceRepository {
 	}
 
 	reverseReceipt(
+		organizationId: string,
 		id: string,
 		actorUserId: string,
 		reason: string,
@@ -339,6 +366,7 @@ export class InvoiceRepository implements TInvoiceRepository {
 				.where(
 					and(
 						eq(receipts.id, id),
+						eq(receipts.organizationId, organizationId),
 						isNull(receipts.deletedAt),
 						eq(receipts.status, 'posted'),
 					),

@@ -88,12 +88,16 @@ export type TInvoiceRepository = {
 	listByOrder(salesOrderId: string): Promise<TInvoiceSelect[]>;
 	/** True when the order has any non-deleted invoice that is not void. */
 	hasLiveInvoices(salesOrderId: string): Promise<boolean>;
-	/** One live receipt by id. */
-	findReceipt(id: string): Promise<TReceiptSelect | null>;
+	/** One live receipt of this organization by id. */
+	findReceipt(organizationId: string, id: string): Promise<TReceiptSelect | null>;
 	/** All live receipts of an invoice, oldest first. */
-	listReceipts(invoiceId: string): Promise<TReceiptSelect[]>;
+	listReceipts(
+		organizationId: string,
+		invoiceId: string,
+	): Promise<TReceiptSelect[]>;
 	/** Paginated receipts joined with their invoice code and customer name. */
 	paginateReceipts(
+		organizationId: string,
 		request: TReceiptListQuery,
 	): Promise<
 		TPaginationResult<
@@ -102,16 +106,18 @@ export type TInvoiceRepository = {
 	>;
 	/**
 	 * Records a receipt and updates the invoice's paid / outstanding / status
-	 * in ONE transaction. Returns null when the invoice is not payable or the
-	 * amount exceeds the outstanding total.
+	 * in ONE transaction. The invoice must belong to the same organization as
+	 * the receipt. Returns null when the invoice is not payable or the amount
+	 * exceeds the outstanding total.
 	 */
 	addReceipt(data: TReceiptData): Promise<TReceiptSelect | null>;
 	/**
 	 * Reverses a posted receipt (status `posted` only) and restores the
 	 * invoice's paid / outstanding / status in ONE transaction. Returns null
-	 * when the receipt is missing or already reversed.
+	 * when the receipt is missing, foreign, or already reversed.
 	 */
 	reverseReceipt(
+		organizationId: string,
 		id: string,
 		actorUserId: string,
 		reason: string,
