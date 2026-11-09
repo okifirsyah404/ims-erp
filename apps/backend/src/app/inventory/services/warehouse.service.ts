@@ -161,6 +161,7 @@ export class WarehouseService {
 			address,
 			storages,
 			productsCount: decorated.productsCount,
+			componentsCount: decorated.componentsCount,
 			materialsCount: decorated.materialsCount,
 			equipmentsCount: decorated.equipmentsCount,
 			storagesCount: decorated.storagesCount,

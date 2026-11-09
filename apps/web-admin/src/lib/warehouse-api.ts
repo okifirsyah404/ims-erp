@@ -64,6 +64,7 @@ export type TWarehouseStorage = {
 /** A list-page warehouse row decorated with backend kind counts. */
 export type TWarehouseWithCounts = TWarehouse & {
 	productsCount: number;
+	componentsCount: number;
 	materialsCount: number;
 	equipmentsCount: number;
 	storagesCount: number;

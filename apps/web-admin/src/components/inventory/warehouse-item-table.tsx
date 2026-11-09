@@ -111,6 +111,9 @@ export function WarehouseItemTable({
 					<Table aria-busy={isPending || undefined}>
 						<TableHeader>
 							<TableRow>
+								<TableHead className='w-16'>
+									{t('inventory:warehouses.image')}
+								</TableHead>
 								<TableHead>{t('inventory:items.sku')}</TableHead>
 								<TableHead>{t('inventory:items.name')}</TableHead>
 								<TableHead>{t('inventory:items.unitLabel')}</TableHead>
@@ -126,6 +129,15 @@ export function WarehouseItemTable({
 						<TableBody>
 							{rows.map((item) => (
 								<TableRow key={item.id}>
+									<TableCell>
+										{/* TODO: render `item.imageUrl` once real image URLs exist; this is a static UI placeholder. */}
+										<img
+											src='https://picsum.photos/80/80'
+											alt={item.name}
+											className='size-10 rounded object-cover'
+											loading='lazy'
+										/>
+									</TableCell>
 									<TableCell className='font-mono text-xs'>
 										{item.sku}
 									</TableCell>

@@ -12,6 +12,33 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-09 - warehouse: components split from products, materials counted from balances
+
+- Contract change: `TWarehouseKindCounts` now has `componentsCount`. `productsCount` counts `product` only (was product + component). `materialsCount` counts distinct material items with `quantity_on_hand > 0` in `stock_balances` (was always 0, because it counted serialized units and materials are not serialized). `componentsCount` counts live serialized `component` units.
+- Backend: `warehouse.repository.ts` (`countKinds`, new `materialRows` query), `warehouse.repository.interface.ts`, `warehouse.service.ts` (`getWarehouse` passes `componentsCount`), and test fakes in `warehouse.service.test.ts`, `warehouse-authorization.test.ts`, `stock-test-doubles.ts`, `stock.service.test.ts`.
+- Web-admin: `warehouse-api.ts` type; list card and detail stats now 5 items (Products, Components, Materials, Equipments, Storages); detail page gets a Components tab (`itemKind='component'`); Materials tab unchanged (`itemKind='material'`).
+- Locales: `inventory:warehouses.components` added (en "Components", id "Komponen").
+- Enum and DB check constraint unchanged (`product|component|material`).
+- Verified: `bunx tsc --noEmit` clean in `apps/backend`. `bun test` in `apps/backend` 803 pass / 0 fail (the `ims_erp_test does not exist` trace in `single-organization.test.ts` is logged, not a failure, as before). `bunx tsc -b` clean and `bun test` 45 pass in `apps/web-admin`. `bun run test` in `packages/locales` 70 pass.
+- Not verified: the new materials query and component split against a real database; no unit test covers `countKinds` (its fakes return zeros). Not verified in browser.
+- `docs/database/` not changed (no schema change). Backlog: no `ERP-*` status change.
+
+## 2026-11-09 - warehouse detail: item image column (placeholder)
+
+- `apps/web-admin/src/components/inventory/warehouse-item-table.tsx`: new first column `Image` in the product/material tables on `/inventory/warehouses/$warehouseId`. Static `picsum.photos` placeholder, same pattern as the warehouse card, with a TODO to render `item.imageUrl`.
+- Backend unchanged. The list endpoint (`GET /items`) does not return `imageUrl`; only the detail (`getItem`) does via `withImageUrl`. Real images in lists need a backend change, not done here.
+- Locales: `inventory:warehouses.image` added (en "Image", id "Gambar").
+- Verified: `bunx tsc -b` clean in `apps/web-admin`. `bun test` in `apps/web-admin` 45 pass / 0 fail. `bun run test` in `packages/locales` 70 pass / 0 fail.
+- Not verified in browser.
+- `docs/database/` not changed (UI only). Backlog: no `ERP-*` status change.
+
+## 2026-11-09 - warehouse detail: equipment count stat
+
+- `apps/web-admin/src/routes/_authed/inventory/warehouses/$warehouseId.tsx`: added the `equipmentsCount` stat card (`inventory:warehouses.equipments`) between Materials and Storages, matching the list card. Backend already returns `equipmentsCount` on `GET /warehouses/:id` (`withEquipmentCounts` in `warehouse.service.ts`). No backend change.
+- Verified: `bunx tsc -b` clean in `apps/web-admin`. `bun test` in `apps/web-admin` 45 pass / 0 fail.
+- Not verified in browser: the detail page with a real warehouse id.
+- `docs/database/` not changed (UI only). Backlog: no `ERP-*` status change.
+
 ## 2026-11-09 - dashboard: revenue chart bars rendered black
 
 - Cause: `ChartContainer` config for `invoiced` had only `label`, so `--color-invoiced` was never defined and `fill='var(--color-invoiced)'` fell back to black.

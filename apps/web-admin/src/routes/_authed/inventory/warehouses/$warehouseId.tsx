@@ -71,7 +71,9 @@ function WarehouseDetail() {
 
 	const stats: Array<[string, number]> = [
 		[t('inventory:warehouses.products'), warehouse.productsCount],
+		[t('inventory:warehouses.components'), warehouse.componentsCount],
 		[t('inventory:warehouses.materials'), warehouse.materialsCount],
+		[t('inventory:warehouses.equipments'), warehouse.equipmentsCount],
 		[t('inventory:warehouses.storages'), warehouse.storagesCount],
 	];
 
@@ -118,7 +120,7 @@ function WarehouseDetail() {
 				</div>
 
 				{/* Stats ------------------------------------------------------ */}
-				<div className='grid grid-cols-2 gap-4 sm:grid-cols-4'>
+				<div className='grid grid-cols-2 gap-4 sm:grid-cols-5'>
 					{stats.map(([label, value]) => (
 						<Card key={label}>
 							<CardHeader className='space-y-0 pb-2'>
@@ -165,6 +167,9 @@ function WarehouseDetail() {
 						<TabsTrigger value='products'>
 							{t('inventory:warehouses.products')}
 						</TabsTrigger>
+						<TabsTrigger value='components'>
+							{t('inventory:warehouses.components')}
+						</TabsTrigger>
 						<TabsTrigger value='materials'>
 							{t('inventory:warehouses.materials')}
 						</TabsTrigger>
@@ -177,6 +182,9 @@ function WarehouseDetail() {
 					</TabsList>
 					<TabsContent value='products'>
 						<WarehouseItemTable warehouseId={warehouseId} itemKind='product' />
+					</TabsContent>
+					<TabsContent value='components'>
+						<WarehouseItemTable warehouseId={warehouseId} itemKind='component' />
 					</TabsContent>
 					<TabsContent value='materials'>
 						<WarehouseItemTable warehouseId={warehouseId} itemKind='material' />

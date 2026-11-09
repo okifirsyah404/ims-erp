@@ -433,8 +433,8 @@ function WarehouseCard({
 					<div className='h-4 w-1/3 rounded bg-muted' />
 				</CardHeader>
 				<CardContent>
-					<div className='grid grid-cols-4 gap-2'>
-						{Array.from({ length: 4 }, (_, index) => (
+					<div className='grid grid-cols-5 gap-2'>
+						{Array.from({ length: 5 }, (_, index) => (
 							<div key={index} className='flex flex-col gap-1'>
 								<div className='mx-auto h-4 w-6 rounded bg-muted' />
 								<div className='mx-auto h-3 w-12 rounded bg-muted' />
@@ -449,6 +449,7 @@ function WarehouseCard({
 
 	const stats: Array<[string, number]> = [
 		[t('inventory:warehouses.products'), warehouse.productsCount],
+		[t('inventory:warehouses.components'), warehouse.componentsCount],
 		[t('inventory:warehouses.materials'), warehouse.materialsCount],
 		[t('inventory:warehouses.equipments'), warehouse.equipmentsCount],
 		[t('inventory:warehouses.storages'), warehouse.storagesCount],
@@ -498,7 +499,7 @@ function WarehouseCard({
 					</div>
 				</CardHeader>
 				<CardContent>
-					<div className='grid grid-cols-4 gap-2 text-center text-sm'>
+					<div className='grid grid-cols-5 gap-2 text-center text-sm'>
 						{stats.map(([label, value]) => (
 							<div key={label} className='flex flex-col'>
 								<span className='font-semibold text-foreground tabular-nums'>

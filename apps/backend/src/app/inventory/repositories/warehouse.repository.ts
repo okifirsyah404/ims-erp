@@ -2,6 +2,7 @@ import { DRIZZLE_TOKEN } from '@di/provider';
 import {
 	items,
 	serialTrackedItems,
+	stockBalances,
 	warehouseAddresses,
 	warehouseOrganizations,
 	warehouseStorages,
@@ -13,9 +14,11 @@ import {
 	and,
 	asc,
 	count,
+	countDistinct,
 	desc,
 	eq,
 	getTableColumns,
+	gt,
 	ilike,
 	inArray,
 	isNotNull,
@@ -309,12 +312,32 @@ export class WarehouseRepository implements IWarehouseRepository {
 			)
 			.groupBy(warehouseStorages.warehouseId);
 
+		// Materials are not serialized, so they count from stock balances:
+		// distinct material items with positive on-hand quantity per warehouse.
+		const materialRows = await this.database
+			.select({
+				warehouseId: stockBalances.warehouseId,
+				value: countDistinct(stockBalances.itemId),
+			})
+			.from(stockBalances)
+			.innerJoin(items, eq(items.id, stockBalances.itemId))
+			.where(
+				and(
+					isNull(items.deletedAt),
+					eq(items.itemKind, 'material'),
+					gt(stockBalances.quantityOnHand, '0'),
+					inArray(stockBalances.warehouseId, warehouseIds),
+				),
+			)
+			.groupBy(stockBalances.warehouseId);
+
 		const byWarehouse = new Map<string, TWarehouseKindCounts>(
 			warehouseIds.map((warehouseId) => [
 				warehouseId,
 				{
 					warehouseId,
 					productsCount: 0,
+					componentsCount: 0,
 					materialsCount: 0,
 					equipmentsCount: 0,
 					storagesCount: 0,
@@ -325,11 +348,16 @@ export class WarehouseRepository implements IWarehouseRepository {
 			if (row.warehouseId === null) continue;
 			const target = byWarehouse.get(row.warehouseId);
 			if (!target) continue;
-			if (row.itemKind === 'product' || row.itemKind === 'component') {
+			if (row.itemKind === 'product') {
 				target.productsCount += row.value;
-			} else if (row.itemKind === 'material') {
-				target.materialsCount += row.value;
+			} else if (row.itemKind === 'component') {
+				target.componentsCount += row.value;
 			}
+		}
+		for (const row of materialRows) {
+			if (row.warehouseId === null) continue;
+			const target = byWarehouse.get(row.warehouseId);
+			if (target) target.materialsCount += row.value;
 		}
 		for (const row of storageRows) {
 			const target = byWarehouse.get(row.warehouseId);
