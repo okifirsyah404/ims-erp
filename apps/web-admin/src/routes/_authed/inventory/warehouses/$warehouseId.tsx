@@ -62,7 +62,7 @@ function WarehouseDetail() {
 	if (isError || !warehouse) {
 		return (
 			<AdminOnly>
-				<p className='p-6 text-sm text-muted-foreground'>
+				<p className='text-sm text-muted-foreground'>
 					{t('inventory:warehouses.notFound')}
 				</p>
 			</AdminOnly>
@@ -71,13 +71,15 @@ function WarehouseDetail() {
 
 	const stats: Array<[string, number]> = [
 		[t('inventory:warehouses.products'), warehouse.productsCount],
+		[t('inventory:warehouses.components'), warehouse.componentsCount],
 		[t('inventory:warehouses.materials'), warehouse.materialsCount],
+		[t('inventory:warehouses.equipments'), warehouse.equipmentsCount],
 		[t('inventory:warehouses.storages'), warehouse.storagesCount],
 	];
 
 	return (
 		<AdminOnly>
-			<div className='flex flex-col gap-6 p-6'>
+			<div className='flex flex-col gap-6'>
 				<div className='flex flex-wrap items-start justify-between gap-4'>
 					<div>
 						<h1 className='text-2xl font-bold'>{warehouse.name}</h1>
@@ -118,7 +120,7 @@ function WarehouseDetail() {
 				</div>
 
 				{/* Stats ------------------------------------------------------ */}
-				<div className='grid grid-cols-2 gap-4 sm:grid-cols-4'>
+				<div className='grid grid-cols-2 gap-4 sm:grid-cols-5'>
 					{stats.map(([label, value]) => (
 						<Card key={label}>
 							<CardHeader className='space-y-0 pb-2'>
@@ -165,6 +167,9 @@ function WarehouseDetail() {
 						<TabsTrigger value='products'>
 							{t('inventory:warehouses.products')}
 						</TabsTrigger>
+						<TabsTrigger value='components'>
+							{t('inventory:warehouses.components')}
+						</TabsTrigger>
 						<TabsTrigger value='materials'>
 							{t('inventory:warehouses.materials')}
 						</TabsTrigger>
@@ -177,6 +182,9 @@ function WarehouseDetail() {
 					</TabsList>
 					<TabsContent value='products'>
 						<WarehouseItemTable warehouseId={warehouseId} itemKind='product' />
+					</TabsContent>
+					<TabsContent value='components'>
+						<WarehouseItemTable warehouseId={warehouseId} itemKind='component' />
 					</TabsContent>
 					<TabsContent value='materials'>
 						<WarehouseItemTable warehouseId={warehouseId} itemKind='material' />

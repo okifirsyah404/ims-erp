@@ -270,6 +270,7 @@ export function installStockDoubles(): void {
 			return warehouseIds.map((warehouseId) => ({
 				warehouseId,
 				productsCount: 0,
+				componentsCount: 0,
 				materialsCount: 0,
 				equipmentsCount: 0,
 				storagesCount: 0,

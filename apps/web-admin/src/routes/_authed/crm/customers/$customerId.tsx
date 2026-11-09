@@ -76,13 +76,13 @@ function CustomerDetailPage() {
 
 	if (isPending) return null;
 	if (isError || !customer) {
-		return <p className='p-6 text-sm text-muted-foreground'>{t('crm:customers.notFound')}</p>;
+		return <p className='text-sm text-muted-foreground'>{t('crm:customers.notFound')}</p>;
 	}
 
 	const active = customer.status === 'active';
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<Link to='/crm/customers' className='text-sm text-muted-foreground hover:underline'>
 				← {t('crm:customers.back')}
 			</Link>

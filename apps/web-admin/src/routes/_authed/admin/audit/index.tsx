@@ -122,7 +122,7 @@ function AuditPage() {
 
 	if (!organizationId) {
 		return (
-			<div className='p-6 text-sm text-muted-foreground'>
+			<div className='text-sm text-muted-foreground'>
 				{t('audit.noOrganization')}
 			</div>
 		);
@@ -130,7 +130,7 @@ function AuditPage() {
 
 	if (!canRead) {
 		return (
-			<div className='p-6 text-sm text-muted-foreground'>
+			<div className='text-sm text-muted-foreground'>
 				{t('audit.noPermission')}
 			</div>
 		);
@@ -140,7 +140,7 @@ function AuditPage() {
 	const pagination = data?.pagination;
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<div>
 				<h1 className='flex items-center gap-2 text-2xl font-bold'>
 					<ScrollText className='size-6' />

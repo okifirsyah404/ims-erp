@@ -16,6 +16,8 @@ import {
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Separator } from '@ims-erp/ui/components/separator';
+import { Textarea } from '@ims-erp/ui/components/textarea';
 import type {
 	TWarehouseDetail,
 	TWarehouseCreateInput,
@@ -178,7 +180,7 @@ export function WarehouseForm({
 					</CardDescription>
 				</CardHeader>
 				<CardContent className='flex flex-col gap-4'>
-					<FieldGroup className='grid gap-4 sm:grid-cols-2'>
+					<FieldGroup>
 						<Field>
 							<FieldLabel htmlFor='warehouse-address-label'>
 								{t('inventory:address.label')}
@@ -189,12 +191,16 @@ export function WarehouseForm({
 								onChange={(event) => setLabel(event.target.value)}
 							/>
 						</Field>
-						<Field>
+					</FieldGroup>
+					<Separator />
+					<FieldGroup className='grid gap-4 sm:grid-cols-3'>
+						<Field className='sm:col-span-3'>
 							<FieldLabel htmlFor='warehouse-address-street'>
 								{t('inventory:address.street')}
 							</FieldLabel>
-							<Input
+							<Textarea
 								id='warehouse-address-street'
+								rows={3}
 								value={street}
 								onChange={(event) => setStreet(event.target.value)}
 							/>

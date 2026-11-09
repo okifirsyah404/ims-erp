@@ -74,6 +74,8 @@ describe('locale values', () => {
 			'admin:users.email',
 			'admin:users.status',
 			'admin:users.filterStatus',
+		'inventory:warehouses.filterStatus',
+		'inventory:warehouses.sortStatus',
 			'admin:invite.email',
 			'admin:invitations.email',
 			'admin:invitations.status',

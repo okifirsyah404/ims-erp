@@ -96,7 +96,7 @@ function QuotationDetailPage() {
 	if (isPending) return null;
 	if (isError) {
 		return (
-			<div className='flex flex-col gap-4 p-6'>
+			<div className='flex flex-col gap-6'>
 				<p className='text-sm text-destructive'>{error.message}</p>
 				<Link to='/sales/quotes' className='text-sm hover:underline'>
 					{t('sales:detail.back')}
@@ -111,7 +111,7 @@ function QuotationDetailPage() {
 	const customer = data.customerSnapshot;
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<Link to='/sales/quotes' className='text-sm text-muted-foreground hover:underline'>
 				{t('sales:detail.back')}
 			</Link>

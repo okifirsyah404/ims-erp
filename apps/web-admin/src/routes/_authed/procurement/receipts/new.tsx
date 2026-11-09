@@ -48,7 +48,7 @@ function NewGoodsReceiptPage() {
 	const setLine = (id: string, patch: Partial<TLineDraft>) => setLines((current) => ({ ...current, [id]: { ...draft(id), ...patch } }));
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<div>
 				<h1 className='text-2xl font-bold'>{t('procurement:receipts.new')}</h1>
 				<p className='text-sm text-muted-foreground'>{t('procurement:receipts.newHint')}</p>

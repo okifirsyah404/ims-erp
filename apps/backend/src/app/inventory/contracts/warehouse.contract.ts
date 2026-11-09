@@ -36,6 +36,14 @@ export const warehouseListQuerySchema = inventoryPaginationSchema.extend({
 	 * unambiguously). Otherwise the value is an exact organization id.
 	 */
 	scope: z.union([z.literal('global'), z.string().min(1)]).optional(),
+	/**
+	 * Lifecycle filter. `all` excludes archived rows; `archived` selects only
+	 * soft-deleted rows. When set it takes precedence over `includeArchived`
+	 * and `isActive`.
+	 */
+	status: z.enum(['all', 'active', 'inactive', 'archived']).optional(),
+	sortBy: z.enum(['name', 'code', 'status']).optional(),
+	sortDir: z.enum(['asc', 'desc']).optional(),
 	includeArchived: booleanQuerySchema.optional(),
 	isActive: booleanQuerySchema.optional(),
 });

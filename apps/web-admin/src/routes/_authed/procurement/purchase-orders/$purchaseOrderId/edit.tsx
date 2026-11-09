@@ -22,7 +22,7 @@ function EditPurchaseOrderPage() {
 	const back = () => void navigate({ to: '/procurement/purchase-orders/$purchaseOrderId', params: { purchaseOrderId } });
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<h1 className='text-2xl font-bold'>{t('procurement:pos.edit')}</h1>
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>

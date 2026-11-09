@@ -21,7 +21,7 @@ function EditBastPage() {
 	const [busy, setBusy] = useState(false);
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<h1 className='text-2xl font-bold'>{bast.data ? t('projects:bast.edit', { code: bast.data.code }) : ''}</h1>
 			{bast.isError ? (
 				<p className='text-sm text-destructive'>{bast.error.message}</p>

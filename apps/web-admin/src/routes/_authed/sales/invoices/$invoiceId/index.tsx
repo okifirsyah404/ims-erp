@@ -92,7 +92,7 @@ function InvoiceDetailPage() {
 	if (isPending) return null;
 	if (isError) {
 		return (
-			<div className='flex flex-col gap-4 p-6'>
+			<div className='flex flex-col gap-6'>
 				<p className='text-sm text-destructive'>{error.message}</p>
 				<Link to='/sales/invoices' className='text-sm hover:underline'>
 					{t('finance:invoices.back')}
@@ -110,7 +110,7 @@ function InvoiceDetailPage() {
 	};
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<Link to='/sales/invoices' className='text-sm text-muted-foreground hover:underline'>
 				{t('finance:invoices.back')}
 			</Link>

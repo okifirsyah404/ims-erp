@@ -66,7 +66,7 @@ function ContractDetailPage() {
 	if (isPending) return null;
 	if (isError) {
 		return (
-			<div className='flex flex-col gap-4 p-6'>
+			<div className='flex flex-col gap-6'>
 				<p className='text-sm text-destructive'>{error.message}</p>
 				<Link to='/subscription' className='text-sm hover:underline'>
 					{t('licensing:contracts.back')}
@@ -120,7 +120,7 @@ function ContractDetailPage() {
 	const anyMasked = data.keys.some((key) => key.masked);
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<Link to='/subscription' className='text-sm text-muted-foreground hover:underline'>
 				{t('licensing:contracts.back')}
 			</Link>

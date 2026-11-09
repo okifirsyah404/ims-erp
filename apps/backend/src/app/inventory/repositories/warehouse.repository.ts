@@ -2,6 +2,7 @@ import { DRIZZLE_TOKEN } from '@di/provider';
 import {
 	items,
 	serialTrackedItems,
+	stockBalances,
 	warehouseAddresses,
 	warehouseOrganizations,
 	warehouseStorages,
@@ -13,13 +14,18 @@ import {
 	and,
 	asc,
 	count,
+	countDistinct,
+	desc,
 	eq,
 	getTableColumns,
+	gt,
 	ilike,
 	inArray,
+	isNotNull,
 	isNull,
 	ne,
 	or,
+	sql,
 } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import type {
@@ -27,6 +33,7 @@ import type {
 	TWarehouseCreateData,
 	TWarehouseKindCounts,
 	TWarehousePaginationRequest,
+	TWarehouseStatusFilter,
 	TWarehouseUpdateData,
 } from '../contracts/warehouse.repository.interface';
 import type { TWarehouseSelect } from '@drizzle/schemas/inventory.schema';
@@ -67,11 +74,21 @@ export class WarehouseRepository implements IWarehouseRepository {
 			organizationId,
 			includeArchived,
 			isActive,
+			status,
+			sortBy = 'name',
+			sortDir = 'asc',
 		} = request;
 
+		// `status` wins when present; otherwise fall back to the legacy flags.
+		const lifecycleFilters = status
+			? lifecycleFilter(status)
+			: [
+					includeArchived ? undefined : isNull(warehouses.deletedAt),
+					isActive === undefined ? undefined : eq(warehouses.isActive, isActive),
+				];
+
 		const filters = [
-			includeArchived ? undefined : isNull(warehouses.deletedAt),
-			isActive === undefined ? undefined : eq(warehouses.isActive, isActive),
+			...lifecycleFilters,
 			// Tri-state: `undefined` = every scope, `null` = global only.
 			...scopeFilter(organizationId),
 			search
@@ -89,11 +106,20 @@ export class WarehouseRepository implements IWarehouseRepository {
 			.from(warehouses)
 			.where(where);
 
+		const direction = sortDir === 'desc' ? desc : asc;
+		const primarySort =
+			sortBy === 'code'
+				? direction(warehouses.code)
+				: sortBy === 'status'
+					? direction(STATUS_RANK)
+					: direction(warehouses.name);
+
 		const data = await this.database
 			.select()
 			.from(warehouses)
 			.where(where)
-			.orderBy(asc(warehouses.name))
+			// Secondary key keeps pages stable when the primary column ties.
+			.orderBy(primarySort, asc(warehouses.name), asc(warehouses.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
 
@@ -286,12 +312,32 @@ export class WarehouseRepository implements IWarehouseRepository {
 			)
 			.groupBy(warehouseStorages.warehouseId);
 
+		// Materials are not serialized, so they count from stock balances:
+		// distinct material items with positive on-hand quantity per warehouse.
+		const materialRows = await this.database
+			.select({
+				warehouseId: stockBalances.warehouseId,
+				value: countDistinct(stockBalances.itemId),
+			})
+			.from(stockBalances)
+			.innerJoin(items, eq(items.id, stockBalances.itemId))
+			.where(
+				and(
+					isNull(items.deletedAt),
+					eq(items.itemKind, 'material'),
+					gt(stockBalances.quantityOnHand, '0'),
+					inArray(stockBalances.warehouseId, warehouseIds),
+				),
+			)
+			.groupBy(stockBalances.warehouseId);
+
 		const byWarehouse = new Map<string, TWarehouseKindCounts>(
 			warehouseIds.map((warehouseId) => [
 				warehouseId,
 				{
 					warehouseId,
 					productsCount: 0,
+					componentsCount: 0,
 					materialsCount: 0,
 					equipmentsCount: 0,
 					storagesCount: 0,
@@ -302,11 +348,16 @@ export class WarehouseRepository implements IWarehouseRepository {
 			if (row.warehouseId === null) continue;
 			const target = byWarehouse.get(row.warehouseId);
 			if (!target) continue;
-			if (row.itemKind === 'product' || row.itemKind === 'component') {
+			if (row.itemKind === 'product') {
 				target.productsCount += row.value;
-			} else if (row.itemKind === 'material') {
-				target.materialsCount += row.value;
+			} else if (row.itemKind === 'component') {
+				target.componentsCount += row.value;
 			}
+		}
+		for (const row of materialRows) {
+			if (row.warehouseId === null) continue;
+			const target = byWarehouse.get(row.warehouseId);
+			if (target) target.materialsCount += row.value;
 		}
 		for (const row of storageRows) {
 			const target = byWarehouse.get(row.warehouseId);
@@ -450,6 +501,38 @@ export class WarehouseRepository implements IWarehouseRepository {
 		return value;
 	}
 }
+
+/**
+ * Lifecycle predicates for the list status filter.
+ *
+ * @remarks
+ * `all` means every alive row, so archived rows stay hidden unless `archived`
+ * is picked explicitly.
+ *
+ * @param status - The requested lifecycle bucket
+ */
+export function lifecycleFilter(status: TWarehouseStatusFilter) {
+	switch (status) {
+		case 'active':
+			return [isNull(warehouses.deletedAt), eq(warehouses.isActive, true)];
+		case 'inactive':
+			return [isNull(warehouses.deletedAt), eq(warehouses.isActive, false)];
+		case 'archived':
+			return [isNotNull(warehouses.deletedAt)];
+		case 'all':
+			return [isNull(warehouses.deletedAt)];
+	}
+}
+
+/**
+ * Sort rank for the `status` column: active, then inactive, then archived.
+ * Archived is checked first because an archived row can still carry `is_active`.
+ */
+const STATUS_RANK = sql<number>`CASE
+	WHEN ${warehouses.deletedAt} IS NOT NULL THEN 2
+	WHEN ${warehouses.isActive} THEN 0
+	ELSE 1
+END`;
 
 /**
  * Scope predicate for exact matching, including the global (`NULL`) scope.

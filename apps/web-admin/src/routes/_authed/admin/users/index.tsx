@@ -223,7 +223,7 @@ function UsersPage() {
 
 	if (!organizationId) {
 		return (
-			<div className='p-6 text-sm text-muted-foreground'>
+			<div className='text-sm text-muted-foreground'>
 				{t('nav:organization.required')}
 			</div>
 		);
@@ -262,7 +262,7 @@ function UsersPage() {
 	}
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<div className='flex items-start justify-between gap-4'>
 				<div>
 					<h1 className='flex items-center gap-2 text-2xl font-bold'>

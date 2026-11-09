@@ -72,7 +72,7 @@ function ItemDetailPage() {
 	if (isError || !item) {
 		return (
 			<AdminOnly>
-				<p className='p-6 text-sm text-muted-foreground'>
+				<p className='text-sm text-muted-foreground'>
 					{t('inventory:detail.notFound')}
 				</p>
 			</AdminOnly>
@@ -97,7 +97,7 @@ function ItemDetailPage() {
 
 	return (
 		<AdminOnly>
-			<div className='flex flex-col gap-6 p-6'>
+			<div className='flex flex-col gap-6'>
 				<div className='flex items-start justify-between'>
 					<div>
 						<div className='flex items-center gap-2'>

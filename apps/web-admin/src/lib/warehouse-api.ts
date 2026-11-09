@@ -64,6 +64,7 @@ export type TWarehouseStorage = {
 /** A list-page warehouse row decorated with backend kind counts. */
 export type TWarehouseWithCounts = TWarehouse & {
 	productsCount: number;
+	componentsCount: number;
 	materialsCount: number;
 	equipmentsCount: number;
 	storagesCount: number;
@@ -222,6 +223,10 @@ export async function listWarehouses(params?: {
 	scope?: string;
 	includeArchived?: boolean;
 	isActive?: boolean;
+	/** Lifecycle bucket. `archived` selects only soft-deleted rows. */
+	status?: 'all' | 'active' | 'inactive' | 'archived';
+	sortBy?: 'name' | 'code' | 'status';
+	sortDir?: 'asc' | 'desc';
 }) {
 	const search = new URLSearchParams();
 	if (params?.page) search.set('page', String(params.page));
@@ -232,6 +237,9 @@ export async function listWarehouses(params?: {
 	if (params?.isActive !== undefined) {
 		search.set('isActive', String(params.isActive));
 	}
+	if (params?.status) search.set('status', params.status);
+	if (params?.sortBy) search.set('sortBy', params.sortBy);
+	if (params?.sortDir) search.set('sortDir', params.sortDir);
 	const query = search.toString();
 
 	const envelope = (await request<TWarehouseWithCounts[]>(

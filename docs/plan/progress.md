@@ -12,6 +12,85 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-09 - warehouse: components split from products, materials counted from balances
+
+- Contract change: `TWarehouseKindCounts` now has `componentsCount`. `productsCount` counts `product` only (was product + component). `materialsCount` counts distinct material items with `quantity_on_hand > 0` in `stock_balances` (was always 0, because it counted serialized units and materials are not serialized). `componentsCount` counts live serialized `component` units.
+- Backend: `warehouse.repository.ts` (`countKinds`, new `materialRows` query), `warehouse.repository.interface.ts`, `warehouse.service.ts` (`getWarehouse` passes `componentsCount`), and test fakes in `warehouse.service.test.ts`, `warehouse-authorization.test.ts`, `stock-test-doubles.ts`, `stock.service.test.ts`.
+- Web-admin: `warehouse-api.ts` type; list card and detail stats now 5 items (Products, Components, Materials, Equipments, Storages); detail page gets a Components tab (`itemKind='component'`); Materials tab unchanged (`itemKind='material'`).
+- Locales: `inventory:warehouses.components` added (en "Components", id "Komponen").
+- Enum and DB check constraint unchanged (`product|component|material`).
+- Verified: `bunx tsc --noEmit` clean in `apps/backend`. `bun test` in `apps/backend` 803 pass / 0 fail (the `ims_erp_test does not exist` trace in `single-organization.test.ts` is logged, not a failure, as before). `bunx tsc -b` clean and `bun test` 45 pass in `apps/web-admin`. `bun run test` in `packages/locales` 70 pass.
+- Not verified: the new materials query and component split against a real database; no unit test covers `countKinds` (its fakes return zeros). Not verified in browser.
+- `docs/database/` not changed (no schema change). Backlog: no `ERP-*` status change.
+
+## 2026-11-09 - warehouse detail: item image column (placeholder)
+
+- `apps/web-admin/src/components/inventory/warehouse-item-table.tsx`: new first column `Image` in the product/material tables on `/inventory/warehouses/$warehouseId`. Static `picsum.photos` placeholder, same pattern as the warehouse card, with a TODO to render `item.imageUrl`.
+- Backend unchanged. The list endpoint (`GET /items`) does not return `imageUrl`; only the detail (`getItem`) does via `withImageUrl`. Real images in lists need a backend change, not done here.
+- Locales: `inventory:warehouses.image` added (en "Image", id "Gambar").
+- Verified: `bunx tsc -b` clean in `apps/web-admin`. `bun test` in `apps/web-admin` 45 pass / 0 fail. `bun run test` in `packages/locales` 70 pass / 0 fail.
+- Not verified in browser.
+- `docs/database/` not changed (UI only). Backlog: no `ERP-*` status change.
+
+## 2026-11-09 - warehouse detail: equipment count stat
+
+- `apps/web-admin/src/routes/_authed/inventory/warehouses/$warehouseId.tsx`: added the `equipmentsCount` stat card (`inventory:warehouses.equipments`) between Materials and Storages, matching the list card. Backend already returns `equipmentsCount` on `GET /warehouses/:id` (`withEquipmentCounts` in `warehouse.service.ts`). No backend change.
+- Verified: `bunx tsc -b` clean in `apps/web-admin`. `bun test` in `apps/web-admin` 45 pass / 0 fail.
+- Not verified in browser: the detail page with a real warehouse id.
+- `docs/database/` not changed (UI only). Backlog: no `ERP-*` status change.
+
+## 2026-11-09 - dashboard: revenue chart bars rendered black
+
+- Cause: `ChartContainer` config for `invoiced` had only `label`, so `--color-invoiced` was never defined and `fill='var(--color-invoiced)'` fell back to black.
+- `apps/web-admin/src/components/dashboard/dashboard-page.tsx`: added `color: 'var(--chart-1)'` to the `invoiced` config entry.
+- Verified: `bunx tsc -b` clean in `apps/web-admin`. `bun test` in `apps/web-admin` 45 pass / 0 fail. Firefox on `/`: 6 bars, computed fill `oklch(0.7156 0.0605 248.685)` (= `--chart-1`). Screenshot did not capture the page, so visual check is not done.
+- Not applied: tweakcn theme `cmc45c7oo000f04jvfpbo2gf9`. The page did not expose its CSS variables; needs the export values.
+- `docs/database/` not changed (UI only). Backlog: no `ERP-*` status change.
+
+## 2026-11-09 - warehouse form: address section layout
+
+- `packages/locales` `inventory:address.street`: en "Street" → "Address", id "Jalan" → "Alamat". Key unchanged.
+- `apps/web-admin/src/components/inventory/warehouse-form.tsx`: label field moved into its own group, separated from the rest of the address by `Separator` (`@ims-erp/ui/components/separator`). Street input is now `Textarea` (`rows={3}`), spanning all three grid columns (`sm:col-span-3`). rt, rw, postal code stay in the grid below. `id` and `htmlFor` unchanged.
+- Backend unchanged: `street` is still a plain string, multi-line values are stored as typed.
+- Verified: `bun run test` in `packages/locales` 70 pass / 0 fail (run after the label change). `bunx tsc -b` clean in `apps/web-admin` after the separator and column-span change. `bun test` in `apps/web-admin` 45 pass / 0 fail (run after the textarea change, before the layout change).
+- Verified in browser (Firefox via `firefox-devtools-mcp`, `--connect-existing`, logged-in profile, 1920×947 viewport): `/inventory/warehouses/new` renders the Label field, a separator, then the full-width Address textarea (1584×64 px, `TEXTAREA`), then RT, RW, Postal code, Province, Regency, District, Village. English only. Not checked: Indonesian locale, filled-in values, edit form `/inventory/warehouses/$id/edit`.
+- Commit: `4de16b3` on `feat/adjust-shadcn-theme` (not pushed).
+- `docs/database/` not changed (UI only). Backlog: no `ERP-*` status change.
+
+## 2026-11-09 - warehouse list: status filter and sort (name, code, status)
+
+- Backend `inventory`: `warehouseListQuerySchema` gained `status` (`all | active | inactive | archived`), `sortBy` (`name | code | status`), `sortDir` (`asc | desc`). `status` overrides the legacy `includeArchived` / `isActive` flags when present.
+- `warehouse.repository.ts`: `lifecycleFilter(status)` maps `all` → alive, `active` → alive + `is_active = true`, `inactive` → alive + `is_active = false`, `archived` → `deleted_at IS NOT NULL`. Sort by `name` / `code` / `STATUS_RANK` (active 0, inactive 1, archived 2), then `name`, then `id` as tie-breakers so pages stay stable.
+- Web-admin: `/inventory/warehouses` checkbox "Include archived" replaced by a `Funnel` popover (status, sort by, order) with draft/Apply/Reset, same pattern as `admin/users`. Route `validateSearch` and `listWarehouses` carry the new params.
+- i18n: `inventory:warehouses.{filters,filtersTitle,filterStatus,statusAll,statusArchived,sortBy,sortName,sortCode,sortStatus,sortOrder,sortAsc,sortDesc,reset,apply}` added in en and id. `inventory:warehouses.includeArchived` removed from both bundles (dead-keys guard green). `listWarehouses` in `lib/warehouse-api.ts` still accepts `includeArchived` as a param, but the warehouse list no longer passes it.
+- Parity allowlist: `inventory:warehouses.filterStatus` and `sortStatus` added to `ALLOWED_IDENTICAL` (the word "Status" is the same in Indonesian).
+- Tests: `apps/backend/test/unit/warehouse-list-filter.test.ts` (4 tests, renders each lifecycle predicate to SQL via `PgDialect`, no DB). `lifecycleFilter` exported for that test.
+- Verified: backend `bunx tsc --noEmit` clean; backend `bun test` 803 pass / 0 fail. The `ims_erp_test does not exist` / `organization_role` stack trace printed by `single-organization.test.ts` did not fail the run; cause not investigated (no test DB in this session). `bun run lint` backend and web-admin: warnings listed, none in files touched here; baseline not compared; `packages/locales` `bun test` 70 pass / 0 fail after removing unused `warehouses.archivedBadge`; web-admin `bunx tsc -b` clean, `bun test` 45 pass / 0 fail.
+- Not verified: sort and status against a live DB (no DB run this session); browser walk-through of the popover and card grid.
+- `docs/database/` not changed (no schema or column change). Backlog: no `ERP-*` status change; ERP-0027 stays `implemented`. `features.md` unchanged.
+- Header "New warehouse" button now has a leading `Plus` icon (`lucide-react`, `mr-2 size-4`, `aria-hidden`). Empty-state action button with the same label is unchanged. Verified: `bunx tsc -b` clean in `apps/web-admin`. Not verified in browser.
+- `graphify update .` run after code change.
+
+## 2026-11-09 - web-admin: page padding and spacing made consistent
+
+- Page padding now comes only from `components/layout/main-layout.tsx` (`p-4 pt-0 md:p-6`). Route roots no longer add their own `p-6` / `p-4`.
+- `main-layout.tsx`: added `print:p-0` so printed documents keep zero page padding.
+- Route roots standardized to `flex flex-col gap-6`. Detail pages that had `flex flex-col gap-4 p-6` moved to `gap-6`. Print pages (`flex flex-col gap-4 p-6 print:p-0`) keep `gap-4`, only `p-6` removed.
+- Removed `p-6` from error and not-found `<p>` in routes, so they sit under the layout padding.
+- Scripted rewrite over `src/routes/**/*.tsx` plus `components/inventory/item-category-list.tsx` and `components/finance/invoice-list.tsx`: 63 files changed (route files plus those two), 85 replacements. Script removed after use.
+- Not changed: auth pages (`login`, `forgot-password`, `reset-password`, full-screen, outside the layout) and inner card or form padding. `space-y-*` on non-root containers kept. `max-w-*` widths in account, profiles, asset-form kept.
+- Corrects the 2026-11-06 entry: that entry said self-padding was removed, but `p-6` root wrappers remained in ~60 route files. Fixed here.
+- Verified: `bunx tsc --noEmit` clean in `apps/web-admin`; `bun run test` 45 pass / 0 fail; grep for leftover `flex flex-col gap-N p-N` root wrappers returns none.
+- Not verified in browser. Print output not checked.
+- `docs/database/` not read (UI-only). Backlog: no `ERP-*` status change.
+
+## 2026-11-09 - web-admin: search icon on warehouse list search field
+
+- `apps/web-admin/src/components/inventory/warehouse-list.tsx`: search input at `/inventory/warehouses` now `InputGroup` with leading `Search` icon (`InputGroupAddon align='inline-start'`). Input type `search`, `aria-label` added.
+- Verified: `bunx tsc --noEmit` in `apps/web-admin` clean; `bun run test` in `apps/web-admin` 45 pass / 0 fail; root `bun run typecheck` 3/3 successful.
+- Not verified in browser. No new i18n keys. Backlog: no `ERP-*` status change.
+- `docs/database/` not read in this change (UI-only, no schema or cross-module change). Not formally reviewed.
+
 ## Completed - merge of main into merge/main-sync, stage 2 (Sales owns AR), 2026-11-09
 
 Branch `merge/main-into-main-sync` (from `merge/main-sync` @ `0efffe1`),

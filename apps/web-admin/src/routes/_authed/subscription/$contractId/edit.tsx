@@ -20,10 +20,10 @@ function EditContractPage() {
 	const back = () => void navigate({ to: '/subscription/$contractId', params: { contractId } });
 
 	if (isPending) return null;
-	if (isError) return <p className='p-6 text-sm text-destructive'>{error.message}</p>;
+	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<div>
 				<h1 className='text-2xl font-bold'>{t('licensing:contracts.edit')}</h1>
 				<p className='text-sm text-muted-foreground'>{data.code}</p>

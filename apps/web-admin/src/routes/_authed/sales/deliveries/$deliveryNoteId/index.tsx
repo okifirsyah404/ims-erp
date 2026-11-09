@@ -66,7 +66,7 @@ function DeliveryNoteDetailPage() {
 	if (isPending) return null;
 	if (isError) {
 		return (
-			<div className='flex flex-col gap-4 p-6'>
+			<div className='flex flex-col gap-6'>
 				<p className='text-sm text-destructive'>{error.message}</p>
 				<Link to='/sales/deliveries' className='text-sm hover:underline'>
 					{t('sales:deliveries.back')}
@@ -100,7 +100,7 @@ function DeliveryNoteDetailPage() {
 		action === 'ship' ? t('sales:deliveries.ship') : action === 'deliver' ? t('sales:deliveries.deliver') : t('sales:deliveries.cancel');
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<Link to='/sales/deliveries' className='text-sm text-muted-foreground hover:underline'>
 				{t('sales:deliveries.back')}
 			</Link>

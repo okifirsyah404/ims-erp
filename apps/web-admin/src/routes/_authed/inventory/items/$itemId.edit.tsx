@@ -55,7 +55,7 @@ function EditItemPage() {
 	if (isError || !item) {
 		return (
 			<AdminOnly>
-				<p className='p-6 text-sm text-muted-foreground'>
+				<p className='text-sm text-muted-foreground'>
 					{t('inventory:detail.notFound')}
 				</p>
 			</AdminOnly>

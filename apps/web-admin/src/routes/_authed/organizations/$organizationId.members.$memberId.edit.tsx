@@ -113,14 +113,14 @@ function EditMemberPage() {
 
 	if (isPending) {
 		return (
-			<div className='p-6 text-sm text-muted-foreground'>
+			<div className='text-sm text-muted-foreground'>
 				{t('common:state.loading')}
 			</div>
 		);
 	}
 	if (!member) {
 		return (
-			<div className='p-6 text-sm text-muted-foreground'>
+			<div className='text-sm text-muted-foreground'>
 				{t('common:state.noResults')}
 			</div>
 		);
@@ -129,7 +129,7 @@ function EditMemberPage() {
 	const effectiveRole = role ?? member.role;
 
 	return (
-		<div className='flex flex-col gap-6 p-6'>
+		<div className='flex flex-col gap-6'>
 			<div>
 				<h1 className='text-2xl font-bold'>
 					{t('memberEdit.title')} — {member.user?.name ?? member.userId}

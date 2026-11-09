@@ -4,6 +4,12 @@ import type {
 	TWarehouseSelect,
 } from '@drizzle/schemas/inventory.schema';
 
+/** Lifecycle filter for the warehouse list. */
+export type TWarehouseStatusFilter = 'all' | 'active' | 'inactive' | 'archived';
+
+/** Sortable columns for the warehouse list. `status` ranks active < inactive < archived. */
+export type TWarehouseSortField = 'name' | 'code' | 'status';
+
 /**
  * Pagination + filters for the warehouse list endpoint.
  *
@@ -28,19 +34,27 @@ export type TWarehousePaginationRequest = {
 	includeArchived?: boolean;
 	/** Exact `is_active` filter. */
 	isActive?: boolean;
+	/** Lifecycle filter. When set, overrides `includeArchived` and `isActive`. */
+	status?: TWarehouseStatusFilter;
+	/** Sort column. Defaults to `name`. */
+	sortBy?: TWarehouseSortField;
+	/** Sort direction. Defaults to `asc`. */
+	sortDir?: 'asc' | 'desc';
 };
 
 /**
  * Item-kind + storage counts for one warehouse.
  *
  * @remarks
- * `productsCount` includes both `product` and `component` kinds (a component
- * is a sellable good in this ERP's vocabulary). Counts come from live
- * serialized units, so they answer "what is physically here".
+ * Serialized kinds (`product`, `component`) count live serialized units, so
+ * they answer "what is physically here". Materials are not serialized:
+ * `materialsCount` counts distinct material items with a positive on-hand
+ * quantity in `stock_balances` for the warehouse.
  */
 export type TWarehouseKindCounts = {
 	warehouseId: string;
 	productsCount: number;
+	componentsCount: number;
 	materialsCount: number;
 	/** Alive `equipment`-typed assets currently located in the warehouse. */
 	equipmentsCount: number;
