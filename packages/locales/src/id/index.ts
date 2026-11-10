@@ -15,6 +15,7 @@ import procurement_ from './procurement';
 import projects_ from './projects';
 import licensing_ from './licensing';
 import tax_ from './tax';
+import hr_ from './hr';
 
 /** Indonesian resources — same namespace/key shape as `en`. */
 export const id = {
@@ -35,4 +36,5 @@ export const id = {
 	projects: projects_,
 	licensing: licensing_,
 	tax: tax_,
+	hr: hr_,
 } as const;

@@ -183,6 +183,13 @@ describe('locale values', () => {
 			'tax:withholding.status',
 			// "Transfer" is a loanword in Indonesian.
 			'assets:disposalMethod.transfer',
+			// Work arrangements use the English terms verbatim in Indonesian HR.
+			'hr:workType.onsite',
+			'hr:workType.remote',
+			'hr:workType.hybrid',
+			// "Company-level" is the code's own term for organization_id NULL.
+			'hr:list.companyLevel',
+			'hr:detail.companyLevel',
 			// Standard accounting vocabulary is identical in Indonesian.
 			'finance:normalBalance.debit',
 			'finance:normalBalance.credit',

@@ -115,6 +115,11 @@ const DYNAMIC_PREFIXES = [
 	'licensing:status.',
 	'licensing:cycle.',
 	'licensing:source.',
+	// Employee enum labels (status, employment type, work type) come from
+	// server values and are composed by the HR UI.
+	'hr:status.',
+	'hr:employmentType.',
+	'hr:workType.',
 	'licensing:keys.source.',
 	'licensing:keys.status.',
 	'licensing:events.kind.',

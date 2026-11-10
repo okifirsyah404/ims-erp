@@ -31,6 +31,7 @@ declare module 'i18next' {
 		projects: typeof en.projects;
 		licensing: typeof en.licensing;
 		tax: typeof en.tax;
+		hr: typeof en.hr;
 	}
 
 	interface CustomTypeOptions {

@@ -15,6 +15,7 @@ import procurement from './procurement';
 import projects from './projects';
 import licensing from './licensing';
 import tax from './tax';
+import hr from './hr';
 
 /**
  * English resources, grouped by namespace. This bundle is the source of
@@ -38,6 +39,7 @@ export const en = {
 	projects,
 	licensing,
 	tax,
+	hr,
 } as const;
 
 export type Namespace = keyof typeof en;
