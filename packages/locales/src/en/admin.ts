@@ -132,8 +132,6 @@ const admin = {
 	'orgDetail.membersEmpty': 'No members yet.',
 	'orgDetail.name': 'Name',
 	'orgDetail.slug': 'Slug',
-	'orgDetail.memberRole': 'Role',
-	'orgDetail.memberJoined': 'Joined',
 	'orgDetail.notFound': 'Organization not found (or you lack access).',
 	'orgDetail.backToList': 'Back to organizations',
 	'orgDetail.createdOn': '{{slug}} · created {{date}}',

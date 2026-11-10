@@ -107,12 +107,3 @@ export class NumberingPatternError extends AppError {
 	}
 }
 
-/**
- * The deployment serves one company with one organization (ADR-0012): a
- * second one cannot be created or restored next to the live one.
- */
-export class SingleOrganizationError extends AppError {
-	constructor() {
-		super(409, 'organization.singleCompany', 'Only one organization is allowed');
-	}
-}

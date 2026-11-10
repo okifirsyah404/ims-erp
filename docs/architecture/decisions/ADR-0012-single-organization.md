@@ -1,8 +1,10 @@
 # ADR-0012 — One Company, One Organization
 
-- **Status:** accepted by the module owner (2026-11-05: "dibikin 1 organisasi
-  aja"); programmer A (Oki) to acknowledge in the merge PR, because it
-  amends his ADR-0007 and ADR-0010.
+- **Status:** superseded (2026-11-08) by ADR-0012
+  (`ADR-0012-multi-organization.md`), which restores ADR-0007 §1: multiple
+  internal organizations are allowed. Its creation/restore 409 gate
+  (`SingleOrganizationError`, `organization.singleCompany`) has been removed;
+  the seeder still seeds only the first organization.
 - **Context:** ADR-0007 allowed several internal organizations (departments)
   inside the one company, and ADR-0010 linked warehouses to them. The owner
   confirmed the business is one company without separate departments, and

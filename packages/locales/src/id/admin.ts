@@ -136,8 +136,6 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgDetail.membersEmpty': 'Belum ada anggota.',
 	'orgDetail.name': 'Nama',
 	'orgDetail.slug': 'Slug',
-	'orgDetail.memberRole': 'Peran',
-	'orgDetail.memberJoined': 'Bergabung',
 	'orgDetail.notFound': 'Organisasi tidak ditemukan (atau Anda tidak memiliki akses).',
 	'orgDetail.backToList': 'Kembali ke daftar organisasi',
 	'orgDetail.createdOn': '{{slug}} · dibuat {{date}}',

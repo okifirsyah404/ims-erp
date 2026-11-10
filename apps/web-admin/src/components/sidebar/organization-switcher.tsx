@@ -182,8 +182,8 @@ export function OrganizationSwitcher() {
 								{t('organization.manage')}
 							</div>
 						</DropdownMenuItem>
-						{/* One company, one organization (ADR-0012). */}
-						{organizations_.length === 0 && (
+						{/* New organization: application admins only (ADR-0007). */}
+						{isAppAdmin && (
 							<DropdownMenuItem
 								className='gap-2 p-2'
 								onClick={() => navigate({ to: '/organizations/new' })}
