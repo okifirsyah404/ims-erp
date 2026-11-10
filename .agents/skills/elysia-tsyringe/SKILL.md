@@ -30,8 +30,9 @@ Reference these guidelines when:
 
 ### 2.1 Expose controllers as static `plugin()` factories — CRITICAL
 
-One plugin per domain module. The factory builds the Elysia instance and
-returns it; the entrypoint mounts it with `.use()`.
+One plugin per controller; each module groups its controllers behind a
+`<module>Module()` factory in `index.ts`. The factory builds the Elysia
+instance and returns it; the entrypoint mounts it with `.use()`.
 
 ```typescript
 // apps/backend/src/app/location/controllers/location.controller.ts — the pattern
@@ -46,12 +47,17 @@ export class LocationController {
 	}
 }
 
-// src/app/app.ts — the root app owns every controller mount
+// src/app/app.ts — the root app mounts module factories, not controllers
 export function createApp() {
 	return new Elysia()
 		.mount(auth.handler)
 		.use(openapi({ path: '/docs', documentation: betterAuthOpenApiDocument }))
-		.use(LocationController.plugin());
+		.use(locationModule());
+}
+
+// src/app/location/index.ts — the module entry point groups its controllers
+export function locationModule() {
+	return new Elysia({ name: 'location' }).use(LocationController.plugin());
 }
 
 // src/index.ts — registration and cross-cutting plugins only
@@ -127,6 +133,9 @@ typing; renamed to `errorEnvelope()`).
   request and defeats the once-per-lifetime pattern.
 - Mounting routes before `registerProvider` has run — repositories inject
   `undefined` connections.
+- Listing individual controllers in `src/app/app.ts` — mount
+  `<module>Module()` factories instead; module-internal route ordering
+  stays inside the module.
 - `scope: 'local'` in `.onError` options — the option is `as: 'local'`.
 - Local helpers named `error`/`status` inside `plugin()`.
 
