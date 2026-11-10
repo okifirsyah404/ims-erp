@@ -296,6 +296,12 @@ const api: Record<keyof typeof en, string> = {
 	'licensing.apiKey.notFound': 'Kunci API tidak ditemukan',
 	'licensing.activationNotFound': 'Aktivasi tidak ditemukan atau sudah dilepas',
 
+	// HR (ERP-0034)
+	'hr.employeeNotFound': 'Karyawan tidak ditemukan',
+	'hr.companyEmployeeForbidden': 'Karyawan company-level hanya dikelola oleh admin aplikasi',
+	'hr.employeeEmailTaken': 'Email atau kode login sudah dipakai karyawan lain',
+	'hr.employeeInvite': 'Invitasi karyawan gagal',
+
 	// Pajak (ERP-0016)
 	'accounting.taxTypeNotFound': 'Jenis pajak tidak ditemukan',
 	'accounting.taxTypeOverlap':

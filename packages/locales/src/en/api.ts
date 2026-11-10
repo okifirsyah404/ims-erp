@@ -296,6 +296,12 @@ const api = {
 	'licensing.apiKey.notFound': 'API key not found',
 	'licensing.activationNotFound': 'Activation not found or already released',
 
+	// HR (ERP-0034)
+	'hr.employeeNotFound': 'Employee not found',
+	'hr.companyEmployeeForbidden': 'Company-level employees are managed by application admins only',
+	'hr.employeeEmailTaken': 'Another employee already uses this login email or code',
+	'hr.employeeInvite': 'The employee invitation failed',
+
 	// Tax (ERP-0016)
 	'accounting.taxTypeNotFound': 'Tax type not found',
 	'accounting.taxTypeOverlap':

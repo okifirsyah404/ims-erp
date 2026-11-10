@@ -24,6 +24,7 @@ import { DeliveryNoteController } from './sales/controllers/delivery-note.contro
 import { GoodsReceiptController, PurchaseOrderController, SupplierController } from './procurement';
 import { ProjectController } from './projects';
 import { ServiceTicketController, WarrantyController } from './aftersales';
+import { EmployeeController } from './hr';
 import { LicenseApiController, LicensingController } from './licensing';
 import { TaxController, LedgerController } from './accounting';
 import { PaymentController } from './accounting/controllers/payment.controller';
@@ -104,6 +105,7 @@ export function createApp() {
 			.use(ProjectController.plugin())
 			.use(WarrantyController.plugin())
 			.use(ServiceTicketController.plugin())
+			.use(EmployeeController.plugin())
 			.use(LicensingController.plugin())
 			.use(LicenseApiController.plugin())
 			.use(SalesController.plugin())
