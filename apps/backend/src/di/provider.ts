@@ -10,10 +10,11 @@ import {
 	type ITransactionRunner,
 	TRANSACTION_RUNNER_TOKEN,
 } from '@providers/database/transaction-runner';
+import { CacheClient, type ICacheClient } from '@cache/cache.client';
 import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { DependencyContainer } from 'tsyringe';
-import { DRIZZLE_TOKEN, REDIS_TOKEN } from './tokens';
+import { CACHE_CLIENT_TOKEN, DRIZZLE_TOKEN, REDIS_TOKEN } from './tokens';
 
 /**
  * Re-exported aliases, not redefinitions: `tokens.ts` is the single
@@ -21,7 +22,7 @@ import { DRIZZLE_TOKEN, REDIS_TOKEN } from './tokens';
  * `Symbol`. Modules that only need a token should prefer `@di/tokens` so
  * they stay clear of the client imports in this file.
  */
-export { DRIZZLE_TOKEN, REDIS_TOKEN };
+export { CACHE_CLIENT_TOKEN, DRIZZLE_TOKEN, REDIS_TOKEN };
 
 export function registerProvider(container: DependencyContainer) {
 	container.register<BunSQLDatabase>(DRIZZLE_TOKEN, {
@@ -29,6 +30,9 @@ export function registerProvider(container: DependencyContainer) {
 	});
 	container.register<RedisClient>(REDIS_TOKEN, {
 		useValue: redisClient,
+	});
+	container.register<ICacheClient>(CACHE_CLIENT_TOKEN, {
+		useClass: CacheClient,
 	});
 	container.register<IObjectStorage>(OBJECT_STORAGE_TOKEN, {
 		useValue: s3ObjectStorage,

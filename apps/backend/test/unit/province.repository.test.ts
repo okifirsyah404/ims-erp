@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { ProvinceRepository } from '../../src/app/location/repositories/province.repository';
-import { mockDb, mockRedis } from '../helpers/mock-db';
+import { mockCache, mockDb } from '../helpers/mock-db';
 
 // Cache round-trips rows through JSON, so Dates come back as strings; the
 // repository returns the deserialized cache value as-is.
@@ -16,9 +16,9 @@ const row = {
 describe('ProvinceRepository', () => {
 	test('findAll: cache miss queries DB excluding soft-deleted rows, then caches with 300s TTL', async () => {
 		const { db, captured } = mockDb({ rows: [row] });
-		const redis = mockRedis();
+		const cache = mockCache();
 
-		const repository = new ProvinceRepository(db, redis.client);
+		const repository = new ProvinceRepository(db, cache.client);
 		const result = await repository.findAll();
 
 		expect(result).toEqual([row]);
@@ -26,17 +26,17 @@ describe('ProvinceRepository', () => {
 		const whereCall = captured.find((c) => c.method === 'where');
 		expect(whereCall).toBeDefined();
 		// cache write with TTL
-		expect(redis.store.get('location:province:all')).toBe(JSON.stringify([row]));
-		expect(redis.ttls.get('location:province:all')).toBe(300);
+		expect(cache.store.get('location:province:all')).toBe(JSON.stringify([row]));
+		expect(cache.ttls.get('location:province:all')).toBe(300);
 	});
 
 	test('findAll: cache hit skips DB entirely', async () => {
 		const { db, captured } = mockDb({ rows: [row] });
-		const redis = mockRedis({
+		const cache = mockCache({
 			'location:province:all': JSON.stringify([row]),
 		});
 
-		const repository = new ProvinceRepository(db, redis.client);
+		const repository = new ProvinceRepository(db, cache.client);
 		const result = await repository.findAll();
 
 		expect(result).toEqual(JSON.parse(JSON.stringify([row])));
@@ -45,21 +45,21 @@ describe('ProvinceRepository', () => {
 
 	test('findById: cache miss stores row under id key', async () => {
 		const { db } = mockDb({ rows: [row] });
-		const redis = mockRedis();
+		const cache = mockCache();
 
-		const repository = new ProvinceRepository(db, redis.client);
+		const repository = new ProvinceRepository(db, cache.client);
 		const result = await repository.findById('1');
 
 		expect(result).toEqual(row);
-		expect(redis.store.get('location:province:id:1')).toBe(JSON.stringify(row));
-		expect(redis.ttls.get('location:province:id:1')).toBe(300);
+		expect(cache.store.get('location:province:id:1')).toBe(JSON.stringify(row));
+		expect(cache.ttls.get('location:province:id:1')).toBe(300);
 	});
 
 	test('findById: cached "null" short-circuits without DB query', async () => {
 		const { db, captured } = mockDb({ rows: [] });
-		const redis = mockRedis({ 'location:province:id:404': 'null' });
+		const cache = mockCache({ 'location:province:id:404': 'null' });
 
-		const repository = new ProvinceRepository(db, redis.client);
+		const repository = new ProvinceRepository(db, cache.client);
 		const result = await repository.findById('404');
 
 		expect(result).toBeNull();
@@ -68,16 +68,16 @@ describe('ProvinceRepository', () => {
 
 	test('create: inserts and invalidates list + id cache keys', async () => {
 		const { db } = mockDb({ rows: [row] });
-		const redis = mockRedis({
+		const cache = mockCache({
 			'location:province:all': JSON.stringify([row]),
 			'location:province:id:1': JSON.stringify(row),
 		});
 
-		const repository = new ProvinceRepository(db, redis.client);
+		const repository = new ProvinceRepository(db, cache.client);
 		const created = await repository.create(row as never);
 
 		expect(created).toEqual(row);
-		expect(redis.store.has('location:province:all')).toBe(false);
-		expect(redis.store.has('location:province:id:1')).toBe(false);
+		expect(cache.store.has('location:province:all')).toBe(false);
+		expect(cache.store.has('location:province:id:1')).toBe(false);
 	});
 });
