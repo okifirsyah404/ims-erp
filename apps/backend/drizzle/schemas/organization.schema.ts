@@ -83,6 +83,8 @@ export const DOCUMENT_TYPES = [
 	'payment',
 	'journal_entry',
 	'supplier_bill',
+	// HR (ERP-0034): employee codes (`EMP-00001`).
+	'employee',
 ] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
