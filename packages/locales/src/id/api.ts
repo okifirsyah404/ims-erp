@@ -195,7 +195,6 @@ const api: Record<keyof typeof en, string> = {
 	'organization.lastOrganization':
 		'Ini organisasi terakhir Anda dan tidak dapat dihapus',
 	'organization.notFound': 'Organisasi tidak ditemukan',
-	'organization.singleCompany': 'Sistem ini hanya memiliki satu organisasi (perusahaan); organisasi lain tidak bisa ditambahkan',
 	'organization.companyProfileRequired':
 		'Lengkapi profil perusahaan (beserta kode dokumen) terlebih dahulu',
 	'numbering.unknownDocumentType': 'Jenis dokumen tidak dikenal',
@@ -236,11 +235,6 @@ const api: Record<keyof typeof en, string> = {
 	'claim.usernameTaken': 'Nama pengguna sudah dipakai',
 	'claim.phoneInUse': 'Nomor telepon sudah digunakan',
 	'claim.alreadyInUse': 'Nama pengguna atau email sudah digunakan',
-
-	'role.rankExceeded':
-		'Anda tidak dapat bertindak pada pengguna yang memegang peran setara atau di atas peringkat Anda',
-	'role.targetRankExceeded':
-		'Target memegang "{{role}}" (peringkat {{rank}}) di organisasi Anda',
 
 	'userAdmin.accountAlreadyActive': 'Akun sudah aktif',
 	'userAdmin.cannotDeactivate':

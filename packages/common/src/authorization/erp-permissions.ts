@@ -216,6 +216,49 @@ export const erpRoleNames = [
 export type ErpRoleName = (typeof erpRoleNames)[number];
 
 /**
+ * Human-readable organization role labels per UI language. Display only —
+ * permission decisions never read these. Unknown roles (a stale client
+ * meeting a newer catalog) should fall back to the raw role key.
+ */
+export const erpRoleLabels: Record<
+	ErpRoleName,
+	{ en: string; id: string }
+> = {
+	owner: { en: 'Owner', id: 'Pemilik' },
+	admin: { en: 'Admin', id: 'Admin' },
+	member: { en: 'Member', id: 'Anggota' },
+	operations_manager: { en: 'Operations Manager', id: 'Manajer Operasional' },
+	sales_manager: { en: 'Sales Manager', id: 'Manajer Penjualan' },
+	sales: { en: 'Sales', id: 'Penjualan' },
+	project_manager: { en: 'Project Manager', id: 'Manajer Proyek' },
+	technician: { en: 'Technician', id: 'Teknisi' },
+	freelancer: { en: 'Freelancer', id: 'Pekerja Lepas' },
+	purchasing: { en: 'Purchasing', id: 'Pembelian' },
+	warehouse: { en: 'Warehouse', id: 'Gudang' },
+	finance: { en: 'Finance', id: 'Keuangan' },
+	accountant: { en: 'Accountant', id: 'Akuntan' },
+	hr: { en: 'Human Resource', id: 'Sumber Daya Manusia' },
+	customer_service: { en: 'Customer Service', id: 'Layanan Pelanggan' },
+	marketing: { en: 'Marketing', id: 'Pemasaran' },
+	investor: { en: 'Investor', id: 'Investor' },
+	customer: { en: 'Customer', id: 'Pelanggan' },
+	auditor: { en: 'Auditor', id: 'Auditor' },
+};
+
+/**
+ * Display label for an organization role in the given UI language. Falls
+ * back to the raw key for unknown roles and to `en` for unknown languages.
+ */
+export function erpRoleLabel(
+	role: string,
+	language: string = 'en',
+): string {
+	const labels = (erpRoleLabels as Record<string, { en: string; id: string } | undefined>)[role];
+	if (!labels) return role;
+	return language.startsWith('id') ? labels.id : labels.en;
+}
+
+/**
  * Zod schema for the closed ERP organization role enum. Invite payloads and
  * any other wire surface that carries an organization role validate against
  * this — unknown role names are a hard parse error (no dynamic roles).

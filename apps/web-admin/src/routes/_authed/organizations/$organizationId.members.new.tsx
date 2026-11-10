@@ -28,7 +28,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { erpRoleNames } from '@ims-erp/common';
+import { erpRoleLabel, erpRoleNames } from '@ims-erp/common';
 import { addMember, organizationMembersQueryOptions } from '@/lib/organization-api';
 
 export const Route = createFileRoute(
@@ -41,7 +41,7 @@ function AddMemberPage() {
 	const { organizationId } = useParams({ from: Route.id });
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const { t } = useTranslation(['admin', 'common']);
+	const { t, i18n } = useTranslation(['admin', 'common']);
 
 	const [userId, setUserId] = useState('');
 	const [role, setRole] = useState<string>('member');
@@ -111,7 +111,7 @@ function AddMemberPage() {
 									<SelectContent>
 										{erpRoleNames.map((roleName) => (
 											<SelectItem key={roleName} value={roleName}>
-												{roleName}
+												{erpRoleLabel(roleName, i18n.language)}
 											</SelectItem>
 										))}
 									</SelectContent>

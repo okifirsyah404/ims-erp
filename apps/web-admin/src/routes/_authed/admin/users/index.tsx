@@ -83,6 +83,7 @@ import { PendingInvitationsPanel } from '@/components/admin/pending-invitations-
 import { useActiveOrganizationId } from '@/lib/use-active-organization';
 import { usePermission } from '@/lib/use-permission';
 import { humanizeIdentifier } from '@/lib/format';
+import { erpRoleLabel } from '@ims-erp/common';
 
 /** Sort fields the users table header exposes. */
 const SORT_FIELDS = ['name', 'createdAt', 'joinedAt'] as const;
@@ -479,7 +480,7 @@ function UserRow({
 	const hasActions =
 		(canUpdate && (isActive || canRestore)) || (canDelete && !user.deletedAt);
 	const [deleteOpen, setDeleteOpen] = useState(false);
-	const { t } = useTranslation(['admin', 'common']);
+	const { t, i18n } = useTranslation(['admin', 'common']);
 
 	return (
 		<TableRow>
@@ -539,7 +540,7 @@ function UserRow({
 					<div className='flex flex-wrap gap-1'>
 						{(user.organizations ?? []).map((org) => (
 							<Badge key={org.id} variant='secondary'>
-								{`${humanizeIdentifier(org.name)} (${humanizeIdentifier(org.role)})`}
+								{`${humanizeIdentifier(org.name)} (${erpRoleLabel(org.role, i18n.language)})`}
 							</Badge>
 						))}
 					</div>

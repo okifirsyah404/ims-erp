@@ -200,7 +200,6 @@ const api = {
 	'organization.lastOrganization':
 		'This is your last organization and cannot be removed',
 	'organization.notFound': 'Organization not found',
-	'organization.singleCompany': 'This deployment has one organization (the company); another one cannot be added',
 	'organization.companyProfileRequired':
 		'Fill in the company profile (with its document code) first',
 	'numbering.unknownDocumentType': 'Unknown document type',
@@ -240,11 +239,6 @@ const api = {
 	'claim.usernameTaken': 'Username is already taken',
 	'claim.phoneInUse': 'Phone number is already in use',
 	'claim.alreadyInUse': 'Username or email already in use',
-
-	'role.rankExceeded':
-		'You cannot act on a user holding a role at or above your own rank',
-	'role.targetRankExceeded':
-		'Target holds "{{role}}" (rank {{rank}}) in your organization',
 
 	'userAdmin.accountAlreadyActive': 'Account is already active',
 	'userAdmin.cannotDeactivate':
