@@ -62,7 +62,12 @@ export class ItemController {
 			.get(
 				'',
 				async ({ query }) =>
-					okPaginated(await itemService.paginate(itemListQuerySchema.parse(query))),
+					okPaginated(
+						await itemService.paginate(itemListQuerySchema.parse(query)).then((page) => ({
+							...page,
+							data: page.data.map((row) => itemImages.withImageUrl(row)),
+						})),
+					),
 				{
 					erp: { permission: ['product:read'] },
 					detail: { description: 'Paginated item master' },

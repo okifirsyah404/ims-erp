@@ -26,6 +26,7 @@ import {
 	TableRow,
 } from '@ims-erp/ui/components/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
+import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { MapPin, PackageOpen } from 'lucide-react';
 import { AdminOnly } from '@/components/inventory/admin-only';
 import { StorageDialog, useArchiveStorage } from '@/components/inventory/storage-dialog';
@@ -57,7 +58,59 @@ function WarehouseDetail() {
 		warehouseQueryOptions(warehouseId),
 	);
 
-	if (isPending) return null;
+	if (isPending) {
+		return (
+			<AdminOnly>
+				<div className='flex flex-col gap-6' aria-busy='true'>
+					{/* Header */}
+					<div className='flex flex-wrap items-start justify-between gap-4'>
+						<div className='flex flex-col gap-2'>
+							<Skeleton className='h-8 w-64' />
+							<Skeleton className='h-4 w-24' />
+						</div>
+						<Skeleton className='h-9 w-20' />
+					</div>
+					{/* Stats */}
+					<div className='grid grid-cols-2 gap-4 sm:grid-cols-5'>
+						{Array.from({ length: 5 }, (_, index) => (
+							<Card key={index}>
+								<CardHeader className='space-y-0 pb-2'>
+									<Skeleton className='h-3 w-16' />
+								</CardHeader>
+								<CardContent>
+									<Skeleton className='h-7 w-10' />
+								</CardContent>
+							</Card>
+						))}
+					</div>
+					{/* Address card */}
+					<Card>
+						<CardHeader>
+							<Skeleton className='h-5 w-32' />
+						</CardHeader>
+						<CardContent>
+							<Skeleton className='h-4 w-full max-w-md' />
+						</CardContent>
+					</Card>
+					{/* Tabs */}
+					<div className='flex flex-col gap-4'>
+						<div className='flex gap-2'>
+							{Array.from({ length: 5 }, (_, index) => (
+								<Skeleton key={index} className='h-8 w-24' />
+							))}
+						</div>
+						<Card>
+							<CardContent className='flex flex-col gap-3 py-6'>
+								{Array.from({ length: 4 }, (_, index) => (
+									<Skeleton key={index} className='h-4 w-full' />
+								))}
+							</CardContent>
+						</Card>
+					</div>
+				</div>
+			</AdminOnly>
+		);
+	}
 
 	if (isError || !warehouse) {
 		return (
