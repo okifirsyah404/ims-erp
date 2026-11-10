@@ -76,13 +76,14 @@ export async function ensureOrganization(input: {
 }
 
 /**
- * Idempotent seeder for the company's single organization ("Entragate"),
- * with the initial admin as its `owner` member.
+ * Idempotent seeder for the default organization ("Entragate"), with the
+ * initial admin as its `owner` member.
  *
  * @remarks
- * Runs in **every environment** (ADR-0012: one company, one organization,
- * so production needs it too). It does nothing when any live organization
- * already exists, whatever its slug — the single-organization rule.
+ * Runs in **every environment** (production included). It does nothing when
+ * any live organization already exists, whatever its slug — it only seeds the
+ * first organization; additional ones are created through the admin UI
+ * (ADR-0012: multiple organizations are allowed, ADR-0007 §1).
  */
 export async function seedOrganization(): Promise<void> {
 	const [live] = await drizzleDB

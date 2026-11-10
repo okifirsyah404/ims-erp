@@ -1591,6 +1591,25 @@ order, cancelling reopens), then invoices / DP / receipts in the finance
 module per docs.dbml, with prints. Gate 1 starts at docs.dbml `sales.sales_*`
 and `finance.invoices` / `receipts`.
 
+## Completed — restore multiple organizations (ADR-0012 multi-org), 2026-11-08
+
+Status: **implemented** (supersedes the 2026-11-05 single-organization entry;
+ADR-0012-multi-organization restores ADR-0007 §1).
+
+- Backend: removed the `countActive()` 409 gate from
+  `OrganizationService.createOrganization` and `restoreOrganization`;
+  `SingleOrganizationError` and the `organization.singleCompany` locale keys
+  (en/id) are deleted. `test/unit/single-organization.test.ts` is replaced by
+  `test/unit/multi-organization.test.ts` (create a second organization goes
+  through; restore no longer consults the live count).
+- Web admin: the "new organization" button on `/organizations` and in the
+  sidebar switcher is shown again (switcher: application admins only).
+- Seeder: unchanged behavior — seeds only the first organization when none
+  is live; JSDoc updated.
+- Docs: `ADR-0012-single-organization.md` marked superseded;
+  `security-and-access.md` notes multiple organizations are allowed.
+- Checks: backend 802 tests, web-admin 45 tests, lint, typecheck, build pass.
+
 ## Completed — one company, one organization (ADR-0012), 2026-11-05
 
 Status: **implemented** (module owner's decision; programmer A to acknowledge
