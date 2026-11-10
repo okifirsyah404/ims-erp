@@ -13,7 +13,7 @@ CREATE TABLE "hr"."employees" (
 	"legal_name" text,
 	"nickname" text,
 	"gender" text,
-	"birth_date" timestamp with time zone,
+	"birth_date" bigint,
 	"birth_place" text,
 	"national_id" varchar(32),
 	"marital_status" text,
@@ -24,12 +24,12 @@ CREATE TABLE "hr"."employees" (
 	"employment_status" text DEFAULT 'active' NOT NULL,
 	"employment_type" text DEFAULT 'permanent' NOT NULL,
 	"work_type" text DEFAULT 'onsite' NOT NULL,
-	"hire_date" timestamp with time zone,
-	"termination_date" timestamp with time zone,
+	"hire_date" bigint,
+	"termination_date" bigint,
 	"manager_employee_id" uuid,
-	"created_at" timestamp with time zone NOT NULL,
-	"updated_at" timestamp with time zone NOT NULL,
-	"deleted_at" timestamp with time zone,
+	"created_at" bigint NOT NULL,
+	"updated_at" bigint NOT NULL,
+	"deleted_at" bigint,
 	CONSTRAINT "hr_employees_manager_employee_id_employees_id_fk" FOREIGN KEY ("manager_employee_id") REFERENCES "hr"."employees"("id") ON DELETE SET NULL ON UPDATE NO ACTION
 );
 --> statement-breakpoint
