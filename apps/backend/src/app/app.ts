@@ -2,48 +2,20 @@ import openapi from '@elysia/openapi';
 import { auth } from '@providers/better-auth/auth';
 import { OpenAPI } from '@providers/better-auth/open-api-extractor.auth';
 import Elysia from 'elysia';
-import { LocationController } from './location/controllers/location.controller';
-import {
-	AdjustmentController,
-	ItemCategoryController,
-	ItemController,
-	StockController,
-	StockValuationController,
-	WarehouseController,
-} from './inventory';
-import { QuotationController } from './sales/controllers/quotation.controller';
-import {
-	AssetCategoryController,
-	AssetController,
-	AssetOperationsController,
-	BorrowingController,
-} from './assets';
-import { SalesController } from './sales/controllers/sales.controller';
-import { SalesOrderController } from './sales/controllers/sales-order.controller';
-import { DeliveryNoteController } from './sales/controllers/delivery-note.controller';
-import { GoodsReceiptController, PurchaseOrderController, SupplierController } from './procurement';
-import { ProjectController } from './projects';
-import { ServiceTicketController, WarrantyController } from './aftersales';
-import { LicenseApiController, LicensingController } from './licensing';
-import { TaxController, LedgerController } from './accounting';
-import { PaymentController } from './accounting/controllers/payment.controller';
-import { InvoiceController } from './sales/controllers/invoice.controller';
-import { ReceiptController } from './sales/controllers/receipt.controller';
-import {
-	InvitationClaimController,
-	InvitationController,
-	UsernameCheckController,
-	UserAdminController,
-} from './user';
-import { UserController } from './user/controllers/user.controller';
-import { AuditController } from './audit';
-import { CustomerController, LeadController, PublicWebsiteController } from './crm';
-import {
-	CompanyProfileController,
-	NumberingController,
-	OrganizationBootstrapController,
-	OrganizationController,
-} from './organization';
+
+import { accountingModule } from './accounting';
+import { aftersalesModule } from './aftersales';
+import { assetsModule } from './assets';
+import { auditModule } from './audit';
+import { crmModule } from './crm';
+import { inventoryModule } from './inventory';
+import { licensingModule } from './licensing';
+import { locationModule } from './location';
+import { organizationModule } from './organization';
+import { procurementModule } from './procurement';
+import { projectsModule } from './projects';
+import { salesModule } from './sales';
+import { userModule } from './user';
 
 /**
  * Better Auth's aggregated OpenAPI document, extracted once at module load.
@@ -60,7 +32,7 @@ const betterAuthOpenApiDocument = {
 };
 
 /**
- * Builds the root Elysia application with every controller mounted.
+ * Builds the root Elysia application with every module mounted.
  *
  * @remarks
  * A factory, not a module-level instance: controllers resolve their services
@@ -70,7 +42,12 @@ const betterAuthOpenApiDocument = {
  * imports are hoisted, so a formatter or refactor could silently mount
  * controllers against an unregistered container.
  *
- * Two concerns are wired here before any feature controller is mounted:
+ * Each feature module owns its own entry point (`<module>/<module>Module()`)
+ * which mounts all of its controllers in a single Elysia instance; this file
+ * only composes the modules and never lists individual controllers. Cross-
+ * module mount-order concerns are documented at each `.use()` below.
+ *
+ * Two concerns are wired here before any feature module is mounted:
  * the Better Auth handler is mounted raw so its own routes keep Better Auth's
  * exact request/response shape, and `@elysia/openapi` publishes the aggregated
  * Better Auth schema at `/docs`. The schema is extracted once at module load
@@ -92,69 +69,26 @@ export function createApp() {
 					documentation: betterAuthOpenApiDocument,
 				}),
 			)
-			.use(LocationController.plugin())
-			.use(QuotationController.plugin())
-			.use(SalesOrderController.plugin())
-			.use(DeliveryNoteController.plugin())
-			.use(InvoiceController.plugin())
-	.use(ReceiptController.plugin())
-			.use(SupplierController.plugin())
-			.use(PurchaseOrderController.plugin())
-			.use(GoodsReceiptController.plugin())
-			.use(ProjectController.plugin())
-			.use(WarrantyController.plugin())
-			.use(ServiceTicketController.plugin())
-			.use(LicensingController.plugin())
-			.use(LicenseApiController.plugin())
-			.use(SalesController.plugin())
+			.use(locationModule())
+			.use(salesModule())
+			.use(procurementModule())
+			.use(projectsModule())
+			.use(aftersalesModule())
+			.use(licensingModule())
 			// Admin surfaces share the `/admin` prefix, so their routes no longer
 			// overlap the self-service `/users/*` routes: mount order is irrelevant
 			// here (before the split, both modules registered `GET /users` and the
 			// first registration silently won).
-			.use(UserAdminController.plugin())
-			.use(UserController.plugin())
-			// Cross-cutting audit read surface (`GET /admin/audit`), mounted with the
-			// other `/admin` plugins it shares a prefix with.
-			.use(AuditController.plugin())
-			.use(OrganizationController.plugin())
-			// Creation mounts separately: it must accept an application admin with no
-			// organization context (ADR-0007), so it cannot ride the org-scoped guard.
-			.use(OrganizationBootstrapController.plugin())
-			.use(CompanyProfileController.plugin())
-			.use(NumberingController.plugin())
-			.use(InvitationController.plugin())
-			// Public, sessionless claim flow: token-gated, deliberately outside
-			// `/admin`, so it must not inherit the admin guard. Mounted after the
-			// admin plugins only for readability; the paths never overlap.
-			.use(InvitationClaimController.plugin())
-			.use(UsernameCheckController.plugin())
-			// Inventory (items, warehouses, stock, adjustments) rides `erp`- or
-			// `session`-guarded prefixes; mount order is irrelevant as none of its
-			// paths overlap the modules above.
-			.use(ItemController.plugin())
-			.use(ItemCategoryController.plugin())
-			.use(CustomerController.plugin())
-			.use(LeadController.plugin())
-			// Server-to-server website API: API-key guard, no session.
-			.use(PublicWebsiteController.plugin())
-			// `/warehouses/linked` mounts before the admin CRUD: both prefixes
-			// start with `/warehouses`, and the linked read needs the `erp`
-			// guard, not the session guard. Static segments win, but mounting
-			// first keeps the intent obvious.
-			.use(WarehouseController.linkedPlugin())
-			.use(WarehouseController.plugin())
-			// Before StockController: a static path must not be shadowed by `/stock/:…`.
-			.use(StockValuationController.plugin())
-			.use(StockController.plugin())
-			.use(AdjustmentController.plugin())
+			.use(userModule())
+			// Cross-cutting audit read surface (`GET /admin/audit`), mounted with
+			// the `/admin` surfaces it shares a prefix with.
+			.use(auditModule())
+			.use(organizationModule())
+			.use(crmModule())
+			.use(inventoryModule())
 			// Assets owns equipment and borrowing (ERP-0036); `/borrowings`
 			// moved here from inventory.
-			.use(AssetController.plugin())
-			.use(AssetCategoryController.plugin())
-			.use(AssetOperationsController.plugin())
-			.use(BorrowingController.plugin())
-			.use(TaxController.plugin())
-			.use(LedgerController.plugin())
-.use(PaymentController.plugin())
+			.use(assetsModule())
+			.use(accountingModule())
 	);
 }

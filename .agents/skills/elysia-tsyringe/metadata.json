@@ -1,7 +1,7 @@
 {
   "name": "elysia-tsyringe",
-  "version": "1.1.0",
-  "description": "Elysia-to-tsyringe wiring convention — controller plugin() factories, resolution placement, domain registration from the composition root, token module placement, reflect-metadata requirement, path-param constraints, and plugin-local error handling.",
+  "version": "1.2.0",
+  "description": "Elysia-to-tsyringe wiring convention — controller plugin() factories grouped by each module's <module>Module() entry-point factory in index.ts, resolution placement, domain registration from the composition root, token module placement, reflect-metadata requirement, path-param constraints, and plugin-local error handling.",
   "author": "OpenAgentic",
   "date": "2026-10",
   "dependsOn": ["elysiajs"],

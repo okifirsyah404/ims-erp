@@ -1,10 +1,10 @@
 ---
 name: elysia-module
-description: Modular monolith boundaries for this project's Elysia backend - each module under src/app/<module>/ owns exactly one Postgres schema via drizzle/schemas/<module>.schema.ts, no foreign keys across schemas (plain id columns instead), and cross-module communication is strictly service-to-service (AService -> B2Service via DI tokens), with service cycles broken by repository-only Exported<Module>Service facades consumed via DI tokens. Modules calling external systems define contract ports first; module-owned BullMQ jobs live in queues/ and write through the module repository. Exception- user and organization modules live beside Better Auth in the auth schema because Better Auth owns those tables, and their repositories write a declared column subset only (user deletedAt; everything else via the Better Auth gateway). Use when creating a new module, deciding where a table belongs, adding cross-module references, wiring cross-module communication, breaking circular DI between modules, or reviewing schema/module coupling in apps/backend. Does NOT cover intra-module layering (use elysia-layered-architecture) or DI mechanics (use elysia-tsyringe).
+description: Modular monolith boundaries for this project's Elysia backend - each module under src/app/<module>/ owns exactly one Postgres schema via drizzle/schemas/<module>.schema.ts, no foreign keys across schemas (plain id columns instead), and cross-module communication is strictly service-to-service (AService -> B2Service via DI tokens), with service cycles broken by repository-only Exported<Module>Service facades consumed via DI tokens. Each module's index.ts exports a <module>Module() Elysia factory mounting all its controllers, and src/app/app.ts mounts only module factories. Modules calling external systems define contract ports first; module-owned BullMQ jobs live in queues/ and write through the module repository. Exception- user and organization modules live beside Better Auth in the auth schema because Better Auth owns those tables, and their repositories write a declared column subset only (user deletedAt; everything else via the Better Auth gateway). Use when creating a new module, deciding where a table belongs, adding cross-module references, wiring cross-module communication, breaking circular DI between modules, or reviewing schema/module coupling in apps/backend. Does NOT cover intra-module layering (use elysia-layered-architecture) or DI mechanics (use elysia-tsyringe).
 license: MIT
 metadata:
   author: OpenAgentic
-  version: "1.5.0"
+  version: "1.6.0"
   dependsOn: elysia-layered-architecture
   canonicalExample: apps/backend/src/app/location
   secondaryExample: apps/backend/src/app/user
@@ -19,6 +19,13 @@ slice with its own persistence boundary:
 src/app/<module>/                  module code (see elysia-layered-architecture)
 drizzle/schemas/<module>.schema.ts one Postgres schema per module: pgSchema("<module>")
 ```
+
+Each module's `index.ts` is its public entry point: it exports a
+`<module>Module()` factory returning one Elysia instance that mounts every
+controller the module owns (in the module's route order), plus the
+composition-root registration and any published tokens/services.
+`src/app/app.ts` mounts only these module factories — one `.use()` per
+module — and never lists individual controllers.
 
 Modules communicate only through published contracts: schema row types and
 DI tokens. Cross-module communication is strictly service-to-service —
@@ -137,10 +144,15 @@ file.
 3. `drizzle/schemas/<module>.schema.ts` with `pgSchema("<module>")`
    — except auth-projecting modules (rule 3.3)
 4. `container.ts` exporting `register<Module>(container)`, called in
-   `src/index.ts`; mount its `Controller.plugin()` in `src/app/app.ts`
-   (registration and mounting live in separate files — see `elysia-tsyringe`
-   rule 2.3)
-5. If the module owns background jobs, export a **worker handle** from its
+   `src/index.ts` (registration and mounting live in separate files — see
+   `elysia-tsyringe` rule 2.3).
+5. `index.ts` exporting the module's HTTP entry point:
+   `<module>Module()` returns one Elysia instance `.use()`ing every
+   controller the module owns, in the module's route order (ordering
+   invariants documented inside the factory). `src/app/app.ts` mounts it
+   with a single `.use(<module>Module())` — individual controllers are
+   never listed there.
+6. If the module owns background jobs, export a **worker handle** from its
    `index.ts` (`start<X>Worker()` returning the shared `QueueWorker` shape —
    `{ onError, close }`). `src/index.ts` registers it in the single
    `startWorkers([...])` array from `@providers/queue/worker-registry`, so a
@@ -150,7 +162,7 @@ file.
    `src/app/app.ts` — that file builds the HTTP app, and a worker's failure
    must not be fatal to it. Construction stays at the call site (after
    `registerProvider` and `register<Module>`), never inside the registry.
-6. No edits to other modules' code. If another module must cooperate, invert:
+7. No edits to other modules' code. If another module must cooperate, invert:
    it exposes a token/service, or (later) a domain event.
 
 ## Anti-patterns (real observations in this repo)
@@ -176,6 +188,10 @@ file.
   names) — tsyringe cannot construct either; break it with the
   `ExportedAssetService`/`ExportedWarehouseService` repository-only
   facades (rule 3.5).
+- Mounting `XController.plugin()` individually in `src/app/app.ts`
+  instead of the module's `<module>Module()` factory — the module boundary
+  leaks into the composition root and its route-ordering invariants
+  scatter (rule 3.6, step 5).
 
 ## References
 
