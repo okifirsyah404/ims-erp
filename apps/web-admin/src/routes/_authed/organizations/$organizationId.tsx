@@ -32,6 +32,7 @@ import {
 } from '@ims-erp/ui/components/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@ims-erp/ui/components/tabs';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
+import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { OrganizationMemberCard } from '@/components/organization';
 import {
 	deleteOrganization,
@@ -44,6 +45,9 @@ import { usePermission } from '@/lib/use-permission';
 export const Route = createFileRoute('/_authed/organizations/$organizationId')({
 	component: OrganizationDetailPage,
 });
+
+/** Members per page in the members tab (matches the backend default). */
+const MEMBER_PAGE_SIZE = 20;
 
 function OrganizationDetailPage() {
 	const { organizationId } = useParams({ from: Route.id });
@@ -58,8 +62,10 @@ function OrganizationDetailPage() {
 		...organizationQueryOptions(organizationId),
 		retry: false,
 	});
+	const [memberPage, setMemberPage] = useState(1);
 	const membersQuery = useQuery({
-		...organizationMembersQueryOptions(organizationId),
+		...organizationMembersQueryOptions(organizationId, memberPage, MEMBER_PAGE_SIZE),
+		placeholderData: (previous) => previous,
 	});
 	const { data: members } = membersQuery;
 
@@ -222,7 +228,7 @@ function OrganizationDetailPage() {
 					<TabsTrigger value='info'>{t('orgDetail.info')}</TabsTrigger>
 					<TabsTrigger value='members'>
 						{t('orgDetail.membersCount', {
-							count: members?.rows.length ?? 0,
+							count: members?.pagination.total ?? 0,
 						})}
 					</TabsTrigger>
 				</TabsList>
@@ -298,14 +304,22 @@ function OrganizationDetailPage() {
 								{t('orgDetail.membersEmpty')}
 							</p>
 						) : (
-							<div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6'>
-								{(members?.rows ?? []).map((member) => (
-									<OrganizationMemberCard
-										key={member.id}
-										member={member}
-										organizationId={organizationId}
-									/>
-								))}
+							<div className='flex flex-col'>
+								<div className='grid flex-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6'>
+									{(members?.rows ?? []).map((member) => (
+										<OrganizationMemberCard
+											key={member.id}
+											member={member}
+											organizationId={organizationId}
+										/>
+									))}
+								</div>
+								<PaginationControls
+									className='mx-4 border-t py-4 mt-0'
+									page={members?.pagination.page ?? memberPage}
+									totalPages={members?.pagination.totalPages ?? 1}
+									onPageChange={setMemberPage}
+								/>
 							</div>
 						)}
 					</Card>

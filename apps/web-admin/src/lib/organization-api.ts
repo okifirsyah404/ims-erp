@@ -175,9 +175,18 @@ export function organizationQueryOptions(organizationId: string) {
 	});
 }
 
-export function organizationMembersQueryOptions(organizationId: string) {
+export function organizationMembersQueryOptions(
+	organizationId: string,
+	page = 1,
+	limit = 20,
+) {
 	return queryOptions({
-		queryKey: ['organizations', organizationId, 'members'] as const,
-		queryFn: () => listMembers(organizationId, { limit: 100 }),
+		queryKey: [
+			'organizations',
+			organizationId,
+			'members',
+			{ page, limit },
+		] as const,
+		queryFn: () => listMembers(organizationId, { page, limit }),
 	});
 }
