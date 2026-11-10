@@ -1,4 +1,4 @@
-import { DRIZZLE_TOKEN, REDIS_TOKEN } from '@di/provider';
+import { CACHE_CLIENT_TOKEN, DRIZZLE_TOKEN } from '@di/provider';
 import { USER_CACHE_PREFIX, USER_CACHE_TTL_SECONDS } from '../constants/cache';
 import {
 	TUserInsert,
@@ -6,7 +6,6 @@ import {
 	users,
 } from '@drizzle/schemas/auth.schema';
 import { TPaginationResult } from '@ims-erp/common';
-import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import {
 	and,
@@ -19,6 +18,8 @@ import {
 	isNull,
 } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
+import { cacheIdKey, cacheListKey } from '@utils/cache.util';
+import type { ICacheClient } from '@cache/cache.client';
 import type {
 	IUserRepository,
 	TUserPaginationRequest,
@@ -41,7 +42,7 @@ import type {
 export class UserRepository implements IUserRepository {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
-		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
+		@inject(CACHE_CLIENT_TOKEN) private readonly cache: ICacheClient,
 	) {}
 
 	/**
@@ -53,9 +54,6 @@ export class UserRepository implements IUserRepository {
 	 * evict the exact same keys.
 	 */
 	private readonly cachePrefix = USER_CACHE_PREFIX;
-
-	/** Cache-aside TTL applied to every cached read (5 minutes). */
-	private readonly cacheTtlSeconds = USER_CACHE_TTL_SECONDS;
 
 	async paginate(
 		request: TUserPaginationRequest,
@@ -104,23 +102,16 @@ export class UserRepository implements IUserRepository {
 	}
 
 	async findAll(): Promise<TUserSelect[]> {
-		const cacheKey = `${this.cachePrefix}:all`;
-		const cached = await this.redisClient.get(cacheKey);
-		if (cached) return JSON.parse(cached) as TUserSelect[];
-
-		const rows = await this.database
-			.select()
-			.from(users)
-			.where(isNull(users.deletedAt))
-			.orderBy(asc(users.name));
-
-		await this.redisClient.set(
-			cacheKey,
-			JSON.stringify(rows),
-			'EX',
-			this.cacheTtlSeconds,
+		return this.cache.remember(
+			cacheListKey(this.cachePrefix),
+			() =>
+				this.database
+					.select()
+					.from(users)
+					.where(isNull(users.deletedAt))
+					.orderBy(asc(users.name)),
+			USER_CACHE_TTL_SECONDS,
 		);
-		return rows;
 	}
 
 	async findAllWithDeleted(): Promise<TUserSelect[]> {
@@ -128,23 +119,17 @@ export class UserRepository implements IUserRepository {
 	}
 
 	async findById(id: string | number): Promise<TUserSelect | null> {
-		const cacheKey = `${this.cachePrefix}:id:${id}`;
-		const cached = await this.redisClient.get(cacheKey);
-		if (cached === 'null') return null;
-		if (cached) return JSON.parse(cached) as TUserSelect;
-
-		const [row] = await this.database
-			.select()
-			.from(users)
-			.where(and(eq(users.id, String(id)), isNull(users.deletedAt)));
-
-		await this.redisClient.set(
-			cacheKey,
-			JSON.stringify(row ?? null),
-			'EX',
-			this.cacheTtlSeconds,
+		return this.cache.remember(
+			cacheIdKey(this.cachePrefix, id),
+			async () => {
+				const [row] = await this.database
+					.select()
+					.from(users)
+					.where(and(eq(users.id, String(id)), isNull(users.deletedAt)));
+				return row ?? null;
+			},
+			USER_CACHE_TTL_SECONDS,
 		);
-		return row ?? null;
 	}
 
 	async findByIds(ids: (string | number)[]): Promise<TUserSelect[]> {
@@ -232,9 +217,9 @@ export class UserRepository implements IUserRepository {
 	 * Evicts the list cache and the per-id entries for the given users.
 	 */
 	private async invalidate(ids: string[]): Promise<void> {
-		await this.redisClient.del(
-			`${this.cachePrefix}:all`,
-			...ids.map((id) => `${this.cachePrefix}:id:${id}`),
+		await this.cache.del(
+			cacheListKey(this.cachePrefix),
+			...ids.map((id) => cacheIdKey(this.cachePrefix, id)),
 		);
 	}
 }

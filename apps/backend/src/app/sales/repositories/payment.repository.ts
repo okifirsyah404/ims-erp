@@ -1,14 +1,14 @@
-import { DRIZZLE_TOKEN, REDIS_TOKEN } from '@di/provider';
+import { CACHE_CLIENT_TOKEN, DRIZZLE_TOKEN } from '@di/provider';
 import {
 	TPaymentInsert,
 	TPaymentSelect,
 	payments,
 	PAYMENT_STATUSES,
 } from '@drizzle/schemas/sales.schema';
-import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, eq } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
+import type { ICacheClient } from '@cache/cache.client';
 import type {
 	TCreatePaymentInput,
 	TPaymentRepository,
@@ -30,14 +30,11 @@ import type {
 export class PaymentRepository implements TPaymentRepository {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
-		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
+		@inject(CACHE_CLIENT_TOKEN) private readonly cache: ICacheClient,
 	) {}
 
 	/** Tenant-scoped Redis key namespace for cached reads. */
 	private readonly cachePrefix = 'sales:payment';
-
-	/** Cache-aside TTL applied to the cached `findById` read (5 minutes). */
-	private readonly cacheTtlSeconds = 300;
 
 	/**
 	 * Creates a payment pinned to `pending` status with server-set
@@ -68,33 +65,26 @@ export class PaymentRepository implements TPaymentRepository {
 		organizationId: string,
 		id: string,
 	): Promise<TPaymentSelect | null> {
-		const cacheKey = `${this.cachePrefix}:${organizationId}:id:${id}`;
-		const cached = await this.redisClient.get(cacheKey);
-		if (cached === 'null') return null;
-		if (cached) return JSON.parse(cached) as TPaymentSelect;
-
-		const [row] = await this.database
-			.select()
-			.from(payments)
-			.where(
-				and(eq(payments.id, id), eq(payments.organizationId, organizationId)),
-			)
-			.limit(1);
-
-		await this.redisClient.set(
-			cacheKey,
-			JSON.stringify(row ?? null),
-			'EX',
-			this.cacheTtlSeconds,
+		return this.cache.remember(
+			`${this.cachePrefix}:${organizationId}:id:${id}`,
+			async () => {
+				const [row] = await this.database
+					.select()
+					.from(payments)
+					.where(
+						and(eq(payments.id, id), eq(payments.organizationId, organizationId)),
+					)
+					.limit(1);
+				return row ?? null;
+			},
 		);
-		return row ?? null;
 	}
 
 	/**
 	 * Evicts the tenant-scoped per-id cache entry.
 	 */
 	private async invalidate(organizationId: string, id: string): Promise<void> {
-		await this.redisClient.del(`${this.cachePrefix}:${organizationId}:id:${id}`);
+		await this.cache.del(`${this.cachePrefix}:${organizationId}:id:${id}`);
 	}
 
 	/**

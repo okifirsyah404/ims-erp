@@ -1,4 +1,4 @@
-import { DRIZZLE_TOKEN, REDIS_TOKEN } from '@di/provider';
+import { CACHE_CLIENT_TOKEN, DRIZZLE_TOKEN } from '@di/provider';
 import {
 	members,
 	TOrganizationSelect,
@@ -7,7 +7,6 @@ import {
 } from '@drizzle/schemas/auth.schema';
 import { warehouseOrganizations } from '@drizzle/schemas/inventory.schema';
 import { TPaginationResult } from '@ims-erp/common';
-import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import {
 	and,
@@ -18,6 +17,8 @@ import {
 	isNull,
 } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
+import { cacheIdKey } from '@utils/cache.util';
+import type { ICacheClient } from '@cache/cache.client';
 import type {
 	IOrganizationRepository,
 	TMemberPaginationRequest,
@@ -49,14 +50,11 @@ export class OrganizationRepository implements IOrganizationRepository {
 	constructor(
 		@inject(DRIZZLE_TOKEN)
 		private readonly db: BunSQLDatabase<Record<string, never>>,
-		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
+		@inject(CACHE_CLIENT_TOKEN) private readonly cache: ICacheClient,
 	) {}
 
 	/** Redis key namespace; only the `findById` read is cached. */
 	private readonly cachePrefix = 'organization';
-
-	/** Cache-aside TTL applied to the cached `findById` read (5 minutes). */
-	private readonly cacheTtlSeconds = 300;
 
 	/**
 	 * Paginated organization listing, ordered by creation time.
@@ -165,24 +163,14 @@ export class OrganizationRepository implements IOrganizationRepository {
 	 * @returns The organization, or `null` when absent
 	 */
 	async findById(id: string): Promise<TOrganizationSelect | null> {
-		const cacheKey = `${this.cachePrefix}:id:${id}`;
-		const cached = await this.redisClient.get(cacheKey);
-		if (cached === 'null') return null;
-		if (cached) return JSON.parse(cached) as TOrganizationSelect;
-
-		const [row] = await this.db
-			.select()
-			.from(organizations)
-			.where(eq(organizations.id, id))
-			.limit(1);
-
-		await this.redisClient.set(
-			cacheKey,
-			JSON.stringify(row ?? null),
-			'EX',
-			this.cacheTtlSeconds,
-		);
-		return row ?? null;
+		return this.cache.remember(cacheIdKey(this.cachePrefix, id), async () => {
+			const [row] = await this.db
+				.select()
+				.from(organizations)
+				.where(eq(organizations.id, id))
+				.limit(1);
+			return row ?? null;
+		});
 	}
 
 	/**
@@ -225,7 +213,7 @@ export class OrganizationRepository implements IOrganizationRepository {
 	 * Evicts the per-id cache entry used by {@link findById}.
 	 */
 	private async invalidate(id: string): Promise<void> {
-		await this.redisClient.del(`${this.cachePrefix}:id:${id}`);
+		await this.cache.del(cacheIdKey(this.cachePrefix, id));
 	}
 
 	/**

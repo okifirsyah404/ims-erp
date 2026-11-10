@@ -1,4 +1,4 @@
-import { DRIZZLE_TOKEN, REDIS_TOKEN } from '@di/provider';
+import { CACHE_CLIENT_TOKEN, DRIZZLE_TOKEN } from '@di/provider';
 import {
 	TRegencyInsert,
 	TRegencySelect,
@@ -6,10 +6,11 @@ import {
 	regency,
 } from '@drizzle/schemas/location.schema';
 import { TPaginationResult } from '@ims-erp/common';
-import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, eq, ilike, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
+import { cacheIdKey, cacheListKey } from '@utils/cache.util';
+import type { ICacheClient } from '@cache/cache.client';
 import type {
 	IRegencyRepository,
 	TRegencyPaginationRequest,
@@ -29,14 +30,11 @@ import type {
 export class RegencyRepository implements IRegencyRepository {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
-		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
+		@inject(CACHE_CLIENT_TOKEN) private readonly cache: ICacheClient,
 	) {}
 
 	/** Redis key namespace for this repository's cache entries. */
 	private readonly cachePrefix = 'location:regency';
-
-	/** Cache-aside TTL applied to every cached read (5 minutes). */
-	private readonly cacheTtlSeconds = 300;
 
 	/**
 	 * Fetches one filtered page of regencies.
@@ -116,18 +114,13 @@ export class RegencyRepository implements IRegencyRepository {
 	 * as immutable reference data, so any write evicts it.
 	 */
 	async findAll(): Promise<TRegencySelect[]> {
-		const cacheKey = `${this.cachePrefix}:all`;
-		const cached = await this.redisClient.get(cacheKey);
-		if (cached) return JSON.parse(cached) as TRegencySelect[];
-
-		const rows = await this.database
-			.select()
-			.from(regency)
-			.where(isNull(regency.deletedAt))
-			.orderBy(asc(regency.name));
-
-		await this.redisClient.set(cacheKey, JSON.stringify(rows), 'EX', this.cacheTtlSeconds);
-		return rows;
+		return this.cache.remember(cacheListKey(this.cachePrefix), () =>
+			this.database
+				.select()
+				.from(regency)
+				.where(isNull(regency.deletedAt))
+				.orderBy(asc(regency.name)),
+		);
 	}
 
 	/**
@@ -147,18 +140,13 @@ export class RegencyRepository implements IRegencyRepository {
 	 * @returns The regency, or `null` when absent or soft-deleted
 	 */
 	async findById(id: string | number): Promise<TRegencySelect | null> {
-		const cacheKey = `${this.cachePrefix}:id:${id}`;
-		const cached = await this.redisClient.get(cacheKey);
-		if (cached === 'null') return null;
-		if (cached) return JSON.parse(cached) as TRegencySelect;
-
-		const [row] = await this.database
-			.select()
-			.from(regency)
-			.where(and(eq(regency.id, String(id)), isNull(regency.deletedAt)));
-
-		await this.redisClient.set(cacheKey, JSON.stringify(row ?? null), 'EX', this.cacheTtlSeconds);
-		return row ?? null;
+		return this.cache.remember(cacheIdKey(this.cachePrefix, id), async () => {
+			const [row] = await this.database
+				.select()
+				.from(regency)
+				.where(and(eq(regency.id, String(id)), isNull(regency.deletedAt)));
+			return row ?? null;
+		});
 	}
 
 	/**
@@ -255,20 +243,15 @@ export class RegencyRepository implements IRegencyRepository {
 	 * Cache-aside keyed per parent: `{prefix}:province:{provinceId}`.
 	 */
 	async findByProvinceId(provinceId: string): Promise<TRegencySelect[]> {
-		const cacheKey = `${this.cachePrefix}:province:${provinceId}`;
-		const cached = await this.redisClient.get(cacheKey);
-		if (cached) return JSON.parse(cached) as TRegencySelect[];
-
-		const rows = await this.database
-			.select()
-			.from(regency)
-			.where(
-				and(eq(regency.provinceId, provinceId), isNull(regency.deletedAt)),
-			)
-			.orderBy(asc(regency.name));
-
-		await this.redisClient.set(cacheKey, JSON.stringify(rows), 'EX', this.cacheTtlSeconds);
-		return rows;
+		return this.cache.remember(`${this.cachePrefix}:province:${provinceId}`, () =>
+			this.database
+				.select()
+				.from(regency)
+				.where(
+					and(eq(regency.provinceId, provinceId), isNull(regency.deletedAt)),
+				)
+				.orderBy(asc(regency.name)),
+		);
 	}
 
 	/**
@@ -333,9 +316,9 @@ export class RegencyRepository implements IRegencyRepository {
 	 * Evicts the list cache, per-id entries, and parent-scoped entries.
 	 */
 	private async invalidate(ids: string[], provinceIds: (string | null)[]): Promise<void> {
-		await this.redisClient.del(
-			`${this.cachePrefix}:all`,
-			...ids.map((id) => `${this.cachePrefix}:id:${id}`),
+		await this.cache.del(
+			cacheListKey(this.cachePrefix),
+			...ids.map((id) => cacheIdKey(this.cachePrefix, id)),
 			...(provinceIds.length
 				? provinceIds.map((pid) => `${this.cachePrefix}:province:${pid}`)
 				: []),
