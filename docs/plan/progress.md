@@ -12,6 +12,66 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-10 - ERP-0034: minimal HR employees + warehouse PIC (slices 1-8)
+
+Status: implemented and browser-verified (create → list → detail; seeder;
+picker). Commits: `8f5e8f3` (schema+module), `4594774` (numbering),
+`513948c` (warehouse PIC), slice 7 (web-admin), `eaf7c90` (seeder+guard).
+
+- **Slice 1 — schema/migration.** New `hr` Postgres schema, table
+  `hr.employees`: nullable `organization_id` (NULL = company-level
+  employee, permanent valid state), nullable `user_id` with partial unique
+  index (`hr_employees_user_uq`, one login ↔ one alive employee),
+  `employee_code`, identity/contact fields, employment/work enums via
+  CHECK constraints, internal `manager_employee_id` FK, soft deletes. No
+  cross-schema FKs (rule 3.2). Date/timestamp columns are **bigint** (unix
+  ms) matching `drizzle/datatypes/unix-timestamp.ts` — an initial
+  timestamptz version caused insert 500s and was re-applied by dropping the
+  schema (empty at the time) and journaling the corrected hash
+  (`973778ea8a2a…`) via a bun script. Migration is hand-written
+  (`20261112000000_erp0034_hr_employees`) because the journal's
+  pre-existing two-branch conflict blocks drizzle-kit; `--fix-conflicts`
+  would discard 14 applied migrations.
+- **Numbering.** `employee` document type (code `EMP`, module `hr`,
+  pattern `{TYPE}-{SEQ:5}`, reset `never`) added to `DOCUMENT_TYPES`,
+  codes, modules, and defaults; `numbering.service.test.ts` expects 28
+  types.
+- **Slices 3-4 — module.** `/hr/employees` REST: paginated list (own org +
+  company-level), detail, create, patch, archive, and `/picker`. Create is
+  **invite-first**: one call resolves the target org, reserves the EMP code
+  via `NumberingService`, runs the user module's `InvitationService.invite`
+  (pre-creating the `auth.users` row), then inserts the employee with the
+  returned `user_id`. Company-level writes require the platform role
+  (`GLOBAL_ADMIN_ROLE`, checked in `EmployeeService` via
+  `isPlatformAdmin`). `ExportedHrService` exposes
+  `findEmployeeById`/`findEmployeeByUserId` for cross-module consumers.
+  Locale error keys `hr.*` (en/id).
+- **Slice 6 — warehouse PIC.** `WarehouseService.assertPicAssignable`:
+  unknown/terminated employees and org-scoped employees outside the
+  warehouse's currently linked organizations are rejected with 422
+  `inventory.warehousePicInvalid`; company-level always assignable. Wired
+  into create and update.
+- **Slice 7 — web-admin.** `/hr/employees` list (search + status filter,
+  server pagination), invite-first new form, detail page; stub removed.
+  New `hr` locale namespace (en/id, flat dotted keys), i18next typing,
+  parity/dead-key allowances for composed enum labels. Build/test/lint
+  pass.
+- **Slice 8 — seeder + picker guard.** `seedHrEmployees` links seeded role
+  accounts (admin, operations_manager, hr, warehouse, finance, sales) to
+  employee rows and adds 2 company-level staff; codes via the numbering
+  service; 29 rows seeded and verified in the UI. Picker guard changed
+  from `warehouse:update` to `employee:read` — no organization role holds
+  `warehouse:*` (ADR-0008), so the original guard was unusable.
+- **Verification (Firefox @ localhost:5173, admin@local.com):** list empty
+  state → create Budi Santoso via form → success → detail
+  (EMP-00002) → seeder filled the list. Picker API 200 with admin session
+  (403 without `employee:read`).
+- **Not done / deferred:** manager picker UI on the form (API supports
+  `managerEmployeeId`); export action; ERP-0034's remaining HR tables.
+  Pre-existing: `multi-organization.test.ts` fails in the full suite
+  (fresh `ims_erp_test` lacks the `auth` schema) — environment issue, not
+  from this change.
+
 ## 2026-11-09 - warehouse: components split from products, materials counted from balances
 
 - Contract change: `TWarehouseKindCounts` now has `componentsCount`. `productsCount` counts `product` only (was product + component). `materialsCount` counts distinct material items with `quantity_on_hand > 0` in `stock_balances` (was always 0, because it counted serialized units and materials are not serialized). `componentsCount` counts live serialized `component` units.

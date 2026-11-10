@@ -167,7 +167,18 @@ Last synced: 2026-11-08.
 - Stock transfers (warehouse→warehouse, storage→storage) — ERP-0032.
 - Tracking views (per-storage balances, movement filters, unit location) —
   ERP-0033.
-- Minimal HR employees + warehouse PIC (display-only) — ERP-0034.
+- ~~Minimal HR employees + warehouse PIC (display-only) — ERP-0034~~ moved
+  to implemented 2026-11-10 (see above).
+
+### implemented
+- Minimal HR employees + warehouse PIC — ERP-0034 (2026-11-10). Invite-first
+  employee CRUD (`/hr/employees`: list/detail/create/patch/archive + picker),
+  `hr.employees` with nullable organization (company-level rows) and
+  `user_id` from the invitation pipeline, EMP numbering, warehouse PIC
+  validation (422 `inventory.warehousePicInvalid`), web-admin
+  `/hr/employees` pages, seeder. Evidence: `apps/backend/src/app/hr`,
+  `apps/web-admin/src/components/hr`, `progress.md` 2026-11-10. Deferred:
+  manager picker UI, export.
 
 ### blocked
 - Supplier payables and the M09 payable handoff of receipts — ERP-0035.
