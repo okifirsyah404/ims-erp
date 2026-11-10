@@ -1,6 +1,7 @@
 import { inject, injectable } from 'tsyringe';
 import type { TOrganizationSelect } from '@drizzle/schemas/auth.schema';
 import { TPaginationResult } from '@ims-erp/common';
+import { presignObjectUrl } from '@providers/s3/s3';
 import { seedOrganizationRoles } from '../../../../database/seeders/seed/organization-roles.seeder';
 import type {
 	IOrganizationAuthGateway,
@@ -32,7 +33,6 @@ import {
 	OrganizationNotDeletedError,
 	OrganizationNotFoundError,
 	OrganizationSlugTakenError,
-	SingleOrganizationError,
 } from '../errors/organization.errors';
 
 /**
@@ -76,8 +76,6 @@ export class OrganizationService {
 		headers: Headers,
 		input: TCreateOrganization & { creatorUserId?: string },
 	): Promise<TOrganizationSelect> {
-		// One company, one organization (ADR-0012).
-		if ((await this.repository.countActive()) > 0) throw new SingleOrganizationError();
 		const created = await this.gateway.createOrganization({
 			name: input.name,
 			slug: input.slug,
@@ -204,8 +202,6 @@ export class OrganizationService {
 		const row = await this.repository.findById(organizationId);
 		if (!row) throw new OrganizationNotFoundError();
 		if (!row.deletedAt) throw new OrganizationNotDeletedError();
-		// Restoring next to a live organization would make two (ADR-0012).
-		if ((await this.repository.countActive()) > 0) throw new SingleOrganizationError();
 		await this.repository.restore(row.id);
 	}
 
@@ -220,12 +216,32 @@ export class OrganizationService {
 		return this.repository.findMemberRole(organizationId, userId);
 	}
 
-	/** Paginated member list joined with user identity fields. */
+	/**
+	 * Paginated member list joined with user identity fields.
+	 *
+	 * @remarks
+	 * `user.image` stores an S3 object key, never a URL — remapped to a
+	 * short-lived presigned GET URL here (same convention as
+	 * `UserService.withPresignedAvatar`), so the browser can actually load
+	 * the avatar.
+	 */
 	async listMembers(
 		organizationId: string,
 		request: TMemberPaginationRequest,
 	): Promise<TPaginationResult<TOrganizationMember>> {
-		return this.repository.paginateMembers(organizationId, request);
+		const page = await this.repository.paginateMembers(organizationId, request);
+		return {
+			...page,
+			data: page.data.map((member) => ({
+				...member,
+				user: member.user
+					? {
+							...member.user,
+							image: member.user.image ? presignObjectUrl(member.user.image) : null,
+						}
+					: null,
+			})),
+		};
 	}
 
 	/**

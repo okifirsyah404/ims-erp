@@ -27,11 +27,11 @@ import {
 import {
 	Card,
 	CardContent,
-	CardDescription,
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@ims-erp/ui/components/tabs';
+import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { OrganizationMemberCard } from '@/components/organization';
 import {
 	deleteOrganization,
@@ -58,9 +58,10 @@ function OrganizationDetailPage() {
 		...organizationQueryOptions(organizationId),
 		retry: false,
 	});
-	const { data: members } = useQuery({
+	const membersQuery = useQuery({
 		...organizationMembersQueryOptions(organizationId),
 	});
+	const { data: members } = membersQuery;
 
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [deleting, setDeleting] = useState(false);
@@ -102,8 +103,34 @@ function OrganizationDetailPage() {
 
 	if (isPending) {
 		return (
-			<div className='text-sm text-muted-foreground'>
-				{t('common:state.loading')}
+			<div className='flex flex-col gap-6' aria-busy='true'>
+				{/* Header */}
+				<div className='flex items-start justify-between gap-4'>
+					<div className='flex flex-col gap-2'>
+						<Skeleton className='h-8 w-64' />
+						<Skeleton className='h-4 w-48' />
+					</div>
+					<Skeleton className='h-9 w-20' />
+				</div>
+				{/* Tabs */}
+				<div className='flex flex-col gap-4'>
+					<div className='flex gap-2'>
+						<Skeleton className='h-8 w-20' />
+						<Skeleton className='h-8 w-32' />
+					</div>
+					{/* Info card */}
+					<Card>
+						<CardHeader>
+							<Skeleton className='h-5 w-24' />
+						</CardHeader>
+						<CardContent>
+							<div className='grid gap-2'>
+								<Skeleton className='h-4 w-full max-w-sm' />
+								<Skeleton className='h-4 w-full max-w-xs' />
+							</div>
+						</CardContent>
+					</Card>
+				</div>
 			</div>
 		);
 	}
@@ -223,16 +250,19 @@ function OrganizationDetailPage() {
 					</Card>
 				</TabsContent>
 				<TabsContent value='members'>
-					<Card>
-						<CardHeader className='flex-row items-center justify-between'>
+					<Card className='gap-0 py-0'>
+						<div className='flex items-center justify-between gap-4 border-b px-4 py-4'>
 							<div>
-								<CardTitle>{t('orgDetail.members')}</CardTitle>
-								<CardDescription>
+								<h2 className='font-semibold leading-none'>
+									{t('orgDetail.members')}
+								</h2>
+								<p className='mt-1.5 text-sm text-muted-foreground'>
 									{t('orgDetail.membersDescription')}
-								</CardDescription>
+								</p>
 							</div>
 							{canManageMembers && (
 								<Button
+									className='shrink-0'
 									render={
 										<Link
 											to='/organizations/$organizationId/members/new'
@@ -243,24 +273,41 @@ function OrganizationDetailPage() {
 									{t('orgDetail.addMember')}
 								</Button>
 							)}
-						</CardHeader>
-						<CardContent>
-							{(members?.rows?.length ?? 0) === 0 ? (
-								<p className='py-6 text-center text-sm text-muted-foreground'>
-									{t('orgDetail.membersEmpty')}
-								</p>
-							) : (
-								<div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
-									{(members?.rows ?? []).map((member) => (
-										<OrganizationMemberCard
-											key={member.id}
-											member={member}
-											organizationId={organizationId}
-										/>
-									))}
-								</div>
-							)}
-						</CardContent>
+						</div>
+						{membersQuery.isPending ? (
+							<div className='grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6'>
+								{Array.from({ length: 6 }, (_, index) => (
+									<Card key={`member-skeleton-${index}`} className='gap-2 py-3'>
+										<div className='flex items-center gap-2.5 px-3'>
+											<Skeleton className='size-9 shrink-0 rounded-full' />
+											<div className='flex flex-1 flex-col gap-1.5'>
+												<Skeleton className='h-4 w-3/4' />
+												<Skeleton className='h-3 w-full' />
+											</div>
+										</div>
+										<div className='flex items-center justify-between gap-2 px-3'>
+											<Skeleton className='h-5 w-24' />
+											<Skeleton className='h-3 w-16' />
+										</div>
+										<Skeleton className='mx-1 h-7' />
+									</Card>
+								))}
+							</div>
+						) : (members?.rows?.length ?? 0) === 0 ? (
+							<p className='py-6 text-center text-sm text-muted-foreground'>
+								{t('orgDetail.membersEmpty')}
+							</p>
+						) : (
+							<div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6'>
+								{(members?.rows ?? []).map((member) => (
+									<OrganizationMemberCard
+										key={member.id}
+										member={member}
+										organizationId={organizationId}
+									/>
+								))}
+							</div>
+						)}
 					</Card>
 				</TabsContent>
 			</Tabs>
