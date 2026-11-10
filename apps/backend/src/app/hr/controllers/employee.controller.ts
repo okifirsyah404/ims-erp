@@ -44,8 +44,8 @@ function contextFrom(erp: ErpContext): TEmployeeContext {
  * @remarks
  * **Authorization.** Every route rides `erpGuard` + the closed `employee:*`
  * vocabulary (`erpRoleGrants`: `hr` full, `admin` read, `owner` all). The
- * picker is guarded by `warehouse:update` because its only consumer is the
- * warehouse PIC field (ADR-0010 display-only). Company-level employees
+ * picker (warehouse PIC dropdown) also rides `employee:read` because no
+ * organization role holds `warehouse:*` (ADR-0008). Company-level employees
  * (`organization_id IS NULL`) are visible to every `employee:read` holder
  * but writable only by platform admins — enforced in the service.
  */
@@ -67,7 +67,15 @@ export class EmployeeController {
 					const parsed = employeePickerQuerySchema.parse(query);
 					return ok(await service.picker(parsed.organizationIds, parsed.search, parsed.limit));
 				},
-				{ erp: { permission: ['warehouse:update'] }, detail: { description: 'PIC candidates for the warehouse form (linked orgs + company-level)' } },
+				{
+					// `warehouse:*` is application-admin-only (ADR-0008), so the
+					// warehouse form's PIC dropdown rides `employee:read`: any role
+					// that can open the warehouse form already holds it (`hr` full,
+					// `admin` read, `owner` all). The endpoint returns only
+					// id/code/name — no PII beyond the list page.
+					erp: { permission: ['employee:read'] },
+					detail: { description: 'PIC candidates for the warehouse form (linked orgs + company-level)' },
+				},
 			)
 			.get(
 				'/:id',

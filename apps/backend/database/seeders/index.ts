@@ -12,6 +12,7 @@ import { seedOrganizationMembers } from './seed/organization-members.seeder';
 import { seedOrganizationRoles } from './seed/organization-roles.seeder';
 import { seedCompanyProfile } from './seed/company-profile.seeder';
 import { seedItemCategories } from './seed/item-category.seeder';
+import { seedHrEmployees } from './seed/hr.seeder';
 
 const logger = pino({
 	timestamp: false,
@@ -41,6 +42,7 @@ export async function runSeeders(): Promise<void> {
 	await seedInventory();
 	await seedAssets();
 	await seedTax();
+	await seedHrEmployees();
 
 	const finishedAt = DateTime.now();
 	const elapsed = Duration.fromObject({
