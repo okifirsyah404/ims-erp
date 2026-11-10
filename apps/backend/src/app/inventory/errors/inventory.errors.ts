@@ -120,6 +120,24 @@ export class WarehouseLinkConflictError extends AppError {
 }
 
 /**
+ * The requested warehouse PIC (responsible employee) is not assignable.
+ *
+ * @remarks
+ * 422: the request is well-formed but the employee is unknown, inactive, or
+ * belongs to an organization not linked to the warehouse (ERP-0034; ADR-0010
+ * keeps the field display-only — this only gates *assignment*, not access).
+ */
+export class WarehousePicInvalidError extends AppError {
+	constructor() {
+		super(
+			422,
+			'inventory.warehousePicInvalid',
+			'The responsible employee is unknown, inactive, or not from a linked organization',
+		);
+	}
+}
+
+/**
  * A storage cannot be written into an inactive warehouse.
  *
  * @remarks

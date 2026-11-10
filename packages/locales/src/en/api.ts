@@ -155,6 +155,8 @@ const api = {
 		'A storage with this code already exists in this warehouse',
 	'inventory.warehouseInactive':
 		'Warehouse "{{warehouseCode}}" is inactive; its storages cannot be changed',
+	'inventory.warehousePicInvalid':
+		'The responsible employee is unknown, inactive, or not from a linked organization',
 	'inventory.movementNotFound': 'Stock movement not found',
 	'inventory.movementAlreadyReversed':
 		'This stock movement has already been reversed',
