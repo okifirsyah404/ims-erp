@@ -9,6 +9,8 @@ import { members, organizations, users } from '../../../drizzle/schemas/auth.sch
 import { NumberingService } from '../../../src/app/organization/services/numbering.service';
 import { DocumentSequenceRepository } from '../../../src/app/organization/repositories/document-sequence.repository';
 import { CompanyProfileRepository } from '../../../src/app/organization/repositories/company-profile.repository';
+import { CacheClient } from '../../../src/cache/cache.client';
+import { redisClient } from '../../../src/providers/redis/redis';
 import { isProductionEnv } from '../../../config/providers/env';
 
 const logger = pino({
@@ -74,7 +76,9 @@ export async function seedHrEmployees(): Promise<void> {
 
 	const numbering = new NumberingService(
 		new DocumentSequenceRepository(drizzleDB),
-		new CompanyProfileRepository(drizzleDB),
+		// The seeder runs outside the DI container, so the repository's cache
+		// dependency is wired by hand over the shared redis client.
+		new CompanyProfileRepository(drizzleDB, new CacheClient(redisClient)),
 	);
 
 	let created = 0;
