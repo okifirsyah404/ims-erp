@@ -22,6 +22,7 @@ import {
 } from '@providers/queue/inventory-scheduler.queue';
 import { startInventorySchedulerWorker } from '@providers/queue/inventory-scheduler.worker';
 import { closeQueueConnection } from '@providers/queue/queue.connection';
+import { startMailWorker } from '@providers/mailer/mailer.worker';
 import { startWorkers, stopWorkers } from '@providers/queue/worker-registry';
 import { Elysia } from 'elysia';
 import { i18next } from 'elysia-i18next';
@@ -119,9 +120,16 @@ const bootstrap = new Elysia()
 // worker is started through the shared registry, so adding a queue means one
 // entry in this array — not a new handle and a new shutdown branch. Non-fatal
 // at boot: a Redis outage must not take the API down.
-startWorkers([startAvatarWorker()], (error) =>
-	pinoLogger.error({ err: error }, 'background worker error'),
+// Mail worker is nullable: `null` when no transport is configured
+// (tests/scripts without SMTP), so booting with no mail server still works.
+const mailWorker = startMailWorker();
+startWorkers(
+	[startAvatarWorker(), ...(mailWorker ? [mailWorker] : [])],
+	(error) => pinoLogger.error({ err: error }, 'background worker error'),
 );
+if (mailWorker) {
+	pinoLogger.info('mail worker started (SMTP transport)');
+}
 
 // Recurring sweeps (S4): late returns and guest-PII retention. `null` when
 // `scheduler.enabled` is false, which is the default for tests and scripts, so

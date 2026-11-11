@@ -5,7 +5,8 @@
 # `--compile` mode (the `build` script in apps/backend/package.json), so the
 # runtime image is a plain Alpine base plus the binary. @ims-erp/common is a
 # workspace dep exposing compiled dist/, so it is built inside the image first;
-# @ims-erp/locales is a source-only dep that is copied straight into the build.
+# @ims-erp/locales and @ims-erp/react-email are source-only deps that are
+# copied straight into the build.
 
 # ---- deps: install workspace deps ----
 # No --platform pin: each stage already builds for the build target by default,
@@ -18,7 +19,9 @@ COPY package.json bun.lock bunfig.toml ./
 COPY packages/common/package.json packages/common/
 # @ims-erp/locales is a source-only workspace package (exports resolve to
 # src/*.ts); bun requires its manifest at install time.
+# @ims-erp/react-email is also source-only — same requirement.
 COPY packages/locales/package.json packages/locales/
+COPY packages/react-email/package.json packages/react-email/
 COPY apps/backend/package.json apps/backend/
 RUN --mount=type=cache,target=/root/.bun/install/cache \
 	bun install --frozen-lockfile --ignore-scripts
@@ -27,8 +30,10 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
 FROM deps AS build
 COPY packages/common/ packages/common/
 # @ims-erp/locales has no build step - its package.json exports point straight
-# at src/*.ts, so the sources are all the compile needs.
+# at src/*.ts, so the sources are all the compile needs. @ims-erp/react-email
+# is source-only the same way.
 COPY packages/locales/ packages/locales/
+COPY packages/react-email/ packages/react-email/
 COPY tsconfig.json ./
 RUN bun run --cwd packages/common build
 # apps/backend/.dockerignore keeps the host's dist/, .env, data/ and tests out

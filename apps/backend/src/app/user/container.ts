@@ -4,7 +4,7 @@ import { InvitationRepository } from './repositories/invitation.repository';
 import { UserManagementRepository } from './repositories/user-management.repository';
 import { BetterAuthUserGateway } from './adapters/better-auth-user';
 import { BetterAuthUserManagementGateway } from './adapters/better-auth-user-management';
-import { LoggerInvitationMailer } from './adapters/logger-mailer';
+import { QueueInvitationMailer } from './adapters/queue-mailer';
 import { UserService } from './services/user.service';
 import { InvitationService } from './services/invitation.service';
 import { UserAdminService } from './services/user-admin.service';
@@ -60,7 +60,7 @@ export function registerUser(container: DependencyContainer): void {
 		useClass: BetterAuthUserManagementGateway,
 	});
 	container.register(INVITATION_MAILER_TOKEN, {
-		useClass: LoggerInvitationMailer,
+		useClass: QueueInvitationMailer,
 	});
 	container.register(USER_ADMIN_SERVICE_TOKEN, { useClass: UserAdminService });
 	container.register(INVITATION_SERVICE_TOKEN, {
