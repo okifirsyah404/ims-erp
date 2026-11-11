@@ -1,0 +1,174 @@
+import {
+	DEFAULT_LANGUAGE,
+	en,
+	id,
+	type LanguageCode,
+} from '@ims-erp/locales';
+import {
+	AppInvitationEmail,
+	OrganizationInvitationEmail,
+	ResetPasswordEmail,
+	renderEmail,
+	VerificationEmail,
+} from '@ims-erp/react-email';
+import { createInstance } from 'i18next';
+import { appConfig } from '@config/providers/config';
+import type { MailPayload } from './mailer.transport';
+
+/**
+ * Email templates rendered with `@ims-erp/react-email`.
+ *
+ * This module owns i18n: a standalone i18next instance is built here (Better
+ * Auth hooks run outside the Elysia request lifecycle — no request-scoped
+ * `t`), translations are interpolated into final strings, and passed as
+ * props to the layout components which know nothing about i18n.
+ *
+ * Language is a parameter defaulting to {@link DEFAULT_LANGUAGE}; pass the
+ * user's locale once it is stored on the user record.
+ */
+
+const appName = () => appConfig.app.name ?? 'ERP';
+
+type EmailKey = keyof typeof en.email & string;
+
+function t(
+	language: LanguageCode,
+	key: `email:${EmailKey}`,
+	options?: Record<string, unknown>,
+): string {
+	const instance = createInstance();
+	instance.init({
+		lng: language,
+		fallbackLng: DEFAULT_LANGUAGE,
+		supportedLngs: ['en', 'id'],
+		keySeparator: false,
+		nsSeparator: ':',
+		interpolation: { escapeValue: false },
+		resources: { en, id } as never,
+	});
+	return instance.t(key, options ?? {}) as string;
+}
+
+type TemplateInput = {
+	name?: string | null;
+	url: string;
+	language?: LanguageCode;
+};
+
+/** Verification-email subject + HTML/plain-text body. */
+export async function renderVerificationEmail({
+	name,
+	url,
+	language = DEFAULT_LANGUAGE,
+}: TemplateInput): Promise<Omit<MailPayload, 'to'>> {
+	const texts = {
+		greeting: t(language, 'email:verification.greeting', {
+			name: name ?? '',
+		}),
+		body: t(language, 'email:verification.body', { app: appName() }),
+		action: t(language, 'email:verification.action'),
+		fallback: t(language, 'email:verification.fallback'),
+		footer: t(language, 'email:footer.noReply', { app: appName() }),
+	};
+	const { html, text } = await renderEmail(
+		<VerificationEmail url={url} texts={texts} />,
+	);
+	return { subject: t(language, 'email:verification.subject'), html, text };
+}
+
+/** Password-reset-email subject + HTML/plain-text body. */
+export async function renderResetPasswordEmail({
+	name,
+	url,
+	language = DEFAULT_LANGUAGE,
+}: TemplateInput): Promise<Omit<MailPayload, 'to'>> {
+	const texts = {
+		greeting: t(language, 'email:resetPassword.greeting', {
+			name: name ?? '',
+		}),
+		body: t(language, 'email:resetPassword.body', { app: appName() }),
+		action: t(language, 'email:resetPassword.action'),
+		fallback: t(language, 'email:resetPassword.fallback'),
+		footer: t(language, 'email:footer.noReply', { app: appName() }),
+	};
+	const { html, text } = await renderEmail(
+		<ResetPasswordEmail url={url} texts={texts} />,
+	);
+	return { subject: t(language, 'email:resetPassword.subject'), html, text };
+}
+
+/** App-invitation-email subject + HTML/plain-text body (`type: 'app'`). */
+export async function renderAppInvitationEmail({
+	name,
+	url,
+	language = DEFAULT_LANGUAGE,
+}: TemplateInput): Promise<Omit<MailPayload, 'to'>> {
+	const texts = {
+		greeting: t(language, 'email:appInvitation.greeting', {
+			name: name ?? '',
+		}),
+		body: t(language, 'email:appInvitation.body', { app: appName() }),
+		action: t(language, 'email:appInvitation.action'),
+		fallback: t(language, 'email:appInvitation.fallback'),
+		footer: t(language, 'email:footer.noReply', { app: appName() }),
+	};
+	const { html, text } = await renderEmail(
+		<AppInvitationEmail url={url} texts={texts} />,
+	);
+	return {
+		subject: t(language, 'email:appInvitation.subject', { app: appName() }),
+		html,
+		text,
+	};
+}
+
+/** Organization-invitation input; superset of the base template input. */
+export type OrganizationInvitationTemplateInput = TemplateInput & {
+	organizationName: string;
+	roleName: string;
+	/** Pre-formatted expiry (e.g. via luxon in the caller). */
+	expiresAt: string;
+};
+
+/** Organization-invitation-email subject + HTML/plain-text body (`type: 'org'`). */
+export async function renderOrganizationInvitationEmail({
+	name,
+	url,
+	language = DEFAULT_LANGUAGE,
+	organizationName,
+	roleName,
+	expiresAt,
+}: OrganizationInvitationTemplateInput): Promise<Omit<MailPayload, 'to'>> {
+	const intro = t(language, 'email:organizationInvitation.intro', {
+		organization: organizationName,
+		role: roleName,
+		app: appName(),
+	});
+	const expires = t(language, 'email:organizationInvitation.expires', {
+		expiresAt,
+	});
+	const texts = {
+		greeting: t(language, 'email:organizationInvitation.greeting', {
+			name: name ?? '',
+		}),
+		body: intro,
+		action: t(language, 'email:organizationInvitation.action'),
+		fallback: t(language, 'email:organizationInvitation.fallback'),
+		footer: t(language, 'email:footer.noReply', { app: appName() }),
+	};
+	const { html, text } = await renderEmail(
+		<OrganizationInvitationEmail
+			intro={intro}
+			expires={expires}
+			url={url}
+			texts={texts}
+		/>,
+	);
+	return {
+		subject: t(language, 'email:organizationInvitation.subject', {
+			organization: organizationName,
+		}),
+		html,
+		text,
+	};
+}

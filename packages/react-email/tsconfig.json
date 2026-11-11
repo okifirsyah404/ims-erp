@@ -1,0 +1,12 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"jsx": "react-jsx",
+		"verbatimModuleSyntax": false,
+		"types": ["bun"]
+	},
+	"include": ["src", "emails", "test"],
+	"exclude": ["node_modules", ".react-email"]
+}

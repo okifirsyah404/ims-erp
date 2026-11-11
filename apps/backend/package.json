@@ -28,6 +28,7 @@
 		"@elysiajs/cors": "^1.4.2",
 		"@ims-erp/common": "workspace:*",
 		"@ims-erp/locales": "workspace:*",
+		"@ims-erp/react-email": "workspace:*",
 		"better-auth": "^1.7.15",
 		"bullmq": "^6.5.1",
 		"dotenv": "^18.0.9",
@@ -38,6 +39,7 @@
 		"exceljs": "^4.4.0",
 		"i18next": "^26.6.0",
 		"luxon": "^3.7.2",
+		"nodemailer": "^10.5.0",
 		"pino": "^10.4.0",
 		"tsyringe": "^4.10.0",
 		"zod": "^4.6.7"

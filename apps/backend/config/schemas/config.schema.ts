@@ -56,12 +56,28 @@ export const S3ConfigSchema = z.object({
 	usePathStyle: z.boolean().nullish(),
 });
 
-export const SMTPConfigSchema = z.object({
-	host: z.string().min(1),
-	port: z.number().int().min(1).max(65535),
-	user: z.string().min(1),
-	password: z.string().min(1),
-	secure: z.boolean().nullish(),
+export const MailConfigSchema = z.object({
+	/**
+	 * Explicit transport selection. When null the resolver auto-detects:
+	 * resend when an API key is present, else smtp when a host is present.
+	 */
+	provider: z.enum(['smtp', 'resend']).nullish(),
+	smtp: z
+		.object({
+			host: z.string().min(1),
+			port: z.number().int().min(1).max(65535),
+			user: z.string().nullish(),
+			password: z.string().nullish(),
+			secure: z.boolean().nullish(),
+		})
+		.nullish(),
+	resend: z
+		.object({
+			apiKey: z.string().min(1),
+		})
+		.nullish(),
+	/** Envelope sender, e.g. `"ERP <noreply@example.com>"`. */
+	from: z.string().min(1).nullish(),
 });
 
 /**
@@ -113,7 +129,7 @@ export const EnvConfigSchema = z.object({
 	database: DatabaseConfigSchema,
 	redis: RedisConfigSchema,
 	s3: S3ConfigSchema,
-	smtp: SMTPConfigSchema,
+	mail: MailConfigSchema,
 	auth: AuthConfigSchema,
 	scheduler: SchedulerConfigSchema,
 });
@@ -123,7 +139,7 @@ export type TAppConfig = z.infer<typeof AppConfigSchema>;
 export type TDatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
 export type TRedisConfig = z.infer<typeof RedisConfigSchema>;
 export type TS3Config = z.infer<typeof S3ConfigSchema>;
-export type TSMTPConfig = z.infer<typeof SMTPConfigSchema>;
+export type TMailConfig = z.infer<typeof MailConfigSchema>;
 export type TAuthConfig = z.infer<typeof AuthConfigSchema>;
 export type TSchedulerConfig = z.infer<typeof SchedulerConfigSchema>;
 export type TEnvConfig = z.infer<typeof EnvConfigSchema>;

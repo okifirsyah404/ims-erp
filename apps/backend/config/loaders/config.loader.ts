@@ -91,15 +91,26 @@ export function loadEnvConfig(
 					: process.env.S3_USE_PATH_STYLE.toLowerCase() === 'true',
 		},
 
-		smtp: {
-			host: process.env.SMTP_HOST,
-			port: Number(process.env.SMTP_PORT ?? 587),
-			user: process.env.SMTP_USER,
-			password: process.env.SMTP_PASSWORD,
-			secure:
-				process.env.SMTP_SECURE == null
-					? null
-					: process.env.SMTP_SECURE.toLowerCase() === 'true',
+		mail: {
+			provider: process.env.MAIL_PROVIDER || null,
+			// A transport block is only populated when its key env var is
+			// present, so the resolver can auto-detect which provider to use.
+			smtp: process.env.MAIL_SMTP_HOST
+				? {
+						host: process.env.MAIL_SMTP_HOST,
+						port: Number(process.env.MAIL_SMTP_PORT ?? 587),
+						user: process.env.MAIL_SMTP_USER || null,
+						password: process.env.MAIL_SMTP_PASSWORD || null,
+						secure:
+							process.env.MAIL_SMTP_SECURE == null
+								? null
+								: process.env.MAIL_SMTP_SECURE.toLowerCase() === 'true',
+					}
+				: null,
+			resend: process.env.MAIL_RESEND_API_KEY
+				? { apiKey: process.env.MAIL_RESEND_API_KEY }
+				: null,
+			from: process.env.MAIL_FROM || null,
 		},
 
 		auth: {

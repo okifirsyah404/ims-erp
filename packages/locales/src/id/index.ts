@@ -2,6 +2,7 @@ import admin_ from './admin';
 import assets_ from './assets';
 import auth_ from './auth';
 import common_ from './common';
+import email_ from './email';
 import dashboard_ from './dashboard';
 import finance_ from './finance';
 import inventory_ from './inventory';
@@ -19,6 +20,7 @@ import tax_ from './tax';
 /** Indonesian resources — same namespace/key shape as `en`. */
 export const id = {
 	common: common_,
+	email: email_,
 	nav: nav_,
 	auth: auth_,
 	account: account_,
