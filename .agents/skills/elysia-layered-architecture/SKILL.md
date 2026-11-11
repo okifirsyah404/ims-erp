@@ -4,7 +4,7 @@ description: Layered backend architecture for this project's Elysia domains - co
 license: MIT
 metadata:
   author: OpenAgentic
-  version: "1.4.0"
+  version: "1.5.0"
   dependsOn: elysiajs
   canonicalExample: apps/backend/src/app/location
   secondaryExample: apps/backend/src/app/user
@@ -28,6 +28,10 @@ utils/       pure helpers — optional
 middleware/  module middleware / Better Auth hooks — optional, reserved
 queues/      module-owned BullMQ queues + workers (optional; user module)
 container.ts registration of the domain's classes (see elysia-tsyringe)
+index.ts     public entry point: exports `<module>Module()` — a factory
+             returning one Elysia instance mounting every controller in the
+             module, in route order (see rule 1.1) — plus re-exports of the
+             container registration, tokens, and published services
 ```
 
 Request flow: HTTP → controller (parse → envelope) → service → repository → DB/cache.
@@ -74,6 +78,35 @@ Two mechanics from the user module:
   `erp: {}` + destructuring `erp` fails typecheck (Elysia loses the
   macro's resolve contribution). Use a non-empty option object, e.g.
   `erp: { permission: [] }` — see `user.controller.ts`.
+
+**Module entry point: `<module>Module()` in `index.ts` — CRITICAL.**
+Each module's `index.ts` exports a `<module>Module()` factory returning
+one Elysia instance that `.use()`s every controller the module owns, in
+the module's documented route order. The root app (`src/app/app.ts`)
+mounts only module factories — `.use(inventoryModule())` — and never
+lists individual controllers.
+
+```typescript
+// apps/backend/src/app/inventory/index.ts — the pattern
+export function inventoryModule() {
+	return new Elysia({ name: 'inventory' })
+		.use(ItemController.plugin())
+		// linked read mounts before the admin CRUD: same /warehouses
+		// prefix, different guard.
+		.use(WarehouseController.linkedPlugin())
+		.use(WarehouseController.plugin())
+		// static path before /stock/:… shadowing.
+		.use(StockValuationController.plugin())
+		.use(StockController.plugin())
+		.use(AdjustmentController.plugin());
+}
+```
+
+The factory (not a module-level instance) keeps container resolution
+after `register<Module>` runs — same reasoning as `createApp()`.
+Route-ordering rules that span controllers of one module (static-before-
+param, linked-before-CRUD) are documented *inside* the module factory;
+order concerns between modules stay documented in `app.ts`.
 
 ### 1.2 Services orchestrate, never touch HTTP or Drizzle — HIGH
 
@@ -162,6 +195,10 @@ receive parsed, typed values only — never `Record<string, unknown>`.
   repository via DI token (cache invalidation + soft-delete filtering).
 - `erp: {}` as macro options while destructuring `erp` in the handler —
   typecheck failure, see rule 1.1.
+- Listing individual controllers in `src/app/app.ts`
+  (`.use(ItemController.plugin())`) instead of mounting the module factory
+  (`inventoryModule()`) — the module's route-ordering invariants scatter
+  across the root app and adding a controller becomes a cross-module edit.
 
 ## References
 

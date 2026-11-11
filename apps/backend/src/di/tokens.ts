@@ -17,3 +17,6 @@ export const DRIZZLE_TOKEN = Symbol('DRIZZLE_TOKEN');
 
 /** Resolves to the shared Bun `RedisClient`. */
 export const REDIS_TOKEN = Symbol('REDIS_TOKEN');
+
+/** Resolves to the shared cache-aside client over Redis. */
+export const CACHE_CLIENT_TOKEN = Symbol('CACHE_CLIENT_TOKEN');

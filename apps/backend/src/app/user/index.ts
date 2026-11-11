@@ -12,9 +12,32 @@ export {
 	startAvatarWorker,
 } from './queues/avatar.worker';
 export { avatarUserCreateHook } from './queues/avatar.queue';
-export { UserAdminController } from './controllers/user-admin.controller';
-export {
-	InvitationClaimController,
-	InvitationController,
-	UsernameCheckController,
-} from './controllers/invitation.controller';
+
+export * from './controllers/invitation.controller';
+
+import Elysia from 'elysia';
+
+import { InvitationClaimController, InvitationController, UsernameCheckController } from './controllers/invitation.controller';
+import { UserAdminController } from './controllers/user-admin.controller';
+import { UserController } from './controllers/user.controller';
+
+/**
+ * Elysia instance mounting every user controller, in route order.
+ *
+ * @remarks
+ * `UserAdminController` mounts before `UserController`: admin surfaces share
+ * the `/admin` prefix, so their routes no longer overlap the self-service
+ * `/users/*` routes — mount order is irrelevant (before the split, both
+ * modules registered `GET /users` and the first registration silently won),
+ * but this order keeps the intent obvious.
+ */
+export function userModule() {
+	return new Elysia({ name: 'user' })
+		.use(UserAdminController.plugin())
+		.use(UserController.plugin())
+		.use(InvitationController.plugin())
+		// Public, sessionless claim flow: token-gated, deliberately outside
+		// `/admin`, so it must not inherit the admin guard.
+		.use(InvitationClaimController.plugin())
+		.use(UsernameCheckController.plugin());
+}

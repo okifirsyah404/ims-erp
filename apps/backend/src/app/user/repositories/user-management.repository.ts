@@ -1,5 +1,4 @@
-import { DRIZZLE_TOKEN, REDIS_TOKEN } from '@di/provider';
-import { RedisClient } from 'bun';
+import { CACHE_CLIENT_TOKEN, DRIZZLE_TOKEN } from '@di/provider';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import {
 	and,
@@ -16,6 +15,8 @@ import {
 	sql,
 } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
+import { cacheIdKey } from '@utils/cache.util';
+import type { ICacheClient } from '@cache/cache.client';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { TUserSelect } from '@drizzle/schemas/auth.schema';
 import { members, organizations, users } from '@drizzle/schemas/auth.schema';
@@ -47,7 +48,7 @@ export class UserManagementRepository implements IUserManagementRepository {
 
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
-		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
+		@inject(CACHE_CLIENT_TOKEN) private readonly cache: ICacheClient,
 	) {}
 
 	async findById(id: string): Promise<TUserSelect | null> {
@@ -304,7 +305,7 @@ export class UserManagementRepository implements IUserManagementRepository {
 	 * stayed visible on `/users/me` for up to 5 minutes.
 	 */
 	private async invalidate(id: string): Promise<void> {
-		await this.redisClient.del(userListCacheKey(), userCacheKey(id));
+		await this.cache.del(userListCacheKey(), userCacheKey(id));
 	}
 }
 

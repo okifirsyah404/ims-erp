@@ -19,9 +19,12 @@ Creating a module means, in order:
    — except auth-projecting modules (rule 3.3), which have no schema file.
 4. `container.ts` exporting `register<Module>(container)`, called in
    `src/index.ts` after provider registration
-5. The controller's `plugin()` mounted in `src/app/app.ts` via
-   `createApp()` — registration and mounting deliberately live in different
-   files (see `elysia-tsyringe` rule 2.3)
+5. `index.ts` exporting the module's HTTP entry point:
+   `<module>Module()` returns one Elysia instance `.use()`ing every
+   controller the module owns, in the module's route order. Mount it in
+   `src/app/app.ts` with a single `.use(<module>Module())`; individual
+   controllers are never listed there (registration and mounting live in
+   different files — see `elysia-tsyringe` rule 2.3)
 6. If the module calls an external system, define the port (interface) in
    `contracts/` first and implement it in `adapters/` - before writing
    any call site (see the layered-architecture skill, rule 1.2).
@@ -42,12 +45,14 @@ src/app/location/
   repositories/         # 4 repositories, cache-aside, soft-delete aware
   services/             # location.service.ts
   container.ts          # registerLocation(container)
+  index.ts              # locationModule() + registerLocation re-export
 drizzle/schemas/location.schema.ts  # pgSchema('location'), 4 tables
 ```
 
 Registered in `src/index.ts`: `registerProvider(container)` →
 `registerLocation(container)`. Mounted in `src/app/app.ts` inside
-`createApp()`: `.use(LocationController.plugin())`.
+`createApp()`: `.use(locationModule())` — one call per module, never per
+controller.
 
 `src/app/user/` is the reference for the two variations — an
 auth-projecting module (no schema file, rule 3.3) with an external-system
@@ -65,6 +70,7 @@ src/app/user/
   services/             # user.service.ts, invitation.service.ts (orchestration only)
   utils/                # token.ts (pure helpers)
   container.ts          # registerUser(container)
+  index.ts              # userModule() + worker handle + registration re-export
 ```
 
 ## Why
@@ -84,6 +90,10 @@ src/app/user/
   without registering (resolution failures at first request).
 - Mounting a controller from `src/index.ts`, or registering a container from
   `src/app/app.ts` — inverting the split makes both files harder to audit.
+- Listing individual controllers in `src/app/app.ts`
+  (`.use(XController.plugin())`) instead of one `.use(<module>Module())`
+  per module — the module's route-ordering invariants scatter across the
+  root app, and adding a controller becomes a cross-module edit.
 - "Just one small change" in another module to make wiring easier — the
   beginning of the entanglement this skill prevents.
 - Calling `auth.api`/SDKs inline first and "extracting a port later" —

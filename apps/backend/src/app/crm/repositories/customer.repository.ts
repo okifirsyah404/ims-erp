@@ -1,4 +1,4 @@
-import { DRIZZLE_TOKEN } from '@di/provider';
+import { CACHE_CLIENT_TOKEN, DRIZZLE_TOKEN } from '@di/provider';
 import {
 	type CustomerStatus,
 	customers,
@@ -9,6 +9,8 @@ import type { TPaginationResult } from '@ims-erp/common';
 import { and, asc, count, eq, ilike, isNull, or } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
+import { cacheIdKey } from '@utils/cache.util';
+import type { ICacheClient } from '@cache/cache.client';
 import type {
 	TCreateCustomerInput,
 	TCustomerListQuery,
@@ -16,10 +18,24 @@ import type {
 } from '../contracts/customer.contract';
 import type { ICustomerRepository } from '../contracts/customer.repository.interface';
 
-/** Drizzle implementation of {@link ICustomerRepository}. */
+/**
+ * Drizzle + Redis implementation of {@link ICustomerRepository}.
+ *
+ * @remarks
+ * `findById` and `findByCode` use cache-aside with a 5-minute TTL (the
+ * former with negative caching); every write evicts both entries for the
+ * affected row. `paginate` is never cached — filters change the result set
+ * per request.
+ */
 @injectable()
 export class CustomerRepository implements ICustomerRepository {
-	constructor(@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase) {}
+	constructor(
+		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
+		@inject(CACHE_CLIENT_TOKEN) private readonly cache: ICacheClient,
+	) {}
+
+	/** Redis key namespace for this repository's cache entries. */
+	private readonly cachePrefix = 'crm:customer';
 
 	private live(id: string) {
 		return and(eq(customers.id, id), isNull(customers.deletedAt));
@@ -47,17 +63,25 @@ export class CustomerRepository implements ICustomerRepository {
 	}
 
 	async findById(id: string): Promise<TCustomerSelect | null> {
-		const [row] = await this.database.select().from(customers).where(this.live(id)).limit(1);
-		return row ?? null;
+		return this.cache.remember(cacheIdKey(this.cachePrefix, id), async () => {
+			const [row] = await this.database
+				.select()
+				.from(customers)
+				.where(this.live(id))
+				.limit(1);
+			return row ?? null;
+		});
 	}
 
 	async findByCode(code: string): Promise<TCustomerSelect | null> {
-		const [row] = await this.database
-			.select()
-			.from(customers)
-			.where(and(eq(customers.code, code), isNull(customers.deletedAt)))
-			.limit(1);
-		return row ?? null;
+		return this.cache.remember(`${this.cachePrefix}:code:${code}`, async () => {
+			const [row] = await this.database
+				.select()
+				.from(customers)
+				.where(and(eq(customers.code, code), isNull(customers.deletedAt)))
+				.limit(1);
+			return row ?? null;
+		});
 	}
 
 	async create(data: TCreateCustomerInput & { createdBy: string }): Promise<TCustomerSelect> {
@@ -66,6 +90,7 @@ export class CustomerRepository implements ICustomerRepository {
 			.insert(customers)
 			.values({ ...data, ownerUserId: data.createdBy, status: 'active', createdAt: now, updatedAt: now })
 			.returning();
+		await this.invalidate(row);
 		return row;
 	}
 
@@ -76,6 +101,7 @@ export class CustomerRepository implements ICustomerRepository {
 			.set({ ...patch, updatedAt: new Date() })
 			.where(this.live(id))
 			.returning();
+		if (row) await this.invalidate(row);
 		return row ?? null;
 	}
 
@@ -89,6 +115,17 @@ export class CustomerRepository implements ICustomerRepository {
 			.set({ status: to, updatedAt: new Date() })
 			.where(and(this.live(id), eq(customers.status, from)))
 			.returning();
+		if (row) await this.invalidate(row);
 		return row ?? null;
+	}
+
+	/**
+	 * Evicts the id and code cache entries for the given row.
+	 */
+	private async invalidate(row: TCustomerSelect): Promise<void> {
+		await this.cache.del(
+			cacheIdKey(this.cachePrefix, row.id),
+			`${this.cachePrefix}:code:${row.code}`,
+		);
 	}
 }

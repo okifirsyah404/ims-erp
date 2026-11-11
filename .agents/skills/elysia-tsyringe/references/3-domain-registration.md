@@ -45,12 +45,12 @@ registerLocation(container);   // then domain classes that inject them
 deliberate:
 
 ```typescript
-// src/app/app.ts
+// src/app/app.ts — mounts one module factory per module
 export function createApp() {
   return new Elysia()
     .mount(auth.handler)
-    .use(LocationController.plugin())
-    /* ...every other controller */
+    .use(locationModule())
+    /* ...every other module factory */
 }
 
 // src/index.ts
@@ -83,3 +83,6 @@ OpenAPI plugin; request-scoped concerns (i18n, CORS, logger) stay in
 - A domain module that self-registers via import side effects.
 - Calling `register<Module>` from `app/app.ts`, or `.use(Controller.plugin())`
   from `src/index.ts` — the split collapses and one file becomes unreadable.
+- Listing individual controllers in `app/app.ts` instead of one
+  `<module>Module()` factory per module — module-internal route ordering
+  and controller growth leak into the composition root.

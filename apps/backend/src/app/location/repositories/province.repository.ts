@@ -1,14 +1,15 @@
-import { DRIZZLE_TOKEN, REDIS_TOKEN } from '@di/provider';
+import { CACHE_CLIENT_TOKEN, DRIZZLE_TOKEN } from '@di/provider';
 import {
 	TProvinceInsert,
 	TProvinceSelect,
 	province,
 } from '@drizzle/schemas/location.schema';
 import { TPaginationResult } from '@ims-erp/common';
-import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, eq, ilike, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
+import { cacheIdKey, cacheListKey } from '@utils/cache.util';
+import type { ICacheClient } from '@cache/cache.client';
 import type {
 	IProvinceRepository,
 	TProvincePaginationRequest,
@@ -28,14 +29,11 @@ import type {
 export class ProvinceRepository implements IProvinceRepository {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
-		@inject(REDIS_TOKEN) private readonly redisClient: RedisClient,
+		@inject(CACHE_CLIENT_TOKEN) private readonly cache: ICacheClient,
 	) {}
 
 	/** Redis key namespace for this repository's cache entries. */
 	private readonly cachePrefix = 'location:province';
-
-	/** Cache-aside TTL applied to every cached read (5 minutes). */
-	private readonly cacheTtlSeconds = 300;
 
 	/**
 	 * Fetches one filtered page of provinces.
@@ -108,18 +106,13 @@ export class ProvinceRepository implements IProvinceRepository {
 	 * as immutable reference data, so any write evicts it.
 	 */
 	async findAll(): Promise<TProvinceSelect[]> {
-		const cacheKey = `${this.cachePrefix}:all`;
-		const cached = await this.redisClient.get(cacheKey);
-		if (cached) return JSON.parse(cached) as TProvinceSelect[];
-
-		const rows = await this.database
-			.select()
-			.from(province)
-			.where(isNull(province.deletedAt))
-			.orderBy(asc(province.name));
-
-		await this.redisClient.set(cacheKey, JSON.stringify(rows), 'EX', this.cacheTtlSeconds);
-		return rows;
+		return this.cache.remember(cacheListKey(this.cachePrefix), () =>
+			this.database
+				.select()
+				.from(province)
+				.where(isNull(province.deletedAt))
+				.orderBy(asc(province.name)),
+		);
 	}
 
 	/**
@@ -139,18 +132,13 @@ export class ProvinceRepository implements IProvinceRepository {
 	 * @returns The province, or `null` when absent or soft-deleted
 	 */
 	async findById(id: string | number): Promise<TProvinceSelect | null> {
-		const cacheKey = `${this.cachePrefix}:id:${id}`;
-		const cached = await this.redisClient.get(cacheKey);
-		if (cached === 'null') return null;
-		if (cached) return JSON.parse(cached) as TProvinceSelect;
-
-		const [row] = await this.database
-			.select()
-			.from(province)
-			.where(and(eq(province.id, String(id)), isNull(province.deletedAt)));
-
-		await this.redisClient.set(cacheKey, JSON.stringify(row ?? null), 'EX', this.cacheTtlSeconds);
-		return row ?? null;
+		return this.cache.remember(cacheIdKey(this.cachePrefix, id), async () => {
+			const [row] = await this.database
+				.select()
+				.from(province)
+				.where(and(eq(province.id, String(id)), isNull(province.deletedAt)));
+			return row ?? null;
+		});
 	}
 
 	/**
@@ -251,9 +239,9 @@ export class ProvinceRepository implements IProvinceRepository {
 	 * Evicts the list cache and the per-id entries for the given rows.
 	 */
 	private async invalidate(ids: string[]): Promise<void> {
-		await this.redisClient.del(
-			`${this.cachePrefix}:all`,
-			...ids.map((id) => `${this.cachePrefix}:id:${id}`),
+		await this.cache.del(
+			cacheListKey(this.cachePrefix),
+			...ids.map((id) => cacheIdKey(this.cachePrefix, id)),
 		);
 	}
 }

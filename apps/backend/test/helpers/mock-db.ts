@@ -1,4 +1,5 @@
 import type { TPaginationResult } from '@ims-erp/common';
+import { CacheClient } from '@cache/cache.client';
 
 type Row = Record<string, unknown>;
 
@@ -108,6 +109,18 @@ export function mockRedis(initial: Record<string, string | null> = {}) {
 		store,
 		ttls,
 	};
+}
+
+/**
+ * Cache client mock per bun-test skill rule 2.2: a real {@link CacheClient}
+ * over {@link mockRedis}, so repositories that inject `CACHE_CLIENT_TOKEN`
+ * exercise the production cache-aside logic (negative caching, TTL) against
+ * an in-memory store.
+ */
+export function mockCache(initial: Record<string, string | null> = {}) {
+	const redis = mockRedis(initial);
+	const client = new CacheClient(redis.client as never);
+	return { client, redis, store: redis.store, ttls: redis.ttls };
 }
 
 export type { TPaginationResult };
