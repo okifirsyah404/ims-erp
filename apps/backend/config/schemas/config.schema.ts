@@ -20,6 +20,11 @@ export const AppConfigSchema = z.object({
 	host: z.string().min(1),
 	port: z.number().int().min(1).max(65535),
 	url: z.url().nullish(),
+	/**
+	 * Base URL of the admin web app — where invitation claim links point.
+	 * Falls back to `url` when unset (single-origin deployments).
+	 */
+	webUrl: z.url().nullish(),
 	logLevel: z.enum(['debug', 'info', 'warn', 'error']).nullish(),
 	/** Comma-separated list of origins allowed for credentialed CORS. */
 	corsOrigins: z.array(z.string()).nullish(),

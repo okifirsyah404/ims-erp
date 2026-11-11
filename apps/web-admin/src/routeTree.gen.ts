@@ -14,6 +14,7 @@ import { Route as AuthedIndexRouteImport } from './routes/_authed.index'
 import { Route as AuthedAccountRouteImport } from './routes/_authed.account'
 import { Route as AuthedProfilesRouteImport } from './routes/_authed.profiles'
 import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as ResetPasswordIndexRouteImport } from './routes/reset-password/index'
 import { Route as AuthedAccountIndexRouteImport } from './routes/_authed.account.index'
@@ -165,6 +166,11 @@ const AuthedProfilesRoute = AuthedProfilesRouteImport.update({
 const ForgotPasswordIndexRoute = ForgotPasswordIndexRouteImport.update({
   id: '/forgot-password/',
   path: '/forgot-password/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
@@ -903,6 +909,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/account': typeof AuthedAccountRouteWithChildren
   '/profiles': typeof AuthedProfilesRouteWithChildren
+  '/invite/$token': typeof InviteTokenRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
   '/reset-password/': typeof ResetPasswordIndexRoute
@@ -1034,6 +1041,7 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId/bast/$bastId/': typeof AuthedProjectsProjectIdBastBastIdIndexRoute
 }
 export interface FileRoutesByTo {
+  '/invite/$token': typeof InviteTokenRoute
   '/': typeof AuthedIndexRoute
   '/forgot-password': typeof ForgotPasswordIndexRoute
   '/login': typeof LoginIndexRoute
@@ -1170,6 +1178,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/_authed/account': typeof AuthedAccountRouteWithChildren
   '/_authed/profiles': typeof AuthedProfilesRouteWithChildren
+  '/invite/$token': typeof InviteTokenRoute
   '/_authed/': typeof AuthedIndexRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
@@ -1307,6 +1316,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/profiles'
+    | '/invite/$token'
     | '/forgot-password/'
     | '/login/'
     | '/reset-password/'
@@ -1438,6 +1448,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId/bast/$bastId/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/invite/$token'
     | '/'
     | '/forgot-password'
     | '/login'
@@ -1573,6 +1584,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/_authed/account'
     | '/_authed/profiles'
+    | '/invite/$token'
     | '/_authed/'
     | '/forgot-password/'
     | '/login/'
@@ -1707,6 +1719,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
+  InviteTokenRoute: typeof InviteTokenRoute
   ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
   ResetPasswordIndexRoute: typeof ResetPasswordIndexRoute
@@ -1747,6 +1760,13 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password/'
       preLoaderRoute: typeof ForgotPasswordIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login/': {
@@ -3006,6 +3026,7 @@ const AuthedRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
+  InviteTokenRoute: InviteTokenRoute,
   ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
   ResetPasswordIndexRoute: ResetPasswordIndexRoute,

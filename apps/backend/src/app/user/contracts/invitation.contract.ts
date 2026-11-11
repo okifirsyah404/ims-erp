@@ -58,8 +58,11 @@ export const claimInvitationSchema = z.object({
 		.min(3)
 		.max(30)
 		.regex(
-			/^[a-zA-Z0-9_-]+$/,
-			'Use 3-30 letters, numbers, dashes or underscores',
+			// Better Auth's username plugin (library default validator) accepts
+			// alphanumerics + underscore only — no dashes, or the claim fails
+			// downstream with a confusing "Username is invalid".
+			/^[a-zA-Z0-9_]+$/,
+			'Use 3-30 letters, numbers or underscores',
 		),
 	password: z.string().min(8).max(72),
 	phone: z

@@ -42,6 +42,7 @@ export function loadEnvConfig(
 			host: process.env.APP_HOST ?? '0.0.0.0',
 			port: Number(process.env.APP_PORT ?? 3000),
 			url: process.env.APP_URL || null,
+			webUrl: process.env.APP_WEB_URL || null,
 			logLevel: process.env.APP_LOG_LEVEL || null,
 			corsOrigins: process.env.CORS_ORIGINS
 				? process.env.CORS_ORIGINS.split(',')

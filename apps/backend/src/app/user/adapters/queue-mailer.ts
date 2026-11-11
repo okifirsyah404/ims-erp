@@ -22,10 +22,12 @@ import type {
  */
 export class QueueInvitationMailer implements IInvitationMailer {
 	async sendInvite(payload: TInviteEmailPayload): Promise<void> {
-		const { url: appUrl, name: appName } = (
+		const { url: appUrl, webUrl, name: appName } = (
 			await import('@config/providers/config')
 		).appConfig.app;
-		const claimUrl = `${appUrl ?? ''}/invite/${payload.token}`;
+		// The claim page lives in the admin web app, not on the API — point
+		// the link there (falls back to APP_URL for single-origin deploys).
+		const claimUrl = `${webUrl ?? appUrl ?? ''}/invite/${payload.token}`;
 		const expiresAt = DateTime.fromJSDate(payload.expiresAt)
 			.setZone('utc')
 			.toLocaleString(DateTime.DATETIME_MED);
