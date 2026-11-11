@@ -33,13 +33,28 @@ async function request<T>(
 			...rest.headers,
 		},
 	});
-	const envelope = (await response.json()) as TApiResponse<T>;
+	const envelope = await parseJsonEnvelope<T>(response);
 	if (!response.ok) {
 		throw new Error(
-			envelope.errors?.[0]?.message ?? envelope.message ?? 'Request failed',
+			envelope.errors?.[0]?.message ?? envelope.message ?? `Request failed (${response.status})`,
 		);
 	}
 	return envelope;
+}
+
+/**
+ * Reads the response as JSON, tolerating non-JSON bodies (auth redirect,
+ * empty body, HTML) by returning an empty envelope so callers fall back to
+ * the status-based error message instead of a cryptic JSON.parse error.
+ */
+async function parseJsonEnvelope<T>(
+	response: Response,
+): Promise<TApiResponse<T>> {
+	try {
+		return (await response.json()) as TApiResponse<T>;
+	} catch {
+		return {} as TApiResponse<T>;
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -263,7 +278,8 @@ export async function sendInvitations(
 /** Input row for the invite dialog. Org invites carry the role *name*. */
 export type TInviteInput = {
 	email: string;
-	name?: string;
+	/** Required by the backend contract (greets the invitee, prefills profile). */
+	name: string;
 	organizationId?: string;
 	organizationRole?: string;
 };
@@ -325,7 +341,9 @@ export function parseBulkInviteRows(
 		}
 		rows.push({
 			email: rawEmail,
-			name: rawName || undefined,
+			// `name` is required by the backend contract; a bare-email row
+			// defaults to the local part, matching the service's own fallback.
+			name: rawName || rawEmail.split('@')[0]!,
 			organizationId: options.organizationId,
 			organizationRole: resolveOrganizationRole(rawRole, options),
 		});

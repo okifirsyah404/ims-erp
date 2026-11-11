@@ -29,21 +29,31 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { erpRoleLabel, erpRoleNames } from '@ims-erp/common';
-import { addMember, organizationMembersQueryOptions } from '@/lib/organization-api';
+import {
+	organizationMembersQueryOptions,
+} from '@/lib/organization-api';
+import { sendInvitations } from '@/lib/admin-api';
 
 export const Route = createFileRoute(
 	'/_authed/organizations/$organizationId/members/new',
 )({
-	component: AddMemberPage,
+	component: InviteMemberPage,
 });
 
-function AddMemberPage() {
+/**
+ * Invite a new member into this organization. Sends an invitation email
+ * (`POST /admin/invitations`, org path): the invitee is pre-created as a
+ * pending user and joins the organization with the chosen role when they
+ * claim the invitation link.
+ */
+function InviteMemberPage() {
 	const { organizationId } = useParams({ from: Route.id });
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const { t, i18n } = useTranslation(['admin', 'common']);
 
-	const [userId, setUserId] = useState('');
+	const [name, setName] = useState('');
+	const [email, setEmail] = useState('');
 	const [role, setRole] = useState<string>('member');
 	const [pending, setPending] = useState(false);
 
@@ -51,11 +61,16 @@ function AddMemberPage() {
 		event.preventDefault();
 		setPending(true);
 		try {
-			await addMember(organizationId, { userId, role });
-			toast.success(t('memberNew.added'));
-			await queryClient.invalidateQueries({
-				queryKey: organizationMembersQueryOptions(organizationId).queryKey,
+			await sendInvitations(organizationId, {
+				email,
+				name,
+				organizationId,
+				organizationRole: role,
 			});
+			toast.success(t('memberNew.invited'));
+			// Pending invitations appear in the admin users page panel; the
+			// members list itself only changes after the invite is claimed.
+			await queryClient.invalidateQueries({ queryKey: ['admin-invitations'] });
 			void navigate({
 				to: '/organizations/$organizationId',
 				params: { organizationId },
@@ -88,13 +103,26 @@ function AddMemberPage() {
 					<form onSubmit={handleSubmit}>
 						<FieldGroup>
 							<Field>
-								<FieldLabel htmlFor='userId'>{t('memberNew.userId')}</FieldLabel>
+								<FieldLabel htmlFor='name'>{t('memberNew.name')}</FieldLabel>
 								<input
-									id='userId'
+									id='name'
 									className='flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs'
-									value={userId}
+									value={name}
 									required
-									onChange={(event) => setUserId(event.target.value)}
+									maxLength={120}
+									onChange={(event) => setName(event.target.value)}
+								/>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor='email'>{t('memberNew.email')}</FieldLabel>
+								<input
+									id='email'
+									type='email'
+									className='flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs'
+									value={email}
+									required
+									maxLength={320}
+									onChange={(event) => setEmail(event.target.value)}
 								/>
 							</Field>
 							<Field>
@@ -118,8 +146,8 @@ function AddMemberPage() {
 								</Select>
 							</Field>
 							<div className='flex gap-2'>
-								<Button type='submit' disabled={pending || !userId}>
-									{pending ? t('memberNew.adding') : t('memberNew.title')}
+								<Button type='submit' disabled={pending || !email || !name}>
+									{pending ? t('memberNew.sending') : t('memberNew.submit')}
 								</Button>
 								<Button
 									type='button'

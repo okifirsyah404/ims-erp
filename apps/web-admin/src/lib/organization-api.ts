@@ -48,13 +48,30 @@ async function request<T>(
 			init?.body != null ? { 'Content-Type': 'application/json' } : undefined,
 		...init,
 	});
-	const envelope = (await response.json()) as TApiResponse<T>;
+	// Parse defensively: error responses (auth redirect, empty body, HTML)
+	// are not JSON — surface the HTTP status instead of a cryptic
+	// "JSON.parse: unexpected character" from the browser.
+	const envelope = await parseJsonEnvelope<T>(response);
 	if (!response.ok) {
 		throw new Error(
-			envelope.errors?.[0]?.message ?? envelope.message ?? 'Request failed',
+			envelope.errors?.[0]?.message ?? envelope.message ?? `Request failed (${response.status})`,
 		);
 	}
 	return envelope;
+}
+
+/**
+ * Reads the response as JSON, tolerating non-JSON bodies by returning an
+ * empty envelope so callers fall back to the status-based error message.
+ */
+async function parseJsonEnvelope<T>(
+	response: Response,
+): Promise<TApiResponse<T>> {
+	try {
+		return (await response.json()) as TApiResponse<T>;
+	} catch {
+		return {} as TApiResponse<T>;
+	}
 }
 
 export async function listOrganizations(params?: {

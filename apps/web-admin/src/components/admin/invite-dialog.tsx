@@ -119,10 +119,16 @@ export function InviteDialog({
 			toast.error(t('invite.emailRequired'));
 			return;
 		}
+		if (!name.trim()) {
+			// `name` is required by the backend contract (it greets the
+			// invitee and prefills their profile).
+			toast.error(t('invite.nameRequired'));
+			return;
+		}
 		setReport(null);
 		send.mutate({
 			email: email.trim(),
-			name: name.trim() || undefined,
+			name: name.trim(),
 			organizationId,
 			organizationRole,
 		});

@@ -131,7 +131,14 @@ export class InvitationRepository implements IInvitationRepository {
 
 	async updateToken(
 		id: string,
-		token: { tokenHash: string; expiresAt: Date },
+		token: {
+			tokenHash: string;
+			expiresAt: Date;
+			type?: TUserInvitationSelect['type'];
+			name?: string | null;
+			organizationId?: string | null;
+			orgRole?: TUserInvitationSelect['orgRole'];
+		},
 	): Promise<void> {
 		const [current] = await this.database
 			.select({ resentCount: userInvitations.resentCount })
@@ -147,6 +154,14 @@ export class InvitationRepository implements IInvitationRepository {
 				// clears any stale bounce flag so the admin sees fresh state.
 				deliveryFailed: false,
 				resentCount: (current?.resentCount ?? 0) + 1,
+				// Context sync: an overwrite may switch path (app ↔ org) or
+				// change org/role/name. Only explicitly provided fields change.
+				...(token.type !== undefined ? { type: token.type } : {}),
+				...(token.name !== undefined ? { name: token.name } : {}),
+				...(token.organizationId !== undefined
+					? { organizationId: token.organizationId }
+					: {}),
+				...(token.orgRole !== undefined ? { orgRole: token.orgRole } : {}),
 			})
 			.where(eq(userInvitations.id, id));
 	}
