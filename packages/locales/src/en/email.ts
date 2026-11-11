@@ -16,6 +16,27 @@ const email = {
 	'resetPassword.fallback':
 		'If the button does not work, copy and paste this link into your browser:',
 
+	// App invitation (invitation.type = 'app'): invite to create an account
+	// on the application itself — no organization context.
+	'appInvitation.subject': "You're invited to create your {{app}} account",
+	'appInvitation.greeting': 'Hi {{name}},',
+	'appInvitation.body':
+		'You have been invited to create your account on {{app}}. Accept the invitation to set up your account and get started.',
+	'appInvitation.action': 'Create account',
+	'appInvitation.fallback':
+		'If the button does not work, copy and paste this link into your browser:',
+
+	// Organization invitation (invitation.type = 'org'): invite to join a
+	// specific organization with a role.
+	'organizationInvitation.subject': 'You are invited to join {{organization}}',
+	'organizationInvitation.greeting': 'Hi {{name}},',
+	'organizationInvitation.intro':
+		'You have been invited to join {{organization}} on {{app}} as {{role}}. Accept the invitation to create your account and start collaborating.',
+	'organizationInvitation.expires': 'This invitation expires on {{expiresAt}}.',
+	'organizationInvitation.action': 'Accept invitation',
+	'organizationInvitation.fallback':
+		'If the button does not work, copy and paste this link into your browser:',
+
 	'footer.noReply':
 		'This is an automated message from {{app}}; replies to this address are not monitored.',
 } as const;

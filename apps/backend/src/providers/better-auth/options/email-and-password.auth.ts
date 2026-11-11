@@ -21,7 +21,7 @@ export const betterAuthEmailAndPasswordOptions: BetterAuthEmailAndPasswordOption
       try {
         await dispatchMail({
           to: user.email,
-          ...renderResetPasswordEmail({ name: user.name, url }),
+          ...(await renderResetPasswordEmail({ name: user.name, url })),
         });
       } catch (error) {
         console.error(

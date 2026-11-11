@@ -469,6 +469,7 @@ export class InvitationService {
 				to: invitation.email,
 				name: invitation.name,
 				token: rawToken,
+				type: invitation.type,
 				organizationName,
 				roleName,
 				expiresAt: invitation.expiresAt,

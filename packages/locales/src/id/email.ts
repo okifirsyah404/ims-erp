@@ -16,6 +16,29 @@ const email = {
 	'resetPassword.fallback':
 		'Jika tombol tidak berfungsi, salin dan tempel tautan ini ke peramban Anda:',
 
+	// Undangan aplikasi (invitation.type = 'app'): undangan membuat akun di
+	// aplikasi — tanpa konteks organisasi.
+	'appInvitation.subject': 'Anda diundang membuat akun {{app}} Anda',
+	'appInvitation.greeting': 'Hai {{name}},',
+	'appInvitation.body':
+		'Anda diundang untuk membuat akun di {{app}}. Terima undangan ini untuk menyiapkan akun Anda dan mulai menggunakan aplikasi.',
+	'appInvitation.action': 'Buat akun',
+	'appInvitation.fallback':
+		'Jika tombol tidak berfungsi, salin dan tempel tautan ini ke peramban Anda:',
+
+	// Undangan organisasi (invitation.type = 'org'): undangan bergabung ke
+	// organisasi tertentu dengan peran.
+	'organizationInvitation.subject':
+		'Anda diundang untuk bergabung dengan {{organization}}',
+	'organizationInvitation.greeting': 'Hai {{name}},',
+	'organizationInvitation.intro':
+		'Anda diundang untuk bergabung dengan {{organization}} di {{app}} sebagai {{role}}. Terima undangan ini untuk membuat akun Anda dan mulai berkolaborasi.',
+	'organizationInvitation.expires':
+		'Undangan ini kedaluwarsa pada {{expiresAt}}.',
+	'organizationInvitation.action': 'Terima undangan',
+	'organizationInvitation.fallback':
+		'Jika tombol tidak berfungsi, salin dan tempel tautan ini ke peramban Anda:',
+
 	'footer.noReply':
 		'Ini pesan otomatis dari {{app}}; balasan ke alamat ini tidak dipantau.',
 } as const;

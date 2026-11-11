@@ -14,7 +14,7 @@ export const betterAuthEmailVerificationOptions: BetterAuthEmailVerificationOpti
       try {
         await dispatchMail({
           to: user.email,
-          ...renderVerificationEmail({ name: user.name, url }),
+          ...(await renderVerificationEmail({ name: user.name, url })),
         });
       } catch (error) {
         console.error(

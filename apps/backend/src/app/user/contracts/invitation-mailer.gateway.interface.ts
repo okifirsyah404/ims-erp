@@ -6,6 +6,8 @@ export type TInviteEmailPayload = {
 	name: string | null;
 	/** Raw single-use token; only ever lives in the email body/link. */
 	token: string;
+	/** Invitation kind — selects the template (app vs organization). */
+	type: 'app' | 'org';
 	organizationName: string | null;
 	roleName: string | null;
 	expiresAt: Date;
