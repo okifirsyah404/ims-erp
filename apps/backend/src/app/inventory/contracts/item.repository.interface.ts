@@ -17,6 +17,12 @@ import type {
  */
 export type TItemListRow = TItemSelect & {
 	quantityOnHand?: string | null;
+	/**
+	 * Presigned display photo URL. Decorated by the controller
+	 * (`ItemImageService.withImageUrl`), never by the repository — the
+	 * repository has no storage dependency. Absent only before decoration.
+	 */
+	imageUrl?: string | null;
 };
 
 /** Pagination + filters for the item list endpoint. */

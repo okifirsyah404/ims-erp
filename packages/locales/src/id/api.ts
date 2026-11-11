@@ -151,6 +151,8 @@ const api: Record<keyof typeof en, string> = {
 		'Penyimpanan dengan kode ini sudah ada di gudang ini',
 	'inventory.warehouseInactive':
 		'Gudang "{{warehouseCode}}" tidak aktif; penyimpanannya tidak dapat diubah',
+	'inventory.warehousePicInvalid':
+		'Karyawan penanggung jawab tidak dikenal, tidak aktif, atau bukan dari organisasi yang terhubung',
 	'inventory.movementNotFound': 'Pergerakan stok tidak ditemukan',
 	'inventory.movementAlreadyReversed':
 		'Pergerakan stok ini sudah dibalik sebelumnya',
@@ -195,7 +197,6 @@ const api: Record<keyof typeof en, string> = {
 	'organization.lastOrganization':
 		'Ini organisasi terakhir Anda dan tidak dapat dihapus',
 	'organization.notFound': 'Organisasi tidak ditemukan',
-	'organization.singleCompany': 'Sistem ini hanya memiliki satu organisasi (perusahaan); organisasi lain tidak bisa ditambahkan',
 	'organization.companyProfileRequired':
 		'Lengkapi profil perusahaan (beserta kode dokumen) terlebih dahulu',
 	'numbering.unknownDocumentType': 'Jenis dokumen tidak dikenal',
@@ -236,11 +237,6 @@ const api: Record<keyof typeof en, string> = {
 	'claim.usernameTaken': 'Nama pengguna sudah dipakai',
 	'claim.phoneInUse': 'Nomor telepon sudah digunakan',
 	'claim.alreadyInUse': 'Nama pengguna atau email sudah digunakan',
-
-	'role.rankExceeded':
-		'Anda tidak dapat bertindak pada pengguna yang memegang peran setara atau di atas peringkat Anda',
-	'role.targetRankExceeded':
-		'Target memegang "{{role}}" (peringkat {{rank}}) di organisasi Anda',
 
 	'userAdmin.accountAlreadyActive': 'Akun sudah aktif',
 	'userAdmin.cannotDeactivate':
@@ -301,6 +297,12 @@ const api: Record<keyof typeof en, string> = {
 	'licensing.apiKey.noOwner': 'Organisasi tidak punya owner untuk menerbitkan kunci',
 	'licensing.apiKey.notFound': 'Kunci API tidak ditemukan',
 	'licensing.activationNotFound': 'Aktivasi tidak ditemukan atau sudah dilepas',
+
+	// HR (ERP-0034)
+	'hr.employeeNotFound': 'Karyawan tidak ditemukan',
+	'hr.companyEmployeeForbidden': 'Karyawan company-level hanya dikelola oleh admin aplikasi',
+	'hr.employeeEmailTaken': 'Email atau kode login sudah dipakai karyawan lain',
+	'hr.employeeInvite': 'Invitasi karyawan gagal',
 
 	// Pajak (ERP-0016)
 	'accounting.taxTypeNotFound': 'Jenis pajak tidak ditemukan',

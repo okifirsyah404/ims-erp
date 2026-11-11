@@ -12,26 +12,9 @@ import type { AuditService } from '../../audit/services/audit.service';
 import { presignObjectUrl } from '@providers/s3/s3';
 import type { TActor } from './invitation.service';
 import {
-	RankGuardError,
 	UserNotFoundError,
 	UserStateError,
 } from '../errors/invitation.errors';
-
-/**
- * Static escalation ranks for the closed ERP organization role enum.
- * Roles outside this map (should be impossible — the catalog is closed)
- * rank as 0. The caller's ceiling is the highest rank THEY hold.
- */
-const ERP_ROLE_RANKS: Record<string, number> = {
-	owner: 100,
-	admin: 80,
-	hr: 60,
-	member: 10,
-};
-
-function rankOf(roleName: string): number {
-	return ERP_ROLE_RANKS[roleName] ?? 0;
-}
 
 /**
  * Account lifecycle administration (phase 4).
@@ -42,8 +25,10 @@ function rankOf(roleName: string): number {
  * account and also kills its sessions. All three are audited.
  *
  * Authorization is the caller's responsibility (the controller's `erp`
- * guard), except the rank guard which is enforced here because it depends on
- * the target user's highest organization rank.
+ * guard with its `member:update`/`member:delete` permission — granted only
+ * to `owner` and `admin` in the shared `erpRoleGrants` catalog). There is no
+ * numeric rank guard: roles are a closed enum with explicit permission
+ * grants, so permissions alone decide who may act on whom.
  */
 @injectable()
 export class UserAdminService {
@@ -105,19 +90,12 @@ export class UserAdminService {
 	 * Deactivates an account: status `deactivated` + every session revoked.
 	 *
 	 * @throws UserStateError when the account is not active
-	 * @throws RankGuardError when the target outranks the caller in any org
 	 */
-	async deactivate(
-		userId: string,
-		callerRank: number,
-		actor: TActor,
-	): Promise<void> {
+	async deactivate(userId: string, actor: TActor): Promise<void> {
 		const user = await this.requireUser(userId);
 		if (user.status !== 'active') {
 			throw new UserStateError();
 		}
-
-		await this.assertNotOutranking(userId, callerRank);
 
 		await this.users.setStatus(userId, 'deactivated');
 		await this.gateway.revokeSessions(userId);
@@ -163,15 +141,9 @@ export class UserAdminService {
 	/**
 	 * Soft-deletes an account and revokes its sessions.
 	 *
-	 * @throws RankGuardError when the target outranks the caller in any org
-	 */
-	async remove(
-		userId: string,
-		callerRank: number,
-		actor: TActor,
-	): Promise<void> {
+	/** Soft-deletes an account and revokes its sessions. */
+	async remove(userId: string, actor: TActor): Promise<void> {
 		const user = await this.requireUser(userId);
-		await this.assertNotOutranking(userId, callerRank);
 
 		await this.users.delete(userId);
 		await this.gateway.revokeSessions(userId);
@@ -194,28 +166,5 @@ export class UserAdminService {
 			: await this.users.findById(userId);
 		if (!user) throw new UserNotFoundError(userId);
 		return user;
-	}
-
-	/**
-	 * Escalation guard for user lifecycle actions: the caller can never
-	 * deactivate or delete someone who holds a role ranked at or above their
-	 * own in any organization.
-	 *
-	 * @throws RankGuardError when the target outranks the caller
-	 */
-	private async assertNotOutranking(
-		userId: string,
-		callerRank: number,
-	): Promise<void> {
-		const memberships = await this.users.listMemberships(userId);
-
-		for (const membership of memberships) {
-			if (rankOf(membership.role) >= callerRank) {
-				throw RankGuardError.targetTooHigh(
-					membership.role,
-					rankOf(membership.role),
-				);
-			}
-		}
 	}
 }

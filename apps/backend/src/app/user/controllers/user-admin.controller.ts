@@ -22,35 +22,6 @@ function actorFrom(erp: ErpContext, request: Request): TActor {
 	};
 }
 
-/**
- * Highest role rank the caller holds in the validated organization — the
- * ceiling for the escalation guard. Ranks come from the static closed
- * catalog (owner=100, admin=80, hr=60, member=10; everything else 0).
- */
-function callerRank(erp: ErpContext): number {
-	const roleNames = erp.member.role
-		.split(',')
-		.map((name) => name.trim())
-		.filter(Boolean);
-
-	const RANKS: Record<string, number> = {
-		owner: 100,
-		admin: 80,
-		hr: 60,
-		member: 10,
-	};
-	let highest = 0;
-	for (const name of roleNames) {
-		const rank = RANKS[name] ?? 0;
-		if (rank > highest) highest = rank;
-	}
-
-	// Global app admin acting in an org where they hold no privileged role:
-	// treat them as the org administrator ceiling, never the owner's.
-	if (highest === 0 && erp.session.user.role === 'admin') return 80;
-	return highest;
-}
-
 /** Shared error mapping for the admin endpoints. */
 function mapAdminError(
 	error: unknown,
@@ -120,7 +91,6 @@ export class UserAdminController {
 					const { userId } = userIdParamsSchema.parse(params);
 					await userAdmin.deactivate(
 						userId,
-						callerRank(erp),
 						actorFrom(erp, request),
 					);
 					return ok(null);
@@ -142,7 +112,6 @@ export class UserAdminController {
 					const { userId } = userIdParamsSchema.parse(params);
 					await userAdmin.remove(
 						userId,
-						callerRank(erp),
 						actorFrom(erp, request),
 					);
 					return ok(null);

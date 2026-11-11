@@ -44,6 +44,7 @@ export const DOCUMENT_TYPE_CODES: Record<DocumentType, string> = {
 	payment: 'PAY',
 	journal_entry: 'JE',
 	supplier_bill: 'SB',
+	employee: 'EMP',
 };
 
 /** Module that owns each document type (`document_sequences.module`). */
@@ -75,6 +76,7 @@ export const DOCUMENT_TYPE_MODULES: Record<DocumentType, string> = {
 	payment: 'accounting',
 	journal_entry: 'accounting',
 	supplier_bill: 'accounting',
+	employee: 'hr',
 };
 
 export const DEFAULT_PATTERN = '{SEQ:4}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YY}';
@@ -108,6 +110,7 @@ export function defaultPattern(documentType: DocumentType): string {
 	if (documentType === 'purchase_order') return PURCHASE_ORDER_PATTERN;
 	if (documentType === 'bast') return BAST_PATTERN;
 	if (documentType === 'warranty') return WARRANTY_PATTERN;
+	if (documentType === 'employee') return '{TYPE}-{SEQ:5}';
 	return documentType.startsWith('web_') ? WEB_REFERENCE_PATTERN : DEFAULT_PATTERN;
 }
 
@@ -115,7 +118,9 @@ export function defaultPattern(documentType: DocumentType): string {
 export function defaultResetPolicy(documentType: DocumentType): ResetPolicy {
 	const inventory = INVENTORY_PATTERNS[documentType];
 	if (inventory) return inventory.reset;
-	return documentType === 'purchase_order' ? 'monthly' : 'yearly';
+	return documentType === 'purchase_order' ? 'monthly'
+		: documentType === 'employee' ? 'never'
+		: 'yearly';
 }
 
 /** Tokens filled from the document itself, allowed only for these types. */

@@ -31,7 +31,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { CircleAlert, Funnel, Plus, Search, Warehouse } from 'lucide-react';
+import { CircleAlert, Funnel, PackageOpen, Plus, Search, Warehouse } from 'lucide-react';
+import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
@@ -428,16 +429,17 @@ function WarehouseCard({
 	if (!warehouse) {
 		return (
 			<Card className='h-full' aria-hidden='true'>
+				<Skeleton className='h-40 w-full rounded-b-none' />
 				<CardHeader className='space-y-2'>
-					<div className='h-5 w-2/3 rounded bg-muted' />
-					<div className='h-4 w-1/3 rounded bg-muted' />
+					<Skeleton className='h-5 w-2/3' />
+					<Skeleton className='h-4 w-1/3' />
 				</CardHeader>
 				<CardContent>
 					<div className='grid grid-cols-5 gap-2'>
 						{Array.from({ length: 5 }, (_, index) => (
 							<div key={index} className='flex flex-col gap-1'>
-								<div className='mx-auto h-4 w-6 rounded bg-muted' />
-								<div className='mx-auto h-3 w-12 rounded bg-muted' />
+								<Skeleton className='mx-auto h-4 w-6' />
+								<Skeleton className='mx-auto h-3 w-12' />
 							</div>
 						))}
 					</div>
@@ -462,13 +464,21 @@ function WarehouseCard({
 			className='group'
 		>
 			<Card className='h-full transition-shadow group-hover:shadow-md'>
-				{/* TODO: render `warehouse.imageUrl` once real image URLs exist; this is a static UI placeholder. */}
-				<img
-					src='https://picsum.photos/300/200'
-					alt={warehouse.name}
-					className='h-40 w-full object-cover'
-					loading='lazy'
-				/>
+				{warehouse.imageUrl ? (
+					<img
+						src={warehouse.imageUrl}
+						alt={warehouse.name}
+						className='h-40 w-full object-cover'
+						loading='lazy'
+					/>
+				) : (
+					<div
+						aria-hidden='true'
+						className='flex h-40 w-full items-center justify-center bg-muted text-muted-foreground'
+					>
+						<PackageOpen className='size-10' />
+					</div>
+				)}
 				<CardHeader className='flex items-start justify-between gap-2 space-y-0'>
 					<div className='flex min-w-0 flex-col gap-0.5'>
 						<CardTitle className='truncate text-base'>

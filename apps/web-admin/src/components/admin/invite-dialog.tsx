@@ -27,7 +27,7 @@ import {
 } from '@ims-erp/ui/components/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
 import { Textarea } from '@ims-erp/ui/components/textarea';
-import { erpRoleNames } from '@ims-erp/common';
+import { erpRoleLabel, erpRoleNames } from '@ims-erp/common';
 import {
 	BULK_INVITE_LIMIT,
 	parseBulkInviteRows,
@@ -35,7 +35,6 @@ import {
 	type TBulkInviteResult,
 	type TInviteInput,
 } from '@/lib/admin-api';
-import { humanizeIdentifier } from '@/lib/format';
 
 /**
  * Invitation dialog with two paths (locked decisions D2/D13):
@@ -65,7 +64,7 @@ export function InviteDialog({
 	const [organizationRole, setOrganizationRole] = useState<string>('member');
 	const [bulk, setBulk] = useState('');
 	const [report, setReport] = useState<string[] | null>(null);
-	const { t } = useTranslation(['admin', 'common']);
+	const { t, i18n } = useTranslation(['admin', 'common']);
 
 	const send = useMutation({
 		mutationFn: (input: TInviteInput | TInviteInput[]) =>
@@ -120,10 +119,16 @@ export function InviteDialog({
 			toast.error(t('invite.emailRequired'));
 			return;
 		}
+		if (!name.trim()) {
+			// `name` is required by the backend contract (it greets the
+			// invitee and prefills their profile).
+			toast.error(t('invite.nameRequired'));
+			return;
+		}
 		setReport(null);
 		send.mutate({
 			email: email.trim(),
-			name: name.trim() || undefined,
+			name: name.trim(),
 			organizationId,
 			organizationRole,
 		});
@@ -189,7 +194,7 @@ export function InviteDialog({
 									<SelectContent>
 										{erpRoleNames.map((roleName) => (
 											<SelectItem key={roleName} value={roleName}>
-												{humanizeIdentifier(roleName)}
+												{erpRoleLabel(roleName, i18n.language)}
 											</SelectItem>
 										))}
 									</SelectContent>
@@ -240,7 +245,7 @@ export function InviteDialog({
 									<SelectContent>
 										{erpRoleNames.map((roleName) => (
 											<SelectItem key={roleName} value={roleName}>
-												{humanizeIdentifier(roleName)}
+												{erpRoleLabel(roleName, i18n.language)}
 											</SelectItem>
 										))}
 									</SelectContent>

@@ -23,6 +23,12 @@ export interface IUserManagementRepository {
 		name: string;
 		email: string;
 	}): Promise<{ id: string }>;
+	/**
+	 * Renames a still-pending (unclaimed) user, used when an invitation is
+	 * re-sent for the same email with a different name. Never touches a
+	 * claimed account — the owner's profile is theirs after claim.
+	 */
+	renamePendingUser(id: string, name: string): Promise<void>;
 	/** Sets lifecycle status; `deactivated` implies session revocation upstream. */
 	setStatus(id: string, status: TUserSelect['status']): Promise<void>;
 	/** Claim-time writes: phone + status active. */

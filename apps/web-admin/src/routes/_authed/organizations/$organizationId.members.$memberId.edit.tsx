@@ -39,7 +39,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { erpRoleNames } from '@ims-erp/common';
+import { erpRoleLabel, erpRoleNames } from '@ims-erp/common';
 import {
 	organizationMembersQueryOptions,
 	removeMember,
@@ -56,7 +56,7 @@ function EditMemberPage() {
 	const { organizationId, memberId } = useParams({ from: Route.id });
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const { t } = useTranslation(['admin', 'common']);
+	const { t, i18n } = useTranslation(['admin', 'common']);
 
 	const { data: members, isPending } = useQuery({
 		...organizationMembersQueryOptions(organizationId),
@@ -161,7 +161,7 @@ function EditMemberPage() {
 										<SelectContent>
 											{erpRoleNames.map((roleName) => (
 												<SelectItem key={roleName} value={roleName}>
-													{roleName}
+													{erpRoleLabel(roleName, i18n.language)}
 												</SelectItem>
 											))}
 										</SelectContent>

@@ -28,10 +28,23 @@ export interface IInvitationRepository {
 		request: TInvitationListRequest,
 	): Promise<TPaginationResult<TUserInvitationSelect>>;
 	create(input: TInvitationCreate): Promise<TUserInvitationSelect>;
-	/** Replaces the token hash/expiry on resend; increments resentCount. */
+	/**
+	 * Replaces the token hash/expiry on resend and increments resentCount.
+	 * The optional context fields sync the row when the resend carries a
+	 * different path (app ↔ org) or organization/role/name — the overwrite
+	 * rule reuses one pending row per email, so the context must track the
+	 * latest invite, not the original one.
+	 */
 	updateToken(
 		id: string,
-		token: { tokenHash: string; expiresAt: Date },
+		token: {
+			tokenHash: string;
+			expiresAt: Date;
+			type?: TUserInvitationSelect['type'];
+			name?: string | null;
+			organizationId?: string | null;
+			orgRole?: TUserInvitationSelect['orgRole'];
+		},
 	): Promise<void>;
 	markStatus(
 		id: string,

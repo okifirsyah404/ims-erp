@@ -91,9 +91,6 @@ export const erpRoles: Record<ErpRoleName, Role<OrganizationStatements>> = {
 	auditor: toRole(erpRoleGrants.auditor),
 };
 
-/** All ERP role keys, exported for membership validation and seeding. */
-export const erpRoleKeys: readonly ErpRoleName[] = erpRoleNames;
-
 /**
  * Server-side permission check against the static roles, used by the Elysia
  * authorization layer. Mirrors Better Auth's hasPermission semantics

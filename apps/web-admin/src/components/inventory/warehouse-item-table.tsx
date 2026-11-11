@@ -14,6 +14,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ims-erp/ui/components/table';
+import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState } from '@/components/empty-state';
 import { PackageOpen } from 'lucide-react';
@@ -107,6 +108,51 @@ export function WarehouseItemTable({
 						description={t('inventory:items.empty')}
 						className='py-4'
 					/>
+				) : rows.length === 0 && isPending ? (
+					<Table aria-busy>
+						<TableHeader>
+							<TableRow>
+								<TableHead className='w-16'>
+									{t('inventory:warehouses.image')}
+								</TableHead>
+								<TableHead>{t('inventory:items.sku')}</TableHead>
+								<TableHead>{t('inventory:items.name')}</TableHead>
+								<TableHead>{t('inventory:items.unitLabel')}</TableHead>
+								<TableHead className='text-right'>
+									{t('inventory:warehouses.quantity')}
+								</TableHead>
+								<TableHead>{t('inventory:items.minStockQty')}</TableHead>
+								<TableHead className='text-right'>
+									<span className='sr-only'>{t('common:action.edit')}</span>
+								</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{Array.from({ length: 5 }, (_, index) => (
+								<TableRow key={`skeleton-${index}`}>
+									<TableCell>
+										<Skeleton className='size-10 rounded' />
+									</TableCell>
+									<TableCell>
+										<Skeleton className='h-4 w-24' />
+									</TableCell>
+									<TableCell>
+										<Skeleton className='h-4 w-40' />
+									</TableCell>
+									<TableCell>
+										<Skeleton className='h-4 w-16' />
+									</TableCell>
+									<TableCell>
+										<Skeleton className='ml-auto h-4 w-12' />
+									</TableCell>
+									<TableCell>
+										<Skeleton className='h-4 w-12' />
+									</TableCell>
+									<TableCell />
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
 				) : (
 					<Table aria-busy={isPending || undefined}>
 						<TableHeader>
@@ -130,13 +176,21 @@ export function WarehouseItemTable({
 							{rows.map((item) => (
 								<TableRow key={item.id}>
 									<TableCell>
-										{/* TODO: render `item.imageUrl` once real image URLs exist; this is a static UI placeholder. */}
-										<img
-											src='https://picsum.photos/80/80'
-											alt={item.name}
-											className='size-10 rounded object-cover'
-											loading='lazy'
-										/>
+										{item.imageUrl ? (
+											<img
+												src={item.imageUrl}
+												alt={item.name}
+												className='size-10 rounded object-cover'
+												loading='lazy'
+											/>
+										) : (
+											<div
+												aria-hidden='true'
+												className='flex size-10 items-center justify-center rounded bg-muted text-xs font-medium text-muted-foreground'
+											>
+												{item.name.slice(0, 2).toUpperCase()}
+											</div>
+										)}
 									</TableCell>
 									<TableCell className='font-mono text-xs'>
 										{item.sku}

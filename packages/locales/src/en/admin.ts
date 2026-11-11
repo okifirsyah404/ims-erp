@@ -42,8 +42,8 @@ const admin = {
 	'invite.bulk': 'Bulk paste',
 	'invite.email': 'Email',
 	'invite.emailPlaceholder': 'person@company.com',
-	'invite.name': 'Name (optional)',
-	'invite.namePlaceholder': 'Prefills the claim form',
+	'invite.name': 'Name',
+	'invite.namePlaceholder': 'Full name of the invitee',
 	'invite.role': 'Role',
 	'invite.rolePlaceholder': 'Select a role',
 	'invite.defaultRole': 'Default role (optional)',
@@ -58,6 +58,7 @@ const admin = {
 	'invite.sentBulk': '{{count}} invitation(s) sent',
 	'invite.sentMixed': '{{succeeded}} sent, {{failed}} failed',
 	'invite.emailRequired': 'Email is required',
+	'invite.nameRequired': 'Name is required',
 
 	'invitations.title': 'Pending invitations',
 	'invitations.description':
@@ -132,8 +133,6 @@ const admin = {
 	'orgDetail.membersEmpty': 'No members yet.',
 	'orgDetail.name': 'Name',
 	'orgDetail.slug': 'Slug',
-	'orgDetail.memberRole': 'Role',
-	'orgDetail.memberJoined': 'Joined',
 	'orgDetail.notFound': 'Organization not found (or you lack access).',
 	'orgDetail.backToList': 'Back to organizations',
 	'orgDetail.createdOn': '{{slug}} · created {{date}}',
@@ -149,16 +148,18 @@ const admin = {
 	'orgEdit.name': 'Name',
 	'orgEdit.saved': 'Organization updated',
 
-	'memberNew.title': 'Add member',
+	'memberNew.title': 'Invite member',
 	'memberNew.description':
-		'Adds an existing user account to the organization directly (no invitation round-trip).',
-	'memberNew.membership': 'Membership',
+		'Sends an invitation email and adds the person to this organization with the chosen role once they accept.',
+	'memberNew.membership': 'Invitation',
 	'memberNew.membershipDescription':
-		"The user's Better Auth id — obtainable from the users admin page.",
-	'memberNew.userId': 'User ID',
+		'The invitee receives a link to set up their account; the role is applied when the invitation is claimed.',
+	'memberNew.name': 'Full name',
+	'memberNew.email': 'Email',
 	'memberNew.role': 'Role',
-	'memberNew.adding': 'Adding…',
-	'memberNew.added': 'Member added',
+	'memberNew.submit': 'Send invitation',
+	'memberNew.sending': 'Sending…',
+	'memberNew.invited': 'Invitation sent',
 
 	'memberEdit.title': 'Edit member',
 	'memberEdit.description': 'Change this member’s role or remove them from the organization.',

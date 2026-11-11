@@ -14,6 +14,7 @@ import { Route as AuthedIndexRouteImport } from './routes/_authed.index'
 import { Route as AuthedAccountRouteImport } from './routes/_authed.account'
 import { Route as AuthedProfilesRouteImport } from './routes/_authed.profiles'
 import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as ResetPasswordIndexRouteImport } from './routes/reset-password/index'
 import { Route as AuthedAccountIndexRouteImport } from './routes/_authed.account.index'
@@ -68,6 +69,8 @@ import { Route as AuthedFinanceReportsIndexRouteImport } from './routes/_authed/
 import { Route as AuthedFinanceTaxIndexRouteImport } from './routes/_authed/finance/tax/index'
 import { Route as AuthedHrAttendanceIndexRouteImport } from './routes/_authed/hr/attendance/index'
 import { Route as AuthedHrEmployeesIndexRouteImport } from './routes/_authed/hr/employees/index'
+import { Route as AuthedHrEmployeesEmployeeIdRouteImport } from './routes/_authed/hr/employees/$employeeId'
+import { Route as AuthedHrEmployeesNewRouteImport } from './routes/_authed/hr/employees/new'
 import { Route as AuthedHrLeaveIndexRouteImport } from './routes/_authed/hr/leave/index'
 import { Route as AuthedHrOvertimeIndexRouteImport } from './routes/_authed/hr/overtime/index'
 import { Route as AuthedHrPayrollIndexRouteImport } from './routes/_authed/hr/payroll/index'
@@ -163,6 +166,11 @@ const AuthedProfilesRoute = AuthedProfilesRouteImport.update({
 const ForgotPasswordIndexRoute = ForgotPasswordIndexRouteImport.update({
   id: '/forgot-password/',
   path: '/forgot-password/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
@@ -459,6 +467,17 @@ const AuthedHrAttendanceIndexRoute = AuthedHrAttendanceIndexRouteImport.update({
 const AuthedHrEmployeesIndexRoute = AuthedHrEmployeesIndexRouteImport.update({
   id: '/hr/employees/',
   path: '/hr/employees/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHrEmployeesEmployeeIdRoute =
+  AuthedHrEmployeesEmployeeIdRouteImport.update({
+    id: '/hr/employees/$employeeId',
+    path: '/hr/employees/$employeeId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedHrEmployeesNewRoute = AuthedHrEmployeesNewRouteImport.update({
+  id: '/hr/employees/new',
+  path: '/hr/employees/new',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedHrLeaveIndexRoute = AuthedHrLeaveIndexRouteImport.update({
@@ -890,6 +909,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/account': typeof AuthedAccountRouteWithChildren
   '/profiles': typeof AuthedProfilesRouteWithChildren
+  '/invite/$token': typeof InviteTokenRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
   '/reset-password/': typeof ResetPasswordIndexRoute
@@ -919,6 +939,8 @@ export interface FileRoutesByFullPath {
   '/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
+  '/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
+  '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -1019,6 +1041,7 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId/bast/$bastId/': typeof AuthedProjectsProjectIdBastBastIdIndexRoute
 }
 export interface FileRoutesByTo {
+  '/invite/$token': typeof InviteTokenRoute
   '/': typeof AuthedIndexRoute
   '/forgot-password': typeof ForgotPasswordIndexRoute
   '/login': typeof LoginIndexRoute
@@ -1049,6 +1072,8 @@ export interface FileRoutesByTo {
   '/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
+  '/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
+  '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -1153,6 +1178,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/_authed/account': typeof AuthedAccountRouteWithChildren
   '/_authed/profiles': typeof AuthedProfilesRouteWithChildren
+  '/invite/$token': typeof InviteTokenRoute
   '/_authed/': typeof AuthedIndexRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
@@ -1183,6 +1209,8 @@ export interface FileRoutesById {
   '/_authed/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/_authed/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/_authed/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
+  '/_authed/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
+  '/_authed/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/_authed/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/_authed/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/_authed/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -1288,6 +1316,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/profiles'
+    | '/invite/$token'
     | '/forgot-password/'
     | '/login/'
     | '/reset-password/'
@@ -1317,6 +1346,8 @@ export interface FileRouteTypes {
     | '/assets/register/new'
     | '/crm/customers/$customerId'
     | '/crm/leads/$leadId'
+    | '/hr/employees/$employeeId'
+    | '/hr/employees/new'
     | '/inventory/items/$itemId'
     | '/inventory/items/new'
     | '/inventory/stock/adjust'
@@ -1417,6 +1448,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId/bast/$bastId/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/invite/$token'
     | '/'
     | '/forgot-password'
     | '/login'
@@ -1447,6 +1479,8 @@ export interface FileRouteTypes {
     | '/assets/register/new'
     | '/crm/customers/$customerId'
     | '/crm/leads/$leadId'
+    | '/hr/employees/$employeeId'
+    | '/hr/employees/new'
     | '/inventory/items/$itemId'
     | '/inventory/items/new'
     | '/inventory/stock/adjust'
@@ -1550,6 +1584,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/_authed/account'
     | '/_authed/profiles'
+    | '/invite/$token'
     | '/_authed/'
     | '/forgot-password/'
     | '/login/'
@@ -1580,6 +1615,8 @@ export interface FileRouteTypes {
     | '/_authed/assets/register/new'
     | '/_authed/crm/customers/$customerId'
     | '/_authed/crm/leads/$leadId'
+    | '/_authed/hr/employees/$employeeId'
+    | '/_authed/hr/employees/new'
     | '/_authed/inventory/items/$itemId'
     | '/_authed/inventory/items/new'
     | '/_authed/inventory/stock/adjust'
@@ -1682,6 +1719,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
+  InviteTokenRoute: typeof InviteTokenRoute
   ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
   ResetPasswordIndexRoute: typeof ResetPasswordIndexRoute
@@ -1722,6 +1760,13 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password/'
       preLoaderRoute: typeof ForgotPasswordIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login/': {
@@ -2100,6 +2145,20 @@ declare module '@tanstack/react-router' {
       path: '/hr/employees'
       fullPath: '/hr/employees/'
       preLoaderRoute: typeof AuthedHrEmployeesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/employees/$employeeId': {
+      id: '/_authed/hr/employees/$employeeId'
+      path: '/hr/employees/$employeeId'
+      fullPath: '/hr/employees/$employeeId'
+      preLoaderRoute: typeof AuthedHrEmployeesEmployeeIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/employees/new': {
+      id: '/_authed/hr/employees/new'
+      path: '/hr/employees/new'
+      fullPath: '/hr/employees/new'
+      preLoaderRoute: typeof AuthedHrEmployeesNewRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/hr/leave/': {
@@ -2714,6 +2773,8 @@ interface AuthedRouteChildren {
   AuthedAssetsRegisterNewRoute: typeof AuthedAssetsRegisterNewRoute
   AuthedCrmCustomersCustomerIdRoute: typeof AuthedCrmCustomersCustomerIdRoute
   AuthedCrmLeadsLeadIdRoute: typeof AuthedCrmLeadsLeadIdRoute
+  AuthedHrEmployeesEmployeeIdRoute: typeof AuthedHrEmployeesEmployeeIdRoute
+  AuthedHrEmployeesNewRoute: typeof AuthedHrEmployeesNewRoute
   AuthedInventoryItemsItemIdRoute: typeof AuthedInventoryItemsItemIdRouteWithChildren
   AuthedInventoryItemsNewRoute: typeof AuthedInventoryItemsNewRoute
   AuthedInventoryStockAdjustRoute: typeof AuthedInventoryStockAdjustRoute
@@ -2836,6 +2897,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAssetsRegisterNewRoute: AuthedAssetsRegisterNewRoute,
   AuthedCrmCustomersCustomerIdRoute: AuthedCrmCustomersCustomerIdRoute,
   AuthedCrmLeadsLeadIdRoute: AuthedCrmLeadsLeadIdRoute,
+  AuthedHrEmployeesEmployeeIdRoute: AuthedHrEmployeesEmployeeIdRoute,
+  AuthedHrEmployeesNewRoute: AuthedHrEmployeesNewRoute,
   AuthedInventoryItemsItemIdRoute: AuthedInventoryItemsItemIdRouteWithChildren,
   AuthedInventoryItemsNewRoute: AuthedInventoryItemsNewRoute,
   AuthedInventoryStockAdjustRoute: AuthedInventoryStockAdjustRoute,
@@ -2963,6 +3026,7 @@ const AuthedRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
+  InviteTokenRoute: InviteTokenRoute,
   ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
   ResetPasswordIndexRoute: ResetPasswordIndexRoute,

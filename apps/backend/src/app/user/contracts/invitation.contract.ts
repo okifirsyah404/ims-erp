@@ -22,13 +22,13 @@ export type TInvitationIdParams = z.infer<typeof invitationIdParamsSchema>;
 
 /**
  * Body for creating invitation(s). A single object or an array (bulk, cap
- * 100). `name` is required on the app path and optional on the org path
- * (validated in the service where the path is known).
+ * 100). `name` is required on both paths: it prefills the pre-created user
+ * and the claim profile form, and it is what the invitation email greets.
  */
 const invitationInputBase = z.object({
 	email: z.email().max(320),
 	/** Prefills the pre-created user and the claim profile form. */
-	name: z.string().min(1).max(120).optional(),
+	name: z.string().min(1).max(120),
 	/** Org path only: target organization. Required when organizationRole is set. */
 	organizationId: z.string().min(1).optional(),
 	/** Org path only: target role from the closed ERP role enum. Optional —
@@ -58,8 +58,11 @@ export const claimInvitationSchema = z.object({
 		.min(3)
 		.max(30)
 		.regex(
-			/^[a-zA-Z0-9_-]+$/,
-			'Use 3-30 letters, numbers, dashes or underscores',
+			// Better Auth's username plugin (library default validator) accepts
+			// alphanumerics + underscore only — no dashes, or the claim fails
+			// downstream with a confusing "Username is invalid".
+			/^[a-zA-Z0-9_]+$/,
+			'Use 3-30 letters, numbers or underscores',
 		),
 	password: z.string().min(8).max(72),
 	phone: z

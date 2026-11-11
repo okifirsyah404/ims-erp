@@ -161,7 +161,9 @@ Organization creation (`POST /organizations`) is the one organization route
 on this guard: the gate is the global application-admin role
 (`user.role === 'admin'`, ADR-0007), never an organization permission, so a
 membershipless admin can bootstrap the first organization. Better Auth
-re-checks the same rule via `allowUserToCreateOrganization`.
+re-checks the same rule via `allowUserToCreateOrganization`. Multiple
+organizations are allowed (ADR-0012); the creation gate stays the same for
+every subsequent one.
 
 ## Scoping a Drizzle query
 

@@ -106,8 +106,25 @@ export class UserManagementRepository implements IUserManagementRepository {
 		return { id: row.id };
 	}
 
-	async setStatus(id: string, status: TUserSelect['status']): Promise<void> {
+	/**
+	 * Renames a pending user. Scoped to `status = 'pending'` so a claimed
+	 * account is never renamed by a re-send of an invitation.
+	 */
+	async renamePendingUser(id: string, name: string): Promise<void> {
 		await this.database
+			.update(users)
+			.set({ name })
+			.where(
+				and(
+					eq(users.id, id),
+					eq(users.status, 'pending'),
+					isNull(users.deletedAt),
+				),
+			);
+		await this.invalidate(id);
+	}
+
+	async setStatus(id: string, status: TUserSelect['status']): Promise<void> {		await this.database
 			.update(users)
 			.set({ status })
 			.where(and(eq(users.id, id), isNull(users.deletedAt)));

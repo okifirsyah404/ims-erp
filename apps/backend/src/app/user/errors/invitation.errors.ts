@@ -201,25 +201,3 @@ export class UserStateError extends UserManagementError {
 	}
 }
 
-/**
- * Escalation guard: a caller can never deactivate or delete a user who holds
- * a role ranked at or above their own in any organization.
- */
-export class RankGuardError extends UserManagementError {
-	constructor() {
-		super(
-			403,
-			'role.rankExceeded',
-			'You cannot grant a role at or above your own rank',
-		);
-	}
-
-	/** Assigning a role to a member whose current rank is too high. */
-	static targetTooHigh(roleName: string, rank: number): RankGuardError {
-		return new RankGuardError().withKey(
-			'role.targetRankExceeded',
-			`Target holds "${roleName}" (rank ${rank})`,
-			{ role: roleName, rank },
-		);
-	}
-}

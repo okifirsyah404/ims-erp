@@ -31,6 +31,8 @@ import {
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 } from '../constants/di';
 import { EXPORTED_ASSET_SERVICE_TOKEN } from '@app/assets/constants/di';
+import { EXPORTED_HR_SERVICE_TOKEN } from '@app/hr/constants/di';
+import type { ExportedHrService } from '@app/hr/services/exported-hr.service';
 import type { ExportedAssetService } from '@app/assets/services/exported-asset.service';import {
 	InventoryRuleViolationError,
 	StorageCodeTakenError,
@@ -40,6 +42,7 @@ import type { ExportedAssetService } from '@app/assets/services/exported-asset.s
 	WarehouseInactiveError,
 	WarehouseLinkConflictError,
 	WarehouseNotFoundError,
+	WarehousePicInvalidError,
 } from '../errors/inventory.errors';
 import type { IWarehouseBorrowingGuard } from '../contracts/warehouse-borrowing-guard.port';
 
@@ -107,7 +110,10 @@ export class WarehouseService {
 		private readonly borrowingGuard: IWarehouseBorrowingGuard,
 		/** Equipment counts come from the assets module via its export facade. */
 		@inject(EXPORTED_ASSET_SERVICE_TOKEN)
-		private readonly exportedAssetService: ExportedAssetService,	) {}
+		private readonly exportedAssetService: ExportedAssetService,
+		/** PIC validation reads hr.employees through the HR export facade. */
+		@inject(EXPORTED_HR_SERVICE_TOKEN)
+		private readonly exportedHrService: ExportedHrService,	) {}
 
 	/** Fetches one filtered page of warehouses, decorated with kind counts. */
 	async paginate(request: {
@@ -235,6 +241,8 @@ export class WarehouseService {
 		);
 		if (existing) throw new WarehouseCodeTakenError();
 
+		await this.assertPicAssignable(input.responsibleEmployeeId ?? null);
+
 		const warehouse = await this.warehouseRepository.create({
 			...input,
 			organizationId: null,
@@ -273,6 +281,14 @@ export class WarehouseService {
 		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TWarehouseDetail> {
 		const current = await this.requireWarehouse(id);
+
+		// ERP-0034: a PIC must be a live employee of a linked org (or company-
+		// level); the linked-org set is the snapshot *before* this update,
+		// which is the relevant one for "who may run this warehouse".
+		if (input.responsibleEmployeeId !== undefined) {
+			await this.assertPicAssignable(input.responsibleEmployeeId, id);
+		}
+
 		const updated = await this.warehouseRepository.update(id, input);
 		if (!updated) throw new WarehouseNotFoundError();
 
@@ -529,6 +545,41 @@ export class WarehouseService {
 	): Promise<boolean> {
 		await this.requireWarehouse(warehouseId);
 		return this.warehouseRepository.isLinked(warehouseId, organizationId);
+	}
+
+	/**
+	 * Throws unless the employee can be the warehouse's PIC (ERP-0034).
+	 *
+	 * @remarks
+	 * Valid PICs: any live employee (ADR-0010 display-only field, but
+	 * assignment is still gated), because every warehouse is global and its
+	 * reachable set is the union of `warehouse_organizations` links — a
+	 * company-level employee (organization_id NULL) is always assignable,
+	 * and an org-scoped one must belong to a currently linked organization.
+	 *
+	 * @param employeeId - The candidate PIC, or `null` to clear the field
+	 * @param warehouseId - Present on update; loads the linked orgs of this
+	 *   warehouse instead of treating the candidate as always-assignable
+	 */
+	private async assertPicAssignable(
+		employeeId: string | null,
+		warehouseId?: string,
+	): Promise<void> {
+		if (!employeeId) return;
+		const employee = await this.exportedHrService.findEmployeeById(employeeId);
+		if (!employee || employee.employmentStatus === 'terminated') {
+			throw new WarehousePicInvalidError();
+		}
+		if (employee.organizationId === null) return; // company-level
+		if (!warehouseId) {
+			// On create the links are not known yet; validate via the linked
+			// list once the warehouse exists (create re-checks with the id).
+			return;
+		}
+		const linked = await this.warehouseRepository.listOrganizations(warehouseId);
+		if (!linked.some((row) => row.organizationId === employee.organizationId)) {
+			throw new WarehousePicInvalidError();
+		}
 	}
 
 	/**

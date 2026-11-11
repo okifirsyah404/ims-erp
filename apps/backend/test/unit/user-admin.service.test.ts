@@ -7,7 +7,6 @@ import type { TAdminUserRow } from '../../src/app/user/contracts/admin-listing.t
 import type { IUserManagementAuthGateway } from '../../src/app/user/contracts/user-management-auth.gateway.interface';
 import type { AuditService } from '../../src/app/audit/services/audit.service';
 import {
-	RankGuardError,
 	UserNotFoundError,
 	UserStateError,
 } from '../../src/app/user/errors/invitation.errors';
@@ -177,7 +176,7 @@ describe('UserAdminService.deactivate', () => {
 			user: makeUser(),
 		});
 
-		await service.deactivate('user-1', 80, ACTOR);
+		await service.deactivate('user-1', ACTOR);
 
 		expect(users.setStatus).toHaveBeenCalledWith('user-1', 'deactivated');
 		// Locked decision D9: deactivation always kills sessions.
@@ -191,39 +190,26 @@ describe('UserAdminService.deactivate', () => {
 		});
 
 		await expect(
-			service.deactivate('user-1', 80, ACTOR),
+			service.deactivate('user-1', ACTOR),
 		).rejects.toBeInstanceOf(UserStateError);
 		expect(gateway.revokeSessions).not.toHaveBeenCalled();
 	});
 
-	test('rejects an unknown user', async () => {
+	test('rejects deactivating a missing user', async () => {
 		const { service } = makeService({ user: null });
 
-		await expect(
-			service.deactivate('missing', 80, ACTOR),
-		).rejects.toBeInstanceOf(UserNotFoundError);
+		await expect(service.deactivate('missing', ACTOR)).rejects.toBeInstanceOf(
+			UserNotFoundError,
+		);
 	});
 
-	test('rejects deactivating a user who outranks the caller', async () => {
-		const { service, gateway } = makeService({
-			user: makeUser(),
-			memberships: [{ id: ORG, name: 'Entragate', role: 'owner' }],
-		});
+	test('deactivates an active user and revokes sessions', async () => {
+		const { service, gateway, users } = makeService({ user: makeUser() });
 
-		await expect(
-			service.deactivate('user-1', 80, ACTOR),
-		).rejects.toBeInstanceOf(RankGuardError);
-		expect(gateway.revokeSessions).not.toHaveBeenCalled();
-	});
+		await service.deactivate('user-1', ACTOR);
 
-	test('allows deactivating a user ranked below the caller', async () => {
-		const { service, users } = makeService({
-			user: makeUser(),
-			memberships: [{ id: ORG, name: 'Entragate', role: 'member' }],
-		});
-
-		await service.deactivate('user-1', 80, ACTOR);
-		expect(users.setStatus).toHaveBeenCalled();
+		expect(users.setStatus).toHaveBeenCalledWith('user-1', 'deactivated');
+		expect(gateway.revokeSessions).toHaveBeenCalledWith('user-1');
 	});
 });
 
@@ -267,22 +253,10 @@ describe('UserAdminService.remove', () => {
 			user: makeUser(),
 		});
 
-		await service.remove('user-1', 80, ACTOR);
+		await service.remove('user-1', ACTOR);
 
 		expect(users.delete).toHaveBeenCalledWith('user-1');
 		expect(gateway.revokeSessions).toHaveBeenCalledWith('user-1');
 		expect(audit.record).toHaveBeenCalledTimes(1);
-	});
-
-	test('rejects deleting a user who outranks the caller', async () => {
-		const { service, users } = makeService({
-			user: makeUser(),
-			memberships: [{ id: ORG, name: 'Entragate', role: 'admin' }],
-		});
-
-		await expect(service.remove('user-1', 80, ACTOR)).rejects.toBeInstanceOf(
-			RankGuardError,
-		);
-		expect(users.delete).not.toHaveBeenCalled();
 	});
 });

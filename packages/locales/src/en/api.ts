@@ -155,6 +155,8 @@ const api = {
 		'A storage with this code already exists in this warehouse',
 	'inventory.warehouseInactive':
 		'Warehouse "{{warehouseCode}}" is inactive; its storages cannot be changed',
+	'inventory.warehousePicInvalid':
+		'The responsible employee is unknown, inactive, or not from a linked organization',
 	'inventory.movementNotFound': 'Stock movement not found',
 	'inventory.movementAlreadyReversed':
 		'This stock movement has already been reversed',
@@ -200,7 +202,6 @@ const api = {
 	'organization.lastOrganization':
 		'This is your last organization and cannot be removed',
 	'organization.notFound': 'Organization not found',
-	'organization.singleCompany': 'This deployment has one organization (the company); another one cannot be added',
 	'organization.companyProfileRequired':
 		'Fill in the company profile (with its document code) first',
 	'numbering.unknownDocumentType': 'Unknown document type',
@@ -240,11 +241,6 @@ const api = {
 	'claim.usernameTaken': 'Username is already taken',
 	'claim.phoneInUse': 'Phone number is already in use',
 	'claim.alreadyInUse': 'Username or email already in use',
-
-	'role.rankExceeded':
-		'You cannot act on a user holding a role at or above your own rank',
-	'role.targetRankExceeded':
-		'Target holds "{{role}}" (rank {{rank}}) in your organization',
 
 	'userAdmin.accountAlreadyActive': 'Account is already active',
 	'userAdmin.cannotDeactivate':
@@ -301,6 +297,12 @@ const api = {
 	'licensing.apiKey.noOwner': 'The organization has no owner to issue the key',
 	'licensing.apiKey.notFound': 'API key not found',
 	'licensing.activationNotFound': 'Activation not found or already released',
+
+	// HR (ERP-0034)
+	'hr.employeeNotFound': 'Employee not found',
+	'hr.companyEmployeeForbidden': 'Company-level employees are managed by application admins only',
+	'hr.employeeEmailTaken': 'Another employee already uses this login email or code',
+	'hr.employeeInvite': 'The employee invitation failed',
 
 	// Tax (ERP-0016)
 	'accounting.taxTypeNotFound': 'Tax type not found',

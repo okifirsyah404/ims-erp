@@ -8,6 +8,7 @@ import {
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
 } from '../constants/di';
+import { dispatchAvatarGeneration } from '../queues/avatar.queue';
 import type {
 	IInvitationRepository,
 	TInvitationListRequest,
@@ -17,6 +18,7 @@ import type { TClaimTarget } from '../contracts/user-management-auth.gateway.int
 import type { IInvitationMailer } from '../contracts/invitation-mailer.gateway.interface';
 import type { IUserManagementAuthGateway } from '../contracts/user-management-auth.gateway.interface';
 import type { TCreateInvitationInput } from '../contracts/invitation.contract';
+import { pinoLogger } from '@providers/logger/logger';
 import { hashToken } from '../utils/token';
 import { AuditService } from '../../audit/services/audit.service';
 import {
@@ -95,12 +97,18 @@ export class InvitationService {
 	) {}
 
 	/**
-	 * Creates one invitation. App path requires `name`; org path requires
-	 * `organizationId` (the role is the closed-enum `organizationRole`,
-	 * defaulting to `member` when omitted).
+	 * Creates one invitation. Both paths require `name` (it prefills the
+	 * pre-created user and the claim profile form). The org path also
+	 * requires `organizationId`; the role is the closed-enum
+	 * `organizationRole`, defaulting to `member` when omitted.
 	 *
 	 * Overwrite rule: a pending invitation for the same email is reused —
-	 * same user row, new token, old token invalidated, counts resent.
+	 * same user row, new token, old token invalidated, counts resent. The
+	 * reused row adopts the new invite's context (path, organization, role,
+	 * name) so the delivered email and the membership created on claim match
+	 * what the admin just submitted, not the original invite. A pending
+	 * invite owned by a *different* organization is rejected instead, so one
+	 * org can never hijack another org's pending invitation.
 	 */
 	async invite(
 		input: TCreateInvitationInput,
@@ -110,7 +118,7 @@ export class InvitationService {
 		if (isOrgPath && !input.organizationId) {
 			throw new InvalidInvitationError();
 		}
-		if (!isOrgPath && !input.name) {
+		if (!input.name) {
 			throw InvalidInvitationError.requiresName();
 		}
 
@@ -136,6 +144,13 @@ export class InvitationService {
 			await this.invitations.updateToken(existingPending.id, {
 				tokenHash,
 				expiresAt,
+				// Sync context: the row must describe THIS invite, otherwise the
+				// email renders the stale template and claim attaches the wrong
+				// organization (or none).
+				type: isOrgPath ? 'org' : 'app',
+				name: input.name,
+				organizationId: isOrgPath ? (input.organizationId ?? null) : null,
+				orgRole: organizationRole,
 			});
 			const updated = await this.invitations.findById(existingPending.id);
 			// Overwrite reuses the pre-created user row (D2): resolve it by
@@ -144,6 +159,14 @@ export class InvitationService {
 			if (!existingUser) {
 				throw ClaimStateError.invitedUserMissing();
 			}
+			// Keep the pending profile in sync with the new invite; a claimed
+			// account is left untouched (the repository guards `pending`).
+			if (existingUser.name !== input.name) {
+				await this.users.renamePendingUser(existingUser.id, input.name);
+			}
+			// Overwritten pre-created users may predate the avatar dispatch —
+			// top them up if the row has no image yet.
+			await this.ensureAvatar(existingUser.id, input.name, existingUser.image);
 			await this.deliver(updated!, token);
 			return {
 				invitation: updated!,
@@ -172,6 +195,7 @@ export class InvitationService {
 			// Soft-deleted user from a prior wrong-email delete: restore it.
 			await this.users.restore(existingAny.id);
 			userId = existingAny.id;
+			await this.ensureAvatar(userId, displayName, existingAny.image);
 		} else {
 			userId = (
 				await this.users.createPendingUser({
@@ -179,6 +203,7 @@ export class InvitationService {
 					email: input.email,
 				})
 			).id;
+			await this.ensureAvatar(userId, displayName, null);
 		}
 		await this.audit.record({
 			actorUserId: actor.userId,
@@ -450,6 +475,33 @@ export class InvitationService {
 	}
 
 	/**
+	 * Fire-and-forget avatar generation for pre-created (pending) users.
+	 * Better Auth's `user.create.after` hook only fires on `auth.api`
+	 * creations, which the invitation pipeline bypasses — so invited users
+	 * would otherwise never get a generated avatar and always render the
+	 * fallback. Guarded on the current image key: the deterministic job id
+	 * (`avatar-<userId>`) dedupes, and users that already carry an avatar
+	 * (restored rows) are not re-rendered.
+	 */
+	private async ensureAvatar(
+		userId: string,
+		name: string,
+		currentImage: string | null,
+	): Promise<void> {
+		if (currentImage) return;
+		try {
+			await dispatchAvatarGeneration({ id: userId, name });
+		} catch (error) {
+			// Mirror the hook's resilience: a queue outage never fails the
+			// invite. The next resend tops the avatar up.
+			pinoLogger.warn(
+				{ err: error, userId },
+				'[invitation] avatar dispatch failed',
+			);
+		}
+	}
+
+	/**
 	 * Email delivery. A mailer failure flips `deliveryFailed` (visible in
 	 * the pending list) but never fails the invite — resend re-delivers.
 	 */
@@ -460,16 +512,19 @@ export class InvitationService {
 		try {
 			let organizationName: string | null = null;
 			let roleName: string | null = null;
-			if (invitation.organizationId) {
-				const org = await this.organizationNameFor(invitation.organizationId);
-				organizationName = org;
+			const isOrgInvite =
+				invitation.type === 'org' && Boolean(invitation.organizationId);
+			if (isOrgInvite && invitation.organizationId) {
+				organizationName = await this.organizationNameFor(
+					invitation.organizationId,
+				);
 				roleName = invitation.orgRole ?? null;
 			}
 			await this.mailer.sendInvite({
 				to: invitation.email,
 				name: invitation.name,
 				token: rawToken,
-				type: invitation.type,
+				type: isOrgInvite ? 'org' : 'app',
 				organizationName,
 				roleName,
 				expiresAt: invitation.expiresAt,

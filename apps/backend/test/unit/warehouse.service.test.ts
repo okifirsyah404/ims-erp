@@ -267,6 +267,9 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 		{ async countOpenBorrowings() { return 0; } },
 		// No assets in these tests — equipment counts resolve to zero.
 		{ countByWarehouse: async () => [] } as never,
+		// ERP-0034: no HR rows in these tests — every PIC lookup misses, so
+		// tests that assign one must clear it (`null`) instead.
+		{ findEmployeeById: async () => null, findEmployeeByUserId: async () => null } as never,
 	);
 	return { service, rows, links, clearDefaultCalls, warehouseRepository };
 }

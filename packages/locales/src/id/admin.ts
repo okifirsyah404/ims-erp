@@ -44,8 +44,8 @@ const admin_: Record<keyof typeof admin, string> = {
 	'invite.bulk': 'Tempel massal',
 	'invite.email': 'Email',
 	'invite.emailPlaceholder': 'orang@perusahaan.com',
-	'invite.name': 'Nama (opsional)',
-	'invite.namePlaceholder': 'Mengisi otomatis formulir klaim',
+	'invite.name': 'Nama',
+	'invite.namePlaceholder': 'Nama lengkap penerima undangan',
 	'invite.role': 'Peran',
 	'invite.rolePlaceholder': 'Pilih peran',
 	'invite.defaultRole': 'Peran bawaan (opsional)',
@@ -60,6 +60,7 @@ const admin_: Record<keyof typeof admin, string> = {
 	'invite.sentBulk': '{{count}} undangan terkirim',
 	'invite.sentMixed': '{{succeeded}} terkirim, {{failed}} gagal',
 	'invite.emailRequired': 'Email wajib diisi',
+	'invite.nameRequired': 'Nama wajib diisi',
 
 	'invitations.title': 'Undangan tertunda',
 	'invitations.description':
@@ -136,8 +137,6 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgDetail.membersEmpty': 'Belum ada anggota.',
 	'orgDetail.name': 'Nama',
 	'orgDetail.slug': 'Slug',
-	'orgDetail.memberRole': 'Peran',
-	'orgDetail.memberJoined': 'Bergabung',
 	'orgDetail.notFound': 'Organisasi tidak ditemukan (atau Anda tidak memiliki akses).',
 	'orgDetail.backToList': 'Kembali ke daftar organisasi',
 	'orgDetail.createdOn': '{{slug}} · dibuat {{date}}',
@@ -153,16 +152,18 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgEdit.name': 'Nama',
 	'orgEdit.saved': 'Organisasi diperbarui',
 
-	'memberNew.title': 'Tambah anggota',
+	'memberNew.title': 'Undang anggota',
 	'memberNew.description':
-		'Menambahkan akun pengguna yang sudah ada langsung ke organisasi (tanpa alur undangan).',
-	'memberNew.membership': 'Keanggotaan',
+		'Mengirim email undangan dan menambahkan orang tersebut ke organisasi ini dengan peran yang dipilih setelah mereka menerima undangan.',
+	'memberNew.membership': 'Undangan',
 	'memberNew.membershipDescription':
-		'ID Better Auth pengguna — dapat dilihat di halaman admin pengguna.',
-	'memberNew.userId': 'ID pengguna',
+		'Penerima undangan mendapat tautan untuk menyiapkan akunnya; peran diterapkan saat undangan diklaim.',
+	'memberNew.name': 'Nama lengkap',
+	'memberNew.email': 'Alamat email',
 	'memberNew.role': 'Peran',
-	'memberNew.adding': 'Menambahkan…',
-	'memberNew.added': 'Anggota ditambahkan',
+	'memberNew.submit': 'Kirim undangan',
+	'memberNew.sending': 'Mengirim…',
+	'memberNew.invited': 'Undangan terkirim',
 
 	'memberEdit.title': 'Ubah anggota',
 	'memberEdit.description':
