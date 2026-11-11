@@ -44,6 +44,17 @@ export type TActor = {
 	userAgent?: string | null;
 };
 
+/**
+ * Caller scope for id-targeted invitation actions.
+ *
+ * @remarks
+ * Organization-scoped callers pass the organization they are acting in; the
+ * service then refuses invitations owned by another organization with a 404
+ * (not a 403 - probing must not reveal that the id exists). Application
+ * admins omit it and keep the cross-organization reach their role implies.
+ */
+export type TInvitationScope = { organizationId: string };
+
 /** Result of a single invite creation. */
 export type TInviteResult = {
 	invitation: TUserInvitationSelect;
@@ -284,8 +295,12 @@ export class InvitationService {
 	/**
 	 * Resend: new token on the SAME row (old token dies), 3-day TTL reset.
 	 */
-	async resend(invitationId: string, actor: TActor): Promise<void> {
-		const invitation = await this.requirePending(invitationId);
+	async resend(
+		invitationId: string,
+		actor: TActor,
+		scope?: TInvitationScope,
+	): Promise<void> {
+		const invitation = await this.requirePending(invitationId, scope);
 		const { token, tokenHash } = generateInvitationToken();
 		await this.invitations.updateToken(invitation.id, {
 			tokenHash,
@@ -305,8 +320,12 @@ export class InvitationService {
 	}
 
 	/** Cancel: pending → cancelled. Terminal states are final. */
-	async cancel(invitationId: string, actor: TActor): Promise<void> {
-		const invitation = await this.requirePending(invitationId);
+	async cancel(
+		invitationId: string,
+		actor: TActor,
+		scope?: TInvitationScope,
+	): Promise<void> {
+		const invitation = await this.requirePending(invitationId, scope);
 		await this.invitations.markStatus(invitation.id, 'cancelled');
 		await this.audit.record({
 			actorUserId: actor.userId,
@@ -324,9 +343,14 @@ export class InvitationService {
 	 * invitation AND its pre-created pending user. After claim the caller
 	 * must deactivate instead — enforced here.
 	 */
-	async deleteUnclaimed(invitationId: string, actor: TActor): Promise<void> {
+	async deleteUnclaimed(
+		invitationId: string,
+		actor: TActor,
+		scope?: TInvitationScope,
+	): Promise<void> {
 		const invitation = await this.invitations.findById(invitationId);
 		if (!invitation) throw new InvitationNotFoundError(invitationId);
+		this.assertScope(invitation, scope, invitationId);
 		if (invitation.status !== 'pending') {
 			throw InvitationNotPendingError.claimed();
 		}
@@ -465,13 +489,30 @@ export class InvitationService {
 
 	private async requirePending(
 		invitationId: string,
+		scope?: TInvitationScope,
 	): Promise<TUserInvitationSelect> {
 		const invitation = await this.invitations.findById(invitationId);
 		if (!invitation) throw new InvitationNotFoundError(invitationId);
+		this.assertScope(invitation, scope, invitationId);
 		if (invitation.status !== 'pending') {
 			throw new InvitationNotPendingError();
 		}
 		return invitation;
+	}
+
+	/**
+	 * Organization-scope gate for id-targeted actions: an org-scoped caller
+	 * may only touch invitations owned by its own organization. Reports the
+	 * row as missing so a probe cannot confirm another org's invitation.
+	 */
+	private assertScope(
+		invitation: TUserInvitationSelect,
+		scope: TInvitationScope | undefined,
+		invitationId: string,
+	): void {
+		if (scope && invitation.organizationId !== scope.organizationId) {
+			throw new InvitationNotFoundError(invitationId);
+		}
 	}
 
 	/**

@@ -38,6 +38,7 @@
 		"elysia-i18next": "^4.0.3",
 		"exceljs": "^4.4.0",
 		"i18next": "^26.6.0",
+		"libphonenumber-js": "^1.13.16",
 		"luxon": "^3.7.2",
 		"nodemailer": "^10.5.0",
 		"pino": "^10.4.0",

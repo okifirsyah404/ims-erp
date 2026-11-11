@@ -59,6 +59,19 @@ const admin = {
 	'invite.sentMixed': '{{succeeded}} sent, {{failed}} failed',
 	'invite.emailRequired': 'Email is required',
 	'invite.nameRequired': 'Name is required',
+	'invite.organization': 'Organization',
+	'invite.organizationPlaceholder': 'Search organizations…',
+	'invite.organizationEmpty': 'No organizations found.',
+	'invite.noOrganization': 'No organization (application-level)',
+	'invite.rowsPlaceholderAdmin':
+		'email@company.com, Jane Doe, org-code, member',
+	'invite.rowsHintAdmin':
+		'One per line: <code>email, name, org code, role</code>. Leave the org code empty to invite without an organization. An unknown code fails only that row.',
+	'invite.rowsEmpty': 'No valid rows to send.',
+	'accessDenied.title': 'Administrator access required',
+	'accessDenied.description':
+		'This page is limited to application administrators. Organization members and invitations are managed from the organization page.',
+	'accessDenied.back': 'Back to dashboard',
 
 	'invitations.title': 'Pending invitations',
 	'invitations.description':
@@ -147,19 +160,6 @@ const admin = {
 	'orgEdit.details': 'Organization details',
 	'orgEdit.name': 'Name',
 	'orgEdit.saved': 'Organization updated',
-
-	'memberNew.title': 'Invite member',
-	'memberNew.description':
-		'Sends an invitation email and adds the person to this organization with the chosen role once they accept.',
-	'memberNew.membership': 'Invitation',
-	'memberNew.membershipDescription':
-		'The invitee receives a link to set up their account; the role is applied when the invitation is claimed.',
-	'memberNew.name': 'Full name',
-	'memberNew.email': 'Email',
-	'memberNew.role': 'Role',
-	'memberNew.submit': 'Send invitation',
-	'memberNew.sending': 'Sending…',
-	'memberNew.invited': 'Invitation sent',
 
 	'memberEdit.title': 'Edit member',
 	'memberEdit.description': 'Change this member’s role or remove them from the organization.',

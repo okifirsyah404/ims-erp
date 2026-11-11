@@ -252,8 +252,13 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		labelKey: 'section.administration',
 		items: [
 			{ titleKey: 'item.organizations', url: '/organizations', icon: Building2 },
-			{ titleKey: 'item.users', url: '/admin/users', icon: Users },
-			{ titleKey: 'item.auditLog', url: '/admin/audit', icon: ScrollText },
+			{ titleKey: 'item.users', url: '/admin/users', icon: Users, adminOnly: true },
+			{
+				titleKey: 'item.auditLog',
+				url: '/admin/audit',
+				icon: ScrollText,
+				adminOnly: true,
+			},
 			{
 				titleKey: 'item.settings',
 				url: '/admin/settings',

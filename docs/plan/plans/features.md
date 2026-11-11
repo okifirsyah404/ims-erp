@@ -345,6 +345,18 @@ Last synced: 2026-11-08.
   `apps/backend/src/app/organization`, UI `/organizations/*`; progress
   2026-10-31, 2026-11-02 live smoke. Pending: browser acceptance. Note:
   organizations = internal departments, consistent with v5.1 (ADR-0010).
+- Organization-scoped invitations + one shared invite dialog — ERP-0039
+  (2026-11-12). Org admins list/resend/cancel/delete their own pending
+  invitations (`/organizations/:organizationId/invitations`, path org
+  authoritative, out-of-scope → 404) without the app-admin-only
+  `/admin/invitations`; `components/invite/invite-dialog.tsx` serves both
+  `/admin/users` (org picker incl. explicit “no organization”) and the
+  organization Members tab; claim phone is E.164 (`libphonenumber-js`).
+  Evidence: `apps/backend/src/app/organization/controllers/
+  organization-invitation.controller.ts`,
+  `test/unit/invitation.service.test.ts` (12),
+  `apps/web-admin/test/unit/invite-parse.test.ts` (10), browser run in
+  `progress.md` 2026-11-12. Pending: reviewer sign-off, PR.
 
 ## Backlog-only (no module)
 

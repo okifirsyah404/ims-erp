@@ -74,6 +74,9 @@ describe('locale values', () => {
 			'admin:users.email',
 			'admin:users.status',
 			'admin:users.filterStatus',
+			// Digit-only phone example: the placeholder is a number pattern,
+			// not prose, so it is identical in both bundles.
+			'claim:form.phonePlaceholder',
 		'inventory:warehouses.filterStatus',
 		'inventory:warehouses.sortStatus',
 			'admin:invite.email',

@@ -121,7 +121,6 @@ const nav_: Record<keyof typeof nav, string> = {
 	'breadcrumb.organizations': 'Organisasi',
 	'breadcrumb.organizationNew': 'Organisasi baru',
 	'breadcrumb.organizationEdit': 'Ubah',
-	'breadcrumb.memberNew': 'Undang anggota',
 	'breadcrumb.memberEdit': 'Ubah anggota',
 	'breadcrumb.quotationNew': 'Penawaran baru',
 	'breadcrumb.quotationEdit': 'Ubah',

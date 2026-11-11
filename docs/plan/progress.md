@@ -12,6 +12,106 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-12 - ERP-0039: organization-scoped invitations + one shared invite dialog
+
+Status: implemented and browser-verified end to end (invite → email → claim →
+membership), unit-tested; reviewer sign-off and PR still open. Branch
+`fix/org-hardening` (based on the merged `89940c0`).
+
+- **Backend — org-scoped invitation surface.** New
+  `app/organization/controllers/organization-invitation.controller.ts`
+  (5 routes under `/organizations/:organizationId/invitations`:
+  list, create/bulk, resend, cancel, delete) plus a local
+  `contracts/organization-invitation.contract.ts`; mounted in
+  `organizationModule()` and exported from `app/organization/index.ts`.
+  It delegates to the user module's `InvitationService` through the DI token
+  (no cross-module repository access). The **path** organization is
+  authoritative — `organizationId` is never read from the body on these
+  routes, and `assertPathOrganization` rejects a mismatch for non-global
+  admins.
+- **Backend — tenant scoping on single-id actions.** `InvitationService`
+  gained `TInvitationScope` and `assertScope()`; `resend`/`cancel`/
+  `deleteUnclaimed`/`requirePending` accept an optional
+  `scope: { organizationId }` and report an out-of-scope row as
+  `InvitationNotFoundError` (404, so a probe cannot confirm another
+  organization's invitation). Application admins call unscoped.
+- **Backend — duplicate rules** (`invite`): pending in org A + invite to org
+  B → 409 (`InvitationPendingExistsError`); app-level pending + org invite →
+  the existing row is **adopted** into the org context; org pending + app
+  invite → 409; app → app and same-org → same-org overwrite (new token).
+- **Backend — claim phone is E.164.** `claimInvitationSchema.phone` now
+  validates with `isValidPhoneNumber` from `libphonenumber-js/min` and
+  normalizes (`+62 812-3456-7890` → `+6281234567890`). Library added to
+  `apps/backend` and `apps/web-admin` (`libphonenumber-js@1.13.16`).
+- **Web admin — one dialog, two modes.**
+  `components/invite/invite-dialog.tsx` (`mode: 'admin' | 'org'`) replaces
+  `components/admin/invite-dialog.tsx` (deleted). Admin mode adds a searchable
+  organization picker with an explicit **“Tanpa organisasi (tingkat
+  aplikasi)”** item (a `null` selection, not an empty state) and hides the
+  role field while no organization is chosen. Org mode pins the organization
+  from the page and never renders the picker. Bulk paste:
+  `email, name, org-code, role` (admin) vs `email, name, role` (org);
+  `parseBulkInviteRows` returns `{ rows, rowErrors, error }` so an unknown org
+  code or bad email drops only that row. The selector lists live
+  organizations only (an invite into a soft-deleted org cannot be claimed).
+- **Web admin — org admin manages its own invitations.** The
+  organization-detail Members tab gained `Tambah anggota` (opens the dialog)
+  and the `PendingInvitationsPanel`, which was refactored to take a `source`
+  prop (`{ queryOptions, resend, cancel, remove, invalidate }`). The old
+  `/organizations/$organizationId/members/new` page route was deleted along
+  with `memberNew.*` locale keys and `breadcrumb.memberNew`. Org admins
+  therefore never need the application-admin-only `/admin/invitations`.
+- **Web admin — app-admin-only surfaces.** New `lib/use-is-app-admin.ts`,
+  `adminOnly` flag on sidebar items (hides `Users` and `Audit log` from
+  organization-only users, keeping `Organisasi` and `Pengaturan`), and a new
+  `routes/_authed/admin.tsx` layout guard that renders an in-place 403
+  (`accessDenied.*`) instead of redirecting.
+- **Web admin — country-code phone picker.**
+  `components/form/country-phone-field.tsx` (searchable shadcn `Combobox`,
+  countries from `getCountries()` + `getCountryCallingCode()`, names via
+  `Intl.DisplayNames([i18n.language])`, default `ID`/`+62`) + `lib/phone.ts`
+  `toE164()`. Filtering is done in a `useMemo` over `onInputValueChange`
+  rather than a `ComboboxList` function child: that child must be the list's
+  **only** child, and the empty state also lives inside the list (a
+  mixed array renders nothing — observed in the browser).
+- **Locales.** `en`/`id` gained `invite.organization*`, `invite.noOrganization`,
+  `invite.rowsPlaceholderAdmin`, `invite.rowsHintAdmin`, `invite.rowsEmpty`,
+  `accessDenied.*`, `claim.form.phoneCountry*`, `claim.form.phonePlaceholder`
+  (added to `ALLOWED_IDENTICAL` — a digit pattern, not prose); `memberNew.*`
+  and `nav:breadcrumb.memberNew` removed.
+- **`docs/database/` reviewed and unchanged.** The organization “code” the
+  admin dialog accepts is the existing `auth.organizations.slug`; no table,
+  column, index, constraint, status vocabulary or logical reference changed,
+  so `docs.dbml` needed no edit and `validate-dbml.ts` was not re-run.
+- **Tests.** `apps/backend/test/unit/invitation.service.test.ts` (12 pass:
+  overwrite tenant rules, scoped resend/cancel/delete, unscoped admin reach,
+  E.164 claim schema) and
+  `apps/web-admin/test/unit/invite-parse.test.ts` (10 pass: both bulk
+  layouts, per-row isolation, `toE164`).
+- **Verified commands (repo root unless noted).**
+  `bun run typecheck` → 4 tasks successful; `bun run lint` →
+  ui 19 / backend 7 / web-admin 11 warnings, 0 errors (no new warnings in the
+  changed files); `bun run test` → 5 tasks successful, backend 820 pass /
+  0 fail, web-admin 55 pass / 0 fail, locales 82 pass / 0 fail,
+  react-email 5 pass / 0 fail (`schema "auth" does not exist` log noise is the
+  mocked-DB unit tests' expected output).
+- **Browser verification (live stack, Firefox + Mailpit).**
+  App-level: `/admin/users` → dialog → organization `Tanpa organisasi` → role
+  field hidden → send → mail `You're invited to create your IMS ERP account`
+  → claim page → account created, lands on `/` with no organization; sidebar
+  hides `Users`, keeps `Organisasi`/`Pengaturan`. Org-level: organization
+  Members tab → `Tambah anggota` (no org picker) → send → mail `You are
+  invited to join Entragate` → claim page with the country picker defaulting
+  to `Indonesia (+62)`, typing `Malay` narrows the list to `Malaysia (+60)` →
+  claim → `auth.members` row (role `member`, org Entragate),
+  `auth.user_invitations.status='accepted'`, `auth.users.phone='+6281399887766'`.
+  Panel actions as org admin (`admin_seed`, no platform role): resend extends
+  expiry and reissues the token, cancel moves the row to `cancelled` and drops
+  it from the pending list, delete soft-deletes both the invitation and the
+  pending user (`deleted_at` set on both). Same account hitting `/admin/users`
+  gets the in-place 403. `GET /organizations/:id/invitations` unauthenticated
+  → 401 envelope.
+
 ## 2026-11-10 - ERP-0034: minimal HR employees + warehouse PIC (slices 1-8)
 
 Status: implemented and browser-verified (create → list → detail; seeder;
@@ -4831,8 +4931,14 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**Docs merge: bring `merge/main-sync` docs into `fix/docs-consistency`**
-(see the entry above). Then decide the 7 deferred tables.
+**Review + PR for ERP-0039 (organization-scoped invitations, shared invite
+dialog).** All gates green: typecheck, lint, `bun run test`
+(backend 820 / web-admin 55 / locales 82 / react-email 5), live browser run
+of both invite paths, `docs/database/` reviewed and unchanged. Next: commit on
+`fix/org-hardening`, open the PR, reviewer sign-off.
+
+Older, still-open follow-ups: docs merge of `merge/main-sync` into
+`fix/docs-consistency`, then the 7 deferred tables.
 
 ## Previous next task (still open)
 

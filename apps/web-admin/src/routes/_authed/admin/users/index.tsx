@@ -67,8 +67,12 @@ import {
 } from '@ims-erp/ui/components/table';
 import {
 	ADMIN_PERMISSIONS,
+	cancelInvitation,
+	deleteInvitation,
 	deleteUser,
 	deactivateUser,
+	listInvitations,
+	resendInvitation,
 	restoreUser,
 	usersQueryOptions,
 	type TAdminUser,
@@ -78,8 +82,11 @@ import {
 } from '@/lib/admin-api';
 import { organizationsQueryOptions } from '@/lib/organization-api';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { InviteDialog } from '@/components/admin/invite-dialog';
-import { PendingInvitationsPanel } from '@/components/admin/pending-invitations-panel';
+import { InviteDialog } from '@/components/invite/invite-dialog';
+import {
+	PendingInvitationsPanel,
+	type TInvitationSource,
+} from '@/components/admin/pending-invitations-panel';
 import { useActiveOrganizationId } from '@/lib/use-active-organization';
 import { usePermission } from '@/lib/use-permission';
 import { humanizeIdentifier } from '@/lib/format';
@@ -221,6 +228,20 @@ function UsersPage() {
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
+
+	// Invitations here are application-wide: the panel's endpoints are
+	// `/admin/invitations`, which only a global admin can reach.
+	const invitationSource: TInvitationSource = {
+		queryOptions: {
+			queryKey: ['admin-invitations', organizationId, 'pending'],
+			queryFn: () => listInvitations(organizationId!, { status: 'pending' }),
+			staleTime: 15 * 1000,
+		},
+		resend: (invitationId) => resendInvitation(organizationId!, invitationId),
+		cancel: (invitationId) => cancelInvitation(organizationId!, invitationId),
+		remove: (invitationId) => deleteInvitation(organizationId!, invitationId),
+		invalidate: [['admin-invitations'], ['admin-audit']],
+	};
 
 	if (!organizationId) {
 		return (
@@ -442,11 +463,12 @@ function UsersPage() {
 				</CardContent>
 			</Card>
 
-			<PendingInvitationsPanel organizationId={organizationId} />
+			<PendingInvitationsPanel source={invitationSource} />
 
 			{canInvite && (
 				<InviteDialog
-					organizationId={organizationId}
+					mode='admin'
+					organizationId={organizationId ?? undefined}
 					open={inviteOpen}
 					onOpenChange={setInviteOpen}
 					onInvited={() => void refresh()}

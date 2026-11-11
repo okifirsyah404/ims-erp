@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { organizationRoleSchema } from '@ims-erp/common';
+import { isValidPhoneNumber } from 'libphonenumber-js/min';
 
 /**
  * Request/response contracts for the user-management invitation API.
@@ -49,6 +50,25 @@ export const invitationQuerySchema = z.object({
 export type TInvitationQuery = z.infer<typeof invitationQuerySchema>;
 
 /**
+ * Phone numbers are stored as E.164 (`+6281234567890`) so the unique index
+ * and the planned phone login see one canonical form per subscriber.
+ *
+ * @remarks
+ * The claim form normalizes before submitting, but the backend re-parses:
+ * the browser is not a trust boundary. A number without a country prefix is
+ * rejected rather than guessed - the caller picked the country explicitly.
+ */
+const e164PhoneSchema = z
+	.string()
+	.min(6)
+	.max(20)
+	.transform((value) => value.replace(/[\s()\-]/g, ''))
+	.refine(
+		(value) => value.startsWith('+') && isValidPhoneNumber(value),
+		'Enter a valid phone number in international format',
+	);
+
+/**
  * Public claim body (form 1). No token in the body — the token travels in
  * the URL path and is validated before these fields are ever parsed.
  */
@@ -65,11 +85,7 @@ export const claimInvitationSchema = z.object({
 			'Use 3-30 letters, numbers or underscores',
 		),
 	password: z.string().min(8).max(72),
-	phone: z
-		.string()
-		.min(6)
-		.max(20)
-		.regex(/^[+0-9()\-\s]+$/, 'Invalid phone number'),
+	phone: e164PhoneSchema,
 });
 export type TClaimInvitation = z.infer<typeof claimInvitationSchema>;
 

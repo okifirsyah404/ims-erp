@@ -297,14 +297,36 @@ export async function resendInvitation(
 /** Backend cap on one bulk batch (locked decision D13). */
 export const BULK_INVITE_LIMIT = 100;
 
+/** How the pasted rows are interpreted. */
+export type TBulkInviteMode = 'admin' | 'org';
+
+export type TBulkInviteParseOptions = {
+	/**
+	 * `admin` rows are `email, name, org-code, role` (org code empty means an
+	 * application-level invite); `org` rows are `email, name, role` and are
+	 * pinned to `organizationId`.
+	 */
+	mode: TBulkInviteMode;
+	/** Pinned organization for `org` mode. */
+	organizationId?: string;
+	/** Role used when a row does not specify one (and the row has an org). */
+	organizationRole?: string;
+	/** Resolves a pasted organization code (slug) to its id; null if unknown. */
+	resolveOrganizationCode?: (code: string) => string | null;
+};
+
 /**
  * Parses pasted bulk-invite rows.
  *
  * @remarks
- * One row per line, comma-separated: `email[, name[, role]]`. Rows may also
- * be a bare email list. `role` is matched case-insensitively against the
- * fixed `erpRoleNames` enum — the backend contract takes `organizationRole`,
- * not a role id.
+ * One row per line, comma-separated. `admin` mode reads
+ * `email, name, org-code, role`; `org` mode reads `email, name, role` (the
+ * organization comes from the dialog context, never the row).
+ *
+ * Row errors are isolated: a bad email or an unknown organization code drops
+ * that row and reports it, while the remaining rows still go out — the same
+ * per-row isolation the backend applies. `error` is reserved for a batch-level
+ * failure (nothing pasted, too many rows).
  *
  * Unknown role names are deliberately NOT dropped here: the row is sent
  * without an `organizationRole` (or with the default), and the backend's
@@ -312,43 +334,68 @@ export const BULK_INVITE_LIMIT = 100;
  */
 export function parseBulkInviteRows(
 	pasted: string,
-	options: {
-		organizationId: string;
-		/** Role used when a row does not specify one. */
-		organizationRole?: string;
-	},
-): { rows: TInviteInput[]; error: string | null } {
+	options: TBulkInviteParseOptions,
+): { rows: TInviteInput[]; rowErrors: string[]; error: string | null } {
 	const lines = pasted
 		.split(/\r?\n/)
 		.map((line) => line.trim())
 		.filter(Boolean);
 
-	if (lines.length === 0) return { rows: [], error: 'Paste at least one row' };
+	if (lines.length === 0) {
+		return { rows: [], rowErrors: [], error: 'Paste at least one row' };
+	}
 	if (lines.length > BULK_INVITE_LIMIT) {
 		return {
 			rows: [],
+			rowErrors: [],
 			error: `Too many rows (${lines.length}); the limit is ${BULK_INVITE_LIMIT}`,
 		};
 	}
 
 	const rows: TInviteInput[] = [];
+	const rowErrors: string[] = [];
 	for (const [index, line] of lines.entries()) {
-		const [rawEmail, rawName, rawRole] = line
-			.split(',')
-			.map((part) => part.trim());
+		const parts = line.split(',').map((part) => part.trim());
+		const [rawEmail, rawName] = parts;
+		const isAdmin = options.mode === 'admin';
+		const rawCode = isAdmin ? parts[2] : undefined;
+		const rawRole = isAdmin ? parts[3] : parts[2];
+
 		if (!rawEmail || !rawEmail.includes('@')) {
-			return { rows: [], error: `Row ${index + 1}: "${line}" has no valid email` };
+			rowErrors.push(`Row ${index + 1}: "${line}" has no valid email`);
+			continue;
 		}
+
+		// Admin rows: an empty code is an explicit application-level invite.
+		let organizationId: string | undefined;
+		if (isAdmin) {
+			if (rawCode) {
+				const resolved = options.resolveOrganizationCode?.(rawCode) ?? null;
+				if (!resolved) {
+					rowErrors.push(
+						`Row ${index + 1}: unknown organization code "${rawCode}"`,
+					);
+					continue;
+				}
+				organizationId = resolved;
+			}
+		} else {
+			organizationId = options.organizationId;
+		}
+
 		rows.push({
 			email: rawEmail,
 			// `name` is required by the backend contract; a bare-email row
 			// defaults to the local part, matching the service's own fallback.
 			name: rawName || rawEmail.split('@')[0]!,
-			organizationId: options.organizationId,
-			organizationRole: resolveOrganizationRole(rawRole, options),
+			organizationId,
+			// A role only means something inside an organization.
+			organizationRole: organizationId
+				? resolveOrganizationRole(rawRole, options)
+				: undefined,
 		});
 	}
-	return { rows, error: null };
+	return { rows, rowErrors, error: null };
 }
 
 /**

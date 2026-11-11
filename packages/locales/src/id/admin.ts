@@ -61,6 +61,19 @@ const admin_: Record<keyof typeof admin, string> = {
 	'invite.sentMixed': '{{succeeded}} terkirim, {{failed}} gagal',
 	'invite.emailRequired': 'Email wajib diisi',
 	'invite.nameRequired': 'Nama wajib diisi',
+	'invite.organization': 'Organisasi',
+	'invite.organizationPlaceholder': 'Cari organisasi…',
+	'invite.organizationEmpty': 'Organisasi tidak ditemukan.',
+	'invite.noOrganization': 'Tanpa organisasi (tingkat aplikasi)',
+	'invite.rowsPlaceholderAdmin':
+		'email@perusahaan.com, Budi Santoso, kode-organisasi, member',
+	'invite.rowsHintAdmin':
+		'Satu per baris: <code>email, nama, kode organisasi, peran</code>. Kosongkan kode organisasi untuk mengundang tanpa organisasi. Kode yang tidak dikenali hanya menggagalkan baris itu.',
+	'invite.rowsEmpty': 'Tidak ada baris valid untuk dikirim.',
+	'accessDenied.title': 'Perlu akses administrator',
+	'accessDenied.description':
+		'Halaman ini hanya untuk administrator aplikasi. Anggota dan undangan organisasi dikelola dari halaman organisasi.',
+	'accessDenied.back': 'Kembali ke dasbor',
 
 	'invitations.title': 'Undangan tertunda',
 	'invitations.description':
@@ -151,19 +164,6 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgEdit.details': 'Detail organisasi',
 	'orgEdit.name': 'Nama',
 	'orgEdit.saved': 'Organisasi diperbarui',
-
-	'memberNew.title': 'Undang anggota',
-	'memberNew.description':
-		'Mengirim email undangan dan menambahkan orang tersebut ke organisasi ini dengan peran yang dipilih setelah mereka menerima undangan.',
-	'memberNew.membership': 'Undangan',
-	'memberNew.membershipDescription':
-		'Penerima undangan mendapat tautan untuk menyiapkan akunnya; peran diterapkan saat undangan diklaim.',
-	'memberNew.name': 'Nama lengkap',
-	'memberNew.email': 'Alamat email',
-	'memberNew.role': 'Peran',
-	'memberNew.submit': 'Kirim undangan',
-	'memberNew.sending': 'Mengirim…',
-	'memberNew.invited': 'Undangan terkirim',
 
 	'memberEdit.title': 'Ubah anggota',
 	'memberEdit.description':

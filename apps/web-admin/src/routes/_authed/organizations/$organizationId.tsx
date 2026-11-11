@@ -34,6 +34,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@ims-erp/ui/components
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { OrganizationMemberCard } from '@/components/organization';
+import { InviteDialog } from '@/components/invite/invite-dialog';
+import {
+	PendingInvitationsPanel,
+	type TInvitationSource,
+} from '@/components/admin/pending-invitations-panel';
+import {
+	cancelOrgInvitation,
+	deleteOrgInvitation,
+	listOrgInvitations,
+	resendOrgInvitation,
+} from '@/lib/org-invitation-api';
 import {
 	deleteOrganization,
 	organizationMembersQueryOptions,
@@ -71,6 +82,26 @@ function OrganizationDetailPage() {
 
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [deleting, setDeleting] = useState(false);
+	const [inviteOpen, setInviteOpen] = useState(false);
+
+	// Invitations for THIS organization: org admins reach them without the
+	// application-admin-only `/admin/invitations` surface.
+	const invitationSource: TInvitationSource = {
+		queryOptions: {
+			queryKey: ['org-invitations', organizationId, 'pending'],
+			queryFn: () =>
+				listOrgInvitations(organizationId, { status: 'pending' }),
+			staleTime: 15 * 1000,
+		},
+		resend: (invitationId) => resendOrgInvitation(organizationId, invitationId),
+		cancel: (invitationId) => cancelOrgInvitation(organizationId, invitationId),
+		remove: (invitationId) => deleteOrgInvitation(organizationId, invitationId),
+		invalidate: [
+			['org-invitations'],
+			['admin-audit'],
+			['organizations', organizationId, 'members'],
+		],
+	};
 
 	// Child routes (edit, members/new, members/$memberId/edit) render instead
 	// of the detail page. The last match's routeId tells us which page is the
@@ -267,15 +298,7 @@ function OrganizationDetailPage() {
 								</p>
 							</div>
 							{canManageMembers && (
-								<Button
-									className='shrink-0'
-									render={
-										<Link
-											to='/organizations/$organizationId/members/new'
-											params={{ organizationId }}
-										/>
-									}
-								>
+								<Button className='shrink-0' onClick={() => setInviteOpen(true)}>
 									{t('orgDetail.addMember')}
 								</Button>
 							)}
@@ -323,8 +346,26 @@ function OrganizationDetailPage() {
 							</div>
 						)}
 					</Card>
+					<PendingInvitationsPanel source={invitationSource} />
 				</TabsContent>
 			</Tabs>
+
+			{canManageMembers && (
+				<InviteDialog
+					mode='org'
+					organizationId={organizationId}
+					open={inviteOpen}
+					onOpenChange={setInviteOpen}
+					onInvited={() =>
+						void Promise.all([
+							queryClient.invalidateQueries({
+								queryKey: ['organizations', organizationId, 'members'],
+							}),
+							queryClient.invalidateQueries({ queryKey: ['org-invitations'] }),
+						])
+					}
+				/>
+			)}
 		</div>
 	);
 }
