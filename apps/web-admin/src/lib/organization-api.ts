@@ -16,6 +16,10 @@ export type TOrganization = {
 	id: string;
 	name: string;
 	slug: string;
+	/**
+	 * Presigned image URL on list responses (the backend signs the stored
+	 * object key on read, since the client cannot). `null` when unset.
+	 */
 	logo: string | null;
 	metadata: Record<string, unknown> | null;
 	createdAt: string;

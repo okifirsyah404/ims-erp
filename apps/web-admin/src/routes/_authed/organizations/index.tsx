@@ -1,12 +1,14 @@
 import { toast } from '@/components/toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useSession } from '@/lib/auth-client';
 import {
 	organizationsQueryOptions,
 	restoreOrganization,
+	type TOrganization,
 } from '@/lib/organization-api';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
@@ -35,6 +37,38 @@ function placeholderProjectCount(organizationId: string): number {
 		hash = (hash * 31 + organizationId.charCodeAt(index)) >>> 0;
 	}
 	return hash % 25;
+}
+
+/**
+ * Organization logo thumbnail for the list card.
+ *
+ * @remarks
+ * `logo` arrives presigned (the backend signs the stored object key on read,
+ * because the browser cannot). A signed URL can still fail — expired on a
+ * long-lived tab, or the object was removed out of band — so a load error
+ * falls back to the name initial instead of a broken-image icon.
+ */
+function OrganizationLogo({ organization }: { organization: TOrganization }) {
+	const [failed, setFailed] = useState(false);
+	const showImage = Boolean(organization.logo) && !failed;
+	return (
+		<div className='flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted'>
+			{showImage ? (
+				<img
+					src={organization.logo ?? ''}
+					alt={organization.name}
+					loading='lazy'
+					decoding='async'
+					className='size-full object-cover'
+					onError={() => setFailed(true)}
+				/>
+			) : (
+				<span className='text-sm font-semibold'>
+					{organization.name.slice(0, 1).toUpperCase()}
+				</span>
+			)}
+		</div>
+	);
 }
 
 function OrganizationsPage() {
@@ -85,23 +119,10 @@ function OrganizationsPage() {
 							to='/organizations/$organizationId'
 							params={{ organizationId: org.id }}
 							className='group'
-						>
-							<Card className='h-full transition-shadow group-hover:shadow-md'>
+						>							<Card className='h-full transition-shadow group-hover:shadow-md'>
 								<CardHeader className='flex items-center gap-3 space-y-0'>
-									<div className='flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted'>
-										{org.logo ? (
-											<img
-												src={org.logo}
-												alt={org.name}
-												className='size-full object-cover'
-											/>
-										) : (
-											<span className='text-sm font-semibold'>
-												{org.name.slice(0, 1).toUpperCase()}
-											</span>
-										)}
-									</div>
-									<div className='flex flex-col gap-0.5'>
+									<OrganizationLogo organization={org} />
+									<div className='flex min-w-0 flex-col gap-0.5'>
 										<CardTitle className='truncate text-base'>
 											{org.name}
 										</CardTitle>

@@ -55,7 +55,9 @@ Last synced: 2026-11-08.
   decision; `POST /organizations` still accepts `users` for API callers) and
   the image input downscales to 512px client-side, caps the source at 20MB and
   falls back to the generated key `logo-generated.webp` behind a conditional
-  `logo IS NULL` write. Evidence: progress 2026-11-12.
+  `logo IS NULL` write. The organization list presigns each card logo on the
+  server (a raw object key rendered as a broken image) with an initials fallback
+  on load error. Evidence: progress 2026-11-12 and 2026-11-13.
 
 
 ## M02 CRM and Sales

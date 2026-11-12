@@ -12,9 +12,10 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
-Status: **verified** (2026-11-12) — live walk-through done: upload via the
-edit page renders the WebP from MinIO (screenshot evidence); create page has
-the image picker + nested users; detail page no longer hosts the card.
+Status: **verified** (2026-11-13) — live walk-through done: upload via the
+edit page renders the WebP from MinIO, and the `/organizations` list renders
+every card logo from a presigned URL; create page has the image picker only
+(nested users removed 2026-11-12); detail page no longer hosts the card.
 Object key is `organizations/<organizationId>/logo.webp` (plural, matching
 `users/<id>/avatar.webp`).
 
@@ -28,6 +29,43 @@ seed admin, POSTed a canvas-encoded WebP to
 GET returned a MinIO presigned URL, and the edit page rendered the image
 (72px preview, Replace/Delete buttons). `docs/plan/backlog.md` ERP-0041 →
 **verified**.
+
+## 2026-11-13 - `/organizations` list: logos presigned server-side
+
+The list cards were broken because `GET /organizations` returned the stored
+**object key** (`organizations/<id>/logo.webp`) where the UI expects a URL — the
+browser cannot sign a SigV4 GET, so every thumbnail was a broken image while the
+detail page (which presigns through `GET …/image-profile`) worked.
+
+- `OrganizationService.listOrganizations` now presigns `logo` per row
+  (`row.logo ? presignObjectUrl(row.logo) : null`), matching `listMembers`,
+  which already presigns member avatars. `TOrganization.logo` is documented as
+  a presigned URL on list responses.
+- `apps/web-admin/src/routes/_authed/organizations/index.tsx` gained
+  `OrganizationLogo`: a load error falls back to the name initial instead of a
+  broken-image icon (a signed URL still expires on a long-lived tab), plus
+  `loading='lazy'`/`decoding='async'` and `min-w-0` so long names truncate.
+
+Verified live (dev servers, seed admin): all four cards render
+`https://minio-s3.okifirsyah.my.id/ims-erp-local/organizations/<id>/logo.webp?X-Amz-Signature=…`
+with `naturalWidth > 0`; the seed org's image is 100×100, uploads 512×320.
+New unit test asserts the presign (raw key would fail the match) and that a
+`null` logo stays `null`: backend **839 pass / 0 fail**, web-admin **62 pass**,
+`tsc -b --noEmit` clean in both workspaces.
+
+`docs/database/` was reviewed and is unchanged: the fix is a read-path
+transformation (key → presigned URL), no table, column, index, constraint,
+logical reference, or status vocabulary moved.
+
+Known limitation (pre-existing, not fixed here): `GET /organizations` sits
+behind `erpGuard`, so it 403s when the session has no active organization —
+which is exactly the state after deleting the active organization
+(`deleteOrganization` calls `setActive(null)`). The list page then shows
+"No organizations yet" although rows exist; a re-login re-activates the first
+membership (`sessionAutoActivateOrganizationHook`) and heals it. Making the
+admin list session-scoped instead of organization-scoped needs a decision
+because the same endpoint also serves the org switcher, the invite dialog, and
+the warehouse-organization tab.
 
 ## 2026-11-12 - Create-org page: invitations dropped, single-card layout, robust image input
 

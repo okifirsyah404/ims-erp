@@ -286,6 +286,30 @@ describe('org-logo worker (ERP-0041)', () => {
 		]);
 	});
 
+	test('listOrganizations presigns the stored logo key, not the raw key', async () => {
+		const row = (logo: string | null) => ({
+			id: 'org-1',
+			name: 'Org',
+			slug: 'org',
+			logo,
+			deletedAt: null,
+		});
+		const { service } = makeService({
+			repository: {
+				paginate: async () => ({
+					data: [row('organizations/org-1/logo.webp'), row(null)],
+					meta: { page: 1, limit: 20, total: 2, totalPages: 1 },
+				}),
+			} as unknown as IOrganizationRepository,
+		});
+		const page = await service.listOrganizations({ page: 1, limit: 20 });
+		// The browser cannot sign, so a raw key would render as a broken image.
+		expect(page.data[0]?.logo).toMatch(
+			/organizations\/org-1\/logo\.webp\?.*X-Amz-Signature=/,
+		);
+		expect(page.data[1]?.logo).toBeNull();
+	});
+
 	test('logo API URL is deterministic on the slug (seed=slug, initials/webp, 256px)', async () => {
 		const { orgLogoApiUrl } = await import('../../src/app/organization/queues/org-logo.worker');
 		const url = orgLogoApiUrl('https://api.dicebear.com/', 'my-org');

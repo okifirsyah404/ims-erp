@@ -235,11 +235,24 @@ export class OrganizationService {
 
 	/**
 	 * Paginated organization listing (soft-deleted excluded unless asked).
+	 *
+	 * @remarks
+	 * `logo` is presigned here: the column stores an object key (never an
+	 * expiring URL), but a list card renders the image directly, and a client
+	 * cannot sign. Same convention as member avatars in
+	 * {@link listMembers}.
 	 */
 	async listOrganizations(
 		request: TOrganizationPaginationRequest,
 	): Promise<TPaginationResult<TOrganizationWithCounts>> {
-		return this.repository.paginate(request);
+		const page = await this.repository.paginate(request);
+		return {
+			...page,
+			data: page.data.map((row) => ({
+				...row,
+				logo: row.logo ? presignObjectUrl(row.logo) : null,
+			})),
+		};
 	}
 
 	/**
