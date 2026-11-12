@@ -164,6 +164,7 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgImage.uploading': 'Mengunggah…',
 	'orgImage.uploaded': 'Gambar profil diperbarui',
 	'orgImage.cleared': 'Gambar profil dihapus',
+	'orgImage.removeSelection': 'Buang pilihan',
 	'orgs.stats.members': 'Anggota',
 	'orgs.stats.warehouses': 'Gudang',
 	'orgs.stats.projects': 'Proyek',

@@ -52,7 +52,6 @@ import {
 	organizationsQueryOptions,
 } from '@/lib/organization-api';
 import { usePermission } from '@/lib/use-permission';
-import { OrganizationImageCard } from '@/components/organization/org-image-card';
 
 export const Route = createFileRoute('/_authed/organizations/$organizationId')({
 	component: OrganizationDetailPage,
@@ -269,10 +268,6 @@ function OrganizationDetailPage() {
 					)}
 				</TabsList>
 				<TabsContent value='info' className='flex flex-col gap-6'>
-					<OrganizationImageCard
-						organizationId={organizationId}
-						canUpdate={canUpdate}
-					/>
 					<OrganizationDashboard
 						name={organization.name}
 						slug={organization.slug}

@@ -159,6 +159,7 @@ const admin = {
 	'orgImage.uploading': 'Uploading…',
 	'orgImage.uploaded': 'Profile image updated',
 	'orgImage.cleared': 'Profile image removed',
+	'orgImage.removeSelection': 'Remove selected',
 	'orgs.stats.members': 'Members',
 	'orgs.stats.warehouses': 'Warehouses',
 	'orgs.stats.projects': 'Projects',

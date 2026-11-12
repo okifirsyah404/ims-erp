@@ -21,6 +21,7 @@ import {
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { OrganizationImageCard } from '@/components/organization/org-image-card';
 import {
 	organizationQueryOptions,
 	updateOrganization,
@@ -86,11 +87,14 @@ function EditOrganizationPage() {
 					<CardTitle>{t('orgEdit.details')}</CardTitle>
 				</CardHeader>
 				<CardContent>
+					<OrganizationImageCard
+						organizationId={organizationId}
+						canUpdate
+					/>
 					<form onSubmit={handleSubmit}>
 						<FieldGroup>
 							<Field>
-								<FieldLabel htmlFor='name'>{t('orgEdit.name')}</FieldLabel>
-								<Input
+								<FieldLabel htmlFor='name'>{t('orgEdit.name')}</FieldLabel>								<Input
 									id='name'
 									value={name}
 									required

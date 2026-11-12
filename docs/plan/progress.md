@@ -12,9 +12,20 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
-Status: **implemented** — backend + migration verified + web-admin UI +
-backend unit tests + CI green. Not yet `verified` (no live browser
-walk-through).
+Status: **verified** (2026-11-12) — live walk-through done: upload via the
+edit page renders the WebP from MinIO (screenshot evidence); create page has
+the image picker + nested users; detail page no longer hosts the card.
+
+Image card placement fix (same day, user feedback): the profile-image card
+moved from the org **detail** page to the **edit** page, and the create page
+gained an optional image picker (file is client-encoded WebP and uploaded
+right after the org exists, since the endpoints are id-scoped).
+Verified live in the browser (dev servers already running): logged in as the
+seed admin, POSTed a canvas-encoded WebP to
+`/organizations/:id/image-profile` → 200 `imageKey: organization/<id>/logo.webp`,
+GET returned a MinIO presigned URL, and the edit page rendered the image
+(72px preview, Replace/Delete buttons). `docs/plan/backlog.md` ERP-0041 →
+**verified**.
 
 ## 2026-11-12 - ERP-0041 CI unblocking (three rounds, pushed to PR #82)
 

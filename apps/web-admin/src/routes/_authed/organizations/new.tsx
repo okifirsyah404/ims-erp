@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { toast } from '@/components/toast';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@ims-erp/ui/components/button';
 import {
@@ -20,7 +20,9 @@ import { Input } from '@ims-erp/ui/components/input';
 import { erpRoleLabel, erpRoleNames } from '@ims-erp/common';
 import {
 	createOrganization,
+	encodeWebp,
 	organizationsQueryOptions,
+	uploadOrganizationImage,
 } from '@/lib/organization-api';
 
 /** One nested-user row in the create form (ERP-0041). */
@@ -109,6 +111,10 @@ function NewOrganizationPage() {
 	const [users, setUsers] = useState<
 		Array<{ email: string; name: string; roles: string[] }>
 	>([]);
+	// Optional profile image (ERP-0041): uploaded right after the org is
+	// created, since the image endpoints are organization-id-scoped.
+	const [imageFile, setImageFile] = useState<File | null>(null);
+	const imageInput = useRef<HTMLInputElement>(null);
 
 	function addUser() {
 		setUsers((current) => [...current, { email: '', name: '', roles: ['member'] }]);
@@ -139,6 +145,20 @@ function NewOrganizationPage() {
 				users: users.length > 0 ? users : undefined,
 			});
 			if (!created) throw new Error(t('common:error.failed'));
+			// Optional profile image picked in the create form: upload after
+			// the org exists (image endpoints are id-scoped).
+			if (imageFile) {
+				try {
+					const webp = await encodeWebp(imageFile);
+					await uploadOrganizationImage(created.organization.id, webp);
+				} catch (error) {
+					toast.error(
+						error instanceof Error
+							? error.message
+							: t('common:error.failed'),
+					);
+				}
+			}
 			toast.success(t('orgs.created'));
 			// Surface the per-item outcomes (ERP-0041) without blocking the
 			// redirect.
@@ -248,6 +268,38 @@ function NewOrganizationPage() {
 								}
 							/>
 						))}
+					</div>
+					<div className='flex gap-2'>
+						<input
+							ref={imageInput}
+							type='file'
+							accept='image/*'
+							hidden
+							onChange={(event) => {
+								setImageFile(event.target.files?.[0] ?? null);
+								event.target.value = '';
+							}}
+						/>
+						<Button
+							type='button'
+							variant='outline'
+							size='sm'
+							onClick={() => imageInput.current?.click()}
+						>
+							{imageFile
+								? imageFile.name
+								: t('orgImage.upload')}
+						</Button>
+						{imageFile && (
+							<Button
+								type='button'
+								variant='ghost'
+								size='sm'
+								onClick={() => setImageFile(null)}
+							>
+								{t('orgImage.removeSelection')}
+							</Button>
+						)}
 					</div>
 					<div className='flex gap-2'>
 						<Button type='submit' disabled={pending || !name || !slug || duplicateEmails}>
