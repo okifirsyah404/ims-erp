@@ -30,7 +30,7 @@ import {
 	uploadOrganizationImage,
 	updateOrganization,
 } from '@/lib/organization-api';
-import { encodeWebp } from '@/lib/image-file';
+import { encodeImage } from '@/lib/image-file';
 import { ImageDropzone } from '@/components/organization/image-dropzone';
 
 export const Route = createFileRoute('/_authed/organizations/$organizationId/edit')(
@@ -188,16 +188,14 @@ function EditImagePicker({ organizationId }: { organizationId: string }) {
 	async function handleFile(file: File) {
 		setUploading(true);
 		try {
-			let webp: Blob;
-			try {
-				webp = await encodeWebp(file);
-			} catch {
-				// Undecodable source (HEIC, corrupt bytes): the browser never
-				// produced a bitmap, so the server was not involved.
+			// Undecodable source (corrupt bytes, format this browser cannot
+			// render): the server was never reached.
+			const encoded = await encodeImage(file).catch(() => null);
+			if (!encoded) {
 				toast.error(t('orgImage.decodeFailed'));
 				return;
 			}
-			await uploadOrganizationImage(organizationId, webp);
+			await uploadOrganizationImage(organizationId, encoded.blob);
 			toast.success(t('orgImage.uploaded'));
 			invalidate();
 		} catch (error) {

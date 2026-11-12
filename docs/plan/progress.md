@@ -12,6 +12,59 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-13 - merge `main` into `refactor/company-document-numbering`
+
+Status: **in-progress** - merge resolved and verified locally; merge commit
+not yet created. `main` brought 21 commits (organization hardening PR #82,
+server-side WebP normalisation, dependabot bumps).
+
+Resolution, by conflict:
+- **Images:** `main`'s server-side WebP normalisation (`utils/image.util.ts`)
+  is the storage path for every image. The client keeps its WebP encode:
+  `encodeWebp` (document logo/signature, 1024px cap, WebP only) and
+  `encodeImage` (`main`, WebP or PNG fallback, organization images). Both share
+  `decodeImage`/`scaleToCanvas`/`toBlob`. `DOCUMENT_IMAGE_MAX_BYTES` stays 2 MB,
+  the cap on the converted output.
+- **Schema:** `company.*` from the branch (ERP-0042) wins. `main`'s
+  `organization.company_profiles` / `company_bank_accounts` moved to
+  `company.profiles` / `company.bank_accounts`. Duplicate `company.bank_accounts`
+  from `main` dropped. `company.profiles` keeps `logo_object_key` with `main`'s
+  WebP note; email/phone/website stay in `company.contacts` (branch decision).
+- **Files removed by the branch:** 14 `organization/*company-profile*`,
+  `numbering*`, `document-sequence*` files are deleted by ERP-0042 and not
+  modified by `main` since the merge base (checked per file), so nothing is
+  lost. The one `main` change to `company-profile.service.test.ts` (real PNG,
+  `.webp` expectation) is ported into `company.service.test.ts`.
+- **Backlog ID collision:** `main` used ERP-0042 for the dependabot bun config;
+  the branch uses ERP-0042 for the organization split. Dependabot is renamed
+  **ERP-0046**. ERP-0041 row is `main`'s text.
+- **Locales:** `common.imageInvalid` / `fileInvalid` from `main`. `image.*`
+  keys stay on the branch values (2 MB for converted output, 20 MB source).
+
+Verification (2026-11-13, after resolution):
+- `bunx tsc --noEmit` (backend): exit 0. One test error fixed: a stale
+  `CompanyProfileService` name in `company.service.test.ts`.
+- `bun test` (backend): 863 pass, 0 fail, 60 files (branch was 856).
+- web-admin `bunx tsc -p tsconfig.app.json --noEmit`: exit 0; `bun test`: 70 pass.
+- `packages/locales` `bun test`: 86 pass (parity, dead keys).
+- `bun run lint`: exit 0, 0 errors (warnings only, pre-existing).
+- `bun docs/database/gen-logical-references.ts`: 526 refs, 41 targets, no diff
+  against the resolved file.
+- `bun docs/database/validate-dbml.ts`: `OK` (268 tables, 231 refs, 0 cross-module, 0 timestamp gaps).
+- No conflict markers left in `apps/`, `packages/`, `docs/`; `git ls-files -u` empty.
+
+Migration order: `main` ends at `20261113090000_erp0041_org_description`, which
+the branch already contains. The branch's five `20261113*` migrations are
+branch-only, so there is no sort collision.
+
+- web-admin `bunx vite build`: exit 0 (4342 modules, 2026-11-13).
+
+Not verified: a browser walk-through of the image flows after the merge.
+
+Next executable task: finish the merge commit after the migration check, then
+**ERP-0045** (settings KV CRUD) - still waiting on the five open questions.
+
+
 Status: **implemented** (2026-11-13) - ERP-0044 wires the document registry
 (11 outward-facing types), `document.files`, public share links and the
 `/documents/$documentId` detail page. Backend 856 tests, web-admin 66, locales
@@ -165,7 +218,10 @@ edit page renders the WebP from MinIO, and the `/organizations` list renders
 every card logo from a presigned URL; create page has the image picker only
 (nested users removed 2026-11-12); detail page no longer hosts the card.
 Object key is `organizations/<organizationId>/logo.webp` (plural, matching
-`users/<id>/avatar.webp`).
+`users/<id>/avatar.webp`). The server, not the user, owns image format: every
+stored image (org logo, generated DiceBear logo/avatar, user avatar, document
+images) is WebP produced by `toWebp` from PNG/JPG/WebP/GIF/BMP/TIFF/HEIC/AVIF
+input (2026-11-13, below).
 
 Image card placement fix (same day, user feedback): the profile-image card
 moved from the org **detail** page to the **edit** page, and the create page
@@ -281,6 +337,70 @@ added; `api` keys `company.profileRequired` / `numbering.unknownCodeType` /
 **Deliberately not done:** PDF rendering of `document.documents` (explicitly out
 of scope), item/asset code generation per kind (deferred here, landed as
 ERP-0043 - see above), and no browser walk-through of the moved pages yet.
+
+## 2026-11-13 - Images: the server normalises every upload and generated image
+
+User request: stop asking people to convert images to WebP by hand — the web
+admin converts on upload when it can, the backend converts always.
+
+- **New `apps/backend/src/utils/image.util.ts`** (zero new dependencies):
+  `sniffImageType` (magic bytes → png/jpeg/webp/gif/bmp/tiff/heic/avif),
+  `toWebp(bytes, { maxSize, quality })` and `fileBytes`. `toWebp` decodes with
+  Bun's built-in `Bun.Image` (verified on Bun 1.4.4: decodes JPEG/PNG/WebP/GIF/
+  BMP/TIFF/HEIC/AVIF and emits `RIFF…WEBP`), downscales the longest side and
+  re-encodes — which also strips EXIF/GPS and any appended payload. Undecodable
+  bytes throw `UnsupportedImageError`.
+- **The server is the format authority now:** `OrganizationService.setImage`,
+  `UserService.setSelfAvatar` (`users/<id>/avatar-custom.webp`, 144px),
+  `storeDocumentImage` (`<prefix>/<uuid>.webp`) and both DiceBear workers
+  (`org-logo` 256px, `avatar` 72px) pass bytes through `toWebp`. Deleted:
+  `isWebpBuffer`, the org `isSupportedImage` helper and the hand-rolled
+  `AVATAR_TYPE_TO_EXT`/`AVATAR_MAGIC_BYTES`/`sniffAvatarType` table. The 2 MB
+  upload cap is unchanged. `IObjectStorage.put` accepts `Blob | Uint8Array` so
+  normalised bytes are written without a `Blob` copy. Old rows keep working:
+  the DB stores object keys, so `avatar-custom.png` / `<uuid>.png` stay valid.
+- **Web admin:** `encodeWebp` (organization-api) and `compressAvatar`
+  (user-api) collapsed into one `encodeImage` in `lib/image-file.ts` —
+  downscales to 512px, returns WebP when the browser can encode it and PNG
+  otherwise, and decodes through `<img>` when `createImageBitmap` rejects the
+  format. Call sites: org create, org edit, org image card, profile avatar,
+  document images. `uploadOrganizationImage` names the part from the blob type.
+  Profile/document pickers accept the formats the backend decodes.
+- **Locales (`en` + `id`):** `common.imageInvalid`, `user.avatarUnsupportedType`,
+  `profile.avatarInvalidType`, `profile.avatarHint`, `common.image.hint`,
+  `common.image.tooLarge`, `orgImage.description`, `orgImage.decodeFailed`.
+- **Bug found by the live check:** `POST /users/me/avatar` returned
+  `500 Body already used` — the handler called `request.formData()` after
+  Elysia had already parsed the multipart body. It now reads the parsed `body`
+  (`avatarFileFrom`), like every other upload route.
+
+Verification:
+
+- `bun test` backend **849 pass / 0 fail** (new `test/unit/image.util.test.ts`,
+  9 tests: sniffing incl. ISO-BMFF brands, PNG/JPEG→WebP, WebP re-encode,
+  size ceiling, garbage bytes; `organization-create-nested.test.ts` and
+  `company-profile.service.test.ts` updated for WebP keys and decode-time
+  format rejection), web-admin **66 pass** (new
+  `test/unit/encode-image.test.ts`: WebP path, PNG fallback, `<img>` decode
+  fallback, nothing-encodable), `packages/locales` **82 pass**.
+- `bunx tsc -b --noEmit` clean in `apps/backend`, `apps/web-admin`,
+  `packages/locales`; `bun run lint` shows only the pre-existing warnings.
+- Live (dev servers, seed admin, `bun run --watch` picked the change up):
+  PNG 900×600 → org `image-profile` 200, stored key
+  `organizations/<id>/logo.webp`, fetched bytes `RIFF/WEBP`, 512×341;
+  JPEG 800×800 → `/users/me/avatar` 200 → `users/<id>/avatar-custom.webp`,
+  144×144; PNG 640×400 → `PUT /company-profile/logo` 200 →
+  `company/logo/<uuid>.webp`, 512×320; the same PNGs dropped into the edit
+  page and the profile page preview from the presigned URL. Rejections:
+  PDF bytes to the org image → 422 `common.imageInvalid`; garbage bytes to the
+  avatar → 415; 2 MB + 10 bytes → 413.
+- `docs/database/` reviewed: one note changed (no table/column/index/constraint)
+  — `company_profile.logo_object_key` now documents the WebP normalisation.
+  `bun docs/database/gen-logical-references.ts` regenerated 533 refs;
+  `bun docs/database/validate-dbml.ts` → `OK: 0 cross-module refs, 0 timestamp
+  gaps`. That validator had been failing on `main` with a `hr.bank_accounts`
+  vs `company.bank_accounts` bare-name duplicate; both tables are real and
+  always schema-qualified, so `bank_accounts` joined `DUP_ALLOWED` with a note.
 
 ## 2026-11-13 - Organization description field (create / detail / edit)
 
@@ -981,6 +1101,45 @@ membership), unit-tested; reviewer sign-off and PR still open. Branch
   pending user (`deleted_at` set on both). Same account hitting `/admin/users`
   gets the in-place 403. `GET /organizations/:id/invitations` unauthenticated
   → 401 envelope.
+
+## 2026-11-13 - ERP-0046: dependabot bun config moved to the workspace root
+
+Status: in-progress - config changed, waiting on the next dependabot run.
+
+- **Symptom.** Every open dependabot PR failed CI at
+  `bun install --frozen-lockfile`:
+  `error: lockfile had changes, but lockfile is frozen` /
+  `note: try re-running without --frozen-lockfile and commit the updated lockfile`.
+  Evidence: `gh run view 43198878926 --log-failed` (PR #85, `Lint Backend` and
+  `Unit Test Backend`) and the same step in `Lint Web Admin` / `Unit Test Web
+  Admin` for PR #79 (run 43198821060); PR #70, #50, #36, #35 identical.
+- **Cause.** `.github/dependabot.yml` declared four `package-ecosystem: bun`
+  entries under `/apps/backend`, `/apps/web-admin`, `/packages/common`,
+  `/packages/ui`. The only `bun.lock` lives at the repo root, outside every
+  declared `directory`, so dependabot bumped `package.json` alone
+  (`gh pr diff <n> --name-only` returned just that one file) and left the
+  lockfile stale. `git log -- bun.lock` confirms no dependabot commit ever
+  touched it.
+- **Fix.** The four bun entries are replaced by one:
+  `package-ecosystem: bun`, `directory: "/"`, `open-pull-requests-limit: 10`,
+  `ignore: typescript`, group `workspace-minor-patch` (minor+patch).
+  dependabot-core's bun fetcher reads `package.json["workspaces"]` and the
+  updater rewrites the lockfile at the configured directory, so root is the
+  only entry that can produce a consistent PR. `github-actions` and both
+  `docker` entries are unchanged.
+- **Docs.** `docs/database/` reviewed and unchanged (no schema, column,
+  constraint, status vocabulary or lifecycle change).
+- **Not verified yet.** No dependabot run has happened since the config
+  change. Verification = a new dependabot PR whose diff contains `bun.lock`
+  and whose `Lint Backend`, `Unit Test Backend`, `Lint Web Admin` and
+  `Unit Test Web Admin` jobs pass.
+- **Known limits.** Dependabot bun supports version updates only - security
+  updates and `bun.lock`-based transitive alerts are unsupported by GitHub.
+  Root `packageManager: bun@1.4.2` still differs from CI `bun-version: 1.4.4`;
+  left alone here.
+- **ID note.** ERP-0039/0040/0041 are claimed on `fix/org-hardening`, so this
+  task took the next free ID (ERP-0042) even though this branch is cut from
+  `main`.
 
 ## 2026-11-10 - ERP-0034: minimal HR employees + warehouse PIC (slices 1-8)
 
@@ -5801,13 +5960,19 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**Push the organization `description` slice and get reviewer sign-off on PR
-#82** (`fix/org-hardening`). Gates green: `bunx tsc -b --noEmit` clean in
-`apps/backend` + `apps/web-admin`, `bun run test` backend 842 / web-admin 62 /
-locales 82, no new lint warnings, migration verified on disposable DB
-`ims_erp41_desc` (dropped), `validate-dbml.ts` `OK`, live create/edit/detail
-walk-through done. Remaining: push, CI green, reviewer approval before moving
-ERP-0041 from `verified` to `accepted`.
+**Get reviewer sign-off on PR #82** (`fix/org-hardening`) — the organization
+`description` slice, the full-width create card, the create-style edit page,
+and the `findById` cache-invalidation fix are all in. Gates green: `bunx tsc
+-b --noEmit` clean in `apps/backend` + `apps/web-admin`, `bun run test`
+backend 842 / web-admin 62 / locales 82, no new lint warnings, migration
+verified on disposable DB `ims_erp41_desc` (dropped), `validate-dbml.ts`
+`OK`, live create/edit/detail walk-through done. Main was merged in after
+dependabot bumped 20 workspace deps.
+
+**Verify ERP-0046** (from main): the next dependabot run after the config
+change must open a PR whose diff contains `bun.lock` with all four lint/test
+jobs green; if it does not, fall back to a lockfile-refresh workflow (see the
+2026-11-13 entry).
 
 Older, still-open follow-ups: docs merge of `merge/main-sync` into
 `fix/docs-consistency`, then the 7 deferred tables.

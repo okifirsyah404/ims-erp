@@ -801,7 +801,7 @@ Table company.profiles {
   document_code varchar(16) [not null, note: "Company code in document numbers (the {COMPANY} token), upper-case letters and digits."]
   tagline varchar(300)
   tax_id varchar(32) [note: "NPWP number of the company."]
-  logo_object_key text [note: "Object-storage key of the letterhead logo (PNG, JPG or WebP)."]
+  logo_object_key text [note: "Object-storage key of the letterhead logo. Stored as WebP: the server re-encodes any accepted upload (PNG/JPG/WebP/GIF/BMP/TIFF/HEIC/AVIF, ≤ 2 MB) to WebP."]
   signature_object_key text [note: "Object-storage key of the signature and stamp image printed above the signatory name."]
   signatory_name varchar(200)
   signatory_title varchar(100)
@@ -1494,7 +1494,7 @@ Table catalog.item_documents {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   item_id uuid [not null]
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   document_type text [not null]
   created_at bigint [not null]
   Note: "Attachment of a product manual, datasheet or certificate to an item."
@@ -1848,7 +1848,7 @@ Table sales.contracts {
   start_date date
   end_date date
   signed_on date
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   notes text
   created_at bigint [not null]
   updated_at bigint [not null]
@@ -3398,7 +3398,7 @@ Table hr.employment_contracts {
   currency_code varchar(3) [not null, default: 'IDR']
   status text [not null, default: 'draft']
   signed_on date
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   approved_at bigint
   created_at bigint [not null]
@@ -3572,7 +3572,7 @@ Table hr.training_records {
   hours numeric(8,2)
   certificate_number text
   status text [not null, default: 'planned']
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Training attended by an employee."
@@ -3596,7 +3596,7 @@ Table hr.certifications {
   expiry_date date
   certificate_number text
   status text [not null, default: 'valid']
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Certification of an employee, for example a technician licence."
@@ -3681,7 +3681,7 @@ Table hr.employee_documents {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   employee_id uuid [not null]
-  document_id uuid [not null, note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [not null, note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   document_type text [not null]
   valid_from date
   valid_to date
@@ -3882,7 +3882,7 @@ Table payroll.payslips {
   payment_status text [not null, default: 'unpaid']
   payment_date date
   published_at bigint
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Payslip of one employee in one payroll run."
@@ -3999,7 +3999,7 @@ Table payroll.payroll_payments {
   status text [not null, default: 'draft']
   executed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   executed_at bigint
-  proof_document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  proof_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Payment batch of a payroll run. Execution is only allowed on an approved run."
@@ -4212,7 +4212,7 @@ Table finance.expense_settlement_items {
   currency_code varchar(3) [not null, default: 'IDR']
   is_advance_offset boolean [not null, default: false]
   project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract."]
-  receipt_document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  receipt_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   Note: "Line of an expense settlement."
   Indexes {
@@ -4470,7 +4470,7 @@ Table finance.expense_claim_items {
   amount bigint [not null, default: 0]
   tax_amount bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
-  receipt_document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  receipt_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   Note: "Line of an expense claim."
   Indexes {
@@ -4826,7 +4826,7 @@ Table accounting.tax_corrections {
   amount bigint [not null]
   currency_code varchar(3) [not null, default: 'IDR']
   reason text [not null]
-  evidence_document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  evidence_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_by text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
@@ -5067,7 +5067,7 @@ Table assets.assets {
   borrowed_since bigint [note: "Renamed from assigned_at (D8). Written only by syncCustody in the same transaction as borrow issue / return / disposal / loss."]
   supplier_id uuid [note: "Logical reference to procurement.suppliers.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
   purchase_order_id uuid [note: "Logical reference to procurement.purchase_orders.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
@@ -5113,7 +5113,7 @@ Table assets.asset_maintenances {
   description text
   status text [not null, default: 'scheduled']
   next_service_date date
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Maintenance record of an asset. The next service date drives the maintenance schedule."
@@ -5201,7 +5201,7 @@ Table assets.asset_documents {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null means global/company-wide (ADR-0008 scope rule)."]
   asset_id uuid [not null]
-  document_id uuid [not null, note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [not null, note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   document_type text [not null]
   created_at bigint [not null]
   Note: "Attachment of an invoice, a manual or a certificate to an asset."
@@ -5861,7 +5861,7 @@ Table aftersales.service_contracts {
   currency_code varchar(3) [not null, default: 'IDR']
   status text [not null, default: 'draft']
   auto_renew boolean [not null, default: false]
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Recurring service contract with a customer."
@@ -6815,7 +6815,7 @@ Table investor.investor_reports {
   status text [not null, default: 'draft']
   published_at bigint
   published_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Investor report, the artefact shared with the investor portal."
@@ -6841,7 +6841,7 @@ Table investor.investor_meetings {
   attendees text
   minutes text
   status text [not null, default: 'scheduled']
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Investor meeting record with its minutes."
@@ -7737,7 +7737,7 @@ Table ticket.tickets {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Customer issue ticket. The customer portal identity (auth.portal_identities) links the auth user to the customer; a portal user may list and read only tickets of its own linked customer in its own organization, enforced server-side. Numbering via organization.document_sequences."
+  Note: "Customer issue ticket. The customer portal identity (auth.portal_identities) links the auth user to the customer; a portal user may list and read only tickets of its own linked customer in its own organization, enforced server-side. Numbering via code_number.series."
   Indexes {
     (organization_id, code) [unique, name: 'tickets_org_code_uq']
     (organization_id, customer_id) [name: 'tickets_org_customer_idx']

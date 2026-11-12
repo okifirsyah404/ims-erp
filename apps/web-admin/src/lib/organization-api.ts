@@ -139,13 +139,14 @@ export async function createOrganization(input: {
 	return envelope.data;
 }
 
-/** Uploads the org profile image (client-encoded WebP). */
+/** Uploads the org profile image; the server normalises it to WebP. */
 export async function uploadOrganizationImage(
 	organizationId: string,
 	file: Blob,
 ) {
 	const body = new FormData();
-	body.append('file', file, 'logo.webp');
+	// The server decides the format from the bytes; the name is only a hint.
+	body.append('file', file, `logo.${file.type === 'image/png' ? 'png' : 'webp'}`);
 	await request(`/organizations/${organizationId}/image-profile`, {
 		method: 'POST',
 		body,

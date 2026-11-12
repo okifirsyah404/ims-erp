@@ -61,8 +61,15 @@ Last synced: 2026-11-13.
   `lg` produced 180px cards) and its header stacks below `sm`. The optional
   organization `description` (new nullable `text` column, 2000-char zod cap)
   is created/edited in a textarea and shown on the info dashboard, which also
-  exposed and fixed a stale-`findById` cache bug on PATCH. Evidence:
-  progress 2026-11-12 and 2026-11-13.
+  exposed and fixed a stale-`findById` cache bug on PATCH. **Server-side image
+  normalisation** (same slice, 2026-11-13): the user never converts to WebP by
+  hand — `apps/backend/src/utils/image.util.ts` (`Bun.Image`, no new dependency)
+  sniffs PNG/JPG/WebP/GIF/BMP/TIFF/HEIC/AVIF and re-encodes every stored image
+  (org logo, DiceBear-generated org logo and avatar, user avatar, document
+  images) to WebP, downscaled to 512px (avatar 144px). The web admin keeps a
+  canvas fast path (`encodeImage`, WebP with a PNG fallback) and can no longer
+  fail with "WebP encoding failed"; the 2 MB upload cap is unchanged because the
+  client downscales first. Evidence: progress 2026-11-12 and 2026-11-13.
 
 ## M02 CRM and Sales
 
@@ -406,6 +413,10 @@ Last synced: 2026-11-13.
 - ERP-0045 Settings KV CRUD (`company.settings` + `organization.settings`).
 
 ### in-progress
+- ERP-0042 Dependabot bun config moved to the workspace root (`directory: "/"`)
+  so the single root `bun.lock` is updated with the manifests. Evidence:
+  `.github/dependabot.yml`, `progress.md` 2026-11-13. Not verified until a
+  dependabot PR lands with `bun.lock` in its diff and green CI.
 - ERP-0037 Port M02/M05/M07 onto main (ADR-0011): steps 1-2 implemented
   2026-11-05 (numbering, company profile, role grants; item categories,
   fixed units, brand/specification/active on items) and 3a (customers +

@@ -1,16 +1,24 @@
 import type { TApiResponse } from '@ims-erp/common';
 import { currentLanguage } from '@/i18n';
+import { encodeImage } from './image-file';
 
 /**
  * Upload and removal of images printed on documents (company logo and
- * signature, item photos). The client converts to WebP before uploading
- * (`lib/image-file.ts`); the server caps the payload at 2 MB and checks the
- * magic bytes again. Multipart, so the JSON request helpers do not fit.
+ * signature, item photos).
+ *
+ * @remarks
+ * Any image the browser can decode is accepted; the client downscales it
+ * (WebP when it can, PNG otherwise) so the payload stays far below the 2 MB
+ * upload cap, and the server normalises the bytes to WebP for storage.
+ * Multipart, so the JSON request helpers do not fit.
  */
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-/** Server-side cap on the uploaded WebP. */
+export const DOCUMENT_IMAGE_ACCEPT =
+	'image/png,image/jpeg,image/webp,image/gif,image/bmp,image/avif,image/heic,image/heif';
+
+/** Server-side cap on the uploaded WebP (`document-image-field` checks it). */
 export const DOCUMENT_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 
 async function send<T>(path: string, init: RequestInit): Promise<T> {
@@ -26,9 +34,10 @@ async function send<T>(path: string, init: RequestInit): Promise<T> {
 	return envelope.data as T;
 }
 
-export function uploadDocumentImage<T>(path: string, file: File): Promise<T> {
+export async function uploadDocumentImage<T>(path: string, file: File): Promise<T> {
+	const encoded = await encodeImage(file);
 	const body = new FormData();
-	body.set('file', file);
+	body.set('file', encoded.blob, `image.${encoded.extension}`);
 	return send<T>(path, { method: 'PUT', body });
 }
 

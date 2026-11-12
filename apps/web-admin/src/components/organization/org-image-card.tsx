@@ -16,13 +16,13 @@ import {
 	organizationQueryOptions,
 	uploadOrganizationImage,
 } from '@/lib/organization-api';
-import { encodeWebp } from '@/lib/image-file';
+import { encodeImage } from '@/lib/image-file';
 import { ImageDropzone } from './image-dropzone';
 
 /**
- * Organization profile image card (ERP-0041): upload (client encodes WebP),
- * replace, and clear. Read shows the presigned URL — refreshed on each
- * mount since presigned GETs expire.
+ * Organization profile image card (ERP-0041): upload (the client downscales,
+ * the server normalises to WebP), replace, and clear. Read shows the
+ * presigned URL — refreshed on each mount since presigned GETs expire.
  */
 export function OrganizationImageCard({
 	organizationId,
@@ -51,16 +51,14 @@ export function OrganizationImageCard({
 	async function handleFile(file: File) {
 		setUploading(true);
 		try {
-			let webp: Blob;
-			try {
-				webp = await encodeWebp(file);
-			} catch {
-				// Undecodable source (HEIC, corrupt bytes): the browser never
-				// produced a bitmap, so the server was not involved.
+			// Undecodable source (corrupt bytes, format this browser cannot
+			// render): the server was never reached.
+			const encoded = await encodeImage(file).catch(() => null);
+			if (!encoded) {
 				toast.error(t('orgImage.decodeFailed'));
 				return;
 			}
-			await uploadOrganizationImage(organizationId, webp);
+			await uploadOrganizationImage(organizationId, encoded.blob);
 			toast.success(t('orgImage.uploaded'));
 			invalidate();
 		} catch (error) {

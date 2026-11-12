@@ -13,7 +13,7 @@ const api = {
 	'common.notFound': 'Not found',
 	'common.conflict': 'Conflict',
 	'common.unsupportedMediaType': 'Unsupported media type',
-	'common.imageInvalid': 'Upload a PNG, JPG or WebP image of at most {{max}} MB',
+	'common.imageInvalid': 'Upload a PNG, JPG, WebP or HEIC image of at most {{max}} MB',
 	'common.fileInvalid': 'Upload a PDF, PNG, JPG or WebP file of at most {{max}} MB',
 	'common.payloadTooLarge': 'Payload too large',
 	'common.authenticationRequired': 'Authentication required',
@@ -198,7 +198,7 @@ const api = {
 	'user.globalAdminRequired': 'Global administrator role required',
 	'user.fileFieldExpected': 'Expected a multipart file field',
 	'user.avatarTooLarge': 'Avatar must be 2 MiB or smaller',
-	'user.avatarUnsupportedType': 'Avatar must be a PNG, JPEG, or WebP image',
+	'user.avatarUnsupportedType': 'Avatar must be a PNG, JPG, WebP or HEIC image',
 
 	'organization.lastOrganization':
 		'This is your last organization and cannot be removed',
