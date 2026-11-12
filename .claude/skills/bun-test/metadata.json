@@ -1,0 +1,9 @@
+{
+  "name": "bun-test",
+  "version": "1.0.0",
+  "description": "Unit-test conventions for this project using bun:test — Bun's built-in runner with mock()/mock.module(); Drizzle DB and Bun RedisClient always mocked via constructor injection, never real connections. Use when writing tests in apps/backend.",
+  "author": "OpenAgentic",
+  "date": "2026-10",
+  "dependsOn": ["tsyringe"],
+  "references": ["https://bun.com/docs/test"]
+}

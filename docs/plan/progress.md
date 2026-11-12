@@ -12,6 +12,14 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-12 - tooling: local skills copied into `.claude/skills/`
+
+11 local skills from `.agents/skills/` copied into `.claude/skills/` (the
+broken `tsyringe` symlink placeholder was replaced with a real copy), and
+each was checked against its source with `diff -rq`. Details are in
+`.agents/docs/skills.md`. Only tooling changed: no app code changed and
+there is no backlog item to move. `docs/database/` was not touched.
+
 ## 2026-11-12 - M08 compliance pass against AGENTS.md (ERP-0040) and main-wide doc fixes
 
 Owner asked to check M08 (PR #83) against `AGENTS.md` and `README.md` and fix
