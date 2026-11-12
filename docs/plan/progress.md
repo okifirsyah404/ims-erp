@@ -12,6 +12,50 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-12 - ERP-0021 lead capture from WhatsApp chats
+
+Closes the Phase 6 gap recorded in the compliance pass below. Owner said
+"kerjakan"; the open choice (automatic on handoff vs an admin button) was
+taken as **an admin button** — no lead is made from spam or chit-chat, and
+the admin decides.
+
+Gate 1: `docs.dbml` `crm.leads` (source `whatsapp`, `whatsapp` column,
+nullable `owner_user_id`), `module-ownership.md` (CRM owns leads; the link
+needs a contract method on the owning side), `logical-references.md`,
+`integrity-and-consistency.md` 7.1, `data-dictionary.md` 1.10/1.14;
+`implementation-phases.md` skipped (no dependency on an unlanded step).
+Gate 2 (manual): ownership — CRM creates the lead through the new contract
+`LeadService.captureFromChat`; automation keeps only the link; tenant — leads
+and chats are company-wide; new column
+`automation.whatsapp_conversations.lead_id` is a nullable logical reference
+(ADR-0014); lead unassigned (`owner_user_id` null, like a website inquiry),
+`created_by` the admin; permission `whatsapp:reply`; once per chat via a
+conditional `UPDATE … WHERE lead_id IS NULL` (two admins at the same instant
+could leave one unlinked duplicate lead in CRM — accepted, documented); no
+service-level DI cycle (WhatsappService → LeadService → OutboxService).
+
+Built: `docs.dbml` first (gen-logical-references → 539 refs, validate-dbml
+OK), Drizzle `leadId`, hand-written migration
+`20261113090400_m04_whatsapp_lead_link` (one nullable column);
+`POST /automation/whatsapp/conversations/:id/lead`; web "Create lead" /
+"Open lead" (only with `lead.read`; otherwise "Lead created in CRM"); en/id
+keys; ADR-0015, `notification.md`, `data-model.md`, user guide 8.7, backlog
+ERP-0021 (partial note removed), features.
+
+Verification: `bunx tsc --noEmit` clean; `bun run lint` → 0 errors (warnings
+unchanged from main); `NODE_ENV=test bun test` (apps/backend) → 843 pass;
+web `bun run build` OK; locales 86 pass; new tests — CRM contract
+(`lead.service.test.ts`) and chat → lead incl. idempotency
+(`whatsapp-assistant.test.ts`); disposable `ims_erp_m04` rebuilt with
+`database/migrate-reset.ts` → migrations and seed complete, `drizzle-kit
+push --explain` → no automation/catalog/crm difference. E2E on the dev stack
+against `ims_erp_m04` (temporary `POSTGRES_DB` and `WAHA_WEBHOOK_SECRET`,
+restored): two signed webhook messages → chat handed off (`no_provider`);
+customer service "Create lead" → 200, linked; second click → same lead;
+sales manager reads the lead (`whatsapp`, unassigned, number and both
+questions in `needs`); one `lead.created` outbox event; `sales` (no
+`whatsapp:*`) → 403; screenshot of the chat page checked.
+
 ## 2026-11-12 - M04 compliance pass against AGENTS.md (ERP-0039, ERP-0021)
 
 Owner asked to check M04 (PR #84) against `AGENTS.md` and `README.md` and fix

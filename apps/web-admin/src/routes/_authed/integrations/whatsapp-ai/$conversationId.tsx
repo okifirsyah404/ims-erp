@@ -13,6 +13,7 @@ import { formatDateTime } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
 import {
 	CONVERSATION_STATUS_VARIANT,
+	captureLead,
 	closeConversation,
 	conversationQueryOptions,
 	replyToConversation,
@@ -31,6 +32,7 @@ function ConversationPage() {
 	const { t, i18n } = useTranslation(['integrations', 'common']);
 	const queryClient = useQueryClient();
 	const canReply = usePermission('whatsapp.reply');
+	const canReadLead = usePermission('lead.read');
 	const { data, isPending, isError, error } = useQuery(conversationQueryOptions(conversationId));
 	const [text, setText] = useState('');
 	const [busy, setBusy] = useState(false);
@@ -72,7 +74,20 @@ function ConversationPage() {
 					</div>
 				</div>
 				{canReply && (
-					<div className='flex gap-2'>
+					<div className='flex flex-wrap gap-2'>
+						{data.leadId ? (
+							canReadLead ? (
+								<Button variant='outline' render={<Link to='/crm/leads/$leadId' params={{ leadId: data.leadId }} />}>
+									{t('integrations:whatsapp.openLead')}
+								</Button>
+							) : (
+								<span className='self-center text-sm text-muted-foreground'>{t('integrations:whatsapp.leadLinked')}</span>
+							)
+						) : (
+							<Button variant='outline' disabled={busy} onClick={() => void run(() => captureLead(data.id), t('integrations:whatsapp.leadCreated'))}>
+								{t('integrations:whatsapp.createLead')}
+							</Button>
+						)}
 						{data.status !== 'assistant' && (
 							<Button variant='outline' disabled={busy} onClick={() => void run(() => resumeConversation(data.id), t('integrations:whatsapp.resumed'))}>
 								{t('integrations:whatsapp.resume')}

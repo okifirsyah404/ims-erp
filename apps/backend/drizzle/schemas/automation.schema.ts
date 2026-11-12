@@ -105,6 +105,8 @@ export const whatsappConversations = automationSchema.table(
 		handoffAt: unixTimestampNullable('handoff_at'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
 		assignedUserId: text('assigned_user_id'),
+		/** Logical reference to crm.leads.id — set when an admin turns the chat into a lead. */
+		leadId: uuid('lead_id'),
 		lastMessageAt: unixTimestamp('last_message_at').notNull(),
 		lastInboundAt: unixTimestampNullable('last_inbound_at'),
 		...timestamps,

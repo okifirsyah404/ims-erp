@@ -1,3 +1,5 @@
+import { LEAD_SERVICE_TOKEN } from '@app/crm/constants/di';
+import type { LeadService } from '@app/crm/services/lead.service';
 import type { HandoffReason, MessageAuthor, TConversationSelect, TWhatsappMessageSelect } from '@drizzle/schemas/automation.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { pinoLogger } from '@providers/logger/logger';
@@ -54,6 +56,7 @@ export class WhatsappService {
 		@inject(INBOUND_DISPATCHER_TOKEN) private readonly dispatcher: IInboundDispatcher,
 		@inject(OUTBOX_SERVICE_TOKEN) private readonly outbox: Pick<OutboxService, 'publish'>,
 		@inject(WHATSAPP_SETTINGS_TOKEN) private readonly settings: TWhatsappSettings,
+		@inject(LEAD_SERVICE_TOKEN) private readonly leads: Pick<LeadService, 'captureFromChat'>,
 	) {}
 
 	/** Inbound WAHA webhook. Unsigned or badly signed calls are refused. */
@@ -183,6 +186,30 @@ export class WhatsappService {
 				handoffAt: conversation.status === 'handoff' ? conversation.handoffAt : new Date(),
 			})) ?? conversation;
 		return this.send(taken, text, 'admin', { sentBy: actorUserId });
+	}
+
+	/**
+	 * Turns the chat into a CRM lead (ERP-0021 lead capture): name and
+	 * WhatsApp number from the chat, the customer's recent messages as the
+	 * needs. A chat that already has a lead returns it unchanged. Two admins
+	 * clicking at the same moment could create two leads; only the first is
+	 * linked (conditional update) and the other stays in CRM unlinked.
+	 */
+	async captureLead(actorUserId: string, id: string): Promise<TConversationSelect> {
+		const conversation = await this.require(id);
+		if (conversation.leadId) return conversation;
+		const asked = (await this.repository.listMessages(id, 50))
+			.filter((message) => message.direction === 'inbound' && message.body !== MEDIA_BODY)
+			.slice(-5)
+			.map((message) => message.body.trim())
+			.filter(Boolean)
+			.join('\n');
+		const lead = await this.leads.captureFromChat(actorUserId, {
+			name: conversation.contactName ?? `+${conversation.phone}`,
+			whatsapp: `+${conversation.phone}`,
+			needs: asked ? `WhatsApp:\n${asked}` : null,
+		});
+		return (await this.repository.linkLead(id, lead.id)) ?? (await this.require(id));
 	}
 
 	/** Lets the assistant answer this chat again. */

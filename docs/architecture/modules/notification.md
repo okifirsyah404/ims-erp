@@ -96,8 +96,15 @@ tools) — not yet tried against a real provider. The model cannot change
 ERP data whatever the prompt says: it has no tools, and its text is checked
 again before sending.
 
+Lead capture (ERP-0021): **Create lead** on a chat
+(`POST …/conversations/:id/lead`, `whatsapp:reply`) calls CRM's contract
+`LeadService.captureFromChat` — an unassigned `whatsapp` lead with the
+contact name, number and the customer's last messages, published as
+`lead.created` — and links it in `whatsapp_conversations.lead_id` (once per
+chat, conditional update).
+
 Endpoints: `/automation/whatsapp/status | conversations | conversations/:id
-| …/reply | …/resume | …/close | messages/:id/retry` and `/automation/faq`.
+| …/reply | …/lead | …/resume | …/close | messages/:id/retry` and `/automation/faq`.
 Permissions `whatsapp:read | reply | manage_faq` (admin all; sales manager
 and customer service read + reply; marketing read + FAQ). Web:
 `/integrations/whatsapp-ai`, `…/$conversationId`, `…/faq`.

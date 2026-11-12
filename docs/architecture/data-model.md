@@ -31,7 +31,8 @@ Schema, keys, constraints, and conventions. Current declarations:
 - **`automation`** — M04 (ADR-0015): `outbox_messages` (ERP events to n8n:
   status `pending|published|failed`, attempts, unique `dedupe_key` for
   once-per-fact events), `faq_entries`, `whatsapp_conversations`
-  (`assistant|handoff|closed`, one per WhatsApp chat id) and
+  (`assistant|handoff|closed`, one per WhatsApp chat id; nullable `lead_id`
+  logical reference to `crm.leads`, ADR-0014) and
   `whatsapp_messages` (inbound/outbound log, unique `(direction,
   external_id)` for webhook dedupe). Company-wide; the workflow tables of
   `docs.dbml` stay target-only.

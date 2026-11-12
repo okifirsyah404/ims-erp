@@ -341,7 +341,10 @@ Bernomor 8.7 karena 8.6 adalah bagian HR di cabangnya sendiri.
 4. Buka chat, ketik di **Balas sebagai admin** lalu **Kirim**: chat Anda
    ambil alih dan asisten diam. Klik **Kembalikan ke asisten** bila
    selesai, atau **Tutup chat** (pesan pelanggan berikutnya membukanya
-   lagi). Pesan yang gagal terkirim menampilkan **Kirim ulang**.
+   lagi). Pesan yang gagal terkirim menampilkan **Kirim ulang**. **Buat lead**
+   menjadikan chat sebagai lead di CRM (nama, nomor WhatsApp, dan pertanyaan
+   pelanggan; sumber WhatsApp, belum ditugaskan agar sales manager bisa
+   menugaskannya); satu chat paling banyak satu lead, lalu tampil **Buka lead**.
 5. **FAQ asisten** (marketing, admin): isi pertanyaan dan jawaban persis
    yang boleh dibaca pelanggan, beserta kata kunci. Hanya entri **Aktif**
    yang dipakai. Jangan menulis diskon atau janji di sini.

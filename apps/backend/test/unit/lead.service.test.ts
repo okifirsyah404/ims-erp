@@ -170,6 +170,13 @@ describe('LeadService', () => {
 		expect(published).toEqual([{ topic: 'lead.created', id: lead.id }]);
 	});
 
+	test('a WhatsApp chat becomes an unassigned whatsapp lead, published to n8n (M04 contract)', async () => {
+		published.length = 0;
+		const lead = await service.captureFromChat('cs-1', { name: 'Budi', whatsapp: '+6281234567890', needs: 'WhatsApp:\nSwing gate' });
+		expect(lead).toMatchObject({ name: 'Budi', whatsapp: '+6281234567890', source: 'whatsapp', ownerUserId: null, createdBy: 'cs-1', needs: 'WhatsApp:\nSwing gate' });
+		expect(published).toEqual([{ topic: 'lead.created', id: lead.id }]);
+	});
+
 	test('non-managers own what they create and only see their own leads (others answer 404)', async () => {
 		const mine = await service.create(ALICE, leadInput({ assignedTo: 'bob' }));
 		expect(mine.ownerUserId).toBe('alice');

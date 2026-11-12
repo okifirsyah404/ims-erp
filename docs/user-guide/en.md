@@ -341,7 +341,10 @@ Numbered 8.7 because 8.6 is the HR section on its own branch.
 4. Open a chat, type in **Reply as admin** and **Send**: you take the chat
    over and the assistant stays silent. **Hand back to the assistant** when
    done, or **Close chat** (the customer's next message reopens it). A
-   message that failed to send shows **Send again**.
+   message that failed to send shows **Send again**. **Create lead** turns the
+   chat into a CRM lead (name, WhatsApp number and the customer's questions;
+   source WhatsApp, unassigned so the sales manager can assign it); a chat
+   has at most one lead, shown as **Open lead** afterwards.
 5. **Assistant FAQ** (marketing, admin): add the questions and the exact
    answers customers may read, with keywords. Only **Active** entries are
    used. Never write discounts or promises here.

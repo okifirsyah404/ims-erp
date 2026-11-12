@@ -117,7 +117,8 @@ Last synced: 2026-11-08.
   ERP-0021. Evidence: `progress.md` 2026-11-07 (M04 4c), event contract in
   `docs/architecture/modules/notification.md`. Not yet accepted by the owner.
 - WhatsApp AI on FAQ + catalog through WAHA, handoff queue, WhatsApp logs,
-  admin replies, FAQ base — T27/T28, ERP-0021, M04 stage 2. Evidence:
+  admin replies, FAQ base, lead capture from a chat — T27/T28, ERP-0021,
+  M04 stage 2. Evidence:
   `progress.md` 2026-11-07 (M04 4d): `whatsapp-assistant.test.ts`, e2e with
   fake WAHA and a fake OpenAI-compatible model. Not yet accepted by the
   owner; live use is blocked until WAHA, a dedicated number and an AI

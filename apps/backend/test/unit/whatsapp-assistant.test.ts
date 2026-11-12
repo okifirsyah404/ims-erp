@@ -30,6 +30,7 @@ let events: { topic: string; data: Record<string, unknown> }[];
 let modelConfigured: boolean;
 let nextAnswer: TAssistantAnswer | Error;
 let seenContext: TAssistantContext | null;
+let capturedLeads: { actorUserId: string; input: { name: string; whatsapp: string; needs: string | null } }[];
 
 const faqs = [
 	{ id: 'faq-1', question: 'Berapa lama garansi swing gate?', answer: 'Garansi swing gate 1 tahun untuk unit dan instalasi.', keywords: 'garansi, warranty', isActive: true },
@@ -40,7 +41,7 @@ const repository: IWhatsappRepository = {
 	async upsertConversation(chat, at) {
 		let row = conversations.find((item) => item.chatId === chat.chatId);
 		if (!row) {
-			row = { id: crypto.randomUUID(), ...chat, status: 'assistant', handoffReason: null, handoffAt: null, assignedUserId: null, lastMessageAt: at, lastInboundAt: at, createdAt: at, updatedAt: at, deletedAt: null };
+			row = { id: crypto.randomUUID(), ...chat, status: 'assistant', handoffReason: null, handoffAt: null, assignedUserId: null, leadId: null, lastMessageAt: at, lastInboundAt: at, createdAt: at, updatedAt: at, deletedAt: null };
 			conversations.push(row);
 		} else if (row.status === 'closed') Object.assign(row, { status: 'assistant', handoffReason: null });
 		return { ...row };
@@ -51,6 +52,11 @@ const repository: IWhatsappRepository = {
 	},
 	paginateConversations: async () => ({ meta: { page: 1, limit: 20, total: conversations.length, totalPages: 1 }, data: conversations.map((row) => ({ ...row, lastMessage: null })) }),
 	countByStatus: async () => ({}),
+	async linkLead(id, leadId) {
+		const row = conversations.find((item) => item.id === id);
+		if (!row || row.leadId) return null;
+		return { ...Object.assign(row, { leadId }) };
+	},
 	async updateConversation(id, data, from) {
 		const row = conversations.find((item) => item.id === id);
 		if (!row || (from && !from.includes(row.status))) return null;
@@ -104,6 +110,12 @@ function services(secret: string | null = SECRET) {
 			},
 		},
 		{ webhookSecret: secret },
+		{
+			captureFromChat: async (actorUserId, input) => {
+				capturedLeads.push({ actorUserId, input });
+				return { id: `lead-${capturedLeads.length}` } as never;
+			},
+		},
 	);
 	const assistant = new AssistantService(
 		repository,
@@ -134,6 +146,7 @@ beforeEach(() => {
 	modelConfigured = true;
 	nextAnswer = { kind: 'answer', text: 'Garansi swing gate 1 tahun.', faqEntryId: 'faq-1' };
 	seenContext = null;
+	capturedLeads = [];
 });
 
 describe('guards and helpers', () => {
@@ -274,6 +287,25 @@ describe('assistant', () => {
 });
 
 describe('admin inbox', () => {
+	test('a chat becomes one CRM lead with the name, number and the customer\'s questions', async () => {
+		modelConfigured = false;
+		await chat('m-1', 'Halo, mau tanya swing gate');
+		await chat('m-2', 'Bisa pasang di Bekasi?');
+		const { whatsapp } = services();
+		const id = conversations[0]!.id;
+		const linked = await whatsapp.captureLead('cs-1', id);
+		expect(linked.leadId).toBe('lead-1');
+		expect(capturedLeads).toEqual([
+			{
+				actorUserId: 'cs-1',
+				input: { name: 'Budi', whatsapp: '+6281234567890', needs: 'WhatsApp:\nHalo, mau tanya swing gate\nBisa pasang di Bekasi?' },
+			},
+		]);
+		// Idempotent per chat: a second click returns the same link.
+		expect((await whatsapp.captureLead('cs-2', id)).leadId).toBe('lead-1');
+		expect(capturedLeads).toHaveLength(1);
+	});
+
 	test('a reply takes the chat over; resume hands it back; close and the next message reopens it', async () => {
 		await chat('m-1', 'Halo, berapa lama garansi swing gate?');
 		const { whatsapp } = services();

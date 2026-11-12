@@ -74,6 +74,15 @@ export class WhatsappRepository implements IWhatsappRepository {
 		return Object.fromEntries(rows.map((row) => [row.status, row.value]));
 	}
 
+	async linkLead(id: string, leadId: string) {
+		const [row] = await this.database
+			.update(whatsappConversations)
+			.set({ leadId, updatedAt: new Date() })
+			.where(and(eq(whatsappConversations.id, id), isNull(whatsappConversations.deletedAt), isNull(whatsappConversations.leadId)))
+			.returning();
+		return row ?? null;
+	}
+
 	async updateConversation(
 		id: string,
 		data: Parameters<IWhatsappRepository['updateConversation']>[1],

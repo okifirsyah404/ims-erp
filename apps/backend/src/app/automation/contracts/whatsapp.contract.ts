@@ -100,6 +100,8 @@ export interface IWhatsappRepository {
 	findConversation(id: string): Promise<TConversationSelect | null>;
 	paginateConversations(query: TConversationListQuery): Promise<TPaginationResult<TConversationRow>>;
 	countByStatus(): Promise<Record<string, number>>;
+	/** Links a lead to a chat that has none yet; `null` when one is already linked (conditional update). */
+	linkLead(id: string, leadId: string): Promise<TConversationSelect | null>;
 	/**
 	 * Updates a live conversation. With `from`, only when its status is one of
 	 * them (a conditional update; `null` = another actor moved it first).

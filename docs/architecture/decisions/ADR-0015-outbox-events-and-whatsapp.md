@@ -39,8 +39,9 @@
   never lost silently and never sent for an action that was rolled back.
   n8n flows must verify the signature and dedupe on the event id. Live use
   waits for a WAHA instance, a dedicated number (sandbox first), n8n flows
-  and an AI provider. Lead capture from WhatsApp chats is not built yet
-  (ERP-0021 partial).
+  and an AI provider. Lead capture is an admin action ("Create lead" on a
+  chat): CRM's `LeadService.captureFromChat` makes an unassigned
+  `whatsapp` lead and the chat keeps a nullable `lead_id` link.
 - **Alternatives considered:**
   - **Calling n8n inline from the service** — rejected: the effect could
     happen for a transaction that later rolls back, and an n8n outage would

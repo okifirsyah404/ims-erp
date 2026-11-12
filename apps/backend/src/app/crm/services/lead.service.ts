@@ -188,6 +188,30 @@ export class LeadService {
 		return lead;
 	}
 
+	/**
+	 * A lead from a WhatsApp chat (M04, ERP-0021) — the CRM contract the
+	 * WhatsApp inbox calls when an admin turns a chat into a lead.
+	 *
+	 * @remarks
+	 * Source `whatsapp`, unassigned (the sales manager assigns it, like a
+	 * website inquiry), `created_by` the admin. Publishes `lead.created`.
+	 */
+	async captureFromChat(actorUserId: string, input: { name: string; whatsapp: string; needs: string | null }): Promise<TLeadSelect> {
+		const lead = await this.leads.create({
+			name: input.name.slice(0, 200),
+			companyName: null,
+			phone: null,
+			whatsapp: input.whatsapp.slice(0, 30),
+			email: null,
+			source: 'whatsapp',
+			needs: input.needs ? input.needs.slice(0, 2000) : null,
+			ownerUserId: null,
+			createdBy: actorUserId,
+		});
+		await this.outbox.publish('lead.created', { type: 'lead', id: lead.id }, leadCreatedEvent(lead));
+		return lead;
+	}
+
 	async update(ctx: TLeadContext, id: string, patch: TUpdateLeadInput): Promise<TLeadSelect> {
 		const lead = await this.requireVisible(ctx, id);
 		if (lead.status === 'won') throw new LeadClosedError();

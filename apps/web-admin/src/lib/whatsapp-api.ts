@@ -28,6 +28,8 @@ export type TConversation = {
 	handoffReason: THandoffReason | null;
 	handoffAt: string | null;
 	assignedUserId: string | null;
+	/** CRM lead made from this chat (ERP-0021 lead capture). */
+	leadId: string | null;
 	lastMessageAt: string;
 	lastMessage?: string | null;
 };
@@ -104,6 +106,7 @@ const post = async <T>(path: string, body?: unknown) =>
 	(await request<T>(path, { method: 'POST', ...(body === undefined ? {} : { body: JSON.stringify(body) }) })).data!;
 
 export const replyToConversation = (id: string, text: string) => post<TWhatsappMessage>(`/automation/whatsapp/conversations/${id}/reply`, { text });
+export const captureLead = (id: string) => post<TConversation>(`/automation/whatsapp/conversations/${id}/lead`);
 export const resumeConversation = (id: string) => post<TConversation>(`/automation/whatsapp/conversations/${id}/resume`);
 export const closeConversation = (id: string) => post<TConversation>(`/automation/whatsapp/conversations/${id}/close`);
 export const retryMessage = (id: string) => post<TWhatsappMessage>(`/automation/whatsapp/messages/${id}/retry`);
