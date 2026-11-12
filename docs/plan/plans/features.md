@@ -124,6 +124,8 @@ Last synced: 2026-11-08.
   provider exist (sandbox first).
 - Requirements form → lead — T15. Built in M02 (`/public/v1`, ADR-0011
   step 3b); the WA button is website-side.
+- All of the above carried onto main on `feat/m04-on-main` (2026-11-12);
+  billing events now come from the sales module.
 
 ### planned
 - Live WhatsApp/n8n go-live: WAHA instance and sandbox number, n8n flows

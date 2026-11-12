@@ -12,7 +12,54 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
-## In progress — M04 n8n, WhatsApp, website: gate 1 and decisions, 2026-11-07
+## 2026-11-12 - M04 carried onto main (ERP-0039, ERP-0021)
+
+Status: **implemented** on branch `feat/m04-on-main` (from `origin/main`
+89940c0), not yet accepted by the owner. Replaces PR #65 (based on
+`merge/main-sync`). The four M04 commits (4a `1cd2799`, 4b `e6f407d`, 4c
+`41053ee`, 4d `ee8f52d`; sections below) were cherry-picked and adapted:
+
+- **Module entry factories** (main mounts modules): `catalogModule()` and
+  `automationModule()`; `index.ts` starts the outbox, WhatsApp and
+  license-due workers next to main's mail worker.
+- **Billing events moved to sales:** invoices and receipts belong to sales
+  on main (the finance module is gone), so `invoice.issued` is published by
+  `sales/services/invoice.service.ts` after the issue transaction commits,
+  and `receipt.recorded` after a receipt, with the invoice re-read
+  (`sales/utils/invoice-events.ts`). `ar-flows.test.ts` asserts the event;
+  new `sales-invoice-events.test.ts` (3 tests).
+- **ADR-0014:** `catalog.web_listings.item_id` is nullable (`docs.dbml`,
+  Drizzle, SQL); an unlinked listing is hidden and cannot be published.
+  The other M04 cross-module references were already nullable.
+- **Migrations** renamed after main's newest and **hand-written** (no
+  `snapshot.json`), like `20261112000000_erp0034_hr_employees`, because
+  drizzle-kit generate/migrate are blocked on main:
+  `20261113090000_m04_catalog_web_listings`,
+  `20261113090100_m04_automation_outbox`,
+  `20261113090200_m04_outbox_dedupe_key`,
+  `20261113090300_m04_whatsapp_assistant` (the SQL is the drizzle-kit
+  output of the M04 branch; the sections below use the old names).
+
+Verification: `bun docs/database/gen-logical-references.ts` → 538 refs,
+`validate-dbml.ts` OK; `bunx tsc --noEmit` clean; `NODE_ENV=test bun test`
+(apps/backend) → 839 pass; web `bun run build` OK; locales 86 pass.
+Fresh disposable database `ims_erp_m04`: `bun run database/migrate-reset.ts`
+→ migrations complete, seed complete; seeder run again → no new rows;
+`drizzle-kit push --explain` shows **no difference for any catalog or
+automation table** (only main's pre-existing `auth.organization_role` and
+`sales.receipts` FK drift). Smoke test on the dev stack against
+`ims_erp_m04` (`POSTGRES_DB` switched temporarily, restored): lead →
+`lead.created` outbox row `pending` ("not configured"); catalog listings
+200; public catalog without key 401; WhatsApp webhook without a configured
+key 503; FAQ by marketing 201, by customer service 403. Invoice issue and
+receipt events are covered by the unit tests above (an invoice flow on the
+dev stack needs the chart of accounts set up).
+
+Next executable task: review of PR #83 (M08) and the M04 PR (programmer A);
+both edit `app.ts`, `index.ts`, permissions and locales, so the second to
+merge needs a small rebase.
+
+## M04 n8n, WhatsApp, website: gate 1, decisions and slices, 2026-11-07
 
 Status: **implemented** (4a catalog API, 4b outbox to n8n, 4c stage 2
 events, 4d WhatsApp assistant), not yet accepted by the owner. Live use
@@ -245,7 +292,6 @@ Built:
 `docs/database/` updated (3 tables, Automation header); the
 `whatsapp.handoff` topic needs no schema change.
 
-## Completed — merge of main into merge/main-sync (PR #58 conflicts), 2026-11-06/07
 ## 2026-11-10 - ERP-0034: minimal HR employees + warehouse PIC (slices 1-8)
 
 Status: implemented and browser-verified (create → list → detail; seeder;
