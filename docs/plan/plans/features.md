@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-08.
+Last synced: 2026-11-12.
 
 > **Sidebar shell note (2026-11-05):** the web-admin sidebar now renders the
 > full M01–M12 nav map (see `progress.md`, "UI — full ERP sidebar shell").
@@ -40,11 +40,6 @@ Last synced: 2026-11-08.
 ## M02 CRM and Sales
 
 ### planned
-- Leads, follow-ups/surveys, customers — T05, ERP-0004/0005. Evidence: dbml
-  `crm` only.
-- Invoice, DP (customer advance), receipt — T05, ERP-0011. Evidence: dbml
-  `sales.invoices` and `sales.receipts` (kwitansi, owned by Sales); payment
-  allocations stay in finance.
 - One template per document — T05. Evidence: dbml `documents` only.
 - Checkout / online orders — T21, ERP-0020. Evidence: dbml `commerce` only.
 - Payment gateway callbacks + reconciliation — T22, ERP-0020. Evidence: none
@@ -85,6 +80,8 @@ Last synced: 2026-11-08.
   `/sales/invoices`, `/sales/down-payments`, `/sales/receipts`,
   `progress.md` 2026-11-06 (ADR-0011 step 3d-2). Gaps: real-PG integration
   tests, e2e, kwitansi print (no sample), `finance.payments` ledger (S7).
+  Since the PR #68 merge the Sales invoice API on main no longer matches the
+  web billing card / void calls (`progress.md` 2026-11-12, "UAT scripts").
 
 ## M03 Subscription and Licensing
 
@@ -116,6 +113,10 @@ Last synced: 2026-11-08.
   ticket updated, license ending — daily, once per threshold) — T28,
   ERP-0021. Evidence: `progress.md` 2026-11-07 (M04 4c), event contract in
   `docs/architecture/modules/notification.md`. Not yet accepted by the owner.
+- WA/n8n setup guide (T32 handover deliverable): WAHA webhook, n8n flow per
+  event with signature check and dedupe, AI provider, go-live checklist.
+  Evidence: `docs/user-guide/whatsapp-n8n-setup.en.md` / `.id.md`
+  (2026-11-12); not yet tried against a real WAHA/n8n.
 - WhatsApp AI on FAQ + catalog through WAHA, handoff queue, WhatsApp logs,
   admin replies, FAQ base, lead capture from a chat — T27/T28, ERP-0021,
   M04 stage 2. Evidence:
@@ -371,23 +372,23 @@ Last synced: 2026-11-08.
 
 ### planned
 - ERP-0001 Repo housekeeping.
-- ERP-0006 Address reference model + lookup API (lookup API itself exists; see
-  Outside the plan).
 - ERP-0008 Remaining master data (suppliers, catalog, COA, cash/bank,
   packages, investors) — company profile part implemented, see below.
-- ERP-0024 UAT, reconciliation, backup drill.
 - ERP-0025 Release preparation.
 - ERP-0037 Nullable cross-module references (ADR-0014 schema flip).
 
 ### in-progress
-- ERP-0037 Port M02/M05/M07 onto main (ADR-0011): steps 1-2 implemented
-  2026-11-05 (numbering, company profile, role grants; item categories,
-  fixed units, brand/specification/active on items) and 3a (customers +
-  contacts, `/crm/customers`) and 3b (leads, follow-ups, website API);
-  3c-3d and 4-6 planned.
-  Evidence: `progress.md` 2026-11-05, `test/unit/item-category.service.test.ts`.
+- ERP-0024 UAT, reconciliation, backup drill: UAT scripts for M02, M03, M04,
+  M05, M07, M08 written (`docs/plan/uat/`, 2026-11-12), not yet run;
+  reconciliation and backup drill not started.
 
 ### implemented
+- ERP-0038 Port M02/M05/M07 onto main (ADR-0011): all six steps; on main
+  through PR #58 → `merge/main-sync` → PR #68 (2026-11-09). Evidence:
+  `progress.md` 2026-11-05/06, per-module entries above.
+- ERP-0006 Address reference model + lookup API: `src/app/location`
+  (`/locations/*`, cached), `location.seeder.ts`,
+  `test/unit/location.service.test.ts`; built by programmer A.
 - ERP-0009 Document numbering (company-wide series, settings page).
   Evidence: `apps/backend/src/app/organization`, `test/unit/numbering.service.test.ts`,
   `progress.md` 2026-11-05.

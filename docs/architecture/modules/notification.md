@@ -111,6 +111,8 @@ and customer service read + reply; marketing read + FAQ). Web:
 
 ## Configuration
 
+Step-by-step setup: `docs/user-guide/whatsapp-n8n-setup.en.md` (and `.id.md`).
+
 `N8N_WEBHOOK_URL`, `N8N_WEBHOOK_SECRET` (min 16 chars) — both optional;
 without them events stay `pending` with "not configured" and can be sent
 from the log once set. `WAHA_URL`, `WAHA_API_KEY`, `WAHA_SESSION` (default

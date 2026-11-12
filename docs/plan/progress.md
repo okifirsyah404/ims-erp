@@ -12,6 +12,54 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-12 - WA/n8n guide (T32), plan-doc cleanup, UAT scripts (ERP-0024)
+
+Owner asked for three small items on `feat/m04-on-main`. Docs only — no
+code, migration, seeder or test changed; `docs/database/` reviewed and
+unchanged (no table, column or reference touched).
+
+1. **WA/n8n setup guide (M04 T32 handover):**
+   `docs/user-guide/whatsapp-n8n-setup.en.md` and `.id.md` — `.env`
+   variables, WAHA webhook (URL, `message` event, HMAC key), n8n webhook
+   with a signature-check Code node and dedupe on `X-Erp-Event-Id`, one
+   flow per topic, AI provider, troubleshooting by status code, go-live
+   checklist. Facts checked against `adapters/waha.ts`,
+   `adapters/n8n-webhook.ts`, `utils/assistant.ts` and the web labels. The
+   n8n snippet is **not** tried against a real n8n instance. Linked from
+   `docs/user-guide/README.md` and `notification.md`.
+2. **Plan-doc cleanup:** `features.md` M02 "planned" no longer lists
+   customers/leads and invoices/DP/receipts (they were already under
+   implemented); the stale "ERP-0037 port in-progress" block (the port is
+   ERP-0038) replaced; ERP-0038 → implemented (PR #58 → PR #68, merged to
+   main 2026-11-09); ERP-0006 → implemented (location module, seeder,
+   cache, test — built by programmer A; found while checking); ERP-0037
+   (nullable cross-module refs) stays `planned`: `sales.quotations`
+   `customer_id` is still `NOT NULL`. Last synced 2026-11-12.
+3. **UAT scripts (ERP-0024 → in-progress):** `docs/plan/uat/README.md` plus
+   one file per owned module (M02 13 cases, M03 11, M04 11, M05 11, M07 9,
+   M08 10), each with steps, expected result, Pass/Fail/Blocked and a
+   sign-off table. Cases come from each plan's Acceptance interpretation
+   (U01–U32 Excel text is not in the repo). Not testable yet and marked
+   N/T: payment gateway callbacks (ERP-0020), customer portal (ERP-0022),
+   payroll journal (ERP-0018). Expected results were checked against the
+   error codes in the services (e.g. licensing keys, receipt overpayment).
+
+**Found, pre-existing on main (not fixed here, owner/programmer A to
+decide):** the web billing card and invoice page call
+`GET /invoices/orders/:id/summary`, `POST /invoices` with `term`, and
+`POST /invoices/:id/void`; main's Sales invoice controller (since the PR
+#68 merge) has only list/get/create (explicit items)/update/cancel (draft
+only)/issue/receipts. Creating an invoice from a sales order and voiding an
+issued invoice therefore fail in the browser on main. Recorded in the M02
+UAT script (cases 09–11) and backlog ERP-0038.
+
+Verification: `bun docs/database/validate-dbml.ts` → OK; locale and code
+untouched (no test run needed for docs).
+
+Next executable task: programmer A reviews PR #83 and #84; then run the UAT
+scripts on a staging database with the owner (M02 first — after the invoice
+API mismatch is fixed), and set up the sandbox WAHA + n8n with the guide.
+
 ## 2026-11-12 - ERP-0021 lead capture from WhatsApp chats
 
 Closes the Phase 6 gap recorded in the compliance pass below. Owner said
