@@ -730,6 +730,45 @@ membership), unit-tested; reviewer sign-off and PR still open. Branch
   gets the in-place 403. `GET /organizations/:id/invitations` unauthenticated
   → 401 envelope.
 
+## 2026-11-13 - ERP-0042: dependabot bun config moved to the workspace root
+
+Status: in-progress - config changed, waiting on the next dependabot run.
+
+- **Symptom.** Every open dependabot PR failed CI at
+  `bun install --frozen-lockfile`:
+  `error: lockfile had changes, but lockfile is frozen` /
+  `note: try re-running without --frozen-lockfile and commit the updated lockfile`.
+  Evidence: `gh run view 43198878926 --log-failed` (PR #85, `Lint Backend` and
+  `Unit Test Backend`) and the same step in `Lint Web Admin` / `Unit Test Web
+  Admin` for PR #79 (run 43198821060); PR #70, #50, #36, #35 identical.
+- **Cause.** `.github/dependabot.yml` declared four `package-ecosystem: bun`
+  entries under `/apps/backend`, `/apps/web-admin`, `/packages/common`,
+  `/packages/ui`. The only `bun.lock` lives at the repo root, outside every
+  declared `directory`, so dependabot bumped `package.json` alone
+  (`gh pr diff <n> --name-only` returned just that one file) and left the
+  lockfile stale. `git log -- bun.lock` confirms no dependabot commit ever
+  touched it.
+- **Fix.** The four bun entries are replaced by one:
+  `package-ecosystem: bun`, `directory: "/"`, `open-pull-requests-limit: 10`,
+  `ignore: typescript`, group `workspace-minor-patch` (minor+patch).
+  dependabot-core's bun fetcher reads `package.json["workspaces"]` and the
+  updater rewrites the lockfile at the configured directory, so root is the
+  only entry that can produce a consistent PR. `github-actions` and both
+  `docker` entries are unchanged.
+- **Docs.** `docs/database/` reviewed and unchanged (no schema, column,
+  constraint, status vocabulary or lifecycle change).
+- **Not verified yet.** No dependabot run has happened since the config
+  change. Verification = a new dependabot PR whose diff contains `bun.lock`
+  and whose `Lint Backend`, `Unit Test Backend`, `Lint Web Admin` and
+  `Unit Test Web Admin` jobs pass.
+- **Known limits.** Dependabot bun supports version updates only - security
+  updates and `bun.lock`-based transitive alerts are unsupported by GitHub.
+  Root `packageManager: bun@1.4.2` still differs from CI `bun-version: 1.4.4`;
+  left alone here.
+- **ID note.** ERP-0039/0040/0041 are claimed on `fix/org-hardening`, so this
+  task took the next free ID (ERP-0042) even though this branch is cut from
+  `main`.
+
 ## 2026-11-10 - ERP-0034: minimal HR employees + warehouse PIC (slices 1-8)
 
 Status: implemented and browser-verified (create → list → detail; seeder;
@@ -5549,13 +5588,19 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**Push the organization `description` slice and get reviewer sign-off on PR
-#82** (`fix/org-hardening`). Gates green: `bunx tsc -b --noEmit` clean in
-`apps/backend` + `apps/web-admin`, `bun run test` backend 842 / web-admin 62 /
-locales 82, no new lint warnings, migration verified on disposable DB
-`ims_erp41_desc` (dropped), `validate-dbml.ts` `OK`, live create/edit/detail
-walk-through done. Remaining: push, CI green, reviewer approval before moving
-ERP-0041 from `verified` to `accepted`.
+**Get reviewer sign-off on PR #82** (`fix/org-hardening`) — the organization
+`description` slice, the full-width create card, the create-style edit page,
+and the `findById` cache-invalidation fix are all in. Gates green: `bunx tsc
+-b --noEmit` clean in `apps/backend` + `apps/web-admin`, `bun run test`
+backend 842 / web-admin 62 / locales 82, no new lint warnings, migration
+verified on disposable DB `ims_erp41_desc` (dropped), `validate-dbml.ts`
+`OK`, live create/edit/detail walk-through done. Main was merged in after
+dependabot bumped 20 workspace deps.
+
+**Verify ERP-0042** (from main): the next dependabot run after the config
+change must open a PR whose diff contains `bun.lock` with all four lint/test
+jobs green; if it does not, fall back to a lockfile-refresh workflow (see the
+2026-11-13 entry).
 
 Older, still-open follow-ups: docs merge of `merge/main-sync` into
 `fix/docs-consistency`, then the 7 deferred tables.
