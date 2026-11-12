@@ -29,7 +29,21 @@ import { Textarea } from '@ims-erp/ui/components/textarea';
 
 /** Client-side pre-check mirroring the backend rules (UX only). */
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
-const AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+/**
+ * Formats the backend can decode. Anything else is refused before the
+ * upload so the user gets an instant message instead of a 415.
+ */
+const AVATAR_TYPES = [
+	'image/png',
+	'image/jpeg',
+	'image/webp',
+	'image/gif',
+	'image/bmp',
+	'image/tiff',
+	'image/heic',
+	'image/heif',
+	'image/avif',
+];
 
 /**
  * Self profile editor (`/profiles/edit`). Avatar uploads go through
@@ -112,7 +126,7 @@ export function ProfileEditForm() {
 							<input
 								ref={fileInputRef}
 								type='file'
-								accept='image/png,image/jpeg,image/webp'
+								accept='image/png,image/jpeg,image/webp,image/gif,image/bmp,image/tiff,image/heic,image/heif,image/avif'
 								className='hidden'
 								onChange={handleAvatarChange}
 							/>

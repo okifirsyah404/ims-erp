@@ -15,6 +15,7 @@ import {
 	eq,
 	inArray,
 	isNull,
+	sql,
 } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import { cacheIdKey } from '@utils/cache.util';
@@ -173,6 +174,16 @@ export class OrganizationRepository implements IOrganizationRepository {
 		});
 	}
 
+	/** Live rows only: a soft-deleted organization cannot receive invites. */
+	async findBySlug(slug: string): Promise<TOrganizationSelect | null> {
+		const [row] = await this.db
+			.select()
+			.from(organizations)
+			.where(and(eq(organizations.slug, slug), isNull(organizations.deletedAt)))
+			.limit(1);
+		return row ?? null;
+	}
+
 	/**
 	 * Counts live (non-soft-deleted) organizations. Backs the
 	 * last-organization guard so an operator can never delete the final
@@ -195,7 +206,7 @@ export class OrganizationRepository implements IOrganizationRepository {
 			.update(organizations)
 			.set({ deletedAt: new Date() })
 			.where(and(eq(organizations.id, id), isNull(organizations.deletedAt)));
-		await this.invalidate(id);
+		await this.invalidateCache(id);
 	}
 
 	/**
@@ -206,13 +217,44 @@ export class OrganizationRepository implements IOrganizationRepository {
 			.update(organizations)
 			.set({ deletedAt: null })
 			.where(eq(organizations.id, id));
-		await this.invalidate(id);
+		await this.invalidateCache(id);
+	}
+
+	/**
+	 * Sets `logo` to an object key (or `null`) and invalidates the cache.
+	 * Service write path (upload / clear); see the interface note.
+	 */
+	async setLogo(id: string, logo: string | null): Promise<void> {
+		await this.db
+			.update(organizations)
+			.set({ logo })
+			.where(eq(organizations.id, id));
+		await this.invalidateCache(id);
+	}
+
+	/**
+	 * Sets `logo` only when it is still empty.
+	 *
+	 * @remarks
+	 * The `logo IS NULL` predicate is what makes the generated-fallback worker
+	 * safe: its earlier `findById` may already be stale, so the check has to
+	 * live in the UPDATE rather than in the caller.
+	 */
+	async setLogoIfEmpty(id: string, logo: string): Promise<boolean> {
+		const updated = await this.db
+			.update(organizations)
+			.set({ logo })
+			.where(and(eq(organizations.id, id), isNull(organizations.logo)))
+			.returning({ id: organizations.id });
+		if (updated.length === 0) return false;
+		await this.invalidateCache(id);
+		return true;
 	}
 
 	/**
 	 * Evicts the per-id cache entry used by {@link findById}.
 	 */
-	private async invalidate(id: string): Promise<void> {
+	async invalidateCache(id: string): Promise<void> {
 		await this.cache.del(cacheIdKey(this.cachePrefix, id));
 	}
 
@@ -234,10 +276,12 @@ export class OrganizationRepository implements IOrganizationRepository {
 		const { page, limit, role } = request;
 		const conditions = [eq(members.organizationId, organizationId)];
 		if (role) {
-			// ponytail: exact single-role match only; comma-separated multi-role
-			// members won't match a partial filter. Add SQL LIKE splitting when
-			// multi-role members actually exist.
-			conditions.push(eq(members.role, role));
+			// Multi-role members are comma-joined (ERP-0041); the wrapped list
+			// matches a whole entry, not a substring ('sales' does not match
+			// 'sales_manager').
+			conditions.push(
+				sql`(',' || ${members.role} || ',') LIKE ${`%,${role},%`}`,
+			);
 		}
 
 		const rows = await this.db

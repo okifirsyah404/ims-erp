@@ -35,7 +35,41 @@ Last synced: 2026-11-08.
   (sample data via `apps/web-admin/src/lib/dashboard-api.ts`, `dashboard`
   locale namespace). Scaffold only — **not feature status**; figures are
   placeholders until the real API replaces the mock fetcher.
-
+- Organization info dashboard, dummy data — ERP-0040 (2026-11-12): tab `info`
+  of the organization detail page renders users-by-role, projects, sales,
+  inventory, activity, profit & loss, cash & bank cards with two BarCharts
+  (existing `@ims-erp/ui/components/chart`, Recharts v3). Hardcoded dummy
+  data (`apps/web-admin/src/lib/org-dashboard-data.ts`), en/id keys complete;
+  **not feature status** — real wiring blocked on the owning modules.
+- Org CRUD robustness — ERP-0041 (2026-11-12, **verified**): backend + web-admin
+  UI (org-create nested users, image-profile icon dropzone with drag & drop on
+  the create and edit pages, member/invite multi-role checkbox grid, bulk paste
+  with `|` role separator) + backend unit tests (12 org-create-nested, 5
+  employee-invite); migration verified on a
+  disposable DB. Live browser walk-through done: WebP upload → MinIO
+  presigned read, multi-role bulk invite stored `technician,sales`, retried
+  invite reuses a leftover employee row. Logo picking is a drag & drop
+  dropzone on both form pages; object key `organizations/<id>/logo.webp`
+  (plural, like `users/<id>/avatar.webp`) re-verified with the real seed asset.
+  The create page is now org details only (nested users removed by user
+  decision; `POST /organizations` still accepts `users` for API callers) and
+  the image input downscales to 512px client-side, caps the source at 20MB and
+  falls back to the generated key `logo-generated.webp` behind a conditional
+  `logo IS NULL` write. The organization list presigns each card logo on the
+  server (a raw object key rendered as a broken image) with an initials fallback
+  on load error. The list grid is `1 / sm:2 / lg:3 / 2xl:4` (a 4-up grid at
+  `lg` produced 180px cards) and its header stacks below `sm`. The optional
+  organization `description` (new nullable `text` column, 2000-char zod cap)
+  is created/edited in a textarea and shown on the info dashboard, which also
+  exposed and fixed a stale-`findById` cache bug on PATCH. **Server-side image
+  normalisation** (same slice, 2026-11-13): the user never converts to WebP by
+  hand — `apps/backend/src/utils/image.util.ts` (`Bun.Image`, no new dependency)
+  sniffs PNG/JPG/WebP/GIF/BMP/TIFF/HEIC/AVIF and re-encodes every stored image
+  (org logo, DiceBear-generated org logo and avatar, user avatar, document
+  images) to WebP, downscaled to 512px (avatar 144px). The web admin keeps a
+  canvas fast path (`encodeImage`, WebP with a PNG fallback) and can no longer
+  fail with "WebP encoding failed"; the 2 MB upload cap is unchanged because the
+  client downscales first. Evidence: progress 2026-11-12 and 2026-11-13.
 
 ## M02 CRM and Sales
 
@@ -178,7 +212,14 @@ Last synced: 2026-11-08.
   validation (422 `inventory.warehousePicInvalid`), web-admin
   `/hr/employees` pages, seeder. Evidence: `apps/backend/src/app/hr`,
   `apps/web-admin/src/components/hr`, `progress.md` 2026-11-10. Deferred:
-  manager picker UI, export.
+  manager picker UI, export. Follow-up 2026-11-12: invite-creates-employee
+  on both scopes (`EmployeeInviteService` behind `IInvitationEmployeePort`),
+  rollback on insert failure, personal fields on `auth.users` via
+  `IUserPersonalFieldsPort` (migration pending disposable-DB run), `hr`
+  invite rights. Bulk invite via CSV/XLSX file upload added 2026-11-12
+  (shared parser in `packages/common`, client-side parse + template
+  download endpoints, `organizationSlug` resolution; evidence in
+  `progress.md`).
 
 ### blocked
 - Supplier payables and the M09 payable handoff of receipts — ERP-0035.
@@ -345,6 +386,18 @@ Last synced: 2026-11-08.
   `apps/backend/src/app/organization`, UI `/organizations/*`; progress
   2026-10-31, 2026-11-02 live smoke. Pending: browser acceptance. Note:
   organizations = internal departments, consistent with v5.1 (ADR-0010).
+- Organization-scoped invitations + one shared invite dialog — ERP-0039
+  (2026-11-12). Org admins list/resend/cancel/delete their own pending
+  invitations (`/organizations/:organizationId/invitations`, path org
+  authoritative, out-of-scope → 404) without the app-admin-only
+  `/admin/invitations`; `components/invite/invite-dialog.tsx` serves both
+  `/admin/users` (org picker incl. explicit “no organization”) and the
+  organization Members tab; claim phone is E.164 (`libphonenumber-js`).
+  Evidence: `apps/backend/src/app/organization/controllers/
+  organization-invitation.controller.ts`,
+  `test/unit/invitation.service.test.ts` (12),
+  `apps/web-admin/test/unit/invite-parse.test.ts` (10), browser run in
+  `progress.md` 2026-11-12. Pending: reviewer sign-off, PR.
 
 ## Backlog-only (no module)
 

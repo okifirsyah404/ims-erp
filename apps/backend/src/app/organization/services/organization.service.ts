@@ -2,6 +2,12 @@ import { inject, injectable } from 'tsyringe';
 import type { TOrganizationSelect } from '@drizzle/schemas/auth.schema';
 import { TPaginationResult } from '@ims-erp/common';
 import { presignObjectUrl } from '@providers/s3/s3';
+import { OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
+import type { IObjectStorage } from '@providers/s3/object-storage';
+import { fileBytes, toWebp, UnsupportedImageError } from '@utils/image.util';
+import { dispatchOrgLogoGeneration } from '../queues/org-logo.queue';
+import { OrganizationImageInvalidError } from '../utils/organization-image';
+import { organizationImageObjectKey } from '../constants/image-keys';
 import { seedOrganizationRoles } from '../../../../database/seeders/seed/organization-roles.seeder';
 import type {
 	IOrganizationAuthGateway,
@@ -16,7 +22,7 @@ import type {
 import type {
 	TAddMember,
 	TCreateOrganization,
-	TMemberRole,
+	TCreateOrganizationResult,
 	TOrganizationMember,
 	TUpdateMemberRole,
 	TUpdateOrganization,
@@ -25,6 +31,13 @@ import {
 	ORGANIZATION_AUTH_GATEWAY_TOKEN,
 	ORGANIZATION_REPOSITORY_TOKEN,
 } from '../constants/di';
+import { INVITATION_SERVICE_TOKEN } from '@app/user/constants/di';
+import type {
+	InvitationService,
+	TActor,
+} from '@app/user/services/invitation.service';
+import { USER_MANAGEMENT_REPOSITORY_TOKEN } from '@app/user/constants/di';
+import type { IUserManagementRepository } from '@app/user/contracts/user-management.repository.interface';
 import {
 	LastOrganizationError,
 	LastOwnerError,
@@ -34,6 +47,7 @@ import {
 	OrganizationNotFoundError,
 	OrganizationSlugTakenError,
 } from '../errors/organization.errors';
+import type { TMemberRole } from '../contracts/organization.contract';
 
 /**
  * Organization module service.
@@ -55,6 +69,12 @@ export class OrganizationService {
 		private readonly repository: IOrganizationRepository,
 		@inject(ORGANIZATION_AUTH_GATEWAY_TOKEN)
 		private readonly gateway: IOrganizationAuthGateway,
+		@inject(INVITATION_SERVICE_TOKEN)
+		private readonly invitations: InvitationService,
+		@inject(USER_MANAGEMENT_REPOSITORY_TOKEN)
+		private readonly users: IUserManagementRepository,
+		@inject(OBJECT_STORAGE_TOKEN)
+		private readonly storage: IObjectStorage,
 	) {}
 
 	/**
@@ -63,32 +83,137 @@ export class OrganizationService {
 	 * @param headers - Caller headers; Better Auth enforces
 	 * `allowUserToCreateOrganization` (application admin) and activates the
 	 * new organization for that session
-	 * @param input - Organization profile plus the creator to register as
-	 * `owner`
+	 * @param input - Organization profile, optional nested users, and the
+	 * creator to register as `owner`
+	 * @param actor - Audit actor for the invitation pipeline
+	 * @param creatorEmail - The creator's own email; a nested-user row with
+	 * this email is skipped (the creator already becomes owner)
 	 *
 	 * @remarks
 	 * Enum verification is best-effort: a failure there must not orphan an
 	 * organization that Better Auth has already created. Roles are a closed
 	 * code catalog (`erpRoleNames`/`erpRoleGrants` in `@ims-erp/common`), so
 	 * no per-organization provisioning is required.
+	 *
+	 * Nested users are per-item isolated (ERP-0041): an email belonging to a
+	 * live active user joins directly through the auth gateway (`added`);
+	 * any other email runs the unified invitation pipeline (`invited`),
+	 * which pre-creates the pending user and delivers the email unless
+	 * `sendInvites` is false. A failed row is reported and the rest still
+	 * run — the organization itself is never rolled back.
 	 */
 	async createOrganization(
 		headers: Headers,
 		input: TCreateOrganization & { creatorUserId?: string },
-	): Promise<TOrganizationSelect> {
+		actor?: TActor,
+		creatorEmail?: string,
+	): Promise<TCreateOrganizationResult> {
 		const created = await this.gateway.createOrganization({
 			name: input.name,
 			slug: input.slug,
 			logo: input.logo ?? undefined,
+			description: input.description ?? undefined,
 			metadata: input.metadata ?? undefined,
 			userId: input.creatorUserId,
-			role: 'owner',
 			headers,
 		});
-		await this.provisionRoles(created.id);
+		// ponytail: fire-and-forget — enum provisioning must not block the
+		// create response (CI runs without Postgres; connection retries would
+		// stall tests). Upgrade path: inject a drizzle client token so the
+		// seeder resolves in tests and awaits properly in prod.
+		void this.provisionRoles(created.id);
 		const row = await this.repository.findById(created.id);
 		if (!row) throw new OrganizationNotFoundError();
-		return row;
+
+		// Fire-and-forget DiceBear fallback logo: skipped by the worker when
+		// the client already uploaded a real logo, or the org got deleted.
+		// Must not block the create response either (CI has no Redis).
+		void dispatchOrgLogoGeneration({ id: row.id, slug: row.slug }).catch(
+			(error) =>
+				console.error('[organization] logo dispatch failed', row.id, error),
+		);
+
+		const members: TCreateOrganizationResult['members'] = [];
+		for (const user of input.users ?? []) {
+			members.push(
+				await this.attachCreateUser(row.id, user, {
+					actor,
+					creatorEmail,
+					sendInvites: input.sendInvites !== false,
+				}).catch((error: unknown) => ({
+					email: user.email,
+					status: 'failed' as const,
+					error: error instanceof Error ? error.message : String(error),
+				})),
+			);
+		}
+
+		return {
+			organization: {
+				id: row.id,
+				name: row.name,
+				slug: row.slug,
+				logo: row.logo ?? null,
+				description: row.description ?? null,
+			},
+			members,
+		};
+	}
+
+	/**
+	 * Attaches one nested user to a freshly created organization: existing
+	 * active user → direct membership through the auth gateway (`added`);
+	 * otherwise → the unified invitation pipeline (`invited`), which
+	 * pre-creates the pending user and (unless `sendInvites` is false)
+	 * delivers the email. The creator's own email is skipped: the creator
+	 * already became owner at organization creation.
+	 */
+	private async attachCreateUser(
+		organizationId: string,
+		user: { email: string; name: string; roles: TMemberRole[] },
+		context: {
+			actor?: TActor;
+			creatorEmail?: string;
+			sendInvites: boolean;
+		},
+	): Promise<TCreateOrganizationResult['members'][number]> {
+		if (
+			context.creatorEmail &&
+			user.email.toLowerCase() === context.creatorEmail.toLowerCase()
+		) {
+			return { email: user.email, status: 'skipped', reason: 'creator' };
+		}
+		if (!context.actor) {
+			return {
+				email: user.email,
+				status: 'skipped',
+				reason: 'no actor context',
+			};
+		}
+		const activeUser = await this.users.findActiveByEmail(user.email);
+		if (activeUser) {
+			const member = await this.gateway.addMember({
+				organizationId,
+				userId: activeUser.id,
+				roles: user.roles,
+			});
+			return { email: user.email, status: 'added', memberId: member.id };
+		}
+		const result = await this.invitations.invite(
+			{
+				email: user.email,
+				name: user.name,
+				organizationId,
+				organizationRoles: user.roles,
+			},
+			context.actor,
+			context.sendInvites,
+		);
+		return {
+			email: user.email,
+			status: 'invited',
+			invitationId: result.invitation.id,
+		};
 	}
 
 	/**
@@ -113,11 +238,24 @@ export class OrganizationService {
 
 	/**
 	 * Paginated organization listing (soft-deleted excluded unless asked).
+	 *
+	 * @remarks
+	 * `logo` is presigned here: the column stores an object key (never an
+	 * expiring URL), but a list card renders the image directly, and a client
+	 * cannot sign. Same convention as member avatars in
+	 * {@link listMembers}.
 	 */
 	async listOrganizations(
 		request: TOrganizationPaginationRequest,
 	): Promise<TPaginationResult<TOrganizationWithCounts>> {
-		return this.repository.paginate(request);
+		const page = await this.repository.paginate(request);
+		return {
+			...page,
+			data: page.data.map((row) => ({
+				...row,
+				logo: row.logo ? presignObjectUrl(row.logo) : null,
+			})),
+		};
 	}
 
 	/**
@@ -151,9 +289,14 @@ export class OrganizationService {
 			data: {
 				name: input.name,
 				logo: input.logo ?? undefined,
+				description: input.description,
 				metadata: input.metadata ?? undefined,
 			},
 		});
+		// Better Auth writes the row itself, so the repository never sees the
+		// write — drop the cached read or `findById` serves the old row for
+		// the full TTL.
+		await this.repository.invalidateCache(organizationId);
 		const row = await this.repository.findById(organizationId);
 		if (!row) throw new OrganizationNotFoundError();
 		return row;
@@ -203,6 +346,58 @@ export class OrganizationService {
 		if (!row) throw new OrganizationNotFoundError();
 		if (!row.deletedAt) throw new OrganizationNotDeletedError();
 		await this.repository.restore(row.id);
+	}
+
+	/**
+	 * Replaces (or, with `null`, removes) the organization profile image.
+	 * Any supported image format is accepted and normalised to WebP on the
+	 * server (downscaled to 512px), so a client without a WebP encoder — or an
+	 * iPhone HEIC photo — still works. The object key is stored in
+	 * `auth.organizations.logo` and presigned on read, never a stored URL
+	 * (ERP-0041).
+	 *
+	 * @param headers - Caller headers; Better Auth enforces `organization:update`
+	 * @param file - The uploaded image, or `null` to clear it
+	 *
+	 * @throws OrganizationImageInvalidError when the bytes are not a decodable image
+	 */
+	async setImage(
+		headers: Headers,
+		organizationId: string,
+		file: File | null,
+	): Promise<{ id: string; imageKey: string | null }> {
+		await this.ensureActive(organizationId);
+		let imageKey: string | null = null;
+		if (file) {
+			let webp: Buffer;
+			try {
+				webp = await toWebp(await fileBytes(file));
+			} catch (error) {
+				if (error instanceof UnsupportedImageError) {
+					throw new OrganizationImageInvalidError();
+				}
+				throw error;
+			}
+			await this.storage.put(
+				organizationImageObjectKey(organizationId),
+				webp,
+				'image/webp',
+			);
+			imageKey = organizationImageObjectKey(organizationId);
+		}
+		// Direct repository write (Better Auth's logo column is mirrored by
+		// this module's read path; no caller-session mutation is needed).
+		await this.repository.setLogo(organizationId, imageKey);
+		return { id: organizationId, imageKey };
+	}
+
+	/**
+	 * Presigned GET URL of the organization profile image, or `null` when
+	 * none was uploaded yet.
+	 */
+	async getImage(organizationId: string): Promise<string | null> {
+		const row = await this.ensureActive(organizationId);
+		return row.logo ? presignObjectUrl(row.logo) : null;
 	}
 
 	/**
@@ -259,12 +454,13 @@ export class OrganizationService {
 		return this.gateway.addMember({
 			organizationId,
 			userId: input.userId,
-			role: input.role,
+			roles: input.roles,
 		});
 	}
 
 	/**
-	 * Changes a member's role through the Better Auth gateway.
+	 * Changes a member's roles through the Better Auth gateway (full
+	 * comma-joined overwrite).
 	 *
 	 * @remarks
 	 * Demoting an owner is pre-checked here (last-owner protection) in
@@ -279,19 +475,20 @@ export class OrganizationService {
 		organizationId: string,
 		memberId: string,
 		input: TUpdateMemberRole,
-	): Promise<{ id: string; role: TMemberRole }> {
+	): Promise<{ id: string; role: string }> {
 		await this.ensureActive(organizationId);
 		const member = await this.repository.findMemberById(organizationId, memberId);
 		if (!member) throw new MemberNotFoundError();
-		if (this.isOwner(member.role) && input.role !== 'owner') {
+		if (this.isOwner(member.role) && !input.roles.includes('owner')) {
 			await this.ensureNotLastOwner(organizationId, memberId);
 		}
+		const joined = input.roles.join(',');
 		const result = await this.gateway.updateMemberRole(headers, {
 			organizationId,
 			memberId,
-			role: input.role,
+			role: joined,
 		});
-		return { id: result.member.id, role: input.role };
+		return { id: result.member.id, role: joined };
 	}
 
 	/**

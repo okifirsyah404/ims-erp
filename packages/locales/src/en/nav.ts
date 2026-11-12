@@ -122,7 +122,6 @@ const nav = {
 	'breadcrumb.organizations': 'Organizations',
 	'breadcrumb.organizationNew': 'New organization',
 	'breadcrumb.organizationEdit': 'Edit',
-	'breadcrumb.memberNew': 'Invite member',
 	'breadcrumb.memberEdit': 'Edit member',
 	'breadcrumb.quotationNew': 'New quotation',
 	'breadcrumb.quotationEdit': 'Edit',

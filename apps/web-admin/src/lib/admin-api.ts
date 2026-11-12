@@ -215,7 +215,10 @@ export type TInvitation = {
 	type: 'app' | 'org';
 	status: TInvitationStatus;
 	organizationId: string | null;
-	/** Closed ERP organization role (org path); null on the app path. */
+	/**
+	 * Comma-joined closed ERP roles (org path); null on the app path
+	 * (ERP-0041 multi-role).
+	 */
 	organizationRole: string | null;
 	invitedBy: string;
 	expiresAt: string;
@@ -275,13 +278,32 @@ export async function sendInvitations(
 	return envelope.data;
 }
 
-/** Input row for the invite dialog. Org invites carry the role *name*. */
+/** Downloads the bulk-invite template file (xlsx, or csv with `format`). */
+export async function downloadInvitationTemplate(
+	format: 'xlsx' | 'csv' = 'xlsx',
+): Promise<void> {
+	const response = await fetch(
+		`${API_URL}/admin/invitations/template?format=${format}`,
+		{ credentials: 'include' },
+	);
+	if (!response.ok) throw new Error(`Request failed (${response.status})`);
+	const blob = await response.blob();
+	const url = URL.createObjectURL(blob);
+	const anchor = document.createElement('a');
+	anchor.href = url;
+	anchor.download = `invitation-template.${format}`;
+	anchor.click();
+	URL.revokeObjectURL(url);
+}
+
+/** Input row for the invite dialog. Org invites carry the role *names*. */
 export type TInviteInput = {
 	email: string;
 	/** Required by the backend contract (greets the invitee, prefills profile). */
 	name: string;
 	organizationId?: string;
-	organizationRole?: string;
+	/** Closed-enum role names; stored comma-joined backend-side (ERP-0041). */
+	organizationRoles?: string[];
 };
 
 export async function resendInvitation(
@@ -297,71 +319,138 @@ export async function resendInvitation(
 /** Backend cap on one bulk batch (locked decision D13). */
 export const BULK_INVITE_LIMIT = 100;
 
+/** How the pasted rows are interpreted. */
+export type TBulkInviteMode = 'admin' | 'org';
+
+export type TBulkInviteParseOptions = {
+	/**
+	 * `admin` rows are `email, name, org-code, role` (org code empty means an
+	 * application-level invite); `org` rows are `email, name, role` and are
+	 * pinned to `organizationId`. The role cell is pipe-separated for
+	 * multi-role invites (`admin|finance`); the comma stays the field
+	 * separator (ERP-0041).
+	 */
+	mode: TBulkInviteMode;
+	/** Pinned organization for `org` mode. */
+	organizationId?: string;
+	/** Role used when a row does not specify one (and the row has an org). */
+	organizationRole?: string;
+	/** Resolves a pasted organization code (slug) to its id; null if unknown. */	resolveOrganizationCode?: (code: string) => string | null;
+};
+
 /**
  * Parses pasted bulk-invite rows.
  *
  * @remarks
- * One row per line, comma-separated: `email[, name[, role]]`. Rows may also
- * be a bare email list. `role` is matched case-insensitively against the
- * fixed `erpRoleNames` enum — the backend contract takes `organizationRole`,
- * not a role id.
+ * One row per line, comma-separated. `admin` mode reads
+ * `email, name, org-code, role`; `org` mode reads `email, name, role` (the
+ * organization comes from the dialog context, never the row).
  *
- * Unknown role names are deliberately NOT dropped here: the row is sent
- * without an `organizationRole` (or with the default), and the backend's
- * fallback to `member` applies. Blank lines are skipped.
+ * Row errors are isolated: a bad email or an unknown organization code drops
+ * that row and reports it, while the remaining rows still go out — the same
+ * per-row isolation the backend applies. `error` is reserved for a batch-level
+ * failure (nothing pasted, too many rows).
+ *
+ * Unknown role names ARE dropped here (per-row validation, matching the
+ * sheet parser): a pipe-separated cell with any unknown role reports a row
+ * error. Blank lines are skipped.
  */
 export function parseBulkInviteRows(
 	pasted: string,
-	options: {
-		organizationId: string;
-		/** Role used when a row does not specify one. */
-		organizationRole?: string;
-	},
-): { rows: TInviteInput[]; error: string | null } {
+	options: TBulkInviteParseOptions,
+): { rows: TInviteInput[]; rowErrors: string[]; error: string | null } {
 	const lines = pasted
 		.split(/\r?\n/)
 		.map((line) => line.trim())
 		.filter(Boolean);
 
-	if (lines.length === 0) return { rows: [], error: 'Paste at least one row' };
+	if (lines.length === 0) {
+		return { rows: [], rowErrors: [], error: 'Paste at least one row' };
+	}
 	if (lines.length > BULK_INVITE_LIMIT) {
 		return {
 			rows: [],
+			rowErrors: [],
 			error: `Too many rows (${lines.length}); the limit is ${BULK_INVITE_LIMIT}`,
 		};
 	}
 
 	const rows: TInviteInput[] = [];
+	const rowErrors: string[] = [];
 	for (const [index, line] of lines.entries()) {
-		const [rawEmail, rawName, rawRole] = line
-			.split(',')
-			.map((part) => part.trim());
+		const parts = line.split(',').map((part) => part.trim());
+		const [rawEmail, rawName] = parts;
+		const isAdmin = options.mode === 'admin';
+		const rawCode = isAdmin ? parts[2] : undefined;
+		const rawRole = isAdmin ? parts[3] : parts[2];
+
 		if (!rawEmail || !rawEmail.includes('@')) {
-			return { rows: [], error: `Row ${index + 1}: "${line}" has no valid email` };
+			rowErrors.push(`Row ${index + 1}: "${line}" has no valid email`);
+			continue;
 		}
+
+		// Admin rows: an empty code is an explicit application-level invite.
+		let organizationId: string | undefined;
+		if (isAdmin) {
+			if (rawCode) {
+				const resolved = options.resolveOrganizationCode?.(rawCode) ?? null;
+				if (!resolved) {
+					rowErrors.push(
+						`Row ${index + 1}: unknown organization code "${rawCode}"`,
+					);
+					continue;
+				}
+				organizationId = resolved;
+			}
+		} else {
+			organizationId = options.organizationId;
+		}
+
+		// A role only means something inside an organization. An unknown
+		// role drops the row (per-row validation, same as the sheet parser).
+		const roles = organizationId
+			? resolveOrganizationRoles(rawRole, options)
+			: undefined;
+		if (organizationId && rawRole && roles === undefined) {
+			rowErrors.push(`Row ${index + 1}: unknown role "${rawRole}"`);
+			continue;
+		}
+
 		rows.push({
 			email: rawEmail,
 			// `name` is required by the backend contract; a bare-email row
 			// defaults to the local part, matching the service's own fallback.
 			name: rawName || rawEmail.split('@')[0]!,
-			organizationId: options.organizationId,
-			organizationRole: resolveOrganizationRole(rawRole, options),
+			organizationId,
+			organizationRoles: roles,
 		});
 	}
-	return { rows, error: null };
+	return { rows, rowErrors, error: null };
 }
 
 /**
- * Maps a pasted role name onto the fixed enum, case-insensitively. Empty
- * input falls back to the dialog default.
+ * Maps a pasted role cell onto the fixed enum, case-insensitively. Empty
+ * input falls back to the dialog default. Multi-role cells are pipe-
+ * separated ('admin|finance'); the comma stays the field separator
+ * (ERP-0041). Returns `undefined` when any role is unknown — the caller
+ * reports a row error, matching the sheet parser's per-row validation.
  */
-function resolveOrganizationRole(
+function resolveOrganizationRoles(
 	value: string | undefined,
 	options: { organizationRole?: string },
-): string | undefined {
-	if (!value) return options.organizationRole;
-	const lowered = value.toLowerCase();
-	return erpRoleNames.find((name) => name === lowered);
+): string[] | undefined {
+	const fallback = options.organizationRole ? [options.organizationRole] : undefined;
+	if (!value) return fallback;
+	const roles = value
+		.split('|')
+		.map((r) => r.trim().toLowerCase())
+		.filter(Boolean);
+	if (roles.length === 0) return fallback;
+	const resolved = roles.map(
+		(role) => erpRoleNames.find((name) => name === role) ?? null,
+	);
+	if (resolved.some((role) => role === null)) return undefined;
+	return [...new Set(resolved)] as string[];
 }
 
 export async function cancelInvitation(
@@ -394,6 +483,8 @@ export const ADMIN_PERMISSIONS = {
 	createMembers: 'member.create' as Permission,
 	updateMembers: 'member.update' as Permission,
 	deleteMembers: 'member.delete' as Permission,
+	createInvitations: 'invitation.create' as Permission,
+	cancelInvitations: 'invitation.cancel' as Permission,
 	readAudit: 'audit_log.read' as Permission,
 };
 

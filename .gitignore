@@ -57,3 +57,4 @@ logs/
 # Playwright output and local e2e state
 apps/web-admin/e2e/.results/
 apps/web-admin/e2e/.state/
+*.tsbuildinfo

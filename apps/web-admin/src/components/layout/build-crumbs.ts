@@ -38,7 +38,6 @@ const LABELS: Record<string, NavKey> = {
 	'/organizations/': 'breadcrumb.organizations',
 	'/organizations/new': 'breadcrumb.organizationNew',
 	'/organizations/$organizationId/edit': 'breadcrumb.organizationEdit',
-	'/organizations/$organizationId/members/new': 'breadcrumb.memberNew',
 	'/organizations/$organizationId/members/$memberId/edit':
 		'breadcrumb.memberEdit',
 	'/admin/settings': 'item.settings',

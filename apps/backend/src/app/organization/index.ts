@@ -11,12 +11,18 @@ import { CompanyProfileController } from './controllers/company-profile.controll
 import { NumberingController } from './controllers/numbering.controller';
 import { OrganizationBootstrapController } from './controllers/organization-bootstrap.controller';
 import { OrganizationController } from './controllers/organization.controller';
+import { OrganizationInvitationController } from './controllers/organization-invitation.controller';
 
 export * from './container';
 export * from './controllers/organization.controller';
 export * from './controllers/organization-bootstrap.controller';
+export * from './controllers/organization-invitation.controller';
 export * from './controllers/company-profile.controller';
 export * from './controllers/numbering.controller';
+export {
+	type OrgLogoWorkerHandle,
+	startOrgLogoWorker,
+} from './queues/org-logo.worker';
 export type { TNumberContext } from './domain/document-number';
 export type { NumberingService } from './services/numbering.service';
 
@@ -31,6 +37,7 @@ export type { NumberingService } from './services/numbering.service';
 export function organizationModule() {
 	return new Elysia({ name: 'organization' })
 		.use(OrganizationController.plugin())
+		.use(OrganizationInvitationController.plugin())
 		.use(OrganizationBootstrapController.plugin())
 		.use(CompanyProfileController.plugin())
 		.use(NumberingController.plugin());

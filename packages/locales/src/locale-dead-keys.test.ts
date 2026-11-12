@@ -175,6 +175,12 @@ const DYNAMIC_PREFIXES = [
 	'finance:aging.bucket.',
 	'finance:reconciliation.status.',
 	'finance:closing.item.',
+	// Organization info dashboard composes role, project status, activity
+	// action and account type labels from dummy data values.
+	'orgDashboard.roles.',
+	'orgDashboard.projects.status.',
+	'orgDashboard.activity.actions.',
+	'orgDashboard.cash.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

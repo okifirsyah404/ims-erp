@@ -9,7 +9,8 @@ import {
 	userIdParamsSchema,
 } from '../contracts/user.contract';
 import { USER_SERVICE_TOKEN } from '../constants/di';
-import { UserService, AVATAR_MAX_BYTES, sniffAvatarType } from '../services/user.service';
+import { UserService, AVATAR_MAX_BYTES } from '../services/user.service';
+import { sniffImageType, UnsupportedImageError } from '@utils/image.util';
 import {
 	InvalidAvatarError,
 	UserEmailTakenError,
@@ -35,6 +36,19 @@ function requireGlobalAdmin({ erp }: { erp: ErpContext }): void {
 	if (erp.session.user.role !== 'admin') {
 		throw new NotGlobalAdminError();
 	}
+}
+
+/**
+ * The multipart `file` field from Elysia's already-parsed body.
+ *
+ * @remarks
+ * Reading `request.formData()` a second time throws `Body already used`, so the
+ * parsed `body` is the only safe source.
+ */
+function avatarFileFrom(body: unknown): File | null {
+	const file =
+		body && typeof body === 'object' ? (body as { file?: unknown }).file : undefined;
+	return file instanceof File ? file : null;
 }
 
 /**
@@ -160,18 +174,21 @@ export class UserController {
 			.post(
 				/**
 				 * Self-service avatar upload (multipart, field `file`).
-				 * Validates type by magic bytes (never the declared
-				 * Content-Type) and enforces the 2 MiB cap; writes to S3 and
+				 * Accepts any image the server can decode (PNG, JPG, WebP,
+				 * GIF, BMP, TIFF, HEIC, AVIF — sniffed by magic bytes, never
+				 * the declared Content-Type), enforces the 2 MiB cap, and
+				 * normalises the bytes to WebP server-side. Writes to S3 and
 				 * points `users.image` at the uploaded key. Returns the
 				 * refreshed profile with a fresh presigned URL.
 				 */
 				'/me/avatar',
 				async (ctx) => {
-					const { request, erp, status } = ctx;
+					const { body, erp, status } = ctx;
 					const t = translator(ctx);
-					const form = await request.formData();
-					const file = form.get('file');
-					if (!(file instanceof File)) {
+					// Elysia already parsed the multipart body; reading
+					// `request.formData()` again throws "Body already used".
+					const file = avatarFileFrom(body);
+					if (!file) {
 						return status(
 							400,
 							errorEnvelope(400, t('common.validationFailed'), [
@@ -188,23 +205,19 @@ export class UserController {
 						);
 					}
 					const bytes = new Uint8Array(await file.arrayBuffer());
-					const sniffed = sniffAvatarType(bytes.subarray(0, 12));
-					if (!sniffed) {
-						return status(
-							415,
-							errorEnvelope(415, t('common.unsupportedMediaType'), [
-								{
-									field: 'file',
-									message: t('user.avatarUnsupportedType'),
-								},
-							]),
-						);
+					try {
+						if (!sniffImageType(bytes.subarray(0, 16))) {
+							throw new InvalidAvatarError(t('user.avatarUnsupportedType'));
+						}
+						return ok(await userService.setSelfAvatar(erp.session.user.id, bytes));
+					} catch (error) {
+						// A sniffable header with an undecodable payload (truncated
+						// upload) lands here too; `onError` maps both to 415.
+						if (error instanceof UnsupportedImageError) {
+							throw new InvalidAvatarError(t('user.avatarUnsupportedType'));
+						}
+						throw error;
 					}
-					const profile = await userService.setSelfAvatar(erp.session.user.id, {
-						data: bytes.buffer as ArrayBuffer,
-						type: sniffed,
-					});
-					return ok(profile);
 				},
 				{ erpSession: { session: true } },
 			)

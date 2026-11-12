@@ -576,6 +576,11 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		payroll: ['read', 'create', 'calculate', 'update', 'submit', 'export'],
 		payslip: ['read', 'publish', 'download'],
 		document: ['read', 'create', 'download'],
+		// Invites org members (and creates their employee record) and sees the
+		// members tab. No `member:create|update|delete`: HR does not manage
+		// organization membership itself.
+		member: ['read'],
+		invitation: ['create', 'cancel'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 

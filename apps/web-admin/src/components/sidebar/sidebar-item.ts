@@ -12,4 +12,12 @@ export type SidebarItem = {
 	icon?: LucideIcon;
 	isActive?: boolean;
 	items?: SidebarItem[];
+	/**
+	 * Hidden from organization-only users (application administrators only).
+	 *
+	 * @remarks
+	 * UX only: the backend refuses these routes to non-admins. Used to keep
+	 * `/admin/users` and `/admin/audit` out of a sidebar they cannot use.
+	 */
+	adminOnly?: boolean;
 };

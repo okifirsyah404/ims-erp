@@ -28,12 +28,23 @@ import {
 	Card,
 	CardContent,
 	CardHeader,
-	CardTitle,
 } from '@ims-erp/ui/components/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@ims-erp/ui/components/tabs';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { OrganizationMemberCard } from '@/components/organization';
+import { OrganizationDashboard } from '@/components/organization/org-dashboard';
+import { InviteDialog } from '@/components/invite/invite-dialog';
+import {
+	PendingInvitationsPanel,
+	type TInvitationSource,
+} from '@/components/admin/pending-invitations-panel';
+import {
+	cancelOrgInvitation,
+	deleteOrgInvitation,
+	listOrgInvitations,
+	resendOrgInvitation,
+} from '@/lib/org-invitation-api';
 import {
 	deleteOrganization,
 	organizationMembersQueryOptions,
@@ -55,7 +66,8 @@ function OrganizationDetailPage() {
 	const queryClient = useQueryClient();
 	const canUpdate = usePermission('organization.update');
 	const canDelete = usePermission('organization.delete');
-	const canManageMembers = usePermission('member.create');
+	const canManageMembers = usePermission('invitation.create');
+	const canReadMembers = usePermission('member.read');
 	const { t } = useTranslation(['admin', 'common']);
 
 	const { data: organization, isPending } = useQuery({
@@ -66,11 +78,32 @@ function OrganizationDetailPage() {
 	const membersQuery = useQuery({
 		...organizationMembersQueryOptions(organizationId, memberPage, MEMBER_PAGE_SIZE),
 		placeholderData: (previous) => previous,
+		enabled: canReadMembers,
 	});
 	const { data: members } = membersQuery;
 
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [deleting, setDeleting] = useState(false);
+	const [inviteOpen, setInviteOpen] = useState(false);
+
+	// Invitations for THIS organization: org admins reach them without the
+	// application-admin-only `/admin/invitations` surface.
+	const invitationSource: TInvitationSource = {
+		queryOptions: {
+			queryKey: ['org-invitations', organizationId, 'pending'],
+			queryFn: () =>
+				listOrgInvitations(organizationId, { status: 'pending' }),
+			staleTime: 15 * 1000,
+		},
+		resend: (invitationId) => resendOrgInvitation(organizationId, invitationId),
+		cancel: (invitationId) => cancelOrgInvitation(organizationId, invitationId),
+		remove: (invitationId) => deleteOrgInvitation(organizationId, invitationId),
+		invalidate: [
+			['org-invitations'],
+			['admin-audit'],
+			['organizations', organizationId, 'members'],
+		],
+	};
 
 	// Child routes (edit, members/new, members/$memberId/edit) render instead
 	// of the detail page. The last match's routeId tells us which page is the
@@ -226,36 +259,23 @@ function OrganizationDetailPage() {
 			<Tabs defaultValue='info'>
 				<TabsList>
 					<TabsTrigger value='info'>{t('orgDetail.info')}</TabsTrigger>
-					<TabsTrigger value='members'>
-						{t('orgDetail.membersCount', {
-							count: members?.pagination.total ?? 0,
-						})}
-					</TabsTrigger>
+					{canReadMembers && (
+						<TabsTrigger value='members'>
+							{t('orgDetail.membersCount', {
+								count: members?.pagination.total ?? 0,
+							})}
+						</TabsTrigger>
+					)}
 				</TabsList>
-				<TabsContent value='info'>
-					<Card>
-						<CardHeader>
-							<CardTitle>{t('orgDetail.details')}</CardTitle>
-						</CardHeader>
-						<CardContent className='grid gap-2 text-sm'>
-							<div className='grid grid-cols-[140px_1fr] gap-2'>
-								<span className='text-muted-foreground'>
-									{t('orgDetail.name')}
-								</span>
-								<span>{organization.name}</span>
-								<span className='text-muted-foreground'>
-									{t('orgDetail.slug')}
-								</span>
-								<span>{organization.slug}</span>
-								<span className='text-muted-foreground'>
-									{t('orgDetail.created')}
-								</span>
-								<span>{new Date(organization.createdAt).toLocaleString()}</span>
-							</div>
-						</CardContent>
-					</Card>
+				<TabsContent value='info' className='flex flex-col gap-6'>
+					<OrganizationDashboard
+						name={organization.name}
+						slug={organization.slug}
+						description={organization.description}
+						createdAt={new Date(organization.createdAt)}
+					/>
 				</TabsContent>
-				<TabsContent value='members'>
+				<TabsContent value='members' className='flex flex-col gap-6'>
 					<Card className='gap-0 py-0'>
 						<div className='flex items-center justify-between gap-4 border-b px-4 py-4'>
 							<div>
@@ -267,15 +287,7 @@ function OrganizationDetailPage() {
 								</p>
 							</div>
 							{canManageMembers && (
-								<Button
-									className='shrink-0'
-									render={
-										<Link
-											to='/organizations/$organizationId/members/new'
-											params={{ organizationId }}
-										/>
-									}
-								>
+								<Button className='shrink-0' onClick={() => setInviteOpen(true)}>
 									{t('orgDetail.addMember')}
 								</Button>
 							)}
@@ -323,8 +335,26 @@ function OrganizationDetailPage() {
 							</div>
 						)}
 					</Card>
+					<PendingInvitationsPanel source={invitationSource} />
 				</TabsContent>
 			</Tabs>
+
+			{canManageMembers && (
+				<InviteDialog
+					mode='org'
+					organizationId={organizationId}
+					open={inviteOpen}
+					onOpenChange={setInviteOpen}
+					onInvited={() =>
+						void Promise.all([
+							queryClient.invalidateQueries({
+								queryKey: ['organizations', organizationId, 'members'],
+							}),
+							queryClient.invalidateQueries({ queryKey: ['org-invitations'] }),
+						])
+					}
+				/>
+			)}
 		</div>
 	);
 }

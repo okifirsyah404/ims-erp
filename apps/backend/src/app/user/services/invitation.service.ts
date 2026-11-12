@@ -5,9 +5,11 @@ import type { TPaginationResult } from '@ims-erp/common';
 import {
 	INVITATION_MAILER_TOKEN,
 	INVITATION_REPOSITORY_TOKEN,
+	ORGANIZATION_SLUG_RESOLVER_TOKEN,
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
 } from '../constants/di';
+import type { IOrganizationSlugResolverPort } from '../contracts/organization-slug-resolver.port';
 import { dispatchAvatarGeneration } from '../queues/avatar.queue';
 import type {
 	IInvitationRepository,
@@ -43,6 +45,17 @@ export type TActor = {
 	ip?: string | null;
 	userAgent?: string | null;
 };
+
+/**
+ * Caller scope for id-targeted invitation actions.
+ *
+ * @remarks
+ * Organization-scoped callers pass the organization they are acting in; the
+ * service then refuses invitations owned by another organization with a 404
+ * (not a 403 - probing must not reveal that the id exists). Application
+ * admins omit it and keep the cross-organization reach their role implies.
+ */
+export type TInvitationScope = { organizationId: string };
 
 /** Result of a single invite creation. */
 export type TInviteResult = {
@@ -93,18 +106,21 @@ export class InvitationService {
 		private readonly authGateway: IUserManagementAuthGateway,
 		@inject(INVITATION_MAILER_TOKEN)
 		private readonly mailer: IInvitationMailer,
+		@inject(ORGANIZATION_SLUG_RESOLVER_TOKEN)
+		private readonly slugResolver: IOrganizationSlugResolverPort,
 		private readonly audit: AuditService,
 	) {}
 
 	/**
 	 * Creates one invitation. Both paths require `name` (it prefills the
 	 * pre-created user and the claim profile form). The org path also
-	 * requires `organizationId`; the role is the closed-enum
-	 * `organizationRole`, defaulting to `member` when omitted.
+	 * requires `organizationId`; the roles are the closed-enum
+	 * `organizationRoles` list, defaulting to `['member']` when omitted and
+	 * stored comma-joined (Better Auth multi-role convention, ERP-0041).
 	 *
 	 * Overwrite rule: a pending invitation for the same email is reused —
 	 * same user row, new token, old token invalidated, counts resent. The
-	 * reused row adopts the new invite's context (path, organization, role,
+	 * reused row adopts the new invite's context (path, organization, roles,
 	 * name) so the delivered email and the membership created on claim match
 	 * what the admin just submitted, not the original invite. A pending
 	 * invite owned by a *different* organization is rejected instead, so one
@@ -113,17 +129,29 @@ export class InvitationService {
 	async invite(
 		input: TCreateInvitationInput,
 		actor: TActor,
+		/** Set false to skip email delivery (nested-users create with `sendInvites: false`). */
+		deliver = true,
 	): Promise<TInviteResult> {
-		const isOrgPath = Boolean(input.organizationRole || input.organizationId);
-		if (isOrgPath && !input.organizationId) {
+		const isOrgPath = Boolean(
+			input.organizationRoles?.length || input.organizationId || input.organizationSlug,
+		);
+		if (isOrgPath && !input.organizationId && !input.organizationSlug) {
 			throw new InvalidInvitationError();
 		}
 		if (!input.name) {
 			throw InvalidInvitationError.requiresName();
 		}
 
+		// Bulk-file convenience: a slug stands in for the UUID. Unknown slug
+		// is a domain error so the bulk loop reports it per row.
+		const organizationId = input.organizationId ?? (input.organizationSlug
+			? await this.resolveSlug(input.organizationSlug)
+			: undefined);
+
+		// Comma-join, dedupe preserving order: the storage shape mirrors
+		// Better Auth's `auth.members.role` multi-role convention.
 		const organizationRole = isOrgPath
-			? (input.organizationRole ?? 'member')
+			? [...new Set(input.organizationRoles ?? ['member'])].join(',')
 			: null;
 
 		// Overwrite rule: reuse the pending invitation + pre-created user.
@@ -133,7 +161,7 @@ export class InvitationService {
 		if (existingPending) {
 			if (
 				existingPending.type === 'org' &&
-				existingPending.organizationId !== input.organizationId
+				existingPending.organizationId !== organizationId
 			) {
 				// Cross-org duplicate: another org's pending invite must not be
 				// hijacked — reject instead of overwrite.
@@ -149,7 +177,7 @@ export class InvitationService {
 				// organization (or none).
 				type: isOrgPath ? 'org' : 'app',
 				name: input.name,
-				organizationId: isOrgPath ? (input.organizationId ?? null) : null,
+				organizationId: isOrgPath ? (organizationId ?? null) : null,
 				orgRole: organizationRole,
 			});
 			const updated = await this.invitations.findById(existingPending.id);
@@ -167,7 +195,7 @@ export class InvitationService {
 			// Overwritten pre-created users may predate the avatar dispatch —
 			// top them up if the row has no image yet.
 			await this.ensureAvatar(existingUser.id, input.name, existingUser.image);
-			await this.deliver(updated!, token);
+			if (deliver) await this.deliver(updated!, token);
 			return {
 				invitation: updated!,
 				userId: existingUser.id,
@@ -211,7 +239,7 @@ export class InvitationService {
 			action: 'user.precreated',
 			targetType: 'user',
 			targetId: userId,
-			organizationId: input.organizationId ?? null,
+			organizationId: organizationId ?? null,
 			meta: { email: input.email },
 			request: { ip: actor.ip, userAgent: actor.userAgent },
 		});
@@ -222,7 +250,7 @@ export class InvitationService {
 			type: isOrgPath ? 'org' : 'app',
 			email: input.email,
 			name: input.name ?? null,
-			organizationId: input.organizationId ?? null,
+			organizationId: organizationId ?? null,
 			orgRole: organizationRole,
 			tokenHash,
 			invitedBy: actor.userId,
@@ -235,11 +263,11 @@ export class InvitationService {
 			action: 'invitation.sent',
 			targetType: 'invitation',
 			targetId: invitation.id,
-			organizationId: input.organizationId ?? null,
+			organizationId: organizationId ?? null,
 			meta: { email: input.email, organizationRole },
 			request: { ip: actor.ip, userAgent: actor.userAgent },
 		});
-		await this.deliver(invitation, token);
+		if (deliver) await this.deliver(invitation, token);
 		return { invitation, userId, overwritten: false };
 	}
 
@@ -284,8 +312,12 @@ export class InvitationService {
 	/**
 	 * Resend: new token on the SAME row (old token dies), 3-day TTL reset.
 	 */
-	async resend(invitationId: string, actor: TActor): Promise<void> {
-		const invitation = await this.requirePending(invitationId);
+	async resend(
+		invitationId: string,
+		actor: TActor,
+		scope?: TInvitationScope,
+	): Promise<void> {
+		const invitation = await this.requirePending(invitationId, scope);
 		const { token, tokenHash } = generateInvitationToken();
 		await this.invitations.updateToken(invitation.id, {
 			tokenHash,
@@ -305,8 +337,12 @@ export class InvitationService {
 	}
 
 	/** Cancel: pending → cancelled. Terminal states are final. */
-	async cancel(invitationId: string, actor: TActor): Promise<void> {
-		const invitation = await this.requirePending(invitationId);
+	async cancel(
+		invitationId: string,
+		actor: TActor,
+		scope?: TInvitationScope,
+	): Promise<void> {
+		const invitation = await this.requirePending(invitationId, scope);
 		await this.invitations.markStatus(invitation.id, 'cancelled');
 		await this.audit.record({
 			actorUserId: actor.userId,
@@ -320,13 +356,48 @@ export class InvitationService {
 	}
 
 	/**
+	 * Rollback for an invite whose employee insert failed (ERP-0034): cancels
+	 * the still-pending invitation and soft-deletes its pre-created pending
+	 * user, so no orphan pending account remains. A claimed user is a real
+	 * account and is never touched here.
+	 */
+	async rollbackPending(
+		invitationId: string,
+		userId: string,
+		actor: TActor,
+	): Promise<void> {
+		const invitation = await this.invitations.findById(invitationId);
+		if (!invitation || invitation.status !== 'pending') return;
+		await this.invitations.markStatus(invitation.id, 'cancelled');
+		const user = await this.users.findById(userId);
+		if (user && user.status === 'pending') {
+			await this.users.delete(user.id);
+		}
+		await this.audit.record({
+			actorUserId: actor.userId,
+			actorEmail: actor.email,
+			action: 'invitation.cancelled',
+			targetType: 'invitation',
+			targetId: invitation.id,
+			organizationId: invitation.organizationId,
+			meta: { reason: 'employee_create_failed' },
+			request: { ip: actor.ip, userAgent: actor.userAgent },
+		});
+	}
+
+	/**
 	 * Delete (wrong-email fix): only while pending. Soft-deletes the
 	 * invitation AND its pre-created pending user. After claim the caller
 	 * must deactivate instead — enforced here.
 	 */
-	async deleteUnclaimed(invitationId: string, actor: TActor): Promise<void> {
+	async deleteUnclaimed(
+		invitationId: string,
+		actor: TActor,
+		scope?: TInvitationScope,
+	): Promise<void> {
 		const invitation = await this.invitations.findById(invitationId);
 		if (!invitation) throw new InvitationNotFoundError(invitationId);
+		this.assertScope(invitation, scope, invitationId);
 		if (invitation.status !== 'pending') {
 			throw InvitationNotPendingError.claimed();
 		}
@@ -421,7 +492,7 @@ export class InvitationService {
 
 		await this.users.setClaimed(user.id, { phone: input.phone });
 
-		// Org path: attach membership with the invited role BEFORE accepting
+		// Org path: attach membership with the invited roles BEFORE accepting
 		// the invitation — a failed attach leaves the claim retryable (the
 		// user is active but the invitation stays pending).
 		let organizationName: string | null = null;
@@ -432,8 +503,6 @@ export class InvitationService {
 				roleName: target.invitation.organizationRole ?? 'member',
 			});
 		}
-
-		await this.invitations.markStatus(invitation.id, 'accepted', new Date());
 
 		const { setCookie } = await this.authGateway.createSession(user.id, {
 			password: input.password,
@@ -465,13 +534,44 @@ export class InvitationService {
 
 	private async requirePending(
 		invitationId: string,
+		scope?: TInvitationScope,
 	): Promise<TUserInvitationSelect> {
 		const invitation = await this.invitations.findById(invitationId);
 		if (!invitation) throw new InvitationNotFoundError(invitationId);
+		this.assertScope(invitation, scope, invitationId);
 		if (invitation.status !== 'pending') {
 			throw new InvitationNotPendingError();
 		}
 		return invitation;
+	}
+
+	/**
+	 * Resolves a bulk-file `organizationSlug` to the organization id.
+	 *
+	 * @throws InvalidInvitationError When no live organization has the slug —
+	 * thrown inside the bulk loop's try, so it is reported per row.
+	 */
+	private async resolveSlug(slug: string): Promise<string> {
+		const id = await this.slugResolver.resolveIdBySlug(slug);
+		if (!id) {
+			throw InvalidInvitationError.unknownOrganizationSlug(slug);
+		}
+		return id;
+	}
+
+	/**
+	 * Organization-scope gate for id-targeted actions: an org-scoped caller
+	 * may only touch invitations owned by its own organization. Reports the
+	 * row as missing so a probe cannot confirm another org's invitation.
+	 */
+	private assertScope(
+		invitation: TUserInvitationSelect,
+		scope: TInvitationScope | undefined,
+		invitationId: string,
+	): void {
+		if (scope && invitation.organizationId !== scope.organizationId) {
+			throw new InvitationNotFoundError(invitationId);
+		}
 	}
 
 	/**
@@ -489,16 +589,16 @@ export class InvitationService {
 		currentImage: string | null,
 	): Promise<void> {
 		if (currentImage) return;
-		try {
-			await dispatchAvatarGeneration({ id: userId, name });
-		} catch (error) {
+		// Fire-and-forget: a queue outage (or CI without Redis) must never
+		// stall the invite; the next resend tops the avatar up.
+		void dispatchAvatarGeneration({ id: userId, name }).catch((error) => {
 			// Mirror the hook's resilience: a queue outage never fails the
 			// invite. The next resend tops the avatar up.
 			pinoLogger.warn(
 				{ err: error, userId },
 				'[invitation] avatar dispatch failed',
 			);
-		}
+		});
 	}
 
 	/**

@@ -9,7 +9,7 @@ const api: Record<keyof typeof en, string> = {
 	'common.notFound': 'Tidak ditemukan',
 	'common.conflict': 'Konflik',
 	'common.unsupportedMediaType': 'Tipe media tidak didukung',
-	'common.imageInvalid': 'Unggah gambar PNG, JPG, atau WebP maksimal {{max}} MB',
+	'common.imageInvalid': 'Unggah gambar PNG, JPG, WebP, atau HEIC maksimal {{max}} MB',
 	'common.payloadTooLarge': 'Data yang dikirim terlalu besar',
 	'common.authenticationRequired': 'Autentikasi diperlukan',
 
@@ -192,7 +192,7 @@ const api: Record<keyof typeof en, string> = {
 	'user.globalAdminRequired': 'Peran administrator global diperlukan',
 	'user.fileFieldExpected': 'Diperlukan kolom berkas multipart',
 	'user.avatarTooLarge': 'Avatar maksimal 2 MiB',
-	'user.avatarUnsupportedType': 'Avatar harus berupa gambar PNG, JPEG, atau WebP',
+	'user.avatarUnsupportedType': 'Avatar harus berupa gambar PNG, JPG, WebP, atau HEIC',
 
 	'organization.lastOrganization':
 		'Ini organisasi terakhir Anda dan tidak dapat dihapus',
@@ -230,6 +230,7 @@ const api: Record<keyof typeof en, string> = {
 	'invitation.inactive': 'Undangan ini sudah tidak aktif',
 	'invitation.expired': 'Tautan undangan ini sudah kedaluwarsa',
 	'invitation.bulkLimited': 'Maksimal {{max}} baris',
+	'invitation.unknownOrganizationSlug': 'Tidak ada organisasi dengan slug "{{slug}}"',
 	'invitation.claimUserMissing': 'Pengguna yang diundang tidak lagi tersedia',
 	'invitation.claimAlreadyActive': 'Akun ini sudah aktif',
 	'invitation.claimInvalid': 'Data klaim tidak valid',

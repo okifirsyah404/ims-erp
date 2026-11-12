@@ -10,6 +10,22 @@ import type { UserAdminService } from '../services/user-admin.service';
 import type { IUserRepository } from '../contracts/user.repository.interface';
 import type { IUserAuthGateway } from '../contracts/user-auth.gateway.interface';
 import type { UserService } from '../services/user.service';
+import type { IUserPersonalFieldsPort } from '../contracts/user-personal-fields.port';
+import type { IInvitationEmployeePort } from '../contracts/invitation-employee.port';
+import type { IOrganizationSlugResolverPort } from '../contracts/organization-slug-resolver.port';
+
+/** Cross-module port: slug → id for bulk invite files. */
+export const ORGANIZATION_SLUG_RESOLVER_TOKEN: InjectionToken<IOrganizationSlugResolverPort> =
+	Symbol('ORGANIZATION_SLUG_RESOLVER');
+
+/** Cross-module port: invite plus employee creation, implemented by HR (ERP-0034). */
+export const INVITATION_EMPLOYEE_PORT_TOKEN: InjectionToken<
+	IInvitationEmployeePort<unknown>
+> = Symbol('INVITATION_EMPLOYEE_PORT');
+
+/** Cross-module port: HR reads and writes personal fields on `auth.users`. */
+export const USER_PERSONAL_FIELDS_PORT_TOKEN: InjectionToken<IUserPersonalFieldsPort> =
+	Symbol('USER_PERSONAL_FIELDS_PORT');
 
 /**
  * Injection tokens for the user module's repository, auth gateway, and

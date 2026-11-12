@@ -11,56 +11,36 @@ const logger = pino({
 });
 
 /**
- * Guardian for the closed organization-role Postgres enum type
- * (`auth.organization_role`).
+ * Verifies the org-role storage shape for the closed ERP role catalog.
  *
- * Roles are a closed enum: the 19 values of `erpRoleNames` from
- * `@ims-erp/common`, stored as a native Postgres enum (see
- * `drizzle/schemas/role.schema.ts` and the migration that created it).
- * There is no per-organization role master data to seed any more.
- *
- * This seeder's only job is to keep the database enum type in sync with the
- * code catalog:
- * - Creates the type when it is missing (`CREATE TYPE` has no
- *   `IF NOT EXISTS`, hence the guarded `DO` block).
- * - Adds any catalog value the type does not have yet
- *   (`ALTER TYPE ... ADD VALUE IF NOT EXISTS`), so adding a role to
- *   `erpRoleNames` needs no hand-written migration.
+ * @remarks
+ * Since ERP-0041, roles are stored comma-joined in plain `text` columns
+ * (`auth.members.role` — Better Auth-owned — and `auth.user_invitations`
+ * `org_role`). The old Postgres enum type `auth.organization_role` is
+ * dropped by the ERP-0041 migration; this seeder's remaining job is to
+ * check the enum type is really gone and to log the closed catalog, so a
+ * stale database is reported loudly instead of silently diverging from the
+ * `erpRoleNames` catalog in `@ims-erp/common`.
  */
 export async function seedOrganizationRoles(): Promise<void> {
-	// Enum labels are catalog constants, not user input: quote+escape them
-	// inline (Postgres does not accept bind parameters in DDL).
-	const label = (value: string): string => `'${value.replaceAll("'", "''")}'`;
-	const labels = erpRoleNames.map(label).join(', ');
-
-	await drizzleDB.execute(
+	const stale = await drizzleDB.execute<{ count: string }>(
 		sql.raw(`
-			DO $$
-			BEGIN
-				IF NOT EXISTS (
-					SELECT 1
-					FROM pg_type t
-					JOIN pg_namespace n ON n.oid = t.typnamespace
-					WHERE t.typname = 'organization_role'
-					  AND n.nspname = 'auth'
-				) THEN
-					CREATE TYPE "auth"."organization_role" AS ENUM (${labels});
-				END IF;
-			END
-			$$;
+			SELECT count(*)::text AS count
+			FROM pg_type t
+			JOIN pg_namespace n ON n.oid = t.typnamespace
+			WHERE t.typname = 'organization_role'
+			  AND n.nspname = 'auth'
 		`),
 	);
-
-	for (const role of erpRoleNames) {
-		await drizzleDB.execute(
-			sql.raw(
-				`ALTER TYPE "auth"."organization_role" ADD VALUE IF NOT EXISTS ${label(role)}`,
-			),
+	const rows = (stale as unknown as { rows?: Array<{ count: string }> }).rows ?? [];
+	if ((rows[0]?.count ?? '0') !== '0') {
+		logger.warn(
+			'organization_role enum type still exists (pre-ERP-0041 database); run the ERP-0041 migration to drop it',
 		);
 	}
 
 	logger.info(
-		{ roles: erpRoleNames.length },
-		'organization_role enum type verified',
+		{ roles: erpRoleNames.length, storage: 'text comma-joined' },
+		'organization role catalog verified',
 	);
 }

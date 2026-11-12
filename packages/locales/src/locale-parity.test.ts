@@ -72,8 +72,12 @@ describe('locale values', () => {
 			'account:profile.email',
 			'account:profile.bio',
 			'admin:users.email',
+	'admin:orgs.userEmail',
 			'admin:users.status',
 			'admin:users.filterStatus',
+			// Digit-only phone example: the placeholder is a number pattern,
+			// not prose, so it is identical in both bundles.
+			'claim:form.phonePlaceholder',
 		'inventory:warehouses.filterStatus',
 		'inventory:warehouses.sortStatus',
 			'admin:invite.email',
@@ -86,6 +90,10 @@ describe('locale values', () => {
 			'admin:orgs.slug',
 			'admin:orgEdit.slug',
 			'admin:orgDetail.slug',
+			// Shared role/finance terms identical in both languages.
+			'admin:orgDashboard.roles.admin',
+			'admin:orgDashboard.roles.total',
+			'admin:orgDashboard.cash.bank',
 			'admin:orgDetail.info',
 			// Indonesian terms used verbatim in the English UI: RT/RW are
 			// neighbourhood administrative units with no English equivalent.

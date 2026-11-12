@@ -12,6 +12,791 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+Status: **verified** (2026-11-13) — live walk-through done: upload via the
+edit page renders the WebP from MinIO, and the `/organizations` list renders
+every card logo from a presigned URL; create page has the image picker only
+(nested users removed 2026-11-12); detail page no longer hosts the card.
+Object key is `organizations/<organizationId>/logo.webp` (plural, matching
+`users/<id>/avatar.webp`). The server, not the user, owns image format: every
+stored image (org logo, generated DiceBear logo/avatar, user avatar, document
+images) is WebP produced by `toWebp` from PNG/JPG/WebP/GIF/BMP/TIFF/HEIC/AVIF
+input (2026-11-13, below).
+
+Image card placement fix (same day, user feedback): the profile-image card
+moved from the org **detail** page to the **edit** page, and the create page
+gained an optional image picker (file is client-encoded WebP and uploaded
+right after the org exists, since the endpoints are id-scoped).
+Verified live in the browser (dev servers already running): logged in as the
+seed admin, POSTed a canvas-encoded WebP to
+`/organizations/:id/image-profile` → 200 `imageKey: organizations/<id>/logo.webp`,
+GET returned a MinIO presigned URL, and the edit page rendered the image
+(72px preview, Replace/Delete buttons). `docs/plan/backlog.md` ERP-0041 →
+**verified**.
+
+## 2026-11-13 - Images: the server normalises every upload and generated image
+
+User request: stop asking people to convert images to WebP by hand — the web
+admin converts on upload when it can, the backend converts always.
+
+- **New `apps/backend/src/utils/image.util.ts`** (zero new dependencies):
+  `sniffImageType` (magic bytes → png/jpeg/webp/gif/bmp/tiff/heic/avif),
+  `toWebp(bytes, { maxSize, quality })` and `fileBytes`. `toWebp` decodes with
+  Bun's built-in `Bun.Image` (verified on Bun 1.4.4: decodes JPEG/PNG/WebP/GIF/
+  BMP/TIFF/HEIC/AVIF and emits `RIFF…WEBP`), downscales the longest side and
+  re-encodes — which also strips EXIF/GPS and any appended payload. Undecodable
+  bytes throw `UnsupportedImageError`.
+- **The server is the format authority now:** `OrganizationService.setImage`,
+  `UserService.setSelfAvatar` (`users/<id>/avatar-custom.webp`, 144px),
+  `storeDocumentImage` (`<prefix>/<uuid>.webp`) and both DiceBear workers
+  (`org-logo` 256px, `avatar` 72px) pass bytes through `toWebp`. Deleted:
+  `isWebpBuffer`, the org `isSupportedImage` helper and the hand-rolled
+  `AVATAR_TYPE_TO_EXT`/`AVATAR_MAGIC_BYTES`/`sniffAvatarType` table. The 2 MB
+  upload cap is unchanged. `IObjectStorage.put` accepts `Blob | Uint8Array` so
+  normalised bytes are written without a `Blob` copy. Old rows keep working:
+  the DB stores object keys, so `avatar-custom.png` / `<uuid>.png` stay valid.
+- **Web admin:** `encodeWebp` (organization-api) and `compressAvatar`
+  (user-api) collapsed into one `encodeImage` in `lib/image-file.ts` —
+  downscales to 512px, returns WebP when the browser can encode it and PNG
+  otherwise, and decodes through `<img>` when `createImageBitmap` rejects the
+  format. Call sites: org create, org edit, org image card, profile avatar,
+  document images. `uploadOrganizationImage` names the part from the blob type.
+  Profile/document pickers accept the formats the backend decodes.
+- **Locales (`en` + `id`):** `common.imageInvalid`, `user.avatarUnsupportedType`,
+  `profile.avatarInvalidType`, `profile.avatarHint`, `common.image.hint`,
+  `common.image.tooLarge`, `orgImage.description`, `orgImage.decodeFailed`.
+- **Bug found by the live check:** `POST /users/me/avatar` returned
+  `500 Body already used` — the handler called `request.formData()` after
+  Elysia had already parsed the multipart body. It now reads the parsed `body`
+  (`avatarFileFrom`), like every other upload route.
+
+Verification:
+
+- `bun test` backend **849 pass / 0 fail** (new `test/unit/image.util.test.ts`,
+  9 tests: sniffing incl. ISO-BMFF brands, PNG/JPEG→WebP, WebP re-encode,
+  size ceiling, garbage bytes; `organization-create-nested.test.ts` and
+  `company-profile.service.test.ts` updated for WebP keys and decode-time
+  format rejection), web-admin **66 pass** (new
+  `test/unit/encode-image.test.ts`: WebP path, PNG fallback, `<img>` decode
+  fallback, nothing-encodable), `packages/locales` **82 pass**.
+- `bunx tsc -b --noEmit` clean in `apps/backend`, `apps/web-admin`,
+  `packages/locales`; `bun run lint` shows only the pre-existing warnings.
+- Live (dev servers, seed admin, `bun run --watch` picked the change up):
+  PNG 900×600 → org `image-profile` 200, stored key
+  `organizations/<id>/logo.webp`, fetched bytes `RIFF/WEBP`, 512×341;
+  JPEG 800×800 → `/users/me/avatar` 200 → `users/<id>/avatar-custom.webp`,
+  144×144; PNG 640×400 → `PUT /company-profile/logo` 200 →
+  `company/logo/<uuid>.webp`, 512×320; the same PNGs dropped into the edit
+  page and the profile page preview from the presigned URL. Rejections:
+  PDF bytes to the org image → 422 `common.imageInvalid`; garbage bytes to the
+  avatar → 415; 2 MB + 10 bytes → 413.
+- `docs/database/` reviewed: one note changed (no table/column/index/constraint)
+  — `company_profile.logo_object_key` now documents the WebP normalisation.
+  `bun docs/database/gen-logical-references.ts` regenerated 533 refs;
+  `bun docs/database/validate-dbml.ts` → `OK: 0 cross-module refs, 0 timestamp
+  gaps`. That validator had been failing on `main` with a `hr.bank_accounts`
+  vs `company.bank_accounts` bare-name duplicate; both tables are real and
+  always schema-qualified, so `bank_accounts` joined `DUP_ALLOWED` with a note.
+
+## 2026-11-13 - Organization description field (create / detail / edit)
+
+User request: the create page should lead with the logo and offer a free-text
+description. Implemented as a new nullable column rather than metadata, so it
+is queryable and shown on detail.
+
+- `docs/database/docs.dbml` + `auth.schema.ts`: `auth.organizations.description
+  text` (no DB length limit; the 2000-char cap is a zod boundary rule so
+  widening it needs no migration). Migration
+  `20261113090000_erp0041_org_description` is hand-written append-only (same
+  convention as `20261112120000` / `20261112150000` — the repo carries no
+  drizzle-kit journal).
+- Better Auth: `additionalFields.description` added, and the plugin options
+  changed from `: OrganizationOptions` to `satisfies OrganizationOptions` —
+  the widened annotation erased `additionalFields` from the inferred API
+  types, so `description` was rejected in create/update bodies. The adapter
+  strips `description` before calling Better Auth and re-adds it (Better Auth
+  forbids `null` in the inferred input for an additional `string`, while
+  clearing the field is exactly a NULL write).
+- zod: `trim().max(2000).transform(v => v.length ? v : null).nullish()`, so
+  whitespace-only becomes `null`; `updateOrganizationSchema` counts
+  `description` as a provided field.
+- Web admin: create page logo is centered at 128px **above** the fields and a
+  description textarea sits between Name and Slug; edit page has the same
+  textarea (empty string clears); the info dashboard renders the value with
+  `whitespace-pre-line` and `-` when unset. Locales added to `en` and `id`
+  (`orgs.descriptionLabel`, `orgs.descriptionPlaceholder`,
+  `orgDetail.description`).
+
+**Cache bug found by the live check:** PATCH `/organizations/:id` returned the
+pre-update row and the detail page kept showing the old description. Cause:
+`findById` is cache-aside (5-min TTL) and profile updates go through Better
+Auth, which writes the row directly — the repository never sees the write, so
+nothing evicted the entry (`setLogo`/`softDelete`/`restore` only). Fixed by
+exposing `invalidateCache(id)` on the repository and calling it from
+`OrganizationService.updateOrganization` after the gateway write. The bug
+predates this slice and also affected `name` updates.
+
+Verification:
+
+- `bunx tsc -b --noEmit` clean in `apps/backend` and `apps/web-admin`;
+  `bun run test` backend **842 pass** (17 in
+  `test/unit/organization-create-nested.test.ts`, including the new
+  "update forwards description and evicts the cached row"), web-admin **62
+  pass**, `packages/locales` **82 pass**; `bun run lint` no new warnings.
+- Migration applied to disposable DB `ims_erp41_desc` via a one-off runner
+  (`migrate-reset` + apply + `drizzle:seed` twice, idempotent); column
+  `description text` present; database dropped afterwards.
+- `bun docs/database/gen-logical-references.ts` + `validate-dbml.ts` →
+  `OK: 0 cross-module refs, 0 timestamp gaps`.
+- Live (dev servers): create form order Name → Description → Slug with a
+  centered 128×128 dropzone above Name; submitted `Description Check` with a
+  dropped PNG logo and a two-line description → detail page rendered both
+  lines; edit page saved a new value and the detail page reflected it
+  (PATCH 200 + fresh GET); the seed org without a description rendered `-`.
+  Test org soft-deleted afterwards.
+
+## 2026-11-13 - `/organizations` list: breakpoint and header layout fix
+
+Cards were cramped: `lg:grid-cols-4` at a 1074px viewport gave **180px** cards
+(3-up is 246px), too narrow for the 40px logo, the three stat columns and the
+badge + `Restore` footer. The grid is now `1 / sm:2 / lg:3 / 2xl:4` — a fourth
+column only appears at 1536px where it actually fits.
+
+The page header stacked badly too: `flex items-center justify-between` with no
+`flex-wrap` squeezed the title/description against the `New organization`
+button on narrow widths. Now `flex-col gap-3` until `sm`, then
+`sm:flex-row sm:items-start sm:justify-between`, with `min-w-0` on the text block
+and `shrink-0` on the button.
+
+Verified live at 1074px: three columns of 246px, no footer or stat-row clipping
+on any card (`scrollWidth <= clientWidth`).
+
+**Card footer height.** An active organization's footer held only the `Active`
+badge (20px) while a deleted one also carried the `Restore` button (28px), so
+the two footer heights differed (53px vs 61px) and the badges in one grid row
+sat 4px apart. The badge is now wrapped in a `flex h-7 items-center` row pinned
+to the small-button height, so every footer is 61px and every badge is 21px from
+the footer's top edge (verified on all four cards).
+
+## 2026-11-13 - `/organizations` list: logos presigned server-side
+
+The list cards were broken because `GET /organizations` returned the stored
+**object key** (`organizations/<id>/logo.webp`) where the UI expects a URL — the
+browser cannot sign a SigV4 GET, so every thumbnail was a broken image while the
+detail page (which presigns through `GET …/image-profile`) worked.
+
+- `OrganizationService.listOrganizations` now presigns `logo` per row
+  (`row.logo ? presignObjectUrl(row.logo) : null`), matching `listMembers`,
+  which already presigns member avatars. `TOrganization.logo` is documented as
+  a presigned URL on list responses.
+- `apps/web-admin/src/routes/_authed/organizations/index.tsx` gained
+  `OrganizationLogo`: a load error falls back to the name initial instead of a
+  broken-image icon (a signed URL still expires on a long-lived tab), plus
+  `loading='lazy'`/`decoding='async'` and `min-w-0` so long names truncate.
+
+Verified live (dev servers, seed admin): all four cards render
+`https://minio-s3.okifirsyah.my.id/ims-erp-local/organizations/<id>/logo.webp?X-Amz-Signature=…`
+with `naturalWidth > 0`; the seed org's image is 100×100, uploads 512×320.
+New unit test asserts the presign (raw key would fail the match) and that a
+`null` logo stays `null`: backend **839 pass / 0 fail**, web-admin **62 pass**,
+`tsc -b --noEmit` clean in both workspaces.
+
+`docs/database/` was reviewed and is unchanged: the fix is a read-path
+transformation (key → presigned URL), no table, column, index, constraint,
+logical reference, or status vocabulary moved.
+
+Known limitation (pre-existing, not fixed here): `GET /organizations` sits
+behind `erpGuard`, so it 403s when the session has no active organization —
+which is exactly the state after deleting the active organization
+(`deleteOrganization` calls `setActive(null)`). The list page then shows
+"No organizations yet" although rows exist; a re-login re-activates the first
+membership (`sessionAutoActivateOrganizationHook`) and heals it. Making the
+admin list session-scoped instead of organization-scoped needs a decision
+because the same endpoint also serves the org switcher, the invite dialog, and
+the warehouse-organization tab.
+
+## 2026-11-12 - Create-org page: invitations dropped, single-card layout, robust image input
+
+User decision: **no user/invite section on organization creation.** The page is
+now name + slug + logo only; the nested-users block (`NewUserRow`, `addUser`,
+`patchUser`, duplicate-email banner, `users` in the POST payload) is gone.
+`POST /organizations` still accepts `users` — backend contract, service, and its
+12 unit tests are untouched — but the UI no longer sends it, so an organization
+is created empty and members are added from the detail page's invite dialog.
+
+**Layout.** One `max-w-2xl` card, `sm:grid-cols-[8rem_1fr]`: the 32×32 logo
+dropzone on the left (it is an organization attribute, not a user field), name
+and slug on the right, actions in a bordered footer (`Cancel` / `Create`) instead
+of stacked inline. The slug line under the input shows the resulting path and
+turns into `orgs.slugInvalid` as soon as the value fails the backend regex.
+
+**Image input hardening** (applies to the edit page too):
+
+- `encodeWebp(file, { maxSize = 512 })` downscales the longest side — a 4000px
+  photo previously re-encoded at full size and tripped the server's 2MB cap.
+  Verified: a 1600×1000 source stored as **512×320, 1170 bytes**.
+- `image-file.ts` gained `rejectImageFile` → `'type' | 'size'`, so the dropzone
+  can distinguish "not an image" from "larger than 20MB" and the caller toasts
+  the right message. Empty MIME types (Windows Explorer drags) now fall back to
+  the extension.
+- Drag highlight uses a depth counter: nested `dragenter`/`dragleave` from child
+  elements no longer flicker the dashed border (verified: highlight survives one
+  nested leave, clears on the real one).
+- Dropzone got `busy` (spinner + input ignored), `focus-visible` ring, and
+  `aria-busy`; the create page shows the picked file name + Remove.
+- Decode failures (`createImageBitmap` rejects HEIC/corrupt bytes) show
+  `orgImage.decodeFailed` instead of a raw English error.
+
+**Real bug found by verifying the create flow: the DiceBear fallback overwrote
+the uploaded logo.** The worker and the upload wrote the *same* key
+(`organizations/<id>/logo.webp`); the worker's `findById` check ran before the
+upload landed, so its DiceBear bytes were written last — the stored image was
+256×256 initials instead of the 512×320 upload. Fixed by construction:
+
+- generated fallback moved to its own key,
+  `organizations/<id>/logo-generated.webp` (`organizationGeneratedImageObjectKey`),
+  so it can never clobber `logo.webp`;
+- new `IOrganizationRepository.setLogoIfEmpty` does the emptiness check inside
+  the `UPDATE` (`WHERE logo IS NULL`, `returning`), so a stale read cannot win;
+- the worker's lost race leaves an unreferenced generated object (bucket
+  lifecycle rule's job, noted in the worker comment).
+
+Verified live (dev servers running, seed admin): drop 1600×1000 PNG on the
+create page → `POST /organizations` **201** with `members: []` (no `users` in the
+payload) → `POST …/image-profile` **200** →
+`GET …/image-profile` presigned key `/ims-erp-local/organizations/<id>/logo.webp`
+serving **512×320**; both test organizations deleted (`DELETE` → 200). Reject
+path: dropping a `.txt` leaves the preview empty.
+
+Tests: backend **838 pass / 0 fail** (new worker case asserts the generated key
+and the conditional write), web-admin **62 pass** (image-file now covers
+extension fallback and the 20MB cap), locales **82 pass** (parity + dead keys
+after removing the six `orgs.*` user keys), `bunx tsc -b --noEmit` clean in both
+workspaces, `bun run lint` no new warnings. `docs/database/` changed only as a
+`logo` column note (key layout), and `validate-dbml.ts` printed `OK`.
+
+Note: the race fix needs a **backend restart** to take effect in the long-running
+dev process; the live run above still used the old worker code.
+
+## 2026-11-12 - Org logo key pluralised + real seed-image upload (`entragate-bg-white.png`)
+
+**Key layout changed to plural:** `organizationImageObjectKey` now returns
+`organizations/<organizationId>/logo.webp` (was singular), matching the user
+avatar convention `users/<id>/avatar.webp`. Callers needed no change — both
+`OrganizationService.setImage` and the DiceBear `processOrgLogoJob` go through
+the builder, and reads presign whatever key is stored in
+`auth.organizations.logo` (nothing parses the prefix). The worker's doc comment
+and the `organization-create-nested` worker fixture were updated with it. No
+data migration: ERP-0041 is unreleased, so a re-upload is enough.
+
+**Seed data fix.** `database/seeders/raw/organization/organization.json` pointed
+at `./entragate.webp`, a file that no longer exists in the tree; it now points
+at `./image/entragate-bg-white.png`. Note: no seeder code reads that JSON —
+`organization.seeder.ts` creates Entragate through the Better Auth API and no
+`image_path` consumer exists, so the value is metadata only (left in place for
+whoever builds the missing uploader).
+
+**Seed re-run + real-file upload verification** (`bun run drizzle:seed` in
+`apps/backend`, 5.1s, idempotent: "Role account already exists; reusing"):
+
+- before: `auth.organizations.logo` for org `QJlMCRUQd4SgShQVK4t4PptOI909atvX`
+  still held the old singular key.
+- served the seed PNG over a throwaway local static server (browser pages
+  cannot read local files), fetched it in the page as a `File`
+  (`image/png`, 6420 bytes) and dispatched a synthetic `drop` on
+  `button[aria-label="Profile image"]` of the edit page.
+- `POST /organizations/:id/image-profile` → **200**,
+  `imageKey: organizations/QJlMCRUQd4SgShQVK4t4PptOI909atvX/logo.webp`.
+- `GET …/image-profile` → 200, presigned URL path
+  `/ims-erp-local/organizations/<id>/logo.webp`; the dropzone preview now
+  renders from it (`100x100` natural, the real asset).
+- DB after: `logo = organizations/QJlMCRUQd4SgShQVK4t4PptOI909atvX/logo.webp`.
+- old object under the singular prefix is untouched/orphaned in the dev bucket
+  (unreleased feature, no migration).
+
+Commands: backend `bun run test` → **837 pass / 0 fail** (58 files),
+`bunx tsc -b --noEmit` clean. Temporary server/check scripts deleted.
+
+## 2026-11-12 - Org logo upload: icon dropzone with drag & drop (create + edit)
+
+Replaced the plain "Upload image" buttons with a click-or-drag dropzone
+(`apps/web-admin/src/components/organization/image-dropzone.tsx`): a `<button>`
+area with an `Upload` icon, dashed border, drag-highlight state, and a hidden
+`input[type=file]` shared by click and drop. The edit page
+(`OrganizationImageCard`) keeps Delete for an existing logo; the create page
+uses the compact variant and keeps the pick-then-upload-after-create flow.
+
+**Real bug found while verifying: multipart upload always failed from the UI.**
+`organization-api.ts`'s `request()` set `Content-Type: application/json` for any
+request with a body, so `uploadOrganizationImage`'s `FormData` lost its
+multipart boundary and the server answered 400
+(`common.validationFailed`). It only ever "worked" earlier because that check
+POSTed with a hand-written `fetch`. `request()` now skips the JSON header for
+`FormData`.
+
+Verified live (dev servers already running, seed admin):
+
+- edit page: dragging a canvas-encoded PNG onto the dropzone fired the upload —
+  `POST /organizations/:id/image-profile` → 200
+  `imageKey: organizations/<id>/logo.webp`, preview then rendered from the MinIO
+  presigned URL (`32x32` natural size).
+- create page: dropping an image shows an object-URL preview and the file name;
+  submitting created the org (`POST /organizations` → 201) and uploaded the logo
+  right after (`POST …/image-profile` → 200), confirmed by
+  `GET …/image-profile` returning a presigned URL. The test org was deleted
+  afterwards (`DELETE /organizations/:id` → 200).
+
+New locale keys (en + id): `orgImage.dropHint`, `orgImage.replaceHint`,
+`orgImage.invalidType`; the now-unused `orgImage.upload` / `orgImage.replace`
+were removed (dead-key guard green). Image type filtering lives in
+`apps/web-admin/src/lib/image-file.ts` (`pickImageFile`) with 3 unit tests —
+web-admin has no DOM test environment, so the rule is tested as a pure
+function. Commands: `bun run test` in `apps/web-admin` (60 pass / 0 fail),
+`packages/locales` (82 pass), `bunx tsc -b --noEmit` clean, `bun run lint` no
+new warnings. `docs/database/` reviewed — unchanged (UI-only change).
+
+## 2026-11-12 - ERP-0041 bulk-invitation browser walk-through (multi-role)
+
+Walked the org-scoped invite dialog (`Add member` → `Bulk paste`) live against
+the running dev stack. Findings:
+
+1. **Dev DB was missing the `org_role` enum → text migration.** The multi-role
+   row inserted the role list as two params (`technician`,`sales`) → Postgres
+   rejected the insert. `information_schema.columns` showed
+   `auth.user_invitations.org_role` = `USER-DEFINED` (`auth.organization_role`).
+   `drizzle-kit migrate` cannot run here (pre-existing journal two-branch
+   conflict), so the exact statements of
+   `database/migrations/20261112150000_erp0041_org_role_text/migration.sql`
+   were executed directly; re-checked: `org_role data_type: text`,
+   `organization_role` enum rows: `0`.
+2. **The failure survived the migration until the backend restarted.** An
+   identical drizzle insert from a fresh process succeeded while the API kept
+   failing: the long-lived server's prepared statements had been prepared
+   against the `org_role` enum type and broke once the migration dropped it
+   (`ALTER COLUMN … TYPE text` + `DROP TYPE`). Touching a watched file
+   restarted the dev backend and the same request returned 201 with
+   `orgRole: "technician,sales"`. Not a code defect, but a deploy-order
+   hazard: apply this migration, then restart the API process.
+3. **Real bug found + fixed: retried invite on a leftover employee row.**
+   `hr.employees` is inserted before the personal-field write; when that later
+   step fails the row stays and the retry hits `hr_employees_user_uq`
+   (`duplicate key value violates unique constraint`, surfaced as a raw
+   "Failed query" string). `EmployeeInviteService.createOne` now looks the
+   invited user up with `employees.findByUserId` and reuses the existing row
+   when it belongs to the same organization (the invitation is still
+   re-sent); a row owned by another organization stays an
+   `EmployeeEmailTakenError`. New unit test: *retried invite reuses the
+   employee row left by an earlier partial failure*.
+4. **Locale copy corrected.** The bulk-paste hint claimed an unrecognized role
+   "falls back to member"; both parsers (`parseBulkInviteRows`,
+   `parseInviteSheet`) instead reject that row (`Row N: unknown role "x"`)
+   while still sending the rows that parsed. `invite.rowsHint` now says the
+   role joins with `|` and an unknown role fails the row (en + id).
+
+Verified after the fixes, same dialog: `walkthrough.multi@example.com` →
+`orgRole: "technician,sales"`, `EMP-00033`; `walkthrough.plain@example.com` →
+reused `EMP-00030`; the pending-invitations panel listed both as `pending`
+with expiry. Final check after the backend restart, two fresh rows in one
+bulk POST: `finalcheck.multi@example.com` → `technician,sales` / `EMP-00035`
+and `finalcheck.plain@example.com` → `member` / `EMP-00036`, both `ok: true`.
+Cleanup: the probe scripts (`apps/backend/.tmp/*`) and the walk-through
+pending invitations were removed (deleted through the org API, all 200); the
+pre-created pending users and their employee rows from the walk-through stay
+in the dev database.
+
+Commands: `bun test test/unit/employee-invite.service.test.ts` (5 pass),
+`bun run test` in `apps/backend` (837 pass / 0 fail),
+`packages/locales` (82 pass), `apps/web-admin` (57 pass), `bunx tsc -b --noEmit`
+clean in `apps/backend` and `packages/locales`. `docs/database/` reviewed — no
+schema change in this step.
+
+## 2026-11-12 - ERP-0041 CI unblocking (three rounds, pushed to PR #82)
+
+CI (`Main Test and Build Backend`) failed 3× with unit tests timing out at
+5s; every root cause was a side effect of org/invite creation awaiting live
+infrastructure CI does not have:
+
+1. `await this.provisionRoles(...)` → seeder uses the real drizzle client
+   (`POSTGRES_CONNECTION_REFUSED` retries) → `void this.provisionRoles(...)`
+   (commit `41232f4`).
+2. `await dispatchOrgLogoGeneration(...)` → BullMQ needs Redis → fire-and-
+   forget `void dispatchOrgLogoGeneration(...).catch(...)` (commit `c197505`).
+3. `InvitationService.ensureAvatar` → `await dispatchAvatarGeneration(...)`
+   → Redis; plus `organizationNameFor` dynamically imports Better Auth whose
+   `$context` needs Postgres → `void` dispatch + unit tests mock
+   `@providers/better-auth/auth` with a throwing `$context` getter (commits
+   `c197505`, `496c986`).
+
+All three paths were already documented as best-effort ("a queue outage
+never fails the invite"), so awaiting them bought nothing — marking
+fire-and-forget is semantically honest, not just CI appeasement. Local
+836 pass after each fix; final CI run `43216792012` success (backend +
+web-admin). Lint warnings shown in CI are pre-existing, not from ERP-0041.
+
+## 2026-11-12 - ERP-0041 frontend slice + unit tests (same day, same task)
+
+- **Nested-users UI.** `/organizations/new` gained an "Users to add"
+  repeater: per row email + name + role checkboxes (closed
+  `erpRoleNames` catalog via `erpRoleLabel`); client-side duplicate-email
+  guard (submit blocked + inline message); per-item outcomes
+  (`failed`/`skipped`) surfaced as toasts after redirect. Locale keys
+  `orgs.usersTitle/addUser/removeUser/userEmail/userName/duplicateUserEmail`
+  (en+id; `orgs.userEmail` in `ALLOWED_IDENTICAL` — "Email" is legitimately
+  identical).
+- **Image-profile UI.** New `org-image-card.tsx` on the org detail `info`
+  tab: upload (any image client-side → `encodeWebp` canvas encode, ERP-0041
+  decision that the client sends WebP), replace, clear; shows the presigned
+  URL refreshed per mount (`staleTime` 60s, key `['org-image', id]`).
+  Locale keys `orgImage.*` (en+id).
+- **Member multi-role edit.** `$organizationId.members.$memberId.edit.tsx`
+  replaced the single role `Select` with the role checkbox grid, seeded from
+  the comma-joined member role; saves via `updateMemberRole(orgId, memberId,
+  roles)` (contract `roles: string[]`); unchanged-joined-string check keeps
+  the save button honest.
+- **Backend unit tests** (`test/unit/organization-create-nested.test.ts`,
+  12 tests): per-item isolation (creator skip, active-user `added`, invited
+  with `sendInvites:false`, one failed row does not stop the rest, zod
+  duplicate-email 400); WebP magic bytes (real header accepted, spoofed
+  JPEG rejected, size 0 / >2MB rejected, missing `file` rejected); worker
+  skip rules (logo already set, org deleted, org missing) + DiceBear URL
+  determinism (pure `orgLogoApiUrl`, no network in tests).
+- Full root run: `bun run lint` 0 errors (pre-existing warnings only),
+  `bun run typecheck` 4/4 tasks, tests: backend **836** pass, web-admin
+  **57** pass, react-email 5 pass, locales **82** pass (parity + dead-keys
+  green after the fixes above).
+
+## 2026-11-12 - ERP-0041: org CRUD robustness (backend slices)
+
+Status: **in-progress** — backend implemented + migration verified; frontend
+slice (org create nested-users UI, image-profile upload UI, member multi-role
+edit) and new unit tests for the new paths still open.
+
+- **Schema** (`docs/database/docs.dbml` edited first — canonical):
+  `auth.user_invitations.org_role` documented as comma-joined `text`
+  (multi-role, ERP-0041); the Postgres enum `auth.organization_role` is
+  dropped. `bun docs/database/gen-logical-references.ts` +
+  `bun docs/database/validate-dbml.ts` → `OK: 265 tables, 0 cross-module
+  refs, 0 timestamp gaps`. Drizzle `role.schema.ts`: `pgEnum` removed,
+  `orgRole: text('org_role')`; seeder `organization-roles.seeder.ts` is now a
+  shape verifier (warns when the enum type still exists, logs
+  "organization role catalog verified").
+- **Migration** `20261112150000_erp0041_org_role_text` (hand-written,
+  append-only): guarded enum recreate (fresh DBs vs 20261107090000-applied
+  DBs) → `ALTER COLUMN org_role TYPE text USING org_role::text` →
+  `DROP TYPE`. **Verified** on a disposable database
+  `ims_erp41_verify` (created with `bun .tmp/create-verify-db.ts`, then
+  `POSTGRES_DB=ims_erp41_verify bun run database/migrate-reset.ts` — full
+  migrate + seed OK, `org_role data_type: text`, `organization_role enum
+  rows: 0` via `.tmp/verify-org-role.ts`), then `bun run drizzle:seed` twice
+  on the same DB — idempotent, second run `created: 0` / `inserted: 0`,
+  "organization role catalog verified" logged both times. Note: the
+  pre-existing drizzle-kit journal two-branch conflict still blocks
+  `bun run drizzle:migrate` (same situation as ERP-0034, see 2026-11-10
+  entry); `migrate-reset` on the fresh DB replays the full history cleanly.
+- **Multi-role invitations.** Contracts now take `organizationRoles:
+  string[]` (closed enum via `organizationRoleSchema`) on all three invite
+  surfaces: app scope (`user/contracts/invitation.contract.ts`), org scope
+  (`organization/contracts/organization-invitation.contract.ts`), HR
+  (`hr/contracts/hr.contract.ts` — hand-rolled enum literal replaced by the
+  shared schema). `InvitationService.invite` dedupes preserving order,
+  comma-joins, and stores the joined string; claim attaches the joined list
+  through `attachMembership` (Better Auth native comma-joined
+  `auth.members.role`). Email `{{role}}` interpolates the joined list
+  unchanged ("sebagai admin, finance" reads fine).
+- **Multi-role members.** `addMemberSchema`/`updateMemberRoleSchema` take
+  `roles: string[]` (`memberRolesSchema`); `OrganizationService.addMember`
+  joins, `updateMemberRole` joins and keeps the last-owner guard
+  (`!input.roles.includes('owner')`); gateway `addMember`/`updateMemberRole`
+  pass the joined string (cast to `'owner'` against Better Auth's inferred
+  literal type — custom runtime roles are valid). Member-list role filter is
+  comma-aware: `(',' || role || ',') LIKE '%,<role>,%'` (whole-entry match,
+  `sales` ≠ `sales_manager`).
+- **Image-profile.** `POST/GET/DELETE /organizations/:id/image-profile`
+  (guard `organization:update` on write/delete, `organization:read` on
+  read). Client sends WebP; server validates magic bytes (`isWebpBuffer` —
+  `RIFF`+`WEBP`) and size ≤ 2MB (`organizationImageFrom`,
+  `utils/organization-image.ts`), stores under
+  `organizations/<id>/logo.webp` (`constants/image-keys.ts`) via
+  `IObjectStorage.put`, writes the object key into `auth.organizations.logo`
+  through the new cache-invalidating `OrganizationRepository.setLogo` (the
+  only direct logo write; the background worker has no caller session for
+  the Better Auth gateway). Read returns a presigned URL.
+- **DiceBear org avatar.** `queues/org-logo.queue.ts` (deterministic job id
+  `org-logo-<id>`) + `queues/org-logo.worker.ts` (seed = slug, style
+  `10.x/initials/webp`, 256px, 10s timeout, 3 attempts). Worker re-reads the
+  org first and skips when `logo` is already set or the org is deleted — a
+  real upload always wins. Dispatched fire-and-forget from
+  `OrganizationService.createOrganization`; `startOrgLogoWorker()` added to
+  `startWorkers` in `src/index.ts`, exported from `organization/index.ts`.
+- **Nested users on create.** `createOrganizationSchema` extended with
+  `users: [{ email, name, roles[] }]` (max 100, duplicate-email refine →
+  400) and `sendInvites` (default true). `createOrganization(headers, input,
+  actor?, creatorEmail?)` returns `{ organization, members[] }` with
+  per-item isolated outcomes: creator email → `skipped` (already owner);
+  active user (`UserManagementRepository.findActiveByEmail` — excludes
+  pending placeholders) → direct `addMember` (`added`); other emails → the
+  unified invite pipeline (`invited`) with email delivery skipped when
+  `sendInvites: false` (new `deliver` flag on `InvitationService.invite`,
+  honored on both overwrite and fresh paths); a thrown error → `failed` with
+  the message, remaining rows still run. Bootstrap controller passes actor +
+  creator email, returns the new shape. Cross-module access goes through
+  `INVITATION_SERVICE_TOKEN` and `USER_MANAGEMENT_REPOSITORY_TOKEN` (user
+  module exports) — no repository reaching across schemas.
+- **Bulk multi-role parsing.** `packages/common invite-sheet.ts` and the
+  web-admin paste parser both treat pipe `|` as the role separator inside
+  the comma-separated field (`admin|finance`); an unknown role drops the row
+  with a row error (paste path now matches the sheet parser — the old
+  "send unvalidated and let the backend default" behavior is gone). Template
+  sample rows show `admin|finance`.
+- **Tests.** Backend 824 pass / 0 fail (updated `invitation.service.test.ts`
+  + `multi-organization.test.ts` for the new ctor arg count), web-admin 57
+  pass / 0 fail (`invite-parse.test.ts`: pipe multi-role, unknown-role drop),
+  locales 82 pass. Root `bun run typecheck` green; `bun run lint` green
+  (pre-existing warnings only; one stale `cacheIdKey` import in
+  `user-management.repository.ts` removed).
+- **Open (frontend + tests):** `/organizations/new` nested-users UI,
+  org-detail image-profile upload/clear UI, member edit multi-role select;
+  backend unit tests for per-item isolation, WebP validation, and the
+  worker skip rule. `docs/plan/plans/features.md` rollup updated with the
+  same status.
+
+## 2026-11-12 - Organization info dashboard (dummy data)
+
+Status: implemented; lint/typecheck/tests green. No backend, schema or
+migration touched — `docs/database/` reviewed and unchanged (frontend-only
+UI slice over hardcoded dummy data).
+
+- Tab `info` of `/organizations/$organizationId` now renders
+  `OrganizationDashboard` (`apps/web-admin/src/components/organization/
+  org-dashboard.tsx`) replacing the plain details card. Seven sections from
+  hardcoded dummy data (`apps/web-admin/src/lib/org-dashboard-data.ts`):
+  users-by-role, projects (status badge + progress bar), sales (BarChart,
+  6 months), inventory (totals + low-stock list), activity feed,
+  profit & loss (revenue/expense BarChart), cash & bank (per-account
+  balances + total). Charts use the existing `@ims-erp/ui/components/chart`
+  (Recharts v3, already in `packages/ui`) — no new dependency.
+- Money formatted via `Intl.NumberFormat('id-ID', IDR)`.
+- Locale: new `orgDashboard.*` keys (en/id) in `packages/locales`; removed
+  now-dead `orgDetail.details/name/slug`; added the composed-key prefixes
+  (`orgDashboard.roles.` / `.projects.status.` / `.activity.actions.` /
+  `.cash.`) to `locale-dead-keys.test.ts` `DYNAMIC_PREFIXES` and three
+  legitimately-identical keys to `ALLOWED_IDENTICAL`.
+- Verified: `bunx tsc --noEmit` (web-admin, clean), `bun run lint` (no new
+  warnings), `bun run test` (backend 824 pass, locales 82 pass).
+
+Next executable task: none claimed — ERP-0041 (incl. its bulk-invitation
+walk-through) is `verified`; the next candidate from `backlog.md` is the
+outstanding reviewer sign-off on ERP-0039/ERP-0041, or claiming the next
+unimplemented item (ERP-0002 / ERP-0003 / ERP-0007 / ERP-0027 / ERP-0036 —
+all still open per `backlog.md`).
+
+## 2026-11-12 - Bulk invitations via CSV/XLSX file upload
+
+Status: implemented and unit-tested (parser + backend + locale guards);
+browser walk-through pending. Committed on `fix/org-hardening`.
+
+- **Shared parser** `packages/common/src/files/invite-sheet.ts`
+  (`papaparse` for CSV incl. BOM/semicolon tolerance, SheetJS `xlsx` for
+  spreadsheets): case-insensitive headers, cell trimming, email lowercase,
+  closed-ERP-role validation, in-file duplicate detection, per-row errors
+  carrying the physical row number, hard caps (100 rows, 1 MB enforced at
+  the caller). Unit-tested 8/8 in `packages/common/test/invite-sheet.test.ts`
+  (first tests in that workspace; `test` script added).
+- **Client-side parse, JSON send.** Per decision, the backend bulk endpoints
+  are unchanged (no multipart). `InviteDialog` gained an "Upload file" tab:
+  parse + inline preview (`invite.fileReady` / per-row error list), send the
+  existing JSON array. `organizationSlug` resolves client-side against the
+  loaded org list in admin mode; org mode pins to the page organization.
+- **`organizationSlug` in the invite contract.** Optional on
+  `TCreateInvitationInput`; `InvitationService.invite` resolves it through
+  the new `IOrganizationSlugResolverPort` (adapter
+  `organization/adapters/organization-slug-resolver.ts` over a new
+  `OrganizationRepository.findBySlug` — live rows only). Unknown slug =
+  `InvalidInvitationError.unknownOrganizationSlug` (422, new locale key
+  `invitation.unknownOrganizationSlug` en/id), reported per row by the bulk
+  loop. Slug chosen because `auth.organizations` has no code column; slug is
+  the unique human-readable identifier.
+- **Template download.** `GET /admin/invitations/template` (global admin)
+  and `GET /organizations/:organizationId/invitations/template`
+  (`member:read`), `?format=csv|xlsx` via the shared
+  `user/utils/invitation-template.ts`; header contract from
+  `INVITE_SHEET_HEADERS` so the file round-trips the parser. Web-admin
+  download buttons in the file tab.
+- **Verification.** Root `bun run typecheck` (4/4), `bun run lint`
+  (12 warnings, 0 errors), `bun run test` all green (backend 824/824,
+  locales 82/82 incl. new keys, web-admin 55/55, common 8/8 via workspace
+  run). `docs/database/` reviewed — no schema change (slug already unique),
+  no DBML edit needed.
+
+## 2026-11-12 - ERP-0034 follow-up: invite creates the employee; personal fields move to `auth.users`
+
+Status: implemented and unit-tested; migration written but **not yet run
+against any database** (no disposable Postgres credentials available —
+`.env` lacks `POSTGRES_*`, role `postgres` absent on `localhost:5432`, no
+running containers). Branch `fix/org-hardening`, uncommitted on top of
+`5f21778` (PR #82 open).
+
+- **Personal fields moved from `hr.employees` to `auth.users`.**
+  `docs/database/docs.dbml` edited first (canonical); `gender`
+  (check `male`/`female`), `birth_date`, `birth_place`, `marital_status`
+  now live on `Table auth.users`, dropped from `Table hr.employees`.
+  `bun docs/database/gen-logical-references.ts` then
+  `bun docs/database/validate-dbml.ts` → `OK: 0 cross-module refs,
+  0 timestamp gaps`. Drizzle schemas hand-edited
+  (`auth.schema.ts` + checks, `hr.schema.ts` −4 columns) and
+  `auth.options.ts` gained the four `user.additionalFields`
+  (`input: false`; `auth:generate` NOT run, per hard rule).
+- **Migration** `20261112120000_erp0034_personal_fields_to_auth_users`
+  (hand-authored SQL, ERP-0034 convention): `DO` block pre-check raises when
+  `hr.employees` rows with `user_id` NULL carry personal values (fail-fast,
+  no data dropped); then adds columns/checks, copies values from live and
+  soft-deleted linked employees, drops the four columns. Append-only journal
+  entry. **Unverified on a database.**
+- **Cross-module port.** HR reads/writes the four fields through
+  `IUserPersonalFieldsPort` (`user/contracts/user-personal-fields.port.ts`,
+  adapter `user/adapters/user-personal-fields.ts`, token
+  `USER_PERSONAL_FIELDS_PORT_TOKEN`) — HR never touches the user repository.
+  API contract unchanged: the fields stay in the HR body/DTO, so the
+  web-admin HR form needs no change.
+- **Invite creates the employee (one step).** New HR orchestrator
+  `EmployeeInviteService` (token `EMPLOYEE_INVITE_SERVICE_TOKEN`): per row —
+  reject an email already an employee, run `InvitationService.invite`,
+  reserve the code via `NumberingService.next('employee')`, insert the
+  employee (defaults: `fullName` from the invite `name`, `active`/`permanent`/
+  `onsite`), write personal fields; if the insert fails the new
+  `InvitationService.rollbackPending` cancels the invitation and soft-deletes
+  the pending user. Bulk is per-row isolated. `InvitationService` no longer
+  depends on HR; `EmployeeService.create` delegates to the orchestrator.
+- **Wiring without cross-module imports.** New port
+  `IInvitationEmployeePort` in the user module
+  (`user/contracts/invitation-employee.port.ts`, token
+  `INVITATION_EMPLOYEE_PORT_TOKEN`), implemented by HR's
+  `InvitationEmployeeAdapter`. Both invitation controllers (app scope
+  `/admin/invitations` in `user`, org scope in `organization`) now call the
+  port instead of `InvitationService.invite`, so **every invite path creates
+  the employee record**; route ownership stays in `user` per decision.
+- **Permissions/gates.** `hr` grants changed to
+  `member: ['read']`, `invitation: ['create', 'cancel']`;
+  org invitation routes guard on `invitation:create` (invite/resend) and
+  `invitation:cancel` (cancel/delete). Web-admin gates moved:
+  `$organizationId.tsx` invite button/dialog → `invitation.create`, Members
+  tab + query → `member.read`; `pending-invitations-panel.tsx` resend →
+  `invitation.create`, cancel/delete → `invitation.cancel`
+  (`ADMIN_PERMISSIONS` gained `createInvitations`/`cancelInvitations`).
+  No locale keys changed (no new strings).
+- **Verification.** `bun run --cwd apps/backend typecheck` clean;
+  `bun run --cwd apps/backend test` → **824 pass, 0 fail** (57 files; the
+  `schema "auth" does not exist` line is the known DB-less integration-test
+  noise). New `test/unit/employee-invite.service.test.ts` covers success,
+  email-taken (pre-invite and per-row in bulk), and rollback on insert
+  failure. `bun run typecheck` (root turbo) 4/4 clean; web-admin `tsc -b`
+  clean; `bun run lint` 0 errors (11 pre-existing warnings);
+  `bun run --cwd apps/web-admin test` 55/55; `packages/locales` guards
+  82/82.
+- **Open items.** Migration untested on a disposable DB (pre-check fail path,
+  copy, drop). `hr.seeder.ts` writes no personal fields (safe — columns
+  nullable). Members tab layout change unverified in the browser. `hr`
+  seeder personal-field backfill optional.
+
+## 2026-11-12 - ERP-0039: organization-scoped invitations + one shared invite dialog
+
+Status: implemented and browser-verified end to end (invite → email → claim →
+membership), unit-tested; reviewer sign-off and PR still open. Branch
+`fix/org-hardening` (based on the merged `89940c0`).
+
+- **Backend — org-scoped invitation surface.** New
+  `app/organization/controllers/organization-invitation.controller.ts`
+  (5 routes under `/organizations/:organizationId/invitations`:
+  list, create/bulk, resend, cancel, delete) plus a local
+  `contracts/organization-invitation.contract.ts`; mounted in
+  `organizationModule()` and exported from `app/organization/index.ts`.
+  It delegates to the user module's `InvitationService` through the DI token
+  (no cross-module repository access). The **path** organization is
+  authoritative — `organizationId` is never read from the body on these
+  routes, and `assertPathOrganization` rejects a mismatch for non-global
+  admins.
+- **Backend — tenant scoping on single-id actions.** `InvitationService`
+  gained `TInvitationScope` and `assertScope()`; `resend`/`cancel`/
+  `deleteUnclaimed`/`requirePending` accept an optional
+  `scope: { organizationId }` and report an out-of-scope row as
+  `InvitationNotFoundError` (404, so a probe cannot confirm another
+  organization's invitation). Application admins call unscoped.
+- **Backend — duplicate rules** (`invite`): pending in org A + invite to org
+  B → 409 (`InvitationPendingExistsError`); app-level pending + org invite →
+  the existing row is **adopted** into the org context; org pending + app
+  invite → 409; app → app and same-org → same-org overwrite (new token).
+- **Backend — claim phone is E.164.** `claimInvitationSchema.phone` now
+  validates with `isValidPhoneNumber` from `libphonenumber-js/min` and
+  normalizes (`+62 812-3456-7890` → `+6281234567890`). Library added to
+  `apps/backend` and `apps/web-admin` (`libphonenumber-js@1.13.16`).
+- **Web admin — one dialog, two modes.**
+  `components/invite/invite-dialog.tsx` (`mode: 'admin' | 'org'`) replaces
+  `components/admin/invite-dialog.tsx` (deleted). Admin mode adds a searchable
+  organization picker with an explicit **“Tanpa organisasi (tingkat
+  aplikasi)”** item (a `null` selection, not an empty state) and hides the
+  role field while no organization is chosen. Org mode pins the organization
+  from the page and never renders the picker. Bulk paste:
+  `email, name, org-code, role` (admin) vs `email, name, role` (org);
+  `parseBulkInviteRows` returns `{ rows, rowErrors, error }` so an unknown org
+  code or bad email drops only that row. The selector lists live
+  organizations only (an invite into a soft-deleted org cannot be claimed).
+- **Web admin — org admin manages its own invitations.** The
+  organization-detail Members tab gained `Tambah anggota` (opens the dialog)
+  and the `PendingInvitationsPanel`, which was refactored to take a `source`
+  prop (`{ queryOptions, resend, cancel, remove, invalidate }`). The old
+  `/organizations/$organizationId/members/new` page route was deleted along
+  with `memberNew.*` locale keys and `breadcrumb.memberNew`. Org admins
+  therefore never need the application-admin-only `/admin/invitations`.
+- **Web admin — app-admin-only surfaces.** New `lib/use-is-app-admin.ts`,
+  `adminOnly` flag on sidebar items (hides `Users` and `Audit log` from
+  organization-only users, keeping `Organisasi` and `Pengaturan`), and a new
+  `routes/_authed/admin.tsx` layout guard that renders an in-place 403
+  (`accessDenied.*`) instead of redirecting.
+- **Web admin — country-code phone picker.**
+  `components/form/country-phone-field.tsx` (searchable shadcn `Combobox`,
+  countries from `getCountries()` + `getCountryCallingCode()`, names via
+  `Intl.DisplayNames([i18n.language])`, default `ID`/`+62`) + `lib/phone.ts`
+  `toE164()`. Filtering is done in a `useMemo` over `onInputValueChange`
+  rather than a `ComboboxList` function child: that child must be the list's
+  **only** child, and the empty state also lives inside the list (a
+  mixed array renders nothing — observed in the browser).
+- **Locales.** `en`/`id` gained `invite.organization*`, `invite.noOrganization`,
+  `invite.rowsPlaceholderAdmin`, `invite.rowsHintAdmin`, `invite.rowsEmpty`,
+  `accessDenied.*`, `claim.form.phoneCountry*`, `claim.form.phonePlaceholder`
+  (added to `ALLOWED_IDENTICAL` — a digit pattern, not prose); `memberNew.*`
+  and `nav:breadcrumb.memberNew` removed.
+- **`docs/database/` reviewed and unchanged.** The organization “code” the
+  admin dialog accepts is the existing `auth.organizations.slug`; no table,
+  column, index, constraint, status vocabulary or logical reference changed,
+  so `docs.dbml` needed no edit and `validate-dbml.ts` was not re-run.
+- **Tests.** `apps/backend/test/unit/invitation.service.test.ts` (12 pass:
+  overwrite tenant rules, scoped resend/cancel/delete, unscoped admin reach,
+  E.164 claim schema) and
+  `apps/web-admin/test/unit/invite-parse.test.ts` (10 pass: both bulk
+  layouts, per-row isolation, `toE164`).
+- **Verified commands (repo root unless noted).**
+  `bun run typecheck` → 4 tasks successful; `bun run lint` →
+  ui 19 / backend 7 / web-admin 11 warnings, 0 errors (no new warnings in the
+  changed files); `bun run test` → 5 tasks successful, backend 820 pass /
+  0 fail, web-admin 55 pass / 0 fail, locales 82 pass / 0 fail,
+  react-email 5 pass / 0 fail (`schema "auth" does not exist` log noise is the
+  mocked-DB unit tests' expected output).
+- **Browser verification (live stack, Firefox + Mailpit).**
+  App-level: `/admin/users` → dialog → organization `Tanpa organisasi` → role
+  field hidden → send → mail `You're invited to create your IMS ERP account`
+  → claim page → account created, lands on `/` with no organization; sidebar
+  hides `Users`, keeps `Organisasi`/`Pengaturan`. Org-level: organization
+  Members tab → `Tambah anggota` (no org picker) → send → mail `You are
+  invited to join Entragate` → claim page with the country picker defaulting
+  to `Indonesia (+62)`, typing `Malay` narrows the list to `Malaysia (+60)` →
+  claim → `auth.members` row (role `member`, org Entragate),
+  `auth.user_invitations.status='accepted'`, `auth.users.phone='+6281399887766'`.
+  Panel actions as org admin (`admin_seed`, no platform role): resend extends
+  expiry and reissues the token, cancel moves the row to `cancelled` and drops
+  it from the pending list, delete soft-deletes both the invitation and the
+  pending user (`deleted_at` set on both). Same account hitting `/admin/users`
+  gets the in-place 403. `GET /organizations/:id/invitations` unauthenticated
+  → 401 envelope.
+
 ## 2026-11-13 - ERP-0042: dependabot bun config moved to the workspace root
 
 Status: in-progress - config changed, waiting on the next dependabot run.
@@ -4870,13 +5655,22 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**Verify ERP-0042:** the next dependabot run after this config reaches `main`
-must open a PR whose diff contains `bun.lock` with all four lint/test jobs
-green; if it does not, fall back to a lockfile-refresh workflow (see the
+**Get reviewer sign-off on PR #82** (`fix/org-hardening`) — the organization
+`description` slice, the full-width create card, the create-style edit page,
+and the `findById` cache-invalidation fix are all in. Gates green: `bunx tsc
+-b --noEmit` clean in `apps/backend` + `apps/web-admin`, `bun run test`
+backend 842 / web-admin 62 / locales 82, no new lint warnings, migration
+verified on disposable DB `ims_erp41_desc` (dropped), `validate-dbml.ts`
+`OK`, live create/edit/detail walk-through done. Main was merged in after
+dependabot bumped 20 workspace deps.
+
+**Verify ERP-0042** (from main): the next dependabot run after the config
+change must open a PR whose diff contains `bun.lock` with all four lint/test
+jobs green; if it does not, fall back to a lockfile-refresh workflow (see the
 2026-11-13 entry).
 
-**Docs merge: bring `merge/main-sync` docs into `fix/docs-consistency`**
-(see the entry above). Then decide the 7 deferred tables.
+Older, still-open follow-ups: docs merge of `merge/main-sync` into
+`fix/docs-consistency`, then the 7 deferred tables.
 
 ## Previous next task (still open)
 

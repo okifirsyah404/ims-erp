@@ -6,7 +6,6 @@ import type {
 	TGatewayFullOrganization,
 	TGatewayOrganization,
 } from '../contracts/organization-auth.gateway.interface';
-import type { TMemberRole } from '../contracts/organization.contract';
 import {
 	LastOwnerError,
 	MemberNotFoundError,
@@ -48,9 +47,9 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 		name: string;
 		slug: string;
 		logo?: string | null;
+		description?: string;
 		metadata?: Record<string, unknown>;
 		userId?: string;
-		role?: TMemberRole;
 		headers?: Headers;
 	}): Promise<TGatewayOrganization> {
 		try {
@@ -60,6 +59,7 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 					name: input.name,
 					slug: input.slug,
 					logo: input.logo ?? undefined,
+					description: input.description,
 					metadata: input.metadata,
 					// Server-side creation: Better Auth adds `userId` as the
 					// organization owner (implicit `role: 'owner'`).
@@ -108,16 +108,26 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 			data: {
 				name?: string;
 				logo?: string | null;
+				description?: string | null;
 				metadata?: Record<string, unknown>;
 			};
 		},
 	): Promise<TGatewayOrganization> {
+		const { description, ...data } = input.data;
 		try {
 			const organization = await auth.api.updateOrganization({
 				headers,
 				body: {
 					organizationId: input.organizationId,
-					data: input.data,
+					data: {
+						...data,
+						// Better Auth's inferred input type forbids `null` for an
+						// additional `string` field, yet the column is nullable and
+						// clearing the description is exactly a NULL write.
+						...(description === undefined
+							? {}
+							: { description: description as string }),
+					},
 				},
 			});
 			if (!organization) throw new OrganizationNotFoundError();
@@ -175,17 +185,18 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 	async addMember(input: {
 		organizationId: string;
 		userId: string;
-		role: TMemberRole;
+		roles: string[];
 	}): Promise<{ id: string }> {
 		try {
 			const member = await auth.api.addMember({
 				body: {
 					organizationId: input.organizationId,
 					userId: input.userId,
-					// Custom ERP roles are valid at runtime (registered via
-					// `erpRoles`); the inferred endpoint type only knows the
-					// built-in literals, hence the cast.
-					role: input.role as 'owner',
+					// Comma-joined multi-role string (ERP-0041). Custom ERP roles
+					// are valid at runtime (registered via `erpRoles`); the
+					// inferred endpoint type only knows the built-in literals,
+					// hence the cast.
+					role: input.roles.join(',') as 'owner',
 				},
 			}) as unknown as { id: string };
 			return { id: member.id };
@@ -204,7 +215,7 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 	 */
 	async updateMemberRole(
 		headers: Headers,
-		input: { organizationId: string; memberId: string; role: TMemberRole },
+		input: { organizationId: string; memberId: string; role: string },
 	): Promise<{ member: { id: string; role: string } }> {
 		try {
 			const result = (await auth.api.updateMemberRole({
@@ -212,7 +223,8 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 				body: {
 					organizationId: input.organizationId,
 					memberId: input.memberId,
-					// Custom ERP role; see the note in addMember.
+					// Comma-joined multi-role string (ERP-0041). Custom ERP
+					// role; see the note in addMember.
 					role: input.role as 'owner',
 				},
 			})) as unknown as { id: string; role: string };
@@ -250,15 +262,16 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 	 * Maps a raw Better Auth organization row onto the gateway contract.
 	 *
 	 * @remarks
-	 * Normalizes `logo` to `null` and narrows untyped `metadata` to a
-	 * record; `deletedAt` is surfaced read-only — all writes to it belong
-	 * to the repository, never to Better Auth.
+	 * Normalizes `logo` and `description` to `null` and narrows untyped
+	 * `metadata` to a record; `deletedAt` is surfaced read-only — all writes
+	 * to it belong to the repository, never to Better Auth.
 	 */
 	private toGatewayOrganization(organization: {
 		id: string;
 		name: string;
 		slug: string;
 		logo?: string | null;
+		description?: string | null;
 		metadata?: unknown;
 		createdAt: Date;
 		deletedAt?: Date | null;
@@ -268,6 +281,7 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 			name: organization.name,
 			slug: organization.slug,
 			logo: organization.logo ?? null,
+			description: organization.description ?? null,
 			metadata:
 				organization.metadata &&
 				typeof organization.metadata === 'object'

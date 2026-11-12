@@ -46,8 +46,8 @@ const common_: Record<keyof typeof common, string> = {
 	'language.switchToIndonesian': 'Bahasa Indonesia',
 	'image.none': 'Belum ada gambar',
 	'image.remove': 'Hapus gambar',
-	'image.hint': 'PNG, JPG, atau WebP, maksimal 2 MB.',
-	'image.tooLarge': 'Gambar lebih dari 2 MB.',
+	'image.hint': 'PNG, JPG, WebP, atau HEIC, maksimal 20 MB.',
+	'image.tooLarge': 'Gambar lebih dari 20 MB.',
 };
 
 export default common_;

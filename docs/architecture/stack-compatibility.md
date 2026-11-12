@@ -25,7 +25,7 @@ again before upgrading anything.
 | Vite / React web | vite 8.3.5, React 19.3.1, TanStack Query 5.66+, Router 1.130+ | — | `@tanstack/router-plugin` generates `routeTree.gen.ts` |
 | Lint/test tooling | oxlint, prettier 3.9.10, vitest 4.x | - | verify per-workspace configs |
 | @faker-js/faker | 10.6.0 | `^10.6.0` (backend, devDependency) | seeders only — never imported in runtime code or tests (`.agents/skills/faker`); note this table's driver row predates the `bun-sql` switch (`drizzle-orm/bun-sql` is the real entrypoint per `AGENTS.md`) |
-| DiceBear HTTP API | `10.x` major (pinned in `avatar.worker.ts`) | external service, no package | user avatars: `10.x/initials/webp`, 72px, seed = display name. **v10 constraint:** `backgroundColor` is hex-pattern-validated — the legacy `transparent` value returns 400; send no background parameter. Object key `user/<id>/avatar.webp`, presigned per request |
+| DiceBear HTTP API | `10.x` major (pinned in `avatar.worker.ts`) | external service, no package | user avatars: `10.x/initials/webp`, 72px, seed = display name. **v10 constraint:** `backgroundColor` is hex-pattern-validated — the legacy `transparent` value returns 400; send no background parameter. Object key `users/<id>/avatar.webp`, presigned per request |
 
 ## Auth integration specifics (Better Auth direct)
 

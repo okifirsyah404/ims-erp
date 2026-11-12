@@ -16,9 +16,11 @@ import {
 	USER_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
+	USER_PERSONAL_FIELDS_PORT_TOKEN,
 	USER_REPOSITORY_TOKEN,
 	USER_SERVICE_TOKEN,
 } from './constants/di';
+import { UserPersonalFieldsAdapter } from './adapters/user-personal-fields';
 
 export * from './constants/di';
 
@@ -65,5 +67,8 @@ export function registerUser(container: DependencyContainer): void {
 	container.register(USER_ADMIN_SERVICE_TOKEN, { useClass: UserAdminService });
 	container.register(INVITATION_SERVICE_TOKEN, {
 		useClass: InvitationService,
+	});
+	container.register(USER_PERSONAL_FIELDS_PORT_TOKEN, {
+		useClass: UserPersonalFieldsAdapter,
 	});
 }

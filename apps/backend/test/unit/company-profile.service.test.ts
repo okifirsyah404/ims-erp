@@ -142,7 +142,12 @@ describe('CompanyProfileService without bank accounts in the input', () => {
 });
 
 describe('CompanyProfileService images', () => {
-	const png = () => new File([new Uint8Array([137, 80, 78, 71])], 'logo.png', { type: 'image/png' });
+	/** Real 1x1 PNG so the server-side WebP conversion can decode it. */
+	const PNG_BYTES = Buffer.from(
+		'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==',
+		'base64',
+	);
+	const png = () => new File([PNG_BYTES], 'logo.png', { type: 'image/png' });
 
 	test('needs a saved profile first', async () => {
 		const service = new CompanyProfileService(new FakeProfiles(), storage);
@@ -155,20 +160,24 @@ describe('CompanyProfileService images', () => {
 		const first = await service.setImage('logo', png(), false);
 		const second = await service.setImage('signature', png(), false);
 		const third = await service.setImage('logo', png(), false);
-		expect(first.logoUrl).toMatch(/^https:\/\/files\.test\/company\/logo\/[0-9a-f-]{36}\.png$/);
+		// Server normalises every upload to WebP, whatever the client sent.
+		expect(first.logoUrl).toMatch(/^https:\/\/files\.test\/company\/logo\/[0-9a-f-]{36}\.webp$/);
 		expect(second.signatureUrl).toContain('company/signature/');
 		expect(third.logoUrl).not.toBe(first.logoUrl);
 		expect((await service.setImage('logo', null, false)).logoUrl).toBeNull();
 	});
 
-	test('only PNG, JPG or WebP up to 2 MB', () => {
-		expect(() => documentImageFrom({ file: new File(['x'], 'a.pdf', { type: 'application/pdf' }) })).toThrow(
-			DocumentImageInvalidError,
-		);
+	test('the boundary checks shape and size; the format is decided on decode', async () => {
+		expect(() => documentImageFrom({})).toThrow(DocumentImageInvalidError);
 		expect(() =>
 			documentImageFrom({ file: new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'a.png', { type: 'image/png' }) }),
 		).toThrow(DocumentImageInvalidError);
-		expect(() => documentImageFrom({})).toThrow(DocumentImageInvalidError);
 		expect(documentImageFrom({ file: png() }).name).toBe('logo.png');
+		// A PDF passes the size/shape check but cannot be decoded to WebP.
+		const service = new CompanyProfileService(new FakeProfiles(), storage);
+		await service.save(input, 'user-1', true);
+		await expect(
+			service.setImage('logo', new File(['x'], 'a.pdf', { type: 'application/pdf' }), false),
+		).rejects.toBeInstanceOf(DocumentImageInvalidError);
 	});
 });

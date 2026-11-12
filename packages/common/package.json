@@ -16,11 +16,14 @@
 		"clean": "rm -rf dist",
 		"prepare": "bun run build"
 	},
-	"devDependencies": {
-		"@types/bun": "latest",
+	"test": "bun test",
+	"devDependencies": {		"@types/bun": "latest",
 		"typescript": "^6.0.3"
 	},
 	"dependencies": {
+		"@types/papaparse": "^5.5.2",
+		"papaparse": "^5.7.1",
+		"xlsx": "^0.18.5",
 		"zod": "^4.6.7"
 	}
 }
