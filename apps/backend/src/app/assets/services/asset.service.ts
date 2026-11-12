@@ -4,8 +4,8 @@ import type {
 	AssetStatus,
 	TAssetSelect,
 } from '@drizzle/schemas/asset.schema';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
 import { EXPORTED_WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
 import type { ExportedWarehouseService } from '@app/inventory/services/exported-warehouse.service';import type { IAssetRepository } from '../contracts/asset.repository.interface';
 import type { TAssetCreateData } from '../contracts/asset.repository.interface';
@@ -75,8 +75,8 @@ export class AssetService {
 		@inject(ASSET_CATEGORY_REPOSITORY_TOKEN)
 		private readonly categoryRepository: IAssetCategoryRepository,
 		/** ERP-0009 numbering authority (D15). */
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: Pick<CodeNumberService, 'next'>,
 		/** Fire-and-forget audit writer, shared with the inventory module. */
 		private readonly audit: InventoryAuditWriter,
 		/** Storage-location name resolution via inventory's export facade. */

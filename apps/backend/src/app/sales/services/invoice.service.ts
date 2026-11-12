@@ -7,8 +7,8 @@ import type {
 	TInvoiceSelect,
 } from '@drizzle/schemas/sales.schema';
 import type { TPaginationResult } from '@ims-erp/common';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
 import {
 	LEDGER_REPOSITORY_TOKEN,
 	POSTING_SERVICE_TOKEN,
@@ -68,8 +68,8 @@ export class InvoiceService {
 		@inject(POSTING_SERVICE_TOKEN) private readonly posting: PostingService,
 		@inject(AR_ACCOUNT_RESOLVER_TOKEN)
 		private readonly arResolver: ArAccountResolverService,
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: NumberingService,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: CodeNumberService,
 	) {}
 
 	async list(

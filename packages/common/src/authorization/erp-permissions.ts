@@ -21,7 +21,10 @@ import { z } from 'zod';
 
 export const erpStatements = {
 	// Organization settings
-	company_setting: ['read', 'update'],
+	/** Company-wide letterhead/profile (ERP-0042; was `company_setting`). */
+	company: ['read', 'update'],
+	/** Numbering series (ERP-0042; was `company_setting`). */
+	code_number: ['read', 'update'],
 	branch: ['read', 'create', 'update', 'archive'],
 	department: ['read', 'create', 'update', 'archive'],
 	master_data: ['read', 'create', 'update', 'archive', 'import', 'export'],
@@ -316,7 +319,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		member: ['create', 'read', 'update', 'delete'],
 		invitation: ['create', 'cancel'],
 		ac: ['read'],
-		company_setting: ['read', 'update'],
+		company: ['read', 'update'],
+		code_number: ['read', 'update'],
 		branch: ['read', 'create', 'update', 'archive'],
 		department: ['read', 'create', 'update', 'archive'],
 		master_data: ['read', 'create', 'update', 'archive', 'import', 'export'],
@@ -641,7 +645,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 	auditor: {
 		ac: ['read'],
 		audit_log: ['read', 'export'],
-		company_setting: ['read'],
+		company: ['read'],
+		code_number: ['read'],
 		branch: ['read'],
 		department: ['read'],
 		master_data: ['read', 'export'],

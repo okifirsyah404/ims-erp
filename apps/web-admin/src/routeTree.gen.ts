@@ -23,6 +23,7 @@ import { Route as AuthedAccountEmailRouteImport } from './routes/_authed.account
 import { Route as AuthedAccountSessionsRouteImport } from './routes/_authed.account.sessions'
 import { Route as AuthedAssetsIndexRouteImport } from './routes/_authed/assets/index'
 import { Route as AuthedCrmIndexRouteImport } from './routes/_authed/crm/index'
+import { Route as AuthedDocumentsIndexRouteImport } from './routes/_authed/documents/index'
 import { Route as AuthedFinanceIndexRouteImport } from './routes/_authed/finance/index'
 import { Route as AuthedHrIndexRouteImport } from './routes/_authed/hr/index'
 import { Route as AuthedOrganizationsIndexRouteImport } from './routes/_authed/organizations/index'
@@ -38,8 +39,8 @@ import { Route as AuthedSalesIndexRouteImport } from './routes/_authed/sales/ind
 import { Route as AuthedSubscriptionIndexRouteImport } from './routes/_authed/subscription/index'
 import { Route as AuthedSubscriptionNewRouteImport } from './routes/_authed/subscription/new'
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
-import { Route as AuthedAdminSettingsIndexRouteImport } from './routes/_authed/admin/settings/index'
-import { Route as AuthedAdminSettingsNumberingRouteImport } from './routes/_authed/admin/settings/numbering'
+import { Route as AuthedAdminCodeNumbersIndexRouteImport } from './routes/_authed/admin/code-numbers/index'
+import { Route as AuthedAdminCompanyIndexRouteImport } from './routes/_authed/admin/company/index'
 import { Route as AuthedAdminUsersIndexRouteImport } from './routes/_authed/admin/users/index'
 import { Route as AuthedAssetsBorrowingsIndexRouteImport } from './routes/_authed/assets/borrowings/index'
 import { Route as AuthedAssetsBorrowingsBorrowingIdRouteImport } from './routes/_authed/assets/borrowings/$borrowingId'
@@ -213,6 +214,11 @@ const AuthedCrmIndexRoute = AuthedCrmIndexRouteImport.update({
   path: '/crm/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedDocumentsIndexRoute = AuthedDocumentsIndexRouteImport.update({
+  id: '/documents/',
+  path: '/documents/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedFinanceIndexRoute = AuthedFinanceIndexRouteImport.update({
   id: '/finance/',
   path: '/finance/',
@@ -290,18 +296,17 @@ const AuthedAdminAuditIndexRoute = AuthedAdminAuditIndexRouteImport.update({
   path: '/audit/',
   getParentRoute: () => AuthedAdminRoute,
 } as any)
-const AuthedAdminSettingsIndexRoute =
-  AuthedAdminSettingsIndexRouteImport.update({
-    id: '/settings/',
-    path: '/settings/',
+const AuthedAdminCodeNumbersIndexRoute =
+  AuthedAdminCodeNumbersIndexRouteImport.update({
+    id: '/code-numbers/',
+    path: '/code-numbers/',
     getParentRoute: () => AuthedAdminRoute,
   } as any)
-const AuthedAdminSettingsNumberingRoute =
-  AuthedAdminSettingsNumberingRouteImport.update({
-    id: '/settings/numbering',
-    path: '/settings/numbering',
-    getParentRoute: () => AuthedAdminRoute,
-  } as any)
+const AuthedAdminCompanyIndexRoute = AuthedAdminCompanyIndexRouteImport.update({
+  id: '/company/',
+  path: '/company/',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
 const AuthedAdminUsersIndexRoute = AuthedAdminUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -923,6 +928,7 @@ export interface FileRoutesByFullPath {
   '/account/': typeof AuthedAccountIndexRoute
   '/assets/': typeof AuthedAssetsIndexRoute
   '/crm/': typeof AuthedCrmIndexRoute
+  '/documents/': typeof AuthedDocumentsIndexRoute
   '/finance/': typeof AuthedFinanceIndexRoute
   '/hr/': typeof AuthedHrIndexRoute
   '/organizations/': typeof AuthedOrganizationsIndexRoute
@@ -932,7 +938,6 @@ export interface FileRoutesByFullPath {
   '/reports/': typeof AuthedReportsIndexRoute
   '/sales/': typeof AuthedSalesIndexRoute
   '/subscription/': typeof AuthedSubscriptionIndexRoute
-  '/admin/settings/numbering': typeof AuthedAdminSettingsNumberingRoute
   '/assets/borrowings/$borrowingId': typeof AuthedAssetsBorrowingsBorrowingIdRoute
   '/assets/borrowings/new': typeof AuthedAssetsBorrowingsNewRoute
   '/assets/register/$assetId': typeof AuthedAssetsRegisterAssetIdRoute
@@ -960,7 +965,8 @@ export interface FileRoutesByFullPath {
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/subscription/$contractId/edit': typeof AuthedSubscriptionContractIdEditRoute
   '/admin/audit/': typeof AuthedAdminAuditIndexRoute
-  '/admin/settings/': typeof AuthedAdminSettingsIndexRoute
+  '/admin/code-numbers/': typeof AuthedAdminCodeNumbersIndexRoute
+  '/admin/company/': typeof AuthedAdminCompanyIndexRoute
   '/admin/users/': typeof AuthedAdminUsersIndexRoute
   '/assets/borrowings/': typeof AuthedAssetsBorrowingsIndexRoute
   '/assets/categories/': typeof AuthedAssetsCategoriesIndexRoute
@@ -1056,6 +1062,7 @@ export interface FileRoutesByTo {
   '/account': typeof AuthedAccountIndexRoute
   '/assets': typeof AuthedAssetsIndexRoute
   '/crm': typeof AuthedCrmIndexRoute
+  '/documents': typeof AuthedDocumentsIndexRoute
   '/finance': typeof AuthedFinanceIndexRoute
   '/hr': typeof AuthedHrIndexRoute
   '/organizations': typeof AuthedOrganizationsIndexRoute
@@ -1065,7 +1072,6 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthedReportsIndexRoute
   '/sales': typeof AuthedSalesIndexRoute
   '/subscription': typeof AuthedSubscriptionIndexRoute
-  '/admin/settings/numbering': typeof AuthedAdminSettingsNumberingRoute
   '/assets/borrowings/$borrowingId': typeof AuthedAssetsBorrowingsBorrowingIdRoute
   '/assets/borrowings/new': typeof AuthedAssetsBorrowingsNewRoute
   '/assets/register/$assetId': typeof AuthedAssetsRegisterAssetIdRoute
@@ -1093,7 +1099,8 @@ export interface FileRoutesByTo {
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/subscription/$contractId/edit': typeof AuthedSubscriptionContractIdEditRoute
   '/admin/audit': typeof AuthedAdminAuditIndexRoute
-  '/admin/settings': typeof AuthedAdminSettingsIndexRoute
+  '/admin/code-numbers': typeof AuthedAdminCodeNumbersIndexRoute
+  '/admin/company': typeof AuthedAdminCompanyIndexRoute
   '/admin/users': typeof AuthedAdminUsersIndexRoute
   '/assets/borrowings': typeof AuthedAssetsBorrowingsIndexRoute
   '/assets/categories': typeof AuthedAssetsCategoriesIndexRoute
@@ -1193,6 +1200,7 @@ export interface FileRoutesById {
   '/_authed/account/': typeof AuthedAccountIndexRoute
   '/_authed/assets/': typeof AuthedAssetsIndexRoute
   '/_authed/crm/': typeof AuthedCrmIndexRoute
+  '/_authed/documents/': typeof AuthedDocumentsIndexRoute
   '/_authed/finance/': typeof AuthedFinanceIndexRoute
   '/_authed/hr/': typeof AuthedHrIndexRoute
   '/_authed/organizations/': typeof AuthedOrganizationsIndexRoute
@@ -1202,7 +1210,6 @@ export interface FileRoutesById {
   '/_authed/reports/': typeof AuthedReportsIndexRoute
   '/_authed/sales/': typeof AuthedSalesIndexRoute
   '/_authed/subscription/': typeof AuthedSubscriptionIndexRoute
-  '/_authed/admin/settings/numbering': typeof AuthedAdminSettingsNumberingRoute
   '/_authed/assets/borrowings/$borrowingId': typeof AuthedAssetsBorrowingsBorrowingIdRoute
   '/_authed/assets/borrowings/new': typeof AuthedAssetsBorrowingsNewRoute
   '/_authed/assets/register/$assetId': typeof AuthedAssetsRegisterAssetIdRoute
@@ -1230,7 +1237,8 @@ export interface FileRoutesById {
   '/_authed/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/_authed/subscription/$contractId/edit': typeof AuthedSubscriptionContractIdEditRoute
   '/_authed/admin/audit/': typeof AuthedAdminAuditIndexRoute
-  '/_authed/admin/settings/': typeof AuthedAdminSettingsIndexRoute
+  '/_authed/admin/code-numbers/': typeof AuthedAdminCodeNumbersIndexRoute
+  '/_authed/admin/company/': typeof AuthedAdminCompanyIndexRoute
   '/_authed/admin/users/': typeof AuthedAdminUsersIndexRoute
   '/_authed/assets/borrowings/': typeof AuthedAssetsBorrowingsIndexRoute
   '/_authed/assets/categories/': typeof AuthedAssetsCategoriesIndexRoute
@@ -1330,6 +1338,7 @@ export interface FileRouteTypes {
     | '/account/'
     | '/assets/'
     | '/crm/'
+    | '/documents/'
     | '/finance/'
     | '/hr/'
     | '/organizations/'
@@ -1339,7 +1348,6 @@ export interface FileRouteTypes {
     | '/reports/'
     | '/sales/'
     | '/subscription/'
-    | '/admin/settings/numbering'
     | '/assets/borrowings/$borrowingId'
     | '/assets/borrowings/new'
     | '/assets/register/$assetId'
@@ -1367,7 +1375,8 @@ export interface FileRouteTypes {
     | '/sales/quotes/new'
     | '/subscription/$contractId/edit'
     | '/admin/audit/'
-    | '/admin/settings/'
+    | '/admin/code-numbers/'
+    | '/admin/company/'
     | '/admin/users/'
     | '/assets/borrowings/'
     | '/assets/categories/'
@@ -1463,6 +1472,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/assets'
     | '/crm'
+    | '/documents'
     | '/finance'
     | '/hr'
     | '/organizations'
@@ -1472,7 +1482,6 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/subscription'
-    | '/admin/settings/numbering'
     | '/assets/borrowings/$borrowingId'
     | '/assets/borrowings/new'
     | '/assets/register/$assetId'
@@ -1500,7 +1509,8 @@ export interface FileRouteTypes {
     | '/sales/quotes/new'
     | '/subscription/$contractId/edit'
     | '/admin/audit'
-    | '/admin/settings'
+    | '/admin/code-numbers'
+    | '/admin/company'
     | '/admin/users'
     | '/assets/borrowings'
     | '/assets/categories'
@@ -1599,6 +1609,7 @@ export interface FileRouteTypes {
     | '/_authed/account/'
     | '/_authed/assets/'
     | '/_authed/crm/'
+    | '/_authed/documents/'
     | '/_authed/finance/'
     | '/_authed/hr/'
     | '/_authed/organizations/'
@@ -1608,7 +1619,6 @@ export interface FileRouteTypes {
     | '/_authed/reports/'
     | '/_authed/sales/'
     | '/_authed/subscription/'
-    | '/_authed/admin/settings/numbering'
     | '/_authed/assets/borrowings/$borrowingId'
     | '/_authed/assets/borrowings/new'
     | '/_authed/assets/register/$assetId'
@@ -1636,7 +1646,8 @@ export interface FileRouteTypes {
     | '/_authed/sales/quotes/new'
     | '/_authed/subscription/$contractId/edit'
     | '/_authed/admin/audit/'
-    | '/_authed/admin/settings/'
+    | '/_authed/admin/code-numbers/'
+    | '/_authed/admin/company/'
     | '/_authed/admin/users/'
     | '/_authed/assets/borrowings/'
     | '/_authed/assets/categories/'
@@ -1824,6 +1835,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedCrmIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/documents/': {
+      id: '/_authed/documents/'
+      path: '/documents'
+      fullPath: '/documents/'
+      preLoaderRoute: typeof AuthedDocumentsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/finance/': {
       id: '/_authed/finance/'
       path: '/finance'
@@ -1929,18 +1947,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminAuditIndexRouteImport
       parentRoute: typeof AuthedAdminRoute
     }
-    '/_authed/admin/settings/': {
-      id: '/_authed/admin/settings/'
-      path: '/settings'
-      fullPath: '/admin/settings/'
-      preLoaderRoute: typeof AuthedAdminSettingsIndexRouteImport
+    '/_authed/admin/code-numbers/': {
+      id: '/_authed/admin/code-numbers/'
+      path: '/code-numbers'
+      fullPath: '/admin/code-numbers/'
+      preLoaderRoute: typeof AuthedAdminCodeNumbersIndexRouteImport
       parentRoute: typeof AuthedAdminRoute
     }
-    '/_authed/admin/settings/numbering': {
-      id: '/_authed/admin/settings/numbering'
-      path: '/settings/numbering'
-      fullPath: '/admin/settings/numbering'
-      preLoaderRoute: typeof AuthedAdminSettingsNumberingRouteImport
+    '/_authed/admin/company/': {
+      id: '/_authed/admin/company/'
+      path: '/company'
+      fullPath: '/admin/company/'
+      preLoaderRoute: typeof AuthedAdminCompanyIndexRouteImport
       parentRoute: typeof AuthedAdminRoute
     }
     '/_authed/admin/users/': {
@@ -2684,16 +2702,16 @@ const AuthedAccountRouteWithChildren = AuthedAccountRoute._addFileChildren(
 )
 
 interface AuthedAdminRouteChildren {
-  AuthedAdminSettingsNumberingRoute: typeof AuthedAdminSettingsNumberingRoute
   AuthedAdminAuditIndexRoute: typeof AuthedAdminAuditIndexRoute
-  AuthedAdminSettingsIndexRoute: typeof AuthedAdminSettingsIndexRoute
+  AuthedAdminCodeNumbersIndexRoute: typeof AuthedAdminCodeNumbersIndexRoute
+  AuthedAdminCompanyIndexRoute: typeof AuthedAdminCompanyIndexRoute
   AuthedAdminUsersIndexRoute: typeof AuthedAdminUsersIndexRoute
 }
 
 const AuthedAdminRouteChildren: AuthedAdminRouteChildren = {
-  AuthedAdminSettingsNumberingRoute: AuthedAdminSettingsNumberingRoute,
   AuthedAdminAuditIndexRoute: AuthedAdminAuditIndexRoute,
-  AuthedAdminSettingsIndexRoute: AuthedAdminSettingsIndexRoute,
+  AuthedAdminCodeNumbersIndexRoute: AuthedAdminCodeNumbersIndexRoute,
+  AuthedAdminCompanyIndexRoute: AuthedAdminCompanyIndexRoute,
   AuthedAdminUsersIndexRoute: AuthedAdminUsersIndexRoute,
 }
 
@@ -2773,6 +2791,7 @@ interface AuthedRouteChildren {
   AuthedSubscriptionNewRoute: typeof AuthedSubscriptionNewRoute
   AuthedAssetsIndexRoute: typeof AuthedAssetsIndexRoute
   AuthedCrmIndexRoute: typeof AuthedCrmIndexRoute
+  AuthedDocumentsIndexRoute: typeof AuthedDocumentsIndexRoute
   AuthedFinanceIndexRoute: typeof AuthedFinanceIndexRoute
   AuthedHrIndexRoute: typeof AuthedHrIndexRoute
   AuthedOrganizationsIndexRoute: typeof AuthedOrganizationsIndexRoute
@@ -2893,6 +2912,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSubscriptionNewRoute: AuthedSubscriptionNewRoute,
   AuthedAssetsIndexRoute: AuthedAssetsIndexRoute,
   AuthedCrmIndexRoute: AuthedCrmIndexRoute,
+  AuthedDocumentsIndexRoute: AuthedDocumentsIndexRoute,
   AuthedFinanceIndexRoute: AuthedFinanceIndexRoute,
   AuthedHrIndexRoute: AuthedHrIndexRoute,
   AuthedOrganizationsIndexRoute: AuthedOrganizationsIndexRoute,

@@ -10,7 +10,7 @@ import { seedTax } from './seed/tax.seeder';
 import { seedOrganization } from './seed/organization.seeder';
 import { seedOrganizationMembers } from './seed/organization-members.seeder';
 import { seedOrganizationRoles } from './seed/organization-roles.seeder';
-import { seedCompanyProfile } from './seed/company-profile.seeder';
+import { seedCompany } from './seed/company.seeder';
 import { seedItemCategories } from './seed/item-category.seeder';
 import { seedHrEmployees } from './seed/hr.seeder';
 import { redisClient } from '../../src/providers/redis/redis';
@@ -34,12 +34,14 @@ export async function runSeeders(): Promise<void> {
 	await redisClient.flushall();
 	logger.info('Cache flushed');
 
+	// Company first: every later seeder may allocate a code, and the numbering
+	// authority needs the company document code ({COMPANY}).
+	await seedCompany();
 	await seedAuth();
 	await seedLocations(drizzleDB);
 	await seedOrganization();
 	await seedOrganizationMembers();
 	await seedOrganizationRoles();
-	await seedCompanyProfile();
 	await seedItemCategories();
 	// Needs the organization (scope), location (address village), the item
 	// category rows above; asset placements then reference the warehouse and

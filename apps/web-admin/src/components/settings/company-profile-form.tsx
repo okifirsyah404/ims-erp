@@ -22,7 +22,7 @@ import type {
 	TCompanyProfile,
 	TCompanyProfileInput,
 	TInvoiceBankAccount,
-} from '@/lib/company-settings-api';
+} from '@/lib/company-api';
 
 type TTextKey = Exclude<keyof TCompanyProfileInput, 'bankAccounts'>;
 type TBankDraft = { bankName: string; accountNumber: string; accountHolder: string };
@@ -51,7 +51,7 @@ function toBank(draft: TBankDraft): TInvoiceBankAccount | null | undefined {
  *
  * @remarks
  * `readOnly` renders the same fields disabled for members without
- * `company_setting:update`. Bank accounts are only shown when the server
+ * `company:update`. Bank accounts are only shown when the server
  * sent them (`bankAccounts !== null`), so a member without access never
  * sees, or blanks, them by saving.
  */

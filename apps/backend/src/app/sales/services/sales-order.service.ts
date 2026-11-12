@@ -1,7 +1,7 @@
 import { INVOICE_LOOKUP_SERVICE_TOKEN } from '@app/sales/constants/di';
 import type { InvoiceLookupService } from '@app/sales/services/invoice-lookup.service';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
 import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/projects/constants/di';
 import { SalesOrderHasProjectError } from '@app/projects/errors/project.errors';
 import type { ProjectLookupService } from '@app/projects/services/project-lookup.service';
@@ -68,8 +68,8 @@ export class SalesOrderService {
 		private readonly orders: ISalesOrderRepository,
 		@inject(QUOTATION_REPOSITORY_TOKEN)
 		private readonly quotations: Pick<IQuotationRepository, 'findById' | 'findItems'>,
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: Pick<CodeNumberService, 'next'>,
 		@inject(USER_SERVICE_TOKEN)
 		private readonly users: Pick<UserService, 'getUser'>,
 		@inject(INVOICE_LOOKUP_SERVICE_TOKEN)

@@ -20,7 +20,7 @@ export * from './constants/di';
  * @remarks
  * Employee creation flows through the user module's invitation pipeline
  * (service-to-service via `INVITATION_SERVICE_TOKEN`) and numbering flows
- * through the organization module's `NumberingService` — HR owns no auth
+ * through the organization module's `CodeNumberService` — HR owns no auth
  * tables of its own (elysia-module rule 3.3).
  */
 export function registerHr(container: DependencyContainer): void {

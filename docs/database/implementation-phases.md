@@ -79,7 +79,7 @@ no dependency on anything.
 |---|---|---|
 | `audit` | 1 | `audit.audit_logs`. Append-only, `organization_id` nullable |
 | `auth` | 6 | the ERP extension tables: `user_profiles`, `user_role_assignments`, `portal_identities`, `user_preferences`, `identity_verifications`, `user_devices` (the 9 Better Auth core tables already exist from the auth setup) |
-| `organization` | 9 | `company_profiles`, `branches`, `departments`, `positions`, `cost_centers`, `company_bank_accounts`, `fiscal_settings`, `document_sequences`, `company_settings` |
+| `organization` | 9 | `branches`, `departments`, `positions`, `cost_centers`, `fiscal_settings`, `settings` (as originally planned; since ERP-0042 the company profile, bank accounts and the numbering series live in the Company and Code Number modules` |
 
 **Explicitly not created.** The `erp` schema. `architecture.md` and
 `data-model.md` still describe it; that text is stale and is corrected by
@@ -119,7 +119,7 @@ anywhere; every other module references `auth.users.id` /
    `CHECK` constraint and every `uuidv7()` default survived.
 4. Write `audit.audit_logs` as an append-only table: no `deleted_at`, no
    `updated_at`.
-5. Seed: none yet beyond the organization(s). A `organization.company_profiles`
+5. Seed: none yet beyond the organization(s). A `company.profiles`
    row per organization is the seed of every other module. Multiple
    organizations may exist inside the one company (ADR-0007); the
    development seeder is skipped in production, where organizations are
@@ -455,7 +455,7 @@ modules easy to seed and to extend, and it is deliberate, not an oversight.
 
 | Schema | Tables | Note |
 |---|---|---|
-| `documents` | 8 | document master, files, signatures, access logs, shares, tags |
+| `documents` | 8 | document master, files, signatures, access logs, shares, tags (schema renamed `document` in ERP-0042) |
 | `approval` | 7 | policies, immutable versions, requests, stages, decisions, delegations, thresholds |
 | `budgeting` | 8 | periods, budgets, items, revisions, executions, cash flow |
 | `investor` | 11 | investors, commitments, deposits, allocations, profit sharing |
@@ -562,7 +562,9 @@ drizzle-kit's vocabulary.
 
 - `location.provinces`, `regencies`, `districts`, `villages`: the code is the
   real administrative code and identifies the same area forever.
-- `organization.company_profiles.organization_id`: one profile per organization, a 1:1
+- `organization.company_profiles.organization_id` (historical - the profile
+  moved to `company.profiles`, company-wide, in ERP-0042): one profile per
+  organization, a 1:1
   slot.
 - Every table without a `deleted_at`: the row is never deleted, so a partial
   index would be pointless.
@@ -577,7 +579,7 @@ drizzle-kit's vocabulary.
 - `public.erp_prevent_row_mutation()` makes the history tables append-only:
   `audit.audit_logs`, `approval.approval_decisions`,
   `approval.approval_policy_versions`, `assets.asset_depreciations`,
-  `documents.document_access_logs`, `licensing.license_events`,
+  `document.access_logs`, `licensing.license_events`,
   `sales.order_status_history`, `sales.quotation_status_history`,
   `ticket.ticket_status_history`.
 

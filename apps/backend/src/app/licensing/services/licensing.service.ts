@@ -2,8 +2,8 @@ import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
 import type { CustomerService } from '@app/crm/services/customer.service';
 import { INVOICE_LOOKUP_SERVICE_TOKEN } from '@app/sales/constants/di';
 import type { InvoiceLookupService } from '@app/sales/services/invoice-lookup.service';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
 import { SALES_FULFILMENT_SERVICE_TOKEN } from '@app/sales/constants/di';
 import type { SalesFulfilmentService } from '@app/sales/services/sales-fulfilment.service';
 import { isUniqueViolation } from '@drizzle/errors';
@@ -88,7 +88,7 @@ export class LicensingService {
 		@inject(LICENSING_REPOSITORY_TOKEN) private readonly repository: ILicensingRepository,
 		@inject(CUSTOMER_SERVICE_TOKEN) private readonly customers: Pick<CustomerService, 'getActiveCustomer'>,
 		@inject(SALES_FULFILMENT_SERVICE_TOKEN) private readonly sales: Pick<SalesFulfilmentService, 'getLiveOrder'>,
-		@inject(NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN) private readonly numbering: Pick<CodeNumberService, 'next'>,
 		@inject(TRANSACTION_RUNNER_TOKEN) private readonly transactions: ITransactionRunner,
 		@inject(LICENSE_API_REPOSITORY_TOKEN)
 		private readonly api: Pick<ILicenseApiRepository, 'insertEvent' | 'listActivations' | 'paginateEvents'>,

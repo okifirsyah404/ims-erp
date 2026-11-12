@@ -128,6 +128,9 @@ only takes an id is not sufficient.
 | `location.*` | global reference data, not tenant scoped |
 | `inventory.*` | company-wide scope (ADR-0008) |
 | `assets.*` | company-wide scope (ERP-0036 D11) |
+| `company.*` | the one company behind every organization (ERP-0042) |
+| `code_number.series` | company-wide numbering authority (ERP-0009) |
+| `document.*` | company-wide documents allowed (ERP-0042) |
 
 Every other table that carries the column has `organization_id text NOT NULL`
 today. ADR-0014 flips the cross-module reference columns to nullable
@@ -283,11 +286,11 @@ approval" true under concurrency, without a lock.
 
 ### 7.2 Numbering
 
-`organization.document_sequences` is the single numbering authority. Allocation is a
+`code_number.series` is the single numbering authority. Allocation is a
 locked row update inside the same transaction as the insert:
 
 ```sql
-UPDATE organization.document_sequences
+UPDATE code_number.series
    SET next_number = next_number + 1
  WHERE organization_id = $1 AND module = $2 AND document_type = $3
  RETURNING next_number - 1;
@@ -398,7 +401,7 @@ split by ownership, with one side authoritative.
 | General ledger balance | `accounting.journal_entries` + `journal_lines` | `accounting.account_balances` |
 | Role and permission | code, `packages/common/src/authorization/erp-permissions.ts` | `auth.members.role`, `auth.user_role_assignments` |
 | Approval decision | `approval.approval_decisions` | the `status` of the business document |
-| Document version | `documents.documents` | `documents.document_templates.version` |
+| Document version | `document.documents` | `document.templates.version` |
 
 ## 10. What the database cannot guarantee
 

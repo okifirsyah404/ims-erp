@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-08.
+Last synced: 2026-11-13.
 
 > **Sidebar shell note (2026-11-05):** the web-admin sidebar now renders the
 > full M01–M12 nav map (see `progress.md`, "UI — full ERP sidebar shell").
@@ -403,6 +403,8 @@ Last synced: 2026-11-08.
 - ERP-0024 UAT, reconciliation, backup drill.
 - ERP-0025 Release preparation.
 - ERP-0037 Nullable cross-module references (ADR-0014 schema flip).
+- ERP-0043 Item / asset code generation per kind (`item_product`,
+  `item_material`, `item_component` code types, `inventory.items.serial_number`).
 
 ### in-progress
 - ERP-0037 Port M02/M05/M07 onto main (ADR-0011): steps 1-2 implemented
@@ -413,11 +415,28 @@ Last synced: 2026-11-08.
   Evidence: `progress.md` 2026-11-05, `test/unit/item-category.service.test.ts`.
 
 ### implemented
-- ERP-0009 Document numbering (company-wide series, settings page).
-  Evidence: `apps/backend/src/app/organization`, `test/unit/numbering.service.test.ts`,
-  `progress.md` 2026-11-05.
-- ERP-0008 (part) Company profile + invoice bank accounts. Evidence:
-  `test/unit/company-profile.service.test.ts`, `progress.md` 2026-11-05.
+- ERP-0042 Decoupled `organization` into `company` + `document` +
+  `code_number` (2026-11-13). Three Postgres schemas, one append-only migration
+  each; `company.profiles/head_office_addresses/contacts/bank_accounts/settings`,
+  `code_number.series` (verbatim rename of `organization.document_sequences`,
+  `document_type`→`code_type`, 29 types incl. `warehouse`),
+  `document.templates/documents/files/signatures/access_logs/shares/tags/tag_links`;
+  `organization.company_settings` split into `company.settings` +
+  `organization.settings`. Contracts `CompanyService.getProfile(tx?)`,
+  `CodeNumberService.next(codeType, {date, context, tx})`,
+  `DocumentService.issue(...)`. Permissions `company:*` / `code_number:*` /
+  `document:*` replace `company_setting:*`. API `/company/profile` +
+  `/code-numbers`; UI `/documents`, `/admin/company`, `/admin/code-numbers`
+  (`/admin/settings` deleted). Evidence: `apps/backend/src/app/{company,code-number,document}`,
+  `test/unit/{company,code-number}.service.test.ts`, migrations
+  `2026111312*_erp0042_*` verified on a disposable DB, `progress.md` 2026-11-13.
+- ERP-0009 Code numbering (company-wide series, settings page). Moved to
+  `code_number` by ERP-0042.
+  Evidence: `apps/backend/src/app/code-number`, `test/unit/code-number.service.test.ts`,
+  `progress.md` 2026-11-05 and 2026-11-13.
+- ERP-0008 (part) Company profile + invoice bank accounts. Moved to `company`
+  by ERP-0042. Evidence:
+  `test/unit/company.service.test.ts`, `progress.md` 2026-11-05 and 2026-11-13.
 - ERP-0030 Faker seeders + `faker` skill. Evidence: `apps/backend/database/
   seeders`, `test/unit/inventory-seeder.data.test.ts`,
   `member-seed-config.test.ts`; run-twice verified 2026-11-03.

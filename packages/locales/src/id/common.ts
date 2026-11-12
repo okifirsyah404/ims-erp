@@ -11,6 +11,7 @@ const common_: Record<keyof typeof common, string> = {
 	'action.saving': 'Menyimpan…',
 	'action.delete': 'Hapus',
 	'action.edit': 'Ubah',
+	'action.search': 'Cari',
 	'action.restore': 'Pulihkan',
 	'action.previous': 'Sebelumnya',
 	'action.next': 'Berikutnya',

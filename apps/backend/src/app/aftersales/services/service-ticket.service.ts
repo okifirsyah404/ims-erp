@@ -1,7 +1,8 @@
 import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
 import type { CustomerService } from '@app/crm/services/customer.service';
-import { NUMBERING_SERVICE_TOKEN, ORGANIZATION_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import { ORGANIZATION_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { CodeNumberService } from '@app/code-number';
 import type { OrganizationService } from '@app/organization/services/organization.service';
 import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/projects/constants/di';
 import type { ProjectLookupService } from '@app/projects/services/project-lookup.service';
@@ -56,7 +57,7 @@ export class ServiceTicketService {
 		@inject(ORGANIZATION_SERVICE_TOKEN) private readonly organizations: Pick<OrganizationService, 'getMemberRole' | 'listMembers'>,
 		@inject(PERMISSION_RESOLVER_TOKEN) private readonly permissions: Pick<IPermissionResolver, 'hasPermission'>,
 		@inject(USER_SERVICE_TOKEN) private readonly users: Pick<UserService, 'getUser'>,
-		@inject(NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN) private readonly numbering: Pick<CodeNumberService, 'next'>,
 	) {}
 
 	private async view(ticket: TServiceTicketSelect): Promise<TTicketView> {

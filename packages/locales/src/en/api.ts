@@ -202,9 +202,11 @@ const api = {
 	'organization.lastOrganization':
 		'This is your last organization and cannot be removed',
 	'organization.notFound': 'Organization not found',
-	'organization.companyProfileRequired':
+	'company.profileRequired':
 		'Fill in the company profile (with its document code) first',
-	'numbering.unknownDocumentType': 'Unknown document type',
+	'numbering.unknownCodeType': 'Unknown code type',
+	'document.notFound': 'Document not found',
+	'document.notVoidable': 'This document cannot be voided',
 	'numbering.pattern.length': 'The pattern must be 1-100 characters',
 	'numbering.pattern.unknownToken': 'Unknown token {{token}}',
 	'numbering.pattern.tokenNotForType':

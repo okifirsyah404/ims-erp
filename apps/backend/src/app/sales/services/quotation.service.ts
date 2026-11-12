@@ -4,8 +4,8 @@ import { LEAD_SERVICE_TOKEN } from '@app/crm/constants/di';
 import type { LeadService } from '@app/crm/services/lead.service';
 import { ITEM_SERVICE_TOKEN } from '@app/inventory/constants/di';
 import type { ItemService } from '@app/inventory/services/item.service';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
 import { USER_SERVICE_TOKEN } from '@app/user/constants/di';
 import type { UserService } from '@app/user/services/user.service';
 import {
@@ -111,8 +111,8 @@ export class QuotationService {
 		private readonly leads: Pick<LeadService, 'noteQuotation'>,
 		@inject(ITEM_SERVICE_TOKEN)
 		private readonly items: Pick<ItemService, 'getActiveItems'>,
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: Pick<CodeNumberService, 'next'>,
 		@inject(USER_SERVICE_TOKEN)
 		private readonly users: Pick<UserService, 'getUser'>,
 		@inject(OBJECT_STORAGE_TOKEN)

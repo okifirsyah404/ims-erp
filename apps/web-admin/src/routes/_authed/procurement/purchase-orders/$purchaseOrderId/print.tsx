@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { PurchaseOrderDocument } from '@/components/procurement/purchase-order-document';
-import { companyProfileQueryOptions } from '@/lib/company-settings-api';
+import { companyProfileQueryOptions } from '@/lib/company-api';
 import { purchaseOrderQueryOptions } from '@/lib/procurement-api';
 
 /** `/procurement/purchase-orders/$purchaseOrderId/print` — the printable PO. */

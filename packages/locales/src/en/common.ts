@@ -10,6 +10,7 @@ const common = {
 	'action.saving': 'Saving…',
 	'action.delete': 'Delete',
 	'action.edit': 'Edit',
+	'action.search': 'Search',
 	'action.restore': 'Restore',
 	'action.previous': 'Previous',
 	'action.next': 'Next',

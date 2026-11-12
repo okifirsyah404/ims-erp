@@ -75,6 +75,9 @@ describe('locale values', () => {
 	'admin:orgs.userEmail',
 			'admin:users.status',
 			'admin:users.filterStatus',
+			// "Invoice" and "Status" are the Indonesian words too.
+			'settings:numbering.type.sales_invoice',
+			'documents:status',
 			// Digit-only phone example: the placeholder is a number pattern,
 			// not prose, so it is identical in both bundles.
 			'claim:form.phonePlaceholder',

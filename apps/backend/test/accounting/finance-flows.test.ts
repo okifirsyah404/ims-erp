@@ -7,7 +7,7 @@
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import type { CodeNumberService } from '@app/code-number';
 import type {
 	TAccountingPeriodSelect,
 	TBankAccountLinkSelect,
@@ -267,7 +267,7 @@ function makeHarness() {
 
 	const numbering = {
 		next: async (type: string) => `${type}-${String(++allocSeq).padStart(6, '0')}`,
-	} as unknown as NumberingService;
+	} as unknown as CodeNumberService;
 
 	// A no-op "transaction" that just forwards to the fake repo.
 	const tx = new Proxy({} as never, {}) as never;

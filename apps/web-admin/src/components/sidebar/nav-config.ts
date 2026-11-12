@@ -4,6 +4,7 @@ import {
 	Contact,
 	FileCheck2,
 	FileSpreadsheet,
+	FileText,
 	Globe,
 	GraduationCap,
 	HandCoins,
@@ -39,11 +40,18 @@ import type { SidebarItem } from './sidebar-item';
  * per item instead of hiding whole sections.
  */
 export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarItem[] }[] = [
-	// M01 — Dashboard. Plain link; the authed index page doubles as the
+	// M01 - Dashboard. Plain link; the authed index page doubles as the
 	// dashboard placeholder for now.
 	{
 		labelKey: 'section.dashboard',
 		items: [{ titleKey: 'item.dashboard', url: '/', icon: LayoutDashboard }],
+	},
+
+	// Document registry (ERP-0042). Company-wide: every issued document,
+	// whatever module owns the business record.
+	{
+		labelKey: 'section.documents',
+		items: [{ titleKey: 'item.documents', url: '/documents', icon: FileText }],
 	},
 
 	// M02 — CRM & Sales. CRM (relationships) and Sales (transactions) are
@@ -260,14 +268,11 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				adminOnly: true,
 			},
 			{
-				titleKey: 'item.settings',
-				url: '/admin/settings',
+				titleKey: 'item.companyProfile',
+				url: '/admin/company',
 				icon: Settings,
-				// Company-wide settings (ADR-0011).
-				items: [
-					{ titleKey: 'item.companyProfile', url: '/admin/settings' },
-					{ titleKey: 'item.documentNumbering', url: '/admin/settings/numbering' },
-				],
+				// Company-wide settings (ADR-0011, ERP-0042).
+				items: [{ titleKey: 'item.codeNumbers', url: '/admin/code-numbers' }],
 			},
 		],
 	},

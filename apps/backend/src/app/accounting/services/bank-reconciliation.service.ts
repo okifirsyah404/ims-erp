@@ -3,8 +3,8 @@ import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type { TTx } from '@drizzle/types';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import type { TPaginationResult } from '@ims-erp/common';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
 import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
 import type { LedgerRepository } from '../repositories/ledger.repository';
 import {
@@ -50,8 +50,8 @@ export class BankReconciliationService {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 		@inject(LEDGER_REPOSITORY_TOKEN) private readonly repo: LedgerRepository,
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: NumberingService,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: CodeNumberService,
 	) {}
 
 	async list(

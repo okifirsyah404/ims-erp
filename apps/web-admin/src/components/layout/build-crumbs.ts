@@ -40,8 +40,8 @@ const LABELS: Record<string, NavKey> = {
 	'/organizations/$organizationId/edit': 'breadcrumb.organizationEdit',
 	'/organizations/$organizationId/members/$memberId/edit':
 		'breadcrumb.memberEdit',
-	'/admin/settings': 'item.settings',
-	'/admin/settings/numbering': 'item.documentNumbering',
+	'/admin/company': 'item.companyProfile',
+	'/admin/code-numbers': 'item.codeNumbers',
 	'/inventory/categories': 'item.itemCategories',
 	'/crm/customers': 'item.customers',
 	'/crm/leads': 'item.leads',

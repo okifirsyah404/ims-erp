@@ -1,7 +1,7 @@
 import { ITEM_SERVICE_TOKEN } from '@app/inventory/constants/di';
 import type { ItemService } from '@app/inventory/services/item.service';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
 import { isUniqueViolation } from '@drizzle/errors';
 import {
 	PURCHASE_CATEGORY_CODES,
@@ -77,8 +77,8 @@ export class PurchaseOrderService {
 		private readonly suppliers: Pick<SupplierService, 'getActiveSupplier'>,
 		@inject(ITEM_SERVICE_TOKEN)
 		private readonly items: Pick<ItemService, 'getActiveItems'>,
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: Pick<CodeNumberService, 'next'>,
 	) {}
 
 	private async require(id: string): Promise<TPurchaseOrderSelect> {

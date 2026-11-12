@@ -8,6 +8,7 @@ const nav = {
 
 	'section.dashboard': 'Dashboard',
 	'section.crmSales': 'CRM & Sales',
+	'section.documents': 'Documents',
 	'section.subscription': 'Subscription & Licensing',
 	'section.integrations': 'Integrations',
 	'section.projects': 'Projects & After-sales',
@@ -16,6 +17,7 @@ const nav = {
 	'section.reports': 'Reports & Access',
 
 	'item.dashboard': 'Dashboard',
+	'item.documents': 'All documents',
 	'item.crm': 'CRM',
 	'item.sales': 'Sales',
 	'item.customers': 'Customers',
@@ -96,9 +98,8 @@ const nav = {
 	'item.organizations': 'Organization',
 	'item.users': 'Users',
 	'item.auditLog': 'Audit Log',
-	'item.settings': 'Settings',
 	'item.companyProfile': 'Company profile',
-	'item.documentNumbering': 'Document numbering',
+	'item.codeNumbers': 'Code numbering',
 
 	'theme.label': 'Theme',
 	'theme.light': 'Light theme',

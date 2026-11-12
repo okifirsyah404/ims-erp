@@ -21,8 +21,8 @@ import {
 	BORROWING_REPOSITORY_TOKEN,
 } from '../constants/di';
 import type { AssetOperationsService } from './asset-operations.service';
-import type { NumberingService } from '@app/organization/services/numbering.service';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { CodeNumberService } from '@app/code-number';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import { InventoryAuditWriter } from '@app/inventory/services/inventory-audit.writer';
 import { ASSET_DOC_TYPES } from '../constants/doc-types';
 import {
@@ -159,8 +159,8 @@ export class BorrowingService {
 		 * ERP-0009 numbering authority: borrowing codes are sequence-allocated
 		 * inside the creating transaction (hardening plan D4).
 		 */
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: Pick<CodeNumberService, 'next'>,
 		/** Fire-and-forget audit writer (hardening plan D3). */
 		private readonly audit: InventoryAuditWriter,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,

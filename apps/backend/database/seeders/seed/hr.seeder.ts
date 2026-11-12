@@ -6,9 +6,11 @@ import {
 	type TEmployeeInsert,
 } from '../../../drizzle/schemas/hr.schema';
 import { members, organizations, users } from '../../../drizzle/schemas/auth.schema';
-import { NumberingService } from '../../../src/app/organization/services/numbering.service';
-import { DocumentSequenceRepository } from '../../../src/app/organization/repositories/document-sequence.repository';
-import { CompanyProfileRepository } from '../../../src/app/organization/repositories/company-profile.repository';
+import { CodeNumberService } from '../../../src/app/code-number/services/code-number.service';
+import { CodeNumberRepository } from '../../../src/app/code-number/repositories/code-number.repository';
+import { CompanyService } from '../../../src/app/company/services/company.service';
+import { CompanyRepository } from '../../../src/app/company/repositories/company.repository';
+import { s3ObjectStorage } from '../../../src/providers/s3/object-storage';
 import { CacheClient } from '../../../src/cache/cache.client';
 import { redisClient } from '../../../src/providers/redis/redis';
 import { isProductionEnv } from '../../../config/providers/env';
@@ -74,11 +76,14 @@ export async function seedHrEmployees(): Promise<void> {
 		return;
 	}
 
-	const numbering = new NumberingService(
-		new DocumentSequenceRepository(drizzleDB),
-		// The seeder runs outside the DI container, so the repository's cache
-		// dependency is wired by hand over the shared redis client.
-		new CompanyProfileRepository(drizzleDB, new CacheClient(redisClient)),
+	const numbering = new CodeNumberService(
+		new CodeNumberRepository(drizzleDB),
+		// The seeder runs outside the DI container, so the dependencies are
+		// wired by hand over the shared redis client and S3 client.
+		new CompanyService(
+			new CompanyRepository(drizzleDB, new CacheClient(redisClient)),
+			s3ObjectStorage,
+		),
 	);
 
 	let created = 0;

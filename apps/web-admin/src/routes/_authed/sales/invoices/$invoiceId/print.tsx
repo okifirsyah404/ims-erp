@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { InvoiceDocument } from '@/components/finance/invoice-document';
-import { companyProfileQueryOptions } from '@/lib/company-settings-api';
+import { companyProfileQueryOptions } from '@/lib/company-api';
 import { invoiceQueryOptions } from '@/lib/invoice-api';
 
 /** `/sales/invoices/$invoiceId/print` — the printable invoice. */

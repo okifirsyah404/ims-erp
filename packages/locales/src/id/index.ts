@@ -18,6 +18,7 @@ import licensing_ from './licensing';
 import tax_ from './tax';
 import hr_ from './hr';
 import claim_ from './claim';
+import documents_ from './documents';
 
 /** Indonesian resources — same namespace/key shape as `en`. */
 export const id = {
@@ -41,4 +42,5 @@ export const id = {
 	tax: tax_,
 	hr: hr_,
 	claim: claim_,
+	documents: documents_,
 } as const;

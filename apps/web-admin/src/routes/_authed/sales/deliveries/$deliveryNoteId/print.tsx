@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { DeliveryNoteDocument } from '@/components/sales/delivery-note-document';
-import { companyProfileQueryOptions } from '@/lib/company-settings-api';
+import { companyProfileQueryOptions } from '@/lib/company-api';
 import { deliveryNoteQueryOptions } from '@/lib/delivery-note-api';
 
 /** `/sales/deliveries/$deliveryNoteId/print` — the printable surat jalan. */

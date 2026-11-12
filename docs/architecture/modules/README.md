@@ -23,6 +23,9 @@ blocked`.
 |---|---|---|---|
 | [user](user.md) | `src/app/user` | partially implemented | T02 (roles/audit), T03 |
 | [organization](organization.md) | `src/app/organization` | scaffold | T02, T15 |
+| company (no doc yet) | `src/app/company` | implemented 2026-11-13 (ERP-0042) - company profile, contacts, bank accounts, company-wide settings | ERP-0042 |
+| code_number (no doc yet) | `src/app/code-number` | implemented 2026-11-13 (ERP-0042) - the one numbering authority (`code_number.series`) | ERP-0009, ERP-0042 |
+| document (no doc yet) | `src/app/document` | implemented 2026-11-13 (ERP-0042) - issued document registry, files, signatures, shares, tags; PDF rendering out of scope | ERP-0042 |
 | [location](location.md) | `src/app/location` | scaffold | T07 |
 
 ## Assessed / planned owners (no module directory yet)

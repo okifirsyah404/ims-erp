@@ -30,16 +30,25 @@ TableGroup "Location" {
   location.villages
 }
 
+TableGroup "Company" {
+  company.profiles
+  company.head_office_addresses
+  company.contacts
+  company.bank_accounts
+  company.settings
+}
+
 TableGroup "Organization" {
-  organization.company_profiles
   organization.branches
   organization.departments
   organization.positions
   organization.cost_centers
-  organization.company_bank_accounts
   organization.fiscal_settings
-  organization.document_sequences
-  organization.company_settings
+  organization.settings
+}
+
+TableGroup "CodeNumber" {
+  code_number.series
 }
 
 TableGroup "CRM" {
@@ -242,14 +251,14 @@ TableGroup "After-Sales" {
 }
 
 TableGroup "Documents" {
-  documents.document_templates
-  documents.documents
-  documents.document_files
-  documents.document_signatures
-  documents.document_access_logs
-  documents.document_shares
-  documents.document_tags
-  documents.document_tag_links
+  document.templates
+  document.documents
+  document.files
+  document.signatures
+  document.access_logs
+  document.shares
+  document.tags
+  document.tag_links
 }
 
 TableGroup "Approval" {
@@ -779,29 +788,21 @@ Ref: location.districts.regency_id > location.regencies.id [delete: cascade]
 Ref: location.villages.district_id > location.districts.id [delete: cascade]
 
 // ---------------------------------------------------------------------------
-// MODULE: Organization  (schema: organization)
-// Company profile, branches, departments, positions, cost centres, bank
-// accounts, fiscal settings, document numbering, settings key value.
-// Tenant scoped by organization_id, except company_profiles,
-// company_bank_accounts and document_sequences, which are company-wide
-// (ADR-0011: one company, organizations are internal departments).
+// MODULE: Company  (schema: company)
+// The one legal company behind every organization (ADR-0011): profile, head
+// office addresses, contacts, bank accounts, company-wide settings. All rows
+// are company-wide — no organization_id column anywhere in this schema.
 // ---------------------------------------------------------------------------
 
-Table organization.company_profiles {
+Table company.profiles {
   id uuid [pk, default: `uuidv7()`]
   legal_name varchar(200) [not null]
   trading_name varchar(200)
   document_code varchar(16) [not null, note: "Company code in document numbers (the {COMPANY} token), upper-case letters and digits."]
   tagline varchar(300)
   tax_id varchar(32) [note: "NPWP number of the company."]
-  email varchar(200)
-  phone varchar(100)
-  website varchar(200)
   logo_object_key text [note: "Object-storage key of the letterhead logo (PNG, JPG or WebP)."]
   signature_object_key text [note: "Object-storage key of the signature and stamp image printed above the signatory name."]
-  address_line text [note: "Free-text address as printed on the letterhead."]
-  address_village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
-  postal_code varchar(10)
   signatory_name varchar(200)
   signatory_title varchar(100)
   default_quotation_terms text
@@ -814,12 +815,96 @@ Table organization.company_profiles {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Legal and display profile of the one company (letterhead, signatory, default terms). Company-wide, no organization_id (ADR-0011): organizations are internal departments. One live row, enforced by the partial unique index company_profiles_singleton_uq ON ((true)) WHERE deleted_at IS NULL in the Drizzle schema."
+  Note: "Legal and display profile of the one company (letterhead, signatory, default terms). Company-wide, no organization_id (ADR-0011): organizations are internal departments. Addresses, phone numbers, email and the website moved to company.head_office_addresses and company.contacts (ERP-0042). One live row, enforced by the partial unique index profiles_singleton_uq ON ((true)) WHERE deleted_at IS NULL in the Drizzle schema."
   Checks {
     `status IN ('active', 'inactive')`
     `document_code ~ '^[A-Z0-9]+$'`
   }
 }
+
+Table company.head_office_addresses {
+  id uuid [pk, default: `uuidv7()`]
+  label varchar(100) [not null, default: 'head_office', note: "Free label distinguishing several office addresses."]
+  address_line text [not null, note: "Free-text address as printed on the letterhead."]
+  village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
+  postal_code varchar(10)
+  is_primary boolean [not null, default: false, note: "The address printed on the letterhead; at most one live row."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Office address of the company, company-wide (ADR-0011). The primary address is what printed documents use. Partial unique index is_primary WHERE deleted_at IS NULL AND is_primary in the Drizzle schema."
+}
+
+Table company.contacts {
+  id uuid [pk, default: `uuidv7()`]
+  contact_type text [not null]
+  value varchar(200) [not null]
+  label varchar(100)
+  is_primary boolean [not null, default: false, note: "The contact shown on the letterhead per type; at most one live row per type."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Company contact channel, company-wide (ADR-0011). Email/phone/website columns left company.profiles in ERP-0042. Partial unique index (contact_type, is_primary) WHERE deleted_at IS NULL AND is_primary in the Drizzle schema."
+  Indexes {
+    value [name: 'contacts_value_idx']
+  }
+  Checks {
+    `contact_type IN ('phone', 'email', 'whatsapp', 'fax', 'other')`
+  }
+}
+
+Table company.bank_accounts {
+  id uuid [pk, default: `uuidv7()`]
+  code varchar(32) [not null]
+  bank_name varchar(100) [not null]
+  bank_code varchar(20)
+  branch_name varchar(100)
+  account_number varchar(50) [not null]
+  account_holder varchar(200) [not null]
+  currency_code varchar(3) [not null, default: 'IDR']
+  invoice_usage text [note: "Account printed on invoices with VAT (vat) or without VAT (non_vat); null for other accounts."]
+  is_primary boolean [not null, default: false]
+  is_active boolean [not null, default: true]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Company owned bank account, company-wide (ADR-0011). Was organization.company_bank_accounts until ERP-0042. Finance owns its own operational cash and bank accounts, this is the master reference. Partial unique indexes in the Drizzle schema: code and invoice_usage are unique among live rows."
+  Indexes {
+    account_number [name: 'bank_accounts_account_number_idx']
+  }
+  Checks {
+    `invoice_usage IS NULL OR invoice_usage IN ('vat', 'non_vat')`
+  }
+}
+
+Table company.settings {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  setting_group text [not null]
+  setting_key text [not null]
+  setting_value text
+  value_type text [not null, default: 'string']
+  is_secret boolean [not null, default: false]
+  description text
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Company-wide configuration key value store (ERP-0042). Organization-scoped settings live in organization.settings. Secret values are never read back by the client."
+  Indexes {
+    (setting_group, setting_key) [unique, name: 'company_settings_scope_uq']
+  }
+  Checks {
+    `value_type IN ('string', 'number', 'boolean', 'json', 'date')`
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MODULE: Organization  (schema: organization)
+// Internal departments of the one company (ADR-0007/ADR-0011): branches,
+// departments, positions, cost centres, fiscal settings, per-organization
+// settings. Every table is tenant scoped by organization_id (logical
+// reference to auth.organizations.id).
+// ---------------------------------------------------------------------------
 
 Table organization.branches {
   id uuid [pk, default: `uuidv7()`]
@@ -904,30 +989,6 @@ Table organization.cost_centers {
   }
 }
 
-Table organization.company_bank_accounts {
-  id uuid [pk, default: `uuidv7()`]
-  code varchar(32) [not null]
-  bank_name varchar(100) [not null]
-  bank_code varchar(20)
-  branch_name varchar(100)
-  account_number varchar(50) [not null]
-  account_holder varchar(200) [not null]
-  currency_code varchar(3) [not null, default: 'IDR']
-  invoice_usage text [note: "Account printed on invoices with VAT (vat) or without VAT (non_vat); null for other accounts."]
-  is_primary boolean [not null, default: false]
-  is_active boolean [not null, default: true]
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
-  Note: "Company owned bank account, company-wide (ADR-0011). Finance owns its own operational cash and bank accounts, this is the master reference. Partial unique indexes in the Drizzle schema: code and invoice_usage are unique among live rows."
-  Indexes {
-    account_number [name: 'company_bank_accounts_account_number_idx']
-  }
-  Checks {
-    `invoice_usage IS NULL OR invoice_usage IN ('vat', 'non_vat')`
-  }
-}
-
 Table organization.fiscal_settings {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
@@ -950,10 +1011,15 @@ Table organization.fiscal_settings {
   }
 }
 
-Table organization.document_sequences {
+// MODULE: CodeNumber  (schema: code_number)
+// The one numbering authority (ERP-0009): one code series per code type for
+// the whole company. Was organization.document_sequences until ERP-0042.
+// ---------------------------------------------------------------------------
+
+Table code_number.series {
   id uuid [pk, default: `uuidv7()`]
-  module varchar(32) [not null, note: "Owning module of the document type (sales, crm, procurement, inventory, assets, projects, aftersales, licensing)."]
-  document_type varchar(32) [not null]
+  module varchar(32) [not null, note: "Owning module of the code type (sales, crm, procurement, inventory, assets, projects, aftersales, licensing)."]
+  code_type varchar(32) [not null]
   pattern varchar(100) [note: "Token pattern, e.g. {SEQ:4}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YY}; null means the code default for the type."]
   reset_policy text [note: "null means the code default for the type."]
   period_key varchar(7) [not null, note: "Period the counter belongs to: 2026 (yearly), 2026-11 (monthly), all (never). A new period starts again at 1."]
@@ -962,14 +1028,14 @@ Table organization.document_sequences {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "One numbering series per document type for the whole company (ADR-0011); the one numbering authority (ERP-0009) — main's per-organization sequences were merged into it on 2026-11-06 (migration merge_main_reconcile), inventory and asset codes keep their shape as default patterns. Allocation is one atomic INSERT ... ON CONFLICT DO UPDATE ... RETURNING in the owning repository. Partial unique index on document_type WHERE deleted_at IS NULL in the Drizzle schema."
+  Note: "One code series per code type for the whole company (ADR-0011); the one numbering authority (ERP-0009) — main's per-organization sequences were merged into it on 2026-11-06 (migration merge_main_reconcile), inventory and asset codes keep their shape as default patterns. Was organization.document_sequences (column document_type renamed code_type) until ERP-0042. Allocation is one atomic INSERT ... ON CONFLICT DO UPDATE ... RETURNING in the owning repository. Partial unique index on code_type WHERE deleted_at IS NULL in the Drizzle schema."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
     `next_number > 0`
   }
 }
 
-Table organization.company_settings {
+Table organization.settings {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
@@ -982,9 +1048,9 @@ Table organization.company_settings {
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Company wide configuration key value store. Secret values are never read back by the client."
+  Note: "Organization-scoped configuration key value store (ERP-0042; was the planned organization.company_settings). Company-wide settings live in company.settings. Secret values are never read back by the client."
   Indexes {
-    (organization_id, setting_group, setting_key) [unique, name: 'company_settings_scope_uq']
+    (organization_id, setting_group, setting_key) [unique, name: 'organization_settings_scope_uq']
   }
   Checks {
     `value_type IN ('string', 'number', 'boolean', 'json', 'date')`
@@ -5810,15 +5876,18 @@ Table aftersales.service_contracts {
 
 
 // ---------------------------------------------------------------------------
-// MODULE: Documents  (schema: documents)
-// Document master, templates, files, signatures, access log, shares, tags.
-// Tenant scoped. The file bytes live in object storage, this module owns the
-// metadata and the access rules.
+// MODULE: Document  (schema: document)
+// Document registry, templates, files, signatures, access log, shares, tags.
+// Registry + issuance (ERP-0042): business documents stay in their owning
+// module's tables; this module owns the issued copy of the document, its
+// files and signatures. The file bytes live in object storage, this module
+// owns the metadata and the access rules. organization_id is nullable:
+// NULL means company-wide (ADR-0011 pattern of inventory and assets).
 // ---------------------------------------------------------------------------
 
-Table documents.document_templates {
+Table document.templates {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide template. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
   name text [not null]
   document_type text [not null]
@@ -5830,19 +5899,19 @@ Table documents.document_templates {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Reusable document template. A new version is a new row, an issued document keeps pointing at the version it used."
+  Note: "Reusable document template. A new version is a new row, an issued document keeps pointing at the version it used. The numbering_pattern here is display-only; the numbering authority is code_number.series."
   Indexes {
-    (organization_id, code, version) [unique, name: 'document_templates_code_version_uq']
+    (organization_id, code, version) [unique, name: 'templates_code_version_uq']
   }
   Checks {
     `version > 0`
   }
 }
 
-Table documents.documents {
+Table document.documents {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide document. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
   document_type text [not null]
   title text [not null]
@@ -5860,7 +5929,7 @@ Table documents.documents {
   supersedes_document_id uuid
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Document master. A document is never hard deleted, a new version supersedes the old one."
+  Note: "Document master (registry + issuance). A document is never hard deleted, a new version supersedes the old one. The unique index on (organization_id, code) is a partial index in the Drizzle schema so a company-wide (NULL organization) row and tenant rows never collide."
   Indexes {
     (organization_id, code) [unique, name: 'documents_org_code_uq']
     template_id [name: 'documents_template_id_idx']
@@ -5873,12 +5942,12 @@ Table documents.documents {
   }
 }
 
-Table documents.document_files {
+Table document.files {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   document_id uuid [not null]
   file_name text [not null]
   storage_key text [not null]
@@ -5889,20 +5958,20 @@ Table documents.document_files {
   uploaded_at bigint [not null]
   Note: "Binary attachment of a document. The storage key never contains a public URL."
   Indexes {
-    document_id [name: 'document_files_document_id_idx']
-    storage_key [unique, name: 'document_files_storage_key_uq']
+    document_id [name: 'files_document_id_idx']
+    storage_key [unique, name: 'files_storage_key_uq']
   }
   Checks {
     `size_bytes >= 0`
   }
 }
 
-Table documents.document_signatures {
+Table document.signatures {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   document_id uuid [not null]
   signer_type text [not null]
   signer_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
@@ -5913,7 +5982,7 @@ Table documents.document_signatures {
   certificate_serial text
   Note: "Signature evidence of a document."
   Indexes {
-    document_id [name: 'document_signatures_document_id_idx']
+    document_id [name: 'signatures_document_id_idx']
   }
   Checks {
     `signer_type IN ('internal', 'customer', 'partner')`
@@ -5921,12 +5990,12 @@ Table documents.document_signatures {
   }
 }
 
-Table documents.document_access_logs {
+Table document.access_logs {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   document_id uuid [not null]
   accessed_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   action text [not null]
@@ -5935,20 +6004,20 @@ Table documents.document_access_logs {
   user_agent text
   Note: "Access trail of a document. Audit reads are never cached and never skipped."
   Indexes {
-    document_id [name: 'document_access_logs_document_id_idx']
-    accessed_at [name: 'document_access_logs_accessed_at_idx']
+    document_id [name: 'access_logs_document_id_idx']
+    accessed_at [name: 'access_logs_accessed_at_idx']
   }
   Checks {
     `action IN ('view', 'download', 'print', 'share', 'delete')`
   }
 }
 
-Table documents.document_shares {
+Table document.shares {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   document_id uuid [not null]
   share_type text [not null]
   shared_with_type text
@@ -5959,51 +6028,51 @@ Table documents.document_shares {
   is_revoked boolean [not null, default: false]
   Note: "External sharing of a document, for example a portal share with a customer."
   Indexes {
-    document_id [name: 'document_shares_document_id_idx']
-    (share_type, shared_with_type, shared_with_id) [name: 'document_shares_target_idx']
+    document_id [name: 'shares_document_id_idx']
+    (share_type, shared_with_type, shared_with_id) [name: 'shares_target_idx']
   }
   Checks {
     `share_type IN ('internal', 'customer', 'portal', 'public_link')`
   }
 }
 
-Table documents.document_tags {
+Table document.tags {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide tag. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   tag text [not null]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Free form tag applied to documents."
   Indexes {
-    (organization_id, tag) [unique, name: 'document_tags_org_tag_uq']
+    (organization_id, tag) [unique, name: 'tags_org_tag_uq']
   }
 }
 
-Table documents.document_tag_links {
+Table document.tag_links {
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   document_id uuid [not null]
   document_tag_id uuid [not null]
   created_at bigint [not null]
   Note: "Link between a document and a tag."
   Indexes {
-    (document_id, document_tag_id) [unique, name: 'document_tag_links_uq']
-    document_tag_id [name: 'document_tag_links_tag_id_idx']
+    (document_id, document_tag_id) [unique, name: 'tag_links_uq']
+    document_tag_id [name: 'tag_links_tag_id_idx']
   }
 }
 
-Ref: documents.documents.template_id > documents.document_templates.id [delete: set null]
-Ref: documents.documents.supersedes_document_id > documents.documents.id [delete: set null]
-Ref: documents.document_files.document_id > documents.documents.id [delete: cascade]
-Ref: documents.document_signatures.document_id > documents.documents.id [delete: cascade]
-Ref: documents.document_access_logs.document_id > documents.documents.id [delete: cascade]
-Ref: documents.document_shares.document_id > documents.documents.id [delete: cascade]
-Ref: documents.document_tag_links.document_id > documents.documents.id [delete: cascade]
-Ref: documents.document_tag_links.document_tag_id > documents.document_tags.id [delete: cascade]
+Ref: document.documents.template_id > document.templates.id [delete: set null]
+Ref: document.documents.supersedes_document_id > document.documents.id [delete: set null]
+Ref: document.files.document_id > document.documents.id [delete: cascade]
+Ref: document.signatures.document_id > document.documents.id [delete: cascade]
+Ref: document.access_logs.document_id > document.documents.id [delete: cascade]
+Ref: document.shares.document_id > document.documents.id [delete: cascade]
+Ref: document.tag_links.document_id > document.documents.id [delete: cascade]
+Ref: document.tag_links.document_tag_id > document.tags.id [delete: cascade]
 
 // ---------------------------------------------------------------------------
 // MODULE: Approval  (schema: approval)

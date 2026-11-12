@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { QuotationDocument } from '@/components/sales/quotation-document';
-import { companyProfileQueryOptions } from '@/lib/company-settings-api';
+import { companyProfileQueryOptions } from '@/lib/company-api';
 import { quotationQueryOptions } from '@/lib/quotation-api';
 
 /** `/sales/quotes/$quotationId/print` — the printable SPH. */

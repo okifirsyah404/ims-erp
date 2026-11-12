@@ -92,7 +92,8 @@ export const createWarehouseSchema = z
 		 * global inventory is a first-class concept (ADR-0008).
 		 */
 		organizationId: z.string().min(1).nullable().default(null),
-		code: z.string().min(1).max(32),
+		/** Omit to let the numbering authority allocate `WH-0001` (ERP-0042). */
+		code: z.string().min(1).max(32).nullish().transform((value) => value ?? null),
 		name: z.string().min(1),
 		responsibleEmployeeId: z.uuid().nullable().optional(),
 		isDefault: z.boolean().default(false),

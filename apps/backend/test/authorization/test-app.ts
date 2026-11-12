@@ -231,7 +231,7 @@ import type { IQuotationRepository } from '../../src/app/sales/contracts/quotati
 import type { TPaymentRepository } from '../../src/app/sales/contracts/payment.repository.interface';
 import { CUSTOMER_SERVICE_TOKEN, LEAD_SERVICE_TOKEN } from '../../src/app/crm/constants/di';
 import { ITEM_SERVICE_TOKEN } from '../../src/app/inventory/constants/di';
-import { NUMBERING_SERVICE_TOKEN } from '../../src/app/organization/constants/di';
+import { CODE_NUMBER_SERVICE_TOKEN } from '../../src/app/code-number';
 import { USER_SERVICE_TOKEN } from '../../src/app/user/constants/di';
 import { OBJECT_STORAGE_TOKEN } from '../../src/providers/s3/object-storage';
 
@@ -351,7 +351,7 @@ export function installSalesMocks() {
 			},
 		} as never,
 	});
-	container.register(NUMBERING_SERVICE_TOKEN, {
+	container.register(CODE_NUMBER_SERVICE_TOKEN, {
 		useValue: { next: async () => `${sequence + 1}/QT/IMS/XI/26` } as never,
 	});
 	container.register(USER_SERVICE_TOKEN, { useValue: { getUser: async () => null } as never });

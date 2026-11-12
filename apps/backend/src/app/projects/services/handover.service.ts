@@ -1,6 +1,7 @@
-import { COMPANY_PROFILE_SERVICE_TOKEN, NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { CompanyProfileService } from '@app/organization/services/company-profile.service';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import { COMPANY_SERVICE_TOKEN } from '@app/company';
+import type { CompanyService } from '@app/company';
+import type { CodeNumberService } from '@app/code-number';
 import { SALES_FULFILMENT_SERVICE_TOKEN } from '@app/sales/constants/di';
 import type { SalesFulfilmentService } from '@app/sales/services/sales-fulfilment.service';
 import { USER_SERVICE_TOKEN } from '@app/user/constants/di';
@@ -35,9 +36,9 @@ export class HandoverService {
 		@inject(HANDOVER_REPOSITORY_TOKEN) private readonly basts: IHandoverRepository,
 		@inject(PROJECT_SERVICE_TOKEN) private readonly projects: Pick<ProjectService, 'require'>,
 		@inject(SALES_FULFILMENT_SERVICE_TOKEN) private readonly sales: Pick<SalesFulfilmentService, 'getOrder' | 'orderLines'>,
-		@inject(COMPANY_PROFILE_SERVICE_TOKEN) private readonly profile: Pick<CompanyProfileService, 'get'>,
+		@inject(COMPANY_SERVICE_TOKEN) private readonly profile: Pick<CompanyService, 'get'>,
 		@inject(USER_SERVICE_TOKEN) private readonly users: Pick<UserService, 'getUser'>,
-		@inject(NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN) private readonly numbering: Pick<CodeNumberService, 'next'>,
 	) {}
 
 	// Contract for After-Sales -------------------------------------------------

@@ -135,7 +135,7 @@ Percentages use `numeric(9,4)` and rates `numeric(18,6)`.
 | Reuse after soft delete | allowed, see the partial unique index `WHERE deleted_at IS NULL` in the Drizzle schemas |
 
 Codes are the human reference of a document (`SPH-2026-0001`, `PO-2026-0007`)
-and are allocated from `organization.document_sequences`, never generated ad hoc.
+and are allocated from `code_number.series`, never generated ad hoc.
 
 **Nullable `organization_id` and codes.** A unique index ignores `NULL`, so
 `(organization_id, code)` alone lets two rows without an organization share a
@@ -194,7 +194,7 @@ with a status instead of a deletion timestamp
 `sales.quotation_status_history`, `sales.order_status_history`,
 `ticket.ticket_status_history`, `approval.approval_decisions`,
 `approval.approval_policy_versions`, `automation.outbox_messages`,
-`audit.audit_logs`, `documents.document_access_logs`).
+`audit.audit_logs`, `document.access_logs`).
 
 ### 1.9 Audit columns
 
@@ -339,7 +339,7 @@ A posted ledger row is never edited. A correction is a compensating row.
 
 ### 3.5 Draft → published → archived
 
-Used by the content tables: `commerce.web_pages`, `documents.documents`,
+Used by the content tables: `commerce.web_pages`, `document.documents`,
 `investor.investor_reports`, `automation.notification_templates`.
 
 ## 4. Per-module glossary
@@ -662,7 +662,7 @@ reconcile.
 | kwitansi | `sales.receipts` |
 | BAST (Berita Acceptance Serah Terima) | `projects.project_handover` |
 | lapangan (daily report) | `projects.project_daily_reports` |
-| NPWP | `organization.company_profiles.tax_id` |
+| NPWP | `company.profiles.tax_id` |
 | kabupaten / kota | `location.regencies` |
 | kecamatan | `location.districts` |
 | kelurahan / desa | `location.villages` |

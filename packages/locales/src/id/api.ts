@@ -197,9 +197,11 @@ const api: Record<keyof typeof en, string> = {
 	'organization.lastOrganization':
 		'Ini organisasi terakhir Anda dan tidak dapat dihapus',
 	'organization.notFound': 'Organisasi tidak ditemukan',
-	'organization.companyProfileRequired':
+	'company.profileRequired':
 		'Lengkapi profil perusahaan (beserta kode dokumen) terlebih dahulu',
-	'numbering.unknownDocumentType': 'Jenis dokumen tidak dikenal',
+	'numbering.unknownCodeType': 'Jenis kode tidak dikenal',
+	'document.notFound': 'Dokumen tidak ditemukan',
+	'document.notVoidable': 'Dokumen ini tidak dapat dibatalkan',
 	'numbering.pattern.length': 'Pola harus 1-100 karakter',
 	'numbering.pattern.unknownToken': 'Token {{token}} tidak dikenal',
 	'numbering.pattern.tokenNotForType':
