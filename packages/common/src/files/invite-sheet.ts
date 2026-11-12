@@ -98,9 +98,15 @@ export function rowsToInviteSheet(
 			return;
 		}
 		const role = normalize(headerKey(record, 'role')).toLowerCase() || null;
-		if (role && !(ERP_ROLES as readonly string[]).includes(role)) {
-			errors.push({ row, message: `unknown role: ${role}` });
-			return;
+		if (role) {
+			// Multi-role cells are pipe-separated ('admin|finance'); the comma
+			// stays the CSV field separator (ERP-0041).
+			const roles = role.split('|').map((r) => r.trim()).filter(Boolean);
+			const unknown = roles.filter((r) => !(ERP_ROLES as readonly string[]).includes(r));
+			if (unknown.length > 0) {
+				errors.push({ row, message: `unknown role: ${unknown.join(', ')}` });
+				return;
+			}
 		}
 		const organizationSlug = normalize(headerKey(record, 'organizationSlug')) || null;
 		seen.set(email, row);

@@ -114,12 +114,13 @@ export class InvitationService {
 	/**
 	 * Creates one invitation. Both paths require `name` (it prefills the
 	 * pre-created user and the claim profile form). The org path also
-	 * requires `organizationId`; the role is the closed-enum
-	 * `organizationRole`, defaulting to `member` when omitted.
+	 * requires `organizationId`; the roles are the closed-enum
+	 * `organizationRoles` list, defaulting to `['member']` when omitted and
+	 * stored comma-joined (Better Auth multi-role convention, ERP-0041).
 	 *
 	 * Overwrite rule: a pending invitation for the same email is reused —
 	 * same user row, new token, old token invalidated, counts resent. The
-	 * reused row adopts the new invite's context (path, organization, role,
+	 * reused row adopts the new invite's context (path, organization, roles,
 	 * name) so the delivered email and the membership created on claim match
 	 * what the admin just submitted, not the original invite. A pending
 	 * invite owned by a *different* organization is rejected instead, so one
@@ -128,9 +129,11 @@ export class InvitationService {
 	async invite(
 		input: TCreateInvitationInput,
 		actor: TActor,
+		/** Set false to skip email delivery (nested-users create with `sendInvites: false`). */
+		deliver = true,
 	): Promise<TInviteResult> {
 		const isOrgPath = Boolean(
-			input.organizationRole || input.organizationId || input.organizationSlug,
+			input.organizationRoles?.length || input.organizationId || input.organizationSlug,
 		);
 		if (isOrgPath && !input.organizationId && !input.organizationSlug) {
 			throw new InvalidInvitationError();
@@ -145,8 +148,10 @@ export class InvitationService {
 			? await this.resolveSlug(input.organizationSlug)
 			: undefined);
 
+		// Comma-join, dedupe preserving order: the storage shape mirrors
+		// Better Auth's `auth.members.role` multi-role convention.
 		const organizationRole = isOrgPath
-			? (input.organizationRole ?? 'member')
+			? [...new Set(input.organizationRoles ?? ['member'])].join(',')
 			: null;
 
 		// Overwrite rule: reuse the pending invitation + pre-created user.
@@ -190,7 +195,7 @@ export class InvitationService {
 			// Overwritten pre-created users may predate the avatar dispatch —
 			// top them up if the row has no image yet.
 			await this.ensureAvatar(existingUser.id, input.name, existingUser.image);
-			await this.deliver(updated!, token);
+			if (deliver) await this.deliver(updated!, token);
 			return {
 				invitation: updated!,
 				userId: existingUser.id,
@@ -262,7 +267,7 @@ export class InvitationService {
 			meta: { email: input.email, organizationRole },
 			request: { ip: actor.ip, userAgent: actor.userAgent },
 		});
-		await this.deliver(invitation, token);
+		if (deliver) await this.deliver(invitation, token);
 		return { invitation, userId, overwritten: false };
 	}
 
@@ -487,7 +492,7 @@ export class InvitationService {
 
 		await this.users.setClaimed(user.id, { phone: input.phone });
 
-		// Org path: attach membership with the invited role BEFORE accepting
+		// Org path: attach membership with the invited roles BEFORE accepting
 		// the invitation — a failed attach leaves the claim retryable (the
 		// user is active but the invitation stays pending).
 		let organizationName: string | null = null;
@@ -498,8 +503,6 @@ export class InvitationService {
 				roleName: target.invitation.organizationRole ?? 'member',
 			});
 		}
-
-		await this.invitations.markStatus(invitation.id, 'accepted', new Date());
 
 		const { setCookie } = await this.authGateway.createSession(user.id, {
 			password: input.password,

@@ -13,6 +13,7 @@ import {
 } from '../contracts/organization.contract';
 import { ORGANIZATION_SERVICE_TOKEN } from '../constants/di';
 import { OrganizationService } from '../services/organization.service';
+import { organizationImageFrom } from '../utils/organization-image';
 import {
 	LastOrganizationError,
 	LastOwnerError,
@@ -169,6 +170,55 @@ export class OrganizationController {
 				{
 					params: organizationIdParamsSchema,
 					erp: { permission: ['organization:delete'] },
+				},
+			)
+			// Profile image: replace (multipart WebP `file`)
+			.post(
+				'/:organizationId/image-profile',
+				async ({ request, params, body }) => {
+					const result = await organizationService.setImage(
+						request.headers,
+						params.organizationId,
+						organizationImageFrom(body),
+					);
+					return ok(result);
+				},
+				{
+					params: organizationIdParamsSchema,
+					erp: { permission: ['organization:update'] },
+					detail: {
+						description:
+							'Uploads the organization profile image (multipart `file`, WebP ≤ 2MB; magic bytes validated)',
+					},
+				},
+			)
+			// Profile image: read (presigned URL)
+			.get(
+				'/:organizationId/image-profile',
+				async ({ params }) =>
+					ok({ url: await organizationService.getImage(params.organizationId) }),
+				{
+					params: organizationIdParamsSchema,
+					erp: { permission: ['organization:read'] },
+					detail: {
+						description: 'Presigned URL of the organization profile image (null before the first upload)',
+					},
+				},
+			)
+			// Profile image: clear
+			.delete(
+				'/:organizationId/image-profile',
+				async ({ request, params }) => {
+					const result = await organizationService.setImage(
+						request.headers,
+						params.organizationId,
+						null,
+					);
+					return ok(result);
+				},
+				{
+					params: organizationIdParamsSchema,
+					erp: { permission: ['organization:update'] },
 				},
 			)
 			// Members: list

@@ -19,6 +19,10 @@ export * from './controllers/organization-bootstrap.controller';
 export * from './controllers/organization-invitation.controller';
 export * from './controllers/company-profile.controller';
 export * from './controllers/numbering.controller';
+export {
+	type OrgLogoWorkerHandle,
+	startOrgLogoWorker,
+} from './queues/org-logo.worker';
 export type { TNumberContext } from './domain/document-number';
 export type { NumberingService } from './services/numbering.service';
 

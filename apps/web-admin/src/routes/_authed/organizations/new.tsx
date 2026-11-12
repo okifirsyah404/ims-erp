@@ -3,7 +3,6 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { toast } from '@/components/toast';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
@@ -18,7 +17,72 @@ import {
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
-import { createOrganization, organizationsQueryOptions } from '@/lib/organization-api';
+import { erpRoleLabel, erpRoleNames } from '@ims-erp/common';
+import {
+	createOrganization,
+	organizationsQueryOptions,
+} from '@/lib/organization-api';
+
+/** One nested-user row in the create form (ERP-0041). */
+function NewUserRow(props: {
+	email: string;
+	name: string;
+	roles: string[];
+	onEmail: (value: string) => void;
+	onName: (value: string) => void;
+	onRoleToggle: (role: string, checked: boolean) => void;
+	onRemove: () => void;
+	t: ReturnType<typeof useTranslation>['t'];
+	language: string;
+}) {
+	const { email, name, roles, onEmail, onName, onRoleToggle, onRemove, t, language } = props;
+	return (
+		<div className='rounded-md border p-3 flex flex-col gap-3'>
+			<div className='grid gap-3 sm:grid-cols-2'>
+				<Field>
+					<FieldLabel>{t('orgs.userEmail')}</FieldLabel>
+					<Input
+						type='email'
+						value={email}
+						required
+						onChange={(e) => onEmail(e.target.value)}
+					/>
+				</Field>
+				<Field>
+					<FieldLabel>{t('orgs.userName')}</FieldLabel>
+					<Input
+						value={name}
+						required
+						onChange={(e) => onName(e.target.value)}
+					/>
+				</Field>
+			</div>
+			<div className='flex flex-wrap gap-2'>
+				{erpRoleNames.map((roleName) => {
+					const id = `new-role-${roleName}-${email || 'row'}`;
+					return (
+						<label
+							key={roleName}
+							htmlFor={id}
+							className='flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs cursor-pointer has-[:checked]:bg-accent'
+						>
+							<input
+								id={id}
+								type='checkbox'
+								checked={roles.includes(roleName)}
+								onChange={(e) => onRoleToggle(roleName, e.target.checked)}
+							/>
+							{erpRoleLabel(roleName, language)}
+						</label>
+					);
+				})}
+			</div>
+			<Button type='button' variant='ghost' size='sm' onClick={onRemove}>
+				{t('orgs.removeUser')}
+			</Button>
+		</div>
+	);
+}
 
 export const Route = createFileRoute('/_authed/organizations/new')({
 	component: NewOrganizationPage,
@@ -34,20 +98,57 @@ function slugify(name: string): string {
 function NewOrganizationPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const { t } = useTranslation(['admin', 'common']);
+	const { t, i18n } = useTranslation(['admin', 'common']);
 
 	const [name, setName] = useState('');
 	const [slug, setSlug] = useState('');
 	const [slugTouched, setSlugTouched] = useState(false);
 	const [pending, setPending] = useState(false);
+	// Nested users (ERP-0041): active emails join directly, unknown emails
+	// are invited (per-item outcomes reported in a toast on success).
+	const [users, setUsers] = useState<
+		Array<{ email: string; name: string; roles: string[] }>
+	>([]);
+
+	function addUser() {
+		setUsers((current) => [...current, { email: '', name: '', roles: ['member'] }]);
+	}
+
+	function patchUser(index: number, patch: Partial<{ email: string; name: string; roles: string[] }>) {
+		setUsers((current) =>
+			current.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+		);
+	}
+
+	const duplicateEmails = (() => {
+		const emails = users.map((u) => u.email.trim().toLowerCase()).filter(Boolean);
+		return new Set(emails.filter((e, i) => emails.indexOf(e) !== i)).size > 0;
+	})();
 
 	async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
+		if (duplicateEmails) {
+			toast.error(t('orgs.duplicateUserEmail'));
+			return;
+		}
 		setPending(true);
 		try {
-			const created = await createOrganization({ name, slug });
+			const created = await createOrganization({
+				name,
+				slug,
+				users: users.length > 0 ? users : undefined,
+			});
 			if (!created) throw new Error(t('common:error.failed'));
 			toast.success(t('orgs.created'));
+			// Surface the per-item outcomes (ERP-0041) without blocking the
+			// redirect.
+			for (const member of created.members ?? []) {
+				if (member.status === 'failed') {
+					toast.error(`${member.email}: ${member.error}`);
+				} else if (member.status === 'skipped') {
+					toast.error(`${member.email}: ${member.reason}`);
+				}
+			}
 			// Better Auth activates the new organization for this session, so
 			// the organization list AND the permission cache are both stale.
 			await Promise.all([
@@ -59,7 +160,7 @@ function NewOrganizationPage() {
 			]);
 			void navigate({
 				to: '/organizations/$organizationId',
-				params: { organizationId: created.id },
+				params: { organizationId: created.organization.id },
 			});
 		} catch (error) {
 			toast.error(
@@ -112,19 +213,55 @@ function NewOrganizationPage() {
 									}}
 								/>
 							</Field>
-							<div className='flex gap-2'>
-								<Button type='submit' disabled={pending || !name || !slug}>
-									{pending ? t('orgs.creating') : t('orgs.create')}
-								</Button>
-								<Button
-									type='button'
-									variant='outline'
-									onClick={() => navigate({ to: '/organizations' })}
-								>
-									{t('common:action.cancel')}
-								</Button>
-							</div>
-						</FieldGroup>
+						{/* Nested users (ERP-0041) */}
+						<div className='flex flex-col gap-3'>
+						<div className='flex items-center justify-between'>
+							<FieldLabel>{t('orgs.usersTitle')}</FieldLabel>
+							<Button type='button' variant='outline' size='sm' onClick={addUser}>
+								{t('orgs.addUser')}
+							</Button>
+						</div>
+						{duplicateEmails && (
+							<p className='text-sm text-destructive'>
+								{t('orgs.duplicateUserEmail')}
+							</p>
+						)}
+						{users.map((row, index) => (
+							<NewUserRow
+								key={index}
+								email={row.email}
+								name={row.name}
+								roles={row.roles}
+								language={i18n.language}
+								t={t}
+								onEmail={(value) => patchUser(index, { email: value })}
+								onName={(value) => patchUser(index, { name: value })}
+								onRoleToggle={(role, checked) =>
+									patchUser(index, {
+										roles: checked
+											? [...row.roles, role]
+											: row.roles.filter((r) => r !== role),
+									})
+								}
+								onRemove={() =>
+									setUsers((current) => current.filter((_, i) => i !== index))
+								}
+							/>
+						))}
+					</div>
+					<div className='flex gap-2'>
+						<Button type='submit' disabled={pending || !name || !slug || duplicateEmails}>
+							{pending ? t('orgs.creating') : t('orgs.create')}
+						</Button>
+						<Button
+							type='button'
+							variant='outline'
+							onClick={() => navigate({ to: '/organizations' })}
+						>
+							{t('common:action.cancel')}
+						</Button>
+					</div>
+					</FieldGroup>
 					</form>
 				</CardContent>
 			</Card>

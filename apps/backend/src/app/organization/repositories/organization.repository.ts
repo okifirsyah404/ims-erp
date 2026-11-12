@@ -15,6 +15,7 @@ import {
 	eq,
 	inArray,
 	isNull,
+	sql,
 } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import { cacheIdKey } from '@utils/cache.util';
@@ -220,6 +221,18 @@ export class OrganizationRepository implements IOrganizationRepository {
 	}
 
 	/**
+	 * Sets `logo` to an object key (or `null`) and invalidates the cache.
+	 * Background-worker + service write path; see the interface note.
+	 */
+	async setLogo(id: string, logo: string | null): Promise<void> {
+		await this.db
+			.update(organizations)
+			.set({ logo })
+			.where(eq(organizations.id, id));
+		await this.invalidate(id);
+	}
+
+	/**
 	 * Evicts the per-id cache entry used by {@link findById}.
 	 */
 	private async invalidate(id: string): Promise<void> {
@@ -244,10 +257,12 @@ export class OrganizationRepository implements IOrganizationRepository {
 		const { page, limit, role } = request;
 		const conditions = [eq(members.organizationId, organizationId)];
 		if (role) {
-			// ponytail: exact single-role match only; comma-separated multi-role
-			// members won't match a partial filter. Add SQL LIKE splitting when
-			// multi-role members actually exist.
-			conditions.push(eq(members.role, role));
+			// Multi-role members are comma-joined (ERP-0041); the wrapped list
+			// matches a whole entry, not a substring ('sales' does not match
+			// 'sales_manager').
+			conditions.push(
+				sql`(',' || ${members.role} || ',') LIKE ${`%,${role},%`}`,
+			);
 		}
 
 		const rows = await this.db

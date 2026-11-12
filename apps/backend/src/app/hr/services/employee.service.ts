@@ -163,7 +163,7 @@ export class EmployeeService {
 				email: body.email,
 				name: body.fullName,
 				organizationId: organizationId ?? undefined,
-				organizationRole: body.organizationRole,
+				organizationRoles: body.organizationRoles,
 				employee: body,
 			},
 			{

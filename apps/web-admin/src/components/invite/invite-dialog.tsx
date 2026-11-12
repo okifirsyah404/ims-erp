@@ -180,7 +180,7 @@ export function InviteDialog({
 			email: email.trim(),
 			name: name.trim(),
 			organizationId: targetOrganizationId ?? undefined,
-			organizationRole: targetOrganizationId ? organizationRole : undefined,
+			organizationRoles: targetOrganizationId ? [organizationRole] : undefined,
 		});
 	}
 
@@ -235,13 +235,18 @@ export function InviteDialog({
 							row.organizationSlug)
 						: undefined)
 					: organizationId;
+				// Sheet cells carry pipe-separated roles ('admin|finance');
+				// empty falls back to the dialog default.
+				const roles = targetOrgId
+					? (row.role
+						? row.role.split('|').map((r) => r.trim()).filter(Boolean)
+						: [organizationRole])
+					: undefined;
 				return {
 					email: row.email,
 					name: row.name,
 					organizationId: targetOrgId,
-					organizationRole: targetOrgId
-						? (row.role ?? organizationRole)
-						: undefined,
+					organizationRoles: roles,
 				};
 			});
 			setFileRows(rows);

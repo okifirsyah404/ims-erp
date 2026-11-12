@@ -143,6 +143,22 @@ const admin = {
 	'orgs.creating': 'Creating…',
 	'orgs.details': 'Organization details',
 	'orgs.slugDescription': 'The slug is permanent and used in URLs and API contexts.',
+	// Nested users on create (ERP-0041).
+	'orgs.usersTitle': 'Users to add',
+	'orgs.addUser': 'Add user',
+	'orgs.removeUser': 'Remove',
+	'orgs.userEmail': 'Email',
+	'orgs.userName': 'Name',
+	'orgs.duplicateUserEmail': 'Each email may appear only once in the list.',
+	// Organization profile image (ERP-0041).
+	'orgImage.title': 'Profile image',
+	'orgImage.description':
+		'Uploaded as WebP; a DiceBear initials image is generated automatically when none is set.',
+	'orgImage.upload': 'Upload image',
+	'orgImage.replace': 'Replace image',
+	'orgImage.uploading': 'Uploading…',
+	'orgImage.uploaded': 'Profile image updated',
+	'orgImage.cleared': 'Profile image removed',
 	'orgs.stats.members': 'Members',
 	'orgs.stats.warehouses': 'Warehouses',
 	'orgs.stats.projects': 'Projects',

@@ -12,6 +12,136 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+Status: **implemented** — backend + migration verified + web-admin UI +
+backend unit tests. Not yet `verified` (no live browser walk-through).
+
+## 2026-11-12 - ERP-0041 frontend slice + unit tests (same day, same task)
+
+- **Nested-users UI.** `/organizations/new` gained an "Users to add"
+  repeater: per row email + name + role checkboxes (closed
+  `erpRoleNames` catalog via `erpRoleLabel`); client-side duplicate-email
+  guard (submit blocked + inline message); per-item outcomes
+  (`failed`/`skipped`) surfaced as toasts after redirect. Locale keys
+  `orgs.usersTitle/addUser/removeUser/userEmail/userName/duplicateUserEmail`
+  (en+id; `orgs.userEmail` in `ALLOWED_IDENTICAL` — "Email" is legitimately
+  identical).
+- **Image-profile UI.** New `org-image-card.tsx` on the org detail `info`
+  tab: upload (any image client-side → `encodeWebp` canvas encode, ERP-0041
+  decision that the client sends WebP), replace, clear; shows the presigned
+  URL refreshed per mount (`staleTime` 60s, key `['org-image', id]`).
+  Locale keys `orgImage.*` (en+id).
+- **Member multi-role edit.** `$organizationId.members.$memberId.edit.tsx`
+  replaced the single role `Select` with the role checkbox grid, seeded from
+  the comma-joined member role; saves via `updateMemberRole(orgId, memberId,
+  roles)` (contract `roles: string[]`); unchanged-joined-string check keeps
+  the save button honest.
+- **Backend unit tests** (`test/unit/organization-create-nested.test.ts`,
+  12 tests): per-item isolation (creator skip, active-user `added`, invited
+  with `sendInvites:false`, one failed row does not stop the rest, zod
+  duplicate-email 400); WebP magic bytes (real header accepted, spoofed
+  JPEG rejected, size 0 / >2MB rejected, missing `file` rejected); worker
+  skip rules (logo already set, org deleted, org missing) + DiceBear URL
+  determinism (pure `orgLogoApiUrl`, no network in tests).
+- Full root run: `bun run lint` 0 errors (pre-existing warnings only),
+  `bun run typecheck` 4/4 tasks, tests: backend **836** pass, web-admin
+  **57** pass, react-email 5 pass, locales **82** pass (parity + dead-keys
+  green after the fixes above).
+
+## 2026-11-12 - ERP-0041: org CRUD robustness (backend slices)
+
+Status: **in-progress** — backend implemented + migration verified; frontend
+slice (org create nested-users UI, image-profile upload UI, member multi-role
+edit) and new unit tests for the new paths still open.
+
+- **Schema** (`docs/database/docs.dbml` edited first — canonical):
+  `auth.user_invitations.org_role` documented as comma-joined `text`
+  (multi-role, ERP-0041); the Postgres enum `auth.organization_role` is
+  dropped. `bun docs/database/gen-logical-references.ts` +
+  `bun docs/database/validate-dbml.ts` → `OK: 265 tables, 0 cross-module
+  refs, 0 timestamp gaps`. Drizzle `role.schema.ts`: `pgEnum` removed,
+  `orgRole: text('org_role')`; seeder `organization-roles.seeder.ts` is now a
+  shape verifier (warns when the enum type still exists, logs
+  "organization role catalog verified").
+- **Migration** `20261112150000_erp0041_org_role_text` (hand-written,
+  append-only): guarded enum recreate (fresh DBs vs 20261107090000-applied
+  DBs) → `ALTER COLUMN org_role TYPE text USING org_role::text` →
+  `DROP TYPE`. **Verified** on a disposable database
+  `ims_erp41_verify` (created with `bun .tmp/create-verify-db.ts`, then
+  `POSTGRES_DB=ims_erp41_verify bun run database/migrate-reset.ts` — full
+  migrate + seed OK, `org_role data_type: text`, `organization_role enum
+  rows: 0` via `.tmp/verify-org-role.ts`), then `bun run drizzle:seed` twice
+  on the same DB — idempotent, second run `created: 0` / `inserted: 0`,
+  "organization role catalog verified" logged both times. Note: the
+  pre-existing drizzle-kit journal two-branch conflict still blocks
+  `bun run drizzle:migrate` (same situation as ERP-0034, see 2026-11-10
+  entry); `migrate-reset` on the fresh DB replays the full history cleanly.
+- **Multi-role invitations.** Contracts now take `organizationRoles:
+  string[]` (closed enum via `organizationRoleSchema`) on all three invite
+  surfaces: app scope (`user/contracts/invitation.contract.ts`), org scope
+  (`organization/contracts/organization-invitation.contract.ts`), HR
+  (`hr/contracts/hr.contract.ts` — hand-rolled enum literal replaced by the
+  shared schema). `InvitationService.invite` dedupes preserving order,
+  comma-joins, and stores the joined string; claim attaches the joined list
+  through `attachMembership` (Better Auth native comma-joined
+  `auth.members.role`). Email `{{role}}` interpolates the joined list
+  unchanged ("sebagai admin, finance" reads fine).
+- **Multi-role members.** `addMemberSchema`/`updateMemberRoleSchema` take
+  `roles: string[]` (`memberRolesSchema`); `OrganizationService.addMember`
+  joins, `updateMemberRole` joins and keeps the last-owner guard
+  (`!input.roles.includes('owner')`); gateway `addMember`/`updateMemberRole`
+  pass the joined string (cast to `'owner'` against Better Auth's inferred
+  literal type — custom runtime roles are valid). Member-list role filter is
+  comma-aware: `(',' || role || ',') LIKE '%,<role>,%'` (whole-entry match,
+  `sales` ≠ `sales_manager`).
+- **Image-profile.** `POST/GET/DELETE /organizations/:id/image-profile`
+  (guard `organization:update` on write/delete, `organization:read` on
+  read). Client sends WebP; server validates magic bytes (`isWebpBuffer` —
+  `RIFF`+`WEBP`) and size ≤ 2MB (`organizationImageFrom`,
+  `utils/organization-image.ts`), stores under
+  `organization/<id>/logo.webp` (`constants/image-keys.ts`) via
+  `IObjectStorage.put`, writes the object key into `auth.organizations.logo`
+  through the new cache-invalidating `OrganizationRepository.setLogo` (the
+  only direct logo write; the background worker has no caller session for
+  the Better Auth gateway). Read returns a presigned URL.
+- **DiceBear org avatar.** `queues/org-logo.queue.ts` (deterministic job id
+  `org-logo-<id>`) + `queues/org-logo.worker.ts` (seed = slug, style
+  `10.x/initials/webp`, 256px, 10s timeout, 3 attempts). Worker re-reads the
+  org first and skips when `logo` is already set or the org is deleted — a
+  real upload always wins. Dispatched fire-and-forget from
+  `OrganizationService.createOrganization`; `startOrgLogoWorker()` added to
+  `startWorkers` in `src/index.ts`, exported from `organization/index.ts`.
+- **Nested users on create.** `createOrganizationSchema` extended with
+  `users: [{ email, name, roles[] }]` (max 100, duplicate-email refine →
+  400) and `sendInvites` (default true). `createOrganization(headers, input,
+  actor?, creatorEmail?)` returns `{ organization, members[] }` with
+  per-item isolated outcomes: creator email → `skipped` (already owner);
+  active user (`UserManagementRepository.findActiveByEmail` — excludes
+  pending placeholders) → direct `addMember` (`added`); other emails → the
+  unified invite pipeline (`invited`) with email delivery skipped when
+  `sendInvites: false` (new `deliver` flag on `InvitationService.invite`,
+  honored on both overwrite and fresh paths); a thrown error → `failed` with
+  the message, remaining rows still run. Bootstrap controller passes actor +
+  creator email, returns the new shape. Cross-module access goes through
+  `INVITATION_SERVICE_TOKEN` and `USER_MANAGEMENT_REPOSITORY_TOKEN` (user
+  module exports) — no repository reaching across schemas.
+- **Bulk multi-role parsing.** `packages/common invite-sheet.ts` and the
+  web-admin paste parser both treat pipe `|` as the role separator inside
+  the comma-separated field (`admin|finance`); an unknown role drops the row
+  with a row error (paste path now matches the sheet parser — the old
+  "send unvalidated and let the backend default" behavior is gone). Template
+  sample rows show `admin|finance`.
+- **Tests.** Backend 824 pass / 0 fail (updated `invitation.service.test.ts`
+  + `multi-organization.test.ts` for the new ctor arg count), web-admin 57
+  pass / 0 fail (`invite-parse.test.ts`: pipe multi-role, unknown-role drop),
+  locales 82 pass. Root `bun run typecheck` green; `bun run lint` green
+  (pre-existing warnings only; one stale `cacheIdKey` import in
+  `user-management.repository.ts` removed).
+- **Open (frontend + tests):** `/organizations/new` nested-users UI,
+  org-detail image-profile upload/clear UI, member edit multi-role select;
+  backend unit tests for per-item isolation, WebP validation, and the
+  worker skip rule. `docs/plan/plans/features.md` rollup updated with the
+  same status.
+
 ## 2026-11-12 - Organization info dashboard (dummy data)
 
 Status: implemented; lint/typecheck/tests green. No backend, schema or

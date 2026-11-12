@@ -6,7 +6,6 @@ import type {
 	TGatewayFullOrganization,
 	TGatewayOrganization,
 } from '../contracts/organization-auth.gateway.interface';
-import type { TMemberRole } from '../contracts/organization.contract';
 import {
 	LastOwnerError,
 	MemberNotFoundError,
@@ -50,7 +49,6 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 		logo?: string | null;
 		metadata?: Record<string, unknown>;
 		userId?: string;
-		role?: TMemberRole;
 		headers?: Headers;
 	}): Promise<TGatewayOrganization> {
 		try {
@@ -175,17 +173,18 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 	async addMember(input: {
 		organizationId: string;
 		userId: string;
-		role: TMemberRole;
+		roles: string[];
 	}): Promise<{ id: string }> {
 		try {
 			const member = await auth.api.addMember({
 				body: {
 					organizationId: input.organizationId,
 					userId: input.userId,
-					// Custom ERP roles are valid at runtime (registered via
-					// `erpRoles`); the inferred endpoint type only knows the
-					// built-in literals, hence the cast.
-					role: input.role as 'owner',
+					// Comma-joined multi-role string (ERP-0041). Custom ERP roles
+					// are valid at runtime (registered via `erpRoles`); the
+					// inferred endpoint type only knows the built-in literals,
+					// hence the cast.
+					role: input.roles.join(',') as 'owner',
 				},
 			}) as unknown as { id: string };
 			return { id: member.id };
@@ -204,7 +203,7 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 	 */
 	async updateMemberRole(
 		headers: Headers,
-		input: { organizationId: string; memberId: string; role: TMemberRole },
+		input: { organizationId: string; memberId: string; role: string },
 	): Promise<{ member: { id: string; role: string } }> {
 		try {
 			const result = (await auth.api.updateMemberRole({
@@ -212,7 +211,8 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 				body: {
 					organizationId: input.organizationId,
 					memberId: input.memberId,
-					// Custom ERP role; see the note in addMember.
+					// Comma-joined multi-role string (ERP-0041). Custom ERP
+					// role; see the note in addMember.
 					role: input.role as 'owner',
 				},
 			})) as unknown as { id: string; role: string };

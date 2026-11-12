@@ -13,8 +13,8 @@ export type TOrganizationPaginationRequest = TPaginationRequest & {
 };
 
 /**
- * Pagination/filter parameters for member listings. `role` is an exact
- * match against the member's (possibly comma-joined) role list.
+ * Pagination/filter parameters for member listings. `role` matches any
+ * member whose comma-joined role list contains the value.
  */
 export type TMemberPaginationRequest = TPaginationRequest & {
 	role?: TMemberRole;
@@ -61,6 +61,15 @@ export interface IOrganizationRepository {
 
 	/** Restores a soft-deleted organization by clearing `deletedAt`. */
 	restore(id: string): Promise<void>;
+
+	/**
+	 * Sets `logo` to an S3 object key (or `null` to clear it) and
+	 * invalidates the `findById` cache. The only direct `logo` write — used
+	 * by the background DiceBear logo worker, which has no caller session
+	 * for the Better Auth gateway. Client uploads also route here after the
+	 * service has stored the object.
+	 */
+	setLogo(id: string, logo: string | null): Promise<void>;
 
 	/** Paginated member list joined with user identity fields. */
 	paginateMembers(

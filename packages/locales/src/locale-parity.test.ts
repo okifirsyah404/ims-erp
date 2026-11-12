@@ -72,6 +72,7 @@ describe('locale values', () => {
 			'account:profile.email',
 			'account:profile.bio',
 			'admin:users.email',
+	'admin:orgs.userEmail',
 			'admin:users.status',
 			'admin:users.filterStatus',
 			// Digit-only phone example: the placeholder is a number pattern,

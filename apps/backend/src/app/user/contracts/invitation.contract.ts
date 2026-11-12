@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { organizationRoleSchema } from '@ims-erp/common';
+import { erpRoleNames, organizationRoleSchema } from '@ims-erp/common';
 import { isValidPhoneNumber } from 'libphonenumber-js/min';
 
 /**
@@ -10,9 +10,10 @@ import { isValidPhoneNumber } from 'libphonenumber-js/min';
  * invitation pipeline covers both paths:
  * - app-admin invite: `{ name, email }` — pre-creates a user with no
  *   organization, app role `user`.
- * - org invite: `{ email, organizationRole }` — pre-creates a user and (on
- *   claim) attaches the organization membership with the chosen role from
- *   the closed ERP role enum (defaults to `member` when omitted).
+ * - org invite: `{ email, organizationRoles }` — pre-creates a user and (on
+ *   claim) attaches the organization membership with the chosen roles from
+ *   the closed ERP role enum (defaults to `member` when omitted), stored
+ *   comma-joined (Better Auth multi-role convention, ERP-0041).
  */
 
 /** Path parameter shared by all id-targeted invitation routes. */
@@ -30,11 +31,14 @@ const invitationInputBase = z.object({
 	email: z.email().max(320),
 	/** Prefills the pre-created user and the claim profile form. */
 	name: z.string().min(1).max(120),
-	/** Org path only: target organization. Required when organizationRole is set. */
+	/** Org path only: target organization. Required when organizationRoles is set. */
 	organizationId: z.string().min(1).optional(),
-	/** Org path only: target role from the closed ERP role enum. Optional —
-	 * the service defaults to `member` on the org path. */
-	organizationRole: organizationRoleSchema.optional(),
+	/**
+	 * Org path only: target roles from the closed ERP role enum. Optional —
+	 * the service defaults to `['member']` on the org path. Stored
+	 * comma-joined; duplicates removed, order preserved.
+	 */
+	organizationRoles: z.array(organizationRoleSchema).min(1).max(erpRoleNames.length).optional(),
 	/** Bulk-file convenience: resolve the target org by its unique slug
 	 * instead of a UUID. Ignored when `organizationId` is present. */
 	organizationSlug: z.string().min(1).max(120).optional(),

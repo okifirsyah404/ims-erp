@@ -140,7 +140,7 @@ describe('InvitationService — tenant rules on the overwrite path', () => {
 					email: 'invitee@example.com',
 					name: 'Invitee',
 					organizationId: ORG_A,
-					organizationRole: 'member',
+					organizationRoles: ['member'],
 				},
 				ACTOR,
 			),
@@ -166,7 +166,7 @@ describe('InvitationService — tenant rules on the overwrite path', () => {
 				email: 'invitee@example.com',
 				name: 'Invitee',
 				organizationId: ORG_A,
-				organizationRole: 'admin',
+				organizationRoles: ['admin'],
 			},
 			ACTOR,
 		);
@@ -209,7 +209,7 @@ describe('InvitationService — tenant rules on the overwrite path', () => {
 				email: 'invitee@example.com',
 				name: 'New Name',
 				organizationId: ORG_A,
-				organizationRole: 'member',
+				organizationRoles: ['member'],
 			},
 			ACTOR,
 		);

@@ -24,16 +24,36 @@ describe('parseBulkInviteRows — organization mode', () => {
 				email: 'jane@example.com',
 				name: 'Jane Doe',
 				organizationId: 'org-1',
-				organizationRole: 'admin',
+				organizationRoles: ['admin'],
 			},
 			{
 				email: 'john@example.com',
 				// Bare-email rows default the name to the local part.
 				name: 'john',
 				organizationId: 'org-1',
-				organizationRole: 'member',
+				organizationRoles: ['member'],
 			},
 		]);
+	});
+
+	test('a pipe-separated role cell resolves to multiple roles', () => {
+		const { rows, rowErrors } = parseBulkInviteRows(
+			'jane@example.com, Jane Doe, admin|finance',
+			{ mode: 'org', organizationId: 'org-1', organizationRole: 'member' },
+		);
+
+		expect(rowErrors).toEqual([]);
+		expect(rows[0]?.organizationRoles).toEqual(['admin', 'finance']);
+	});
+
+	test('an unknown role fails only that row', () => {
+		const { rows, rowErrors } = parseBulkInviteRows(
+			'jane@example.com, Jane Doe, boss',
+			{ mode: 'org', organizationId: 'org-1', organizationRole: 'member' },
+		);
+
+		expect(rowErrors).toEqual(['Row 1: unknown role "boss"']);
+		expect(rows).toHaveLength(0);
 	});
 });
 
@@ -50,7 +70,7 @@ describe('parseBulkInviteRows — admin mode', () => {
 				email: 'jane@example.com',
 				name: 'Jane Doe',
 				organizationId: 'org-acme',
-				organizationRole: 'admin',
+				organizationRoles: ['admin'],
 			},
 		]);
 	});
@@ -67,7 +87,7 @@ describe('parseBulkInviteRows — admin mode', () => {
 				email: 'jane@example.com',
 				name: 'Jane Doe',
 				organizationId: undefined,
-				organizationRole: undefined,
+				organizationRoles: undefined,
 			},
 		]);
 	});

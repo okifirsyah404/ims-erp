@@ -16,19 +16,80 @@ export const memberRoleSchema = z.enum(erpRoleNames);
 /** Parsed {@link memberRoleSchema}. */
 export type TMemberRole = z.infer<typeof memberRoleSchema>;
 
-/** Body for creating an organization. `slug` must be kebab-case. */
-export const createOrganizationSchema = z.object({
-	name: z.string().min(1).max(200),
-	slug: z
-		.string()
-		.min(1)
-		.max(100)
-		.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Lowercase alphanumeric and dashes'),
-	logo: z.string().url().max(2048).nullish(),
-	metadata: z.record(z.string(), z.unknown()).nullish(),
+/**
+ * Member role list: one or more closed-enum roles, stored comma-joined on
+ * `auth.members.role` (Better Auth multi-role convention, ERP-0041).
+ */
+export const memberRolesSchema = z
+	.array(memberRoleSchema)
+	.min(1)
+	.max(erpRoleNames.length);
+/** Parsed {@link memberRolesSchema}. */
+export type TMemberRoles = z.infer<typeof memberRolesSchema>;
+
+/**
+ * One nested-user row on organization creation. An email that belongs to a
+ * live active user joins the new organization directly (`added`); any other
+ * email runs the existing invitation pipeline (`invited`) and receives the
+ * roles on claim.
+ */
+export const createOrganizationUserSchema = z.object({
+	email: z.email().max(320),
+	/** Prefills the pre-created user and the claim profile form. */
+	name: z.string().min(1).max(120),
+	roles: memberRolesSchema,
 });
+/** Parsed {@link createOrganizationUserSchema}. */
+export type TCreateOrganizationUser = z.infer<typeof createOrganizationUserSchema>;
+
+/** Body for creating an organization. `slug` must be kebab-case. */
+export const createOrganizationSchema = z
+	.object({
+		name: z.string().min(1).max(200),
+		slug: z
+			.string()
+			.min(1)
+			.max(100)
+			.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Lowercase alphanumeric and dashes'),
+		logo: z.string().url().max(2048).nullish(),
+		metadata: z.record(z.string(), z.unknown()).nullish(),
+		/**
+		 * Users to attach at creation: existing active users become members
+		 * immediately, unknown emails are invited through the unified
+		 * pipeline. Emails must be unique within the request (the creator's
+		 * own email is skipped — they already become owner).
+		 */
+		users: z.array(createOrganizationUserSchema).max(100).optional(),
+		/** Deliver invitation emails for the invited rows (default true). */
+		sendInvites: z.boolean().optional(),
+	})
+	.refine(
+		(v) =>
+			!v.users ||
+			new Set(v.users.map((u) => u.email.toLowerCase())).size ===
+				v.users.length,
+		{ message: 'Duplicate email in users' },
+	);
 /** Parsed {@link createOrganizationSchema}. */
 export type TCreateOrganization = z.infer<typeof createOrganizationSchema>;
+
+/** Per-user outcome of the nested-users create flow (isolated per row). */
+export type TOrganizationCreateUserOutcome =
+	| { email: string; status: 'added'; memberId: string }
+	| { email: string; status: 'invited'; invitationId: string }
+	| { email: string; status: 'skipped'; reason: string }
+	| { email: string; status: 'failed'; error: string };
+
+/** Response of the create flow: the organization plus per-user outcomes. */
+export type TCreateOrganizationResult = {
+	organization: {
+		id: string;
+		name: string;
+		slug: string;
+		logo: string | null;
+	};
+	members: TOrganizationCreateUserOutcome[];
+};
 
 /**
  * Body for partial organization updates. At least one field is required;
@@ -69,7 +130,8 @@ export const organizationIdParamsSchema = z.object({
 });
 
 /**
- * Member listing query: pagination plus an optional exact role filter.
+ * Member listing query: pagination plus an optional role filter that matches
+ * any member whose comma-joined role list contains the value.
  */
 export const memberQuerySchema = z.object({
 	page: z.coerce.number().int().min(1).default(1),
@@ -82,14 +144,14 @@ export type TMemberQuery = z.infer<typeof memberQuerySchema>;
 /** Body for adding a member to an organization. */
 export const addMemberSchema = z.object({
 	userId: z.string().min(1),
-	role: memberRoleSchema,
+	roles: memberRolesSchema,
 });
 /** Parsed {@link addMemberSchema}. */
 export type TAddMember = z.infer<typeof addMemberSchema>;
 
-/** Body for changing a member's role (single-role overwrite). */
+/** Body for changing a member's roles (full comma-joined overwrite). */
 export const updateMemberRoleSchema = z.object({
-	role: memberRoleSchema,
+	roles: memberRolesSchema,
 });
 /** Parsed {@link updateMemberRoleSchema}. */
 export type TUpdateMemberRole = z.infer<typeof updateMemberRoleSchema>;

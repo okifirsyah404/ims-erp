@@ -215,7 +215,10 @@ export type TInvitation = {
 	type: 'app' | 'org';
 	status: TInvitationStatus;
 	organizationId: string | null;
-	/** Closed ERP organization role (org path); null on the app path. */
+	/**
+	 * Comma-joined closed ERP roles (org path); null on the app path
+	 * (ERP-0041 multi-role).
+	 */
 	organizationRole: string | null;
 	invitedBy: string;
 	expiresAt: string;
@@ -293,13 +296,14 @@ export async function downloadInvitationTemplate(
 	URL.revokeObjectURL(url);
 }
 
-/** Input row for the invite dialog. Org invites carry the role *name*. */
+/** Input row for the invite dialog. Org invites carry the role *names*. */
 export type TInviteInput = {
 	email: string;
 	/** Required by the backend contract (greets the invitee, prefills profile). */
 	name: string;
 	organizationId?: string;
-	organizationRole?: string;
+	/** Closed-enum role names; stored comma-joined backend-side (ERP-0041). */
+	organizationRoles?: string[];
 };
 
 export async function resendInvitation(
@@ -322,15 +326,16 @@ export type TBulkInviteParseOptions = {
 	/**
 	 * `admin` rows are `email, name, org-code, role` (org code empty means an
 	 * application-level invite); `org` rows are `email, name, role` and are
-	 * pinned to `organizationId`.
+	 * pinned to `organizationId`. The role cell is pipe-separated for
+	 * multi-role invites (`admin|finance`); the comma stays the field
+	 * separator (ERP-0041).
 	 */
 	mode: TBulkInviteMode;
 	/** Pinned organization for `org` mode. */
 	organizationId?: string;
 	/** Role used when a row does not specify one (and the row has an org). */
 	organizationRole?: string;
-	/** Resolves a pasted organization code (slug) to its id; null if unknown. */
-	resolveOrganizationCode?: (code: string) => string | null;
+	/** Resolves a pasted organization code (slug) to its id; null if unknown. */	resolveOrganizationCode?: (code: string) => string | null;
 };
 
 /**
@@ -346,9 +351,9 @@ export type TBulkInviteParseOptions = {
  * per-row isolation the backend applies. `error` is reserved for a batch-level
  * failure (nothing pasted, too many rows).
  *
- * Unknown role names are deliberately NOT dropped here: the row is sent
- * without an `organizationRole` (or with the default), and the backend's
- * fallback to `member` applies. Blank lines are skipped.
+ * Unknown role names ARE dropped here (per-row validation, matching the
+ * sheet parser): a pipe-separated cell with any unknown role reports a row
+ * error. Blank lines are skipped.
  */
 export function parseBulkInviteRows(
 	pasted: string,
@@ -401,32 +406,51 @@ export function parseBulkInviteRows(
 			organizationId = options.organizationId;
 		}
 
+		// A role only means something inside an organization. An unknown
+		// role drops the row (per-row validation, same as the sheet parser).
+		const roles = organizationId
+			? resolveOrganizationRoles(rawRole, options)
+			: undefined;
+		if (organizationId && rawRole && roles === undefined) {
+			rowErrors.push(`Row ${index + 1}: unknown role "${rawRole}"`);
+			continue;
+		}
+
 		rows.push({
 			email: rawEmail,
 			// `name` is required by the backend contract; a bare-email row
 			// defaults to the local part, matching the service's own fallback.
 			name: rawName || rawEmail.split('@')[0]!,
 			organizationId,
-			// A role only means something inside an organization.
-			organizationRole: organizationId
-				? resolveOrganizationRole(rawRole, options)
-				: undefined,
+			organizationRoles: roles,
 		});
 	}
 	return { rows, rowErrors, error: null };
 }
 
 /**
- * Maps a pasted role name onto the fixed enum, case-insensitively. Empty
- * input falls back to the dialog default.
+ * Maps a pasted role cell onto the fixed enum, case-insensitively. Empty
+ * input falls back to the dialog default. Multi-role cells are pipe-
+ * separated ('admin|finance'); the comma stays the field separator
+ * (ERP-0041). Returns `undefined` when any role is unknown — the caller
+ * reports a row error, matching the sheet parser's per-row validation.
  */
-function resolveOrganizationRole(
+function resolveOrganizationRoles(
 	value: string | undefined,
 	options: { organizationRole?: string },
-): string | undefined {
-	if (!value) return options.organizationRole;
-	const lowered = value.toLowerCase();
-	return erpRoleNames.find((name) => name === lowered);
+): string[] | undefined {
+	const fallback = options.organizationRole ? [options.organizationRole] : undefined;
+	if (!value) return fallback;
+	const roles = value
+		.split('|')
+		.map((r) => r.trim().toLowerCase())
+		.filter(Boolean);
+	if (roles.length === 0) return fallback;
+	const resolved = roles.map(
+		(role) => erpRoleNames.find((name) => name === role) ?? null,
+	);
+	if (resolved.some((role) => role === null)) return undefined;
+	return [...new Set(resolved)] as string[];
 }
 
 export async function cancelInvitation(

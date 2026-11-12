@@ -41,6 +41,11 @@ Last synced: 2026-11-08.
   (existing `@ims-erp/ui/components/chart`, Recharts v3). Hardcoded dummy
   data (`apps/web-admin/src/lib/org-dashboard-data.ts`), en/id keys complete;
   **not feature status** — real wiring blocked on the owning modules.
+- Org CRUD robustness — ERP-0041 (2026-11-12, implemented): backend +
+  web-admin UI (org-create nested users, image-profile upload/replace/clear,
+  member multi-role checkbox grid) + 12 backend unit tests; migration
+  verified on a disposable DB. Not `verified` until a live browser
+  walk-through.
 
 
 ## M02 CRM and Sales

@@ -98,16 +98,76 @@ export async function getOrganization(organizationId: string) {
 	return envelope.data;
 }
 
+/** Result of the create flow: the org plus per-user outcomes (ERP-0041). */
+export type TCreateOrganizationResult = {
+	organization: TOrganization;
+	members: Array<
+		| { email: string; status: 'added'; memberId: string }
+		| { email: string; status: 'invited'; invitationId: string }
+		| { email: string; status: 'skipped'; reason: string }
+		| { email: string; status: 'failed'; error: string }
+	>;
+};
+
 export async function createOrganization(input: {
 	name: string;
 	slug: string;
 	logo?: string | null;
+	/** Nested users: active emails join directly, unknown emails get invited. */
+	users?: Array<{ email: string; name: string; roles: string[] }>;
+	/** Deliver invitation emails (default true). */
+	sendInvites?: boolean;
 }) {
-	const envelope = await request<TOrganization>('/organizations', {
+	const envelope = await request<TCreateOrganizationResult>('/organizations', {
 		method: 'POST',
 		body: JSON.stringify(input),
 	});
 	return envelope.data;
+}
+
+/** Uploads the org profile image (client-encoded WebP). */
+export async function uploadOrganizationImage(
+	organizationId: string,
+	file: Blob,
+) {
+	const body = new FormData();
+	body.append('file', file, 'logo.webp');
+	await request(`/organizations/${organizationId}/image-profile`, {
+		method: 'POST',
+		body,
+	});
+}
+
+export async function deleteOrganizationImage(organizationId: string) {
+	await request(`/organizations/${organizationId}/image-profile`, {
+		method: 'DELETE',
+	});
+}
+
+export async function getOrganizationImage(organizationId: string) {
+	const envelope = await request<{ url: string | null }>(
+		`/organizations/${organizationId}/image-profile`,
+	);
+	return envelope.data?.url ?? null;
+}
+
+/** Encodes an image file to WebP via canvas (ERP-0041: client-side encode). */
+export async function encodeWebp(file: File): Promise<Blob> {
+	const bitmap = await createImageBitmap(file);
+	const canvas = document.createElement('canvas');
+	canvas.width = bitmap.width;
+	canvas.height = bitmap.height;
+	canvas.getContext('2d')?.drawImage(bitmap, 0, 0);
+	return new Promise<Blob>((resolve, reject) => {
+		canvas.toBlob(
+			(blob) =>
+				blob && blob.type === 'image/webp'
+					? resolve(blob)
+					: reject(new Error('WebP encoding failed')),
+			'image/webp',
+			0.9,
+		);
+	});
 }
 
 export async function updateOrganization(
@@ -152,7 +212,7 @@ export async function listMembers(
 
 export async function addMember(
 	organizationId: string,
-	input: { userId: string; role: string },
+	input: { userId: string; roles: string[] },
 ) {
 	const envelope = await request<{ id: string }>(
 		`/organizations/${organizationId}/members`,
@@ -164,11 +224,11 @@ export async function addMember(
 export async function updateMemberRole(
 	organizationId: string,
 	memberId: string,
-	role: string,
+	roles: string[],
 ) {
 	const envelope = await request<{ id: string; role: string }>(
 		`/organizations/${organizationId}/members/${memberId}`,
-		{ method: 'PATCH', body: JSON.stringify({ role }) },
+		{ method: 'PATCH', body: JSON.stringify({ roles }) },
 	);
 	return envelope.data;
 }

@@ -32,9 +32,9 @@ import { container } from 'tsyringe';
 import { createApp } from './app/app';
 import { registerAudit } from './app/audit';
 import { registerLocation } from './app/location/container';
-import { registerOrganization } from './app/organization';
 import { registerSales } from './app/sales/container';
 import { registerUser, startAvatarWorker } from './app/user';
+import { registerOrganization, startOrgLogoWorker } from './app/organization';
 import { registerAuthorization } from './authorization/container';
 
 registerProvider(container);
@@ -124,7 +124,7 @@ const bootstrap = new Elysia()
 // (tests/scripts without SMTP), so booting with no mail server still works.
 const mailWorker = startMailWorker();
 startWorkers(
-	[startAvatarWorker(), ...(mailWorker ? [mailWorker] : [])],
+	[startAvatarWorker(), startOrgLogoWorker(), ...(mailWorker ? [mailWorker] : [])],
 	(error) => pinoLogger.error({ err: error }, 'background worker error'),
 );
 if (mailWorker) {

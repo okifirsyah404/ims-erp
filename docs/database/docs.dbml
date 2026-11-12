@@ -685,6 +685,7 @@ Table auth.user_invitations {
   name text [note: "App-admin path input; pre-creates the user and prefills the profile form on claim."]
   organization_id text
   role_id text
+  org_role text [note: "Comma-joined closed ERP role keys ('admin,finance') assigned to the membership on claim. NULL on app-path invites. Was the Postgres enum organization_role before multi-role support (ERP-0041); validity is enforced by the zod closed enum at every boundary."]
   token_hash text [not null, unique, note: "SHA-256 of the emailed single-use token; raw token never stored. Replaced on resend (old token dies)."]
   status text [not null, default: 'pending', note: "pending -> accepted on claim; cancelled by admin; expired by sweeper (3-day expiry)."]
   invited_by text [not null]

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { erpRoleNames } from '@ims-erp/common';
+import { erpRoleNames, organizationRoleSchema } from '@ims-erp/common';
 
 /**
  * Request contracts for the organization-scoped invitation routes.
@@ -17,8 +17,15 @@ export const orgInvitationRowSchema = z.object({
 	email: z.email().max(320),
 	/** Prefills the pre-created user and the claim profile form. */
 	name: z.string().min(1).max(120),
-	/** Closed ERP role enum; the service defaults to `member`. */
-	organizationRole: z.enum(erpRoleNames).optional(),
+	/**
+	 * Closed ERP role enum list; the service defaults to `['member']`.
+	 * Stored comma-joined (ERP-0041 multi-role).
+	 */
+	organizationRoles: z
+		.array(organizationRoleSchema)
+		.min(1)
+		.max(erpRoleNames.length)
+		.optional(),
 });
 /** Parsed {@link orgInvitationRowSchema}. */
 export type TOrgInvitationRow = z.infer<typeof orgInvitationRowSchema>;

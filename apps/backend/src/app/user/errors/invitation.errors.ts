@@ -49,13 +49,13 @@ export class InvitationNotPendingError extends UserManagementError {
 	}
 }
 
-/** Org invite missing organizationId/organizationRole, or an invalid role. */
+/** Org invite missing organizationId/organizationRoles, or an invalid role. */
 export class InvalidInvitationError extends UserManagementError {
 	constructor() {
 		super(
 			422,
 			'invitation.invalidPayload',
-			'Organization invites require both organizationId and a valid organizationRole',
+			'Organization invites require both organizationId and valid organizationRoles',
 		);
 	}
 

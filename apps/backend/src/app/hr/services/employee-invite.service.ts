@@ -130,7 +130,9 @@ export class EmployeeInviteService {
 				email: row.email,
 				name: row.name,
 				organizationId: row.organizationId,
-				organizationRole: row.organizationId ? (row.organizationRole ?? 'member') : undefined,
+				organizationRoles: row.organizationId
+					? (row.organizationRoles ?? ['member'])
+					: undefined,
 			},
 			actor,
 		);

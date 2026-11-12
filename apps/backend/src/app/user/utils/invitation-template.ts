@@ -13,8 +13,11 @@ export function buildInvitationTemplate(
 ): { body: ArrayBuffer; contentType: string; fileName: string } {
 	const sample = [
 		[...INVITE_SHEET_HEADERS],
+		// Multi-role cells are pipe-separated; the comma stays the field
+		// separator (ERP-0041).
 		['budi@example.com', 'Budi Santoso', 'my-org-slug', 'member'],
-		['ani@example.com', 'Ani Lestari', '', ''],
+		['ani@example.com', 'Ani Lestari', 'my-org-slug', 'admin|finance'],
+		['sari@example.com', 'Sari Dewi', '', ''],
 	];
 	if (format === 'csv') {
 		const csv = XLSX.utils.sheet_to_csv(XLSX.utils.aoa_to_sheet(sample));

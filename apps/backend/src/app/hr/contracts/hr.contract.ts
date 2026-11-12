@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { organizationRoleSchema } from '@ims-erp/common';
 import {
 	EMPLOYMENT_STATUSES,
 	EMPLOYMENT_TYPES,
@@ -56,10 +57,8 @@ export const employeeBaseSchema = z.object({
 export const createEmployeeSchema = employeeBaseSchema.extend({
 	/** Target organization; omit for a company-level employee (admins only). */
 	organizationId: z.string().min(1).nullish(),
-	/** Organization role granted on claim (org path only; default `member`). */
-	organizationRole: z
-		.enum(['owner', 'admin', 'member', 'operations_manager', 'sales_manager', 'sales', 'project_manager', 'technician', 'freelancer', 'purchasing', 'warehouse', 'finance', 'accountant', 'hr', 'customer_service', 'marketing', 'investor', 'customer', 'auditor'])
-		.optional(),
+	/** Organization roles granted on claim (org path only; default `member`). */
+	organizationRoles: z.array(organizationRoleSchema).min(1).optional(),
 });
 
 /** Patch: everything optional, identity columns never change here. */
