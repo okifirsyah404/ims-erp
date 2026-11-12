@@ -35,6 +35,9 @@ const invitationInputBase = z.object({
 	/** Org path only: target role from the closed ERP role enum. Optional —
 	 * the service defaults to `member` on the org path. */
 	organizationRole: organizationRoleSchema.optional(),
+	/** Bulk-file convenience: resolve the target org by its unique slug
+	 * instead of a UUID. Ignored when `organizationId` is present. */
+	organizationSlug: z.string().min(1).max(120).optional(),
 });
 
 export const createInvitationSchema = z.union([

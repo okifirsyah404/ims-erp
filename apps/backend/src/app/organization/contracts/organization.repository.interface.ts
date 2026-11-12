@@ -50,6 +50,9 @@ export interface IOrganizationRepository {
 	/** Finds by id, including soft-deleted rows. */
 	findById(id: string): Promise<TOrganizationSelect | null>;
 
+	/** Finds a live organization by its unique slug (bulk invite files). */
+	findBySlug(slug: string): Promise<TOrganizationSelect | null>;
+
 	/** Whether any organization row exists, soft-deleted included. */
 	countActive(): Promise<number>;
 

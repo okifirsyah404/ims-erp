@@ -18,6 +18,7 @@ import type { IUserManagementRepository } from '../contracts/user-management.rep
 import { UserManagementError } from '../errors/invitation.errors';
 import { NotGlobalAdminError } from '@http/errors';
 import { domainPlugin } from '@http/plugin';
+import { buildInvitationTemplate } from '../utils/invitation-template';
 import { created, errorEnvelope, ok, okPaginated } from '@http/response';
 
 /**
@@ -115,6 +116,17 @@ export class InvitationController {
 						limit: 50,
 					});
 					return okPaginated(result);
+				},
+				{ erp: { policy: requireGlobalAdmin } },
+			)
+			.get(
+				'/template',
+				({ set, request }) => {
+					const format = new URL(request.url).searchParams.get('format') === 'csv' ? 'csv' : 'xlsx';
+					const file = buildInvitationTemplate(format);
+					set.headers['content-type'] = file.contentType;
+					set.headers['content-disposition'] = `attachment; filename="${file.fileName}"`;
+					return file.body;
 				},
 				{ erp: { policy: requireGlobalAdmin } },
 			)

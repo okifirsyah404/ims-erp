@@ -87,6 +87,29 @@ export async function sendOrgInvitations(
 	return envelope.data;
 }
 
+/** Downloads the bulk-invite template file (xlsx, or csv with `format`). */
+export async function downloadOrgInvitationTemplate(
+	organizationId: string,
+	format: 'xlsx' | 'csv' = 'xlsx',
+): Promise<void> {
+	const response = await fetch(
+		`${API_URL}/organizations/${organizationId}/invitations/template?format=${format}`,
+		{ credentials: 'include', headers: { 'x-organization-id': organizationId } },
+	);
+	if (!response.ok) throw new Error(`Request failed (${response.status})`);
+	downloadBlob(response, format);
+}
+
+async function downloadBlob(response: Response, format: 'xlsx' | 'csv') {
+	const blob = await response.blob();
+	const url = URL.createObjectURL(blob);
+	const anchor = document.createElement('a');
+	anchor.href = url;
+	anchor.download = `invitation-template.${format}`;
+	anchor.click();
+	URL.revokeObjectURL(url);
+}
+
 export async function resendOrgInvitation(
 	organizationId: string,
 	invitationId: string,

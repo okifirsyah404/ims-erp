@@ -234,6 +234,7 @@ const api = {
 	'invitation.inactive': 'This invitation is no longer active',
 	'invitation.expired': 'This invitation link has expired',
 	'invitation.bulkLimited': 'Bulk limited to {{max}} rows',
+	'invitation.unknownOrganizationSlug': 'No organization has slug "{{slug}}"',
 	'invitation.claimUserMissing': 'Invited user no longer exists',
 	'invitation.claimAlreadyActive': 'This account is already active',
 	'invitation.claimInvalid': 'Invalid claim data',

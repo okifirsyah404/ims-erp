@@ -3,6 +3,7 @@ import { isGlobalAdmin } from '@authorization/require-global-admin';
 import { container } from 'tsyringe';
 import { DomainHttpError } from '@http/errors';
 import { domainPlugin } from '@http/plugin';
+import { buildInvitationTemplate } from '@app/user/utils/invitation-template';
 import { created, ok, okPaginated } from '@http/response';
 import type {
 	InvitationService,
@@ -132,6 +133,17 @@ export class OrganizationInvitationController {
 					return created(result);
 				},
 				{ erp: { permission: ['invitation:create'] } },
+			)
+			.get(
+				'/template',
+				({ set, request }) => {
+					const format = new URL(request.url).searchParams.get('format') === 'csv' ? 'csv' : 'xlsx';
+					const file = buildInvitationTemplate(format);
+					set.headers['content-type'] = file.contentType;
+					set.headers['content-disposition'] = `attachment; filename="${file.fileName}"`;
+					return file.body;
+				},
+				{ erp: { permission: ['member:read'] } },
 			)
 			.post(
 				'/:organizationId/invitations/:invitationId/resend',

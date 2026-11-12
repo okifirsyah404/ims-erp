@@ -75,6 +75,15 @@ export class InvalidInvitationError extends UserManagementError {
 			{ max },
 		);
 	}
+
+	/** A bulk-file row names an organization slug no live organization has. */
+	static unknownOrganizationSlug(slug: string): InvalidInvitationError {
+		return new InvalidInvitationError().withKey(
+			'invitation.unknownOrganizationSlug',
+			`No organization has slug "${slug}"`,
+			{ slug },
+		);
+	}
 }
 
 /** Token invalid, expired, cancelled, or already used. */

@@ -12,6 +12,44 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-12 - Bulk invitations via CSV/XLSX file upload
+
+Status: implemented and unit-tested (parser + backend + locale guards);
+browser walk-through pending. Committed on `fix/org-hardening`.
+
+- **Shared parser** `packages/common/src/files/invite-sheet.ts`
+  (`papaparse` for CSV incl. BOM/semicolon tolerance, SheetJS `xlsx` for
+  spreadsheets): case-insensitive headers, cell trimming, email lowercase,
+  closed-ERP-role validation, in-file duplicate detection, per-row errors
+  carrying the physical row number, hard caps (100 rows, 1 MB enforced at
+  the caller). Unit-tested 8/8 in `packages/common/test/invite-sheet.test.ts`
+  (first tests in that workspace; `test` script added).
+- **Client-side parse, JSON send.** Per decision, the backend bulk endpoints
+  are unchanged (no multipart). `InviteDialog` gained an "Upload file" tab:
+  parse + inline preview (`invite.fileReady` / per-row error list), send the
+  existing JSON array. `organizationSlug` resolves client-side against the
+  loaded org list in admin mode; org mode pins to the page organization.
+- **`organizationSlug` in the invite contract.** Optional on
+  `TCreateInvitationInput`; `InvitationService.invite` resolves it through
+  the new `IOrganizationSlugResolverPort` (adapter
+  `organization/adapters/organization-slug-resolver.ts` over a new
+  `OrganizationRepository.findBySlug` — live rows only). Unknown slug =
+  `InvalidInvitationError.unknownOrganizationSlug` (422, new locale key
+  `invitation.unknownOrganizationSlug` en/id), reported per row by the bulk
+  loop. Slug chosen because `auth.organizations` has no code column; slug is
+  the unique human-readable identifier.
+- **Template download.** `GET /admin/invitations/template` (global admin)
+  and `GET /organizations/:organizationId/invitations/template`
+  (`member:read`), `?format=csv|xlsx` via the shared
+  `user/utils/invitation-template.ts`; header contract from
+  `INVITE_SHEET_HEADERS` so the file round-trips the parser. Web-admin
+  download buttons in the file tab.
+- **Verification.** Root `bun run typecheck` (4/4), `bun run lint`
+  (12 warnings, 0 errors), `bun run test` all green (backend 824/824,
+  locales 82/82 incl. new keys, web-admin 55/55, common 8/8 via workspace
+  run). `docs/database/` reviewed — no schema change (slug already unique),
+  no DBML edit needed.
+
 ## 2026-11-12 - ERP-0034 follow-up: invite creates the employee; personal fields move to `auth.users`
 
 Status: implemented and unit-tested; migration written but **not yet run

@@ -113,6 +113,7 @@ function makeService(
 		delete: mock(() => Promise.resolve()),
 	};
 	const mailer = { sendInvite: mock(() => Promise.resolve()) };
+	const slugResolver = { resolveIdBySlug: mock(() => Promise.resolve('org-a')) };
 	const gateway = {};
 	const audit = { record: mock(() => Promise.resolve()) };
 
@@ -121,9 +122,10 @@ function makeService(
 		users as unknown as IUserManagementRepository,
 		gateway as unknown as IUserManagementAuthGateway,
 		mailer as unknown as IInvitationMailer,
+		slugResolver as unknown as import('../../src/app/user/contracts/organization-slug-resolver.port').IOrganizationSlugResolverPort,
 		audit as unknown as AuditService,
 	);
-	return { service, invitations, users, mailer, audit };
+	return { service, invitations, users, mailer, audit, slugResolver };
 }
 
 describe('InvitationService — tenant rules on the overwrite path', () => {

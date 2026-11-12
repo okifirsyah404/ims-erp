@@ -35,16 +35,20 @@ import {
 } from '@ims-erp/ui/components/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
 import { Textarea } from '@ims-erp/ui/components/textarea';
-import { erpRoleLabel, erpRoleNames } from '@ims-erp/common';
+import { erpRoleLabel, erpRoleNames, parseInviteSheet, MAX_INVITE_SHEET_ROWS } from '@ims-erp/common';
 import {
 	BULK_INVITE_LIMIT,
 	parseBulkInviteRows,
 	sendInvitations,
+	downloadInvitationTemplate,
 	type TBulkInviteResult,
 	type TInviteInput,
 } from '@/lib/admin-api';
 import { listOrganizations, type TOrganization } from '@/lib/organization-api';
-import { sendOrgInvitations } from '@/lib/org-invitation-api';
+import {
+	sendOrgInvitations,
+	downloadOrgInvitationTemplate,
+} from '@/lib/org-invitation-api';
 
 /** `admin` = application-level dialog (`/admin/users`); `org` = organization detail. */
 export type TInviteMode = 'admin' | 'org';
@@ -91,6 +95,8 @@ export function InviteDialog({
 		organizationId ?? null,
 	);
 	const [bulk, setBulk] = useState('');
+	const [fileRows, setFileRows] = useState<TInviteInput[] | null>(null);
+	const [fileErrors, setFileErrors] = useState<string[]>([]);
 	const [report, setReport] = useState<string[] | null>(null);
 	const { t, i18n } = useTranslation(['admin', 'common']);
 
@@ -153,6 +159,8 @@ export function InviteDialog({
 		setName('');
 		setOrganizationRole('member');
 		setBulk('');
+		setFileRows(null);
+		setFileErrors([]);
 	}
 
 	function submitSingle() {
@@ -199,6 +207,72 @@ export function InviteDialog({
 		send.mutate(rows);
 	}
 
+	async function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
+		const file = event.target.files?.[0];
+		if (!file) return;
+		setFileRows(null);
+		setFileErrors([]);
+		if (file.size > 1024 * 1024) {
+			setFileErrors([t('invite.fileTooLarge')]);
+			return;
+		}
+		try {
+			const buffer = new Uint8Array(await file.arrayBuffer());
+			const parsed = parseInviteSheet(file.name, buffer);
+			if (parsed.rows.length === 0 && parsed.errors.length === 0) {
+				setFileErrors([t('invite.fileEmpty')]);
+				return;
+			}
+			const errors = parsed.errors.map((e) =>
+				t('invite.fileRowError', { row: e.row, message: e.message }),
+			);
+			// Admin rows resolve the slug client-side; org rows pin to the page's
+			// organization. Backend re-validates everything regardless.
+			const rows: TInviteInput[] = parsed.rows.map((row) => {
+				const targetOrgId = isAdmin
+					? (row.organizationSlug
+						? (options.find((o) => o.slug === row.organizationSlug)?.id ??
+							row.organizationSlug)
+						: undefined)
+					: organizationId;
+				return {
+					email: row.email,
+					name: row.name,
+					organizationId: targetOrgId,
+					organizationRole: targetOrgId
+						? (row.role ?? organizationRole)
+						: undefined,
+				};
+			});
+			setFileRows(rows);
+			setFileErrors(errors);
+		} catch (error) {
+			setFileErrors([
+				error instanceof Error ? error.message : t('invite.fileUnreadable'),
+			]);
+		}
+	}
+
+	async function downloadTemplate(format: 'xlsx' | 'csv') {
+		try {
+			const download = isAdmin
+				? downloadInvitationTemplate(format)
+				: downloadOrgInvitationTemplate(organizationId ?? '', format);
+			await download;
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : String(error));
+		}
+	}
+
+	function submitFile() {
+		if (!fileRows || fileRows.length === 0) {
+			toast.error(t('invite.fileEmpty'));
+			return;
+		}
+		setReport(null);
+		send.mutate(fileRows);
+	}
+
 	const roleSelect = (placeholder: string) => (
 		<Select
 			value={organizationRole}
@@ -229,6 +303,7 @@ export function InviteDialog({
 					<TabsList>
 						<TabsTrigger value='single'>{t('invite.single')}</TabsTrigger>
 						<TabsTrigger value='bulk'>{t('invite.bulk')}</TabsTrigger>
+						<TabsTrigger value='file'>{t('invite.file')}</TabsTrigger>
 					</TabsList>
 
 					<TabsContent value='single' className='pt-4'>
@@ -328,6 +403,74 @@ export function InviteDialog({
 								{t('common:action.cancel')}
 							</Button>
 							<Button onClick={submitBulk} disabled={send.isPending}>
+								{t('invite.sendBulk')}
+							</Button>
+						</DialogFooter>
+					</TabsContent>
+
+					<TabsContent value='file' className='pt-4'>
+						<FieldGroup>
+							<Field>
+								<FieldLabel htmlFor='invite-file'>
+									{t('invite.fileLabel', { max: MAX_INVITE_SHEET_ROWS })}
+								</FieldLabel>
+								<Input
+									id='invite-file'
+									type='file'
+									accept='.csv,.xlsx,.xls'
+									onChange={(event) => void handleFile(event)}
+								/>
+								<p className='text-xs text-muted-foreground'>
+									<Trans
+										t={t}
+										i18nKey='invite.fileHint'
+										components={{ code: <code /> }}
+									/>
+								</p>
+								<div className='flex gap-2'>
+									<Button
+										type='button'
+										variant='outline'
+										size='sm'
+										onClick={() => void downloadTemplate('xlsx')}
+									>
+										{t('invite.downloadTemplateXlsx')}
+									</Button>
+									<Button
+										type='button'
+										variant='outline'
+										size='sm'
+										onClick={() => void downloadTemplate('csv')}
+									>
+										{t('invite.downloadTemplateCsv')}
+									</Button>
+								</div>
+							</Field>
+							{fileRows && fileRows.length > 0 && (
+								<p className='text-sm'>
+									{t('invite.fileReady', { count: fileRows.length })}
+								</p>
+							)}
+							{fileErrors.length > 0 && (
+								<div className='max-h-40 overflow-auto rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive'>
+									{fileErrors.map((line) => (
+										<div key={line}>{line}</div>
+									))}
+								</div>
+							)}
+						</FieldGroup>
+						<DialogFooter className='mt-6'>
+							<Button
+								variant='outline'
+								onClick={() => onOpenChange(false)}
+								disabled={send.isPending}
+							>
+								{t('common:action.cancel')}
+							</Button>
+							<Button
+								onClick={submitFile}
+								disabled={send.isPending || !fileRows || fileRows.length === 0}
+							>
 								{t('invite.sendBulk')}
 							</Button>
 						</DialogFooter>

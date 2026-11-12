@@ -12,6 +12,7 @@
  */
 import type { InjectionToken } from 'tsyringe';
 import type { IOrganizationRepository } from '../contracts/organization.repository.interface';
+import type { IOrganizationSlugResolverPort } from '@app/user/contracts/organization-slug-resolver.port';
 import type { IOrganizationAuthGateway } from '../contracts/organization-auth.gateway.interface';
 import type { OrganizationService } from '../services/organization.service';
 import type { ICompanyProfileRepository } from '../contracts/company-profile.repository.interface';
@@ -22,6 +23,10 @@ import type { NumberingService } from '../services/numbering.service';
 /** Token resolving to the {@link IOrganizationRepository} implementation. */
 export const ORGANIZATION_REPOSITORY_TOKEN: InjectionToken<IOrganizationRepository> =
 	Symbol('ORGANIZATION_REPOSITORY_TOKEN');
+
+/** Cross-module port: slug → id for bulk invite files (implemented here). */
+export const ORGANIZATION_SLUG_RESOLVER_TOKEN: InjectionToken<IOrganizationSlugResolverPort> =
+	Symbol('ORGANIZATION_SLUG_RESOLVER');
 
 /** Token resolving to the {@link IOrganizationAuthGateway} implementation. */
 export const ORGANIZATION_AUTH_GATEWAY_TOKEN: InjectionToken<IOrganizationAuthGateway> =

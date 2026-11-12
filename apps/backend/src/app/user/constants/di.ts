@@ -12,6 +12,11 @@ import type { IUserAuthGateway } from '../contracts/user-auth.gateway.interface'
 import type { UserService } from '../services/user.service';
 import type { IUserPersonalFieldsPort } from '../contracts/user-personal-fields.port';
 import type { IInvitationEmployeePort } from '../contracts/invitation-employee.port';
+import type { IOrganizationSlugResolverPort } from '../contracts/organization-slug-resolver.port';
+
+/** Cross-module port: slug → id for bulk invite files. */
+export const ORGANIZATION_SLUG_RESOLVER_TOKEN: InjectionToken<IOrganizationSlugResolverPort> =
+	Symbol('ORGANIZATION_SLUG_RESOLVER');
 
 /** Cross-module port: invite plus employee creation, implemented by HR (ERP-0034). */
 export const INVITATION_EMPLOYEE_PORT_TOKEN: InjectionToken<

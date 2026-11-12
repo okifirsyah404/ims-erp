@@ -70,6 +70,17 @@ const admin_: Record<keyof typeof admin, string> = {
 	'invite.rowsHintAdmin':
 		'Satu per baris: <code>email, nama, kode organisasi, peran</code>. Kosongkan kode organisasi untuk mengundang tanpa organisasi. Kode yang tidak dikenali hanya menggagalkan baris itu.',
 	'invite.rowsEmpty': 'Tidak ada baris valid untuk dikirim.',
+	'invite.file': 'Unggah file',
+	'invite.fileLabel': 'Lembar kerja (.csv atau .xlsx, maks {{max}} baris)',
+	'invite.fileHint':
+		'Kolom: <code>email, name, organizationSlug, role</code>. Hanya email dan nama yang wajib; unduh templat untuk tata letak pastinya.',
+	'invite.fileTooLarge': 'Ukuran file melebihi 1 MB',
+	'invite.fileEmpty': 'File tidak berisi baris data',
+	'invite.fileUnreadable': 'File tidak dapat dibaca',
+	'invite.fileRowError': 'Baris {{row}}: {{message}}',
+	'invite.fileReady': '{{count}} baris siap dikirim',
+	'invite.downloadTemplateXlsx': 'Unduh templat (.xlsx)',
+	'invite.downloadTemplateCsv': 'Unduh templat (.csv)',
 	'accessDenied.title': 'Perlu akses administrator',
 	'accessDenied.description':
 		'Halaman ini hanya untuk administrator aplikasi. Anggota dan undangan organisasi dikelola dari halaman organisasi.',

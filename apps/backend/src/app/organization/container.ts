@@ -1,5 +1,6 @@
 import type { DependencyContainer } from 'tsyringe';
 import { OrganizationRepository } from './repositories/organization.repository';
+import { OrganizationSlugResolverAdapter } from './adapters/organization-slug-resolver';
 import { BetterAuthOrganizationGateway } from './adapters/better-auth-organization';
 import { OrganizationService } from './services/organization.service';
 import { CompanyProfileRepository } from './repositories/company-profile.repository';
@@ -10,6 +11,7 @@ import {
 	ORGANIZATION_AUTH_GATEWAY_TOKEN,
 	ORGANIZATION_REPOSITORY_TOKEN,
 	ORGANIZATION_SERVICE_TOKEN,
+	ORGANIZATION_SLUG_RESOLVER_TOKEN,
 	COMPANY_PROFILE_REPOSITORY_TOKEN,
 	COMPANY_PROFILE_SERVICE_TOKEN,
 	DOCUMENT_SEQUENCE_REPOSITORY_TOKEN,
@@ -30,6 +32,9 @@ export * from './constants/di';
 export function registerOrganization(container: DependencyContainer): void {
 	container.register(ORGANIZATION_REPOSITORY_TOKEN, {
 		useClass: OrganizationRepository,
+	});
+	container.register(ORGANIZATION_SLUG_RESOLVER_TOKEN, {
+		useClass: OrganizationSlugResolverAdapter,
 	});
 	container.register(ORGANIZATION_AUTH_GATEWAY_TOKEN, {
 		useClass: BetterAuthOrganizationGateway,

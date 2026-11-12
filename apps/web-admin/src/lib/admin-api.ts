@@ -275,6 +275,24 @@ export async function sendInvitations(
 	return envelope.data;
 }
 
+/** Downloads the bulk-invite template file (xlsx, or csv with `format`). */
+export async function downloadInvitationTemplate(
+	format: 'xlsx' | 'csv' = 'xlsx',
+): Promise<void> {
+	const response = await fetch(
+		`${API_URL}/admin/invitations/template?format=${format}`,
+		{ credentials: 'include' },
+	);
+	if (!response.ok) throw new Error(`Request failed (${response.status})`);
+	const blob = await response.blob();
+	const url = URL.createObjectURL(blob);
+	const anchor = document.createElement('a');
+	anchor.href = url;
+	anchor.download = `invitation-template.${format}`;
+	anchor.click();
+	URL.revokeObjectURL(url);
+}
+
 /** Input row for the invite dialog. Org invites carry the role *name*. */
 export type TInviteInput = {
 	email: string;

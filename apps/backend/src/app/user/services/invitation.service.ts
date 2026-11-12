@@ -5,9 +5,11 @@ import type { TPaginationResult } from '@ims-erp/common';
 import {
 	INVITATION_MAILER_TOKEN,
 	INVITATION_REPOSITORY_TOKEN,
+	ORGANIZATION_SLUG_RESOLVER_TOKEN,
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
 } from '../constants/di';
+import type { IOrganizationSlugResolverPort } from '../contracts/organization-slug-resolver.port';
 import { dispatchAvatarGeneration } from '../queues/avatar.queue';
 import type {
 	IInvitationRepository,
@@ -104,6 +106,8 @@ export class InvitationService {
 		private readonly authGateway: IUserManagementAuthGateway,
 		@inject(INVITATION_MAILER_TOKEN)
 		private readonly mailer: IInvitationMailer,
+		@inject(ORGANIZATION_SLUG_RESOLVER_TOKEN)
+		private readonly slugResolver: IOrganizationSlugResolverPort,
 		private readonly audit: AuditService,
 	) {}
 
@@ -125,13 +129,21 @@ export class InvitationService {
 		input: TCreateInvitationInput,
 		actor: TActor,
 	): Promise<TInviteResult> {
-		const isOrgPath = Boolean(input.organizationRole || input.organizationId);
-		if (isOrgPath && !input.organizationId) {
+		const isOrgPath = Boolean(
+			input.organizationRole || input.organizationId || input.organizationSlug,
+		);
+		if (isOrgPath && !input.organizationId && !input.organizationSlug) {
 			throw new InvalidInvitationError();
 		}
 		if (!input.name) {
 			throw InvalidInvitationError.requiresName();
 		}
+
+		// Bulk-file convenience: a slug stands in for the UUID. Unknown slug
+		// is a domain error so the bulk loop reports it per row.
+		const organizationId = input.organizationId ?? (input.organizationSlug
+			? await this.resolveSlug(input.organizationSlug)
+			: undefined);
 
 		const organizationRole = isOrgPath
 			? (input.organizationRole ?? 'member')
@@ -144,7 +156,7 @@ export class InvitationService {
 		if (existingPending) {
 			if (
 				existingPending.type === 'org' &&
-				existingPending.organizationId !== input.organizationId
+				existingPending.organizationId !== organizationId
 			) {
 				// Cross-org duplicate: another org's pending invite must not be
 				// hijacked — reject instead of overwrite.
@@ -160,7 +172,7 @@ export class InvitationService {
 				// organization (or none).
 				type: isOrgPath ? 'org' : 'app',
 				name: input.name,
-				organizationId: isOrgPath ? (input.organizationId ?? null) : null,
+				organizationId: isOrgPath ? (organizationId ?? null) : null,
 				orgRole: organizationRole,
 			});
 			const updated = await this.invitations.findById(existingPending.id);
@@ -222,7 +234,7 @@ export class InvitationService {
 			action: 'user.precreated',
 			targetType: 'user',
 			targetId: userId,
-			organizationId: input.organizationId ?? null,
+			organizationId: organizationId ?? null,
 			meta: { email: input.email },
 			request: { ip: actor.ip, userAgent: actor.userAgent },
 		});
@@ -233,7 +245,7 @@ export class InvitationService {
 			type: isOrgPath ? 'org' : 'app',
 			email: input.email,
 			name: input.name ?? null,
-			organizationId: input.organizationId ?? null,
+			organizationId: organizationId ?? null,
 			orgRole: organizationRole,
 			tokenHash,
 			invitedBy: actor.userId,
@@ -246,7 +258,7 @@ export class InvitationService {
 			action: 'invitation.sent',
 			targetType: 'invitation',
 			targetId: invitation.id,
-			organizationId: input.organizationId ?? null,
+			organizationId: organizationId ?? null,
 			meta: { email: input.email, organizationRole },
 			request: { ip: actor.ip, userAgent: actor.userAgent },
 		});
@@ -528,6 +540,20 @@ export class InvitationService {
 			throw new InvitationNotPendingError();
 		}
 		return invitation;
+	}
+
+	/**
+	 * Resolves a bulk-file `organizationSlug` to the organization id.
+	 *
+	 * @throws InvalidInvitationError When no live organization has the slug —
+	 * thrown inside the bulk loop's try, so it is reported per row.
+	 */
+	private async resolveSlug(slug: string): Promise<string> {
+		const id = await this.slugResolver.resolveIdBySlug(slug);
+		if (!id) {
+			throw InvalidInvitationError.unknownOrganizationSlug(slug);
+		}
+		return id;
 	}
 
 	/**

@@ -173,6 +173,16 @@ export class OrganizationRepository implements IOrganizationRepository {
 		});
 	}
 
+	/** Live rows only: a soft-deleted organization cannot receive invites. */
+	async findBySlug(slug: string): Promise<TOrganizationSelect | null> {
+		const [row] = await this.db
+			.select()
+			.from(organizations)
+			.where(and(eq(organizations.slug, slug), isNull(organizations.deletedAt)))
+			.limit(1);
+		return row ?? null;
+	}
+
 	/**
 	 * Counts live (non-soft-deleted) organizations. Backs the
 	 * last-organization guard so an operator can never delete the final

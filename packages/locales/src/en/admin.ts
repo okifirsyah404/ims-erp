@@ -68,6 +68,17 @@ const admin = {
 	'invite.rowsHintAdmin':
 		'One per line: <code>email, name, org code, role</code>. Leave the org code empty to invite without an organization. An unknown code fails only that row.',
 	'invite.rowsEmpty': 'No valid rows to send.',
+	'invite.file': 'Upload file',
+	'invite.fileLabel': 'Spreadsheet (.csv or .xlsx, {{max}} rows max)',
+	'invite.fileHint':
+		'Columns: <code>email, name, organizationSlug, role</code>. Only email and name are required; download the template for the exact layout.',
+	'invite.fileTooLarge': 'The file is larger than 1 MB',
+	'invite.fileEmpty': 'The file has no data rows',
+	'invite.fileUnreadable': 'The file could not be read',
+	'invite.fileRowError': 'Row {{row}}: {{message}}',
+	'invite.fileReady': '{{count}} row(s) ready to send',
+	'invite.downloadTemplateXlsx': 'Download template (.xlsx)',
+	'invite.downloadTemplateCsv': 'Download template (.csv)',
 	'accessDenied.title': 'Administrator access required',
 	'accessDenied.description':
 		'This page is limited to application administrators. Organization members and invitations are managed from the organization page.',

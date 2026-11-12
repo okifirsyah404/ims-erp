@@ -182,7 +182,10 @@ Last synced: 2026-11-08.
   on both scopes (`EmployeeInviteService` behind `IInvitationEmployeePort`),
   rollback on insert failure, personal fields on `auth.users` via
   `IUserPersonalFieldsPort` (migration pending disposable-DB run), `hr`
-  invite rights.
+  invite rights. Bulk invite via CSV/XLSX file upload added 2026-11-12
+  (shared parser in `packages/common`, client-side parse + template
+  download endpoints, `organizationSlug` resolution; evidence in
+  `progress.md`).
 
 ### blocked
 - Supplier payables and the M09 payable handoff of receipts — ERP-0035.

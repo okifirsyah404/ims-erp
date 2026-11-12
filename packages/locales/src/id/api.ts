@@ -230,6 +230,7 @@ const api: Record<keyof typeof en, string> = {
 	'invitation.inactive': 'Undangan ini sudah tidak aktif',
 	'invitation.expired': 'Tautan undangan ini sudah kedaluwarsa',
 	'invitation.bulkLimited': 'Maksimal {{max}} baris',
+	'invitation.unknownOrganizationSlug': 'Tidak ada organisasi dengan slug "{{slug}}"',
 	'invitation.claimUserMissing': 'Pengguna yang diundang tidak lagi tersedia',
 	'invitation.claimAlreadyActive': 'Akun ini sudah aktif',
 	'invitation.claimInvalid': 'Data klaim tidak valid',
