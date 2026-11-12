@@ -24,9 +24,10 @@ import type { NumberingService } from '../services/numbering.service';
 export const ORGANIZATION_REPOSITORY_TOKEN: InjectionToken<IOrganizationRepository> =
 	Symbol('ORGANIZATION_REPOSITORY_TOKEN');
 
-/** Cross-module port: slug → id for bulk invite files (implemented here). */
-export const ORGANIZATION_SLUG_RESOLVER_TOKEN: InjectionToken<IOrganizationSlugResolverPort> =
-	Symbol('ORGANIZATION_SLUG_RESOLVER');
+/** Cross-module port: slug → id for bulk invite files (implemented here).
+ * The token is OWNED by the user module (its contract); re-exported so the
+ * adapter registration uses the identical symbol the consumer injects. */
+export { ORGANIZATION_SLUG_RESOLVER_TOKEN } from '@app/user/constants/di';
 
 /** Token resolving to the {@link IOrganizationAuthGateway} implementation. */
 export const ORGANIZATION_AUTH_GATEWAY_TOKEN: InjectionToken<IOrganizationAuthGateway> =
