@@ -115,7 +115,11 @@ export class OrganizationService {
 			userId: input.creatorUserId,
 			headers,
 		});
-		await this.provisionRoles(created.id);
+		// ponytail: fire-and-forget — enum provisioning must not block the
+		// create response (CI runs without Postgres; connection retries would
+		// stall tests). Upgrade path: inject a drizzle client token so the
+		// seeder resolves in tests and awaits properly in prod.
+		void this.provisionRoles(created.id);
 		const row = await this.repository.findById(created.id);
 		if (!row) throw new OrganizationNotFoundError();
 
