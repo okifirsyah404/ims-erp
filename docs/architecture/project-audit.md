@@ -83,6 +83,21 @@ Failing suites, grouped by cause:
 4. `user.controller.spec.ts` / `user.service.spec.ts` — "should be defined"
    fails; instantiate-time DI/dependency issue in stub classes.
 
+## Pre-existing issues on main found 2026-11-12
+
+Found while rebuilding M08 (PR #83) and M04 (PR #84) on `main` @ 89940c0.
+Not caused by those PRs; recorded here per the Definition of Done.
+
+| Issue | Evidence | Workaround used | Owner action |
+|---|---|---|---|
+| `drizzle-kit generate` / `migrate` refuse to run | two snapshot branches from `20261106103434_add_asset_image_url`; two snapshots with id `d536237d…`; hand-written migrations without snapshots (`20261106170000_…`, `20261112000000_erp0034_hr_employees`) | hand-written migrations; `bun run database/migrate-reset.ts` (drizzle-orm migrator, no conflict check) on a **disposable** database only | one agreed snapshot-chain repair; never `--fix-conflicts` (it deletes 14 applied migrations) |
+| Schema and migrations disagree | `drizzle-kit push --explain` on a fresh database wants to create `auth.organization_role` and drop two `sales.receipts` FKs | none | reconcile in one migration |
+| `DRIZZLE_TOKEN` injected in a service | `sales/services/invoice.service.ts` (uses `this.database.transaction`) — AGENTS hard rule: no service may inject it | none (M04 only added an outbox dependency) | move the transaction behind the repository / transaction runner |
+| Port 3000 clash in dev | `@ims-erp/react-email` preview also binds 3000; the backend gets `127.0.0.1`, the preview `[::1]` | call the backend on `127.0.0.1:3000` | give the preview its own port |
+| No local DB/Redis ports | `docker-compose.yml` publishes no Postgres/Redis ports; `.env` expects 15432/16379 | override file outside the repo (see `runbook.md`) | add a local override to the repo |
+| `docs.dbml` `hr.employees` is the target, not ERP-0034 as built | DBML: `organization_id NOT NULL`, `date` columns, department/position ids; Drizzle: nullable org, bigint dates | none | sync the DBML table |
+| JSON columns are `jsonb` | `data-dictionary.md` 1.12 says structured payloads are JSON `text`; 14+ `docs.dbml` columns use `jsonb` | M04 follows the existing `jsonb` practice | decide and fix the dictionary or the columns |
+
 ## Known risks and blockers
 
 | Risk | Impact | Mitigation tracked in |

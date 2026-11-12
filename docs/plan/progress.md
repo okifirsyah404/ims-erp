@@ -12,6 +12,42 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-12 - M08 compliance pass against AGENTS.md (ERP-0040) and main-wide doc fixes
+
+Owner asked to check M08 (PR #83) against `AGENTS.md` and `README.md` and fix
+the gaps.
+
+- **Skills read:** `elysia-module`, `elysia-layered-architecture`,
+  `elysia-tsyringe`, `tsyringe`. `hrModule()` factory, module-internal access
+  only (`HrPeopleService` over ERP-0034 employees), one `:id` per position
+  (`/hr/employees/:id` and `/:id/bank-account`), `container.resolve` only
+  inside `plugin()`: conform.
+- **Gate 1 completed:** `integrity-and-consistency.md`, `data-dictionary.md`
+  and `logical-references.md` now read in addition to `docs.dbml`, ADR-0012
+  and ADR-0014; `implementation-phases.md` skipped (no dependency on an
+  unlanded step). Checked: leave/overtime decisions and the salary approval
+  are conditional updates; separation of duties (recorder cannot decide);
+  money `CHECK`s and the net-pay identity; partial unique indexes on
+  `deleted_at IS NULL`; actor columns `recorded_by` / `decided_by` /
+  `approved_by` / `created_by`; cross-module references nullable (fixed in
+  the entry below). No further change needed.
+- **Phase 3 (ERP-0008 employees):** model + permissions + tests + idempotent
+  seeder + permission-scoped bank reads: met. Output "`data-model.md`
+  updates": the `hr` schema is now listed.
+- **Main-wide docs (DoD 2):** the pre-existing issues found on main are in
+  `project-audit.md` ("Pre-existing issues on main found 2026-11-12",
+  including `DRIZZLE_TOKEN` in `sales/services/invoice.service.ts`);
+  `runbook.md`, the `AGENTS.md` command-status table, `README.md` step 4
+  and `data-model.md` migration policy now say that drizzle-kit
+  generate/migrate are blocked on main and how migrations are verified
+  meanwhile.
+- `bun run lint` → 0 errors (warnings unchanged from main: backend 6,
+  web-admin 11, ui 19; none in HR files). `graphify update .` not run:
+  graphify is not installed on this machine.
+
+No code change in this entry; `docs/database/` unchanged; no backlog status
+move.
+
 ## 2026-11-12 - ERP-0040 fix: recorded_by nullable (ADR-0014)
 
 `hr.leave_requests.recorded_by` and `hr.overtime_requests.recorded_by`
