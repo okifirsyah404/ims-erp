@@ -319,6 +319,36 @@ Menu **Proyek**. Diagram:
    Begitu finance mencatat pelunasan, draf aktif sendiri dan kunci berlanjut
    ke periode baru.
 
+### 8.6 Karyawan, absensi, cuti, dan gaji (M08)
+
+1. **Karyawan & Kehadiran → Karyawan → Karyawan baru** membuat data
+   karyawan sekaligus mengirim email undangan untuk akun loginnya. Di
+   halaman karyawan tambahkan **rekening bank** gaji dan lihat **sisa cuti**
+   tahun ini. Peran tanpa akses data pribadi melihat NIK dan nomor rekening
+   sebagian tersembunyi. Yang tampil adalah karyawan organisasi Anda
+   ditambah karyawan tingkat perusahaan.
+2. **Absensi**: pilih tanggal, isi status tiap karyawan (hadir, izin, sakit,
+   cuti, alpa, libur) dan jam masuk / pulang bila perlu, lalu **Simpan hari
+   ini** ("Isi baris kosong dengan Hadir" mempercepat). Atau **Impor**: unduh
+   template, isi di Excel, unggah. Bila ada baris yang salah, tidak ada yang
+   diimpor dan baris yang salah ditampilkan. **Rekap bulanan** menghitung
+   status per karyawan.
+3. **Cuti**: HR **mencatat cuti** karyawan (jenis, dari, sampai); hari
+   Minggu tidak dihitung dan cuti tahunan tidak boleh lebih dari 12 hari
+   setahun (pengajuan yang menunggu ikut dihitung). Orang lain selain
+   pencatat **Menyetujui** atau **Menolak**; hari yang disetujui otomatis
+   masuk absensi. **Batalkan** mengembalikan harinya.
+4. **Lembur**: HR mencatat tanggal dan jamnya; orang lain menyetujui. Jam
+   yang disetujui tampil di samping karyawan pada ringkasan gaji.
+5. **Tugas**: tugas sederhana untuk karyawan dengan tenggat; tandai
+   **Selesai** atau **Batal**.
+6. **Penggajian** (ringkasan gaji): pilih bulan, **Isi dari bulan lalu** (menyalin
+   gaji pokok dan tunjangan bulan lalu; bulan pertama mulai dari 0), lalu
+   ubah baris (tunjangan, lembur, bonus, potongan; gaji bersih dihitung)
+   atau **Impor** file. Owner klik **Setujui bulan ini**, lalu bulan itu terkunci.
+   Belum ada hitung gaji otomatis, slip gaji, atau jurnal (tahap 2 menunggu
+   aturan gaji dari finance).
+
 ## 9. Dokumen cetak dan penomoran
 
 | Dokumen | Contoh nomor | Kapan bernomor | Cetak |

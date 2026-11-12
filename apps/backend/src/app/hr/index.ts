@@ -1,4 +1,18 @@
 /**
+ * Public entry point of the HR module: ERP-0034 employees and the M08 stage
+ * 1 employee records (attendance, leave, overtime, tasks, salary summary).
+ * `src/app/app.ts` mounts `.use(hrModule())`.
+ */
+import Elysia from 'elysia';
+
+import { AttendanceController } from './controllers/attendance.controller';
+import { EmployeeController } from './controllers/employee.controller';
+import { LeaveController } from './controllers/leave.controller';
+import { HrPeopleController } from './controllers/people.controller';
+import { SalaryController } from './controllers/salary.controller';
+import { TaskController } from './controllers/task.controller';
+
+/**
  * Public entry point of the HR module.
  *
  * @remarks
@@ -8,3 +22,18 @@
 export * from './container';
 export * from './controllers/employee.controller';
 export type { ExportedHrService } from './services/exported-hr.service';
+
+/**
+ * Elysia instance mounting every HR controller. The employee routes were not
+ * mounted before (ERP-0034 shipped the controller without a mount), so
+ * `/hr/employees` answered 404.
+ */
+export function hrModule() {
+	return new Elysia({ name: 'hr' })
+		.use(EmployeeController.plugin())
+		.use(HrPeopleController.plugin())
+		.use(AttendanceController.plugin())
+		.use(LeaveController.plugin())
+		.use(TaskController.plugin())
+		.use(SalaryController.plugin());
+}

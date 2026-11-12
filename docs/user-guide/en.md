@@ -320,6 +320,36 @@ Menu **Projects**. Diagram:
    finance records full payment, the draft activates by itself and the keys
    continue on the new period.
 
+### 8.6 Employees, attendance, leave and pay (M08)
+
+1. **HR & Attendance → Employees → New employee** creates the employee and
+   emails an invitation for their login (see the employee page). On the
+   employee page add the salary **bank account** and see this year's
+   **leave balance**. Roles without access to private data see the NIK and
+   the account number partly hidden. You see the employees of your
+   organization plus company-level employees.
+2. **Attendance**: pick the date, set each employee's status (present,
+   permit, sick, leave, absent, holiday) and optional in / out times, then
+   **Save day** ("Mark empty rows present" speeds this up). Or **Import**:
+   download the template, fill it in Excel, upload it. If any row is wrong
+   nothing is imported and the wrong rows are listed. **Monthly recap**
+   counts the statuses per employee.
+3. **Leave**: HR **records leave** for an employee (type, from, until);
+   Sundays are not counted and annual leave cannot go over the 12 days a
+   year (waiting requests count too). Someone other than the recorder
+   **Approves** or **Rejects**; approved days appear in the attendance
+   automatically. **Cancel** gives the days back.
+4. **Overtime**: HR records the date and hours; someone else approves.
+   Approved hours show next to the employee in the salary summary.
+5. **Tasks**: simple tasks for an employee with a due date; mark them
+   **Done** or **Cancel**.
+6. **Payroll (salary summary)**: pick the month, **Fill from last month**
+   (copies last month's base and allowances; the first month starts at 0),
+   then edit rows (allowances, overtime pay, bonus, deductions; net pay is
+   computed) or **Import** a sheet. The owner **Approves the month**, which
+   locks it. There is no automatic payroll calculation, payslip or journal
+   yet (stage 2 needs the payroll rules from finance).
+
 ## 9. Printed documents and numbering
 
 | Document | Example number | Numbered when | Print |

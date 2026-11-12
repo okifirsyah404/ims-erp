@@ -254,9 +254,15 @@ Last synced: 2026-11-08.
 
 ## M08 Employees and Attendance
 
+### done
+- Employees (invite-first, organization or company level) — ERP-0034.
+  Evidence: `progress.md` 2026-11-10.
+- Attendance (manual + import), leave (12-day quota, no self-approval),
+  overtime, employee tasks, salary summary approved and locked by the owner,
+  salary bank account — T10, ERP-0040. Evidence: `progress.md` 2026-11-12
+  (`hr-records.service.test.ts`, e2e). Not yet accepted by the owner.
+
 ### planned
-- Employees, manual attendance, leave, overtime, salary/bonus summary — T10,
-  ERP-0008. Evidence: dbml `hr` only.
 - Payslips, approval, payroll journals — T20, ERP-0018. Evidence: none.
 
 ### blocked

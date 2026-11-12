@@ -66,10 +66,16 @@ describe('organization access control', () => {
 		expect(authorizeErpPermissions(['sales_manager'], { payment: ['execute'] })).toBe(false);
 	});
 
-	test('finance executes payments but has no HR record access', () => {
+	test('finance executes payments and enters salary summaries, but has no other HR record access', () => {
 		expect(authorizeErpPermissions(['finance'], { payment: ['execute'] })).toBe(true);
-		expect(authorizeErpPermissions(['finance'], { employee: ['read'] })).toBe(false);
-		expect(authorizeErpPermissions(['finance'], { payroll: ['read'] })).toBe(false);
+		// M08 decision 2026-11-07: HR/finance enter the monthly salary summary,
+		// the owner approves it.
+		expect(authorizeErpPermissions(['finance'], { payroll: ['read', 'create', 'update'] })).toBe(true);
+		expect(authorizeErpPermissions(['finance'], { employee: ['read', 'read_private'] })).toBe(true);
+		expect(authorizeErpPermissions(['finance'], { payroll: ['approve'] })).toBe(false);
+		expect(authorizeErpPermissions(['finance'], { attendance: ['read'] })).toBe(false);
+		expect(authorizeErpPermissions(['finance'], { leave: ['read'] })).toBe(false);
+		expect(authorizeErpPermissions(['finance'], { employee: ['create'] })).toBe(false);
 	});
 
 	test('hr prepares payroll but cannot approve or execute it', () => {

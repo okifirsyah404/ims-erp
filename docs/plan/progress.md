@@ -12,6 +12,101 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-12 - ERP-0040: M08 stage 1 rebuilt on ERP-0034 employees
+
+Status: **implemented** on branch `feat/m08-hr-on-main` (from `origin/main`
+89940c0), not yet accepted by the owner. Replaces PR #64
+(`feat/m08-employees-attendance`), whose own `hr.employees` collided with
+ERP-0034. Owner decision 2026-11-12: keep ERP-0034's employees and stack the
+M08 records on them (option 1).
+
+Gate 1: `docs.dbml` MODULE HR (unchanged on main since the base; employees
+table as ERP-0034 left it), ADR-0012 (multi-organization: only transaction
+documents whose plan says so carry `organization_id`), ADR-0014 (nullable
+cross-module references), `module-ownership.md` (hr owns `hr`). Gate 2
+answers (manual fallback):
+- Ownership: `hr` schema; employees stay ERP-0034's; M08 adds
+  `bank_accounts`, `attendance_records`, `leave_types`, `leave_requests`,
+  `overtime_requests`, `employee_tasks`, `salary_summaries` (intra-schema
+  FKs to `employees`).
+- Tenant: no `organization_id` on the M08 tables; a record is scoped through
+  its employee with ERP-0034's rule (company-level + active organization; an
+  application admin sees all) — lists, reads, decisions, imports and salary
+  approval included.
+- Soft delete on all; money bigint minor units; business dates `date`;
+  status vocabularies unchanged from the M08 design (2026-11-07).
+- Base salary: ERP-0034 employees carry none and the DBML's
+  `employment_contracts` / `employee_salary_components` are not built, so
+  "Fill from last month" copies last month's base and allowances (0 for the
+  first month). Position field dropped (DBML has `position_id` → not built).
+- Employee codes are unique per organization in ERP-0034, so an import code
+  that matches two visible employees is reported (`employeeAmbiguous`).
+
+Built:
+- `docs.dbml` HR section: the seven M08 tables (from the M08 branch) with
+  ERP-0034's `employees` kept as is; `bun docs/database/gen-logical-references.ts`
+  → 535 refs; `bun docs/database/validate-dbml.ts` → OK.
+- Migration `20261112100000_m08_hr_records`, **hand-written**: `drizzle-kit
+  generate` and `migrate` refuse to run on main (pre-existing two-branch
+  snapshot conflict, see findings). The SQL is the drizzle-kit output of the
+  M08 schema minus the schema and employees statements. Applied to a fresh
+  disposable database `ims_erp_m08` with `bun run database/migrate-reset.ts`
+  (drizzle-orm migrator, all migrations); `drizzle-kit push --explain`
+  against it shows **no difference for any `hr` table**.
+- Backend `src/app/hr`: `HrPeopleService` / `HrPeopleRepository` (scope,
+  bank account), attendance / leave+overtime / task / salary services,
+  repositories and controllers ported with the scope; `hrModule()` mounts
+  them **and ERP-0034's `EmployeeController`, which main never mounted**
+  (`/hr/employees` answered 404). ERP-0034 reads mask the NIK without
+  `employee:read_private` and an update never writes a masked NIK back.
+- Permissions: `employee:read_private`, `attendance:record`, statement
+  `overtime`; HR gets them plus `task`; admin `attendance:read, record`;
+  finance `employee:read, read_private`, `payroll:read, create, update,
+  export` (decision 2026-11-07); `permission-matrix.test.ts` finance case
+  updated. `packages/common` rebuilt.
+- Seeder `hr-leave-types.seeder.ts` (every environment): run twice on
+  `ims_erp_m08` → inserted 4, then 0.
+- Web: pages attendance / leave / overtime / payroll / tasks (stubs on main
+  replaced), `lib/hr-records-api.ts`, bank account + leave balance cards on
+  the ERP-0034 employee page, Tasks in the sidebar, HR crumbs; `hr` locale
+  keys merged (en/id), dead-key prefixes and parity allowances.
+- Docs: `docs/architecture/modules/employee.md` rewritten; user guide 8.6
+  (en/id).
+
+Verification: `NODE_ENV=test bun test` (apps/backend) → 824 pass
+(`hr-records.service.test.ts` 16); `bunx tsc --noEmit` clean; web `bun run
+build` OK; locales 82 pass. E2E against `ims_erp_m08` (dev `.env`
+`POSTGRES_DB` switched temporarily, restored afterwards): `/hr/employees`
+200; NIK and bank account masked for admin, clear for HR; day sheet saved;
+leave 5 days, self-approval 403, another HR approves, 5 leave days in the
+month recap; overtime 2.50 h approved; task created; finance saves a salary
+row; generate → 29 rows; finance approve 403, owner approves; edit after
+lock 409; finance reads attendance 403. Screenshots of attendance, payroll
+and the employee page checked.
+
+Findings on main (pre-existing, not changed here):
+- `drizzle-kit generate` / `migrate` blocked: two snapshot branches from
+  `20261106103434_add_asset_image_url`, two snapshots with id `d536237d…`,
+  and hand-written migrations without snapshots. Only the drizzle-orm
+  migrator (`migrate-reset`) applies migrations. Needs one agreed repair.
+- `drizzle-kit push --explain` on a fresh database still wants to create
+  `auth.organization_role` and drop two `sales.receipts` FKs: the schema and
+  the migrations disagree there.
+- `@ims-erp/react-email` dev preview also takes port 3000; whichever starts
+  first wins `localhost`, so the web app can talk to the preview instead of
+  the backend.
+- `docker-compose.yml` publishes no Postgres/Redis ports for local dev; the
+  runbook's `up postgres redis` needs a local override (used one outside
+  the repo).
+- `docs.dbml` `hr.employees` still shows the target design (NOT NULL
+  `organization_id`, `date` columns) rather than ERP-0034 as built.
+
+The developer database `ims_erp_sync` holds the old M08 branch schema; this
+branch runs on a fresh database (`migrate-reset`).
+
+Next executable task: open a PR `feat/m08-hr-on-main` → `main` and close
+PR #64 (owner's call), then rebuild M04 (PR #65) on main the same way.
+
 ## 2026-11-10 - ERP-0034: minimal HR employees + warehouse PIC (slices 1-8)
 
 Status: implemented and browser-verified (create → list → detail; seeder;

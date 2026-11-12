@@ -180,6 +180,7 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 					{ titleKey: 'item.leave', url: '/hr/leave' },
 					{ titleKey: 'item.overtime', url: '/hr/overtime' },
 					{ titleKey: 'item.payroll', url: '/hr/payroll' },
+					{ titleKey: 'item.hrTasks', url: '/hr/tasks' },
 				],
 			},
 		],

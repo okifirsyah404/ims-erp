@@ -8,6 +8,7 @@ import { aftersalesModule } from './aftersales';
 import { assetsModule } from './assets';
 import { auditModule } from './audit';
 import { crmModule } from './crm';
+import { hrModule } from './hr';
 import { inventoryModule } from './inventory';
 import { licensingModule } from './licensing';
 import { locationModule } from './location';
@@ -90,5 +91,6 @@ export function createApp() {
 			// moved here from inventory.
 			.use(assetsModule())
 			.use(accountingModule())
+			.use(hrModule())
 	);
 }

@@ -6,6 +6,7 @@ import type { NumberingService } from '@app/organization/services/numbering.serv
 import { INVITATION_SERVICE_TOKEN } from '@app/user/constants/di';
 import type { InvitationService } from '@app/user/services/invitation.service';
 import { AppError } from '@http/errors';
+import { maskTail } from '../utils/hr';
 import { EMPLOYEE_REPOSITORY_TOKEN } from '../constants/di';
 import type { IEmployeeRepository } from '../contracts/employee.repository.interface';
 import type {
@@ -39,7 +40,19 @@ export type TEmployeeContext = {
 	isPlatformAdmin: boolean;
 	/** Organization-level `employee:*` grant decided by `erpGuard`. */
 	canManage: boolean;
+	/**
+	 * `employee:read_private` (M08 owner decision 2026-11-07): without it the
+	 * NIK is masked on reads and never written back on updates. Absent =
+	 * allowed (internal callers).
+	 */
+	canReadPrivate?: boolean;
 };
+
+/** The NIK shown to a caller without `employee:read_private`. */
+function masked(ctx: TEmployeeContext, dto: TEmployeeDto): TEmployeeDto {
+	if (ctx.canReadPrivate !== false) return dto;
+	return { ...dto, nationalId: maskTail(dto.nationalId ?? null) } as TEmployeeDto;
+}
 
 /** Parses a `YYYY-MM-DD` business date into the instant at Jakarta midnight. */
 function jakartaDate(value: string | null | undefined): Date | null {
@@ -126,7 +139,7 @@ export class EmployeeService {
 			organizationIds,
 			includeCompany: true,
 		});
-		return { meta: page.meta, data: page.data.map(toDto) };
+		return { meta: page.meta, data: page.data.map((row) => masked(ctx, toDto(row))) };
 	}
 
 	/** One employee; a non-admin only sees own-org or company-level rows. */
@@ -140,7 +153,7 @@ export class EmployeeService {
 		) {
 			throw new EmployeeNotFoundError();
 		}
-		return toDto(row);
+		return masked(ctx, toDto(row));
 	}
 
 	/**
@@ -265,7 +278,7 @@ export class EmployeeService {
 			...(body.gender !== undefined ? { gender: body.gender } : {}),
 			...(body.birthDate !== undefined ? { birthDate: jakartaDate(body.birthDate) } : {}),
 			...(body.birthPlace !== undefined ? { birthPlace: body.birthPlace } : {}),
-			...(body.nationalId !== undefined ? { nationalId: body.nationalId } : {}),
+			...(body.nationalId !== undefined && ctx.canReadPrivate !== false ? { nationalId: body.nationalId } : {}),
 			...(body.maritalStatus !== undefined ? { maritalStatus: body.maritalStatus } : {}),
 			...(body.email !== undefined ? { email: body.email } : {}),
 			...(body.phone !== undefined ? { phone: body.phone } : {}),
