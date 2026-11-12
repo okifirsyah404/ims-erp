@@ -47,6 +47,7 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 		name: string;
 		slug: string;
 		logo?: string | null;
+		description?: string;
 		metadata?: Record<string, unknown>;
 		userId?: string;
 		headers?: Headers;
@@ -58,6 +59,7 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 					name: input.name,
 					slug: input.slug,
 					logo: input.logo ?? undefined,
+					description: input.description,
 					metadata: input.metadata,
 					// Server-side creation: Better Auth adds `userId` as the
 					// organization owner (implicit `role: 'owner'`).
@@ -106,16 +108,26 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 			data: {
 				name?: string;
 				logo?: string | null;
+				description?: string | null;
 				metadata?: Record<string, unknown>;
 			};
 		},
 	): Promise<TGatewayOrganization> {
+		const { description, ...data } = input.data;
 		try {
 			const organization = await auth.api.updateOrganization({
 				headers,
 				body: {
 					organizationId: input.organizationId,
-					data: input.data,
+					data: {
+						...data,
+						// Better Auth's inferred input type forbids `null` for an
+						// additional `string` field, yet the column is nullable and
+						// clearing the description is exactly a NULL write.
+						...(description === undefined
+							? {}
+							: { description: description as string }),
+					},
 				},
 			});
 			if (!organization) throw new OrganizationNotFoundError();
@@ -250,15 +262,16 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 	 * Maps a raw Better Auth organization row onto the gateway contract.
 	 *
 	 * @remarks
-	 * Normalizes `logo` to `null` and narrows untyped `metadata` to a
-	 * record; `deletedAt` is surfaced read-only — all writes to it belong
-	 * to the repository, never to Better Auth.
+	 * Normalizes `logo` and `description` to `null` and narrows untyped
+	 * `metadata` to a record; `deletedAt` is surfaced read-only — all writes
+	 * to it belong to the repository, never to Better Auth.
 	 */
 	private toGatewayOrganization(organization: {
 		id: string;
 		name: string;
 		slug: string;
 		logo?: string | null;
+		description?: string | null;
 		metadata?: unknown;
 		createdAt: Date;
 		deletedAt?: Date | null;
@@ -268,6 +281,7 @@ export class BetterAuthOrganizationGateway implements IOrganizationAuthGateway {
 			name: organization.name,
 			slug: organization.slug,
 			logo: organization.logo ?? null,
+			description: organization.description ?? null,
 			metadata:
 				organization.metadata &&
 				typeof organization.metadata === 'object'

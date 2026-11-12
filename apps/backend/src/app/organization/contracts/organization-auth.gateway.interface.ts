@@ -6,6 +6,8 @@ export type TGatewayOrganization = {
 	name: string;
 	slug: string;
 	logo: string | null;
+	/** Optional free-text description; `null` when unset. */
+	description: string | null;
 	metadata: Record<string, unknown> | null;
 	createdAt: Date;
 	deletedAt: Date | null;
@@ -47,6 +49,8 @@ export interface IOrganizationAuthGateway {
 		name: string;
 		slug: string;
 		logo?: string | null;
+		/** Optional free-text description. */
+		description?: string;
 		metadata?: Record<string, unknown>;
 		/** Creator to add as owner; role applies to that membership. */
 		userId?: string;
@@ -61,7 +65,13 @@ export interface IOrganizationAuthGateway {
 		headers: Headers,
 		input: {
 			organizationId: string;
-			data: { name?: string; logo?: string | null; metadata?: Record<string, unknown> };
+			data: {
+				name?: string;
+				logo?: string | null;
+				/** `null` clears the description. */
+				description?: string | null;
+				metadata?: Record<string, unknown>;
+			};
 		},
 	): Promise<TGatewayOrganization>;
 

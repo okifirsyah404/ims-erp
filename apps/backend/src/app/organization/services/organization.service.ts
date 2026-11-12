@@ -111,6 +111,7 @@ export class OrganizationService {
 			name: input.name,
 			slug: input.slug,
 			logo: input.logo ?? undefined,
+			description: input.description ?? undefined,
 			metadata: input.metadata ?? undefined,
 			userId: input.creatorUserId,
 			headers,
@@ -152,6 +153,7 @@ export class OrganizationService {
 				name: row.name,
 				slug: row.slug,
 				logo: row.logo ?? null,
+				description: row.description ?? null,
 			},
 			members,
 		};
@@ -286,9 +288,14 @@ export class OrganizationService {
 			data: {
 				name: input.name,
 				logo: input.logo ?? undefined,
+				description: input.description,
 				metadata: input.metadata ?? undefined,
 			},
 		});
+		// Better Auth writes the row itself, so the repository never sees the
+		// write — drop the cached read or `findById` serves the old row for
+		// the full TTL.
+		await this.repository.invalidateCache(organizationId);
 		const row = await this.repository.findById(organizationId);
 		if (!row) throw new OrganizationNotFoundError();
 		return row;

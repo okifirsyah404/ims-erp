@@ -206,7 +206,7 @@ export class OrganizationRepository implements IOrganizationRepository {
 			.update(organizations)
 			.set({ deletedAt: new Date() })
 			.where(and(eq(organizations.id, id), isNull(organizations.deletedAt)));
-		await this.invalidate(id);
+		await this.invalidateCache(id);
 	}
 
 	/**
@@ -217,7 +217,7 @@ export class OrganizationRepository implements IOrganizationRepository {
 			.update(organizations)
 			.set({ deletedAt: null })
 			.where(eq(organizations.id, id));
-		await this.invalidate(id);
+		await this.invalidateCache(id);
 	}
 
 	/**
@@ -229,7 +229,7 @@ export class OrganizationRepository implements IOrganizationRepository {
 			.update(organizations)
 			.set({ logo })
 			.where(eq(organizations.id, id));
-		await this.invalidate(id);
+		await this.invalidateCache(id);
 	}
 
 	/**
@@ -247,14 +247,14 @@ export class OrganizationRepository implements IOrganizationRepository {
 			.where(and(eq(organizations.id, id), isNull(organizations.logo)))
 			.returning({ id: organizations.id });
 		if (updated.length === 0) return false;
-		await this.invalidate(id);
+		await this.invalidateCache(id);
 		return true;
 	}
 
 	/**
 	 * Evicts the per-id cache entry used by {@link findById}.
 	 */
-	private async invalidate(id: string): Promise<void> {
+	async invalidateCache(id: string): Promise<void> {
 		await this.cache.del(cacheIdKey(this.cachePrefix, id));
 	}
 

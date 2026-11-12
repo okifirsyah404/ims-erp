@@ -145,6 +145,9 @@ export const organizations = authSchema.table(
     name: text("name").notNull(),
     slug: text("slug").notNull().unique(),
     logo: text("logo"),
+    // Free-text organization description (ERP-0041). Hand-applied
+    // append-only delta, same reason as `deletedAt` below.
+    description: text("description"),
     createdAt: timestamp("created_at").notNull(),
     metadata: text("metadata"),
     // Soft-delete marker owned by the organization module's repository (sets

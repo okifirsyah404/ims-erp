@@ -138,6 +138,9 @@ const admin = {
 	'orgs.newDescription':
 		'You become the owner of the organization you create, and it becomes your active organization.',
 	'orgs.name': 'Name',
+	'orgs.descriptionLabel': 'Description',
+	'orgs.descriptionPlaceholder':
+		'What this organization does, who it serves, anything worth knowing (optional).',
 	'orgs.slug': 'Slug',
 	'orgs.create': 'Create',
 	'orgs.creating': 'Creating…',
@@ -170,6 +173,7 @@ const admin = {
 	'orgDetail.membersDescription': 'People with access to this organization.',
 	'orgDetail.membersEmpty': 'No members yet.',
 	'orgDetail.name': 'Name',
+	'orgDetail.description': 'Description',
 	'orgDetail.code': 'Code',
 	'orgDetail.notFound': 'Organization not found (or you lack access).',
 	'orgDetail.backToList': 'Back to organizations',

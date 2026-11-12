@@ -52,6 +52,17 @@ export const createOrganizationSchema = z
 			.max(100)
 			.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Lowercase alphanumeric and dashes'),
 		logo: z.string().url().max(2048).nullish(),
+		/**
+		 * Optional free-text description. Trimmed here so a whitespace-only
+		 * value becomes `null`; the DB column has no length limit, so the 2000
+		 * cap is a boundary rule that can be widened without a migration.
+		 */
+		description: z
+			.string()
+			.trim()
+			.max(2000)
+			.transform((value) => (value.length > 0 ? value : null))
+			.nullish(),
 		metadata: z.record(z.string(), z.unknown()).nullish(),
 		/**
 		 * Users to attach at creation: existing active users become members
@@ -87,6 +98,8 @@ export type TCreateOrganizationResult = {
 		name: string;
 		slug: string;
 		logo: string | null;
+		/** `null` when unset (or when only whitespace was submitted). */
+		description: string | null;
 	};
 	members: TOrganizationCreateUserOutcome[];
 };
@@ -99,11 +112,21 @@ export const updateOrganizationSchema = z
 	.object({
 		name: z.string().min(1).max(200).optional(),
 		logo: z.string().url().max(2048).nullish(),
+		/** Trimmed; an empty string clears the description (`null`). */
+		description: z
+			.string()
+			.trim()
+			.max(2000)
+			.transform((value) => (value.length > 0 ? value : null))
+			.nullish(),
 		metadata: z.record(z.string(), z.unknown()).nullish(),
 	})
 	.refine(
 		(v) =>
-			v.name !== undefined || v.logo !== undefined || v.metadata !== undefined,
+			v.name !== undefined ||
+			v.logo !== undefined ||
+			v.description !== undefined ||
+			v.metadata !== undefined,
 		{ message: 'At least one field is required' },
 	);
 /** Parsed {@link updateOrganizationSchema}. */

@@ -70,6 +70,17 @@ export interface IOrganizationRepository {
 	setLogo(id: string, logo: string | null): Promise<void>;
 
 	/**
+	 * Evicts the cached `findById` entry.
+	 *
+	 * @remarks
+	 * Profile updates run through Better Auth, which writes the row directly —
+	 * this repository never sees that write, so the service has to drop the
+	 * cache entry itself or the next read serves the pre-update row for up to
+	 * the 5-minute TTL.
+	 */
+	invalidateCache(id: string): Promise<void>;
+
+	/**
 	 * Sets `logo` only when the column is still empty, and invalidates the
 	 * `findById` cache when it did write.
 	 *

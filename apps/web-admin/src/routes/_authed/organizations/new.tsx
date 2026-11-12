@@ -17,6 +17,7 @@ import {
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Textarea } from '@ims-erp/ui/components/textarea';
 import { ImageDropzone } from '@/components/organization/image-dropzone';
 import {
 	createOrganization,
@@ -46,6 +47,7 @@ function NewOrganizationPage() {
 
 	const [name, setName] = useState('');
 	const [slug, setSlug] = useState('');
+	const [description, setDescription] = useState('');
 	const [slugTouched, setSlugTouched] = useState(false);
 	const [pending, setPending] = useState(false);
 	const [uploading, setUploading] = useState(false);
@@ -70,7 +72,12 @@ function NewOrganizationPage() {
 		if (!canSubmit) return;
 		setPending(true);
 		try {
-			const created = await createOrganization({ name, slug });
+			const created = await createOrganization({
+				name,
+				slug,
+				// Empty/whitespace-only clears it server-side; send nothing.
+				description: description.trim() || undefined,
+			});
 			if (!created) throw new Error(t('common:error.failed'));
 
 			// A failed logo upload must not lose the organization that was just
@@ -129,85 +136,96 @@ function NewOrganizationPage() {
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit}>
-						<div className='grid gap-6 sm:grid-cols-[8rem_1fr]'>
-							{/* Logo is an organization attribute, so it sits beside the
-							    fields rather than inside a separate section. */}
-							<div className='flex flex-col gap-2'>
-								<ImageDropzone
-									previewUrl={imagePreviewUrl}
-									busy={uploading}
-									disabled={pending}
-									label={t('orgImage.title')}
-									hint={t('orgImage.dropHint')}
-									onSelect={setImageFile}
-									onReject={(reason) =>
-										toast.error(
-											t(
-												reason === 'size'
-													? 'orgImage.tooLarge'
-													: 'orgImage.invalidType',
-											),
-										)
-									}
-								/>
-								{/* The zone already shows the hint, so only the picked file
-								    and its removal need a line of their own. */}
-								{imageFile && (
-									<>
-										<p className='truncate text-xs leading-snug text-muted-foreground'>
-											{imageFile.name}
-										</p>
-										<Button
-											type='button'
-											variant='ghost'
-											size='sm'
-											className='self-start px-2'
-											disabled={pending}
-											onClick={() => setImageFile(null)}
-										>
-											{t('orgImage.removeSelection')}
-										</Button>
-									</>
-								)}
-							</div>
-
-							<FieldGroup>
-								<Field>
-									<FieldLabel htmlFor='name'>{t('orgs.name')}</FieldLabel>
-									<Input
-										id='name'
-										value={name}
-										required
-										maxLength={200}
-										disabled={pending}
-										onChange={(event) => {
-											setName(event.target.value);
-											if (!slugTouched) setSlug(slugify(event.target.value));
-										}}
-									/>
-								</Field>
-								<Field>
-									<FieldLabel htmlFor='slug'>{t('orgs.slug')}</FieldLabel>
-									<Input
-										id='slug'
-										value={slug}
-										required
-										pattern='[a-z0-9]+(-[a-z0-9]+)*'
-										disabled={pending}
-										aria-invalid={Boolean(slug) && !slugValid}
-										onChange={(event) => {
-											setSlugTouched(true);
-											setSlug(event.target.value);
-										}}
-									/>
-									<p className='text-xs text-muted-foreground'>
-										{Boolean(slug) && !slugValid
-											? t('orgs.slugInvalid')
-											: `/organizations/${slug || '…'}`}
+						{/* Logo is an organization attribute, so it leads the form;
+						    centered because it is the identity anchor of the card. */}
+						<div className='mb-6 flex flex-col items-center gap-2'>
+							<ImageDropzone
+								previewUrl={imagePreviewUrl}
+								busy={uploading}
+								disabled={pending}
+								label={t('orgImage.title')}
+								hint={t('orgImage.dropHint')}
+								onSelect={setImageFile}
+								onReject={(reason) =>
+									toast.error(
+										t(
+											reason === 'size'
+												? 'orgImage.tooLarge'
+												: 'orgImage.invalidType',
+										),
+									)
+								}
+							/>
+							{/* The zone already shows the hint, so only the picked file
+							    and its removal need a line of their own. */}
+							{imageFile && (
+								<>
+									<p className='max-w-full truncate text-xs leading-snug text-muted-foreground'>
+										{imageFile.name}
 									</p>
-								</Field>
-							</FieldGroup>
+									<Button
+										type='button'
+										variant='ghost'
+										size='sm'
+										disabled={pending}
+										onClick={() => setImageFile(null)}
+									>
+										{t('orgImage.removeSelection')}
+									</Button>
+								</>
+							)}
 						</div>
+
+						<FieldGroup>
+							<Field>
+								<FieldLabel htmlFor='name'>{t('orgs.name')}</FieldLabel>
+								<Input
+									id='name'
+									value={name}
+									required
+									maxLength={200}
+									disabled={pending}
+									onChange={(event) => {
+										setName(event.target.value);
+										if (!slugTouched) setSlug(slugify(event.target.value));
+									}}
+								/>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor='description'>
+									{t('orgs.descriptionLabel')}
+								</FieldLabel>
+								<Textarea
+									id='description'
+									value={description}
+									rows={4}
+									maxLength={2000}
+									disabled={pending}
+									placeholder={t('orgs.descriptionPlaceholder')}
+									onChange={(event) => setDescription(event.target.value)}
+								/>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor='slug'>{t('orgs.slug')}</FieldLabel>
+								<Input
+									id='slug'
+									value={slug}
+									required
+									pattern='[a-z0-9]+(-[a-z0-9]+)*'
+									disabled={pending}
+									aria-invalid={Boolean(slug) && !slugValid}
+									onChange={(event) => {
+										setSlugTouched(true);
+										setSlug(event.target.value);
+									}}
+								/>
+								<p className='text-xs text-muted-foreground'>
+									{Boolean(slug) && !slugValid
+										? t('orgs.slugInvalid')
+										: `/organizations/${slug || '…'}`}
+								</p>
+							</Field>
+						</FieldGroup>
 
 						<div className='mt-6 flex items-center justify-end gap-2 border-t pt-4'>
 							<Button

@@ -271,6 +271,7 @@ function OrganizationDetailPage() {
 					<OrganizationDashboard
 						name={organization.name}
 						slug={organization.slug}
+						description={organization.description}
 						createdAt={new Date(organization.createdAt)}
 					/>
 				</TabsContent>

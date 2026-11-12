@@ -30,6 +30,63 @@ GET returned a MinIO presigned URL, and the edit page rendered the image
 (72px preview, Replace/Delete buttons). `docs/plan/backlog.md` ERP-0041 →
 **verified**.
 
+## 2026-11-13 - Organization description field (create / detail / edit)
+
+User request: the create page should lead with the logo and offer a free-text
+description. Implemented as a new nullable column rather than metadata, so it
+is queryable and shown on detail.
+
+- `docs/database/docs.dbml` + `auth.schema.ts`: `auth.organizations.description
+  text` (no DB length limit; the 2000-char cap is a zod boundary rule so
+  widening it needs no migration). Migration
+  `20261113090000_erp0041_org_description` is hand-written append-only (same
+  convention as `20261112120000` / `20261112150000` — the repo carries no
+  drizzle-kit journal).
+- Better Auth: `additionalFields.description` added, and the plugin options
+  changed from `: OrganizationOptions` to `satisfies OrganizationOptions` —
+  the widened annotation erased `additionalFields` from the inferred API
+  types, so `description` was rejected in create/update bodies. The adapter
+  strips `description` before calling Better Auth and re-adds it (Better Auth
+  forbids `null` in the inferred input for an additional `string`, while
+  clearing the field is exactly a NULL write).
+- zod: `trim().max(2000).transform(v => v.length ? v : null).nullish()`, so
+  whitespace-only becomes `null`; `updateOrganizationSchema` counts
+  `description` as a provided field.
+- Web admin: create page logo is centered at 128px **above** the fields and a
+  description textarea sits between Name and Slug; edit page has the same
+  textarea (empty string clears); the info dashboard renders the value with
+  `whitespace-pre-line` and `-` when unset. Locales added to `en` and `id`
+  (`orgs.descriptionLabel`, `orgs.descriptionPlaceholder`,
+  `orgDetail.description`).
+
+**Cache bug found by the live check:** PATCH `/organizations/:id` returned the
+pre-update row and the detail page kept showing the old description. Cause:
+`findById` is cache-aside (5-min TTL) and profile updates go through Better
+Auth, which writes the row directly — the repository never sees the write, so
+nothing evicted the entry (`setLogo`/`softDelete`/`restore` only). Fixed by
+exposing `invalidateCache(id)` on the repository and calling it from
+`OrganizationService.updateOrganization` after the gateway write. The bug
+predates this slice and also affected `name` updates.
+
+Verification:
+
+- `bunx tsc -b --noEmit` clean in `apps/backend` and `apps/web-admin`;
+  `bun run test` backend **842 pass** (17 in
+  `test/unit/organization-create-nested.test.ts`, including the new
+  "update forwards description and evicts the cached row"), web-admin **62
+  pass**, `packages/locales` **82 pass**; `bun run lint` no new warnings.
+- Migration applied to disposable DB `ims_erp41_desc` via a one-off runner
+  (`migrate-reset` + apply + `drizzle:seed` twice, idempotent); column
+  `description text` present; database dropped afterwards.
+- `bun docs/database/gen-logical-references.ts` + `validate-dbml.ts` →
+  `OK: 0 cross-module refs, 0 timestamp gaps`.
+- Live (dev servers): create form order Name → Description → Slug with a
+  centered 128×128 dropzone above Name; submitted `Description Check` with a
+  dropped PNG logo and a two-line description → detail page rendered both
+  lines; edit page saved a new value and the detail page reflected it
+  (PATCH 200 + fresh GET); the seed org without a description rendered `-`.
+  Test org soft-deleted afterwards.
+
 ## 2026-11-13 - `/organizations` list: breakpoint and header layout fix
 
 Cards were cramped: `lg:grid-cols-4` at a 1074px viewport gave **180px** cards
@@ -5492,11 +5549,13 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**Review + PR for ERP-0039 (organization-scoped invitations, shared invite
-dialog).** All gates green: typecheck, lint, `bun run test`
-(backend 820 / web-admin 55 / locales 82 / react-email 5), live browser run
-of both invite paths, `docs/database/` reviewed and unchanged. Next: commit on
-`fix/org-hardening`, open the PR, reviewer sign-off.
+**Push the organization `description` slice and get reviewer sign-off on PR
+#82** (`fix/org-hardening`). Gates green: `bunx tsc -b --noEmit` clean in
+`apps/backend` + `apps/web-admin`, `bun run test` backend 842 / web-admin 62 /
+locales 82, no new lint warnings, migration verified on disposable DB
+`ims_erp41_desc` (dropped), `validate-dbml.ts` `OK`, live create/edit/detail
+walk-through done. Remaining: push, CI green, reviewer approval before moving
+ERP-0041 from `verified` to `accepted`.
 
 Older, still-open follow-ups: docs merge of `merge/main-sync` into
 `fix/docs-consistency`, then the 7 deferred tables.

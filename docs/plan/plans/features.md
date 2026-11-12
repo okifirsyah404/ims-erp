@@ -58,7 +58,10 @@ Last synced: 2026-11-08.
   `logo IS NULL` write. The organization list presigns each card logo on the
   server (a raw object key rendered as a broken image) with an initials fallback
   on load error. The list grid is `1 / sm:2 / lg:3 / 2xl:4` (a 4-up grid at
-  `lg` produced 180px cards) and its header stacks below `sm`. Evidence:
+  `lg` produced 180px cards) and its header stacks below `sm`. The optional
+  organization `description` (new nullable `text` column, 2000-char zod cap)
+  is created/edited in a textarea and shown on the info dashboard, which also
+  exposed and fixed a stale-`findById` cache bug on PATCH. Evidence:
   progress 2026-11-12 and 2026-11-13.
 
 ## M02 CRM and Sales

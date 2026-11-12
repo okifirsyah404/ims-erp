@@ -21,6 +21,8 @@ export type TOrganization = {
 	 * object key on read, since the client cannot). `null` when unset.
 	 */
 	logo: string | null;
+	/** Optional free-text organization description; `null` when unset. */
+	description: string | null;
 	metadata: Record<string, unknown> | null;
 	createdAt: string;
 	deletedAt: string | null;
@@ -123,6 +125,8 @@ export async function createOrganization(input: {
 	name: string;
 	slug: string;
 	logo?: string | null;
+	/** Optional free-text description (trimmed server-side; empty clears). */
+	description?: string | null;
 	/** Nested users: active emails join directly, unknown emails get invited. */
 	users?: Array<{ email: string; name: string; roles: string[] }>;
 	/** Deliver invitation emails (default true). */
@@ -204,7 +208,12 @@ export async function encodeWebp(
 
 export async function updateOrganization(
 	organizationId: string,
-	input: { name?: string; logo?: string | null },
+	input: {
+		name?: string;
+		logo?: string | null;
+		/** Trimmed server-side; an empty string clears it. */
+		description?: string | null;
+	},
 ) {
 	const envelope = await request<TOrganization>(
 		`/organizations/${organizationId}`,

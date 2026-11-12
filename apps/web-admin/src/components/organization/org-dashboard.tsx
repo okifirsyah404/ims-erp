@@ -277,10 +277,13 @@ function CashBankCard() {
 export function OrganizationDashboard({
 	name,
 	slug,
+	description,
 	createdAt,
 }: {
 	name: string;
 	slug: string;
+	/** Free-text description; the card renders `-` when unset. */
+	description: string | null;
 	createdAt: Date;
 }) {
 	const { t } = useTranslation('admin');
@@ -295,6 +298,11 @@ export function OrganizationDashboard({
 					<span>{name}</span>
 					<span className='text-muted-foreground'>{t('orgDetail.code')}</span>
 					<span>{slug}</span>
+					<span className='text-muted-foreground'>
+						{t('orgDetail.description')}
+					</span>
+					{/* Newlines are preserved: the field is free text. */}
+					<span className='whitespace-pre-line'>{description || '-'}</span>
 					<span className='text-muted-foreground'>{t('orgDetail.created')}</span>
 					<span>{createdAt.toLocaleString()}</span>
 				</CardContent>

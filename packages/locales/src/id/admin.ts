@@ -141,6 +141,9 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgs.newDescription':
 		'Anda menjadi pemilik organisasi yang Anda buat, dan organisasi tersebut menjadi organisasi aktif Anda.',
 	'orgs.name': 'Nama',
+	'orgs.descriptionLabel': 'Deskripsi',
+	'orgs.descriptionPlaceholder':
+		'Apa yang dilakukan organisasi ini, siapa yang dilayani, hal lain yang perlu diketahui (opsional).',
 	'orgs.slug': 'Slug',
 	'orgs.create': 'Buat',
 	'orgs.creating': 'Membuat…',
@@ -174,6 +177,7 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgDetail.membersDescription': 'Orang-orang yang memiliki akses ke organisasi ini.',
 	'orgDetail.membersEmpty': 'Belum ada anggota.',
 	'orgDetail.name': 'Nama',
+	'orgDetail.description': 'Deskripsi',
 	'orgDetail.code': 'Kode',
 	'orgDetail.notFound': 'Organisasi tidak ditemukan (atau Anda tidak memiliki akses).',
 	'orgDetail.backToList': 'Kembali ke daftar organisasi',

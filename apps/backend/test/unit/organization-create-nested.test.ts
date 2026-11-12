@@ -175,6 +175,106 @@ describe('nested users on organization create (ERP-0041)', () => {
 		});
 		expect(parsed.success).toBe(false);
 	});
+
+	test('description is forwarded to the gateway and echoed in the response', async () => {
+		const createInputs: Array<{ description?: string }> = [];
+		const { service } = makeService({
+			repository: {
+				findById: async (id: string) => ({
+					id,
+					name: 'Org',
+					slug: 'org',
+					logo: null,
+					description: 'Access control for offices.',
+					deletedAt: null,
+				}),
+			} as unknown as IOrganizationRepository,
+			gateway: {
+				createOrganization: async (input: { description?: string }) => {
+					createInputs.push(input);
+					return { id: 'org-1' };
+				},
+			} as unknown as IOrganizationAuthGateway,
+		});
+		const result = await service.createOrganization(
+			new Headers(),
+			{ name: 'Org', slug: 'org', description: 'Access control for offices.' } as never,
+			ACTOR,
+		);
+		expect(createInputs[0]?.description).toBe('Access control for offices.');
+		expect(result.organization.description).toBe('Access control for offices.');
+	});
+
+	test('update forwards description and evicts the cached row', async () => {
+		const updates: Array<{ description?: string | null }> = [];
+		const invalidated: string[] = [];
+		let stored: { description: string | null } = { description: null };
+		const { service } = makeService({
+			repository: {
+				findById: async (id: string) => ({
+					id,
+					name: 'Org',
+					slug: 'org',
+					logo: null,
+					description: stored.description,
+					deletedAt: null,
+				}),
+				invalidateCache: async (id: string) => {
+					invalidated.push(id);
+				},
+			} as unknown as IOrganizationRepository,
+			gateway: {
+				// Stands in for Better Auth: it writes the row itself.
+				updateOrganization: async (
+					_headers: Headers,
+					input: { data: { description?: string | null } },
+				) => {
+					updates.push(input.data);
+					stored = { description: input.data.description ?? null };
+					return { id: 'org-1' };
+				},
+			} as unknown as IOrganizationAuthGateway,
+		});
+
+		const row = await service.updateOrganization(new Headers(), 'org-1', {
+			description: 'Access control for offices.',
+		} as never);
+
+		expect(updates[0]?.description).toBe('Access control for offices.');
+		// Without the eviction the cached pre-update row would be returned.
+		expect(invalidated).toEqual(['org-1']);
+		expect(row.description).toBe('Access control for offices.');
+	});
+
+	test('description is trimmed, blank becomes null, and 2000 chars is the cap', async () => {
+		const { createOrganizationSchema } = await import(
+			'../../src/app/organization/contracts/organization.contract'
+		);
+		const base = { name: 'Org', slug: 'org' };
+		const trimmed = createOrganizationSchema.parse({
+			...base,
+			description: '  hello  ',
+		});
+		expect(trimmed.description).toBe('hello');
+		// Whitespace-only is stored as null, never an empty string.
+		const blank = createOrganizationSchema.parse({
+			...base,
+			description: '   ',
+		});
+		expect(blank.description).toBeNull();
+		expect(
+			createOrganizationSchema.safeParse({
+				...base,
+				description: 'x'.repeat(2001),
+			}).success,
+		).toBe(false);
+		expect(
+			createOrganizationSchema.safeParse({
+				...base,
+				description: 'x'.repeat(2000),
+			}).success,
+		).toBe(true);
+	});
 });
 
 describe('WebP image validation (ERP-0041)', () => {

@@ -21,6 +21,7 @@ import {
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Textarea } from '@ims-erp/ui/components/textarea';
 import { OrganizationImageCard } from '@/components/organization/org-image-card';
 import {
 	organizationQueryOptions,
@@ -44,11 +45,15 @@ function EditOrganizationPage() {
 	});
 
 	const [name, setName] = useState(organization?.name ?? '');
+	const [description, setDescription] = useState(
+		organization?.description ?? '',
+	);
 	const [pending, setPending] = useState(false);
 	const [loadedName, setLoadedName] = useState<string | null>(null);
 
 	if (organization && loadedName === null) {
 		setName(organization.name);
+		setDescription(organization.description ?? '');
 		setLoadedName(organization.name);
 	}
 
@@ -56,7 +61,11 @@ function EditOrganizationPage() {
 		event.preventDefault();
 		setPending(true);
 		try {
-			await updateOrganization(organizationId, { name });
+			await updateOrganization(organizationId, {
+				name,
+				// An empty string clears the description server-side.
+				description: description.trim(),
+			});
 			toast.success(t('orgEdit.saved'));
 			await queryClient.invalidateQueries({
 				queryKey: organizationQueryOptions(organizationId).queryKey,
@@ -94,12 +103,26 @@ function EditOrganizationPage() {
 					<form onSubmit={handleSubmit}>
 						<FieldGroup>
 							<Field>
-								<FieldLabel htmlFor='name'>{t('orgEdit.name')}</FieldLabel>								<Input
+								<FieldLabel htmlFor='name'>{t('orgEdit.name')}</FieldLabel>
+								<Input
 									id='name'
 									value={name}
 									required
 									maxLength={200}
 									onChange={(event) => setName(event.target.value)}
+								/>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor='description'>
+									{t('orgs.descriptionLabel')}
+								</FieldLabel>
+								<Textarea
+									id='description'
+									value={description}
+									rows={4}
+									maxLength={2000}
+									placeholder={t('orgs.descriptionPlaceholder')}
+									onChange={(event) => setDescription(event.target.value)}
 								/>
 							</Field>
 							<div className='flex gap-2'>
