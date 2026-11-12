@@ -97,29 +97,36 @@ function OrganizationsPage() {
 
 	return (
 		<div className='flex flex-col gap-6'>
-			<div className='flex items-center justify-between'>
-				<div>
+			<div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
+				<div className='min-w-0'>
 					<h1 className='text-2xl font-bold'>{t('orgs.title')}</h1>
 					<p className='text-sm text-muted-foreground'>
 						{t('orgs.description')}
 					</p>
 				</div>
 				{!isPending && canCreate && (
-					<Button onClick={() => navigate({ to: '/organizations/new' })}>
+					<Button
+						className='shrink-0 self-start sm:self-auto'
+						onClick={() => navigate({ to: '/organizations/new' })}
+					>
 						{t('orgs.new')}
 					</Button>
 				)}
 			</div>
 
 			{isPending ? null : hasAny ? (
-				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+				/* Three columns max below 1536px: a 4-up grid at `lg` gave ~180px
+				   cards, too narrow for the 40px logo, the three stat columns and
+				   the badge+Restore footer. */
+				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4'>
 					{(data?.rows ?? []).map((org) => (
 						<Link
 							key={org.id}
 							to='/organizations/$organizationId'
 							params={{ organizationId: org.id }}
 							className='group'
-						>							<Card className='h-full transition-shadow group-hover:shadow-md'>
+						>
+							<Card className='h-full transition-shadow group-hover:shadow-md'>
 								<CardHeader className='flex items-center gap-3 space-y-0'>
 									<OrganizationLogo organization={org} />
 									<div className='flex min-w-0 flex-col gap-0.5'>

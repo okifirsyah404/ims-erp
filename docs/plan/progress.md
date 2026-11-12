@@ -30,6 +30,22 @@ GET returned a MinIO presigned URL, and the edit page rendered the image
 (72px preview, Replace/Delete buttons). `docs/plan/backlog.md` ERP-0041 →
 **verified**.
 
+## 2026-11-13 - `/organizations` list: breakpoint and header layout fix
+
+Cards were cramped: `lg:grid-cols-4` at a 1074px viewport gave **180px** cards
+(3-up is 246px), too narrow for the 40px logo, the three stat columns and the
+badge + `Restore` footer. The grid is now `1 / sm:2 / lg:3 / 2xl:4` — a fourth
+column only appears at 1536px where it actually fits.
+
+The page header stacked badly too: `flex items-center justify-between` with no
+`flex-wrap` squeezed the title/description against the `New organization`
+button on narrow widths. Now `flex-col gap-3` until `sm`, then
+`sm:flex-row sm:items-start sm:justify-between`, with `min-w-0` on the text block
+and `shrink-0` on the button.
+
+Verified live at 1074px: three columns of 246px, no footer or stat-row clipping
+on any card (`scrollWidth <= clientWidth`).
+
 ## 2026-11-13 - `/organizations` list: logos presigned server-side
 
 The list cards were broken because `GET /organizations` returned the stored

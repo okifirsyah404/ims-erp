@@ -57,8 +57,9 @@ Last synced: 2026-11-08.
   falls back to the generated key `logo-generated.webp` behind a conditional
   `logo IS NULL` write. The organization list presigns each card logo on the
   server (a raw object key rendered as a broken image) with an initials fallback
-  on load error. Evidence: progress 2026-11-12 and 2026-11-13.
-
+  on load error. The list grid is `1 / sm:2 / lg:3 / 2xl:4` (a 4-up grid at
+  `lg` produced 180px cards) and its header stacks below `sm`. Evidence:
+  progress 2026-11-12 and 2026-11-13.
 
 ## M02 CRM and Sales
 
