@@ -4,8 +4,9 @@ import { TPaginationResult } from '@ims-erp/common';
 import { presignObjectUrl } from '@providers/s3/s3';
 import { OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import type { IObjectStorage } from '@providers/s3/object-storage';
+import { fileBytes, toWebp, UnsupportedImageError } from '@utils/image.util';
 import { dispatchOrgLogoGeneration } from '../queues/org-logo.queue';
-import { isWebpBuffer, OrganizationImageInvalidError } from '../utils/organization-image';
+import { OrganizationImageInvalidError } from '../utils/organization-image';
 import { organizationImageObjectKey } from '../constants/image-keys';
 import { seedOrganizationRoles } from '../../../../database/seeders/seed/organization-roles.seeder';
 import type {
@@ -349,14 +350,16 @@ export class OrganizationService {
 
 	/**
 	 * Replaces (or, with `null`, removes) the organization profile image.
-	 * The client uploads WebP; the server validates magic bytes and size and
-	 * stores the object key in `auth.organizations.logo` — presigned on read,
-	 * never a stored URL (ERP-0041).
+	 * Any supported image format is accepted and normalised to WebP on the
+	 * server (downscaled to 512px), so a client without a WebP encoder — or an
+	 * iPhone HEIC photo — still works. The object key is stored in
+	 * `auth.organizations.logo` and presigned on read, never a stored URL
+	 * (ERP-0041).
 	 *
 	 * @param headers - Caller headers; Better Auth enforces `organization:update`
-	 * @param file - The validated WebP file, or `null` to clear the image
+	 * @param file - The uploaded image, or `null` to clear it
 	 *
-	 * @throws OrganizationImageInvalidError when the file is not a WebP
+	 * @throws OrganizationImageInvalidError when the bytes are not a decodable image
 	 */
 	async setImage(
 		headers: Headers,
@@ -364,14 +367,20 @@ export class OrganizationService {
 		file: File | null,
 	): Promise<{ id: string; imageKey: string | null }> {
 		await this.ensureActive(organizationId);
-		if (file && !(await isWebpBuffer(file))) {
-			throw new OrganizationImageInvalidError();
-		}
 		let imageKey: string | null = null;
 		if (file) {
+			let webp: Buffer;
+			try {
+				webp = await toWebp(await fileBytes(file));
+			} catch (error) {
+				if (error instanceof UnsupportedImageError) {
+					throw new OrganizationImageInvalidError();
+				}
+				throw error;
+			}
 			await this.storage.put(
 				organizationImageObjectKey(organizationId),
-				file,
+				webp,
 				'image/webp',
 			);
 			imageKey = organizationImageObjectKey(organizationId);

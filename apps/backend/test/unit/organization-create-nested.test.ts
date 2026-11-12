@@ -7,7 +7,6 @@ import type { IOrganizationAuthGateway } from '../../src/app/organization/contra
 import type { IOrganizationRepository } from '../../src/app/organization/contracts/organization.repository.interface';
 import { OrganizationService } from '../../src/app/organization/services/organization.service';
 import {
-	isWebpBuffer,
 	organizationImageFrom,
 	OrganizationImageInvalidError,
 } from '../../src/app/organization/utils/organization-image';
@@ -277,7 +276,7 @@ describe('nested users on organization create (ERP-0041)', () => {
 	});
 });
 
-describe('WebP image validation (ERP-0041)', () => {
+describe('organization image upload (ERP-0041)', () => {
 	function fileFrom(bytes: number[], size?: number): File {
 		const data = new Uint8Array(bytes);
 		const file = new File([data], 'logo.webp', { type: 'image/webp' });
@@ -292,21 +291,16 @@ describe('WebP image validation (ERP-0041)', () => {
 		0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
 	];
 
-	test('accepts a real WebP magic-byte header', async () => {
-		expect(await isWebpBuffer(fileFrom(WEBP))).toBe(true);
-	});
-
-	test('rejects a JPEG spoofed as image/webp', async () => {
-		const jpeg = [0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01];
-		expect(await isWebpBuffer(fileFrom(jpeg))).toBe(false);
-	});
-
-	test('organizationImageFrom accepts WebP; size and body are checked later (magic bytes at service)', async () => {
+	test('organizationImageFrom accepts any non-empty file; format is decided server-side', () => {
 		expect(organizationImageFrom({ file: fileFrom(WEBP) })).toBeInstanceOf(File);
+		// A JPEG is accepted here too: `toWebp` re-encodes it in the service.
+		expect(
+			organizationImageFrom({ file: fileFrom([0xff, 0xd8, 0xff, 0xe0]) }),
+		).toBeInstanceOf(File);
 		expect(() => organizationImageFrom({})).toThrow(OrganizationImageInvalidError);
 	});
 
-	test('rejects an empty and an over-cap file by size', async () => {
+	test('rejects an empty and an over-cap file by size', () => {
 		expect(() =>
 			organizationImageFrom({ file: fileFrom(WEBP, 0) }),
 		).toThrow(OrganizationImageInvalidError);
@@ -365,10 +359,15 @@ describe('org-logo worker (ERP-0041)', () => {
 				return true;
 			},
 		} as unknown as IOrganizationRepository;
-		// Stub the DiceBear fetch so no network call is made.
+		// Stub the DiceBear fetch with a real 1x1 WebP so the worker's
+		// re-encode step has something decodable (no network call).
+		const generated = Buffer.from(
+			'UklGRjwAAABXRUJQVlA4IDAAAADQAQCdASoBAAEAAUAmJaACdLoB+AADsAD+8ut//NgVzXPv9//S4P0uD9Lg/9KQAAA=',
+			'base64',
+		);
 		const originalFetch = globalThis.fetch;
 		globalThis.fetch = (async () =>
-			new Response(new Uint8Array([0x52, 0x49, 0x46, 0x46]), { status: 200 })) as unknown as typeof fetch;
+			new Response(generated, { status: 200 })) as unknown as typeof fetch;
 		const s3 = await import('@providers/s3/s3');
 		const originalWrite = s3.s3Client.write.bind(s3.s3Client);
 		(s3.s3Client as unknown as { write: (key: string) => Promise<void> }).write = async (key: string) => {

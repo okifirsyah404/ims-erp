@@ -139,13 +139,14 @@ export async function createOrganization(input: {
 	return envelope.data;
 }
 
-/** Uploads the org profile image (client-encoded WebP). */
+/** Uploads the org profile image; the server normalises it to WebP. */
 export async function uploadOrganizationImage(
 	organizationId: string,
 	file: Blob,
 ) {
 	const body = new FormData();
-	body.append('file', file, 'logo.webp');
+	// The server decides the format from the bytes; the name is only a hint.
+	body.append('file', file, `logo.${file.type === 'image/png' ? 'png' : 'webp'}`);
 	await request(`/organizations/${organizationId}/image-profile`, {
 		method: 'POST',
 		body,
@@ -163,47 +164,6 @@ export async function getOrganizationImage(organizationId: string) {
 		`/organizations/${organizationId}/image-profile`,
 	);
 	return envelope.data?.url ?? null;
-}
-
-/** Encodes an image file to WebP via canvas (ERP-0041: client-side encode). */
-/**
- * Encodes a picked image to WebP, downscaling it so the longest side is at
- * most `maxSize` (default 512px).
- *
- * @remarks
- * The backend caps the upload at 2MB and validates magic bytes only, so the
- * client must keep the payload small: a 4000px photo re-encoded at quality 0.9
- * blows past the cap, while a 512px logo is visually identical at 32-128px.
- * `createImageBitmap` rejects formats the browser cannot decode (e.g. HEIC).
- */
-export async function encodeWebp(
-	file: File,
-	{ maxSize = 512 }: { maxSize?: number } = {},
-): Promise<Blob> {
-	const bitmap = await createImageBitmap(file);
-	const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
-	const width = Math.max(1, Math.round(bitmap.width * scale));
-	const height = Math.max(1, Math.round(bitmap.height * scale));
-	const canvas = document.createElement('canvas');
-	canvas.width = width;
-	canvas.height = height;
-	const context = canvas.getContext('2d');
-	if (!context) {
-		bitmap.close();
-		throw new Error('Canvas unavailable');
-	}
-	context.drawImage(bitmap, 0, 0, width, height);
-	bitmap.close();
-	return new Promise<Blob>((resolve, reject) => {
-		canvas.toBlob(
-			(blob) =>
-				blob && blob.type === 'image/webp'
-					? resolve(blob)
-					: reject(new Error('WebP encoding failed')),
-			'image/webp',
-			0.9,
-		);
-	});
 }
 
 export async function updateOrganization(

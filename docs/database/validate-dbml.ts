@@ -41,7 +41,10 @@ let dups = 0;
 // are adopted, and no new ref may target it.
 // "item_categories": inventory.item_categories supersedes the unbuilt
 // catalog.item_categories (ADR-0011), the same way inventory.items does.
-const DUP_ALLOWED = new Set(["payments", "items", "item_categories"]);
+// "bank_accounts": company.bank_accounts (letterhead invoice accounts) and
+// hr.bank_accounts (employee payroll accounts) are unrelated tables that
+// happen to share a name; both are real and fully qualified at every ref.
+const DUP_ALLOWED = new Set(["payments", "items", "item_categories", "bank_accounts"]);
 for (const t of tables) {
   if (nameMap.has(t.name) && nameMap.get(t.name) !== t.schema && !DUP_ALLOWED.has(t.name)) {
     console.error(`DUPLICATE table name: ${t.schema}.${t.name} also in ${nameMap.get(t.name)}`); dups++;

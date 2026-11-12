@@ -6,6 +6,7 @@ import { container } from 'tsyringe';
 import { queueConnection } from '@providers/queue/queue.connection';
 import type { QueueWorker } from '@providers/queue/worker-registry';
 import { s3Client } from '@providers/s3/s3';
+import { toWebp } from '@utils/image.util';
 import { organizationGeneratedImageObjectKey } from '../constants/image-keys';
 import { ORGANIZATION_REPOSITORY_TOKEN } from '../constants/di';
 import type { IOrganizationRepository } from '../contracts/organization.repository.interface';
@@ -74,7 +75,10 @@ export async function processOrgLogoJob(
 	const existing = await repository.findById(organizationId);
 	if (!existing || existing.deletedAt || existing.logo) return;
 
-	const buffer = await generateOrgLogoWebp(slug);
+	const raw = await generateOrgLogoWebp(slug);
+	// The upstream API is asked for WebP, but it is a third party: re-encode
+	// so the stored object is always WebP at the expected size.
+	const buffer = await toWebp(raw, { maxSize: LOGO_SIZE });
 	const key = organizationGeneratedImageObjectKey(organizationId);
 
 	await mkdir(TMP_DIR, { recursive: true });

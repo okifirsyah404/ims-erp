@@ -154,12 +154,13 @@ const admin_: Record<keyof typeof admin, string> = {
 	// Gambar profil organisasi (ERP-0041).
 	'orgImage.title': 'Gambar profil',
 	'orgImage.description':
-		'Diunggah sebagai WebP; gambar inisial DiceBear dibuat otomatis bila belum ada.',
+		'PNG, JPG, WebP, atau HEIC — otomatis dikonversi ke WebP. Gambar inisial DiceBear dibuat bila belum ada.',
 	'orgImage.dropHint': 'Tarik gambar ke sini, atau klik untuk memilih',
 	'orgImage.replaceHint': 'Tarik gambar baru untuk mengganti, atau klik untuk memilih',
 	'orgImage.invalidType': 'Hanya berkas gambar yang didukung',
 	'orgImage.tooLarge': 'Gambar lebih besar dari 20 MB',
-	'orgImage.decodeFailed': 'Gambar tidak dapat dibaca',
+	'orgImage.decodeFailed':
+		'Berkas ini tidak dapat dibaca sebagai gambar. Coba berkas lain.',
 	'orgImage.uploading': 'Mengunggah…',
 	'orgImage.uploaded': 'Gambar profil diperbarui',
 	'orgImage.cleared': 'Gambar profil dihapus',

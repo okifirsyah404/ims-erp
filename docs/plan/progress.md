@@ -17,7 +17,10 @@ edit page renders the WebP from MinIO, and the `/organizations` list renders
 every card logo from a presigned URL; create page has the image picker only
 (nested users removed 2026-11-12); detail page no longer hosts the card.
 Object key is `organizations/<organizationId>/logo.webp` (plural, matching
-`users/<id>/avatar.webp`).
+`users/<id>/avatar.webp`). The server, not the user, owns image format: every
+stored image (org logo, generated DiceBear logo/avatar, user avatar, document
+images) is WebP produced by `toWebp` from PNG/JPG/WebP/GIF/BMP/TIFF/HEIC/AVIF
+input (2026-11-13, below).
 
 Image card placement fix (same day, user feedback): the profile-image card
 moved from the org **detail** page to the **edit** page, and the create page
@@ -29,6 +32,70 @@ seed admin, POSTed a canvas-encoded WebP to
 GET returned a MinIO presigned URL, and the edit page rendered the image
 (72px preview, Replace/Delete buttons). `docs/plan/backlog.md` ERP-0041 →
 **verified**.
+
+## 2026-11-13 - Images: the server normalises every upload and generated image
+
+User request: stop asking people to convert images to WebP by hand — the web
+admin converts on upload when it can, the backend converts always.
+
+- **New `apps/backend/src/utils/image.util.ts`** (zero new dependencies):
+  `sniffImageType` (magic bytes → png/jpeg/webp/gif/bmp/tiff/heic/avif),
+  `toWebp(bytes, { maxSize, quality })` and `fileBytes`. `toWebp` decodes with
+  Bun's built-in `Bun.Image` (verified on Bun 1.4.4: decodes JPEG/PNG/WebP/GIF/
+  BMP/TIFF/HEIC/AVIF and emits `RIFF…WEBP`), downscales the longest side and
+  re-encodes — which also strips EXIF/GPS and any appended payload. Undecodable
+  bytes throw `UnsupportedImageError`.
+- **The server is the format authority now:** `OrganizationService.setImage`,
+  `UserService.setSelfAvatar` (`users/<id>/avatar-custom.webp`, 144px),
+  `storeDocumentImage` (`<prefix>/<uuid>.webp`) and both DiceBear workers
+  (`org-logo` 256px, `avatar` 72px) pass bytes through `toWebp`. Deleted:
+  `isWebpBuffer`, the org `isSupportedImage` helper and the hand-rolled
+  `AVATAR_TYPE_TO_EXT`/`AVATAR_MAGIC_BYTES`/`sniffAvatarType` table. The 2 MB
+  upload cap is unchanged. `IObjectStorage.put` accepts `Blob | Uint8Array` so
+  normalised bytes are written without a `Blob` copy. Old rows keep working:
+  the DB stores object keys, so `avatar-custom.png` / `<uuid>.png` stay valid.
+- **Web admin:** `encodeWebp` (organization-api) and `compressAvatar`
+  (user-api) collapsed into one `encodeImage` in `lib/image-file.ts` —
+  downscales to 512px, returns WebP when the browser can encode it and PNG
+  otherwise, and decodes through `<img>` when `createImageBitmap` rejects the
+  format. Call sites: org create, org edit, org image card, profile avatar,
+  document images. `uploadOrganizationImage` names the part from the blob type.
+  Profile/document pickers accept the formats the backend decodes.
+- **Locales (`en` + `id`):** `common.imageInvalid`, `user.avatarUnsupportedType`,
+  `profile.avatarInvalidType`, `profile.avatarHint`, `common.image.hint`,
+  `common.image.tooLarge`, `orgImage.description`, `orgImage.decodeFailed`.
+- **Bug found by the live check:** `POST /users/me/avatar` returned
+  `500 Body already used` — the handler called `request.formData()` after
+  Elysia had already parsed the multipart body. It now reads the parsed `body`
+  (`avatarFileFrom`), like every other upload route.
+
+Verification:
+
+- `bun test` backend **849 pass / 0 fail** (new `test/unit/image.util.test.ts`,
+  9 tests: sniffing incl. ISO-BMFF brands, PNG/JPEG→WebP, WebP re-encode,
+  size ceiling, garbage bytes; `organization-create-nested.test.ts` and
+  `company-profile.service.test.ts` updated for WebP keys and decode-time
+  format rejection), web-admin **66 pass** (new
+  `test/unit/encode-image.test.ts`: WebP path, PNG fallback, `<img>` decode
+  fallback, nothing-encodable), `packages/locales` **82 pass**.
+- `bunx tsc -b --noEmit` clean in `apps/backend`, `apps/web-admin`,
+  `packages/locales`; `bun run lint` shows only the pre-existing warnings.
+- Live (dev servers, seed admin, `bun run --watch` picked the change up):
+  PNG 900×600 → org `image-profile` 200, stored key
+  `organizations/<id>/logo.webp`, fetched bytes `RIFF/WEBP`, 512×341;
+  JPEG 800×800 → `/users/me/avatar` 200 → `users/<id>/avatar-custom.webp`,
+  144×144; PNG 640×400 → `PUT /company-profile/logo` 200 →
+  `company/logo/<uuid>.webp`, 512×320; the same PNGs dropped into the edit
+  page and the profile page preview from the presigned URL. Rejections:
+  PDF bytes to the org image → 422 `common.imageInvalid`; garbage bytes to the
+  avatar → 415; 2 MB + 10 bytes → 413.
+- `docs/database/` reviewed: one note changed (no table/column/index/constraint)
+  — `company_profile.logo_object_key` now documents the WebP normalisation.
+  `bun docs/database/gen-logical-references.ts` regenerated 533 refs;
+  `bun docs/database/validate-dbml.ts` → `OK: 0 cross-module refs, 0 timestamp
+  gaps`. That validator had been failing on `main` with a `hr.bank_accounts`
+  vs `company.bank_accounts` bare-name duplicate; both tables are real and
+  always schema-qualified, so `bank_accounts` joined `DUP_ALLOWED` with a note.
 
 ## 2026-11-13 - Organization description field (create / detail / edit)
 

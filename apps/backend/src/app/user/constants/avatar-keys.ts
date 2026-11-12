@@ -13,7 +13,14 @@ export function avatarObjectKey(userId: string): string {
 	return `users/${userId}/avatar.webp`;
 }
 
-/** S3 key of a user-uploaded avatar (extension from the sniffed type). */
-export function avatarCustomObjectKey(userId: string, ext: string): string {
-	return `users/${userId}/avatar-custom.${ext}`;
+/**
+ * S3 key of a user-uploaded avatar.
+ *
+ * @remarks
+ * Always `.webp`: the service re-encodes every upload, so the extension is
+ * fixed. Keys written by earlier versions (`avatar-custom.png|jpg`) stay valid
+ * — the database stores the key, not the format.
+ */
+export function avatarCustomObjectKey(userId: string): string {
+	return `users/${userId}/avatar-custom.webp`;
 }

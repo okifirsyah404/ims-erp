@@ -150,12 +150,13 @@ const admin = {
 	// Organization profile image (ERP-0041).
 	'orgImage.title': 'Profile image',
 	'orgImage.description':
-		'Uploaded as WebP; a DiceBear initials image is generated automatically when none is set.',
+		'PNG, JPG, WebP or HEIC — converted to WebP automatically. A DiceBear initials image is generated when none is set.',
 	'orgImage.dropHint': 'Drop an image here, or click to choose',
 	'orgImage.replaceHint': 'Drop a new image to replace, or click to choose',
 	'orgImage.invalidType': 'Only image files are supported',
 	'orgImage.tooLarge': 'The image is larger than 20 MB',
-	'orgImage.decodeFailed': 'The image could not be read',
+	'orgImage.decodeFailed':
+		'This file could not be read as an image. Try another file.',
 	'orgImage.uploading': 'Uploading…',
 	'orgImage.uploaded': 'Profile image updated',
 	'orgImage.cleared': 'Profile image removed',

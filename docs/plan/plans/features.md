@@ -61,8 +61,15 @@ Last synced: 2026-11-08.
   `lg` produced 180px cards) and its header stacks below `sm`. The optional
   organization `description` (new nullable `text` column, 2000-char zod cap)
   is created/edited in a textarea and shown on the info dashboard, which also
-  exposed and fixed a stale-`findById` cache bug on PATCH. Evidence:
-  progress 2026-11-12 and 2026-11-13.
+  exposed and fixed a stale-`findById` cache bug on PATCH. **Server-side image
+  normalisation** (same slice, 2026-11-13): the user never converts to WebP by
+  hand — `apps/backend/src/utils/image.util.ts` (`Bun.Image`, no new dependency)
+  sniffs PNG/JPG/WebP/GIF/BMP/TIFF/HEIC/AVIF and re-encodes every stored image
+  (org logo, DiceBear-generated org logo and avatar, user avatar, document
+  images) to WebP, downscaled to 512px (avatar 144px). The web admin keeps a
+  canvas fast path (`encodeImage`, WebP with a PNG fallback) and can no longer
+  fail with "WebP encoding failed"; the 2 MB upload cap is unchanged because the
+  client downscales first. Evidence: progress 2026-11-12 and 2026-11-13.
 
 ## M02 CRM and Sales
 

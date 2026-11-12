@@ -19,9 +19,9 @@ import {
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { ImageDropzone } from '@/components/organization/image-dropzone';
+import { encodeImage } from '@/lib/image-file';
 import {
 	createOrganization,
-	encodeWebp,
 	organizationsQueryOptions,
 	uploadOrganizationImage,
 } from '@/lib/organization-api';
@@ -85,8 +85,8 @@ function NewOrganizationPage() {
 			if (imageFile) {
 				setUploading(true);
 				try {
-					const webp = await encodeWebp(imageFile);
-					await uploadOrganizationImage(created.organization.id, webp);
+					const { blob } = await encodeImage(imageFile);
+					await uploadOrganizationImage(created.organization.id, blob);
 				} catch (error) {
 					toast.error(
 						error instanceof Error

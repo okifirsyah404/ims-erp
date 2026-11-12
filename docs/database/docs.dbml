@@ -797,7 +797,7 @@ Table company.profiles {
   email varchar(200)
   phone varchar(100)
   website varchar(200)
-  logo_object_key text [note: "Object-storage key of the letterhead logo (PNG, JPG or WebP)."]
+  logo_object_key text [note: "Object-storage key of the letterhead logo. Stored as WebP: the server re-encodes any accepted upload (PNG/JPG/WebP/GIF/BMP/TIFF/HEIC/AVIF, ≤ 2 MB) to WebP."]
   signature_object_key text [note: "Object-storage key of the signature and stamp image printed above the signatory name."]
   address_line text [note: "Free-text address as printed on the letterhead."]
   address_village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
