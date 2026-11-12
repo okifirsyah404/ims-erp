@@ -1,4 +1,18 @@
 import { describe, expect, mock, test } from 'bun:test';
+
+// organizationNameFor() dynamically imports the Better Auth instance, whose
+// $context needs Postgres. Mock it so unit tests never touch a database.
+mock.module('@providers/better-auth/auth', () => ({
+	auth: {
+		// ponytail: minimal stub — tests only exercise the failure path
+		// (catch -> null), never a successful adapter read.
+		// Accessing $context throws synchronously; the service's catch turns
+		// it into a null org name (the only path unit tests exercise).
+		get $context() {
+			throw new Error('no db in unit tests');
+		},
+	},
+}));
 import type { TUserInvitationSelect } from '../../drizzle/schemas/role.schema';
 import type { TUserSelect } from '../../drizzle/schemas/auth.schema';
 import type { IInvitationRepository } from '../../src/app/user/contracts/invitation.repository.interface';

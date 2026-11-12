@@ -125,7 +125,8 @@ export class OrganizationService {
 
 		// Fire-and-forget DiceBear fallback logo: skipped by the worker when
 		// the client already uploaded a real logo, or the org got deleted.
-		await dispatchOrgLogoGeneration({ id: row.id, slug: row.slug }).catch(
+		// Must not block the create response either (CI has no Redis).
+		void dispatchOrgLogoGeneration({ id: row.id, slug: row.slug }).catch(
 			(error) =>
 				console.error('[organization] logo dispatch failed', row.id, error),
 		);
