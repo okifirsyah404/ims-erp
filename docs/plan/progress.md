@@ -55,7 +55,8 @@ key 503; FAQ by marketing 201, by customer service 403. Invoice issue and
 receipt events are covered by the unit tests above (an invoice flow on the
 dev stack needs the chart of accounts set up).
 
-Next executable task: review of PR #83 (M08) and the M04 PR (programmer A);
+Next executable task: review of PR #83 (M08) and PR #84 (M04; #65 closed as
+superseded) by programmer A;
 both edit `app.ts`, `index.ts`, permissions and locales, so the second to
 merge needs a small rebase.
 
