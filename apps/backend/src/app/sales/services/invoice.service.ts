@@ -7,6 +7,8 @@ import type {
 	TInvoiceSelect,
 } from '@drizzle/schemas/sales.schema';
 import type { TPaginationResult } from '@ims-erp/common';
+import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
+import type { OutboxService } from '@app/automation/services/outbox.service';
 import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
 import type { NumberingService } from '@app/organization/services/numbering.service';
 import {
@@ -35,6 +37,7 @@ import {
 	ReceiptNotFoundError,
 } from '../errors/invoice.errors';
 import { businessDateOf } from '@utils/business-date.util';
+import { invoiceIssuedEvent, receiptRecordedEvent } from '../utils/invoice-events';
 import type {
 	TCreateReceiptInput,
 	TReceiptListQuery,
@@ -70,6 +73,8 @@ export class InvoiceService {
 		private readonly arResolver: ArAccountResolverService,
 		@inject(NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: NumberingService,
+		@inject(OUTBOX_SERVICE_TOKEN)
+		private readonly outbox: Pick<OutboxService, 'publish'>,
 	) {}
 
 	async list(
@@ -182,7 +187,17 @@ export class InvoiceService {
 	 * status stamp, the journal (DR AR / CR revenue / CR tax payable) and the
 	 * `ar_open_items` row. Idempotent through the JE idempotency key.
 	 */
+	/**
+	 * Issues the invoice, then publishes `invoice.issued` to n8n (M04) once the
+	 * transaction has committed.
+	 */
 	async issue(ctx: TInvoiceActionContext, id: string): Promise<TInvoiceSelect> {
+		const issued = await this.issueInTransaction(ctx, id);
+		await this.outbox.publish('invoice.issued', { type: 'invoice', id: issued.id }, invoiceIssuedEvent(issued));
+		return issued;
+	}
+
+	private async issueInTransaction(ctx: TInvoiceActionContext, id: string): Promise<TInvoiceSelect> {
 		return this.database.transaction(async (tx) => {
 			const invoice = await this.mustFind(ctx.organizationId, id, tx);
 			if (invoice.status !== 'draft') throw new InvoiceNotDraftError();
@@ -393,6 +408,9 @@ export class InvoiceService {
 			receivedBy: ctx.actorUserId,
 		});
 		if (!receipt) throw new ReceiptExceedsOutstandingError();
+		// n8n event (M04), with the invoice as it stands after the payment.
+		const paid = (await this.repo.findById(ctx.organizationId, invoiceId)) ?? invoice;
+		await this.outbox.publish('receipt.recorded', { type: 'receipt', id: receipt.id }, receiptRecordedEvent(receipt, paid));
 		return receipt;
 	}
 

@@ -27,11 +27,16 @@ export class OutboxService {
 		@inject(OUTBOX_DISPATCHER_TOKEN) private readonly dispatcher: IOutboxDispatcher,
 	) {}
 
-	/** Records an event and queues its delivery. Never throws into the caller's flow. */
+	/**
+	 * Records an event and queues its delivery. Never throws into the caller's
+	 * flow. With `dedupeKey`, an event already recorded under that key is not
+	 * recorded again (returns `null`).
+	 */
 	async publish(
 		topic: OutboxTopic,
 		aggregate: { type: string; id: string },
 		data: Record<string, unknown>,
+		options: { dedupeKey?: string } = {},
 	): Promise<TOutboxSelect | null> {
 		try {
 			const message = await this.repository.create({
@@ -40,7 +45,9 @@ export class OutboxService {
 				aggregateId: aggregate.id,
 				payload: data,
 				status: 'pending',
+				dedupeKey: options.dedupeKey ?? null,
 			});
+			if (!message) return null;
 			await this.dispatcher.enqueue(message.id).catch((error: unknown) => {
 				pinoLogger.warn({ err: error, outboxId: message.id }, 'outbox enqueue failed; the event waits for a manual send');
 			});

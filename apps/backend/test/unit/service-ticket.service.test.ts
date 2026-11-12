@@ -24,9 +24,11 @@ const tech: TTicketContext = { organizationId: 'org', actorUserId: 'tech', canMa
 
 let tickets: TServiceTicketSelect[];
 let service: ServiceTicketService;
+let published: Record<string, unknown>[];
 
 beforeEach(() => {
 	tickets = [];
+	published = [];
 	const roles: Record<string, string> = { cs: 'customer_service', tech: 'technician', sales: 'sales' };
 	service = new ServiceTicketService(
 		{
@@ -60,6 +62,12 @@ beforeEach(() => {
 		{ hasPermission: async (_org, names) => names.includes('customer_service') || names.includes('technician') },
 		{ getUser: async (id: string) => ({ id, name: `User ${id}` }) as never },
 		{ next: async () => '0001/TKT/IMS/XI/26' },
+		{
+			publish: async (_topic, _aggregate, data) => {
+				published.push(data);
+				return null;
+			},
+		},
 	);
 });
 
@@ -101,6 +109,10 @@ describe('service tickets', () => {
 		await service.resolve(tech, ticket.id, { resolution: 'Ganti sensor + kabel', serviceCost: 20_000_000 });
 		const closed = await service.close(cs, ticket.id, { confirmedByName: 'Pak Aris', confirmationChannel: 'phone' });
 		expect(closed).toMatchObject({ status: 'closed', confirmedByName: 'Pak Aris', closedBy: 'cs' });
+		// One service_ticket.updated event to n8n per successful change (M04).
+		expect(published.map((event) => event.change)).toEqual(['created', 'assigned', 'started', 'resolved', 'reopened', 'resolved', 'closed']);
+		expect(published[1]).toMatchObject({ code: '0001/TKT/IMS/XI/26', status: 'new', assignee: { userId: 'tech', name: 'User tech' }, customer: { id: CUSTOMER } });
+		expect(published[published.length - 1]).toMatchObject({ status: 'closed', resolution: 'Ganti sensor + kabel', serviceCost: 20_000_000 });
 	});
 
 	test('a technician only sees tickets assigned to them; a manager works any ticket', async () => {

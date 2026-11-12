@@ -310,6 +310,8 @@ function makeHarness() {
 		},
 	} as unknown as TInvoiceRepository;
 
+	// n8n events (M04): recorded so the flows can assert on them.
+	const events: { topic: string; data: Record<string, unknown> }[] = [];
 	const invoiceService = new InvoiceService(
 		dbLike,
 		invoiceRepo,
@@ -317,10 +319,17 @@ function makeHarness() {
 		posting,
 		arResolver,
 		numbering,
+		{
+			publish: async (topic, _aggregate, data) => {
+				events.push({ topic, data });
+				return null;
+			},
+		},
 	);
 
 	return {
 		posting,
+		events,
 		invoiceService,
 		paymentService,
 		cashBank,
@@ -390,6 +399,9 @@ describe('InvoiceService (F4)', () => {
 		expect(h.arItems).toHaveLength(1);
 		expect(h.arItems[0].outstandingAmount).toBe(1_000_000);
 		expect(h.arItems[0].status).toBe('open');
+		// One invoice.issued event to n8n after the commit (M04).
+		expect(h.events.map((event) => event.topic)).toEqual(['invoice.issued']);
+		expect(h.events[0]!.data).toMatchObject({ invoiceId: issued.id, grandTotal: 1_000_000 });
 	});
 
 	test('issue with tax posts three lines including CR tax payable', async () => {

@@ -7,7 +7,7 @@ import { registerProcurement } from '@app/procurement';
 import { registerProjects } from '@app/projects';
 import { registerAftersales } from '@app/aftersales';
 import { registerHr } from '@app/hr';
-import { registerLicensing } from '@app/licensing';
+import { registerLicenseDueSchedule, registerLicensing, startLicenseDueWorker } from '@app/licensing';
 import { registerCatalog } from '@app/catalog';
 import { registerAutomation, startOutboxWorker } from '@app/automation';
 import { registerAssets } from '@app/assets';
@@ -128,10 +128,23 @@ const bootstrap = new Elysia()
 // Mail worker is nullable: `null` when no transport is configured
 // (tests/scripts without SMTP), so booting with no mail server still works.
 const mailWorker = startMailWorker();
+// `startLicenseDueWorker` is `null` unless `scheduler.enabled` (M04 reminders).
+const licenseDueWorker = startLicenseDueWorker();
 startWorkers(
-	[startAvatarWorker(), startOutboxWorker(), ...(mailWorker ? [mailWorker] : [])],
+	[
+		startAvatarWorker(),
+		startOutboxWorker(),
+		...(mailWorker ? [mailWorker] : []),
+		...(licenseDueWorker ? [licenseDueWorker] : []),
+	],
 	(error) => pinoLogger.error({ err: error }, 'background worker error'),
 );
+if (licenseDueWorker) {
+	await registerLicenseDueSchedule().then(
+		() => pinoLogger.info('license.due reminder schedule registered'),
+		(error: unknown) => pinoLogger.error({ err: error }, 'license.due schedule not registered'),
+	);
+}
 if (mailWorker) {
 	pinoLogger.info('mail worker started (SMTP transport)');
 }

@@ -1,3 +1,5 @@
+import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
+import type { OutboxService } from '@app/automation/services/outbox.service';
 import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
 import type { CustomerService } from '@app/crm/services/customer.service';
 import { INVOICE_LOOKUP_SERVICE_TOKEN } from '@app/sales/constants/di';
@@ -39,6 +41,7 @@ import {
 import {
 	addDays,
 	contractTiming,
+	dueNoticeThreshold,
 	GRACE_DAYS,
 	generateLicenseKey,
 	maskLicenseKey,
@@ -93,6 +96,7 @@ export class LicensingService {
 		@inject(LICENSE_API_REPOSITORY_TOKEN)
 		private readonly api: Pick<ILicenseApiRepository, 'insertEvent' | 'listActivations' | 'paginateEvents'>,
 		@inject(INVOICE_LOOKUP_SERVICE_TOKEN) private readonly invoices: Pick<InvoiceLookupService, 'paidTotal'>,
+		@inject(OUTBOX_SERVICE_TOKEN) private readonly outbox: Pick<OutboxService, 'publish'>,
 	) {}
 
 	// Applications -----------------------------------------------------------
@@ -323,6 +327,60 @@ export class LicensingService {
 			}
 		}
 		return activated;
+	}
+
+	/**
+	 * Daily `license.due` reminders to n8n (M04 stage 2): active contracts
+	 * ending within 30 days, within 7 days, or ended and still in grace.
+	 * Each (contract, end date, threshold) is published once — the outbox
+	 * skips a repeated dedupe key — so the job is safe to run any number of
+	 * times. Paid renewals are activated first, so a renewed license is not
+	 * reminded.
+	 */
+	async publishDueNotices(today = businessDateOf()): Promise<{ processed: number; skipped: number }> {
+		await this.activatePaidRenewals();
+		let processed = 0;
+		let skipped = 0;
+		for (let page = 1; ; page += 1) {
+			const result = await this.repository.paginateContracts({ page, limit: 100, dueBefore: addDays(today, DUE_WITHIN_DAYS) });
+			for (const row of result.data) {
+				const contract = this.timed(row, today);
+				const threshold = dueNoticeThreshold(contract.daysLeft);
+				if (threshold === null || contract.status !== 'active' || !contract.endDate) {
+					skipped += 1;
+					continue;
+				}
+				const customer = await this.customers.getActiveCustomer(contract.customerId);
+				const message = await this.outbox.publish(
+					'license.due',
+					{ type: 'license_contract', id: contract.id },
+					{
+						contractId: contract.id,
+						code: contract.code,
+						threshold,
+						stage: threshold === 0 ? 'ended' : 'ending',
+						daysLeft: contract.daysLeft,
+						endDate: contract.endDate,
+						graceEndsOn: contract.graceEndsOn,
+						application: { code: contract.applicationCode, name: contract.applicationName },
+						packageName: contract.packageName,
+						salesOrderId: contract.salesOrderId,
+						customer: {
+							id: contract.customerId,
+							name: contract.customerName,
+							email: customer?.email ?? null,
+							phone: customer?.phone ?? null,
+							whatsapp: customer?.whatsapp ?? null,
+						},
+					},
+					{ dedupeKey: `license.due:${contract.id}:${contract.endDate}:${threshold}` },
+				);
+				if (message) processed += 1;
+				else skipped += 1;
+			}
+			if (page >= result.meta.totalPages) break;
+		}
+		return { processed, skipped };
 	}
 
 	async suspend(ctx: TLicenseContext, id: string, reason: string | null): Promise<TContractView> {

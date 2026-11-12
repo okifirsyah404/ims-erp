@@ -113,11 +113,16 @@ Last synced: 2026-11-08.
   `outbox.service.test.ts`, e2e with a fake receiver (signature, retry,
   manual send). Not yet accepted by the owner.
 
+- Stage 2 notifications as n8n events (invoice issued, payment received,
+  ticket updated, license ending — daily, once per threshold) — T28,
+  ERP-0021. Evidence: `progress.md` 2026-11-07 (M04 4c), event contract in
+  `docs/architecture/modules/notification.md`. Not yet accepted by the owner.
+
 ### planned
 - Requirements form → lead (done in M02 `/public/v1`); WA button is website-side — T15.
   Evidence: none.
 - AI FAQ + n8n integration — T27, ERP-0021. Evidence: none.
-- Notifications, human handoff, WhatsApp logs — T28, ERP-0021. Evidence: none.
+- Human handoff, WhatsApp logs — T28, ERP-0021 (M04 4d). Evidence: none.
 
 ## M05 Inventory and Purchasing
 
