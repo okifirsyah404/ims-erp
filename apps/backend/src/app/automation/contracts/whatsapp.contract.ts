@@ -100,7 +100,15 @@ export interface IWhatsappRepository {
 	findConversation(id: string): Promise<TConversationSelect | null>;
 	paginateConversations(query: TConversationListQuery): Promise<TPaginationResult<TConversationRow>>;
 	countByStatus(): Promise<Record<string, number>>;
-	updateConversation(id: string, data: Partial<TConversationInsert>): Promise<TConversationSelect | null>;
+	/**
+	 * Updates a live conversation. With `from`, only when its status is one of
+	 * them (a conditional update; `null` = another actor moved it first).
+	 */
+	updateConversation(
+		id: string,
+		data: Partial<TConversationInsert>,
+		from?: TConversationSelect['status'][],
+	): Promise<TConversationSelect | null>;
 	/** `null` when an inbound message with the same external id was already stored. */
 	insertMessage(data: Omit<TWhatsappMessageInsert, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>): Promise<TWhatsappMessageSelect | null>;
 	findMessage(id: string): Promise<TWhatsappMessageSelect | null>;

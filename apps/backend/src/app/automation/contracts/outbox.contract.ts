@@ -61,7 +61,7 @@ export interface IOutboxRepository {
 	create(data: Omit<TOutboxInsert, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>): Promise<TOutboxSelect | null>;
 	findById(id: string): Promise<TOutboxSelect | null>;
 	paginate(query: TOutboxListQuery): Promise<TPaginationResult<TOutboxSelect>>;
-	/** Counts the attempt and stores its outcome. */
+	/** Counts the attempt and stores its outcome; `null` when the event is already published (conditional update). */
 	recordAttempt(
 		id: string,
 		outcome: { status: TOutboxSelect['status']; responseStatus: number | null; errorMessage: string | null },

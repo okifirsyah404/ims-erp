@@ -157,6 +157,7 @@ const DYNAMIC_PREFIXES = [
 	'catalog.listing.',
 	'automation.whatsappNotFound.',
 	'automation.whatsappWebhook.',
+	'automation.whatsappState.',
 	// Borrowing workflow (ERP-0036): status, purpose, condition, and event
 	// type all arrive as server values, so the label key has to be composed.
 	'assets:borrowingStatus.',

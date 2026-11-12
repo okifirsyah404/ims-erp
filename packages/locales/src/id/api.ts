@@ -410,6 +410,8 @@ const api: Record<keyof typeof en, string> = {
 	'automation.whatsappNotFound.faq': 'Entri FAQ tidak ditemukan',
 	'automation.whatsappWebhook.notConfigured': 'Kunci webhook WhatsApp belum diatur di server',
 	'automation.whatsappWebhook.badSignature': 'Tanda tangan webhook tidak valid',
+	'automation.whatsappState.resume': 'Asisten sudah menjawab chat ini',
+	'automation.whatsappState.close': 'Chat sudah ditutup',
 	'automation.whatsappRetry': 'Hanya pesan keluar yang gagal yang bisa dikirim ulang',
 	'catalog.notFound.listing': 'Listing tidak ditemukan',
 	'catalog.notFound.product': 'Produk tidak ditemukan',

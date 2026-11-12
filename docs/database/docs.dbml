@@ -7359,7 +7359,7 @@ Table automation.whatsapp_messages {
   body text [not null]
   status text [not null]
   faq_entry_id uuid [note: "The FAQ entry the assistant's answer was based on, if any."]
-  sent_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  sent_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   error_message varchar(500) [note: "Last send failure, without secrets."]
   attempts smallint [not null, default: 0]
   created_at bigint [not null]

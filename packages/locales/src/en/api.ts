@@ -407,6 +407,8 @@ const api = {
 	'automation.whatsappNotFound.faq': 'FAQ entry not found',
 	'automation.whatsappWebhook.notConfigured': 'The WhatsApp webhook key is not configured on the server',
 	'automation.whatsappWebhook.badSignature': 'Invalid webhook signature',
+	'automation.whatsappState.resume': 'The assistant already answers this chat',
+	'automation.whatsappState.close': 'The chat is already closed',
 	'automation.whatsappRetry': 'Only a failed outgoing message can be sent again',
 	'catalog.notFound.listing': 'Listing not found',
 	'catalog.notFound.product': 'Product not found',

@@ -42,7 +42,7 @@ CREATE TABLE "automation"."whatsapp_messages" (
 	"body" text NOT NULL,
 	"status" text NOT NULL,
 	"faq_entry_id" uuid,
-	"sent_by_user_id" text,
+	"sent_by" text,
 	"error_message" varchar(500),
 	"attempts" smallint DEFAULT 0 NOT NULL,
 	"created_at" bigint NOT NULL,

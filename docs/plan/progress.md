@@ -12,6 +12,56 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-12 - M04 compliance pass against AGENTS.md (ERP-0039, ERP-0021)
+
+Owner asked to check M04 (PR #84) against `AGENTS.md` and `README.md` and fix
+the gaps. What was missing before and what was done:
+
+- **Skills read before the fixes:** `elysia-module`,
+  `elysia-layered-architecture`, `elysia-tsyringe`, `tsyringe`. Module entry
+  factories, cross-module access (type + token only; publishers inject
+  `OUTBOX_SERVICE_TOKEN`, the assistant `CATALOG_SERVICE_TOKEN`), one path-
+  param name per position, worker handles in `startWorkers`, and
+  `container.resolve` only in `plugin()` / worker start: conform. No
+  service-level DI cycle (assistant → catalog → licensing → outbox).
+- **Gate 1 completed:** `docs.dbml`, `module-ownership.md`,
+  `integrity-and-consistency.md`, `data-dictionary.md` and
+  `logical-references.md` (regenerated) read for the M04 tables;
+  `implementation-phases.md` skipped (no dependency on an unlanded step).
+  Findings fixed:
+  - integrity 7.1 (state transitions are conditional updates): WhatsApp
+    handoff / resume / close now update only from the expected statuses
+    (`updateConversation(..., from)`); a second handoff sends no second reply
+    or event; resume / close of a chat already in that state → 409
+    `automation.whatsappState.*` (en/id). The outbox `recordAttempt` no
+    longer overwrites a `published` event.
+  - data-dictionary 1.10 (actor columns): `whatsapp_messages.sent_by_user_id`
+    renamed `sent_by` (`docs.dbml` first, Drizzle, the unmerged migration
+    `20261113090300_m04_whatsapp_assistant`, code, tests).
+  - data-dictionary 1.12 says structured payloads are JSON `text`; M04 keeps
+    `jsonb` for `outbox_messages.payload` like 14 existing `docs.dbml` columns
+    (CRM submissions, sales snapshots). Recorded, not changed.
+  - `whatsapp_conversations.chat_id` is a full (not partial) unique index:
+    a soft-deleted chat is revived by the upsert, never duplicated.
+- **Phase 6 (ERP-0021) check:** FAQ/catalog-only answers, human handoff,
+  untrusted-message tests, sandbox/mock gating, webhook authenticity,
+  idempotency, retries: met. **Lead capture from WhatsApp chats is not
+  built** → ERP-0021 marked partial in `backlog.md`. Exit criterion "outbox
+  decision recorded": ADR-0015 (proposed) written and indexed in
+  `docs/architecture/README.md`.
+- **Phase 3 output:** `data-model.md` now lists the `catalog` and
+  `automation` schemas.
+
+Commands and results: `bun docs/database/gen-logical-references.ts` → 538
+refs; `bun docs/database/validate-dbml.ts` → OK; `bunx tsc --noEmit` clean;
+`bun run lint` → 0 errors (warnings unchanged from main: backend 6,
+web-admin 11, ui 19; none in M04 files); `NODE_ENV=test bun test`
+(apps/backend) → 841 pass (new: conditional handoff/resume/close, outbox
+race); web `bun run build` OK; locales 86 pass. Disposable `ims_erp_m04`
+rebuilt with `bun run database/migrate-reset.ts` → migrations and seed
+complete; `drizzle-kit push --explain` → no catalog/automation difference.
+`graphify update .` not run: graphify is not installed on this machine.
+
 ## 2026-11-12 - M04 carried onto main (ERP-0039, ERP-0021)
 
 Status: **implemented** on branch `feat/m04-on-main` (from `origin/main`

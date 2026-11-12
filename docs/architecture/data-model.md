@@ -24,6 +24,17 @@ Schema, keys, constraints, and conventions. Current declarations:
     structured Indonesian address references, tax identity.
   - `investors` — same shape plus `ownership_share` (placeholder); exact
     portion/reserve config is business data governed by owner approval.
+- **`catalog`** — website catalog (M04): `web_listings` — which inventory
+  item the public website shows (slug, price mode, out-of-stock mode).
+  `item_id` is a nullable logical reference to `inventory.items` (ADR-0014);
+  name, price, photo and stock always come from the item. Company-wide.
+- **`automation`** — M04 (ADR-0015): `outbox_messages` (ERP events to n8n:
+  status `pending|published|failed`, attempts, unique `dedupe_key` for
+  once-per-fact events), `faq_entries`, `whatsapp_conversations`
+  (`assistant|handoff|closed`, one per WhatsApp chat id) and
+  `whatsapp_messages` (inbound/outbound log, unique `(direction,
+  external_id)` for webhook dedupe). Company-wide; the workflow tables of
+  `docs.dbml` stay target-only.
 - **`inventory`** — inventory module (ADR-0008, ADR-0009):
   - `items` — SKU-level master. `item_kind` (`product|component|material|tool|service`,
     CHECK-guarded text, not an enum), `is_serialized`, `is_stock_tracked`,

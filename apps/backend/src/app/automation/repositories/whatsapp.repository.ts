@@ -1,6 +1,6 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
 import { whatsappConversations, whatsappMessages } from '@drizzle/schemas/automation.schema';
-import { and, count, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import type { IWhatsappRepository, TConversationListQuery } from '../contracts/whatsapp.contract';
@@ -74,11 +74,21 @@ export class WhatsappRepository implements IWhatsappRepository {
 		return Object.fromEntries(rows.map((row) => [row.status, row.value]));
 	}
 
-	async updateConversation(id: string, data: Parameters<IWhatsappRepository['updateConversation']>[1]) {
+	async updateConversation(
+		id: string,
+		data: Parameters<IWhatsappRepository['updateConversation']>[1],
+		from?: Parameters<IWhatsappRepository['updateConversation']>[2],
+	) {
 		const [row] = await this.database
 			.update(whatsappConversations)
 			.set({ ...data, updatedAt: new Date() })
-			.where(and(eq(whatsappConversations.id, id), isNull(whatsappConversations.deletedAt)))
+			.where(
+				and(
+					eq(whatsappConversations.id, id),
+					isNull(whatsappConversations.deletedAt),
+					from ? inArray(whatsappConversations.status, from) : undefined,
+				),
+			)
 			.returning();
 		return row ?? null;
 	}

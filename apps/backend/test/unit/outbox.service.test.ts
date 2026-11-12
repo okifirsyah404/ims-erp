@@ -30,6 +30,8 @@ function service(configured = true) {
 			paginate: async () => ({ meta: { page: 1, limit: 20, total: rows.length, totalPages: 1 }, data: rows }),
 			recordAttempt: async (id, outcome) => {
 				const row = rows.find((item) => item.id === id)!;
+				// Conditional, like the repository: a published event is never overwritten.
+				if (row.status === 'published') return null;
 				return Object.assign(row, outcome, { attempts: row.attempts + 1 });
 			},
 			countByStatus: async () => ({}),
@@ -98,6 +100,26 @@ describe('outbox', () => {
 		next = { kind: 'notConfigured' };
 		expect(await service(false).deliver(other.id)).toMatchObject({ retryable: false, message: { status: 'pending', errorMessage: 'The n8n webhook is not configured' } });
 	});
+});
+
+test('an attempt finishing after another one published the event keeps it published', async () => {
+	const message = (await service().publish('lead.created', { type: 'lead', id: 'L1' }, {}))!;
+	const fakes = service() as unknown as { repository: unknown; dispatcher: unknown };
+	// A webhook call that fails while a concurrent attempt publishes the event.
+	const racing = new OutboxService(
+		fakes.repository as never,
+		{
+			configured: true,
+			deliver: async () => {
+				Object.assign(rows[0]!, { status: 'published', responseStatus: 200 });
+				return { kind: 'unreachable', error: 'late failure' };
+			},
+		},
+		fakes.dispatcher as never,
+	);
+	const outcome = await racing.deliver(message.id);
+	expect(outcome.message).toMatchObject({ status: 'published', responseStatus: 200 });
+	expect(rows[0]!.errorMessage ?? null).toBeNull();
 });
 
 describe('n8n webhook adapter', () => {

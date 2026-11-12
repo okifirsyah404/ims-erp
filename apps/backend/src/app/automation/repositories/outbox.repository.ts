@@ -1,6 +1,6 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
 import { outboxMessages } from '@drizzle/schemas/automation.schema';
-import { and, count, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, count, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import type { IOutboxRepository, TOutboxListQuery } from '../contracts/outbox.contract';
@@ -59,7 +59,7 @@ export class OutboxRepository implements IOutboxRepository {
 				publishedAt: outcome.status === 'published' ? now : undefined,
 				updatedAt: now,
 			})
-			.where(and(eq(outboxMessages.id, id), isNull(outboxMessages.deletedAt)))
+			.where(and(eq(outboxMessages.id, id), isNull(outboxMessages.deletedAt), ne(outboxMessages.status, 'published')))
 			.returning();
 		return row ?? null;
 	}

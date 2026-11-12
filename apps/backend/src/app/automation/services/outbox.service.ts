@@ -76,7 +76,8 @@ export class OutboxService {
 				: result.kind === 'notConfigured'
 					? { status: 'pending' as const, responseStatus: null, errorMessage: 'The n8n webhook is not configured' }
 					: { status: 'failed' as const, responseStatus: result.kind === 'rejected' ? result.status : null, errorMessage: result.error };
-		const updated = (await this.repository.recordAttempt(id, outcome)) ?? message;
+		// Another attempt may have published it meanwhile: keep that row.
+		const updated = (await this.repository.recordAttempt(id, outcome)) ?? (await this.repository.findById(id)) ?? message;
 		// Client errors (4xx except 408/429) will not heal by retrying.
 		const retryable =
 			result.kind === 'unreachable' ||

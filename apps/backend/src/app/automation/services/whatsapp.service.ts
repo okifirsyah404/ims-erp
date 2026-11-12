@@ -19,7 +19,7 @@ import type {
 	TConversationRow,
 	TWhatsappSettings,
 } from '../contracts/whatsapp.contract';
-import { WhatsappNotFoundError, WhatsappRetryError, WhatsappWebhookError } from '../errors/automation.errors';
+import { WhatsappNotFoundError, WhatsappRetryError, WhatsappStateError, WhatsappWebhookError } from '../errors/automation.errors';
 import { parseWahaWebhook, SYSTEM_REPLIES, verifyWahaSignature } from '../utils/assistant';
 import type { OutboxService } from './outbox.service';
 
@@ -95,7 +95,7 @@ export class WhatsappService {
 		conversation: TConversationSelect,
 		text: string,
 		author: Exclude<MessageAuthor, 'customer'>,
-		extra: { faqEntryId?: string | null; sentByUserId?: string | null } = {},
+		extra: { faqEntryId?: string | null; sentBy?: string | null } = {},
 	): Promise<TWhatsappMessageSelect> {
 		const message = await this.repository.insertMessage({
 			conversationId: conversation.id,
@@ -104,7 +104,7 @@ export class WhatsappService {
 			body: text,
 			status: 'pending',
 			faqEntryId: extra.faqEntryId ?? null,
-			sentByUserId: extra.sentByUserId ?? null,
+			sentBy: extra.sentBy ?? null,
 		});
 		await this.repository.updateConversation(conversation.id, { lastMessageAt: new Date() });
 		return this.deliver(message!);
@@ -130,9 +130,13 @@ export class WhatsappService {
 	 */
 	async handoff(conversation: TConversationSelect, reason: HandoffReason, question: string): Promise<void> {
 		if (conversation.status === 'handoff') return;
-		const updated =
-			(await this.repository.updateConversation(conversation.id, { status: 'handoff', handoffReason: reason, handoffAt: new Date() })) ??
-			conversation;
+		// Conditional: only the first actor hands the chat off (one reply, one event).
+		const updated = await this.repository.updateConversation(
+			conversation.id,
+			{ status: 'handoff', handoffReason: reason, handoffAt: new Date() },
+			['assistant', 'closed'],
+		);
+		if (!updated) return;
 		await this.send(updated, reason === 'restricted' ? SYSTEM_REPLIES.restricted : SYSTEM_REPLIES.handoff, 'system');
 		await this.outbox.publish(
 			'whatsapp.handoff',
@@ -178,19 +182,27 @@ export class WhatsappService {
 				assignedUserId: actorUserId,
 				handoffAt: conversation.status === 'handoff' ? conversation.handoffAt : new Date(),
 			})) ?? conversation;
-		return this.send(taken, text, 'admin', { sentByUserId: actorUserId });
+		return this.send(taken, text, 'admin', { sentBy: actorUserId });
 	}
 
 	/** Lets the assistant answer this chat again. */
 	async resume(id: string): Promise<TConversationSelect> {
 		await this.require(id);
-		return (await this.repository.updateConversation(id, { status: 'assistant', handoffReason: null, handoffAt: null, assignedUserId: null }))!;
+		const resumed = await this.repository.updateConversation(
+			id,
+			{ status: 'assistant', handoffReason: null, handoffAt: null, assignedUserId: null },
+			['handoff', 'closed'],
+		);
+		if (!resumed) throw new WhatsappStateError('resume');
+		return resumed;
 	}
 
 	/** Done; the customer's next message reopens it with the assistant. */
 	async close(id: string): Promise<TConversationSelect> {
 		await this.require(id);
-		return (await this.repository.updateConversation(id, { status: 'closed', assignedUserId: null }))!;
+		const closed = await this.repository.updateConversation(id, { status: 'closed', assignedUserId: null }, ['assistant', 'handoff']);
+		if (!closed) throw new WhatsappStateError('close');
+		return closed;
 	}
 
 	/** Sends a failed outbound message again. */

@@ -44,3 +44,4 @@ design interview; see **Feature module lifecycle** in `../AGENTS.md`.
 | [ADR-0010](decisions/ADR-0010-department-orgs-warehouse-links.md) | Department Organizations and Warehouse Links | proposed |
 | [ADR-0012](decisions/ADR-0012-multi-organization.md) | Multiple Organizations, Company-Wide Master Data | accepted (2026-11-08) |
 | [ADR-0014](decisions/ADR-0014-nullable-cross-module-references.md) | Nullable Cross-Module References | accepted (2026-11-08) |
+| [ADR-0015](decisions/ADR-0015-outbox-events-and-whatsapp.md) | ERP Events Through an Outbox to n8n; WhatsApp Through WAHA | proposed (2026-11-12) |

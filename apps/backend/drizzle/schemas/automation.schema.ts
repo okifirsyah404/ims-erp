@@ -146,7 +146,7 @@ export const whatsappMessages = automationSchema.table(
 		status: text('status').$type<MessageStatus>().notNull(),
 		faqEntryId: uuid('faq_entry_id').references(() => faqEntries.id, { onDelete: 'set null' }),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		sentByUserId: text('sent_by_user_id'),
+		sentBy: text('sent_by'),
 		errorMessage: varchar('error_message', { length: 500 }),
 		attempts: smallint('attempts').notNull().default(0),
 		...timestamps,

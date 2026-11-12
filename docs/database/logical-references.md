@@ -305,7 +305,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `automation.job_executions`  ->  `triggered_by_user_id`
 - `automation.notifications`  ->  `recipient_user_id`
 - `automation.whatsapp_conversations`  ->  `assigned_user_id`
-- `automation.whatsapp_messages`  ->  `sent_by_user_id`
+- `automation.whatsapp_messages`  ->  `sent_by`
 - `automation.workflow_runs`  ->  `initiated_by_user_id`
 - `automation.workflows`  ->  `created_by_user_id`
 - `budgeting.budget_revisions`  ->  `approved_by_user_id`

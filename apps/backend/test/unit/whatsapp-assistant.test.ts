@@ -11,7 +11,7 @@ import type { TConversationSelect, TFaqEntrySelect, TWhatsappMessageSelect } fro
 import { readAnswer, systemPrompt, UNSURE_TOKEN } from '../../src/app/automation/adapters/openai-compatible';
 import { WahaClient } from '../../src/app/automation/adapters/waha';
 import type { IAssistantModel, IWhatsappRepository, TAssistantAnswer, TAssistantContext } from '../../src/app/automation/contracts/whatsapp.contract';
-import { WhatsappRetryError, WhatsappWebhookError } from '../../src/app/automation/errors/automation.errors';
+import { WhatsappRetryError, WhatsappStateError, WhatsappWebhookError } from '../../src/app/automation/errors/automation.errors';
 import { AssistantService } from '../../src/app/automation/services/assistant.service';
 import { WhatsappService } from '../../src/app/automation/services/whatsapp.service';
 import { isRestricted, parseWahaWebhook, rankFaqs, SYSTEM_REPLIES, verifyWahaSignature, wantsHuman } from '../../src/app/automation/utils/assistant';
@@ -51,13 +51,14 @@ const repository: IWhatsappRepository = {
 	},
 	paginateConversations: async () => ({ meta: { page: 1, limit: 20, total: conversations.length, totalPages: 1 }, data: conversations.map((row) => ({ ...row, lastMessage: null })) }),
 	countByStatus: async () => ({}),
-	async updateConversation(id, data) {
+	async updateConversation(id, data, from) {
 		const row = conversations.find((item) => item.id === id);
-		return row ? { ...Object.assign(row, data) } : null;
+		if (!row || (from && !from.includes(row.status))) return null;
+		return { ...Object.assign(row, data) };
 	},
 	async insertMessage(data) {
 		if (data.externalId && messages.some((item) => item.direction === data.direction && item.externalId === data.externalId)) return null;
-		const row = { id: crypto.randomUUID(), externalId: null, faqEntryId: null, sentByUserId: null, errorMessage: null, attempts: 0, ...data, createdAt: new Date(), updatedAt: new Date(), deletedAt: null } as TWhatsappMessageSelect;
+		const row = { id: crypto.randomUUID(), externalId: null, faqEntryId: null, sentBy: null, errorMessage: null, attempts: 0, ...data, createdAt: new Date(), updatedAt: new Date(), deletedAt: null } as TWhatsappMessageSelect;
 		messages.push(row);
 		return { ...row };
 	},
@@ -279,11 +280,23 @@ describe('admin inbox', () => {
 		const id = conversations[0].id;
 		await whatsapp.reply('admin-1', id, 'Halo Pak Budi, saya Rina dari Entragate.');
 		expect(conversations[0]).toMatchObject({ status: 'handoff', assignedUserId: 'admin-1' });
-		expect(messages[messages.length - 1]).toMatchObject({ author: 'admin', sentByUserId: 'admin-1', status: 'sent' });
+		expect(messages[messages.length - 1]).toMatchObject({ author: 'admin', sentBy: 'admin-1', status: 'sent' });
 		expect(await chat('m-2', 'Baik terima kasih')).toBe('skipped');
 		expect((await whatsapp.resume(id)).status).toBe('assistant');
+		await expect(whatsapp.resume(id)).rejects.toBeInstanceOf(WhatsappStateError);
 		expect((await whatsapp.close(id)).status).toBe('closed');
+		await expect(whatsapp.close(id)).rejects.toBeInstanceOf(WhatsappStateError);
 		expect(await chat('m-3', 'Berapa lama garansi swing gate?')).toBe('answered');
+	});
+
+	test('a handoff is conditional: a chat another actor already took over gets no second reply or event', async () => {
+		modelConfigured = false;
+		await chat('m-1', 'x'.repeat(3));
+		const { whatsapp } = services();
+		const stale = { ...conversations[0]!, status: 'assistant' as const };
+		await whatsapp.handoff(stale, 'not_found', 'again');
+		expect(sent).toHaveLength(1);
+		expect(events).toHaveLength(1);
 	});
 
 	test('a failed send is logged and can be sent again; nothing else can', async () => {

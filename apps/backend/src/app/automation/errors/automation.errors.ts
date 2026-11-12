@@ -27,3 +27,11 @@ export class WhatsappRetryError extends AppError {
 		super(409, 'automation.whatsappRetry', 'Only a failed outbound message can be sent again');
 	}
 }
+
+/** The chat is not in a state the action applies to (already assistant / already closed). */
+export class WhatsappStateError extends AppError {
+	constructor(action: 'resume' | 'close') {
+		const messages = { resume: 'The assistant already answers this chat', close: 'The chat is already closed' };
+		super(409, `automation.whatsappState.${action}` as const, messages[action]);
+	}
+}
