@@ -22,6 +22,7 @@
 		"@tanstack/react-router-devtools": "^1.167.3",
 		"better-auth": "^1.7.18",
 		"i18next-browser-languagedetector": "^8.3.0",
+		"libphonenumber-js": "^1.13.16",
 		"lucide-react": "^1.70.0",
 		"react": "^19.3.1",
 		"react-dom": "^19.3.1",
