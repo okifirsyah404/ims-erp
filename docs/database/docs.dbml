@@ -3429,7 +3429,7 @@ Table hr.leave_requests {
   days integer [not null, note: "Working days in the range (Sundays excluded), counted by the service."]
   reason text
   status text [not null, default: 'submitted']
-  recorded_by text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. HR records the request for the employee."]
+  recorded_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. HR records the request for the employee; nullable per ADR-0014, always set by the service."]
   decided_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Never the recorder."]
   decided_at bigint
   decision_note text
@@ -3455,7 +3455,7 @@ Table hr.overtime_requests {
   hours numeric(5,2) [not null]
   reason text
   status text [not null, default: 'submitted']
-  recorded_by text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  recorded_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Nullable per ADR-0014, always set by the service."]
   decided_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Never the recorder."]
   decided_at bigint
   decision_note text

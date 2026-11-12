@@ -12,6 +12,17 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-12 - ERP-0040 fix: recorded_by nullable (ADR-0014)
+
+`hr.leave_requests.recorded_by` and `hr.overtime_requests.recorded_by`
+reference `auth.users`, so per ADR-0014 they are nullable (the services
+always set them). Changed in `docs.dbml` (gen-logical-references → 535
+refs, validate-dbml OK), the Drizzle schema and the unmerged hand-written
+migration `20261112100000_m08_hr_records` (not applied to any shared
+database). Disposable `ims_erp_m08` rebuilt with `migrate-reset`: migrations
+and seed complete; `drizzle-kit push --explain` shows no `hr` difference.
+`bunx tsc --noEmit` clean; `hr-records.service.test.ts` 16 pass.
+
 ## 2026-11-12 - ERP-0040: M08 stage 1 rebuilt on ERP-0034 employees
 
 Status: **implemented** on branch `feat/m08-hr-on-main` (from `origin/main`
