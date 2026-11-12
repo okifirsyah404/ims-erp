@@ -589,16 +589,16 @@ export class InvitationService {
 		currentImage: string | null,
 	): Promise<void> {
 		if (currentImage) return;
-		try {
-			await dispatchAvatarGeneration({ id: userId, name });
-		} catch (error) {
+		// Fire-and-forget: a queue outage (or CI without Redis) must never
+		// stall the invite; the next resend tops the avatar up.
+		void dispatchAvatarGeneration({ id: userId, name }).catch((error) => {
 			// Mirror the hook's resilience: a queue outage never fails the
 			// invite. The next resend tops the avatar up.
 			pinoLogger.warn(
 				{ err: error, userId },
 				'[invitation] avatar dispatch failed',
 			);
-		}
+		});
 	}
 
 	/**
