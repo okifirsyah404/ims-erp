@@ -359,6 +359,10 @@ Last synced: 2026-11-08.
 - ERP-0037 Nullable cross-module references (ADR-0014 schema flip).
 
 ### in-progress
+- ERP-0042 Dependabot bun config moved to the workspace root (`directory: "/"`)
+  so the single root `bun.lock` is updated with the manifests. Evidence:
+  `.github/dependabot.yml`, `progress.md` 2026-11-13. Not verified until a
+  dependabot PR lands with `bun.lock` in its diff and green CI.
 - ERP-0037 Port M02/M05/M07 onto main (ADR-0011): steps 1-2 implemented
   2026-11-05 (numbering, company profile, role grants; item categories,
   fixed units, brand/specification/active on items) and 3a (customers +

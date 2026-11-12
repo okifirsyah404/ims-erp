@@ -12,6 +12,45 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-13 - ERP-0042: dependabot bun config moved to the workspace root
+
+Status: in-progress - config changed, waiting on the next dependabot run.
+
+- **Symptom.** Every open dependabot PR failed CI at
+  `bun install --frozen-lockfile`:
+  `error: lockfile had changes, but lockfile is frozen` /
+  `note: try re-running without --frozen-lockfile and commit the updated lockfile`.
+  Evidence: `gh run view 43198878926 --log-failed` (PR #85, `Lint Backend` and
+  `Unit Test Backend`) and the same step in `Lint Web Admin` / `Unit Test Web
+  Admin` for PR #79 (run 43198821060); PR #70, #50, #36, #35 identical.
+- **Cause.** `.github/dependabot.yml` declared four `package-ecosystem: bun`
+  entries under `/apps/backend`, `/apps/web-admin`, `/packages/common`,
+  `/packages/ui`. The only `bun.lock` lives at the repo root, outside every
+  declared `directory`, so dependabot bumped `package.json` alone
+  (`gh pr diff <n> --name-only` returned just that one file) and left the
+  lockfile stale. `git log -- bun.lock` confirms no dependabot commit ever
+  touched it.
+- **Fix.** The four bun entries are replaced by one:
+  `package-ecosystem: bun`, `directory: "/"`, `open-pull-requests-limit: 10`,
+  `ignore: typescript`, group `workspace-minor-patch` (minor+patch).
+  dependabot-core's bun fetcher reads `package.json["workspaces"]` and the
+  updater rewrites the lockfile at the configured directory, so root is the
+  only entry that can produce a consistent PR. `github-actions` and both
+  `docker` entries are unchanged.
+- **Docs.** `docs/database/` reviewed and unchanged (no schema, column,
+  constraint, status vocabulary or lifecycle change).
+- **Not verified yet.** No dependabot run has happened since the config
+  change. Verification = a new dependabot PR whose diff contains `bun.lock`
+  and whose `Lint Backend`, `Unit Test Backend`, `Lint Web Admin` and
+  `Unit Test Web Admin` jobs pass.
+- **Known limits.** Dependabot bun supports version updates only - security
+  updates and `bun.lock`-based transitive alerts are unsupported by GitHub.
+  Root `packageManager: bun@1.4.2` still differs from CI `bun-version: 1.4.4`;
+  left alone here.
+- **ID note.** ERP-0039/0040/0041 are claimed on `fix/org-hardening`, so this
+  task took the next free ID (ERP-0042) even though this branch is cut from
+  `main`.
+
 ## 2026-11-10 - ERP-0034: minimal HR employees + warehouse PIC (slices 1-8)
 
 Status: implemented and browser-verified (create → list → detail; seeder;
@@ -4830,6 +4869,11 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
   in-progress until ERP-0010..0013 are decided in `backlog.md`; Stage 2 is open.
 
 ## Next executable task
+
+**Verify ERP-0042:** the next dependabot run after this config reaches `main`
+must open a PR whose diff contains `bun.lock` with all four lint/test jobs
+green; if it does not, fall back to a lockfile-refresh workflow (see the
+2026-11-13 entry).
 
 **Docs merge: bring `merge/main-sync` docs into `fix/docs-consistency`**
 (see the entry above). Then decide the 7 deferred tables.
