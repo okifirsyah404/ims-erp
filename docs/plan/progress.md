@@ -104,8 +104,10 @@ Findings on main (pre-existing, not changed here):
 The developer database `ims_erp_sync` holds the old M08 branch schema; this
 branch runs on a fresh database (`migrate-reset`).
 
-Next executable task: open a PR `feat/m08-hr-on-main` → `main` and close
-PR #64 (owner's call), then rebuild M04 (PR #65) on main the same way.
+PR #83 (`feat/m08-hr-on-main` → `main`) opened 2026-11-12; PR #64 closed as
+superseded. Next executable task: review of #83 (programmer A), then
+rebuild M04 (PR #65) on main the same way (invoice/receipt events now on the
+sales module).
 
 ## 2026-11-10 - ERP-0034: minimal HR employees + warehouse PIC (slices 1-8)
 
