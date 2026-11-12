@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { toast } from '@/components/toast';
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@ims-erp/ui/components/button';
 import {
@@ -18,6 +18,7 @@ import {
 } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { erpRoleLabel, erpRoleNames } from '@ims-erp/common';
+import { ImageDropzone } from '@/components/organization/image-dropzone';
 import {
 	createOrganization,
 	encodeWebp,
@@ -114,7 +115,15 @@ function NewOrganizationPage() {
 	// Optional profile image (ERP-0041): uploaded right after the org is
 	// created, since the image endpoints are organization-id-scoped.
 	const [imageFile, setImageFile] = useState<File | null>(null);
-	const imageInput = useRef<HTMLInputElement>(null);
+	// Object URL preview for the picked image; revoked when it is replaced.
+	const imagePreviewUrl = useMemo(
+		() => (imageFile ? URL.createObjectURL(imageFile) : null),
+		[imageFile],
+	);
+	useEffect(() => {
+		if (!imagePreviewUrl) return;
+		return () => URL.revokeObjectURL(imagePreviewUrl);
+	}, [imagePreviewUrl]);
 
 	function addUser() {
 		setUsers((current) => [...current, { email: '', name: '', roles: ['member'] }]);
@@ -269,37 +278,31 @@ function NewOrganizationPage() {
 							/>
 						))}
 					</div>
-					<div className='flex gap-2'>
-						<input
-							ref={imageInput}
-							type='file'
-							accept='image/*'
-							hidden
-							onChange={(event) => {
-								setImageFile(event.target.files?.[0] ?? null);
-								event.target.value = '';
-							}}
+					<div className='flex items-center gap-4'>
+						<ImageDropzone
+							variant='compact'
+							previewUrl={imagePreviewUrl}
+							label={t('orgImage.title')}
+							hint={t('orgImage.dropHint')}
+							onSelect={setImageFile}
+							onReject={() => toast.error(t('orgImage.invalidType'))}
 						/>
-						<Button
-							type='button'
-							variant='outline'
-							size='sm'
-							onClick={() => imageInput.current?.click()}
-						>
-							{imageFile
-								? imageFile.name
-								: t('orgImage.upload')}
-						</Button>
-						{imageFile && (
-							<Button
-								type='button'
-								variant='ghost'
-								size='sm'
-								onClick={() => setImageFile(null)}
-							>
-								{t('orgImage.removeSelection')}
-							</Button>
-						)}
+						<div className='flex flex-col gap-1'>
+							<p className='text-xs text-muted-foreground'>
+								{imageFile ? imageFile.name : t('orgImage.dropHint')}
+							</p>
+							{imageFile && (
+								<Button
+									type='button'
+									variant='ghost'
+									size='sm'
+									className='self-start'
+									onClick={() => setImageFile(null)}
+								>
+									{t('orgImage.removeSelection')}
+								</Button>
+							)}
+						</div>
 					</div>
 					<div className='flex gap-2'>
 						<Button type='submit' disabled={pending || !name || !slug || duplicateEmails}>

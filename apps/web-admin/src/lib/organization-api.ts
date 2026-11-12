@@ -42,10 +42,16 @@ async function request<T>(
 	path: string,
 	init?: RequestInit,
 ): Promise<TApiResponse<T>> {
+	// FormData must carry the browser-generated multipart boundary: setting any
+	// Content-Type here breaks the body parse (400 from the server).
+	const isFormData =
+		typeof FormData !== 'undefined' && init?.body instanceof FormData;
 	const response = await fetch(`${API_URL}${path}`, {
 		credentials: 'include',
 		headers:
-			init?.body != null ? { 'Content-Type': 'application/json' } : undefined,
+			init?.body != null && !isFormData
+				? { 'Content-Type': 'application/json' }
+				: undefined,
 		...init,
 	});
 	// Parse defensively: error responses (auth redirect, empty body, HTML)

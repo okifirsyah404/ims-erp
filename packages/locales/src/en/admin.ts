@@ -154,8 +154,9 @@ const admin = {
 	'orgImage.title': 'Profile image',
 	'orgImage.description':
 		'Uploaded as WebP; a DiceBear initials image is generated automatically when none is set.',
-	'orgImage.upload': 'Upload image',
-	'orgImage.replace': 'Replace image',
+	'orgImage.dropHint': 'Drop an image here, or click to choose',
+	'orgImage.replaceHint': 'Drop a new image to replace, or click to choose',
+	'orgImage.invalidType': 'Only image files are supported',
 	'orgImage.uploading': 'Uploading…',
 	'orgImage.uploaded': 'Profile image updated',
 	'orgImage.cleared': 'Profile image removed',

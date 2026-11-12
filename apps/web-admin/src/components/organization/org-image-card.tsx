@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/components/toast';
 import { Button } from '@ims-erp/ui/components/button';
@@ -17,6 +17,7 @@ import {
 	organizationQueryOptions,
 	uploadOrganizationImage,
 } from '@/lib/organization-api';
+import { ImageDropzone } from './image-dropzone';
 
 /**
  * Organization profile image card (ERP-0041): upload (client encodes WebP),
@@ -32,7 +33,6 @@ export function OrganizationImageCard({
 }) {
 	const { t } = useTranslation(['admin', 'common']);
 	const queryClient = useQueryClient();
-	const fileInput = useRef<HTMLInputElement>(null);
 	const [uploading, setUploading] = useState(false);
 
 	const { data: imageUrl } = useQuery({
@@ -48,10 +48,7 @@ export function OrganizationImageCard({
 		});
 	};
 
-	async function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
-		const file = event.target.files?.[0];
-		event.target.value = '';
-		if (!file) return;
+	async function handleFile(file: File) {
 		setUploading(true);
 		try {
 			const webp = await encodeWebp(file);
@@ -86,44 +83,29 @@ export function OrganizationImageCard({
 				<CardDescription>{t('orgImage.description')}</CardDescription>
 			</CardHeader>
 			<CardContent className='flex items-center gap-4'>
-				{imageUrl ? (
-					<img
-						src={imageUrl}
-						alt={t('orgImage.title')}
-						className='h-16 w-16 rounded-md object-cover border'
-					/>
-				) : (
-					<div className='h-16 w-16 rounded-md border border-dashed grid place-items-center text-xs text-muted-foreground'>
-						—
-					</div>
-				)}
+				<ImageDropzone
+					previewUrl={imageUrl ?? null}
+					disabled={!canUpdate || uploading}
+					label={t('orgImage.title')}
+					hint={t('orgImage.dropHint')}
+					onSelect={(file) => void handleFile(file)}
+					onReject={() => toast.error(t('orgImage.invalidType'))}
+				/>
 				{canUpdate && (
-					<div className='flex flex-wrap gap-2'>
-						<input
-							ref={fileInput}
-							type='file'
-							accept='image/*'
-							hidden
-							onChange={handleFile}
-						/>
-						<Button
-							type='button'
-							variant='outline'
-							size='sm'
-							disabled={uploading}
-							onClick={() => fileInput.current?.click()}
-						>
+					<div className='flex flex-col gap-2'>
+						<p className='text-xs text-muted-foreground'>
 							{uploading
 								? t('orgImage.uploading')
 								: imageUrl
-									? t('orgImage.replace')
-									: t('orgImage.upload')}
-						</Button>
+									? t('orgImage.replaceHint')
+									: t('orgImage.dropHint')}
+						</p>
 						{imageUrl && (
 							<Button
 								type='button'
 								variant='ghost'
 								size='sm'
+								className='self-start'
 								onClick={() => void handleClear()}
 							>
 								{t('common:action.delete')}

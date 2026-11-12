@@ -27,6 +27,44 @@ GET returned a MinIO presigned URL, and the edit page rendered the image
 (72px preview, Replace/Delete buttons). `docs/plan/backlog.md` ERP-0041 →
 **verified**.
 
+## 2026-11-12 - Org logo upload: icon dropzone with drag & drop (create + edit)
+
+Replaced the plain "Upload image" buttons with a click-or-drag dropzone
+(`apps/web-admin/src/components/organization/image-dropzone.tsx`): a `<button>`
+area with an `Upload` icon, dashed border, drag-highlight state, and a hidden
+`input[type=file]` shared by click and drop. The edit page
+(`OrganizationImageCard`) keeps Delete for an existing logo; the create page
+uses the compact variant and keeps the pick-then-upload-after-create flow.
+
+**Real bug found while verifying: multipart upload always failed from the UI.**
+`organization-api.ts`'s `request()` set `Content-Type: application/json` for any
+request with a body, so `uploadOrganizationImage`'s `FormData` lost its
+multipart boundary and the server answered 400
+(`common.validationFailed`). It only ever "worked" earlier because that check
+POSTed with a hand-written `fetch`. `request()` now skips the JSON header for
+`FormData`.
+
+Verified live (dev servers already running, seed admin):
+
+- edit page: dragging a canvas-encoded PNG onto the dropzone fired the upload —
+  `POST /organizations/:id/image-profile` → 200
+  `imageKey: organization/<id>/logo.webp`, preview then rendered from the MinIO
+  presigned URL (`32x32` natural size).
+- create page: dropping an image shows an object-URL preview and the file name;
+  submitting created the org (`POST /organizations` → 201) and uploaded the logo
+  right after (`POST …/image-profile` → 200), confirmed by
+  `GET …/image-profile` returning a presigned URL. The test org was deleted
+  afterwards (`DELETE /organizations/:id` → 200).
+
+New locale keys (en + id): `orgImage.dropHint`, `orgImage.replaceHint`,
+`orgImage.invalidType`; the now-unused `orgImage.upload` / `orgImage.replace`
+were removed (dead-key guard green). Image type filtering lives in
+`apps/web-admin/src/lib/image-file.ts` (`pickImageFile`) with 3 unit tests —
+web-admin has no DOM test environment, so the rule is tested as a pure
+function. Commands: `bun run test` in `apps/web-admin` (60 pass / 0 fail),
+`packages/locales` (82 pass), `bunx tsc -b --noEmit` clean, `bun run lint` no
+new warnings. `docs/database/` reviewed — unchanged (UI-only change).
+
 ## 2026-11-12 - ERP-0041 bulk-invitation browser walk-through (multi-role)
 
 Walked the org-scoped invite dialog (`Add member` → `Bulk paste`) live against

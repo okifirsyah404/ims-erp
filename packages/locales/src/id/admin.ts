@@ -159,8 +159,9 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgImage.title': 'Gambar profil',
 	'orgImage.description':
 		'Diunggah sebagai WebP; gambar inisial DiceBear dibuat otomatis bila belum ada.',
-	'orgImage.upload': 'Unggah gambar',
-	'orgImage.replace': 'Ganti gambar',
+	'orgImage.dropHint': 'Tarik gambar ke sini, atau klik untuk memilih',
+	'orgImage.replaceHint': 'Tarik gambar baru untuk mengganti, atau klik untuk memilih',
+	'orgImage.invalidType': 'Hanya berkas gambar yang didukung',
 	'orgImage.uploading': 'Mengunggah…',
 	'orgImage.uploaded': 'Gambar profil diperbarui',
 	'orgImage.cleared': 'Gambar profil dihapus',
