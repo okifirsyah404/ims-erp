@@ -51,7 +51,7 @@ const admin = {
 	'invite.rows': 'Rows ({{max}} max)',
 	'invite.rowsPlaceholder': 'email@company.com, Jane Doe, member',
 	'invite.rowsHint':
-		'One per line: <code>email, name, role</code>. Name and role are optional; an unrecognized role falls back to <strong>member</strong>.',
+		'One per line: <code>email, name, role</code>. Name and role are optional; join several roles with <code>|</code>. An unrecognized role fails that row.',
 	'invite.send': 'Send invitation',
 	'invite.sendBulk': 'Send invitations',
 	'invite.sent': 'Invitation sent',

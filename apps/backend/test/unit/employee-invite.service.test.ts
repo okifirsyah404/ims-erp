@@ -15,6 +15,7 @@ const ACTOR: TActor = { userId: 'actor-1', email: 'actor@example.com', ip: null,
 
 function makeDeps(overrides: {
 	findByEmail?: IEmployeeRepository['findByEmail'];
+	findByUserId?: IEmployeeRepository['findByUserId'];
 	insert?: IEmployeeRepository['insert'];
 } = {}) {
 	const invitation = { id: 'inv-1' };
@@ -24,6 +25,7 @@ function makeDeps(overrides: {
 	};
 	const employees = {
 		findByEmail: mock(overrides.findByEmail ?? (async () => null)),
+		findByUserId: mock(overrides.findByUserId ?? (async () => null)),
 		codeTaken: mock(async () => false),
 		insert: mock(
 			overrides.insert ??
@@ -90,5 +92,15 @@ describe('EmployeeInviteService', () => {
 		});
 		await expect(service.invite(row, ACTOR)).rejects.toBeInstanceOf(EmployeeInviteError);
 		expect(invitations.rollbackPending).toHaveBeenCalledWith('inv-1', 'user-1', ACTOR);
+	});
+
+	test('retried invite reuses the employee row left by an earlier partial failure', async () => {
+		const { service, employees, invitations } = makeDeps({
+			findByUserId: async () => ({ id: 'emp-1', organizationId: null }) as never,
+		});
+		const result = await service.invite(row, ACTOR);
+		expect(result.ok).toBe(true);
+		expect(employees.insert).not.toHaveBeenCalled();
+		expect(invitations.rollbackPending).not.toHaveBeenCalled();
 	});
 });

@@ -137,6 +137,20 @@ export class EmployeeInviteService {
 			actor,
 		);
 
+		// A retried invite for an email whose earlier attempt rolled back left
+		// its employee row behind (the profile insert commits before the
+		// personal-field write). Reuse that row instead of tripping
+		// `hr_employees_user_uq`; the invitation above was still (re)sent.
+		const existing = await this.employees.findByUserId(invited.userId);
+		if (existing && existing.organizationId === (row.organizationId ?? null)) {
+			return {
+				ok: true,
+				email: row.email,
+				invitation: invited,
+				employee: await withPersonalFields(this.personalFields, existing),
+			};
+		}
+
 		try {
 			const organizationId = row.organizationId ?? null;
 			const body = defaultProfile(row);

@@ -53,7 +53,7 @@ const admin_: Record<keyof typeof admin, string> = {
 	'invite.rows': 'Baris (maksimal {{max}})',
 	'invite.rowsPlaceholder': 'email@perusahaan.com, Budi Santoso, member',
 	'invite.rowsHint':
-		'Satu per baris: <code>email, nama, peran</code>. Nama dan peran opsional; peran yang tidak dikenali akan memakai <strong>member</strong>.',
+		'Satu per baris: <code>email, nama, peran</code>. Nama dan peran opsional; gabungkan beberapa peran dengan <code>|</code>. Peran yang tidak dikenali menggagalkan baris itu.',
 	'invite.send': 'Kirim undangan',
 	'invite.sendBulk': 'Kirim undangan',
 	'invite.sent': 'Undangan terkirim',

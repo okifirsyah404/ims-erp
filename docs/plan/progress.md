@@ -27,6 +27,61 @@ GET returned a MinIO presigned URL, and the edit page rendered the image
 (72px preview, Replace/Delete buttons). `docs/plan/backlog.md` ERP-0041 →
 **verified**.
 
+## 2026-11-12 - ERP-0041 bulk-invitation browser walk-through (multi-role)
+
+Walked the org-scoped invite dialog (`Add member` → `Bulk paste`) live against
+the running dev stack. Findings:
+
+1. **Dev DB was missing the `org_role` enum → text migration.** The multi-role
+   row inserted the role list as two params (`technician`,`sales`) → Postgres
+   rejected the insert. `information_schema.columns` showed
+   `auth.user_invitations.org_role` = `USER-DEFINED` (`auth.organization_role`).
+   `drizzle-kit migrate` cannot run here (pre-existing journal two-branch
+   conflict), so the exact statements of
+   `database/migrations/20261112150000_erp0041_org_role_text/migration.sql`
+   were executed directly; re-checked: `org_role data_type: text`,
+   `organization_role` enum rows: `0`.
+2. **The failure survived the migration until the backend restarted.** An
+   identical drizzle insert from a fresh process succeeded while the API kept
+   failing: the long-lived server's prepared statements had been prepared
+   against the `org_role` enum type and broke once the migration dropped it
+   (`ALTER COLUMN … TYPE text` + `DROP TYPE`). Touching a watched file
+   restarted the dev backend and the same request returned 201 with
+   `orgRole: "technician,sales"`. Not a code defect, but a deploy-order
+   hazard: apply this migration, then restart the API process.
+3. **Real bug found + fixed: retried invite on a leftover employee row.**
+   `hr.employees` is inserted before the personal-field write; when that later
+   step fails the row stays and the retry hits `hr_employees_user_uq`
+   (`duplicate key value violates unique constraint`, surfaced as a raw
+   "Failed query" string). `EmployeeInviteService.createOne` now looks the
+   invited user up with `employees.findByUserId` and reuses the existing row
+   when it belongs to the same organization (the invitation is still
+   re-sent); a row owned by another organization stays an
+   `EmployeeEmailTakenError`. New unit test: *retried invite reuses the
+   employee row left by an earlier partial failure*.
+4. **Locale copy corrected.** The bulk-paste hint claimed an unrecognized role
+   "falls back to member"; both parsers (`parseBulkInviteRows`,
+   `parseInviteSheet`) instead reject that row (`Row N: unknown role "x"`)
+   while still sending the rows that parsed. `invite.rowsHint` now says the
+   role joins with `|` and an unknown role fails the row (en + id).
+
+Verified after the fixes, same dialog: `walkthrough.multi@example.com` →
+`orgRole: "technician,sales"`, `EMP-00033`; `walkthrough.plain@example.com` →
+reused `EMP-00030`; the pending-invitations panel listed both as `pending`
+with expiry. Final check after the backend restart, two fresh rows in one
+bulk POST: `finalcheck.multi@example.com` → `technician,sales` / `EMP-00035`
+and `finalcheck.plain@example.com` → `member` / `EMP-00036`, both `ok: true`.
+Cleanup: the probe scripts (`apps/backend/.tmp/*`) and the walk-through
+pending invitations were removed (deleted through the org API, all 200); the
+pre-created pending users and their employee rows from the walk-through stay
+in the dev database.
+
+Commands: `bun test test/unit/employee-invite.service.test.ts` (5 pass),
+`bun run test` in `apps/backend` (837 pass / 0 fail),
+`packages/locales` (82 pass), `apps/web-admin` (57 pass), `bunx tsc -b --noEmit`
+clean in `apps/backend` and `packages/locales`. `docs/database/` reviewed — no
+schema change in this step.
+
 ## 2026-11-12 - ERP-0041 CI unblocking (three rounds, pushed to PR #82)
 
 CI (`Main Test and Build Backend`) failed 3× with unit tests timing out at
@@ -201,8 +256,11 @@ UI slice over hardcoded dummy data).
 - Verified: `bunx tsc --noEmit` (web-admin, clean), `bun run lint` (no new
   warnings), `bun run test` (backend 824 pass, locales 82 pass).
 
-Next executable task: unchanged — bulk-invitation browser walk-through
-(see 2026-11-12 entry above).
+Next executable task: none claimed — ERP-0041 (incl. its bulk-invitation
+walk-through) is `verified`; the next candidate from `backlog.md` is the
+outstanding reviewer sign-off on ERP-0039/ERP-0041, or claiming the next
+unimplemented item (ERP-0002 / ERP-0003 / ERP-0007 / ERP-0027 / ERP-0036 —
+all still open per `backlog.md`).
 
 ## 2026-11-12 - Bulk invitations via CSV/XLSX file upload
 

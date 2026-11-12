@@ -41,11 +41,14 @@ Last synced: 2026-11-08.
   (existing `@ims-erp/ui/components/chart`, Recharts v3). Hardcoded dummy
   data (`apps/web-admin/src/lib/org-dashboard-data.ts`), en/id keys complete;
   **not feature status** — real wiring blocked on the owning modules.
-- Org CRUD robustness — ERP-0041 (2026-11-12, implemented): backend +
-  web-admin UI (org-create nested users, image-profile upload/replace/clear,
-  member multi-role checkbox grid) + 12 backend unit tests; migration
-  verified on a disposable DB. Not `verified` until a live browser
-  walk-through.
+- Org CRUD robustness — ERP-0041 (2026-11-12, **verified**): backend + web-admin
+  UI (org-create nested users, image-profile upload/replace/clear on the
+  create and edit pages, member/invite multi-role checkbox grid, bulk paste
+  with `|` role separator) + backend unit tests (12 org-create-nested, 5
+  employee-invite); migration verified on a
+  disposable DB. Live browser walk-through done: WebP upload → MinIO
+  presigned read, multi-role bulk invite stored `technician,sales`, retried
+  invite reuses a leftover employee row. Evidence: progress 2026-11-12.
 
 
 ## M02 CRM and Sales
