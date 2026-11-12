@@ -12,6 +12,7 @@ import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
 	CardContent,
+	CardDescription,
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
@@ -22,11 +23,15 @@ import {
 } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
-import { OrganizationImageCard } from '@/components/organization/org-image-card';
 import {
+	deleteOrganizationImage,
+	encodeWebp,
+	getOrganizationImage,
 	organizationQueryOptions,
+	uploadOrganizationImage,
 	updateOrganization,
 } from '@/lib/organization-api';
+import { ImageDropzone } from '@/components/organization/image-dropzone';
 
 export const Route = createFileRoute('/_authed/organizations/$organizationId/edit')(
 	{
@@ -91,16 +96,20 @@ function EditOrganizationPage() {
 					{t('orgEdit.description')}
 				</p>
 			</div>
-			<Card className='max-w-xl'>
+			<Card>
 				<CardHeader>
 					<CardTitle>{t('orgEdit.details')}</CardTitle>
+					<CardDescription>{t('orgImage.description')}</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<OrganizationImageCard
-						organizationId={organizationId}
-						canUpdate
-					/>
 					<form onSubmit={handleSubmit}>
+						{/* Matches the create page: the logo leads the form, centered
+						    because it is the identity anchor of the card. The upload
+						    is immediate (the org exists), so the picker binds to the
+						    org's presigned image instead of a local file. */}
+						<div className='mb-6 flex flex-col items-center gap-2'>
+							<EditImagePicker organizationId={organizationId} />
+						</div>
 						<FieldGroup>
 							<Field>
 								<FieldLabel htmlFor='name'>{t('orgEdit.name')}</FieldLabel>
@@ -149,5 +158,94 @@ function EditOrganizationPage() {
 				</CardContent>
 			</Card>
 		</div>
+	);
+}
+
+/**
+ * Centered logo picker for the edit page, mirroring the create page's
+ * centered zone. Unlike create, the organization already exists, so a pick
+ * encodes and uploads immediately (the same flow the old image card used),
+ * and an existing image can be cleared.
+ */
+function EditImagePicker({ organizationId }: { organizationId: string }) {
+	const { t } = useTranslation(['admin', 'common']);
+	const queryClient = useQueryClient();
+	const [uploading, setUploading] = useState(false);
+
+	const { data: imageUrl } = useQuery({
+		queryKey: ['org-image', organizationId],
+		queryFn: () => getOrganizationImage(organizationId),
+		staleTime: 60_000,
+	});
+
+	const invalidate = () => {
+		queryClient.invalidateQueries({ queryKey: ['org-image', organizationId] });
+		queryClient.invalidateQueries({
+			queryKey: organizationQueryOptions(organizationId).queryKey,
+		});
+	};
+
+	async function handleFile(file: File) {
+		setUploading(true);
+		try {
+			let webp: Blob;
+			try {
+				webp = await encodeWebp(file);
+			} catch {
+				// Undecodable source (HEIC, corrupt bytes): the browser never
+				// produced a bitmap, so the server was not involved.
+				toast.error(t('orgImage.decodeFailed'));
+				return;
+			}
+			await uploadOrganizationImage(organizationId, webp);
+			toast.success(t('orgImage.uploaded'));
+			invalidate();
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : t('common:error.failed'),
+			);
+		} finally {
+			setUploading(false);
+		}
+	}
+
+	async function handleClear() {
+		try {
+			await deleteOrganizationImage(organizationId);
+			toast.success(t('orgImage.cleared'));
+			invalidate();
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : t('common:error.failed'),
+			);
+		}
+	}
+
+	return (
+		<>
+			<ImageDropzone
+				previewUrl={imageUrl ?? null}
+				busy={uploading}
+				label={t('orgImage.title')}
+				hint={imageUrl ? t('orgImage.replaceHint') : t('orgImage.dropHint')}
+				onSelect={(file) => void handleFile(file)}
+				onReject={(reason) =>
+					toast.error(
+						t(reason === 'size' ? 'orgImage.tooLarge' : 'orgImage.invalidType'),
+					)
+				}
+			/>
+			{imageUrl && (
+				<Button
+					type='button'
+					variant='ghost'
+					size='sm'
+					disabled={uploading}
+					onClick={() => void handleClear()}
+				>
+					{t('common:action.delete')}
+				</Button>
+			)}
+		</>
 	);
 }

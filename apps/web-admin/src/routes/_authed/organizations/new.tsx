@@ -129,7 +129,7 @@ function NewOrganizationPage() {
 					{t('orgs.newDescription')}
 				</p>
 			</div>
-			<Card className='max-w-2xl'>
+			<Card>
 				<CardHeader>
 					<CardTitle>{t('orgs.details')}</CardTitle>
 					<CardDescription>{t('orgs.slugDescription')}</CardDescription>
