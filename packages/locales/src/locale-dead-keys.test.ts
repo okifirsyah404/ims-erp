@@ -128,6 +128,10 @@ const DYNAMIC_PREFIXES = [
 	'integrations:catalog.outOfStock.',
 	'integrations:outbox.status.',
 	'integrations:outbox.topic.',
+	'integrations:whatsapp.missing.',
+	'integrations:whatsapp.status.',
+	'integrations:whatsapp.reason.',
+	'integrations:whatsapp.author.',
 	// Finance errors compose `finance.term.${problem}` / `finance.invoiceState.${kind}`.
 	'finance.term.',
 	'finance.invoiceState.',
@@ -151,6 +155,8 @@ const DYNAMIC_PREFIXES = [
 	'licensing.apiKey.',
 	'catalog.notFound.',
 	'catalog.listing.',
+	'automation.whatsappNotFound.',
+	'automation.whatsappWebhook.',
 	// Borrowing workflow (ERP-0036): status, purpose, condition, and event
 	// type all arrive as server values, so the label key has to be composed.
 	'assets:borrowingStatus.',

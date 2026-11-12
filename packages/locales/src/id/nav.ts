@@ -30,7 +30,6 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.activations': 'Validasi & Aktivasi',
 	'item.websiteCatalog': 'Katalog Website',
 	'item.whatsappAi': 'WhatsApp AI (otomatisasi)',
-	'item.notifications': 'Notifikasi',
 	'item.webhooks': 'Webhook (n8n)',
 	'item.procurement': 'Pengadaan',
 	'item.suppliers': 'Pemasok',
@@ -128,6 +127,8 @@ const nav_: Record<keyof typeof nav, string> = {
 	'breadcrumb.print': 'Cetak',
 	'breadcrumb.purchaseOrderNew': 'Purchase order baru',
 	'breadcrumb.goodsReceiptNew': 'Terima barang',
+	'breadcrumb.whatsappFaq': 'FAQ asisten',
+	'breadcrumb.whatsappChat': 'Percakapan',
 };
 
 export default nav_;

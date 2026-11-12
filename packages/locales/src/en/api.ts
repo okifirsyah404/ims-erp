@@ -402,6 +402,12 @@ const api = {
 	'sales.invoiceNotPayable':
 		'Only issued or partially paid invoices can receive payments',
 	'automation.outboxNotFound': 'Event not found',
+	'automation.whatsappNotFound.conversation': 'Chat not found',
+	'automation.whatsappNotFound.message': 'Message not found',
+	'automation.whatsappNotFound.faq': 'FAQ entry not found',
+	'automation.whatsappWebhook.notConfigured': 'The WhatsApp webhook key is not configured on the server',
+	'automation.whatsappWebhook.badSignature': 'Invalid webhook signature',
+	'automation.whatsappRetry': 'Only a failed outgoing message can be sent again',
 	'catalog.notFound.listing': 'Listing not found',
 	'catalog.notFound.product': 'Product not found',
 	'catalog.listing.slug': 'Another listing already uses this slug',

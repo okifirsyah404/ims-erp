@@ -8,7 +8,14 @@ import type { TPaginationResult } from '@ims-erp/common';
  */
 
 /** Topics the ERP publishes (stage 1: lead.created; stage 2: the rest). */
-export const OUTBOX_TOPICS = ['lead.created', 'invoice.issued', 'receipt.recorded', 'license.due', 'service_ticket.updated'] as const;
+export const OUTBOX_TOPICS = [
+	'lead.created',
+	'invoice.issued',
+	'receipt.recorded',
+	'license.due',
+	'service_ticket.updated',
+	'whatsapp.handoff',
+] as const;
 export type OutboxTopic = (typeof OUTBOX_TOPICS)[number];
 
 export const outboxListQuerySchema = z.object({

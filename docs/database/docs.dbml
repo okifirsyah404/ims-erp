@@ -7069,8 +7069,10 @@ Ref: commerce.commerce_order_items.commerce_order_id > commerce.commerce_orders.
 // Integrations and encrypted credentials, workflows and steps, workflow runs,
 // scheduled jobs and executions, outbox, notification templates and
 // notifications. Tenant scoped. Secrets are never stored in clear text.
-// M04 stage 1 builds outbox_messages only, company-wide (ADR-0012); n8n is
-// the workflow engine, so the workflow tables here stay target-only.
+// M04 builds outbox_messages (stages 1-2) and the WhatsApp assistant tables
+// faq_entries, whatsapp_conversations, whatsapp_messages (stage 2), all
+// company-wide (ADR-0012); n8n is the workflow engine, so the workflow tables
+// here stay target-only.
 // ---------------------------------------------------------------------------
 
 Table automation.integrations {
@@ -7305,6 +7307,78 @@ Table automation.outbox_messages {
   }
 }
 
+Table automation.faq_entries {
+  id uuid [pk, default: `uuidv7()`]
+  question varchar(300) [not null]
+  answer text [not null]
+  keywords varchar(500) [note: "Comma separated words that also match this entry."]
+  is_active boolean [not null, default: true, note: "Only active entries are given to the WhatsApp assistant."]
+  sort_order integer [not null, default: 0]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Approved answers the WhatsApp assistant may use (M04 stage 2, company-wide). The assistant answers only from these and the published catalog."
+  Indexes {
+    is_active [name: 'faq_entries_is_active_idx']
+  }
+}
+
+Table automation.whatsapp_conversations {
+  id uuid [pk, default: `uuidv7()`]
+  chat_id varchar(128) [not null, note: "WhatsApp chat id from WAHA, e.g. 628123456789@c.us; replies go here."]
+  phone varchar(32) [not null, note: "Digits of the sender's number."]
+  contact_name varchar(200) [note: "WhatsApp profile name, as sent by WAHA."]
+  status text [not null, default: 'assistant']
+  handoff_reason text
+  handoff_at bigint
+  assigned_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  last_message_at bigint [not null]
+  last_inbound_at bigint
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "One WhatsApp chat with the company number (M04 stage 2). assistant = the AI answers; handoff = waiting for or with an admin, the AI stays silent; closed = done (the next message reopens it with the assistant)."
+  Indexes {
+    chat_id [unique, name: 'whatsapp_conversations_chat_id_key']
+    (status, last_message_at) [name: 'whatsapp_conversations_status_idx']
+  }
+  Checks {
+    `status IN ('assistant', 'handoff', 'closed')`
+    `handoff_reason IS NULL OR handoff_reason IN ('no_provider', 'not_found', 'human_requested', 'restricted', 'error')`
+  }
+}
+
+Table automation.whatsapp_messages {
+  id uuid [pk, default: `uuidv7()`]
+  conversation_id uuid [not null]
+  direction text [not null]
+  author text [not null]
+  external_id varchar(128) [note: "WhatsApp message id; inbound webhooks are deduped on it."]
+  body text [not null]
+  status text [not null]
+  faq_entry_id uuid [note: "The FAQ entry the assistant's answer was based on, if any."]
+  sent_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  error_message varchar(500) [note: "Last send failure, without secrets."]
+  attempts smallint [not null, default: 0]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Every inbound and outbound WhatsApp message of a conversation, with the assistant's and admins' replies (M04 stage 2 log)."
+  Indexes {
+    (conversation_id, created_at) [name: 'whatsapp_messages_conversation_idx']
+    (direction, external_id) [unique, name: 'whatsapp_messages_direction_external_id_key']
+    status [name: 'whatsapp_messages_status_idx']
+  }
+  Checks {
+    `direction IN ('inbound', 'outbound')`
+    `author IN ('customer', 'assistant', 'admin', 'system')`
+    `status IN ('received', 'processed', 'pending', 'sent', 'failed')`
+    `attempts >= 0`
+  }
+}
+
 Table automation.notification_templates {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
@@ -7369,6 +7443,8 @@ Ref: automation.workflow_step_runs.workflow_run_id > automation.workflow_runs.id
 Ref: automation.workflow_step_runs.workflow_step_id > automation.workflow_steps.id [delete: set null]
 Ref: automation.job_executions.scheduled_job_id > automation.scheduled_jobs.id [delete: set null]
 Ref: automation.notifications.notification_template_id > automation.notification_templates.id [delete: set null]
+Ref: automation.whatsapp_messages.conversation_id > automation.whatsapp_conversations.id [delete: restrict]
+Ref: automation.whatsapp_messages.faq_entry_id > automation.faq_entries.id [delete: set null]
 
 // ---------------------------------------------------------------------------
 // MODULE: Licensing  (schema: licensing)

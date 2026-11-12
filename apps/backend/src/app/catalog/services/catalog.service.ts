@@ -226,6 +226,25 @@ export class CatalogService {
 		};
 	}
 
+	/**
+	 * Published products sharing the most words with a customer's message,
+	 * for the WhatsApp assistant (M04 stage 2). Prices are whole rupiah;
+	 * `null` = quotation only.
+	 */
+	async matchProducts(words: string[], limit: number): Promise<{ name: string; category: string; price: number | null; stock: string }[]> {
+		if (words.length === 0) return [];
+		const products = await this.products();
+		return products
+			.map((product) => {
+				const text = `${product.name} ${product.category} ${product.specs} ${product.applications.join(' ')}`.toLowerCase();
+				return { product, score: words.filter((word) => text.includes(word)).length };
+			})
+			.filter(({ score }) => score > 0)
+			.sort((a, b) => b.score - a.score || b.product.popularity - a.product.popularity)
+			.slice(0, limit)
+			.map(({ product }) => ({ name: product.name, category: product.category, price: product.price, stock: product.stock }));
+	}
+
 	/** Server-side cart pricing: unknown, unpublished or quotation lines cost nothing and are flagged. */
 	async priceCart(lines: { productSlug: string; quantity: number }[]) {
 		const products = new Map((await this.products()).map((product) => [product.slug, product]));

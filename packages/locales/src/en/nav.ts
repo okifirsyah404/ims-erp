@@ -31,7 +31,6 @@ const nav = {
 	'item.activations': 'Validation & Activation',
 	'item.websiteCatalog': 'Website Catalog',
 	'item.whatsappAi': 'WhatsApp AI',
-	'item.notifications': 'Notifications',
 	'item.webhooks': 'Webhooks (n8n)',
 	'item.procurement': 'Procurement',
 	'item.suppliers': 'Suppliers',
@@ -129,6 +128,8 @@ const nav = {
 	'breadcrumb.print': 'Print',
 	'breadcrumb.purchaseOrderNew': 'New purchase order',
 	'breadcrumb.goodsReceiptNew': 'Receive goods',
+	'breadcrumb.whatsappFaq': 'Assistant FAQ',
+	'breadcrumb.whatsappChat': 'Conversation',
 } as const;
 
 export default nav;

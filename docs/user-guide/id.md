@@ -319,6 +319,33 @@ Menu **Proyek**. Diagram:
    Begitu finance mencatat pelunasan, draf aktif sendiri dan kunci berlanjut
    ke periode baru.
 
+### 8.7 Katalog website, event n8n, dan WhatsApp AI (M04)
+
+Bernomor 8.7 karena 8.6 adalah bagian HR di cabangnya sendiri.
+
+1. **Integrasi → Katalog Website**: pilih barang yang tampil di website
+   (harga atau "minta penawaran", perilaku saat stok habis) lalu
+   **Tampilkan**. Nama, foto, harga, dan stok selalu dari data barang.
+2. **Integrasi → Webhook (n8n)**: semua event yang dikirim ERP ke n8n — lead
+   baru, invoice terbit, pembayaran diterima, tiket diperbarui, lisensi
+   segera berakhir (harian, pada 30 dan 7 hari dan setelah berakhir), dan
+   chat WhatsApp yang diteruskan ke admin. n8n mengubahnya menjadi pesan
+   WhatsApp atau email. Event yang gagal dicoba ulang otomatis; **Kirim
+   sekarang** mengirim ulang secara manual.
+3. **Integrasi → WhatsApp AI (otomatisasi)**: chat di nomor perusahaan (WAHA). Asisten
+   hanya menjawab dari **FAQ asisten** dan katalog yang tampil. Permintaan
+   diskon, harga khusus, pembayaran, atau pesanan, minta bicara dengan
+   orang, atau pertanyaan yang tidak bisa dijawab masuk ke **Perlu admin**
+   dengan balasan otomatis ke pelanggan. Selama penyedia AI belum diatur,
+   semua chat diteruskan ke admin.
+4. Buka chat, ketik di **Balas sebagai admin** lalu **Kirim**: chat Anda
+   ambil alih dan asisten diam. Klik **Kembalikan ke asisten** bila
+   selesai, atau **Tutup chat** (pesan pelanggan berikutnya membukanya
+   lagi). Pesan yang gagal terkirim menampilkan **Kirim ulang**.
+5. **FAQ asisten** (marketing, admin): isi pertanyaan dan jawaban persis
+   yang boleh dibaca pelanggan, beserta kata kunci. Hanya entri **Aktif**
+   yang dipakai. Jangan menulis diskon atau janji di sini.
+
 ## 9. Dokumen cetak dan penomoran
 
 | Dokumen | Contoh nomor | Kapan bernomor | Cetak |

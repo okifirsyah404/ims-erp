@@ -1,5 +1,4 @@
 import {
-	Bell,
 	Building2,
 	Contact,
 	FileCheck2,
@@ -100,7 +99,6 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		items: [
 			{ titleKey: 'item.websiteCatalog', url: '/integrations/website-catalog', icon: Globe },
 			{ titleKey: 'item.whatsappAi', url: '/integrations/whatsapp-ai', icon: MessageSquare },
-			{ titleKey: 'item.notifications', url: '/integrations/notifications', icon: Bell },
 			{ titleKey: 'item.webhooks', url: '/integrations/webhooks', icon: Webhook },
 		],
 	},

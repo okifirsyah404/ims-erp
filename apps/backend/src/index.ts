@@ -9,7 +9,7 @@ import { registerAftersales } from '@app/aftersales';
 import { registerHr } from '@app/hr';
 import { registerLicenseDueSchedule, registerLicensing, startLicenseDueWorker } from '@app/licensing';
 import { registerCatalog } from '@app/catalog';
-import { registerAutomation, startOutboxWorker } from '@app/automation';
+import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
 import { registerAssets } from '@app/assets';
 import { registerAccounting } from '@app/accounting';
 import { appConfig } from '@config/providers/config';
@@ -134,6 +134,7 @@ startWorkers(
 	[
 		startAvatarWorker(),
 		startOutboxWorker(),
+		startWhatsappWorker(),
 		...(mailWorker ? [mailWorker] : []),
 		...(licenseDueWorker ? [licenseDueWorker] : []),
 	],
