@@ -128,6 +128,12 @@ export const SchedulerConfigSchema = z.object({
 	guestPiiRetentionMonths: z.number().int().min(1),
 });
 
+/** M04 integrations: the n8n webhook of ERP events (server config only). */
+export const IntegrationsConfigSchema = z.object({
+	n8nWebhookUrl: z.url().nullable(),
+	n8nWebhookSecret: z.string().min(16).nullable(),
+});
+
 export const EnvConfigSchema = z.object({
 	instance: InstanceConfigSchema,
 	app: AppConfigSchema,
@@ -137,6 +143,7 @@ export const EnvConfigSchema = z.object({
 	mail: MailConfigSchema,
 	auth: AuthConfigSchema,
 	scheduler: SchedulerConfigSchema,
+	integrations: IntegrationsConfigSchema,
 });
 
 export type TInstanceConfig = z.infer<typeof InstanceConfigSchema>;

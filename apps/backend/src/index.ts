@@ -9,6 +9,7 @@ import { registerAftersales } from '@app/aftersales';
 import { registerHr } from '@app/hr';
 import { registerLicensing } from '@app/licensing';
 import { registerCatalog } from '@app/catalog';
+import { registerAutomation, startOutboxWorker } from '@app/automation';
 import { registerAssets } from '@app/assets';
 import { registerAccounting } from '@app/accounting';
 import { appConfig } from '@config/providers/config';
@@ -50,6 +51,8 @@ registerOrganization(container);
 registerAudit(container);
 registerInventory(container);
 registerAssets(container);
+// Automation before the modules that publish events (CRM, …).
+registerAutomation(container);
 registerCrm(container);
 registerProcurement(container);
 registerProjects(container);
@@ -126,7 +129,7 @@ const bootstrap = new Elysia()
 // (tests/scripts without SMTP), so booting with no mail server still works.
 const mailWorker = startMailWorker();
 startWorkers(
-	[startAvatarWorker(), ...(mailWorker ? [mailWorker] : [])],
+	[startAvatarWorker(), startOutboxWorker(), ...(mailWorker ? [mailWorker] : [])],
 	(error) => pinoLogger.error({ err: error }, 'background worker error'),
 );
 if (mailWorker) {

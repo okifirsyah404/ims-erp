@@ -13,6 +13,8 @@ import type {
 } from '@drizzle/schemas/crm.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
+import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
+import type { OutboxService } from '@app/automation/services/outbox.service';
 import { inject, injectable } from 'tsyringe';
 import {
 	CUSTOMER_SERVICE_TOKEN,
@@ -42,6 +44,7 @@ import {
 	LeadNotFoundError,
 } from '../errors/crm.errors';
 import type { CustomerService } from './customer.service';
+import { leadCreatedEvent } from '../utils/lead-event';
 
 export type TLeadContext = {
 	/** Caller's organization (decides permissions, not which leads exist). */
@@ -96,6 +99,8 @@ export class LeadService {
 		private readonly users: Pick<UserService, 'getUser'>,
 		@inject(OBJECT_STORAGE_TOKEN)
 		private readonly storage: Pick<IObjectStorage, 'presignGet'>,
+		@inject(OUTBOX_SERVICE_TOKEN)
+		private readonly outbox: Pick<OutboxService, 'publish'>,
 	) {}
 
 	private async requireVisible(ctx: TLeadContext, id: string): Promise<TLeadSelect> {
@@ -177,7 +182,10 @@ export class LeadService {
 			if (ownerUserId) await this.assertAssignable(ctx.organizationId, ownerUserId);
 		}
 		const { assignedTo: _ignored, nextFollowUpAt, ...rest } = input;
-		return this.leads.create({ ...rest, nextFollowUpAt: toDate(nextFollowUpAt), ownerUserId, createdBy: ctx.actorUserId });
+		const lead = await this.leads.create({ ...rest, nextFollowUpAt: toDate(nextFollowUpAt), ownerUserId, createdBy: ctx.actorUserId });
+		// n8n notifies the sales admin (M04); never fails the lead.
+		await this.outbox.publish('lead.created', { type: 'lead', id: lead.id }, leadCreatedEvent(lead));
+		return lead;
 	}
 
 	async update(ctx: TLeadContext, id: string, patch: TUpdateLeadInput): Promise<TLeadSelect> {

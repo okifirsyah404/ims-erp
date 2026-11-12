@@ -322,6 +322,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		master_data: ['read', 'create', 'update', 'archive', 'import', 'export'],
 		dashboard: ['read'],
 		employee: ['read'],
+		// Watches the n8n event log and sends failed events again (M04).
+		automation: ['read', 'read_log', 'execute'],
 		product: ['read'],
 		asset_borrowing: [
 			'read',

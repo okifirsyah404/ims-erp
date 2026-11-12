@@ -404,6 +404,7 @@ const api: Record<keyof typeof en, string> = {
 	'sales.receiptReversed': 'Kwitansi sudah dibatalkan',
 	'sales.invoiceNotPayable':
 		'Hanya faktur berstatus terbit atau sebagian dibayar yang dapat menerima pembayaran',
+	'automation.outboxNotFound': 'Event tidak ditemukan',
 	'catalog.notFound.listing': 'Listing tidak ditemukan',
 	'catalog.notFound.product': 'Produk tidak ditemukan',
 	'catalog.listing.slug': 'Slug ini sudah dipakai listing lain',

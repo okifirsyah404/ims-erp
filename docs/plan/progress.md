@@ -14,7 +14,8 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 ## In progress — M04 n8n, WhatsApp, website: gate 1 and decisions, 2026-11-07
 
-Status: **in progress** (gate 1 and owner decisions done; no code yet).
+Status: **in progress** (4a catalog API and 4b outbox to n8n implemented;
+4c notifications and 4d WhatsApp AI next).
 Branch `feat/m04-integrations` (from `merge/main-sync`, so PR #58 stays as
 reviewed).
 
@@ -90,6 +91,45 @@ Owner decisions (2026-11-07):
   and a hidden one via the API; public API with a temporary website key
   (disabled afterwards): no key 401, hidden product 404, products / product
   / categories / facets / stock / pricing / search / cart as expected.
+
+### 4b — ERP events to n8n: the outbox (implemented 2026-11-07)
+
+- `docs/database/docs.dbml` MODULE Automation: header note (n8n is the
+  workflow engine; the ERP keeps only the outbox) and
+  `automation.outbox_messages` rewritten company-wide (topic, aggregate,
+  payload, status `pending | published | failed`, attempts, last response);
+  `bun docs/database/gen-logical-references.ts` then
+  `bun docs/database/validate-dbml.ts` → OK. Drizzle
+  `drizzle/schemas/automation.schema.ts`; migration
+  `20261107093321_automation_outbox` (generated, inspected, applied with
+  `NODE_ENV=development bun run drizzle:migrate`).
+- Module `src/app/automation`: `OutboxService.publish` writes the event (row
+  id = event id n8n dedupes on) and queues it on BullMQ `automation-outbox`
+  (5 attempts, exponential backoff from 30 s); it never throws into the
+  business action — a queue outage leaves the event `pending` for a manual
+  send. Adapter `adapters/n8n-webhook.ts` posts the envelope with
+  `X-Erp-Event-Id`, `X-Erp-Event-Type`, `X-Erp-Timestamp` and
+  `X-Erp-Signature: sha256=<HMAC of "timestamp.body">`, 10 s timeout, never
+  logs or echoes the URL. 5xx / 408 / 429 / network errors retry; other 4xx
+  are final; no webhook configured keeps the event `pending`.
+- Config `N8N_WEBHOOK_URL` / `N8N_WEBHOOK_SECRET` (optional; secret min 16
+  chars; names in `.env.example`).
+- CRM publishes `lead.created` from `LeadService.create` and
+  `WebsiteInquiryService.capture` (`crm/utils/lead-event.ts`).
+- Admin `/automation/outbox` (`automation:read_log`), `/summary`,
+  `/:id/retry` (`automation:execute`); admin role gains `automation`. Web
+  `/integrations/webhooks` (log, filters, "Send now", not-configured alert);
+  locale keys `integrations:outbox.*` en/id.
+- Verification: `NODE_ENV=test bun test` (apps/backend) → 694 pass (new
+  `outbox.service.test.ts` 5, `lead.service.test.ts` + 1); `bun run
+  typecheck` / `bun run lint` clean; locales 70 pass; web build OK. E2E
+  against a local fake receiver (HMAC checked, first call 503, dedupe on
+  event id; temporary `.env` entries removed afterwards): lead with no
+  webhook → `pending` "not configured"; lead with webhook → 503 → BullMQ
+  retry → `published` after 2 attempts; manual send of the pending one →
+  `published`; resending a published event sends nothing; screenshot of the
+  log screen checked. Note: two stale dev stacks were running at once and
+  answered with an old env — stop ports 3000/5173/5174 before restarting.
 
 ## Completed — merge of main into merge/main-sync (PR #58 conflicts), 2026-11-06/07
 ## 2026-11-10 - ERP-0034: minimal HR employees + warehouse PIC (slices 1-8)

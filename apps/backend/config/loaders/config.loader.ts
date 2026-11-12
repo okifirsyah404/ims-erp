@@ -127,6 +127,13 @@ export function loadEnvConfig(
 			},
 		},
 
+		integrations: {
+			// M04: the n8n webhook that receives ERP events, and the shared
+			// secret of its HMAC signature. Server config only; never logged.
+			n8nWebhookUrl: process.env.N8N_WEBHOOK_URL || null,
+			n8nWebhookSecret: process.env.N8N_WEBHOOK_SECRET || null,
+		},
+
 		scheduler: {
 			// Off by default: a unit test or a one-off script must never open a
 			// Redis worker connection.

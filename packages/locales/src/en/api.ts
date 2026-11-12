@@ -401,6 +401,7 @@ const api = {
 	'sales.receiptReversed': 'The receipt is already reversed',
 	'sales.invoiceNotPayable':
 		'Only issued or partially paid invoices can receive payments',
+	'automation.outboxNotFound': 'Event not found',
 	'catalog.notFound.listing': 'Listing not found',
 	'catalog.notFound.product': 'Product not found',
 	'catalog.listing.slug': 'Another listing already uses this slug',

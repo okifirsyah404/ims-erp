@@ -74,6 +74,7 @@ import { Route as AuthedHrEmployeesNewRouteImport } from './routes/_authed/hr/em
 import { Route as AuthedHrLeaveIndexRouteImport } from './routes/_authed/hr/leave/index'
 import { Route as AuthedHrOvertimeIndexRouteImport } from './routes/_authed/hr/overtime/index'
 import { Route as AuthedHrPayrollIndexRouteImport } from './routes/_authed/hr/payroll/index'
+import { Route as AuthedIntegrationsWebhooksIndexRouteImport } from './routes/_authed/integrations/webhooks/index'
 import { Route as AuthedIntegrationsWebsiteCatalogIndexRouteImport } from './routes/_authed/integrations/website-catalog/index'
 import { Route as AuthedInventoryCategoriesIndexRouteImport } from './routes/_authed/inventory/categories/index'
 import { Route as AuthedInventoryComponentsIndexRouteImport } from './routes/_authed/inventory/components/index'
@@ -496,6 +497,12 @@ const AuthedHrPayrollIndexRoute = AuthedHrPayrollIndexRouteImport.update({
   path: '/hr/payroll/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedIntegrationsWebhooksIndexRoute =
+  AuthedIntegrationsWebhooksIndexRouteImport.update({
+    id: '/integrations/webhooks/',
+    path: '/integrations/webhooks/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedIntegrationsWebsiteCatalogIndexRoute =
   AuthedIntegrationsWebsiteCatalogIndexRouteImport.update({
     id: '/integrations/website-catalog/',
@@ -995,6 +1002,7 @@ export interface FileRoutesByFullPath {
   '/hr/leave/': typeof AuthedHrLeaveIndexRoute
   '/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
   '/hr/payroll/': typeof AuthedHrPayrollIndexRoute
+  '/integrations/webhooks/': typeof AuthedIntegrationsWebhooksIndexRoute
   '/integrations/website-catalog/': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
   '/inventory/categories/': typeof AuthedInventoryCategoriesIndexRoute
   '/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
@@ -1129,6 +1137,7 @@ export interface FileRoutesByTo {
   '/hr/leave': typeof AuthedHrLeaveIndexRoute
   '/hr/overtime': typeof AuthedHrOvertimeIndexRoute
   '/hr/payroll': typeof AuthedHrPayrollIndexRoute
+  '/integrations/webhooks': typeof AuthedIntegrationsWebhooksIndexRoute
   '/integrations/website-catalog': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
   '/inventory/categories': typeof AuthedInventoryCategoriesIndexRoute
   '/inventory/components': typeof AuthedInventoryComponentsIndexRoute
@@ -1267,6 +1276,7 @@ export interface FileRoutesById {
   '/_authed/hr/leave/': typeof AuthedHrLeaveIndexRoute
   '/_authed/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
   '/_authed/hr/payroll/': typeof AuthedHrPayrollIndexRoute
+  '/_authed/integrations/webhooks/': typeof AuthedIntegrationsWebhooksIndexRoute
   '/_authed/integrations/website-catalog/': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
   '/_authed/inventory/categories/': typeof AuthedInventoryCategoriesIndexRoute
   '/_authed/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
@@ -1405,6 +1415,7 @@ export interface FileRouteTypes {
     | '/hr/leave/'
     | '/hr/overtime/'
     | '/hr/payroll/'
+    | '/integrations/webhooks/'
     | '/integrations/website-catalog/'
     | '/inventory/categories/'
     | '/inventory/components/'
@@ -1539,6 +1550,7 @@ export interface FileRouteTypes {
     | '/hr/leave'
     | '/hr/overtime'
     | '/hr/payroll'
+    | '/integrations/webhooks'
     | '/integrations/website-catalog'
     | '/inventory/categories'
     | '/inventory/components'
@@ -1676,6 +1688,7 @@ export interface FileRouteTypes {
     | '/_authed/hr/leave/'
     | '/_authed/hr/overtime/'
     | '/_authed/hr/payroll/'
+    | '/_authed/integrations/webhooks/'
     | '/_authed/integrations/website-catalog/'
     | '/_authed/inventory/categories/'
     | '/_authed/inventory/components/'
@@ -2193,6 +2206,13 @@ declare module '@tanstack/react-router' {
       path: '/hr/payroll'
       fullPath: '/hr/payroll/'
       preLoaderRoute: typeof AuthedHrPayrollIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/integrations/webhooks/': {
+      id: '/_authed/integrations/webhooks/'
+      path: '/integrations/webhooks'
+      fullPath: '/integrations/webhooks/'
+      preLoaderRoute: typeof AuthedIntegrationsWebhooksIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/integrations/website-catalog/': {
@@ -2841,6 +2861,7 @@ interface AuthedRouteChildren {
   AuthedHrLeaveIndexRoute: typeof AuthedHrLeaveIndexRoute
   AuthedHrOvertimeIndexRoute: typeof AuthedHrOvertimeIndexRoute
   AuthedHrPayrollIndexRoute: typeof AuthedHrPayrollIndexRoute
+  AuthedIntegrationsWebhooksIndexRoute: typeof AuthedIntegrationsWebhooksIndexRoute
   AuthedIntegrationsWebsiteCatalogIndexRoute: typeof AuthedIntegrationsWebsiteCatalogIndexRoute
   AuthedInventoryCategoriesIndexRoute: typeof AuthedInventoryCategoriesIndexRoute
   AuthedInventoryComponentsIndexRoute: typeof AuthedInventoryComponentsIndexRoute
@@ -2971,6 +2992,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedHrLeaveIndexRoute: AuthedHrLeaveIndexRoute,
   AuthedHrOvertimeIndexRoute: AuthedHrOvertimeIndexRoute,
   AuthedHrPayrollIndexRoute: AuthedHrPayrollIndexRoute,
+  AuthedIntegrationsWebhooksIndexRoute: AuthedIntegrationsWebhooksIndexRoute,
   AuthedIntegrationsWebsiteCatalogIndexRoute:
     AuthedIntegrationsWebsiteCatalogIndexRoute,
   AuthedInventoryCategoriesIndexRoute: AuthedInventoryCategoriesIndexRoute,
