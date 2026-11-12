@@ -12,3 +12,18 @@
 export function organizationImageObjectKey(organizationId: string): string {
 	return `organizations/${organizationId}/logo.webp`;
 }
+
+/**
+ * S3 key of the generated DiceBear fallback logo.
+ *
+ * @remarks
+ * Deliberately distinct from {@link organizationImageObjectKey}: the worker
+ * runs right after the organization is created, while the create form uploads
+ * the picked logo a moment later. Sharing one key made a slow DiceBear fetch
+ * overwrite a real upload (same key, last writer wins — observed live). With
+ * separate keys the worker can only ever fill an empty slot, and the database
+ * decides which object is current.
+ */
+export function organizationGeneratedImageObjectKey(organizationId: string): string {
+	return `organizations/${organizationId}/logo-generated.webp`;
+}

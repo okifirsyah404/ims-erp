@@ -6,7 +6,7 @@ import { container } from 'tsyringe';
 import { queueConnection } from '@providers/queue/queue.connection';
 import type { QueueWorker } from '@providers/queue/worker-registry';
 import { s3Client } from '@providers/s3/s3';
-import { organizationImageObjectKey } from '../constants/image-keys';
+import { organizationGeneratedImageObjectKey } from '../constants/image-keys';
 import { ORGANIZATION_REPOSITORY_TOKEN } from '../constants/di';
 import type { IOrganizationRepository } from '../contracts/organization.repository.interface';
 import { ORG_LOGO_QUEUE_NAME, type OrgLogoJobData } from './org-logo.queue';
@@ -55,10 +55,16 @@ export async function generateOrgLogoWebp(slug: string): Promise<Buffer> {
 
 /**
  * Generates the logo WebP, uploads it to S3 as
- * `organizations/<orgId>/logo.webp`, and stores the object key (NOT a URL) in
- * `auth.organizations.logo` through the organization repository — but ONLY
- * when the organization still has no logo: a real uploaded image (or an
- * org that has been deleted meanwhile) always wins over the fallback.
+ * `organizations/<orgId>/logo-generated.webp`, and stores that object key (NOT
+ * a URL) in `auth.organizations.logo` — but ONLY when the organization still
+ * has no logo: a real uploaded image (or an org deleted meanwhile) always wins
+ * over the fallback.
+ *
+ * @remarks
+ * Both the key and the write are race-safe by construction: the fallback uses
+ * its own object key (so it can never overwrite `logo.webp`, the upload key)
+ * and the database write is a conditional `logo IS NULL` update, because the
+ * `findById` check above can be stale by the time the DiceBear fetch returns.
  */
 export async function processOrgLogoJob(
 	repository: IOrganizationRepository,
@@ -69,17 +75,20 @@ export async function processOrgLogoJob(
 	if (!existing || existing.deletedAt || existing.logo) return;
 
 	const buffer = await generateOrgLogoWebp(slug);
+	const key = organizationGeneratedImageObjectKey(organizationId);
 
 	await mkdir(TMP_DIR, { recursive: true });
 	const tmpPath = path.join(TMP_DIR, `${organizationId}.webp`);
 	try {
 		await writeFile(tmpPath, buffer);
-		await s3Client.write(organizationImageObjectKey(organizationId), Bun.file(tmpPath));
+		await s3Client.write(key, Bun.file(tmpPath));
 	} finally {
 		await rm(tmpPath, { force: true });
 	}
 
-	await repository.setLogo(organizationId, organizationImageObjectKey(organizationId));
+	// Loses the race on purpose: the object above is unreferenced (and left
+	// for the bucket lifecycle rule) when a real upload landed meanwhile.
+	await repository.setLogoIfEmpty(organizationId, key);
 }
 
 /**

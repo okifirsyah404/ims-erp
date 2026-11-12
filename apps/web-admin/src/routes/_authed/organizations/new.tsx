@@ -17,7 +17,6 @@ import {
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
-import { erpRoleLabel, erpRoleNames } from '@ims-erp/common';
 import { ImageDropzone } from '@/components/organization/image-dropzone';
 import {
 	createOrganization,
@@ -26,70 +25,12 @@ import {
 	uploadOrganizationImage,
 } from '@/lib/organization-api';
 
-/** One nested-user row in the create form (ERP-0041). */
-function NewUserRow(props: {
-	email: string;
-	name: string;
-	roles: string[];
-	onEmail: (value: string) => void;
-	onName: (value: string) => void;
-	onRoleToggle: (role: string, checked: boolean) => void;
-	onRemove: () => void;
-	t: ReturnType<typeof useTranslation>['t'];
-	language: string;
-}) {
-	const { email, name, roles, onEmail, onName, onRoleToggle, onRemove, t, language } = props;
-	return (
-		<div className='rounded-md border p-3 flex flex-col gap-3'>
-			<div className='grid gap-3 sm:grid-cols-2'>
-				<Field>
-					<FieldLabel>{t('orgs.userEmail')}</FieldLabel>
-					<Input
-						type='email'
-						value={email}
-						required
-						onChange={(e) => onEmail(e.target.value)}
-					/>
-				</Field>
-				<Field>
-					<FieldLabel>{t('orgs.userName')}</FieldLabel>
-					<Input
-						value={name}
-						required
-						onChange={(e) => onName(e.target.value)}
-					/>
-				</Field>
-			</div>
-			<div className='flex flex-wrap gap-2'>
-				{erpRoleNames.map((roleName) => {
-					const id = `new-role-${roleName}-${email || 'row'}`;
-					return (
-						<label
-							key={roleName}
-							htmlFor={id}
-							className='flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs cursor-pointer has-[:checked]:bg-accent'
-						>
-							<input
-								id={id}
-								type='checkbox'
-								checked={roles.includes(roleName)}
-								onChange={(e) => onRoleToggle(roleName, e.target.checked)}
-							/>
-							{erpRoleLabel(roleName, language)}
-						</label>
-					);
-				})}
-			</div>
-			<Button type='button' variant='ghost' size='sm' onClick={onRemove}>
-				{t('orgs.removeUser')}
-			</Button>
-		</div>
-	);
-}
-
 export const Route = createFileRoute('/_authed/organizations/new')({
 	component: NewOrganizationPage,
 });
+
+/** Must match the backend `createOrganizationSchema.slug` rule. */
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function slugify(name: string): string {
 	return name
@@ -101,19 +42,15 @@ function slugify(name: string): string {
 function NewOrganizationPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const { t, i18n } = useTranslation(['admin', 'common']);
+	const { t } = useTranslation(['admin', 'common']);
 
 	const [name, setName] = useState('');
 	const [slug, setSlug] = useState('');
 	const [slugTouched, setSlugTouched] = useState(false);
 	const [pending, setPending] = useState(false);
-	// Nested users (ERP-0041): active emails join directly, unknown emails
-	// are invited (per-item outcomes reported in a toast on success).
-	const [users, setUsers] = useState<
-		Array<{ email: string; name: string; roles: string[] }>
-	>([]);
-	// Optional profile image (ERP-0041): uploaded right after the org is
-	// created, since the image endpoints are organization-id-scoped.
+	const [uploading, setUploading] = useState(false);
+	// Optional profile image: the endpoints are organization-id-scoped, so the
+	// file is encoded and uploaded right after the organization exists.
 	const [imageFile, setImageFile] = useState<File | null>(null);
 	// Object URL preview for the picked image; revoked when it is replaced.
 	const imagePreviewUrl = useMemo(
@@ -125,38 +62,21 @@ function NewOrganizationPage() {
 		return () => URL.revokeObjectURL(imagePreviewUrl);
 	}, [imagePreviewUrl]);
 
-	function addUser() {
-		setUsers((current) => [...current, { email: '', name: '', roles: ['member'] }]);
-	}
-
-	function patchUser(index: number, patch: Partial<{ email: string; name: string; roles: string[] }>) {
-		setUsers((current) =>
-			current.map((row, i) => (i === index ? { ...row, ...patch } : row)),
-		);
-	}
-
-	const duplicateEmails = (() => {
-		const emails = users.map((u) => u.email.trim().toLowerCase()).filter(Boolean);
-		return new Set(emails.filter((e, i) => emails.indexOf(e) !== i)).size > 0;
-	})();
+	const slugValid = SLUG_PATTERN.test(slug);
+	const canSubmit = Boolean(name.trim()) && slugValid && !pending;
 
 	async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
-		if (duplicateEmails) {
-			toast.error(t('orgs.duplicateUserEmail'));
-			return;
-		}
+		if (!canSubmit) return;
 		setPending(true);
 		try {
-			const created = await createOrganization({
-				name,
-				slug,
-				users: users.length > 0 ? users : undefined,
-			});
+			const created = await createOrganization({ name, slug });
 			if (!created) throw new Error(t('common:error.failed'));
-			// Optional profile image picked in the create form: upload after
-			// the org exists (image endpoints are id-scoped).
+
+			// A failed logo upload must not lose the organization that was just
+			// created: report it and keep the redirect.
 			if (imageFile) {
+				setUploading(true);
 				try {
 					const webp = await encodeWebp(imageFile);
 					await uploadOrganizationImage(created.organization.id, webp);
@@ -166,18 +86,12 @@ function NewOrganizationPage() {
 							? error.message
 							: t('common:error.failed'),
 					);
+				} finally {
+					setUploading(false);
 				}
 			}
+
 			toast.success(t('orgs.created'));
-			// Surface the per-item outcomes (ERP-0041) without blocking the
-			// redirect.
-			for (const member of created.members ?? []) {
-				if (member.status === 'failed') {
-					toast.error(`${member.email}: ${member.error}`);
-				} else if (member.status === 'skipped') {
-					toast.error(`${member.email}: ${member.reason}`);
-				}
-			}
 			// Better Auth activates the new organization for this session, so
 			// the organization list AND the permission cache are both stale.
 			await Promise.all([
@@ -208,115 +122,106 @@ function NewOrganizationPage() {
 					{t('orgs.newDescription')}
 				</p>
 			</div>
-			<Card className='max-w-xl'>
+			<Card className='max-w-2xl'>
 				<CardHeader>
 					<CardTitle>{t('orgs.details')}</CardTitle>
 					<CardDescription>{t('orgs.slugDescription')}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit}>
-						<FieldGroup>
-							<Field>
-								<FieldLabel htmlFor='name'>{t('orgs.name')}</FieldLabel>
-								<Input
-									id='name'
-									value={name}
-									required
-									maxLength={200}
-									onChange={(event) => {
-										setName(event.target.value);
-										if (!slugTouched) setSlug(slugify(event.target.value));
-									}}
+						<div className='grid gap-6 sm:grid-cols-[8rem_1fr]'>
+							{/* Logo is an organization attribute, so it sits beside the
+							    fields rather than inside a separate section. */}
+							<div className='flex flex-col gap-2'>
+								<ImageDropzone
+									previewUrl={imagePreviewUrl}
+									busy={uploading}
+									disabled={pending}
+									label={t('orgImage.title')}
+									hint={t('orgImage.dropHint')}
+									onSelect={setImageFile}
+									onReject={(reason) =>
+										toast.error(
+											t(
+												reason === 'size'
+													? 'orgImage.tooLarge'
+													: 'orgImage.invalidType',
+											),
+										)
+									}
 								/>
-							</Field>
-							<Field>
-								<FieldLabel htmlFor='slug'>{t('orgs.slug')}</FieldLabel>
-								<Input
-									id='slug'
-									value={slug}
-									required
-									pattern='[a-z0-9]+(-[a-z0-9]+)*'
-									onChange={(event) => {
-										setSlugTouched(true);
-										setSlug(event.target.value);
-									}}
-								/>
-							</Field>
-						{/* Nested users (ERP-0041) */}
-						<div className='flex flex-col gap-3'>
-						<div className='flex items-center justify-between'>
-							<FieldLabel>{t('orgs.usersTitle')}</FieldLabel>
-							<Button type='button' variant='outline' size='sm' onClick={addUser}>
-								{t('orgs.addUser')}
+								{/* The zone already shows the hint, so only the picked file
+								    and its removal need a line of their own. */}
+								{imageFile && (
+									<>
+										<p className='truncate text-xs leading-snug text-muted-foreground'>
+											{imageFile.name}
+										</p>
+										<Button
+											type='button'
+											variant='ghost'
+											size='sm'
+											className='self-start px-2'
+											disabled={pending}
+											onClick={() => setImageFile(null)}
+										>
+											{t('orgImage.removeSelection')}
+										</Button>
+									</>
+								)}
+							</div>
+
+							<FieldGroup>
+								<Field>
+									<FieldLabel htmlFor='name'>{t('orgs.name')}</FieldLabel>
+									<Input
+										id='name'
+										value={name}
+										required
+										maxLength={200}
+										disabled={pending}
+										onChange={(event) => {
+											setName(event.target.value);
+											if (!slugTouched) setSlug(slugify(event.target.value));
+										}}
+									/>
+								</Field>
+								<Field>
+									<FieldLabel htmlFor='slug'>{t('orgs.slug')}</FieldLabel>
+									<Input
+										id='slug'
+										value={slug}
+										required
+										pattern='[a-z0-9]+(-[a-z0-9]+)*'
+										disabled={pending}
+										aria-invalid={Boolean(slug) && !slugValid}
+										onChange={(event) => {
+											setSlugTouched(true);
+											setSlug(event.target.value);
+										}}
+									/>
+									<p className='text-xs text-muted-foreground'>
+										{Boolean(slug) && !slugValid
+											? t('orgs.slugInvalid')
+											: `/organizations/${slug || '…'}`}
+									</p>
+								</Field>
+							</FieldGroup>
+						</div>
+
+						<div className='mt-6 flex items-center justify-end gap-2 border-t pt-4'>
+							<Button
+								type='button'
+								variant='outline'
+								disabled={pending}
+								onClick={() => navigate({ to: '/organizations' })}
+							>
+								{t('common:action.cancel')}
+							</Button>
+							<Button type='submit' disabled={!canSubmit}>
+								{pending ? t('orgs.creating') : t('orgs.create')}
 							</Button>
 						</div>
-						{duplicateEmails && (
-							<p className='text-sm text-destructive'>
-								{t('orgs.duplicateUserEmail')}
-							</p>
-						)}
-						{users.map((row, index) => (
-							<NewUserRow
-								key={index}
-								email={row.email}
-								name={row.name}
-								roles={row.roles}
-								language={i18n.language}
-								t={t}
-								onEmail={(value) => patchUser(index, { email: value })}
-								onName={(value) => patchUser(index, { name: value })}
-								onRoleToggle={(role, checked) =>
-									patchUser(index, {
-										roles: checked
-											? [...row.roles, role]
-											: row.roles.filter((r) => r !== role),
-									})
-								}
-								onRemove={() =>
-									setUsers((current) => current.filter((_, i) => i !== index))
-								}
-							/>
-						))}
-					</div>
-					<div className='flex items-center gap-4'>
-						<ImageDropzone
-							variant='compact'
-							previewUrl={imagePreviewUrl}
-							label={t('orgImage.title')}
-							hint={t('orgImage.dropHint')}
-							onSelect={setImageFile}
-							onReject={() => toast.error(t('orgImage.invalidType'))}
-						/>
-						<div className='flex flex-col gap-1'>
-							<p className='text-xs text-muted-foreground'>
-								{imageFile ? imageFile.name : t('orgImage.dropHint')}
-							</p>
-							{imageFile && (
-								<Button
-									type='button'
-									variant='ghost'
-									size='sm'
-									className='self-start'
-									onClick={() => setImageFile(null)}
-								>
-									{t('orgImage.removeSelection')}
-								</Button>
-							)}
-						</div>
-					</div>
-					<div className='flex gap-2'>
-						<Button type='submit' disabled={pending || !name || !slug || duplicateEmails}>
-							{pending ? t('orgs.creating') : t('orgs.create')}
-						</Button>
-						<Button
-							type='button'
-							variant='outline'
-							onClick={() => navigate({ to: '/organizations' })}
-						>
-							{t('common:action.cancel')}
-						</Button>
-					</div>
-					</FieldGroup>
 					</form>
 				</CardContent>
 			</Card>

@@ -222,11 +222,12 @@ describe('org-logo worker (ERP-0041)', () => {
 	}
 
 	test('skips when a logo is already set (real upload wins)', async () => {
-		const setLogoCalls: Array<[string, string | null]> = [];
+		const setLogoCalls: Array<[string, string]> = [];
 		const repository = {
 			findById: async () => orgRow({ logo: 'organizations/org-1/logo.webp' }),
-			setLogo: async (id: string, logo: string | null) => {
+			setLogoIfEmpty: async (id: string, logo: string) => {
 				setLogoCalls.push([id, logo]);
+				return true;
 			},
 		} as unknown as IOrganizationRepository;
 		await processOrgLogoJob(repository, { data: { organizationId: 'org-1', slug: 'org' } });
@@ -237,19 +238,52 @@ describe('org-logo worker (ERP-0041)', () => {
 		const setLogoCalls: Array<unknown> = [];
 		const repository = {
 			findById: async () => orgRow({ deletedAt: new Date() }),
-			setLogo: async () => {
+			setLogoIfEmpty: async () => {
 				setLogoCalls.push(1);
+				return true;
 			},
 		} as unknown as IOrganizationRepository;
 		await processOrgLogoJob(repository, { data: { organizationId: 'org-1', slug: 'org' } });
 		const missing = {
 			findById: async () => null,
-			setLogo: async () => {
+			setLogoIfEmpty: async () => {
 				setLogoCalls.push(1);
+				return true;
 			},
 		} as unknown as IOrganizationRepository;
 		await processOrgLogoJob(missing, { data: { organizationId: 'org-1', slug: 'org' } });
 		expect(setLogoCalls).toHaveLength(0);
+	});
+
+	test('writes the generated logo under its own key, never the upload key', async () => {
+		const written: string[] = [];
+		const setLogoIfEmptyCalls: Array<[string, string]> = [];
+		const repository = {
+			findById: async () => orgRow(),
+			setLogoIfEmpty: async (id: string, logo: string) => {
+				setLogoIfEmptyCalls.push([id, logo]);
+				return true;
+			},
+		} as unknown as IOrganizationRepository;
+		// Stub the DiceBear fetch so no network call is made.
+		const originalFetch = globalThis.fetch;
+		globalThis.fetch = (async () =>
+			new Response(new Uint8Array([0x52, 0x49, 0x46, 0x46]), { status: 200 })) as unknown as typeof fetch;
+		const s3 = await import('@providers/s3/s3');
+		const originalWrite = s3.s3Client.write.bind(s3.s3Client);
+		(s3.s3Client as unknown as { write: (key: string) => Promise<void> }).write = async (key: string) => {
+			written.push(key);
+		};
+		try {
+			await processOrgLogoJob(repository, { data: { organizationId: 'org-1', slug: 'org' } });
+		} finally {
+			globalThis.fetch = originalFetch;
+			(s3.s3Client as unknown as { write: typeof originalWrite }).write = originalWrite;
+		}
+		expect(written).toEqual(['organizations/org-1/logo-generated.webp']);
+		expect(setLogoIfEmptyCalls).toEqual([
+			['org-1', 'organizations/org-1/logo-generated.webp'],
+		]);
 	});
 
 	test('logo API URL is deterministic on the slug (seed=slug, initials/webp, 256px)', async () => {

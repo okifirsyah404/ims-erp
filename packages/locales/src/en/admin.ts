@@ -143,13 +143,7 @@ const admin = {
 	'orgs.creating': 'Creating…',
 	'orgs.details': 'Organization details',
 	'orgs.slugDescription': 'The slug is permanent and used in URLs and API contexts.',
-	// Nested users on create (ERP-0041).
-	'orgs.usersTitle': 'Users to add',
-	'orgs.addUser': 'Add user',
-	'orgs.removeUser': 'Remove',
-	'orgs.userEmail': 'Email',
-	'orgs.userName': 'Name',
-	'orgs.duplicateUserEmail': 'Each email may appear only once in the list.',
+	'orgs.slugInvalid': 'Use lowercase letters, digits and single dashes.',
 	// Organization profile image (ERP-0041).
 	'orgImage.title': 'Profile image',
 	'orgImage.description':
@@ -157,6 +151,8 @@ const admin = {
 	'orgImage.dropHint': 'Drop an image here, or click to choose',
 	'orgImage.replaceHint': 'Drop a new image to replace, or click to choose',
 	'orgImage.invalidType': 'Only image files are supported',
+	'orgImage.tooLarge': 'The image is larger than 20 MB',
+	'orgImage.decodeFailed': 'The image could not be read',
 	'orgImage.uploading': 'Uploading…',
 	'orgImage.uploaded': 'Profile image updated',
 	'orgImage.cleared': 'Profile image removed',

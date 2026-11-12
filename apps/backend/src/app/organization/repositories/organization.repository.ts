@@ -222,7 +222,7 @@ export class OrganizationRepository implements IOrganizationRepository {
 
 	/**
 	 * Sets `logo` to an object key (or `null`) and invalidates the cache.
-	 * Background-worker + service write path; see the interface note.
+	 * Service write path (upload / clear); see the interface note.
 	 */
 	async setLogo(id: string, logo: string | null): Promise<void> {
 		await this.db
@@ -230,6 +230,25 @@ export class OrganizationRepository implements IOrganizationRepository {
 			.set({ logo })
 			.where(eq(organizations.id, id));
 		await this.invalidate(id);
+	}
+
+	/**
+	 * Sets `logo` only when it is still empty.
+	 *
+	 * @remarks
+	 * The `logo IS NULL` predicate is what makes the generated-fallback worker
+	 * safe: its earlier `findById` may already be stale, so the check has to
+	 * live in the UPDATE rather than in the caller.
+	 */
+	async setLogoIfEmpty(id: string, logo: string): Promise<boolean> {
+		const updated = await this.db
+			.update(organizations)
+			.set({ logo })
+			.where(and(eq(organizations.id, id), isNull(organizations.logo)))
+			.returning({ id: organizations.id });
+		if (updated.length === 0) return false;
+		await this.invalidate(id);
+		return true;
 	}
 
 	/**

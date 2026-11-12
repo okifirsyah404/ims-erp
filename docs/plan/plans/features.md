@@ -51,7 +51,11 @@ Last synced: 2026-11-08.
   invite reuses a leftover employee row. Logo picking is a drag & drop
   dropzone on both form pages; object key `organizations/<id>/logo.webp`
   (plural, like `users/<id>/avatar.webp`) re-verified with the real seed asset.
-  Evidence: progress 2026-11-12.
+  The create page is now org details only (nested users removed by user
+  decision; `POST /organizations` still accepts `users` for API callers) and
+  the image input downscales to 512px client-side, caps the source at 20MB and
+  falls back to the generated key `logo-generated.webp` behind a conditional
+  `logo IS NULL` write. Evidence: progress 2026-11-12.
 
 
 ## M02 CRM and Sales

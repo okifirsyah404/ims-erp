@@ -51,7 +51,15 @@ export function OrganizationImageCard({
 	async function handleFile(file: File) {
 		setUploading(true);
 		try {
-			const webp = await encodeWebp(file);
+			let webp: Blob;
+			try {
+				webp = await encodeWebp(file);
+			} catch {
+				// Undecodable source (HEIC, corrupt bytes): the browser never
+				// produced a bitmap, so the server was not involved.
+				toast.error(t('orgImage.decodeFailed'));
+				return;
+			}
 			await uploadOrganizationImage(organizationId, webp);
 			toast.success(t('orgImage.uploaded'));
 			invalidate();
@@ -85,27 +93,39 @@ export function OrganizationImageCard({
 			<CardContent className='flex items-center gap-4'>
 				<ImageDropzone
 					previewUrl={imageUrl ?? null}
-					disabled={!canUpdate || uploading}
+					disabled={!canUpdate}
+					busy={uploading}
 					label={t('orgImage.title')}
 					hint={t('orgImage.dropHint')}
 					onSelect={(file) => void handleFile(file)}
-					onReject={() => toast.error(t('orgImage.invalidType'))}
+					onReject={(reason) =>
+						toast.error(
+							t(reason === 'size' ? 'orgImage.tooLarge' : 'orgImage.invalidType'),
+						)
+					}
 				/>
 				{canUpdate && (
 					<div className='flex flex-col gap-2'>
-						<p className='text-xs text-muted-foreground'>
-							{uploading
-								? t('orgImage.uploading')
-								: imageUrl
-									? t('orgImage.replaceHint')
-									: t('orgImage.dropHint')}
-						</p>
+						{/* The zone shows the pick hint when empty; once an image
+						    exists only the replace hint and Delete are needed. */}
+						{uploading ? (
+							<p className='text-xs text-muted-foreground'>
+								{t('orgImage.uploading')}
+							</p>
+						) : (
+							imageUrl && (
+								<p className='text-xs text-muted-foreground'>
+									{t('orgImage.replaceHint')}
+								</p>
+							)
+						)}
 						{imageUrl && (
 							<Button
 								type='button'
 								variant='ghost'
 								size='sm'
 								className='self-start'
+								disabled={uploading}
 								onClick={() => void handleClear()}
 							>
 								{t('common:action.delete')}

@@ -29,6 +29,69 @@ GET returned a MinIO presigned URL, and the edit page rendered the image
 (72px preview, Replace/Delete buttons). `docs/plan/backlog.md` ERP-0041 →
 **verified**.
 
+## 2026-11-12 - Create-org page: invitations dropped, single-card layout, robust image input
+
+User decision: **no user/invite section on organization creation.** The page is
+now name + slug + logo only; the nested-users block (`NewUserRow`, `addUser`,
+`patchUser`, duplicate-email banner, `users` in the POST payload) is gone.
+`POST /organizations` still accepts `users` — backend contract, service, and its
+12 unit tests are untouched — but the UI no longer sends it, so an organization
+is created empty and members are added from the detail page's invite dialog.
+
+**Layout.** One `max-w-2xl` card, `sm:grid-cols-[8rem_1fr]`: the 32×32 logo
+dropzone on the left (it is an organization attribute, not a user field), name
+and slug on the right, actions in a bordered footer (`Cancel` / `Create`) instead
+of stacked inline. The slug line under the input shows the resulting path and
+turns into `orgs.slugInvalid` as soon as the value fails the backend regex.
+
+**Image input hardening** (applies to the edit page too):
+
+- `encodeWebp(file, { maxSize = 512 })` downscales the longest side — a 4000px
+  photo previously re-encoded at full size and tripped the server's 2MB cap.
+  Verified: a 1600×1000 source stored as **512×320, 1170 bytes**.
+- `image-file.ts` gained `rejectImageFile` → `'type' | 'size'`, so the dropzone
+  can distinguish "not an image" from "larger than 20MB" and the caller toasts
+  the right message. Empty MIME types (Windows Explorer drags) now fall back to
+  the extension.
+- Drag highlight uses a depth counter: nested `dragenter`/`dragleave` from child
+  elements no longer flicker the dashed border (verified: highlight survives one
+  nested leave, clears on the real one).
+- Dropzone got `busy` (spinner + input ignored), `focus-visible` ring, and
+  `aria-busy`; the create page shows the picked file name + Remove.
+- Decode failures (`createImageBitmap` rejects HEIC/corrupt bytes) show
+  `orgImage.decodeFailed` instead of a raw English error.
+
+**Real bug found by verifying the create flow: the DiceBear fallback overwrote
+the uploaded logo.** The worker and the upload wrote the *same* key
+(`organizations/<id>/logo.webp`); the worker's `findById` check ran before the
+upload landed, so its DiceBear bytes were written last — the stored image was
+256×256 initials instead of the 512×320 upload. Fixed by construction:
+
+- generated fallback moved to its own key,
+  `organizations/<id>/logo-generated.webp` (`organizationGeneratedImageObjectKey`),
+  so it can never clobber `logo.webp`;
+- new `IOrganizationRepository.setLogoIfEmpty` does the emptiness check inside
+  the `UPDATE` (`WHERE logo IS NULL`, `returning`), so a stale read cannot win;
+- the worker's lost race leaves an unreferenced generated object (bucket
+  lifecycle rule's job, noted in the worker comment).
+
+Verified live (dev servers running, seed admin): drop 1600×1000 PNG on the
+create page → `POST /organizations` **201** with `members: []` (no `users` in the
+payload) → `POST …/image-profile` **200** →
+`GET …/image-profile` presigned key `/ims-erp-local/organizations/<id>/logo.webp`
+serving **512×320**; both test organizations deleted (`DELETE` → 200). Reject
+path: dropping a `.txt` leaves the preview empty.
+
+Tests: backend **838 pass / 0 fail** (new worker case asserts the generated key
+and the conditional write), web-admin **62 pass** (image-file now covers
+extension fallback and the 20MB cap), locales **82 pass** (parity + dead keys
+after removing the six `orgs.*` user keys), `bunx tsc -b --noEmit` clean in both
+workspaces, `bun run lint` no new warnings. `docs/database/` changed only as a
+`logo` column note (key layout), and `validate-dbml.ts` printed `OK`.
+
+Note: the race fix needs a **backend restart** to take effect in the long-running
+dev process; the live run above still used the old worker code.
+
 ## 2026-11-12 - Org logo key pluralised + real seed-image upload (`entragate-bg-white.png`)
 
 **Key layout changed to plural:** `organizationImageObjectKey` now returns

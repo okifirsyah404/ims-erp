@@ -64,12 +64,24 @@ export interface IOrganizationRepository {
 
 	/**
 	 * Sets `logo` to an S3 object key (or `null` to clear it) and
-	 * invalidates the `findById` cache. The only direct `logo` write — used
-	 * by the background DiceBear logo worker, which has no caller session
-	 * for the Better Auth gateway. Client uploads also route here after the
-	 * service has stored the object.
+	 * invalidates the `findById` cache. Used by client uploads (after the
+	 * service has stored the object) and by clearing the image.
 	 */
 	setLogo(id: string, logo: string | null): Promise<void>;
+
+	/**
+	 * Sets `logo` only when the column is still empty, and invalidates the
+	 * `findById` cache when it did write.
+	 *
+	 * @returns `true` when this call set the logo, `false` when another writer
+	 * (a real upload, typically) already did.
+	 *
+	 * @remarks
+	 * The generated DiceBear fallback must never overwrite a user upload: the
+	 * worker's earlier read of `logo === null` can be stale by the time it
+	 * writes, so the emptiness check has to happen inside the UPDATE.
+	 */
+	setLogoIfEmpty(id: string, logo: string): Promise<boolean>;
 
 	/** Paginated member list joined with user identity fields. */
 	paginateMembers(

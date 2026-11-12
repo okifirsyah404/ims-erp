@@ -147,14 +147,7 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgs.details': 'Detail organisasi',
 	'orgs.slugDescription':
 		'Slug bersifat permanen dan dipakai di URL serta konteks API.',
-	// Pengguna bersarang saat membuat (ERP-0041).
-	'orgs.usersTitle': 'Pengguna yang ditambahkan',
-	'orgs.addUser': 'Tambah pengguna',
-	'orgs.removeUser': 'Hapus',
-	'orgs.userEmail': 'Email',
-	'orgs.userName': 'Nama',
-	'orgs.duplicateUserEmail':
-		'Setiap email hanya boleh muncul satu kali dalam daftar.',
+	'orgs.slugInvalid': 'Gunakan huruf kecil, angka, dan satu tanda hubung.',
 	// Gambar profil organisasi (ERP-0041).
 	'orgImage.title': 'Gambar profil',
 	'orgImage.description':
@@ -162,6 +155,8 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgImage.dropHint': 'Tarik gambar ke sini, atau klik untuk memilih',
 	'orgImage.replaceHint': 'Tarik gambar baru untuk mengganti, atau klik untuk memilih',
 	'orgImage.invalidType': 'Hanya berkas gambar yang didukung',
+	'orgImage.tooLarge': 'Gambar lebih besar dari 20 MB',
+	'orgImage.decodeFailed': 'Gambar tidak dapat dibaca',
 	'orgImage.uploading': 'Mengunggah…',
 	'orgImage.uploaded': 'Gambar profil diperbarui',
 	'orgImage.cleared': 'Gambar profil dihapus',
