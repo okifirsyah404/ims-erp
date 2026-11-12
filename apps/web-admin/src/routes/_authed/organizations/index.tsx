@@ -167,13 +167,19 @@ function OrganizationsPage() {
 									</div>
 								</CardContent>
 								<CardFooter className='justify-between'>
-									{org.deletedAt ? (
-										<Badge variant='destructive'>
-											{t('orgs.deletedBadge')}
-										</Badge>
-									) : (
-										<Badge variant='secondary'>{t('orgs.activeBadge')}</Badge>
-									)}
+									{/* The row is pinned to the small-button height so a
+									    badge-only (active) footer matches the height of a
+									    deleted one that also carries Restore — otherwise the
+									    two badges sit 4px apart in the same grid row. */}
+									<div className='flex h-7 items-center'>
+										{org.deletedAt ? (
+											<Badge variant='destructive'>
+												{t('orgs.deletedBadge')}
+											</Badge>
+										) : (
+											<Badge variant='secondary'>{t('orgs.activeBadge')}</Badge>
+										)}
+									</div>
 									{org.deletedAt && (
 										<Button
 											variant='outline'

@@ -46,6 +46,13 @@ and `shrink-0` on the button.
 Verified live at 1074px: three columns of 246px, no footer or stat-row clipping
 on any card (`scrollWidth <= clientWidth`).
 
+**Card footer height.** An active organization's footer held only the `Active`
+badge (20px) while a deleted one also carried the `Restore` button (28px), so
+the two footer heights differed (53px vs 61px) and the badges in one grid row
+sat 4px apart. The badge is now wrapped in a `flex h-7 items-center` row pinned
+to the small-button height, so every footer is 61px and every badge is 21px from
+the footer's top edge (verified on all four cards).
+
 ## 2026-11-13 - `/organizations` list: logos presigned server-side
 
 The list cards were broken because `GET /organizations` returned the stored
