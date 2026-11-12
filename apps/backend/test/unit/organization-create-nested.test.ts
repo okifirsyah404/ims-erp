@@ -224,7 +224,7 @@ describe('org-logo worker (ERP-0041)', () => {
 	test('skips when a logo is already set (real upload wins)', async () => {
 		const setLogoCalls: Array<[string, string | null]> = [];
 		const repository = {
-			findById: async () => orgRow({ logo: 'organization/org-1/logo.webp' }),
+			findById: async () => orgRow({ logo: 'organizations/org-1/logo.webp' }),
 			setLogo: async (id: string, logo: string | null) => {
 				setLogoCalls.push([id, logo]);
 			},

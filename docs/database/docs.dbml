@@ -432,7 +432,7 @@ Table auth.organizations {
   id text [pk]
   name text [not null]
   slug text [not null, unique]
-  logo text
+  logo text [note: "Object-storage key of the organization profile image (`organizations/<id>/logo.webp`, WebP). Presigned on read; never an expiring URL."]
   created_at timestamp [not null]
   metadata text
   Note: "Better Auth organization. An internal organization of the company; multiple may exist inside one company. Not a tenancy boundary - ERP master data is shared company-wide. See ADR-0001 and ADR-0007."

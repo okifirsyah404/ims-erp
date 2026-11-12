@@ -15,6 +15,8 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 Status: **verified** (2026-11-12) — live walk-through done: upload via the
 edit page renders the WebP from MinIO (screenshot evidence); create page has
 the image picker + nested users; detail page no longer hosts the card.
+Object key is `organizations/<organizationId>/logo.webp` (plural, matching
+`users/<id>/avatar.webp`).
 
 Image card placement fix (same day, user feedback): the profile-image card
 moved from the org **detail** page to the **edit** page, and the create page
@@ -22,10 +24,49 @@ gained an optional image picker (file is client-encoded WebP and uploaded
 right after the org exists, since the endpoints are id-scoped).
 Verified live in the browser (dev servers already running): logged in as the
 seed admin, POSTed a canvas-encoded WebP to
-`/organizations/:id/image-profile` → 200 `imageKey: organization/<id>/logo.webp`,
+`/organizations/:id/image-profile` → 200 `imageKey: organizations/<id>/logo.webp`,
 GET returned a MinIO presigned URL, and the edit page rendered the image
 (72px preview, Replace/Delete buttons). `docs/plan/backlog.md` ERP-0041 →
 **verified**.
+
+## 2026-11-12 - Org logo key pluralised + real seed-image upload (`entragate-bg-white.png`)
+
+**Key layout changed to plural:** `organizationImageObjectKey` now returns
+`organizations/<organizationId>/logo.webp` (was singular), matching the user
+avatar convention `users/<id>/avatar.webp`. Callers needed no change — both
+`OrganizationService.setImage` and the DiceBear `processOrgLogoJob` go through
+the builder, and reads presign whatever key is stored in
+`auth.organizations.logo` (nothing parses the prefix). The worker's doc comment
+and the `organization-create-nested` worker fixture were updated with it. No
+data migration: ERP-0041 is unreleased, so a re-upload is enough.
+
+**Seed data fix.** `database/seeders/raw/organization/organization.json` pointed
+at `./entragate.webp`, a file that no longer exists in the tree; it now points
+at `./image/entragate-bg-white.png`. Note: no seeder code reads that JSON —
+`organization.seeder.ts` creates Entragate through the Better Auth API and no
+`image_path` consumer exists, so the value is metadata only (left in place for
+whoever builds the missing uploader).
+
+**Seed re-run + real-file upload verification** (`bun run drizzle:seed` in
+`apps/backend`, 5.1s, idempotent: "Role account already exists; reusing"):
+
+- before: `auth.organizations.logo` for org `QJlMCRUQd4SgShQVK4t4PptOI909atvX`
+  still held the old singular key.
+- served the seed PNG over a throwaway local static server (browser pages
+  cannot read local files), fetched it in the page as a `File`
+  (`image/png`, 6420 bytes) and dispatched a synthetic `drop` on
+  `button[aria-label="Profile image"]` of the edit page.
+- `POST /organizations/:id/image-profile` → **200**,
+  `imageKey: organizations/QJlMCRUQd4SgShQVK4t4PptOI909atvX/logo.webp`.
+- `GET …/image-profile` → 200, presigned URL path
+  `/ims-erp-local/organizations/<id>/logo.webp`; the dropzone preview now
+  renders from it (`100x100` natural, the real asset).
+- DB after: `logo = organizations/QJlMCRUQd4SgShQVK4t4PptOI909atvX/logo.webp`.
+- old object under the singular prefix is untouched/orphaned in the dev bucket
+  (unreleased feature, no migration).
+
+Commands: backend `bun run test` → **837 pass / 0 fail** (58 files),
+`bunx tsc -b --noEmit` clean. Temporary server/check scripts deleted.
 
 ## 2026-11-12 - Org logo upload: icon dropzone with drag & drop (create + edit)
 
@@ -48,7 +89,7 @@ Verified live (dev servers already running, seed admin):
 
 - edit page: dragging a canvas-encoded PNG onto the dropzone fired the upload —
   `POST /organizations/:id/image-profile` → 200
-  `imageKey: organization/<id>/logo.webp`, preview then rendered from the MinIO
+  `imageKey: organizations/<id>/logo.webp`, preview then rendered from the MinIO
   presigned URL (`32x32` natural size).
 - create page: dropping an image shows an object-URL preview and the file name;
   submitting created the org (`POST /organizations` → 201) and uploaded the logo
@@ -226,7 +267,7 @@ edit) and new unit tests for the new paths still open.
   read). Client sends WebP; server validates magic bytes (`isWebpBuffer` —
   `RIFF`+`WEBP`) and size ≤ 2MB (`organizationImageFrom`,
   `utils/organization-image.ts`), stores under
-  `organization/<id>/logo.webp` (`constants/image-keys.ts`) via
+  `organizations/<id>/logo.webp` (`constants/image-keys.ts`) via
   `IObjectStorage.put`, writes the object key into `auth.organizations.logo`
   through the new cache-invalidating `OrganizationRepository.setLogo` (the
   only direct logo write; the background worker has no caller session for

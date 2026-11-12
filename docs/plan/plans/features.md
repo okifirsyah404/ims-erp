@@ -49,7 +49,9 @@ Last synced: 2026-11-08.
   disposable DB. Live browser walk-through done: WebP upload → MinIO
   presigned read, multi-role bulk invite stored `technician,sales`, retried
   invite reuses a leftover employee row. Logo picking is a drag & drop
-  dropzone on both form pages. Evidence: progress 2026-11-12.
+  dropzone on both form pages; object key `organizations/<id>/logo.webp`
+  (plural, like `users/<id>/avatar.webp`) re-verified with the real seed asset.
+  Evidence: progress 2026-11-12.
 
 
 ## M02 CRM and Sales

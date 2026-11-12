@@ -10,5 +10,5 @@
 
 /** S3 key of the organization profile image (WebP uploaded by the client). */
 export function organizationImageObjectKey(organizationId: string): string {
-	return `organization/${organizationId}/logo.webp`;
+	return `organizations/${organizationId}/logo.webp`;
 }

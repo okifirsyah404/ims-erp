@@ -55,7 +55,7 @@ export async function generateOrgLogoWebp(slug: string): Promise<Buffer> {
 
 /**
  * Generates the logo WebP, uploads it to S3 as
- * `organization/<orgId>/logo.webp`, and stores the object key (NOT a URL) in
+ * `organizations/<orgId>/logo.webp`, and stores the object key (NOT a URL) in
  * `auth.organizations.logo` through the organization repository — but ONLY
  * when the organization still has no logo: a real uploaded image (or an
  * org that has been deleted meanwhile) always wins over the fallback.
