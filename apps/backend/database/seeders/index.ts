@@ -13,6 +13,7 @@ import { seedOrganizationRoles } from './seed/organization-roles.seeder';
 import { seedCompanyProfile } from './seed/company-profile.seeder';
 import { seedItemCategories } from './seed/item-category.seeder';
 import { seedHrEmployees } from './seed/hr.seeder';
+import { redisClient } from '../../src/providers/redis/redis';
 
 const logger = pino({
 	timestamp: false,
@@ -28,6 +29,10 @@ const logger = pino({
 export async function runSeeders(): Promise<void> {
 	const startedAt = DateTime.now();
 	logger.info({ startedAt: startedAt.toISO() }, 'Seeding started');
+
+	// Stale cache after reseeding points at old rows; clear everything first.
+	await redisClient.flushall();
+	logger.info('Cache flushed');
 
 	await seedAuth();
 	await seedLocations(drizzleDB);
