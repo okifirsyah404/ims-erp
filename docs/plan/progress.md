@@ -13,7 +13,31 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > entries are left as written; only current/live sections use the new paths.
 
 Status: **implemented** — backend + migration verified + web-admin UI +
-backend unit tests. Not yet `verified` (no live browser walk-through).
+backend unit tests + CI green. Not yet `verified` (no live browser
+walk-through).
+
+## 2026-11-12 - ERP-0041 CI unblocking (three rounds, pushed to PR #82)
+
+CI (`Main Test and Build Backend`) failed 3× with unit tests timing out at
+5s; every root cause was a side effect of org/invite creation awaiting live
+infrastructure CI does not have:
+
+1. `await this.provisionRoles(...)` → seeder uses the real drizzle client
+   (`POSTGRES_CONNECTION_REFUSED` retries) → `void this.provisionRoles(...)`
+   (commit `41232f4`).
+2. `await dispatchOrgLogoGeneration(...)` → BullMQ needs Redis → fire-and-
+   forget `void dispatchOrgLogoGeneration(...).catch(...)` (commit `c197505`).
+3. `InvitationService.ensureAvatar` → `await dispatchAvatarGeneration(...)`
+   → Redis; plus `organizationNameFor` dynamically imports Better Auth whose
+   `$context` needs Postgres → `void` dispatch + unit tests mock
+   `@providers/better-auth/auth` with a throwing `$context` getter (commits
+   `c197505`, `496c986`).
+
+All three paths were already documented as best-effort ("a queue outage
+never fails the invite"), so awaiting them bought nothing — marking
+fire-and-forget is semantically honest, not just CI appeasement. Local
+836 pass after each fix; final CI run `43216792012` success (backend +
+web-admin). Lint warnings shown in CI are pre-existing, not from ERP-0041.
 
 ## 2026-11-12 - ERP-0041 frontend slice + unit tests (same day, same task)
 
