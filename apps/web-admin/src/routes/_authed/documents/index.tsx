@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { FileText } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -169,7 +169,15 @@ function DocumentsPage() {
 							<TableBody>
 								{rows.map((document) => (
 									<TableRow key={document.id}>
-										<TableCell className='font-mono text-xs'>{document.code}</TableCell>
+										<TableCell className='font-mono text-xs'>
+										<Link
+											to='/documents/$documentId'
+											params={{ documentId: document.id }}
+											className='hover:underline'
+										>
+											{document.code}
+										</Link>
+									</TableCell>
 										<TableCell className='text-xs'>{document.documentType}</TableCell>
 										<TableCell>{document.title}</TableCell>
 										<TableCell className='whitespace-nowrap text-xs'>

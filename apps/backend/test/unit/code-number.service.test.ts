@@ -14,6 +14,7 @@ import type {
 	CodeType,
 	TCodeNumberSeriesSelect,
 } from '@drizzle/schemas/code-number.schema';
+import { CODE_TYPES } from '@drizzle/schemas/code-number.schema';
 import type {
 	ICodeNumberRepository,
 	TCodeNumberSettings,
@@ -162,11 +163,17 @@ describe('CodeNumberService', () => {
 	test('listSettings shows every type with defaults until overridden', async () => {
 		const settings = await service.listSettings();
 		const quotation = settings.find((s) => s.codeType === 'quotation');
-		expect(settings).toHaveLength(29);
+		// One row per code type, no fewer (ERP-0043 added the three item kinds).
+		expect(settings).toHaveLength(CODE_TYPES.length);
 		expect(quotation).toMatchObject({ typeCode: 'QT', isDefault: true, resetPolicy: 'yearly' });
 		expect(settings.find((s) => s.codeType === 'purchase_order')?.resetPolicy).toBe('monthly');
 		expect(settings.find((s) => s.codeType === 'employee')).toMatchObject({
 			typeCode: 'EMP',
+			isDefault: true,
+			resetPolicy: 'never',
+		});
+		expect(settings.find((s) => s.codeType === 'item_product')).toMatchObject({
+			typeCode: 'PRD',
 			isDefault: true,
 			resetPolicy: 'never',
 		});

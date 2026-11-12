@@ -119,6 +119,9 @@ let orders: FakeOrders;
 let billed: Set<string>;
 let delivering: Set<string>;
 let executing: Set<string>;
+/** Registry calls made by the service (ERP-0044). */
+let registered: { code: string; sourceId: string }[];
+let voided: string[];
 let service: SalesOrderService;
 const create = (ctx: TSalesOrderContext, extra: Record<string, unknown> = {}) =>
 	service.create(ctx, createSalesOrderSchema.parse({ quotationId: Q, ...extra }));
@@ -129,6 +132,8 @@ beforeEach(() => {
 	delivering = new Set();
 	executing = new Set();
 	orders = new FakeOrders();
+	registered = [];
+	voided = [];
 	service = new SalesOrderService(
 		orders,
 		{
@@ -143,6 +148,16 @@ beforeEach(() => {
 		{ hasLiveInvoices: async (id: string) => billed.has(id) },
 		{ hasLiveNotes: async (id: string) => delivering.has(id) },
 		{ hasLiveProject: async (id: string) => executing.has(id) },
+		{
+			register: async (input) => {
+				registered.push(input);
+				return {} as never;
+			},
+			voidBySource: async (module, sourceType, sourceId) => {
+				voided.push(`${module}/${sourceType}/${sourceId}`);
+				return 1;
+			},
+		},
 	);
 });
 
@@ -164,6 +179,18 @@ describe('creating an order from an SPH', () => {
 		expect(order.paymentSchedule).toHaveLength(2);
 		expect(await orders.findItems(order.id)).toMatchObject([{ quotationItemId: 'qi-1', sku: 'SG-01', quantity: '2' }]);
 		expect(quotations.get(Q)!.status).toBe('won');
+		// ERP-0044: the registry row shares the business code and source id.
+		expect(registered).toEqual([
+			expect.objectContaining({
+				code: '0001/SO/IMS/XI/26',
+				documentType: 'sales_order',
+				module: 'sales',
+				sourceType: 'sales_order',
+				sourceId: order.id,
+				issuedOn: '2026-11-06',
+			}),
+		]);
+		expect(voided).toEqual([]);
 	});
 
 	test('a sent SPH works too; draft, submitted, rejected and lost do not', async () => {
@@ -209,6 +236,8 @@ describe('cancelling', () => {
 		const cancelled = await service.cancel(manager, order.id, 'Customer batal');
 		expect(cancelled).toMatchObject({ status: 'cancelled', cancellationReason: 'Customer batal' });
 		expect(quotations.get(Q)!.status).toBe('sent');
+		// ERP-0044: a cancelled order is voided in the registry.
+		expect(voided).toEqual([`sales/sales_order/${order.id}`]);
 		await expect(service.cancel(manager, order.id, 'lagi')).rejects.toBeInstanceOf(SalesOrderNotCancellableError);
 		// The reopened SPH can become an order again.
 		expect((await create(sales)).status).toBe('confirmed');

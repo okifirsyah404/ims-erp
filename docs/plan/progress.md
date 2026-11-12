@@ -12,15 +12,153 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+Status: **implemented** (2026-11-13) - ERP-0044 wires the document registry
+(11 outward-facing types), `document.files`, public share links and the
+`/documents/$documentId` detail page. Backend 856 tests, web-admin 66, locales
+86, backend + web-admin typecheck clean, lint exit 0, migration
+`20261113140000` verified on a disposable database, `validate-dbml.ts` OK. Not
+`verified`: no live HTTP run of the share/download routes and no browser
+walk-through. Next executable task: **ERP-0045** (settings KV CRUD). See
+"2026-11-13 - ERP-0044" below.
+
+Status: **implemented** (2026-11-13) - ERP-0043 gives the item master a
+generated `code` per kind (`PRD-`/`MAT-`/`CMP-`), adds
+`inventory.items.serial_number`, and keeps `sku` manual. Not `verified`: no
+browser walk-through of the item form/list.
+
 Status: **implemented** (2026-11-13) - ERP-0042 split `organization` into
 three modules with their own Postgres schemas (`company`, `document`,
 `code_number`) and the UI/nav/locale changes that follow. Backend 844 tests,
 web-admin 62, locales 86, typecheck clean, migrations + seeders verified on a
 disposable database, `validate-dbml.ts` OK. Not `verified` yet: no browser
 walk-through of `/admin/company`, `/admin/code-numbers` or `/documents`, and no
-reviewer sign-off. Next executable task: **ERP-0043** (item/asset code
-generation per kind), or a browser pass over the moved pages if the walk-through
-is wanted first.
+reviewer sign-off. ERP-0043 (item codes per kind) landed afterwards - see the
+next entry.
+
+## 2026-11-13 - ERP-0044 document registry, files, public shares
+
+Design answers (from the 2026-11-13 design session): share token is its own
+uuid column, never the row id; expiry mandatory (default 30 days, cap 365);
+registry rows are written when a business document becomes outward-facing;
+file uploads are PDF/PNG/JPG/WebP up to 10 MB under a fresh key per upload.
+
+**Registry wiring (S2).** `DocumentService.register(input, tx?)` inserts an
+`issued` row without allocating; `issue` allocates then inserts. `voidBySource`
+voids registry copies when a business document dies. Nine owning services call
+it: quotation, sales order, delivery note, invoice (incl. receipts), purchase
+order, goods receipt, handover/BAST, warranty, service ticket, licensing. Unit
+tests updated with register/void doubles and assertions.
+
+**Files (S3).** `document.files` upload, list, soft delete, presigned download
+(300 s) writing `access_logs` with ip/user-agent. `providers/s3/document-file.ts`
+holds the rule set. `DocumentService.uploadFile` refuses void documents.
+
+**Shares (S4).** `document.shares.token` (uuid) via append-only migration
+`20261113140000_erp0044_document_share_token` (`shares_token_uq` partial unique,
+`shares_token_live_idx`). `createShare` / `revokeShare` on
+`/documents/:id/shares`. `GET /public/v1/documents/:token` (anonymous) returns
+only code, type, title, issuedOn, status, files, and logs a `view` row with no
+user. Expired, revoked or void-document links answer 404.
+
+**Web-admin.** `/documents/$documentId` with files (upload, download, delete),
+share links (create, copy, revoke) and access trail. Registry list rows link
+to it. `routeTree.gen.ts` regenerated via `bunx vite build`. Locales en+id:
+`documents.*` keys, `api.ts` `document.fileNotFound` / `shareNotFound` /
+`fileNotAllowed` and `common.fileInvalid`.
+
+**Schema docs.** `docs/database/docs.dbml`: `document.shares.token` plus
+`shares_token_uq` / `shares_token_live_idx`.
+`gen-logical-references.ts` -> 526 refs across 41 targets; `validate-dbml.ts`
+-> `parsed: 268 tables, 231 refs`, `cross-module refs: 0`, `timestamp gaps: 0`,
+`OK`.
+
+**Commands and outcomes.**
+- `bunx tsc --noEmit` (apps/backend): clean (after locale keys added).
+- `bun test` (apps/backend): 856 pass, 0 fail, 59 files (12 new in
+  `test/unit/document.service.test.ts`).
+- `bunx tsc -p tsconfig.app.json --noEmit` (apps/web-admin): clean.
+- `bun run test` (apps/web-admin): 66 pass.
+- `bun run test` (packages/locales): 86 pass after adding
+  `documents:action.` to `DYNAMIC_PREFIXES` (the trail label key is composed
+  from the server's action value).
+- `bun run lint` (packages/locales and apps/backend): exit 0; backend warnings
+  are pre-existing.
+- `bunx vite build` (apps/web-admin): built; route tree regenerated.
+- `psql -v ON_ERROR_STOP=1` on `verify_s6` for `20261113140000`: applies, and a
+  second run is idempotent (notices only).
+
+**Not done / open.** No live HTTP check of upload, download, share or public
+routes; no browser walk-through of `/documents/$documentId`. The 11 registry
+types are wired in code and unit-tested per owning service, not against a live
+database. Changes are uncommitted in `B:\ims\erp-company`.
+
+## 2026-11-13 - ERP-0043 item codes per kind
+
+User decision: item `code` is **newly generated** per tenant (option 2), not
+backfilled from `sku`. Assets needed no change - `AssetService.create` already
+allocates `AST-` through the numbering authority, and adding a `sku` column with
+no consumer would be dead code.
+
+**Schema (canonical first).** `docs/database/docs.dbml`: `inventory.items` gained
+`code varchar(32) [not null]` and `serial_number text`, the `sku` note now says
+user-typed/immutable, the table note records ERP-0043, and the index block gained
+the ADR-0008 pair `inventory_items_org_code_uq` / `inventory_items_global_code_uq`.
+`code_number.series`' note records the three new types.
+`bun docs/database/validate-dbml.ts` -> `parsed: 268 tables, 231 refs`,
+`cross-module refs: 0`, `timestamp gaps: 0`, `OK`.
+
+**Code.** `CODE_TYPES` += `item_product`/`item_material`/`item_component`;
+`CODE_TYPE_CODES` `PRD`/`MAT`/`CMP`; `CODE_TYPE_MODULES` -> `inventory`;
+patterns `{TYPE}-{SEQ:5}` with `reset: 'never'`. `ItemService` injects
+`CODE_NUMBER_SERVICE_TOKEN` (`Pick<CodeNumberService, 'next'>`), maps kind ->
+code type through `itemCodeType()` (narrowing helper, because `itemKind` arrives
+as plain `text` from the insert type), allocates before the insert and audits
+`code` in the meta. `IItemRepository.create(data, code)` keeps `code` out of
+`TItemCreateData`/`TItemUpdateData`, so the type system enforces immutability.
+`createItemSchema`/`updateItemSchema` gained `serialNumber`; `.strict()` rejects
+a client-sent `code`.
+
+**Migration** `20261113130000_erp0043_item_codes` (hand-written, append-only):
+adds both columns, backfills `code` deterministically per kind with
+`ROW_NUMBER() OVER (PARTITION BY item_kind ORDER BY created_at, id)`, sets
+`NOT NULL`, creates the two partial unique indexes, and inserts the three
+`code_number.series` rows at `used + 1` guarded by `NOT EXISTS`. The backfill is
+explicitly a **synthetic** value for pre-existing rows, not a rename of `sku`.
+
+**Seeder.** `SEED_ITEMS` entries carry a deterministic `code`
+(`PRD-00001`..`CMP-00004`) alongside the `ITEM-###` SKU anchors, so idempotency
+and the `ITEM-005`/`ITEM-009` opening-stock anchors are untouched; a new
+`ensureItemCodeSeries()` pushes the three series to `seeded + 1` with
+`GREATEST(...)` so the first API-created item continues instead of colliding.
+
+**Web admin.** `TItem`/`TItemCreateInput` gained `code`/`serialNumber`; the item
+form shows `code` read-only when editing and a serial-number input; the kind list
+gained a Code column; the detail header renders `code · sku`. Locale keys
+`inventory:items.code`, `items.codeAutoHint`, `items.serialNumber` in **en + id**.
+
+**Verification (this worktree).**
+- `psql` against a fresh disposable DB `verify_s6`: all **53** migrations applied
+  in folder order with `ON_ERROR_STOP=1`, 0 failures (drizzle-kit migrate is
+  still unusable on this branch - conflicting hand-written migrations).
+- Seeders run twice: 12 items, 4 stock movements, series `next_number` 5 before
+  and after the second run - 0 new rows.
+- Backfill re-run proof: nulled every `code`, re-executed the migration SQL - the
+  same deterministic codes came back, and the series counters did not move
+  (`NOT EXISTS` guard).
+- `apps/backend`: `bunx tsc --noEmit` clean; `bun test` **844 pass / 0 fail**
+  (updated `item.service.test.ts` double for the numbering port and `create(code)`,
+  `inventory-authorization.test.ts` registers a numbering double,
+  `code-number.service.test.ts` asserts `CODE_TYPES.length` and the `item_product`
+  default instead of a hardcoded 29).
+- `apps/web-admin`: `bunx tsc -p tsconfig.app.json --noEmit` clean, `bun test`
+  62 pass, `bun run lint` warnings only.
+- `packages/locales`: `bun test` 86 pass. Root `bun run lint` 5/5.
+- `docs/database/` reviewed and updated (table + index + series note).
+
+**Deliberately not done:** no browser walk-through of the item form/list, and no
+backfill of `code` into any other module's snapshot columns (nothing references
+an item code yet).
+
 
 Status: **verified** (2026-11-13) — live walk-through done: upload via the
 edit page renders the WebP from MinIO, and the `/organizations` list renders
@@ -141,8 +279,8 @@ added; `api` keys `company.profileRequired` / `numbering.unknownCodeType` /
   `gen-logical-references.ts` re-run (526 refs).
 
 **Deliberately not done:** PDF rendering of `document.documents` (explicitly out
-of scope), item/asset code generation per kind (ERP-0043), and no browser
-walk-through of the moved pages yet.
+of scope), item/asset code generation per kind (deferred here, landed as
+ERP-0043 - see above), and no browser walk-through of the moved pages yet.
 
 ## 2026-11-13 - Organization description field (create / detail / edit)
 

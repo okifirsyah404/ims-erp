@@ -46,6 +46,9 @@ export const CODE_TYPE_CODES: Record<CodeType, string> = {
 	supplier_bill: 'SB',
 	employee: 'EMP',
 	warehouse: 'WH',
+	item_product: 'PRD',
+	item_material: 'MAT',
+	item_component: 'CMP',
 };
 
 /** Module that owns each code type (`code_number.series.module`). */
@@ -79,6 +82,9 @@ export const CODE_TYPE_MODULES: Record<CodeType, string> = {
 	supplier_bill: 'accounting',
 	employee: 'hr',
 	warehouse: 'inventory',
+	item_product: 'inventory',
+	item_material: 'inventory',
+	item_component: 'inventory',
 };
 
 export const DEFAULT_PATTERN = '{SEQ:4}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YY}';
@@ -104,6 +110,10 @@ const INVENTORY_PATTERNS: Partial<Record<CodeType, { pattern: string; reset: Res
 	asset_tool_set: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
 	asset_borrowing: { pattern: '{TYPE}-{YYYY}{MM}-{SEQ:4}', reset: 'monthly' },
 	warehouse: { pattern: '{TYPE}-{SEQ:4}', reset: 'never' },
+	// ERP-0043: item master codes per kind, company-wide and never reset.
+	item_product: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
+	item_material: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
+	item_component: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
 };
 
 /** Default pattern per code type (used until the owner overrides it). */

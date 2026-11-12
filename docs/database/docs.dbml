@@ -1028,7 +1028,7 @@ Table code_number.series {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "One code series per code type for the whole company (ADR-0011); the one numbering authority (ERP-0009) — main's per-organization sequences were merged into it on 2026-11-06 (migration merge_main_reconcile), inventory and asset codes keep their shape as default patterns. Was organization.document_sequences (column document_type renamed code_type) until ERP-0042. Allocation is one atomic INSERT ... ON CONFLICT DO UPDATE ... RETURNING in the owning repository. Partial unique index on code_type WHERE deleted_at IS NULL in the Drizzle schema."
+  Note: "One code series per code type for the whole company (ADR-0011); the one numbering authority (ERP-0009) - main's per-organization sequences were merged into it on 2026-11-06 (migration merge_main_reconcile), inventory and asset codes keep their shape as default patterns. Was organization.document_sequences (column document_type renamed code_type) until ERP-0042. ERP-0043 added item_product/item_material/item_component (PRD/MAT/CMP, {TYPE}-{SEQ:5}, reset never) so an item code is allocated like any other. Allocation is one atomic INSERT ... ON CONFLICT DO UPDATE ... RETURNING in the owning repository. Partial unique index on code_type WHERE deleted_at IS NULL in the Drizzle schema."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
     `next_number > 0`
@@ -2597,7 +2597,9 @@ Table inventory.warehouse_organizations {
 Table inventory.items {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Null means global/company-wide (ADR-0008). Logical reference to auth.organizations.id; cross-module FK intentionally omitted."]
-  sku varchar(64) [not null]
+  code varchar(32) [not null, note: "Human reference, allocated by the numbering authority (ERP-0043): item_product -> PRD-00001, item_material -> MAT-00001, item_component -> CMP-00001. Immutable after create."]
+  sku varchar(64) [not null, note: "Manufacturer/business SKU, typed by the user. Unique per tenant; immutable after create."]
+  serial_number text [note: "Optional manufacturer serial of a serialized item master (ERP-0043). Per-unit serials stay in inventory.serial_tracked_items."]
   name text [not null]
   description text
   item_kind text [not null]
@@ -2618,8 +2620,10 @@ Table inventory.items {
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
-  Note: "Item master at SKU level. One item master for the whole ERP; catalog.items is superseded by this table (ADR-0008). Status exists only on serialized units, never here. ERP-0036 D9: item_kind is product|component|material only — physical tools are assets (assets.assets) and services are neither stocked nor serialized, so the former service clause is gone."
+  Note: "Item master at SKU level. One item master for the whole ERP; catalog.items is superseded by this table (ADR-0008). Status exists only on serialized units, never here. ERP-0036 D9: item_kind is product|component|material only - physical tools are assets (assets.assets) and services are neither stocked nor serialized, so the former service clause is gone. ERP-0043 added code (numbering authority) and serial_number; sku stays user-typed."
   Indexes {
+    (organization_id, code) [unique, name: 'inventory_items_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
+    (code) [unique, name: 'inventory_items_global_code_uq', note: 'WHERE organization_id IS NULL']
     (organization_id, sku) [unique, name: 'inventory_items_org_sku_uq', note: 'WHERE organization_id IS NOT NULL']
     (sku) [unique, name: 'inventory_items_global_sku_uq', note: 'WHERE organization_id IS NULL']
     item_kind [name: 'inventory_items_kind_idx']
@@ -6020,6 +6024,7 @@ Table document.shares {
   organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   document_id uuid [not null]
   share_type text [not null]
+  token uuid [note: "Opaque public-link token, never the row id. Unique across every tenant because the public route resolves it without a session."]
   shared_with_type text
   shared_with_id text
   shared_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
@@ -6030,6 +6035,8 @@ Table document.shares {
   Indexes {
     document_id [name: 'shares_document_id_idx']
     (share_type, shared_with_type, shared_with_id) [name: 'shares_target_idx']
+    token [unique, name: 'shares_token_uq']
+    (token, expires_at) [name: 'shares_token_live_idx']
   }
   Checks {
     `share_type IN ('internal', 'customer', 'portal', 'public_link')`

@@ -5,6 +5,8 @@ import type { StockService } from '@app/inventory/services/stock.service';
 import { exVatUnitCost } from '@app/inventory/utils/moving-average';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import type { DocumentService } from '@app/document';
 import type {
 	TGoodsReceiptItemSelect,
 	TPurchaseOrderItemSelect,
@@ -82,6 +84,9 @@ export class GoodsReceiptService {
 		private readonly transactions: ITransactionRunner,
 		@inject(WAREHOUSE_SERVICE_TOKEN)
 		private readonly warehouses: Pick<WarehouseService, 'paginate' | 'getWarehouse'>,
+		/** ERP-0044: received goods are recorded in the registry. */
+		@inject(DOCUMENT_SERVICE_TOKEN)
+		private readonly documents: Pick<DocumentService, 'register'>,
 	) {}
 
 	list(query: TGoodsReceiptListQuery): Promise<TPaginationResult<TGoodsReceiptRow>> {
@@ -273,6 +278,19 @@ export class GoodsReceiptService {
 				}
 			}
 			return receipt;
+		});
+		// ERP-0044: the BPB (bukti penerimaan barang) is an issued document. No
+		// void path exists - a receipt is never cancelled, only superseded by a
+		// correction, which the registry keeps as history.
+		await this.documents.register({
+			code: created.code,
+			documentType: 'goods_receipt',
+			module: 'procurement',
+			sourceType: 'goods_receipt',
+			sourceId: created.id,
+			organizationId: null,
+			issuedOn: created.receiptDate,
+			issuedByUserId: actor.userId,
 		});
 		return this.get(created.id);
 	}

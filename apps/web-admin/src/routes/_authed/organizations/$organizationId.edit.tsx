@@ -25,12 +25,12 @@ import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import {
 	deleteOrganizationImage,
-	encodeWebp,
 	getOrganizationImage,
 	organizationQueryOptions,
 	uploadOrganizationImage,
 	updateOrganization,
 } from '@/lib/organization-api';
+import { encodeWebp } from '@/lib/image-file';
 import { ImageDropzone } from '@/components/organization/image-dropzone';
 
 export const Route = createFileRoute('/_authed/organizations/$organizationId/edit')(

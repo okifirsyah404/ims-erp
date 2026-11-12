@@ -429,6 +429,16 @@ export async function buildTestApp() {
 	const { erpGuard } = await import('../../src/authorization/elysia-auth');
 
 	const { QUOTATION_SERVICE_TOKEN } = await import('../../src/app/sales/constants/di');
+	// ERP-0044: the registry is a side effect; this suite only needs it to exist.
+	const { DOCUMENT_SERVICE_TOKEN } = await import(
+		'../../src/app/document/constants/di'
+	);
+	container.register(DOCUMENT_SERVICE_TOKEN, {
+		useValue: {
+			register: async () => ({}) as never,
+			voidBySource: async () => 0,
+		} as never,
+	});
 	container.register(SALES_SERVICE_TOKEN, { useClass: SalesService });
 	container.register(QUOTATION_SERVICE_TOKEN, { useClass: QuotationService });
 

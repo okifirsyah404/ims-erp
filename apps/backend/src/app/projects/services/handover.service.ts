@@ -2,6 +2,8 @@ import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import { COMPANY_SERVICE_TOKEN } from '@app/company';
 import type { CompanyService } from '@app/company';
 import type { CodeNumberService } from '@app/code-number';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import type { DocumentService } from '@app/document';
 import { SALES_FULFILMENT_SERVICE_TOKEN } from '@app/sales/constants/di';
 import type { SalesFulfilmentService } from '@app/sales/services/sales-fulfilment.service';
 import { USER_SERVICE_TOKEN } from '@app/user/constants/di';
@@ -39,6 +41,8 @@ export class HandoverService {
 		@inject(COMPANY_SERVICE_TOKEN) private readonly profile: Pick<CompanyService, 'get'>,
 		@inject(USER_SERVICE_TOKEN) private readonly users: Pick<UserService, 'getUser'>,
 		@inject(CODE_NUMBER_SERVICE_TOKEN) private readonly numbering: Pick<CodeNumberService, 'next'>,
+		/** ERP-0044: issued BAST is recorded in the registry. */
+		@inject(DOCUMENT_SERVICE_TOKEN) private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
 	) {}
 
 	// Contract for After-Sales -------------------------------------------------
@@ -111,7 +115,19 @@ export class HandoverService {
 	async create(ctx: TProjectContext, projectId: string, body: TBastBodyRequest): Promise<TProjectHandoverSelect> {
 		await this.requireActive(ctx, projectId);
 		const code = await this.numbering.next('bast', { date: new Date(`${body.bastDate}T12:00:00+07:00`) });
-		return this.basts.create(projectId, code, ctx.actorUserId, body);
+		const bast = await this.basts.create(projectId, code, ctx.actorUserId, body);
+		// ERP-0044: the signed handover is the document the customer keeps.
+		await this.documents.register({
+			code: bast.code,
+			documentType: 'bast',
+			module: 'projects',
+			sourceType: 'bast',
+			sourceId: bast.id,
+			organizationId: null,
+			issuedOn: bast.bastDate,
+			issuedByUserId: ctx.actorUserId,
+		});
+		return bast;
 	}
 
 	async update(ctx: TProjectContext, projectId: string, bastId: string, body: TBastBodyRequest): Promise<TProjectHandoverSelect> {
@@ -127,6 +143,8 @@ export class HandoverService {
 		if (!(await this.basts.find(projectId, bastId))) throw new BastNotFoundError();
 		const cancelled = await this.basts.cancel(bastId, ctx.actorUserId);
 		if (!cancelled) throw new BastNotFoundError();
+		// ERP-0044: a cancelled BAST is a dead document in the registry.
+		await this.documents.voidBySource('projects', 'bast', bastId);
 		return cancelled;
 	}
 }

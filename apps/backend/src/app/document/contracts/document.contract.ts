@@ -2,7 +2,11 @@ import {
 	CODE_TYPES,
 	type CodeType,
 } from '@drizzle/schemas/code-number.schema';
-import { DOCUMENT_STATUSES } from '@drizzle/schemas/document.schema';
+import {
+	DOCUMENT_STATUSES,
+	type DocumentAccessAction,
+	type TDocumentSelect,
+} from '@drizzle/schemas/document.schema';
 import { z } from 'zod';
 
 const optionalText = (max: number) =>
@@ -56,5 +60,82 @@ export const createDocumentTemplateSchema = z.object({
 
 export type TCreateDocumentTemplateInput = z.output<typeof createDocumentTemplateSchema>;
 
+/**
+ * One already-issued business document to record in the registry (ERP-0044).
+ *
+ * @remarks
+ * Not a request schema: this is the internal contract other modules call, so
+ * it takes the code they already allocated instead of allocating another one.
+ */
+export type TRegisterDocumentInput = {
+	/** Code the owning module allocated for the same row. */
+	code: string;
+	documentType: CodeType;
+	/** Defaults to `code`. */
+	title?: string | null;
+	/** Owning module, e.g. `sales`. */
+	module: string;
+	/** Source table discriminator, e.g. `quotation`. */
+	sourceType: string;
+	/** Source row id. */
+	sourceId: string;
+	/** `null` = company-wide. */
+	organizationId: string | null;
+	/** Business date (Asia/Jakarta); defaults to today when null. */
+	issuedOn?: string | null;
+	issuedByUserId?: string | null;
+	templateId?: string | null;
+};
+
 /** The `codeType` of an issued document is always one of the code types. */
 export type TDocumentCodeType = CodeType;
+
+/** Create a public share link: the token is generated server-side. */
+export const createDocumentShareSchema = z.object({
+	/** Days until the link stops working; the cap is one year. */
+	expiresInDays: z.coerce.number().int().min(1).max(365).default(30),
+});
+
+export type TCreateDocumentShareInput = z.output<typeof createDocumentShareSchema>;
+
+/** One file of a document as the client sees it (plus a download URL). */
+export type TDocumentFileView = {
+	id: string;
+	fileName: string;
+	mimeType: string | null;
+	sizeBytes: number;
+	uploadedAt: string;
+	/** Short-lived presigned URL; reading the file appends a download row. */
+	url: string;
+};
+
+/** One share link as the client sees it. */
+export type TDocumentShareView = {
+	id: string;
+	token: string;
+	sharedAt: string;
+	expiresAt: string | null;
+	isRevoked: boolean;
+};
+
+/** The document detail screen: registry row, files, links and the access trail. */
+export type TDocumentDetail = TDocumentSelect & {
+	files: TDocumentFileView[];
+	shares: TDocumentShareView[];
+	accessTrail: {
+		id: string;
+		action: DocumentAccessAction;
+		accessedAt: string;
+		accessedByUserId: string | null;
+	}[];
+};
+
+/** What a public share link exposes - never the organization or the trail. */
+export type TPublicDocumentView = {
+	code: string;
+	documentType: string;
+	title: string;
+	issuedOn: string | null;
+	status: string;
+	files: { fileName: string; mimeType: string | null; sizeBytes: number; url: string }[];
+};

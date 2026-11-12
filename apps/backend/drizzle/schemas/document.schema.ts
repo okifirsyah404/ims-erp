@@ -304,6 +304,11 @@ export const documentShares = documentSchema.table(
 		organizationId: text('organization_id'),
 		documentId: uuid('document_id').notNull(),
 		shareType: text('share_type').notNull(),
+		/**
+		 * Opaque public-link token, never the row id. Unique across tenants
+		 * because the public route resolves it without a session.
+		 */
+		token: uuid('token'),
 		sharedWithType: text('shared_with_type'),
 		sharedWithId: text('shared_with_id'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
@@ -320,6 +325,12 @@ export const documentShares = documentSchema.table(
 			table.sharedWithType,
 			table.sharedWithId,
 		),
+		uniqueIndex('shares_token_uq')
+			.on(table.token)
+			.where(sql`deleted_at IS NULL`),
+		index('shares_token_live_idx')
+			.on(table.token, table.expiresAt)
+			.where(sql`deleted_at IS NULL AND is_revoked = false`),
 		check(
 			'shares_share_type_check',
 			sql`${table.shareType} IN ('internal', 'customer', 'portal', 'public_link')`,

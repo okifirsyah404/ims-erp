@@ -24,6 +24,7 @@ import { Route as AuthedAccountSessionsRouteImport } from './routes/_authed.acco
 import { Route as AuthedAssetsIndexRouteImport } from './routes/_authed/assets/index'
 import { Route as AuthedCrmIndexRouteImport } from './routes/_authed/crm/index'
 import { Route as AuthedDocumentsIndexRouteImport } from './routes/_authed/documents/index'
+import { Route as AuthedDocumentsDocumentIdRouteImport } from './routes/_authed/documents/$documentId'
 import { Route as AuthedFinanceIndexRouteImport } from './routes/_authed/finance/index'
 import { Route as AuthedHrIndexRouteImport } from './routes/_authed/hr/index'
 import { Route as AuthedOrganizationsIndexRouteImport } from './routes/_authed/organizations/index'
@@ -219,6 +220,12 @@ const AuthedDocumentsIndexRoute = AuthedDocumentsIndexRouteImport.update({
   path: '/documents/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedDocumentsDocumentIdRoute =
+  AuthedDocumentsDocumentIdRouteImport.update({
+    id: '/documents/$documentId',
+    path: '/documents/$documentId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedFinanceIndexRoute = AuthedFinanceIndexRouteImport.update({
   id: '/finance/',
   path: '/finance/',
@@ -920,6 +927,7 @@ export interface FileRoutesByFullPath {
   '/reset-password/': typeof ResetPasswordIndexRoute
   '/account/email': typeof AuthedAccountEmailRoute
   '/account/sessions': typeof AuthedAccountSessionsRoute
+  '/documents/$documentId': typeof AuthedDocumentsDocumentIdRoute
   '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/organizations/new': typeof AuthedOrganizationsNewRoute
   '/profiles/edit': typeof AuthedProfilesEditRoute
@@ -1054,6 +1062,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordIndexRoute
   '/account/email': typeof AuthedAccountEmailRoute
   '/account/sessions': typeof AuthedAccountSessionsRoute
+  '/documents/$documentId': typeof AuthedDocumentsDocumentIdRoute
   '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/organizations/new': typeof AuthedOrganizationsNewRoute
   '/profiles/edit': typeof AuthedProfilesEditRoute
@@ -1192,6 +1201,7 @@ export interface FileRoutesById {
   '/reset-password/': typeof ResetPasswordIndexRoute
   '/_authed/account/email': typeof AuthedAccountEmailRoute
   '/_authed/account/sessions': typeof AuthedAccountSessionsRoute
+  '/_authed/documents/$documentId': typeof AuthedDocumentsDocumentIdRoute
   '/_authed/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/_authed/organizations/new': typeof AuthedOrganizationsNewRoute
   '/_authed/profiles/edit': typeof AuthedProfilesEditRoute
@@ -1330,6 +1340,7 @@ export interface FileRouteTypes {
     | '/reset-password/'
     | '/account/email'
     | '/account/sessions'
+    | '/documents/$documentId'
     | '/organizations/$organizationId'
     | '/organizations/new'
     | '/profiles/edit'
@@ -1464,6 +1475,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/account/email'
     | '/account/sessions'
+    | '/documents/$documentId'
     | '/organizations/$organizationId'
     | '/organizations/new'
     | '/profiles/edit'
@@ -1601,6 +1613,7 @@ export interface FileRouteTypes {
     | '/reset-password/'
     | '/_authed/account/email'
     | '/_authed/account/sessions'
+    | '/_authed/documents/$documentId'
     | '/_authed/organizations/$organizationId'
     | '/_authed/organizations/new'
     | '/_authed/profiles/edit'
@@ -1840,6 +1853,13 @@ declare module '@tanstack/react-router' {
       path: '/documents'
       fullPath: '/documents/'
       preLoaderRoute: typeof AuthedDocumentsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/documents/$documentId': {
+      id: '/_authed/documents/$documentId'
+      path: '/documents/$documentId'
+      fullPath: '/documents/$documentId'
+      preLoaderRoute: typeof AuthedDocumentsDocumentIdRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/finance/': {
@@ -2785,6 +2805,7 @@ interface AuthedRouteChildren {
   AuthedAdminRoute: typeof AuthedAdminRouteWithChildren
   AuthedProfilesRoute: typeof AuthedProfilesRouteWithChildren
   AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedDocumentsDocumentIdRoute: typeof AuthedDocumentsDocumentIdRoute
   AuthedOrganizationsOrganizationIdRoute: typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   AuthedOrganizationsNewRoute: typeof AuthedOrganizationsNewRoute
   AuthedProjectsNewRoute: typeof AuthedProjectsNewRoute
@@ -2905,6 +2926,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminRoute: AuthedAdminRouteWithChildren,
   AuthedProfilesRoute: AuthedProfilesRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedDocumentsDocumentIdRoute: AuthedDocumentsDocumentIdRoute,
   AuthedOrganizationsOrganizationIdRoute:
     AuthedOrganizationsOrganizationIdRouteWithChildren,
   AuthedOrganizationsNewRoute: AuthedOrganizationsNewRoute,

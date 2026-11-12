@@ -19,9 +19,9 @@ import {
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { ImageDropzone } from '@/components/organization/image-dropzone';
+import { encodeWebp } from '@/lib/image-file';
 import {
 	createOrganization,
-	encodeWebp,
 	organizationsQueryOptions,
 	uploadOrganizationImage,
 } from '@/lib/organization-api';

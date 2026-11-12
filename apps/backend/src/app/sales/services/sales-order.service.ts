@@ -2,6 +2,8 @@ import { INVOICE_LOOKUP_SERVICE_TOKEN } from '@app/sales/constants/di';
 import type { InvoiceLookupService } from '@app/sales/services/invoice-lookup.service';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import type { DocumentService } from '@app/document';
 import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/projects/constants/di';
 import { SalesOrderHasProjectError } from '@app/projects/errors/project.errors';
 import type { ProjectLookupService } from '@app/projects/services/project-lookup.service';
@@ -78,6 +80,9 @@ export class SalesOrderService {
 		private readonly deliveries: Pick<IDeliveryNoteRepository, 'hasLiveNotes'>,
 		@inject(PROJECT_LOOKUP_SERVICE_TOKEN)
 		private readonly projects: Pick<ProjectLookupService, 'hasLiveProject'>,
+		/** ERP-0044: issued orders are recorded in the document registry. */
+		@inject(DOCUMENT_SERVICE_TOKEN)
+		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
 	) {}
 
 	private async requireVisible(ctx: TSalesOrderContext, id: string): Promise<TSalesOrderSelect> {
@@ -181,6 +186,17 @@ export class SalesOrderService {
 				ctx.actorUserId,
 			);
 			if (!order) throw new SalesOrderQuotationNotReadyError();
+			// ERP-0044: the confirmed order is registered with the same code.
+			await this.documents.register({
+				code: order.code,
+				documentType: 'sales_order',
+				module: 'sales',
+				sourceType: 'sales_order',
+				sourceId: order.id,
+				organizationId: null,
+				issuedOn: order.orderDate,
+				issuedByUserId: ctx.actorUserId,
+			});
 			return order;
 		} catch (error) {
 			if (isUniqueViolation(error)) throw new SalesOrderExistsError();
@@ -199,6 +215,8 @@ export class SalesOrderService {
 		if (await this.projects.hasLiveProject(id)) throw new SalesOrderHasProjectError();
 		const cancelled = await this.orders.cancel(id, ctx.actorUserId, reason);
 		if (!cancelled) throw new SalesOrderNotCancellableError();
+		// ERP-0044: a cancelled order is a dead document in the registry.
+		await this.documents.voidBySource('sales', 'sales_order', id);
 		return cancelled;
 	}
 }

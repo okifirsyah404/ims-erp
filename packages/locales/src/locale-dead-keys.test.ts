@@ -59,6 +59,8 @@ const CONCATENATED = SOURCES.map((file) => readFileSync(file, 'utf8')).join('\n'
 const DYNAMIC_PREFIXES = [
 	'common:status.',
 	'status.',
+	// The detail page labels the access trail with the server's action value.
+	'documents:action.',
 	// `t(`inventory:kind.${kind}`)` — an item's kind selects its own label.
 	'inventory:kind.',
 	// The ledger and the adjustment workflow label their enums the same way:

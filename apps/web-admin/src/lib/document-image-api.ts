@@ -3,13 +3,14 @@ import { currentLanguage } from '@/i18n';
 
 /**
  * Upload and removal of images printed on documents (company logo and
- * signature, item photos). PNG, JPG or WebP up to 2 MB; the server checks
- * again. Multipart, so the JSON request helpers do not fit.
+ * signature, item photos). The client converts to WebP before uploading
+ * (`lib/image-file.ts`); the server caps the payload at 2 MB and checks the
+ * magic bytes again. Multipart, so the JSON request helpers do not fit.
  */
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-export const DOCUMENT_IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp';
+/** Server-side cap on the uploaded WebP. */
 export const DOCUMENT_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 
 async function send<T>(path: string, init: RequestInit): Promise<T> {

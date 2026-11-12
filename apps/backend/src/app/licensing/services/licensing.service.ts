@@ -4,6 +4,8 @@ import { INVOICE_LOOKUP_SERVICE_TOKEN } from '@app/sales/constants/di';
 import type { InvoiceLookupService } from '@app/sales/services/invoice-lookup.service';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import type { DocumentService } from '@app/document';
 import { SALES_FULFILMENT_SERVICE_TOKEN } from '@app/sales/constants/di';
 import type { SalesFulfilmentService } from '@app/sales/services/sales-fulfilment.service';
 import { isUniqueViolation } from '@drizzle/errors';
@@ -93,6 +95,8 @@ export class LicensingService {
 		@inject(LICENSE_API_REPOSITORY_TOKEN)
 		private readonly api: Pick<ILicenseApiRepository, 'insertEvent' | 'listActivations' | 'paginateEvents'>,
 		@inject(INVOICE_LOOKUP_SERVICE_TOKEN) private readonly invoices: Pick<InvoiceLookupService, 'paidTotal'>,
+		/** ERP-0044: license contracts are registered documents. */
+		@inject(DOCUMENT_SERVICE_TOKEN) private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
 	) {}
 
 	// Applications -----------------------------------------------------------
@@ -277,6 +281,21 @@ export class LicensingService {
 				tx,
 			);
 			if (!activated) throw new ContractStateError('activate');
+			// ERP-0044: an active contract is the document the customer signs;
+			// drafts are internal and stay out of the registry.
+			await this.documents.register(
+				{
+					code: activated.code,
+					documentType: 'license_contract',
+					module: 'licensing',
+					sourceType: 'license_contract',
+					sourceId: activated.id,
+					organizationId: null,
+					issuedOn: activated.startDate ?? businessDateOf(),
+					issuedByUserId: actorUserId,
+				},
+				tx,
+			);
 			if (!current.renewedFromContractId) return;
 			const old = await this.repository.transition(current.renewedFromContractId, ['active', 'suspended'], { status: 'renewed' }, tx);
 			if (!old) return;
@@ -346,6 +365,8 @@ export class LicensingService {
 		});
 		if (!updated) throw await this.stateError(id, 'terminate');
 		await this.event('terminated', id, ctx.actorUserId, reason);
+		// ERP-0044: a terminated contract is a dead document.
+		await this.documents.voidBySource('licensing', 'license_contract', id);
 		return this.timed(await this.require(id));
 	}
 

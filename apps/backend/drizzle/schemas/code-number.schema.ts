@@ -33,8 +33,8 @@ export const codeNumberSchema = pgSchema('code_number');
  * `web_*` are public references handed back to website visitors (RFQ,
  * contact, demo). Inventory and asset codes keep the shape they had under
  * ERP-0009; `warehouse` was added in ERP-0042 so a warehouse code can be
- * allocated (`WH-0001`). Item codes per kind (`item_product`,
- * `item_material`, `item_component`) land with ERP-0043.
+ * allocated (`WH-0001`); the three `item_*` types landed with ERP-0043, so an
+ * item code is allocated per kind (`PRD-00001`, `MAT-00001`, `CMP-00001`).
  */
 export const CODE_TYPES = [
 	'quotation',
@@ -70,6 +70,10 @@ export const CODE_TYPES = [
 	'employee',
 	// Organization structure (ERP-0042): warehouse codes (`WH-0001`).
 	'warehouse',
+	// Item master per kind (ERP-0043): `PRD-00001`, `MAT-00001`, `CMP-00001`.
+	'item_product',
+	'item_material',
+	'item_component',
 ] as const;
 export type CodeType = (typeof CODE_TYPES)[number];
 

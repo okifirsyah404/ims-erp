@@ -105,8 +105,9 @@ beforeAll(async () => {
 				null
 			);
 		},
-		async create(data) {
+		async create(data, code) {
 			const row = seedRow(data.organizationId ?? fixture.orgA);
+			row.code = code;
 			rows.push(row);
 			return row;
 		},
@@ -189,6 +190,13 @@ beforeAll(async () => {
 	});
 	container.register(InventoryAuditWriter, {
 		useValue: new AuditWriterDouble(),
+	});
+	// ERP-0043: item codes come from the numbering authority.
+	const { CODE_NUMBER_SERVICE_TOKEN } = await import(
+		'../../src/app/code-number/constants/di'
+	);
+	container.register(CODE_NUMBER_SERVICE_TOKEN, {
+		useValue: { next: async () => 'PRD-00001' } as never,
 	});
 	container.register(ITEM_SERVICE_TOKEN, { useClass: ItemService });
 	// Photos are not part of the authorization suite.

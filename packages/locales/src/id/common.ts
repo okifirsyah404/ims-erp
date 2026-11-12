@@ -47,7 +47,13 @@ const common_: Record<keyof typeof common, string> = {
 	'language.switchToIndonesian': 'Bahasa Indonesia',
 	'image.none': 'Belum ada gambar',
 	'image.remove': 'Hapus gambar',
-	'image.hint': 'PNG, JPG, atau WebP, maksimal 2 MB.',
+	'image.drop': 'Lepas gambar di sini, atau klik untuk memilih',
+	'image.choose': 'Pilih gambar',
+	'image.replace': 'Ganti gambar',
+	'image.converting': 'Mengonversi.',
+	'image.wrongType': 'Berkas itu bukan gambar.',
+	'image.sourceTooLarge': 'Gambar lebih dari 20 MB.',
+	'image.hint': 'PNG, JPG, atau WebP, maksimal 2 MB. Dikonversi ke WebP sebelum diunggah.',
 	'image.tooLarge': 'Gambar lebih dari 2 MB.',
 };
 

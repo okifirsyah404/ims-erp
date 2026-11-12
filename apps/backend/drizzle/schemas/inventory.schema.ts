@@ -429,7 +429,11 @@ export const items = inventorySchema.table(
 			.primaryKey()
 			.default(sql`uuidv7()`),
 		organizationId: organizationId(),
+		/** Human reference from the numbering authority (ERP-0043); immutable. */
+		code: varchar('code', { length: 32 }).notNull(),
 		sku: varchar('sku', { length: 64 }).notNull(),
+		/** Optional manufacturer serial of a serialized item master (ERP-0043). */
+		serialNumber: text('serial_number'),
 		name: text('name').notNull(),
 		description: text('description'),
 		itemKind: text('item_kind').notNull(),
@@ -470,6 +474,10 @@ export const items = inventorySchema.table(
 		...softDeleteTimestamps,
 	},
 	(table) => [
+		...scopedUnique(table.organizationId, table.code, {
+			orgScoped: 'inventory_items_org_code_uq',
+			global: 'inventory_items_global_code_uq',
+		}),
 		...scopedUnique(table.organizationId, table.sku, {
 			orgScoped: 'inventory_items_org_sku_uq',
 			global: 'inventory_items_global_sku_uq',

@@ -12,11 +12,11 @@ import {
 } from '@ims-erp/ui/components/card';
 import {
 	deleteOrganizationImage,
-	encodeWebp,
 	getOrganizationImage,
 	organizationQueryOptions,
 	uploadOrganizationImage,
 } from '@/lib/organization-api';
+import { encodeWebp } from '@/lib/image-file';
 import { ImageDropzone } from './image-dropzone';
 
 /**

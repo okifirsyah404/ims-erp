@@ -9,6 +9,8 @@ import type {
 import type { TPaginationResult } from '@ims-erp/common';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import type { DocumentService } from '@app/document';
 import {
 	LEDGER_REPOSITORY_TOKEN,
 	POSTING_SERVICE_TOKEN,
@@ -70,6 +72,9 @@ export class InvoiceService {
 		private readonly arResolver: ArAccountResolverService,
 		@inject(CODE_NUMBER_SERVICE_TOKEN)
 		private readonly numbering: CodeNumberService,
+		/** ERP-0044: issued invoices and receipts are registered documents. */
+		@inject(DOCUMENT_SERVICE_TOKEN)
+		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
 	) {}
 
 	async list(
@@ -265,6 +270,24 @@ export class InvoiceService {
 				},
 				tx,
 			);
+			// ERP-0044: the tax invoice joins the registry with its own code.
+			// `code` is nullable in the schema (legacy drafts) but `create`
+			// always allocates it, so a coded draft is the only issuable state.
+			if (invoice.code) {
+				await this.documents.register(
+					{
+						code: invoice.code,
+						documentType: 'sales_invoice',
+						module: 'sales',
+						sourceType: 'invoice',
+						sourceId: invoice.id,
+						organizationId: ctx.organizationId,
+						issuedOn: issueDate,
+						issuedByUserId: ctx.actorUserId,
+					},
+					tx,
+				);
+			}
 			return issued ?? invoice;
 		});
 	}
@@ -393,6 +416,17 @@ export class InvoiceService {
 			receivedBy: ctx.actorUserId,
 		});
 		if (!receipt) throw new ReceiptExceedsOutstandingError();
+		// ERP-0044: a receipt (kuitansi) is an issued document too.
+		await this.documents.register({
+			code: receipt.code,
+			documentType: 'receipt',
+			module: 'sales',
+			sourceType: 'receipt',
+			sourceId: receipt.id,
+			organizationId: ctx.organizationId,
+			issuedOn: receipt.receivedDate,
+			issuedByUserId: ctx.actorUserId,
+		});
 		return receipt;
 	}
 
@@ -411,6 +445,8 @@ export class InvoiceService {
 			reason,
 		);
 		if (!reversed) throw new ReceiptAlreadyReversedError();
+		// ERP-0044: a reversed receipt is a dead document.
+		await this.documents.voidBySource('sales', 'receipt', id);
 		return reversed;
 	}
 }

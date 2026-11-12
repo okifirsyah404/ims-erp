@@ -4,6 +4,8 @@ import type { StockService } from '@app/inventory/services/stock.service';
 import type { WarehouseService } from '@app/inventory/services/warehouse.service';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import type { DocumentService } from '@app/document';
 import type {
 	TDeliveryNoteItemSelect,
 	TSalesOrderItemSelect,
@@ -93,6 +95,9 @@ export class DeliveryNoteService {
 		private readonly transactions: ITransactionRunner,
 		@inject(WAREHOUSE_SERVICE_TOKEN)
 		private readonly warehouses: Pick<WarehouseService, 'paginate' | 'getWarehouse'>,
+		/** ERP-0044: shipped delivery notes are recorded in the registry. */
+		@inject(DOCUMENT_SERVICE_TOKEN)
+		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
 	) {}
 
 	list(query: TDeliveryNoteListQuery): Promise<TPaginationResult<TDeliveryNoteRow>> {
@@ -337,6 +342,21 @@ export class DeliveryNoteService {
 				}
 			}
 			await this.orders.markInProgress(note.salesOrderId, actor.userId, `delivery note ${note.code} shipped`, tx);
+			// ERP-0044: the surat jalan is registered once it actually ships,
+			// inside the same transaction as the stock movement.
+			await this.documents.register(
+				{
+					code: note.code,
+					documentType: 'delivery_note',
+					module: 'sales',
+					sourceType: 'delivery_note',
+					sourceId: note.id,
+					organizationId: null,
+					issuedOn: note.deliveryDate,
+					issuedByUserId: actor.userId,
+				},
+				tx,
+			);
 		});
 		return this.get(id);
 	}
@@ -367,6 +387,8 @@ export class DeliveryNoteService {
 				{ release: true },
 				tx,
 			);
+			// ERP-0044: a cancelled surat jalan is a dead document.
+			await this.documents.voidBySource('sales', 'delivery_note', id, tx);
 		});
 		return this.get(id);
 	}

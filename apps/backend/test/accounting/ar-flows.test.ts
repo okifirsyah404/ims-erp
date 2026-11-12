@@ -113,6 +113,9 @@ function makeHarness() {
 	const arItems: TArOpenItemSelect[] = [];
 	const paymentsRows = new Map<string, TPaymentSelect>();
 	const allocations: TPaymentAllocationSelect[] = [];
+	/** Registry calls made by the invoice service (ERP-0044). */
+	const registered: { code: string; sourceId: string; documentType: string }[] = [];
+	const voided: string[] = [];
 	let seq = 0;
 	const now = () => new Date();
 	const id = (p: string) => `${p}-${++seq}`;
@@ -317,6 +320,17 @@ function makeHarness() {
 		posting,
 		arResolver,
 		numbering,
+		{
+			// ERP-0044: registry side effect is asserted through `registered`.
+			register: async (input) => {
+				registered.push(input);
+				return {} as never;
+			},
+			voidBySource: async (module, sourceType, sourceId) => {
+				voided.push(`${module}/${sourceType}/${sourceId}`);
+				return 1;
+			},
+		},
 	);
 
 	return {
@@ -330,6 +344,8 @@ function makeHarness() {
 		invoiceItemsRows,
 		arItems,
 		paymentsRows,
+		registered,
+		voided,
 		cashAccounts,
 		cashTxRows,
 		links,
@@ -390,6 +406,15 @@ describe('InvoiceService (F4)', () => {
 		expect(h.arItems).toHaveLength(1);
 		expect(h.arItems[0].outstandingAmount).toBe(1_000_000);
 		expect(h.arItems[0].status).toBe('open');
+		// ERP-0044: issuing registers the invoice in the document registry.
+		expect(h.registered).toEqual([
+			expect.objectContaining({
+				code: issued.code,
+				documentType: 'sales_invoice',
+				sourceType: 'invoice',
+				sourceId: issued.id,
+			}),
+		]);
 	});
 
 	test('issue with tax posts three lines including CR tax payable', async () => {

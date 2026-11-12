@@ -20,3 +20,24 @@ export class DocumentNotVoidableError extends AppError {
 		super(409, 'document.notVoidable', 'This document cannot be voided');
 	}
 }
+
+/** The file id does not resolve to a live file of that document. */
+export class DocumentFileNotFoundError extends AppError {
+	constructor() {
+		super(404, 'document.fileNotFound', 'File not found');
+	}
+}
+
+/** The share link is unknown, expired or revoked. */
+export class DocumentShareNotFoundError extends AppError {
+	constructor() {
+		super(404, 'document.shareNotFound', 'This link is invalid or has expired');
+	}
+}
+
+/** Files can only be attached to a live, non-void document. */
+export class DocumentFileStateError extends AppError {
+	constructor() {
+		super(409, 'document.fileNotAllowed', 'A void document cannot take files');
+	}
+}

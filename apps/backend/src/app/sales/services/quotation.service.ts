@@ -6,6 +6,8 @@ import { ITEM_SERVICE_TOKEN } from '@app/inventory/constants/di';
 import type { ItemService } from '@app/inventory/services/item.service';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import type { DocumentService } from '@app/document';
 import { USER_SERVICE_TOKEN } from '@app/user/constants/di';
 import type { UserService } from '@app/user/services/user.service';
 import {
@@ -119,6 +121,9 @@ export class QuotationService {
 		private readonly storage: Pick<IObjectStorage, 'presignGet'>,
 		@inject(SALES_ORDER_REPOSITORY_TOKEN)
 		private readonly orders: Pick<ISalesOrderRepository, 'findLiveByQuotation'>,
+		/** ERP-0044: the issued quotation is recorded in the document registry. */
+		@inject(DOCUMENT_SERVICE_TOKEN)
+		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
 	) {}
 
 	private async requireVisible(ctx: TQuotationContext, id: string): Promise<TQuotationSelect> {
@@ -279,7 +284,19 @@ export class QuotationService {
 		if (header.leadId && !(await this.leads.noteQuotation(header.leadId))) throw new QuotationLeadNotFoundError();
 		// Numbered on creation; gaps from abandoned drafts are accepted.
 		const code = await this.numbering.next('quotation', { date: new Date() });
-		return this.quotations.create({ ...header, code, createdBy: ctx.actorUserId }, items);
+		const quotation = await this.quotations.create({ ...header, code, createdBy: ctx.actorUserId }, items);
+		// ERP-0044: the printed SPH is registered with the same code.
+		await this.documents.register({
+			code: quotation.code,
+			documentType: 'quotation',
+			module: 'sales',
+			sourceType: 'quotation',
+			sourceId: quotation.id,
+			organizationId: null,
+			issuedOn: quotation.quotationDate,
+			issuedByUserId: ctx.actorUserId,
+		});
+		return quotation;
 	}
 
 	async update(ctx: TQuotationContext, id: string, body: TQuotationBodyRequest): Promise<TQuotationSelect> {
@@ -369,6 +386,8 @@ export class QuotationService {
 			{ userId: ctx.actorUserId, note: input.note ?? null },
 		);
 		if (!updated) throw new QuotationStateError('notOpen');
+		// ERP-0044: a lost SPH is a dead document in the registry.
+		await this.documents.voidBySource('sales', 'quotation', id);
 		return updated;
 	}
 }
