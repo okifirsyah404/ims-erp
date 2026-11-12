@@ -89,6 +89,10 @@ describe('locale values', () => {
 			'admin:orgs.slug',
 			'admin:orgEdit.slug',
 			'admin:orgDetail.slug',
+			// Shared role/finance terms identical in both languages.
+			'admin:orgDashboard.roles.admin',
+			'admin:orgDashboard.roles.total',
+			'admin:orgDashboard.cash.bank',
 			'admin:orgDetail.info',
 			// Indonesian terms used verbatim in the English UI: RT/RW are
 			// neighbourhood administrative units with no English equivalent.

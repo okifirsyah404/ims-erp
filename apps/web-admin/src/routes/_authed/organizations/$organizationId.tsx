@@ -28,12 +28,12 @@ import {
 	Card,
 	CardContent,
 	CardHeader,
-	CardTitle,
 } from '@ims-erp/ui/components/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@ims-erp/ui/components/tabs';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { OrganizationMemberCard } from '@/components/organization';
+import { OrganizationDashboard } from '@/components/organization/org-dashboard';
 import { InviteDialog } from '@/components/invite/invite-dialog';
 import {
 	PendingInvitationsPanel,
@@ -267,28 +267,12 @@ function OrganizationDetailPage() {
 						</TabsTrigger>
 					)}
 				</TabsList>
-				<TabsContent value='info'>
-					<Card>
-						<CardHeader>
-							<CardTitle>{t('orgDetail.details')}</CardTitle>
-						</CardHeader>
-						<CardContent className='grid gap-2 text-sm'>
-							<div className='grid grid-cols-[140px_1fr] gap-2'>
-								<span className='text-muted-foreground'>
-									{t('orgDetail.name')}
-								</span>
-								<span>{organization.name}</span>
-								<span className='text-muted-foreground'>
-									{t('orgDetail.slug')}
-								</span>
-								<span>{organization.slug}</span>
-								<span className='text-muted-foreground'>
-									{t('orgDetail.created')}
-								</span>
-								<span>{new Date(organization.createdAt).toLocaleString()}</span>
-							</div>
-						</CardContent>
-					</Card>
+				<TabsContent value='info' className='flex flex-col gap-6'>
+					<OrganizationDashboard
+						name={organization.name}
+						slug={organization.slug}
+						createdAt={new Date(organization.createdAt)}
+					/>
 				</TabsContent>
 				<TabsContent value='members' className='flex flex-col gap-6'>
 					<Card className='gap-0 py-0'>

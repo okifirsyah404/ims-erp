@@ -12,6 +12,33 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-12 - Organization info dashboard (dummy data)
+
+Status: implemented; lint/typecheck/tests green. No backend, schema or
+migration touched — `docs/database/` reviewed and unchanged (frontend-only
+UI slice over hardcoded dummy data).
+
+- Tab `info` of `/organizations/$organizationId` now renders
+  `OrganizationDashboard` (`apps/web-admin/src/components/organization/
+  org-dashboard.tsx`) replacing the plain details card. Seven sections from
+  hardcoded dummy data (`apps/web-admin/src/lib/org-dashboard-data.ts`):
+  users-by-role, projects (status badge + progress bar), sales (BarChart,
+  6 months), inventory (totals + low-stock list), activity feed,
+  profit & loss (revenue/expense BarChart), cash & bank (per-account
+  balances + total). Charts use the existing `@ims-erp/ui/components/chart`
+  (Recharts v3, already in `packages/ui`) — no new dependency.
+- Money formatted via `Intl.NumberFormat('id-ID', IDR)`.
+- Locale: new `orgDashboard.*` keys (en/id) in `packages/locales`; removed
+  now-dead `orgDetail.details/name/slug`; added the composed-key prefixes
+  (`orgDashboard.roles.` / `.projects.status.` / `.activity.actions.` /
+  `.cash.`) to `locale-dead-keys.test.ts` `DYNAMIC_PREFIXES` and three
+  legitimately-identical keys to `ALLOWED_IDENTICAL`.
+- Verified: `bunx tsc --noEmit` (web-admin, clean), `bun run lint` (no new
+  warnings), `bun run test` (backend 824 pass, locales 82 pass).
+
+Next executable task: unchanged — bulk-invitation browser walk-through
+(see 2026-11-12 entry above).
+
 ## 2026-11-12 - Bulk invitations via CSV/XLSX file upload
 
 Status: implemented and unit-tested (parser + backend + locale guards);

@@ -35,6 +35,12 @@ Last synced: 2026-11-08.
   (sample data via `apps/web-admin/src/lib/dashboard-api.ts`, `dashboard`
   locale namespace). Scaffold only — **not feature status**; figures are
   placeholders until the real API replaces the mock fetcher.
+- Organization info dashboard, dummy data — ERP-0040 (2026-11-12): tab `info`
+  of the organization detail page renders users-by-role, projects, sales,
+  inventory, activity, profit & loss, cash & bank cards with two BarCharts
+  (existing `@ims-erp/ui/components/chart`, Recharts v3). Hardcoded dummy
+  data (`apps/web-admin/src/lib/org-dashboard-data.ts`), en/id keys complete;
+  **not feature status** — real wiring blocked on the owning modules.
 
 
 ## M02 CRM and Sales
