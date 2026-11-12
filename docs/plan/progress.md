@@ -12,6 +12,76 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-12 - ERP-0034 follow-up: invite creates the employee; personal fields move to `auth.users`
+
+Status: implemented and unit-tested; migration written but **not yet run
+against any database** (no disposable Postgres credentials available —
+`.env` lacks `POSTGRES_*`, role `postgres` absent on `localhost:5432`, no
+running containers). Branch `fix/org-hardening`, uncommitted on top of
+`5f21778` (PR #82 open).
+
+- **Personal fields moved from `hr.employees` to `auth.users`.**
+  `docs/database/docs.dbml` edited first (canonical); `gender`
+  (check `male`/`female`), `birth_date`, `birth_place`, `marital_status`
+  now live on `Table auth.users`, dropped from `Table hr.employees`.
+  `bun docs/database/gen-logical-references.ts` then
+  `bun docs/database/validate-dbml.ts` → `OK: 0 cross-module refs,
+  0 timestamp gaps`. Drizzle schemas hand-edited
+  (`auth.schema.ts` + checks, `hr.schema.ts` −4 columns) and
+  `auth.options.ts` gained the four `user.additionalFields`
+  (`input: false`; `auth:generate` NOT run, per hard rule).
+- **Migration** `20261112120000_erp0034_personal_fields_to_auth_users`
+  (hand-authored SQL, ERP-0034 convention): `DO` block pre-check raises when
+  `hr.employees` rows with `user_id` NULL carry personal values (fail-fast,
+  no data dropped); then adds columns/checks, copies values from live and
+  soft-deleted linked employees, drops the four columns. Append-only journal
+  entry. **Unverified on a database.**
+- **Cross-module port.** HR reads/writes the four fields through
+  `IUserPersonalFieldsPort` (`user/contracts/user-personal-fields.port.ts`,
+  adapter `user/adapters/user-personal-fields.ts`, token
+  `USER_PERSONAL_FIELDS_PORT_TOKEN`) — HR never touches the user repository.
+  API contract unchanged: the fields stay in the HR body/DTO, so the
+  web-admin HR form needs no change.
+- **Invite creates the employee (one step).** New HR orchestrator
+  `EmployeeInviteService` (token `EMPLOYEE_INVITE_SERVICE_TOKEN`): per row —
+  reject an email already an employee, run `InvitationService.invite`,
+  reserve the code via `NumberingService.next('employee')`, insert the
+  employee (defaults: `fullName` from the invite `name`, `active`/`permanent`/
+  `onsite`), write personal fields; if the insert fails the new
+  `InvitationService.rollbackPending` cancels the invitation and soft-deletes
+  the pending user. Bulk is per-row isolated. `InvitationService` no longer
+  depends on HR; `EmployeeService.create` delegates to the orchestrator.
+- **Wiring without cross-module imports.** New port
+  `IInvitationEmployeePort` in the user module
+  (`user/contracts/invitation-employee.port.ts`, token
+  `INVITATION_EMPLOYEE_PORT_TOKEN`), implemented by HR's
+  `InvitationEmployeeAdapter`. Both invitation controllers (app scope
+  `/admin/invitations` in `user`, org scope in `organization`) now call the
+  port instead of `InvitationService.invite`, so **every invite path creates
+  the employee record**; route ownership stays in `user` per decision.
+- **Permissions/gates.** `hr` grants changed to
+  `member: ['read']`, `invitation: ['create', 'cancel']`;
+  org invitation routes guard on `invitation:create` (invite/resend) and
+  `invitation:cancel` (cancel/delete). Web-admin gates moved:
+  `$organizationId.tsx` invite button/dialog → `invitation.create`, Members
+  tab + query → `member.read`; `pending-invitations-panel.tsx` resend →
+  `invitation.create`, cancel/delete → `invitation.cancel`
+  (`ADMIN_PERMISSIONS` gained `createInvitations`/`cancelInvitations`).
+  No locale keys changed (no new strings).
+- **Verification.** `bun run --cwd apps/backend typecheck` clean;
+  `bun run --cwd apps/backend test` → **824 pass, 0 fail** (57 files; the
+  `schema "auth" does not exist` line is the known DB-less integration-test
+  noise). New `test/unit/employee-invite.service.test.ts` covers success,
+  email-taken (pre-invite and per-row in bulk), and rollback on insert
+  failure. `bun run typecheck` (root turbo) 4/4 clean; web-admin `tsc -b`
+  clean; `bun run lint` 0 errors (11 pre-existing warnings);
+  `bun run --cwd apps/web-admin test` 55/55; `packages/locales` guards
+  82/82.
+- **Open items.** Migration untested on a disposable DB (pre-check fail path,
+  copy, drop). `hr.seeder.ts` writes no personal fields (safe — columns
+  nullable). Members tab layout change unverified in the browser. `hr`
+  seeder personal-field backfill optional.
+
 ## 2026-11-12 - ERP-0039: organization-scoped invitations + one shared invite dialog
 
 Status: implemented and browser-verified end to end (invite → email → claim →

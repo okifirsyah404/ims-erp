@@ -361,10 +361,18 @@ Table auth.users {
   username text [unique]
   display_username text
   status text [note: "User lifecycle for the invitation-only flow: pending (pre-created by invitation, no credentials) | active | deactivated (sessions revoked, memberships kept). ERP-owned extension column; default 'active'."]
+  gender text [note: "Personal field moved from hr.employees (ERP-0034). API contract: male | female only."]
+  birth_date bigint [note: "Unix milliseconds at Asia/Jakarta midnight. Personal field moved from hr.employees (ERP-0034)."]
+  birth_place text [note: "Personal field moved from hr.employees (ERP-0034)."]
+  marital_status text [note: "Personal field moved from hr.employees (ERP-0034)."]
   Note: "Better Auth system user. Superadmin flag for the admin plugin."
   Indexes {
     email [unique, name: 'users_email_key']
     username [unique, name: 'users_username_key']
+  }
+  Checks {
+    `gender IS NULL OR gender IN ('male', 'female')`
+    `marital_status IS NULL OR marital_status IN ('single', 'married', 'divorced', 'widowed')`
   }
 }
 
@@ -3246,11 +3254,7 @@ Table hr.employees {
   full_name text [not null]
   legal_name text
   nickname text
-  gender text
-  birth_date date
-  birth_place text
   national_id text
-  marital_status text
   email text
   phone text
   whatsapp text
@@ -3278,8 +3282,6 @@ Table hr.employees {
     (organization_id, full_name) [name: 'employees_org_name_idx']
   }
   Checks {
-    `gender IN ('male', 'female', 'other')`
-    `marital_status IN ('single', 'married', 'divorced', 'widowed')`
     `employment_status IN ('active', 'on_leave', 'suspended', 'terminated')`
     `employment_type IN ('permanent', 'contract', 'freelance', 'intern')`
     `work_type IN ('onsite', 'remote', 'hybrid')`

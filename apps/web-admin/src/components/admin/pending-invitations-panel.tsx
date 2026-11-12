@@ -63,8 +63,8 @@ export function PendingInvitationsPanel({
 	source: TInvitationSource;
 }) {
 	const queryClient = useQueryClient();
-	const canCreate = usePermission(ADMIN_PERMISSIONS.createMembers);
-	const canDelete = usePermission(ADMIN_PERMISSIONS.deleteMembers);
+	const canCreate = usePermission(ADMIN_PERMISSIONS.createInvitations);
+	const canDelete = usePermission(ADMIN_PERMISSIONS.cancelInvitations);
 	const { t } = useTranslation(['admin', 'common']);
 
 	const { data, isPending } = useQuery(source.queryOptions);
@@ -222,7 +222,7 @@ function InvitationRow({
 							{t('invitations.resend')}
 						</Button>
 					)}
-					{canCreate && (
+					{canDelete && (
 						<Button variant='ghost' size='sm' disabled={busy} onClick={onCancel}>
 							{t('common:action.cancel')}
 						</Button>

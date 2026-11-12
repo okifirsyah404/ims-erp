@@ -339,6 +339,36 @@ export class InvitationService {
 	}
 
 	/**
+	 * Rollback for an invite whose employee insert failed (ERP-0034): cancels
+	 * the still-pending invitation and soft-deletes its pre-created pending
+	 * user, so no orphan pending account remains. A claimed user is a real
+	 * account and is never touched here.
+	 */
+	async rollbackPending(
+		invitationId: string,
+		userId: string,
+		actor: TActor,
+	): Promise<void> {
+		const invitation = await this.invitations.findById(invitationId);
+		if (!invitation || invitation.status !== 'pending') return;
+		await this.invitations.markStatus(invitation.id, 'cancelled');
+		const user = await this.users.findById(userId);
+		if (user && user.status === 'pending') {
+			await this.users.delete(user.id);
+		}
+		await this.audit.record({
+			actorUserId: actor.userId,
+			actorEmail: actor.email,
+			action: 'invitation.cancelled',
+			targetType: 'invitation',
+			targetId: invitation.id,
+			organizationId: invitation.organizationId,
+			meta: { reason: 'employee_create_failed' },
+			request: { ip: actor.ip, userAgent: actor.userAgent },
+		});
+	}
+
+	/**
 	 * Delete (wrong-email fix): only while pending. Soft-deletes the
 	 * invitation AND its pre-created pending user. After claim the caller
 	 * must deactivate instead — enforced here.

@@ -75,6 +75,10 @@ function makeUser(overrides: Partial<TUserSelect> = {}): TUserSelect {
 		status: 'pending',
 		phone: null,
 		claimedAt: null,
+		gender: null,
+		birthDate: null,
+		birthPlace: null,
+		maritalStatus: null,
 		...overrides,
 	};
 }

@@ -178,7 +178,11 @@ Last synced: 2026-11-08.
   validation (422 `inventory.warehousePicInvalid`), web-admin
   `/hr/employees` pages, seeder. Evidence: `apps/backend/src/app/hr`,
   `apps/web-admin/src/components/hr`, `progress.md` 2026-11-10. Deferred:
-  manager picker UI, export.
+  manager picker UI, export. Follow-up 2026-11-12: invite-creates-employee
+  on both scopes (`EmployeeInviteService` behind `IInvitationEmployeePort`),
+  rollback on insert failure, personal fields on `auth.users` via
+  `IUserPersonalFieldsPort` (migration pending disposable-DB run), `hr`
+  invite rights.
 
 ### blocked
 - Supplier payables and the M09 payable handoff of receipts — ERP-0035.

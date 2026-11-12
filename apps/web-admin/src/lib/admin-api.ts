@@ -441,6 +441,8 @@ export const ADMIN_PERMISSIONS = {
 	createMembers: 'member.create' as Permission,
 	updateMembers: 'member.update' as Permission,
 	deleteMembers: 'member.delete' as Permission,
+	createInvitations: 'invitation.create' as Permission,
+	cancelInvitations: 'invitation.cancel' as Permission,
 	readAudit: 'audit_log.read' as Permission,
 };
 

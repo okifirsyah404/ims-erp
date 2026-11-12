@@ -8,9 +8,11 @@ import {
 	usernameAvailableQuerySchema,
 } from '../contracts/invitation.contract';
 import {
+	INVITATION_EMPLOYEE_PORT_TOKEN,
 	INVITATION_SERVICE_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
 } from '../constants/di';
+import type { IInvitationEmployeePort } from '../contracts/invitation-employee.port';
 import type { InvitationService, TActor } from '../../user/services/invitation.service';
 import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
 import { UserManagementError } from '../errors/invitation.errors';
@@ -62,6 +64,9 @@ export class InvitationController {
 		const invitationService = container.resolve<InvitationService>(
 			INVITATION_SERVICE_TOKEN,
 		);
+		const employeePort = container.resolve<IInvitationEmployeePort<unknown>>(
+			INVITATION_EMPLOYEE_PORT_TOKEN,
+		);
 
 		return domainPlugin({
 			name: 'user-management-invitations',
@@ -83,11 +88,13 @@ export class InvitationController {
 				async (ctx) => {
 					const actor = actorFrom(ctx.erp, ctx.request);
 					const parsed = createInvitationSchema.parse(ctx.body);
+					// Invite and employee creation are one step (ERP-0034): the port
+					// is implemented by HR, so this controller never imports HR.
 					if (Array.isArray(parsed)) {
-						const result = await invitationService.inviteBulk(parsed, actor);
+						const result = await employeePort.inviteBulk(parsed, actor);
 						return created(result);
 					}
-					const result = await invitationService.invite(parsed, actor);
+					const result = await employeePort.invite(parsed, actor);
 					return created(result);
 				},
 				{ erp: { policy: requireGlobalAdmin } },

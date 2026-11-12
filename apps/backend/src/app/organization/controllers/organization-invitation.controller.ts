@@ -8,7 +8,11 @@ import type {
 	InvitationService,
 	TActor,
 } from '../../user/services/invitation.service';
-import { INVITATION_SERVICE_TOKEN } from '../../user/constants/di';
+import {
+	INVITATION_EMPLOYEE_PORT_TOKEN,
+	INVITATION_SERVICE_TOKEN,
+} from '../../user/constants/di';
+import type { IInvitationEmployeePort } from '../../user/contracts/invitation-employee.port';
 import {
 	createOrgInvitationSchema,
 	orgInvitationListParamsSchema,
@@ -77,6 +81,9 @@ export class OrganizationInvitationController {
 		const invitationService = container.resolve<InvitationService>(
 			INVITATION_SERVICE_TOKEN,
 		);
+		const employeePort = container.resolve<IInvitationEmployeePort<unknown>>(
+			INVITATION_EMPLOYEE_PORT_TOKEN,
+		);
 
 		return domainPlugin({
 			name: 'organization-invitations',
@@ -112,19 +119,19 @@ export class OrganizationInvitationController {
 					// The organization comes from the path, never the body, so a
 					// caller cannot redirect an invitation it is allowed to send.
 					if (Array.isArray(parsed)) {
-						const result = await invitationService.inviteBulk(
+						const result = await employeePort.inviteBulk(
 							parsed.map((row) => ({ ...row, organizationId })),
 							actor,
 						);
 						return created(result);
 					}
-					const result = await invitationService.invite(
+					const result = await employeePort.invite(
 						{ ...parsed, organizationId },
 						actor,
 					);
 					return created(result);
 				},
-				{ erp: { permission: ['member:create'] } },
+				{ erp: { permission: ['invitation:create'] } },
 			)
 			.post(
 				'/:organizationId/invitations/:invitationId/resend',
@@ -139,7 +146,7 @@ export class OrganizationInvitationController {
 					);
 					return ok(null);
 				},
-				{ erp: { permission: ['member:create'] } },
+				{ erp: { permission: ['invitation:create'] } },
 			)
 			.post(
 				'/:organizationId/invitations/:invitationId/cancel',
@@ -154,7 +161,7 @@ export class OrganizationInvitationController {
 					);
 					return ok(null);
 				},
-				{ erp: { permission: ['member:delete'] } },
+				{ erp: { permission: ['invitation:cancel'] } },
 			)
 			.delete(
 				'/:organizationId/invitations/:invitationId',
@@ -169,7 +176,7 @@ export class OrganizationInvitationController {
 					);
 					return ok(null);
 				},
-				{ erp: { permission: ['member:delete'] } },
+				{ erp: { permission: ['invitation:cancel'] } },
 			);
 	}
 }

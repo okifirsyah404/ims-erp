@@ -7,7 +7,9 @@ import {
   integer,
   index,
   uniqueIndex,
+  check,
 } from "drizzle-orm/pg-core";
+import { unixTimestampNullable } from "@drizzle/datatypes/unix-timestamp";
 
 export const authSchema = pgSchema("auth");
 
@@ -53,7 +55,18 @@ export const users = authSchema.table("users", {
   // the planned phone login can never hit a migration wall. Mirrors the
   // `phone` additionalField in auth.options.ts (hand-applied-delta caveat).
   phone: text("phone"),
+  // Personal fields moved from hr.employees (ERP-0034). Hand-applied delta
+  // (same caveat as above). `gender` allows male|female only (API contract).
+  gender: text("gender"),
+  birthDate: unixTimestampNullable("birth_date"),
+  birthPlace: text("birth_place"),
+  maritalStatus: text("marital_status"),
 }, (table) => [
+  check("users_gender_check", sql`gender IS NULL OR gender IN ('male', 'female')`),
+  check(
+    "users_marital_status_check",
+    sql`marital_status IS NULL OR marital_status IN ('single', 'married', 'divorced', 'widowed')`,
+  ),
   // Phone uniqueness for the planned phone login; partial so multiple
   // NULLs (users without phone) are allowed.
   uniqueIndex("users_phone_live_idx").on(table.phone).where(sql`phone IS NOT NULL`),

@@ -66,7 +66,8 @@ function OrganizationDetailPage() {
 	const queryClient = useQueryClient();
 	const canUpdate = usePermission('organization.update');
 	const canDelete = usePermission('organization.delete');
-	const canManageMembers = usePermission('member.create');
+	const canManageMembers = usePermission('invitation.create');
+	const canReadMembers = usePermission('member.read');
 	const { t } = useTranslation(['admin', 'common']);
 
 	const { data: organization, isPending } = useQuery({
@@ -77,6 +78,7 @@ function OrganizationDetailPage() {
 	const membersQuery = useQuery({
 		...organizationMembersQueryOptions(organizationId, memberPage, MEMBER_PAGE_SIZE),
 		placeholderData: (previous) => previous,
+		enabled: canReadMembers,
 	});
 	const { data: members } = membersQuery;
 
@@ -257,11 +259,13 @@ function OrganizationDetailPage() {
 			<Tabs defaultValue='info'>
 				<TabsList>
 					<TabsTrigger value='info'>{t('orgDetail.info')}</TabsTrigger>
-					<TabsTrigger value='members'>
-						{t('orgDetail.membersCount', {
-							count: members?.pagination.total ?? 0,
-						})}
-					</TabsTrigger>
+					{canReadMembers && (
+						<TabsTrigger value='members'>
+							{t('orgDetail.membersCount', {
+								count: members?.pagination.total ?? 0,
+							})}
+						</TabsTrigger>
+					)}
 				</TabsList>
 				<TabsContent value='info'>
 					<Card>
@@ -286,7 +290,7 @@ function OrganizationDetailPage() {
 						</CardContent>
 					</Card>
 				</TabsContent>
-				<TabsContent value='members'>
+				<TabsContent value='members' className='flex flex-col gap-6'>
 					<Card className='gap-0 py-0'>
 						<div className='flex items-center justify-between gap-4 border-b px-4 py-4'>
 							<div>

@@ -26,8 +26,9 @@ export type TUserPaginationRequest = TPaginationRequest &
  * @remarks
  * Module-boundary exception (see the `elysia-module` skill, rule 3.3): the
  * user module projects over the auth schema because Better Auth owns the
- * identity tables. This repository touches ONLY the `deletedAt` column —
- * that is the full extent of the user module's direct write surface.
+ * identity tables. Direct writes are limited to `deletedAt` and the personal
+ * fields moved here from `hr.employees` (ERP-0034: gender, birth_date,
+ * birth_place, marital_status), which Better Auth does not manage.
  * `role`, `banned`, `banReason`, `banExpires`, passwords, and sessions are
  * Better Auth–owned state and must be mutated exclusively through the
  * Better Auth admin API (see `IUserAuthGateway`), never via Drizzle.
