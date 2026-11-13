@@ -331,6 +331,42 @@ count → 401 envelope, `GET /notifications` → 200 paginated, `unreadOnly=true
   recipient ids and tag.
 - A queue outage does not fail the originating HTTP request.
 
+**Status: done (2026-11-14).**
+
+Deviations from the plan text, all deliberate:
+
+- **`ExportedNotificationService`'s dispatcher is a DI token, not just a
+  defaulted constructor parameter.** The Phase 3 default-parameter seam made
+  tsyringe fail the whole graph at boot: `Cannot inject the dependency at
+  position #0 of "ExportedNotificationService" ... TypeInfo not known for
+  "Object"` (a defaulted parameter emits no design type). The queue function is
+  now registered as `NOTIFICATION_DISPATCHER_TOKEN` (`useValue`) and injected;
+  constructing the class by hand in a test still works, so the Phase 3 test seam
+  is unchanged. Unit tests never caught this — only `bun run src/index.ts` did.
+- **`createOrganization` notifies the creator only when `creatorUserId` is
+  present.** The bootstrap controller always passes it; a service-level caller
+  without it has no id to notify and no session to infer one from.
+- **Nested **invited** users are not notified at create time.** Only the claim
+  path notifies (`org.member_added` once the membership exists), so a user gets
+  exactly one notification for one membership — an invite email is not an
+  in-app notification.
+- **`role` is joined `', '`, not `','`.** The row stores the Better Auth
+  comma-joined list; the notification renders it for humans (`admin, sales`).
+- **`sourceId` on `org.member_added` is the member row id** (create/add) or the
+  organization id (claim, which has no member id in hand), so the enqueued job
+  id stays deterministic and a replayed request cannot double-notify.
+
+Verified: `bun test` 919 pass / 0 fail (7 new in
+`test/unit/notification.producers.test.ts`), `bunx tsc -b --noEmit` clean,
+`oxlint` clean. Live against `:3001` with the real queue and worker:
+`POST /organizations` enqueued `org.org_created` for the creator, and
+`POST /organizations/:id/members` enqueued `org.member_added` with
+`{ organizationName, role }` and the organization name as the tag; the worker
+then inserted `notification.notifications` as `status='sent'` with the rendered
+title/body, `source_type='organization_member'` and the member id as
+`source_id`. Boot was re-verified (`bun run src/index.ts` reaches
+"Elysia is running") after the DI fix.
+
 ---
 
 ## Phase 6 — Seeders

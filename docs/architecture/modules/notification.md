@@ -17,8 +17,8 @@ WhatsApp AI handoff of M04 stage 2.
 
 ## Current state (2026-11-14)
 
-**Backend module landed with its REST surface; no producer, seeder or UI yet.**
-Phases 0–4 of `docs/plan/plans/ws-notification.md`:
+**Backend module landed with its REST surface and producers; no seeder or UI
+yet.** Phases 0–5 of `docs/plan/plans/ws-notification.md`:
 
 - `docs/database/docs.dbml` — `notification.notification_templates` and
   `notification.notifications` moved out of the `automation` schema.
@@ -35,9 +35,35 @@ Phases 0–4 of `docs/plan/plans/ws-notification.md`:
   tables, `NotificationService` (list, unread count, mark read, mark all read),
   `ExportedNotificationService` (the only cross-module entry point), the
   `send`/`prune` BullMQ queue and its worker, and the controller mounting the
-  inbox routes. Nothing calls the producer yet.
+  inbox routes.
 
-Phase 5 adds the producers, Phase 6 the seeders, Phase 7 the bell.
+Phase 6 adds the seeders, Phase 7 the bell.
+
+## Producers (landed)
+
+`OrganizationService` is the first producer, through
+`EXPORTED_NOTIFICATION_SERVICE_TOKEN` only:
+
+| Path | Template | Variables | Tag |
+|---|---|---|---|
+| `addMember` | `org.member_added` | `organizationName`, `role` | organization name |
+| `createOrganization` (creator) | `org.org_created` | `organizationName` | organization name |
+| `createOrganization` (nested **active** user) | `org.member_added` | `organizationName`, `role` | organization name |
+| `InvitationService.claim` (org path, after the membership exists) | `org.member_added` | `organizationName`, `role` | organization name |
+
+Rules that keep this honest:
+
+- A nested **invited** user is notified once, at claim — never at create. One
+  membership yields one notification, and an invite email is not an in-app
+  notification.
+- `role` is the Better Auth comma-joined list rendered for humans
+  (`admin, sales`).
+- `sourceId` is the member row id where one exists, else the organization id,
+  so the enqueued job id is deterministic and a replay cannot double-notify.
+- `ExportedNotificationService` takes its dispatcher through
+  `NOTIFICATION_DISPATCHER_TOKEN`. A defaulted constructor parameter emits no
+  design type, and tsyringe then fails the entire graph at boot with
+  `TypeInfo not known for "Object"`.
 
 ## HTTP surface
 
@@ -148,7 +174,8 @@ undelivered information, not stale storage.
 
 ## Consumers
 
-- Organization: member added, organization created, invitation claimed.
+- Organization: member added, organization created, invitation claimed (landed
+  2026-11-14, Phase 5).
 - Planned: sales invoice issued, document signature requested, licensing expiry.
 
 ## Tests
@@ -171,6 +198,10 @@ undelivered information, not stale storage.
   another user's row → 404, non-uuid id → 400, `read-all`, plus the same 400
   asserted against a **listening** server (`.listen()` serves the compiled
   route, which is where the shared validation handler used to throw).
+- `notification.producers.test.ts` — the three producer paths: `addMember`,
+  `createOrganization` (creator vs nested active user), the invitation claim,
+  and the outage contract exercised with the **real**
+  `ExportedNotificationService` over a throwing dispatcher.
 
 `apps/backend/test/unit/realtime.{hub,gateway}.test.ts` cover the transport the
 worker publishes through (envelope, upgrade rejected without a session).

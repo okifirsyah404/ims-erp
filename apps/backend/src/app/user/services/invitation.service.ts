@@ -21,6 +21,8 @@ import type { IInvitationMailer } from '../contracts/invitation-mailer.gateway.i
 import type { IUserManagementAuthGateway } from '../contracts/user-management-auth.gateway.interface';
 import type { TCreateInvitationInput } from '../contracts/invitation.contract';
 import { pinoLogger } from '@providers/logger/logger';
+import { EXPORTED_NOTIFICATION_SERVICE_TOKEN } from '@app/notification/constants/di';
+import type { ExportedNotificationService } from '@app/notification/services/exported-notification.service';
 import { hashToken } from '../utils/token';
 import { AuditService } from '../../audit/services/audit.service';
 import {
@@ -109,6 +111,13 @@ export class InvitationService {
 		@inject(ORGANIZATION_SLUG_RESOLVER_TOKEN)
 		private readonly slugResolver: IOrganizationSlugResolverPort,
 		private readonly audit: AuditService,
+		/**
+		 * Cross-module producer entry point (ERP-0047). The claim path is the
+		 * only place this module notifies: an invitation email is not a
+		 * notification, but the membership it creates is.
+		 */
+		@inject(EXPORTED_NOTIFICATION_SERVICE_TOKEN)
+		private readonly notifications: ExportedNotificationService,
 	) {}
 
 	/**
@@ -501,6 +510,22 @@ export class InvitationService {
 				userId: user.id,
 				organizationId: invitation.organizationId,
 				roleName: target.invitation.organizationRole ?? 'member',
+			});
+			// ERP-0047: membership exists now, so this is the claim success
+			// point — never the invite send, never a rejected/expired token.
+			await this.notifications.notify({
+				userIds: [user.id],
+				templateCode: 'org.member_added',
+				variables: {
+					organizationName,
+					role: (target.invitation.organizationRole ?? 'member')
+						.split(',')
+						.map((role) => role.trim())
+						.join(', '),
+				},
+				tags: organizationName ? [organizationName] : [],
+				sourceType: 'organization_member',
+				sourceId: invitation.organizationId,
 			});
 		}
 

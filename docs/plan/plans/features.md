@@ -174,7 +174,12 @@ Last synced: 2026-11-13.
   `POST /notifications/read-all`) mounted via `notificationModule()` under the
   session guard only; `sessionGuard()` maps its own `ErpAuthError`, and the
   shared `domainPlugin` `VALIDATION` branch was fixed (it 500-ed every
-  validation failure on a listening server). No producers, seeders or UI yet.
+  validation failure on a listening server). Phase 5 done 2026-11-14: adding a
+  member (`OrganizationService.addMember`), creating an organization (creator +
+  nested active users) and a successful invitation claim all produce
+  `org.member_added`/`org.org_created` through `ExportedNotificationService`;
+  a `NOTIFICATION_DISPATCHER_TOKEN` was added because the defaulted constructor
+  parameter made tsyringe fail at boot. No seeders or UI yet.
 
 ## M05 Inventory and Purchasing
 

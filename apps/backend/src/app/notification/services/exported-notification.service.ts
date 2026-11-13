@@ -1,6 +1,7 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { pinoLogger } from '@providers/logger/logger';
 import type { NotificationTemplateCode } from '@drizzle/schemas/notification.schema';
+import { NOTIFICATION_DISPATCHER_TOKEN } from '../constants/di';
 import {
 	dispatchNotification,
 	type NotificationSendJobData,
@@ -57,12 +58,14 @@ export type TNotificationDispatcher = (
  * One job per recipient, so a failed render for one user cannot drop the
  * notification for the rest.
  *
- * The dispatcher defaults to the real queue, so DI resolves this with no
- * arguments; tests pass a double instead of mocking the queue module.
+ * The dispatcher is injected through `NOTIFICATION_DISPATCHER_TOKEN`
+ * (registered as the real queue), so DI can construct this class; tests still
+ * pass a double as the plain constructor argument.
  */
 @injectable()
 export class ExportedNotificationService {
 	constructor(
+		@inject(NOTIFICATION_DISPATCHER_TOKEN)
 		private readonly dispatch: TNotificationDispatcher = dispatchNotification,
 	) {}
 

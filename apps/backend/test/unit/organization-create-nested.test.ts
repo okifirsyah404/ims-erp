@@ -26,6 +26,16 @@ type Repos = {
 		findActiveByEmail: (email: string) => Promise<{ id: string } | null>;
 	};
 	storage: { put: (key: string, data: Blob, type: string) => Promise<void> };
+	notifications: {
+		notify: (input: {
+			userIds: string[];
+			templateCode: string;
+			variables?: Record<string, string>;
+			tags?: string[];
+			sourceType?: string;
+			sourceId?: string;
+		}) => Promise<void>;
+	};
 	addedMembers: Array<{ organizationId: string; userId: string; roles: string[] }>;
 	inviteInputs: Array<{ email: string; organizationRoles?: string[] }>;
 	deliverFlags: boolean[];
@@ -57,12 +67,14 @@ function makeService(overrides: Partial<Repos> = {}) {
 		findActiveByEmail: async () => null,
 	} as never;
 	const storage = { put: async () => undefined } as never;
+	const notifications = { notify: async () => undefined } as never;
 	const service = new OrganizationService(
 		overrides.repository ?? repository,
 		overrides.gateway ?? gateway,
 		(overrides.invitations ?? invitations) as never,
 		(overrides.users ?? users) as never,
 		(overrides.storage ?? storage) as never,
+		(overrides.notifications ?? notifications) as never,
 	);
 	return { service, addedMembers, inviteInputs, deliverFlags };
 }

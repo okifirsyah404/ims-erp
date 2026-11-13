@@ -18,6 +18,79 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0047 Phase 5: notification producers
+
+Status: **Phase 5 done**. Adding a user to an organization now produces an
+in-app notification for that user; creating an organization notifies the
+creator. No seeders (Phase 6) and no UI (Phase 7) yet.
+
+- **`src/app/organization/services/organization.service.ts`** — injects
+  `EXPORTED_NOTIFICATION_SERVICE_TOKEN` and notifies on three paths:
+  `addMember` → `org.member_added`, `createOrganization` → `org.org_created`
+  for the creator, and a nested **active** user attached at create time →
+  `org.member_added`. The organization name is both the tag chip and the
+  `organizationName` variable. `role` is the comma-joined Better Auth list
+  rendered as `admin, sales`.
+- **`src/app/user/services/invitation.service.ts`** — `claim()` notifies
+  `org.member_added` **after** `attachMembership` succeeds, so the claim that
+  actually creates the membership is the notification point. Invite send,
+  resend, cancel, and a rejected or expired token notify nothing.
+- **`src/app/notification/constants/di.ts` + `container.ts` +
+  `services/exported-notification.service.ts`** — new
+  `NOTIFICATION_DISPATCHER_TOKEN` registered with the real `dispatchNotification`
+  as a `useValue`, and injected into `ExportedNotificationService`.
+- **`test/unit/notification.producers.test.ts`** (new) — 7 tests over the three
+  paths, including the real `ExportedNotificationService` over a throwing
+  dispatcher to prove a queue outage never fails the business write.
+
+Deviations / defects found:
+
+- **The Phase 3 dispatcher seam broke the DI graph at boot.** A defaulted
+  constructor parameter emits no design type, so tsyringe threw
+  `Cannot inject the dependency at position #0 of "ExportedNotificationService"
+  ... TypeInfo not known for "Object"` the first time a producer actually
+  resolved the exported service — and it surfaced as a chain through
+  `QuotationService` → `LeadService` → `OrganizationService` →
+  `InvitationService`. Unit tests never resolve the container, so the whole
+  suite stayed green while `bun run src/index.ts` failed. Fixed with an explicit
+  token; constructing the class by hand in tests still works.
+- Only nested **invited** users skip the create-time notification: they are
+  notified once at claim, so one membership never yields two notifications.
+- `sourceId` is the member row id where one exists, else the organization id, so
+  the job id stays deterministic and a replay cannot double-notify.
+
+Commands and outcomes:
+
+```text
+cd apps/backend; bun test
+  919 pass, 0 fail, 2114 expect() calls (67 files; 7 new)
+
+cd apps/backend; bunx tsc -b --noEmit
+  (clean)
+
+cd apps/backend; bunx oxlint
+  exit 0
+
+cd apps/backend; bun run src/index.ts
+  "🦊 Elysia is running at localhost:3001" (boot re-verified after the DI fix)
+
+# live, real queue + real worker, local Postgres/Redis
+POST /organizations                     -> 201; queue completed +1
+  job notification-org.org_created-<userId>-<orgId>
+  data { templateCode: 'org.org_created', variables: { organizationName },
+         tags: [organizationName], sourceType: 'organization', sourceId: <orgId> }
+POST /organizations/:id/members         -> 201; queue completed +1
+  job notification-org.member_added-<userId>-<memberId>
+  data { templateCode: 'org.member_added',
+         variables: { organizationName, role: 'member' },
+         tags: [organizationName], sourceType: 'organization_member',
+         sourceId: <memberId> }
+notification.notifications row -> status 'sent',
+  title 'Member added',
+  body 'Admin added you as member of Phase5 Probe ...',
+  tags ["Phase5 Probe ..."], source_type 'organization_member'
+```
+
 ## 2026-11-14 - ERP-0047 Phase 4: notification REST surface
 
 Status: **Phase 4 done**. The caller's inbox is reachable over HTTP; nothing
@@ -6657,12 +6730,13 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**ERP-0047 Phase 5** — notification producers, per
-`docs/plan/plans/ws-notification.md`: `OrganizationService.addMember` →
-`org.member_added`, `createOrganization` → `org.org_created` (nested attached
-users get `org.member_added`), and invitation claim success → `org.member_added`.
-All three through `ExportedNotificationService` only. Phases 0-4 are done (see
-the 2026-11-14 entry).
+**ERP-0047 Phase 6** — notification seeders, per
+`docs/plan/plans/ws-notification.md`: `database/seeders/seed/notification-templates.ts`
+(four templates, English copy, anchor-based idempotency) and
+`notification-demo.ts` (2-3 demo rows for one fixed user), wired into
+`database/seeders/index.ts` and verified by running the seed twice. Phases 0-5
+are done (see the 2026-11-14 entries); Phase 5 already produced real rows live,
+so the templates must be seeded before Phase 7 can render anything.
 
 **Get reviewer sign-off on PR #82** (`fix/org-hardening`) — the organization
 `description` slice, the full-width create card, the create-style edit page,

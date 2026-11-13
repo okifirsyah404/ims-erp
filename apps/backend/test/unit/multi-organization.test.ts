@@ -27,6 +27,7 @@ function service() {
 			undefined as never,
 			undefined as never,
 			undefined as never,
+			undefined as never,
 		),
 		created: () => created,
 	};

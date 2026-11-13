@@ -20,6 +20,7 @@ import type { IUserManagementRepository } from '../../src/app/user/contracts/use
 import type { IInvitationMailer } from '../../src/app/user/contracts/invitation-mailer.gateway.interface';
 import type { IUserManagementAuthGateway } from '../../src/app/user/contracts/user-management-auth.gateway.interface';
 import type { AuditService } from '../../src/app/audit/services/audit.service';
+import type { ExportedNotificationService } from '../../src/app/notification/services/exported-notification.service';
 import {
 	InvitationNotFoundError,
 	InvitationPendingExistsError,
@@ -130,6 +131,7 @@ function makeService(
 	const slugResolver = { resolveIdBySlug: mock(() => Promise.resolve('org-a')) };
 	const gateway = {};
 	const audit = { record: mock(() => Promise.resolve()) };
+	const notifications = { notify: mock(() => Promise.resolve()) };
 
 	const service = new InvitationService(
 		invitations as unknown as IInvitationRepository,
@@ -138,8 +140,9 @@ function makeService(
 		mailer as unknown as IInvitationMailer,
 		slugResolver as unknown as import('../../src/app/user/contracts/organization-slug-resolver.port').IOrganizationSlugResolverPort,
 		audit as unknown as AuditService,
+		notifications as unknown as ExportedNotificationService,
 	);
-	return { service, invitations, users, mailer, audit, slugResolver };
+	return { service, invitations, users, mailer, audit, slugResolver, notifications };
 }
 
 describe('InvitationService — tenant rules on the overwrite path', () => {
