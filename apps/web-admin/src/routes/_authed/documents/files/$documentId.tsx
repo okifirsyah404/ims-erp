@@ -35,8 +35,8 @@ import {
 import { formatDateTime } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
 
-/** `/documents/$documentId` — one registry document with its files and links. */
-export const Route = createFileRoute('/_authed/documents/$documentId')({
+/** `/documents/files/$documentId` — one registry document with its files and links. */
+export const Route = createFileRoute('/_authed/documents/files/$documentId')({
 	component: DocumentDetailPage,
 });
 
@@ -116,7 +116,7 @@ function DocumentDetailPage() {
 
 	return (
 		<div className='flex flex-col gap-6'>
-			<Link to='/documents' className='text-sm text-muted-foreground hover:underline'>
+			<Link to='/documents/files' className='text-sm text-muted-foreground hover:underline'>
 				{t('documents:back')}
 			</Link>
 			<div className='flex flex-wrap items-center justify-between gap-3'>

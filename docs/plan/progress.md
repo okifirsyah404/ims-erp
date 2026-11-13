@@ -12,7 +12,42 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
-## 2026-11-13 - sidebar: Documents / Signatures / Templates, Administration order
+## 2026-11-13 - sidebar: Files route, Signatures sub-items, Documents below CRM & Sales
+
+Status: **implemented** (uncommitted at time of writing; see commit line below).
+Supersedes the sidebar entry further down for the Documents section.
+
+- Section order: Dashboard → CRM & Sales → Documents → Subscription ….
+- Documents section: Files (`/documents/files`, the registry moved from
+  `/documents`), Signatures (parent, no URL) with three sub-items, Templates
+  (`/documents/templates`, flat, placeholder until ERP-0050).
+- Signatures sub-items, all `ComingSoonPage` placeholders until ERP-0048 / ERP-0049:
+  Document Signature (`/documents/signatures/documents`), Request Signature
+  (`/documents/signatures/request`), My Signature (`/documents/signatures/mine`).
+- `/documents` redirects to `/documents/files` (`routes/_authed/documents/index.tsx`).
+- Registry detail moved to `/documents/files/$documentId`; back link and breadcrumb updated.
+- Locales en/id: `item.files` (Files / Berkas), `item.documentSignatures`,
+  `item.requestSignature`, `item.mySignature`, `breadcrumb.documentDetail`.
+  `item.documents` removed (no longer used).
+- Status label "Rejected" / "Ditolak" for `declined` is a UI copy decision for
+  ERP-0048; not added yet because the page is a placeholder.
+
+Verification (2026-11-13):
+- `bun run build` (web-admin): exit 0 after dropping an unused `Send` import
+  (first build failed with TS6133). `routeTree.gen.ts` regenerated.
+- `bun test` (web-admin): 70 pass, 0 fail.
+- `bun test` (packages/locales): 86 pass, 0 fail.
+- `bun run lint` (web-admin): exit 0, 0 errors.
+- Browser: sidebar order Dashboard, CRM & Sales, Documents (Files, Signatures
+  with Document Signature / Request Signature / My Signature, Templates).
+  `/documents` lands on `/documents/files`. `/documents/files` breadcrumb
+  `Home > Documents > Files`. `/documents/signatures/request` breadcrumb
+  `Home > Documents > Signatures > Request Signature` with Coming soon.
+
+Not verified: `/documents/files/$documentId` in the browser after the move;
+the other two signature placeholders in the browser; non-admin visibility.
+
+## 2026-11-13 - sidebar: Documents / Signatures / Templates, Administration order (superseded for Documents)
 
 Status: **implemented** (commit `7b1f699`, local branch only, not pushed). No
 backlog ID claimed: the sidebar split is a UI follow-up to ERP-0042, not a

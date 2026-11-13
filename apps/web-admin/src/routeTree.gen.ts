@@ -24,8 +24,6 @@ import { Route as AuthedAccountSessionsRouteImport } from './routes/_authed.acco
 import { Route as AuthedAssetsIndexRouteImport } from './routes/_authed/assets/index'
 import { Route as AuthedCrmIndexRouteImport } from './routes/_authed/crm/index'
 import { Route as AuthedDocumentsIndexRouteImport } from './routes/_authed/documents/index'
-import { Route as AuthedDocumentsDocumentIdRouteImport } from './routes/_authed/documents/$documentId'
-import { Route as AuthedDocumentsSignaturesRouteImport } from './routes/_authed/documents/signatures'
 import { Route as AuthedDocumentsTemplatesRouteImport } from './routes/_authed/documents/templates'
 import { Route as AuthedFinanceIndexRouteImport } from './routes/_authed/finance/index'
 import { Route as AuthedHrIndexRouteImport } from './routes/_authed/hr/index'
@@ -60,6 +58,11 @@ import { Route as AuthedCrmCustomersIndexRouteImport } from './routes/_authed/cr
 import { Route as AuthedCrmCustomersCustomerIdRouteImport } from './routes/_authed/crm/customers/$customerId'
 import { Route as AuthedCrmLeadsIndexRouteImport } from './routes/_authed/crm/leads/index'
 import { Route as AuthedCrmLeadsLeadIdRouteImport } from './routes/_authed/crm/leads/$leadId'
+import { Route as AuthedDocumentsFilesIndexRouteImport } from './routes/_authed/documents/files/index'
+import { Route as AuthedDocumentsFilesDocumentIdRouteImport } from './routes/_authed/documents/files/$documentId'
+import { Route as AuthedDocumentsSignaturesDocumentsRouteImport } from './routes/_authed/documents/signatures/documents'
+import { Route as AuthedDocumentsSignaturesMineRouteImport } from './routes/_authed/documents/signatures/mine'
+import { Route as AuthedDocumentsSignaturesRequestRouteImport } from './routes/_authed/documents/signatures/request'
 import { Route as AuthedFinanceAccountsIndexRouteImport } from './routes/_authed/finance/accounts/index'
 import { Route as AuthedFinanceCashBankIndexRouteImport } from './routes/_authed/finance/cash-bank/index'
 import { Route as AuthedFinanceClosingIndexRouteImport } from './routes/_authed/finance/closing/index'
@@ -222,18 +225,6 @@ const AuthedDocumentsIndexRoute = AuthedDocumentsIndexRouteImport.update({
   path: '/documents/',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedDocumentsDocumentIdRoute =
-  AuthedDocumentsDocumentIdRouteImport.update({
-    id: '/documents/$documentId',
-    path: '/documents/$documentId',
-    getParentRoute: () => AuthedRoute,
-  } as any)
-const AuthedDocumentsSignaturesRoute =
-  AuthedDocumentsSignaturesRouteImport.update({
-    id: '/documents/signatures',
-    path: '/documents/signatures',
-    getParentRoute: () => AuthedRoute,
-  } as any)
 const AuthedDocumentsTemplatesRoute =
   AuthedDocumentsTemplatesRouteImport.update({
     id: '/documents/templates',
@@ -419,6 +410,36 @@ const AuthedCrmLeadsLeadIdRoute = AuthedCrmLeadsLeadIdRouteImport.update({
   path: '/crm/leads/$leadId',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedDocumentsFilesIndexRoute =
+  AuthedDocumentsFilesIndexRouteImport.update({
+    id: '/documents/files/',
+    path: '/documents/files/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedDocumentsFilesDocumentIdRoute =
+  AuthedDocumentsFilesDocumentIdRouteImport.update({
+    id: '/documents/files/$documentId',
+    path: '/documents/files/$documentId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedDocumentsSignaturesDocumentsRoute =
+  AuthedDocumentsSignaturesDocumentsRouteImport.update({
+    id: '/documents/signatures/documents',
+    path: '/documents/signatures/documents',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedDocumentsSignaturesMineRoute =
+  AuthedDocumentsSignaturesMineRouteImport.update({
+    id: '/documents/signatures/mine',
+    path: '/documents/signatures/mine',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedDocumentsSignaturesRequestRoute =
+  AuthedDocumentsSignaturesRequestRouteImport.update({
+    id: '/documents/signatures/request',
+    path: '/documents/signatures/request',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedFinanceAccountsIndexRoute =
   AuthedFinanceAccountsIndexRouteImport.update({
     id: '/finance/accounts/',
@@ -941,8 +962,6 @@ export interface FileRoutesByFullPath {
   '/reset-password/': typeof ResetPasswordIndexRoute
   '/account/email': typeof AuthedAccountEmailRoute
   '/account/sessions': typeof AuthedAccountSessionsRoute
-  '/documents/$documentId': typeof AuthedDocumentsDocumentIdRoute
-  '/documents/signatures': typeof AuthedDocumentsSignaturesRoute
   '/documents/templates': typeof AuthedDocumentsTemplatesRoute
   '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/organizations/new': typeof AuthedOrganizationsNewRoute
@@ -968,6 +987,10 @@ export interface FileRoutesByFullPath {
   '/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
+  '/documents/files/$documentId': typeof AuthedDocumentsFilesDocumentIdRoute
+  '/documents/signatures/documents': typeof AuthedDocumentsSignaturesDocumentsRoute
+  '/documents/signatures/mine': typeof AuthedDocumentsSignaturesMineRoute
+  '/documents/signatures/request': typeof AuthedDocumentsSignaturesRequestRoute
   '/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
   '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -1001,6 +1024,7 @@ export interface FileRoutesByFullPath {
   '/assets/tool-sets/': typeof AuthedAssetsToolSetsIndexRoute
   '/crm/customers/': typeof AuthedCrmCustomersIndexRoute
   '/crm/leads/': typeof AuthedCrmLeadsIndexRoute
+  '/documents/files/': typeof AuthedDocumentsFilesIndexRoute
   '/finance/accounts/': typeof AuthedFinanceAccountsIndexRoute
   '/finance/cash-bank/': typeof AuthedFinanceCashBankIndexRoute
   '/finance/closing/': typeof AuthedFinanceClosingIndexRoute
@@ -1078,8 +1102,6 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordIndexRoute
   '/account/email': typeof AuthedAccountEmailRoute
   '/account/sessions': typeof AuthedAccountSessionsRoute
-  '/documents/$documentId': typeof AuthedDocumentsDocumentIdRoute
-  '/documents/signatures': typeof AuthedDocumentsSignaturesRoute
   '/documents/templates': typeof AuthedDocumentsTemplatesRoute
   '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/organizations/new': typeof AuthedOrganizationsNewRoute
@@ -1105,6 +1127,10 @@ export interface FileRoutesByTo {
   '/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
+  '/documents/files/$documentId': typeof AuthedDocumentsFilesDocumentIdRoute
+  '/documents/signatures/documents': typeof AuthedDocumentsSignaturesDocumentsRoute
+  '/documents/signatures/mine': typeof AuthedDocumentsSignaturesMineRoute
+  '/documents/signatures/request': typeof AuthedDocumentsSignaturesRequestRoute
   '/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
   '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -1138,6 +1164,7 @@ export interface FileRoutesByTo {
   '/assets/tool-sets': typeof AuthedAssetsToolSetsIndexRoute
   '/crm/customers': typeof AuthedCrmCustomersIndexRoute
   '/crm/leads': typeof AuthedCrmLeadsIndexRoute
+  '/documents/files': typeof AuthedDocumentsFilesIndexRoute
   '/finance/accounts': typeof AuthedFinanceAccountsIndexRoute
   '/finance/cash-bank': typeof AuthedFinanceCashBankIndexRoute
   '/finance/closing': typeof AuthedFinanceClosingIndexRoute
@@ -1219,8 +1246,6 @@ export interface FileRoutesById {
   '/reset-password/': typeof ResetPasswordIndexRoute
   '/_authed/account/email': typeof AuthedAccountEmailRoute
   '/_authed/account/sessions': typeof AuthedAccountSessionsRoute
-  '/_authed/documents/$documentId': typeof AuthedDocumentsDocumentIdRoute
-  '/_authed/documents/signatures': typeof AuthedDocumentsSignaturesRoute
   '/_authed/documents/templates': typeof AuthedDocumentsTemplatesRoute
   '/_authed/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/_authed/organizations/new': typeof AuthedOrganizationsNewRoute
@@ -1246,6 +1271,10 @@ export interface FileRoutesById {
   '/_authed/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/_authed/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/_authed/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
+  '/_authed/documents/files/$documentId': typeof AuthedDocumentsFilesDocumentIdRoute
+  '/_authed/documents/signatures/documents': typeof AuthedDocumentsSignaturesDocumentsRoute
+  '/_authed/documents/signatures/mine': typeof AuthedDocumentsSignaturesMineRoute
+  '/_authed/documents/signatures/request': typeof AuthedDocumentsSignaturesRequestRoute
   '/_authed/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
   '/_authed/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/_authed/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -1279,6 +1308,7 @@ export interface FileRoutesById {
   '/_authed/assets/tool-sets/': typeof AuthedAssetsToolSetsIndexRoute
   '/_authed/crm/customers/': typeof AuthedCrmCustomersIndexRoute
   '/_authed/crm/leads/': typeof AuthedCrmLeadsIndexRoute
+  '/_authed/documents/files/': typeof AuthedDocumentsFilesIndexRoute
   '/_authed/finance/accounts/': typeof AuthedFinanceAccountsIndexRoute
   '/_authed/finance/cash-bank/': typeof AuthedFinanceCashBankIndexRoute
   '/_authed/finance/closing/': typeof AuthedFinanceClosingIndexRoute
@@ -1360,8 +1390,6 @@ export interface FileRouteTypes {
     | '/reset-password/'
     | '/account/email'
     | '/account/sessions'
-    | '/documents/$documentId'
-    | '/documents/signatures'
     | '/documents/templates'
     | '/organizations/$organizationId'
     | '/organizations/new'
@@ -1387,6 +1415,10 @@ export interface FileRouteTypes {
     | '/assets/register/new'
     | '/crm/customers/$customerId'
     | '/crm/leads/$leadId'
+    | '/documents/files/$documentId'
+    | '/documents/signatures/documents'
+    | '/documents/signatures/mine'
+    | '/documents/signatures/request'
     | '/hr/employees/$employeeId'
     | '/hr/employees/new'
     | '/inventory/items/$itemId'
@@ -1420,6 +1452,7 @@ export interface FileRouteTypes {
     | '/assets/tool-sets/'
     | '/crm/customers/'
     | '/crm/leads/'
+    | '/documents/files/'
     | '/finance/accounts/'
     | '/finance/cash-bank/'
     | '/finance/closing/'
@@ -1497,8 +1530,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/account/email'
     | '/account/sessions'
-    | '/documents/$documentId'
-    | '/documents/signatures'
     | '/documents/templates'
     | '/organizations/$organizationId'
     | '/organizations/new'
@@ -1524,6 +1555,10 @@ export interface FileRouteTypes {
     | '/assets/register/new'
     | '/crm/customers/$customerId'
     | '/crm/leads/$leadId'
+    | '/documents/files/$documentId'
+    | '/documents/signatures/documents'
+    | '/documents/signatures/mine'
+    | '/documents/signatures/request'
     | '/hr/employees/$employeeId'
     | '/hr/employees/new'
     | '/inventory/items/$itemId'
@@ -1557,6 +1592,7 @@ export interface FileRouteTypes {
     | '/assets/tool-sets'
     | '/crm/customers'
     | '/crm/leads'
+    | '/documents/files'
     | '/finance/accounts'
     | '/finance/cash-bank'
     | '/finance/closing'
@@ -1637,8 +1673,6 @@ export interface FileRouteTypes {
     | '/reset-password/'
     | '/_authed/account/email'
     | '/_authed/account/sessions'
-    | '/_authed/documents/$documentId'
-    | '/_authed/documents/signatures'
     | '/_authed/documents/templates'
     | '/_authed/organizations/$organizationId'
     | '/_authed/organizations/new'
@@ -1664,6 +1698,10 @@ export interface FileRouteTypes {
     | '/_authed/assets/register/new'
     | '/_authed/crm/customers/$customerId'
     | '/_authed/crm/leads/$leadId'
+    | '/_authed/documents/files/$documentId'
+    | '/_authed/documents/signatures/documents'
+    | '/_authed/documents/signatures/mine'
+    | '/_authed/documents/signatures/request'
     | '/_authed/hr/employees/$employeeId'
     | '/_authed/hr/employees/new'
     | '/_authed/inventory/items/$itemId'
@@ -1697,6 +1735,7 @@ export interface FileRouteTypes {
     | '/_authed/assets/tool-sets/'
     | '/_authed/crm/customers/'
     | '/_authed/crm/leads/'
+    | '/_authed/documents/files/'
     | '/_authed/finance/accounts/'
     | '/_authed/finance/cash-bank/'
     | '/_authed/finance/closing/'
@@ -1879,20 +1918,6 @@ declare module '@tanstack/react-router' {
       path: '/documents'
       fullPath: '/documents/'
       preLoaderRoute: typeof AuthedDocumentsIndexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/documents/$documentId': {
-      id: '/_authed/documents/$documentId'
-      path: '/documents/$documentId'
-      fullPath: '/documents/$documentId'
-      preLoaderRoute: typeof AuthedDocumentsDocumentIdRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/documents/signatures': {
-      id: '/_authed/documents/signatures'
-      path: '/documents/signatures'
-      fullPath: '/documents/signatures'
-      preLoaderRoute: typeof AuthedDocumentsSignaturesRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/documents/templates': {
@@ -2131,6 +2156,41 @@ declare module '@tanstack/react-router' {
       path: '/crm/leads/$leadId'
       fullPath: '/crm/leads/$leadId'
       preLoaderRoute: typeof AuthedCrmLeadsLeadIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/documents/files/': {
+      id: '/_authed/documents/files/'
+      path: '/documents/files'
+      fullPath: '/documents/files/'
+      preLoaderRoute: typeof AuthedDocumentsFilesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/documents/files/$documentId': {
+      id: '/_authed/documents/files/$documentId'
+      path: '/documents/files/$documentId'
+      fullPath: '/documents/files/$documentId'
+      preLoaderRoute: typeof AuthedDocumentsFilesDocumentIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/documents/signatures/documents': {
+      id: '/_authed/documents/signatures/documents'
+      path: '/documents/signatures/documents'
+      fullPath: '/documents/signatures/documents'
+      preLoaderRoute: typeof AuthedDocumentsSignaturesDocumentsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/documents/signatures/mine': {
+      id: '/_authed/documents/signatures/mine'
+      path: '/documents/signatures/mine'
+      fullPath: '/documents/signatures/mine'
+      preLoaderRoute: typeof AuthedDocumentsSignaturesMineRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/documents/signatures/request': {
+      id: '/_authed/documents/signatures/request'
+      path: '/documents/signatures/request'
+      fullPath: '/documents/signatures/request'
+      preLoaderRoute: typeof AuthedDocumentsSignaturesRequestRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/finance/accounts/': {
@@ -2845,8 +2905,6 @@ interface AuthedRouteChildren {
   AuthedAdminRoute: typeof AuthedAdminRouteWithChildren
   AuthedProfilesRoute: typeof AuthedProfilesRouteWithChildren
   AuthedIndexRoute: typeof AuthedIndexRoute
-  AuthedDocumentsDocumentIdRoute: typeof AuthedDocumentsDocumentIdRoute
-  AuthedDocumentsSignaturesRoute: typeof AuthedDocumentsSignaturesRoute
   AuthedDocumentsTemplatesRoute: typeof AuthedDocumentsTemplatesRoute
   AuthedOrganizationsOrganizationIdRoute: typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   AuthedOrganizationsNewRoute: typeof AuthedOrganizationsNewRoute
@@ -2869,6 +2927,10 @@ interface AuthedRouteChildren {
   AuthedAssetsRegisterNewRoute: typeof AuthedAssetsRegisterNewRoute
   AuthedCrmCustomersCustomerIdRoute: typeof AuthedCrmCustomersCustomerIdRoute
   AuthedCrmLeadsLeadIdRoute: typeof AuthedCrmLeadsLeadIdRoute
+  AuthedDocumentsFilesDocumentIdRoute: typeof AuthedDocumentsFilesDocumentIdRoute
+  AuthedDocumentsSignaturesDocumentsRoute: typeof AuthedDocumentsSignaturesDocumentsRoute
+  AuthedDocumentsSignaturesMineRoute: typeof AuthedDocumentsSignaturesMineRoute
+  AuthedDocumentsSignaturesRequestRoute: typeof AuthedDocumentsSignaturesRequestRoute
   AuthedHrEmployeesEmployeeIdRoute: typeof AuthedHrEmployeesEmployeeIdRoute
   AuthedHrEmployeesNewRoute: typeof AuthedHrEmployeesNewRoute
   AuthedInventoryItemsItemIdRoute: typeof AuthedInventoryItemsItemIdRouteWithChildren
@@ -2897,6 +2959,7 @@ interface AuthedRouteChildren {
   AuthedAssetsToolSetsIndexRoute: typeof AuthedAssetsToolSetsIndexRoute
   AuthedCrmCustomersIndexRoute: typeof AuthedCrmCustomersIndexRoute
   AuthedCrmLeadsIndexRoute: typeof AuthedCrmLeadsIndexRoute
+  AuthedDocumentsFilesIndexRoute: typeof AuthedDocumentsFilesIndexRoute
   AuthedFinanceAccountsIndexRoute: typeof AuthedFinanceAccountsIndexRoute
   AuthedFinanceCashBankIndexRoute: typeof AuthedFinanceCashBankIndexRoute
   AuthedFinanceClosingIndexRoute: typeof AuthedFinanceClosingIndexRoute
@@ -2968,8 +3031,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAdminRoute: AuthedAdminRouteWithChildren,
   AuthedProfilesRoute: AuthedProfilesRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
-  AuthedDocumentsDocumentIdRoute: AuthedDocumentsDocumentIdRoute,
-  AuthedDocumentsSignaturesRoute: AuthedDocumentsSignaturesRoute,
   AuthedDocumentsTemplatesRoute: AuthedDocumentsTemplatesRoute,
   AuthedOrganizationsOrganizationIdRoute:
     AuthedOrganizationsOrganizationIdRouteWithChildren,
@@ -2994,6 +3055,11 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAssetsRegisterNewRoute: AuthedAssetsRegisterNewRoute,
   AuthedCrmCustomersCustomerIdRoute: AuthedCrmCustomersCustomerIdRoute,
   AuthedCrmLeadsLeadIdRoute: AuthedCrmLeadsLeadIdRoute,
+  AuthedDocumentsFilesDocumentIdRoute: AuthedDocumentsFilesDocumentIdRoute,
+  AuthedDocumentsSignaturesDocumentsRoute:
+    AuthedDocumentsSignaturesDocumentsRoute,
+  AuthedDocumentsSignaturesMineRoute: AuthedDocumentsSignaturesMineRoute,
+  AuthedDocumentsSignaturesRequestRoute: AuthedDocumentsSignaturesRequestRoute,
   AuthedHrEmployeesEmployeeIdRoute: AuthedHrEmployeesEmployeeIdRoute,
   AuthedHrEmployeesNewRoute: AuthedHrEmployeesNewRoute,
   AuthedInventoryItemsItemIdRoute: AuthedInventoryItemsItemIdRouteWithChildren,
@@ -3026,6 +3092,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAssetsToolSetsIndexRoute: AuthedAssetsToolSetsIndexRoute,
   AuthedCrmCustomersIndexRoute: AuthedCrmCustomersIndexRoute,
   AuthedCrmLeadsIndexRoute: AuthedCrmLeadsIndexRoute,
+  AuthedDocumentsFilesIndexRoute: AuthedDocumentsFilesIndexRoute,
   AuthedFinanceAccountsIndexRoute: AuthedFinanceAccountsIndexRoute,
   AuthedFinanceCashBankIndexRoute: AuthedFinanceCashBankIndexRoute,
   AuthedFinanceClosingIndexRoute: AuthedFinanceClosingIndexRoute,

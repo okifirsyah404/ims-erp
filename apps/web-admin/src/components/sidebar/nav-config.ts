@@ -50,18 +50,6 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		items: [{ titleKey: 'item.dashboard', url: '/', icon: LayoutDashboard }],
 	},
 
-	// Document registry (ERP-0042). Company-wide: every issued document,
-	// whatever module owns the business record. Signatures and templates are
-	// separate pages; both are placeholders until ERP-0048 and ERP-0050.
-	{
-		labelKey: 'section.documents',
-		items: [
-			{ titleKey: 'item.documents', url: '/documents', icon: FileText },
-			{ titleKey: 'item.signatures', url: '/documents/signatures', icon: PenLine },
-			{ titleKey: 'item.templates', url: '/documents/templates', icon: LayoutTemplate },
-		],
-	},
-
 	// M02 — CRM & Sales. CRM (relationships) and Sales (transactions) are
 	// separate domains with their own route namespaces.
 	{
@@ -89,6 +77,26 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 					{ titleKey: 'item.receipts', url: '/sales/receipts' },
 				],
 			},
+		],
+	},
+
+	// Document registry (ERP-0042). Company-wide: every issued document,
+	// whatever module owns the business record. Signatures and templates are
+	// placeholders until ERP-0048 and ERP-0050.
+	{
+		labelKey: 'section.documents',
+		items: [
+			{ titleKey: 'item.files', url: '/documents/files', icon: FileText },
+			{
+				titleKey: 'item.signatures',
+				icon: PenLine,
+				items: [
+					{ titleKey: 'item.documentSignatures', url: '/documents/signatures/documents' },
+					{ titleKey: 'item.requestSignature', url: '/documents/signatures/request' },
+					{ titleKey: 'item.mySignature', url: '/documents/signatures/mine' },
+				],
+			},
+			{ titleKey: 'item.templates', url: '/documents/templates', icon: LayoutTemplate },
 		],
 	},
 
