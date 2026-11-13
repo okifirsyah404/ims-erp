@@ -29,10 +29,13 @@ Last synced: 2026-11-14.
 
 Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`proposed`).
 
+### in-progress
+- Role-based sidebar in web-admin (`permission` / `open` / `appAdminOnly`), switcher
+  limited to internal-role organizations, logo fallback. Done: nav model, switcher,
+  `GET /organizations/mine`. Open: route guard, filter test with investor-only accounts.
+  Evidence: `progress.md` 2026-11-14 "Phase 4 part 1" (browser check, tests green).
+
 ### planned
-- Role-based sidebar and route guards in web-admin (`permission` / `open` /
-  `appAdminOnly`), switcher limited to internal-role organizations, logo fallback.
-  Evidence: none.
 - Login gate (reject investor/customer-only sessions) and default organization
   at login. Evidence: none.
 - Warehouse person-in-charge (`inventory.warehouse_managers`, `warehouseGuard`).

@@ -23,11 +23,13 @@ import {
 } from '@ims-erp/ui/components/sidebar';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { useSession } from '@/lib/auth-client';
-import { organizationsQueryOptions } from '@/lib/organization-api';
 import {
-	switchOrganization,
-	useOrganizations,
-} from '@/lib/use-permission';
+	myOrganizationsQueryOptions,
+	organizationsQueryOptions,
+} from '@/lib/organization-api';
+import { hasInternalRole } from '@/lib/internal-role';
+import { OrgLogo } from './org-logo';
+import { switchOrganization } from '@/lib/use-permission';
 
 /**
  * Organization switcher (sidebar header).
@@ -52,18 +54,13 @@ export function OrganizationSwitcher() {
 	const { data: session, isPending: sessionPending } = useSession();
 	const isAppAdmin = session?.user?.role === 'admin';
 
-	const { data: memberships, isPending: orgsPending } = useOrganizations();
-	const { data: allOrganizations, isPending: allOrgsPending } = useQuery({
-		...organizationsQueryOptions,
-		// Only application admins may read the full organization list.
-		enabled: isAppAdmin,
-	});
+	// Membership rows with role + logo. App admins get the same list, filtered
+	// to internal roles like everyone else (ADR-0017 §8).
+	const { data: myOrgs, isPending: orgsPending } = useQuery(myOrganizationsQueryOptions);
 
 	const activeOrganizationId = session?.session?.activeOrganizationId;
-	const organizations_ = isAppAdmin
-		? (allOrganizations?.rows ?? []).filter((org) => !org.deletedAt)
-		: (memberships ?? []);
-	const pending = isAppAdmin ? allOrgsPending : orgsPending;
+	const organizations_ = (myOrgs ?? []).filter((org) => hasInternalRole(org.role));
+	const pending = orgsPending;
 	const activeOrganization = organizations_.find(
 		(org) => org.id === activeOrganizationId,
 	);
@@ -75,7 +72,8 @@ export function OrganizationSwitcher() {
 			// Permissions are organization-scoped: refresh both caches.
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: ['erp-has-permission'] }),
-				queryClient.invalidateQueries({ queryKey: ['erp-organizations'] }),
+				queryClient.invalidateQueries({ queryKey: myOrganizationsQueryOptions.queryKey }),
+				queryClient.invalidateQueries({ queryKey: organizationsQueryOptions.queryKey }),
 			]);
 			toast.success(t('organization.switched'));
 		} catch {
@@ -132,7 +130,7 @@ export function OrganizationSwitcher() {
 						}
 					>
 						<div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground'>
-							<Building2 className='size-4' />
+							<OrgLogo src={activeOrganization.logo} className='size-4' />
 						</div>
 						<div className='grid flex-1 text-left text-sm leading-tight'>
 							<span className='truncate font-medium'>
@@ -164,7 +162,7 @@ export function OrganizationSwitcher() {
 									className='gap-2 p-2'
 								>
 									<div className='flex size-6 items-center justify-center rounded-md border'>
-										<Building2 className='size-3.5 shrink-0' />
+										<OrgLogo src={org.logo} className='size-3.5 shrink-0' />
 									</div>
 									{org.name}
 								</DropdownMenuItem>

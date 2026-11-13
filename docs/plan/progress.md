@@ -18,6 +18,42 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - Role-based nav: Phase 4 part 1 (nav model, switcher, `GET /organizations/mine`)
+
+Branch `fix/side-nav-role-based`. Not merged. Phase 4 is partial: route guard and
+PIC nav item are still open.
+
+- Nav model: `sidebar-item.ts` (`permission?`, `open?`, `appAdminOnly?`; `adminOnly` removed),
+  `filter-nav.ts` (`filterNav`, `collectPermissions`), `nav-config.ts` per-item gates.
+  Items with no catalog resource are hidden (deny by default).
+- `use-nav-permissions.ts`: one `hasPermission` batch under `['erp-has-permission', ...]`.
+  `main-sidebar.tsx` uses `filterNav`, skeleton while pending.
+- Backend: `GET /organizations/mine` (session-only, `OrganizationMembershipController`,
+  mounted before `/:organizationId`). Repo `findMembershipsForUser`, service `listMyOrganizations`.
+  Fix this session: route read `erp.session` but did not enable `erpSession: { session: true }`,
+  so `sessionGuard` never set `erp` and the endpoint returned 500
+  (`undefined is not an object (evaluating 'erp.session')`). Now 200.
+- Switcher: `myOrganizationsQueryOptions` (`['my-organizations']`), filter `hasInternalRole`,
+  `OrgLogo` (fallback `Building2`), invalidates `['my-organizations']` and `['organizations']`.
+- `lib/internal-role.ts` (`hasInternalRole`), `org-logo.tsx`.
+
+Commands and outcomes:
+- `bun test` (web-admin): 84 pass, 0 fail, 14 files.
+- `bunx tsc -b` (web-admin): exit 0.
+- `bun test test/unit/organization-mine.test.ts` (backend): 2 pass, 0 fail.
+- `bunx tsc --noEmit -p .` (backend): exit 0.
+- Browser (`localhost:5173`, admin login): `GET /organizations/mine` 200 with 3 orgs, all role
+  `owner`. Sidebar renders. Switcher lists Entragate (`Building2` fallback, logo null) and two
+  "Live Org" entries with presigned logos.
+
+Not verified:
+- Filter for investor-only and investor+internal users: no such accounts exist, so the
+  filter has only unit-test evidence.
+- `findMembershipsForUser` SQL checked only through the endpoint, not directly against the DB.
+- Route guard in `_authed.tsx`: not started.
+
+Docs: `docs/database/` reviewed, unchanged (no schema change in this phase).
+
 ## 2026-11-14 - Role-based nav plan: Phase 0 (docs only)
 
 Branch `fix/side-nav-role-based`. Docs only; no code, no migration, no `docs/database/` change.

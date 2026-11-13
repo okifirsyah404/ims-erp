@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import type { NavKey } from '@ims-erp/locales';
+import type { Permission } from '@/lib/permissions';
 
 export type SidebarItem = {
 	/**
@@ -13,11 +14,16 @@ export type SidebarItem = {
 	isActive?: boolean;
 	items?: SidebarItem[];
 	/**
-	 * Hidden from organization-only users (application administrators only).
+	 * Organization permission(s) that show this item. All listed permissions
+	 * must hold in the active organization.
 	 *
 	 * @remarks
-	 * UX only: the backend refuses these routes to non-admins. Used to keep
-	 * `/admin/users` and `/admin/audit` out of a sidebar they cannot use.
+	 * UX only: the backend enforces the route. Items with no `permission`,
+	 * no `open`, and no `appAdminOnly` are hidden (deny by default).
 	 */
-	adminOnly?: boolean;
+	permission?: Permission | Permission[];
+	/** Shown to every logged-in user with an internal role. */
+	open?: true;
+	/** Shown only to application administrators. */
+	appAdminOnly?: true;
 };
