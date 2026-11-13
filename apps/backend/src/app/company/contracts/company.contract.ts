@@ -74,6 +74,13 @@ export const companyProfileSchema = z.object({
 });
 
 export type TCompanyProfileInput = z.output<typeof companyProfileSchema>;
+
+/**
+ * `PUT /company/profile` body. Omitted fields keep their stored value; a
+ * present `null` clears a text field.
+ */
+export const companyProfilePatchSchema = companyProfileSchema.partial();
+export type TCompanyProfilePatch = z.output<typeof companyProfilePatchSchema>;
 type TInvoiceBankAccounts = NonNullable<TCompanyProfileInput['bankAccounts']>;
 export type TInvoiceBankAccount = NonNullable<TInvoiceBankAccounts['vat']>;
 

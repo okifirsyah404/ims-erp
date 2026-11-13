@@ -10,7 +10,7 @@ import { container } from 'tsyringe';
 import { z } from 'zod';
 import { COMPANY_SERVICE_TOKEN } from '../constants/di';
 import {
-	companyProfileSchema,
+	companyProfilePatchSchema,
 	companySettingInputSchema,
 	companySettingParamsSchema,
 	type TCompanyImageKind,
@@ -59,7 +59,7 @@ export class CompanyController {
 				async ({ body, erp }) =>
 					ok(
 						await service.save(
-							companyProfileSchema.parse(body),
+							companyProfilePatchSchema.parse(body),
 							erp.session.user.id,
 							await canSeeBanks(permissions, erp),
 						),

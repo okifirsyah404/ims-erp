@@ -18,6 +18,7 @@ import type {
 	THeadOfficeAddressSelect,
 } from '@drizzle/schemas/company.schema';
 import {
+	companyProfilePatchSchema,
 	companyProfileSchema,
 	companySettingInputSchema,
 	type TCompanySettingValueType,
@@ -207,6 +208,43 @@ describe('CompanyService without bank accounts in the input', () => {
 			false,
 		);
 		expect((await service.get(true))?.bankAccounts?.vat?.bankName).toBe('BCA');
+	});
+});
+
+describe('CompanyService partial update (PUT sends only changed fields)', () => {
+	test('omitted fields keep their stored value', async () => {
+		const repository = new FakeProfiles();
+		const service = new CompanyService(repository, storage);
+		await service.save(
+			{ ...input, signatoryName: 'Budi', defaultInvoiceTerms: 'Net 14' },
+			'user-1',
+			true,
+		);
+		const view = await service.save({ tagline: 'Baru' }, 'user-2', true);
+		expect(view.tagline).toBe('Baru');
+		expect(view.legalName).toBe('PT Inovasi Mitra Sejati');
+		expect(view.documentCode).toBe('IMS');
+		expect(view.signatoryName).toBe('Budi');
+		expect(view.defaultInvoiceTerms).toBe('Net 14');
+		expect(view.bankAccounts?.vat?.bankName).toBe('BCA');
+	});
+
+	test('an explicit null clears a text field', async () => {
+		const repository = new FakeProfiles();
+		const service = new CompanyService(repository, storage);
+		await service.save({ ...input, tagline: 'Baru' }, 'user-1', true);
+		expect((await service.save({ tagline: null }, 'user-2', true)).tagline).toBeNull();
+	});
+
+	test('a patch without legalName or documentCode on an empty profile is rejected', async () => {
+		const repository = new FakeProfiles();
+		const service = new CompanyService(repository, storage);
+		expect(service.save({ tagline: 'Baru' }, 'user-1', true)).rejects.toThrow();
+	});
+
+	test('the patch schema accepts a subset and still normalises the document code', () => {
+		expect(companyProfilePatchSchema.parse({ documentCode: 'ims' }).documentCode).toBe('IMS');
+		expect(companyProfilePatchSchema.parse({})).toEqual({});
 	});
 });
 

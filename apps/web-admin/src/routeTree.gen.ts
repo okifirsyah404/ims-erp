@@ -118,6 +118,9 @@ import { Route as AuthedSalesOrdersOrderIdRouteImport } from './routes/_authed/s
 import { Route as AuthedSalesQuotesIndexRouteImport } from './routes/_authed/sales/quotes/index'
 import { Route as AuthedSalesQuotesNewRouteImport } from './routes/_authed/sales/quotes/new'
 import { Route as AuthedSalesReceiptsIndexRouteImport } from './routes/_authed/sales/receipts/index'
+import { Route as AuthedSettingsCodeNumbersIndexRouteImport } from './routes/_authed/settings/code-numbers/index'
+import { Route as AuthedSettingsCompanyIndexRouteImport } from './routes/_authed/settings/company/index'
+import { Route as AuthedSettingsDocumentsIndexRouteImport } from './routes/_authed/settings/documents/index'
 import { Route as AuthedSubscriptionContractIdIndexRouteImport } from './routes/_authed/subscription/$contractId/index'
 import { Route as AuthedSubscriptionContractIdEditRouteImport } from './routes/_authed/subscription/$contractId/edit'
 import { Route as AuthedSubscriptionActivationsIndexRouteImport } from './routes/_authed/subscription/activations/index'
@@ -758,6 +761,24 @@ const AuthedSalesReceiptsIndexRoute =
     path: '/sales/receipts/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedSettingsCodeNumbersIndexRoute =
+  AuthedSettingsCodeNumbersIndexRouteImport.update({
+    id: '/settings/code-numbers/',
+    path: '/settings/code-numbers/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedSettingsCompanyIndexRoute =
+  AuthedSettingsCompanyIndexRouteImport.update({
+    id: '/settings/company/',
+    path: '/settings/company/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedSettingsDocumentsIndexRoute =
+  AuthedSettingsDocumentsIndexRouteImport.update({
+    id: '/settings/documents/',
+    path: '/settings/documents/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedSubscriptionContractIdIndexRoute =
   AuthedSubscriptionContractIdIndexRouteImport.update({
     id: '/subscription/$contractId/',
@@ -1061,6 +1082,9 @@ export interface FileRoutesByFullPath {
   '/sales/orders/': typeof AuthedSalesOrdersIndexRoute
   '/sales/quotes/': typeof AuthedSalesQuotesIndexRoute
   '/sales/receipts/': typeof AuthedSalesReceiptsIndexRoute
+  '/settings/code-numbers/': typeof AuthedSettingsCodeNumbersIndexRoute
+  '/settings/company/': typeof AuthedSettingsCompanyIndexRoute
+  '/settings/documents/': typeof AuthedSettingsDocumentsIndexRoute
   '/subscription/$contractId/': typeof AuthedSubscriptionContractIdIndexRoute
   '/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
   '/subscription/api-keys/': typeof AuthedSubscriptionApiKeysIndexRoute
@@ -1201,6 +1225,9 @@ export interface FileRoutesByTo {
   '/sales/orders': typeof AuthedSalesOrdersIndexRoute
   '/sales/quotes': typeof AuthedSalesQuotesIndexRoute
   '/sales/receipts': typeof AuthedSalesReceiptsIndexRoute
+  '/settings/code-numbers': typeof AuthedSettingsCodeNumbersIndexRoute
+  '/settings/company': typeof AuthedSettingsCompanyIndexRoute
+  '/settings/documents': typeof AuthedSettingsDocumentsIndexRoute
   '/subscription/$contractId': typeof AuthedSubscriptionContractIdIndexRoute
   '/subscription/activations': typeof AuthedSubscriptionActivationsIndexRoute
   '/subscription/api-keys': typeof AuthedSubscriptionApiKeysIndexRoute
@@ -1345,6 +1372,9 @@ export interface FileRoutesById {
   '/_authed/sales/orders/': typeof AuthedSalesOrdersIndexRoute
   '/_authed/sales/quotes/': typeof AuthedSalesQuotesIndexRoute
   '/_authed/sales/receipts/': typeof AuthedSalesReceiptsIndexRoute
+  '/_authed/settings/code-numbers/': typeof AuthedSettingsCodeNumbersIndexRoute
+  '/_authed/settings/company/': typeof AuthedSettingsCompanyIndexRoute
+  '/_authed/settings/documents/': typeof AuthedSettingsDocumentsIndexRoute
   '/_authed/subscription/$contractId/': typeof AuthedSubscriptionContractIdIndexRoute
   '/_authed/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
   '/_authed/subscription/api-keys/': typeof AuthedSubscriptionApiKeysIndexRoute
@@ -1489,6 +1519,9 @@ export interface FileRouteTypes {
     | '/sales/orders/'
     | '/sales/quotes/'
     | '/sales/receipts/'
+    | '/settings/code-numbers/'
+    | '/settings/company/'
+    | '/settings/documents/'
     | '/subscription/$contractId/'
     | '/subscription/activations/'
     | '/subscription/api-keys/'
@@ -1629,6 +1662,9 @@ export interface FileRouteTypes {
     | '/sales/orders'
     | '/sales/quotes'
     | '/sales/receipts'
+    | '/settings/code-numbers'
+    | '/settings/company'
+    | '/settings/documents'
     | '/subscription/$contractId'
     | '/subscription/activations'
     | '/subscription/api-keys'
@@ -1772,6 +1808,9 @@ export interface FileRouteTypes {
     | '/_authed/sales/orders/'
     | '/_authed/sales/quotes/'
     | '/_authed/sales/receipts/'
+    | '/_authed/settings/code-numbers/'
+    | '/_authed/settings/company/'
+    | '/_authed/settings/documents/'
     | '/_authed/subscription/$contractId/'
     | '/_authed/subscription/activations/'
     | '/_authed/subscription/api-keys/'
@@ -2578,6 +2617,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSalesReceiptsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/settings/code-numbers/': {
+      id: '/_authed/settings/code-numbers/'
+      path: '/settings/code-numbers'
+      fullPath: '/settings/code-numbers/'
+      preLoaderRoute: typeof AuthedSettingsCodeNumbersIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/settings/company/': {
+      id: '/_authed/settings/company/'
+      path: '/settings/company'
+      fullPath: '/settings/company/'
+      preLoaderRoute: typeof AuthedSettingsCompanyIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/settings/documents/': {
+      id: '/_authed/settings/documents/'
+      path: '/settings/documents'
+      fullPath: '/settings/documents/'
+      preLoaderRoute: typeof AuthedSettingsDocumentsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/subscription/$contractId/': {
       id: '/_authed/subscription/$contractId/'
       path: '/subscription/$contractId'
@@ -2996,6 +3056,9 @@ interface AuthedRouteChildren {
   AuthedSalesOrdersIndexRoute: typeof AuthedSalesOrdersIndexRoute
   AuthedSalesQuotesIndexRoute: typeof AuthedSalesQuotesIndexRoute
   AuthedSalesReceiptsIndexRoute: typeof AuthedSalesReceiptsIndexRoute
+  AuthedSettingsCodeNumbersIndexRoute: typeof AuthedSettingsCodeNumbersIndexRoute
+  AuthedSettingsCompanyIndexRoute: typeof AuthedSettingsCompanyIndexRoute
+  AuthedSettingsDocumentsIndexRoute: typeof AuthedSettingsDocumentsIndexRoute
   AuthedSubscriptionContractIdIndexRoute: typeof AuthedSubscriptionContractIdIndexRoute
   AuthedSubscriptionActivationsIndexRoute: typeof AuthedSubscriptionActivationsIndexRoute
   AuthedSubscriptionApiKeysIndexRoute: typeof AuthedSubscriptionApiKeysIndexRoute
@@ -3132,6 +3195,9 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSalesOrdersIndexRoute: AuthedSalesOrdersIndexRoute,
   AuthedSalesQuotesIndexRoute: AuthedSalesQuotesIndexRoute,
   AuthedSalesReceiptsIndexRoute: AuthedSalesReceiptsIndexRoute,
+  AuthedSettingsCodeNumbersIndexRoute: AuthedSettingsCodeNumbersIndexRoute,
+  AuthedSettingsCompanyIndexRoute: AuthedSettingsCompanyIndexRoute,
+  AuthedSettingsDocumentsIndexRoute: AuthedSettingsDocumentsIndexRoute,
   AuthedSubscriptionContractIdIndexRoute:
     AuthedSubscriptionContractIdIndexRoute,
   AuthedSubscriptionActivationsIndexRoute:

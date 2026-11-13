@@ -14,6 +14,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'section.hr': 'Karyawan & Kehadiran',
 	'section.finance': 'Keuangan',
 	'section.reports': 'Laporan & Hak Akses',
+	'section.settings': 'Pengaturan',
 
 	'item.dashboard': 'Dasbor',
 	'item.files': 'Berkas',
@@ -105,6 +106,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.auditLog': 'Log Audit',
 	'item.companyProfile': 'Perusahaan',
 	'item.codeNumbers': 'Penomoran Kode',
+	'item.documentSettings': 'Dokumen',
 
 	'theme.label': 'Tema',
 	'theme.light': 'Tema terang',

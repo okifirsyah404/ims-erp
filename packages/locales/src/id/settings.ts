@@ -6,21 +6,17 @@ import type en from '../en/settings';
 const settings: Record<keyof typeof en, string> = {
 	'companyProfile.title': 'Profil Perusahaan',
 	'companyProfile.description':
-		'Kop surat, penanda tangan, rekening bank, dan ketentuan bawaan yang dicetak di dokumen. Satu profil untuk seluruh perusahaan.',
+		'Identitas hukum dan kontak kop surat perusahaan. Satu profil untuk seluruh perusahaan.',
 	'companyProfile.saved': 'Profil perusahaan disimpan',
 	'companyProfile.empty':
-		'Profil perusahaan belum diisi. Nomor dokumen membutuhkan kode dokumennya.',
+		'Profil perusahaan belum diisi. Nomor dokumen membutuhkan kode perusahaannya.',
 	'companyProfile.readOnly':
 		'Anda dapat melihat profil; mengubahnya membutuhkan akses pengaturan perusahaan.',
 	'companyProfile.section.identity': 'Perusahaan',
 	'companyProfile.section.contact': 'Alamat dan kontak',
-	'companyProfile.section.signatory': 'Penanda tangan',
-	'companyProfile.section.banks': 'Rekening bank di invoice',
-	'companyProfile.section.terms': 'Ketentuan bawaan',
-	'companyProfile.section.warranty': 'Sertifikat garansi',
 	'companyProfile.legalName': 'Nama badan usaha',
 	'companyProfile.tradingName': 'Nama dagang',
-	'companyProfile.documentCode': 'Kode dokumen',
+	'companyProfile.documentCode': 'Kode perusahaan',
 	'companyProfile.documentCodeHint':
 		'Dipakai nomor dokumen ({COMPANY}), mis. IMS. Hanya huruf dan angka.',
 	'companyProfile.tagline': 'Slogan',
@@ -30,22 +26,6 @@ const settings: Record<keyof typeof en, string> = {
 	'companyProfile.phone': 'Telepon',
 	'companyProfile.email': 'Email',
 	'companyProfile.website': 'Situs web',
-	'companyProfile.signatoryName': 'Nama penanda tangan',
-	'companyProfile.signatoryTitle': 'Jabatan penanda tangan',
-	'companyProfile.bankVat': 'Invoice dengan PPN',
-	'companyProfile.bankNonVat': 'Invoice tanpa PPN',
-	'companyProfile.bankHint': 'Kosongkan ketiga kolom bila tidak ada rekening yang dicetak.',
-	'companyProfile.bankIncomplete':
-		'Isi bank, nomor rekening, dan atas nama, atau kosongkan ketiganya.',
-	'companyProfile.bankName': 'Bank',
-	'companyProfile.accountNumber': 'Nomor rekening',
-	'companyProfile.accountHolder': 'Atas nama',
-	'companyProfile.defaultQuotationTerms': 'Ketentuan penawaran',
-	'companyProfile.defaultInvoiceTerms': 'Ketentuan invoice',
-	'companyProfile.warrantyCoverage': 'Cakupan garansi',
-	'companyProfile.warrantyExclusions': 'Pengecualian',
-	'companyProfile.warrantyServiceTerms': 'Ketentuan layanan',
-	'companyProfile.linesHint': 'Satu butir per baris. Kosong memakai teks bawaan.',
 
 	'numbering.title': 'Penomoran Kode',
 	'numbering.description':
@@ -104,6 +84,13 @@ const settings: Record<keyof typeof en, string> = {
 	'companyProfile.image.logo': 'Logo kop surat',
 	'companyProfile.image.signature': 'Tanda tangan dan stempel',
 	'companyProfile.imageSaved': 'Gambar disimpan',
+
+	'document.title': 'Pengaturan Dokumen',
+	'document.description': 'Logo, tanda tangan, dan nilai yang dipakai saat dokumen dicetak dan ditandatangani.',
+	'document.settingsTitle': 'Pengaturan dokumen',
+	'document.settingsDescription': 'Nilai yang dipakai modul dokumen (grup `document`).',
+	'document.settingsEmpty':
+		'Belum ada pengaturan dokumen. `document.signature_request_expiry_days` ditulis oleh alur permintaan tanda tangan (ERP-0048).',
 
 	'settings.title': 'Pengaturan',
 	'settings.description': 'Pengaturan kunci/nilai di level perusahaan yang dipakai modul lain.',

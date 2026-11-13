@@ -49,12 +49,12 @@ export type TCompanyProfile = {
 };
 
 /**
- * What the form sends. Omitting `bankAccounts` leaves them unchanged (the
- * server also ignores them from callers without bank access).
+ * What the form sends. The endpoint is a patch: an omitted field keeps its
+ * stored value, so the form only sends the fields it still edits.
  */
-export type TCompanyProfileInput = Omit<TCompanyProfile, 'bankAccounts' | 'logoUrl' | 'signatureUrl'> & {
-	bankAccounts?: { vat: TInvoiceBankAccount | null; nonVat: TInvoiceBankAccount | null };
-};
+export type TCompanyProfileInput = Partial<
+	Omit<TCompanyProfile, 'bankAccounts' | 'logoUrl' | 'signatureUrl'>
+>;
 
 export const RESET_POLICIES = ['never', 'yearly', 'monthly'] as const;
 export type TResetPolicy = (typeof RESET_POLICIES)[number];

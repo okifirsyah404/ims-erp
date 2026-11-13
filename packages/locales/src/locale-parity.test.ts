@@ -179,7 +179,6 @@ describe('locale values', () => {
 			'dashboard:widget.cash.total',
 			// Business terms the company uses verbatim in Indonesian documents.
 			'settings:companyProfile.email',
-			'settings:companyProfile.bankName',
 			'settings:numbering.type.sales_order',
 			'settings:numbering.type.invoice',
 			'settings:numbering.type.purchase_order',

@@ -15,6 +15,7 @@ const nav = {
 	'section.hr': 'HR & Attendance',
 	'section.finance': 'Finance',
 	'section.reports': 'Reports & Access',
+	'section.settings': 'Settings',
 
 	'item.dashboard': 'Dashboard',
 	'item.files': 'Files',
@@ -106,6 +107,7 @@ const nav = {
 	'item.auditLog': 'Audit Log',
 	'item.companyProfile': 'Company',
 	'item.codeNumbers': 'Code numbering',
+	'item.documentSettings': 'Document',
 
 	'theme.label': 'Theme',
 	'theme.light': 'Light theme',

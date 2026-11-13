@@ -426,6 +426,19 @@ Last synced: 2026-11-13.
   Evidence: `progress.md` 2026-11-05, `test/unit/item-category.service.test.ts`.
 
 ### implemented
+- ERP-0045c Settings section (2026-11-13). Sidebar `Settings` after
+  Administration: Company, Code numbering, Document. `/settings/company`,
+  `/settings/code-numbers`, `/settings/documents`; `/admin/company` and
+  `/admin/code-numbers` redirect. Company form cut to identity + contact;
+  `documentCode` relabelled "Company code"; Signatory, Bank accounts, Default
+  terms, Warranty certificate and Logo/signature removed from the page, the
+  images moved to `/settings/documents`. `PUT /company/profile` is now a patch
+  (`companyProfilePatchSchema`) so the removed fields keep their stored value.
+  Evidence: `progress.md` 2026-11-13 ERP-0045c; backend 872 tests, web-admin 70,
+  locales 86, build + lint clean. Verified in the browser: the form shows only
+  identity + contact, "Company code" label, a tagline-only save keeps
+  `signatoryName` and the bank account, both old `/admin/*` URLs redirect, and
+  the `document` settings card is empty until ERP-0048 writes its key.
 - ERP-0045 Company settings KV CRUD (2026-11-13, `company.settings` only;
   `organization.settings` split into ERP-0045b). `GET /company/settings`,
   `PUT /company/settings/:group/:key`, permissions `company:read` /

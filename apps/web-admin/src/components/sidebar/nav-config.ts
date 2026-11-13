@@ -275,18 +275,26 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 	{
 		labelKey: 'section.administration',
 		items: [
-			// Company-wide profile and settings (ADR-0011, ERP-0042, ERP-0045).
-			{ titleKey: 'item.companyProfile', url: '/admin/company', icon: Settings },
 			{ titleKey: 'item.organizations', url: '/organizations', icon: Building2 },
 			{ titleKey: 'item.users', url: '/admin/users', icon: Users, adminOnly: true },
-			// Code numbering is its own module (ERP-0042), not part of Company.
-			{ titleKey: 'item.codeNumbers', url: '/admin/code-numbers', icon: Hash },
 			{
 				titleKey: 'item.auditLog',
 				url: '/admin/audit',
 				icon: ScrollText,
 				adminOnly: true,
 			},
+		],
+	},
+
+	// Company-wide configuration (ADR-0011). Company profile and code
+	// numbering used to sit under Administration; each module's own settings
+	// page goes here too (Document first).
+	{
+		labelKey: 'section.settings',
+		items: [
+			{ titleKey: 'item.companyProfile', url: '/settings/company', icon: Settings },
+			{ titleKey: 'item.codeNumbers', url: '/settings/code-numbers', icon: Hash },
+			{ titleKey: 'item.documentSettings', url: '/settings/documents', icon: FileText },
 		],
 	},
 ];

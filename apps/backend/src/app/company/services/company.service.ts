@@ -9,6 +9,7 @@ import { COMPANY_REPOSITORY_TOKEN } from '../constants/di';
 import type {
 	TCompanyImageKind,
 	TCompanyProfileInput,
+	TCompanyProfilePatch,
 	TCompanyProfileSnapshot,
 	TCompanyProfileView,
 	TCompanySettingInput,
@@ -141,14 +142,19 @@ export class CompanyService {
 	}
 
 	async save(
-		input: TCompanyProfileInput,
+		patch: TCompanyProfilePatch,
 		actorUserId: string,
 		includeBanks: boolean,
 	): Promise<TCompanyProfileView> {
-		const { bankAccounts, ...profile } = input;
+		const { bankAccounts, ...fields } = patch;
+		// Merge over the stored profile so omitted fields keep their value.
+		const current = await this.repository.findProfile();
+		const sent = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined));
+		const merged = { ...(current ? toFlat(current) : {}), ...sent } as TCompanyProfileInput;
+		if (!merged.legalName || !merged.documentCode) throw new CompanyProfileRequiredError();
 		// Callers who may not see the accounts may not change them either.
 		const saved = await this.repository.save(
-			{ ...profile, updatedBy: actorUserId },
+			{ ...merged, updatedBy: actorUserId },
 			includeBanks ? bankAccounts : undefined,
 		);
 		return toView(saved.record, includeBanks ? saved.accounts : null, this.storage);

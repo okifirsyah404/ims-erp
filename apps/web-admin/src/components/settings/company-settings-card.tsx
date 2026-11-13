@@ -36,23 +36,44 @@ import {
  * Company-wide key/value settings (ERP-0045). Lists every setting and edits
  * one at a time; `canEdit` gates the edit action (`company:update`).
  */
-export function CompanySettingsCard({ canEdit }: { canEdit: boolean }) {
+export function CompanySettingsCard({
+	canEdit,
+	excludeGroups = [],
+	groups,
+	title,
+	description,
+	emptyText,
+}: {
+	canEdit: boolean;
+	/** Groups shown on their own settings page instead (e.g. `document`). */
+	excludeGroups?: string[];
+	/** When set, only these groups are listed. */
+	groups?: string[];
+	/** Already-translated overrides. */
+	title?: string;
+	description?: string;
+	emptyText?: string;
+}) {
 	const { t } = useTranslation(['settings', 'common']);
 	const queryClient = useQueryClient();
-	const { data: settings = [], isPending, isError, error } = useQuery(companySettingsQueryOptions());
+	const { data = [], isPending, isError, error } = useQuery(companySettingsQueryOptions());
+	const settings = data.filter(
+		(s) =>
+			!excludeGroups.includes(s.settingGroup) && (groups === undefined || groups.includes(s.settingGroup)),
+	);
 	const [editing, setEditing] = useState<TCompanySetting | null>(null);
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>{t('settings:settings.title')}</CardTitle>
-				<CardDescription>{t('settings:settings.description')}</CardDescription>
+				<CardTitle>{title ?? t('settings:settings.title')}</CardTitle>
+				<CardDescription>{description ?? t('settings:settings.description')}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				{isPending ? null : isError ? (
 					<p className='text-sm text-destructive'>{error.message}</p>
 				) : settings.length === 0 ? (
-					<p className='text-sm text-muted-foreground'>{t('settings:settings.empty')}</p>
+					<p className='text-sm text-muted-foreground'>{emptyText ?? t('settings:settings.empty')}</p>
 				) : (
 					<Table>
 						<TableHeader>
