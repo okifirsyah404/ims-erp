@@ -18,6 +18,76 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0047 Phase 4: notification REST surface
+
+Status: **Phase 4 done**. The caller's inbox is reachable over HTTP; nothing
+produces a notification yet (Phase 5) and there is no UI (Phase 7).
+
+- **`src/app/notification/controllers/notification.controller.ts`** (new) —
+  `GET /notifications` (paginated, newest first), `GET /notifications/unread-count`,
+  `PATCH /notifications/:id/read`, `POST /notifications/read-all`. Mounted with
+  `guards: 'session'` only (D13): app-scope, no `erp` macro, no
+  `x-organization-id`. The caller's id always comes from the resolved session,
+  never from a path or body field, so no request can widen the scope.
+- **`notificationIdParamsSchema`** added to
+  `contracts/notification.contract.ts` — `z.uuid()`, so a malformed id is a 400
+  instead of a Postgres 500.
+- **`notificationModule()`** added to the module `index.ts` and mounted in
+  `src/app/app.ts` after `auditModule()`.
+- **`src/authorization/elysia-auth.ts`** — `sessionGuard()` now carries its own
+  `onError({ as: 'global' })` mapping `ErpAuthError` → envelope. It previously
+  relied on being mounted beside `erpGuard()`, so an unauthenticated call to a
+  session-only module answered with Elysia's default plain-text body. The
+  notification routes are the first session-only surface with no `erp` macro.
+- **`src/http/plugin.ts`** — the shared `VALIDATION` branch is fixed (see below).
+- **`test/unit/notification.controller.test.ts`** (new) — 10 tests: 401 envelope,
+  caller-scoped list + ordering, `unreadOnly`, malformed page, unread count,
+  mark-read, another user's row → 404, non-uuid id → 400, `read-all`, and the
+  same 400 asserted against a **listening** server.
+
+Deviations / defects found:
+
+- **`domainPlugin`'s `VALIDATION` branch was broken for Zod schemas.** It wrote
+  `String(error.value)` into `errors[0].field`; with Zod-backed schemas Elysia
+  puts the raw request input there, and stringifying it threw
+  `TypeError: No default value`. On a **listening** server (AOT-compiled route)
+  that turned every param/query validation failure into a 500 HTML page —
+  `app.handle()` never reproduced it, which is why the suite was green. Fixed by
+  a `validationDetail()` helper reading `error.valueError.path` (Zod array and
+  TypeBox JSON-pointer both handled) and the validator's own message. Pre-existing
+  shared-plumbing defect, not a notification bug.
+- The 500 was first misread as an i18n/CORS problem; three probe files bisected
+  it (`createApp().handle` → 400, `createApp().listen` → 500). Probes deleted.
+- Another user's id returns 404, not 403 (D-decision), so a caller cannot probe
+  which ids exist.
+
+Commands and outcomes:
+
+```text
+cd apps/backend; bun test
+  912 pass, 0 fail, 2102 expect() calls (66 files; 10 new)
+
+cd apps/backend; bunx tsc -b --noEmit
+  (clean)
+
+cd apps/backend; bunx oxlint
+  exit 0 (3 pre-existing warnings, none in notification files)
+
+cd $repo; bun docs/database/validate-dbml.ts
+  parsed: 268 tables, 231 refs; cross-module refs: 0; timestamp gaps: 0; OK
+  (docs/database/ reviewed, unchanged: no schema change this phase)
+
+# live, bun run src/index.ts on :3001, real signed-in session (admin@local.com)
+GET  /notifications                     (anon) -> 401 envelope
+GET  /notifications/unread-count        (anon) -> 401 envelope
+GET  /notifications                            -> 200 { pagination:{page:1,limit:20,total:0} }
+GET  /notifications?unreadOnly=true            -> 200
+GET  /notifications?page=0                     -> 400 { message:"Validation failed" }
+PATCH /notifications/not-a-uuid/read           -> 400 { field:"id", message:"Invalid UUID" }
+PATCH /notifications/0190a1b2-...-0000000000ff/read -> 404 "Notification not found"
+POST /notifications/read-all                   -> 200 { changed: 0 }
+```
+
 ## 2026-11-13 - ERP-0047 Phase 3: notification module core
 
 Status: **Phase 3 done**. The module exists with a repository, two services,
@@ -6587,12 +6657,12 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**ERP-0047 Phase 4** — notification REST surface, per
-`docs/plan/plans/ws-notification.md`: `GET /notifications`,
-`GET /notifications/unread-count`, `PATCH /notifications/:id/read`,
-`POST /notifications/read-all`, mounted through `notificationModule()` and the
-session guard only (D13). The service and repository they call are done
-(Phase 3) — see the 2026-11-13 entry.
+**ERP-0047 Phase 5** — notification producers, per
+`docs/plan/plans/ws-notification.md`: `OrganizationService.addMember` →
+`org.member_added`, `createOrganization` → `org.org_created` (nested attached
+users get `org.member_added`), and invitation claim success → `org.member_added`.
+All three through `ExportedNotificationService` only. Phases 0-4 are done (see
+the 2026-11-14 entry).
 
 **Get reviewer sign-off on PR #82** (`fix/org-hardening`) — the organization
 `description` slice, the full-width create card, the create-style edit page,

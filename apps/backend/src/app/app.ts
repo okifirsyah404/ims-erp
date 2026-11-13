@@ -15,6 +15,7 @@ import { documentModule } from './document';
 import { inventoryModule } from './inventory';
 import { licensingModule } from './licensing';
 import { locationModule } from './location';
+import { notificationModule } from './notification';
 import { organizationModule } from './organization';
 import { procurementModule } from './procurement';
 import { projectsModule } from './projects';
@@ -91,6 +92,10 @@ export function createApp() {
 			// Cross-cutting audit read surface (`GET /admin/audit`), mounted with
 			// the `/admin` surfaces it shares a prefix with.
 			.use(auditModule())
+			// The caller's own inbox (`/notifications`). App-scope: session guard
+			// only, so it does not sit under `/admin` and needs no organization
+			// context.
+			.use(notificationModule())
 			.use(organizationModule())
 			.use(companyModule())
 			.use(codeNumberModule())

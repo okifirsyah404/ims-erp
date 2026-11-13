@@ -15,10 +15,10 @@ Planned later scope (unchanged from the original v5.1 targets, not built here):
 email/WhatsApp delivery channels, notification preferences, Web Push, and the
 WhatsApp AI handoff of M04 stage 2.
 
-## Current state (2026-11-13)
+## Current state (2026-11-14)
 
-**Backend module landed; no REST route, producer, seeder or UI yet.** Phases 0–3
-of `docs/plan/plans/ws-notification.md`:
+**Backend module landed with its REST surface; no producer, seeder or UI yet.**
+Phases 0–4 of `docs/plan/plans/ws-notification.md`:
 
 - `docs/database/docs.dbml` — `notification.notification_templates` and
   `notification.notifications` moved out of the `automation` schema.
@@ -34,10 +34,24 @@ of `docs/plan/plans/ws-notification.md`:
 - `apps/backend/src/app/notification/` — the module: repository over both
   tables, `NotificationService` (list, unread count, mark read, mark all read),
   `ExportedNotificationService` (the only cross-module entry point), the
-  `send`/`prune` BullMQ queue and its worker. Nothing calls the producer yet.
+  `send`/`prune` BullMQ queue and its worker, and the controller mounting the
+  inbox routes. Nothing calls the producer yet.
 
-Phase 4 adds the REST routes, Phase 5 the producers, Phase 6 the seeders,
-Phase 7 the bell.
+Phase 5 adds the producers, Phase 6 the seeders, Phase 7 the bell.
+
+## HTTP surface
+
+App-scope, so the plugin rides the **session guard only** (no `erp` macro, no
+`x-organization-id`): a user reads their inbox from every organization they
+belong to, and a fresh login has no active organization yet. The caller's id
+always comes from the resolved session — never from a path or body field.
+
+| Method | Path | Behaviour |
+|---|---|---|
+| GET | `/notifications` | paginated list for the caller, newest first; `unreadOnly=true` filters |
+| GET | `/notifications/unread-count` | `{ count }` |
+| PATCH | `/notifications/:id/read` | 404 when the row is not the caller's; a non-uuid id is a 400 |
+| POST | `/notifications/read-all` | marks every unread row of the caller, returns `{ changed }` |
 
 ## How a notification is produced
 
@@ -151,6 +165,12 @@ undelivered information, not stale storage.
 - `notification.service.test.ts` — list scoped to the caller and mapped to the
   wire shape, `markRead` publishing `notification.updated` + the new unread
   count, another user's row rejected as 404 with nothing published.
+- `notification.controller.test.ts` — the HTTP surface end to end through the
+  real guard and service over a repository double: 401 envelope, caller-scoped
+  list and ordering, `unreadOnly`, malformed page, unread count, mark read,
+  another user's row → 404, non-uuid id → 400, `read-all`, plus the same 400
+  asserted against a **listening** server (`.listen()` serves the compiled
+  route, which is where the shared validation handler used to throw).
 
 `apps/backend/test/unit/realtime.{hub,gateway}.test.ts` cover the transport the
 worker publishes through (envelope, upgrade rejected without a session).

@@ -4,12 +4,13 @@
  * @remarks
  * Other modules import **only** `ExportedNotificationService` (through
  * `EXPORTED_NOTIFICATION_SERVICE_TOKEN`) — never the repository, the queue, or
- * the in-module service (D7).
- *
- * `notificationModule()` (the Elysia plugin with the REST routes) is added in
- * Phase 4: it has no controllers yet, and mounting an empty plugin would only
- * make `createApp()` claim a surface that does not exist.
+ * the in-module service (D7). `notificationModule()` is the HTTP surface and is
+ * mounted by `createApp()`.
  */
+import Elysia from 'elysia';
+
+import { NotificationController } from './controllers/notification.controller';
+
 export * from './container';
 export type {
 	INotificationRepository,
@@ -40,3 +41,10 @@ export {
 	renderNotificationText,
 	startNotificationWorker,
 } from './queues/notification.worker';
+
+/** Elysia instance mounting every notification controller. */
+export function notificationModule() {
+	return new Elysia({ name: 'notification' }).use(
+		NotificationController.plugin(),
+	);
+}

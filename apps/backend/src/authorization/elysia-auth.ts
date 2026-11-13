@@ -271,11 +271,23 @@ export function erpGuard() {
  * {@link erpGuard} so their type stays non-nullable for existing consumers.
  * Like `erpGuard`, it accepts an optional `policy` hook for record-level
  * checks that must run before the handler.
- * Shares the `ErpAuthError` mapping by being mounted alongside `erpGuard()`.
+ *
+ * Maps its own `ErpAuthError` (2026-11-14): it used to rely on being mounted
+ * next to `erpGuard()`, so a module that rode the session guard **alone**
+ * answered an unauthenticated call with Elysia's default plain-text body
+ * instead of the API envelope. The ERP-0047 notification routes are the first
+ * session-only surface with no `erp` macro, which exposed it.
  */
 export function sessionGuard() {
 	return new Elysia({ name: 'session-guard' })
 		.error({ ErpAuthError })
+		.onError({ as: 'global' }, ({ code, error, set }) => {
+			if (code === 'ErpAuthError') {
+				set.status = error.status;
+				return envelope(error.status, error.message);
+			}
+			return undefined;
+		})
 		.macro({
 			erpSession: (options: {
 				/** Object-form macro enablement flag (no behavior of its own). */

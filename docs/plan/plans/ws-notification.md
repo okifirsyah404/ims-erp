@@ -277,6 +277,40 @@ and a second call left it at one.
 - Unauthenticated calls return the standard 401 envelope.
 - Pagination and ordering covered by tests.
 
+**Status: done (2026-11-14).**
+
+Deviations from the plan text, all deliberate:
+
+- **`notificationIdParamsSchema` is `z.uuid()`, not `z.string().min(1)`.** A
+  malformed id would otherwise reach Postgres and surface as a 500.
+- **`unreadOnly` is not accepted as a free string.** It is part of the shared
+  `notificationQuerySchema` (`z.enum(['true','false'])`), so `?unreadOnly=1` is
+  a 400 rather than a silent "false".
+- **`sessionGuard()` now maps its own `ErpAuthError`.** It used to rely on being
+  mounted beside `erpGuard()`, so the first session-only surface without the
+  `erp` macro answered an unauthenticated call with Elysia's default plain-text
+  body. The notification routes are that surface.
+- **`domainPlugin`'s `VALIDATION` branch was rewritten.** It stringified
+  `error.value` into `field`, and with Zod-backed schemas Elysia puts the raw
+  request input there — `String()` on it threw (`No default value`). Under
+  `.listen()` (AOT-compiled routes) that turned **every** param/query validation
+  failure into a 500 HTML page; `app.handle()` never reproduced it. `field` is
+  now the offending property name from `error.valueError.path` (Zod arrays and
+  TypeBox JSON-pointers both handled) and `message` the validator's own message.
+  This was a pre-existing defect in shared plumbing, not a notification bug.
+- **A test asserts the listening-server path**, because the bug above only
+  existed there: `PATCH /notifications/not-a-uuid/read` on a `.listen(0)` app
+  must return 400 `{ field: 'id', message: 'Invalid UUID' }`.
+
+Verified: `bun test` 912 pass / 0 fail (10 in
+`test/unit/notification.controller.test.ts`), `bunx tsc -b --noEmit` clean,
+`oxlint` clean, `validate-dbml.ts` OK (no schema change). Live against the
+running backend on `:3001` with a real signed-in session: anonymous list and
+count → 401 envelope, `GET /notifications` → 200 paginated, `unreadOnly=true`
+→ 200, `page=0` → 400 envelope, `PATCH .../not-a-uuid/read` → 400
+`{ field: 'id', message: 'Invalid UUID' }`, an unknown-but-valid id → 404
+`Notification not found`, `POST /notifications/read-all` → 200 `{ changed }`.
+
 ---
 
 ## Phase 5 — Producers

@@ -168,8 +168,13 @@ Last synced: 2026-11-13.
   `{ type, status, sentAt, data }`. Phase 3 done 2026-11-13: `src/app/
   notification/` (repository, `NotificationService`, `ExportedNotificationService`,
   queue `send`/`prune` + worker), retention config keys, worker started in
-  `src/index.ts`; live send/list/markRead/prune verified. No REST routes or UI
-  yet.
+  `src/index.ts`; live send/list/markRead/prune verified. Phase 4 done
+  2026-11-14: `notification.controller.ts` (`GET /notifications`,
+  `GET /notifications/unread-count`, `PATCH /notifications/:id/read`,
+  `POST /notifications/read-all`) mounted via `notificationModule()` under the
+  session guard only; `sessionGuard()` maps its own `ErpAuthError`, and the
+  shared `domainPlugin` `VALIDATION` branch was fixed (it 500-ed every
+  validation failure on a listening server). No producers, seeders or UI yet.
 
 ## M05 Inventory and Purchasing
 

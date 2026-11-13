@@ -30,6 +30,14 @@ export const notificationQuerySchema = z.object({
 });
 export type TNotificationQuery = z.infer<typeof notificationQuerySchema>;
 
+/** Path parameter for the single-notification routes. */
+export const notificationIdParamsSchema = z.object({
+	// `z.uuid()`, not `z.string().min(1)`: a malformed id would otherwise reach
+	// Postgres and surface as a 500 instead of a validation error.
+	id: z.uuid(),
+});
+export type TNotificationIdParams = z.infer<typeof notificationIdParamsSchema>;
+
 /** One notification as the client receives it. */
 export type TNotificationView = {
 	id: string;
