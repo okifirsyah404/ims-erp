@@ -104,6 +104,23 @@ const settings: Record<keyof typeof en, string> = {
 	'companyProfile.image.logo': 'Logo kop surat',
 	'companyProfile.image.signature': 'Tanda tangan dan stempel',
 	'companyProfile.imageSaved': 'Gambar disimpan',
+
+	'settings.title': 'Pengaturan',
+	'settings.description': 'Pengaturan kunci/nilai di level perusahaan yang dipakai modul lain.',
+	'settings.empty': 'Belum ada pengaturan.',
+	'settings.group': 'Grup',
+	'settings.key': 'Kunci',
+	'settings.valueType': 'Tipe',
+	'settings.value': 'Nilai',
+	'settings.edit': 'Ubah',
+	'settings.editTitle': 'Pengaturan {{key}}',
+	'settings.editDescription': 'Nilai kosong menghapus isi pengaturan. Nilai harus sesuai tipenya.',
+	'settings.saved': 'Pengaturan disimpan',
+	'settings.type.string': 'Teks',
+	'settings.type.number': 'Angka',
+	'settings.type.boolean': 'Ya / tidak (true atau false)',
+	'settings.type.json': 'JSON',
+	'settings.type.date': 'Tanggal (YYYY-MM-DD)',
 };
 
 export default settings;

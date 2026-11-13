@@ -815,7 +815,7 @@ Table company.profiles {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Legal and display profile of the one company (letterhead, signatory, default terms). Company-wide, no organization_id (ADR-0011): organizations are internal departments. Addresses, phone numbers, email and the website moved to company.head_office_addresses and company.contacts (ERP-0042). One live row, enforced by the partial unique index profiles_singleton_uq ON ((true)) WHERE deleted_at IS NULL in the Drizzle schema."
+  Note: "Legal and display profile of the one company (letterhead, signatory, default terms). Company-wide, no organization_id (ADR-0011): one company per application; organizations (tenants) sit under it and do not own it. Whether an organization is a subsidiary is out of scope. Addresses, phone numbers, email and the website moved to company.head_office_addresses and company.contacts (ERP-0042). One live row, enforced by the partial unique index profiles_singleton_uq ON ((true)) WHERE deleted_at IS NULL in the Drizzle schema."
   Checks {
     `status IN ('active', 'inactive')`
     `document_code ~ '^[A-Z0-9]+$'`
@@ -889,7 +889,7 @@ Table company.settings {
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Company-wide configuration key value store (ERP-0042). Organization-scoped settings live in organization.settings. Secret values are never read back by the client."
+  Note: "Company-wide configuration key value store (ERP-0042). Organization-scoped settings live in organization.settings. Secret values are never read back by the client. ERP-0045: is_secret is reserved and always false; the API neither accepts nor returns it, and no secret read path exists yet (the write-only rule applies when dynamic secrets are built)."
   Indexes {
     (setting_group, setting_key) [unique, name: 'company_settings_scope_uq']
   }

@@ -11,13 +11,35 @@ import type {
 	TCompanyProfileInput,
 	TCompanyProfileSnapshot,
 	TCompanyProfileView,
+	TCompanySettingInput,
+	TCompanySettingView,
 	TInvoiceBankAccount,
 } from '../contracts/company.contract';
 import type {
 	ICompanyRepository,
 	TCompanyProfileRecord,
 } from '../contracts/company.repository.interface';
-import { CompanyProfileRequiredError } from '../errors/company.errors';
+import { CompanyProfileRequiredError, CompanySettingInvalidError } from '../errors/company.errors';
+
+/** Checks a raw setting value against its declared type; `null` is always allowed (cleared). */
+function assertSettingValue(valueType: TCompanySettingInput['valueType'], value: string | null): void {
+	if (value === null) return;
+	const valid: Record<TCompanySettingInput['valueType'], (v: string) => boolean> = {
+		string: () => true,
+		number: (v) => Number.isFinite(Number(v)) && v.trim() !== '',
+		boolean: (v) => v === 'true' || v === 'false',
+		json: (v) => {
+			try {
+				JSON.parse(v);
+				return true;
+			} catch {
+				return false;
+			}
+		},
+		date: (v) => /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`)),
+	};
+	if (!valid[valueType](value)) throw new CompanySettingInvalidError(valueType);
+}
 
 function toAccount(row: TBankAccountSelect | undefined): TInvoiceBankAccount | null {
 	return row
@@ -138,6 +160,41 @@ export class CompanyService {
 	 *
 	 * @throws {CompanyProfileRequiredError} Before the profile was first saved
 	 */
+	/** Every company setting. Values are plain text; typing is checked on write. */
+	async listSettings(): Promise<TCompanySettingView[]> {
+		const rows = await this.repository.findSettings();
+		return rows.map((row) => ({
+			settingGroup: row.settingGroup,
+			settingKey: row.settingKey,
+			valueType: row.valueType as TCompanySettingView['valueType'],
+			value: row.settingValue,
+		}));
+	}
+
+	/**
+	 * Creates or replaces one setting. `isSecret` is never set here: the column
+	 * stays `false` until the dynamic-secret feature exists (ERP-0045 decision).
+	 */
+	async upsertSetting(
+		group: string,
+		key: string,
+		input: TCompanySettingInput,
+		actorUserId: string,
+	): Promise<TCompanySettingView> {
+		assertSettingValue(input.valueType, input.value);
+		const row = await this.repository.upsertSetting(group, key, {
+			valueType: input.valueType,
+			value: input.value,
+			updatedBy: actorUserId,
+		});
+		return {
+			settingGroup: row.settingGroup,
+			settingKey: row.settingKey,
+			valueType: row.valueType as TCompanySettingView['valueType'],
+			value: row.settingValue,
+		};
+	}
+
 	async setImage(
 		kind: TCompanyImageKind,
 		file: File | null,

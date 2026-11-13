@@ -410,7 +410,8 @@ Last synced: 2026-11-13.
 - ERP-0024 UAT, reconciliation, backup drill.
 - ERP-0025 Release preparation.
 - ERP-0037 Nullable cross-module references (ADR-0014 schema flip).
-- ERP-0045 Settings KV CRUD (`company.settings` + `organization.settings`).
+- ERP-0045b Organization settings KV CRUD (`organization.settings`) — split out of
+  ERP-0045, not built.
 
 ### in-progress
 - ERP-0046 Dependabot bun config moved to the workspace root (`directory: "/"`)
@@ -425,6 +426,15 @@ Last synced: 2026-11-13.
   Evidence: `progress.md` 2026-11-05, `test/unit/item-category.service.test.ts`.
 
 ### implemented
+- ERP-0045 Company settings KV CRUD (2026-11-13, `company.settings` only;
+  `organization.settings` split into ERP-0045b). `GET /company/settings`,
+  `PUT /company/settings/:group/:key`, permissions `company:read` /
+  `company:update`, no delete route; service-side value check per `value_type`
+  (string/number/boolean/json/date) plus the DB CHECK; single-statement upsert
+  on the live `(setting_group, setting_key)` partial unique index.
+  `is_secret` stays reserved (`false`): the API neither accepts nor returns it.
+  UI `CompanySettingsCard` on `/admin/company`. Evidence: `progress.md`
+  2026-11-13 ERP-0045; `test/unit/company.service.test.ts` 15 pass.
 - ERP-0044 Document registry wiring + files + public share links (2026-11-13).
   11 outward-facing types register through `DocumentService.register` and void
   with `voidBySource`; `document.files` upload/list/soft-delete/presigned download

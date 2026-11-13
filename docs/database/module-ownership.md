@@ -110,10 +110,12 @@ portal.
 
 ### 3. Company — `company`
 
-- **Owns** the one legal company behind every organization (ADR-0011): the
-  profile (`company.profiles`), head office addresses, contacts, bank
-  accounts and company-wide settings. Every table is company-wide — no
-  `organization_id` column anywhere in the schema.
+- **Owns** the one legal company of the application (ADR-0011): the profile
+  (`company.profiles`), head office addresses, contacts, bank accounts and
+  company-wide settings. Every table is company-wide — no `organization_id`
+  column anywhere in the schema. Many organizations (tenants) sit under this
+  one company; a multi-company model (`company_id` on `organization.*`) is not
+  built. Whether an organization is a subsidiary is out of scope.
 - `company.profiles.document_code` feeds the `{COMPANY}` token of the
   numbering patterns (ERP-0009).
 - **Contract**: `ExportedCompanyService.getProfile()` — the letterhead data

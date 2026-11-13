@@ -9,7 +9,12 @@ import { documentImageFrom } from '@providers/s3/document-image';
 import { container } from 'tsyringe';
 import { z } from 'zod';
 import { COMPANY_SERVICE_TOKEN } from '../constants/di';
-import { companyProfileSchema, type TCompanyImageKind } from '../contracts/company.contract';
+import {
+	companyProfileSchema,
+	companySettingInputSchema,
+	companySettingParamsSchema,
+	type TCompanyImageKind,
+} from '../contracts/company.contract';
 
 /**
  * Invoice bank accounts go to `invoice:read` or `company:read` holders,
@@ -86,6 +91,23 @@ export class CompanyController {
 				{
 					erp: { permission: ['company:update'] },
 					detail: { description: 'Removes the letterhead logo or the signature image' },
+				},
+			)
+			.get('/settings', async () => ok(await service.listSettings()), {
+				erp: { permission: ['company:read'] },
+				detail: { description: 'Every company setting (group, key, type, value)' },
+			})
+			.put(
+				'/settings/:group/:key',
+				async ({ params, body, erp }) => {
+					const { group, key } = companySettingParamsSchema.parse(params);
+					return ok(
+						await service.upsertSetting(group, key, companySettingInputSchema.parse(body), erp.session.user.id),
+					);
+				},
+				{
+					erp: { permission: ['company:update'] },
+					detail: { description: 'Creates or replaces one company setting' },
 				},
 			);
 	}

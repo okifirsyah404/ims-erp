@@ -102,3 +102,37 @@ export type TCompanyProfileSnapshot = Omit<
 
 /** Images on the profile: the letterhead logo and the signature with stamp. */
 export type TCompanyImageKind = 'logo' | 'signature';
+
+/** Must match the `settings_value_type_check` constraint in `company.settings`. */
+export const COMPANY_SETTING_VALUE_TYPES = ['string', 'number', 'boolean', 'json', 'date'] as const;
+export type TCompanySettingValueType = (typeof COMPANY_SETTING_VALUE_TYPES)[number];
+
+/** `group` and `key` of a setting: lower-case segments, e.g. `invoice` / `due_days`. */
+const settingSegment = z
+	.string()
+	.trim()
+	.regex(/^[a-z][a-z0-9_]{0,63}$/);
+
+export const companySettingParamsSchema = z.object({
+	group: settingSegment,
+	key: settingSegment,
+});
+
+/**
+ * Upsert body. `value: null` clears the value but keeps the row. Type checks
+ * (number, boolean, json, date) run in the service, not in the database.
+ */
+export const companySettingInputSchema = z.object({
+	valueType: z.enum(COMPANY_SETTING_VALUE_TYPES),
+	value: z.string().max(4000).nullable(),
+});
+
+export type TCompanySettingInput = z.output<typeof companySettingInputSchema>;
+
+/** One company setting as clients see it. Secrets are not part of this contract (ERP-0045). */
+export type TCompanySettingView = {
+	settingGroup: string;
+	settingKey: string;
+	valueType: TCompanySettingValueType;
+	value: string | null;
+};

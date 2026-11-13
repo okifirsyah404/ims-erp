@@ -12,6 +12,55 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-13 - ERP-0045: company settings KV CRUD
+
+Status: **implemented** (uncommitted at time of writing). Scope narrowed from the
+backlog text: `company.settings` only. `organization.settings` is split out as
+**ERP-0045b** and not built.
+
+- Contract: `COMPANY_SETTING_VALUE_TYPES` (string/number/boolean/json/date),
+  `companySettingParamsSchema` (group/key = `^[a-z][a-z0-9_]{0,63}$`),
+  `companySettingInputSchema` (`valueType` + nullable `value`, max 4000),
+  `TCompanySettingView`.
+- Repository: `findSettings()`, `findSetting(group, key)`, `upsertSetting(...)`.
+  The upsert is a single `insert … onConflictDoUpdate` against the live
+  `(setting_group, setting_key)` partial unique index, so two concurrent PUTs
+  cannot both insert. Both reads filter `deleted_at IS NULL`.
+- Service: `listSettings()`, `upsertSetting()` with `assertSettingValue` per
+  `value_type` (`null` always allowed = cleared). Bad value →
+  `CompanySettingInvalidError` (422, `company.settingInvalid`).
+- Routes: `GET /company/settings` (`company:read`),
+  `PUT /company/settings/:group/:key` (`company:update`). No delete route.
+- `is_secret` decision: column stays, default `false`, reserved. The API neither
+  accepts nor returns it, so there is no `hasValue` field. Recorded in
+  `docs.dbml` and in the service comment.
+- UI: `CompanySettingsCard` on `/admin/company` (table + Change → dialog with
+  type select and value input). Empty value clears to `null`. en/id keys
+  `settings:settings.*`; `settings:settings.type.` added to the dead-key
+  `DYNAMIC_PREFIXES` and `settings:settings.type.json` to `ALLOWED_IDENTICAL`.
+- Schema: no migration needed — `company.settings` and its constraints already
+  exist from `20261113120000_erp0042_company`.
+
+Verification (2026-11-13):
+- `bun test test/unit/company.service.test.ts` (backend): 15 pass, 0 fail.
+- `bun test` (backend): 868 pass, 0 fail.
+- `bun test` (web-admin): 70 pass. `bun test` (packages/locales): 86 pass.
+- web-admin `tsc`/build: exit 0. `bun run lint`: exit 0, 0 errors.
+- Browser (`/admin/company`, logged in as admin): Settings card lists
+  `invoice / due_days / Number / 14 / Change`. Change → `abc` → dialog stays open
+  and the toast shows "The value does not match its type"; Change → `14` → dialog
+  closes, row shows 14, `GET /company/settings` returns `value: "14"`.
+- First browser attempt showed the raw key `company.settingInvalid`: the backend
+  process was started before the locale key existed and `bun --watch` does not
+  restart on changes under `packages/`. Restarting the backend fixed it. Note for
+  future locale work: restart the backend after adding an `api` key.
+- `bun docs/database/validate-dbml.ts`: OK.
+
+Left in the local dev DB: the test setting `invoice.due_days = 14`.
+
+Not built (ERP-0045b): `organization.settings`, per-organization scope, secret
+values with `hasValue`. No feature reads `company.settings` yet.
+
 ## 2026-11-13 - sidebar: Files route, Signatures sub-items, Documents below CRM & Sales
 
 Status: **implemented** (uncommitted at time of writing; see commit line below).

@@ -1,11 +1,16 @@
 import type {
 	TBankAccountSelect,
 	TCompanyProfileSelect,
+	TCompanySettingSelect,
 	TContactSelect,
 	THeadOfficeAddressSelect,
 } from '@drizzle/schemas/company.schema';
 import type { TTx } from '@drizzle/types';
-import type { TCompanyProfileInput, TInvoiceBankAccount } from './company.contract';
+import type {
+	TCompanyProfileInput,
+	TCompanySettingValueType,
+	TInvoiceBankAccount,
+} from './company.contract';
 
 /**
  * Flat profile as the repository persists it: the letterhead columns of
@@ -44,4 +49,17 @@ export interface ICompanyRepository {
 
 	/** Sets (or clears) the logo or signature key of the live profile; `null` when there is none. */
 	setImage(kind: 'logo' | 'signature', key: string | null): Promise<TCompanyProfileRecord | null>;
+
+	/** Every live company setting. */
+	findSettings(): Promise<TCompanySettingSelect[]>;
+
+	/** The live setting for a group/key, if any. */
+	findSetting(group: string, key: string): Promise<TCompanySettingSelect | null>;
+
+	/** Creates or updates the live setting for a group/key. */
+	upsertSetting(
+		group: string,
+		key: string,
+		data: { valueType: TCompanySettingValueType; value: string | null; updatedBy: string },
+	): Promise<TCompanySettingSelect>;
 }

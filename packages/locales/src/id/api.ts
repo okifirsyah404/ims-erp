@@ -200,6 +200,7 @@ const api: Record<keyof typeof en, string> = {
 	'organization.notFound': 'Organisasi tidak ditemukan',
 	'company.profileRequired':
 		'Lengkapi profil perusahaan (beserta kode dokumen) terlebih dahulu',
+	'company.settingInvalid': 'Nilai tidak sesuai dengan tipenya',
 	'numbering.unknownCodeType': 'Jenis kode tidak dikenal',
 	'document.notFound': 'Dokumen tidak ditemukan',
 	'document.notVoidable': 'Dokumen ini tidak dapat dibatalkan',

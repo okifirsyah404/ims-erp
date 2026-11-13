@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@ims-erp/ui/components/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { DocumentImageField } from '@/components/documents/document-image-field';
 import { CompanyProfileForm } from '@/components/settings/company-profile-form';
+import { CompanySettingsCard } from '@/components/settings/company-settings-card';
 import { toast } from '@/components/toast';
 import {
 	companyProfileQueryOptions,
@@ -79,6 +80,7 @@ function CompanyProfilePage() {
 						submitting={submitting}
 						onSubmit={(input) => void handleSubmit(input)}
 					/>
+					<CompanySettingsCard canEdit={canEdit} />
 					{profile && (
 						<Card>
 							<CardHeader>

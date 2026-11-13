@@ -3,17 +3,22 @@ import {
 	type BankAccountInvoiceUsage,
 	bankAccounts,
 	companyProfiles,
+	companySettings,
 	contacts,
 	headOfficeAddresses,
 	type TBankAccountSelect,
 	type TCompanyProfileSelect,
+	type TCompanySettingSelect,
 } from '@drizzle/schemas/company.schema';
 import type { TTx } from '@drizzle/types';
 import { and, eq, isNotNull, isNull } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import type { ICacheClient } from '@cache/cache.client';
-import type { TInvoiceBankAccount } from '../contracts/company.contract';
+import type {
+	TCompanySettingValueType,
+	TInvoiceBankAccount,
+} from '../contracts/company.contract';
 import type {
 	ICompanyRepository,
 	TCompanyProfileData,
@@ -250,6 +255,64 @@ export class CompanyRepository implements ICompanyRepository {
 			.select()
 			.from(bankAccounts)
 			.where(and(isNull(bankAccounts.deletedAt), isNotNull(bankAccounts.invoiceUsage)));
+	}
+
+	findSettings(): Promise<TCompanySettingSelect[]> {
+		return this.database
+			.select()
+			.from(companySettings)
+			.where(isNull(companySettings.deletedAt))
+			.orderBy(companySettings.settingGroup, companySettings.settingKey);
+	}
+
+	async findSetting(group: string, key: string): Promise<TCompanySettingSelect | null> {
+		const [row] = await this.database
+			.select()
+			.from(companySettings)
+			.where(
+				and(
+					eq(companySettings.settingGroup, group),
+					eq(companySettings.settingKey, key),
+					isNull(companySettings.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	/**
+	 * Insert-or-update on the live (group, key) row. A single statement keeps
+	 * two concurrent PUTs for the same key from both inserting.
+	 */
+	async upsertSetting(
+		group: string,
+		key: string,
+		data: { valueType: TCompanySettingValueType; value: string | null; updatedBy: string },
+	): Promise<TCompanySettingSelect> {
+		const now = new Date();
+		const [row] = await this.database
+			.insert(companySettings)
+			.values({
+				settingGroup: group,
+				settingKey: key,
+				valueType: data.valueType,
+				settingValue: data.value,
+				updatedBy: data.updatedBy,
+				createdAt: now,
+				updatedAt: now,
+			})
+			.onConflictDoUpdate({
+				target: [companySettings.settingGroup, companySettings.settingKey],
+				targetWhere: isNull(companySettings.deletedAt),
+				set: {
+					valueType: data.valueType,
+					settingValue: data.value,
+					updatedBy: data.updatedBy,
+					updatedAt: now,
+				},
+			})
+			.returning();
+		return row;
 	}
 
 	/** Sets the account printed for one invoice usage; `null` soft-deletes it. */

@@ -13,11 +13,14 @@ import type {
 	BankAccountInvoiceUsage,
 	TBankAccountSelect,
 	TCompanyProfileSelect,
+	TCompanySettingSelect,
 	TContactSelect,
 	THeadOfficeAddressSelect,
 } from '@drizzle/schemas/company.schema';
 import {
 	companyProfileSchema,
+	companySettingInputSchema,
+	type TCompanySettingValueType,
 	type TInvoiceBankAccount,
 } from '../../src/app/company/contracts/company.contract';
 import type {
@@ -80,6 +83,40 @@ class FakeProfiles implements ICompanyRepository {
 
 	private record(): TCompanyProfileRecord {
 		return { profile: this.profile!, address: this.address, contacts: this.contacts };
+	}
+
+	settings: TCompanySettingSelect[] = [];
+
+	async findSettings() {
+		return this.settings;
+	}
+
+	async findSetting(group: string, key: string) {
+		return this.settings.find((s) => s.settingGroup === group && s.settingKey === key) ?? null;
+	}
+
+	async upsertSetting(
+		group: string,
+		key: string,
+		data: { valueType: TCompanySettingValueType; value: string | null; updatedBy: string },
+	) {
+		const row = {
+			id: `${group}.${key}`,
+			settingGroup: group,
+			settingKey: key,
+			settingValue: data.value,
+			valueType: data.valueType,
+			isSecret: false,
+			description: null,
+			updatedBy: data.updatedBy,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			deletedAt: null,
+		} as unknown as TCompanySettingSelect;
+		const i = this.settings.findIndex((s) => s.settingGroup === group && s.settingKey === key);
+		if (i >= 0) this.settings[i] = row;
+		else this.settings.push(row);
+		return row;
 	}
 }
 
@@ -211,5 +248,71 @@ describe('CompanyService images', () => {
 		await expect(
 			service.setImage('logo', new File(['x'], 'a.pdf', { type: 'application/pdf' }), false),
 		).rejects.toBeInstanceOf(DocumentImageInvalidError);
+	});
+});
+
+describe('CompanyService settings (ERP-0045)', () => {
+	let repository: FakeProfiles;
+	let service: CompanyService;
+
+	beforeEach(() => {
+		repository = new FakeProfiles();
+		service = new CompanyService(repository, storage);
+	});
+
+	test('rejects a value that does not match its type, and writes nothing', async () => {
+		const cases: Array<[TCompanySettingValueType, string]> = [
+			['number', 'abc'],
+			['number', '  '],
+			['boolean', 'yes'],
+			['json', '{oops'],
+			['date', '2026-13-40'],
+			['date', '13/11/2026'],
+		];
+		for (const [valueType, value] of cases) {
+			await expect(
+				service.upsertSetting('invoice', 'due_days', { valueType, value }, 'user-1'),
+			).rejects.toThrow();
+		}
+		expect(repository.settings).toHaveLength(0);
+	});
+
+	test('accepts a valid value for each type and null (cleared)', async () => {
+		const ok: Array<[TCompanySettingValueType, string | null]> = [
+			['string', 'anything at all'],
+			['number', '-3.5'],
+			['boolean', 'false'],
+			['json', '{"a":1}'],
+			['date', '2026-11-13'],
+			['number', null],
+		];
+		for (const [i, [valueType, value]] of ok.entries()) {
+			await service.upsertSetting('invoice', `k_${i}`, { valueType, value }, 'user-1');
+		}
+		expect(repository.settings).toHaveLength(ok.length);
+	});
+
+	test('upsert replaces the row for the same group and key, not a second row', async () => {
+		await service.upsertSetting('invoice', 'due_days', { valueType: 'number', value: '14' }, 'user-1');
+		const second = await service.upsertSetting(
+			'invoice',
+			'due_days',
+			{ valueType: 'number', value: '30' },
+			'user-2',
+		);
+		expect(repository.settings).toHaveLength(1);
+		expect(second.value).toBe('30');
+		expect(repository.settings[0].updatedBy).toBe('user-2');
+	});
+
+	test('list returns the stored settings as views', async () => {
+		await service.upsertSetting('ui', 'theme', { valueType: 'string', value: 'dark' }, 'user-1');
+		expect(await service.listSettings()).toEqual([
+			{ settingGroup: 'ui', settingKey: 'theme', valueType: 'string', value: 'dark' },
+		]);
+	});
+
+	test('the request schema rejects unknown value types', () => {
+		expect(() => companySettingInputSchema.parse({ valueType: 'secret', value: 'x' })).toThrow();
 	});
 });

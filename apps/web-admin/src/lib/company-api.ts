@@ -137,6 +137,35 @@ export function saveCompanyProfile(input: TCompanyProfileInput) {
 	});
 }
 
+export const COMPANY_SETTING_VALUE_TYPES = ['string', 'number', 'boolean', 'json', 'date'] as const;
+export type TCompanySettingValueType = (typeof COMPANY_SETTING_VALUE_TYPES)[number];
+
+/** One company setting. Plain text value; typing is checked on save. */
+export type TCompanySetting = {
+	settingGroup: string;
+	settingKey: string;
+	valueType: TCompanySettingValueType;
+	value: string | null;
+};
+
+export function companySettingsQueryOptions() {
+	return queryOptions({
+		queryKey: ['company-settings'],
+		queryFn: () => request<TCompanySetting[]>('/company/settings'),
+	});
+}
+
+export function saveCompanySetting(
+	group: string,
+	key: string,
+	input: { valueType: TCompanySettingValueType; value: string | null },
+) {
+	return request<TCompanySetting>(`/company/settings/${encodeURIComponent(group)}/${encodeURIComponent(key)}`, {
+		method: 'PUT',
+		body: JSON.stringify(input),
+	});
+}
+
 /** Every numbering series with its next number. */
 export function numberingQueryOptions() {
 	return queryOptions({

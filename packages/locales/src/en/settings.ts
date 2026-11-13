@@ -98,6 +98,23 @@ const settings = {
 	'companyProfile.image.logo': 'Letterhead logo',
 	'companyProfile.image.signature': 'Signature and stamp',
 	'companyProfile.imageSaved': 'Image saved',
+
+	'settings.title': 'Settings',
+	'settings.description': 'Company-wide key/value settings used by other modules.',
+	'settings.empty': 'No settings yet.',
+	'settings.group': 'Group',
+	'settings.key': 'Key',
+	'settings.valueType': 'Type',
+	'settings.value': 'Value',
+	'settings.edit': 'Change',
+	'settings.editTitle': 'Setting {{key}}',
+	'settings.editDescription': 'Empty value clears the setting. The value must match its type.',
+	'settings.saved': 'Setting saved',
+	'settings.type.string': 'Text',
+	'settings.type.number': 'Number',
+	'settings.type.boolean': 'Yes / no (true or false)',
+	'settings.type.json': 'JSON',
+	'settings.type.date': 'Date (YYYY-MM-DD)',
 } as const;
 
 export default settings;

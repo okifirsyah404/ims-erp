@@ -205,6 +205,7 @@ const api = {
 	'organization.notFound': 'Organization not found',
 	'company.profileRequired':
 		'Fill in the company profile (with its document code) first',
+	'company.settingInvalid': 'The value does not match its type',
 	'numbering.unknownCodeType': 'Unknown code type',
 	'document.notFound': 'Document not found',
 	'document.notVoidable': 'This document cannot be voided',

@@ -60,9 +60,11 @@ describe('locale values', () => {
 		// Guards against copy-pasting the English bundle into `id`. Brand names
 		// and locale-neutral tokens are expected to match, so they're exempt.
 		const ALLOWED_IDENTICAL = new Set([
-			'common:language.switchToEnglish',
-			// Material is the same word in both languages.
+			// `JSON` is the format name in both languages.
+			'settings:settings.type.json',
+			// `Material` is the same word in both languages.
 			'settings:numbering.type.item_material',
+			'common:language.switchToEnglish',
 			'common:language.switchToIndonesian',
 			'nav:section.platform',
 			'nav:item.organizations',
