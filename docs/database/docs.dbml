@@ -1,6 +1,6 @@
 Project "ENTRAGATE ERP" {
   database_type: 'PostgreSQL'
-  Note: "Canonical persistence contract for ENTRAGATE ERP. 24 Postgres schemas owned by 24 modules. Module isolation is a hard rule: a Ref may only connect tables owned by the same module; Warehouse and Inventory are one module spanning two schemas, so inventory tables keep real FKs into warehouse.*. Cross-module links are logical id columns plus a column note, never a foreign key. Datetimes are unix milliseconds in bigint. Money is exact integer IDR minor units in bigint plus a currency_code column. Tenant scope is organization_id (text, references auth.organizations.id logically). Soft delete is deleted_at (bigint, nullable) on every business table except append-only ledgers and projections, which document their exemption in their table note. Status vocabularies are text guarded by Checks blocks, never native enums, so no enum type can leak into the public schema. Composite tenant foreign keys and partial unique indexes for soft-deleted codes are implemented directly in the Drizzle schema files, which DBML cannot express. Better Auth owned tables (auth.users, auth.sessions, auth.accounts, auth.verifications, auth.organizations, auth.members, auth.invitations, auth.passkeys, auth.apikeys) are the exception to the soft-delete rule: only auth.users and auth.organizations carry deleted_at, the rest are hard deleted by Better Auth itself, so their tables must never gain a deleted_at column nor be queried with one."
+  Note: "Canonical persistence contract for ENTRAGATE ERP. 26 Postgres schemas owned by 26 modules. Module isolation is a hard rule: a Ref may only connect tables owned by the same module, and every module owns exactly one schema - there is no two-schema module. Cross-module links are logical id columns plus a column note, never a foreign key. Datetimes are unix milliseconds in bigint. Money is exact integer IDR minor units in bigint plus a currency_code column. Tenant scope is organization_id (text, references auth.organizations.id logically). Soft delete is deleted_at (bigint, nullable) on every business table except append-only ledgers and projections, which document their exemption in their table note. Status vocabularies are text guarded by Checks blocks, never native enums, so no enum type can leak into the public schema. Composite tenant foreign keys and partial unique indexes for soft-deleted codes are implemented directly in the Drizzle schema files, which DBML cannot express. Better Auth owned tables (auth.users, auth.sessions, auth.accounts, auth.verifications, auth.organizations, auth.members, auth.invitations, auth.passkeys, auth.apikeys) are the exception to the soft-delete rule: only auth.users and auth.organizations carry deleted_at, the rest are hard deleted by Better Auth itself, so their tables must never gain a deleted_at column nor be queried with one."
 }
 
 TableGroup "Identity" {
@@ -47,7 +47,7 @@ TableGroup "Organization" {
   organization.settings
 }
 
-TableGroup "CodeNumber" {
+TableGroup "Code Number" {
   code_number.series
 }
 
@@ -250,7 +250,7 @@ TableGroup "After-Sales" {
   aftersales.sla_policies
 }
 
-TableGroup "Documents" {
+TableGroup "Document" {
   document.templates
   document.documents
   document.files
@@ -2514,10 +2514,10 @@ Ref: procurement.purchase_return_items.purchase_return_id > procurement.purchase
 Ref: procurement.purchase_return_items.purchase_order_item_id > procurement.purchase_order_items.id [delete: set null]
 
 
-// MODULE: Inventory, warehouse schema  (same module as Inventory below)
-// Warehouse master: warehouses and their zones and bins. Same module as
-// Inventory; the split schema is storage grouping, not an ownership boundary,
-// so Inventory tables keep real foreign keys into warehouse.*.
+// MODULE: Inventory  (schema: inventory)
+// Warehouse master: warehouses and their storages. Same module as the stock
+// ledger below; the schema was folded into inventory (ADR-0008), so these
+// foreign keys are ordinary intra-module references.
 // Tenant scoped.
 // ---------------------------------------------------------------------------
 

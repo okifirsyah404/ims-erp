@@ -63,20 +63,31 @@ stock adjustments).
 
 Done once by the admin/owner.
 
-1. **Settings → Company profile**: legal name, address, phone, email, logo,
-   signature, signatory name and title, bank accounts (VAT and non-VAT),
-   default quotation/invoice terms, warranty texts (coverage, exclusions,
-   service terms). Every printed document uses this data.
-2. **Settings → Document numbering**: check the number pattern of each
-   document (see [section 9](#9-printed-documents-and-numbering)).
-3. **Master data**:
+1. **Settings → Company**: legal name, trading name, company code, tagline,
+   tax ID (NPWP), address, postal code, phone, email, website. The company code
+   is what `{COMPANY}` becomes in every document number, so set it first -
+   number previews stay empty until it is filled in.
+2. **Settings → Code numbering**: check the pattern and the restart policy of
+   each code type (see [section 9](#9-printed-documents-and-numbering)). A
+   change only affects numbers issued afterwards; numbers already issued never
+   change.
+3. **Settings → Document**: upload the letterhead logo. Below it sits the
+   `document` settings group, which holds the values the document module reads.
+4. **Master data**:
    - **CRM → Customers** (the customer code appears in the warranty number).
    - **Inventory → Items**: SKU, name, kind, unit, category, selling price,
-     photo for quotations, tick *serialized* when every unit has a serial.
+     photo for quotations, tick *serialized* when every unit has a serial. The
+     item code is generated from the kind and cannot be edited later.
    - **Procurement → Suppliers** (bank details only for allowed roles).
    - **Inventory → Warehouses** and storages (application admin only).
-4. **Opening stock** when goods are already in the warehouse: see
+5. **Opening stock** when goods are already in the warehouse: see
    [section 7.2](#72-opening-stock-and-adjustments).
+
+> The signatory name and title, the invoice bank accounts, the default
+> quotation/invoice terms and the warranty texts are **no longer editable from
+> the UI** (since 2026-11-13): they belong to modules that get their own pages.
+> Values already stored keep printing on documents; a fresh install prints
+> documents without a signatory line until those pages exist.
 
 ## 4. Sales: quotation → revision → Deal → sales order
 
@@ -268,7 +279,7 @@ Menu **Projects**. Diagram:
    one BAST).
 2. Pick the BAST the warranty starts at, the letter date, the period
    (months, default 12). Devices are prefilled from the shipped delivery
-   notes with their serials; the terms come from the company profile.
+   notes with their serials; the terms come from the stored company profile.
 3. Term text format: one item per line; a line starting with `o ` is a
    sub-item; `**text**` prints bold.
 4. **Save and print**. Period: from the BAST date to the day before the same
@@ -337,7 +348,7 @@ Menu **Projects**. Diagram:
 | Service ticket | `0001/TKT/IMS/XI/26` | opened | — |
 
 Print with the **Print** button on the document page, then the browser's
-print / save-as-PDF. Patterns are set in **Settings → Document numbering**.
+print / save-as-PDF. Patterns are set in **Settings → Code numbering**.
 
 ## 10. Notes
 

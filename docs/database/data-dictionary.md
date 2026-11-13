@@ -430,9 +430,11 @@ Used by the content tables: `commerce.web_pages`, `document.documents`,
 | serial tracked item | a unit tracked by serial number. Serialized **products** only since ERP-0036: a physical tool is an asset, not an item. |
 | cycle count | a periodic stock count; the variance becomes an adjustment. |
 
-Note: the warehouse schema (`warehouse.warehouses`, `warehouse.warehouse_zones`,
-`warehouse.warehouse_bins`) holds the physical structure of the same
-Inventory module; it is storage grouping, not a separate module.
+Note: the physical structure of the Inventory module lives in the same schema
+(`inventory.warehouses`, `inventory.warehouse_addresses`,
+`inventory.warehouse_storages`). The separate `warehouse` schema in the
+original plan was retired (ADR-0008); it was storage grouping, never a
+separate module.
 
 ### Ticketing
 

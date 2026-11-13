@@ -64,12 +64,17 @@ drizzle/                      Drizzle client + schemas (code-owned)
   verified 2026-10-30): do not run `auth:generate`; apply hand-written,
   append-only edits and mirror the column in Better Auth's
   `user.additionalFields` where applicable.
-- `erp` schema: current shared domain schema (`audit_logs`, `customers`,
-  `investors`). Owned by this repo. **Do not grow it further**: new feature
-  tables get a per-feature Postgres schema named after the domain
-  (`customer.*`, `sales.*`, ...) per the cross-feature isolation rule. Migrate
-  existing non-audit tables into their feature schemas as each feature is
-  built. Relations live in v2 `defineRelationsPart`
+- `erp` schema: **retired**. The shared domain schema in the original plan
+  (`audit_logs`, `customers`, `investors`) was never created as `erp.*`;
+  those tables landed in their own feature schemas as `audit.audit_logs`,
+  `crm.customers` and `investor.investors`. Do not create it.
+- One module owns exactly one Postgres schema. `company.*` (company profile,
+  contacts, bank accounts, company-wide settings), `code_number.series` (the
+  numbering authority) and `document.*` (the issued document registry) were
+  split out of `organization.*` in ERP-0042 (ADR-0015); no module spans two
+  schemas any more. New feature tables get a per-feature Postgres schema
+  named after the domain (`customer.*`, `sales.*`, ...) per the cross-feature
+  isolation rule. Relations live in v2 `defineRelationsPart`
   blocks per schema file, combined in `drizzle.ts`. Relations do **not**
   replace PostgreSQL FKs, unique constraints, checks, or indexes — add both
   (within a single feature's schema only; cross-feature references are loose

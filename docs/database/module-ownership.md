@@ -16,8 +16,8 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   single `auth` schema, shared by Better Auth's 9 core tables and the 6 ERP
   extension tables.
 - A **foreign key may only connect two tables of the same module**.
-  `docs.dbml` contains 226 `Ref:` declarations and **0 cross-module refs**
-  (`validate-dbml.ts` now checks all 226; before 2026-11-05 it read
+  `docs.dbml` contains 231 `Ref:` declarations and **0 cross-module refs**
+  (`validate-dbml.ts` now checks all 231; before 2026-11-05 it read
   `db.refs`, which `@dbml/core` v11 leaves empty, so the check passed vacuously).
 - A **cross-module link** is a plain id column plus a column note that **starts
   with** the sentence below — `gen-logical-references.ts` anchors its regex at
@@ -25,7 +25,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   silently not counted:
   `Logical reference to <target>.id. Cross-module FK intentionally omitted.
   Validated through the <Module> module contract.`
-- 522 such logical reference columns exist (target count re-verified on each validation run, see validate-dbml.ts).
+- 526 such logical reference columns exist (target count re-verified on each validation run, see validate-dbml.ts).
 - Every one of them is a **nullable** plain id column (ADR-0014); presence is
   a service-layer fact, enforced by the owning module's contract method, not
   by the database.
@@ -73,11 +73,14 @@ into `inventory` (ADR-0008): `inventory.warehouses`, `inventory.warehouse_addres
 and `inventory.warehouse_storages`. The previous `warehouse` schema — and its
 `warehouse_zones` / `warehouse_bins` tables — is retired from the contract.
 
-`location` is the 24th module relative to the 22 originally proposed: it
-already existed in the database (4 tables, seeded) and is a real ownership
-boundary, so folding it into another module would have been a fiction.
-Ticketing (customer issue tickets) is the 23rd, added for the customer
-portal.
+`location` and `ticket` are modules in their own right rather than groupings
+of a neighbour: `location` already existed in the database (4 tables, seeded)
+and is a real ownership boundary, so folding it into another module would have
+been a fiction; Ticketing (customer issue tickets) exists for the customer
+portal. ERP-0042 then split Organization three ways - the company profile, the
+numbering authority and the document registry each became their own module
+(Company, Code Number, Document), which is where the count went from 24 to 26
+and why no module spans two schemas any more (ADR-0015).
 
 ## Module profiles
 
@@ -357,7 +360,7 @@ portal.
 ### 25. Ticketing — `ticket`
 
 - **Owns** ticket categories, tickets, messages, attachments and the status
-  history of the customer issue tickets (see 10b for the profile).
+  history of the customer issue tickets.
 
 ### 26. Audit — `audit`
 

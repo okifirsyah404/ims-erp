@@ -12,6 +12,92 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+> **Docs-first, 2026-11-13.** The ERP-0042..ERP-0045c entries below were written
+> on branch `refactor/company-document-numbering`. The code for them lives on
+> that branch; this documentation set was written there first and then copied
+> to the `erp` repository, so a reader on an older branch sees the docs before
+> the code. Nothing here claims a commit that does not exist on that branch.
+
+## 2026-11-13 - Docs: ERP-0042 split documented end to end (schemas, modules, ADR-0015)
+
+Status: **implemented (documentation only)**. No code changed; `docs/` grew to
+match the ERP-0042 code that already exists on
+`refactor/company-document-numbering`.
+
+The split was implemented on 2026-11-13 but only partly documented: the schemas
+were in `docs.dbml` and `module-ownership.md`, while `domain-map.md`,
+`data-model.md`, `architecture.md` and `security-and-access.md` still described
+the retired `erp` schema and Organization as the owner of the company profile,
+and there was no module doc for the three new modules at all.
+
+- **Modules docs (new):** `architecture/modules/company.md`,
+  `code-number.md`, `document.md`. Each covers purpose and boundary, owned
+  tables, the exported contract, the routes with their permissions, and the
+  tests. `modules/README.md` now links them instead of saying "no doc yet".
+- **`architecture/decisions/ADR-0015-company-document-code-number-split.md`
+  (new, accepted).** Records *why* three modules instead of one, the
+  one-module-one-schema rule, the verbatim rename of the numbering table, and
+  the consequence that a field removed from the UI keeps its column.
+  `architecture/README.md` indexes it.
+- **`architecture/security-and-access.md`**: a new "Company-wide resources"
+  section. It states the `company` / `code_number` / `document` resource-action
+  pairs and, importantly, that company-wide is a *data scope*, never an
+  authorization boundary - those routes still run the `erp` macro with a
+  validated organization. The integration-gap section now separates the built
+  modules from the signature-request flow (ERP-0048).
+- **`architecture/data-model.md`**: `erp` replaced by per-schema entries for
+  `company`, `code_number`, `document`, `audit`, `crm`, `investor`, with `erp`
+  explicitly retired. `apps/backend-elysia` corrected to `apps/backend`. The
+  location seeder note now points at `location.*`.
+- **`architecture/architecture.md`**: the `erp` schema bullet became "retired"
+  plus the one-module-one-schema rule naming the three new schemas.
+- **`architecture/domain-map.md`**: the "Company, users, roles, permissions,
+  audit" row now lists `company`, `code_number` and `document` as owners.
+- **`database/docs.dbml`**: header 24 schemas/24 modules → 26/26, and the
+  "Warehouse and Inventory are one module spanning two schemas" clause replaced
+  by "every module owns exactly one schema" - the clause had been false since
+  ADR-0008. `TableGroup "Documents"` → `"Document"`, `"CodeNumber"` →
+  `"Code Number"`, and the Inventory module comment no longer describes a
+  `warehouse` schema.
+- **`database/module-ownership.md`**: `226 Ref:` → `231`, `522` logical
+  reference columns → `526`, and the module-count paragraph rewritten (Company
+  and Code Number split out of Organization; `location` and `ticket` reasons
+  kept; ADR-0015 named). A dead `(see 10b)` cross-reference removed.
+- **`database/integrity-and-consistency.md`**: `218 Ref:` → `231`,
+  `parsed: 251 tables` → `268`, and §2.2 "The one exception" rewritten - there
+  is no two-schema module left, so no cross-schema foreign key is allowed
+  anywhere.
+- **`database/implementation-phases.md`**: target 24/251 → 26/268; the
+  `warehouse` schema row and the "generate both in the same step" instruction
+  replaced by the folded `inventory` shape (14 tables); the `warehouse.schema.ts`
+  stub dropped from the file list; the two `inventory <-> warehouse` exception
+  clauses in the verification queries and exit criteria replaced by "no
+  exception"; final checklist 24/251/218 → 26/268/231.
+- **`database/data-dictionary.md`**: the warehouse-schema note now names
+  `inventory.warehouses` / `inventory.warehouse_addresses` /
+  `inventory.warehouse_storages`.
+- **`user-guide/en.md` + `id.md`**: setup step 1 rewritten. It used to tell the
+  admin to fill the signatory, the bank accounts, the default terms and the
+  warranty texts on the company page - none of which are editable there since
+  ERP-0045c. The steps now split into Settings → Company (identity + contact),
+  Settings → Code numbering, Settings → Document (logo), with an explicit note
+  that the removed fields cannot be edited from the UI and that stored values
+  keep printing. "Settings → Document numbering" became "Settings → Code
+  numbering"; the item code is called out as generated and immutable.
+- **`plan/plans/features.md`**: the sidebar bullet no longer claims
+  Administration holds Company and Code numbering (ERP-0045c moved them);
+  the ERP-0042 bullet names the new module docs and ADR-0015 and says 32 code
+  types, not 29.
+- **`plan/backlog.md`**: unchanged in this entry - ERP-0042..ERP-0046 already
+  carry their statuses.
+
+Verified: `bun docs/database/validate-dbml.ts` →
+`parsed: 268 tables, 231 refs` / `cross-module refs: 0` / `timestamp gaps: 0` /
+`OK`. Grep for `organization.company_profiles`,
+`organization.document_sequences`, `organization.company_bank_accounts`,
+`documents.documents`, `TableGroup "Documents"`, `24 Postgres` and
+`251 tables` returns only the deliberate historical mentions.
+
 ## 2026-11-13 - `/settings/documents`: logo only, company signature image removed from the UI
 
 Status: **implemented and verified in the browser**.

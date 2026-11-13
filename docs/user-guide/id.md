@@ -61,20 +61,31 @@ Aturan umum: **dokumen yang dibuat sendiri tidak bisa disetujui sendiri**
 
 Dilakukan sekali oleh admin/owner.
 
-1. **Pengaturan → Profil Perusahaan**: nama resmi, alamat, telepon, email,
-   logo, tanda tangan, nama & jabatan penandatangan, rekening bank (PPN dan
-   non-PPN), syarat SPH/invoice bawaan, teks garansi (cakupan, pengecualian,
-   layanan). Semua dokumen cetak mengambil data dari sini.
-2. **Pengaturan → Penomoran Dokumen**: periksa pola nomor tiap dokumen
-   (lihat [bagian 9](#9-dokumen-cetak-dan-penomoran)).
-3. **Data induk**:
+1. **Pengaturan → Perusahaan**: nama resmi, nama dagang, kode perusahaan,
+   tagline, NPWP, alamat, kode pos, telepon, email, situs web. Kode perusahaan
+   adalah isi `{COMPANY}` di setiap nomor dokumen, jadi isi ini dulu - pratinjau
+   nomor akan kosong sampai terisi.
+2. **Pengaturan → Penomoran Kode**: periksa pola nomor dan kebijakan mulai-ulang
+   setiap jenis kode (lihat [bagian 9](#9-dokumen-cetak-dan-penomoran)).
+   Perubahan hanya berlaku untuk nomor yang terbit setelahnya; nomor yang sudah
+   terbit tidak pernah berubah.
+3. **Pengaturan → Dokumen**: unggah logo kop surat. Di bawahnya ada grup
+   pengaturan `document` yang menyimpan nilai yang dibaca modul dokumen.
+4. **Data induk**:
    - **CRM → Pelanggan** (kode pelanggan dipakai di nomor surat garansi).
    - **Inventaris → Barang**: SKU, nama, jenis, satuan, kategori, harga jual,
-     foto untuk SPH, centang *bernomor seri* bila setiap unit punya SN.
+     foto untuk SPH, centang *bernomor seri* bila setiap unit punya SN. Kode
+     barang dibuat otomatis dari jenisnya dan tidak bisa diubah kemudian.
    - **Pengadaan → Pemasok** (data bank hanya terlihat oleh yang berhak).
    - **Inventaris → Gudang** dan lokasi simpan (hanya admin global).
-4. **Stok awal** bila barang sudah ada di gudang: lihat
+5. **Stok awal** bila barang sudah ada di gudang: lihat
    [bagian 7.2](#72-stok-awal-dan-penyesuaian).
+
+> Nama & jabatan penandatangan, rekening bank pada invoice, syarat SPH/invoice
+> bawaan dan teks garansi **tidak bisa lagi diedit dari antarmuka** (sejak
+> 2026-11-13): masing-masing akan punya halaman sendiri. Nilai yang sudah
+> tersimpan tetap tercetak di dokumen; instalasi baru mencetak dokumen tanpa
+> baris penandatangan sampai halaman tersebut ada.
 
 ## 4. Penjualan: SPH → revisi → Deal → sales order
 
@@ -336,7 +347,7 @@ Menu **Proyek**. Diagram:
 | Tiket servis | `0001/TKT/IMS/XI/26` | saat dibuat | — |
 
 Cetak memakai tombol **Cetak** di halaman dokumen lalu fitur cetak/simpan
-PDF browser. Pola nomor diatur di **Pengaturan → Penomoran Dokumen**.
+PDF browser. Pola nomor diatur di **Pengaturan → Penomoran Kode**.
 
 ## 10. Catatan
 

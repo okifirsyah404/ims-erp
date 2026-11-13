@@ -471,21 +471,26 @@ Last synced: 2026-11-13.
 - Sidebar (2026-11-13): Documents section below CRM & Sales, with Files
   (`/documents/files`), Signatures (Document Signature, Request Signature, My Signature,
   placeholders until ERP-0048/0049), Templates (placeholder until ERP-0050).
-  Administration has Company first, Code numbering before Audit log. Evidence:
-  `progress.md` 2026-11-13 "sidebar" (top entry), commit `7b1f699` for Administration.
+  The same day ERP-0045c moved Company and Code numbering out of Administration
+  into a new `Settings` section, so Administration now holds the organization
+  pages and the audit log only. Evidence: `progress.md` 2026-11-13 "sidebar"
+  (top entry), commit `7b1f699` for the first arrangement, ERP-0045c for the move.
 - ERP-0042 Decoupled `organization` into `company` + `document` +
   `code_number` (2026-11-13). Three Postgres schemas, one append-only migration
   each; `company.profiles/head_office_addresses/contacts/bank_accounts/settings`,
   `code_number.series` (verbatim rename of `organization.document_sequences`,
-  `document_type`→`code_type`, 29 types incl. `warehouse`),
+  `document_type`→`code_type`, 32 code types incl. `warehouse` and the three
+  item kinds),
   `document.templates/documents/files/signatures/access_logs/shares/tags/tag_links`;
   `organization.company_settings` split into `company.settings` +
   `organization.settings`. Contracts `CompanyService.getProfile(tx?)`,
   `CodeNumberService.next(codeType, {date, context, tx})`,
   `DocumentService.issue(...)`. Permissions `company:*` / `code_number:*` /
   `document:*` replace `company_setting:*`. API `/company/profile` +
-  `/code-numbers`; UI `/documents`, `/admin/company`, `/admin/code-numbers`
-  (`/admin/settings` deleted). Evidence: `apps/backend/src/app/{company,code-number,document}`,
+  `/code-numbers`; UI `/documents`, `/settings/company`,
+  `/settings/code-numbers` (the `/admin/*` pages and `/admin/settings` were
+  replaced by ERP-0045c). Docs: `architecture/modules/{company,code-number,document}.md`
+  and ADR-0015. Evidence: `apps/backend/src/app/{company,code-number,document}`,
   `test/unit/{company,code-number}.service.test.ts`, migrations
   `2026111312*_erp0042_*` verified on a disposable DB, `progress.md` 2026-11-13.
 - ERP-0009 Code numbering (company-wide series, settings page). Moved to
