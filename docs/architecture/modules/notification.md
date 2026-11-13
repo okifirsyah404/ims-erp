@@ -1,51 +1,107 @@
-> 2026-10-28: content below describes the deleted NestJS backend (apps/backend-nest). Domains listed as modules/ stubs do not exist in apps/backend-elysia (which has only user, organization, location). Treat as historical audit; re-verify against backend-elysia before acting.
-
 # Notification Module
 
 ## Purpose and boundary
 
-All outbound communications: OTP/magic-link delivery (replacing the console
-loggers in auth options), operational notifications, and later WhatsApp AI
-flows + notifications/handoff (v5.1 M04 stage 2; tasks T27–T28). Owns
-delivery adapters and delivery logs/retries; does **not** decide business
-content beyond approved templates/knowledge.
+Owns the in-app notification inbox: the message a user sees in the bell menu,
+its unread badge, and the templates that produce it. It is the **first consumer
+of the single realtime socket** (`/ws`), not the owner of that socket — the
+transport lives in `apps/backend/src/providers/realtime/` so later features
+(chat, live counters) reuse it without opening a second connection.
 
-## Current state (audit, 2026-10-25)
+The module does **not** decide business content. A caller names a template code
+and supplies variables; the module renders, stores and pushes.
 
-**Scaffold only:**
+Planned later scope (unchanged from the original v5.1 targets, not built here):
+email/WhatsApp delivery channels, notification preferences, Web Push, and the
+WhatsApp AI handoff of M04 stage 2.
 
-- `modules/notification/**` — empty stubs; registered in `app.module.ts`.
-- Pre-written unit specs (controller/service) exist.
-- Related-but-external: BullMQ is configured (bootstrap) — delivery retries
-  should use queues, not ad-hoc timers.
+## Current state (2026-11-13)
 
-## Data ownership (planned)
+**Planned, not implemented.** The contract landed first (Phase 0 of
+`docs/plan/plans/ws-notification.md`):
 
-- `erp.notifications` (or delivery log) — channel (email/wa/system), target,
-  template id, payload refs (no secrets), status, attempts, last error,
-  timestamps. Delivery failures are logged and followed up manually per S05.
+- `docs/database/docs.dbml` — `notification.notification_templates` and
+  `notification.notifications` moved out of the `automation` schema.
+- `docs/database/module-ownership.md` — module 27.
+- ADR-0016 — why the module is app-scope and why there is one socket.
 
-## Behavior targets
+No Drizzle schema, no migration, no module folder in `apps/backend/src/app/`
+yet. Phase 1 creates them.
 
-- Stage 1 (T15): basic notifications for ERP events (one event to n8n with
-  logging/manual trigger per v5.1 M04).
-- Stage 2 (T27–T28): **one** WhatsApp number + **one** AI provider (limits);
-  FAQ/catalog-based answers only; record leads; hand off to administrator;
-  failures logged with manual retry. AI cannot grant discounts or perform
-  financial transactions (hard limit; prompt-injection tests required).
-- Auth OTP senders route here (sandbox/mock until provider approval —
-  condition gate from v5.1).
+## Data ownership
 
-## Dependencies and rules
+Schema `notification`, app-scope (no `organization_id`):
 
-- Consumers: authentication (OTP/magic link), sales/payment (status
-  notifications), licensing (expiry/suspension notices). Consumes customer
-  contact data via contracts. Sandbox/mock adapters until credentials exist;
-  never send live messages without owner approval.
+| Table | Holds |
+|---|---|
+| `notification.notification_templates` | copy per `module.event` code, its channel and declared variables |
+| `notification.notifications` | one row per recipient: `user_id`, `template_code`, `title`, `body`, `tags`, `variables`, `metadata`, `status`, `sent_at`, `read_at`, `source_type`/`source_id` |
+
+Rules:
+
+- The tenant is **not** in the row. A notification is per user and is readable
+  from every organization that user belongs to; the organization context is a
+  display **tag** (the organization name), never a filter.
+- Rows are created by the module's BullMQ worker as `status='sent'` and turned
+  `read` by the recipient. There is no `queued` round-trip: the job is the
+  queue.
+- Prune is a repeat job that **hard deletes** `status='read'` rows past the
+  retention window. They are delivery records, not business data, so the
+  soft-delete rule does not apply to them.
+- `template_code` is denormalized onto the row, so a later template edit never
+  rewrites what a user already received.
+
+## Contract
+
+`ExportedNotificationService` — the **only** cross-module entry point:
+
+```ts
+notify({
+  userIds: string[];
+  templateCode: string;          // 'module.event'
+  variables: Record<string, string>;
+  tags: string[];                // display labels, e.g. [organizationName]
+  sourceType?: string;
+  sourceId?: string;
+}): Promise<void>;
+```
+
+It enqueues one BullMQ job per recipient and never throws into the caller's
+request path: a queue outage is logged, the business write still succeeds (same
+contract as the avatar queue hook).
+
+Read-side guards: `resolveNotificationRecipient(userId)` and
+`assertNotificationOwnedBy(notificationId, userId)`. A notification id that
+belongs to another user returns **404**, never 403 — probing must not reveal
+existence.
+
+## Realtime envelope
+
+The socket is shared, so every message is wrapped:
+
+```ts
+{ type: string; status: 'success' | 'error'; sentAt: number; data: unknown }
+```
+
+`status` is the delivery result of the message itself; `data.status` carries the
+domain status (`sent`, `read`). Notification types are `notification.created`,
+`notification.updated` and `notification.unread_count`. Chat later adds
+`chat.message` on the same socket.
+
+## Consumers
+
+- Organization: member added, organization created, invitation claimed.
+- Planned: sales invoice issued, document signature requested, licensing expiry.
 
 ## Tests
 
-- Existing stub specs to replace.
-- Required: template/knowledge gating tests (unapproved content cannot send),
-  retry/idempotency on delivery, injection-resistance tests for AI answers,
-  redaction of personal data in logs.
+`apps/backend/test/notification/`:
+
+- `notification.service.test.ts` — enqueue payload, template code, tags,
+  deterministic job id.
+- `notification.worker.test.ts` — row created as `sent`, hub publish, prune
+  selection.
+- `notification.gateway.test.ts` — envelope shape, upgrade rejected without a
+  session.
+- `realtime.smoke.test.ts` — connect with a session cookie, trigger a producer,
+  receive the message.

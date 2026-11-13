@@ -45,3 +45,4 @@ design interview; see **Feature module lifecycle** in `../AGENTS.md`.
 | [ADR-0012](decisions/ADR-0012-multi-organization.md) | Multiple Organizations, Company-Wide Master Data | accepted (2026-11-08) |
 | [ADR-0014](decisions/ADR-0014-nullable-cross-module-references.md) | Nullable Cross-Module References | accepted (2026-11-08) |
 | [ADR-0015](decisions/ADR-0015-company-document-code-number-split.md) | Company / Document / Code Number Schema Split | accepted (2026-11-13) |
+| [ADR-0016](decisions/ADR-0016-notification-module-and-single-realtime-socket.md) | Notification Module and the Single Realtime Socket | accepted (2026-11-13) |

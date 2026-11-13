@@ -144,6 +144,20 @@ Last synced: 2026-11-13.
   Evidence: none.
 - AI FAQ + n8n integration — T27, ERP-0021. Evidence: none.
 - Notifications, human handoff, WhatsApp logs — T28, ERP-0021. Evidence: none.
+  Note: the **in-app** notification substrate is not part of M04; it is
+  `ERP-0047` (below) and its WhatsApp/email channels attach to that model later.
+
+## Notification + realtime (ERP-0047)
+
+### in-progress
+- In-app notification module (schema `notification`, app-scope, organization as
+  tag) + single realtime socket `/ws` + header bell with unread badge.
+  Plan: `docs/plan/plans/ws-notification.md` (Phase 0-9). Evidence: Phase 0 done
+  2026-11-13 — `docs/database/docs.dbml` module 27, `module-ownership.md`,
+  `implementation-phases.md`, `data-dictionary.md`,
+  `docs/architecture/modules/notification.md`, ADR-0016,
+  `api-conventions.md`; `validate-dbml.ts` OK (268 tables, 231 refs, 0
+  cross-module), `gen-logical-references.ts` 524 refs. No code yet.
 
 ## M05 Inventory and Purchasing
 

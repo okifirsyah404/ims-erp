@@ -63,6 +63,12 @@ ADR-0001's multi-tenancy migration path is ever executed.
 `location.*` tables are global reference data and carry no
 `organization_id`.
 
+**App-scope tables carry no tenant column at all.** `notification.*` is
+deliberately app-scope: a notification belongs to one user, is readable from
+every organization that user belongs to, and the organization context travels
+as a display tag (the organization name). Do not add `organization_id` there;
+the list endpoint filters by `user_id` only.
+
 ### 1.3 Datetimes
 
 Two different kinds, never mixed up.
@@ -240,9 +246,18 @@ attached to the record).
 | codes, slugs, short labels | `varchar(32)` / `varchar(64)` / `varchar(128)` |
 | names, descriptions, notes | `text` |
 | structured but schema-less payloads (templates, config, criteria) | `text` holding JSON |
+| structured payloads the ERP filters or searches inside | `jsonb` |
 
 Structured payloads are stored as JSON text, not `jsonb`, because the shape
 is owned by the calling module and the ERP does not query inside it.
+
+**`jsonb` exception — notification payloads.** `notification.notifications`
+uses `jsonb` for `tags`, `variables` and `metadata`, and
+`notification.notification_templates` for `variables`, because those are
+read as structured values by the API (tags are rendered as chips, variables
+are interpolated by the client, metadata carries navigation targets). Never
+store authorization facts in them: a `metadata` or `tags` value is display
+data, and permission checks read the database columns, not the payload.
 
 ### 1.13 Index conventions
 
@@ -340,7 +355,7 @@ A posted ledger row is never edited. A correction is a compensating row.
 ### 3.5 Draft → published → archived
 
 Used by the content tables: `commerce.web_pages`, `document.documents`,
-`investor.investor_reports`, `automation.notification_templates`.
+`investor.investor_reports`, `notification.notification_templates`.
 
 ## 4. Per-module glossary
 
@@ -629,7 +644,17 @@ reconcile.
 | workflow run | one execution of a workflow. |
 | scheduled job | a database driven recurring job. The queue transport stays in Redis. |
 | outbox message | a transactional outbox event, published after the commit. |
-| notification | one message queued or sent to one recipient. |
+
+### Notification
+
+| Term | Meaning |
+|---|---|
+| template | the copy of one event, keyed by a `module.event` code (`org.member_added`). One template serves every organization. |
+| template code | the stable `module.event` identifier. Events are snake_case, the prefix is the owning module (`org.`, `sales.`, `document.`). |
+| notification | one in-app message for one user, created as `sent` and turned `read` by the recipient. |
+| tag | a free-form display label rendered as a chip. The organization name is the tag for organization events; there is no `organization_id` column. |
+| variables | interpolation values for the template (`{ organizationName, role }`), used by the client to render localized copy. |
+| status | delivery state: `queued`, `sending`, `sent`, `delivered`, `read`, `failed`, `cancelled`. Only `sent` and `read` are produced today. |
 
 ### Licensing
 
