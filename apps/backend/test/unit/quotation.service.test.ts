@@ -141,6 +141,9 @@ const customer = {
 
 let repo: FakeQuotations;
 let leadNoted: string[];
+/** Registry calls made by the service (ERP-0044). */
+let registered: { code: string; sourceId: string }[];
+let voided: string[];
 let service: QuotationService;
 
 const sales: TQuotationContext = { actorUserId: 'sales-1', canViewAll: false, canViewDeals: false };
@@ -160,6 +163,8 @@ function body(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
 	repo = new FakeQuotations();
 	leadNoted = [];
+	registered = [];
+	voided = [];
 	service = new QuotationService(
 		repo,
 		{
@@ -193,6 +198,17 @@ beforeEach(() => {
 		{ getUser: async (id: string) => ({ id, name: `User ${id}` }) as never },
 		{ presignGet: (key: string) => `https://files.test/${key}` },
 		{ findLiveByQuotation: async () => null },
+		{
+			// ERP-0044: the registry is asserted through `registered` / `voided`.
+			register: async (input) => {
+				registered.push(input);
+				return {} as never;
+			},
+			voidBySource: async (module, sourceType, sourceId) => {
+				voided.push(`${module}/${sourceType}/${sourceId}`);
+				return 1;
+			},
+		},
 	);
 });
 
@@ -244,6 +260,16 @@ describe('create', () => {
 		const [shown] = (await service.get(sales, created.id)).items;
 		expect(shown!.imageUrl).toBe('https://files.test/inventory/items/sg/photo.png');
 		expect(repo.history.map((h) => h.toStatus)).toEqual(['draft']);
+		// ERP-0044: the registry row shares the business code and source id.
+		expect(registered).toEqual([
+			expect.objectContaining({
+				code: '1376/QT/IMS/XI/26',
+				documentType: 'quotation',
+				module: 'sales',
+				sourceType: 'quotation',
+				sourceId: created.id,
+			}),
+		]);
 	});
 
 	test('VAT off, custom line, per-line discount; attention defaults to the contact', async () => {
@@ -355,6 +381,8 @@ describe('lost ("Batal") and revisions', () => {
 		expect(() => quotationLostSchema.parse({ reason: 'other' })).toThrow();
 		const lost = await service.markLost(sales, quotation.id, { reason: 'price', note: 'Terlalu mahal' });
 		expect(lost).toMatchObject({ status: 'lost', lostReason: 'price', closedBy: 'sales-1' });
+		// ERP-0044: the registry copy of a lost SPH is voided.
+		expect(voided).toEqual([`sales/quotation/${quotation.id}`]);
 		await expect(service.markLost(sales, quotation.id, { reason: 'price' })).rejects.toBeInstanceOf(
 			QuotationStateError,
 		);

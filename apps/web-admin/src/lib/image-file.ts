@@ -1,5 +1,6 @@
 /**
- * Picking and downscaling images before upload (ERP-0041).
+ * Picking and downscaling images before upload (ERP-0041), and the WebP
+ * encoding the document logo and signature use (ERP-0044).
  *
  * @remarks
  * Only images are accepted; anything else (including a folder drag, which
@@ -16,6 +17,12 @@
 
 /** Largest source image worth decoding (the output is downscaled to 512px). */
 export const MAX_IMAGE_SOURCE_BYTES = 20 * 1024 * 1024;
+
+/** Longest output side for a logo/signature printed on a document (ERP-0044). */
+export const DOCUMENT_IMAGE_MAX_SIZE = 1024;
+
+/** WebP quality used for every client-side encode. */
+const WEBP_QUALITY = 0.9;
 
 /** Extensions accepted when the browser reports no MIME type. */
 const IMAGE_EXTENSIONS = new Set([
@@ -55,6 +62,60 @@ function isImage(file: File): boolean {
 	if (file.type) return false;
 	const extension = file.name.toLowerCase().split('.').pop() ?? '';
 	return IMAGE_EXTENSIONS.has(extension);
+}
+
+/**
+ * Output dimensions after downscaling, never upscaling.
+ *
+ * @remarks
+ * Pure so the rule is testable without a DOM: `scale` is clamped to 1, so a
+ * 64px icon stays 64px, and both sides round to at least 1px.
+ */
+export function webpDimensions(
+	width: number,
+	height: number,
+	maxSize: number = DOCUMENT_IMAGE_MAX_SIZE,
+): { width: number; height: number } {
+	const scale = Math.min(1, maxSize / Math.max(width, height));
+	return {
+		width: Math.max(1, Math.round(width * scale)),
+		height: Math.max(1, Math.round(height * scale)),
+	};
+}
+
+/**
+ * Encodes a picked image to WebP, downscaling it so the longest side is at
+ * most `maxSize` (default {@link DOCUMENT_IMAGE_MAX_SIZE}). Used by the
+ * document logo/signature, where the 1024px print-size cap matters.
+ *
+ * @remarks
+ * The backend caps the upload at 2MB, so the client keeps the payload small: a
+ * 4000px photo re-encoded at quality 0.9 blows past the cap, while a 1024px
+ * logo is still ~650dpi at 40mm print size. No PNG fallback here: the document
+ * field needs the WebP size guarantee; {@link encodeImage} is the lenient path.
+ *
+ * @throws {Error} When the browser cannot decode the file, create a canvas, or
+ * encode WebP (Safari < 14 has no WebP encoder)
+ */
+export async function encodeWebp(
+	file: File,
+	{ maxSize = DOCUMENT_IMAGE_MAX_SIZE }: { maxSize?: number } = {},
+): Promise<Blob> {
+	const { source, width, height, release } = await decodeImage(file);
+	try {
+		const dimensions = webpDimensions(width, height, maxSize);
+		const canvas = document.createElement('canvas');
+		canvas.width = dimensions.width;
+		canvas.height = dimensions.height;
+		const context = canvas.getContext('2d');
+		if (!context) throw new Error('Canvas unavailable');
+		context.drawImage(source, 0, 0, dimensions.width, dimensions.height);
+		const blob = await toBlob(canvas, 'image/webp', WEBP_QUALITY);
+		if (blob?.type !== 'image/webp') throw new Error('WebP encoding failed');
+		return blob;
+	} finally {
+		release();
+	}
 }
 
 /** Result of {@link encodeImage}: bytes to upload plus their extension. */
@@ -143,6 +204,10 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 	});
 }
 
-function toBlob(canvas: HTMLCanvasElement, type: string): Promise<Blob | null> {
-	return new Promise((resolve) => canvas.toBlob(resolve, type, 0.9));
+function toBlob(
+	canvas: HTMLCanvasElement,
+	type: string,
+	quality = 0.9,
+): Promise<Blob | null> {
+	return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
 }

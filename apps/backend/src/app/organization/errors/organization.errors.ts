@@ -7,9 +7,7 @@
  * presentation; the controller resolves the key against the request's
  * `Accept-Language` before writing the response envelope.
  */
-import { AppError } from '@http/errors';
 import type { ApiKey } from '@providers/i18n/translator';
-import type { TPatternProblem } from '../domain/document-number';
 
 /** Organization lookup by id or slug failed in the auth gateway. */
 export class OrganizationNotFoundError extends Error {
@@ -78,32 +76,6 @@ export class LastOwnerError extends Error {
 	constructor() {
 		super('Cannot remove or demote the last owner');
 		this.name = 'LastOwnerError';
-	}
-}
-
-/** Document numbers need the company profile (its document code). */
-export class CompanyProfileRequiredError extends AppError {
-	constructor() {
-		super(422, 'organization.companyProfileRequired', 'Fill in the company profile first');
-	}
-}
-
-/** The document type has no numbering series. */
-export class UnknownDocumentTypeError extends AppError {
-	constructor() {
-		super(404, 'numbering.unknownDocumentType', 'Unknown document type');
-	}
-}
-
-/** A numbering pattern the owner typed is not valid (first problem reported). */
-export class NumberingPatternError extends AppError {
-	constructor(problem: TPatternProblem) {
-		super(
-			422,
-			`numbering.pattern.${problem.code}` as ApiKey,
-			`Invalid numbering pattern: ${problem.code}`,
-			problem.params,
-		);
 	}
 }
 

@@ -4,14 +4,18 @@ import {
 	Contact,
 	FileCheck2,
 	FileSpreadsheet,
+	FileText,
 	Globe,
 	GraduationCap,
+	Hash,
 	HandCoins,
 	KeyRound,
 	Calculator,
 	LayoutDashboard,
+	LayoutTemplate,
 	MessageSquare,
 	Package,
+	PenLine,
 	ReceiptText,
 	Repeat,
 	Scale,
@@ -39,7 +43,7 @@ import type { SidebarItem } from './sidebar-item';
  * per item instead of hiding whole sections.
  */
 export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarItem[] }[] = [
-	// M01 — Dashboard. Plain link; the authed index page doubles as the
+	// M01 - Dashboard. Plain link; the authed index page doubles as the
 	// dashboard placeholder for now.
 	{
 		labelKey: 'section.dashboard',
@@ -73,6 +77,26 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 					{ titleKey: 'item.receipts', url: '/sales/receipts' },
 				],
 			},
+		],
+	},
+
+	// Document registry (ERP-0042). Company-wide: every issued document,
+	// whatever module owns the business record. Signatures and templates are
+	// placeholders until ERP-0048 and ERP-0050.
+	{
+		labelKey: 'section.documents',
+		items: [
+			{ titleKey: 'item.files', url: '/documents/files', icon: FileText },
+			{
+				titleKey: 'item.signatures',
+				icon: PenLine,
+				items: [
+					{ titleKey: 'item.documentSignatures', url: '/documents/signatures/documents' },
+					{ titleKey: 'item.requestSignature', url: '/documents/signatures/request' },
+					{ titleKey: 'item.mySignature', url: '/documents/signatures/mine' },
+				],
+			},
+			{ titleKey: 'item.templates', url: '/documents/templates', icon: LayoutTemplate },
 		],
 	},
 
@@ -259,16 +283,18 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				icon: ScrollText,
 				adminOnly: true,
 			},
-			{
-				titleKey: 'item.settings',
-				url: '/admin/settings',
-				icon: Settings,
-				// Company-wide settings (ADR-0011).
-				items: [
-					{ titleKey: 'item.companyProfile', url: '/admin/settings' },
-					{ titleKey: 'item.documentNumbering', url: '/admin/settings/numbering' },
-				],
-			},
+		],
+	},
+
+	// Company-wide configuration (ADR-0011). Company profile and code
+	// numbering used to sit under Administration; each module's own settings
+	// page goes here too (Document first).
+	{
+		labelKey: 'section.settings',
+		items: [
+			{ titleKey: 'item.companyProfile', url: '/settings/company', icon: Settings },
+			{ titleKey: 'item.codeNumbers', url: '/settings/code-numbers', icon: Hash },
+			{ titleKey: 'item.documentSettings', url: '/settings/documents', icon: FileText },
 		],
 	},
 ];

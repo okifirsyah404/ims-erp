@@ -25,6 +25,9 @@ let numbers: { type: string; context?: unknown }[];
 let handover: HandoverService;
 let warranty: WarrantyService;
 let profileTexts: { warrantyCoverage: string | null };
+/** Registry calls made by the two services (ERP-0044). */
+let registered: { code: string; sourceId: string; documentType: string }[];
+let voided: string[];
 
 const bastBody = (date = '2025-12-24') => ({
 	bastDate: date,
@@ -47,6 +50,8 @@ beforeEach(() => {
 	certificates = [];
 	numbers = [];
 	profileTexts = { warrantyCoverage: null };
+	registered = [];
+	voided = [];
 	const numbering = {
 		async next(type: string, options?: { context?: unknown }) {
 			numbers.push({ type, context: options?.context });
@@ -80,6 +85,17 @@ beforeEach(() => {
 		{ get: async () => ({ legalName: 'CV Inti Multi Solusi', ...profileTexts }) as never },
 		{ getUser: async () => ({ id: 'pm', name: 'Agus Supriyadi' }) as never },
 		numbering,
+		{
+			// ERP-0044: registry side effects are asserted through `registered` / `voided`.
+			register: async (input) => {
+				registered.push(input);
+				return {} as never;
+			},
+			voidBySource: async (module, sourceType, sourceId) => {
+				voided.push(`${module}/${sourceType}/${sourceId}`);
+				return 1;
+			},
+		},
 	);
 	warranty = new WarrantyService(
 		{
@@ -111,6 +127,13 @@ beforeEach(() => {
 			liveProjectOfOrder: async (orderId: string) => (orderId === project.salesOrderId ? project : null),
 			getProject: async (id: string) => (id === PROJECT ? project : null),
 		},
+		{
+			// ERP-0044: an issued certificate is registered.
+			register: async (input) => {
+				registered.push(input);
+				return {} as never;
+			},
+		},
 	);
 });
 
@@ -134,6 +157,9 @@ describe('BAST', () => {
 		await handover.update(ctx, PROJECT, first.id, { ...bastBody(), firstPartyTitle: 'Manager' });
 		expect(first.code).toBe('001/bast');
 		await handover.cancel(ctx, PROJECT, second.id);
+		// ERP-0044: every BAST is registered on create, and cancelling voids it.
+		expect(registered.filter((row) => row.documentType === 'bast').map((row) => row.code)).toEqual(['001/bast', '002/bast']);
+		expect(voided).toEqual([`projects/bast/${second.id}`]);
 		await expect(handover.update(ctx, PROJECT, second.id, bastBody())).rejects.toBeInstanceOf(BastNotFoundError);
 		project.status = 'closed';
 		await expect(handover.create(ctx, PROJECT, bastBody())).rejects.toBeInstanceOf(ProjectNotActiveError);
@@ -151,6 +177,10 @@ describe('warranty certificate', () => {
 		const certificate = await warranty.save(ctx, PROJECT, { ...body, bastId: bast.id });
 		expect(certificate).toMatchObject({ startDate: '2025-12-24', endDate: '2026-12-23', months: 12 });
 		expect(numbers[numbers.length - 1]).toEqual({ type: 'warranty', context: { customer: 'APP' } });
+		// ERP-0044: the certificate is registered once, on create.
+		expect(registered.filter((row) => row.documentType === 'warranty')).toEqual([
+			expect.objectContaining({ code: certificate.code, sourceId: certificate.id }),
+		]);
 		// Saving again updates the same certificate (still editable after closing).
 		project.status = 'closed';
 		const again = await warranty.save(ctx, PROJECT, { ...body, bastId: bast.id, months: 24 });

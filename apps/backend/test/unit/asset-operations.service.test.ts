@@ -42,7 +42,7 @@ import {
 	AssetRuleViolationError,
 	AssetTransitionError,
 } from '../../src/app/assets/errors/asset.errors';
-import { NUMBERING_SERVICE_TOKEN } from '../../src/app/organization/constants/di';
+import { CODE_NUMBER_SERVICE_TOKEN } from '../../src/app/code-number';
 
 const ORG_A = 'org-a';
 const ORG_B = 'org-b';
@@ -348,7 +348,7 @@ function buildWorld() {
 	container.register(ASSET_OPERATIONS_REPOSITORY_TOKEN, {
 		useValue: operations,
 	});
-	container.register(NUMBERING_SERVICE_TOKEN, {
+	container.register(CODE_NUMBER_SERVICE_TOKEN, {
 		useValue: numbering,
 	});
 	container.register(ASSET_OPERATIONS_SERVICE_TOKEN, {

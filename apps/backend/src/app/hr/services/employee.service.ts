@@ -1,8 +1,8 @@
 import type { TEmployeeInsert, TEmployeeSelect } from '@drizzle/schemas/hr.schema';
 import type { TTx } from '@drizzle/types';
 import { inject, injectable } from 'tsyringe';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
 import { USER_PERSONAL_FIELDS_PORT_TOKEN } from '@app/user/constants/di';
 import type { IUserPersonalFieldsPort } from '@app/user/contracts/user-personal-fields.port';
 import type { TUserPersonalFields, TUserPersonalFieldsPatch } from '@app/user/contracts/user-personal-fields.contract';
@@ -67,8 +67,8 @@ export class EmployeeService {
 	constructor(
 		@inject(EMPLOYEE_REPOSITORY_TOKEN)
 		private readonly repository: IEmployeeRepository,
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: NumberingService,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: CodeNumberService,
 		@inject(USER_PERSONAL_FIELDS_PORT_TOKEN)
 		private readonly personalFields: IUserPersonalFieldsPort,
 		@inject(EMPLOYEE_INVITE_SERVICE_TOKEN)

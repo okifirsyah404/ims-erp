@@ -1,6 +1,6 @@
 import type { TApiResponse } from '@ims-erp/common';
 import { currentLanguage } from '@/i18n';
-import { encodeImage, MAX_IMAGE_SOURCE_BYTES } from './image-file';
+import { encodeImage } from './image-file';
 
 /**
  * Upload and removal of images printed on documents (company logo and
@@ -18,8 +18,8 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 export const DOCUMENT_IMAGE_ACCEPT =
 	'image/png,image/jpeg,image/webp,image/gif,image/bmp,image/avif,image/heic,image/heif';
 
-/** Largest source worth decoding; the uploaded blob itself is much smaller. */
-export const DOCUMENT_IMAGE_MAX_BYTES = MAX_IMAGE_SOURCE_BYTES;
+/** Server-side cap on the uploaded WebP (`document-image-field` checks it). */
+export const DOCUMENT_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 
 async function send<T>(path: string, init: RequestInit): Promise<T> {
 	const response = await fetch(`${API_URL}${path}`, {

@@ -12,6 +12,549 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+> **Docs-first, 2026-11-13.** The ERP-0042..ERP-0045c entries below were written
+> on branch `refactor/company-document-numbering`. The code for them lives on
+> that branch; this documentation set was written there first and then copied
+> to the `erp` repository, so a reader on an older branch sees the docs before
+> the code. Nothing here claims a commit that does not exist on that branch.
+
+## 2026-11-13 - Docs: ERP-0042 split documented end to end (schemas, modules, ADR-0015)
+
+Status: **implemented (documentation only)**. No code changed; `docs/` grew to
+match the ERP-0042 code that already exists on
+`refactor/company-document-numbering`.
+
+The split was implemented on 2026-11-13 but only partly documented: the schemas
+were in `docs.dbml` and `module-ownership.md`, while `domain-map.md`,
+`data-model.md`, `architecture.md` and `security-and-access.md` still described
+the retired `erp` schema and Organization as the owner of the company profile,
+and there was no module doc for the three new modules at all.
+
+- **Modules docs (new):** `architecture/modules/company.md`,
+  `code-number.md`, `document.md`. Each covers purpose and boundary, owned
+  tables, the exported contract, the routes with their permissions, and the
+  tests. `modules/README.md` now links them instead of saying "no doc yet".
+- **`architecture/decisions/ADR-0015-company-document-code-number-split.md`
+  (new, accepted).** Records *why* three modules instead of one, the
+  one-module-one-schema rule, the verbatim rename of the numbering table, and
+  the consequence that a field removed from the UI keeps its column.
+  `architecture/README.md` indexes it.
+- **`architecture/security-and-access.md`**: a new "Company-wide resources"
+  section. It states the `company` / `code_number` / `document` resource-action
+  pairs and, importantly, that company-wide is a *data scope*, never an
+  authorization boundary - those routes still run the `erp` macro with a
+  validated organization. The integration-gap section now separates the built
+  modules from the signature-request flow (ERP-0048).
+- **`architecture/data-model.md`**: `erp` replaced by per-schema entries for
+  `company`, `code_number`, `document`, `audit`, `crm`, `investor`, with `erp`
+  explicitly retired. `apps/backend-elysia` corrected to `apps/backend`. The
+  location seeder note now points at `location.*`.
+- **`architecture/architecture.md`**: the `erp` schema bullet became "retired"
+  plus the one-module-one-schema rule naming the three new schemas.
+- **`architecture/domain-map.md`**: the "Company, users, roles, permissions,
+  audit" row now lists `company`, `code_number` and `document` as owners.
+- **`database/docs.dbml`**: header 24 schemas/24 modules → 26/26, and the
+  "Warehouse and Inventory are one module spanning two schemas" clause replaced
+  by "every module owns exactly one schema" - the clause had been false since
+  ADR-0008. `TableGroup "Documents"` → `"Document"`, `"CodeNumber"` →
+  `"Code Number"`, and the Inventory module comment no longer describes a
+  `warehouse` schema.
+- **`database/module-ownership.md`**: `226 Ref:` → `231`, `522` logical
+  reference columns → `526`, and the module-count paragraph rewritten (Company
+  and Code Number split out of Organization; `location` and `ticket` reasons
+  kept; ADR-0015 named). A dead `(see 10b)` cross-reference removed.
+- **`database/integrity-and-consistency.md`**: `218 Ref:` → `231`,
+  `parsed: 251 tables` → `268`, and §2.2 "The one exception" rewritten - there
+  is no two-schema module left, so no cross-schema foreign key is allowed
+  anywhere.
+- **`database/implementation-phases.md`**: target 24/251 → 26/268; the
+  `warehouse` schema row and the "generate both in the same step" instruction
+  replaced by the folded `inventory` shape (14 tables); the `warehouse.schema.ts`
+  stub dropped from the file list; the two `inventory <-> warehouse` exception
+  clauses in the verification queries and exit criteria replaced by "no
+  exception"; final checklist 24/251/218 → 26/268/231.
+- **`database/data-dictionary.md`**: the warehouse-schema note now names
+  `inventory.warehouses` / `inventory.warehouse_addresses` /
+  `inventory.warehouse_storages`.
+- **`user-guide/en.md` + `id.md`**: setup step 1 rewritten. It used to tell the
+  admin to fill the signatory, the bank accounts, the default terms and the
+  warranty texts on the company page - none of which are editable there since
+  ERP-0045c. The steps now split into Settings → Company (identity + contact),
+  Settings → Code numbering, Settings → Document (logo), with an explicit note
+  that the removed fields cannot be edited from the UI and that stored values
+  keep printing. "Settings → Document numbering" became "Settings → Code
+  numbering"; the item code is called out as generated and immutable.
+- **`plan/plans/features.md`**: the sidebar bullet no longer claims
+  Administration holds Company and Code numbering (ERP-0045c moved them);
+  the ERP-0042 bullet names the new module docs and ADR-0015 and says 32 code
+  types, not 29.
+- **`plan/backlog.md`**: unchanged in this entry - ERP-0042..ERP-0046 already
+  carry their statuses.
+
+Verified: `bun docs/database/validate-dbml.ts` →
+`parsed: 268 tables, 231 refs` / `cross-module refs: 0` / `timestamp gaps: 0` /
+`OK`. Grep for `organization.company_profiles`,
+`organization.document_sequences`, `organization.company_bank_accounts`,
+`documents.documents`, `TableGroup "Documents"`, `24 Postgres` and
+`251 tables` returns only the deliberate historical mentions.
+
+## 2026-11-13 - `/settings/documents`: logo only, company signature image removed from the UI
+
+Status: **implemented and verified in the browser**.
+
+The company signature image is not edited on the documents settings page any
+more: signatures get their own module (ERP-0048 / ERP-0049). The page keeps the
+letterhead logo and the `document` settings card.
+
+- `routes/_authed/settings/documents/index.tsx`: one `DocumentImageField`
+  (`/company/profile/logo`), not the `['logo','signature']` loop; the grid
+  became a single column; `signatureUrl` is no longer read there.
+- Locales: `companyProfile.section.images` is now "Logo" / "Logo" and
+  `companyProfile.imagesHint` describes the letterhead only.
+  `companyProfile.image.signature` was deleted from both bundles (dead key).
+  `section.images` and `image.logo` were added to `ALLOWED_IDENTICAL` ("Logo"
+  is the same word in Indonesian); the parity test caught this.
+- Deliberately unchanged: `PUT`/`DELETE /company/profile/signature` still exist,
+  `company.profiles.signature_object_key` stays in the schema and `docs.dbml`,
+  and `quotation-document.tsx`, `purchase-order-document.tsx` and
+  `warranty-document.tsx` still render `profile.signatureUrl`. Removing the
+  endpoint would have stopped an already-stored signature from printing.
+  No migration; `validate-dbml.ts` unchanged.
+
+Consequence: a company signature can no longer be uploaded from any UI. An
+existing image keeps printing; a fresh install prints documents without one
+until the signature module fills it.
+
+Verification (2026-11-13):
+- `bun test` (packages/locales): 86 pass, 0 fail — after the first run failed on
+  the identical "Logo" values, which the parity guard is meant to catch.
+- `bun test` (web-admin): 70 pass. `bun test` (backend): 872 pass.
+- web-admin `bun run build`: exit 0. `bun run lint` (root): 0 errors.
+- Browser `/settings/documents`: two cards — "Logo / Printed in the letterhead
+  of every document. / Letterhead logo" with exactly one file input, and
+  "Document settings" ("No document settings yet"). No "Signature and stamp".
+- Note: a plain `bun test` from the repo root runs the backend integration
+  suites without their env and reports ZodError failures (missing `app.name`,
+  `app.id`, `app.secret`, `database`). Pre-existing; run the backend and
+  web-admin suites from their own workspaces.
+
+## 2026-11-13 - ERP-0045c: Settings section, company form cut, profile patch
+
+Status: **implemented**, browser check pending at the time of writing.
+
+Scope moved from the sidebar request plus a follow-up decision to strip the
+document-related blocks off the company page.
+
+- Sidebar: new `section.settings` ("Settings" / "Pengaturan") placed **after**
+  Administration, with Company (`/settings/company`), Code numbering
+  (`/settings/code-numbers`) and Document (`/settings/documents`). Both items
+  left Administration (`nav-config.ts`).
+- Routes: `routes/_authed/settings/{company,code-numbers,documents}/index.tsx`.
+  `/admin/company` and `/admin/code-numbers` became redirect-only routes, so old
+  bookmarks keep working (`routeTree.gen.ts` regenerated by the router plugin).
+  `build-crumbs.ts` labels the three `/settings/*` paths.
+- Company form (`company-profile-form.tsx`) now renders **identity + contact
+  only**. Removed from the page: Signatory, Bank accounts, Default terms,
+  Warranty certificate, and (from the route) the Logo and signature card.
+  `documentCode` is relabelled **Company code** / **Kode perusahaan**; its hint
+  ("Used by document numbers ({COMPANY})") is unchanged.
+- Why the backend had to change: `PUT /company/profile` used to require the
+  whole body and overwrite every column. With those blocks off the page, the
+  next save would have blanked signatory, banks, terms and warranty, which are
+  still printed on quotations, invoices, purchase orders and warranty
+  certificates. The route now parses `companyProfilePatchSchema`
+  (`companyProfileSchema.partial()`) and the service merges the patch over the
+  stored profile, so an omitted field keeps its value and an explicit `null`
+  clears it. `legalName` and `documentCode` are still required in the merged
+  result (`CompanyProfileRequiredError` when missing on an empty profile).
+- `/settings/documents` carries the logo and signature upload (moved, not
+  dropped) plus `CompanySettingsCard` filtered to `groups={['document']}`.
+  `/settings/company` filters that group out (`excludeGroups`). The card gained
+  `excludeGroups`, `groups`, `title`, `description`, `emptyText` props.
+  The only `document.*` key in the design is
+  `document.signature_request_expiry_days` (ERP-0048); the card edits settings,
+  it does not create them, so the list is empty until ERP-0048 writes the row.
+- Locales: `nav:section.settings`, `nav:item.documentSettings`,
+  `settings:document.*`; `companyProfile.documentCode` retitled; 21 dead
+  `companyProfile.*` keys removed (signatory, banks, terms, warranty). The
+  parity exemption for `settings:companyProfile.bankName` went with it.
+
+Verification (2026-11-13):
+- `bun test test/unit/company.service.test.ts` (backend): 19 pass, 0 fail
+  (4 new partial-update tests: omitted field keeps its value, explicit `null`
+  clears, empty profile without `legalName`/`documentCode` rejected, patch
+  schema normalises the company code).
+- `bun test` (backend): 872 pass, 0 fail. `bun test` (web-admin): 70 pass.
+  `bun test` (packages/locales): 86 pass.
+- web-admin `bun run build`: exit 0. `bun run lint` (root): 0 errors.
+- Browser (logged in as admin), after restarting both dev servers because the
+  locale keys changed:
+  - `/settings/company`: renders identity + contact only; "Company code" present,
+    "Signatory", "Bank accounts", "Default terms", "Warranty certificate" and
+    "Logo and signature" absent; the Settings card still lists
+    `invoice / due_days / Number / 14`.
+  - Saving only the tagline kept the other fields: before and after,
+    `GET /company/profile` still returned `signatoryName: "Budi Santoso"` and
+    `bankAccounts.vat.bankName: "Bank Central Asia"`; the tagline changed. This
+    is the patch behaviour that matters, since the form no longer sends those
+    fields.
+  - `/settings/documents`: logo + signature upload cards and the `document`
+    settings card ("No document settings yet") render.
+  - `/admin/company` redirects to `/settings/company`; `/admin/code-numbers`
+    redirects to `/settings/code-numbers`.
+  - Sidebar order confirmed: Administration (Organization, Users, Audit Log)
+    then Settings (Company, Code numbering, Document).
+- Browser reading note: `document.body.innerText` came back empty on these
+  pages while `textContent` was fine; use `textContent` for assertions there.
+
+Known consequences:
+- Signatory, bank accounts, default terms and warranty texts can no longer be
+  edited from any UI, but their stored values are preserved and still printed.
+  A fresh install has no way to set them; that gap is intentional per the
+  request and would need a follow-up page if the documents are still wanted.
+- Logo and signature upload still works (now under `/settings/documents`); the
+  backend endpoints are unchanged.
+
+## 2026-11-13 - ERP-0045: company settings KV CRUD
+
+Status: **implemented** (uncommitted at time of writing). Scope narrowed from the
+backlog text: `company.settings` only. `organization.settings` is split out as
+**ERP-0045b** and not built.
+
+- Contract: `COMPANY_SETTING_VALUE_TYPES` (string/number/boolean/json/date),
+  `companySettingParamsSchema` (group/key = `^[a-z][a-z0-9_]{0,63}$`),
+  `companySettingInputSchema` (`valueType` + nullable `value`, max 4000),
+  `TCompanySettingView`.
+- Repository: `findSettings()`, `findSetting(group, key)`, `upsertSetting(...)`.
+  The upsert is a single `insert … onConflictDoUpdate` against the live
+  `(setting_group, setting_key)` partial unique index, so two concurrent PUTs
+  cannot both insert. Both reads filter `deleted_at IS NULL`.
+- Service: `listSettings()`, `upsertSetting()` with `assertSettingValue` per
+  `value_type` (`null` always allowed = cleared). Bad value →
+  `CompanySettingInvalidError` (422, `company.settingInvalid`).
+- Routes: `GET /company/settings` (`company:read`),
+  `PUT /company/settings/:group/:key` (`company:update`). No delete route.
+- `is_secret` decision: column stays, default `false`, reserved. The API neither
+  accepts nor returns it, so there is no `hasValue` field. Recorded in
+  `docs.dbml` and in the service comment.
+- UI: `CompanySettingsCard` on `/admin/company` (table + Change → dialog with
+  type select and value input). Empty value clears to `null`. en/id keys
+  `settings:settings.*`; `settings:settings.type.` added to the dead-key
+  `DYNAMIC_PREFIXES` and `settings:settings.type.json` to `ALLOWED_IDENTICAL`.
+- Schema: no migration needed — `company.settings` and its constraints already
+  exist from `20261113120000_erp0042_company`.
+
+Verification (2026-11-13):
+- `bun test test/unit/company.service.test.ts` (backend): 15 pass, 0 fail.
+- `bun test` (backend): 868 pass, 0 fail.
+- `bun test` (web-admin): 70 pass. `bun test` (packages/locales): 86 pass.
+- web-admin `tsc`/build: exit 0. `bun run lint`: exit 0, 0 errors.
+- Browser (`/admin/company`, logged in as admin): Settings card lists
+  `invoice / due_days / Number / 14 / Change`. Change → `abc` → dialog stays open
+  and the toast shows "The value does not match its type"; Change → `14` → dialog
+  closes, row shows 14, `GET /company/settings` returns `value: "14"`.
+- First browser attempt showed the raw key `company.settingInvalid`: the backend
+  process was started before the locale key existed and `bun --watch` does not
+  restart on changes under `packages/`. Restarting the backend fixed it. Note for
+  future locale work: restart the backend after adding an `api` key.
+- `bun docs/database/validate-dbml.ts`: OK.
+
+Left in the local dev DB: the test setting `invoice.due_days = 14`.
+
+Not built (ERP-0045b): `organization.settings`, per-organization scope, secret
+values with `hasValue`. No feature reads `company.settings` yet.
+
+## 2026-11-13 - sidebar: Files route, Signatures sub-items, Documents below CRM & Sales
+
+Status: **implemented** (uncommitted at time of writing; see commit line below).
+Supersedes the sidebar entry further down for the Documents section.
+
+- Section order: Dashboard → CRM & Sales → Documents → Subscription ….
+- Documents section: Files (`/documents/files`, the registry moved from
+  `/documents`), Signatures (parent, no URL) with three sub-items, Templates
+  (`/documents/templates`, flat, placeholder until ERP-0050).
+- Signatures sub-items, all `ComingSoonPage` placeholders until ERP-0048 / ERP-0049:
+  Document Signature (`/documents/signatures/documents`), Request Signature
+  (`/documents/signatures/request`), My Signature (`/documents/signatures/mine`).
+- `/documents` redirects to `/documents/files` (`routes/_authed/documents/index.tsx`).
+- Registry detail moved to `/documents/files/$documentId`; back link and breadcrumb updated.
+- Locales en/id: `item.files` (Files / Berkas), `item.documentSignatures`,
+  `item.requestSignature`, `item.mySignature`, `breadcrumb.documentDetail`.
+  `item.documents` removed (no longer used).
+- Status label "Rejected" / "Ditolak" for `declined` is a UI copy decision for
+  ERP-0048; not added yet because the page is a placeholder.
+
+Verification (2026-11-13):
+- `bun run build` (web-admin): exit 0 after dropping an unused `Send` import
+  (first build failed with TS6133). `routeTree.gen.ts` regenerated.
+- `bun test` (web-admin): 70 pass, 0 fail.
+- `bun test` (packages/locales): 86 pass, 0 fail.
+- `bun run lint` (web-admin): exit 0, 0 errors.
+- Browser: sidebar order Dashboard, CRM & Sales, Documents (Files, Signatures
+  with Document Signature / Request Signature / My Signature, Templates).
+  `/documents` lands on `/documents/files`. `/documents/files` breadcrumb
+  `Home > Documents > Files`. `/documents/signatures/request` breadcrumb
+  `Home > Documents > Signatures > Request Signature` with Coming soon.
+
+Not verified: `/documents/files/$documentId` in the browser after the move;
+the other two signature placeholders in the browser; non-admin visibility.
+
+## 2026-11-13 - sidebar: Documents / Signatures / Templates, Administration order (superseded for Documents)
+
+Status: **implemented** (commit `7b1f699`, local branch only, not pushed). No
+backlog ID claimed: the sidebar split is a UI follow-up to ERP-0042, not a
+backlog row.
+
+- Documents section: Documents (`/documents`), Signatures (`/documents/signatures`),
+  Templates (`/documents/templates`). Signatures and Templates are `ComingSoonPage`
+  placeholders until ERP-0048 and ERP-0050.
+- Administration section: Company (`/admin/company`) first, then Organizations,
+  Users, Code numbering (`/admin/code-numbers`, now a top-level entry instead of a
+  child of Company), Audit log.
+- Labels: Company / Perusahaan, Documents / Dokumen, Signatures / Tanda tangan,
+  Templates / Templat.
+- Breadcrumb `LABELS` in `build-crumbs.ts` gained the two new document paths.
+- Fixed ERP-0043 gap found in the browser: `numbering.type.item_product`,
+  `item_material`, `item_component` had no en/id label, so the code-numbers page
+  showed raw keys. Added (`Product`/`Produk`, `Material`, `Component`/`Komponen`).
+  `Material` is identical in both languages, so it is in `locale-parity.test.ts`
+  `ALLOWED_IDENTICAL`.
+
+Verification (2026-11-13):
+- `bun run build` (web-admin, `tsc -b && vite build`): exit 0. Regenerated
+  `routeTree.gen.ts` adds only the two document routes.
+- `bun test` (web-admin): 70 pass, 0 fail.
+- `bun test` (packages/locales): 86 pass, 0 fail (after the `ALLOWED_IDENTICAL` entry).
+- `bun run lint` (web-admin): exit 0, 0 errors (pre-existing warnings only).
+- `bun test` (backend): 868 pass, 0 fail. Turbo build OK.
+- Browser (localhost:5173, logged in as admin): Documents, Signatures, Templates
+  listed under Documents. `/documents/signatures` renders breadcrumb
+  `Home > Documents > Signatures` with Coming soon. `/admin/code-numbers` renders
+  breadcrumb `Home > Admin > Code numbering` and labels Product / Material / Component.
+
+Not verified: sidebar clicks for Organizations, Users, Audit log, and the
+`adminOnly` hiding for non-admin users.
+
+Docs: `docs/database/` unchanged (no schema change).
+
+## 2026-11-13 - merge `main` into `refactor/company-document-numbering`
+
+Status: **implemented** (merge commit `8a4fcd1`, local branch only, not pushed).
+Browser check 2026-11-13: `/admin/company` loads with seeded data after the
+local DB reset (see "Local DB reset" below). `main` brought 21 commits (organization hardening PR #82,
+server-side WebP normalisation, dependabot bumps).
+
+Resolution, by conflict:
+- **Images:** `main`'s server-side WebP normalisation (`utils/image.util.ts`)
+  is the storage path for every image. The client keeps its WebP encode:
+  `encodeWebp` (document logo/signature, 1024px cap, WebP only) and
+  `encodeImage` (`main`, WebP or PNG fallback, organization images). Both share
+  `decodeImage`/`scaleToCanvas`/`toBlob`. `DOCUMENT_IMAGE_MAX_BYTES` stays 2 MB,
+  the cap on the converted output.
+- **Schema:** `company.*` from the branch (ERP-0042) wins. `main`'s
+  `organization.company_profiles` / `company_bank_accounts` moved to
+  `company.profiles` / `company.bank_accounts`. Duplicate `company.bank_accounts`
+  from `main` dropped. `company.profiles` keeps `logo_object_key` with `main`'s
+  WebP note; email/phone/website stay in `company.contacts` (branch decision).
+- **Files removed by the branch:** 14 `organization/*company-profile*`,
+  `numbering*`, `document-sequence*` files are deleted by ERP-0042 and not
+  modified by `main` since the merge base (checked per file), so nothing is
+  lost. The one `main` change to `company-profile.service.test.ts` (real PNG,
+  `.webp` expectation) is ported into `company.service.test.ts`.
+- **Backlog ID collision:** `main` used ERP-0042 for the dependabot bun config;
+  the branch uses ERP-0042 for the organization split. Dependabot is renamed
+  **ERP-0046**. ERP-0041 row is `main`'s text.
+- **Locales:** `common.imageInvalid` / `fileInvalid` from `main`. `image.*`
+  keys stay on the branch values (2 MB for converted output, 20 MB source).
+
+Verification (2026-11-13, after resolution):
+- `bunx tsc --noEmit` (backend): exit 0. One test error fixed: a stale
+  `CompanyProfileService` name in `company.service.test.ts`.
+- `bun test` (backend): 863 pass, 0 fail, 60 files (branch was 856).
+- web-admin `bunx tsc -p tsconfig.app.json --noEmit`: exit 0; `bun test`: 70 pass.
+- `packages/locales` `bun test`: 86 pass (parity, dead keys).
+- `bun run lint`: exit 0, 0 errors (warnings only, pre-existing).
+- `bun docs/database/gen-logical-references.ts`: 526 refs, 41 targets, no diff
+  against the resolved file.
+- `bun docs/database/validate-dbml.ts`: `OK` (268 tables, 231 refs, 0 cross-module, 0 timestamp gaps).
+- No conflict markers left in `apps/`, `packages/`, `docs/`; `git ls-files -u` empty.
+
+Migration order: `main` ends at `20261113090000_erp0041_org_description`, which
+the branch already contains. The branch's five `20261113*` migrations are
+branch-only, so there is no sort collision.
+
+- web-admin `bunx vite build`: exit 0 (4342 modules, 2026-11-13).
+
+Not verified: a browser walk-through of the image flows after the merge.
+
+Local DB reset (2026-11-13, dev only, user approved): `ims_erp_local` had the
+pre-ERP-0042 schema (`organization.company_profiles`, no `company`/`code_number`/
+`document` schemas), so `GET /company/profile` returned 500. Backup taken with
+`pg_dump` to `%TEMP%\opencode\ims_erp_local_backup_20261113_054440.sql` (11.9 MB,
+47 auth users). Then `bun run drizzle:migrate-reset` in `apps/backend`, exit 0:
+schemas `company`, `code_number`, `document`, `organization` present, 40 auth
+users after the seed. Backend restarted; `GET /company/profile` → 401 without
+session, and the logged-in `/admin/company` page renders the seeded profile.
+
+Docs (2026-11-13): `docs.dbml` `company.profiles` note and
+`module-ownership.md` Company section now say one company per application, many
+organizations under it, multi-company (`company_id`) not built, subsidiaries out
+of scope. No schema change. `gen-logical-references.ts`: 526 refs, 41 targets.
+`validate-dbml.ts`: OK (268 tables, 231 refs, 0 cross-module, 0 timestamp gaps).
+`features.md`: ERP-0042 → ERP-0046 rename for the dependabot row, carried from
+the merge.
+
+Next executable task: **ERP-0045** (settings KV CRUD) - still waiting on the five open questions.
+
+
+Status: **implemented** (2026-11-13) - ERP-0044 wires the document registry
+(11 outward-facing types), `document.files`, public share links and the
+`/documents/$documentId` detail page. Backend 856 tests, web-admin 66, locales
+86, backend + web-admin typecheck clean, lint exit 0, migration
+`20261113140000` verified on a disposable database, `validate-dbml.ts` OK. Not
+`verified`: no live HTTP run of the share/download routes and no browser
+walk-through. Next executable task: **ERP-0045** (settings KV CRUD). See
+"2026-11-13 - ERP-0044" below.
+
+Status: **implemented** (2026-11-13) - ERP-0043 gives the item master a
+generated `code` per kind (`PRD-`/`MAT-`/`CMP-`), adds
+`inventory.items.serial_number`, and keeps `sku` manual. Not `verified`: no
+browser walk-through of the item form/list.
+
+Status: **implemented** (2026-11-13) - ERP-0042 split `organization` into
+three modules with their own Postgres schemas (`company`, `document`,
+`code_number`) and the UI/nav/locale changes that follow. Backend 844 tests,
+web-admin 62, locales 86, typecheck clean, migrations + seeders verified on a
+disposable database, `validate-dbml.ts` OK. Not `verified` yet: no browser
+walk-through of `/admin/company`, `/admin/code-numbers` or `/documents`, and no
+reviewer sign-off. ERP-0043 (item codes per kind) landed afterwards - see the
+next entry.
+
+## 2026-11-13 - ERP-0044 document registry, files, public shares
+
+Design answers (from the 2026-11-13 design session): share token is its own
+uuid column, never the row id; expiry mandatory (default 30 days, cap 365);
+registry rows are written when a business document becomes outward-facing;
+file uploads are PDF/PNG/JPG/WebP up to 10 MB under a fresh key per upload.
+
+**Registry wiring (S2).** `DocumentService.register(input, tx?)` inserts an
+`issued` row without allocating; `issue` allocates then inserts. `voidBySource`
+voids registry copies when a business document dies. Nine owning services call
+it: quotation, sales order, delivery note, invoice (incl. receipts), purchase
+order, goods receipt, handover/BAST, warranty, service ticket, licensing. Unit
+tests updated with register/void doubles and assertions.
+
+**Files (S3).** `document.files` upload, list, soft delete, presigned download
+(300 s) writing `access_logs` with ip/user-agent. `providers/s3/document-file.ts`
+holds the rule set. `DocumentService.uploadFile` refuses void documents.
+
+**Shares (S4).** `document.shares.token` (uuid) via append-only migration
+`20261113140000_erp0044_document_share_token` (`shares_token_uq` partial unique,
+`shares_token_live_idx`). `createShare` / `revokeShare` on
+`/documents/:id/shares`. `GET /public/v1/documents/:token` (anonymous) returns
+only code, type, title, issuedOn, status, files, and logs a `view` row with no
+user. Expired, revoked or void-document links answer 404.
+
+**Web-admin.** `/documents/$documentId` with files (upload, download, delete),
+share links (create, copy, revoke) and access trail. Registry list rows link
+to it. `routeTree.gen.ts` regenerated via `bunx vite build`. Locales en+id:
+`documents.*` keys, `api.ts` `document.fileNotFound` / `shareNotFound` /
+`fileNotAllowed` and `common.fileInvalid`.
+
+**Schema docs.** `docs/database/docs.dbml`: `document.shares.token` plus
+`shares_token_uq` / `shares_token_live_idx`.
+`gen-logical-references.ts` -> 526 refs across 41 targets; `validate-dbml.ts`
+-> `parsed: 268 tables, 231 refs`, `cross-module refs: 0`, `timestamp gaps: 0`,
+`OK`.
+
+**Commands and outcomes.**
+- `bunx tsc --noEmit` (apps/backend): clean (after locale keys added).
+- `bun test` (apps/backend): 856 pass, 0 fail, 59 files (12 new in
+  `test/unit/document.service.test.ts`).
+- `bunx tsc -p tsconfig.app.json --noEmit` (apps/web-admin): clean.
+- `bun run test` (apps/web-admin): 66 pass.
+- `bun run test` (packages/locales): 86 pass after adding
+  `documents:action.` to `DYNAMIC_PREFIXES` (the trail label key is composed
+  from the server's action value).
+- `bun run lint` (packages/locales and apps/backend): exit 0; backend warnings
+  are pre-existing.
+- `bunx vite build` (apps/web-admin): built; route tree regenerated.
+- `psql -v ON_ERROR_STOP=1` on `verify_s6` for `20261113140000`: applies, and a
+  second run is idempotent (notices only).
+
+**Not done / open.** No live HTTP check of upload, download, share or public
+routes; no browser walk-through of `/documents/$documentId`. The 11 registry
+types are wired in code and unit-tested per owning service, not against a live
+database. Changes are uncommitted in `B:\ims\erp-company`.
+
+## 2026-11-13 - ERP-0043 item codes per kind
+
+User decision: item `code` is **newly generated** per tenant (option 2), not
+backfilled from `sku`. Assets needed no change - `AssetService.create` already
+allocates `AST-` through the numbering authority, and adding a `sku` column with
+no consumer would be dead code.
+
+**Schema (canonical first).** `docs/database/docs.dbml`: `inventory.items` gained
+`code varchar(32) [not null]` and `serial_number text`, the `sku` note now says
+user-typed/immutable, the table note records ERP-0043, and the index block gained
+the ADR-0008 pair `inventory_items_org_code_uq` / `inventory_items_global_code_uq`.
+`code_number.series`' note records the three new types.
+`bun docs/database/validate-dbml.ts` -> `parsed: 268 tables, 231 refs`,
+`cross-module refs: 0`, `timestamp gaps: 0`, `OK`.
+
+**Code.** `CODE_TYPES` += `item_product`/`item_material`/`item_component`;
+`CODE_TYPE_CODES` `PRD`/`MAT`/`CMP`; `CODE_TYPE_MODULES` -> `inventory`;
+patterns `{TYPE}-{SEQ:5}` with `reset: 'never'`. `ItemService` injects
+`CODE_NUMBER_SERVICE_TOKEN` (`Pick<CodeNumberService, 'next'>`), maps kind ->
+code type through `itemCodeType()` (narrowing helper, because `itemKind` arrives
+as plain `text` from the insert type), allocates before the insert and audits
+`code` in the meta. `IItemRepository.create(data, code)` keeps `code` out of
+`TItemCreateData`/`TItemUpdateData`, so the type system enforces immutability.
+`createItemSchema`/`updateItemSchema` gained `serialNumber`; `.strict()` rejects
+a client-sent `code`.
+
+**Migration** `20261113130000_erp0043_item_codes` (hand-written, append-only):
+adds both columns, backfills `code` deterministically per kind with
+`ROW_NUMBER() OVER (PARTITION BY item_kind ORDER BY created_at, id)`, sets
+`NOT NULL`, creates the two partial unique indexes, and inserts the three
+`code_number.series` rows at `used + 1` guarded by `NOT EXISTS`. The backfill is
+explicitly a **synthetic** value for pre-existing rows, not a rename of `sku`.
+
+**Seeder.** `SEED_ITEMS` entries carry a deterministic `code`
+(`PRD-00001`..`CMP-00004`) alongside the `ITEM-###` SKU anchors, so idempotency
+and the `ITEM-005`/`ITEM-009` opening-stock anchors are untouched; a new
+`ensureItemCodeSeries()` pushes the three series to `seeded + 1` with
+`GREATEST(...)` so the first API-created item continues instead of colliding.
+
+**Web admin.** `TItem`/`TItemCreateInput` gained `code`/`serialNumber`; the item
+form shows `code` read-only when editing and a serial-number input; the kind list
+gained a Code column; the detail header renders `code · sku`. Locale keys
+`inventory:items.code`, `items.codeAutoHint`, `items.serialNumber` in **en + id**.
+
+**Verification (this worktree).**
+- `psql` against a fresh disposable DB `verify_s6`: all **53** migrations applied
+  in folder order with `ON_ERROR_STOP=1`, 0 failures (drizzle-kit migrate is
+  still unusable on this branch - conflicting hand-written migrations).
+- Seeders run twice: 12 items, 4 stock movements, series `next_number` 5 before
+  and after the second run - 0 new rows.
+- Backfill re-run proof: nulled every `code`, re-executed the migration SQL - the
+  same deterministic codes came back, and the series counters did not move
+  (`NOT EXISTS` guard).
+- `apps/backend`: `bunx tsc --noEmit` clean; `bun test` **844 pass / 0 fail**
+  (updated `item.service.test.ts` double for the numbering port and `create(code)`,
+  `inventory-authorization.test.ts` registers a numbering double,
+  `code-number.service.test.ts` asserts `CODE_TYPES.length` and the `item_product`
+  default instead of a hardcoded 29).
+- `apps/web-admin`: `bunx tsc -p tsconfig.app.json --noEmit` clean, `bun test`
+  62 pass, `bun run lint` warnings only.
+- `packages/locales`: `bun test` 86 pass. Root `bun run lint` 5/5.
+- `docs/database/` reviewed and updated (table + index + series note).
+
+**Deliberately not done:** no browser walk-through of the item form/list, and no
+backfill of `code` into any other module's snapshot columns (nothing references
+an item code yet).
+
+
 Status: **verified** (2026-11-13) — live walk-through done: upload via the
 edit page renders the WebP from MinIO, and the `/organizations` list renders
 every card logo from a presigned URL; create page has the image picker only
@@ -32,6 +575,110 @@ seed admin, POSTed a canvas-encoded WebP to
 GET returned a MinIO presigned URL, and the edit page rendered the image
 (72px preview, Replace/Delete buttons). `docs/plan/backlog.md` ERP-0041 →
 **verified**.
+
+## 2026-11-13 - ERP-0042: `organization` split into `company` / `document` / `code_number`
+
+User request: the company profile, the document registry and the numbering
+authority were all living in `organization` (one module, one Postgres schema,
+`organization.company_settings` and `organization.document_sequences`). They are
+different things with different owners, so each got its own module and its own
+schema. Design settled over three grilled rounds (Q1-Q24) before any code;
+answers recorded in `docs/plan/plans/features.md` and `docs/database/docs.dbml`.
+
+**Persistence (`docs.dbml` first, then Drizzle, then migration).**
+
+- New schemas with stutter-free table names: `company.profiles`,
+  `company.head_office_addresses`, `company.contacts`,
+  `company.bank_accounts`, `company.settings`; `code_number.series`;
+  `document.templates`, `document.documents`, `document.files`,
+  `document.signatures`, `document.access_logs`, `document.shares`,
+  `document.tags`, `document.tag_links`.
+- `organization.company_settings` never existed in Drizzle (docs only), so no
+  data migration was needed; it split into `company.settings` (company-wide)
+  and `organization.settings` (per organization), both created/dropped in the
+  same migration.
+- `organization.document_sequences` is a **verbatim** rename to
+  `code_number.series` (column `document_type` → `code_type`), so existing
+  counters survive. The vocabulary grew from 28 to 29 code types: `warehouse`
+  was added so a warehouse code can be allocated (`WH-{SEQ:4}`).
+- Three append-only migrations, each standalone: `20261113120000_erp0042_company_schema`,
+  `20261113120100_erp0042_code_number_schema`, `20261113120200_erp0042_document_schema`.
+- `document.documents.organization_id` is nullable (NULL = company-wide).
+
+**Backend modules.** `src/app/company`, `src/app/code-number`,
+`src/app/document`, each with the standard module shape. Published contracts:
+`CompanyService.getProfile(tx?)`, `CodeNumberService.next(codeType, {date,
+context, tx})`, `DocumentService.issue(...)`. `NUMBERING_SERVICE_TOKEN` is gone
+with no alias - every import site moved to `CODE_NUMBER_SERVICE_TOKEN` (CRM
+website-inquiry references, warehouse code allocation, asset operations, tests).
+`WarehouseService` now injects the code-number service and `createWarehouseSchema.code`
+is nullish, so an omitted code allocates one; existing codes are unchanged and
+entity codes stay immutable after create. `organization` shrank to its settings
+table, guard and slug resolver.
+
+**Permissions.** `company_setting:*` removed from `erpStatements`;
+`company: [read, update]`, `code_number: [read, update]` and `document: [read,
+create, update, submit, approve, issue, void, download]` added. Owner/admin get
+full, auditor read-only, and every role that had `document` keeps it.
+`packages/common` rebuilt (`bun run build`) before the backend typecheck.
+
+**API.** `/company-profile` → `/company/profile`, `/document-numbering` →
+`/code-numbers`; no aliases kept (nothing outside this repo consumes them).
+
+**UI.** `/admin/settings` and `/admin/settings/numbering` deleted with no
+redirect; replaced by `/admin/company` and `/admin/code-numbers`. New top-level
+`/documents` registry page (`lib/documents-api.ts`, list/search/status filter +
+void). `lib/company-settings-api.ts` → `lib/company-api.ts` (`/company/profile`,
+`/code-numbers`, `TCodeNumberSetting`, `CODE_TYPES`). `nav-config.ts`,
+`build-crumbs.ts` and every print/document component repointed.
+`routeTree.gen.ts` regenerated by `bunx vite build` (`bunx tsr generate` crashes
+in this repo with `Cannot read properties of undefined (reading 'readFile')`).
+
+**Locales.** New `documents` namespace (`en` + `id`, registered in both
+`index.ts`, `NAMESPACES` and `i18next.d.ts`); `settings.numbering.*` reworded
+from "document type" to "code type" plus six new type labels; `nav` gained
+`section.documents`/`item.documents` and lost `item.settings`/
+`item.documentNumbering` in favour of `item.codeNumbers`; `common.action.search`
+added; `api` keys `company.profileRequired` / `numbering.unknownCodeType` /
+`document.notFound` / `document.notVoidable` replace the old
+`organization.companyProfileRequired` / `numbering.unknownDocumentType`.
+`settings:numbering.type.sales_invoice` and `documents:status` were added to
+`ALLOWED_IDENTICAL` (both words are already Indonesian).
+
+**Verification (this worktree, `B:\ims\erp-company`).**
+
+- `bunx --bun drizzle-kit migrate` is unusable on this branch: it aborts with
+  "Conflicting migrations detected" across the 52 hand-written migrations (no
+  drizzle journal). Migrations were verified instead by piping each
+  `migration.sql` through `psql -v ON_ERROR_STOP=1` in folder order against a
+  disposable database `ims_erp_erp0042_scratch`: **52 applied, 0 failed**, then
+  `information_schema` confirmed `company.*` (5), `code_number.series`,
+  `document.*` (8) and `organization.settings`.
+- Seeders: `runSeeders()` twice on the same disposable DB - second run added 0
+  rows; `company.profiles` 1, `company.contacts` 3,
+  `company.head_office_addresses` 1, `company.bank_accounts` 2,
+  `code_number.series` 1 (`employee`, next 30). New `company.seeder.ts` runs
+  first and is skipped in production. Scratch DB dropped, scratch scripts
+  deleted.
+- `apps/backend`: `bunx tsc --noEmit` clean; `bun test` **844 pass / 0 fail**;
+  `bun run lint` warnings only (pre-existing). Tests renamed:
+  `test/unit/numbering.service.test.ts` → `code-number.service.test.ts`,
+  `company-profile.service.test.ts` → `company.service.test.ts`; new
+  `CodeNumberServiceDouble` in `test/helpers/numbering-double.ts`.
+- `apps/web-admin`: `bunx tsc -p tsconfig.app.json --noEmit` clean, `bun test`
+  62 pass, `bunx vite build` succeeds (regenerates `routeTree.gen.ts`),
+  `bun run lint` warnings only.
+- `packages/locales`: `bun test` 86 pass (parity + dead-key guards).
+- Root `bun run typecheck` 4/4, `bun run lint` 5/5, `bun run test` 5/5.
+  Note: `apps/web-admin` and `packages/common` have no `typecheck` script, so
+  the root task does not cover them; both were checked directly.
+- `bun docs/database/validate-dbml.ts` → `parsed: 268 tables, 231 refs`,
+  `cross-module refs: 0`, `timestamp gaps: 0`, `OK`;
+  `gen-logical-references.ts` re-run (526 refs).
+
+**Deliberately not done:** PDF rendering of `document.documents` (explicitly out
+of scope), item/asset code generation per kind (deferred here, landed as
+ERP-0043 - see above), and no browser walk-through of the moved pages yet.
 
 ## 2026-11-13 - Images: the server normalises every upload and generated image
 
@@ -797,7 +1444,7 @@ membership), unit-tested; reviewer sign-off and PR still open. Branch
   gets the in-place 403. `GET /organizations/:id/invitations` unauthenticated
   → 401 envelope.
 
-## 2026-11-13 - ERP-0042: dependabot bun config moved to the workspace root
+## 2026-11-13 - ERP-0046: dependabot bun config moved to the workspace root
 
 Status: in-progress - config changed, waiting on the next dependabot run.
 
@@ -5664,7 +6311,7 @@ verified on disposable DB `ims_erp41_desc` (dropped), `validate-dbml.ts`
 `OK`, live create/edit/detail walk-through done. Main was merged in after
 dependabot bumped 20 workspace deps.
 
-**Verify ERP-0042** (from main): the next dependabot run after the config
+**Verify ERP-0046** (from main): the next dependabot run after the config
 change must open a PR whose diff contains `bun.lock` with all four lint/test
 jobs green; if it does not, fall back to a lockfile-refresh workflow (see the
 2026-11-13 entry).

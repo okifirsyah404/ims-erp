@@ -35,14 +35,21 @@ import { registerLocation } from './app/location/container';
 import { registerSales } from './app/sales/container';
 import { registerUser, startAvatarWorker } from './app/user';
 import { registerOrganization, startOrgLogoWorker } from './app/organization';
+import { registerCompany } from './app/company';
+import { registerCodeNumber } from './app/code-number';
+import { registerDocument } from './app/document';
 import { registerAuthorization } from './authorization/container';
 
 registerProvider(container);
 registerLocation(container);
 registerSales(container);
-// Organization first: its NumberingService (the one numbering authority,
-// ERP-0009) is injected into the document services of every module.
+// Company first, then code numbers: CodeNumberService reads the company
+// document code ({COMPANY}) through COMPANY_SERVICE_TOKEN. Both are injected
+// into the document services of every module.
+registerCompany(container);
+registerCodeNumber(container);
 registerOrganization(container);
+registerDocument(container);
 // Audit before the modules that resolve AUDIT_SERVICE_TOKEN eagerly
 // (registerInventory builds the shared InventoryAuditWriter at
 // registration time; registerAssets documents the same expectation).

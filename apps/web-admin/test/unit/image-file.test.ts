@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
+	DOCUMENT_IMAGE_MAX_SIZE,
 	MAX_IMAGE_SOURCE_BYTES,
 	pickImageFile,
 	rejectImageFile,
+	webpDimensions,
 } from '../../src/lib/image-file';
 
 /** The dropzone's accept rule (ERP-0041): images only, folders ignored. */
@@ -40,5 +42,29 @@ describe('pickImageFile', () => {
 		expect(pickImageFile(null)).toBeNull();
 		expect(pickImageFile(undefined)).toBeNull();
 		expect(rejectImageFile(null)).toBeNull();
+	});
+});
+
+describe('webpDimensions', () => {
+	test('downscales the longest side to the cap, preserving the aspect ratio', () => {
+		expect(webpDimensions(4000, 3000)).toEqual({ width: 1024, height: 768 });
+		expect(webpDimensions(3000, 4000)).toEqual({ width: 768, height: 1024 });
+	});
+
+	test('never upscales a small source', () => {
+		expect(webpDimensions(64, 48)).toEqual({ width: 64, height: 48 });
+		// A 1px sliver is already inside the cap, so it stays 1px wide.
+		expect(webpDimensions(1, 900)).toEqual({ width: 1, height: 900 });
+	});
+
+	test('honours a custom cap and never returns zero', () => {
+		expect(webpDimensions(2000, 1000, 512)).toEqual({ width: 512, height: 256 });
+		// A very wide panorama rounds the short side down, but not to zero.
+		expect(webpDimensions(10_000, 10, 100)).toEqual({ width: 100, height: 1 });
+	});
+
+	test('the default cap is the 1024px document rule', () => {
+		expect(DOCUMENT_IMAGE_MAX_SIZE).toBe(1024);
+		expect(webpDimensions(2048, 2048)).toEqual({ width: 1024, height: 1024 });
 	});
 });

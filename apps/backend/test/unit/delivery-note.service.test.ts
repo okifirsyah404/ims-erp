@@ -36,6 +36,9 @@ let movements: { itemId: string; quantity: string; movementType: string; referen
 let sold: { itemId: string; serials: readonly string[]; customerId: string | null }[];
 let inStock: string[];
 let inProgress: number;
+/** Registry calls made by the service (ERP-0044). */
+let registered: { code: string; sourceId: string; issuedOn?: string | null }[];
+let voided: string[];
 let service: DeliveryNoteService;
 
 const allocate = (lines: { salesOrderItemId: string; quantity: string }[], release: boolean) => {
@@ -66,6 +69,8 @@ beforeEach(() => {
 	] as TSalesOrderItemSelect[];
 	notes = [];
 	movements = [];
+	registered = [];
+	voided = [];
 	sold = [];
 	inStock = ['SN1', 'SN2', 'SN3'];
 	inProgress = 0;
@@ -146,6 +151,17 @@ beforeEach(() => {
 			paginate: async () => ({ meta: { page: 1, limit: 100, total: 1, totalPages: 1 }, data: [{ id: WAREHOUSE, code: 'WH1', name: 'Gudang' }] }) as never,
 			getWarehouse: async () => ({ id: WAREHOUSE, code: 'WH1', name: 'Gudang', storages: [] }) as never,
 		},
+		{
+			// ERP-0044: registry side effects are asserted through `registered` / `voided`.
+			register: async (input) => {
+				registered.push(input);
+				return {} as never;
+			},
+			voidBySource: async (module, sourceType, sourceId) => {
+				voided.push(`${module}/${sourceType}/${sourceId}`);
+				return 1;
+			},
+		},
 	);
 });
 
@@ -204,6 +220,16 @@ describe('delivery notes', () => {
 		expect(shipped.items.map((item) => item.unitCost)).toEqual([7_000, 7_000, null]);
 		expect(sold).toEqual([{ itemId: 'item-s', serials: ['SN1', 'SN2'], customerId: 'cust-1' }]);
 		expect(inProgress).toBe(1);
+		// ERP-0044: the shipped surat jalan is registered with its own code.
+		expect(registered).toEqual([
+			expect.objectContaining({
+				code: '0001/SJ/IMS/XI/26',
+				documentType: 'delivery_note',
+				sourceType: 'delivery_note',
+				sourceId: note.id,
+			}),
+		]);
+		expect(voided).toEqual([]);
 		await expect(service.ship({ userId: 'wh', organizationId: 'org' }, note.id)).rejects.toBeInstanceOf(DeliveryNoteStateError);
 		await expect(service.cancel('wh', note.id, 'x')).rejects.toBeInstanceOf(DeliveryNoteStateError);
 		const delivered = await service.deliver(note.id, { receiverName: 'Pak Budi', receivedAt: null });
@@ -223,6 +249,8 @@ describe('delivery notes', () => {
 		expect(soItems[0]!.quantityDelivered).toBe('60.000');
 		await service.cancel('wh', note.id, 'salah gudang');
 		expect(soItems[0]!.quantityDelivered).toBe('0.000');
+		// ERP-0044: the cancelled note is voided in the registry.
+		expect(voided).toEqual([`sales/delivery_note/${note.id}`]);
 		await expect(service.deliver(note.id, { receiverName: 'x', receivedAt: null })).rejects.toBeInstanceOf(DeliveryNoteStateError);
 	});
 

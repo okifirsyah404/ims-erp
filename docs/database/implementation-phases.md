@@ -17,7 +17,7 @@ The database today has three schemas and 16 tables.
 | `location` | 4 | migration `20261028042750_create_location_schema`, seeded from `database/seeders/raw/location/*.json` |
 | `sales` | 2 | migration `20261029044823_dear_living_lightning` (transitional scaffold) |
 
-The target is 24 schemas, 251 tables.
+The target is 26 schemas, 268 tables.
 
 ## The gap between the two
 
@@ -79,7 +79,7 @@ no dependency on anything.
 |---|---|---|
 | `audit` | 1 | `audit.audit_logs`. Append-only, `organization_id` nullable |
 | `auth` | 6 | the ERP extension tables: `user_profiles`, `user_role_assignments`, `portal_identities`, `user_preferences`, `identity_verifications`, `user_devices` (the 9 Better Auth core tables already exist from the auth setup) |
-| `organization` | 9 | `company_profiles`, `branches`, `departments`, `positions`, `cost_centers`, `company_bank_accounts`, `fiscal_settings`, `document_sequences`, `company_settings` |
+| `organization` | 9 | `branches`, `departments`, `positions`, `cost_centers`, `fiscal_settings`, `settings` (as originally planned; since ERP-0042 the company profile, bank accounts and the numbering series live in the Company and Code Number modules` |
 
 **Explicitly not created.** The `erp` schema. `architecture.md` and
 `data-model.md` still describe it; that text is stale and is corrected by
@@ -119,7 +119,7 @@ anywhere; every other module references `auth.users.id` /
    `CHECK` constraint and every `uuidv7()` default survived.
 4. Write `audit.audit_logs` as an append-only table: no `deleted_at`, no
    `updated_at`.
-5. Seed: none yet beyond the organization(s). A `organization.company_profiles`
+5. Seed: none yet beyond the organization(s). A `company.profiles`
    row per organization is the seed of every other module. Multiple
    organizations may exist inside the one company (ADR-0007); the
    development seeder is skipped in production, where organizations are
@@ -143,7 +143,7 @@ the Identity contract, not in a `NOT NULL` constraint (ADR-0014).
 ## S2 — Master data: location, CRM, catalog, HR, procurement, inventory
 
 **Schemas.** `location` (aligned), `crm`, `catalog`, `hr`, `procurement`,
-`warehouse`, `inventory`.
+`inventory`.
 
 | Schema | Tables | Note |
 |---|---|---|
@@ -152,14 +152,13 @@ the Identity contract, not in a `NOT NULL` constraint (ADR-0014).
 | `catalog` | 12 | unified goods and service master, units, prices, bundles |
 | `hr` | 16 | employee master, contracts, attendance, leave, training, bank accounts |
 | `procurement` | 11 | suppliers, purchase requests, orders, receipts, returns |
-| `warehouse` | 3 | warehouses, zones, bins — the physical structure of the Inventory module |
-| `inventory` | 11 | stock movements (truth), stock balances (projection), adjustments, transfers, reservations, serial/lot, cycle counts |
+| `inventory` | 14 | warehouses, their addresses and storages, stock movements (truth), stock balances (projection), adjustments, transfers, reservations, serial/lot, cycle counts |
 
-The Inventory module spans `warehouse` and `inventory`. The split is storage
-grouping, not an ownership boundary: `inventory.*` tables carry real foreign
-keys into `warehouse.warehouses` and `warehouse.warehouse_bins`, so the
-Drizzle files must be generated and migrated **in the same step**, warehouse
-first.
+The Inventory module owns `inventory` alone: the physical structure
+(`inventory.warehouses`, `inventory.warehouse_addresses`,
+`inventory.warehouse_storages`) and the stock ledger are in the same schema,
+so the foreign keys between them are ordinary intra-schema references. The
+separate `warehouse` schema in the original plan was dropped (ADR-0008).
 
 **Location alignment.** The four tables already exist with the right shape.
 The only change is a `location` module contract (`resolveLocation`) and the
@@ -173,13 +172,13 @@ apps/backend/drizzle/schemas/crm.schema.ts          (new)
 apps/backend/drizzle/schemas/catalog.schema.ts       (new)
 apps/backend/drizzle/schemas/hr.schema.ts            (new, replaces the empty employee.schema.ts stub)
 apps/backend/drizzle/schemas/procurement.schema.ts   (new)
-apps/backend/drizzle/schemas/warehouse.schema.ts     (new, replaces the empty warehouse.schema.ts stub; warehouse structure)
-apps/backend/drizzle/schemas/inventory.schema.ts     (new, replaces the empty inventory.schema.ts stub; stock ledger)
+apps/backend/drizzle/schemas/inventory.schema.ts     (new, replaces the empty inventory.schema.ts stub; warehouse structure + stock ledger)
 ```
 
 The empty stub files `employee.schema.ts`, `inventory.schema.ts`,
-`project.schema.ts`, `document.schema.ts` and `warehouse.schema.ts` are
-placeholders. Fill or delete them, do not leave a half-named schema behind.
+`project.schema.ts` and `document.schema.ts` are placeholders. Fill or delete
+them, do not leave a half-named schema behind. No `warehouse.schema.ts` is
+created: that schema was retired (ADR-0008).
 
 **One table, one owner.**
 
@@ -455,7 +454,7 @@ modules easy to seed and to extend, and it is deliberate, not an oversight.
 
 | Schema | Tables | Note |
 |---|---|---|
-| `documents` | 8 | document master, files, signatures, access logs, shares, tags |
+| `documents` | 8 | document master, files, signatures, access logs, shares, tags (schema renamed `document` in ERP-0042) |
 | `approval` | 7 | policies, immutable versions, requests, stages, decisions, delegations, thresholds |
 | `budgeting` | 8 | periods, budgets, items, revisions, executions, cash flow |
 | `investor` | 11 | investors, commitments, deposits, allocations, profit sharing |
@@ -562,7 +561,9 @@ drizzle-kit's vocabulary.
 
 - `location.provinces`, `regencies`, `districts`, `villages`: the code is the
   real administrative code and identifies the same area forever.
-- `organization.company_profiles.organization_id`: one profile per organization, a 1:1
+- `organization.company_profiles.organization_id` (historical - the profile
+  moved to `company.profiles`, company-wide, in ERP-0042): one profile per
+  organization, a 1:1
   slot.
 - Every table without a `deleted_at`: the row is never deleted, so a partial
   index would be pointless.
@@ -577,7 +578,7 @@ drizzle-kit's vocabulary.
 - `public.erp_prevent_row_mutation()` makes the history tables append-only:
   `audit.audit_logs`, `approval.approval_decisions`,
   `approval.approval_policy_versions`, `assets.asset_depreciations`,
-  `documents.document_access_logs`, `licensing.license_events`,
+  `document.access_logs`, `licensing.license_events`,
   `sales.order_status_history`, `sales.quotation_status_history`,
   `ticket.ticket_status_history`.
 
@@ -616,8 +617,8 @@ is `NOT NULL`, which is the case for every tenant-scoped table.
   `f` with two key columns whose target matches `(organization_id, id)` —
   expected exactly 197.
 - Cross-module foreign keys: join `pg_constraint` to the target table's
-  schema; expected 0 outside the documented `inventory <-> warehouse`
-  exception.
+  schema; expected 0. No module spans two schemas, so there is no
+  intra-module cross-schema exception to allow for.
 - `sales.payments`: `to_regclass('sales.payments')` is `NULL`.
 
 **Tests.**
@@ -637,8 +638,8 @@ is `NOT NULL`, which is the case for every tenant-scoped table.
       migration SQL, verified by count.
 - [ ] The verification queries all return the expected values.
 - [ ] `sales.payments` no longer exists.
-- [ ] No cross-schema foreign key exists except the documented
-      `inventory <-> warehouse` exception. The cross-module query returns 0.
+- [ ] No cross-schema foreign key exists: no module spans two schemas, so the
+      cross-module query returns 0 with no exception.
 
 ---
 
@@ -698,8 +699,8 @@ schema, point at `docs/database/docs.dbml`), `docs/architecture/architecture.md`
 
 - [ ] `bun run drizzle:seed` twice, both runs clean.
 - [ ] `bun run typecheck`, `bun run lint`, `bun test` pass.
-- [ ] The 24 schemas exist and the table count is 251.
-- [ ] `docs.dbml` parses and reports 251 tables, 218 refs, 0 cross-module
+- [ ] The 26 schemas exist and the table count is 268.
+- [ ] `docs.dbml` parses and reports 268 tables, 231 refs, 0 cross-module
       refs, 0 enums, 0 tables without a note.
 - [ ] `data-model.md` and `architecture.md` match the database.
 

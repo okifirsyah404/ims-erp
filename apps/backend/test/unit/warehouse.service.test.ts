@@ -270,6 +270,8 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 		// ERP-0034: no HR rows in these tests — every PIC lookup misses, so
 		// tests that assign one must clear it (`null`) instead.
 		{ findEmployeeById: async () => null, findEmployeeByUserId: async () => null } as never,
+		// ERP-0042: no code allocation in these tests - every create passes a code.
+		{ next: async (codeType: string) => `WH-${codeType}` } as never,
 	);
 	return { service, rows, links, clearDefaultCalls, warehouseRepository };
 }

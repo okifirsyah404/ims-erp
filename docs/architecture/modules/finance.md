@@ -42,7 +42,8 @@ are complete; decisions D1–D12 are pinned in the same plan.
   in exact integer minor units; `sourceType`/`sourceId` provenance on the JE.
 - Corrections are append-only reversals, never edits (reversal links both
   ways); posting requires an open period for the entry date; document codes
-  come from `organization.document_sequences`.
+  come from `code_number.series` (was `organization.document_sequences` before
+  ERP-0042).
 - Cash/bank accounts need a GL link before the first movement; the
   informational `opening_balance` never overrides the JE truth.
 - AR/AP: sub-ledger mirror tables (`ar_open_items` / `ap_open_items`)

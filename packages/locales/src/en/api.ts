@@ -14,6 +14,7 @@ const api = {
 	'common.conflict': 'Conflict',
 	'common.unsupportedMediaType': 'Unsupported media type',
 	'common.imageInvalid': 'Upload a PNG, JPG, WebP or HEIC image of at most {{max}} MB',
+	'common.fileInvalid': 'Upload a PDF, PNG, JPG or WebP file of at most {{max}} MB',
 	'common.payloadTooLarge': 'Payload too large',
 	'common.authenticationRequired': 'Authentication required',
 
@@ -202,9 +203,15 @@ const api = {
 	'organization.lastOrganization':
 		'This is your last organization and cannot be removed',
 	'organization.notFound': 'Organization not found',
-	'organization.companyProfileRequired':
+	'company.profileRequired':
 		'Fill in the company profile (with its document code) first',
-	'numbering.unknownDocumentType': 'Unknown document type',
+	'company.settingInvalid': 'The value does not match its type',
+	'numbering.unknownCodeType': 'Unknown code type',
+	'document.notFound': 'Document not found',
+	'document.notVoidable': 'This document cannot be voided',
+	'document.fileNotFound': 'File not found',
+	'document.shareNotFound': 'This link is invalid or has expired',
+	'document.fileNotAllowed': 'A void document cannot take files',
 	'numbering.pattern.length': 'The pattern must be 1-100 characters',
 	'numbering.pattern.unknownToken': 'Unknown token {{token}}',
 	'numbering.pattern.tokenNotForType':

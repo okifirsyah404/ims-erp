@@ -10,8 +10,8 @@ import type {
 } from '@app/user/services/invitation.service';
 import type { TCreateInvitationInput } from '@app/user/contracts/invitation.contract';
 import { AppError } from '@http/errors';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
 import { USER_PERSONAL_FIELDS_PORT_TOKEN } from '@app/user/constants/di';
 import type { IUserPersonalFieldsPort } from '@app/user/contracts/user-personal-fields.port';
 import { EMPLOYEE_REPOSITORY_TOKEN } from '../constants/di';
@@ -76,8 +76,8 @@ export class EmployeeInviteService {
 		private readonly invitations: InvitationService,
 		@inject(EMPLOYEE_REPOSITORY_TOKEN)
 		private readonly employees: IEmployeeRepository,
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: NumberingService,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: CodeNumberService,
 		@inject(USER_PERSONAL_FIELDS_PORT_TOKEN)
 		private readonly personalFields: IUserPersonalFieldsPort,
 	) {}

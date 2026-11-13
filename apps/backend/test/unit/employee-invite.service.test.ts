@@ -3,7 +3,7 @@ import { EmployeeInviteService } from '../../src/app/hr/services/employee-invite
 import type { InvitationService, TActor } from '../../src/app/user/services/invitation.service';
 import type { IEmployeeRepository } from '../../src/app/hr/contracts/employee.repository.interface';
 import type { IUserPersonalFieldsPort } from '../../src/app/user/contracts/user-personal-fields.port';
-import type { NumberingService } from '../../src/app/organization/services/numbering.service';
+import type { CodeNumberService } from '../../src/app/code-number';
 import { EmployeeEmailTakenError, EmployeeInviteError } from '../../src/app/hr/errors/hr.errors';
 
 /**
@@ -40,7 +40,7 @@ function makeDeps(overrides: {
 	const service = new EmployeeInviteService(
 		invitations as unknown as InvitationService,
 		employees as unknown as IEmployeeRepository,
-		numbering as unknown as NumberingService,
+		numbering as unknown as CodeNumberService,
 		personalFields as unknown as IUserPersonalFieldsPort,
 	);
 	return { service, invitations, employees, personalFields };

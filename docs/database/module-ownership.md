@@ -16,8 +16,8 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   single `auth` schema, shared by Better Auth's 9 core tables and the 6 ERP
   extension tables.
 - A **foreign key may only connect two tables of the same module**.
-  `docs.dbml` contains 226 `Ref:` declarations and **0 cross-module refs**
-  (`validate-dbml.ts` now checks all 226; before 2026-11-05 it read
+  `docs.dbml` contains 231 `Ref:` declarations and **0 cross-module refs**
+  (`validate-dbml.ts` now checks all 231; before 2026-11-05 it read
   `db.refs`, which `@dbml/core` v11 leaves empty, so the check passed vacuously).
 - A **cross-module link** is a plain id column plus a column note that **starts
   with** the sentence below — `gen-logical-references.ts` anchors its regex at
@@ -25,7 +25,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   silently not counted:
   `Logical reference to <target>.id. Cross-module FK intentionally omitted.
   Validated through the <Module> module contract.`
-- 522 such logical reference columns exist (target count re-verified on each validation run, see validate-dbml.ts).
+- 526 such logical reference columns exist (target count re-verified on each validation run, see validate-dbml.ts).
 - Every one of them is a **nullable** plain id column (ADR-0014); presence is
   a service-layer fact, enforced by the owning module's contract method, not
   by the database.
@@ -33,35 +33,37 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 - Cross-module reads and writes go through the owning module's exported
   service contract. Another module's repository is never imported.
 
-## The 24 modules
+## The 26 modules
 
 | # | Module | Schema(s) | Tables | Intra-module FKs | Logical refs out |
 |---|---|---|---|---|---|
 | 1 | Identity | `auth` | 17 | 17 | 2 |
 | 2 | Location | `location` | 4 | 3 | 0 |
-| 3 | Organization | `organization` | 9 | 6 | 15 |
-| 4 | CRM | `crm` | 10 | 9 | 21 |
-| 5 | Catalog | `catalog` | 12 | 16 | 15 |
-| 6 | Sales | `sales` | 15 | 11 | 47 |
-| 7 | Procurement | `procurement` | 11 | 13 | 30 |
-| 8 | Inventory | `inventory` | 13 | 19 | 12 |
-| 9 | Projects | `projects` | 13 | 0 | 33 |
-| 10 | HR | `hr` | 16 | 17 | 44 |
-| 11 | Payroll | `payroll` | 11 | 10 | 28 |
-| 12 | Finance | `finance` | 16 | 14 | 46 |
-| 13 | Accounting | `accounting` | 13 | 12 | 24 |
-| 14 | Assets | `assets` | 14 | 16 | 33 |
-| 15 | After-Sales | `aftersales` | 15 | 0 | 39 |
-| 16 | Documents | `documents` | 8 | 8 | 14 |
-| 17 | Approval | `approval` | 7 | 7 | 14 |
-| 18 | Budgeting | `budgeting` | 8 | 8 | 17 |
-| 19 | Investor | `investor` | 11 | 10 | 31 |
-| 20 | Commerce | `commerce` | 9 | 6 | 16 |
-| 21 | Automation | `automation` | 11 | 7 | 16 |
-| 22 | Licensing | `licensing` | 9 | 11 | 11 |
-| 23 | Ticketing | `ticket` | 5 | 5 | 14 |
-| 24 | Audit | `audit` | 1 | 0 | 1 |
-| | **Total** | **24 schemas** | **258** | **225** | **523** |
+| 3 | Company | `company` | 5 | 0 | 1 |
+| 4 | Code Number | `code_number` | 1 | 0 | 1 |
+| 5 | Organization | `organization` | 6 | 5 | 15 |
+| 6 | CRM | `crm` | 10 | 9 | 21 |
+| 7 | Catalog | `catalog` | 12 | 16 | 15 |
+| 8 | Sales | `sales` | 15 | 11 | 47 |
+| 9 | Procurement | `procurement` | 11 | 13 | 30 |
+| 10 | Inventory | `inventory` | 13 | 19 | 12 |
+| 11 | Projects | `projects` | 13 | 0 | 33 |
+| 12 | HR | `hr` | 16 | 17 | 44 |
+| 13 | Payroll | `payroll` | 11 | 10 | 28 |
+| 14 | Finance | `finance` | 16 | 14 | 46 |
+| 15 | Accounting | `accounting` | 13 | 12 | 24 |
+| 16 | Assets | `assets` | 14 | 16 | 33 |
+| 17 | After-Sales | `aftersales` | 15 | 0 | 39 |
+| 18 | Document | `document` | 8 | 8 | 14 |
+| 19 | Approval | `approval` | 7 | 7 | 14 |
+| 20 | Budgeting | `budgeting` | 8 | 8 | 17 |
+| 21 | Investor | `investor` | 11 | 10 | 31 |
+| 22 | Commerce | `commerce` | 9 | 6 | 16 |
+| 23 | Automation | `automation` | 11 | 7 | 16 |
+| 24 | Licensing | `licensing` | 9 | 11 | 11 |
+| 25 | Ticketing | `ticket` | 5 | 5 | 14 |
+| 26 | Audit | `audit` | 1 | 0 | 1 |
+| | **Total** | **26 schemas** | **268** | **231** | **526** |
 
 Counts are re-derived from `docs.dbml` on every validation run. The parser
 also reports an empty `public` schema (0 tables); it is not a module.
@@ -71,11 +73,14 @@ into `inventory` (ADR-0008): `inventory.warehouses`, `inventory.warehouse_addres
 and `inventory.warehouse_storages`. The previous `warehouse` schema — and its
 `warehouse_zones` / `warehouse_bins` tables — is retired from the contract.
 
-`location` is the 24th module relative to the 22 originally proposed: it
-already existed in the database (4 tables, seeded) and is a real ownership
-boundary, so folding it into another module would have been a fiction.
-Ticketing (customer issue tickets) is the 23rd, added for the customer
-portal.
+`location` and `ticket` are modules in their own right rather than groupings
+of a neighbour: `location` already existed in the database (4 tables, seeded)
+and is a real ownership boundary, so folding it into another module would have
+been a fiction; Ticketing (customer issue tickets) exists for the customer
+portal. ERP-0042 then split Organization three ways - the company profile, the
+numbering authority and the document registry each became their own module
+(Company, Code Number, Document), which is where the count went from 24 to 26
+and why no module spans two schemas any more (ADR-0015).
 
 ## Module profiles
 
@@ -106,17 +111,44 @@ portal.
 - The four tables are the reason `location` is a module: 6 address columns
   in CRM, HR, Procurement, Organization and Investor point at them.
 
-### 3. Organization — `org`
+### 3. Company — `company`
 
-- **Owns** company profile, branches, departments, positions, cost centres,
-  company bank accounts, fiscal settings, document numbering, settings.
-- `organization.document_sequences` is the numbering authority: the owning module
-  calls the Organization contract to allocate the next number inside a
-  locked row update.
+- **Owns** the one legal company of the application (ADR-0011): the profile
+  (`company.profiles`), head office addresses, contacts, bank accounts and
+  company-wide settings. Every table is company-wide — no `organization_id`
+  column anywhere in the schema. Many organizations (tenants) sit under this
+  one company; a multi-company model (`company_id` on `organization.*`) is not
+  built. Whether an organization is a subsidiary is out of scope.
+- `company.profiles.document_code` feeds the `{COMPANY}` token of the
+  numbering patterns (ERP-0009).
+- **Contract**: `ExportedCompanyService.getProfile()` — the letterhead data
+  other modules render.
+- **Does not own** cash/bank operational balances (Finance owns
+  `finance.cash_bank_accounts`) or anything organization-scoped.
+
+### 4. Code Number — `code_number`
+
+- **Owns** the one numbering authority (ERP-0009, moved from Organization in
+  ERP-0042): one code series per code type for the whole company
+  (`code_number.series`, was `organization.document_sequences`).
+- The owning module calls `CodeNumberService.next(codeType)` inside its own
+  transaction; allocation is one atomic
+  `INSERT ... ON CONFLICT DO UPDATE ... RETURNING`.
+- Generates document codes for every module and entity codes (employee,
+  project, asset, warehouse); items keep their business SKU
+  (ERP-0043 adds auto `code` per item kind).
+
+### 5. Organization — `organization`
+
+- **Owns** the internal structure of the company: branches, departments,
+  positions, cost centres, fiscal settings and organization-scoped settings.
+  Every table is tenant scoped by `organization_id`.
+- The company profile, bank accounts and the numbering authority moved out to
+  the Company and Code Number modules (ERP-0042).
 - **Does not own** cash/bank operational balances (Finance owns
   `finance.cash_bank_accounts`).
 
-### 4. CRM — `crm`
+### 6. CRM — `crm`
 
 - **Owns** the customer master: customers, groups, contacts, addresses
   (one table with a `kind` discriminator), leads and lead activities,
@@ -125,7 +157,7 @@ portal.
 - **Contract**: `assertCustomerOwnedByOrganization(customerId, orgId)`,
   `resolveCustomerContact`, `resolveCustomerAddress`.
 
-### 5. Catalog — `catalog`
+### 7. Catalog — `catalog`
 
 - **Owns** the unified goods-and-service master: categories, units, items,
   variants, unit conversions, bundles, attributes, documents, price lists and
@@ -135,7 +167,7 @@ portal.
   tables.
 - **Contract**: `resolveItem`, `resolvePrice(itemId, priceListId, date)`.
 
-### 6. Sales — `sales`
+### 8. Sales — `sales`
 
 - **Owns** quotations, quotation items, discount requests, sales orders,
   sales order items, contracts, sales targets, status histories, sales
@@ -149,13 +181,13 @@ portal.
   payment ledger of the ERP is `finance.payments`.
 - **Contract**: `assertQuotationBelongsToOrganization`, `resolveOrder`.
 
-### 7. Procurement — `procurement`
+### 9. Procurement — `procurement`
 
 - **Owns** supplier master (with contacts and addresses), purchase requests,
   purchase orders, goods receipts, purchase returns.
 - Supplier bills and their payment live in Finance, not here.
 
-### 8. Inventory - `inventory`
+### 10. Inventory - `inventory`
 
 - **Owns** one schema. `inventory.warehouses`,
   `inventory.warehouse_addresses`, `inventory.warehouse_storages`,
@@ -185,19 +217,7 @@ portal.
   latter **returns true for every warehouse until ERP-0031 adds
   `inventory.warehouse_organizations`** (ERP-0036 Stage 0, B1).
 
-### 8b. Ticketing - `ticket`
-
-- **Owns** the customer-facing issue ticket system: `tickets`,
-  `ticket_messages`, `ticket_attachments`, `ticket_status_history`,
-  `ticket_categories`.
-- A portal customer (linked through `auth.portal_identities`) creates
-  and tracks tickets; staff work them. Internal notes are never exposed to
-  the portal.
-- Distinct from After-Sales `service_tickets`: a ticket may escalate into a
-  service ticket by logical reference, no FK.
-- **Contract**: `assertTicketOfCustomer`, `assertTicketOfOrganization`.
-
-### 9. Projects — `projects`
+### 11. Projects — `projects`
 
 - **Owns** project types, projects, phases, tasks and dependencies, daily
   reports, site assignments, KPI definitions and evaluations, milestones,
@@ -206,7 +226,7 @@ portal.
   is a logical id on `projects.projects.id`, validated by the Projects
   service. This keeps the module easy to seed and to extend.
 
-### 10. HR — `hr`
+### 12. HR — `hr`
 
 - **Owns** employee master, addresses, employment contracts, attendance and
   attendance corrections, leave types and requests, disciplinary records,
@@ -217,7 +237,7 @@ portal.
 - Employee bank details are restricted data; never exposed by an export that
   does not require the `employee` read permission.
 
-### 11. Payroll — `payroll`
+### 13. Payroll — `payroll`
 
 - **Owns** salary components, payroll periods, payroll runs, payslips and
   payslip items, payroll inputs, adjustments, payment batches and payment
@@ -225,7 +245,7 @@ portal.
 - The payslip component lines are a **snapshot**, so a later component
   change never rewrites a historical payslip.
 
-### 12. Finance — `finance`
+### 14. Finance — `finance`
 
 - Sales owns invoices and invoice items (`sales.invoices`, plan D2); finance
   owns **the single payment ledger**
@@ -238,7 +258,7 @@ portal.
 - Advances and settlements have exactly one ledger: `finance.employee_advances`
   and `finance.expense_settlements`.
 
-### 13. Accounting — `accounting`
+### 15. Accounting — `accounting`
 
 - **Owns** the chart of accounts, journal entries and lines, accounting
   periods, tax types and tax records, opening balances, account balances,
@@ -246,7 +266,7 @@ portal.
 - A journal entry is only postable when debit equals credit. The check is in
   the service (transactional) and mirrored by a database check constraint.
 
-### 14. Assets — `assets`
+### 16. Assets — `assets`
 
 - **Owns** asset types (global lookup), categories, the asset register, the
   physical movement history, maintenance, depreciation, disposal, documents,
@@ -271,7 +291,7 @@ portal.
   controllers; other modules reference assets only by id
   (`resolveAsset(id, orgId)`).
 
-### 15. After-Sales — `aftersales`
+### 17. After-Sales — `aftersales`
 
 - **Owns** warranty policies and claims, service tickets, comments, work
   orders, parts usage, technician assignments, SLA policies, maintenance
@@ -280,14 +300,19 @@ portal.
 - Zero intra-module foreign keys by design; the After-Sales service
   validates its own hierarchy.
 
-### 16. Documents — `documents`
+### 18. Document — `document`
 
-- **Owns** document templates, the document master, files, signatures,
-  access logs, shares, tags and tag links.
+- **Owns** document templates, the document registry (`document.documents`),
+  files, signatures, access logs, shares, tags and tag links. Was schema
+  `documents` with `documents.*` table names until ERP-0042.
+- Registry + issuance: business documents stay in their owning module's
+  tables; this module owns the issued copy, its files and signatures.
+- `organization_id` is nullable: NULL means company-wide (ADR-0011 pattern
+  of Inventory and Assets).
 - File bytes live in object storage; this module owns metadata and access
   rules. A document is never hard deleted, a new version supersedes the old.
 
-### 17. Approval — `approval`
+### 19. Approval — `approval`
 
 - **Owns** approval policies, immutable policy versions, approval requests,
   stages, decisions, delegations, amount thresholds.
@@ -296,12 +321,12 @@ portal.
 - Policy versions are immutable: a change creates a new version, and an
   approval request always points at the version that was in force.
 
-### 18. Budgeting — `budgeting`
+### 20. Budgeting — `budgeting`
 
 - **Owns** budget periods, budgets and items, revisions and revision items,
   executions, cash flow plans and items.
 
-### 19. Investor — `investor`
+### 21. Investor — `investor`
 
 - **Owns** investor master and addresses, capital commitments and deposits,
   fund allocations, profit sharing schemes and entries, profit distribution
@@ -309,14 +334,14 @@ portal.
 - The profit distribution run is per period; `investor.profit_shares` is per
   investor. The cash movement is a `finance.payments` row.
 
-### 20. Commerce — `commerce`
+### 22. Commerce — `commerce`
 
 - **Owns** public web pages, menus and menu items, catalog publications and
   their items, promotions and rules, public shop orders and their items.
 - A commerce order is **not** a sales order. The Sales module owns the
   confirmed order.
 
-### 21. Automation — `automation`
+### 23. Automation — `automation`
 
 - **Owns** integrations and encrypted credentials, workflows and steps,
   workflow and step runs, scheduled jobs and executions, the transactional
@@ -326,13 +351,18 @@ portal.
 - Long-running queues stay in the Redis worker. This module owns the
   schedule and the log, not the queue transport.
 
-### 22. Licensing — `licensing`
+### 24. Licensing — `licensing`
 
 - **Owns** licensable applications, packages, contracts, keys, activations,
   entitlements and usages, subscription schedules, license events.
 - One integrated pilot application at the moment.
 
-### 23. Audit — `audit`
+### 25. Ticketing — `ticket`
+
+- **Owns** ticket categories, tickets, messages, attachments and the status
+  history of the customer issue tickets.
+
+### 26. Audit — `audit`
 
 - **Owns** one append-only trail: `audit.audit_logs`.
 - `organization_id` is nullable because a global admin action can happen

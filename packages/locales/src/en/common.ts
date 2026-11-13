@@ -10,6 +10,7 @@ const common = {
 	'action.saving': 'Saving…',
 	'action.delete': 'Delete',
 	'action.edit': 'Edit',
+	'action.search': 'Search',
 	'action.restore': 'Restore',
 	'action.previous': 'Previous',
 	'action.next': 'Next',
@@ -49,8 +50,14 @@ const common = {
 	'language.switchToIndonesian': 'Bahasa Indonesia',
 	'image.none': 'No image',
 	'image.remove': 'Remove image',
-	'image.hint': 'PNG, JPG, WebP or HEIC, at most 20 MB.',
-	'image.tooLarge': 'The image is larger than 20 MB.',
+	'image.drop': 'Drop an image here, or click to pick one',
+	'image.choose': 'Choose image',
+	'image.replace': 'Replace image',
+	'image.converting': 'Converting.',
+	'image.wrongType': 'That file is not an image.',
+	'image.sourceTooLarge': 'The image is larger than 20 MB.',
+	'image.hint': 'PNG, JPG or WebP, at most 2 MB. Converted to WebP before upload.',
+	'image.tooLarge': 'The image is larger than 2 MB.',
 } as const;
 
 export default common;

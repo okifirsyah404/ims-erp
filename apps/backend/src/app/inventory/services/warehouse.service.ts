@@ -1,4 +1,6 @@
 import { inject, injectable } from 'tsyringe';
+import type { CodeNumberService } from '@app/code-number';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import { InventoryAuditWriter } from './inventory-audit.writer';
 import { SYSTEM_AUDIT_ACTOR } from '../constants/audit-actor';
 import type { TInventoryAuditActor } from '../constants/audit-actor';
@@ -113,7 +115,11 @@ export class WarehouseService {
 		private readonly exportedAssetService: ExportedAssetService,
 		/** PIC validation reads hr.employees through the HR export facade. */
 		@inject(EXPORTED_HR_SERVICE_TOKEN)
-		private readonly exportedHrService: ExportedHrService,	) {}
+		private readonly exportedHrService: ExportedHrService,
+		/** Codes of warehouses created without an explicit one (ERP-0042). */
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: Pick<CodeNumberService, 'next'>,
+	) {}
 
 	/** Fetches one filtered page of warehouses, decorated with kind counts. */
 	async paginate(request: {
@@ -223,11 +229,12 @@ export class WarehouseService {
 	/**
 	 * Creates a warehouse, optionally with its address, in one transaction.
 	 *
-	 * @param input - Warehouse columns plus an optional nested address
+	 * @param input - Warehouse columns plus an optional nested address; a
+	 * missing `code` is allocated from the numbering authority (`WH-0001`)
 	 * @throws {WarehouseCodeTakenError} When the code is taken in this scope
 	 */
 	async createWarehouse(
-		input: TWarehouseCreateData,
+		input: Omit<TWarehouseCreateData, 'code'> & { code?: string | null },
 		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TWarehouseDetail> {
 		// ERP-0031 (D1): every warehouse is global; organization access comes
@@ -235,16 +242,17 @@ export class WarehouseService {
 		// dropped rather than stored. The column is frozen at NULL.
 		const organizationId = null;
 
-		const existing = await this.warehouseRepository.findByCode(
-			organizationId,
-			input.code,
-		);
+		// ERP-0042: an omitted code is sequence-allocated (`WH-0001`); a code
+		// the client typed wins and stays immutable afterwards.
+		const code = input.code ?? (await this.numbering.next('warehouse'));
+		const existing = await this.warehouseRepository.findByCode(organizationId, code);
 		if (existing) throw new WarehouseCodeTakenError();
 
 		await this.assertPicAssignable(input.responsibleEmployeeId ?? null);
 
 		const warehouse = await this.warehouseRepository.create({
 			...input,
+			code,
 			organizationId: null,
 		});
 

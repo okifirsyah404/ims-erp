@@ -48,15 +48,31 @@ export type TItemPaginationRequest = {
 	includeArchived?: boolean;
 };
 
-/** Fields a client may set when creating an item. */
+/**
+ * Fields a client may set when creating an item.
+ *
+ * @remarks
+ * `code` is not client-settable: ERP-0043 allocates it in `ItemService` from
+ * the numbering authority, so the repository takes it as a separate argument
+ * (`create(data, code)`).
+ */
 export type TItemCreateData = Omit<
 	TItemInsert,
-	'id' | 'createdAt' | 'updatedAt' | 'deletedAt'
+	'id' | 'code' | 'createdAt' | 'updatedAt' | 'deletedAt'
 > & { createdAt?: Date };
 
-/** Fields a client may change on an existing item. */
+/**
+ * Fields a client may change on an existing item.
+ *
+ * @remarks
+ * `code` joins `sku` and `itemKind` as immutable: all three are load bearing
+ * for uniqueness and for the numbering story.
+ */
 export type TItemUpdateData = Partial<
-	Omit<TItemInsert, 'id' | 'sku' | 'itemKind' | 'createdAt' | 'updatedAt'>
+	Omit<
+		TItemInsert,
+		'id' | 'code' | 'sku' | 'itemKind' | 'createdAt' | 'updatedAt'
+	>
 >;
 
 /**
@@ -85,8 +101,8 @@ export interface IItemRepository {
 		sku: string,
 	): Promise<TItemSelect | null>;
 
-	/** Inserts an item. */
-	create(data: TItemCreateData): Promise<TItemSelect>;
+	/** Inserts an item; the `code` comes from the numbering authority. */
+	create(data: TItemCreateData, code: string): Promise<TItemSelect>;
 
 	/** Applies a partial update to an alive item. */
 	update(id: string, data: TItemUpdateData): Promise<TItemSelect | null>;

@@ -16,10 +16,10 @@ not an implementation claim.
 
 | Capability group | Owner module(s) | Coverage |
 |---|---|---|
-| Company, users, roles, permissions, audit | `user`, `notification`, `auth` (to be created), Better Auth plugins; `audit_logs` table | Company profile/bank refs/audit trail = `erp` schema; users/roles = Better Auth |
+| Company, users, roles, permissions, audit | `company`, `code_number`, `document`, `user`, `notification`, `auth` (to be created), Better Auth plugins; `audit.audit_logs` table | Company profile, bank refs and settings = `company.*`; numbering authority = `code_number.series`; issued document registry = `document.*`; audit trail = `audit.audit_logs`; users/roles = Better Auth |
 | Customers & CRM | `customer` (company-wide CRM data), `notification` | Customers + contacts + lead/follow-up planning; approved FAQ knowledge (catalog knowledge) |
 | Suppliers & procurement | `supplier`, `purchasing` | Supplier master, purchase bills, payables, supplier payments |
-| Catalog & stock | `product`, `inventory`, `warehouse` | Products/services + categories/units; stock movements + valuation boundaries; single operational warehouse |
+| Catalog & stock | `product`, `inventory`, `warehouse` | Products/services + categories/units; stock movements + valuation boundaries; single operational warehouse (physical structure lives in `inventory.*`, ADR-0008) |
 | Sales & payments | `sales`, `payment` | Quotation (SPH), invoice, DP, partial payments, settlements, receipts, receivables |
 | Expenses & accounting | `expense` (operational costs), accounting to be located | COA, opening balances, journals, ledger, trial balance, reconciliation, period closing |
 | Financial reporting & tax | `reporting`; tax to be located | P&L, balance sheet, cash flow, drill-down, configurable tax recap |

@@ -53,7 +53,11 @@ export type TUnitStatus = (typeof UNIT_STATUSES)[number];
 export type TItem = {
 	id: string;
 	organizationId: string | null;
+	/** Human reference from the numbering authority (ERP-0043); read-only. */
+	code: string;
 	sku: string;
+	/** Optional manufacturer serial of the item master itself (ERP-0043). */
+	serialNumber: string | null;
 	name: string;
 	description: string | null;
 	itemKind: TItemKind;
@@ -104,9 +108,10 @@ export type TItemUnit = {
 	deletedAt: string | null;
 };
 
-/** Fields the create form submits. */
+/** Fields the create form submits. `code` is server-allocated (ERP-0043). */
 export type TItemCreateInput = {
 	sku: string;
+	serialNumber?: string | null;
 	name: string;
 	itemKind: TItemKind;
 	description?: string | null;

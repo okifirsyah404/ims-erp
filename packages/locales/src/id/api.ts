@@ -10,6 +10,7 @@ const api: Record<keyof typeof en, string> = {
 	'common.conflict': 'Konflik',
 	'common.unsupportedMediaType': 'Tipe media tidak didukung',
 	'common.imageInvalid': 'Unggah gambar PNG, JPG, WebP, atau HEIC maksimal {{max}} MB',
+	'common.fileInvalid': 'Unggah file PDF, PNG, JPG, atau WebP maksimal {{max}} MB',
 	'common.payloadTooLarge': 'Data yang dikirim terlalu besar',
 	'common.authenticationRequired': 'Autentikasi diperlukan',
 
@@ -197,9 +198,15 @@ const api: Record<keyof typeof en, string> = {
 	'organization.lastOrganization':
 		'Ini organisasi terakhir Anda dan tidak dapat dihapus',
 	'organization.notFound': 'Organisasi tidak ditemukan',
-	'organization.companyProfileRequired':
+	'company.profileRequired':
 		'Lengkapi profil perusahaan (beserta kode dokumen) terlebih dahulu',
-	'numbering.unknownDocumentType': 'Jenis dokumen tidak dikenal',
+	'company.settingInvalid': 'Nilai tidak sesuai dengan tipenya',
+	'numbering.unknownCodeType': 'Jenis kode tidak dikenal',
+	'document.notFound': 'Dokumen tidak ditemukan',
+	'document.notVoidable': 'Dokumen ini tidak dapat dibatalkan',
+	'document.fileNotFound': 'File tidak ditemukan',
+	'document.shareNotFound': 'Tautan ini tidak valid atau sudah kedaluwarsa',
+	'document.fileNotAllowed': 'Dokumen yang dibatalkan tidak dapat menerima file',
 	'numbering.pattern.length': 'Pola harus 1-100 karakter',
 	'numbering.pattern.unknownToken': 'Token {{token}} tidak dikenal',
 	'numbering.pattern.tokenNotForType':

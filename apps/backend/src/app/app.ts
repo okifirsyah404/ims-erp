@@ -7,7 +7,10 @@ import { accountingModule } from './accounting';
 import { aftersalesModule } from './aftersales';
 import { assetsModule } from './assets';
 import { auditModule } from './audit';
+import { codeNumberModule } from './code-number';
+import { companyModule } from './company';
 import { crmModule } from './crm';
+import { documentModule } from './document';
 import { inventoryModule } from './inventory';
 import { licensingModule } from './licensing';
 import { locationModule } from './location';
@@ -84,6 +87,9 @@ export function createApp() {
 			// the `/admin` surfaces it shares a prefix with.
 			.use(auditModule())
 			.use(organizationModule())
+			.use(companyModule())
+			.use(codeNumberModule())
+			.use(documentModule())
 			.use(crmModule())
 			.use(inventoryModule())
 			// Assets owns equipment and borrowing (ERP-0036); `/borrowings`
