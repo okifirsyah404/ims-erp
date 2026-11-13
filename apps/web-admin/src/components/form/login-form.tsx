@@ -35,8 +35,8 @@ function GoogleIcon(props: React.ComponentProps<'svg'>) {
 }
 
 /**
- * Login wired to Better Auth. Credentials (email or username + password)
- * go through `signIn.username`; Google goes through `signIn.social`,
+ * Login wired to Better Auth. Credentials go through `signIn.email` when the
+ * identifier contains `@`, otherwise `signIn.username`; Google goes through `signIn.social`,
  * which redirects to Google and back to the app (Better Auth navigates
  * itself — `onSuccess` is credentials-only).
  */
@@ -78,15 +78,16 @@ export function LoginForm({
 		setPending(true);
 		try {
 			/**
-			 * One code path for both identifiers: the backend's
-			 * `email-identifier` hook rewrites an email to its username, so
-			 * `/sign-in/username` handles both. Unknown emails fail with the
-			 * same generic invalid-credentials error as unknown usernames.
+			 * An email goes to `signIn.email`. Routing it through
+			 * `/sign-in/username` fails for accounts created by sign-up, which
+			 * have no `username` (the `email-identifier` hook falls back to the
+			 * raw email and the username plugin rejects it with 422). Unknown
+			 * emails and wrong passwords return the same generic error.
 			 */
-			const { error: signInError } = await authClient.signIn.username({
-				username: identifier,
-				password,
-			});
+			const isEmail = identifier.includes('@');
+			const { error: signInError } = isEmail
+				? await authClient.signIn.email({ email: identifier, password })
+				: await authClient.signIn.username({ username: identifier, password });
 			if (signInError) {
 				// Better Auth's message comes back already localized (the backend
 				// runs the i18n plugin with header detection); the fallback is ours.
