@@ -119,21 +119,29 @@ export function NavUser() {
 
 	return (
 		<DropdownMenu>
+			{/* Header trigger is avatar-only; name and email live in the menu. */}
 			<DropdownMenuTrigger
 				render={
 					<Button
 						variant='ghost'
-						className='h-auto gap-2 px-2 py-1.5'
+						className='h-auto p-1'
 						aria-label={user?.name ?? t('user.account')}
+						aria-busy={isPending || undefined}
 					/>
 				}
 			>
-				<UserIdentity
-					user={user}
-					isPending={isPending}
-					isError={isError}
-					className='hidden md:grid'
-				/>
+				{isPending ? (
+					<Skeleton className='h-8 w-8 rounded-lg motion-reduce:animate-none' />
+				) : (
+					<Avatar className='h-8 w-8 rounded-lg'>
+						{user?.image && !isError && (
+							<AvatarImage src={user.image} alt={user.name} />
+						)}
+						<AvatarFallback className='rounded-lg'>
+							{initials(user?.name ?? '')}
+						</AvatarFallback>
+					</Avatar>
+				)}
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
 				className='w-(--anchor-width) min-w-56'
