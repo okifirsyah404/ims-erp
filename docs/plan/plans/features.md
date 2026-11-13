@@ -25,6 +25,21 @@ Last synced: 2026-11-14.
 
 ---
 
+## Cross-cutting: role-based nav, login gate, warehouse PIC (no ERP ID yet)
+
+Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`proposed`).
+
+### planned
+- Role-based sidebar and route guards in web-admin (`permission` / `open` /
+  `appAdminOnly`), switcher limited to internal-role organizations, logo fallback.
+  Evidence: none.
+- Login gate (reject investor/customer-only sessions) and default organization
+  at login. Evidence: none.
+- Warehouse person-in-charge (`inventory.warehouse_managers`, `warehouseGuard`).
+  Evidence: none. Blocked until ADR-0017 is accepted.
+
+---
+
 ## M01 Dashboard
 
 ### planned
