@@ -42,6 +42,14 @@ export type TOrganizationWithCounts = TOrganizationSelect & {
  * API) instead.
  */
 export interface IOrganizationRepository {
+	/**
+	 * Live organizations where `userId` holds a membership, with that
+	 * membership's comma-joined `role`. Soft-deleted organizations excluded.
+	 */
+	findMembershipsForUser(
+		userId: string,
+	): Promise<{ organization: TOrganizationSelect; role: string }[]>;
+
 	/** Paginated listing; excludes soft-deleted rows unless asked. */
 	paginate(
 		request: TOrganizationPaginationRequest,
