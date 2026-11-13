@@ -18,6 +18,22 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - Role-based nav plan: Phase 0 (docs only)
+
+Branch `fix/side-nav-role-based`. Docs only; no code, no migration, no `docs/database/` change.
+
+- `docs/plan/plans/side-nav-role-based.md` added (status: planned). No `ERP-*` claimed.
+- `docs/architecture/decisions/ADR-0017-warehouse-person-in-charge.md` added (status: `proposed`).
+  Amends ADR-0008 §3 and ADR-0010 §5, §7, §10 by reference only. Those ADRs are not edited yet.
+- `docs/plan/plans/features.md` gets a cross-cutting section (planned, evidence: none).
+- Cross-checked ADR-0008 §3 (warehouse global, no org role holds `warehouse:*`) against the
+  ADR-0017 wording: consistent.
+- Owner sign-off on ADR-0017: **pending**. Backend PIC work does not merge before acceptance.
+- `docs/database/` reviewed, unchanged in this phase (the `inventory.warehouse_managers` table lands in Phase 1).
+
+Commits: `f8078e4` (plan), `93089f8` (ADR-0017). Tests not rerun for this phase: no code changed;
+the pre-commit hook ran backend 923/923 and locales 90/90 on each commit.
+
 ## 2026-11-14 - Web admin: header shows the avatar only
 
 Change: `apps/web-admin/src/components/sidebar/nav-user.tsx`. The header trigger now
