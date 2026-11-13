@@ -17,16 +17,22 @@ WhatsApp AI handoff of M04 stage 2.
 
 ## Current state (2026-11-13)
 
-**Planned, not implemented.** The contract landed first (Phase 0 of
-`docs/plan/plans/ws-notification.md`):
+**Schema landed, no behaviour yet.** Phase 0 of
+`docs/plan/plans/ws-notification.md` produced the contract; Phase 1 produced the
+database:
 
 - `docs/database/docs.dbml` — `notification.notification_templates` and
   `notification.notifications` moved out of the `automation` schema.
 - `docs/database/module-ownership.md` — module 27.
 - ADR-0016 — why the module is app-scope and why there is one socket.
+- `apps/backend/drizzle/schemas/notification.schema.ts` — the two tables,
+  their indexes, checks and the one intra-module FK.
+- `apps/backend/database/migrations/20261113150000_erp0047_notification_schema/`
+  — applied to the local database through `drizzle:migrate-reset`.
 
-No Drizzle schema, no migration, no module folder in `apps/backend/src/app/`
-yet. Phase 1 creates them.
+No module folder in `apps/backend/src/app/notification/` yet, no `/ws`
+transport, no REST routes, no UI. Phase 2 adds the transport, Phase 3 the
+module.
 
 ## Data ownership
 

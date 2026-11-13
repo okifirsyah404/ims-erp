@@ -13,7 +13,7 @@ Honest record. Only Phase 0 (docs/contract) is in flight; nothing in code yet.
 | Phase | State | Delivered |
 |---|---|---|
 | 0 | ✅ done | `docs/`: `docs.dbml` (schema `notification`, tables moved out of Automation), `module-ownership.md` (module 27), `implementation-phases.md`, `data-dictionary.md`, `logical-references.md` (regenerated), `modules/notification.md` (rewritten), ADR-0016 + index, `api-conventions.md`, this file, `backlog.md` `ERP-0047`, `features.md` |
-| 1 | planned | Drizzle schema `notification.*` + one additive migration + fresh-DB reset |
+| 1 | ✅ done | `drizzle/schemas/notification.schema.ts` + hand-written migration `20261113150000_erp0047_notification_schema`; applied through `drizzle:migrate-reset` |
 | 2 | planned | `/ws` transport: envelope, hub, gateway, DI + mount |
 | 3 | planned | module core: repository, services, queue (`send`, `prune`), worker |
 | 4 | planned | REST surface (list, unread count, read, read-all) |
@@ -122,14 +122,27 @@ Honest record. Only Phase 0 (docs/contract) is in flight; nothing in code yet.
    `(user_id, status)`, `created_at`, `status`,
    `notification_template_id`; checks for `channel` and `status`; unix-ms
    timestamps through the shared custom types.
-2. `bun run drizzle:generate` → one additive migration; the SQL is read by hand.
+2. One migration, **hand-written** like every migration since
+   2026-11-13: the repo carries no drizzle-kit journal or snapshot, so
+   `drizzle:generate` refuses with a pre-existing branch conflict and
+   `drizzle:generate --fix-conflicts` would delete 14 existing migrations.
+   Convention is `database/migrations/<timestamp>_<name>/migration.sql`,
+   append-only, `CREATE ... IF NOT EXISTS`.
 3. `bun run drizzle:migrate-reset` (D14).
 
 **Exit criteria**
 
-- Generated SQL contains only `CREATE SCHEMA "notification"`, the two tables,
-  their indexes and checks. No `ALTER` against another schema.
-- `migrate-reset` output recorded: schemas dropped, migration applied, seed run.
+- The migration SQL contains only `CREATE SCHEMA "notification"`, the two
+  tables, their indexes, checks and the one intra-schema FK. No `ALTER`
+  against another schema.
+- `migrate-reset` output recorded: schemas dropped, migrations applied, seed run.
+
+**Done (2026-11-13).** `20261113150000_erp0047_notification_schema/migration.sql`.
+Verified on the local database after `drizzle:migrate-reset`: tables
+`notification_templates`, `notifications`; 9 indexes (including
+`notification_templates_code_uq` partial on `deleted_at IS NULL`); 3 checks;
+1 FK (`notifications_notification_template_id_fk`, `ON DELETE SET NULL`);
+`bunx tsc -b --noEmit` clean.
 
 ---
 

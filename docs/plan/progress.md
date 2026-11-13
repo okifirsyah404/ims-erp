@@ -18,6 +18,60 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-13 - ERP-0047 Phase 1: notification schema + migration
+
+Status: **Phase 1 done**. `notification` schema exists in Drizzle and in the
+local database. No application code yet; Phase 2 (`/ws` transport) is next.
+
+- **`drizzle/schemas/notification.schema.ts`** (new): `notificationSchema`
+  pgSchema; `notification_templates` (code `varchar(64)` unique partial on
+  `deleted_at IS NULL`, body, declared variables, channel) and `notifications`
+  (`user_id`, `template_code`, `title`, `body`, `tags`/`variables`/`metadata`
+  jsonb, `channel`, `status`, `sent_at`, `read_at`, `source_type`/`source_id`,
+  timestamps). No `organization_id` anywhere — app-scope per ADR-0016. The one
+  FK is intra-module, `set null`. Exported `NOTIFICATION_CHANNELS`,
+  `NOTIFICATION_STATUSES`, `NOTIFICATION_TEMPLATE_CODES`.
+- **`database/migrations/20261113150000_erp0047_notification_schema/migration.sql`**
+  (new, hand-written). `drizzle:generate` is not usable in this repo: there is
+  no `meta/_journal.json` and no snapshot, so drizzle-kit reports a
+  pre-existing branch conflict across 2 migrations and its only offered fix
+  (`--fix-conflicts`) would delete 14 existing migrations. Every migration
+  since 2026-11-13 is hand-written and append-only; this follows that
+  convention (`CREATE SCHEMA/TABLE/INDEX IF NOT EXISTS`, one `ALTER ... ADD
+  CONSTRAINT` for the FK).
+
+Commands and outcomes:
+
+```text
+bun run drizzle:generate
+  Conflicting migrations detected: 1 conflict across 2 migrations
+  (no journal in repo; --fix-conflicts would delete 14 migrations) -> not used
+
+bun run drizzle:migrate-reset
+  Dropping schema ... (19 app schemas)
+  Migrations complete
+  Seeding complete (7.29 s)
+  Migrate-reset complete (9.95 s)
+
+# post-reset verification against pg_catalog
+schemas: ..., notification, ...           (notification present)
+tables: notification_templates, notifications
+indexes: notification_templates_channel_idx, notification_templates_code_uq,
+  notification_templates_pkey, notifications_created_at_idx, notifications_pkey,
+  notifications_status_idx, notifications_template_id_idx,
+  notifications_user_id_idx, notifications_user_status_idx
+checks: notification_templates_channel_check, notifications_channel_check,
+  notifications_status_check
+fks: notifications_notification_template_id_fk
+
+cd apps/backend; bunx tsc -b --noEmit
+  (clean)
+```
+
+`docs/database/` was reviewed and is unchanged: the Drizzle schema and the
+migration mirror `docs.dbml` exactly as Phase 0 wrote it. `validate-dbml.ts`
+still prints `OK` (268 tables, 231 refs, 0 cross-module, 0 timestamp gaps).
+
 ## 2026-11-13 - ERP-0047 Phase 0: notification module contract + single realtime socket
 
 Status: **Phase 0 done (docs/contract only)**. No application code changed.
@@ -6371,13 +6425,14 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**ERP-0047 Phase 1** — notification schema + migration, per
-`docs/plan/plans/ws-notification.md`: create
-`apps/backend/drizzle/schemas/notification.schema.ts` exactly as
-`docs/database/docs.dbml` now specifies, run `drizzle:generate`, read the SQL by
-hand (expected: `CREATE SCHEMA "notification"` + 2 tables + indexes + checks,
-nothing touching another schema), then `drizzle:migrate-reset` on the local
-database. Phase 0 (docs/contract + ADR-0016) is done — see the 2026-11-13 entry.
+**ERP-0047 Phase 2** — realtime transport, per
+`docs/plan/plans/ws-notification.md`: `src/providers/realtime/`
+(`realtime.message.ts` envelope, `realtime.hub.ts` in-process
+`Map<userId, ws>` behind `REALTIME_HUB_TOKEN`, `realtime.gateway.ts` with
+`websocket()` from `elysia/websocket` + `.ws('/ws')` and the session resolved
+from the upgrade cookie in `beforeHandle`), register the hub in
+`src/di/provider.ts`, mount the gateway in `src/app/app.ts`. Phase 1 (schema +
+migration) is done — see the 2026-11-13 entry.
 
 **Get reviewer sign-off on PR #82** (`fix/org-hardening`) — the organization
 `description` slice, the full-width create card, the create-style edit page,
