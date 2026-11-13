@@ -22,7 +22,9 @@ export type SidebarItem = {
 	 * no `open`, and no `appAdminOnly` are hidden (deny by default).
 	 */
 	permission?: Permission | Permission[];
-	/** Shown to every logged-in user with an internal role. */
+	/** Shown to every logged-in user with an internal role in some organization. */
+	internalRole?: true;
+	/** Shown to any logged-in user, no role check (e.g. Notifications). */
 	open?: true;
 	/** Shown only to application administrators. */
 	appAdminOnly?: true;

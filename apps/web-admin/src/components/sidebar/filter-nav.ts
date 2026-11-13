@@ -5,6 +5,8 @@ export type NavContext = {
 	/** True when every permission in the list is granted in the active organization. */
 	can: (permissions: Permission[]) => boolean;
 	isAppAdmin: boolean;
+	/** True when the user holds an internal role in at least one organization. */
+	hasInternalRole: boolean;
 };
 
 /**
@@ -14,6 +16,7 @@ export type NavContext = {
 function leafVisible(item: SidebarItem, ctx: NavContext): boolean {
 	if (item.appAdminOnly) return ctx.isAppAdmin;
 	if (item.open) return true;
+	if (item.internalRole) return ctx.hasInternalRole;
 	if (item.permission) {
 		const list = Array.isArray(item.permission) ? item.permission : [item.permission];
 		return ctx.can(list);

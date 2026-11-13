@@ -18,6 +18,22 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - Role-based nav: Phase 4 part 2 (Dashboard gated on internal role)
+
+- `internalRole` item flag: Dashboard shows only when the user holds an internal role in some
+  organization. `open` stays for items every logged-in user may see (Notifications).
+- Sidebar waits for `['my-organizations']` as well as permissions before rendering items.
+- Browser checks (dev DB, test accounts created through the API, not the seeder):
+  - `investor2.test` (investor in Entragate only): sidebar shows Notifications only; no Dashboard.
+  - `customer.test` (customer in Entragate only): sidebar shows Notifications only.
+  - Admin: unchanged.
+- Correction: earlier `investor.test` run was not investor-only (it held `sales` in Live Org);
+  its Dashboard was correct.
+- Known gap: route guard not yet built. Typing `/` as an investor-only user still renders the
+  Dashboard page content. Blocked on `_authed.tsx` `beforeLoad` (next step).
+- Login gate (Phase 3) not built: investor-only and customer-only users still sign in.
+- `bun test` web-admin: 85 pass, 0 fail. `bunx tsc -b`: exit 0.
+
 ## 2026-11-14 - Role-based nav: Phase 4 part 1 (nav model, switcher, `GET /organizations/mine`)
 
 Branch `fix/side-nav-role-based`. Not merged. Phase 4 is partial: route guard and

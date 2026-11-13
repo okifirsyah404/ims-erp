@@ -47,7 +47,7 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 	// M01 - Dashboard.
 	{
 		labelKey: 'section.dashboard',
-		items: [{ titleKey: 'item.dashboard', url: '/', icon: LayoutDashboard, open: true }],
+		items: [{ titleKey: 'item.dashboard', url: '/', icon: LayoutDashboard, internalRole: true }],
 	},
 
 	// M02 — CRM & Sales.

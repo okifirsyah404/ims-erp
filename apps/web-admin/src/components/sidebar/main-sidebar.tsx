@@ -12,6 +12,9 @@ import {
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { useTranslation } from 'react-i18next';
 
+import { useQuery } from '@tanstack/react-query';
+import { hasInternalRole as hasInternalRoleOf } from '@/lib/internal-role';
+import { myOrganizationsQueryOptions } from '@/lib/organization-api';
 import { useSelfUserImageRefresh } from '@/lib/user-api';
 import { useIsAppAdmin } from '@/lib/use-is-app-admin';
 import { collectPermissions, filterNav } from './filter-nav';
@@ -37,7 +40,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const { can, pending } = useNavPermissions(navPermissions);
 	const { t } = useTranslation('nav');
 
-	const sections = filterNav(navSections, { can, isAppAdmin });
+	const { data: myOrgs, isPending: myOrgsPending } = useQuery(myOrganizationsQueryOptions);
+	const hasInternalRole = (myOrgs ?? []).some((org) => hasInternalRoleOf(org.role));
+	const loading = pending || myOrgsPending;
+
+	const sections = filterNav(navSections, { can, isAppAdmin, hasInternalRole });
 
 	return (
 		<Sidebar collapsible='icon' {...props}>
@@ -45,7 +52,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				<OrganizationSwitcher />
 			</SidebarHeader>
 			<SidebarContent>
-				{pending
+				{loading
 					? navSections.map((section) => (
 							<SidebarGroup key={section.labelKey}>
 								<SidebarGroupLabel>{t(section.labelKey)}</SidebarGroupLabel>

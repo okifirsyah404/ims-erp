@@ -2,9 +2,10 @@ import { describe, expect, test } from 'bun:test';
 import { filterNav } from '../../src/components/sidebar/filter-nav';
 import type { SidebarItem } from '../../src/components/sidebar/sidebar-item';
 
-const ctx = (perms: string[], isAppAdmin = false) => ({
+const ctx = (perms: string[], isAppAdmin = false, hasInternalRole = true) => ({
 	can: (list: string[]) => list.every((p) => perms.includes(p)),
 	isAppAdmin,
+	hasInternalRole,
 });
 
 const sec = (items: SidebarItem[]) => ({ labelKey: 'section.x' as SidebarItem['titleKey'], items });
@@ -12,6 +13,14 @@ const leaf = (titleKey: string, extra: Partial<SidebarItem> = {}) =>
 	({ titleKey, url: '/x', ...extra }) as SidebarItem;
 
 describe('filterNav', () => {
+	test('internalRole item hides for investor-only users, shows with an internal role', () => {
+		const items = [leaf('a', { internalRole: true }), leaf('b', { open: true })];
+		const onlyInvestor = filterNav([sec(items)], ctx([], false, false));
+		expect(onlyInvestor[0].items.map((i) => i.titleKey)).toEqual(['b']);
+		const internal = filterNav([sec(items)], ctx([], false, true));
+		expect(internal[0].items).toHaveLength(2);
+	});
+
 	test('no permission, no open, no appAdminOnly is hidden', () => {
 		const out = filterNav([sec([leaf('a')])], ctx([]));
 		expect(out).toEqual([]);
