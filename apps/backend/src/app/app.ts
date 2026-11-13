@@ -1,6 +1,7 @@
 import openapi from '@elysia/openapi';
 import { auth } from '@providers/better-auth/auth';
 import { OpenAPI } from '@providers/better-auth/open-api-extractor.auth';
+import { realtimeGateway } from '@providers/realtime/realtime.gateway';
 import Elysia from 'elysia';
 
 import { accountingModule } from './accounting';
@@ -72,6 +73,10 @@ export function createApp() {
 					documentation: betterAuthOpenApiDocument,
 				}),
 			)
+			// The single realtime socket (`/ws`). Mounted before the feature
+			// modules so no module can shadow the upgrade path; the hub it
+			// publishes into is registered by `registerProvider`.
+			.use(realtimeGateway())
 			.use(locationModule())
 			.use(salesModule())
 			.use(procurementModule())

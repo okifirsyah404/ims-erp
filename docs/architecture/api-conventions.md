@@ -91,7 +91,8 @@ must not reveal existence. Read state is the only mutable field.
 
 One WebSocket for the whole application: `GET /ws` (upgrade). Authentication is
 the Better Auth session cookie presented with the upgrade request; without a
-session the upgrade is rejected and no message handling runs.
+session the upgrade is rejected with the standard 401 envelope and no message
+handling runs. Implementation: `apps/backend/src/providers/realtime/`.
 
 Every frame is the same envelope, whatever the feature:
 

@@ -14,7 +14,7 @@ Honest record. Only Phase 0 (docs/contract) is in flight; nothing in code yet.
 |---|---|---|
 | 0 | ✅ done | `docs/`: `docs.dbml` (schema `notification`, tables moved out of Automation), `module-ownership.md` (module 27), `implementation-phases.md`, `data-dictionary.md`, `logical-references.md` (regenerated), `modules/notification.md` (rewritten), ADR-0016 + index, `api-conventions.md`, this file, `backlog.md` `ERP-0047`, `features.md` |
 | 1 | ✅ done | `drizzle/schemas/notification.schema.ts` + hand-written migration `20261113150000_erp0047_notification_schema`; applied through `drizzle:migrate-reset` |
-| 2 | planned | `/ws` transport: envelope, hub, gateway, DI + mount |
+| 2 | ✅ done | `/ws` transport: envelope, in-process hub, gateway, DI + mount |
 | 3 | planned | module core: repository, services, queue (`send`, `prune`), worker |
 | 4 | planned | REST surface (list, unread count, read, read-all) |
 | 5 | planned | producers (organization service, invitation claim) |
@@ -151,17 +151,18 @@ Verified on the local database after `drizzle:migrate-reset`: tables
 **Work**
 
 1. `src/providers/realtime/realtime.message.ts` — envelope type
-   `{ type: string; status: 'success' | 'error'; sentAt: number; data: unknown }`.
+   `{ type: string; status: 'success' | 'error'; sentAt: number; data: unknown }`
+   plus a `realtimeMessage()` builder that stamps `sentAt`.
 2. `src/providers/realtime/realtime.hub.ts` — `IRealtimeHub`
-   (`publish(userId, message)`, `register(wsId, userId)`, `unregister(wsId)`),
-   `REALTIME_HUB_TOKEN`, in-process `Map` implementation with a `ponytail:`
-   note that Redis pub/sub is required only when the API runs as more than one
-   instance.
-3. `src/providers/realtime/realtime.gateway.ts` — `websocket()` from
-   `elysia/websocket`, `.ws('/ws')`, session resolved from the upgrade cookie in
-   `beforeHandle`, `open`/`close` register/unregister.
-4. Register the hub in `src/di/provider.ts`; mount the gateway in
-   `src/app/app.ts`.
+   (`register(wsId, userId, socket)`, `unregister(wsId)`,
+   `publish(userId, message)`, `connectionCount(userId?)`),
+   `REALTIME_HUB_TOKEN`, in-process `Map` implementation. Redis pub/sub is
+   documented as required only when the API runs as more than one instance.
+3. `src/providers/realtime/realtime.gateway.ts` — `.ws('/ws')`, session
+   resolved in `resolve({ as: 'local' })` so the user id lands on `ws.data`,
+   `open`/`close` register/unregister.
+4. Register the hub in `src/di/provider.ts` (`useValue`, so it is one map);
+   mount the gateway in `src/app/app.ts` before the feature modules.
 5. `docs/architecture/runbook.md` — the nginx `Upgrade`/`Connection` headers a
    reverse proxy needs.
 
@@ -170,6 +171,23 @@ Verified on the local database after `drizzle:migrate-reset`: tables
 - Upgrade with a valid session opens the socket; an upgrade without a cookie is
   rejected.
 - Unit test: publishing to a fake socket yields the exact envelope shape.
+
+**Done (2026-11-13).** Three files under `src/providers/realtime/`, hub
+registered in `registerProvider`, gateway mounted in `createApp()`.
+Two deviations from the plan text, both forced by Elysia 1.4.31:
+
+- **No `websocket()` plugin.** `elysia/ws` exports a handler *object*, not a
+  factory — `websocket()` throws `websocket is not a function`. The Bun adapter
+  already passes its own handler to `Bun.serve`, so `.ws()` alone is correct.
+- **Auth in `resolve({ as: 'local' })`, not `beforeHandle`.** Verified by probe:
+  a value returned from `beforeHandle` does not reach `ws.data`, while a
+  `resolve` return value does (`ws.data.realtimeUserId`).
+
+Verified against a real listening server: upgrade without a session returns
+`401` with the standard envelope; with a seeded admin session the socket opens;
+`hub.publish` reaches the client with
+`{ type, status, sentAt, data }`. `bun test` 883 pass / 0 fail (11 new),
+`bunx tsc -b --noEmit` clean, `oxlint` clean.
 
 ---
 

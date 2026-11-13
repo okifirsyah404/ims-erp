@@ -161,7 +161,11 @@ Last synced: 2026-11-13.
   2026-11-13: `drizzle/schemas/notification.schema.ts` +
   `database/migrations/20261113150000_erp0047_notification_schema/` applied
   through `drizzle:migrate-reset` (2 tables, 9 indexes, 3 checks, 1 intra-module
-  FK), `tsc -b --noEmit` clean. No service or UI yet.
+  FK), `tsc -b --noEmit` clean. Phase 2 done 2026-11-13: `src/providers/
+  realtime/` (`realtime.message.ts`, `realtime.hub.ts`, `realtime.gateway.ts`),
+  `/ws` mounted in `createApp()`, hub in `registerProvider`; session-less
+  upgrade 401, authenticated socket opens, `publish` delivers
+  `{ type, status, sentAt, data }`. No service, REST routes or UI yet.
 
 ## M05 Inventory and Purchasing
 

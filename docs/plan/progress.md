@@ -18,6 +18,66 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-13 - ERP-0047 Phase 2: the single realtime socket (`/ws`)
+
+Status: **Phase 2 done**. One WebSocket endpoint exists, authenticated at
+upgrade, with an in-process fanout hub. No notification module yet; Phase 3 is
+next.
+
+- **`src/providers/realtime/realtime.message.ts`** (new) — `TRealtimeMessage`
+  (`{ type, status, sentAt, data }`) and `realtimeMessage()` which stamps
+  `sentAt` at send time. `status` is the frame result; `data.status` stays the
+  domain status.
+- **`src/providers/realtime/realtime.hub.ts`** (new) — `IRealtimeHub` +
+  `REALTIME_HUB_TOKEN` + `InProcessRealtimeHub`. Two maps (`byWsId` for close,
+  `byUserId` for publish) so neither operation scans. `publish` serializes once
+  per frame, delivers to every tab of the user, and drops a socket that throws
+  instead of failing the producer.
+- **`src/providers/realtime/realtime.gateway.ts`** (new) — `.ws('/ws')` with the
+  Better Auth session resolved in `resolve({ as: 'local' })`; `open`/`close`
+  register/unregister; a session-less upgrade throws `RealtimeAuthError` → 401
+  envelope.
+- **`src/di/provider.ts`** — hub registered with `useValue` (one map per
+  process; `useClass` would hand out a fresh empty hub per resolve).
+- **`src/app/app.ts`** — gateway mounted before the feature modules.
+- **`docs/architecture/runbook.md`** — new "Realtime socket (`/ws`) and reverse
+  proxies" section (nginx `Upgrade`/`Connection`/`proxy_read_timeout`, Caddy,
+  Traefik, CDN caveat; the in-process hub's single-instance limit).
+
+Two plan deviations, both measured rather than assumed:
+
+- `websocket()` from `elysia/ws` **does not exist** in 1.4.31 — the module
+  exports a handler object, so calling it throws `websocket is not a function`.
+  The Bun adapter already installs its own handler in `Bun.serve`; `.ws()` alone
+  is correct.
+- `beforeHandle` cannot carry the user id: a value returned there does not reach
+  `ws.data`. `resolve({ as: 'local' })` does — probed both ways before writing
+  the gateway.
+
+Commands and outcomes:
+
+```text
+cd apps/backend; bun test
+  883 pass, 0 fail, 2033 expect() calls (62 files; 11 new realtime tests)
+
+cd apps/backend; bunx tsc -b --noEmit
+  (clean)
+
+cd apps/backend; bunx oxlint src/providers/realtime test/unit/realtime.*.test.ts
+  exit 0
+
+# live, against `bun run src/index.ts` on :3001 with the seeded database
+raw upgrade GET /ws without a session
+  -> 401 {"requestId":...,"status":401,"message":"Authentication required",...}
+signed in as admin@local.com, upgrade with the session cookie
+  -> socket open
+
+# live, inside the test harness (real Bun.serve, mocked Better Auth seam)
+hub.publish('user-1', realtimeMessage('notification.created', { id: 'n-1' }))
+  -> client received {"type":"notification.created","status":"success",
+     "sentAt":<ms>,"data":{"id":"n-1"}}
+```
+
 ## 2026-11-13 - ERP-0047 Phase 1: notification schema + migration
 
 Status: **Phase 1 done**. `notification` schema exists in Drizzle and in the
@@ -6425,14 +6485,12 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**ERP-0047 Phase 2** — realtime transport, per
-`docs/plan/plans/ws-notification.md`: `src/providers/realtime/`
-(`realtime.message.ts` envelope, `realtime.hub.ts` in-process
-`Map<userId, ws>` behind `REALTIME_HUB_TOKEN`, `realtime.gateway.ts` with
-`websocket()` from `elysia/websocket` + `.ws('/ws')` and the session resolved
-from the upgrade cookie in `beforeHandle`), register the hub in
-`src/di/provider.ts`, mount the gateway in `src/app/app.ts`. Phase 1 (schema +
-migration) is done — see the 2026-11-13 entry.
+**ERP-0047 Phase 3** — notification module core, per
+`docs/plan/plans/ws-notification.md`: `src/app/notification/` (container,
+contracts, repository, `NotificationService`, `ExportedNotificationService`,
+queue `send`/`prune` + worker, errors) and the module registered in
+`src/index.ts`. The transport it publishes into is done (Phase 2) — see the
+2026-11-13 entry.
 
 **Get reviewer sign-off on PR #82** (`fix/org-hardening`) — the organization
 `description` slice, the full-width create card, the create-style edit page,

@@ -17,9 +17,9 @@ WhatsApp AI handoff of M04 stage 2.
 
 ## Current state (2026-11-13)
 
-**Schema landed, no behaviour yet.** Phase 0 of
-`docs/plan/plans/ws-notification.md` produced the contract; Phase 1 produced the
-database:
+**Schema and transport landed, no notification behaviour yet.** Phase 0 of
+`docs/plan/plans/ws-notification.md` produced the contract, Phase 1 the
+database, Phase 2 the socket:
 
 - `docs/database/docs.dbml` — `notification.notification_templates` and
   `notification.notifications` moved out of the `automation` schema.
@@ -29,10 +29,13 @@ database:
   their indexes, checks and the one intra-module FK.
 - `apps/backend/database/migrations/20261113150000_erp0047_notification_schema/`
   — applied to the local database through `drizzle:migrate-reset`.
+- `apps/backend/src/providers/realtime/` — the shared `/ws` transport
+  (envelope, in-process hub, gateway). It is not notification-specific and
+  later features reuse it.
 
-No module folder in `apps/backend/src/app/notification/` yet, no `/ws`
-transport, no REST routes, no UI. Phase 2 adds the transport, Phase 3 the
-module.
+No module folder in `apps/backend/src/app/notification/` yet, no REST routes,
+no UI. Phase 3 adds the module (repository, services, queue, worker), Phase 4
+the routes, Phase 7 the bell.
 
 ## Data ownership
 
@@ -93,6 +96,10 @@ The socket is shared, so every message is wrapped:
 domain status (`sent`, `read`). Notification types are `notification.created`,
 `notification.updated` and `notification.unread_count`. Chat later adds
 `chat.message` on the same socket.
+
+The transport lives in `apps/backend/src/providers/realtime/` (envelope builder,
+in-process hub, gateway), not in this module: the module only calls
+`IRealtimeHub.publish(userId, realtimeMessage(type, data))`.
 
 ## Consumers
 
