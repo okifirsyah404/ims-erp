@@ -413,7 +413,7 @@ Last synced: 2026-11-13.
 - ERP-0045 Settings KV CRUD (`company.settings` + `organization.settings`).
 
 ### in-progress
-- ERP-0042 Dependabot bun config moved to the workspace root (`directory: "/"`)
+- ERP-0046 Dependabot bun config moved to the workspace root (`directory: "/"`)
   so the single root `bun.lock` is updated with the manifests. Evidence:
   `.github/dependabot.yml`, `progress.md` 2026-11-13. Not verified until a
   dependabot PR lands with `bun.lock` in its diff and green CI.
@@ -441,6 +441,10 @@ Last synced: 2026-11-13.
   `20261113130000_erp0043_item_codes` (deterministic per-kind backfill, ADR-0008
   unique index pair, 3 series rows). Asset needed no change - `AST-` was already
   allocated and no `sku` column was added. Evidence: `progress.md` 2026-11-13.
+- Sidebar split (2026-11-13): Documents section has Documents, Signatures
+  (placeholder until ERP-0048), Templates (placeholder until ERP-0050); Administration
+  has Company first, Code numbering before Audit log. Evidence: `progress.md` 2026-11-13
+  "sidebar", commit `7b1f699`.
 - ERP-0042 Decoupled `organization` into `company` + `document` +
   `code_number` (2026-11-13). Three Postgres schemas, one append-only migration
   each; `company.profiles/head_office_addresses/contacts/bank_accounts/settings`,

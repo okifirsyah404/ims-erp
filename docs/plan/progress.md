@@ -12,10 +12,49 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-13 - sidebar: Documents / Signatures / Templates, Administration order
+
+Status: **implemented** (commit `7b1f699`, local branch only, not pushed). No
+backlog ID claimed: the sidebar split is a UI follow-up to ERP-0042, not a
+backlog row.
+
+- Documents section: Documents (`/documents`), Signatures (`/documents/signatures`),
+  Templates (`/documents/templates`). Signatures and Templates are `ComingSoonPage`
+  placeholders until ERP-0048 and ERP-0050.
+- Administration section: Company (`/admin/company`) first, then Organizations,
+  Users, Code numbering (`/admin/code-numbers`, now a top-level entry instead of a
+  child of Company), Audit log.
+- Labels: Company / Perusahaan, Documents / Dokumen, Signatures / Tanda tangan,
+  Templates / Templat.
+- Breadcrumb `LABELS` in `build-crumbs.ts` gained the two new document paths.
+- Fixed ERP-0043 gap found in the browser: `numbering.type.item_product`,
+  `item_material`, `item_component` had no en/id label, so the code-numbers page
+  showed raw keys. Added (`Product`/`Produk`, `Material`, `Component`/`Komponen`).
+  `Material` is identical in both languages, so it is in `locale-parity.test.ts`
+  `ALLOWED_IDENTICAL`.
+
+Verification (2026-11-13):
+- `bun run build` (web-admin, `tsc -b && vite build`): exit 0. Regenerated
+  `routeTree.gen.ts` adds only the two document routes.
+- `bun test` (web-admin): 70 pass, 0 fail.
+- `bun test` (packages/locales): 86 pass, 0 fail (after the `ALLOWED_IDENTICAL` entry).
+- `bun run lint` (web-admin): exit 0, 0 errors (pre-existing warnings only).
+- `bun test` (backend): 868 pass, 0 fail. Turbo build OK.
+- Browser (localhost:5173, logged in as admin): Documents, Signatures, Templates
+  listed under Documents. `/documents/signatures` renders breadcrumb
+  `Home > Documents > Signatures` with Coming soon. `/admin/code-numbers` renders
+  breadcrumb `Home > Admin > Code numbering` and labels Product / Material / Component.
+
+Not verified: sidebar clicks for Organizations, Users, Audit log, and the
+`adminOnly` hiding for non-admin users.
+
+Docs: `docs/database/` unchanged (no schema change).
+
 ## 2026-11-13 - merge `main` into `refactor/company-document-numbering`
 
-Status: **in-progress** - merge resolved and verified locally; merge commit
-not yet created. `main` brought 21 commits (organization hardening PR #82,
+Status: **implemented** (merge commit `8a4fcd1`, local branch only, not pushed).
+Browser check 2026-11-13: `/admin/company` loads with seeded data after the
+local DB reset (see "Local DB reset" below). `main` brought 21 commits (organization hardening PR #82,
 server-side WebP normalisation, dependabot bumps).
 
 Resolution, by conflict:
@@ -61,8 +100,24 @@ branch-only, so there is no sort collision.
 
 Not verified: a browser walk-through of the image flows after the merge.
 
-Next executable task: finish the merge commit after the migration check, then
-**ERP-0045** (settings KV CRUD) - still waiting on the five open questions.
+Local DB reset (2026-11-13, dev only, user approved): `ims_erp_local` had the
+pre-ERP-0042 schema (`organization.company_profiles`, no `company`/`code_number`/
+`document` schemas), so `GET /company/profile` returned 500. Backup taken with
+`pg_dump` to `%TEMP%\opencode\ims_erp_local_backup_20261113_054440.sql` (11.9 MB,
+47 auth users). Then `bun run drizzle:migrate-reset` in `apps/backend`, exit 0:
+schemas `company`, `code_number`, `document`, `organization` present, 40 auth
+users after the seed. Backend restarted; `GET /company/profile` → 401 without
+session, and the logged-in `/admin/company` page renders the seeded profile.
+
+Docs (2026-11-13): `docs.dbml` `company.profiles` note and
+`module-ownership.md` Company section now say one company per application, many
+organizations under it, multi-company (`company_id`) not built, subsidiaries out
+of scope. No schema change. `gen-logical-references.ts`: 526 refs, 41 targets.
+`validate-dbml.ts`: OK (268 tables, 231 refs, 0 cross-module, 0 timestamp gaps).
+`features.md`: ERP-0042 → ERP-0046 rename for the dependabot row, carried from
+the merge.
+
+Next executable task: **ERP-0045** (settings KV CRUD) - still waiting on the five open questions.
 
 
 Status: **implemented** (2026-11-13) - ERP-0044 wires the document registry
