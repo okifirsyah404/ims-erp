@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-13.
+Last synced: 2026-11-14.
 
 > **Sidebar shell note (2026-11-05):** the web-admin sidebar now renders the
 > full M01–M12 nav map (see `progress.md`, "UI — full ERP sidebar shell").
@@ -149,7 +149,7 @@ Last synced: 2026-11-13.
 
 ## Notification + realtime (ERP-0047)
 
-### in-progress
+### verified
 - In-app notification module (schema `notification`, app-scope, organization as
   tag) + single realtime socket `/ws` + header bell with unread badge.
   Plan: `docs/plan/plans/ws-notification.md` (Phase 0-9). Evidence: Phase 0 done
@@ -187,9 +187,9 @@ Last synced: 2026-11-13.
   one `/ws` socket client with backoff reconnect and a `type` → handler
   registry, `NavUser` moved into the header, `notifications` locale namespace
   in en+id. Verified live (badge updates without reload, reconnect after a
-  backend restart, Indonesian copy). Phase 8 partial 2026-11-14: automated gates
+  backend restart, Indonesian copy). Phase 8 done 2026-11-14: automated gates
   green, WS smoke test committed, live HTTP inbox and browser live badge verified;
-  second-user live arrival still open (see `progress.md`). Stays in-progress.
+  second-user live arrival verified in two runs (see `progress.md`). Verified.
 
 ## M05 Inventory and Purchasing
 

@@ -8,7 +8,8 @@
 
 ## Implementation Status
 
-Honest record. Phases 0–3 are done; no REST route, seeder or UI yet.
+Honest record. Phases 0–9 are done; ERP-0047 is `verified` (2026-11-14). One
+open risk is recorded under Phase 8.
 
 | Phase | State | Delivered |
 |---|---|---|
@@ -16,12 +17,12 @@ Honest record. Phases 0–3 are done; no REST route, seeder or UI yet.
 | 1 | ✅ done | `drizzle/schemas/notification.schema.ts` + hand-written migration `20261113150000_erp0047_notification_schema`; applied through `drizzle:migrate-reset` |
 | 2 | ✅ done | `/ws` transport: envelope, in-process hub, gateway, DI + mount |
 | 3 | ✅ done | module core: repository, `NotificationService`, `ExportedNotificationService`, queue (`send`, `prune`), worker, config keys, composition root |
-| 4 | planned | REST surface (list, unread count, read, read-all) |
-| 5 | planned | producers (organization service, invitation claim) |
-| 6 | planned | seeders (4 templates + demo rows) |
-| 7 | planned | web admin (zustand store, header bell, `NavUser` move, locales) |
-| 8 | planned | full verification + WS smoke test + two-session walkthrough |
-| 9 | planned | close-out docs (`progress.md`, `backlog.md`, `features.md`, user guide) |
+| 4 | ✅ done | REST surface: list, unread count, read, read-all |
+| 5 | ✅ done | producers: organization service (member added, org created), invitation claim |
+| 6 | ✅ done | seeders: 4 templates (every env) + 3 demo rows (dev only) |
+| 7 | ✅ done | web admin: header bell, unread badge, popover, `/ws` client, `NavUser` move, locales |
+| 8 | ✅ done | automated gates, WS smoke test, reset + seed, two-session walkthrough (two runs). Open risk below |
+| 9 | ✅ done | close-out docs: `progress.md`, `backlog.md`, `features.md`, user guide en + id sec. 11 |
 
 ## Grilling outcome — locked decisions
 
@@ -522,14 +523,29 @@ INV-DEV-0001 diterbitkan", "Tanda tangan diminta: BAST Swing Gate").
   organization → that user logs in → unread badge and popover item present;
   a second notification arrives live while the browser is open.
 
+**Status: done (2026-11-14).** Automated gates green (backend 923/0, locales 90,
+web-admin 74, `tsc -b --noEmit` clean in both apps, `validate-dbml.ts` OK,
+`turbo build` passes). Smoke test passes (2/2). Reset + seed run twice, second run
+inserts 0. Two-session walkthrough, invited user in the in-app browser tab, admin in
+Firefox, no reload: run 1 badge 1 → 2, run 2 badge 2 → 3, popover shows the new
+membership at the top. Details: `progress.md`, 2026-11-14 "Phase 8 complete".
+
+**Open risk (not reproduced):** in run 2, `POST /organizations/:id/members` sent
+right after `POST /organizations` in the same script returned 403. The same call,
+sent again as a separate request, returned 201. Cause not established. If it
+recurs, check the org creator's membership state at the time of the call.
+
 ---
 
 ## Phase 9 — Close-out docs
 
-- `docs/plan/progress.md` — dated entry per phase with exact commands.
-- `docs/plan/backlog.md` — `ERP-0047` statuses moved with evidence.
-- `docs/plan/plans/features.md` — rollup entry moved only at `verified`.
-- `docs/user-guide/en.md` + `id.md` — how to read and mark notifications.
+**Status: done (2026-11-14).**
+
+- `docs/plan/progress.md` — dated entries for Phase 8 partial, Phase 8 complete,
+  and the phase-by-phase entries from Phase 0 to 7.
+- `docs/plan/backlog.md` — `ERP-0047` moved to `verified` with evidence.
+- `docs/plan/plans/features.md` — ERP-0047 rollup moved to `verified`.
+- `docs/user-guide/en.md` + `id.md` — section 11, how to read and mark notifications.
 
 ---
 

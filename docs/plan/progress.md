@@ -18,6 +18,40 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0047 Phase 8 complete: second-user live pass, ERP-0047 verified
+
+Status: **verified**. The second-user live step passed in two runs. This entry
+supersedes the "Not verified in Phase 8" list in the partial entry below.
+
+Setup: invited user `live.1475870968@local.com` (id `TJLcTxZJKmgrS9fZGxs2yeMABzn6yiP9`)
+logged in through the login form in the in-app browser tab. Admin logged in through
+the login form in the Firefox tab. Separate browser sessions, separate cookies.
+
+- Run 1: user bell "Notifications, 1 unread" (baseline). Admin
+  `POST /organizations/I40etZ.../members` (Live Org `live-zkc8m9`, role `sales`) → 201.
+  User bell, no reload: "Notifications, 2 unread". Popover top item:
+  "You joined Live Org live-zkc8m9".
+- Run 2: user bell "Notifications, 2 unread" (baseline). Admin creates
+  `Live Org live2-cpbmho` → 201, then adds the user as `sales` → 201.
+  User bell, no reload: "Notifications, 3 unread". Popover top item:
+  "You joined Live Org live2-cpbmho".
+- Open risk, not reproduced: in run 2, the first add-member call was sent right after
+  creating the org in the same script and returned 403. A second add-member to the
+  same org, sent as a separate request, returned 201. Cause not established. If it
+  recurs, check the org creator's membership state at the time of the call.
+- Browser notes (test tooling, not product): the in-app tab showed a blank page right
+  after navigate; a reload rendered the form. Typed input into the admin password field
+  doubled the value (22 chars); the fix was setting the value by script before submit.
+
+Dev DB side effects from this pass: `Live Org live2-cpbmho` created; the invited user
+is now a member of `Live Org live-zkc8m9` and `Live Org live2-cpbmho` in addition to
+Entragate.
+
+Phase 9 close-out is unchanged (see the partial entry). Out-of-scope follow-ups are
+unchanged: Web Push, notification preferences, email/WhatsApp channels, template
+editor, chat on `/ws`, Redis pub/sub fanout, producers for sales invoice and document
+signature templates.
+
 ## 2026-11-14 - ERP-0047 Phase 8: verification (partial) and Phase 9: close-out docs
 
 Status: **Phase 8 partial**. Automated gates green, WebSocket smoke test
@@ -6966,7 +7000,7 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**ERP-0047 Phase 8 (partial)** — finish verification, per `docs/plan/plans/ws-notification.md`. Left open: the manual two-session browser pass (new user login through the form is refused; see 2026-11-14 Phase 8 entry) and committing `apps/backend/test/notification/realtime.smoke.test.ts`. Then Phase 9 is written and ERP-0047 moves to `verified` only after that pass. Original scope:
+**ERP-0047 is verified** (2026-11-14, see the Phase 8 complete entry above). Nothing open in its plan. The docs changes for this step are uncommitted. The original Phase 8 scope, for reference:
 `bunx tsc -b --noEmit` in both apps, `bun run test`, `bun run lint`,
 `bun docs/database/validate-dbml.ts`, `bun run drizzle:migrate-reset` then seed
 twice, `apps/backend/test/notification/realtime.smoke.test.ts` (session cookie →
