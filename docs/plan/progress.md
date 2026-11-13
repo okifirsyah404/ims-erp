@@ -18,6 +18,108 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-13 - ERP-0047 Phase 3: notification module core
+
+Status: **Phase 3 done**. The module exists with a repository, two services,
+a BullMQ `send`/`prune` queue and its worker; nothing produces a notification
+yet (Phase 5) and there is no REST route (Phase 4) or UI (Phase 7).
+
+- **`src/app/notification/constants/di.ts`** (new) — three tokens:
+  `NOTIFICATION_REPOSITORY_TOKEN`, `NOTIFICATION_SERVICE_TOKEN` (in-module
+  read/ack surface) and `EXPORTED_NOTIFICATION_SERVICE_TOKEN` (the **only**
+  entry point other modules may use, D7).
+- **`contracts/notification.repository.interface.ts`** (new) — the data-access
+  contract: `insert`, `findTemplateByCode`, `findByIdForUser`, `listForUser`,
+  `countUnread`, `markRead`, `markAllRead`, `pruneRead`. Reads filter
+  `deleted_at IS NULL`; `pruneRead` is the one hard delete, because retention
+  (D10) is a storage rule.
+- **`contracts/notification.contract.ts`** (new) — `notificationQuerySchema`
+  (`page`, `limit`, `unreadOnly`) and `toNotificationView`, which maps a row to
+  the wire shape with ISO dates so an HTTP body and a WebSocket frame describe
+  a notification identically. `unreadOnly` is an enum of `"true"`/`"false"`, not
+  `z.coerce.boolean()` — coercion turns the string `"false"` into `true`.
+- **`repositories/notification.repository.ts`** (new) — every statement against
+  `notification.*`; ownership is part of the WHERE clause, so a row belonging to
+  another user is indistinguishable from a missing one.
+- **`services/notification.service.ts`** (new) — `list`, `unreadCount`,
+  `markRead`, `markAllRead`, `assertOwnedBy`. Every method takes the caller's
+  `userId`; there is no "any user" variant to widen the scope by accident.
+  Read-state changes publish `notification.updated` + `notification.unread_count`
+  to that user's other tabs.
+- **`services/exported-notification.service.ts`** (new) — `notify({ userIds,
+  templateCode, variables, tags, sourceType?, sourceId?, metadata? })`.
+  Enqueue-only, one job per recipient, duplicates and blanks collapsed; a queue
+  failure is logged and never thrown into the caller's write.
+- **`queues/notification.queue.ts`** (new) — queue `notification`, jobs `send`
+  and `prune`, `upsertJobScheduler` for the retention job.
+- **`queues/notification.worker.ts`** (new) — `send` resolves the template,
+  renders `{{variable}}` placeholders into English `title`/`body`, inserts the
+  row as `sent` with `sent_at`, then publishes `notification.created`; `prune`
+  hard-deletes read rows past the window. A missing or inactive template
+  **skips** the job instead of retrying — a retry cannot create a template.
+- **`errors/notification.errors.ts`** (new) — `NotificationNotFoundError` (404).
+- **`config/schemas/config.schema.ts` + `config/loaders/config.loader.ts`** —
+  `scheduler.notificationRetentionCron` (`SCHEDULER_NOTIFICATION_RETENTION_CRON`,
+  default `0 4 * * *`) and `scheduler.notificationRetentionDays`
+  (`NOTIFICATION_RETENTION_DAYS`, default 90). `.env.example` documents both and
+  the `SCHEDULER_ENABLED` master switch, which was undocumented before.
+- **`src/index.ts`** — `registerNotification(container)`,
+  `startNotificationWorker()` inside the existing `startWorkers(...)` call, and
+  `registerNotificationSchedules(...)` behind `scheduler.enabled`.
+- **`packages/locales/src/{en,id}/api.ts`** — `notification.notFound`.
+
+Deviations from the plan text:
+
+- **No `constants/tags.ts`.** Tags are caller-supplied display strings (today:
+  the organization name); a closed `NOTIFICATION_TAGS` vocabulary would have to
+  be edited per tenant name.
+- **No `notificationModule()` yet.** Phase 4 owns the controllers; mounting an
+  empty plugin would make `createApp()` claim a surface that does not exist.
+- **The dispatcher is a constructor parameter** on `ExportedNotificationService`
+  (defaulting to the real queue). The first attempt used `mock.module` on the
+  queue in a test; bun's module mock leaks across files in the same run and
+  replaced `notificationJobId` for the worker test (`Received: "job-1"`). A
+  constructor seam is the honest fix and needs no global state.
+- **`jobId` suffix** is `sourceId` when the producer has one, else a djb2 hash
+  of the sorted variables, so a replayed producer call dedupes without
+  colliding two organizations through the same template.
+
+Commands and outcomes:
+
+```text
+cd apps/backend; bun test
+  902 pass, 0 fail, 2077 expect() calls (65 files; 19 new notification tests)
+
+cd apps/backend; bunx tsc -b --noEmit
+  (clean)
+
+cd apps/backend; bunx oxlint src/app/notification test/unit/notification.*.test.ts
+  exit 0
+
+cd $repo; bun run --filter @ims-erp/locales test
+  86 pass, 0 fail
+
+# live, real repository + real in-process hub, local Postgres/Redis
+processNotificationSendJob(...)
+  -> { status: 'sent', notificationId: '01a1d560-4dba-758d-...' }
+  -> socket frame {"type":"notification.created","status":"success","sentAt":<ms>,
+     "data":{"id":...,"templateCode":"org.member_added","title":"You joined
+     Entragate","body":"Admin added you as member.","tags":["Entragate"],
+     "status":"sent","sentAt":"2026-11-13T14:47:00.790Z",...}}
+publish to a user with no socket -> 0
+listForUser -> total 1; countUnread -> 1
+markRead -> status 'read', readAt set; markRead by another user -> null
+countUnread after -> 0; markAllRead -> 0
+processNotificationPruneJob(0 days) -> { removed: 1 }
+
+registerNotificationSchedules -> [{ key: 'prune', pattern: '0 4 * * *' }]
+second call -> still 1 (idempotent)
+
+# boot, real process
+bun run src/index.ts -> "🦊 Elysia is running at localhost:3001" with the
+  notification worker registered alongside the avatar/org-logo/mail workers
+```
+
 ## 2026-11-13 - ERP-0047 Phase 2: the single realtime socket (`/ws`)
 
 Status: **Phase 2 done**. One WebSocket endpoint exists, authenticated at
@@ -6485,12 +6587,12 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**ERP-0047 Phase 3** — notification module core, per
-`docs/plan/plans/ws-notification.md`: `src/app/notification/` (container,
-contracts, repository, `NotificationService`, `ExportedNotificationService`,
-queue `send`/`prune` + worker, errors) and the module registered in
-`src/index.ts`. The transport it publishes into is done (Phase 2) — see the
-2026-11-13 entry.
+**ERP-0047 Phase 4** — notification REST surface, per
+`docs/plan/plans/ws-notification.md`: `GET /notifications`,
+`GET /notifications/unread-count`, `PATCH /notifications/:id/read`,
+`POST /notifications/read-all`, mounted through `notificationModule()` and the
+session guard only (D13). The service and repository they call are done
+(Phase 3) — see the 2026-11-13 entry.
 
 **Get reviewer sign-off on PR #82** (`fix/org-hardening`) — the organization
 `description` slice, the full-width create card, the create-style edit page,

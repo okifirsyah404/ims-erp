@@ -409,6 +409,8 @@ const api = {
 	'sales.receiptReversed': 'The receipt is already reversed',
 	'sales.invoiceNotPayable':
 		'Only issued or partially paid invoices can receive payments',
+
+	'notification.notFound': 'Notification not found',
 } as const;
 
 export default api;

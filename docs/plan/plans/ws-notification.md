@@ -8,14 +8,14 @@
 
 ## Implementation Status
 
-Honest record. Only Phase 0 (docs/contract) is in flight; nothing in code yet.
+Honest record. Phases 0–3 are done; no REST route, seeder or UI yet.
 
 | Phase | State | Delivered |
 |---|---|---|
 | 0 | ✅ done | `docs/`: `docs.dbml` (schema `notification`, tables moved out of Automation), `module-ownership.md` (module 27), `implementation-phases.md`, `data-dictionary.md`, `logical-references.md` (regenerated), `modules/notification.md` (rewritten), ADR-0016 + index, `api-conventions.md`, this file, `backlog.md` `ERP-0047`, `features.md` |
 | 1 | ✅ done | `drizzle/schemas/notification.schema.ts` + hand-written migration `20261113150000_erp0047_notification_schema`; applied through `drizzle:migrate-reset` |
 | 2 | ✅ done | `/ws` transport: envelope, in-process hub, gateway, DI + mount |
-| 3 | planned | module core: repository, services, queue (`send`, `prune`), worker |
+| 3 | ✅ done | module core: repository, `NotificationService`, `ExportedNotificationService`, queue (`send`, `prune`), worker, config keys, composition root |
 | 4 | planned | REST surface (list, unread count, read, read-all) |
 | 5 | planned | producers (organization service, invitation claim) |
 | 6 | planned | seeders (4 templates + demo rows) |
@@ -46,11 +46,15 @@ Honest record. Only Phase 0 (docs/contract) is in flight; nothing in code yet.
 
 - `docs.dbml` originally owned `notification_templates` + `notifications` inside
   the tenant-scoped `automation` schema; Phase 0 moved them to `notification`.
-- There is **no** `apps/backend/src/app/notification/` module and no
-  `notification.schema.ts` yet. Module count in the docs was 26, now 27.
-- There is **no** WebSocket anywhere in the repo. `elysia@1.4.31` registers
-  sockets with `websocket()` from `elysia/websocket` before `.ws(...)` routes;
-  authentication belongs in `beforeHandle`.
+- **Corrected:** there was no `apps/backend/src/app/notification/` module and no
+  `notification.schema.ts` at exploration time; Phases 1 and 3 created both.
+  Module count in the docs was 26, now 27.
+- There is **no** WebSocket anywhere in the repo. **Corrected during Phase 2:**
+  `elysia@1.4.31` needs no `websocket()` plugin (its `elysia/ws` module exports
+  a handler *object*, and the Bun adapter installs its own handler in
+  `Bun.serve`), and authentication cannot ride `beforeHandle` — a value
+  returned there never reaches `ws.data`. `resolve({ as: 'local' })` is the
+  hook that can. See the Phase 2 notes.
 - `Bun.RedisClient` + BullMQ are already wired: `queueConnection` in
   `src/providers/queue/queue.connection.ts`, one-shot jobs follow
   `app/user/queues/avatar.queue.ts`, repeat jobs follow
@@ -223,6 +227,38 @@ Verified against a real listening server: upgrade without a session returns
 - Unit tests: enqueue payload, `jobId` dedupe, template render, prune
   selection — all with a mocked database.
 - Worker started from `src/index.ts` through `startWorkers(...)`.
+
+**Done (2026-11-13).** Files: `container.ts`, `index.ts`, `constants/di.ts`,
+`contracts/{notification.repository.interface,notification.contract}.ts`,
+`errors/notification.errors.ts`, `repositories/notification.repository.ts`,
+`services/{notification,exported-notification}.service.ts`,
+`queues/{notification.queue,notification.worker}.ts`.
+
+Deviations from the plan text, all deliberate:
+
+- **No `constants/tags.ts`.** `tags` is a free-form `string[]` produced by the
+  caller (today: the organization name); a closed `NOTIFICATION_TAGS` list would
+  have to be edited for every new tenant name, which is not a vocabulary.
+- **No `notificationModule()` yet.** Phase 4 owns the controllers, and mounting
+  an empty plugin would make `createApp()` claim a surface that does not exist.
+- **`ExportedNotificationService` takes its dispatcher as a constructor
+  parameter** (defaulting to the real queue). `mock.module` on the queue leaked
+  into other test files in the same `bun test` run and silently replaced
+  `notificationJobId` for the worker test; a seam is the honest fix.
+- **The prune schedule rides `scheduler.enabled`**, like the inventory sweeps,
+  so tests and one-off scripts never open a repeatable-job connection.
+- **`jobId` suffix**: `sourceId` when the producer has one, else a djb2 hash of
+  the sorted variables — a replayed producer call dedupes without colliding two
+  organizations that share a template.
+
+Verified: `bun test` 902 pass / 0 fail (19 new), `bunx tsc -b --noEmit` clean,
+`oxlint` clean, locales 86 pass. Against the local database with the real
+repository and hub: `send` inserted the row as `sent`, the recording socket got
+`notification.created` with the rendered view, `listForUser` returned it,
+`markRead` flipped it to `read` (another user's id returned `null`),
+`countUnread` went 1 → 0, `prune(0 days)` removed exactly the read row.
+`registerNotificationSchedules` produced one scheduler (`prune`, `0 4 * * *`)
+and a second call left it at one.
 
 ---
 
