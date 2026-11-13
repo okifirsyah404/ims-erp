@@ -5,8 +5,9 @@ Schema, keys, constraints, and conventions. Current declarations:
 `apps/backend/drizzle/datatypes/unix-timestamp.ts`.
 
 > 2026-11-13: `apps/backend-elysia` is now `apps/backend`. The schema list
-> below matches `docs/database/docs.dbml`: 26 modules, one Postgres schema each
-> (ERP-0042, ADR-0015). `docs.dbml` is canonical if the two disagree.
+> below matches `docs/database/docs.dbml`: 27 modules, one Postgres schema each
+> (ERP-0042, ADR-0015; `notification` added by ADR-0016). `docs.dbml` is
+> canonical if the two disagree.
 
 ## PostgreSQL schemas
 

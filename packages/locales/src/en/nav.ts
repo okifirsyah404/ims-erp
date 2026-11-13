@@ -124,7 +124,6 @@ const nav = {
 
 	'user.loadingAccount': 'Loading account…',
 	'user.account': 'Account',
-	'user.notifications': 'Notifications',
 	'user.logOut': 'Log out',
 
 	'breadcrumb.home': 'Home',

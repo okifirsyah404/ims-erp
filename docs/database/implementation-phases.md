@@ -17,7 +17,7 @@ The database today has three schemas and 16 tables.
 | `location` | 4 | migration `20261028042750_create_location_schema`, seeded from `database/seeders/raw/location/*.json` |
 | `sales` | 2 | migration `20261029044823_dear_living_lightning` (transitional scaffold) |
 
-The target is 26 schemas, 268 tables.
+The target is 27 schemas, 268 tables.
 
 ## The gap between the two
 
@@ -459,7 +459,7 @@ modules easy to seed and to extend, and it is deliberate, not an oversight.
 | `budgeting` | 8 | periods, budgets, items, revisions, executions, cash flow |
 | `investor` | 11 | investors, commitments, deposits, allocations, profit sharing |
 | `commerce` | 9 | public web pages, menus, catalog publications, promotions, shop orders |
-| `automation` | 11 | integrations, encrypted credentials, workflows, scheduled jobs, outbox, notifications |
+| `automation` | 9 | integrations, encrypted credentials, workflows, scheduled jobs, outbox |
 | `licensing` | 9 | applications, packages, contracts, keys, activations, entitlements, subscriptions |
 | `ticket` | 5 | customer issue tickets: categories, tickets, messages, attachments, status history |
 
@@ -484,6 +484,13 @@ calls the Approval contract instead of inventing its own columns. The rules:
 **Automation secrets.** `automation.integration_credentials.secret_value_encrypted`
 is the only place a secret is stored. It carries a key version and a rotation
 date. No read endpoint returns the plain value.
+
+**Notification is its own module, not part of S6.** `notification_templates` and
+`notifications` left the `automation` schema (2026-11-13, ADR-0016): the module is
+**app-scope**, so it carries no `organization_id`, while every other Automation
+table is tenant scoped. It lands in the `notification` schema as module 27, built
+by the `docs/plan/plans/ws-notification.md` phases (Phase 1 = schema + migration),
+not by step S6.
 
 **Commerce is not Sales.** A `commerce.commerce_orders` row is a public shop
 order. The confirmed customer order is `sales.sales_orders`. The two are
@@ -684,9 +691,10 @@ SELECT schema_name FROM information_schema.schemata
  WHERE schema_name IN ('auth','location','organization','crm','catalog','hr',
    'procurement','inventory','sales','finance','accounting','projects',
    'aftersales','assets','payroll','documents','approval','budgeting',
-   'investor','commerce','automation','licensing','audit')
+   'investor','commerce','automation','licensing','audit','notification')
  ORDER BY schema_name;
--- expected: 24 rows
+-- expected: 25 rows (company, code_number and document were split out of
+-- organization by ERP-0042; notification is module 27)
 ```
 
 **Documentation.** Update `docs/architecture/data-model.md` (remove the `erp`
@@ -699,7 +707,7 @@ schema, point at `docs/database/docs.dbml`), `docs/architecture/architecture.md`
 
 - [ ] `bun run drizzle:seed` twice, both runs clean.
 - [ ] `bun run typecheck`, `bun run lint`, `bun test` pass.
-- [ ] The 26 schemas exist and the table count is 268.
+- [ ] The 27 schemas exist and the table count is 268.
 - [ ] `docs.dbml` parses and reports 268 tables, 231 refs, 0 cross-module
       refs, 0 enums, 0 tables without a note.
 - [ ] `data-model.md` and `architecture.md` match the database.

@@ -123,7 +123,6 @@ const nav_: Record<keyof typeof nav, string> = {
 
 	'user.loadingAccount': 'Memuat akun…',
 	'user.account': 'Akun',
-	'user.notifications': 'Notifikasi',
 	'user.logOut': 'Keluar',
 
 	'breadcrumb.home': 'Beranda',

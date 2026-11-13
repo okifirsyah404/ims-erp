@@ -412,6 +412,8 @@ const api: Record<keyof typeof en, string> = {
 	'sales.receiptReversed': 'Kwitansi sudah dibatalkan',
 	'sales.invoiceNotPayable':
 		'Hanya faktur berstatus terbit atau sebagian dibayar yang dapat menerima pembayaran',
+
+	'notification.notFound': 'Notifikasi tidak ditemukan',
 };
 
 export default api;

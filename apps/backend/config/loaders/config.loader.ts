@@ -141,6 +141,12 @@ export function loadEnvConfig(
 				process.env.GUEST_PII_RETENTION_MONTHS == null
 					? 24
 					: Number(process.env.GUEST_PII_RETENTION_MONTHS),
+			notificationRetentionCron:
+				process.env.SCHEDULER_NOTIFICATION_RETENTION_CRON ?? '0 4 * * *',
+			notificationRetentionDays:
+				process.env.NOTIFICATION_RETENTION_DAYS == null
+					? 90
+					: Number(process.env.NOTIFICATION_RETENTION_DAYS),
 		},
 	});
 }

@@ -11,6 +11,11 @@ import {
 	TRANSACTION_RUNNER_TOKEN,
 } from '@providers/database/transaction-runner';
 import { CacheClient, type ICacheClient } from '@cache/cache.client';
+import {
+	InProcessRealtimeHub,
+	type IRealtimeHub,
+	REALTIME_HUB_TOKEN,
+} from '@providers/realtime/realtime.hub';
 import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { DependencyContainer } from 'tsyringe';
@@ -39,5 +44,11 @@ export function registerProvider(container: DependencyContainer) {
 	});
 	container.register<ITransactionRunner>(TRANSACTION_RUNNER_TOKEN, {
 		useValue: drizzleTransactionRunner(drizzleDB),
+	});
+	// One hub per process, shared by the gateway (which registers sockets) and
+	// every producer (which publishes frames) — `useValue`, not `useClass`, so
+	// tsyringe does not hand out a fresh, empty map per resolve.
+	container.register<IRealtimeHub>(REALTIME_HUB_TOKEN, {
+		useValue: new InProcessRealtimeHub(),
 	});
 }

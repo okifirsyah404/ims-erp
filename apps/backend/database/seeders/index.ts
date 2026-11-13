@@ -13,6 +13,8 @@ import { seedOrganizationRoles } from './seed/organization-roles.seeder';
 import { seedCompany } from './seed/company.seeder';
 import { seedItemCategories } from './seed/item-category.seeder';
 import { seedHrEmployees } from './seed/hr.seeder';
+import { seedNotificationTemplates } from './seed/notification-templates.seeder';
+import { seedNotificationDemo } from './seed/notification-demo.seeder';
 import { redisClient } from '../../src/providers/redis/redis';
 
 const logger = pino({
@@ -50,6 +52,11 @@ export async function runSeeders(): Promise<void> {
 	await seedAssets();
 	await seedTax();
 	await seedHrEmployees();
+	// Notification templates are reference rows (every environment); the demo
+	// rows that reference them are dev-only and need the seed admin, which
+	// `seedAuth` created above.
+	await seedNotificationTemplates();
+	await seedNotificationDemo();
 
 	const finishedAt = DateTime.now();
 	const elapsed = Duration.fromObject({

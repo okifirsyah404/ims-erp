@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-13.
+Last synced: 2026-11-14.
 
 > **Sidebar shell note (2026-11-05):** the web-admin sidebar now renders the
 > full M01–M12 nav map (see `progress.md`, "UI — full ERP sidebar shell").
@@ -144,6 +144,52 @@ Last synced: 2026-11-13.
   Evidence: none.
 - AI FAQ + n8n integration — T27, ERP-0021. Evidence: none.
 - Notifications, human handoff, WhatsApp logs — T28, ERP-0021. Evidence: none.
+  Note: the **in-app** notification substrate is not part of M04; it is
+  `ERP-0047` (below) and its WhatsApp/email channels attach to that model later.
+
+## Notification + realtime (ERP-0047)
+
+### verified
+- In-app notification module (schema `notification`, app-scope, organization as
+  tag) + single realtime socket `/ws` + header bell with unread badge.
+  Plan: `docs/plan/plans/ws-notification.md` (Phase 0-9). Evidence: Phase 0 done
+  2026-11-13 — `docs/database/docs.dbml` module 27, `module-ownership.md`,
+  `implementation-phases.md`, `data-dictionary.md`,
+  `docs/architecture/modules/notification.md`, ADR-0016,
+  `api-conventions.md`; `validate-dbml.ts` OK (268 tables, 231 refs, 0
+  cross-module), `gen-logical-references.ts` 524 refs. Phase 1 done
+  2026-11-13: `drizzle/schemas/notification.schema.ts` +
+  `database/migrations/20261113150000_erp0047_notification_schema/` applied
+  through `drizzle:migrate-reset` (2 tables, 9 indexes, 3 checks, 1 intra-module
+  FK), `tsc -b --noEmit` clean. Phase 2 done 2026-11-13: `src/providers/
+  realtime/` (`realtime.message.ts`, `realtime.hub.ts`, `realtime.gateway.ts`),
+  `/ws` mounted in `createApp()`, hub in `registerProvider`; session-less
+  upgrade 401, authenticated socket opens, `publish` delivers
+  `{ type, status, sentAt, data }`. Phase 3 done 2026-11-13: `src/app/
+  notification/` (repository, `NotificationService`, `ExportedNotificationService`,
+  queue `send`/`prune` + worker), retention config keys, worker started in
+  `src/index.ts`; live send/list/markRead/prune verified. Phase 4 done
+  2026-11-14: `notification.controller.ts` (`GET /notifications`,
+  `GET /notifications/unread-count`, `PATCH /notifications/:id/read`,
+  `POST /notifications/read-all`) mounted via `notificationModule()` under the
+  session guard only; `sessionGuard()` maps its own `ErpAuthError`, and the
+  shared `domainPlugin` `VALIDATION` branch was fixed (it 500-ed every
+  validation failure on a listening server). Phase 5 done 2026-11-14: adding a
+  member (`OrganizationService.addMember`), creating an organization (creator +
+  nested active users) and a successful invitation claim all produce
+  `org.member_added`/`org.org_created` through `ExportedNotificationService`;
+  a `NOTIFICATION_DISPATCHER_TOKEN` was added because the defaulted constructor
+  parameter made tsyringe fail at boot. Phase 6 done 2026-11-14: the four
+  templates are seeded in every environment and three demo rows for the seed
+  admin in dev, both idempotent (4+3 then 0+0 inserted), guarded by a drift test
+  that keeps the code vocabulary, the seed list and the declared variables in
+  sync. Phase 7 done 2026-11-14: header bell with unread badge and popover,
+  one `/ws` socket client with backoff reconnect and a `type` → handler
+  registry, `NavUser` moved into the header, `notifications` locale namespace
+  in en+id. Verified live (badge updates without reload, reconnect after a
+  backend restart, Indonesian copy). Phase 8 done 2026-11-14: automated gates
+  green, WS smoke test committed, live HTTP inbox and browser live badge verified;
+  second-user live arrival verified in two runs (see `progress.md`). Verified.
 
 ## M05 Inventory and Purchasing
 

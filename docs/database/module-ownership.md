@@ -25,7 +25,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   silently not counted:
   `Logical reference to <target>.id. Cross-module FK intentionally omitted.
   Validated through the <Module> module contract.`
-- 526 such logical reference columns exist (target count re-verified on each validation run, see validate-dbml.ts).
+- 524 such logical reference columns exist (target count re-verified on each validation run, see validate-dbml.ts).
 - Every one of them is a **nullable** plain id column (ADR-0014); presence is
   a service-layer fact, enforced by the owning module's contract method, not
   by the database.
@@ -33,7 +33,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 - Cross-module reads and writes go through the owning module's exported
   service contract. Another module's repository is never imported.
 
-## The 26 modules
+## The 27 modules
 
 | # | Module | Schema(s) | Tables | Intra-module FKs | Logical refs out |
 |---|---|---|---|---|---|
@@ -59,11 +59,12 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 | 20 | Budgeting | `budgeting` | 8 | 8 | 17 |
 | 21 | Investor | `investor` | 11 | 10 | 31 |
 | 22 | Commerce | `commerce` | 9 | 6 | 16 |
-| 23 | Automation | `automation` | 11 | 7 | 16 |
+| 23 | Automation | `automation` | 9 | 6 | 13 |
 | 24 | Licensing | `licensing` | 9 | 11 | 11 |
 | 25 | Ticketing | `ticket` | 5 | 5 | 14 |
 | 26 | Audit | `audit` | 1 | 0 | 1 |
-| | **Total** | **26 schemas** | **268** | **231** | **526** |
+| 27 | Notification | `notification` | 2 | 1 | 1 |
+| | **Total** | **27 schemas** | **268** | **231** | **524** |
 
 Counts are re-derived from `docs.dbml` on every validation run. The parser
 also reports an empty `public` schema (0 tables); it is not a module.
@@ -80,7 +81,9 @@ been a fiction; Ticketing (customer issue tickets) exists for the customer
 portal. ERP-0042 then split Organization three ways - the company profile, the
 numbering authority and the document registry each became their own module
 (Company, Code Number, Document), which is where the count went from 24 to 26
-and why no module spans two schemas any more (ADR-0015).
+and why no module spans two schemas any more (ADR-0015). Notification then left
+Automation as module 27 (ADR-0016): it is app-scope, so it cannot live in a
+tenant-scoped schema.
 
 ## Module profiles
 
@@ -345,11 +348,14 @@ and why no module spans two schemas any more (ADR-0015).
 
 - **Owns** integrations and encrypted credentials, workflows and steps,
   workflow and step runs, scheduled jobs and executions, the transactional
-  outbox, notification templates and notifications.
+  outbox.
 - Secrets are only in `automation.integration_credentials.secret_value_encrypted`.
   No read endpoint returns the plain value.
 - Long-running queues stay in the Redis worker. This module owns the
   schedule and the log, not the queue transport.
+- **Notification moved out** (2026-11-13): `notification_templates` and
+  `notifications` left this schema for the Notification module, which is
+  app-scope rather than tenant-scoped.
 
 ### 24. Licensing — `licensing`
 
@@ -369,6 +375,27 @@ and why no module spans two schemas any more (ADR-0015).
   outside any organization.
 - `actor_user_id` is a logical reference, so deleting a user never erases the
   trail.
+
+### 27. Notification — `notification`
+
+- **Owns** the in-app notification inbox and its templates:
+  `notification.notification_templates` and `notification.notifications`.
+- **App-scope, not tenant-scope.** There is no `organization_id` column: a
+  notification belongs to one user and is readable from every organization the
+  user belongs to. Organization context travels as a **tag** (the organization
+  name), never as a scope filter, so adding a user to an organization produces a
+  notification that survives the user switching organizations.
+- A notification is created by the module's BullMQ worker as `status='sent'` and
+  pushed over the single realtime socket (`/ws`); `read`/`read_at` is set by the
+  recipient. The client renders the copy from `template_code` + `variables`
+  through i18n, and the server also stores the rendered English `title`/`body`
+  as a fallback for non-UI consumers.
+- Prune is a BullMQ repeat job: `status='read'` rows past the retention window
+  are hard deleted. They are delivery records, not business data.
+- **Contract**: `notify({ userIds, templateCode, variables, tags, sourceType,
+  sourceId })` via `ExportedNotificationService`, the single cross-module entry
+  point (enqueue-only). `resolveNotificationRecipient(userId)` and
+  `assertNotificationOwnedBy(notificationId, userId)` guard reads.
 
 ## Why there is no `erp` schema
 

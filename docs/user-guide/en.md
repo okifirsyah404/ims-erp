@@ -22,6 +22,7 @@ interface uses the names in [id.md](id.md).
 8. [Projects, BAST, warranty, service tickets](#8-projects-bast-warranty-service-tickets)
 9. [Printed documents and numbering](#9-printed-documents-and-numbering)
 10. [Notes](#10-notes)
+11. [Notifications](#11-notifications)
 
 The whole flow at a glance:
 [end-to-end diagram](diagrams.md#1-end-to-end-flow-activity).
@@ -393,3 +394,29 @@ print / save-as-PDF. Patterns are set in **Settings → Code numbering**.
   journals (M09), supplier payables, sales/purchase returns, ticket SLA.
 - The network topology page of the warranty sample is not built into the
   system (owner decision 2026-11-06).
+
+## 11. Notifications
+
+The bell in the top-right header (next to your account menu) lists your
+in-app notifications. A number badge shows how many are unread.
+
+1. **Read**: click the bell. The newest notifications come first; each shows
+   its title, text and tags (for example the organization name).
+2. **Open an item**: click it. It is marked as read, then:
+   - an organization notification opens that organization's page;
+   - a membership notification opens **Organizations**;
+   - any other notification is only marked as read.
+3. **Mark all as read**: the link at the top of the popover.
+4. **Live updates**: new notifications appear without reloading the page. If
+   the bell shows **Live updates unavailable** (a red dot), the connection is
+   down; it reconnects by itself. Reload the page if the dot stays for long.
+5. **Retention**: read notifications are deleted after the retention period
+   set by the system administrator (default 90 days). Unread ones are kept.
+
+Notifications are sent only to the person concerned. What you see depends on
+your own account, not on the organization you are viewing. Browser or phone
+pop-ups are not available yet.
+
+> Known limitation (2026-11-14): only the organization events (member added,
+> organization created) send notifications so far. Invoice-issued and
+> signature-requested templates exist but no module sends them yet.

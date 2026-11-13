@@ -18,6 +18,751 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - Web admin: header shows the avatar only
+
+Change: `apps/web-admin/src/components/sidebar/nav-user.tsx`. The header trigger now
+renders the avatar alone (skeleton avatar while loading). The name and email text
+were removed from the trigger and remain in the dropdown's profile row. The
+trigger keeps `aria-label` set to the user's name, so screen readers still announce
+the account. No locale keys added or removed.
+
+Commands and outcomes:
+
+```text
+cd apps/web-admin; bunx tsc -b --noEmit                 clean
+cd apps/web-admin; bun run test                          74 pass / 0 fail
+cd repo;           bunx oxlint nav-user.tsx              exit 0
+browser (in-app tab, user logged in, web-admin :5173):
+  header innerText                                       "Toggle Sidebar Home Profiles 3" (no name, no email)
+  trigger innerText                                      "" (avatar only)
+  trigger aria-label                                     "Live User"
+  dropdown open                                          "Live User / live.1475870968@local.com / EN ID / Account / Log out"
+```
+
+Not run: mobile width and the loading/error skeleton states in the browser.
+
+## 2026-11-14 - Web admin: sticky header
+
+Change: `apps/web-admin/src/components/layout/main-layout.tsx`, header class adds
+`sticky top-0 z-10 border-b bg-background`. Nothing else in the shell changed;
+`packages/ui` sidebar untouched. Login, forgot/reset password and invite pages
+have no header and are unchanged.
+
+Commands and outcomes:
+
+```text
+cd apps/web-admin; bunx tsc -b --noEmit                 clean
+cd apps/web-admin; bun run test                          74 pass / 0 fail
+cd repo;           bunx oxlint main-layout.tsx           exit 0
+browser (in-app tab, user logged in, web-admin :5173):
+  header computed style                                  position sticky, top 0px, z-index 10, border 1px
+  scroll to 800px with a 2500px pad (removed after)      header top stays 0
+  bell popover open while scrolled                       popover is the element at its own center point (above header and content)
+  sidebar collapse                                       header 64 -> 48px, top 0 while scrolled
+  sidebar expand                                         header back to 64px
+```
+
+Not run: print preview and mobile width. Print is covered by the existing
+`print:hidden` class on the header, which this change did not touch.
+
+## 2026-11-14 - ERP-0047 Phase 8 complete: second-user live pass, ERP-0047 verified
+
+Status: **verified**. The second-user live step passed in two runs. This entry
+supersedes the "Not verified in Phase 8" list in the partial entry below.
+
+Setup: invited user `live.1475870968@local.com` (id `TJLcTxZJKmgrS9fZGxs2yeMABzn6yiP9`)
+logged in through the login form in the in-app browser tab. Admin logged in through
+the login form in the Firefox tab. Separate browser sessions, separate cookies.
+
+- Run 1: user bell "Notifications, 1 unread" (baseline). Admin
+  `POST /organizations/I40etZ.../members` (Live Org `live-zkc8m9`, role `sales`) → 201.
+  User bell, no reload: "Notifications, 2 unread". Popover top item:
+  "You joined Live Org live-zkc8m9".
+- Run 2: user bell "Notifications, 2 unread" (baseline). Admin creates
+  `Live Org live2-cpbmho` → 201, then adds the user as `sales` → 201.
+  User bell, no reload: "Notifications, 3 unread". Popover top item:
+  "You joined Live Org live2-cpbmho".
+- Open risk, not reproduced: in run 2, the first add-member call was sent right after
+  creating the org in the same script and returned 403. A second add-member to the
+  same org, sent as a separate request, returned 201. Cause not established. If it
+  recurs, check the org creator's membership state at the time of the call.
+- Browser notes (test tooling, not product): the in-app tab showed a blank page right
+  after navigate; a reload rendered the form. Typed input into the admin password field
+  doubled the value (22 chars); the fix was setting the value by script before submit.
+
+Dev DB side effects from this pass: `Live Org live2-cpbmho` created; the invited user
+is now a member of `Live Org live-zkc8m9` and `Live Org live2-cpbmho` in addition to
+Entragate.
+
+Phase 9 close-out is unchanged (see the partial entry). Out-of-scope follow-ups are
+unchanged: Web Push, notification preferences, email/WhatsApp channels, template
+editor, chat on `/ws`, Redis pub/sub fanout, producers for sales invoice and document
+signature templates.
+
+## 2026-11-14 - ERP-0047 Phase 8: verification (partial) and Phase 9: close-out docs
+
+Status: **Phase 8 partial**. Automated gates green, WebSocket smoke test
+committed, login fix committed, and the browser pass covers most of the manual
+walkthrough. The one step not run is a true second-user live arrival (see
+"Not verified" below). **Phase 9 docs written**. ERP-0047 stays `in-progress`.
+
+- **Login fix** (separate commit): `apps/web-admin/src/components/form/login-form.tsx`
+  sends identifiers containing `@` to `authClient.signIn.email`; others still go
+  to `signIn.username`. Root cause: accounts created by sign-up have no
+  `username`, so the backend `email-identifier` hook fell back to the raw email
+  and the username plugin returned 422 `INVALID_USERNAME` ("Username is invalid").
+- **`apps/backend/test/notification/realtime.smoke.test.ts`** (new)
+  — real `Bun.serve` `/ws` socket with a session cookie; `ExportedNotificationService`
+  → dispatcher → `processNotificationSendJob` → in-memory repository → hub → socket.
+  Asserts the frame `{ type: 'notification.created', status: 'success', sentAt, data }`
+  with `data.status === 'sent'`, and that the stored row carries the same
+  `templateCode` and `variables` the client renders. Second test: a second
+  producer call delivers again.
+- **Docs**: `docs/user-guide/en.md` + `id.md` gained section 11 (Notifications).
+- **Plan files**: `backlog.md` ERP-0047 evidence line, `features.md` ERP-0047
+  evidence, and "Next executable task" refreshed.
+
+Commands and outcomes:
+
+```text
+cd apps/backend;  bun test test/notification/realtime.smoke.test.ts   2 pass / 0 fail
+cd apps/backend;  bun test                                            923 pass / 0 fail (69 files)
+cd apps/backend;  bunx tsc -b --noEmit                                clean
+cd apps/web-admin; bunx tsc -b --noEmit                               clean
+cd $repo;         bun run lint                                        0 errors; backend 12 warnings (pre-existing)
+cd $repo;         bun docs/database/validate-dbml.ts                  OK (268 tables, 231 refs, 0 cross-module, 0 timestamp gaps)
+cd apps/backend;  bun run drizzle:migrate-reset                       reset + seeders run; schemas recreated
+cd apps/backend;  bun run drizzle:seed                                templates inserted 0/4, demo inserted 0 (idempotent re-run)
+
+# live HTTP, backend :3001, scripted (not browser)
+sign-up smoke.user@local.com                 200
+admin adds user to Entragate (sales)         201
+user GET /notifications                      total 1: org.member_added | You joined Entragate | sent | Entragate
+user GET /notifications/unread-count         1
+
+# browser, web-admin :5173 + backend :3001, after the login fix
+new user smoke.user@local.com via login form  -> dashboard; bell "Notifications, 1 unread"
+admin via login form, tab open                -> bell "Notifications, 2 unread"
+admin POST /organizations (in-tab fetch)      -> 201; bell "Notifications, 3 unread" with no reload
+admin popover                                 -> "Live Org ... is ready" listed first
+```
+
+Not verified in Phase 8:
+
+- **Second-user live arrival**: the live step ran on the admin's own tab, where
+  the notification is the admin's own org-creation. The plan's case (user tab
+  open while an admin adds that user, badge updates) was not run; the user's
+  badge was checked after login only. Open item before ERP-0047 can be `verified`.
+- Earlier browser attempts (before the login fix) showed "Username is invalid",
+  then "Invalid username or password"; cause was the username-only sign-in
+  route (see the login fix above), not the notification path.
+- Background `bun run src/index.ts` and `bun run dev` shells reported
+  `Shell.NotFoundError` after starting. Ports still answered; tmp logs
+  `apps/backend/tmp-boot.log` and `apps/web-admin/tmp-vite.log` deleted.
+- Dev DB has test data from the browser pass: `live.*@local.com` user, an extra
+  `Live Org live-zkc8m9`, and `smoke.user@local.com` as an Entragate member.
+
+Phase 9 deliverables:
+
+- `docs/plan/backlog.md` ERP-0047 stays `in-progress`; evidence lists Phases 0–7
+  plus Phase 8 partial. Not moved to `verified` until the second-user live step runs.
+- `docs/plan/plans/features.md` stays under `in-progress` (no rollup move).
+- User guide section 11 explains the bell, unread badge, mark read, mark all,
+  live-update indicator, and retention. It states that only the org templates
+  have producers so far; invoice and signature templates are seeded but no
+  module sends them yet.
+- `docs/database/` reviewed: unchanged in this change; `validate-dbml.ts` OK.
+
+Follow-ups recorded (out of scope): Web Push / Notification API (VAPID, service
+worker, `push_subscriptions`), notification preferences, email/WhatsApp
+channels, template editor, chat on `/ws`, Redis pub/sub fanout (multi-instance
+only), producers for sales invoice and document signature templates.
+
+## 2026-11-14 - ERP-0047 Phase 7: web admin bell and realtime client
+
+Status: **Phase 7 done**. The header has a working notification bell fed by the
+single `/ws` socket; `NavUser` moved out of the sidebar footer into the header.
+
+- **`apps/web-admin/package.json`** — `zustand@5.1.0` added (the only new
+  dependency).
+- **`src/lib/realtime/realtime-client.ts`** (new) — one `WebSocket` to
+  `ws(s)://<api>/ws`, exponential backoff (1s doubling, capped at 30s), exact
+  `type` → handler registry. `onerror` is deliberately unwired: a browser error
+  event is always followed by `close`, and reconnecting from both would double
+  every retry. Exports `reconnectDelayMs` and `realtimeUrl` so the two pure
+  pieces are testable.
+- **`src/lib/realtime/realtime-store.ts`** (new) — zustand store holding the
+  connection status only.
+- **`src/lib/realtime/use-realtime.ts`** (new) — mounts the socket once, from
+  `MainLayout`. `onOpen` refetches the inbox, because frames sent while the
+  socket was down are not replayed.
+- **`src/lib/notification-api.ts`** (new) — `notificationsQueryOptions`,
+  `unreadCountQueryOptions`, `markNotificationRead`,
+  `markAllNotificationsRead`, `refreshNotifications`, and the three socket
+  handlers (`notification.created` / `.updated` invalidate,
+  `notification.unread_count` writes the count into the cache).
+- **`src/lib/notification-text.ts`** (new) — localized title/body per
+  `templateCode` via an explicit `switch`.
+- **`src/components/notification/notification-bell.tsx`** (new) — icon-only
+  ghost `Button` with the unread badge and a disconnected dot, `Popover` with a
+  header, "mark all as read" and a scrollable list of title / body / tag chips;
+  an item marks itself read and navigates.
+- **`src/components/layout/main-layout.tsx`** — header is now
+  `[SidebarTrigger][Separator][Breadcrumb] … [NotificationBell][NavUser]`, and
+  the layout calls `useRealtime()`.
+- **`src/components/sidebar/nav-user.tsx`** — trigger is a ghost `Button`
+  (avatar always, name/email `hidden md:grid`); `ChevronsUpDown` and the
+  dead "Notifications" item removed.
+- **`src/components/sidebar/main-sidebar.tsx`** — `SidebarFooter` / `NavUser`
+  removed.
+- **`packages/locales`** — new `notifications` namespace (`en` + `id`, including
+  the four template copies), registered in `NAMESPACES`, both `index.ts`
+  bundles and `i18next.d.ts`; `NotificationKey` type added; the now-dead
+  `nav:user.notifications` removed from both bundles.
+
+Deviations from the plan text:
+
+- **`DYNAMIC_PREFIXES` needed no entry.** Every key is literal, so the dead-key
+  guard already sees them; what the plan missed is the `i18next.d.ts`
+  augmentation, without which `useTranslation('notifications')` does not type.
+- **The store holds connection status only.** Buffered events and an optimistic
+  badge were dropped: a buffer is stale after a long outage (refetch on open is
+  correct), and the badge is already the server's count.
+- **Template copy is a `switch`, not a key map** — a map of keys compiles to a
+  union and i18next's overloads then reject the call, losing the interpolation
+  check.
+- **Template keys are camelCase** (`template.org.memberAdded.title`): i18next
+  reads `_` as a plural suffix and rejects the snake_case code as a key.
+- **`useRealtime()` lives in `MainLayout`**, not the `_authed` route.
+- **Item navigation is shallow**: `organization` → the organization page,
+  `organization_member` → `/organizations`, everything else marks read only.
+
+Commands and outcomes:
+
+```text
+cd apps/web-admin; bun add zustand           -> zustand@5.1.0
+cd apps/web-admin; bunx tsc -b --noEmit      (clean)
+cd apps/backend;   bunx tsc -b --noEmit      (clean)
+cd $repo; bun run test
+  @ims-erp/web-admin  74 pass / 0 fail  (2 new files: realtime-client, notification-realtime)
+  @ims-erp/locales    90 pass / 0 fail
+  @ims-erp/backend   921 pass / 0 fail
+  @ims-erp/react-email 5 pass / 0 fail
+cd $repo; bun run lint                       0 errors (ui 19 / backend 12 / web-admin 11
+                                             pre-existing warnings)
+cd $repo; bun docs/database/validate-dbml.ts OK (no schema change)
+
+# live, backend :3001 + vite :5173, signed in as admin@local.com
+header (en)          "Notifications, 2 unread"  -> popover lists the 3 seeded rows
+"Mark all as read"   badge cleared, both queries refetched
+second session PATCH /notifications/:id/read  -> badge 3 -> 2, no reload (socket frame)
+backend stopped      bell shows "Live updates unavailable"
+backend restarted    dot cleared without a reload (backoff reconnect)
+locale -> id         "Notifikasi, 3 belum dibaca", "Tandai semua dibaca",
+                     "Anda bergabung dengan Entragate", "Invoice INV-DEV-0001
+                     diterbitkan", "Tanda tangan diminta: BAST Swing Gate"
+keyboard             bell focusable, Enter opens the popover, Escape closes it
+```
+
+Seeded demo rows were restored to their intended state after the manual pass
+(two unread, one read).
+
+## 2026-11-14 - ERP-0047 Phase 6: notification seeders
+
+Status: **Phase 6 done**. A seeded database has the four templates and three
+demo notifications for the seed admin; the bell (Phase 7) has data to render.
+
+- **`database/seeders/seed/notification-templates.seeder.ts`** (new) — the four
+  canonical templates (`org.member_added`, `org.org_created`,
+  `sales.invoice_issued`, `document.signature_requested`) with English
+  subject/body copy and their declared `variables`. Anchored on `code` with
+  `deleted_at IS NULL`, so re-runs insert nothing and an operator's edited copy
+  is never overwritten. Runs in **every** environment: a production database
+  without templates would make every producer job skip.
+- **`database/seeders/seed/notification-demo.seeder.ts`** (new) — three demo
+  rows for `appConfig.auth.seedAdminEmail` only (two unread, one read, staggered
+  `createdAt` so "newest first" is visible). Anchored on
+  `(user_id, source_id)` with `source_type='seed_demo'`. Dev-only.
+- **`database/seeders/index.ts`** — both wired after `seedHrEmployees()`:
+  templates then demo, because the demo rows reference the templates and the
+  seed admin created by `seedAuth`.
+- **`test/unit/notification-seeders.test.ts`** (new) — drift guard between the
+  schema's `NOTIFICATION_TEMPLATE_CODES`, the seed list, and each seed's
+  placeholders vs declared `variables`.
+
+Deviations from the plan text:
+
+- **`.seeder.ts` suffix**, matching every other seeder in that directory.
+- **The demo seeder stores `title`/`body` pre-rendered** rather than importing
+  the worker's `renderNotificationText`: importing it pulls in
+  `notification.queue`, which builds a BullMQ `Queue` at module load and opens a
+  Redis connection from a seeder. The duplication is guarded by the new test.
+- **The demo anchor is `source_id` + `source_type='seed_demo'`**, not just the
+  user id, so a re-run is a no-op and a demo row is distinguishable from the
+  rows the Phase 5 producers write.
+
+Commands and outcomes:
+
+```text
+cd apps/backend; bun run drizzle:seed        # run 1
+  inserted 4 / total 4   "Notification templates seeded"
+  inserted 3             "Demo notifications seeded"
+  Seeding complete (4.8s)
+
+cd apps/backend; bun run drizzle:seed        # run 2 (idempotency)
+  inserted 0 / total 4   "Notification templates seeded"
+  inserted 0             "Demo notifications seeded"
+  Seeding complete (4.4s)
+
+# row inspection
+notification.notification_templates -> 4 rows, channel 'in_app', is_active true,
+  variables ["organizationName","role"], ["organizationName"],
+  ["invoiceNumber","customerName","amount"], ["requesterName","documentName"]
+notification.notifications (source_type='seed_demo') -> 3 rows for the seed
+  admin, newest first: 'You joined Entragate' (sent), 'Invoice INV-DEV-0001
+  issued' (sent, tags [Entragate, Invoice]), 'Signature requested: BAST Swing
+  Gate' (read, tags [Entragate, Signature])
+
+cd apps/backend; bun test
+  921 pass, 0 fail, 2120 expect() calls (68 files; 2 new)
+cd apps/backend; bunx tsc -b --noEmit   (clean)
+cd apps/backend; bunx oxlint            exit 0
+cd $repo; bun docs/database/validate-dbml.ts   OK (no schema change)
+
+# live over HTTP, :3001, signed in as admin@local.com
+GET /notifications                    -> 200, total 3, newest first
+GET /notifications/unread-count       -> 200 { count: 2 }
+GET /notifications?unreadOnly=true    -> 200, total 2
+```
+
+## 2026-11-14 - ERP-0047 Phase 5: notification producers
+
+Status: **Phase 5 done**. Adding a user to an organization now produces an
+in-app notification for that user; creating an organization notifies the
+creator. No seeders (Phase 6) and no UI (Phase 7) yet.
+
+- **`src/app/organization/services/organization.service.ts`** — injects
+  `EXPORTED_NOTIFICATION_SERVICE_TOKEN` and notifies on three paths:
+  `addMember` → `org.member_added`, `createOrganization` → `org.org_created`
+  for the creator, and a nested **active** user attached at create time →
+  `org.member_added`. The organization name is both the tag chip and the
+  `organizationName` variable. `role` is the comma-joined Better Auth list
+  rendered as `admin, sales`.
+- **`src/app/user/services/invitation.service.ts`** — `claim()` notifies
+  `org.member_added` **after** `attachMembership` succeeds, so the claim that
+  actually creates the membership is the notification point. Invite send,
+  resend, cancel, and a rejected or expired token notify nothing.
+- **`src/app/notification/constants/di.ts` + `container.ts` +
+  `services/exported-notification.service.ts`** — new
+  `NOTIFICATION_DISPATCHER_TOKEN` registered with the real `dispatchNotification`
+  as a `useValue`, and injected into `ExportedNotificationService`.
+- **`test/unit/notification.producers.test.ts`** (new) — 7 tests over the three
+  paths, including the real `ExportedNotificationService` over a throwing
+  dispatcher to prove a queue outage never fails the business write.
+
+Deviations / defects found:
+
+- **The Phase 3 dispatcher seam broke the DI graph at boot.** A defaulted
+  constructor parameter emits no design type, so tsyringe threw
+  `Cannot inject the dependency at position #0 of "ExportedNotificationService"
+  ... TypeInfo not known for "Object"` the first time a producer actually
+  resolved the exported service — and it surfaced as a chain through
+  `QuotationService` → `LeadService` → `OrganizationService` →
+  `InvitationService`. Unit tests never resolve the container, so the whole
+  suite stayed green while `bun run src/index.ts` failed. Fixed with an explicit
+  token; constructing the class by hand in tests still works.
+- Only nested **invited** users skip the create-time notification: they are
+  notified once at claim, so one membership never yields two notifications.
+- `sourceId` is the member row id where one exists, else the organization id, so
+  the job id stays deterministic and a replay cannot double-notify.
+
+Commands and outcomes:
+
+```text
+cd apps/backend; bun test
+  919 pass, 0 fail, 2114 expect() calls (67 files; 7 new)
+
+cd apps/backend; bunx tsc -b --noEmit
+  (clean)
+
+cd apps/backend; bunx oxlint
+  exit 0
+
+cd apps/backend; bun run src/index.ts
+  "🦊 Elysia is running at localhost:3001" (boot re-verified after the DI fix)
+
+# live, real queue + real worker, local Postgres/Redis
+POST /organizations                     -> 201; queue completed +1
+  job notification-org.org_created-<userId>-<orgId>
+  data { templateCode: 'org.org_created', variables: { organizationName },
+         tags: [organizationName], sourceType: 'organization', sourceId: <orgId> }
+POST /organizations/:id/members         -> 201; queue completed +1
+  job notification-org.member_added-<userId>-<memberId>
+  data { templateCode: 'org.member_added',
+         variables: { organizationName, role: 'member' },
+         tags: [organizationName], sourceType: 'organization_member',
+         sourceId: <memberId> }
+notification.notifications row -> status 'sent',
+  title 'Member added',
+  body 'Admin added you as member of Phase5 Probe ...',
+  tags ["Phase5 Probe ..."], source_type 'organization_member'
+```
+
+## 2026-11-14 - ERP-0047 Phase 4: notification REST surface
+
+Status: **Phase 4 done**. The caller's inbox is reachable over HTTP; nothing
+produces a notification yet (Phase 5) and there is no UI (Phase 7).
+
+- **`src/app/notification/controllers/notification.controller.ts`** (new) —
+  `GET /notifications` (paginated, newest first), `GET /notifications/unread-count`,
+  `PATCH /notifications/:id/read`, `POST /notifications/read-all`. Mounted with
+  `guards: 'session'` only (D13): app-scope, no `erp` macro, no
+  `x-organization-id`. The caller's id always comes from the resolved session,
+  never from a path or body field, so no request can widen the scope.
+- **`notificationIdParamsSchema`** added to
+  `contracts/notification.contract.ts` — `z.uuid()`, so a malformed id is a 400
+  instead of a Postgres 500.
+- **`notificationModule()`** added to the module `index.ts` and mounted in
+  `src/app/app.ts` after `auditModule()`.
+- **`src/authorization/elysia-auth.ts`** — `sessionGuard()` now carries its own
+  `onError({ as: 'global' })` mapping `ErpAuthError` → envelope. It previously
+  relied on being mounted beside `erpGuard()`, so an unauthenticated call to a
+  session-only module answered with Elysia's default plain-text body. The
+  notification routes are the first session-only surface with no `erp` macro.
+- **`src/http/plugin.ts`** — the shared `VALIDATION` branch is fixed (see below).
+- **`test/unit/notification.controller.test.ts`** (new) — 10 tests: 401 envelope,
+  caller-scoped list + ordering, `unreadOnly`, malformed page, unread count,
+  mark-read, another user's row → 404, non-uuid id → 400, `read-all`, and the
+  same 400 asserted against a **listening** server.
+
+Deviations / defects found:
+
+- **`domainPlugin`'s `VALIDATION` branch was broken for Zod schemas.** It wrote
+  `String(error.value)` into `errors[0].field`; with Zod-backed schemas Elysia
+  puts the raw request input there, and stringifying it threw
+  `TypeError: No default value`. On a **listening** server (AOT-compiled route)
+  that turned every param/query validation failure into a 500 HTML page —
+  `app.handle()` never reproduced it, which is why the suite was green. Fixed by
+  a `validationDetail()` helper reading `error.valueError.path` (Zod array and
+  TypeBox JSON-pointer both handled) and the validator's own message. Pre-existing
+  shared-plumbing defect, not a notification bug.
+- The 500 was first misread as an i18n/CORS problem; three probe files bisected
+  it (`createApp().handle` → 400, `createApp().listen` → 500). Probes deleted.
+- Another user's id returns 404, not 403 (D-decision), so a caller cannot probe
+  which ids exist.
+
+Commands and outcomes:
+
+```text
+cd apps/backend; bun test
+  912 pass, 0 fail, 2102 expect() calls (66 files; 10 new)
+
+cd apps/backend; bunx tsc -b --noEmit
+  (clean)
+
+cd apps/backend; bunx oxlint
+  exit 0 (3 pre-existing warnings, none in notification files)
+
+cd $repo; bun docs/database/validate-dbml.ts
+  parsed: 268 tables, 231 refs; cross-module refs: 0; timestamp gaps: 0; OK
+  (docs/database/ reviewed, unchanged: no schema change this phase)
+
+# live, bun run src/index.ts on :3001, real signed-in session (admin@local.com)
+GET  /notifications                     (anon) -> 401 envelope
+GET  /notifications/unread-count        (anon) -> 401 envelope
+GET  /notifications                            -> 200 { pagination:{page:1,limit:20,total:0} }
+GET  /notifications?unreadOnly=true            -> 200
+GET  /notifications?page=0                     -> 400 { message:"Validation failed" }
+PATCH /notifications/not-a-uuid/read           -> 400 { field:"id", message:"Invalid UUID" }
+PATCH /notifications/0190a1b2-...-0000000000ff/read -> 404 "Notification not found"
+POST /notifications/read-all                   -> 200 { changed: 0 }
+```
+
+## 2026-11-13 - ERP-0047 Phase 3: notification module core
+
+Status: **Phase 3 done**. The module exists with a repository, two services,
+a BullMQ `send`/`prune` queue and its worker; nothing produces a notification
+yet (Phase 5) and there is no REST route (Phase 4) or UI (Phase 7).
+
+- **`src/app/notification/constants/di.ts`** (new) — three tokens:
+  `NOTIFICATION_REPOSITORY_TOKEN`, `NOTIFICATION_SERVICE_TOKEN` (in-module
+  read/ack surface) and `EXPORTED_NOTIFICATION_SERVICE_TOKEN` (the **only**
+  entry point other modules may use, D7).
+- **`contracts/notification.repository.interface.ts`** (new) — the data-access
+  contract: `insert`, `findTemplateByCode`, `findByIdForUser`, `listForUser`,
+  `countUnread`, `markRead`, `markAllRead`, `pruneRead`. Reads filter
+  `deleted_at IS NULL`; `pruneRead` is the one hard delete, because retention
+  (D10) is a storage rule.
+- **`contracts/notification.contract.ts`** (new) — `notificationQuerySchema`
+  (`page`, `limit`, `unreadOnly`) and `toNotificationView`, which maps a row to
+  the wire shape with ISO dates so an HTTP body and a WebSocket frame describe
+  a notification identically. `unreadOnly` is an enum of `"true"`/`"false"`, not
+  `z.coerce.boolean()` — coercion turns the string `"false"` into `true`.
+- **`repositories/notification.repository.ts`** (new) — every statement against
+  `notification.*`; ownership is part of the WHERE clause, so a row belonging to
+  another user is indistinguishable from a missing one.
+- **`services/notification.service.ts`** (new) — `list`, `unreadCount`,
+  `markRead`, `markAllRead`, `assertOwnedBy`. Every method takes the caller's
+  `userId`; there is no "any user" variant to widen the scope by accident.
+  Read-state changes publish `notification.updated` + `notification.unread_count`
+  to that user's other tabs.
+- **`services/exported-notification.service.ts`** (new) — `notify({ userIds,
+  templateCode, variables, tags, sourceType?, sourceId?, metadata? })`.
+  Enqueue-only, one job per recipient, duplicates and blanks collapsed; a queue
+  failure is logged and never thrown into the caller's write.
+- **`queues/notification.queue.ts`** (new) — queue `notification`, jobs `send`
+  and `prune`, `upsertJobScheduler` for the retention job.
+- **`queues/notification.worker.ts`** (new) — `send` resolves the template,
+  renders `{{variable}}` placeholders into English `title`/`body`, inserts the
+  row as `sent` with `sent_at`, then publishes `notification.created`; `prune`
+  hard-deletes read rows past the window. A missing or inactive template
+  **skips** the job instead of retrying — a retry cannot create a template.
+- **`errors/notification.errors.ts`** (new) — `NotificationNotFoundError` (404).
+- **`config/schemas/config.schema.ts` + `config/loaders/config.loader.ts`** —
+  `scheduler.notificationRetentionCron` (`SCHEDULER_NOTIFICATION_RETENTION_CRON`,
+  default `0 4 * * *`) and `scheduler.notificationRetentionDays`
+  (`NOTIFICATION_RETENTION_DAYS`, default 90). `.env.example` documents both and
+  the `SCHEDULER_ENABLED` master switch, which was undocumented before.
+- **`src/index.ts`** — `registerNotification(container)`,
+  `startNotificationWorker()` inside the existing `startWorkers(...)` call, and
+  `registerNotificationSchedules(...)` behind `scheduler.enabled`.
+- **`packages/locales/src/{en,id}/api.ts`** — `notification.notFound`.
+
+Deviations from the plan text:
+
+- **No `constants/tags.ts`.** Tags are caller-supplied display strings (today:
+  the organization name); a closed `NOTIFICATION_TAGS` vocabulary would have to
+  be edited per tenant name.
+- **No `notificationModule()` yet.** Phase 4 owns the controllers; mounting an
+  empty plugin would make `createApp()` claim a surface that does not exist.
+- **The dispatcher is a constructor parameter** on `ExportedNotificationService`
+  (defaulting to the real queue). The first attempt used `mock.module` on the
+  queue in a test; bun's module mock leaks across files in the same run and
+  replaced `notificationJobId` for the worker test (`Received: "job-1"`). A
+  constructor seam is the honest fix and needs no global state.
+- **`jobId` suffix** is `sourceId` when the producer has one, else a djb2 hash
+  of the sorted variables, so a replayed producer call dedupes without
+  colliding two organizations through the same template.
+
+Commands and outcomes:
+
+```text
+cd apps/backend; bun test
+  902 pass, 0 fail, 2077 expect() calls (65 files; 19 new notification tests)
+
+cd apps/backend; bunx tsc -b --noEmit
+  (clean)
+
+cd apps/backend; bunx oxlint src/app/notification test/unit/notification.*.test.ts
+  exit 0
+
+cd $repo; bun run --filter @ims-erp/locales test
+  86 pass, 0 fail
+
+# live, real repository + real in-process hub, local Postgres/Redis
+processNotificationSendJob(...)
+  -> { status: 'sent', notificationId: '01a1d560-4dba-758d-...' }
+  -> socket frame {"type":"notification.created","status":"success","sentAt":<ms>,
+     "data":{"id":...,"templateCode":"org.member_added","title":"You joined
+     Entragate","body":"Admin added you as member.","tags":["Entragate"],
+     "status":"sent","sentAt":"2026-11-13T14:47:00.790Z",...}}
+publish to a user with no socket -> 0
+listForUser -> total 1; countUnread -> 1
+markRead -> status 'read', readAt set; markRead by another user -> null
+countUnread after -> 0; markAllRead -> 0
+processNotificationPruneJob(0 days) -> { removed: 1 }
+
+registerNotificationSchedules -> [{ key: 'prune', pattern: '0 4 * * *' }]
+second call -> still 1 (idempotent)
+
+# boot, real process
+bun run src/index.ts -> "🦊 Elysia is running at localhost:3001" with the
+  notification worker registered alongside the avatar/org-logo/mail workers
+```
+
+## 2026-11-13 - ERP-0047 Phase 2: the single realtime socket (`/ws`)
+
+Status: **Phase 2 done**. One WebSocket endpoint exists, authenticated at
+upgrade, with an in-process fanout hub. No notification module yet; Phase 3 is
+next.
+
+- **`src/providers/realtime/realtime.message.ts`** (new) — `TRealtimeMessage`
+  (`{ type, status, sentAt, data }`) and `realtimeMessage()` which stamps
+  `sentAt` at send time. `status` is the frame result; `data.status` stays the
+  domain status.
+- **`src/providers/realtime/realtime.hub.ts`** (new) — `IRealtimeHub` +
+  `REALTIME_HUB_TOKEN` + `InProcessRealtimeHub`. Two maps (`byWsId` for close,
+  `byUserId` for publish) so neither operation scans. `publish` serializes once
+  per frame, delivers to every tab of the user, and drops a socket that throws
+  instead of failing the producer.
+- **`src/providers/realtime/realtime.gateway.ts`** (new) — `.ws('/ws')` with the
+  Better Auth session resolved in `resolve({ as: 'local' })`; `open`/`close`
+  register/unregister; a session-less upgrade throws `RealtimeAuthError` → 401
+  envelope.
+- **`src/di/provider.ts`** — hub registered with `useValue` (one map per
+  process; `useClass` would hand out a fresh empty hub per resolve).
+- **`src/app/app.ts`** — gateway mounted before the feature modules.
+- **`docs/architecture/runbook.md`** — new "Realtime socket (`/ws`) and reverse
+  proxies" section (nginx `Upgrade`/`Connection`/`proxy_read_timeout`, Caddy,
+  Traefik, CDN caveat; the in-process hub's single-instance limit).
+
+Two plan deviations, both measured rather than assumed:
+
+- `websocket()` from `elysia/ws` **does not exist** in 1.4.31 — the module
+  exports a handler object, so calling it throws `websocket is not a function`.
+  The Bun adapter already installs its own handler in `Bun.serve`; `.ws()` alone
+  is correct.
+- `beforeHandle` cannot carry the user id: a value returned there does not reach
+  `ws.data`. `resolve({ as: 'local' })` does — probed both ways before writing
+  the gateway.
+
+Commands and outcomes:
+
+```text
+cd apps/backend; bun test
+  883 pass, 0 fail, 2033 expect() calls (62 files; 11 new realtime tests)
+
+cd apps/backend; bunx tsc -b --noEmit
+  (clean)
+
+cd apps/backend; bunx oxlint src/providers/realtime test/unit/realtime.*.test.ts
+  exit 0
+
+# live, against `bun run src/index.ts` on :3001 with the seeded database
+raw upgrade GET /ws without a session
+  -> 401 {"requestId":...,"status":401,"message":"Authentication required",...}
+signed in as admin@local.com, upgrade with the session cookie
+  -> socket open
+
+# live, inside the test harness (real Bun.serve, mocked Better Auth seam)
+hub.publish('user-1', realtimeMessage('notification.created', { id: 'n-1' }))
+  -> client received {"type":"notification.created","status":"success",
+     "sentAt":<ms>,"data":{"id":"n-1"}}
+```
+
+## 2026-11-13 - ERP-0047 Phase 1: notification schema + migration
+
+Status: **Phase 1 done**. `notification` schema exists in Drizzle and in the
+local database. No application code yet; Phase 2 (`/ws` transport) is next.
+
+- **`drizzle/schemas/notification.schema.ts`** (new): `notificationSchema`
+  pgSchema; `notification_templates` (code `varchar(64)` unique partial on
+  `deleted_at IS NULL`, body, declared variables, channel) and `notifications`
+  (`user_id`, `template_code`, `title`, `body`, `tags`/`variables`/`metadata`
+  jsonb, `channel`, `status`, `sent_at`, `read_at`, `source_type`/`source_id`,
+  timestamps). No `organization_id` anywhere — app-scope per ADR-0016. The one
+  FK is intra-module, `set null`. Exported `NOTIFICATION_CHANNELS`,
+  `NOTIFICATION_STATUSES`, `NOTIFICATION_TEMPLATE_CODES`.
+- **`database/migrations/20261113150000_erp0047_notification_schema/migration.sql`**
+  (new, hand-written). `drizzle:generate` is not usable in this repo: there is
+  no `meta/_journal.json` and no snapshot, so drizzle-kit reports a
+  pre-existing branch conflict across 2 migrations and its only offered fix
+  (`--fix-conflicts`) would delete 14 existing migrations. Every migration
+  since 2026-11-13 is hand-written and append-only; this follows that
+  convention (`CREATE SCHEMA/TABLE/INDEX IF NOT EXISTS`, one `ALTER ... ADD
+  CONSTRAINT` for the FK).
+
+Commands and outcomes:
+
+```text
+bun run drizzle:generate
+  Conflicting migrations detected: 1 conflict across 2 migrations
+  (no journal in repo; --fix-conflicts would delete 14 migrations) -> not used
+
+bun run drizzle:migrate-reset
+  Dropping schema ... (19 app schemas)
+  Migrations complete
+  Seeding complete (7.29 s)
+  Migrate-reset complete (9.95 s)
+
+# post-reset verification against pg_catalog
+schemas: ..., notification, ...           (notification present)
+tables: notification_templates, notifications
+indexes: notification_templates_channel_idx, notification_templates_code_uq,
+  notification_templates_pkey, notifications_created_at_idx, notifications_pkey,
+  notifications_status_idx, notifications_template_id_idx,
+  notifications_user_id_idx, notifications_user_status_idx
+checks: notification_templates_channel_check, notifications_channel_check,
+  notifications_status_check
+fks: notifications_notification_template_id_fk
+
+cd apps/backend; bunx tsc -b --noEmit
+  (clean)
+```
+
+`docs/database/` was reviewed and is unchanged: the Drizzle schema and the
+migration mirror `docs.dbml` exactly as Phase 0 wrote it. `validate-dbml.ts`
+still prints `OK` (268 tables, 231 refs, 0 cross-module, 0 timestamp gaps).
+
+## 2026-11-13 - ERP-0047 Phase 0: notification module contract + single realtime socket
+
+Status: **Phase 0 done (docs/contract only)**. No application code changed.
+`docs/plan/plans/ws-notification.md` Phase 1 (schema + migration) is next.
+
+Notification left the tenant-scoped `automation` schema and became its own
+app-scope module. A notification belongs to one user and must be readable from
+every organization that user belongs to, so a tenant column would either hide it
+in the wrong context or force one row per organization for one event. The same
+change reserves **one** realtime socket (`/ws`) for every feature instead of a
+socket per feature.
+
+- **`database/docs.dbml`**: new `// MODULE: Notification (schema: notification)`
+  section; `notification_templates` + `notifications` moved out of Automation
+  and reshaped - `recipient_user_id` → `user_id`, `organization_id` /
+  `recipient_type` / `recipient_value` / `subject` / `scheduled_at` /
+  `error_message` dropped, `template_code` / `title` / `tags` (jsonb) /
+  `variables` (jsonb) / `metadata` (jsonb) added, template `code` unique
+  globally instead of per tenant. Header note 26 → 27 schemas/modules.
+  `TableGroup "Notification"` added; `automation` header comment no longer
+  claims notifications.
+- **`database/module-ownership.md`**: module table 26 → 27 rows (Automation
+  11 tables / 7 intra FKs / 16 logical refs → 9 / 6 / 13; Notification 2 / 1 / 1),
+  totals 268 tables / 231 intra FKs / 524 logical refs, Automation profile
+  updated and a new Notification profile with the contract and the app-scope
+  rule.
+- **`database/implementation-phases.md`**: S6 table list drops the two tables
+  and a paragraph states the module lands through `ws-notification.md` Phase 1,
+  not S6; schema-existence check list gains `notification`; exit criterion
+  26 → 27 schemas.
+- **`database/data-dictionary.md`**: `jsonb` exception for notification
+  payloads (and the rule that payload data is never authorization), the
+  app-scope carve-out in the tenant-column section, Notification glossary, and
+  the `3.5` vocabulary list repointed at `notification.notification_templates`.
+- **`database/logical-references.md`**: regenerated by script - 526 → 524
+  referring columns (the two dropped `organization_id` columns),
+  `auth.organizations.id` 188 → 186, `automation.notifications →
+  recipient_user_id` replaced by `notification.notifications → user_id`.
+- **`architecture/modules/notification.md`**: rewritten. The old file was the
+  deleted NestJS audit ("scaffold only"); it now documents the boundary, the
+  data ownership, the `ExportedNotificationService` contract, the envelope and
+  the planned tests.
+- **`architecture/decisions/ADR-0016-notification-module-and-single-realtime-socket.md`**
+  (new, accepted) + index row in `architecture/README.md`: why the module is
+  app-scope, why one socket, why the fanout starts in-process.
+- **`architecture/api-conventions.md`**: notification endpoint family (session
+  guard only, 404 not 403 for another user's row) and the socket envelope
+  `{ type, status, sentAt, data }` with the rule that REST stays the source of
+  truth.
+- **`plan/plans/ws-notification.md`** (new): the 10-phase plan (Phase 0 docs →
+  Phase 9 close-out) with locked decisions D1-D14 and a per-phase exit gate.
+- **`plan/backlog.md`**: `ERP-0047` in-progress (Phase 0 done).
+  **`plan/plans/features.md`**: new "Notification + realtime" section
+  in-progress, plus a note that the in-app substrate is not part of M04.
+
+Commands and outcomes:
+
+```text
+bun docs/database/validate-dbml.ts
+  parsed: 268 tables, 231 refs
+  cross-module refs: 0
+  timestamp gaps: 0
+  OK
+
+bun docs/database/gen-logical-references.ts
+  regenerated: 524 refs across 41 targets, 231 intra-module refs
+  (re-run: no further diff)
+```
+
 ## 2026-11-13 - Docs: ERP-0042 split documented end to end (schemas, modules, ADR-0015)
 
 Status: **implemented (documentation only)**. No code changed; `docs/` grew to
@@ -6301,6 +7046,17 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
   in-progress until ERP-0010..0013 are decided in `backlog.md`; Stage 2 is open.
 
 ## Next executable task
+
+**ERP-0047 is verified** (2026-11-14, see the Phase 8 complete entry above). Nothing open in its plan. The docs changes for this step are uncommitted. The original Phase 8 scope, for reference:
+`bunx tsc -b --noEmit` in both apps, `bun run test`, `bun run lint`,
+`bun docs/database/validate-dbml.ts`, `bun run drizzle:migrate-reset` then seed
+twice, `apps/backend/test/notification/realtime.smoke.test.ts` (session cookie →
+producer → `{ type: 'notification.created', status: 'success', sentAt, data }`),
+and the manual two-session walkthrough (admin adds a registered user → that user
+sees the badge; a second notification arrives live). Phases 0-7 are done (see
+the 2026-11-14 entries); the browser pass already exercised the reconnect,
+live-delivery and locale paths by hand, so Phase 8 only has to automate the
+smoke test and re-run the reset.
 
 **Get reviewer sign-off on PR #82** (`fix/org-hardening`) — the organization
 `description` slice, the full-width create card, the create-style edit page,

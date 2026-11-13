@@ -36,6 +36,8 @@ import type {
 	InvitationService,
 	TActor,
 } from '@app/user/services/invitation.service';
+import { EXPORTED_NOTIFICATION_SERVICE_TOKEN } from '@app/notification/constants/di';
+import type { ExportedNotificationService } from '@app/notification/services/exported-notification.service';
 import { USER_MANAGEMENT_REPOSITORY_TOKEN } from '@app/user/constants/di';
 import type { IUserManagementRepository } from '@app/user/contracts/user-management.repository.interface';
 import {
@@ -75,6 +77,12 @@ export class OrganizationService {
 		private readonly users: IUserManagementRepository,
 		@inject(OBJECT_STORAGE_TOKEN)
 		private readonly storage: IObjectStorage,
+		/**
+		 * Cross-module producer entry point (ERP-0047). Resolved lazily; the
+		 * notification module never calls back into this one.
+		 */
+		@inject(EXPORTED_NOTIFICATION_SERVICE_TOKEN)
+		private readonly notifications: ExportedNotificationService,
 	) {}
 
 	/**
@@ -125,6 +133,20 @@ export class OrganizationService {
 		const row = await this.repository.findById(created.id);
 		if (!row) throw new OrganizationNotFoundError();
 
+		// ERP-0047: the creator hears about the organization they just made.
+		// Awaited, not fire-and-forget: `notify` is enqueue-only and never
+		// throws, so this costs one Redis round-trip and no failure mode.
+		if (input.creatorUserId) {
+			await this.notifications.notify({
+				userIds: [input.creatorUserId],
+				templateCode: 'org.org_created',
+				variables: { organizationName: row.name },
+				tags: [row.name],
+				sourceType: 'organization',
+				sourceId: row.id,
+			});
+		}
+
 		// Fire-and-forget DiceBear fallback logo: skipped by the worker when
 		// the client already uploaded a real logo, or the org got deleted.
 		// Must not block the create response either (CI has no Redis).
@@ -140,6 +162,7 @@ export class OrganizationService {
 					actor,
 					creatorEmail,
 					sendInvites: input.sendInvites !== false,
+					organizationName: row.name,
 				}).catch((error: unknown) => ({
 					email: user.email,
 					status: 'failed' as const,
@@ -175,6 +198,8 @@ export class OrganizationService {
 			actor?: TActor;
 			creatorEmail?: string;
 			sendInvites: boolean;
+			/** Display name for the notification tag and variables. */
+			organizationName: string;
 		},
 	): Promise<TCreateOrganizationResult['members'][number]> {
 		if (
@@ -197,6 +222,12 @@ export class OrganizationService {
 				userId: activeUser.id,
 				roles: user.roles,
 			});
+			await this.notifyMemberAdded(
+				activeUser.id,
+				context.organizationName,
+				user.roles,
+				member.id,
+			);
 			return { email: user.email, status: 'added', memberId: member.id };
 		}
 		const result = await this.invitations.invite(
@@ -450,12 +481,19 @@ export class OrganizationService {
 		organizationId: string,
 		input: TAddMember,
 	): Promise<{ id: string }> {
-		await this.ensureActive(organizationId);
-		return this.gateway.addMember({
+		const organization = await this.ensureActive(organizationId);
+		const member = await this.gateway.addMember({
 			organizationId,
 			userId: input.userId,
 			roles: input.roles,
 		});
+		await this.notifyMemberAdded(
+			input.userId,
+			organization.name,
+			input.roles,
+			member.id,
+		);
+		return member;
 	}
 
 	/**
@@ -511,6 +549,34 @@ export class OrganizationService {
 		await this.gateway.removeMember(headers, {
 			organizationId,
 			memberIdOrEmail: member.user?.email ?? memberId,
+		});
+	}
+
+	/**
+	 * Tells a user they joined an organization (ERP-0047).
+	 *
+	 * @remarks
+	 * The organization name is both the tag chip and the template variable, so
+	 * the client can render localized copy from `templateCode` + `variables`.
+	 * `sourceId` is the member row, which makes the enqueued job id
+	 * deterministic: a retried request cannot double-notify.
+	 */
+	private notifyMemberAdded(
+		userId: string,
+		organizationName: string,
+		roles: readonly string[],
+		sourceId?: string,
+	): Promise<void> {
+		return this.notifications.notify({
+			userIds: [userId],
+			templateCode: 'org.member_added',
+			variables: {
+				organizationName,
+				role: roles.join(', '),
+			},
+			tags: organizationName ? [organizationName] : [],
+			sourceType: 'organization_member',
+			sourceId,
 		});
 	}
 
