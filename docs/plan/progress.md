@@ -18,6 +18,74 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0047 Phase 6: notification seeders
+
+Status: **Phase 6 done**. A seeded database has the four templates and three
+demo notifications for the seed admin; the bell (Phase 7) has data to render.
+
+- **`database/seeders/seed/notification-templates.seeder.ts`** (new) — the four
+  canonical templates (`org.member_added`, `org.org_created`,
+  `sales.invoice_issued`, `document.signature_requested`) with English
+  subject/body copy and their declared `variables`. Anchored on `code` with
+  `deleted_at IS NULL`, so re-runs insert nothing and an operator's edited copy
+  is never overwritten. Runs in **every** environment: a production database
+  without templates would make every producer job skip.
+- **`database/seeders/seed/notification-demo.seeder.ts`** (new) — three demo
+  rows for `appConfig.auth.seedAdminEmail` only (two unread, one read, staggered
+  `createdAt` so "newest first" is visible). Anchored on
+  `(user_id, source_id)` with `source_type='seed_demo'`. Dev-only.
+- **`database/seeders/index.ts`** — both wired after `seedHrEmployees()`:
+  templates then demo, because the demo rows reference the templates and the
+  seed admin created by `seedAuth`.
+- **`test/unit/notification-seeders.test.ts`** (new) — drift guard between the
+  schema's `NOTIFICATION_TEMPLATE_CODES`, the seed list, and each seed's
+  placeholders vs declared `variables`.
+
+Deviations from the plan text:
+
+- **`.seeder.ts` suffix**, matching every other seeder in that directory.
+- **The demo seeder stores `title`/`body` pre-rendered** rather than importing
+  the worker's `renderNotificationText`: importing it pulls in
+  `notification.queue`, which builds a BullMQ `Queue` at module load and opens a
+  Redis connection from a seeder. The duplication is guarded by the new test.
+- **The demo anchor is `source_id` + `source_type='seed_demo'`**, not just the
+  user id, so a re-run is a no-op and a demo row is distinguishable from the
+  rows the Phase 5 producers write.
+
+Commands and outcomes:
+
+```text
+cd apps/backend; bun run drizzle:seed        # run 1
+  inserted 4 / total 4   "Notification templates seeded"
+  inserted 3             "Demo notifications seeded"
+  Seeding complete (4.8s)
+
+cd apps/backend; bun run drizzle:seed        # run 2 (idempotency)
+  inserted 0 / total 4   "Notification templates seeded"
+  inserted 0             "Demo notifications seeded"
+  Seeding complete (4.4s)
+
+# row inspection
+notification.notification_templates -> 4 rows, channel 'in_app', is_active true,
+  variables ["organizationName","role"], ["organizationName"],
+  ["invoiceNumber","customerName","amount"], ["requesterName","documentName"]
+notification.notifications (source_type='seed_demo') -> 3 rows for the seed
+  admin, newest first: 'You joined Entragate' (sent), 'Invoice INV-DEV-0001
+  issued' (sent, tags [Entragate, Invoice]), 'Signature requested: BAST Swing
+  Gate' (read, tags [Entragate, Signature])
+
+cd apps/backend; bun test
+  921 pass, 0 fail, 2120 expect() calls (68 files; 2 new)
+cd apps/backend; bunx tsc -b --noEmit   (clean)
+cd apps/backend; bunx oxlint            exit 0
+cd $repo; bun docs/database/validate-dbml.ts   OK (no schema change)
+
+# live over HTTP, :3001, signed in as admin@local.com
+GET /notifications                    -> 200, total 3, newest first
+GET /notifications/unread-count       -> 200 { count: 2 }
+GET /notifications?unreadOnly=true    -> 200, total 2
+```
+
 ## 2026-11-14 - ERP-0047 Phase 5: notification producers
 
 Status: **Phase 5 done**. Adding a user to an organization now produces an
@@ -6730,13 +6798,16 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**ERP-0047 Phase 6** — notification seeders, per
-`docs/plan/plans/ws-notification.md`: `database/seeders/seed/notification-templates.ts`
-(four templates, English copy, anchor-based idempotency) and
-`notification-demo.ts` (2-3 demo rows for one fixed user), wired into
-`database/seeders/index.ts` and verified by running the seed twice. Phases 0-5
-are done (see the 2026-11-14 entries); Phase 5 already produced real rows live,
-so the templates must be seeded before Phase 7 can render anything.
+**ERP-0047 Phase 7** — web admin, per `docs/plan/plans/ws-notification.md`: add
+`zustand`, build `src/lib/realtime/{realtime-client,realtime-store,use-realtime}.ts`
+(one socket to `/ws`, backoff reconnect, type → handler registry, connection
+status + optimistic badge), `src/lib/notification-api.ts` (query options +
+mutations, `setQueryData`/invalidate on socket events),
+`src/components/notification/notification-bell.tsx` (icon-only button + unread
+badge + popover), move `NavUser` into the header and delete `SidebarFooter`, and
+add the `notification` locale namespace in both `en` and `id`. Phases 0-6 are
+done (see the 2026-11-14 entries); the API it consumes and the seeded rows it
+renders both exist.
 
 **Get reviewer sign-off on PR #82** (`fix/org-hardening`) — the organization
 `description` slice, the full-width create card, the create-style edit page,

@@ -17,8 +17,8 @@ WhatsApp AI handoff of M04 stage 2.
 
 ## Current state (2026-11-14)
 
-**Backend module landed with its REST surface and producers; no seeder or UI
-yet.** Phases 0–5 of `docs/plan/plans/ws-notification.md`:
+**Backend module landed with its REST surface, producers and seeders; no UI
+yet.** Phases 0–6 of `docs/plan/plans/ws-notification.md`:
 
 - `docs/database/docs.dbml` — `notification.notification_templates` and
   `notification.notifications` moved out of the `automation` schema.
@@ -36,8 +36,29 @@ yet.** Phases 0–5 of `docs/plan/plans/ws-notification.md`:
   `ExportedNotificationService` (the only cross-module entry point), the
   `send`/`prune` BullMQ queue and its worker, and the controller mounting the
   inbox routes.
+- `apps/backend/database/seeders/seed/notification-templates.seeder.ts` and
+  `notification-demo.seeder.ts` — the four canonical templates (every
+  environment) and three demo rows for the seed admin (dev only).
 
-Phase 6 adds the seeders, Phase 7 the bell.
+Phase 7 adds the bell.
+
+## Seed data
+
+| Seeder | Environment | Anchored on |
+|---|---|---|
+| `notification-templates.seeder.ts` | all | template `code` (live rows only) |
+| `notification-demo.seeder.ts` | dev only | `(user_id, source_id)` with `source_type='seed_demo'` |
+
+Templates are reference data: a database without them makes every producer job
+skip at runtime ("template missing or inactive"). Demo rows exist so the bell
+has something to render — one fixed user, not the whole directory, so the
+unread badge stays meaningful. The demo seeder stores `title`/`body`
+pre-rendered because importing the worker would construct a BullMQ `Queue` at
+module load and open a Redis connection from a seeder.
+
+`test/unit/notification-seeders.test.ts` guards the duplication: every code in
+`NOTIFICATION_TEMPLATE_CODES` must have exactly one seed row, and each seed's
+`{{placeholders}}` must match its declared `variables`.
 
 ## Producers (landed)
 
@@ -202,6 +223,9 @@ undelivered information, not stale storage.
   `createOrganization` (creator vs nested active user), the invitation claim,
   and the outage contract exercised with the **real**
   `ExportedNotificationService` over a throwing dispatcher.
+- `notification-seeders.test.ts` — the seeded template list matches
+  `NOTIFICATION_TEMPLATE_CODES` one-to-one, and each template declares exactly
+  the variables its own placeholders use.
 
 `apps/backend/test/unit/realtime.{hub,gateway}.test.ts` cover the transport the
 worker publishes through (envelope, upgrade rejected without a session).

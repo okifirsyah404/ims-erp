@@ -179,7 +179,11 @@ Last synced: 2026-11-13.
   nested active users) and a successful invitation claim all produce
   `org.member_added`/`org.org_created` through `ExportedNotificationService`;
   a `NOTIFICATION_DISPATCHER_TOKEN` was added because the defaulted constructor
-  parameter made tsyringe fail at boot. No seeders or UI yet.
+  parameter made tsyringe fail at boot. Phase 6 done 2026-11-14: the four
+  templates are seeded in every environment and three demo rows for the seed
+  admin in dev, both idempotent (4+3 then 0+0 inserted), guarded by a drift test
+  that keeps the code vocabulary, the seed list and the declared variables in
+  sync. No UI yet.
 
 ## M05 Inventory and Purchasing
 

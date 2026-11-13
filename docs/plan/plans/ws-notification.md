@@ -384,6 +384,41 @@ title/body, `source_type='organization_member'` and the member id as
 
 - Seeding twice produces identical row counts and no duplicate templates.
 
+**Status: done (2026-11-14).**
+
+Deviations from the plan text, all deliberate:
+
+- **File names end in `.seeder.ts`**, matching every existing seeder in
+  `database/seeders/seed/` (`notification-templates.seeder.ts`,
+  `notification-demo.seeder.ts`) — the plan's `.ts` names would have been the
+  only two without the suffix.
+- **`notification` import would have opened Redis.** The demo seeder stores
+  `title`/`body` **pre-rendered** instead of importing the worker's
+  `renderNotificationText`: importing it pulls in `notification.queue`, which
+  constructs a BullMQ `Queue` at module load and therefore opens a Redis
+  connection from a seeder. The copy is duplicated on purpose, and the drift is
+  guarded by a test.
+- **Demo rows are anchored on `(user_id, source_id)` with
+  `source_type='seed_demo'`.** The plan only said "2-3 demo rows for one fixed
+  user"; the anchor is what makes re-runs no-ops and keeps a demo row
+  distinguishable from a real one (the Phase 5 producers write
+  `organization_member`/`organization`).
+- **Templates are seeded in every environment, demo rows only in dev.** The
+  templates are reference data; a production database with no template would
+  make every producer job skip.
+- **`notification-seeders.test.ts`** guards the three-way duplication: the
+  schema's `NOTIFICATION_TEMPLATE_CODES`, the seed list, and each seed's own
+  `{{placeholders}}` vs its declared `variables`. A code added to the schema
+  without a seed row fails the test instead of silently skipping jobs at
+  runtime.
+
+Verified: `bun test` 921 pass / 0 fail (2 new), `tsc -b --noEmit` clean,
+`oxlint` clean, `validate-dbml.ts` OK (no schema change). Seeded twice against
+the local database: first run inserted 4 templates + 3 demo rows, second run
+inserted 0 and 0 with the same totals. Live over HTTP on `:3001`:
+`GET /notifications` → 3 rows newest first, `GET /notifications/unread-count` →
+`{ count: 2 }`, `GET /notifications?unreadOnly=true` → 2 rows.
+
 ---
 
 ## Phase 7 — Web admin
