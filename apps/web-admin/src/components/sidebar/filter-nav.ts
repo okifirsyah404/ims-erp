@@ -13,7 +13,7 @@ export type NavContext = {
  * Whether one leaf item is visible. Deny by default: no `permission`, no
  * `open`, and no `appAdminOnly` means hidden.
  */
-function leafVisible(item: SidebarItem, ctx: NavContext): boolean {
+export function leafVisible(item: SidebarItem, ctx: NavContext): boolean {
 	if (item.appAdminOnly) return ctx.isAppAdmin;
 	if (item.open) return true;
 	if (item.internalRole) return ctx.hasInternalRole;
@@ -39,6 +39,30 @@ export function collectPermissions(sections: { items: SidebarItem[] }[]): Permis
 	};
 	for (const section of sections) visit(section.items);
 	return [...found];
+}
+
+/**
+ * Nav leaf governing a pathname, or null. Longest matching url wins; `/`
+ * matches only itself.
+ */
+export function findNavLeaf(
+	sections: { items: SidebarItem[] }[],
+	pathname: string,
+): SidebarItem | null {
+	const all = sections.flatMap((section) => section.items.flatMap(leavesOf));
+	let best: SidebarItem | null = null;
+	for (const leaf of all) {
+		const url = leaf.url;
+		if (!url) continue;
+		const matches =
+			url === '/' ? pathname === '/' : pathname === url || pathname.startsWith(`${url}/`);
+		if (matches && url.length > (best?.url?.length ?? -1)) best = leaf;
+	}
+	return best;
+}
+
+function leavesOf(item: SidebarItem): SidebarItem[] {
+	return item.items ? item.items.flatMap(leavesOf) : [item];
 }
 
 /**

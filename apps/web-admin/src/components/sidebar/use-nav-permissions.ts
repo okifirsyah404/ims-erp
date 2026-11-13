@@ -1,7 +1,29 @@
-import { useQueries } from '@tanstack/react-query';
+import { queryOptions, useQueries } from '@tanstack/react-query';
 import { organization, useSession } from '@/lib/auth-client';
 import type { Permission } from '@/lib/permissions';
 import { splitPermission } from '@/lib/use-permission';
+
+/**
+ * Cached `hasPermission` for one permission in one organization. Shared by the
+ * sidebar and the route guard so both read the same cache entry.
+ */
+export function orgPermissionQueryOptions(
+	userId: string,
+	activeOrgId: string,
+	permission: Permission,
+) {
+	return queryOptions({
+		queryKey: ['erp-has-permission', userId, activeOrgId, permission] as const,
+		staleTime: 60 * 1000,
+		queryFn: async () => {
+			const { resource, action } = splitPermission(permission);
+			const result = await organization.hasPermission({
+				permissions: { [resource]: [action] },
+			});
+			return result.data?.success === true;
+		},
+	});
+}
 
 /**
  * Resolves every nav permission in one batch: one `hasPermission` query per
@@ -19,16 +41,8 @@ export function useNavPermissions(permissions: Permission[]) {
 
 	const results = useQueries({
 		queries: permissions.map((permission) => ({
-			queryKey: ['erp-has-permission', userId, activeOrgId, permission],
+			...orgPermissionQueryOptions(userId ?? '', activeOrgId ?? '', permission),
 			enabled: !isPending && !!userId && !!activeOrgId,
-			staleTime: 60 * 1000,
-			queryFn: async () => {
-				const { resource, action } = splitPermission(permission);
-				const result = await organization.hasPermission({
-					permissions: { [resource]: [action] },
-				});
-				return result.data?.success === true;
-			},
 		})),
 	});
 

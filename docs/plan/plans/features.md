@@ -31,8 +31,9 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`proposed`).
 
 ### in-progress
 - Role-based sidebar in web-admin (`permission` / `open` / `appAdminOnly`), switcher
-  limited to internal-role organizations, logo fallback. Done: nav model, switcher,
-  `GET /organizations/mine`. Open: route guard, filter test with investor-only accounts.
+  limited to internal-role organizations, logo fallback, route guard in `_authed`
+  (investor-only redirect + toast). Done: nav model, switcher, `GET /organizations/mine`,
+  Dashboard gate, route guard. Open: PIC nav item (ADR-0017), login gate (Phase 3).
   Evidence: `progress.md` 2026-11-14 "Phase 4 part 1" (browser check, tests green).
 
 ### planned

@@ -18,7 +18,32 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
-## 2026-11-14 - Role-based nav: Phase 4 part 2 (Dashboard gated on internal role)
+## 2026-11-14 - Role-based nav: Phase 4 part 3 (route guard in `_authed`)
+
+- `lib/route-guard.ts` `canOpenPath`: finds the governing nav leaf (`findNavLeaf`, longest url
+  match), reuses `leafVisible` and the same permission cache (`orgPermissionQueryOptions`,
+  exported from `use-nav-permissions.ts`) and `['my-organizations']`. Fails closed on error.
+- `_authed.tsx` `beforeLoad`: denied path → `toast.error` (`nav:access.denied`, en + id) and
+  `redirect({ to: '/' })`.
+- `_authed.index.tsx`: Dashboard renders only for internal-role users; others get an empty page.
+  Not a redirect, because redirecting `/` to `/` would loop.
+- Decision: a path no nav leaf covers is allowed by the frontend; backend still enforces it.
+- Known gap: first `/crm/customers` check showed a blank page; the cause was my test timing
+  (DOM read before async i18n/session settled), not the guard. Re-test confirmed redirect.
+
+Commands and outcomes:
+- `bun test` (web-admin): 96 pass, 0 fail, 16 files (`find-nav-leaf.test.ts`,
+  `route-guard.test.ts` added).
+- `bunx tsc -b` (web-admin): exit 0.
+- Browser, `investor2.test` (investor in Entragate only), `localhost:5173`:
+  - `/crm/customers` by URL → redirected to `/`, toast "You do not have access to that page."
+    (en) and "Anda tidak memiliki akses ke halaman tersebut." (id).
+  - Dashboard hidden, sidebar shows Notifications only.
+
+Not verified: guard for an internal-role user on a denied page (unit test only); `canOpenPath`
+against real `hasPermission` responses beyond the investor case.
+
+## 2026-11-14 - Role-based nav plan: Phase 4 part 2 (Dashboard gated on internal role)
 
 - `internalRole` item flag: Dashboard shows only when the user holds an internal role in some
   organization. `open` stays for items every logged-in user may see (Notifications).
