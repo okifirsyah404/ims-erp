@@ -14,9 +14,10 @@ import { usePermission } from '@/lib/use-permission';
  * `/settings/documents` — document module settings.
  *
  * @remarks
- * Two parts: the letterhead logo and the company signature image (printed on
- * documents), and the `document` group of `company.settings` (ERP-0045). The
- * only `document.*` key in the design so far is
+ * Two parts: the letterhead logo printed on documents, and the `document`
+ * group of `company.settings` (ERP-0045). The company signature is **not**
+ * here: signatures get their own module (ERP-0048/ERP-0049). The only
+ * `document.*` key in the design so far is
  * `document.signature_request_expiry_days` (ERP-0048); it appears here once it
  * has been written, because settings are edited, not created, from this page.
  */
@@ -45,22 +46,19 @@ function DocumentSettingsPage() {
 						<CardTitle>{t('settings:companyProfile.section.images')}</CardTitle>
 						<CardDescription>{t('settings:companyProfile.imagesHint')}</CardDescription>
 					</CardHeader>
-					<CardContent className='grid gap-6 sm:grid-cols-2'>
-						{(['logo', 'signature'] as const).map((kind) => (
-							<DocumentImageField
-								key={kind}
-								label={t(`settings:companyProfile.image.${kind}`)}
-								imageUrl={kind === 'logo' ? profile.logoUrl : profile.signatureUrl}
-								disabled={!canEdit}
-								onUpload={async (file) => {
-									setProfile(await uploadDocumentImage<TCompanyProfile>(`/company/profile/${kind}`, file));
-									toast.success(t('settings:companyProfile.imageSaved'));
-								}}
-								onRemove={async () => {
-									setProfile(await removeDocumentImage<TCompanyProfile>(`/company/profile/${kind}`));
-								}}
-							/>
-						))}
+					<CardContent>
+						<DocumentImageField
+							label={t('settings:companyProfile.image.logo')}
+							imageUrl={profile.logoUrl}
+							disabled={!canEdit}
+							onUpload={async (file) => {
+								setProfile(await uploadDocumentImage<TCompanyProfile>('/company/profile/logo', file));
+								toast.success(t('settings:companyProfile.imageSaved'));
+							}}
+							onRemove={async () => {
+								setProfile(await removeDocumentImage<TCompanyProfile>('/company/profile/logo'));
+							}}
+						/>
 					</CardContent>
 				</Card>
 			)}

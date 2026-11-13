@@ -74,10 +74,9 @@ const settings = {
 	'numbering.type.item_product': 'Product',
 	'numbering.type.item_material': 'Material',
 	'numbering.type.item_component': 'Component',
-	'companyProfile.section.images': 'Logo and signature',
-	'companyProfile.imagesHint': 'Printed on documents: the logo in the letterhead, the signature (with stamp) above the signatory name.',
+	'companyProfile.section.images': 'Logo',
+	'companyProfile.imagesHint': 'Printed in the letterhead of every document.',
 	'companyProfile.image.logo': 'Letterhead logo',
-	'companyProfile.image.signature': 'Signature and stamp',
 	'companyProfile.imageSaved': 'Image saved',
 
 	'document.title': 'Document settings',

@@ -12,6 +12,46 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-13 - `/settings/documents`: logo only, company signature image removed from the UI
+
+Status: **implemented and verified in the browser**.
+
+The company signature image is not edited on the documents settings page any
+more: signatures get their own module (ERP-0048 / ERP-0049). The page keeps the
+letterhead logo and the `document` settings card.
+
+- `routes/_authed/settings/documents/index.tsx`: one `DocumentImageField`
+  (`/company/profile/logo`), not the `['logo','signature']` loop; the grid
+  became a single column; `signatureUrl` is no longer read there.
+- Locales: `companyProfile.section.images` is now "Logo" / "Logo" and
+  `companyProfile.imagesHint` describes the letterhead only.
+  `companyProfile.image.signature` was deleted from both bundles (dead key).
+  `section.images` and `image.logo` were added to `ALLOWED_IDENTICAL` ("Logo"
+  is the same word in Indonesian); the parity test caught this.
+- Deliberately unchanged: `PUT`/`DELETE /company/profile/signature` still exist,
+  `company.profiles.signature_object_key` stays in the schema and `docs.dbml`,
+  and `quotation-document.tsx`, `purchase-order-document.tsx` and
+  `warranty-document.tsx` still render `profile.signatureUrl`. Removing the
+  endpoint would have stopped an already-stored signature from printing.
+  No migration; `validate-dbml.ts` unchanged.
+
+Consequence: a company signature can no longer be uploaded from any UI. An
+existing image keeps printing; a fresh install prints documents without one
+until the signature module fills it.
+
+Verification (2026-11-13):
+- `bun test` (packages/locales): 86 pass, 0 fail — after the first run failed on
+  the identical "Logo" values, which the parity guard is meant to catch.
+- `bun test` (web-admin): 70 pass. `bun test` (backend): 872 pass.
+- web-admin `bun run build`: exit 0. `bun run lint` (root): 0 errors.
+- Browser `/settings/documents`: two cards — "Logo / Printed in the letterhead
+  of every document. / Letterhead logo" with exactly one file input, and
+  "Document settings" ("No document settings yet"). No "Signature and stamp".
+- Note: a plain `bun test` from the repo root runs the backend integration
+  suites without their env and reports ZodError failures (missing `app.name`,
+  `app.id`, `app.secret`, `database`). Pre-existing; run the backend and
+  web-admin suites from their own workspaces.
+
 ## 2026-11-13 - ERP-0045c: Settings section, company form cut, profile patch
 
 Status: **implemented**, browser check pending at the time of writing.

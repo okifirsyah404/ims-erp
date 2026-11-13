@@ -79,10 +79,9 @@ const settings: Record<keyof typeof en, string> = {
 	'numbering.type.item_product': 'Produk',
 	'numbering.type.item_material': 'Material',
 	'numbering.type.item_component': 'Komponen',
-	'companyProfile.section.images': 'Logo dan tanda tangan',
-	'companyProfile.imagesHint': 'Dicetak di dokumen: logo di kop surat, tanda tangan (beserta stempel) di atas nama penanda tangan.',
+	'companyProfile.section.images': 'Logo',
+	'companyProfile.imagesHint': 'Dicetak di kop surat setiap dokumen.',
 	'companyProfile.image.logo': 'Logo kop surat',
-	'companyProfile.image.signature': 'Tanda tangan dan stempel',
 	'companyProfile.imageSaved': 'Gambar disimpan',
 
 	'document.title': 'Pengaturan Dokumen',

@@ -62,6 +62,9 @@ describe('locale values', () => {
 		const ALLOWED_IDENTICAL = new Set([
 			// `JSON` is the format name in both languages.
 			'settings:settings.type.json',
+			// `Logo` is the same word in Indonesian.
+			'settings:companyProfile.section.images',
+			'settings:companyProfile.image.logo',
 			// `Material` is the same word in both languages.
 			'settings:numbering.type.item_material',
 			'common:language.switchToEnglish',
