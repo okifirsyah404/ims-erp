@@ -42,6 +42,8 @@ const LABELS: Record<string, NavKey> = {
 		'breadcrumb.memberEdit',
 	'/admin/company': 'item.companyProfile',
 	'/admin/code-numbers': 'item.codeNumbers',
+	'/documents/signatures': 'item.signatures',
+	'/documents/templates': 'item.templates',
 	'/inventory/categories': 'item.itemCategories',
 	'/crm/customers': 'item.customers',
 	'/crm/leads': 'item.leads',

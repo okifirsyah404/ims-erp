@@ -7,12 +7,15 @@ import {
 	FileText,
 	Globe,
 	GraduationCap,
+	Hash,
 	HandCoins,
 	KeyRound,
 	Calculator,
 	LayoutDashboard,
+	LayoutTemplate,
 	MessageSquare,
 	Package,
+	PenLine,
 	ReceiptText,
 	Repeat,
 	Scale,
@@ -48,10 +51,15 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 	},
 
 	// Document registry (ERP-0042). Company-wide: every issued document,
-	// whatever module owns the business record.
+	// whatever module owns the business record. Signatures and templates are
+	// separate pages; both are placeholders until ERP-0048 and ERP-0050.
 	{
 		labelKey: 'section.documents',
-		items: [{ titleKey: 'item.documents', url: '/documents', icon: FileText }],
+		items: [
+			{ titleKey: 'item.documents', url: '/documents', icon: FileText },
+			{ titleKey: 'item.signatures', url: '/documents/signatures', icon: PenLine },
+			{ titleKey: 'item.templates', url: '/documents/templates', icon: LayoutTemplate },
+		],
 	},
 
 	// M02 — CRM & Sales. CRM (relationships) and Sales (transactions) are
@@ -259,20 +267,17 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 	{
 		labelKey: 'section.administration',
 		items: [
+			// Company-wide profile and settings (ADR-0011, ERP-0042, ERP-0045).
+			{ titleKey: 'item.companyProfile', url: '/admin/company', icon: Settings },
 			{ titleKey: 'item.organizations', url: '/organizations', icon: Building2 },
 			{ titleKey: 'item.users', url: '/admin/users', icon: Users, adminOnly: true },
+			// Code numbering is its own module (ERP-0042), not part of Company.
+			{ titleKey: 'item.codeNumbers', url: '/admin/code-numbers', icon: Hash },
 			{
 				titleKey: 'item.auditLog',
 				url: '/admin/audit',
 				icon: ScrollText,
 				adminOnly: true,
-			},
-			{
-				titleKey: 'item.companyProfile',
-				url: '/admin/company',
-				icon: Settings,
-				// Company-wide settings (ADR-0011, ERP-0042).
-				items: [{ titleKey: 'item.codeNumbers', url: '/admin/code-numbers' }],
 			},
 		],
 	},

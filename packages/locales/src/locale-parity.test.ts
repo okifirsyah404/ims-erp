@@ -61,6 +61,8 @@ describe('locale values', () => {
 		// and locale-neutral tokens are expected to match, so they're exempt.
 		const ALLOWED_IDENTICAL = new Set([
 			'common:language.switchToEnglish',
+			// Material is the same word in both languages.
+			'settings:numbering.type.item_material',
 			'common:language.switchToIndonesian',
 			'nav:section.platform',
 			'nav:item.organizations',

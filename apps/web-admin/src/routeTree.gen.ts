@@ -25,6 +25,8 @@ import { Route as AuthedAssetsIndexRouteImport } from './routes/_authed/assets/i
 import { Route as AuthedCrmIndexRouteImport } from './routes/_authed/crm/index'
 import { Route as AuthedDocumentsIndexRouteImport } from './routes/_authed/documents/index'
 import { Route as AuthedDocumentsDocumentIdRouteImport } from './routes/_authed/documents/$documentId'
+import { Route as AuthedDocumentsSignaturesRouteImport } from './routes/_authed/documents/signatures'
+import { Route as AuthedDocumentsTemplatesRouteImport } from './routes/_authed/documents/templates'
 import { Route as AuthedFinanceIndexRouteImport } from './routes/_authed/finance/index'
 import { Route as AuthedHrIndexRouteImport } from './routes/_authed/hr/index'
 import { Route as AuthedOrganizationsIndexRouteImport } from './routes/_authed/organizations/index'
@@ -224,6 +226,18 @@ const AuthedDocumentsDocumentIdRoute =
   AuthedDocumentsDocumentIdRouteImport.update({
     id: '/documents/$documentId',
     path: '/documents/$documentId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedDocumentsSignaturesRoute =
+  AuthedDocumentsSignaturesRouteImport.update({
+    id: '/documents/signatures',
+    path: '/documents/signatures',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedDocumentsTemplatesRoute =
+  AuthedDocumentsTemplatesRouteImport.update({
+    id: '/documents/templates',
+    path: '/documents/templates',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedFinanceIndexRoute = AuthedFinanceIndexRouteImport.update({
@@ -928,6 +942,8 @@ export interface FileRoutesByFullPath {
   '/account/email': typeof AuthedAccountEmailRoute
   '/account/sessions': typeof AuthedAccountSessionsRoute
   '/documents/$documentId': typeof AuthedDocumentsDocumentIdRoute
+  '/documents/signatures': typeof AuthedDocumentsSignaturesRoute
+  '/documents/templates': typeof AuthedDocumentsTemplatesRoute
   '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/organizations/new': typeof AuthedOrganizationsNewRoute
   '/profiles/edit': typeof AuthedProfilesEditRoute
@@ -1063,6 +1079,8 @@ export interface FileRoutesByTo {
   '/account/email': typeof AuthedAccountEmailRoute
   '/account/sessions': typeof AuthedAccountSessionsRoute
   '/documents/$documentId': typeof AuthedDocumentsDocumentIdRoute
+  '/documents/signatures': typeof AuthedDocumentsSignaturesRoute
+  '/documents/templates': typeof AuthedDocumentsTemplatesRoute
   '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/organizations/new': typeof AuthedOrganizationsNewRoute
   '/profiles/edit': typeof AuthedProfilesEditRoute
@@ -1202,6 +1220,8 @@ export interface FileRoutesById {
   '/_authed/account/email': typeof AuthedAccountEmailRoute
   '/_authed/account/sessions': typeof AuthedAccountSessionsRoute
   '/_authed/documents/$documentId': typeof AuthedDocumentsDocumentIdRoute
+  '/_authed/documents/signatures': typeof AuthedDocumentsSignaturesRoute
+  '/_authed/documents/templates': typeof AuthedDocumentsTemplatesRoute
   '/_authed/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/_authed/organizations/new': typeof AuthedOrganizationsNewRoute
   '/_authed/profiles/edit': typeof AuthedProfilesEditRoute
@@ -1341,6 +1361,8 @@ export interface FileRouteTypes {
     | '/account/email'
     | '/account/sessions'
     | '/documents/$documentId'
+    | '/documents/signatures'
+    | '/documents/templates'
     | '/organizations/$organizationId'
     | '/organizations/new'
     | '/profiles/edit'
@@ -1476,6 +1498,8 @@ export interface FileRouteTypes {
     | '/account/email'
     | '/account/sessions'
     | '/documents/$documentId'
+    | '/documents/signatures'
+    | '/documents/templates'
     | '/organizations/$organizationId'
     | '/organizations/new'
     | '/profiles/edit'
@@ -1614,6 +1638,8 @@ export interface FileRouteTypes {
     | '/_authed/account/email'
     | '/_authed/account/sessions'
     | '/_authed/documents/$documentId'
+    | '/_authed/documents/signatures'
+    | '/_authed/documents/templates'
     | '/_authed/organizations/$organizationId'
     | '/_authed/organizations/new'
     | '/_authed/profiles/edit'
@@ -1860,6 +1886,20 @@ declare module '@tanstack/react-router' {
       path: '/documents/$documentId'
       fullPath: '/documents/$documentId'
       preLoaderRoute: typeof AuthedDocumentsDocumentIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/documents/signatures': {
+      id: '/_authed/documents/signatures'
+      path: '/documents/signatures'
+      fullPath: '/documents/signatures'
+      preLoaderRoute: typeof AuthedDocumentsSignaturesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/documents/templates': {
+      id: '/_authed/documents/templates'
+      path: '/documents/templates'
+      fullPath: '/documents/templates'
+      preLoaderRoute: typeof AuthedDocumentsTemplatesRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/finance/': {
@@ -2806,6 +2846,8 @@ interface AuthedRouteChildren {
   AuthedProfilesRoute: typeof AuthedProfilesRouteWithChildren
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedDocumentsDocumentIdRoute: typeof AuthedDocumentsDocumentIdRoute
+  AuthedDocumentsSignaturesRoute: typeof AuthedDocumentsSignaturesRoute
+  AuthedDocumentsTemplatesRoute: typeof AuthedDocumentsTemplatesRoute
   AuthedOrganizationsOrganizationIdRoute: typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   AuthedOrganizationsNewRoute: typeof AuthedOrganizationsNewRoute
   AuthedProjectsNewRoute: typeof AuthedProjectsNewRoute
@@ -2927,6 +2969,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedProfilesRoute: AuthedProfilesRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedDocumentsDocumentIdRoute: AuthedDocumentsDocumentIdRoute,
+  AuthedDocumentsSignaturesRoute: AuthedDocumentsSignaturesRoute,
+  AuthedDocumentsTemplatesRoute: AuthedDocumentsTemplatesRoute,
   AuthedOrganizationsOrganizationIdRoute:
     AuthedOrganizationsOrganizationIdRouteWithChildren,
   AuthedOrganizationsNewRoute: AuthedOrganizationsNewRoute,

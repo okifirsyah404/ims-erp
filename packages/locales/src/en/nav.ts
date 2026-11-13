@@ -17,7 +17,9 @@ const nav = {
 	'section.reports': 'Reports & Access',
 
 	'item.dashboard': 'Dashboard',
-	'item.documents': 'All documents',
+	'item.documents': 'Documents',
+	'item.signatures': 'Signatures',
+	'item.templates': 'Templates',
 	'item.crm': 'CRM',
 	'item.sales': 'Sales',
 	'item.customers': 'Customers',
@@ -98,7 +100,7 @@ const nav = {
 	'item.organizations': 'Organization',
 	'item.users': 'Users',
 	'item.auditLog': 'Audit Log',
-	'item.companyProfile': 'Company profile',
+	'item.companyProfile': 'Company',
 	'item.codeNumbers': 'Code numbering',
 
 	'theme.label': 'Theme',

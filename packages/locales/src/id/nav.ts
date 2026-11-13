@@ -16,7 +16,9 @@ const nav_: Record<keyof typeof nav, string> = {
 	'section.reports': 'Laporan & Hak Akses',
 
 	'item.dashboard': 'Dasbor',
-	'item.documents': 'Semua dokumen',
+	'item.documents': 'Dokumen',
+	'item.signatures': 'Tanda tangan',
+	'item.templates': 'Templat',
 	'item.crm': 'CRM',
 	'item.sales': 'Penjualan',
 	'item.customers': 'Pelanggan',
@@ -97,7 +99,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.organizations': 'Organisasi',
 	'item.users': 'Pengguna',
 	'item.auditLog': 'Log Audit',
-	'item.companyProfile': 'Profil Perusahaan',
+	'item.companyProfile': 'Perusahaan',
 	'item.codeNumbers': 'Penomoran Kode',
 
 	'theme.label': 'Tema',
