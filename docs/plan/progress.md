@@ -18,6 +18,95 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0047 Phase 7: web admin bell and realtime client
+
+Status: **Phase 7 done**. The header has a working notification bell fed by the
+single `/ws` socket; `NavUser` moved out of the sidebar footer into the header.
+
+- **`apps/web-admin/package.json`** — `zustand@5.1.0` added (the only new
+  dependency).
+- **`src/lib/realtime/realtime-client.ts`** (new) — one `WebSocket` to
+  `ws(s)://<api>/ws`, exponential backoff (1s doubling, capped at 30s), exact
+  `type` → handler registry. `onerror` is deliberately unwired: a browser error
+  event is always followed by `close`, and reconnecting from both would double
+  every retry. Exports `reconnectDelayMs` and `realtimeUrl` so the two pure
+  pieces are testable.
+- **`src/lib/realtime/realtime-store.ts`** (new) — zustand store holding the
+  connection status only.
+- **`src/lib/realtime/use-realtime.ts`** (new) — mounts the socket once, from
+  `MainLayout`. `onOpen` refetches the inbox, because frames sent while the
+  socket was down are not replayed.
+- **`src/lib/notification-api.ts`** (new) — `notificationsQueryOptions`,
+  `unreadCountQueryOptions`, `markNotificationRead`,
+  `markAllNotificationsRead`, `refreshNotifications`, and the three socket
+  handlers (`notification.created` / `.updated` invalidate,
+  `notification.unread_count` writes the count into the cache).
+- **`src/lib/notification-text.ts`** (new) — localized title/body per
+  `templateCode` via an explicit `switch`.
+- **`src/components/notification/notification-bell.tsx`** (new) — icon-only
+  ghost `Button` with the unread badge and a disconnected dot, `Popover` with a
+  header, "mark all as read" and a scrollable list of title / body / tag chips;
+  an item marks itself read and navigates.
+- **`src/components/layout/main-layout.tsx`** — header is now
+  `[SidebarTrigger][Separator][Breadcrumb] … [NotificationBell][NavUser]`, and
+  the layout calls `useRealtime()`.
+- **`src/components/sidebar/nav-user.tsx`** — trigger is a ghost `Button`
+  (avatar always, name/email `hidden md:grid`); `ChevronsUpDown` and the
+  dead "Notifications" item removed.
+- **`src/components/sidebar/main-sidebar.tsx`** — `SidebarFooter` / `NavUser`
+  removed.
+- **`packages/locales`** — new `notifications` namespace (`en` + `id`, including
+  the four template copies), registered in `NAMESPACES`, both `index.ts`
+  bundles and `i18next.d.ts`; `NotificationKey` type added; the now-dead
+  `nav:user.notifications` removed from both bundles.
+
+Deviations from the plan text:
+
+- **`DYNAMIC_PREFIXES` needed no entry.** Every key is literal, so the dead-key
+  guard already sees them; what the plan missed is the `i18next.d.ts`
+  augmentation, without which `useTranslation('notifications')` does not type.
+- **The store holds connection status only.** Buffered events and an optimistic
+  badge were dropped: a buffer is stale after a long outage (refetch on open is
+  correct), and the badge is already the server's count.
+- **Template copy is a `switch`, not a key map** — a map of keys compiles to a
+  union and i18next's overloads then reject the call, losing the interpolation
+  check.
+- **Template keys are camelCase** (`template.org.memberAdded.title`): i18next
+  reads `_` as a plural suffix and rejects the snake_case code as a key.
+- **`useRealtime()` lives in `MainLayout`**, not the `_authed` route.
+- **Item navigation is shallow**: `organization` → the organization page,
+  `organization_member` → `/organizations`, everything else marks read only.
+
+Commands and outcomes:
+
+```text
+cd apps/web-admin; bun add zustand           -> zustand@5.1.0
+cd apps/web-admin; bunx tsc -b --noEmit      (clean)
+cd apps/backend;   bunx tsc -b --noEmit      (clean)
+cd $repo; bun run test
+  @ims-erp/web-admin  74 pass / 0 fail  (2 new files: realtime-client, notification-realtime)
+  @ims-erp/locales    90 pass / 0 fail
+  @ims-erp/backend   921 pass / 0 fail
+  @ims-erp/react-email 5 pass / 0 fail
+cd $repo; bun run lint                       0 errors (ui 19 / backend 12 / web-admin 11
+                                             pre-existing warnings)
+cd $repo; bun docs/database/validate-dbml.ts OK (no schema change)
+
+# live, backend :3001 + vite :5173, signed in as admin@local.com
+header (en)          "Notifications, 2 unread"  -> popover lists the 3 seeded rows
+"Mark all as read"   badge cleared, both queries refetched
+second session PATCH /notifications/:id/read  -> badge 3 -> 2, no reload (socket frame)
+backend stopped      bell shows "Live updates unavailable"
+backend restarted    dot cleared without a reload (backoff reconnect)
+locale -> id         "Notifikasi, 3 belum dibaca", "Tandai semua dibaca",
+                     "Anda bergabung dengan Entragate", "Invoice INV-DEV-0001
+                     diterbitkan", "Tanda tangan diminta: BAST Swing Gate"
+keyboard             bell focusable, Enter opens the popover, Escape closes it
+```
+
+Seeded demo rows were restored to their intended state after the manual pass
+(two unread, one read).
+
 ## 2026-11-14 - ERP-0047 Phase 6: notification seeders
 
 Status: **Phase 6 done**. A seeded database has the four templates and three
@@ -6798,16 +6887,16 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**ERP-0047 Phase 7** — web admin, per `docs/plan/plans/ws-notification.md`: add
-`zustand`, build `src/lib/realtime/{realtime-client,realtime-store,use-realtime}.ts`
-(one socket to `/ws`, backoff reconnect, type → handler registry, connection
-status + optimistic badge), `src/lib/notification-api.ts` (query options +
-mutations, `setQueryData`/invalidate on socket events),
-`src/components/notification/notification-bell.tsx` (icon-only button + unread
-badge + popover), move `NavUser` into the header and delete `SidebarFooter`, and
-add the `notification` locale namespace in both `en` and `id`. Phases 0-6 are
-done (see the 2026-11-14 entries); the API it consumes and the seeded rows it
-renders both exist.
+**ERP-0047 Phase 8** — verification, per `docs/plan/plans/ws-notification.md`:
+`bunx tsc -b --noEmit` in both apps, `bun run test`, `bun run lint`,
+`bun docs/database/validate-dbml.ts`, `bun run drizzle:migrate-reset` then seed
+twice, `apps/backend/test/notification/realtime.smoke.test.ts` (session cookie →
+producer → `{ type: 'notification.created', status: 'success', sentAt, data }`),
+and the manual two-session walkthrough (admin adds a registered user → that user
+sees the badge; a second notification arrives live). Phases 0-7 are done (see
+the 2026-11-14 entries); the browser pass already exercised the reconnect,
+live-delivery and locale paths by hand, so Phase 8 only has to automate the
+smoke test and re-run the reset.
 
 **Get reviewer sign-off on PR #82** (`fix/org-hardening`) — the organization
 `description` slice, the full-width create card, the create-style edit page,

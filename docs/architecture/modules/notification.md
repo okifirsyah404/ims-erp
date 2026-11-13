@@ -17,8 +17,8 @@ WhatsApp AI handoff of M04 stage 2.
 
 ## Current state (2026-11-14)
 
-**Backend module landed with its REST surface, producers and seeders; no UI
-yet.** Phases 0–6 of `docs/plan/plans/ws-notification.md`:
+**Backend module, REST surface, producers, seeders and the web-admin bell all
+landed.** Phases 0–7 of `docs/plan/plans/ws-notification.md`:
 
 - `docs/database/docs.dbml` — `notification.notification_templates` and
   `notification.notifications` moved out of the `automation` schema.
@@ -40,7 +40,18 @@ yet.** Phases 0–6 of `docs/plan/plans/ws-notification.md`:
   `notification-demo.seeder.ts` — the four canonical templates (every
   environment) and three demo rows for the seed admin (dev only).
 
-Phase 7 adds the bell.
+Client side (Phase 7):
+
+- `apps/web-admin/src/lib/realtime/{realtime-client,realtime-store,use-realtime}.ts`
+  — one socket to `/ws` with backoff reconnect and a `type` → handler registry;
+  the zustand store holds the connection status only.
+- `apps/web-admin/src/lib/notification-api.ts` — query options, mutations and
+  the socket handlers; server data stays in TanStack Query.
+- `apps/web-admin/src/lib/notification-text.ts` — localized title/body per
+  `templateCode`, falling back to the stored English text.
+- `apps/web-admin/src/components/notification/notification-bell.tsx` — header
+  bell with the unread badge and the popover; `NavUser` sits beside it in the
+  header, and the sidebar footer is gone.
 
 ## Seed data
 
@@ -184,6 +195,14 @@ The transport lives in `apps/backend/src/providers/realtime/` (envelope builder,
 in-process hub, gateway), not in this module: the module only calls
 `IRealtimeHub.publish(userId, realtimeMessage(type, data))`.
 
+The client half (`src/lib/realtime/`) opens exactly one socket per
+authenticated shell, from `MainLayout`. It reconnects with exponential backoff
+(1s doubling, capped at 30s) and **refetches on open** rather than buffering:
+frames sent while the socket was down are not replayed, so the server is the
+only safe reconciliation. `notification.created` and `notification.updated`
+invalidate the list and the count; `notification.unread_count` writes its number
+straight into the query cache, because it already carries the answer.
+
 ## Retention
 
 `prune` is a BullMQ repeat job (`upsertJobScheduler`, key `prune`), declared at
@@ -229,3 +248,8 @@ undelivered information, not stale storage.
 
 `apps/backend/test/unit/realtime.{hub,gateway}.test.ts` cover the transport the
 worker publishes through (envelope, upgrade rejected without a session).
+
+`apps/web-admin/test/unit/` (Phase 7): `realtime-client.test.ts` pins the
+backoff curve and the `ws`/`wss` URL derivation; `notification-realtime.test.ts`
+pins that a `notification.unread_count` frame lands in the badge cache and that
+a malformed frame leaves the badge alone.

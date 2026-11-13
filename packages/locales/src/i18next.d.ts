@@ -34,6 +34,7 @@ declare module 'i18next' {
 		hr: typeof en.hr;
 		claim: typeof en.claim;
 		documents: typeof en.documents;
+		notifications: typeof en.notifications;
 	}
 
 	interface CustomTypeOptions {

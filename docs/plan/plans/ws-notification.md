@@ -452,6 +452,60 @@ inserted 0 and 0 with the same totals. Live over HTTP on `:3001`:
 - The badge updates without polling and the socket reconnects after a drop.
 - The popover is keyboard reachable and dismissible; no nested-button markup.
 
+**Status: done (2026-11-14).**
+
+Deviations from the plan text, all deliberate:
+
+- **`DYNAMIC_PREFIXES` needed no `notifications:` entry.** The plan assumed the
+  bell would compose keys (`notifications:${kind}`). It does not: every key is
+  a literal, including the four template copies, so the dead-key guard sees
+  them directly. What the plan missed is that `packages/locales/src/i18next.d.ts`
+  also has to gain the namespace — without it `useTranslation('notifications')`
+  is a type error, and the guard would have been the only thing to fail.
+- **Template copy is rendered client-side through an explicit `switch`, not a
+  key map.** `notificationText()` in `src/lib/notification-text.ts` spells out
+  each code with a literal key and a literal options object. A key map
+  (`TEMPLATE_KEYS[code]`) compiles to a union of keys, and i18next's overloads
+  then reject the call: the interpolation check needs the key and its options
+  to be statically paired. The `switch` keeps that, so a template gaining a
+  `{{placeholder}}` fails to compile until the variable is passed. An unknown
+  code (a newer backend, or the seeded demo rows) falls back to the stored
+  English text instead of rendering a raw key.
+- **Template locale keys are camelCase** (`template.org.memberAdded.title`), not
+  the code's snake_case: i18next's typed keys read `_` as a plural suffix and
+  reject `template.org.member_added.title` outright.
+- **The store holds connection status only.** The plan also listed "buffered
+  events and the optimistic badge"; neither survived contact. Frames are not
+  replayed after a reconnect — `onOpen` refetches instead, which is correct even
+  after a long outage, where a buffer would be stale. The badge is the server's
+  own count (`notification.unread_count` writes straight into the query cache),
+  so a second client-side counter would be a second source of truth.
+- **`useRealtime()` is called from `MainLayout`, not `_authed`.** The layout is
+  what unmounts on sign-out and what already owns the header; mounting the
+  socket in the route would have split one concern across two files.
+- **`API_URL` moved to `src/lib/api-url.ts`.** `notification-api.ts` and the
+  socket URL both need it; `user-api.ts` still declares its own copy, which is
+  pre-existing and left alone.
+- **Navigation from an item is deliberately shallow.** `organization` opens the
+  organization page; `organization_member` opens `/organizations` because its
+  `source_id` is a member row that no route accepts without its organization id.
+  Everything else (including the demo rows) only marks itself read.
+- **A disconnected dot sits on the bell.** Not in the plan; a badge that silently
+  stops updating is worse than one that admits it.
+
+Verified: `bun test` web-admin 74 pass / locales 90 / backend 921, `tsc -b
+--noEmit` clean in both apps, `oxlint` 0 errors, `validate-dbml.ts` OK (no
+schema change). Live in the browser against `:3001` + Vite `:5173`:
+header renders `[SidebarTrigger][Separator][Breadcrumb] … [Bell][NavUser]`, the
+bell read `Notifications, 2 unread` from the seeded rows; clicking "Mark all as
+read" cleared the badge; a `PATCH /notifications/:id/read` issued from a
+**second** session dropped the badge from 3 to 2 with no reload (socket
+delivery); stopping the backend showed "Live updates unavailable" and starting
+it again cleared the dot without a reload (backoff reconnect); switching to
+Indonesian rendered "Notifikasi, 3 belum dibaca", "Tandai semua dibaca" and the
+Indonesian template copy ("Anda bergabung dengan Entragate", "Invoice
+INV-DEV-0001 diterbitkan", "Tanda tangan diminta: BAST Swing Gate").
+
 ---
 
 ## Phase 8 — Verification

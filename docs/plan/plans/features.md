@@ -183,7 +183,11 @@ Last synced: 2026-11-13.
   templates are seeded in every environment and three demo rows for the seed
   admin in dev, both idempotent (4+3 then 0+0 inserted), guarded by a drift test
   that keeps the code vocabulary, the seed list and the declared variables in
-  sync. No UI yet.
+  sync. Phase 7 done 2026-11-14: header bell with unread badge and popover,
+  one `/ws` socket client with backoff reconnect and a `type` → handler
+  registry, `NavUser` moved into the header, `notifications` locale namespace
+  in en+id. Verified live (badge updates without reload, reconnect after a
+  backend restart, Indonesian copy); Phase 8 verification next.
 
 ## M05 Inventory and Purchasing
 

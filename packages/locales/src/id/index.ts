@@ -19,6 +19,7 @@ import tax_ from './tax';
 import hr_ from './hr';
 import claim_ from './claim';
 import documents_ from './documents';
+import notifications_ from './notifications';
 
 /** Indonesian resources — same namespace/key shape as `en`. */
 export const id = {
@@ -43,4 +44,5 @@ export const id = {
 	hr: hr_,
 	claim: claim_,
 	documents: documents_,
+	notifications: notifications_,
 } as const;

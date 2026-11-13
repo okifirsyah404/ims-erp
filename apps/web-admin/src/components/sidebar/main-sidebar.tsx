@@ -1,9 +1,7 @@
-import { NavUser } from '@/components/sidebar/nav-user';
 import { OrganizationSwitcher } from '@/components/sidebar/organization-switcher';
 import {
 	Sidebar,
 	SidebarContent,
-	SidebarFooter,
 	SidebarHeader,
 	SidebarRail,
 } from '@ims-erp/ui/components/sidebar';
@@ -24,7 +22,7 @@ import SidebarSection from './sidebar-section';
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	// Keeps the presigned avatar URL fresh for the whole authenticated shell
 	// (this sidebar mounts once per session, so the timer is not duplicated
-	// by `NavUser` / profile pages reading the same cache entry).
+	// by the header `NavUser` / profile pages reading the same cache entry).
 	useSelfUserImageRefresh();
 	const { isAppAdmin } = useIsAppAdmin();
 
@@ -49,9 +47,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					/>
 				))}
 			</SidebarContent>
-			<SidebarFooter>
-				<NavUser />
-			</SidebarFooter>
 			<SidebarRail />
 		</Sidebar>
 	);
