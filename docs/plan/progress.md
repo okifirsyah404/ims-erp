@@ -18,6 +18,53 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - Web admin: header shows the avatar only
+
+Change: `apps/web-admin/src/components/sidebar/nav-user.tsx`. The header trigger now
+renders the avatar alone (skeleton avatar while loading). The name and email text
+were removed from the trigger and remain in the dropdown's profile row. The
+trigger keeps `aria-label` set to the user's name, so screen readers still announce
+the account. No locale keys added or removed.
+
+Commands and outcomes:
+
+```text
+cd apps/web-admin; bunx tsc -b --noEmit                 clean
+cd apps/web-admin; bun run test                          74 pass / 0 fail
+cd repo;           bunx oxlint nav-user.tsx              exit 0
+browser (in-app tab, user logged in, web-admin :5173):
+  header innerText                                       "Toggle Sidebar Home Profiles 3" (no name, no email)
+  trigger innerText                                      "" (avatar only)
+  trigger aria-label                                     "Live User"
+  dropdown open                                          "Live User / live.1475870968@local.com / EN ID / Account / Log out"
+```
+
+Not run: mobile width and the loading/error skeleton states in the browser.
+
+## 2026-11-14 - Web admin: sticky header
+
+Change: `apps/web-admin/src/components/layout/main-layout.tsx`, header class adds
+`sticky top-0 z-10 border-b bg-background`. Nothing else in the shell changed;
+`packages/ui` sidebar untouched. Login, forgot/reset password and invite pages
+have no header and are unchanged.
+
+Commands and outcomes:
+
+```text
+cd apps/web-admin; bunx tsc -b --noEmit                 clean
+cd apps/web-admin; bun run test                          74 pass / 0 fail
+cd repo;           bunx oxlint main-layout.tsx           exit 0
+browser (in-app tab, user logged in, web-admin :5173):
+  header computed style                                  position sticky, top 0px, z-index 10, border 1px
+  scroll to 800px with a 2500px pad (removed after)      header top stays 0
+  bell popover open while scrolled                       popover is the element at its own center point (above header and content)
+  sidebar collapse                                       header 64 -> 48px, top 0 while scrolled
+  sidebar expand                                         header back to 64px
+```
+
+Not run: print preview and mobile width. Print is covered by the existing
+`print:hidden` class on the header, which this change did not touch.
+
 ## 2026-11-14 - ERP-0047 Phase 8 complete: second-user live pass, ERP-0047 verified
 
 Status: **verified**. The second-user live step passed in two runs. This entry
