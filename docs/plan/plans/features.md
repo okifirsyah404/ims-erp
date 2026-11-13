@@ -187,7 +187,9 @@ Last synced: 2026-11-13.
   one `/ws` socket client with backoff reconnect and a `type` → handler
   registry, `NavUser` moved into the header, `notifications` locale namespace
   in en+id. Verified live (badge updates without reload, reconnect after a
-  backend restart, Indonesian copy); Phase 8 verification next.
+  backend restart, Indonesian copy). Phase 8 partial 2026-11-14: automated gates
+  green, WS smoke test committed, live HTTP inbox and browser live badge verified;
+  second-user live arrival still open (see `progress.md`). Stays in-progress.
 
 ## M05 Inventory and Purchasing
 

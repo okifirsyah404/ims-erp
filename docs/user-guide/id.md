@@ -20,6 +20,7 @@ Panduan ini menjelaskan cara memakai modul M02 (CRM & Penjualan), M05
 8. [Proyek, BAST, garansi, tiket servis](#8-proyek-bast-garansi-tiket-servis)
 9. [Dokumen cetak dan penomoran](#9-dokumen-cetak-dan-penomoran)
 10. [Catatan](#10-catatan)
+11. [Notifikasi](#11-notifikasi)
 
 Ringkasan alur lengkap: lihat diagram
 [Alur menyeluruh](diagrams.md#1-end-to-end-flow-activity).
@@ -390,3 +391,34 @@ PDF browser. Pola nomor diatur di **Pengaturan → Penomoran Kode**.
   hutang pemasok, retur penjualan/pembelian, SLA tiket.
 - Diagram topologi jaringan pada contoh garansi tidak dibuat di sistem
   (keputusan owner 2026-11-06).
+
+## 11. Notifikasi
+
+Lonceng di pojok kanan atas header (di sebelah menu akun) menampilkan
+notifikasi dalam aplikasi. Angka pada lencana menunjukkan jumlah yang belum
+dibaca.
+
+1. **Membaca**: klik lonceng. Notifikasi terbaru tampil paling atas; setiap
+   item menampilkan judul, isi, dan tag (misalnya nama organisasi).
+2. **Membuka item**: klik item tersebut. Item langsung ditandai sudah dibaca,
+   lalu:
+   - notifikasi organisasi membuka halaman organisasi tersebut;
+   - notifikasi keanggotaan membuka **Organisasi**;
+   - notifikasi lain hanya ditandai sudah dibaca.
+3. **Tandai semua dibaca**: tautan di bagian atas popover.
+4. **Pembaruan langsung**: notifikasi baru muncul tanpa memuat ulang halaman.
+   Jika lonceng menampilkan **Live updates unavailable** (titik merah), koneksi
+   sedang terputus; aplikasi menyambung ulang sendiri. Muat ulang halaman bila
+   titik merah tetap ada cukup lama.
+5. **Retensi**: notifikasi yang sudah dibaca dihapus setelah masa retensi yang
+   diatur administrator sistem (bawaan 90 hari). Notifikasi yang belum dibaca
+   tetap disimpan.
+
+Notifikasi hanya dikirim kepada orang yang bersangkutan. Yang Anda lihat
+bergantung pada akun Anda, bukan pada organisasi yang sedang dibuka. Pop-up
+browser atau ponsel belum tersedia.
+
+> Keterbatasan yang diketahui (2026-11-14): sejauh ini hanya kejadian
+> organisasi (anggota ditambahkan, organisasi dibuat) yang mengirim notifikasi.
+> Templat invoice diterbitkan dan permintaan tanda tangan sudah ada, tetapi
+> belum ada modul yang mengirimnya.

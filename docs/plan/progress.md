@@ -18,6 +18,85 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0047 Phase 8: verification (partial) and Phase 9: close-out docs
+
+Status: **Phase 8 partial**. Automated gates green, WebSocket smoke test
+committed, login fix committed, and the browser pass covers most of the manual
+walkthrough. The one step not run is a true second-user live arrival (see
+"Not verified" below). **Phase 9 docs written**. ERP-0047 stays `in-progress`.
+
+- **Login fix** (separate commit): `apps/web-admin/src/components/form/login-form.tsx`
+  sends identifiers containing `@` to `authClient.signIn.email`; others still go
+  to `signIn.username`. Root cause: accounts created by sign-up have no
+  `username`, so the backend `email-identifier` hook fell back to the raw email
+  and the username plugin returned 422 `INVALID_USERNAME` ("Username is invalid").
+- **`apps/backend/test/notification/realtime.smoke.test.ts`** (new)
+  — real `Bun.serve` `/ws` socket with a session cookie; `ExportedNotificationService`
+  → dispatcher → `processNotificationSendJob` → in-memory repository → hub → socket.
+  Asserts the frame `{ type: 'notification.created', status: 'success', sentAt, data }`
+  with `data.status === 'sent'`, and that the stored row carries the same
+  `templateCode` and `variables` the client renders. Second test: a second
+  producer call delivers again.
+- **Docs**: `docs/user-guide/en.md` + `id.md` gained section 11 (Notifications).
+- **Plan files**: `backlog.md` ERP-0047 evidence line, `features.md` ERP-0047
+  evidence, and "Next executable task" refreshed.
+
+Commands and outcomes:
+
+```text
+cd apps/backend;  bun test test/notification/realtime.smoke.test.ts   2 pass / 0 fail
+cd apps/backend;  bun test                                            923 pass / 0 fail (69 files)
+cd apps/backend;  bunx tsc -b --noEmit                                clean
+cd apps/web-admin; bunx tsc -b --noEmit                               clean
+cd $repo;         bun run lint                                        0 errors; backend 12 warnings (pre-existing)
+cd $repo;         bun docs/database/validate-dbml.ts                  OK (268 tables, 231 refs, 0 cross-module, 0 timestamp gaps)
+cd apps/backend;  bun run drizzle:migrate-reset                       reset + seeders run; schemas recreated
+cd apps/backend;  bun run drizzle:seed                                templates inserted 0/4, demo inserted 0 (idempotent re-run)
+
+# live HTTP, backend :3001, scripted (not browser)
+sign-up smoke.user@local.com                 200
+admin adds user to Entragate (sales)         201
+user GET /notifications                      total 1: org.member_added | You joined Entragate | sent | Entragate
+user GET /notifications/unread-count         1
+
+# browser, web-admin :5173 + backend :3001, after the login fix
+new user smoke.user@local.com via login form  -> dashboard; bell "Notifications, 1 unread"
+admin via login form, tab open                -> bell "Notifications, 2 unread"
+admin POST /organizations (in-tab fetch)      -> 201; bell "Notifications, 3 unread" with no reload
+admin popover                                 -> "Live Org ... is ready" listed first
+```
+
+Not verified in Phase 8:
+
+- **Second-user live arrival**: the live step ran on the admin's own tab, where
+  the notification is the admin's own org-creation. The plan's case (user tab
+  open while an admin adds that user, badge updates) was not run; the user's
+  badge was checked after login only. Open item before ERP-0047 can be `verified`.
+- Earlier browser attempts (before the login fix) showed "Username is invalid",
+  then "Invalid username or password"; cause was the username-only sign-in
+  route (see the login fix above), not the notification path.
+- Background `bun run src/index.ts` and `bun run dev` shells reported
+  `Shell.NotFoundError` after starting. Ports still answered; tmp logs
+  `apps/backend/tmp-boot.log` and `apps/web-admin/tmp-vite.log` deleted.
+- Dev DB has test data from the browser pass: `live.*@local.com` user, an extra
+  `Live Org live-zkc8m9`, and `smoke.user@local.com` as an Entragate member.
+
+Phase 9 deliverables:
+
+- `docs/plan/backlog.md` ERP-0047 stays `in-progress`; evidence lists Phases 0–7
+  plus Phase 8 partial. Not moved to `verified` until the second-user live step runs.
+- `docs/plan/plans/features.md` stays under `in-progress` (no rollup move).
+- User guide section 11 explains the bell, unread badge, mark read, mark all,
+  live-update indicator, and retention. It states that only the org templates
+  have producers so far; invoice and signature templates are seeded but no
+  module sends them yet.
+- `docs/database/` reviewed: unchanged in this change; `validate-dbml.ts` OK.
+
+Follow-ups recorded (out of scope): Web Push / Notification API (VAPID, service
+worker, `push_subscriptions`), notification preferences, email/WhatsApp
+channels, template editor, chat on `/ws`, Redis pub/sub fanout (multi-instance
+only), producers for sales invoice and document signature templates.
+
 ## 2026-11-14 - ERP-0047 Phase 7: web admin bell and realtime client
 
 Status: **Phase 7 done**. The header has a working notification bell fed by the
@@ -6887,7 +6966,7 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 
 ## Next executable task
 
-**ERP-0047 Phase 8** — verification, per `docs/plan/plans/ws-notification.md`:
+**ERP-0047 Phase 8 (partial)** — finish verification, per `docs/plan/plans/ws-notification.md`. Left open: the manual two-session browser pass (new user login through the form is refused; see 2026-11-14 Phase 8 entry) and committing `apps/backend/test/notification/realtime.smoke.test.ts`. Then Phase 9 is written and ERP-0047 moves to `verified` only after that pass. Original scope:
 `bunx tsc -b --noEmit` in both apps, `bun run test`, `bun run lint`,
 `bun docs/database/validate-dbml.ts`, `bun run drizzle:migrate-reset` then seed
 twice, `apps/backend/test/notification/realtime.smoke.test.ts` (session cookie →
