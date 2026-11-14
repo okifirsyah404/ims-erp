@@ -42,7 +42,7 @@ approvals or fully automated CRM.
   `sales.order.*`, `sales.invoice.*`).
 - Stage 2: checkout connects orders/invoices to gateway payment status and
   customer-portal document visibility (T21/T25).
-- **Online payment of invoices (ERP-0020, ADR-0019, 2026-11-14, in-progress).**
+- **Online payment of invoices (ERP-0020, ADR-0021, 2026-11-14, in-progress).**
   `sales.gateway_payments` holds hosted checkouts of an issued invoice.
   `IPaymentGateway` (`contracts/payment-gateway.contract.ts`) has adapters
   in `adapters/` (Xendit, SingaPay, local `fake`), chosen by

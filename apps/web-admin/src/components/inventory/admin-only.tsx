@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { hasRole } from '@ims-erp/common';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { useSession } from '@/lib/auth-client';
 
@@ -21,7 +22,7 @@ export function AdminOnly({ children }: { children: ReactNode }) {
 	const { data: session, isPending } = useSession();
 
 	if (isPending) return null;
-	if (session?.user?.role !== 'admin') {
+	if (!hasRole(session?.user?.role, 'admin')) {
 		return (
 			<Card>
 				<CardContent className='py-8 text-center text-sm text-muted-foreground'>

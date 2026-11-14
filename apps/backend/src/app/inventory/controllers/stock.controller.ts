@@ -1,5 +1,6 @@
 import { container } from 'tsyringe';
 import type { ErpContext } from '@authorization/elysia-auth';
+import { GLOBAL_ADMIN_ROLE, hasAppRole } from '@providers/better-auth/ac/admin-ac';
 import { domainPlugin } from '@http/plugin';
 import { created, ok, okPaginated } from '@http/response';
 import {
@@ -261,7 +262,7 @@ function resolveRecomputeScope(
  * @param erp - The guard-resolved context
  */
 function isApplicationAdmin(erp: ErpContext): boolean {
-	return erp.session.user.role === 'admin';
+	return hasAppRole(erp.session.user.role, GLOBAL_ADMIN_ROLE);
 }
 
 /**

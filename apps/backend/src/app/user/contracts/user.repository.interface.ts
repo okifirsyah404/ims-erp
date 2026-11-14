@@ -14,10 +14,15 @@ import {
  * @remarks
  * `email`, `name`, `username`, and `role` act as optional search filters
  * (case-insensitive partial match); `banned` is an exact boolean filter.
+ * `search` is the picker variant: one term matched against name **or** email
+ * **or** username, for callers that offer a single search box (the warehouse
+ * person-in-charge picker).
  */
 export type TUserPaginationRequest = TPaginationRequest &
 	Partial<Pick<TUserInsert, 'email' | 'name' | 'username' | 'role'>> & {
 		banned?: boolean;
+		/** Free-text term matched against name, email, or username. */
+		search?: string;
 	};
 
 /**

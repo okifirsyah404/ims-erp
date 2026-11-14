@@ -9,7 +9,7 @@ import { SingapayPaymentGateway } from './singapay-payment-gateway';
 import { XenditPaymentGateway } from './xendit-payment-gateway';
 
 /**
- * The configured payment gateways (ERP-0020, ADR-0019). Every provider with
+ * The configured payment gateways (ERP-0020, ADR-0021). Every provider with
  * credentials is built so webhooks of checkouts opened before a provider
  * switch still settle; only `config.provider` opens new checkouts. The fake
  * provider is never built in production.

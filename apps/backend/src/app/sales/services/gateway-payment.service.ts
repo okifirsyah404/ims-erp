@@ -47,7 +47,7 @@ function view(row: TGatewayPaymentSelect): TGatewayPaymentView {
 export type TGatewayActionContext = { organizationId: string; actorUserId: string };
 
 /**
- * Online payment of sales invoices (ERP-0020, ADR-0019).
+ * Online payment of sales invoices (ERP-0020, ADR-0021).
  *
  * @remarks
  * `open` asks the configured provider for a hosted checkout of the invoice's
@@ -176,8 +176,11 @@ export class GatewayPaymentService {
 				lastEvent: event.raw,
 			};
 
-			const invoice = await this.invoices.findById(row.organizationId, row.salesInvoiceId, tx);
+			// Always set when the checkout is opened; nullable only per ADR-0014.
+			const organizationId = row.organizationId;
+			const invoice = organizationId ? await this.invoices.findById(organizationId, row.salesInvoiceId, tx) : null;
 			if (
+				!organizationId ||
 				!invoice ||
 				(invoice.status !== 'issued' && invoice.status !== 'partially_paid') ||
 				invoice.outstandingTotal <= 0 ||
@@ -196,7 +199,7 @@ export class GatewayPaymentService {
 			const receipt = await this.invoices.addReceipt(
 				{
 					salesInvoiceId: row.salesInvoiceId,
-					organizationId: row.organizationId,
+					organizationId,
 					code,
 					receivedDate,
 					amount: paidAmount,
@@ -220,7 +223,7 @@ export class GatewayPaymentService {
 					module: 'sales',
 					sourceType: 'receipt',
 					sourceId: receipt.id,
-					organizationId: row.organizationId,
+					organizationId,
 					issuedOn: receivedDate,
 					issuedByUserId: null,
 				},

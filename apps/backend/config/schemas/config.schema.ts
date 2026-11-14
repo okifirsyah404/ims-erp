@@ -133,7 +133,7 @@ export const SchedulerConfigSchema = z.object({
 });
 
 /**
- * Payment gateway (ERP-0020, ADR-0019). `provider` picks where new checkouts
+ * Payment gateway (ERP-0020, ADR-0021). `provider` picks where new checkouts
  * are opened; every provider whose credentials are present can still receive
  * webhooks, so checkouts opened before a switch settle. Null provider = online
  * payment off. Values are secrets and never logged.

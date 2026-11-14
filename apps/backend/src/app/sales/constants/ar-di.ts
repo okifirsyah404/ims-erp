@@ -22,7 +22,7 @@ export const GATEWAY_PAYMENT_REPOSITORY_TOKEN: InjectionToken<IGatewayPaymentRep
 	'GATEWAY_PAYMENT_REPOSITORY_TOKEN',
 );
 
-/** Token resolving to the configured payment gateways (ADR-0019 port). */
+/** Token resolving to the configured payment gateways (ADR-0021 port). */
 export const PAYMENT_GATEWAY_REGISTRY_TOKEN: InjectionToken<IPaymentGatewayRegistry> = Symbol(
 	'PAYMENT_GATEWAY_REGISTRY_TOKEN',
 );

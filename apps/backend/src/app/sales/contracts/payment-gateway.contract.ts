@@ -9,7 +9,7 @@ import type {
 import { GATEWAY_PROVIDERS } from '@drizzle/schemas/sales.schema';
 
 /**
- * Payment gateway port (ERP-0020, ADR-0019).
+ * Payment gateway port (ERP-0020, ADR-0021).
  *
  * @remarks
  * Provider neutral: Xendit and SingaPay (and a local `fake`) implement

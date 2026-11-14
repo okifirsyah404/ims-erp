@@ -1,1 +1,0 @@
-ALTER TABLE "assets"."assets" ADD COLUMN "image_url" text;

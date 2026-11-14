@@ -1,5 +1,5 @@
 /**
- * Payment gateway (ERP-0020, ADR-0019): the provider adapters against the
+ * Payment gateway (ERP-0020, ADR-0021): the provider adapters against the
  * documented wire formats with faked HTTP (no sandbox accounts yet) — Xendit
  * Invoice API + x-callback-token, SingaPay signed access token, Payment Link
  * v2 and the HMAC-SHA512 webhook signature with its replay window — the

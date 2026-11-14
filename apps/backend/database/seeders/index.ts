@@ -5,6 +5,7 @@ import { closeDB, drizzleDB } from '../../drizzle/db';
 import { seedLocations } from './seed/location.seeder';
 import { seedAuth } from './seed/auth.seeder';
 import { seedInventory } from './seed/inventory.seeder';
+import { seedWarehouseManagers } from './seed/warehouse-managers.seeder';
 import { seedAssets } from './seed/assets.seeder';
 import { seedTax } from './seed/tax.seeder';
 import { seedOrganization } from './seed/organization.seeder';
@@ -12,6 +13,7 @@ import { seedOrganizationMembers } from './seed/organization-members.seeder';
 import { seedOrganizationRoles } from './seed/organization-roles.seeder';
 import { seedCompany } from './seed/company.seeder';
 import { seedItemCategories } from './seed/item-category.seeder';
+import { seedLeaveTypes } from './seed/hr-leave-types.seeder';
 import { seedHrEmployees } from './seed/hr.seeder';
 import { seedNotificationTemplates } from './seed/notification-templates.seeder';
 import { seedNotificationDemo } from './seed/notification-demo.seeder';
@@ -49,9 +51,14 @@ export async function runSeeders(): Promise<void> {
 	// category rows above; asset placements then reference the warehouse and
 	// storage rows it creates.
 	await seedInventory();
+	// Needs the live warehouse rows above and the seeded `warehouse` role
+	// account from `seedOrganizationMembers` (ADR-0017).
+	await seedWarehouseManagers();
 	await seedAssets();
 	await seedTax();
 	await seedHrEmployees();
+	// M08 leave types are reference rows the attendance/leave records depend on.
+	await seedLeaveTypes();
 	// Notification templates are reference rows (every environment); the demo
 	// rows that reference them are dev-only and need the seed admin, which
 	// `seedAuth` created above.

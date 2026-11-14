@@ -781,7 +781,7 @@ export const receipts = salesSchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
- * sales.gateway_payments — online checkouts of invoices (ERP-0020, ADR-0019)
+ * sales.gateway_payments — online checkouts of invoices (ERP-0020, ADR-0021)
  * ------------------------------------------------------------------------ */
 
 export const GATEWAY_PROVIDERS = ['xendit', 'singapay', 'fake'] as const;
@@ -795,7 +795,8 @@ export const gatewayPayments = salesSchema.table(
 	{
 		/** Also the merchant reference sent to the provider. */
 		id: uuid('id').primaryKey().default(sql`uuidv7()`),
-		organizationId: text('organization_id').notNull(),
+		/** Logical reference to auth.organizations.id; nullable per ADR-0014. */
+		organizationId: text('organization_id'),
 		salesInvoiceId: uuid('sales_invoice_id')
 			.notNull()
 			.references(() => invoices.id, { onDelete: 'restrict' }),

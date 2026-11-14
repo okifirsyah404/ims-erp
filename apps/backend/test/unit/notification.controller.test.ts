@@ -38,6 +38,16 @@ mock.module('@providers/better-auth/auth', () => ({
 	},
 }));
 
+// The login gate reads the database (ADR-0018). This suite has no database, so
+// the gate is stubbed open, exactly as `test/authorization/test-app.ts` does.
+// The gate's own rule is covered by test/unit/login-gate.test.ts.
+mock.module('@providers/better-auth/options/session.auth', () => ({
+	isWebAdminSessionAllowed: async () => true,
+	sessionAutoActivateOrganizationHook: async () => undefined,
+	loadMembershipsForGate: async () => [],
+	assertWebAdminAllowed: async () => undefined,
+}));
+
 const CALLER = 'user-member';
 const OTHER = 'user-sales';
 const READ_ID = '0190a1b2-0000-7000-8000-0000000000aa';

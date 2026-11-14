@@ -14,8 +14,13 @@ The database today has three schemas and 16 tables.
 | Schema | Tables | Origin |
 |---|---|---|
 | `auth` | 9 | Better Auth, migration `20261028042701_create_auth_schema` |
-| `location` | 4 | migration `20261028042750_create_location_schema`, seeded from `database/seeders/raw/location/*.json` |
-| `sales` | 2 | migration `20261029044823_dear_living_lightning` (transitional scaffold) |
+| `location` | 4 | migration `20261028044001_create_location_schema`, seeded from `database/seeders/raw/location/*.json` |
+| `sales` | 2 | migration `20261028044501_create_sales_schema` (transitional scaffold) |
+
+> Migration names in this section were rewritten on 2026-11-14 when the history
+> was squashed to one migration per schema (ADR-0019). The three schemas and
+> their table counts are unchanged; only the folder that creates them is now
+> named after the schema.
 
 The target is 27 schemas, 268 tables.
 

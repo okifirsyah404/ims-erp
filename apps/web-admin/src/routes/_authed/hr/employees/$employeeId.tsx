@@ -11,6 +11,7 @@ import {
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
+import { EmployeeRecordCards } from '@/components/hr/employee-records';
 import { toast } from '@/components/toast';
 import { archiveEmployee, employeeDetailQueryOptions } from '@/lib/hr-api';
 import { usePermission } from '@/lib/use-permission';
@@ -77,7 +78,7 @@ function EmployeeDetailPage() {
 	];
 
 	return (
-		<div className='mx-auto max-w-2xl space-y-4 p-4'>
+		<div className='mx-auto max-w-4xl space-y-4 p-4'>
 			<div className='flex items-start justify-between gap-3'>
 				<div>
 					<h1 className='text-xl font-semibold'>{employee.fullName}</h1>
@@ -112,6 +113,7 @@ function EmployeeDetailPage() {
 					</div>
 				</CardContent>
 			</Card>
+			<EmployeeRecordCards employeeId={employee.id} fullName={employee.fullName} />
 			{canArchive && (
 				<Button
 					variant='destructive'

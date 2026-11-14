@@ -7,14 +7,25 @@ export type NavContext = {
 	isAppAdmin: boolean;
 	/** True when the user holds an internal role in at least one organization. */
 	hasInternalRole: boolean;
+	/**
+	 * True when the user is a person in charge of at least one live warehouse
+	 * (ADR-0017).
+	 *
+	 * @remarks
+	 * Resolved from `GET /warehouses/mine`, not from an organization
+	 * permission: the grant is a table row and survives having no organization
+	 * link at all.
+	 */
+	isPic: boolean;
 };
 
 /**
  * Whether one leaf item is visible. Deny by default: no `permission`, no
- * `open`, and no `appAdminOnly` means hidden.
+ * `open`, no `appAdminOnly`, and no `warehousePic` means hidden.
  */
 export function leafVisible(item: SidebarItem, ctx: NavContext): boolean {
 	if (item.appAdminOnly) return ctx.isAppAdmin;
+	if (item.warehousePic) return ctx.isAppAdmin || ctx.isPic;
 	if (item.open) return true;
 	if (item.internalRole) return ctx.hasInternalRole;
 	if (item.permission) {
