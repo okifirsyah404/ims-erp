@@ -1,0 +1,1646 @@
+{
+	"type": "diff",
+	"version": "9",
+	"dialect": "postgres",
+	"id": "58cb789a-c3a6-42f6-a898-aa706b1b4f8e",
+	"prevIds": [
+		"a639e231-f87f-4072-b528-96edb8f94439"
+	],
+	"footprints": [
+		{
+			"statementType": "create_schema",
+			"statementTarget": [
+				"schema",
+				"company"
+			],
+			"writes": [
+				"s|sch|company",
+				"n|sch|company",
+				"e|sch|company"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"company",
+				"bank_accounts"
+			],
+			"writes": [
+				"s|tbl|company.bank_accounts",
+				"n|tbl|company.bank_accounts",
+				"e|tbl|company.bank_accounts",
+				"n|rel|company.bank_accounts",
+				"n|type|company.bank_accounts",
+				"n|rel|company.bank_accounts_pkey"
+			],
+			"reads": [
+				"n|sch|company"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"company",
+				"profiles"
+			],
+			"writes": [
+				"s|tbl|company.profiles",
+				"n|tbl|company.profiles",
+				"e|tbl|company.profiles",
+				"n|rel|company.profiles",
+				"n|type|company.profiles",
+				"n|rel|company.profiles_pkey"
+			],
+			"reads": [
+				"n|sch|company"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"company",
+				"settings"
+			],
+			"writes": [
+				"s|tbl|company.settings",
+				"n|tbl|company.settings",
+				"e|tbl|company.settings",
+				"n|rel|company.settings",
+				"n|type|company.settings",
+				"n|rel|company.settings_pkey"
+			],
+			"reads": [
+				"n|sch|company"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"company",
+				"contacts"
+			],
+			"writes": [
+				"s|tbl|company.contacts",
+				"n|tbl|company.contacts",
+				"e|tbl|company.contacts",
+				"n|rel|company.contacts",
+				"n|type|company.contacts",
+				"n|rel|company.contacts_pkey"
+			],
+			"reads": [
+				"n|sch|company"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"company",
+				"head_office_addresses"
+			],
+			"writes": [
+				"s|tbl|company.head_office_addresses",
+				"n|tbl|company.head_office_addresses",
+				"e|tbl|company.head_office_addresses",
+				"n|rel|company.head_office_addresses",
+				"n|type|company.head_office_addresses",
+				"n|rel|company.head_office_addresses_pkey"
+			],
+			"reads": [
+				"n|sch|company"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"company",
+				"bank_accounts",
+				"bank_accounts_code_uq"
+			],
+			"writes": [
+				"s|idx|company.bank_accounts_code_uq",
+				"n|idx|company.bank_accounts_code_uq",
+				"e|idx|company.bank_accounts_code_uq",
+				"n|rel|company.bank_accounts_code_uq"
+			],
+			"reads": [
+				"n|tbl|company.bank_accounts",
+				"n|sch|company",
+				"n|col|company.bank_accounts.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"company",
+				"bank_accounts",
+				"bank_accounts_invoice_usage_uq"
+			],
+			"writes": [
+				"s|idx|company.bank_accounts_invoice_usage_uq",
+				"n|idx|company.bank_accounts_invoice_usage_uq",
+				"e|idx|company.bank_accounts_invoice_usage_uq",
+				"n|rel|company.bank_accounts_invoice_usage_uq"
+			],
+			"reads": [
+				"n|tbl|company.bank_accounts",
+				"n|sch|company",
+				"n|col|company.bank_accounts.invoice_usage"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"company",
+				"bank_accounts",
+				"bank_accounts_account_number_idx"
+			],
+			"writes": [
+				"s|idx|company.bank_accounts_account_number_idx",
+				"n|idx|company.bank_accounts_account_number_idx",
+				"e|idx|company.bank_accounts_account_number_idx",
+				"n|rel|company.bank_accounts_account_number_idx"
+			],
+			"reads": [
+				"n|tbl|company.bank_accounts",
+				"n|sch|company",
+				"n|col|company.bank_accounts.account_number"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"company",
+				"profiles",
+				"profiles_singleton_uq"
+			],
+			"writes": [
+				"s|idx|company.profiles_singleton_uq",
+				"n|idx|company.profiles_singleton_uq",
+				"e|idx|company.profiles_singleton_uq",
+				"n|rel|company.profiles_singleton_uq"
+			],
+			"reads": [
+				"n|tbl|company.profiles",
+				"n|sch|company"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"company",
+				"settings",
+				"settings_scope_uq"
+			],
+			"writes": [
+				"s|idx|company.settings_scope_uq",
+				"n|idx|company.settings_scope_uq",
+				"e|idx|company.settings_scope_uq",
+				"n|rel|company.settings_scope_uq"
+			],
+			"reads": [
+				"n|tbl|company.settings",
+				"n|sch|company",
+				"n|col|company.settings.setting_group",
+				"n|col|company.settings.setting_key"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"company",
+				"contacts",
+				"contacts_primary_per_type_uq"
+			],
+			"writes": [
+				"s|idx|company.contacts_primary_per_type_uq",
+				"n|idx|company.contacts_primary_per_type_uq",
+				"e|idx|company.contacts_primary_per_type_uq",
+				"n|rel|company.contacts_primary_per_type_uq"
+			],
+			"reads": [
+				"n|tbl|company.contacts",
+				"n|sch|company",
+				"n|col|company.contacts.contact_type",
+				"n|col|company.contacts.is_primary"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"company",
+				"contacts",
+				"contacts_value_idx"
+			],
+			"writes": [
+				"s|idx|company.contacts_value_idx",
+				"n|idx|company.contacts_value_idx",
+				"e|idx|company.contacts_value_idx",
+				"n|rel|company.contacts_value_idx"
+			],
+			"reads": [
+				"n|tbl|company.contacts",
+				"n|sch|company",
+				"n|col|company.contacts.value"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"company",
+				"head_office_addresses",
+				"head_office_addresses_primary_uq"
+			],
+			"writes": [
+				"s|idx|company.head_office_addresses_primary_uq",
+				"n|idx|company.head_office_addresses_primary_uq",
+				"e|idx|company.head_office_addresses_primary_uq",
+				"n|rel|company.head_office_addresses_primary_uq"
+			],
+			"reads": [
+				"n|tbl|company.head_office_addresses",
+				"n|sch|company",
+				"n|col|company.head_office_addresses.is_primary"
+			]
+		}
+	],
+	"deltas": [
+		{
+			"op": "create",
+			"row": {
+				"name": "company",
+				"entityType": "schemas"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"name": "bank_accounts",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"name": "profiles",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"name": "settings",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"name": "contacts",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"name": "head_office_addresses",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "bank_name",
+				"type": "varchar(100)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "bank_code",
+				"type": "varchar(20)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "branch_name",
+				"type": "varchar(100)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "account_number",
+				"type": "varchar(50)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "account_holder",
+				"type": "varchar(200)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "invoice_usage",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "is_primary",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "false",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "is_active",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "true",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "legal_name",
+				"type": "varchar(200)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "trading_name",
+				"type": "varchar(200)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "document_code",
+				"type": "varchar(16)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "tagline",
+				"type": "varchar(300)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "tax_id",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "logo_object_key",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "signature_object_key",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "signatory_name",
+				"type": "varchar(200)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "signatory_title",
+				"type": "varchar(100)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "default_quotation_terms",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "default_invoice_terms",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "warranty_coverage",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "warranty_exclusions",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "warranty_service_terms",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'active'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "updated_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "setting_group",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "setting_key",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "setting_value",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "value_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'string'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "is_secret",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "false",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "description",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "updated_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "contacts",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "contacts",
+				"name": "contact_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "contacts",
+				"name": "value",
+				"type": "varchar(200)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "contacts",
+				"name": "label",
+				"type": "varchar(100)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "contacts",
+				"name": "is_primary",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "false",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "contacts",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "contacts",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "contacts",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "head_office_addresses",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "head_office_addresses",
+				"name": "label",
+				"type": "varchar(100)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'head_office'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "head_office_addresses",
+				"name": "address_line",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "head_office_addresses",
+				"name": "village_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "head_office_addresses",
+				"name": "postal_code",
+				"type": "varchar(10)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "head_office_addresses",
+				"name": "is_primary",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "false",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "head_office_addresses",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "head_office_addresses",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "head_office_addresses",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "bank_accounts_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "bank_accounts_invoice_usage_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "invoice_usage",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL AND invoice_usage IS NOT NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "bank_accounts_account_number_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "account_number",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "profiles_singleton_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "(true)",
+						"isExpression": true,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "settings_scope_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "setting_group",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "setting_key",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "contacts",
+				"name": "contacts_primary_per_type_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "contact_type",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "is_primary",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL AND is_primary",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "contacts",
+				"name": "contacts_value_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "value",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "head_office_addresses",
+				"name": "head_office_addresses_primary_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "is_primary",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL AND is_primary",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "bank_accounts_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "profiles_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "settings_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "contacts",
+				"name": "contacts_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "head_office_addresses",
+				"name": "head_office_addresses_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "bank_accounts",
+				"name": "bank_accounts_invoice_usage_check",
+				"value": "\"invoice_usage\" IS NULL OR \"invoice_usage\" IN ('vat', 'non_vat')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "profiles_status_check",
+				"value": "\"status\" IN ('active', 'inactive')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "profiles",
+				"name": "profiles_document_code_check",
+				"value": "\"document_code\" ~ '^[A-Z0-9]+$'",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "settings",
+				"name": "settings_value_type_check",
+				"value": "\"value_type\" IN ('string', 'number', 'boolean', 'json', 'date')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "company",
+				"table": "contacts",
+				"name": "contacts_contact_type_check",
+				"value": "\"contact_type\" IN ('phone', 'email', 'whatsapp', 'fax', 'other')",
+				"entityType": "checks"
+			}
+		}
+	]
+}

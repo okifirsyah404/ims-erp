@@ -90,6 +90,41 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`accepted` 2
 
 ---
 
+## Cross-cutting: migration history (ERP-0052)
+
+Decision: ADR-0019 (`accepted` 2026-11-14).
+
+### verified
+- Migration history squashed to **19 migrations, one per Postgres schema**,
+  generated from `drizzle/schemas` (1 `base` + 18 chained `diff` snapshots), so
+  `bunx --bun drizzle-kit check` reports `Everything's fine` and
+  `drizzle-kit generate` reports `No schema changes` against the repo's own
+  `drizzle.config.ts` for the first time since the ERP-0011 merge. Root causes:
+  11 migrations without `snapshot.json`, the unrecorded
+  `DROP SCHEMA "finance" CASCADE` in `20261106170000`, and `generate` emitting a
+  base snapshot when the out folder is empty. DDL the builder cannot express
+  (`NULLS NOT DISTINCT` on both `stock_balances` scope indexes, the
+  `deleted_at IS NULL` predicate on the two `items` code indexes, the
+  intra-module `sales.receipts` -> `sales.invoices` FK) is kept as a documented
+  tail in the owning migration. The cross-schema FK
+  `receipts_payment_id_payments_id_fkey` (sales -> finance) was dropped - it
+  violated `elysia-module` rule 3.2 / ADR-0014 - so the database now has zero
+  cross-schema foreign keys. Evidence: `progress.md` 2026-11-14 "ERP-0052";
+  `drizzle:migrate-reset` on `ims_erp_local` -> 19 journal rows, 116 tables;
+  `drizzle:migrate` afterwards a no-op; probe column produced a real `ALTER TABLE`
+  diff; schema fingerprint equal to the old chain except two auto-named
+  constraints; `smoke-warehouse-pic.ts` 47/47; backend 1005 pass, web-admin 100,
+  locales 90, react-email 5; typecheck, lint, `validate-dbml.ts` green.
+
+### planned
+- Teach `inventory.schema.ts`'s `scopedUnique()` helper the `deleted_at IS NULL`
+  predicate so the snapshot matches the `items` code indexes the database carries.
+  Cosmetic today - `generate` diffs against the snapshot, so it does not try to
+  drop them (probed 2026-11-14) - but the two should not drift. Recorded in
+  ADR-0019 consequences; not a regression of the squash.
+
+---
+
 ## M01 Dashboard
 
 ### planned

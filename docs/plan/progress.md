@@ -18,6 +18,86 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0052: migration history squashed to one migration per schema
+
+Branch `refactor/app-roles-investor-customer`. Closes ERP-0052: `drizzle-kit check` and
+`drizzle-kit generate` now both work against the repo's own config, for the first time since the
+ERP-0011 merge. Decision recorded as **ADR-0019**.
+
+**Root causes** (all four had to be fixed; the reported error was only the first symptom):
+1. Eleven migrations carried no `snapshot.json` - every hand-written one from `20261113150000`
+   onward. `generate` diffs against the *last* snapshot, so those changes were invisible.
+2. `20261106170000_drop_merge_side_finance_receipts` runs `DROP SCHEMA "finance" CASCADE` but has
+   no snapshot, so the deletion was never recorded. `20261106221731` therefore looked like a second
+   creation of `finance.receipts` - the "Two migrations gave one name to two different entities"
+   error. `20261109090000_sales_owns_invoice_receipt` was just the next conflict in line.
+3. On this drizzle-kit version (`1.0.0-rc.5`) `generate` writes a **base** snapshot, not a `diff`,
+   whenever the out folder has no snapshot yet. My first build script moved each generated folder
+   out of `--out` immediately, so every step saw an empty folder and produced a cumulative base -
+   visible as 19 base snapshots instead of 1 base + 18 diffs. Fixed by leaving the folders in
+   `--out` and copying at the end; the script now asserts `base` first and `prevIds` chaining.
+4. After removing only the immediate conflict, `generate` asked for **40** interactive
+   rename/create hints, so repairing the graph was not viable.
+
+**What replaced it:** 19 migrations, one per Postgres schema, in dependency order - `auth` (with
+`role`), `accounting`, `aftersales`, `assets`, `audit`, `code_number`, `company`, `crm`, `document`,
+`finance`, `hr`, `inventory`, `licensing`, `location`, `notification`, `organization`,
+`procurement`, `projects`, `sales`. The first is a `base` snapshot generated from
+`drizzle/schemas`; the next 18 are `diff` snapshots chained by `prevIds`. Each folder adds exactly
+one schema, so provenance survives the squash. Table adds per folder: 10, 11, 2, 14, 1, 1, 5, 5, 8,
+10, 1, 12, 6, 4, 2, 1, 5, 5, 12 = **115**.
+
+**Hand-written tails kept** (drizzle cannot express them; documented inline in the SQL):
+`create_inventory_schema` carries `NULLS NOT DISTINCT` on both `stock_balances` scope indexes (the
+bug `20261105185010` fixed - `inventory.schema.ts` explains why the builder cannot express it) and
+the `deleted_at IS NULL` predicate on the two `items` code indexes (SQL `IF NOT EXISTS` made
+`20261113130000` a no-op, so the live DB keeps the stricter definition).
+`create_sales_schema` carries the intra-module `sales.receipts` -> `sales.invoices` FK.
+
+**One foreign key deliberately dropped:** `receipts_payment_id_payments_id_fkey`
+(`sales.receipts` -> `finance.payments`). It violates `elysia-module` rule 3.2 / ADR-0014, it was
+created only by hand-written SQL (`sales.schema.ts` models `paymentId` as a plain id), and no code
+depends on it (the only `paymentId` outside the schema file is a TypeScript type in
+`web-admin/src/lib/finance-api.ts`). The database now has **zero** cross-schema foreign keys -
+verified by `pg_constraint` where child namespace <> parent namespace: 0 rows.
+
+**Evidence** (`ims_erp_local`, backup taken first at
+`%TEMP%\opencode\ims_erp_local_backup_20261114_210952.sql`):
+- `bun run drizzle:migrate-reset` -> 19 journal rows, 116 tables, 2 live PIC grants, 40 `auth.users`,
+  seeds complete in 9.9s.
+- `bunx --bun drizzle-kit check` (repo config) -> `Everything's fine`; `bunx --bun drizzle-kit
+  generate` -> `No schema changes, nothing to migrate`.
+- Positive test in a scratch copy of the chain: adding a probe column produced
+  `ALTER TABLE "inventory"."warehouses" ADD COLUMN "probe_column" text;` (a diff, not a base);
+  probe reverted, `git diff` on `drizzle/schemas` clean.
+- Replay of the new chain on an empty database (`ims_erp_squash_check`): 116 tables, and a
+  schema fingerprint (tables, columns, indexes, constraints, enums - 3759 lines) equal to the old
+  chain's except for two constraint *names* (the `hr.employees` manager FK and the
+  `notification.notifications` template FK now use drizzle's auto-generated names) plus the dropped
+  cross-schema FK. Both fingerprints stored under `%TEMP%\opencode\fp-*.txt`.
+- `drizzle:migrate` on the already-migrated DB is a no-op (still 19 journal rows, 116 tables).
+- `scripts/smoke-warehouse-pic.ts` re-run against the freshly rebuilt DB: **47 passed, 0 failed**.
+- Gates: `bun run typecheck` 4/4, `bun run lint` 5/5 (0 errors, pre-existing warnings only),
+  `bun run test` 5/5 - backend **1005 pass / 0 fail**, web-admin 100, locales 90, react-email 5;
+  `bun run docs/database/validate-dbml.ts` -> `269 tables, 232 refs, cross-module refs: 0,
+  timestamp gaps: 0, OK`.
+
+**Upgrade path:** a database migrated by the old 57-folder chain **cannot** be upgraded in place -
+the first squashed migration starts with `CREATE SCHEMA`, which fails against an existing database
+(verified). Rebuild it with `bun run drizzle:migrate-reset`. Acceptable while no production server
+exists (ADR-0019 decision 6).
+
+**Known follow-up, not introduced here:** `inventory.schema.ts`'s `scopedUnique()` helper does not
+model the `deleted_at IS NULL` predicate that the `items` code indexes carry in the database, so the
+snapshot understates them. It is **not** an active problem: a probe `drizzle:generate` against the
+squashed chain emitted only the probe's own `ALTER TABLE`, so `generate` diffs against the snapshot
+and will not try to drop those indexes. Worth closing so the two stay in sync if the indexes are
+ever edited; recorded in ADR-0019 consequences.
+
+**Superseded:** the `57 journal rows` / `57 migration folders` figures in the entries below describe
+the pre-squash tree. They are left as written (append-only); the migration tree they refer to no
+longer exists.
+
 ## 2026-11-14 - ERP-0051: dev DB reset to a fresh migrate + import/export guard proof
 
 Branch `refactor/app-roles-investor-customer`. The earlier Phase 5 evidence ran on a disposable database

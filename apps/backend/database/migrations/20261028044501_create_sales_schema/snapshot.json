@@ -1,0 +1,6985 @@
+{
+	"type": "diff",
+	"version": "9",
+	"dialect": "postgres",
+	"id": "f3e62ffa-45d5-4da0-8ec7-87ad4512f96c",
+	"prevIds": [
+		"19d7f6fe-29cd-4e30-ac80-40478e55becc"
+	],
+	"footprints": [
+		{
+			"statementType": "create_schema",
+			"statementTarget": [
+				"schema",
+				"sales"
+			],
+			"writes": [
+				"s|sch|sales",
+				"n|sch|sales",
+				"e|sch|sales"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"sales",
+				"delivery_note_items"
+			],
+			"writes": [
+				"s|tbl|sales.delivery_note_items",
+				"n|tbl|sales.delivery_note_items",
+				"e|tbl|sales.delivery_note_items",
+				"n|rel|sales.delivery_note_items",
+				"n|type|sales.delivery_note_items",
+				"n|rel|sales.delivery_note_items_pkey"
+			],
+			"reads": [
+				"n|sch|sales"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"sales",
+				"delivery_notes"
+			],
+			"writes": [
+				"s|tbl|sales.delivery_notes",
+				"n|tbl|sales.delivery_notes",
+				"e|tbl|sales.delivery_notes",
+				"n|rel|sales.delivery_notes",
+				"n|type|sales.delivery_notes",
+				"n|rel|sales.delivery_notes_pkey"
+			],
+			"reads": [
+				"n|sch|sales"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"sales",
+				"invoice_items"
+			],
+			"writes": [
+				"s|tbl|sales.invoice_items",
+				"n|tbl|sales.invoice_items",
+				"e|tbl|sales.invoice_items",
+				"n|rel|sales.invoice_items",
+				"n|type|sales.invoice_items",
+				"n|rel|sales.invoice_items_pkey"
+			],
+			"reads": [
+				"n|sch|sales"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"sales",
+				"invoices"
+			],
+			"writes": [
+				"s|tbl|sales.invoices",
+				"n|tbl|sales.invoices",
+				"e|tbl|sales.invoices",
+				"n|rel|sales.invoices",
+				"n|type|sales.invoices",
+				"n|rel|sales.invoices_pkey"
+			],
+			"reads": [
+				"n|sch|sales"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"sales",
+				"order_status_history"
+			],
+			"writes": [
+				"s|tbl|sales.order_status_history",
+				"n|tbl|sales.order_status_history",
+				"e|tbl|sales.order_status_history",
+				"n|rel|sales.order_status_history",
+				"n|type|sales.order_status_history",
+				"n|rel|sales.order_status_history_pkey"
+			],
+			"reads": [
+				"n|sch|sales"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"sales",
+				"payments"
+			],
+			"writes": [
+				"s|tbl|sales.payments",
+				"n|tbl|sales.payments",
+				"e|tbl|sales.payments",
+				"n|rel|sales.payments",
+				"n|type|sales.payments",
+				"n|rel|sales.payments_pkey"
+			],
+			"reads": [
+				"n|sch|sales"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"sales",
+				"quotation_items"
+			],
+			"writes": [
+				"s|tbl|sales.quotation_items",
+				"n|tbl|sales.quotation_items",
+				"e|tbl|sales.quotation_items",
+				"n|rel|sales.quotation_items",
+				"n|type|sales.quotation_items",
+				"n|rel|sales.quotation_items_pkey"
+			],
+			"reads": [
+				"n|sch|sales"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"sales",
+				"quotation_status_history"
+			],
+			"writes": [
+				"s|tbl|sales.quotation_status_history",
+				"n|tbl|sales.quotation_status_history",
+				"e|tbl|sales.quotation_status_history",
+				"n|rel|sales.quotation_status_history",
+				"n|type|sales.quotation_status_history",
+				"n|rel|sales.quotation_status_history_pkey"
+			],
+			"reads": [
+				"n|sch|sales"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"sales",
+				"quotations"
+			],
+			"writes": [
+				"s|tbl|sales.quotations",
+				"n|tbl|sales.quotations",
+				"e|tbl|sales.quotations",
+				"n|rel|sales.quotations",
+				"n|type|sales.quotations",
+				"n|rel|sales.quotations_pkey"
+			],
+			"reads": [
+				"n|sch|sales"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"sales",
+				"receipts"
+			],
+			"writes": [
+				"s|tbl|sales.receipts",
+				"n|tbl|sales.receipts",
+				"e|tbl|sales.receipts",
+				"n|rel|sales.receipts",
+				"n|type|sales.receipts",
+				"n|rel|sales.receipts_pkey"
+			],
+			"reads": [
+				"n|sch|sales"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"sales",
+				"sales_order_items"
+			],
+			"writes": [
+				"s|tbl|sales.sales_order_items",
+				"n|tbl|sales.sales_order_items",
+				"e|tbl|sales.sales_order_items",
+				"n|rel|sales.sales_order_items",
+				"n|type|sales.sales_order_items",
+				"n|rel|sales.sales_order_items_pkey"
+			],
+			"reads": [
+				"n|sch|sales"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"sales",
+				"sales_orders"
+			],
+			"writes": [
+				"s|tbl|sales.sales_orders",
+				"n|tbl|sales.sales_orders",
+				"e|tbl|sales.sales_orders",
+				"n|rel|sales.sales_orders",
+				"n|type|sales.sales_orders",
+				"n|rel|sales.sales_orders_pkey"
+			],
+			"reads": [
+				"n|sch|sales"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"delivery_note_items",
+				"delivery_note_items_delivery_note_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.delivery_note_items_delivery_note_id_idx",
+				"n|idx|sales.delivery_note_items_delivery_note_id_idx",
+				"e|idx|sales.delivery_note_items_delivery_note_id_idx",
+				"n|rel|sales.delivery_note_items_delivery_note_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.delivery_note_items",
+				"n|sch|sales",
+				"n|col|sales.delivery_note_items.delivery_note_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"delivery_note_items",
+				"delivery_note_items_sales_order_item_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.delivery_note_items_sales_order_item_id_idx",
+				"n|idx|sales.delivery_note_items_sales_order_item_id_idx",
+				"e|idx|sales.delivery_note_items_sales_order_item_id_idx",
+				"n|rel|sales.delivery_note_items_sales_order_item_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.delivery_note_items",
+				"n|sch|sales",
+				"n|col|sales.delivery_note_items.sales_order_item_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"delivery_notes",
+				"delivery_notes_code_uq"
+			],
+			"writes": [
+				"s|idx|sales.delivery_notes_code_uq",
+				"n|idx|sales.delivery_notes_code_uq",
+				"e|idx|sales.delivery_notes_code_uq",
+				"n|rel|sales.delivery_notes_code_uq"
+			],
+			"reads": [
+				"n|tbl|sales.delivery_notes",
+				"n|sch|sales",
+				"n|col|sales.delivery_notes.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"delivery_notes",
+				"delivery_notes_sales_order_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.delivery_notes_sales_order_id_idx",
+				"n|idx|sales.delivery_notes_sales_order_id_idx",
+				"e|idx|sales.delivery_notes_sales_order_id_idx",
+				"n|rel|sales.delivery_notes_sales_order_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.delivery_notes",
+				"n|sch|sales",
+				"n|col|sales.delivery_notes.sales_order_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"delivery_notes",
+				"delivery_notes_status_idx"
+			],
+			"writes": [
+				"s|idx|sales.delivery_notes_status_idx",
+				"n|idx|sales.delivery_notes_status_idx",
+				"e|idx|sales.delivery_notes_status_idx",
+				"n|rel|sales.delivery_notes_status_idx"
+			],
+			"reads": [
+				"n|tbl|sales.delivery_notes",
+				"n|sch|sales",
+				"n|col|sales.delivery_notes.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"invoice_items",
+				"invoice_items_invoice_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.invoice_items_invoice_id_idx",
+				"n|idx|sales.invoice_items_invoice_id_idx",
+				"e|idx|sales.invoice_items_invoice_id_idx",
+				"n|rel|sales.invoice_items_invoice_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.invoice_items",
+				"n|sch|sales",
+				"n|col|sales.invoice_items.invoice_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"invoice_items",
+				"invoice_items_item_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.invoice_items_item_id_idx",
+				"n|idx|sales.invoice_items_item_id_idx",
+				"e|idx|sales.invoice_items_item_id_idx",
+				"n|rel|sales.invoice_items_item_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.invoice_items",
+				"n|sch|sales",
+				"n|col|sales.invoice_items.item_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"invoices",
+				"invoices_org_code_uq"
+			],
+			"writes": [
+				"s|idx|sales.invoices_org_code_uq",
+				"n|idx|sales.invoices_org_code_uq",
+				"e|idx|sales.invoices_org_code_uq",
+				"n|rel|sales.invoices_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|sales.invoices",
+				"n|sch|sales",
+				"n|col|sales.invoices.organization_id",
+				"n|col|sales.invoices.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"invoices",
+				"invoices_customer_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.invoices_customer_id_idx",
+				"n|idx|sales.invoices_customer_id_idx",
+				"e|idx|sales.invoices_customer_id_idx",
+				"n|rel|sales.invoices_customer_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.invoices",
+				"n|sch|sales",
+				"n|col|sales.invoices.customer_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"invoices",
+				"invoices_sales_order_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.invoices_sales_order_id_idx",
+				"n|idx|sales.invoices_sales_order_id_idx",
+				"e|idx|sales.invoices_sales_order_id_idx",
+				"n|rel|sales.invoices_sales_order_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.invoices",
+				"n|sch|sales",
+				"n|col|sales.invoices.sales_order_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"invoices",
+				"invoices_status_idx"
+			],
+			"writes": [
+				"s|idx|sales.invoices_status_idx",
+				"n|idx|sales.invoices_status_idx",
+				"e|idx|sales.invoices_status_idx",
+				"n|rel|sales.invoices_status_idx"
+			],
+			"reads": [
+				"n|tbl|sales.invoices",
+				"n|sch|sales",
+				"n|col|sales.invoices.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"invoices",
+				"invoices_due_date_idx"
+			],
+			"writes": [
+				"s|idx|sales.invoices_due_date_idx",
+				"n|idx|sales.invoices_due_date_idx",
+				"e|idx|sales.invoices_due_date_idx",
+				"n|rel|sales.invoices_due_date_idx"
+			],
+			"reads": [
+				"n|tbl|sales.invoices",
+				"n|sch|sales",
+				"n|col|sales.invoices.due_date"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"invoices",
+				"invoices_term_kind_idx"
+			],
+			"writes": [
+				"s|idx|sales.invoices_term_kind_idx",
+				"n|idx|sales.invoices_term_kind_idx",
+				"e|idx|sales.invoices_term_kind_idx",
+				"n|rel|sales.invoices_term_kind_idx"
+			],
+			"reads": [
+				"n|tbl|sales.invoices",
+				"n|sch|sales",
+				"n|col|sales.invoices.term_kind"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"order_status_history",
+				"order_status_history_sales_order_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.order_status_history_sales_order_id_idx",
+				"n|idx|sales.order_status_history_sales_order_id_idx",
+				"e|idx|sales.order_status_history_sales_order_id_idx",
+				"n|rel|sales.order_status_history_sales_order_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.order_status_history",
+				"n|sch|sales",
+				"n|col|sales.order_status_history.sales_order_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"payments",
+				"payments_org_idx"
+			],
+			"writes": [
+				"s|idx|sales.payments_org_idx",
+				"n|idx|sales.payments_org_idx",
+				"e|idx|sales.payments_org_idx",
+				"n|rel|sales.payments_org_idx"
+			],
+			"reads": [
+				"n|tbl|sales.payments",
+				"n|sch|sales",
+				"n|col|sales.payments.organization_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"payments",
+				"payments_quotation_idx"
+			],
+			"writes": [
+				"s|idx|sales.payments_quotation_idx",
+				"n|idx|sales.payments_quotation_idx",
+				"e|idx|sales.payments_quotation_idx",
+				"n|rel|sales.payments_quotation_idx"
+			],
+			"reads": [
+				"n|tbl|sales.payments",
+				"n|sch|sales",
+				"n|col|sales.payments.quotation_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"quotation_items",
+				"quotation_items_quotation_sort_idx"
+			],
+			"writes": [
+				"s|idx|sales.quotation_items_quotation_sort_idx",
+				"n|idx|sales.quotation_items_quotation_sort_idx",
+				"e|idx|sales.quotation_items_quotation_sort_idx",
+				"n|rel|sales.quotation_items_quotation_sort_idx"
+			],
+			"reads": [
+				"n|tbl|sales.quotation_items",
+				"n|sch|sales",
+				"n|col|sales.quotation_items.quotation_id",
+				"n|col|sales.quotation_items.sort_order"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"quotation_status_history",
+				"quotation_status_history_quotation_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.quotation_status_history_quotation_id_idx",
+				"n|idx|sales.quotation_status_history_quotation_id_idx",
+				"e|idx|sales.quotation_status_history_quotation_id_idx",
+				"n|rel|sales.quotation_status_history_quotation_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.quotation_status_history",
+				"n|sch|sales",
+				"n|col|sales.quotation_status_history.quotation_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"quotations",
+				"quotations_code_uq"
+			],
+			"writes": [
+				"s|idx|sales.quotations_code_uq",
+				"n|idx|sales.quotations_code_uq",
+				"e|idx|sales.quotations_code_uq",
+				"n|rel|sales.quotations_code_uq"
+			],
+			"reads": [
+				"n|tbl|sales.quotations",
+				"n|sch|sales",
+				"n|col|sales.quotations.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"quotations",
+				"quotations_base_code_idx"
+			],
+			"writes": [
+				"s|idx|sales.quotations_base_code_idx",
+				"n|idx|sales.quotations_base_code_idx",
+				"e|idx|sales.quotations_base_code_idx",
+				"n|rel|sales.quotations_base_code_idx"
+			],
+			"reads": [
+				"n|tbl|sales.quotations",
+				"n|sch|sales",
+				"n|col|sales.quotations.base_code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"quotations",
+				"quotations_customer_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.quotations_customer_id_idx",
+				"n|idx|sales.quotations_customer_id_idx",
+				"e|idx|sales.quotations_customer_id_idx",
+				"n|rel|sales.quotations_customer_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.quotations",
+				"n|sch|sales",
+				"n|col|sales.quotations.customer_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"quotations",
+				"quotations_status_idx"
+			],
+			"writes": [
+				"s|idx|sales.quotations_status_idx",
+				"n|idx|sales.quotations_status_idx",
+				"e|idx|sales.quotations_status_idx",
+				"n|rel|sales.quotations_status_idx"
+			],
+			"reads": [
+				"n|tbl|sales.quotations",
+				"n|sch|sales",
+				"n|col|sales.quotations.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"quotations",
+				"quotations_created_by_idx"
+			],
+			"writes": [
+				"s|idx|sales.quotations_created_by_idx",
+				"n|idx|sales.quotations_created_by_idx",
+				"e|idx|sales.quotations_created_by_idx",
+				"n|rel|sales.quotations_created_by_idx"
+			],
+			"reads": [
+				"n|tbl|sales.quotations",
+				"n|sch|sales",
+				"n|col|sales.quotations.created_by"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"receipts",
+				"receipts_org_code_uq"
+			],
+			"writes": [
+				"s|idx|sales.receipts_org_code_uq",
+				"n|idx|sales.receipts_org_code_uq",
+				"e|idx|sales.receipts_org_code_uq",
+				"n|rel|sales.receipts_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|sales.receipts",
+				"n|sch|sales",
+				"n|col|sales.receipts.organization_id",
+				"n|col|sales.receipts.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"receipts",
+				"receipts_sales_invoice_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.receipts_sales_invoice_id_idx",
+				"n|idx|sales.receipts_sales_invoice_id_idx",
+				"e|idx|sales.receipts_sales_invoice_id_idx",
+				"n|rel|sales.receipts_sales_invoice_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.receipts",
+				"n|sch|sales",
+				"n|col|sales.receipts.sales_invoice_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"receipts",
+				"receipts_payment_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.receipts_payment_id_idx",
+				"n|idx|sales.receipts_payment_id_idx",
+				"e|idx|sales.receipts_payment_id_idx",
+				"n|rel|sales.receipts_payment_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.receipts",
+				"n|sch|sales",
+				"n|col|sales.receipts.payment_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"receipts",
+				"receipts_status_idx"
+			],
+			"writes": [
+				"s|idx|sales.receipts_status_idx",
+				"n|idx|sales.receipts_status_idx",
+				"e|idx|sales.receipts_status_idx",
+				"n|rel|sales.receipts_status_idx"
+			],
+			"reads": [
+				"n|tbl|sales.receipts",
+				"n|sch|sales",
+				"n|col|sales.receipts.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"sales_order_items",
+				"sales_order_items_order_sort_idx"
+			],
+			"writes": [
+				"s|idx|sales.sales_order_items_order_sort_idx",
+				"n|idx|sales.sales_order_items_order_sort_idx",
+				"e|idx|sales.sales_order_items_order_sort_idx",
+				"n|rel|sales.sales_order_items_order_sort_idx"
+			],
+			"reads": [
+				"n|tbl|sales.sales_order_items",
+				"n|sch|sales",
+				"n|col|sales.sales_order_items.sales_order_id",
+				"n|col|sales.sales_order_items.sort_order"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"sales_order_items",
+				"sales_order_items_fulfillment_status_idx"
+			],
+			"writes": [
+				"s|idx|sales.sales_order_items_fulfillment_status_idx",
+				"n|idx|sales.sales_order_items_fulfillment_status_idx",
+				"e|idx|sales.sales_order_items_fulfillment_status_idx",
+				"n|rel|sales.sales_order_items_fulfillment_status_idx"
+			],
+			"reads": [
+				"n|tbl|sales.sales_order_items",
+				"n|sch|sales",
+				"n|col|sales.sales_order_items.fulfillment_status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"sales_orders",
+				"sales_orders_code_uq"
+			],
+			"writes": [
+				"s|idx|sales.sales_orders_code_uq",
+				"n|idx|sales.sales_orders_code_uq",
+				"e|idx|sales.sales_orders_code_uq",
+				"n|rel|sales.sales_orders_code_uq"
+			],
+			"reads": [
+				"n|tbl|sales.sales_orders",
+				"n|sch|sales",
+				"n|col|sales.sales_orders.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"sales_orders",
+				"sales_orders_live_quotation_uq"
+			],
+			"writes": [
+				"s|idx|sales.sales_orders_live_quotation_uq",
+				"n|idx|sales.sales_orders_live_quotation_uq",
+				"e|idx|sales.sales_orders_live_quotation_uq",
+				"n|rel|sales.sales_orders_live_quotation_uq"
+			],
+			"reads": [
+				"n|tbl|sales.sales_orders",
+				"n|sch|sales",
+				"n|col|sales.sales_orders.quotation_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"sales_orders",
+				"sales_orders_quotation_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.sales_orders_quotation_id_idx",
+				"n|idx|sales.sales_orders_quotation_id_idx",
+				"e|idx|sales.sales_orders_quotation_id_idx",
+				"n|rel|sales.sales_orders_quotation_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.sales_orders",
+				"n|sch|sales",
+				"n|col|sales.sales_orders.quotation_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"sales_orders",
+				"sales_orders_customer_id_idx"
+			],
+			"writes": [
+				"s|idx|sales.sales_orders_customer_id_idx",
+				"n|idx|sales.sales_orders_customer_id_idx",
+				"e|idx|sales.sales_orders_customer_id_idx",
+				"n|rel|sales.sales_orders_customer_id_idx"
+			],
+			"reads": [
+				"n|tbl|sales.sales_orders",
+				"n|sch|sales",
+				"n|col|sales.sales_orders.customer_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"sales_orders",
+				"sales_orders_status_idx"
+			],
+			"writes": [
+				"s|idx|sales.sales_orders_status_idx",
+				"n|idx|sales.sales_orders_status_idx",
+				"e|idx|sales.sales_orders_status_idx",
+				"n|rel|sales.sales_orders_status_idx"
+			],
+			"reads": [
+				"n|tbl|sales.sales_orders",
+				"n|sch|sales",
+				"n|col|sales.sales_orders.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"sales",
+				"sales_orders",
+				"sales_orders_sales_person_idx"
+			],
+			"writes": [
+				"s|idx|sales.sales_orders_sales_person_idx",
+				"n|idx|sales.sales_orders_sales_person_idx",
+				"e|idx|sales.sales_orders_sales_person_idx",
+				"n|rel|sales.sales_orders_sales_person_idx"
+			],
+			"reads": [
+				"n|tbl|sales.sales_orders",
+				"n|sch|sales",
+				"n|col|sales.sales_orders.sales_person_user_id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"sales",
+				"delivery_note_items"
+			],
+			"writes": [
+				"s|fk|sales.delivery_note_items.delivery_note_items_delivery_note_id_delivery_notes_id_fkey",
+				"n|fk|sales.delivery_note_items.delivery_note_items_delivery_note_id_delivery_notes_id_fkey",
+				"e|fk|sales.delivery_note_items.delivery_note_items_delivery_note_id_delivery_notes_id_fkey",
+				"n|con|sales.delivery_note_items.delivery_note_items_delivery_note_id_delivery_notes_id_fkey"
+			],
+			"reads": [
+				"n|tbl|sales.delivery_note_items",
+				"n|sch|sales",
+				"n|tbl|sales.delivery_notes",
+				"n|sch|sales",
+				"n|col|sales.delivery_note_items.delivery_note_id",
+				"n|col|sales.delivery_notes.id",
+				"e|uniqueness|sales.delivery_notes.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"sales",
+				"delivery_note_items"
+			],
+			"writes": [
+				"s|fk|sales.delivery_note_items.delivery_note_items_GizTnQCLjA1F_fkey",
+				"n|fk|sales.delivery_note_items.delivery_note_items_GizTnQCLjA1F_fkey",
+				"e|fk|sales.delivery_note_items.delivery_note_items_GizTnQCLjA1F_fkey",
+				"n|con|sales.delivery_note_items.delivery_note_items_GizTnQCLjA1F_fkey"
+			],
+			"reads": [
+				"n|tbl|sales.delivery_note_items",
+				"n|sch|sales",
+				"n|tbl|sales.sales_order_items",
+				"n|sch|sales",
+				"n|col|sales.delivery_note_items.sales_order_item_id",
+				"n|col|sales.sales_order_items.id",
+				"e|uniqueness|sales.sales_order_items.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"sales",
+				"delivery_notes"
+			],
+			"writes": [
+				"s|fk|sales.delivery_notes.delivery_notes_sales_order_id_sales_orders_id_fkey",
+				"n|fk|sales.delivery_notes.delivery_notes_sales_order_id_sales_orders_id_fkey",
+				"e|fk|sales.delivery_notes.delivery_notes_sales_order_id_sales_orders_id_fkey",
+				"n|con|sales.delivery_notes.delivery_notes_sales_order_id_sales_orders_id_fkey"
+			],
+			"reads": [
+				"n|tbl|sales.delivery_notes",
+				"n|sch|sales",
+				"n|tbl|sales.sales_orders",
+				"n|sch|sales",
+				"n|col|sales.delivery_notes.sales_order_id",
+				"n|col|sales.sales_orders.id",
+				"e|uniqueness|sales.sales_orders.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"sales",
+				"invoice_items"
+			],
+			"writes": [
+				"s|fk|sales.invoice_items.invoice_items_invoice_id_invoices_id_fkey",
+				"n|fk|sales.invoice_items.invoice_items_invoice_id_invoices_id_fkey",
+				"e|fk|sales.invoice_items.invoice_items_invoice_id_invoices_id_fkey",
+				"n|con|sales.invoice_items.invoice_items_invoice_id_invoices_id_fkey"
+			],
+			"reads": [
+				"n|tbl|sales.invoice_items",
+				"n|sch|sales",
+				"n|tbl|sales.invoices",
+				"n|sch|sales",
+				"n|col|sales.invoice_items.invoice_id",
+				"n|col|sales.invoices.id",
+				"e|uniqueness|sales.invoices.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"sales",
+				"order_status_history"
+			],
+			"writes": [
+				"s|fk|sales.order_status_history.order_status_history_sales_order_id_sales_orders_id_fkey",
+				"n|fk|sales.order_status_history.order_status_history_sales_order_id_sales_orders_id_fkey",
+				"e|fk|sales.order_status_history.order_status_history_sales_order_id_sales_orders_id_fkey",
+				"n|con|sales.order_status_history.order_status_history_sales_order_id_sales_orders_id_fkey"
+			],
+			"reads": [
+				"n|tbl|sales.order_status_history",
+				"n|sch|sales",
+				"n|tbl|sales.sales_orders",
+				"n|sch|sales",
+				"n|col|sales.order_status_history.sales_order_id",
+				"n|col|sales.sales_orders.id",
+				"e|uniqueness|sales.sales_orders.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"sales",
+				"quotation_items"
+			],
+			"writes": [
+				"s|fk|sales.quotation_items.quotation_items_quotation_id_quotations_id_fkey",
+				"n|fk|sales.quotation_items.quotation_items_quotation_id_quotations_id_fkey",
+				"e|fk|sales.quotation_items.quotation_items_quotation_id_quotations_id_fkey",
+				"n|con|sales.quotation_items.quotation_items_quotation_id_quotations_id_fkey"
+			],
+			"reads": [
+				"n|tbl|sales.quotation_items",
+				"n|sch|sales",
+				"n|tbl|sales.quotations",
+				"n|sch|sales",
+				"n|col|sales.quotation_items.quotation_id",
+				"n|col|sales.quotations.id",
+				"e|uniqueness|sales.quotations.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"sales",
+				"quotation_status_history"
+			],
+			"writes": [
+				"s|fk|sales.quotation_status_history.quotation_status_history_quotation_id_quotations_id_fkey",
+				"n|fk|sales.quotation_status_history.quotation_status_history_quotation_id_quotations_id_fkey",
+				"e|fk|sales.quotation_status_history.quotation_status_history_quotation_id_quotations_id_fkey",
+				"n|con|sales.quotation_status_history.quotation_status_history_quotation_id_quotations_id_fkey"
+			],
+			"reads": [
+				"n|tbl|sales.quotation_status_history",
+				"n|sch|sales",
+				"n|tbl|sales.quotations",
+				"n|sch|sales",
+				"n|col|sales.quotation_status_history.quotation_id",
+				"n|col|sales.quotations.id",
+				"e|uniqueness|sales.quotations.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"sales",
+				"quotations"
+			],
+			"writes": [
+				"s|fk|sales.quotations.quotations_previous_revision_id_quotations_id_fkey",
+				"n|fk|sales.quotations.quotations_previous_revision_id_quotations_id_fkey",
+				"e|fk|sales.quotations.quotations_previous_revision_id_quotations_id_fkey",
+				"n|con|sales.quotations.quotations_previous_revision_id_quotations_id_fkey"
+			],
+			"reads": [
+				"n|tbl|sales.quotations",
+				"n|sch|sales",
+				"n|tbl|sales.quotations",
+				"n|sch|sales",
+				"n|col|sales.quotations.previous_revision_id",
+				"n|col|sales.quotations.id",
+				"e|uniqueness|sales.quotations.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"sales",
+				"sales_order_items"
+			],
+			"writes": [
+				"s|fk|sales.sales_order_items.sales_order_items_sales_order_id_sales_orders_id_fkey",
+				"n|fk|sales.sales_order_items.sales_order_items_sales_order_id_sales_orders_id_fkey",
+				"e|fk|sales.sales_order_items.sales_order_items_sales_order_id_sales_orders_id_fkey",
+				"n|con|sales.sales_order_items.sales_order_items_sales_order_id_sales_orders_id_fkey"
+			],
+			"reads": [
+				"n|tbl|sales.sales_order_items",
+				"n|sch|sales",
+				"n|tbl|sales.sales_orders",
+				"n|sch|sales",
+				"n|col|sales.sales_order_items.sales_order_id",
+				"n|col|sales.sales_orders.id",
+				"e|uniqueness|sales.sales_orders.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"sales",
+				"sales_order_items"
+			],
+			"writes": [
+				"s|fk|sales.sales_order_items.sales_order_items_quotation_item_id_quotation_items_id_fkey",
+				"n|fk|sales.sales_order_items.sales_order_items_quotation_item_id_quotation_items_id_fkey",
+				"e|fk|sales.sales_order_items.sales_order_items_quotation_item_id_quotation_items_id_fkey",
+				"n|con|sales.sales_order_items.sales_order_items_quotation_item_id_quotation_items_id_fkey"
+			],
+			"reads": [
+				"n|tbl|sales.sales_order_items",
+				"n|sch|sales",
+				"n|tbl|sales.quotation_items",
+				"n|sch|sales",
+				"n|col|sales.sales_order_items.quotation_item_id",
+				"n|col|sales.quotation_items.id",
+				"e|uniqueness|sales.quotation_items.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"sales",
+				"sales_orders"
+			],
+			"writes": [
+				"s|fk|sales.sales_orders.sales_orders_quotation_id_quotations_id_fkey",
+				"n|fk|sales.sales_orders.sales_orders_quotation_id_quotations_id_fkey",
+				"e|fk|sales.sales_orders.sales_orders_quotation_id_quotations_id_fkey",
+				"n|con|sales.sales_orders.sales_orders_quotation_id_quotations_id_fkey"
+			],
+			"reads": [
+				"n|tbl|sales.sales_orders",
+				"n|sch|sales",
+				"n|tbl|sales.quotations",
+				"n|sch|sales",
+				"n|col|sales.sales_orders.quotation_id",
+				"n|col|sales.quotations.id",
+				"e|uniqueness|sales.quotations.id"
+			]
+		}
+	],
+	"deltas": [
+		{
+			"op": "create",
+			"row": {
+				"name": "sales",
+				"entityType": "schemas"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"name": "delivery_note_items",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"name": "delivery_notes",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"name": "invoice_items",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"name": "invoices",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"name": "order_status_history",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"name": "payments",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"name": "quotation_items",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"name": "quotation_status_history",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"name": "quotations",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"name": "receipts",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"name": "sales_order_items",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"name": "sales_orders",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "delivery_note_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "sales_order_item_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "item_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "sku",
+				"type": "varchar(64)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "unit",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "quantity",
+				"type": "numeric(18,3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "unit_price",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "unit_cost",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "serial_numbers",
+				"type": "jsonb",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "remarks",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "stock_movement_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "sort_order",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "sales_order_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "warehouse_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "bin_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'prepared'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "delivery_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "project_name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "project_location",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "recipient_name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "recipient_address",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "recipient_pic",
+				"type": "varchar(200)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "recipient_contact",
+				"type": "varchar(200)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "driver_name",
+				"type": "varchar(200)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "vehicle_number",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "notes",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "shipped_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "shipped_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "received_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "receiver_name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "cancelled_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "cancelled_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "cancellation_reason",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "created_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "invoice_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "item_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "item_variant_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "description",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "quantity",
+				"type": "numeric(18,4)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'0'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "unit_price",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "discount_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "tax_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "line_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoice_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'sales'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "term_kind",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "customer_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "customer_snapshot",
+				"type": "jsonb",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "sales_order_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "sales_order_code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "quotation_code",
+				"type": "varchar(40)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "title",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "description",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "percentage_bps",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "payment_term_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "issue_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "due_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "vat_enabled",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "true",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "vat_rate_bps",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "subtotal",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "discount_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "tax_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "grand_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "paid_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "outstanding_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'draft'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "terms",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "notes",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "created_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "issued_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "issued_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "approved_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "approved_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "voided_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "voided_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "void_reason",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "order_status_history",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "order_status_history",
+				"name": "sales_order_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "order_status_history",
+				"name": "from_status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "order_status_history",
+				"name": "to_status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "order_status_history",
+				"name": "changed_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "order_status_history",
+				"name": "changed_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "order_status_history",
+				"name": "note",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "order_status_history",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "order_status_history",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "order_status_history",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "quotation_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "amount",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'pending'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "created_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "approved_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "approved_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "executed_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "executed_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "quotation_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "item_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "sku",
+				"type": "varchar(64)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "specification",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "image_object_key",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "unit",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "quantity",
+				"type": "numeric(18,3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'1'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "unit_price",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "discount_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "line_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "sort_order",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_status_history",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_status_history",
+				"name": "quotation_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_status_history",
+				"name": "from_status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_status_history",
+				"name": "to_status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_status_history",
+				"name": "changed_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_status_history",
+				"name": "changed_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_status_history",
+				"name": "note",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_status_history",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_status_history",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_status_history",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "code",
+				"type": "varchar(40)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "base_code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "revision",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "previous_revision_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "title",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "heading",
+				"type": "varchar(120)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "customer_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "customer_contact_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "customer_snapshot",
+				"type": "jsonb",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "lead_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "attention",
+				"type": "varchar(200)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'draft'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "quotation_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "valid_until",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "payment_terms",
+				"type": "varchar(300)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "payment_schedule",
+				"type": "jsonb",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "guarantee",
+				"type": "varchar(300)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "vat_enabled",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "true",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "vat_rate_bps",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "subtotal",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "discount_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "tax_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "grand_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "notes",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "terms",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "created_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "submitted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "approved_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "approved_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "rejected_reason",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "sent_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "sent_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "closed_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "closed_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "lost_reason",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "lost_note",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "sales_invoice_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "payment_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "received_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "method",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'bank_transfer'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "reference",
+				"type": "varchar(100)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "notes",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'draft'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "received_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "posted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "reversed_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "reversed_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "reversal_reason",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "sales_order_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "quotation_item_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "item_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "sku",
+				"type": "varchar(64)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "specification",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "unit",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "quantity",
+				"type": "numeric(18,3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'1'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "unit_price",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "discount_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "line_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "quantity_delivered",
+				"type": "numeric(18,3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'0'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "fulfillment_status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'pending'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "sort_order",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "quotation_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "quotation_code",
+				"type": "varchar(40)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "customer_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "customer_snapshot",
+				"type": "jsonb",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "customer_po_number",
+				"type": "varchar(100)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "title",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "attention",
+				"type": "varchar(200)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'confirmed'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "order_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "delivery_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "payment_terms",
+				"type": "varchar(300)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "payment_schedule",
+				"type": "jsonb",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "guarantee",
+				"type": "varchar(300)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "vat_enabled",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "vat_rate_bps",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "subtotal",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "discount_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "tax_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "grand_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "sales_person_user_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "notes",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "created_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "cancelled_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "cancelled_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "cancellation_reason",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "delivery_note_items_delivery_note_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "delivery_note_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "delivery_note_items_sales_order_item_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "sales_order_item_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "delivery_notes_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "delivery_notes_sales_order_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "sales_order_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "delivery_notes_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "invoice_items_invoice_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "invoice_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "invoice_items_item_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "item_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_customer_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "customer_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_sales_order_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "sales_order_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_due_date_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "due_date",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_term_kind_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "term_kind",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "order_status_history",
+				"name": "order_status_history_sales_order_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "sales_order_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "payments_org_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "payments_quotation_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "quotation_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "quotation_items_quotation_sort_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "quotation_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "sort_order",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_status_history",
+				"name": "quotation_status_history_quotation_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "quotation_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "quotations_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "quotations_base_code_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "base_code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "quotations_customer_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "customer_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "quotations_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "quotations_created_by_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "created_by",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "receipts_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "receipts_sales_invoice_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "sales_invoice_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "receipts_payment_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "payment_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "receipts_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "sales_order_items_order_sort_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "sales_order_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "sort_order",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "sales_order_items_fulfillment_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "fulfillment_status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "sales_orders_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "sales_orders_live_quotation_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "quotation_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL AND status <> 'cancelled'",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "sales_orders_quotation_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "quotation_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "sales_orders_customer_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "customer_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "sales_orders_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "sales_orders_sales_person_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "sales_person_user_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "delivery_note_items_delivery_note_id_delivery_notes_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"delivery_note_id"
+				],
+				"schemaTo": "sales",
+				"tableTo": "delivery_notes",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "delivery_note_items_GizTnQCLjA1F_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"sales_order_item_id"
+				],
+				"schemaTo": "sales",
+				"tableTo": "sales_order_items",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "delivery_notes_sales_order_id_sales_orders_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"sales_order_id"
+				],
+				"schemaTo": "sales",
+				"tableTo": "sales_orders",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "invoice_items_invoice_id_invoices_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"invoice_id"
+				],
+				"schemaTo": "sales",
+				"tableTo": "invoices",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "order_status_history",
+				"name": "order_status_history_sales_order_id_sales_orders_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"sales_order_id"
+				],
+				"schemaTo": "sales",
+				"tableTo": "sales_orders",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "quotation_items_quotation_id_quotations_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"quotation_id"
+				],
+				"schemaTo": "sales",
+				"tableTo": "quotations",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_status_history",
+				"name": "quotation_status_history_quotation_id_quotations_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"quotation_id"
+				],
+				"schemaTo": "sales",
+				"tableTo": "quotations",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "quotations_previous_revision_id_quotations_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"previous_revision_id"
+				],
+				"schemaTo": "sales",
+				"tableTo": "quotations",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "sales_order_items_sales_order_id_sales_orders_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"sales_order_id"
+				],
+				"schemaTo": "sales",
+				"tableTo": "sales_orders",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "sales_order_items_quotation_item_id_quotation_items_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"quotation_item_id"
+				],
+				"schemaTo": "sales",
+				"tableTo": "quotation_items",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "sales_orders_quotation_id_quotations_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"quotation_id"
+				],
+				"schemaTo": "sales",
+				"tableTo": "quotations",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "delivery_note_items_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "delivery_notes_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "invoice_items_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "order_status_history",
+				"name": "order_status_history_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "payments",
+				"name": "payments_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "quotation_items_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_status_history",
+				"name": "quotation_status_history_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "quotations_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "receipts_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "sales_order_items_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "sales_orders_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_note_items",
+				"name": "delivery_note_items_amounts_check",
+				"value": "\"quantity\" > 0 AND \"unit_price\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "delivery_notes",
+				"name": "delivery_notes_status_check",
+				"value": "\"status\" IN ('prepared', 'shipped', 'delivered', 'cancelled')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "invoice_items_quantity_check",
+				"value": "quantity >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "invoice_items_unit_price_check",
+				"value": "unit_price >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "invoice_items_discount_check",
+				"value": "discount_amount >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "invoice_items_tax_check",
+				"value": "tax_amount >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoice_items",
+				"name": "invoice_items_line_total_check",
+				"value": "line_total >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_type_check",
+				"value": "invoice_type IN ('sales', 'proforma', 'recurring')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_term_kind_check",
+				"value": "term_kind IS NULL OR term_kind IN ('down_payment', 'installment', 'settlement')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_status_check",
+				"value": "status IN ('draft', 'issued', 'partially_paid', 'paid', 'void', 'cancelled')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_vat_rate_check",
+				"value": "vat_rate_bps >= 0 AND vat_rate_bps <= 10000",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_subtotal_check",
+				"value": "subtotal >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_discount_total_check",
+				"value": "discount_total >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_tax_total_check",
+				"value": "tax_total >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_grand_total_check",
+				"value": "grand_total >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_paid_total_check",
+				"value": "paid_total >= 0 AND paid_total <= grand_total",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_outstanding_total_check",
+				"value": "outstanding_total >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "invoices",
+				"name": "invoices_due_after_issue_check",
+				"value": "due_date IS NULL OR issue_date IS NULL OR due_date >= issue_date",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotation_items",
+				"name": "quotation_items_amounts_check",
+				"value": "\"quantity\" > 0 AND \"unit_price\" >= 0 AND \"discount_amount\" >= 0 AND \"line_total\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "quotations_status_check",
+				"value": "\"status\" IN ('draft', 'submitted', 'approved', 'rejected', 'sent', 'superseded', 'won', 'lost')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "quotations_lost_reason_check",
+				"value": "\"lost_reason\" IS NULL OR \"lost_reason\" IN ('price', 'competitor', 'project_cancelled', 'no_response', 'other')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "quotations_revision_check",
+				"value": "\"revision\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "quotations_vat_rate_check",
+				"value": "\"vat_rate_bps\" >= 0 AND \"vat_rate_bps\" <= 10000",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "quotations",
+				"name": "quotations_amounts_check",
+				"value": "\"subtotal\" >= 0 AND \"discount_total\" >= 0 AND \"tax_total\" >= 0 AND \"grand_total\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "receipts_status_check",
+				"value": "status IN ('draft', 'verified', 'posted', 'reversed', 'void')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "receipts_amount_check",
+				"value": "amount > 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "receipts",
+				"name": "receipts_method_check",
+				"value": "method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "sales_order_items_amounts_check",
+				"value": "\"quantity\" > 0 AND \"unit_price\" >= 0 AND \"discount_amount\" >= 0 AND \"line_total\" >= 0 AND \"quantity_delivered\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_order_items",
+				"name": "sales_order_items_fulfillment_status_check",
+				"value": "\"fulfillment_status\" IN ('pending', 'reserved', 'partial', 'fulfilled', 'cancelled')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "sales_orders_status_check",
+				"value": "\"status\" IN ('confirmed', 'in_progress', 'delivered', 'completed', 'cancelled')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "sales_orders_vat_rate_check",
+				"value": "\"vat_rate_bps\" >= 0 AND \"vat_rate_bps\" <= 10000",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "sales",
+				"table": "sales_orders",
+				"name": "sales_orders_amounts_check",
+				"value": "\"subtotal\" >= 0 AND \"discount_total\" >= 0 AND \"tax_total\" >= 0 AND \"grand_total\" >= 0",
+				"entityType": "checks"
+			}
+		}
+	]
+}

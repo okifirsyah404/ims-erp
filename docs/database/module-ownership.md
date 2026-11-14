@@ -176,7 +176,7 @@ tenant-scoped schema.
   sales order items, contracts, sales targets, status histories, sales
   returns, delivery notes.
 - `sales.quotations` is shown in its **target** shape in `docs.dbml`. The
-  scaffold table created by migration `20261029044823_dear_living_lightning`
+  scaffold table created by migration `20261028044501_create_sales_schema`
   has a different shape and is **replaced**, not altered, by step S3 of
   `implementation-phases.md`.
 - `sales.payments` is a **transitional scaffold scheduled for removal**; it is

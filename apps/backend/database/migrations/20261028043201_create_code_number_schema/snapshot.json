@@ -1,0 +1,313 @@
+{
+	"type": "diff",
+	"version": "9",
+	"dialect": "postgres",
+	"id": "a639e231-f87f-4072-b528-96edb8f94439",
+	"prevIds": [
+		"71864572-67e4-4bb7-ad9f-0f753f4dd10c"
+	],
+	"footprints": [
+		{
+			"statementType": "create_schema",
+			"statementTarget": [
+				"schema",
+				"code_number"
+			],
+			"writes": [
+				"s|sch|code_number",
+				"n|sch|code_number",
+				"e|sch|code_number"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"code_number",
+				"series"
+			],
+			"writes": [
+				"s|tbl|code_number.series",
+				"n|tbl|code_number.series",
+				"e|tbl|code_number.series",
+				"n|rel|code_number.series",
+				"n|type|code_number.series",
+				"n|rel|code_number.series_pkey"
+			],
+			"reads": [
+				"n|sch|code_number"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"code_number",
+				"series",
+				"series_code_type_uq"
+			],
+			"writes": [
+				"s|idx|code_number.series_code_type_uq",
+				"n|idx|code_number.series_code_type_uq",
+				"e|idx|code_number.series_code_type_uq",
+				"n|rel|code_number.series_code_type_uq"
+			],
+			"reads": [
+				"n|tbl|code_number.series",
+				"n|sch|code_number",
+				"n|col|code_number.series.code_type"
+			]
+		}
+	],
+	"deltas": [
+		{
+			"op": "create",
+			"row": {
+				"name": "code_number",
+				"entityType": "schemas"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"name": "series",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "module",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "code_type",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "pattern",
+				"type": "varchar(100)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "reset_policy",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "period_key",
+				"type": "varchar(7)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "next_number",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "1",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "updated_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "series_code_type_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "code_type",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "series_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "series_reset_policy_check",
+				"value": "\"reset_policy\" IS NULL OR \"reset_policy\" IN ('never', 'yearly', 'monthly')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "code_number",
+				"table": "series",
+				"name": "series_next_number_check",
+				"value": "\"next_number\" > 0",
+				"entityType": "checks"
+			}
+		}
+	]
+}
