@@ -18,6 +18,52 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0051: investor and customer move to app roles (ADR-0018), login gate in code
+
+Branch `refactor/app-roles-investor-customer` (from `main`). Changes are uncommitted.
+Status: **implemented, partially verified**. Not accepted.
+
+What changed:
+- `investor` and `customer` removed from organization roles (`erpRoleNames`, `erpRoleLabels`,
+  `erpRoleGrants`, backend and web-admin `organization-ac.ts`/`erp-ac.ts`).
+- Added as Better Auth `admin()` app roles: `appRoleNames`, `appRoleGrants` (portal grants,
+  data only), `parseRoleList`, `hasRole` in `@ims-erp/common`. Server `admin-ac.ts` and
+  `plugins/admin.auth.ts` declare the roles; web-admin `adminClient` mirrors them.
+- Every `user.role === 'admin'` check (backend and web-admin) replaced by `hasRole` / `hasAppRole`
+  (multi-role, comma-joined `user.role`).
+- Login gate (ADR-0017 §8 amended by ADR-0018): `providers/better-auth/ac/login-gate.ts`
+  (`isWebAdminAllowed`). Enforced in `session.create.before` (`session.auth.ts`) and re-checked
+  per request in `sessionGuard` (403). `erpGuard` unchanged. PIC without membership is rejected.
+- Login hook default org = first membership with an internal role.
+- Migration `20261114120000_erp0048_investor_customer_app_roles`: strips portal tokens from mixed
+  `members.role` rows, deletes portal-only rows, NULLs `user_invitations.org_role` for portal roles.
+  Dev-only; no production data.
+- ADR-0018 written (`proposed`). ADR-0017 §8 and §9 amended in place.
+
+Commands and outcomes:
+- `bun test` (backend): 934 pass, 0 fail, 71 files. The first run had 98 failures (500 instead of
+  403): the gate queried the DB in route tests. Fixed by stubbing `session.auth` in
+  `test/authorization/test-app.ts`.
+- `bun test test/unit/login-gate.test.ts test/authorization/permission-matrix.test.ts` (backend): 32 pass.
+- `bun test` (web-admin): 97 pass, 0 fail, 16 files.
+- `bun run build` in `packages/common`: needed; web-admin and backend read `dist`, which was stale.
+- `bun run typecheck` (root): pass. `bunx tsc --noEmit` (web-admin): clean.
+- `bun run lint` (root): 0 errors, 12 warnings (pre-existing, in files not changed here).
+- `bun docs/database/validate-dbml.ts`: OK (268 tables, 0 cross-module refs). No schema change.
+- Seeders: no `investor`/`customer` role written. Comment in `organization-members.seeder.ts` updated.
+
+Not verified yet:
+- Migration not run on a disposable database. Next: `drizzle:migrate` on a throwaway DB, inspect result.
+- No DB-backed login-gate test. The route harness stubs the gate open; `login-gate.test.ts`
+  covers the pure predicate only.
+- Manual checks (ADR-0017 verification list) not run against a live server: investor-only denied,
+  investor plus internal allowed, PIC without membership denied, admin without membership allowed.
+- Warehouse PIC (Phase 1-2, `inventory.warehouse_managers`, `warehouseGuard`) still not started.
+
+Docs: `docs/database/` reviewed, unchanged (no table or column change).
+
+Next executable task: run the migration on a disposable DB, then add the DB-backed login-gate test.
+
 ## 2026-11-14 - Role-based nav: Phase 4 complete (ERP-0051, web-admin side)
 
 Claimed `ERP-0051` in `backlog.md` (in-progress; PIC and login gate stay blocked on ADR-0017).

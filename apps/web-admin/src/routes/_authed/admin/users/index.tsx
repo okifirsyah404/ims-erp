@@ -90,7 +90,7 @@ import {
 import { useActiveOrganizationId } from '@/lib/use-active-organization';
 import { usePermission } from '@/lib/use-permission';
 import { humanizeIdentifier } from '@/lib/format';
-import { erpRoleLabel } from '@ims-erp/common';
+import { erpRoleLabel, hasRole } from '@ims-erp/common';
 
 /** Sort fields the users table header exposes. */
 const SORT_FIELDS = ['name', 'createdAt', 'joinedAt'] as const;
@@ -545,7 +545,7 @@ function UserRow({
 						 */}
 						{t(`common:status.${status}` as TranslationKey, { defaultValue: status })}
 					</Badge>
-					{user.role === 'admin' && (
+					{hasRole(user.role, 'admin') && (
 						<Badge variant='outline'>{t('users.appAdmin')}</Badge>
 					)}
 				</div>

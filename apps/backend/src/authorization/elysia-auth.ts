@@ -30,6 +30,7 @@
  */
 import Elysia, { type Context } from 'elysia';
 import { container } from 'tsyringe';
+import { isWebAdminSessionAllowed } from '@providers/better-auth/options/session.auth';
 import { auth } from '@providers/better-auth/auth';
 import type { ErpResource } from '@ims-erp/common';
 import {
@@ -301,6 +302,12 @@ export function sessionGuard() {
 					const session = await resolveSession(context.request.headers);
 					if (!session) {
 						throw new ErpAuthError(401, 'Authentication required');
+					}
+					// ADR-0018 / ADR-0017 §8: re-check the web-admin login gate on
+					// every request so sessions created before the gate are rejected.
+					// Failure is 403 (authenticated, not allowed), not 401.
+					if (!(await isWebAdminSessionAllowed(session.user.id))) {
+						throw new ErpAuthError(403, 'Web-admin access requires an internal organization role');
 					}
 					const erp = { session };
 					// Session-only guard has no other preconditions, so the

@@ -38,8 +38,9 @@ describe('canOpenPath', () => {
 	});
 
 	test('investor-only user is denied a permission-gated page', async () => {
-		// Realistic: an investor holds no ERP permission in its org.
-		const client = fakeClient([{ role: 'investor' }], {});
+		// Realistic: an investor app role holds no organization membership with
+		// an internal role, so no ERP permission is granted (ADR-0018).
+		const client = fakeClient([], {});
 		expect(await canOpenPath('/crm/customers', investorOnly, client)).toBe(false);
 	});
 

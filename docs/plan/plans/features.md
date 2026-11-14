@@ -34,15 +34,16 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`proposed`).
   `appAdminOnly`), switcher limited to internal-role organizations, logo fallback,
   route guard in `_authed` (redirect + toast), organization switch re-checks the
   current route, `/organizations/new` app-admin only, Settings needs an active
-  organization. Done: Phase 4 web-admin (all of the above). Open: PIC nav item
-  and PIC UI (ADR-0017), login gate (Phase 3).
+  organization. Done: Phase 4 web-admin (all of the above). Login gate and app roles
+  implemented on branch `refactor/app-roles-investor-customer` (ADR-0018), not yet
+  verified against a DB or live server. Open: PIC nav item and PIC UI (ADR-0017).
   Evidence: `progress.md` 2026-11-14 "Phase 4 complete" (browser checks, 97 tests).
 
 ### planned
-- Login gate (reject investor/customer-only sessions) and default organization
-  at login. Evidence: none.
 - Warehouse person-in-charge (`inventory.warehouse_managers`, `warehouseGuard`).
   Evidence: none. Blocked until ADR-0017 is accepted.
+- Login gate DB-backed verification and migration run (ADR-0018). Code exists, see
+  `progress.md` 2026-11-14 "ERP-0051: investor and customer move to app roles".
 
 ---
 

@@ -1,3 +1,4 @@
+import { hasRole } from '@ims-erp/common';
 import { useSession } from './auth-client';
 
 /**
@@ -10,7 +11,7 @@ import { useSession } from './auth-client';
 export function useIsAppAdmin(): { isAppAdmin: boolean; isPending: boolean } {
 	const { data: session, isPending } = useSession();
 	return {
-		isAppAdmin: session?.user?.role === 'admin',
+		isAppAdmin: hasRole(session?.user?.role, 'admin'),
 		isPending,
 	};
 }

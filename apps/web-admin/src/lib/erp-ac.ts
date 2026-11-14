@@ -7,6 +7,7 @@
  * no database imports, and no secrets - safe for the frontend bundle.
  */
 import { createAccessControl } from 'better-auth/plugins/access';
+import { adminAc, defaultStatements as adminDefaultStatements, userAc } from 'better-auth/plugins/admin/access';
 import { defaultStatements } from 'better-auth/plugins/organization/access';
 import {
 	builtInOrgStatements,
@@ -58,9 +59,21 @@ export const erpRoles = {
 	hr: toRole(erpRoleGrants.hr),
 	customer_service: toRole(erpRoleGrants.customer_service),
 	marketing: toRole(erpRoleGrants.marketing),
-	investor: toRole(erpRoleGrants.investor),
-	customer: toRole(erpRoleGrants.customer),
 	auditor: toRole(erpRoleGrants.auditor),
+} as const;
+
+/**
+ * Global admin() access control, mirrored from
+ * `apps/backend/src/providers/better-auth/ac/admin-ac.ts` (ADR-0018). Must
+ * match the server so the client knows the app roles `investor` and `customer`.
+ */
+export const adminAccessControl = createAccessControl(adminDefaultStatements);
+
+export const adminPluginRoles = {
+	admin: adminAccessControl.newRole({ ...adminAc.statements }),
+	user: adminAccessControl.newRole({ ...userAc.statements }),
+	investor: adminAccessControl.newRole({}),
+	customer: adminAccessControl.newRole({}),
 } as const;
 
 export type ErpClientRoleName = (typeof erpRoleNames)[number];

@@ -60,7 +60,7 @@ function toRole(grants: ErpPermissionRequest): Role<OrganizationStatements> {
 	const statements: Record<string, readonly string[]> = {};
 	for (const [resource, actions] of Object.entries(grants)) {
 		// Trust the shared catalog's typing; filter for safety at runtime.
-		const valid = organizationStatements[resource as ErpResource | 'self_service' | 'customer_portal' | 'investor_portal'];
+		const valid = organizationStatements[resource as ErpResource | 'self_service'];
 		if (!valid) continue;
 		statements[resource] = (actions as readonly string[]).filter((action) =>
 			(valid as readonly string[]).includes(action),
@@ -86,8 +86,6 @@ export const erpRoles: Record<ErpRoleName, Role<OrganizationStatements>> = {
 	hr: toRole(erpRoleGrants.hr),
 	customer_service: toRole(erpRoleGrants.customer_service),
 	marketing: toRole(erpRoleGrants.marketing),
-	investor: toRole(erpRoleGrants.investor),
-	customer: toRole(erpRoleGrants.customer),
 	auditor: toRole(erpRoleGrants.auditor),
 };
 

@@ -43,16 +43,17 @@
      is not leaked.
   8. **Login gate.** A Better Auth hook rejects a session when the user is not an
      application admin and holds no internal organization role in any
-     membership. The **internal** roles are every `erpRoleNames` entry except
-     `investor` and `customer`; `freelancer` and `auditor` count as internal.
-     Sessions created before the gate are rejected too: `sessionGuard` re-checks
-     the rule on each request.
+     membership. The **internal** roles are every `erpRoleNames` entry;
+     `freelancer` and `auditor` count as internal. `investor` and `customer` are
+     no longer organization roles (ADR-0018), so they never count. A PIC with no
+     membership is rejected. Sessions created before the gate are rejected too:
+     `sessionGuard` re-checks the rule on each request.
   9. **Default organization.** At login the server sets the active organization
      to the first membership with an internal role, when none is active.
-     Organizations where the user holds only `investor` or `customer` are not
-     offered in the web-admin switcher. A user who holds both an internal role and
-     `investor` in the same organization logs in normally; the `investor` role
-     grants nothing in web-admin.
+     Memberships without an internal role are not offered in the web-admin
+     switcher. A user with an `investor` app role and an internal membership logs
+     in normally; the app role grants nothing in web-admin.
+     (Amended by ADR-0018.)
   10. **Application admins** bypass the login gate and see every live
       organization, as today (ADR-0007).
 - **Consequences:**
