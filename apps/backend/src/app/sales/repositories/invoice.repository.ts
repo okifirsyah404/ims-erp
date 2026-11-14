@@ -23,7 +23,8 @@ import {
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
-import type { TInvoiceRepository } from '../contracts/invoice.repository.interface';
+import type { TInvoiceListFilters, TInvoiceRepository } from '../contracts/invoice.repository.interface';
+import { sumTerms, type TTermAmounts } from '../utils/invoice-terms';
 import type { TReceiptData } from '../contracts/invoice.repository.interface';
 import type { TReceiptListQuery } from '../contracts/invoice.contract';
 import { likePattern } from '@drizzle/search';
@@ -84,7 +85,7 @@ export class InvoiceRepository implements TInvoiceRepository {
 
 	async list(
 		organizationId: string,
-		filters: { status?: string; customerId?: string },
+		filters: TInvoiceListFilters,
 		pagination: { page: number; limit: number },
 	): Promise<{
 		data: TInvoiceSelect[];
@@ -97,6 +98,24 @@ export class InvoiceRepository implements TInvoiceRepository {
 		if (filters.status) conditions.push(eq(invoices.status, filters.status));
 		if (filters.customerId) {
 			conditions.push(eq(invoices.customerId, filters.customerId));
+		}
+		if (filters.termKind) conditions.push(eq(invoices.termKind, filters.termKind));
+		if (filters.search) {
+			const pattern = likePattern(filters.search);
+			conditions.push(
+				or(
+					ilike(invoices.code, pattern),
+					ilike(invoices.title, pattern),
+					ilike(invoices.salesOrderCode, pattern),
+					sql`${invoices.customerSnapshot}->>'name' ILIKE ${pattern}`,
+				)!,
+			);
+		}
+		if (filters.overdueOn) {
+			conditions.push(
+				or(eq(invoices.status, 'issued'), eq(invoices.status, 'partially_paid'))!,
+				sql`${invoices.dueDate} < ${filters.overdueOn}`,
+			);
 		}
 		const where = and(...conditions);
 		const [{ value: total }] = await this.database
@@ -218,10 +237,55 @@ export class InvoiceRepository implements TInvoiceRepository {
 					eq(invoices.salesOrderId, salesOrderId),
 					isNull(invoices.deletedAt),
 					ne(invoices.status, 'void'),
+					ne(invoices.status, 'cancelled'),
 				),
 			)
 			.limit(1);
 		return !!row;
+	}
+
+	withLockedInvoice<T>(organizationId: string, id: string, work: (invoice: TInvoiceSelect, tx: unknown) => Promise<T>): Promise<T | null> {
+		return this.database.transaction(async (tx) => {
+			const [invoice] = await tx
+				.select()
+				.from(invoices)
+				.where(and(eq(invoices.id, id), eq(invoices.organizationId, organizationId), isNull(invoices.deletedAt)))
+				.for('update');
+			return invoice ? work(invoice, tx) : null;
+		});
+	}
+
+	createTermDraftLocked(
+		salesOrderId: string,
+		build: (billed: TTermAmounts, liveCount: number, tx: unknown) => Promise<{ row: Record<string, unknown>; items: Array<Record<string, unknown>> }>,
+	): Promise<TInvoiceSelect> {
+		return this.database.transaction(async (tx) => {
+			// One billing at a time per order: the term is chosen under this lock.
+			await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`invoice:${salesOrderId}`}))`);
+			const live = await tx
+				.select({ taxBase: invoices.subtotal, vatAmount: invoices.taxTotal, total: invoices.grandTotal })
+				.from(invoices)
+				.where(
+					and(
+						eq(invoices.salesOrderId, salesOrderId),
+						isNull(invoices.deletedAt),
+						ne(invoices.status, 'void'),
+						ne(invoices.status, 'cancelled'),
+					),
+				);
+			const { row, items } = await build(sumTerms(live), live.length, tx);
+			const now = new Date();
+			const [created] = await tx
+				.insert(invoices)
+				.values({ ...row, createdAt: now, updatedAt: now } as never)
+				.returning();
+			if (items.length > 0) {
+				await tx
+					.insert(invoiceItems)
+					.values(items.map((item) => ({ ...item, invoiceId: created!.id, createdAt: now, updatedAt: now })) as never);
+			}
+			return created!;
+		});
 	}
 
 	async findReceipt(

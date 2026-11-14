@@ -79,10 +79,11 @@ export class InvoiceService {
 
 	async list(
 		organizationId: string,
-		filters: { status?: string; customerId?: string },
+		filters: { status?: string; customerId?: string; termKind?: string; search?: string; overdue?: boolean },
 		pagination: { page: number; limit: number },
 	): Promise<TPaginationResult<TInvoiceSelect>> {
-		return this.repo.list(organizationId, filters, pagination);
+		const { overdue, ...rest } = filters;
+		return this.repo.list(organizationId, { ...rest, ...(overdue ? { overdueOn: businessDateOf() } : {}) }, pagination);
 	}
 
 	async get(organizationId: string, id: string): Promise<{
@@ -187,10 +188,19 @@ export class InvoiceService {
 	 * status stamp, the journal (DR AR / CR revenue / CR tax payable) and the
 	 * `ar_open_items` row. Idempotent through the JE idempotency key.
 	 */
-	async issue(ctx: TInvoiceActionContext, id: string): Promise<TInvoiceSelect> {
+	async issue(
+		ctx: TInvoiceActionContext,
+		id: string,
+		dates: { issueDate: string | null; dueDate: string | null } = { issueDate: null, dueDate: null },
+	): Promise<TInvoiceSelect> {
 		return this.database.transaction(async (tx) => {
-			const invoice = await this.mustFind(ctx.organizationId, id, tx);
-			if (invoice.status !== 'draft') throw new InvoiceNotDraftError();
+			const found = await this.mustFind(ctx.organizationId, id, tx);
+			if (found.status !== 'draft') throw new InvoiceNotDraftError();
+			// The web's issue form confirms the dates (M02); otherwise the draft's own.
+			const invoice =
+				dates.issueDate || dates.dueDate
+					? { ...found, issueDate: dates.issueDate ?? found.issueDate, dueDate: dates.dueDate ?? found.dueDate }
+					: found;
 
 			const items = await this.repo.listItems(ctx.organizationId, id, tx);
 			if (items.length === 0) throw new InvoiceNoItemsError();
@@ -264,6 +274,7 @@ export class InvoiceService {
 				{
 					status: 'issued',
 					issueDate,
+					dueDate: invoice.dueDate,
 					issuedBy: ctx.actorUserId,
 					issuedAt: new Date(),
 					outstandingTotal: invoice.grandTotal,

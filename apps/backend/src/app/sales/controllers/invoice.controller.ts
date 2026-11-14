@@ -5,12 +5,16 @@ import { created, ok, okPaginated } from '@http/response';
 import {
 	invoiceCreateSchema,
 	invoiceIdParamSchema,
+	invoiceIssueSchema,
 	invoiceListQuerySchema,
+	invoiceTermCreateSchema,
 	invoiceUpdateSchema,
 	createReceiptSchema,
+	reasonSchema,
+	salesOrderIdParamSchema,
 } from '../contracts/invoice.contract';
 import type { InvoiceService } from '../services/invoice.service';
-import { INVOICE_SERVICE_TOKEN } from '../constants/ar-di';
+import { INVOICE_BILLING_SERVICE_TOKEN, INVOICE_SERVICE_TOKEN } from '../constants/ar-di';
 
 /**
  * REST controller for the sales invoice slice (M09 F4).
@@ -24,6 +28,7 @@ export class InvoiceController {
 	/** Builds the Elysia plugin mounting `/invoices`. */
 	static plugin() {
 		const invoices = container.resolve<InvoiceService>(INVOICE_SERVICE_TOKEN);
+		const billing = container.resolve(INVOICE_BILLING_SERVICE_TOKEN);
 
 		const ctxOf = (erp: ErpContext) => ({
 			organizationId: erp.organizationId,
@@ -52,17 +57,23 @@ export class InvoiceController {
 				},
 			)
 			.get(
-				'/invoices/:id',
-				async ({ params, erp }) =>
-					ok(
-						await invoices.get(
-							erp.organizationId,
-							invoiceIdParamSchema.parse(params).id,
-						),
-					),
+				'/invoices/orders/:orderId/summary',
+				async ({ params }) => ok(await billing.summary(salesOrderIdParamSchema.parse(params).orderId)),
 				{
 					erp: { permission: ['invoice:read'] },
-					detail: { description: 'One invoice with its line items' },
+					detail: { description: "An order's billing state: invoiced, paid, left to invoice, next planned term" },
+				},
+			)
+			.get(
+				'/invoices/:id',
+				async ({ params, erp }) => {
+					const id = invoiceIdParamSchema.parse(params).id;
+					const [detail, { items }] = await Promise.all([billing.detail(ctxOf(erp), id), invoices.get(erp.organizationId, id)]);
+					return ok({ ...detail, items });
+				},
+				{
+					erp: { permission: ['invoice:read'] },
+					detail: { description: 'One invoice with its lines, receipts, order and the order billing schedule' },
 				},
 			)
 			.post(
@@ -71,17 +82,16 @@ export class InvoiceController {
 					status(
 						201,
 						created(
-							await invoices.create(
-								ctxOf(erp),
-								invoiceCreateSchema.parse(body),
-							),
+							body && typeof body === 'object' && 'term' in body
+								? await billing.createFromTerm(ctxOf(erp), invoiceTermCreateSchema.parse(body))
+								: await invoices.create(ctxOf(erp), invoiceCreateSchema.parse(body)),
 						),
 					),
 				{
 					erp: { permission: ['invoice:create'] },
 					detail: {
 						description:
-							'Creates a draft invoice; totals are recomputed server-side from the items',
+							'Creates a draft invoice: one term of a sales order (`term`) or free items; totals are computed server-side',
 					},
 				},
 			)
@@ -116,18 +126,30 @@ export class InvoiceController {
 			)
 			.post(
 				'/invoices/:id/issue',
-				async ({ params, erp }) =>
+				async ({ params, body, erp }) =>
 					ok(
 						await invoices.issue(
 							ctxOf(erp),
 							invoiceIdParamSchema.parse(params).id,
+							invoiceIssueSchema.parse(body ?? undefined),
 						),
 					),
 				{
 					erp: { permission: ['invoice:issue'] },
 					detail: {
 						description:
-							'draft → issued: posts DR AR / CR revenue (+ CR tax payable) and opens the AR sub-ledger row',
+							'draft → issued (optional issueDate / dueDate): posts DR AR / CR revenue (+ CR tax payable) and opens the AR sub-ledger row',
+					},
+				},
+			)
+			.post(
+				'/invoices/:id/void',
+				async ({ params, body, erp }) =>
+					ok(await billing.void(ctxOf(erp), invoiceIdParamSchema.parse(params).id, reasonSchema.parse(body).reason)),
+				{
+					erp: { permission: ['invoice:void'] },
+					detail: {
+						description: 'Unpaid draft or issued → void with a reason; an issued invoice has its journal reversed and its AR item voided',
 					},
 				},
 			)

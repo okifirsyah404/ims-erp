@@ -141,6 +141,7 @@ const DYNAMIC_PREFIXES = [
 	'projects.forbidden.',
 	'projects.file.',
 	'aftersales.ticketRef.',
+	'sales.invoiceTerm.',
 	'aftersales.ticketState.',
 	'licensing.notFound.',
 	'licensing.contract.',

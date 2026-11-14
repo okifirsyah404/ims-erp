@@ -18,6 +18,76 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - M02 invoices: billing by terms, summary and void restored (ERP-0011 regression)
+
+Owner: "perbaiki aja" (programmer A to be told). Branch `fix/m02-invoice-billing`
+from `origin/main` (`a997778`).
+
+**Cause.** The merge `812f2b5` ("Sales owns invoice + receipt", PR #68) kept
+programmer A's accounting-aware Sales `InvoiceService` (free items, issue
+posts DR AR / CR revenue / CR VAT, receipts) and dropped the M02 billing use
+cases of `3072ccf` (ADR-0011 step 3d-2). The web admin still calls them, so on
+`main` the order's billing card (`GET /invoices/orders/:id/summary`), "create
+invoice" (`POST /invoices` with `term`), the invoice page (expects receipts,
+order and schedule), void (`POST /invoices/:id/void`), the issue dates and the
+list filters (`termKind` for the DP page, `search`, `overdue`) all failed or
+were ignored. The table `sales.invoices` still had every term column, so no
+schema change was needed.
+
+**Fix** (programmer A's service changed minimally):
+- `sales/utils/invoice-terms.ts` — the pure term rules ported back (money
+  helpers from `@utils/money.util`).
+- `sales/services/invoice-billing.service.ts` (`InvoiceBillingService`):
+  `summary`, `createFromTerm` (next planned / percentage / amount incl. VAT /
+  remaining; per-order advisory lock; DP / installment / settlement; **one
+  invoice line per term** so the existing issue posting works; numbered at
+  draft like every Sales draft), `detail` (receipts in the web shape, the
+  order and its schedule of issued terms), `void` (unpaid draft or issued;
+  for an issued invoice the journal is reversed with `PostingService.reverse`,
+  the AR open item set to `void` — amounts kept because of the
+  `outstanding = original − paid` check — and the registry copy voided, all
+  in one transaction with the invoice row locked).
+- Repository: `createTermDraftLocked`, `withLockedInvoice`, list filters;
+  `hasLiveInvoices` no longer counts `cancelled` drafts.
+- Controller: summary route, `POST /invoices` takes `term` or items,
+  `GET /invoices/:id` returns the detail plus `items`, issue accepts
+  `issueDate` / `dueDate`, void route (`invoice:void`).
+- `InvoiceService.list` passes the new filters; `issue` takes optional dates.
+- Web: status `cancelled` (a cancelled draft) labelled. en/id keys for the
+  new errors (`sales.invoiceOrderUnavailable`, `sales.invoiceTerm.*`,
+  `sales.invoiceNotVoidable`) and `finance:status.cancelled`.
+
+`docs/database/` reviewed and unchanged (no table, column or reference
+touched).
+
+**Verification**
+- `bun run typecheck` 4/4; `bun run lint` 0 errors (warning counts as on
+  main; none in the touched files); backend `bun test` 932 pass / 4 fail (the
+  same `Bun.Image` tests, Bun 1.4.1 here); new
+  `invoice-billing.service.test.ts` 11 pass; web-admin 97; locales 90.
+- API e2e on the disposable `ims_erp_inv` (development seed, role accounts),
+  calling exactly what the web calls: **19/19** — sales creates customer and
+  SPH with DP 30 / Terpasang 70, sales manager approves and creates the order;
+  billing summary (next term DP 30%); DP draft from the next term; a term above
+  what is left 422; issue with the form dates (journal posted); detail shape;
+  partial receipt; void of a partly paid invoice 409; receipt reversed; void of
+  the unpaid issued invoice with a reason; DP-list filter; search by customer
+  name; DP again after the void, then settlement; the order exactly fully
+  invoiced; an order with a live invoice cannot be cancelled. Ledger checked in
+  the DB: the invoice entry `reversed`, one `journal_reversal` entry posted, AR
+  item `void`, debits = credits.
+- Browser (Playwright, web admin on the same backend, signed in as finance):
+  order page billing card, voided invoice page (reason, struck-out reversed
+  receipt), invoices / down payments / receipts lists — no page errors, no
+  failing API calls; the raw `status.cancelled` label found here was fixed.
+
+**Found for programmer A (M09, not changed here):**
+- Issuing needs the chart of accounts codes `1-1300` / `4-1000` / `2-1000`
+  (created in the test through `POST /accounts` as the accountant).
+- An **open accounting period** is required, but `POST /periods` demands
+  `accounting_period:create`, which is not in the permission catalog — no role
+  can open a period through the API (the test DB got its period by SQL).
+
 ## 2026-11-14 - Role-based nav: Phase 4 complete (ERP-0051, web-admin side)
 
 Claimed `ERP-0051` in `backlog.md` (in-progress; PIC and login gate stay blocked on ADR-0017).

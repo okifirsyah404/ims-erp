@@ -82,6 +82,7 @@ const finance: Record<keyof typeof en, string> = {
 	'status.partially_paid': 'Dibayar sebagian',
 	'status.paid': 'Lunas',
 	'status.void': 'Void',
+	'status.cancelled': 'Dibatalkan',
 	'termKind.down_payment': 'Uang muka',
 	'termKind.installment': 'Termin',
 	'termKind.settlement': 'Pelunasan',

@@ -399,6 +399,12 @@ const api: Record<keyof typeof en, string> = {
 		'Rentang tanggal laporan tidak valid',
 
 	// Faktur (F4) — kunci sales
+	'sales.invoiceOrderUnavailable': 'Sales order tidak ada atau sudah dibatalkan',
+	'sales.invoiceTerm.fullyInvoiced': 'Order sudah ditagih seluruhnya',
+	'sales.invoiceTerm.empty': 'Nilai termin harus lebih dari nol',
+	'sales.invoiceTerm.exceeds': 'Termin melebihi sisa yang belum ditagih',
+	'sales.invoiceTerm.noPlannedTerm': 'Tidak ada termin rencana yang tersisa',
+	'sales.invoiceNotVoidable': 'Hanya invoice draft atau terbit yang belum dibayar yang bisa dibatalkan. Batalkan kwitansinya dulu.',
 	'sales.invoiceNotFound': 'Faktur tidak ditemukan',
 	'sales.invoiceNotDraft':
 		'Hanya faktur berstatus draf yang dapat diubah atau diterbitkan',

@@ -11,7 +11,8 @@ import type { TSalesOrderItem } from './sales-order-api';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-export const INVOICE_STATUSES = ['draft', 'issued', 'partially_paid', 'paid', 'void'] as const;
+/** `cancelled` = a draft cancelled before it was issued (Sales invoice API since PR #68). */
+export const INVOICE_STATUSES = ['draft', 'issued', 'partially_paid', 'paid', 'void', 'cancelled'] as const;
 export type TInvoiceStatus = (typeof INVOICE_STATUSES)[number];
 export const INVOICE_STATUS_VARIANT: Record<TInvoiceStatus, 'default' | 'secondary' | 'outline' | 'destructive'> = {
 	draft: 'outline',
@@ -19,6 +20,7 @@ export const INVOICE_STATUS_VARIANT: Record<TInvoiceStatus, 'default' | 'seconda
 	partially_paid: 'secondary',
 	paid: 'default',
 	void: 'outline',
+	cancelled: 'outline',
 };
 export type TInvoiceTermKind = 'down_payment' | 'installment' | 'settlement';
 
