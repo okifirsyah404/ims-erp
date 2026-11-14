@@ -246,6 +246,26 @@ export const organizationsQueryOptions = queryOptions({
 	queryFn: () => listOrganizations({ includeDeleted: true }),
 });
 
+/** The caller's memberships (`GET /organizations/mine`); `role` is comma-joined. */
+export type TMyOrganization = {
+	id: string;
+	name: string;
+	slug: string;
+	logo: string | null;
+	role: string;
+};
+
+export async function listMyOrganizations(): Promise<TMyOrganization[]> {
+	const envelope = await request<TMyOrganization[]>('/organizations/mine');
+	return envelope.data ?? [];
+}
+
+/** Separate key from `organizationsQueryOptions`: membership rows, not the admin list. */
+export const myOrganizationsQueryOptions = queryOptions({
+	queryKey: ['my-organizations'] as const,
+	queryFn: listMyOrganizations,
+});
+
 export function organizationQueryOptions(organizationId: string) {
 	return queryOptions({
 		queryKey: ['organizations', organizationId] as const,

@@ -50,6 +50,37 @@ import {
  * @throws 409 On slug conflicts, double delete/restore, last-owner
  * protection, or deleting the final live organization
  */
+/**
+ * Session-only plugin for `GET /organizations/mine`: the caller's own
+ * memberships. No organization context is required (the switcher needs the
+ * list before any org is active), so it does not ride `erpGuard`.
+ */
+export class OrganizationMembershipController {
+	static plugin() {
+		const organizationService = container.resolve<OrganizationService>(
+			ORGANIZATION_SERVICE_TOKEN,
+		);
+
+		return domainPlugin({
+			name: 'organizations-mine',
+			prefix: '/organizations',
+			tags: ['Organization'],
+			guards: 'session',
+		}).get(
+			'/mine',
+			async ({ erp }) =>
+				ok(await organizationService.listMyOrganizations(erp.session.user.id)),
+			{
+				erpSession: { session: true },
+				detail: {
+					description:
+						"Lists the caller's live organizations with their role string. Session only; no active organization needed.",
+				},
+			},
+		);
+	}
+}
+
 export class OrganizationController {
 	/**
 	 * Builds the Elysia plugin mounting the organization-scoped routes.

@@ -1,6 +1,10 @@
 import { createFileRoute, isRedirect, redirect, Outlet } from '@tanstack/react-router';
 import MainLayout from '@/components/layout/main-layout';
 import { getSession } from '@/lib/auth-client';
+import { i18nInstance } from '@/i18n';
+import { canOpenPath } from '@/lib/route-guard';
+import { queryClient } from '@/lib/query-client';
+import { toast } from '@/components/toast';
 
 /**
  * Authenticated shell: redirects to /login when no valid session cookie is
@@ -15,6 +19,10 @@ export const Route = createFileRoute('/_authed')({
 			const { data } = await getSession();
 			if (!data) {
 				throw redirect({ to: '/login', search: { redirect: location.href } });
+			}
+			if (!(await canOpenPath(location.pathname, data, queryClient))) {
+				toast.error(i18nInstance.t('access.denied', { ns: 'nav' }));
+				throw redirect({ to: '/' });
 			}
 			return { session: data };
 		} catch (error) {

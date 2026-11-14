@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { organization, useSession } from './auth-client'
 import type { Permission } from './permissions'
 
-const splitPermission = (permission: Permission) => {
+export const splitPermission = (permission: Permission) => {
   const dot = permission.lastIndexOf('.')
   return {
     resource: permission.slice(0, dot),

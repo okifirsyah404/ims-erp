@@ -57,6 +57,19 @@ export class OrganizationRepository implements IOrganizationRepository {
 	/** Redis key namespace; only the `findById` read is cached. */
 	private readonly cachePrefix = 'organization';
 
+	/** Live organizations where `userId` is a member, with that member's role. */
+	async findMembershipsForUser(
+		userId: string,
+	): Promise<{ organization: TOrganizationSelect; role: string }[]> {
+		const rows = await this.db
+			.select({ organization: organizations, role: members.role })
+			.from(members)
+			.innerJoin(organizations, eq(members.organizationId, organizations.id))
+			.where(and(eq(members.userId, userId), isNull(organizations.deletedAt)))
+			.orderBy(asc(organizations.createdAt));
+		return rows;
+	}
+
 	/**
 	 * Paginated organization listing, ordered by creation time.
 	 *

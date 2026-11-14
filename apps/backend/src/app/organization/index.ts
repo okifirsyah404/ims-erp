@@ -8,7 +8,10 @@
 import Elysia from 'elysia';
 
 import { OrganizationBootstrapController } from './controllers/organization-bootstrap.controller';
-import { OrganizationController } from './controllers/organization.controller';
+import {
+	OrganizationController,
+	OrganizationMembershipController,
+} from './controllers/organization.controller';
 import { OrganizationInvitationController } from './controllers/organization-invitation.controller';
 
 export * from './container';
@@ -33,6 +36,8 @@ export {
  */
 export function organizationModule() {
 	return new Elysia({ name: 'organization' })
+		// `/mine` must register before `OrganizationController`'s `/:organizationId`.
+		.use(OrganizationMembershipController.plugin())
 		.use(OrganizationController.plugin())
 		.use(OrganizationInvitationController.plugin())
 		.use(OrganizationBootstrapController.plugin());

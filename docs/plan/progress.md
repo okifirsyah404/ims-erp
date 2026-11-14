@@ -18,6 +18,142 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - Role-based nav: Phase 4 complete (ERP-0051, web-admin side)
+
+Claimed `ERP-0051` in `backlog.md` (in-progress; PIC and login gate stay blocked on ADR-0017).
+
+- `/organizations/new` is app-admin only in `canOpenPath`. It was previously derived from the
+  `/organizations` nav leaf (`organization.read`), which a non-admin org owner also holds.
+- Decision 9: `organization-switcher.tsx` re-checks the current route after a switch, using a
+  fresh `getSession()`. If the new organization does not allow the page → toast + `navigate('/')`.
+- Plan correction: Phase 4.3 says "one `organization.hasPermission` call with every nav
+  permission". That is not possible - the endpoint returns one boolean for the whole set, so
+  per-item filtering needs one call per permission. `useQueries` is the correct shape; the plan
+  text is wrong, the code is not.
+- Plan correction: Phase 4.5 "unify the cache key" was replaced by a separate
+  `['my-organizations']` key (`GET /organizations/mine`), approved earlier.
+
+Commands and outcomes:
+- `bun test` (web-admin): 97 pass, 0 fail, 16 files.
+- `bunx tsc -b` (web-admin): exit 0.
+- Browser (`localhost:5173`, dev DB):
+  - `orgadmin.test` (`admin` in Entragate, `sales` in Live Org):
+    - `/organizations/new` → redirected to `/` with the denied toast.
+    - No active organization (session `set-active` null) → `/settings/company` redirected to `/`
+      with the toast; sidebar showed Dashboard + Notifications only, so Settings is hidden
+      without an active organization.
+    - `/crm/customers` with Live Org active → switch to Entragate (no `customer.read`) →
+      redirected to `/` with the denied toast.
+    - `/documents/files` (allowed in both) → switch Entragate → Live Org → stayed on the page,
+      toast "Organization switched". No false redirect.
+  - `admin`: `/organizations/new` renders "New organization"; `/crm/customers` renders (member
+    of Entragate as owner), no redirect.
+
+Not verified: warehouse PIC nav item and PIC UI (Phase 4.8) - blocked on ADR-0017 and
+`/warehouses/mine`; the item stays `appAdminOnly`.
+
+Docs: `docs/database/` reviewed, unchanged (no schema change).
+
+Dev database reset after the checks (owner request): `bun run drizzle:migrate-reset` in
+`apps/backend` - all schemas dropped, migrations replayed, seeders run, `Migrate-reset
+complete` in 9.7 s. Post-reset: `POST /api/auth/sign-in/username` `admin` → 200,
+`GET /organizations/mine` → 200 with Entragate only. The throwaway accounts used for the
+browser checks (`investor.test`, `investor2.test`, `customer.test`, `orgadmin.test`) no longer
+exist; they were created through the API, never by a seeder.
+
+## 2026-11-14 - Role-based nav: Phase 4 part 3 (route guard in `_authed`)
+
+- `lib/route-guard.ts` `canOpenPath`: finds the governing nav leaf (`findNavLeaf`, longest url
+  match), reuses `leafVisible` and the same permission cache (`orgPermissionQueryOptions`,
+  exported from `use-nav-permissions.ts`) and `['my-organizations']`. Fails closed on error.
+- `_authed.tsx` `beforeLoad`: denied path → `toast.error` (`nav:access.denied`, en + id) and
+  `redirect({ to: '/' })`.
+- `_authed.index.tsx`: Dashboard renders only for internal-role users; others get an empty page.
+  Not a redirect, because redirecting `/` to `/` would loop.
+- Decision: a path no nav leaf covers is allowed by the frontend; backend still enforces it.
+- Known gap: first `/crm/customers` check showed a blank page; the cause was my test timing
+  (DOM read before async i18n/session settled), not the guard. Re-test confirmed redirect.
+
+Commands and outcomes:
+- `bun test` (web-admin): 96 pass, 0 fail, 16 files (`find-nav-leaf.test.ts`,
+  `route-guard.test.ts` added).
+- `bunx tsc -b` (web-admin): exit 0.
+- Browser, `investor2.test` (investor in Entragate only), `localhost:5173`:
+  - `/crm/customers` by URL → redirected to `/`, toast "You do not have access to that page."
+    (en) and "Anda tidak memiliki akses ke halaman tersebut." (id).
+  - Dashboard hidden, sidebar shows Notifications only.
+
+Not verified: guard for an internal-role user on a denied page (unit test only); `canOpenPath`
+against real `hasPermission` responses beyond the investor case.
+
+## 2026-11-14 - Role-based nav plan: Phase 4 part 2 (Dashboard gated on internal role)
+
+- `internalRole` item flag: Dashboard shows only when the user holds an internal role in some
+  organization. `open` stays for items every logged-in user may see (Notifications).
+- Sidebar waits for `['my-organizations']` as well as permissions before rendering items.
+- Browser checks (dev DB, test accounts created through the API, not the seeder):
+  - `investor2.test` (investor in Entragate only): sidebar shows Notifications only; no Dashboard.
+  - `customer.test` (customer in Entragate only): sidebar shows Notifications only.
+  - Admin: unchanged.
+- Correction: earlier `investor.test` run was not investor-only (it held `sales` in Live Org);
+  its Dashboard was correct.
+- Known gap: route guard not yet built. Typing `/` as an investor-only user still renders the
+  Dashboard page content. Blocked on `_authed.tsx` `beforeLoad` (next step).
+- Login gate (Phase 3) not built: investor-only and customer-only users still sign in.
+- `bun test` web-admin: 85 pass, 0 fail. `bunx tsc -b`: exit 0.
+
+## 2026-11-14 - Role-based nav: Phase 4 part 1 (nav model, switcher, `GET /organizations/mine`)
+
+Branch `fix/side-nav-role-based`. Not merged. Phase 4 is partial: route guard and
+PIC nav item are still open.
+
+- Nav model: `sidebar-item.ts` (`permission?`, `open?`, `appAdminOnly?`; `adminOnly` removed),
+  `filter-nav.ts` (`filterNav`, `collectPermissions`), `nav-config.ts` per-item gates.
+  Items with no catalog resource are hidden (deny by default).
+- `use-nav-permissions.ts`: one `hasPermission` batch under `['erp-has-permission', ...]`.
+  `main-sidebar.tsx` uses `filterNav`, skeleton while pending.
+- Backend: `GET /organizations/mine` (session-only, `OrganizationMembershipController`,
+  mounted before `/:organizationId`). Repo `findMembershipsForUser`, service `listMyOrganizations`.
+  Fix this session: route read `erp.session` but did not enable `erpSession: { session: true }`,
+  so `sessionGuard` never set `erp` and the endpoint returned 500
+  (`undefined is not an object (evaluating 'erp.session')`). Now 200.
+- Switcher: `myOrganizationsQueryOptions` (`['my-organizations']`), filter `hasInternalRole`,
+  `OrgLogo` (fallback `Building2`), invalidates `['my-organizations']` and `['organizations']`.
+- `lib/internal-role.ts` (`hasInternalRole`), `org-logo.tsx`.
+
+Commands and outcomes:
+- `bun test` (web-admin): 84 pass, 0 fail, 14 files.
+- `bunx tsc -b` (web-admin): exit 0.
+- `bun test test/unit/organization-mine.test.ts` (backend): 2 pass, 0 fail.
+- `bunx tsc --noEmit -p .` (backend): exit 0.
+- Browser (`localhost:5173`, admin login): `GET /organizations/mine` 200 with 3 orgs, all role
+  `owner`. Sidebar renders. Switcher lists Entragate (`Building2` fallback, logo null) and two
+  "Live Org" entries with presigned logos.
+
+Not verified:
+- Filter for investor-only and investor+internal users: no such accounts exist, so the
+  filter has only unit-test evidence.
+- `findMembershipsForUser` SQL checked only through the endpoint, not directly against the DB.
+- Route guard in `_authed.tsx`: not started.
+
+Docs: `docs/database/` reviewed, unchanged (no schema change in this phase).
+
+## 2026-11-14 - Role-based nav plan: Phase 0 (docs only)
+
+Branch `fix/side-nav-role-based`. Docs only; no code, no migration, no `docs/database/` change.
+
+- `docs/plan/plans/side-nav-role-based.md` added (status: planned). No `ERP-*` claimed.
+- `docs/architecture/decisions/ADR-0017-warehouse-person-in-charge.md` added (status: `proposed`).
+  Amends ADR-0008 §3 and ADR-0010 §5, §7, §10 by reference only. Those ADRs are not edited yet.
+- `docs/plan/plans/features.md` gets a cross-cutting section (planned, evidence: none).
+- Cross-checked ADR-0008 §3 (warehouse global, no org role holds `warehouse:*`) against the
+  ADR-0017 wording: consistent.
+- Owner sign-off on ADR-0017: **pending**. Backend PIC work does not merge before acceptance.
+- `docs/database/` reviewed, unchanged in this phase (the `inventory.warehouse_managers` table lands in Phase 1).
+
+Commits: `f8078e4` (plan), `93089f8` (ADR-0017). Tests not rerun for this phase: no code changed;
+the pre-commit hook ran backend 923/923 and locales 90/90 on each commit.
+
 ## 2026-11-14 - Web admin: header shows the avatar only
 
 Change: `apps/web-admin/src/components/sidebar/nav-user.tsx`. The header trigger now

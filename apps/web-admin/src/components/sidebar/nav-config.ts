@@ -33,25 +33,24 @@ import type { SidebarItem } from './sidebar-item';
 /**
  * Full ERP navigation map (docs module map M01–M12 + Administration).
  *
- * UI-first pass: every module from the docs is present so the shell shows
- * the app's final shape. Modules whose routes do not exist yet render a
- * `ComingSoonPage` stub (see `routes/_authed/**` thin route files), so all
- * items are clickable and navigate to a real (placeholder) page.
+ * Visibility is declared per item (see `filterNav`):
+ * - `permission`: shown when the active organization holds it.
+ * - `open`: shown to every logged-in user with an internal role.
+ * - `appAdminOnly`: shown to application administrators only.
+ * - none of the above: hidden. Used for modules whose permission is not in
+ *   the catalog yet (`erpStatements`), so the item cannot be gated honestly.
  *
- * Permission gating is intentionally absent in this pass; when the shared
- * `erp-permissions` catalog is wired into the sidebar, filter these lists
- * per item instead of hiding whole sections.
+ * Warehouse (`appAdminOnly`) becomes "app admin or PIC" once the
+ * `/warehouses/mine` endpoint lands (ADR-0017, plan Phase 4).
  */
 export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarItem[] }[] = [
-	// M01 - Dashboard. Plain link; the authed index page doubles as the
-	// dashboard placeholder for now.
+	// M01 - Dashboard.
 	{
 		labelKey: 'section.dashboard',
-		items: [{ titleKey: 'item.dashboard', url: '/', icon: LayoutDashboard }],
+		items: [{ titleKey: 'item.dashboard', url: '/', icon: LayoutDashboard, internalRole: true }],
 	},
 
-	// M02 — CRM & Sales. CRM (relationships) and Sales (transactions) are
-	// separate domains with their own route namespaces.
+	// M02 — CRM & Sales.
 	{
 		labelKey: 'section.crmSales',
 		items: [
@@ -60,8 +59,8 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/crm',
 				icon: Contact,
 				items: [
-					{ titleKey: 'item.leads', url: '/crm/leads' },
-					{ titleKey: 'item.customers', url: '/crm/customers' },
+					{ titleKey: 'item.leads', url: '/crm/leads', permission: 'lead.read' },
+					{ titleKey: 'item.customers', url: '/crm/customers', permission: 'customer.read' },
 				],
 			},
 			{
@@ -69,24 +68,25 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/sales',
 				icon: ReceiptText,
 				items: [
-					{ titleKey: 'item.quotes', url: '/sales/quotes' },
-					{ titleKey: 'item.salesOrders', url: '/sales/orders' },
+					{ titleKey: 'item.quotes', url: '/sales/quotes', permission: 'quotation.read' },
+					{ titleKey: 'item.salesOrders', url: '/sales/orders', permission: 'sales_order.read' },
+					// No catalog resource yet: hidden.
 					{ titleKey: 'item.deliveryNotes', url: '/sales/deliveries' },
-					{ titleKey: 'item.invoices', url: '/sales/invoices' },
+					{ titleKey: 'item.invoices', url: '/sales/invoices', permission: 'invoice.read' },
+					// No catalog resource yet: hidden.
 					{ titleKey: 'item.downPayments', url: '/sales/down-payments' },
-					{ titleKey: 'item.receipts', url: '/sales/receipts' },
+					{ titleKey: 'item.receipts', url: '/sales/receipts', permission: 'receipt.read' },
 				],
 			},
 		],
 	},
 
-	// Document registry (ERP-0042). Company-wide: every issued document,
-	// whatever module owns the business record. Signatures and templates are
-	// placeholders until ERP-0048 and ERP-0050.
+	// Document registry (ERP-0042). Signatures and templates have no catalog
+	// resource yet (ERP-0048, ERP-0050): hidden.
 	{
 		labelKey: 'section.documents',
 		items: [
-			{ titleKey: 'item.files', url: '/documents/files', icon: FileText },
+			{ titleKey: 'item.files', url: '/documents/files', icon: FileText, permission: 'document.read' },
 			{
 				titleKey: 'item.signatures',
 				icon: PenLine,
@@ -109,45 +109,46 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/subscription',
 				icon: KeyRound,
 				items: [
-					{ titleKey: 'item.licenseApplications', url: '/subscription/applications' },
-					{ titleKey: 'item.apiKeys', url: '/subscription/api-keys' },
-					{ titleKey: 'item.activations', url: '/subscription/activations' },
+					{ titleKey: 'item.licenseApplications', url: '/subscription/applications', permission: 'license.read' },
+					{ titleKey: 'item.apiKeys', url: '/subscription/api-keys', permission: 'license.manage_api' },
+					{ titleKey: 'item.activations', url: '/subscription/activations', permission: 'license.activate' },
 				],
 			},
 		],
 	},
 
-	// M04 — Integrations. Flat items: each integration is its own area, no
-	// grouping parent (per plan review).
+	// M04 — Integrations. Flat items.
 	{
 		labelKey: 'section.integrations',
 		items: [
-			{ titleKey: 'item.websiteCatalog', url: '/integrations/website-catalog', icon: Globe },
-			{ titleKey: 'item.whatsappAi', url: '/integrations/whatsapp-ai', icon: MessageSquare },
-			{ titleKey: 'item.notifications', url: '/integrations/notifications', icon: Bell },
-			{ titleKey: 'item.webhooks', url: '/integrations/webhooks', icon: Webhook },
+			{ titleKey: 'item.websiteCatalog', url: '/integrations/website-catalog', icon: Globe, permission: 'catalog.read' },
+			{ titleKey: 'item.whatsappAi', url: '/integrations/whatsapp-ai', icon: MessageSquare, permission: 'automation.read' },
+			{ titleKey: 'item.notifications', url: '/integrations/notifications', icon: Bell, open: true },
+			{ titleKey: 'item.webhooks', url: '/integrations/webhooks', icon: Webhook, permission: 'integration.read' },
 		],
 	},
 
-	// M05 — Inventory & Purchasing (existing routes + new Procurement),
-	// with Assets & Equipment (M06) folded in as its own group.
+	// M05 — Inventory & Purchasing, with Assets & Equipment (M06) folded in.
 	{
 		labelKey: 'section.inventory',
 		items: [
-			{ titleKey: 'item.warehouses', url: '/inventory/warehouses', icon: Warehouse },
-			{ titleKey: 'item.inventoryValue', url: '/inventory/stock/value', icon: Calculator },
+			// PIC access (ADR-0017) comes in Phase 4 via `/warehouses/mine`.
+			{ titleKey: 'item.warehouses', url: '/inventory/warehouses', icon: Warehouse, appAdminOnly: true },
+			{ titleKey: 'item.inventoryValue', url: '/inventory/stock/value', icon: Calculator, permission: 'stock.read' },
 			{
 				titleKey: 'item.items',
 				icon: Package,
 				items: [
-					{ titleKey: 'item.products', url: '/inventory/products' },
+					{ titleKey: 'item.products', url: '/inventory/products', permission: 'product.read' },
+					// No catalog resource yet: hidden.
 					{ titleKey: 'item.components', url: '/inventory/components' },
 					{ titleKey: 'item.materials', url: '/inventory/materials' },
-					{ titleKey: 'item.stock', url: '/inventory/stock' },
-					{ titleKey: 'item.stockAdjustments', url: '/inventory/stock/adjustments' },
-					{ titleKey: 'item.newItem', url: '/inventory/items/new' },
+					{ titleKey: 'item.stock', url: '/inventory/stock', permission: 'stock.read' },
+					{ titleKey: 'item.stockAdjustments', url: '/inventory/stock/adjustments', permission: 'stock_adjustment.read' },
+					{ titleKey: 'item.newItem', url: '/inventory/items/new', permission: 'product.create' },
+					// No catalog resource yet: hidden.
 					{ titleKey: 'item.itemCategories', url: '/inventory/categories' },
-					{ titleKey: 'item.itemMovements', url: '/inventory/stock/movements' },
+					{ titleKey: 'item.itemMovements', url: '/inventory/stock/movements', permission: 'stock.read' },
 				],
 			},
 			{
@@ -155,8 +156,9 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/procurement',
 				icon: Truck,
 				items: [
-					{ titleKey: 'item.suppliers', url: '/procurement/suppliers' },
-					{ titleKey: 'item.purchaseOrders', url: '/procurement/purchase-orders' },
+					{ titleKey: 'item.suppliers', url: '/procurement/suppliers', permission: 'supplier.read' },
+					{ titleKey: 'item.purchaseOrders', url: '/procurement/purchase-orders', permission: 'purchase_order.read' },
+					// No catalog resource yet: hidden.
 					{ titleKey: 'item.goodsReceipts', url: '/procurement/receipts' },
 				],
 			},
@@ -165,9 +167,10 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/assets',
 				icon: Repeat,
 				items: [
-					{ titleKey: 'item.borrowings', url: '/assets/borrowings' },
-					{ titleKey: 'item.assetRegister', url: '/assets/register' },
-					{ titleKey: 'item.serviceRecords', url: '/assets/service-records' },
+					{ titleKey: 'item.borrowings', url: '/assets/borrowings', permission: 'asset_borrowing.read' },
+					{ titleKey: 'item.assetRegister', url: '/assets/register', permission: 'asset.read' },
+					{ titleKey: 'item.serviceRecords', url: '/assets/service-records', permission: 'asset.read' },
+					// No catalog resource yet: hidden.
 					{ titleKey: 'item.depreciation', url: '/assets/depreciation' },
 				],
 			},
@@ -183,8 +186,9 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/projects',
 				icon: FileCheck2,
 				items: [
+					// No catalog resource yet: hidden.
 					{ titleKey: 'item.bast', url: '/projects/bast' },
-					{ titleKey: 'item.tickets', url: '/projects/tickets' },
+					{ titleKey: 'item.tickets', url: '/projects/tickets', permission: 'service_ticket.read' },
 				],
 			},
 		],
@@ -199,18 +203,18 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/hr',
 				icon: GraduationCap,
 				items: [
-					{ titleKey: 'item.employees', url: '/hr/employees' },
-					{ titleKey: 'item.attendance', url: '/hr/attendance' },
-					{ titleKey: 'item.leave', url: '/hr/leave' },
+					{ titleKey: 'item.employees', url: '/hr/employees', permission: 'employee.read' },
+					{ titleKey: 'item.attendance', url: '/hr/attendance', permission: 'attendance.read' },
+					{ titleKey: 'item.leave', url: '/hr/leave', permission: 'leave.read' },
+					// No catalog resource yet: hidden.
 					{ titleKey: 'item.overtime', url: '/hr/overtime' },
-					{ titleKey: 'item.payroll', url: '/hr/payroll' },
+					{ titleKey: 'item.payroll', url: '/hr/payroll', permission: 'payroll.read' },
 				],
 			},
 		],
 	},
 
-	// M09 — Finance, with Tax (M10) merged in: the docs have tax recaps
-	// reviewed by finance, so Tax is a sibling parent inside this section.
+	// M09 — Finance, with Tax (M10) and Investors (M11) merged in.
 	{
 		labelKey: 'section.finance',
 		items: [
@@ -219,16 +223,17 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/finance',
 				icon: Wallet,
 				items: [
+					// No catalog resource yet: hidden.
 					{ titleKey: 'item.openingBalances', url: '/finance/opening-balances' },
-					{ titleKey: 'item.accounts', url: '/finance/accounts' },
-					{ titleKey: 'item.journal', url: '/finance/journal' },
-					{ titleKey: 'item.cashBank', url: '/finance/cash-bank' },
-					{ titleKey: 'item.reconciliation', url: '/finance/reconciliation' },
-					{ titleKey: 'item.receivables', url: '/finance/receivables' },
-					{ titleKey: 'item.payables', url: '/finance/payables' },
-					{ titleKey: 'item.expenses', url: '/finance/expenses' },
-					{ titleKey: 'item.financialReports', url: '/finance/reports' },
-					{ titleKey: 'item.periodClosing', url: '/finance/closing' },
+					{ titleKey: 'item.accounts', url: '/finance/accounts', permission: 'chart_of_account.read' },
+					{ titleKey: 'item.journal', url: '/finance/journal', permission: 'journal.read' },
+					{ titleKey: 'item.cashBank', url: '/finance/cash-bank', permission: 'cash_bank.read' },
+					{ titleKey: 'item.reconciliation', url: '/finance/reconciliation', permission: 'cash_bank.reconcile' },
+					{ titleKey: 'item.receivables', url: '/finance/receivables', permission: 'invoice.read' },
+					{ titleKey: 'item.payables', url: '/finance/payables', permission: 'bill.read' },
+					{ titleKey: 'item.expenses', url: '/finance/expenses', permission: 'bill.read' },
+					{ titleKey: 'item.financialReports', url: '/finance/reports', permission: 'financial_report.read' },
+					{ titleKey: 'item.periodClosing', url: '/finance/closing', permission: 'accounting_period.close' },
 				],
 			},
 			{
@@ -236,22 +241,21 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/finance/tax',
 				icon: Scale,
 				items: [
-					{ titleKey: 'item.taxTypes', url: '/finance/tax/types' },
-					{ titleKey: 'item.taxRecords', url: '/finance/tax/records' },
-					{ titleKey: 'item.taxRecap', url: '/finance/tax/recap' },
-					{ titleKey: 'item.taxWithholding', url: '/finance/tax/withholding' },
-					{ titleKey: 'item.taxCorrections', url: '/finance/tax/corrections' },
+					{ titleKey: 'item.taxTypes', url: '/finance/tax/types', permission: 'tax.read' },
+					{ titleKey: 'item.taxRecords', url: '/finance/tax/records', permission: 'tax.read' },
+					{ titleKey: 'item.taxRecap', url: '/finance/tax/recap', permission: 'tax.read' },
+					{ titleKey: 'item.taxWithholding', url: '/finance/tax/withholding', permission: 'tax.read' },
+					{ titleKey: 'item.taxCorrections', url: '/finance/tax/corrections', permission: 'tax.read' },
 				],
 			},
 			{
-				// M11 — Investors, merged into Finance per plan review (the
-				// docs treat profit-sharing payouts as finance-owned).
+				// M11 — Investors, merged into Finance per plan review.
 				titleKey: 'item.investors',
 				url: '/finance/investors',
 				icon: HandCoins,
 				items: [
-					{ titleKey: 'item.investorList', url: '/finance/investors/registry' },
-					{ titleKey: 'item.profitSharing', url: '/finance/investors/profit-sharing' },
+					{ titleKey: 'item.investorList', url: '/finance/investors/registry', permission: 'investor.read' },
+					{ titleKey: 'item.profitSharing', url: '/finance/investors/profit-sharing', permission: 'profit_distribution.read' },
 				],
 			},
 		],
@@ -265,35 +269,28 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				titleKey: 'item.reports',
 				url: '/reports',
 				icon: FileSpreadsheet,
-				items: [{ titleKey: 'item.monthlyArchives', url: '/reports/monthly-archives' }],
+				items: [{ titleKey: 'item.monthlyArchives', url: '/reports/monthly-archives', permission: 'financial_report.read' }],
 			},
 		],
 	},
 
-	// Platform-level account administration (stays separate from M12 per
-	// the plan: /admin/* is platform-account admin, not ERP access rights).
+	// Platform-level account administration.
 	{
 		labelKey: 'section.administration',
 		items: [
-			{ titleKey: 'item.organizations', url: '/organizations', icon: Building2 },
-			{ titleKey: 'item.users', url: '/admin/users', icon: Users, adminOnly: true },
-			{
-				titleKey: 'item.auditLog',
-				url: '/admin/audit',
-				icon: ScrollText,
-				adminOnly: true,
-			},
+			{ titleKey: 'item.organizations', url: '/organizations', icon: Building2, permission: 'organization.read' },
+			{ titleKey: 'item.users', url: '/admin/users', icon: Users, appAdminOnly: true },
+			{ titleKey: 'item.auditLog', url: '/admin/audit', icon: ScrollText, appAdminOnly: true },
 		],
 	},
 
-	// Company-wide configuration (ADR-0011). Company profile and code
-	// numbering used to sit under Administration; each module's own settings
-	// page goes here too (Document first).
+	// Company-wide configuration (ADR-0011).
 	{
 		labelKey: 'section.settings',
 		items: [
-			{ titleKey: 'item.companyProfile', url: '/settings/company', icon: Settings },
-			{ titleKey: 'item.codeNumbers', url: '/settings/code-numbers', icon: Hash },
+			{ titleKey: 'item.companyProfile', url: '/settings/company', icon: Settings, permission: 'company.read' },
+			{ titleKey: 'item.codeNumbers', url: '/settings/code-numbers', icon: Hash, permission: 'code_number.read' },
+			// No catalog resource yet: hidden.
 			{ titleKey: 'item.documentSettings', url: '/settings/documents', icon: FileText },
 		],
 	},
