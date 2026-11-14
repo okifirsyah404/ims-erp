@@ -42,6 +42,16 @@ approvals or fully automated CRM.
   `sales.order.*`, `sales.invoice.*`).
 - Stage 2: checkout connects orders/invoices to gateway payment status and
   customer-portal document visibility (T21/T25).
+- **Online payment of invoices (ERP-0020, ADR-0019, 2026-11-14, in-progress).**
+  `sales.gateway_payments` holds hosted checkouts of an issued invoice.
+  `IPaymentGateway` (`contracts/payment-gateway.contract.ts`) has adapters
+  in `adapters/` (Xendit, SingaPay, local `fake`), chosen by
+  `PAYMENT_GATEWAY_PROVIDER`. Staff: `GET /gateway-payments/status`,
+  `GET|POST /invoices/:id/gateway-payments` (`invoice:read` /
+  `receipt:create`). Public: `POST /payments/gateway/:provider/webhook`,
+  verified by the adapter. A paid event posts exactly one receipt, capped at
+  the outstanding amount, in one transaction with the checkout row locked.
+  Money that cannot be applied is kept `paid` with a note.
 
 ## Dependencies and rules
 

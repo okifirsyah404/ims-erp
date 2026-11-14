@@ -96,6 +96,7 @@ TableGroup "Sales" {
   sales.invoices
   sales.invoice_items
   sales.receipts
+  sales.gateway_payments
 }
 
 TableGroup "Procurement" {
@@ -1629,6 +1630,8 @@ Ref: catalog.item_cost_histories.item_id > catalog.items.id [delete: cascade]
 // recreation migration of ADR-0011 step 3c (implementation-phases.md S3).
 // The transitional sales.payments table is documented in the Legacy group at
 // the end of this file.
+// sales.gateway_payments (ERP-0020, ADR-0019) holds online payment checkouts
+// of invoices; a paid checkout posts a sales.receipts row.
 // ---------------------------------------------------------------------------
 
 Table sales.quotations {
@@ -2151,6 +2154,43 @@ Table sales.receipts {
     `status IN ('draft', 'verified', 'posted', 'reversed', 'void')`
     `amount > 0`
     `method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque')`
+  }
+}
+
+Table sales.gateway_payments {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`, note: "Also the merchant reference sent to the provider (Xendit external_id, SingaPay reff_no), so a webhook finds its row without a tenant."]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  sales_invoice_id uuid [not null, note: "The invoice being paid (same module)."]
+  provider text [not null, note: "Payment gateway that holds the checkout: xendit or singapay (fake only outside production)."]
+  provider_reference varchar(100) [note: "The provider's id of the checkout (Xendit invoice id, SingaPay payment link id). Null until the provider answered."]
+  payment_url text [note: "Hosted checkout page the customer opens."]
+  amount bigint [not null, note: "Requested amount in IDR minor units: the invoice outstanding rounded up to whole rupiah, because gateways charge whole rupiah."]
+  currency_code varchar(3) [not null, default: 'IDR']
+  status text [not null, default: 'pending']
+  expires_at bigint [note: "When the provider closes the checkout."]
+  paid_at bigint
+  paid_amount bigint [note: "What the provider reports as paid, IDR minor units."]
+  payment_channel text [note: "Provider channel, e.g. BCA, QRIS, OVO."]
+  provider_transaction_id varchar(100) [note: "The provider's id of the payment, copied to the receipt reference."]
+  receipt_id uuid [note: "The receipt (kwitansi) recorded automatically for the payment. Null while unpaid, or when the paid amount could not be applied (invoice void or already settled), which staff resolve by hand."]
+  settlement_note text [note: "Why a paid checkout was not applied to its invoice."]
+  last_event jsonb [note: "The last verified webhook body, kept for audit."]
+  requested_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Online payment checkout of a sales invoice through a payment gateway (ERP-0020, ADR-0019). Provider neutral: the provider is chosen by configuration and recorded per row, so a checkout opened with one provider still settles after a switch. pending -> paid | expired | failed; a paid webhook on an expired or failed row still counts, money received is a fact. Paid is applied once: the row is locked, a receipt is posted against the invoice (never above its outstanding amount) and receipt_id set; a replayed webhook finds receipt_id and does nothing."
+  Indexes {
+    sales_invoice_id [name: 'gateway_payments_sales_invoice_id_idx']
+    status [name: 'gateway_payments_status_idx']
+    (provider, provider_reference) [unique, name: 'gateway_payments_provider_reference_uq', note: "Partial: WHERE provider_reference IS NOT NULL."]
+    receipt_id [unique, name: 'gateway_payments_receipt_id_uq', note: "Partial: WHERE receipt_id IS NOT NULL. One receipt per checkout."]
+  }
+  Checks {
+    `provider IN ('xendit', 'singapay', 'fake')`
+    `status IN ('pending', 'paid', 'expired', 'failed')`
+    `amount > 0`
+    `paid_amount IS NULL OR paid_amount >= 0`
   }
 }
 
@@ -4602,6 +4642,8 @@ Table finance.credit_memos {
 }
 
 Ref: sales.invoice_items.invoice_id > sales.invoices.id [delete: cascade]
+Ref: sales.gateway_payments.sales_invoice_id > sales.invoices.id [delete: restrict]
+Ref: sales.gateway_payments.receipt_id > sales.receipts.id [delete: restrict]
 // finance.payments.sales_invoice_id, finance.payment_allocations.sales_invoice_id and
 // finance.credit_memos.sales_invoice_id are logical references to
 // sales.invoices.id — cross-module refs are intentionally FK-free.

@@ -102,9 +102,19 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`proposed`).
   allocations stay in finance.
 - One template per document — T05. Evidence: dbml `documents` only.
 - Checkout / online orders — T21, ERP-0020. Evidence: dbml `commerce` only.
-- Payment gateway callbacks + reconciliation — T22, ERP-0020. Evidence: none
-  (payment ledger is `finance.payments`, M09; `sales.payments` is scheduled
-  for removal at step S7 in `docs/database/implementation-phases.md`).
+- Gateway reconciliation (fees, gross / net settlement) — T22, ERP-0020.
+  Evidence: none (payment ledger is `finance.payments`, M09; `sales.payments`
+  is scheduled for removal at step S7 in
+  `docs/database/implementation-phases.md`).
+
+### in-progress
+- Online payment of invoices (payment gateway) — T21/T22, ERP-0020, ADR-0019.
+  Evidence: `apps/backend/src/app/sales` (`GatewayPaymentService`,
+  `adapters/` Xendit / SingaPay / fake), `sales.gateway_payments`, migration
+  `20261114120000_erp0020_gateway_payments`,
+  `test/unit/payment-gateway.test.ts`, invoice page card, `progress.md`
+  2026-11-14 (API e2e 24/24, browser). Gaps: no provider sandbox yet,
+  reconciliation, portal pay button.
 
 ### implemented
 - Customers + contacts — T05, ERP-0004/0005. Evidence: `apps/backend/src/app/crm`,

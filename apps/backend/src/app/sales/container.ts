@@ -1,4 +1,7 @@
 import { InvoiceBillingService } from './services/invoice-billing.service';
+import { GatewayPaymentService } from './services/gateway-payment.service';
+import { GatewayPaymentRepository } from './repositories/gateway-payment.repository';
+import { PaymentGatewayRegistry } from './adapters/payment-gateway-registry';
 import { QuotationRepository } from './repositories/quotation.repository';
 import { PaymentRepository } from './repositories/payment.repository';
 import { QuotationService } from './services/quotation.service';
@@ -29,6 +32,9 @@ import {
 	INVOICE_REPOSITORY_TOKEN,
 	INVOICE_SERVICE_TOKEN,
 	INVOICE_BILLING_SERVICE_TOKEN,
+	GATEWAY_PAYMENT_REPOSITORY_TOKEN,
+	GATEWAY_PAYMENT_SERVICE_TOKEN,
+	PAYMENT_GATEWAY_REGISTRY_TOKEN,
 } from './constants/ar-di';
 
 import type { DependencyContainer } from 'tsyringe';
@@ -56,6 +62,12 @@ export function registerSales(container: DependencyContainer): void {
 	});
 	container.register(INVOICE_SERVICE_TOKEN, { useClass: InvoiceService });
 	container.register(INVOICE_BILLING_SERVICE_TOKEN, { useClass: InvoiceBillingService });
+	// ERP-0020: providers are built from configuration once (cached token, etc.).
+	container.register(PAYMENT_GATEWAY_REGISTRY_TOKEN, {
+		useValue: new PaymentGatewayRegistry(),
+	});
+	container.register(GATEWAY_PAYMENT_REPOSITORY_TOKEN, { useClass: GatewayPaymentRepository });
+	container.register(GATEWAY_PAYMENT_SERVICE_TOKEN, { useClass: GatewayPaymentService });
 	container.register(INVOICE_LOOKUP_SERVICE_TOKEN, {
 		useClass: InvoiceLookupService,
 	});

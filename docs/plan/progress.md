@@ -18,6 +18,135 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0020 payment gateway: online payment of invoices (Xendit / SingaPay, provider neutral)
+
+Owner: "Payment gateway dibikin dinamis karna ada 2 kemungkinan menggunakan
+xendit/singapay"; customers pay after staff confirmation; no sandbox account
+yet, so build with faked responses. Branch `feat/m02-payment-gateway`,
+stacked on `fix/m02-invoice-billing` (PR #98), because the invoice page it
+extends is broken on `main` until #98 merges. Decisions: ADR-0019 (proposed).
+
+**Gate 1.** Read `docs/database/docs.dbml` (Sales, Finance, Automation,
+Commerce), `module-ownership.md` (Sales owns invoices and receipts, Finance
+owns `finance.payments`), `integrity-and-consistency.md` (FK policy,
+soft delete), `data-dictionary.md` (money and datetimes). No gateway
+transaction table existed (only `finance.payments`,
+`automation.integration_credentials` and `commerce.commerce_orders`
+`payment_status`). `logical-references.md` was regenerated; the only new
+logical reference is `requested_by` → auth users. `implementation-phases.md`
+was skipped: no pending step is involved.
+
+**Gate 2 (manual fallback; the `grilling` skill is not installed).**
+- **Owner:** Sales, because it owns invoices and receipts. `finance.payments`
+  is M09 and stays untouched.
+- **Tenant:** `organization_id` on every row. The webhook finds a row by its
+  id, which is the merchant reference.
+- **Soft delete:** `deleted_at`. Rows are never deleted.
+- **Money:** bigint IDR minor units. Gateways charge whole rupiah, rounded
+  up; the receipt is capped at the outstanding amount.
+- **Datetimes:** unix ms.
+- **Status vocabulary:** `pending | paid | expired | failed`.
+- **Cross-module:** none except `requested_by`.
+- **Permissions:** existing `receipt:create` / `invoice:read`.
+- **Idempotency:** row lock plus a partial unique `receipt_id`.
+- **Redirect:** never trusted.
+
+**Provider research (official docs, read 2026-11-14).**
+- **Xendit:** Invoice API `POST /v2/invoices` with Basic auth (secret key).
+  Callback authenticated by `x-callback-token`. Status `PAID` / `SETTLED` /
+  `EXPIRED`.
+- **SingaPay** (docs.singapay.id): `POST /api/v1.1/access-token/b2b`, signed
+  HMAC-SHA512 over `client_id_client_secret_YYYYMMDD`; Payment Link v2
+  `POST /api/v2.0/payment-link/{account_id}`; webhook `X-Signature`
+  HMAC-SHA512 over `METHOD:path:token:sha256(key-sorted body):timestamp`,
+  with a 5-minute window.
+- **Unverified until a sandbox exists:** the SingaPay `expired_at` format,
+  and number serialization in the signed body.
+
+**Change**
+- **Schema.**
+  - `docs.dbml` first: `sales.gateway_payments` plus two intra-module refs
+    and the Sales group.
+  - Then `bun docs/database/gen-logical-references.ts`, which printed
+    "526 refs across 41 targets, 233 intra-module refs".
+  - Then `bun docs/database/validate-dbml.ts`, which printed "269 tables,
+    cross-module refs: 0, timestamp gaps: 0, OK".
+  - Drizzle `gatewayPayments` in `sales.schema.ts`.
+  - Hand-written append-only migration
+    `20261114120000_erp0020_gateway_payments`.
+- **Config:** `paymentGateway` block, with env names in `.env.example` only
+  (`PAYMENT_GATEWAY_PROVIDER`, `..._EXPIRY_HOURS`, `..._SUCCESS_URL`,
+  `XENDIT_*`, `SINGAPAY_*`, `PAYMENT_GATEWAY_FAKE_SECRET`).
+- **Backend (sales module):**
+  - Port in `contracts/payment-gateway.contract.ts`.
+  - `adapters/` for Xendit, SingaPay and fake, plus a registry (fake is
+    never built in production).
+  - `GatewayPaymentRepository` and `GatewayPaymentService` (`open`, `list`,
+    `status`, `handleWebhook`).
+  - `GatewayPaymentController` (erp guard) and `GatewayWebhookController`
+    (public).
+  - Errors in `errors/payment-gateway.errors.ts`.
+  - `InvoiceRepository.addReceipt` can now join the caller's transaction and
+    cap the amount at the outstanding total. Existing callers are unchanged.
+- **Web:** `GatewayPaymentsCard` on the invoice page: create the link (copied
+  to the clipboard), status, expiry, copy/open, an "automatic receipt" note
+  and an "unapplied" note.
+- **Locales (en + id):** `finance:gateway.*` and the four `sales.gateway*`
+  API errors. Dead-key prefix `finance:gateway.status.`.
+
+**Verification**
+- **Typecheck and lint:**
+  - `bun run typecheck`: 4/4 clean.
+  - `bun run lint`: 0 errors, and no warning in the touched files.
+- **Unit tests:**
+  - Backend `bun test`: 960 pass, 4 fail. The 4 are the same `Bun.Image` /
+    WebP tests as before (Bun 1.4.1 here, the repo pins 1.4.2).
+  - New `test/unit/payment-gateway.test.ts`: **28 pass**. It covers the wire
+    formats with faked HTTP, the token cache, signature tampering / path /
+    token / stale timestamp, the registry, the service, and the webhook
+    outcomes.
+  - web-admin 97; locales 90.
+- **Migration:** applied with `psql -v ON_ERROR_STOP=1` to the disposable
+  `ims_erp_inv`, twice. The second run is idempotent: `IF NOT EXISTS`
+  notices only.
+  - `bun run drizzle:migrate` refuses on this database with "Conflicting
+    migrations detected" (`20261106103434_add_asset_image_url` against the
+    `20261106110000..` chain). That conflict is pre-existing on `main` and
+    unrelated to this change.
+- **API e2e: 24/24** on `ims_erp_inv` (development seed). The backend ran
+  with `PAYMENT_GATEWAY_PROVIDER=fake` and a local secret.
+  - Status: enabled.
+  - Open: 201, pending, whole-rupiah amount, link. `lastEvent` is hidden.
+  - Opening again reuses the pending checkout.
+  - Forged webhook: 401. A provider without credentials: 404. An unsupported
+    provider: 400.
+  - Paid webhook without a session: 200, `applied`. The invoice is `paid`,
+    with one posted receipt for the outstanding amount, the gateway
+    reference and the note.
+  - Replay: `duplicate`, still one receipt.
+  - The paid invoice refuses a new checkout (409).
+  - Second invoice: issue → open → `expired` webhook (`updated`) → void →
+    paid webhook → `unapplied`, no receipt, a note.
+  - The sales role cannot open a checkout (403). No session: 401.
+  - DB check: the receipt has a null `received_by` and is registered in
+    `document.documents`.
+- **Concurrency:** 5 identical paid webhooks sent at once gave 1 `applied`
+  and 4 `duplicate`; the invoice is `paid` with exactly 1 posted receipt.
+- **Browser (Playwright, signed in as finance, Indonesian):**
+  - Setup: the static web-admin build was served from `dist` by request
+    interception (no dev server started), with
+    `VITE_API_URL=http://localhost:3000`.
+  - The card is shown; "Buat link pembayaran" creates the link and copies
+    it to the clipboard.
+  - Pending, paid ("Kwitansi tercatat otomatis") and unapplied rows render.
+  - No page errors and no failing API calls.
+
+**Open:**
+- Live sandbox runs (no Xendit / SingaPay account yet).
+- Gateway fees and net-settlement reconciliation, and the `finance.payments`
+  row behind each receipt (M09, for programmer A).
+- The portal pay button (ERP-0022 stage C, after #97).
+
 ## 2026-11-14 - M02 invoices: billing by terms, summary and void restored (ERP-0011 regression)
 
 Owner: "perbaiki aja" (programmer A to be told). Branch `fix/m02-invoice-billing`

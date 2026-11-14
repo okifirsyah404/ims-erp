@@ -58,6 +58,8 @@ const CONCATENATED = SOURCES.map((file) => readFileSync(file, 'utf8')).join('\n'
  */
 const DYNAMIC_PREFIXES = [
 	'common:status.',
+	// Online payment status labels come from server values (ERP-0020).
+	'finance:gateway.status.',
 	'status.',
 	// Company setting value types, rendered from the stored `valueType`.
 	'settings:settings.type.',

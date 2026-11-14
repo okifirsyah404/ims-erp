@@ -24,6 +24,7 @@ import {
 	TableRow,
 } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { GatewayPaymentsCard } from '@/components/finance/gateway-payments-card';
 import { toast } from '@/components/toast';
 import { formatBusinessDate, formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
 import {
@@ -193,6 +194,8 @@ function InvoiceDetailPage() {
 					</CardContent>
 				</Card>
 			</div>
+
+			<GatewayPaymentsCard invoiceId={invoiceId} payable={payable} />
 
 			<Card>
 				<CardHeader>

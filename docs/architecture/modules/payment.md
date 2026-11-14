@@ -32,6 +32,13 @@ delivery).
   callback event log with idempotency keys.
 - Refunds are **administrator-handled** (v5.1 limit), not self-service.
 
+> **2026-11-14 (ERP-0020, ADR-0019).** Invoice checkout is implemented in the
+> Sales module, not here: `sales.gateway_payments` plus the provider-neutral
+> port and adapters in `apps/backend/src/app/sales/adapters`. A verified paid
+> webhook posts a `sales.receipts` row. Still open for this module and M09:
+> gateway fees / gross / net reconciliation, and the `finance.payments` row
+> behind each receipt.
+
 ## Behavior targets
 
 - Stage 1 (T06): record payments against receivables/payables in

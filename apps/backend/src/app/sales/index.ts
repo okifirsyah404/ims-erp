@@ -12,6 +12,7 @@ import Elysia from 'elysia';
 
 import { DeliveryNoteController } from './controllers/delivery-note.controller';
 import { InvoiceController } from './controllers/invoice.controller';
+import { GatewayPaymentController, GatewayWebhookController } from './controllers/gateway-payment.controller';
 import { QuotationController } from './controllers/quotation.controller';
 import { ReceiptController } from './controllers/receipt.controller';
 import { SalesController } from './controllers/sales.controller';
@@ -27,5 +28,7 @@ export function salesModule() {
 		.use(DeliveryNoteController.plugin())
 		.use(InvoiceController.plugin())
 		.use(ReceiptController.plugin())
+		.use(GatewayPaymentController.plugin())
+		.use(GatewayWebhookController.plugin())
 		.use(SalesController.plugin());
 }
