@@ -18,6 +18,80 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-15 - ERP-0054 `docs.dbml` vs Drizzle parity (branch `docs/dbml-schema-parity`)
+
+Question that started it: does `apps/backend/drizzle/schemas/` match
+`docs/database/docs.dbml`? Table-name sets already agreed in one direction -
+`docs.dbml` 272 tables, Drizzle and the migrations both 122, and no migration
+table was missing from the contract. The gap was column-level: 11 shipped
+tables disagreed, plus two target tables that contradicted shipped code.
+
+**Fixed in `docs.dbml` (canonical; migrations are append-only, so the shipped
+shape wins and carries a `DEVIATION (shipped)` note):**
+
+- `auth.users`: added `claimed_at`, `phone`.
+- `auth.user_invitations`: removed `role_id` (code uses only `org_role`).
+- `assets.assets`, `inventory.warehouses`: added `image_url`.
+- `finance.payment_allocations`: `amount` (was `allocated_amount`), no
+  `currency_code` / `allocated_at` / `deleted_at`; check is `amount > 0`.
+- `finance.ap_open_items` / `finance.ar_open_items` / `sales.payments`: removed
+  the invented `deleted_at` (all three are shipped without it).
+- `validate-dbml.ts` timestamp-exempt set grew three entries for the above:
+  `finance.payment_allocations` (cascade-deleted with its payment, never
+  soft-deleted on its own) and the two open-item sub-ledgers (running balances
+  cleared by `status`, projections by nature).
+- `hr.employees`: `hire_date` / `termination_date` `date` -> `bigint`; widened
+  `national_id varchar(32)`, `email varchar(320)`, `phone` / `whatsapp
+  varchar(100)`; vocabulary checks now `active|inactive|terminated` and
+  `permanent|contract|probation|internship|outsourced` to match
+  `hr.schema.ts`. The four planned `department_id` / `position_id` /
+  `branch_id` / `cost_center_id` columns stay - they are target columns, not
+  shipped ones, and the parity check is one-way.
+- `auth.roles` + `auth.user_role_assignments` removed, and the `auth.members`
+  role note rewritten: ERP-0041 made organization roles a closed
+  `erpRoleNames` enum read from `@ims-erp/common`, so there is no dynamic role
+  table to consult (`static-permissions.ts`, `role.schema.ts` header). The same
+  stale claim was corrected in `data-model.md`, `module-ownership.md`,
+  `integrity-and-consistency.md`, `security-and-access.md` (the whole "dynamic
+  per-organization roles" and "rank guard" sections described files that no
+  longer exist), `modules/organization.md`, `m12-reports-access.md`, and a
+  superseded note added to `plans/assets-equipment-location-and-borrowing.md`
+  (D15/B3 built on `auth.roles.permissions`).
+
+**`validate-dbml.ts` gained section 5 - Drizzle parity (one-way).** Every
+`.table('name', {...})` block and every
+`camelCase: sqlType('snake_case', ...)` column in
+`apps/backend/drizzle/schemas/*.schema.ts` must exist in `docs.dbml`; a
+shipped table or column the contract does not mention is the bug. The reverse
+is not checked, because `docs.dbml` describes the target (150 unbuilt tables).
+The check resolves a file that reuses an imported `pgSchema` instead of
+declaring its own (`role.schema.ts` -> `auth`). Exit condition is now
+`if (dups || cross || gaps.length || drift.length) process.exit(1)`.
+
+**Stale counts corrected.** `AGENTS.md` "253 tables / 24 modules" ->
+"270 tables / 27 modules"; `implementation-phases.md` target 268 -> 270 tables
+and exit criteria 268/231 -> 270/233; `integrity-and-consistency.md`
+268/231 -> 270/233.
+
+**Commands and outcomes (all on this branch):**
+
+- `bun docs/database/gen-logical-references.ts` -> `regenerated: 525 refs
+  across 41 targets, 233 intra-module refs`.
+- `bun docs/database/validate-dbml.ts` -> `parsed: 270 tables, 233 refs` /
+  `cross-module refs: 0` / `timestamp gaps: 0` / `drizzle parity drift: 0` /
+  `OK`. Before the fixes it reported 11 drifting tables plus a
+  `role.schema.ts: no pgSchema() declaration` false positive.
+- Gate probed, not assumed: adding `probeCol: text('probe_col')` to
+  `audit.audit_logs` produced `drizzle parity drift: 1` +
+  `audit.audit_logs.probe_col (audit.schema.ts): column missing from docs.dbml`
+  and exit 1; removing it returned `OK`. `bunx oxlint docs/database/` clean for
+  `validate-dbml.ts` (three pre-existing warnings in
+  `gen-logical-references.ts` are untouched).
+
+No migration, Drizzle schema, seeder or test file changed: the database is
+untouched, only the contract and its validator moved. `docs/database/` was
+updated (required: column sets and two table removals changed).
+
 ## 2026-11-15 - merge `main` into `feat/m08-hr-on-main` (PR #83), M08 rebased on the squashed migration baseline
 
 Worktree `B:\ims\erp-m08-merge`, branch `feat/m08-hr-on-main`, merge of
