@@ -158,6 +158,7 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				icon: Truck,
 				items: [
 					{ titleKey: 'item.suppliers', url: '/procurement/suppliers', permission: 'supplier.read' },
+					{ titleKey: 'item.purchaseRequests', url: '/procurement/purchase-requests', permission: 'purchase_request.read' },
 					{ titleKey: 'item.purchaseOrders', url: '/procurement/purchase-orders', permission: 'purchase_order.read' },
 					// No catalog resource yet: hidden.
 					{ titleKey: 'item.goodsReceipts', url: '/procurement/receipts' },

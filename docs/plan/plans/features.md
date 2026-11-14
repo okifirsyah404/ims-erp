@@ -353,6 +353,12 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   to implemented 2026-11-10 (see above).
 
 ### implemented
+- Purchase requests (PR → PO by lines, free-text lines mapped on the PO,
+  one-level approval, company-wide) — T07, ERP-0053 (2026-11-15). Evidence:
+  `procurement/services/purchase-request.service.ts`,
+  `repositories/request-ordering.ts`, `test/unit/purchase-request.service.test.ts`,
+  `/procurement/purchase-requests`, `progress.md` 2026-11-15 (API e2e 32/32,
+  browser). Not yet accepted by the owner.
 - Minimal HR employees + warehouse PIC — ERP-0034 (2026-11-10). Invite-first
   employee CRUD (`/hr/employees`: list/detail/create/patch/archive + picker),
   `hr.employees` with nullable organization (company-level rows) and

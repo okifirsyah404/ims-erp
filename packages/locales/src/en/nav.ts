@@ -45,6 +45,7 @@ const nav = {
 	'item.procurement': 'Procurement',
 	'item.suppliers': 'Suppliers',
 	'item.purchaseOrders': 'Purchase Orders',
+	'item.purchaseRequests': 'Purchase Requests',
 	'item.goodsReceipts': 'Goods Receipts',
 	'item.deliveryNotes': 'Delivery Notes',
 	'breadcrumb.deliveryNoteNew': 'New delivery note',
@@ -137,6 +138,7 @@ const nav = {
 	'breadcrumb.quotationEdit': 'Edit',
 	'breadcrumb.print': 'Print',
 	'breadcrumb.purchaseOrderNew': 'New purchase order',
+	'breadcrumb.purchaseRequestNew': 'New purchase request',
 	'breadcrumb.goodsReceiptNew': 'Receive goods',
 } as const;
 

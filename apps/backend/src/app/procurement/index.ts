@@ -6,6 +6,7 @@ import Elysia from 'elysia';
 
 import { GoodsReceiptController } from './controllers/goods-receipt.controller';
 import { PurchaseOrderController } from './controllers/purchase-order.controller';
+import { PurchaseRequestController } from './controllers/purchase-request.controller';
 import { SupplierController } from './controllers/supplier.controller';
 
 export { registerProcurement } from './container';
@@ -18,6 +19,7 @@ export {
 export function procurementModule() {
 	return new Elysia({ name: 'procurement' })
 		.use(SupplierController.plugin())
+		.use(PurchaseRequestController.plugin())
 		.use(PurchaseOrderController.plugin())
 		.use(GoodsReceiptController.plugin());
 }

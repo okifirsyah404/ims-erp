@@ -18,6 +18,139 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-15 - ERP-0053 M05 purchase requests (PR → PO by lines)
+
+Owner's choice for the next M05 slice, made while #97–#100 wait for review.
+Branch `feat/m05-purchase-requests`, from `origin/main` (`2b28fc4`, with the
+squashed migration baseline of ADR-0019 / ERP-0052).
+
+**Gate 1.**
+- `docs.dbml` MODULE Procurement + Inventory items, read.
+  `module-ownership.md`, `integrity-and-consistency.md` and
+  `data-dictionary.md` (codes, money, quantity) were also read.
+  `implementation-phases.md` was skipped: no pending step is involved.
+- The PR tables in `docs.dbml` were the old scaffold:
+  - tenant-scoped;
+  - `catalog.items` / `catalog.units` refs, although the item master is now
+    `inventory.items` (OPEN-1);
+  - `department_id` / `project_id` cross-module references;
+  - `requested_by NOT NULL`, against ADR-0014;
+  - no link to purchase orders.
+- They were rewritten **before** the Drizzle schema.
+
+**Gate 2.** The owner answered four questions; all four recommended options
+were chosen:
+- lines split across POs;
+- free-text lines allowed and mapped on the PO;
+- one-level approval;
+- company-wide.
+
+The rest was resolved from existing rules:
+- **Ownership:** Procurement.
+- **Tenant:** company-wide; `organization_id` is a nullable informational
+  logical reference.
+- **Soft delete:** `deleted_at` on both tables.
+- **Column types:** money is bigint minor units, quantity is
+  `numeric(18,3)`, dates are Jakarta `date`.
+- **Cross-module references:** `requested_by`, `approved_by`,
+  `cancelled_by`, `organization_id`, `item_id`, all nullable logical
+  references. The intra-module FK is `purchase_order_items.purchase_request_item_id`.
+- **Status vocabulary:** `draft | submitted | approved | ordered | cancelled`.
+- **Rejection** returns the request to draft (same as POs).
+- **Permissions:** the existing catalog (`purchase_request:*`), unchanged.
+
+**Change**
+- **Schema and migration.**
+  - `docs.dbml` first: 2 tables rewritten, PO line column, ref and index.
+    `bun docs/database/gen-logical-references.ts` printed "521 refs across
+    41 targets"; `bun docs/database/validate-dbml.ts` printed "269 tables,
+    cross-module refs: 0, timestamp gaps: 0, OK"; Refs went from 232 to 233.
+  - Drizzle schema, then **`bun run drizzle:generate`**, which produced a
+    normal diff on the new baseline. The migration was renamed to
+    `20261114173057_m05_purchase_requests` and inspected: 2 `CREATE TABLE`,
+    `ALTER TABLE ... ADD COLUMN purchase_request_item_id`, indexes, and
+    2 FKs with drizzle's auto names.
+  - Numbering type `purchase_request` (`PR`), plus the web settings list and
+    locales.
+- **Backend.**
+  - `PurchaseRequestRepository` and `PurchaseRequestService`;
+    `PurchaseRequestController` at `/purchase-requests`.
+  - `repositories/request-ordering.ts`: the claim under `FOR UPDATE` and the
+    `approved ↔ ordered` sync.
+  - The PO repository's `create` / `replaceDraft` now claim request lines
+    and return `TPurchaseOrderWrite`.
+  - PO cancel syncs the requests. The PO detail shows the request per line.
+  - Errors `procurement.pr*`, en + id.
+- **Found in the browser check.** A technician (requester) gets **403 on
+  `GET /items`**: no `product:read`. Rather than widen the role catalog, a
+  narrow `GET /purchase-requests/items` (`purchase_request:create`) searches
+  active items through the `ItemService.paginate` contract and returns only
+  id / SKU / name / unit / specification / purchase price.
+- **Web.**
+  - `/procurement/purchase-requests`: list with search, status and "only
+    mine"; new / edit / detail with submit, approve, reject, cancel and
+    "Buat purchase order".
+  - PO form: "Dari permintaan pembelian" picker, prefill from
+    `?fromRequest=`, an item mapper for free-text lines, and save blocked
+    while a line is unmapped.
+  - Fixed while doing this: the PO edit form kept no request link, so saving
+    an edit would have dropped it. It now carries `purchaseRequestItemId`.
+  - Sidebar entry, breadcrumbs, en + id keys; dead-key prefixes
+    `procurement:prStatus.` and `procurement.prState.`.
+
+**Verification**
+- **Typecheck and lint.** `bun run typecheck`: 4/4 clean. `bun run lint`:
+  0 errors, no warning in the touched files.
+- **Unit tests.**
+  - Backend `bun test`: 1010 pass, 4 fail. The 4 are the known `Bun.Image` /
+    WebP tests (Bun 1.4.1 here, the repo pins 1.4.2).
+  - New `purchase-request.service.test.ts` passes 9. `procurement.service.test.ts`
+    passes 8, including the request-line claim mapping and the cancel sync.
+  - web-admin 100; locales 90.
+- **Disposable database `ims_erp_m05`.** It was created fresh.
+  `drizzle:migrate` applied the 19 baseline folders plus the new one.
+  `drizzle-kit check` printed "Everything's fine". The development seed ran
+  after a rebuild of `packages/common`, whose `dist` was stale and lacked
+  `appRoleNames`.
+- **API e2e: 32/32.**
+  - Drafting: item and free-text lines; another role or another user
+    cannot edit (403).
+  - Approval: submit numbers the request (`…/PR/…`); a technician cannot
+    approve; ops rejects to draft and the number is kept on resubmit; ops
+    approves.
+  - Ordering:
+    - open lines are listed;
+    - PO 1 orders the item line and the request stays approved;
+    - the same line on a second PO gets 422; the same line twice on one PO
+      gets 422 on line 2;
+    - **3 concurrent POs for one line: exactly one 201**;
+    - the request becomes `ordered` and the PO detail shows the request
+      code;
+    - an ordered request cannot be cancelled (422).
+  - Freeing lines: the owner cancels PO 2, the request goes back to
+    `approved` and the line is open again; editing PO 1 without the link
+    frees its line.
+  - Refusals: an unapproved request cannot be ordered; a cancelled request
+    cannot be ordered.
+  - Lists: `mine` and the company-wide list; search.
+  - No session: 401.
+- **Browser (Playwright, Indonesian).**
+  - Setup: the static build was served by request interception.
+  - The technician creates a request with a master item and a free-text
+    line, then submits it (`0004/PR/DEV/XI/26`).
+  - The operations manager approves it.
+  - Purchasing opens "Buat purchase order": both lines are prefilled, the
+    subject and project come from the request, the mapper shows for the
+    free-text line, and save stays disabled until it is mapped. The PO is
+    saved.
+  - The request shows "Sudah dipesan" with the PO per line.
+  - No page errors and no failing API calls.
+- **Environment note.** The first API run returned 404. Two old backend
+  processes were still holding port 3000, one of them the payment-gateway
+  backend of 2026-11-14 on `ims_erp_inv`. Both were stopped and the backend
+  was started again.
+- **`docs/database/`** was updated in this change (above).
+
 ## 2026-11-14 - ERP-0051: delivery follow-ups recorded as a separate plan
 
 Branch `refactor/app-roles-investor-customer`. Reviewing the PR #101 delivery left six items

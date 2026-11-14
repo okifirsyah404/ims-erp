@@ -4,6 +4,8 @@ import {
 	type PurchaseOrderStatus,
 	purchaseOrderItems,
 	purchaseOrders,
+	purchaseRequestItems,
+	purchaseRequests,
 	type TPurchaseOrderItemSelect,
 	type TPurchaseOrderSelect,
 } from '@drizzle/schemas/procurement.schema';
@@ -17,7 +19,9 @@ import type {
 	TPurchaseOrderHeaderData,
 	TPurchaseOrderItemData,
 	TPurchaseOrderTransitionPatch,
+	TPurchaseOrderWrite,
 } from '../contracts/procurement.repository.interface';
+import { claimRequestLines, requestIdsOfOrder, syncRequestStatuses } from './request-ordering';
 import type { TPurchaseOrderListQuery } from '../contracts/purchase-order.contract';
 import type {
 	IPurchaseOrderReceiving,
@@ -80,32 +84,59 @@ export class PurchaseOrderRepository implements IPurchaseOrderRepository, IPurch
 			.orderBy(asc(purchaseOrderItems.sortOrder));
 	}
 
-	create(header: TPurchaseOrderHeaderData & { createdBy: string }, items: TPurchaseOrderItemData[]): Promise<TPurchaseOrderSelect> {
+	async findItemRequests(
+		purchaseOrderId: string,
+	): Promise<{ purchaseOrderItemId: string; purchaseRequestId: string; purchaseRequestCode: string | null }[]> {
+		return this.database
+			.select({
+				purchaseOrderItemId: purchaseOrderItems.id,
+				purchaseRequestId: purchaseRequests.id,
+				purchaseRequestCode: purchaseRequests.code,
+			})
+			.from(purchaseOrderItems)
+			.innerJoin(purchaseRequestItems, eq(purchaseRequestItems.id, purchaseOrderItems.purchaseRequestItemId))
+			.innerJoin(purchaseRequests, eq(purchaseRequests.id, purchaseRequestItems.purchaseRequestId))
+			.where(and(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId), isNull(purchaseOrderItems.deletedAt)));
+	}
+
+	create(header: TPurchaseOrderHeaderData & { createdBy: string }, items: TPurchaseOrderItemData[]): Promise<TPurchaseOrderWrite> {
 		return this.database.transaction(async (tx) => {
+			const claim = await claimRequestLines(tx, null, items.map((item) => item.purchaseRequestItemId));
+			if (!claim.ok) return { ok: false, reason: 'requestLine', line: claim.line };
 			const now = new Date();
 			const [row] = await tx
 				.insert(purchaseOrders)
 				.values({ ...header, status: 'draft', createdAt: now, updatedAt: now })
 				.returning();
 			await this.insertItems(tx, row.id, items, now);
-			return row;
+			await syncRequestStatuses(tx, claim.requestIds);
+			return { ok: true, order: row };
 		});
 	}
 
-	replaceDraft(id: string, header: TPurchaseOrderHeaderData, items: TPurchaseOrderItemData[]): Promise<TPurchaseOrderSelect | null> {
+	replaceDraft(id: string, header: TPurchaseOrderHeaderData, items: TPurchaseOrderItemData[]): Promise<TPurchaseOrderWrite> {
 		return this.database.transaction(async (tx) => {
+			const claim = await claimRequestLines(tx, id, items.map((item) => item.purchaseRequestItemId));
+			if (!claim.ok) return { ok: false, reason: 'requestLine', line: claim.line };
 			const now = new Date();
 			const [row] = await tx
 				.update(purchaseOrders)
 				.set({ ...header, updatedAt: now })
 				.where(and(this.live(id), eq(purchaseOrders.status, 'draft')))
 				.returning();
-			if (!row) return null;
+			if (!row) return { ok: false, reason: 'notDraft' };
+			// Requests the old lines ordered may fall back to `approved`.
+			const before = await requestIdsOfOrder(tx, id);
 			// Draft lines are replaced as a whole; nothing references them yet.
 			await tx.delete(purchaseOrderItems).where(eq(purchaseOrderItems.purchaseOrderId, id));
 			await this.insertItems(tx, id, items, now);
-			return row;
+			await syncRequestStatuses(tx, [...new Set([...before, ...claim.requestIds])]);
+			return { ok: true, order: row };
 		});
+	}
+
+	syncRequestsOfOrder(id: string): Promise<void> {
+		return this.database.transaction(async (tx) => syncRequestStatuses(tx, await requestIdsOfOrder(tx, id)));
 	}
 
 	async transition(

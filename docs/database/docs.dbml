@@ -2158,8 +2158,9 @@ Table sales.receipts {
 // ---------------------------------------------------------------------------
 // MODULE: Procurement  (schema: procurement)
 // Supplier master, purchase requests, purchase orders, goods receipts and
-// purchase returns. Tenant scoped, except suppliers, purchase orders and goods
-// receipts, which are company-wide (ADR-0011).
+// purchase returns. Tenant scoped, except suppliers, purchase requests,
+// purchase orders and goods receipts, which are company-wide (ADR-0011;
+// purchase requests since 2026-11-15, owner decision).
 // ---------------------------------------------------------------------------
 
 Table procurement.suppliers {
@@ -2251,54 +2252,61 @@ Table procurement.supplier_addresses {
 }
 
 Table procurement.purchase_requests {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  requested_by text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  department_id uuid [note: "Logical reference to organization.departments.id. Cross-module FK intentionally omitted. Validated through the Organization module contract."]
-  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract."]
-  status text [not null, default: 'draft']
-  request_date date
+  code varchar(40) [note: "Assigned on submit from the numbering authority (purchase_request, e.g. 0001/PR/IMS/XI/26); null for a draft. Unique among live rows (partial index in the Drizzle schema)."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. The requester's active organization, for information only: purchase requests are company-wide (ADR-0011)."]
+  requested_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  requested_by_name varchar(120) [note: "The requester's name when the request was created (display)."]
+  subject varchar(200) [not null, note: "What is needed, in one line."]
+  justification text [note: "Why it is needed."]
+  project_name varchar(200) [note: "Free text, like purchase_orders.project_name."]
+  request_date date [not null]
   needed_by date
-  justification text
-  estimated_total bigint [not null, default: 0]
+  status text [not null, default: 'draft']
+  estimated_total bigint [not null, default: 0, note: "Sum of the lines' estimated totals, IDR minor units."]
   currency_code varchar(3) [not null, default: 'IDR']
+  rejection_reason text [note: "The last rejection; a rejected request returns to draft."]
   submitted_at bigint
   approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   approved_at bigint
-  rejected_reason text
+  cancelled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancelled_at bigint
+  cancelled_reason text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Purchase request, the approval gate before a purchase order exists."
+  deleted_at bigint
+  Note: "Purchase request (PR), the approval gate before a purchase order, company-wide (ADR-0011). draft -> submitted -> approved -> ordered; rejection returns to draft with the reason; cancelled by the requester while no line is on a live purchase order. One-level approval (purchase_request:approve), never by the requester. Purchasing puts approved lines on purchase orders, one PR can feed several POs and one PO can merge several PRs; the request is ordered while every line is on a live (not cancelled) purchase order, and goes back to approved when such a PO is cancelled."
   Indexes {
-    (organization_id, code) [unique, name: 'purchase_requests_org_code_uq']
+    code [unique, name: 'purchase_requests_code_uq', note: "Partial: WHERE deleted_at IS NULL AND code IS NOT NULL."]
     status [name: 'purchase_requests_status_idx']
     requested_by [name: 'purchase_requests_requested_by_idx']
   }
   Checks {
-    `status IN ('draft', 'submitted', 'approved', 'rejected', 'cancelled', 'ordered')`
+    `status IN ('draft', 'submitted', 'approved', 'ordered', 'cancelled')`
     `estimated_total >= 0`
+    `needed_by IS NULL OR needed_by >= request_date`
   }
 }
 
 Table procurement.purchase_request_items {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   purchase_request_id uuid [not null]
-  item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  description text
+  item_id uuid [note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Null for a free-text line; purchasing maps it to an item when putting it on a purchase order."]
+  sku varchar(64) [note: "Copied from the item; null for a free-text line."]
+  name text [not null, note: "The item's name, or what the requester typed."]
+  specification text
+  unit varchar(32) [not null]
   quantity numeric(18,3) [not null, default: 1]
-  unit_id uuid [note: "Logical reference to catalog.units.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
   estimated_unit_price bigint [not null, default: 0]
-  estimated_total bigint [not null, default: 0]
+  estimated_total bigint [not null, default: 0, note: "round(quantity x estimated_unit_price)."]
   notes text
+  sort_order integer [not null, default: 0]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Line of a purchase request."
+  deleted_at bigint
+  Note: "Line of a purchase request, company-wide like its header. It is ordered when a live purchase order line references it (purchase_order_items.purchase_request_item_id)."
   Indexes {
-    purchase_request_id [name: 'purchase_request_items_purchase_request_id_idx']
+    (purchase_request_id, sort_order) [name: 'purchase_request_items_request_sort_idx']
   }
   Checks {
     `quantity > 0`
@@ -2372,6 +2380,7 @@ Table procurement.purchase_order_items {
   unit_price bigint [not null, default: 0]
   line_total bigint [not null, default: 0, note: "round(quantity x unit_price)."]
   quantity_received numeric(18,3) [not null, default: 0]
+  purchase_request_item_id uuid [note: "The purchase request line this line orders (same module). At most one live purchase order line per request line, enforced under a row lock by the service."]
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
   updated_at bigint [not null]
@@ -2379,6 +2388,7 @@ Table procurement.purchase_order_items {
   Note: "Line of a purchase order, company-wide like its header. VAT is per purchase order."
   Indexes {
     (purchase_order_id, sort_order) [name: 'purchase_order_items_order_sort_idx']
+    purchase_request_item_id [name: 'purchase_order_items_purchase_request_item_id_idx']
   }
   Checks {
     `quantity > 0`
@@ -2507,6 +2517,7 @@ Ref: sales.delivery_note_items.sales_order_item_id > sales.sales_order_items.id 
 Ref: procurement.supplier_contacts.supplier_id > procurement.suppliers.id [delete: cascade]
 Ref: procurement.supplier_addresses.supplier_id > procurement.suppliers.id [delete: cascade]
 Ref: procurement.purchase_request_items.purchase_request_id > procurement.purchase_requests.id [delete: cascade]
+Ref: procurement.purchase_order_items.purchase_request_item_id > procurement.purchase_request_items.id [delete: restrict]
 Ref: procurement.purchase_orders.supplier_id > procurement.suppliers.id [delete: restrict]
 Ref: procurement.purchase_order_items.purchase_order_id > procurement.purchase_orders.id [delete: cascade]
 Ref: procurement.goods_receipts.purchase_order_id > procurement.purchase_orders.id [delete: restrict]

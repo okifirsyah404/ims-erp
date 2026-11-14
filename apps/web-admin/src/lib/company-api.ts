@@ -69,6 +69,7 @@ export const CODE_TYPES = [
 	'web_contact',
 	'web_demo',
 	'purchase_order',
+	'purchase_request',
 	'goods_receipt',
 	'stock_adjustment',
 	'delivery_note',

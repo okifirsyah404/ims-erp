@@ -50,6 +50,7 @@ const settings = {
 	'numbering.type.web_contact': 'Website: contact message',
 	'numbering.type.web_demo': 'Website: demo request',
 	'numbering.type.purchase_order': 'Purchase order',
+	'numbering.type.purchase_request': 'Purchase request',
 	'numbering.type.goods_receipt': 'Goods receipt',
 	'numbering.type.stock_adjustment': 'Stock adjustment',
 	'numbering.type.delivery_note': 'Delivery note (surat jalan)',
