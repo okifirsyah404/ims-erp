@@ -68,17 +68,31 @@ not of one organization membership.
 - The login gate blocks users whose only membership is `investor`/`customer`.
   Intended; those rows are deleted by the migration.
 - The route test harness stubs the login gate open (see
-  `test/authorization/test-app.ts`). The gate is covered by a pure-function test
-  (`test/unit/login-gate.test.ts`). A DB-backed gate test is still required
-  before acceptance.
+  `test/authorization/test-app.ts`), because the repo has no test that touches a
+  real database. The gate is covered three ways instead: the pure predicate
+  (`test/unit/login-gate.test.ts`), the guard wiring over HTTP with a
+  controllable stub (`test/authorization/login-gate.guard.test.ts`), and a live
+  script against the real Better Auth instance
+  (`apps/backend/scripts/smoke-login-gate.ts`). The live script is deliberately
+  outside `bun test`.
 
 ## Verification
 
-- `bun test` in `apps/backend`: 934 pass, 0 fail.
+- `bun test` in `apps/backend`: 941 pass, 0 fail, 73 files (after the role
+  contract and guard-wiring tests were added).
 - `bun test` in `apps/web-admin`: 97 pass, 0 fail.
 - `bun run typecheck` at the root: pass. `apps/web-admin` `tsc --noEmit`: clean.
 - `bun run lint`: 0 errors (warnings pre-existing).
 - `bun docs/database/validate-dbml.ts`: OK.
-- Not yet verified: the migration on a disposable database, and the manual
-  checks in ADR-0017 (investor-only, investor-plus-internal, PIC without
-  membership, admin without membership) against a running server.
+- Migration `20261114120000_erp0048_investor_customer_app_roles` applied to a
+  disposable database and inspected: portal-only memberships deleted, mixed rows
+  keep their internal roles, portal `org_role` cleared on pending invitations, a
+  pre-existing empty-role row survives, second run is a no-op, and the seeder
+  runs twice with no portal role written. No table references `auth.members` or
+  `auth.user_invitations`, so the deletes orphan nothing.
+- Live gate check, `bun run scripts/smoke-login-gate.ts` against a disposable
+  database (real Better Auth instance): 8/8 cases - admin without membership 200,
+  `admin,investor` 200, `investor` alone 403, `customer` alone 403, plain `user`
+  without membership 403, portal role plus an internal membership 200.
+- Not verified: the PIC half of the ADR-0017 list (no `warehouse_managers` table
+  yet), and browser checks against `bun run dev`.

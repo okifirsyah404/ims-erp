@@ -54,7 +54,8 @@ Not verified: the PIC half of the ADR-0017 verification list (no `warehouse_mana
 the gate's own DB query still has no automated test (it is covered live, not in `bun test`).
 
 Docs: `docs/database/` reviewed, unchanged (no table or column change; the migration only moves data
-between existing columns).
+between existing columns). `ADR-0018` §Risks and §Verification updated to match the results above -
+the earlier text still claimed the migration was unrun and a DB-backed gate test was missing.
 
 Next executable task: owner review of ADR-0017 / ADR-0018; then warehouse PIC Phase 1-2.
 
