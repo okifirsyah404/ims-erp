@@ -35,7 +35,7 @@ better-auth aja, jadi bisa track issuernya siapa."
 survive staff leaving; issue them as the acting member. A user-owned key
 would have died with the issuer's account.
 
-Branch `fix/m03-api-key-issuer` from `origin/main` (`c7ae98d`).
+Branch `fix/m03-api-key-issuer` (**PR #104**) from `origin/main` (`c7ae98d`).
 
 **Change**
 - **Catalog.** `@ims-erp/common` `builtInOrgStatements` gains Better Auth's
