@@ -86,7 +86,9 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`accepted` 2
   freshly reset `ims_erp_local`.
 
 ### planned
-- Nothing open for ERP-0051.
+- Nothing open for ERP-0051 itself. Delivery follow-ups are tracked separately in
+  `docs/plan/plans/erp-0051-follow-ups.md` (ERP-0053 … ERP-0058): one route-guard
+  behaviour bug, four documentation drifts, and one schema-helper gap.
 
 ---
 

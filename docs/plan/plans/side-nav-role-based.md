@@ -11,6 +11,8 @@
 > pieces it depends on (login gate, warehouse person-in-charge access).
 > Backlog: **`ERP-0051`**.
 > Decisions: ADR-0017 (`accepted`), ADR-0018 (app roles + login gate).
+> Delivery follow-ups: `erp-0051-follow-ups.md` (ERP-0053 … ERP-0058). They are
+> not part of this plan's scope and do not reopen it.
 
 ## Problem
 

@@ -18,6 +18,38 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0051: delivery follow-ups recorded as a separate plan
+
+Branch `refactor/app-roles-investor-customer`. Reviewing the PR #101 delivery left six items
+that are not missing features, so they are recorded in
+`docs/plan/plans/erp-0051-follow-ups.md` instead of reopening `side-nav-role-based.md`:
+
+- **ERP-0053** - `canOpenPath` fails open for a path no nav leaf covers
+  (`route-guard.ts:45`). `/inventory/items/$itemId` and `$itemId.edit` are real pages with no
+  gate; the only leaf under `/inventory/items` is `/inventory/items/new` with `product.create`,
+  which does not prefix-match either. The only behaviour bug in the set.
+- **ERP-0054** - ADR-0018 still reads `proposed` while its code is shipped and `features.md`
+  says `verified`.
+- **ERP-0055** - plan decision 6 ("Administration section: app admins only") contradicts the
+  shipped tree, where `/organizations` carries `permission: 'organization.read'`. The shipped
+  behaviour matches the backend (`GET /organizations` is session-only, `GET /organizations/:id`
+  needs `organization:read`), so decision 6 is the stale text.
+- **ERP-0056** - `docs/database/module-ownership.md:402-408` says the database has three
+  schemas; it has nineteen, and there is no `investor` schema at all.
+- **ERP-0057** - `progress.md` quotes a per-build seeded organization id
+  (`LwhLYWKg7I9qkzTSHXPqQColX3To0u5r`) that no longer exists; the current dev database holds
+  `h7fUe07E5C4vzig3hE6yXzh73sM87EHs`.
+- **ERP-0058** - `scopedUnique()` does not model the `deleted_at IS NULL` predicate on the two
+  `items` code indexes; already recorded as known in ADR-0019.
+
+`features.md` and the `side-nav-role-based.md` header now point at the new file, so ERP-0051
+stays closed. `backlog.md` has no ERP-0053…ERP-0058 rows yet; the file states that and asks the
+next worker to add them when work starts rather than duplicating the ledger.
+
+`docs/database/` reviewed: no table, column, index, constraint, logical reference or status
+vocabulary changed. The stale sentence in `module-ownership.md` is prose, tracked as ERP-0056,
+not a schema change.
+
 ## 2026-11-14 - ERP-0051: CI caught a unit suite that needed a live database
 
 Branch `refactor/app-roles-investor-customer`, PR #101. The first CI run on this branch failed
