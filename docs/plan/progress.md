@@ -18,6 +18,16 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - PR #97 opened for the customer portal
+
+`feat/m07-customer-portal` merged with `origin/main` (`a997778`, conflict
+only in this file, both sides kept), re-verified (`tsc` clean; backend 947
+pass / 4 pre-existing `Bun.Image` fails; web-admin 97; locales 90) and opened
+as **PR #97** to `main` for programmer A's review. Owner direction recorded
+for the next work: portal ordering with an ERP check, a provider-neutral
+payment gateway (Xendit / SingaPay), payroll rules left to programmer A, M03 =
+activation keys for the company's own apps.
+
 ## 2026-11-14 - API reference with Zudoku (`apps/api-docs`) for the website and portal API
 
 Owner asked what the ERP gained for the portal (answered in the session: the
