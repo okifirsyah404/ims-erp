@@ -21,7 +21,7 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 ## 2026-11-15 - ERP-0053 M05 purchase requests (PR → PO by lines)
 
 Owner's choice for the next M05 slice, made while #97–#100 wait for review.
-Branch `feat/m05-purchase-requests`, from `origin/main` (`2b28fc4`, with the
+Branch `feat/m05-purchase-requests` (**PR #102**), from `origin/main` (`2b28fc4`, with the
 squashed migration baseline of ADR-0019 / ERP-0052).
 
 **Gate 1.**
