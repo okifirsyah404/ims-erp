@@ -171,7 +171,7 @@ the same change); a backend-only move is an incomplete change.
 Creating, updating, or deleting a feature module — and any backend feature
 work that adds or changes endpoints, services, repositories, Drizzle schemas,
 or migrations — passes through two gates **before** code and one **after** it.
-The schema contract is 253 tables across 24 modules; nobody holds it in their
+The schema contract is 270 tables across 27 modules; nobody holds it in their
 head, and inventing a column or a cross-module link is the most expensive
 mistake available here.
 

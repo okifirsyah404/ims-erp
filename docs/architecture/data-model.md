@@ -172,8 +172,9 @@ Schema, keys, constraints, and conventions. Current declarations:
 
 One company; `auth.organizations`/`members` model internal structure
 (departments/teams/portal identity). Multiple organizations may exist inside
-that company, each with its own membership and per-organization `auth.roles`
-catalog (created organizations are provisioned with the full catalog).
+that company, each with its own membership; organization roles are a closed
+`erpRoleNames` enum stored comma-joined in `auth.members.role` (ERP-0041), not
+a per-organization role table.
 ERP master tables do **not** carry an `organization_id` tenant column — master
 data stays company-wide. If true multi-company arrives later this is a data
 migration plus repo-layer scoping change — recorded as the migration path in

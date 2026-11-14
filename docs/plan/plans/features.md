@@ -127,6 +127,39 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 
 ---
 
+## Cross-cutting: `docs.dbml` vs Drizzle parity (ERP-0054)
+
+### verified
+- Every table and column shipped in `apps/backend/drizzle/schemas/*.schema.ts`
+  now exists in `docs/database/docs.dbml`, and
+  `bun docs/database/validate-dbml.ts` enforces that one-way direction in
+  section 5 (`drizzle parity drift: 0`, exit 1 on any drift). The reverse
+  direction is deliberately not enforced: `docs.dbml` describes the target and
+  legitimately carries 150 unbuilt tables plus planned columns.
+- 11 shipped tables drifted (column sets, not names). The shipped shape won
+  and each deviation is annotated `DEVIATION (shipped)` in `docs.dbml` because
+  migrations are append-only: `assets.assets` / `inventory.warehouses`
+  `image_url`; `auth.users` `claimed_at` + `phone`; `auth.user_invitations`
+  dropped the stale `role_id`; `finance.payment_allocations` is `amount` (not
+  `allocated_amount`) with no `currency_code` / `allocated_at` /
+  `deleted_at`; `finance.ap_open_items` / `ar_open_items` / `sales.payments`
+  have no `deleted_at`; `hr.employees` `hire_date` / `termination_date` are
+  bigint unix-ms with the shipped `active|inactive|terminated` and
+  `permanent|contract|probation|internship|outsourced` vocabularies.
+- `auth.roles` and `auth.user_role_assignments` **removed** from `docs.dbml`:
+  ERP-0041 made organization roles a closed `erpRoleNames` enum read directly
+  from `@ims-erp/common` (`static-permissions.ts`, `role.schema.ts`), so the
+  dynamic-role target tables contradicted the shipped authorization model. The
+  same stale claim was fixed in `data-model.md`, `module-ownership.md`,
+  `integrity-and-consistency.md`, `security-and-access.md` and
+  `modules/organization.md`.
+- Stale counts corrected to 270 tables / 27 modules / 233 refs in `AGENTS.md`,
+  `implementation-phases.md`, `integrity-and-consistency.md`;
+  `logical-references.md` regenerated (525 logical refs, 233 intra-module).
+  Evidence: `progress.md` 2026-11-15 "ERP-0054".
+
+---
+
 ## M01 Dashboard
 
 ### planned
