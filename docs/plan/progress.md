@@ -54,6 +54,13 @@ Not verified: warehouse PIC nav item and PIC UI (Phase 4.8) - blocked on ADR-001
 
 Docs: `docs/database/` reviewed, unchanged (no schema change).
 
+Dev database reset after the checks (owner request): `bun run drizzle:migrate-reset` in
+`apps/backend` - all schemas dropped, migrations replayed, seeders run, `Migrate-reset
+complete` in 9.7 s. Post-reset: `POST /api/auth/sign-in/username` `admin` → 200,
+`GET /organizations/mine` → 200 with Entragate only. The throwaway accounts used for the
+browser checks (`investor.test`, `investor2.test`, `customer.test`, `orgadmin.test`) no longer
+exist; they were created through the API, never by a seeder.
+
 ## 2026-11-14 - Role-based nav: Phase 4 part 3 (route guard in `_authed`)
 
 - `lib/route-guard.ts` `canOpenPath`: finds the governing nav leaf (`findNavLeaf`, longest url
