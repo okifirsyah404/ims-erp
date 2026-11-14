@@ -14,12 +14,14 @@
 import { type AnyElysia, Elysia } from 'elysia';
 import { ZodError } from 'zod';
 import { erpGuard, sessionGuard } from '@authorization/elysia-auth';
+import { portalGuard } from '@authorization/portal-auth';
 import { translator } from '@providers/i18n/translator';
 import { toErrorResponse } from './errors';
 import { errorEnvelope } from './response';
 
 /** Guard combinations a module can declare. */
-export type TGuardSet = 'none' | 'session' | 'erp' | 'erp+session';
+/** `portal` = the customer-portal bearer session (ERP-0022), never combined with the ERP guards. */
+export type TGuardSet = 'none' | 'session' | 'erp' | 'erp+session' | 'portal';
 
 /** Options describing one module's plugin. */
 export type TDomainPluginOptions = {
@@ -99,6 +101,7 @@ export function domainPlugin(
 	if (guards === 'session' || guards === 'erp+session') {
 		app = app.use(sessionGuard());
 	}
+	if (guards === 'portal') app = app.use(portalGuard());
 
 	return app.onError({ as: 'local' }, (ctx) => {
 		const { code, error, set } = ctx;

@@ -26,6 +26,16 @@ const email = {
 	'appInvitation.fallback':
 		'Jika tombol tidak berfungsi, salin dan tempel tautan ini ke peramban Anda:',
 
+	// Undangan portal pelanggan (ERP-0022): tautan untuk membuat kata sandi
+	// pertama di portal pelanggan.
+	'portalInvitation.subject': 'Akun portal pelanggan {{app}} Anda',
+	'portalInvitation.greeting': 'Hai {{name}},',
+	'portalInvitation.body':
+		'Akun Anda di portal pelanggan {{app}} sudah dibuat. Di sana Anda dapat memantau proyek, garansi, dan tiket servis Anda. Buat kata sandi untuk masuk. Tautan berlaku 3 hari.',
+	'portalInvitation.action': 'Buat kata sandi',
+	'portalInvitation.fallback':
+		'Jika tombol tidak berfungsi, salin dan tempel tautan ini ke peramban Anda:',
+
 	// Undangan organisasi (invitation.type = 'org'): undangan bergabung ke
 	// organisasi tertentu dengan peran.
 	'organizationInvitation.subject':

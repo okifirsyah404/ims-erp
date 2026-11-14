@@ -18,6 +18,115 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0022 customer portal, stage 1 (M07 T26 + M12 T25 account part)
+
+Branch `feat/m07-customer-portal` from `origin/main` (`f64788d`). Owner asked
+to leave the #83/#84 conflicts to programmer A and continue with another
+module; picked the customer portal. ERP-0022 was listed under owner A while
+the module plans give T25/T26 to B: the owner chose to take it and inform
+programmer A (backlog owner updated with that note).
+
+**Gate 1** (`erp-database-schema` order): `docs.dbml` module headers, Identity
+(`auth.portal_identities`), CRM (`crm.customers.portal_identity_id`),
+Projects, After-Sales (`service_tickets`, `service_ticket_comments`),
+Ticketing (`ticket.*`, target only); `module-ownership.md` (Identity contract
+`resolvePortalIdentity`), `integrity-and-consistency.md`,
+`data-dictionary.md`, `logical-references.md`. Skipped
+`implementation-phases.md` (no dependency on an unlanded step). Also read the
+website repo's `PortalSource` contract (`entragate-platform/packages/
+api-client/src/services/portal.ts`) and `apps/customer` reset page.
+
+**Gate 2** (owner, 2026-11-14; `grilling` skill not installed, manual pass):
+portal UI = the website repo (ERP gives the API); login = staff invitation +
+password set from the email (no sign-up); one login per customer; portal
+tickets = after-sales service tickets (not the `ticket.*` module); stage 1 =
+account + projects + tickets + warranty. Resolved by me and recorded in
+ADR-0018: a portal user is never an organization member (the unused
+`customer` role stays unused); no Better Auth `bearer` plugin (token valid
+only on `/portal/v1`); lockout in Redis (5 failures, 15 min); separate portal
+DTOs (no money, no internal notes); responses in the portal's `PortalSource`
+shapes (labels id/en). Tenant: company-wide like the tickets/projects
+(ADR-0011/0012), no `organization_id`. Soft delete: revoked identities get
+`deleted_at`; comments carry `deleted_at`. Status vocabularies: identity
+`active|suspended|revoked`; ticket channel + confirmation channel gain
+`portal`; comment `visibility internal|customer`, `author_type
+staff|customer`. Cross-module links: `portal_identities.linked_entity_id`
+(→ CRM, nullable, checked by `CustomerService.getActiveCustomer`).
+`crm.customers.portal_identity_id` is left unused (the identity row is the
+source of truth; writing it would be a second cross-module write).
+
+**docs.dbml first**: `auth.portal_identities` (nullable logical reference,
+`created_by`, `last_login_at`, unique live indexes), `aftersales.
+service_ticket_comments` rewritten company-wide (+ `author_type`,
+`author_name`, FK to the ticket), ticket channel checks + `portal`.
+`bun docs/database/gen-logical-references.ts` → `524 refs across 41 targets,
+232 intra-module refs`; `bun docs/database/validate-dbml.ts` → `cross-module
+refs: 0, timestamp gaps: 0, OK`.
+
+**Built**
+- Drizzle `drizzle/schemas/portal.schema.ts` (auth extension) and
+  `service_ticket_comments`; hand-written migration
+  `20261114100000_erp0022_customer_portal` (no snapshot, main's convention).
+- Identity (`src/app/user`): `PortalAccountService` (invite / resend /
+  revoke / `resolveCustomer` / `requestPasswordReset`), repository, Better
+  Auth adapter (internal adapter; the token is Better Auth's own
+  `reset-password:` verification), queue mailer + `renderPortalInvitationEmail`,
+  `/admin/portal-accounts`, permission `portal_account:read|invite|revoke`
+  (admin, sales manager, customer service; owner via all). Config `PORTAL_URL`
+  (trusted origin).
+- Authorization: `src/authorization/portal-auth.ts` (`portal` macro) and
+  `domainPlugin({ guards: 'portal' })`.
+- Portal module `src/app/portal` (no tables): sign-in/logout/reset/change
+  password with lockout, `/portal/v1` me, home, badges, projects, tickets
+  (create, messages, confirm), products/warranty; pure presenter to the
+  `PortalSource` shapes.
+- Projects: `ProjectPortalService` (+ `listByCustomer`). After-sales:
+  `ServiceTicketService` portal + thread methods, comment repository,
+  `/service-tickets/:id/comments`, `WarrantyService.listForCustomer /
+  getForCustomer`.
+- Web admin: customer page **Customer portal** card; ticket page **Messages**
+  thread; `portal` channel shown, not selectable by staff. en/id keys (crm,
+  projects, api, email).
+- Docs: ADR-0018, `modules/customer-portal.md` (route map for the website's
+  `PortalRoutes`), `data-model.md`, module and ADR indexes, user guide 8.4 +
+  8.8 (en, id), `.env.example`.
+
+**Verification**
+- Baseline on `origin/main` before any change: backend `bun test` → 919 pass,
+  4 fail. The 4 (`toWebp` ×3, `CompanyService images`) need `Bun.Image`
+  from Bun 1.4.2; this machine runs 1.4.1 (`bun upgrade` failed: ENOENT) —
+  environment, not code. `tsc` needed `packages/common` rebuilt first
+  (`bun run build`), then clean.
+- After: `bun run typecheck` → clean (all workspaces); `bun run lint` → 0
+  errors, no warnings in the new files; backend `bun test` → 936 pass, 4 fail
+  (the same 4); `test/unit/customer-portal.test.ts` 17 pass (rejections
+  awaited); locales `bun test` → 90 pass.
+- Disposable DB `ims_erp_portal`: `bun run database/migrate-reset.ts` →
+  migrations and seed complete; `drizzle-kit push --explain` → only main's
+  pre-existing `sales.receipts` FK drift, no portal/aftersales difference.
+- E2E (backend alone on `ims_erp_portal`, `PORTAL_URL` set on the process,
+  `.env` untouched; script outside the repo): **32/32** — invite 201, second
+  invite 409, staff email 409, token from Better Auth's Redis storage, short
+  password 400, first password set, token reuse 400, register 403, staff
+  login on the portal 401, portal login with the `PortalSource` shape, `/me`,
+  portal token on an ERP route refused, staff cookie on a portal route 401,
+  projects `[]`, portal ticket 201 (channel `portal`), staff internal note +
+  reply, portal sees the reply but not the note (`awaiting_you`), customer
+  message, staff thread 3, list/badges, another customer's ticket 404 (read
+  and write), confirm before resolved 422 then closed via portal, wrong
+  current password 400, lockout 423, revoke → token 401. The first runs
+  failed on test setup only (untrusted origin in the script, stale
+  `packages/common` dist, empty company profile needed for numbering — a
+  pre-existing rule, token in Redis not in the table); one run locked the
+  admin's email on the portal after 5 runs, which is the lockout working.
+- Not done: the website's `PortalRoutes` / adapter wiring (website repo);
+  a browser check of the two web-admin cards; UAT M07-09 (UAT scripts live
+  on `feat/m04-on-main` and will move from N/T when both land).
+
+`docs/database/` updated (above). Next executable task: owner review and PR
+for `feat/m07-customer-portal`; then wire the website adapter routes
+(`modules/customer-portal.md`) and run the portal against this API.
+
 ## 2026-11-14 - Web admin: header shows the avatar only
 
 Change: `apps/web-admin/src/components/sidebar/nav-user.tsx`. The header trigger now

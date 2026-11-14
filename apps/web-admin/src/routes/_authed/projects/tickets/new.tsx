@@ -13,7 +13,7 @@ import { toast } from '@/components/toast';
 import { customersQueryOptions } from '@/lib/customer-api';
 import { formatBusinessDate } from '@/lib/format';
 import { projectsQueryOptions } from '@/lib/project-api';
-import { checkWarranty, createTicket, TICKET_CHANNELS, type TTicketChannel, type TWarrantyCheck } from '@/lib/service-ticket-api';
+import { checkWarranty, createTicket, STAFF_TICKET_CHANNELS, type TTicketChannel, type TWarrantyCheck } from '@/lib/service-ticket-api';
 
 /** `/projects/tickets/new` — open a service ticket with the warranty check. */
 export const Route = createFileRoute('/_authed/projects/tickets/new')({
@@ -171,7 +171,7 @@ function NewTicketPage() {
 							<Field>
 								<FieldLabel htmlFor='ticket-channel'>{t('projects:ticket.channel')}</FieldLabel>
 								<select id='ticket-channel' className={select} value={channel} onChange={(event) => setChannel(event.target.value as TTicketChannel)}>
-									{TICKET_CHANNELS.map((value) => (
+									{STAFF_TICKET_CHANNELS.map((value) => (
 										<option key={value} value={value}>
 											{t(`projects:channel.${value}`)}
 										</option>

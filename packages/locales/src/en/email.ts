@@ -26,6 +26,16 @@ const email = {
 	'appInvitation.fallback':
 		'If the button does not work, copy and paste this link into your browser:',
 
+	// Customer portal invitation (ERP-0022): the link sets the first password
+	// on the customer portal.
+	'portalInvitation.subject': 'Your {{app}} customer portal account',
+	'portalInvitation.greeting': 'Hi {{name}},',
+	'portalInvitation.body':
+		'An account has been created for you on the {{app}} customer portal, where you can follow your projects, warranties and service tickets. Set your password to sign in. The link expires in 3 days.',
+	'portalInvitation.action': 'Set password',
+	'portalInvitation.fallback':
+		'If the button does not work, copy and paste this link into your browser:',
+
 	// Organization invitation (invitation.type = 'org'): invite to join a
 	// specific organization with a role.
 	'organizationInvitation.subject': 'You are invited to join {{organization}}',

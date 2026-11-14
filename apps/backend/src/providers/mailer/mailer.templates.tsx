@@ -122,6 +122,26 @@ export async function renderAppInvitationEmail({
 	};
 }
 
+/**
+ * Customer-portal invitation (ERP-0022): the link sets the first password on
+ * the portal's `/reset-password` page. Reuses the app-invitation layout.
+ */
+export async function renderPortalInvitationEmail({
+	name,
+	url,
+	language = DEFAULT_LANGUAGE,
+}: TemplateInput): Promise<Omit<MailPayload, 'to'>> {
+	const texts = {
+		greeting: t(language, 'email:portalInvitation.greeting', { name: name ?? '' }),
+		body: t(language, 'email:portalInvitation.body', { app: appName() }),
+		action: t(language, 'email:portalInvitation.action'),
+		fallback: t(language, 'email:portalInvitation.fallback'),
+		footer: t(language, 'email:footer.noReply', { app: appName() }),
+	};
+	const { html, text } = await renderEmail(<AppInvitationEmail url={url} texts={texts} />);
+	return { subject: t(language, 'email:portalInvitation.subject', { app: appName() }), html, text };
+}
+
 /** Organization-invitation input; superset of the base template input. */
 export type OrganizationInvitationTemplateInput = TemplateInput & {
 	organizationName: string;

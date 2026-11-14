@@ -46,3 +46,4 @@ design interview; see **Feature module lifecycle** in `../AGENTS.md`.
 | [ADR-0014](decisions/ADR-0014-nullable-cross-module-references.md) | Nullable Cross-Module References | accepted (2026-11-08) |
 | [ADR-0015](decisions/ADR-0015-company-document-code-number-split.md) | Company / Document / Code Number Schema Split | accepted (2026-11-13) |
 | [ADR-0016](decisions/ADR-0016-notification-module-and-single-realtime-socket.md) | Notification Module and the Single Realtime Socket | accepted (2026-11-13) |
+| [ADR-0018](decisions/ADR-0018-customer-portal-api.md) | Customer Portal: Portal Identities and the `/portal/v1` API | proposed (2026-11-14) |

@@ -300,6 +300,12 @@ Menu **Projects**. Diagram:
    work** → **Resolve** (resolution, service cost) — can **Reopen**.
 5. **Close ticket** only with the customer's confirmation (name and
    channel).
+6. **Messages** on the ticket: write an **internal note** (staff only) or
+   tick *Visible to the customer in the portal* to reply to the customer.
+   Messages the customer writes in the portal appear here too. Tickets the
+   customer opens in the portal have the channel **Customer portal**, and
+   the customer can confirm a resolved ticket there (it closes with the
+   confirmation channel *Customer portal*).
 
 ### 8.5 Licenses and subscriptions (M03)
 
@@ -331,6 +337,23 @@ Menu **Projects**. Diagram:
 9. **Renewal paid**: link the new sales order to the draft renewal. Once
    finance records full payment, the draft activates by itself and the keys
    continue on the new period.
+
+### 8.8 Customer portal (ERP-0022)
+
+Numbered 8.8 because 8.6 (HR) and 8.7 (M04) are on their own branches.
+
+1. **CRM → Customers → (a customer) → Customer portal**: enter the name and
+   the email the customer signs in with → **Invite to portal**. One login per
+   customer. The customer gets an email to set a password (valid 3 days).
+2. The card shows **Waiting for password** until the customer sets it, then
+   **Active** and the last sign-in. **Resend link** sends a new password
+   email; **Revoke access** ends every session (you can invite again later).
+3. In the portal the customer sees their projects (stage, checklist, BASTs
+   and the function test / training / signed BAST / photo files — never
+   costs or internal notes), their devices and warranties, and their service
+   tickets; they can open a ticket, write messages and confirm a fix.
+4. The email of a staff login cannot be used for the portal. After 5 wrong
+   passwords the portal locks that email for 15 minutes.
 
 ## 9. Printed documents and numbering
 

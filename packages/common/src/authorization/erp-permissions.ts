@@ -102,6 +102,8 @@ export const erpStatements = {
 
 	// After-sales and assets
 	service_ticket: ['read', 'create', 'update', 'assign', 'resolve', 'close'],
+	// Customer portal logins (ERP-0022): invite a customer, resend, revoke.
+	portal_account: ['read', 'invite', 'revoke'],
 	warranty_claim: ['read', 'create', 'update', 'approve', 'reject', 'close'],
 	asset: ['read', 'create', 'update', 'assign', 'return', 'maintain', 'dispose', 'export'],
 
@@ -315,6 +317,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 	// Organization administration + non-sensitive master data. No payroll,
 	// payment execution, accounting, investor-finance, or integration secrets.
 	admin: {
+		portal_account: ['read', 'invite', 'revoke'],
 		organization: ['read', 'update'],
 		member: ['create', 'read', 'update', 'delete'],
 		invitation: ['create', 'cancel'],
@@ -397,6 +400,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 	},
 
 	sales_manager: {
+		portal_account: ['read', 'invite', 'revoke'],
 		ac: ['read'],
 		asset_borrowing: ['read', 'create'],
 		dashboard: ['read'],
@@ -589,6 +593,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 	},
 
 	customer_service: {
+		portal_account: ['read', 'invite', 'revoke'],
 		ac: ['read'],
 		asset_borrowing: ['read', 'create'],
 		dashboard: ['read'],

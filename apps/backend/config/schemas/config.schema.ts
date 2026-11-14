@@ -25,6 +25,11 @@ export const AppConfigSchema = z.object({
 	 * Falls back to `url` when unset (single-origin deployments).
 	 */
 	webUrl: z.url().nullish(),
+	/**
+	 * Base URL of the customer portal (website repo, ERP-0022) — where the
+	 * portal's "set your password" links point; trusted by Better Auth.
+	 */
+	portalUrl: z.url().nullish(),
 	logLevel: z.enum(['debug', 'info', 'warn', 'error']).nullish(),
 	/** Comma-separated list of origins allowed for credentialed CORS. */
 	corsOrigins: z.array(z.string()).nullish(),

@@ -76,6 +76,15 @@ export class ProjectRepository implements IProjectRepository {
 		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
 	}
 
+	async listByCustomer(customerId: string) {
+		return this.database
+			.select()
+			.from(projects)
+			.where(and(eq(projects.customerId, customerId), isNull(projects.deletedAt), ne(projects.status, 'cancelled')))
+			.orderBy(desc(projects.createdAt), desc(projects.id))
+			.limit(100);
+	}
+
 	async findById(id: string) {
 		const [row] = await this.database.select().from(projects).where(this.live(id)).limit(1);
 		return row ?? null;

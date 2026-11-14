@@ -38,6 +38,7 @@ beforeEach(() => {
 				return { meta: { page: 1, limit: 20, total: data.length, totalPages: 1 }, data };
 			},
 			findById: async (id) => tickets.find((row) => row.id === id) ?? null,
+			listByCustomer: async (customerId) => tickets.filter((row) => row.customerId === customerId),
 			async create(data) {
 				const row = { ...data, id: crypto.randomUUID(), status: 'new', assigneeUserId: null } as TServiceTicketSelect;
 				tickets.push(row);
@@ -70,6 +71,8 @@ beforeEach(() => {
 				return {} as never;
 			},
 		},
+		// ERP-0022 message thread: not exercised here (see customer-portal.test.ts).
+		{ list: async () => [], latestCustomerVisible: async () => new Map(), create: async () => ({}) as never },
 	);
 });
 

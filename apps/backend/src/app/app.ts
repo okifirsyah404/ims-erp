@@ -17,6 +17,7 @@ import { licensingModule } from './licensing';
 import { locationModule } from './location';
 import { notificationModule } from './notification';
 import { organizationModule } from './organization';
+import { portalModule } from './portal';
 import { procurementModule } from './procurement';
 import { projectsModule } from './projects';
 import { salesModule } from './sales';
@@ -83,6 +84,8 @@ export function createApp() {
 			.use(procurementModule())
 			.use(projectsModule())
 			.use(aftersalesModule())
+			// Customer portal API (ERP-0022): `/portal/v1`, bearer sessions, own guard.
+			.use(portalModule())
 			.use(licensingModule())
 			// Admin surfaces share the `/admin` prefix, so their routes no longer
 			// overlap the self-service `/users/*` routes: mount order is irrelevant

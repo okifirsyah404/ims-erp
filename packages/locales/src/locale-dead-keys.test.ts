@@ -149,6 +149,10 @@ const DYNAMIC_PREFIXES = [
 	'licensing.api.',
 	'licensing.refused.',
 	'licensing.apiKey.',
+	// Customer portal (ERP-0022): stage and evidence labels are composed from
+	// the server value in `portal-presenter.ts`.
+	'portal.stage.',
+	'portal.evidence.',
 	// Borrowing workflow (ERP-0036): status, purpose, condition, and event
 	// type all arrive as server values, so the label key has to be composed.
 	'assets:borrowingStatus.',
