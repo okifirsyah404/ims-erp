@@ -1,9 +1,10 @@
 # Role-Based Sidebar, Route Guards, and Warehouse Person-in-Charge
 
-> Status: **in-progress** (ADR-0017 accepted 2026-11-14). Phase 0 and Phase 4
-> (web-admin) shipped on the branch; Phase 1 (PIC schema) and Phase 2 (backend
-> authorization) shipped on `refactor/app-roles-investor-customer`. Phase 3 (login
-> gate) shipped there too (ADR-0018). Remaining: Phase 4 item 8 (PIC nav item and UI).
+> Status: **done / verified 2026-11-14** (ADR-0017 accepted 2026-11-14). Phase 0 and
+> Phase 4 (web-admin) shipped on the branch; Phase 1 (PIC schema), Phase 2 (backend
+> authorization), Phase 3 (login gate, ADR-0018), Phase 4 item 8 (PIC nav item and UI)
+> and Phase 5 (verification) all shipped on
+> `refactor/app-roles-investor-customer`. Nothing remains open in this plan.
 > Branch: `refactor/app-roles-investor-customer` (`fix/side-nav-role-based` keeps
 > the Phase 4 web-admin record).
 > Scope: `apps/web-admin` (sidebar, switcher, route guards) plus the backend
@@ -233,13 +234,18 @@ New table `inventory.warehouse_managers`:
 
 ## Phase 6 — Docs in the same change
 
-- `docs/database/docs.dbml` updated, `validate-dbml.ts` prints `OK`.
-- `docs/architecture/decisions/ADR-0017-*.md` status moves to `accepted` only
+- `docs/database/docs.dbml` updated, `validate-dbml.ts` prints `OK`.- `docs/architecture/decisions/ADR-0017-*.md` status moves to `accepted` only
   after owner sign-off.
 - `docs/plan/progress.md`: dated entry with exact commands and results.
 - `docs/plan/backlog.md`: no `ERP-*` claimed. Record the fix as a non-ERP
   entry, or add a new ERP ID if the owner wants one. Owner decides.
 - `docs/plan/plans/features.md`: move this plan's status with the code.
+
+Phase 6 status: **done 2026-11-14** — `bun run docs/database/validate-dbml.ts` prints `269 tables,
+232 refs, cross-module refs: 0, timestamp gaps: 0, OK` (there is no root script by that name, so it is
+run by path); ADR-0017 moved to `accepted` with an owner-review note; `progress.md` carries dated Phase
+1/2/4.8/5 entries with commands and results; `backlog.md` records ERP-0051 as `verified`; `features.md`
+rolls it up under `verified`.
 
 ## Risks and open points
 
