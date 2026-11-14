@@ -12,6 +12,48 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-15 - The remaining native date inputs: month, time and datetime
+
+The last non-date native inputs followed `DatePicker`: 4 `type='month'`, 2
+`type='time'` and 2 `type='datetime-local'` across 6 files now use
+`MonthPicker`, `TimePicker` and `DateTimePicker` from `packages/ui`. No native
+`type='date' | 'month' | 'time' | 'datetime-local'` input is left in
+`apps/web-admin`.
+
+Each keeps the value contract its call site already held, so handlers only lost
+their `event.target.value`:
+
+- `MonthPicker` — `YYYY-MM` (`todayBusinessDate().slice(0, 7)`), year stepper
+  plus a 12-month grid.
+- `TimePicker` — `HH:mm`, two scrollable columns; `step` defaults to 1 so no
+  stored minute is unreachable, and an empty value still maps to `null` in the
+  attendance handler.
+- `DateTimePicker` — `YYYY-MM-DDTHH:mm`, the exact shape
+  `toDateTimeInput`/`fromDateTimeInput` produce, so the CRM dialogs did not
+  change. Calendar and time sit in one popover; picking either half fills the
+  other with today / `00:00` so the emitted value is always complete.
+
+All three share the `DatePicker` shell: `Button variant="outline"` trigger,
+`data-empty` for the placeholder colour, a suffix icon in
+`--muted-foreground` (so it follows light/dark — measured
+`oklch(0.551 0.0234 264.364)` in light), and the off-screen `required` input that
+keeps native form validation working. `parseTime`/`formatTime` moved to
+`packages/ui/src/lib/time.ts` so `TimePicker` and `DateTimePicker` share one
+parser instead of a component file exporting helpers.
+
+Verified:
+
+- `@ims-erp/ui` `typecheck` and `lint` → exit 0
+- `bunx tsc -b` in `apps/web-admin` → clean; `lint` → exit 0; `test` → 100 pass, 0 fail
+- Browser: `/hr/attendance` "Monthly recap" shows `November 2026` and the popover
+  opens the 2026 month grid, picking March updates the trigger to
+  `March 2026`; the day sheet's In/Out columns render `--:--` disabled for
+  non-editable rows. `/crm/leads` "New lead" opens `dd/mm/yyyy --:--`, and
+  picking the 20th, hour 09 and minute 30 sets `Nov 20, 2026 09:30`.
+  `/hr/payroll` shows `November 2026` with the suffix icon.
+
+`docs/database/` was reviewed and is unchanged. No locale keys added or removed.
+
 ## 2026-11-15 - Web admin date inputs become a `DatePicker`
 
 Every `type='date'` input in `apps/web-admin` (40 across 28 files) is now

@@ -16,8 +16,8 @@ import {
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DateTimePicker } from '@ims-erp/ui/components/datetime-picker';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
-import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { ConvertLeadDialog } from '@/components/crm/convert-lead-dialog';
@@ -340,11 +340,10 @@ function LeadDetailPage() {
 								</Field>
 								<Field>
 									<FieldLabel htmlFor='activity-follow-up'>{t('crm:activities.nextFollowUp')}</FieldLabel>
-									<Input
+									<DateTimePicker
 										id='activity-follow-up'
-										type='datetime-local'
 										value={activityFollowUp}
-										onChange={(e) => setActivityFollowUp(e.target.value)}
+										onChange={setActivityFollowUp}
 									/>
 								</Field>
 							</div>

@@ -9,7 +9,7 @@ import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
-import { Input } from '@ims-erp/ui/components/input';
+import { MonthPicker } from '@ims-erp/ui/components/month-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
@@ -96,13 +96,12 @@ function LeavePage() {
 						))}
 					</SelectContent>
 				</Select>
-				<Input
-					type='month'
+				<MonthPicker
 					className='w-44'
 					aria-label={t('hr:attendance.period')}
 					value={period}
-					onChange={(event) => {
-						setPeriod(event.target.value);
+					onChange={(value) => {
+						setPeriod(value);
 						setPage(1);
 					}}
 				/>

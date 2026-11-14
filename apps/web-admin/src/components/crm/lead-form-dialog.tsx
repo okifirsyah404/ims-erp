@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
+import { DateTimePicker } from '@ims-erp/ui/components/datetime-picker';
 import {
 	Dialog,
 	DialogContent,
@@ -141,11 +142,10 @@ export function LeadFormDialog({
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='lead-follow-up'>{t('crm:lead.nextFollowUpAt')}</FieldLabel>
-								<Input
+								<DateTimePicker
 									id='lead-follow-up'
-									type='datetime-local'
 									value={nextFollowUpAt}
-									onChange={(e) => setNextFollowUpAt(e.target.value)}
+									onChange={setNextFollowUpAt}
 								/>
 							</Field>
 						</div>
