@@ -11,6 +11,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import {
 	Dialog,
 	DialogContent,
@@ -211,7 +212,7 @@ function CreateInvoiceDialog({ summary, onClose }: { summary: TBillingSummary; o
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='invoice-due'>{t('finance:invoice.dueDate')}</FieldLabel>
-							<Input id='invoice-due' type='date' value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+							<DatePicker id='invoice-due' value={dueDate} onChange={setDueDate} />
 						</Field>
 					</FieldGroup>
 					<DialogFooter>

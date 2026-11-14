@@ -10,6 +10,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
 import { Label } from '@ims-erp/ui/components/label';
 import {
@@ -165,11 +166,10 @@ export function EmployeeForm() {
 						</div>
 						<div className='space-y-2'>
 							<Label htmlFor='hireDate'>{t('form.hireDate')}</Label>
-							<Input
+							<DatePicker
 								id='hireDate'
-								type='date'
 								value={hireDate}
-								onChange={(event) => setHireDate(event.target.value)}
+								onChange={setHireDate}
 							/>
 						</div>
 					</div>

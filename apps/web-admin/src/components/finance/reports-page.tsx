@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
-import { Input } from '@ims-erp/ui/components/input';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
 import { Button } from '@ims-erp/ui/components/button';
 import { useState } from 'react';
@@ -64,23 +64,20 @@ export function ReportsPage() {
 			</div>
 
 			<div className='flex flex-wrap items-center gap-2'>
-				<Input
-					type='date'
+				<DatePicker
 					className='w-40'
 					value={startDate}
-					onChange={(event) => setStartDate(event.target.value)}
+					onChange={setStartDate}
 				/>
-				<Input
-					type='date'
+				<DatePicker
 					className='w-40'
 					value={endDate}
-					onChange={(event) => setEndDate(event.target.value)}
+					onChange={setEndDate}
 				/>
-				<Input
-					type='date'
+				<DatePicker
 					className='w-40'
 					value={asOfDate}
-					onChange={(event) => setAsOfDate(event.target.value)}
+					onChange={setAsOfDate}
 				/>
 				<Button size='sm' onClick={run}>
 					{t('finance:reports.run')}

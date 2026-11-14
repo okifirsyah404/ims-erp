@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
@@ -134,16 +135,15 @@ function NewProjectPage() {
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='project-start'>{t('projects:field.targetStart')}</FieldLabel>
-								<Input id='project-start' type='date' value={targetStartDate} onChange={(event) => setTargetStartDate(event.target.value)} />
+								<DatePicker id='project-start' value={targetStartDate} onChange={setTargetStartDate} />
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='project-end'>{t('projects:field.targetEnd')}</FieldLabel>
-								<Input
+								<DatePicker
 									id='project-end'
-									type='date'
 									min={targetStartDate || undefined}
 									value={targetEndDate}
-									onChange={(event) => setTargetEndDate(event.target.value)}
+									onChange={setTargetEndDate}
 								/>
 							</Field>
 							<Field className='sm:col-span-2'>

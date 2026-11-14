@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import {
@@ -312,22 +313,20 @@ export function QuotationForm({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='quotation-date'>{t('sales:quotation.date')}</FieldLabel>
-							<Input
+							<DatePicker
 								id='quotation-date'
-								type='date'
 								required
 								value={quotationDate}
-								onChange={(e) => setQuotationDate(e.target.value)}
+								onChange={setQuotationDate}
 							/>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='quotation-valid-until'>{t('sales:quotation.validUntil')}</FieldLabel>
-							<Input
+							<DatePicker
 								id='quotation-valid-until'
-								type='date'
 								min={quotationDate}
 								value={validUntil}
-								onChange={(e) => setValidUntil(e.target.value)}
+								onChange={setValidUntil}
 							/>
 							<FieldDescription>{t('sales:form.validUntilHint')}</FieldDescription>
 						</Field>

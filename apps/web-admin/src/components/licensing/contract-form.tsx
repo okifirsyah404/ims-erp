@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import {
@@ -147,11 +148,11 @@ export function ContractForm({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='contract-start'>{t('licensing:field.startDate')}</FieldLabel>
-							<Input id='contract-start' type='date' value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+							<DatePicker id='contract-start' value={startDate} onChange={setStartDate} />
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='contract-end'>{t('licensing:field.endDate')}</FieldLabel>
-							<Input id='contract-end' type='date' min={startDate || undefined} value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+							<DatePicker id='contract-end' min={startDate || undefined} value={endDate} onChange={setEndDate} />
 							<FieldDescription>{t('licensing:field.endDateHint')}</FieldDescription>
 						</Field>
 						<Field>

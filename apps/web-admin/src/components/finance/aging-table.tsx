@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
-import { Input } from '@ims-erp/ui/components/input';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import {
 	Table,
 	TableBody,
@@ -68,11 +68,10 @@ export function AgingTable({
 					<p className='text-muted-foreground text-sm'>{description}</p>
 				</div>
 				<div className='flex items-center gap-2'>
-					<Input
-						type='date'
+					<DatePicker
 						className='w-40'
 						value={asOfInput}
-						onChange={(event) => setAsOfInput(event.target.value)}
+						onChange={setAsOfInput}
 					/>
 					<Button
 						size='sm'

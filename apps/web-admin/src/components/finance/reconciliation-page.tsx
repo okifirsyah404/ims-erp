@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -186,11 +187,10 @@ export function ReconciliationPage() {
 							))}
 						</SelectContent>
 					</Select>
-					<Input
-						type='date'
+					<DatePicker
 						className='w-40'
 						value={reconciliationDate}
-						onChange={(event) => setReconciliationDate(event.target.value)}
+						onChange={setReconciliationDate}
 					/>
 					<Input
 						className='w-40'

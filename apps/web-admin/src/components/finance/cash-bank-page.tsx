@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -336,11 +337,10 @@ export function CashBankPage() {
 							))}
 						</SelectContent>
 					</Select>
-					<Input
-						type='date'
+					<DatePicker
 						className='w-40'
 						value={movementDate}
-						onChange={(event) => setMovementDate(event.target.value)}
+						onChange={setMovementDate}
 					/>
 					<Select
 						value={movementDirection}

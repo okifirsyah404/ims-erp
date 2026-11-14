@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
@@ -243,11 +244,11 @@ function RecordLeaveDialog({ onClose }: { onClose: () => void }) {
 						<div className='grid gap-4 sm:grid-cols-2'>
 							<Field>
 								<FieldLabel htmlFor='leave-start'>{t('hr:leave.start')}</FieldLabel>
-								<Input id='leave-start' type='date' required value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+								<DatePicker id='leave-start' required value={startDate} onChange={setStartDate} />
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='leave-end'>{t('hr:leave.end')}</FieldLabel>
-								<Input id='leave-end' type='date' required min={startDate} value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+								<DatePicker id='leave-end' required min={startDate} value={endDate} onChange={setEndDate} />
 							</Field>
 						</div>
 						<Field>

@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import {
@@ -255,7 +256,7 @@ function NewDeliveryNotePage() {
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='dn-date'>{t('sales:delivery.date')}</FieldLabel>
-								<Input id='dn-date' type='date' required value={deliveryDate} onChange={(event) => setDeliveryDate(event.target.value)} />
+								<DatePicker id='dn-date' required value={deliveryDate} onChange={setDeliveryDate} />
 							</Field>
 						</FieldGroup>
 					</CardContent>

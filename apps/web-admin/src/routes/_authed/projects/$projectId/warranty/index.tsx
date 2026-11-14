@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
@@ -83,7 +84,7 @@ function WarrantyForm({ projectId, initial }: { projectId: string; initial: TWar
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='warranty-issue'>{t('projects:warranty.issueDate')}</FieldLabel>
-							<Input id='warranty-issue' type='date' required value={value.issueDate} onChange={(event) => set({ issueDate: event.target.value })} />
+							<DatePicker id='warranty-issue' required value={value.issueDate} onChange={(issueDate) => set({ issueDate })} />
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='warranty-months'>{t('projects:warranty.months')}</FieldLabel>

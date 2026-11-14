@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import {
@@ -169,7 +170,7 @@ function NewGoodsReceiptPage() {
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='gr-date'>{t('procurement:receipt.date')}</FieldLabel>
-								<Input id='gr-date' type='date' required value={receiptDate} onChange={(event) => setReceiptDate(event.target.value)} />
+								<DatePicker id='gr-date' required value={receiptDate} onChange={setReceiptDate} />
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='gr-ref'>{t('procurement:receipt.supplierDeliveryRef')}</FieldLabel>

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -141,11 +142,10 @@ export function JournalPage() {
 			{canPost && showForm ? (
 				<div className='space-y-3 rounded-md border p-4'>
 					<div className='flex flex-wrap items-center gap-2'>
-						<Input
-							type='date'
+						<DatePicker
 							className='w-44'
 							value={entryDate}
-							onChange={(event) => setEntryDate(event.target.value)}
+							onChange={setEntryDate}
 						/>
 						<Input
 							className='w-72'

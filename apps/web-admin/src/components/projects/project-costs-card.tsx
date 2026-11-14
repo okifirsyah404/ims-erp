@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import {
@@ -170,7 +171,7 @@ export function ProjectCostsCard({ project }: { project: TProjectDetail & { cost
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='cost-date'>{t('projects:costs.date')}</FieldLabel>
-							<Input id='cost-date' type='date' required value={costDate} onChange={(event) => setCostDate(event.target.value)} />
+							<DatePicker id='cost-date' required value={costDate} onChange={setCostDate} />
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='cost-amount'>{t('projects:costs.amountRp')}</FieldLabel>

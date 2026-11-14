@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
@@ -60,7 +61,7 @@ function AttendancePage() {
 					))}
 				</div>
 				{view === 'day' ? (
-					<Input type='date' className='w-44' aria-label={t('hr:field.date')} value={date} onChange={(event) => event.target.value && setDate(event.target.value)} />
+					<DatePicker className='w-44' aria-label={t('hr:field.date')} value={date} onChange={setDate} />
 				) : (
 					<Input
 						type='month'

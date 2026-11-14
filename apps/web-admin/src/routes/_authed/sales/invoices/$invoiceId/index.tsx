@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import {
 	Dialog,
 	DialogContent,
@@ -285,22 +286,20 @@ function InvoiceDetailPage() {
 								<div className='grid gap-4 sm:grid-cols-2'>
 									<Field>
 										<FieldLabel htmlFor='issue-date'>{t('finance:invoice.issueDate')}</FieldLabel>
-										<Input
+										<DatePicker
 											id='issue-date'
-											type='date'
 											required
 											value={issueDate}
-											onChange={(e) => setIssueDate(e.target.value)}
+											onChange={setIssueDate}
 										/>
 									</Field>
 									<Field>
 										<FieldLabel htmlFor='issue-due'>{t('finance:invoice.dueDate')}</FieldLabel>
-										<Input
+										<DatePicker
 											id='issue-due'
-											type='date'
 											min={issueDate}
 											value={dueDate}
-											onChange={(e) => setDueDate(e.target.value)}
+											onChange={setDueDate}
 										/>
 									</Field>
 								</div>
@@ -324,12 +323,11 @@ function InvoiceDetailPage() {
 										</Field>
 										<Field>
 											<FieldLabel htmlFor='receipt-date'>{t('finance:receipt.date')}</FieldLabel>
-											<Input
+											<DatePicker
 												id='receipt-date'
-												type='date'
 												required
 												value={receivedDate}
-												onChange={(e) => setReceivedDate(e.target.value)}
+												onChange={setReceivedDate}
 											/>
 										</Field>
 									</div>

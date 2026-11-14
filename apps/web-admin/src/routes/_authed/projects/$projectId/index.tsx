@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import {
 	Dialog,
 	DialogContent,
@@ -110,16 +111,15 @@ function EditFields({ project, onChange }: { project: TProjectDetail; onChange: 
 			</Field>
 			<Field>
 				<FieldLabel htmlFor='edit-start'>{t('projects:field.targetStart')}</FieldLabel>
-				<Input id='edit-start' type='date' value={draft.targetStartDate} onChange={(event) => set({ targetStartDate: event.target.value })} />
+				<DatePicker id='edit-start' value={draft.targetStartDate} onChange={(targetStartDate) => set({ targetStartDate })} />
 			</Field>
 			<Field>
 				<FieldLabel htmlFor='edit-end'>{t('projects:field.targetEnd')}</FieldLabel>
-				<Input
+				<DatePicker
 					id='edit-end'
-					type='date'
 					min={draft.targetStartDate || undefined}
 					value={draft.targetEndDate}
-					onChange={(event) => set({ targetEndDate: event.target.value })}
+					onChange={(targetEndDate) => set({ targetEndDate })}
 				/>
 			</Field>
 			<Field className='sm:col-span-2'>

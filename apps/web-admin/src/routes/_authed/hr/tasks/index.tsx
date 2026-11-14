@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
@@ -201,7 +202,7 @@ function TasksPage() {
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='task-due'>{t('hr:tasks.due')}</FieldLabel>
-								<Input id='task-due' type='date' value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
+								<DatePicker id='task-due' value={dueDate} onChange={setDueDate} />
 							</Field>
 						</FieldGroup>
 						<DialogFooter>

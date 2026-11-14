@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
@@ -189,7 +190,7 @@ function OvertimePage() {
 							<div className='grid gap-4 sm:grid-cols-2'>
 								<Field>
 									<FieldLabel htmlFor='overtime-date'>{t('hr:field.date')}</FieldLabel>
-									<Input id='overtime-date' type='date' required value={workDate} onChange={(event) => setWorkDate(event.target.value)} />
+									<DatePicker id='overtime-date' required value={workDate} onChange={setWorkDate} />
 								</Field>
 								<Field>
 									<FieldLabel htmlFor='overtime-hours'>{t('hr:overtime.hours')}</FieldLabel>
