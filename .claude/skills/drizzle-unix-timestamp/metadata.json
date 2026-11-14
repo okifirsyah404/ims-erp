@@ -1,0 +1,13 @@
+{
+  "name": "drizzle-unix-timestamp",
+  "version": "1.0.0",
+  "description": "Project datetime convention — unix milliseconds since epoch stored as PostgreSQL bigint via the shared unixTimestamp custom types.",
+  "author": "OpenAgentic",
+  "date": "2026-10",
+  "canonicalType": "apps/backend-elysia/drizzle/datatypes/unix-timestamp.ts",
+  "references": [
+    "https://orm.drizzle.team/docs/column-types/pg#timestamp",
+    "https://orm.drizzle.team/docs/custom-types",
+    "https://moment.github.io/luxon/api-docs/index.html#datetime"
+  ]
+}

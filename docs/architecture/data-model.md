@@ -130,6 +130,16 @@ Schema, keys, constraints, and conventions. Current declarations:
   - A warehouse's `organization_id` is **immutable after creation** (plan
     D-C), as is its `code`.
 
+- **`hr`** — employees (ERP-0034: invite-first, `organization_id` nullable =
+  company level) and the M08 stage 1 records (ERP-0059): `bank_accounts`
+  (one salary account per employee, masked without `employee:read_private`),
+  `attendance_records` (one per employee per day; sources `manual|import|leave`),
+  `leave_types`, `leave_requests` (`submitted|approved|rejected|cancelled`,
+  Sundays excluded, annual quota), `overtime_requests`, `employee_tasks`,
+  `salary_summaries` (per month; net = base + allowances + overtime + bonus −
+  deductions, `CHECK`ed; `draft|approved`, approved = locked). The records
+  carry no `organization_id`; they are scoped through the employee.
+
 ## Conventions (pinned decisions)
 
 - **Datetimes** — unix milliseconds in bigint columns via
@@ -207,3 +217,6 @@ never ships in a frontend bundle.
   generated diff into the migration, never hand-edit auth tables.
 - Unknown journal state for the existing baseline (`migrations/meta`) must be
   verified before the first new generate/migrate run.
+- 2026-11-12: generate/migrate are blocked on main by a branching snapshot
+  chain; new migrations are hand-written and verified on a disposable
+  database with `database/migrate-reset.ts` (`runbook.md`, `project-audit.md`).

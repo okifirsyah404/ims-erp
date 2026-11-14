@@ -57,6 +57,7 @@ const nav = {
 	'item.bast': 'BAST (Handover)',
 	'item.tickets': 'Tickets & Warranty',
 	'item.hr': 'HR & Attendance',
+	'item.hrTasks': 'Tasks',
 	'item.employees': 'Employees',
 	'item.attendance': 'Attendance',
 	'item.leave': 'Leave',

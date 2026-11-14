@@ -56,6 +56,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.bast': 'BAST',
 	'item.tickets': 'Tiket & Garansi',
 	'item.hr': 'Karyawan & Kehadiran',
+	'item.hrTasks': 'Tugas',
 	'item.employees': 'Karyawan',
 	'item.attendance': 'Absensi',
 	'item.leave': 'Cuti',
