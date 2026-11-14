@@ -7,8 +7,9 @@ import { Alert, AlertDescription } from '@ims-erp/ui/components/alert';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
-import { Input } from '@ims-erp/ui/components/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
+import { Search } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatDateTime } from '@/lib/format';
 import {
@@ -71,17 +72,21 @@ function WhatsappInboxPage() {
 						{value && health.data?.counts[value] ? ` (${health.data.counts[value]})` : ''}
 					</Button>
 				))}
-				<Input
-					type='search'
-					className='ml-auto w-64'
-					aria-label={t('integrations:whatsapp.search')}
-					placeholder={t('integrations:whatsapp.search')}
-					value={search}
-					onChange={(event) => {
-						setSearch(event.target.value);
-						setPage(1);
-					}}
-				/>
+				<InputGroup className='ml-auto w-64'>
+					<InputGroupAddon align='inline-start'>
+						<Search aria-hidden='true' />
+					</InputGroupAddon>
+					<InputGroupInput
+						type='search'
+						aria-label={t('integrations:whatsapp.search')}
+						placeholder={t('integrations:whatsapp.search')}
+						value={search}
+						onChange={(event) => {
+							setSearch(event.target.value);
+							setPage(1);
+						}}
+					/>
+				</InputGroup>
 			</div>
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>

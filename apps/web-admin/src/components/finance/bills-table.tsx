@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Table,
@@ -112,17 +113,15 @@ export function BillsTable() {
 						value={supplierId}
 						onChange={(event) => setSupplierId(event.target.value)}
 					/>
-					<Input
-						type='date'
+					<DatePicker
 						className='w-40'
 						value={billDate}
-						onChange={(event) => setBillDate(event.target.value)}
+						onChange={setBillDate}
 					/>
-					<Input
-						type='date'
+					<DatePicker
 						className='w-40'
 						value={dueDate}
-						onChange={(event) => setDueDate(event.target.value)}
+						onChange={setDueDate}
 					/>
 					<Input
 						className='w-36'

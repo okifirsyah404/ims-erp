@@ -7,6 +7,13 @@ import { Alert, AlertDescription } from '@ims-erp/ui/components/alert';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
@@ -27,8 +34,6 @@ import { usePermission } from '@/lib/use-permission';
 export const Route = createFileRoute('/_authed/integrations/webhooks/')({
 	component: WebhooksPage,
 });
-
-const select = 'h-9 rounded-md border bg-transparent px-3 text-sm';
 
 function WebhooksPage() {
 	const { t, i18n } = useTranslation(['integrations', 'common']);
@@ -70,38 +75,44 @@ function WebhooksPage() {
 					</Alert>
 				))}
 			<div className='flex flex-wrap gap-2'>
-				<select
-					aria-label={t('integrations:outbox.event')}
-					className={select}
-					value={topic}
-					onChange={(event) => {
-						setTopic(event.target.value as TOutboxTopic | '');
+				<Select
+					value={topic || 'all'}
+					onValueChange={(value: string | null) => {
+						setTopic(value === 'all' || value == null ? '' : (value as TOutboxTopic));
 						setPage(1);
 					}}
 				>
-					<option value=''>{t('integrations:outbox.allTopics')}</option>
-					{OUTBOX_TOPICS.map((value) => (
-						<option key={value} value={value}>
-							{t(`integrations:outbox.topic.${value}`)}
-						</option>
-					))}
-				</select>
-				<select
-					aria-label={t('integrations:outbox.result')}
-					className={select}
-					value={status}
-					onChange={(event) => {
-						setStatus(event.target.value as TOutboxStatus | '');
+					<SelectTrigger aria-label={t('integrations:outbox.event')} className='w-44'>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('integrations:outbox.allTopics')}</SelectItem>
+						{OUTBOX_TOPICS.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`integrations:outbox.topic.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+				<Select
+					value={status || 'all'}
+					onValueChange={(value: string | null) => {
+						setStatus(value === 'all' || value == null ? '' : (value as TOutboxStatus));
 						setPage(1);
 					}}
 				>
-					<option value=''>{t('integrations:outbox.allStatuses')}</option>
-					{OUTBOX_STATUSES.map((value) => (
-						<option key={value} value={value}>
-							{t(`integrations:outbox.status.${value}`)}
-						</option>
-					))}
-				</select>
+					<SelectTrigger aria-label={t('integrations:outbox.result')} className='w-44'>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('integrations:outbox.allStatuses')}</SelectItem>
+						{OUTBOX_STATUSES.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`integrations:outbox.status.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 			</div>
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>

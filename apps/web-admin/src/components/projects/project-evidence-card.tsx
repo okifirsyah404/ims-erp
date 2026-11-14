@@ -7,12 +7,17 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Field, FieldDescription, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { toast } from '@/components/toast';
 import { formatDateTime } from '@/lib/format';
 import { EVIDENCE_KINDS, removeEvidence, type TEvidenceKind, type TProjectDetail, uploadEvidence } from '@/lib/project-api';
 import { usePermission } from '@/lib/use-permission';
-
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 /**
  * Evidence files (function test, training, signed BAST, photos). Closing a
@@ -112,13 +117,18 @@ export function ProjectEvidenceCard({ project, actorUserId }: { project: TProjec
 					>
 						<Field>
 							<FieldLabel htmlFor='evidence-kind'>{t('projects:evidence.kind')}</FieldLabel>
-							<select id='evidence-kind' className={select} value={kind} onChange={(event) => setKind(event.target.value as TEvidenceKind)}>
-								{EVIDENCE_KINDS.map((value) => (
-									<option key={value} value={value}>
-										{t(`projects:evidenceKind.${value}`)}
-									</option>
-								))}
-							</select>
+							<Select value={kind} onValueChange={(value: string | null) => setKind(value as TEvidenceKind)}>
+								<SelectTrigger id='evidence-kind' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{EVIDENCE_KINDS.map((value) => (
+										<SelectItem key={value} value={value}>
+											{t(`projects:evidenceKind.${value}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='evidence-file'>{t('projects:evidence.file')}</FieldLabel>

@@ -6,6 +6,13 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { toast } from '@/components/toast';
 import { formatBusinessDate } from '@/lib/format';
 import {
@@ -22,8 +29,6 @@ import {
 	updateTask,
 } from '@/lib/project-api';
 import { usePermission } from '@/lib/use-permission';
-
-const select = 'h-8 rounded-md border bg-transparent px-2 text-sm';
 
 /**
  * The project checklist. `task:assign` holders assign, reschedule and
@@ -81,40 +86,50 @@ export function ProjectTasksCard({ project, actorUserId }: { project: TProjectDe
 									</div>
 								</div>
 								{active && canAssign ? (
-									<select
-										aria-label={t('projects:tasks.assigneeOf', { task: task.title })}
-										className={select}
-										value={task.assigneeUserId ?? ''}
+									<Select
+										value={task.assigneeUserId ?? 'none'}
 										disabled={busy}
-										onChange={(event) => void run(() => updateTask(project.id, task.id, input(task, { assigneeUserId: event.target.value || null })))}
+										onValueChange={(value: string | null) =>
+											void run(() => updateTask(project.id, task.id, input(task, { assigneeUserId: value == null || value === 'none' ? null : value })))
+										}
 									>
-										<option value=''>{t('projects:tasks.unassigned')}</option>
-										{(staff.data?.workers ?? []).map((person) => (
-											<option key={person.userId} value={person.userId}>
-												{person.name}
-											</option>
-										))}
-										{task.assignee && !staff.data?.workers.some((person) => person.userId === task.assigneeUserId) && (
-											<option value={task.assignee.userId}>{task.assignee.name}</option>
-										)}
-									</select>
+										<SelectTrigger aria-label={t('projects:tasks.assigneeOf', { task: task.title })}>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value='none'>{t('projects:tasks.unassigned')}</SelectItem>
+											{(staff.data?.workers ?? []).map((person) => (
+												<SelectItem key={person.userId} value={person.userId}>
+													{person.name}
+												</SelectItem>
+											))}
+											{task.assignee && !staff.data?.workers.some((person) => person.userId === task.assigneeUserId) && (
+												<SelectItem value={task.assignee.userId}>{task.assignee.name}</SelectItem>
+											)}
+										</SelectContent>
+									</Select>
 								) : (
 									<span className='text-muted-foreground'>{task.assignee?.name ?? t('projects:tasks.unassigned')}</span>
 								)}
 								{active && (canAssign || mine) ? (
-									<select
-										aria-label={t('projects:tasks.statusOf', { task: task.title })}
-										className={select}
+									<Select
 										value={task.status}
 										disabled={busy}
-										onChange={(event) => void run(() => setTaskStatus(project.id, task.id, event.target.value as TTaskStatus))}
+										onValueChange={(value: string | null) =>
+											void run(() => setTaskStatus(project.id, task.id, value as TTaskStatus))
+										}
 									>
-										{TASK_STATUSES.map((status) => (
-											<option key={status} value={status}>
-												{t(`projects:taskStatus.${status}`)}
-											</option>
-										))}
-									</select>
+										<SelectTrigger aria-label={t('projects:tasks.statusOf', { task: task.title })}>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											{TASK_STATUSES.map((status) => (
+												<SelectItem key={status} value={status}>
+													{t(`projects:taskStatus.${status}`)}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
 								) : (
 									<span className='text-xs'>{t(`projects:taskStatus.${task.status}`)}</span>
 								)}
@@ -150,24 +165,37 @@ export function ProjectTasksCard({ project, actorUserId }: { project: TProjectDe
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='task-stage'>{t('projects:field.stage')}</FieldLabel>
-							<select id='task-stage' className={`${select} h-9`} value={stage} onChange={(event) => setStage(event.target.value as TProjectStage)}>
-								{PROJECT_STAGES.filter((value) => value !== 'warranty').map((value) => (
-									<option key={value} value={value}>
-										{t(`projects:stage.${value}`)}
-									</option>
-								))}
-							</select>
+							<Select value={stage} onValueChange={(value: string | null) => setStage(value as TProjectStage)}>
+								<SelectTrigger id='task-stage' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{PROJECT_STAGES.filter((value) => value !== 'warranty').map((value) => (
+										<SelectItem key={value} value={value}>
+											{t(`projects:stage.${value}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='task-assignee'>{t('projects:tasks.assignee')}</FieldLabel>
-							<select id='task-assignee' className={`${select} h-9`} value={assigneeUserId} onChange={(event) => setAssigneeUserId(event.target.value)}>
-								<option value=''>{t('projects:tasks.unassigned')}</option>
-								{(staff.data?.workers ?? []).map((person) => (
-									<option key={person.userId} value={person.userId}>
-										{person.name}
-									</option>
-								))}
-							</select>
+							<Select
+								value={assigneeUserId === '' ? 'none' : assigneeUserId}
+								onValueChange={(value: string | null) => setAssigneeUserId(value == null || value === 'none' ? '' : value)}
+							>
+								<SelectTrigger id='task-assignee' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='none'>{t('projects:tasks.unassigned')}</SelectItem>
+									{(staff.data?.workers ?? []).map((person) => (
+										<SelectItem key={person.userId} value={person.userId}>
+											{person.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Button type='submit' disabled={busy || title.trim() === ''}>
 							{t('projects:tasks.add')}

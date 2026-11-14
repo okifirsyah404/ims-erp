@@ -12,6 +12,138 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-15 - The remaining native date inputs: month, time and datetime
+
+The last non-date native inputs followed `DatePicker`: 4 `type='month'`, 2
+`type='time'` and 2 `type='datetime-local'` across 6 files now use
+`MonthPicker`, `TimePicker` and `DateTimePicker` from `packages/ui`. No native
+`type='date' | 'month' | 'time' | 'datetime-local'` input is left in
+`apps/web-admin`.
+
+Each keeps the value contract its call site already held, so handlers only lost
+their `event.target.value`:
+
+- `MonthPicker` — `YYYY-MM` (`todayBusinessDate().slice(0, 7)`), year stepper
+  plus a 12-month grid.
+- `TimePicker` — `HH:mm`, two scrollable columns; `step` defaults to 1 so no
+  stored minute is unreachable, and an empty value still maps to `null` in the
+  attendance handler.
+- `DateTimePicker` — `YYYY-MM-DDTHH:mm`, the exact shape
+  `toDateTimeInput`/`fromDateTimeInput` produce, so the CRM dialogs did not
+  change. Calendar and time sit in one popover; picking either half fills the
+  other with today / `00:00` so the emitted value is always complete.
+
+All three share the `DatePicker` shell: `Button variant="outline"` trigger,
+`data-empty` for the placeholder colour, a suffix icon in
+`--muted-foreground` (so it follows light/dark — measured
+`oklch(0.551 0.0234 264.364)` in light), and the off-screen `required` input that
+keeps native form validation working. `parseTime`/`formatTime` moved to
+`packages/ui/src/lib/time.ts` so `TimePicker` and `DateTimePicker` share one
+parser instead of a component file exporting helpers.
+
+Verified:
+
+- `@ims-erp/ui` `typecheck` and `lint` → exit 0
+- `bunx tsc -b` in `apps/web-admin` → clean; `lint` → exit 0; `test` → 100 pass, 0 fail
+- Browser: `/hr/attendance` "Monthly recap" shows `November 2026` and the popover
+  opens the 2026 month grid, picking March updates the trigger to
+  `March 2026`; the day sheet's In/Out columns render `--:--` disabled for
+  non-editable rows. `/crm/leads` "New lead" opens `dd/mm/yyyy --:--`, and
+  picking the 20th, hour 09 and minute 30 sets `Nov 20, 2026 09:30`.
+  `/hr/payroll` shows `November 2026` with the suffix icon.
+
+`docs/database/` was reviewed and is unchanged. No locale keys added or removed.
+
+## 2026-11-15 - Web admin date inputs become a `DatePicker`
+
+Every `type='date'` input in `apps/web-admin` (40 across 28 files) is now
+`DatePicker` from `packages/ui`, built from `Popover` + `Calendar` as the shadcn
+date-picker docs prescribe. `captionLayout="dropdown"` gives the month and year
+dropdowns of the "Date of Birth" example, so a date in another year is two
+clicks instead of a paging walk.
+
+The component keeps the repo's existing date contract: `value` is the
+`YYYY-MM-DD` business-date string every call site already held, and `onChange`
+returns that same string. No call site had to convert to `Date` or back, which
+is why the whole conversion is a swap plus dropping `type='date'`.
+
+Two details that are easy to get wrong and are handled in the component:
+
+- **Suffix icon follows the theme.** The calendar icon renders in
+  `--muted-foreground` rather than a hardcoded colour. Measured in the browser:
+  `oklch(0.551 0.0234 264.364)` in light and `oklch(0.7155 0 0)` in dark, and
+  the popover calendar re-themes with it.
+- **`required` still blocks submit.** A popover trigger is a button, not a form
+  control, so `required` renders an off-screen `required` input carrying the
+  value; `checkValidity()` on it is `true` when a date is set. It is omitted
+  when `disabled` so a disabled picker never blocks a form.
+- `min`/`max` map to the calendar's `disabled` matchers, and `YYYY-MM-DD` is
+  parsed by hand — `new Date('2026-11-15')` is UTC and lands a day early west of
+  Greenwich.
+
+`type='month'`, `type='time'` and `type='datetime-local'` are untouched: this
+slice covers date-only inputs, which is what the request named.
+
+Verified:
+
+- `bun run --filter '@ims-erp/ui' typecheck` and `lint` → exit 0
+- `bunx tsc -b` in `apps/web-admin` → clean
+- `bun run --filter '@ims-erp/web-admin' lint` → exit 0; `test` → 100 pass, 0 fail
+- Browser: `/projects/new` shows `dd/mm/yyyy` placeholders with the suffix icon,
+  the popover opens a calendar with month and year dropdowns (123 years), and
+  picking the 20th sets `Nov 20, 2026`; toggling the root `dark` class re-colours
+  both the icon and the calendar. `/hr/leave` "Record leave" renders two
+  DatePickers with the hidden `required` inputs bound to the form and valid.
+
+`docs/database/` was reviewed and is unchanged. No locale keys added or removed.
+
+## 2026-11-15 - Web admin UI consistency: shadcn `Select` everywhere, search icon prefix
+
+Every native `<select>` in `apps/web-admin` that was not already a
+`packages/ui` component is now the shadcn `Select` (`Select`, `SelectTrigger`,
+`SelectValue`, `SelectContent`, `SelectItem`), and every `type='search'` input
+is an `InputGroup` with a `Search` (lucide) prefix. 85 native selects across 51
+files and 25 search inputs; the `const select = '...'` class strings they used
+are gone. `NativeSelect` usages (`components/assets/borrowing-form.tsx`,
+`assets/asset-detail.tsx`) and `inventory/adjustment-form.tsx` were already
+`packages/ui` components and were left alone.
+
+**Bug found and fixed in `packages/ui`, not at the call sites.** Base UI's
+`SelectValue` reads the trigger label from the root's `items` prop, not from the
+`SelectItem` children (the popup unmounts while closed). Without `items` every
+filter trigger rendered its raw value — the pre-existing `hr/employees` status
+filter already showed `all` on `main`, so this was not introduced here but the
+conversion multiplied it. `packages/ui/src/components/select.tsx` now wraps
+`SelectPrimitive.Root` and derives `items` from the `SelectItem` children when
+the caller does not pass it, so all 110 call sites get labels with no per-file
+churn.
+
+Behaviour notes: empty/placeholder options use a `'none'` (or `'all'`) sentinel
+mapped back to `''`/`undefined`/`null` in the handler; `disabled`, `id` (moved
+to `SelectTrigger` so `<label htmlFor>` still works) and `aria-label` are
+preserved. `required` no longer triggers the browser's native form validation —
+each affected form already guards its submit button on the same state
+(`!salesOrderId`, `!bastId`, `!itemId`, ...), so submission behaviour is
+unchanged but the browser tooltip is gone.
+
+Verified:
+
+- `bun run --filter '@ims-erp/web-admin' lint` → exit 0 (pre-existing warnings only)
+- `bunx tsc -b` in `apps/web-admin` → clean; `bun run --filter '@ims-erp/ui' typecheck` → exit 0
+- `bun run --filter '@ims-erp/ui' lint` → exit 0
+- `bun run --filter '@ims-erp/web-admin' test` → 100 pass, 0 fail
+- Browser walkthrough on the dev server: `/crm/leads`, `/crm/customers`,
+  `/hr/employees`, `/projects`, `/procurement/purchase-orders`,
+  `/projects/new`, `/procurement/purchase-orders/new` — trigger labels render
+  ("All statuses", "Pick a supplier", "Hardware"), the search boxes carry the
+  icon, and selecting an option updates the trigger and the query.
+  `/integrations/webhooks` could not be checked: the page fetches
+  `http://localhost:3001/api/auth/get-session` and is blocked by CORS, a local
+  env issue unrelated to this change.
+
+`docs/database/` was reviewed and is unchanged (no schema, contract, or
+lifecycle change). No locale keys were added or removed.
+
 ## 2026-11-15 - M04 lands on the current mainline: `main` merged into `feat/m04-on-main`
 
 Branch `feat/m04-on-main` was 106 commits behind `main`; the M04 code (website

@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Search } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
@@ -9,6 +10,18 @@ import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from '@ims-erp/ui/components/input-group';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { toast } from '@/components/toast';
 import {
@@ -33,8 +46,6 @@ import { usePermission } from '@/lib/use-permission';
 export const Route = createFileRoute('/_authed/integrations/website-catalog/')({
 	component: WebsiteCatalogPage,
 });
-
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 function WebsiteCatalogPage() {
 	const { t } = useTranslation(['integrations', 'common']);
@@ -219,33 +230,42 @@ function ListingDialog({
 								</p>
 							) : (
 								<>
-									<Input
-										type='search'
-										aria-label={t('integrations:catalog.pickItem')}
-										placeholder={t('integrations:catalog.pickItem')}
-										value={search}
-										onChange={(event) => setSearch(event.target.value)}
-									/>
-									<select
-										id='listing-item'
+									<InputGroup>
+										<InputGroupAddon align='inline-start'>
+											<Search aria-hidden='true' />
+										</InputGroupAddon>
+										<InputGroupInput
+											type='search'
+											aria-label={t('integrations:catalog.pickItem')}
+											placeholder={t('integrations:catalog.pickItem')}
+											value={search}
+											onChange={(event) => setSearch(event.target.value)}
+										/>
+									</InputGroup>
+									<Select
 										required
-										className={select}
-										value={itemId}
-										onChange={(event) => {
-											setItemId(event.target.value);
-											const item = items.data?.rows.find((row) => row.id === event.target.value);
+										value={itemId || 'none'}
+										onValueChange={(value: string | null) => {
+											const next = value === 'none' || value == null ? '' : value;
+											setItemId(next);
+											const item = items.data?.rows.find((row) => row.id === next);
 											if (item && !slug) setSlug(slugify(item.name));
 										}}
 									>
-										<option value=''>—</option>
-										{(items.data?.rows ?? [])
-											.filter((item) => item.isActive)
-											.map((item) => (
-												<option key={item.id} value={item.id}>
-													{item.sku} — {item.name}
-												</option>
-											))}
-									</select>
+										<SelectTrigger id='listing-item' className='w-full'>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value='none'>—</SelectItem>
+											{(items.data?.rows ?? [])
+												.filter((item) => item.isActive)
+												.map((item) => (
+													<SelectItem key={item.id} value={item.id}>
+														{item.sku} — {item.name}
+													</SelectItem>
+												))}
+										</SelectContent>
+									</Select>
 								</>
 							)}
 						</Field>
@@ -269,13 +289,18 @@ function ListingDialog({
 						<div className='grid gap-4 sm:grid-cols-2'>
 							<Field>
 								<FieldLabel htmlFor='listing-price-mode'>{t('integrations:catalog.priceMode')}</FieldLabel>
-								<select id='listing-price-mode' className={select} value={priceMode} onChange={(event) => setPriceMode(event.target.value as TPriceMode)}>
-									{PRICE_MODES.map((mode) => (
-										<option key={mode} value={mode}>
-											{t(`integrations:catalog.priceMode.${mode}`)}
-										</option>
-									))}
-								</select>
+								<Select value={priceMode} onValueChange={(value: string | null) => setPriceMode(value as TPriceMode)}>
+									<SelectTrigger id='listing-price-mode' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{PRICE_MODES.map((mode) => (
+											<SelectItem key={mode} value={mode}>
+												{t(`integrations:catalog.priceMode.${mode}`)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='listing-caption'>{t('integrations:catalog.priceCaption')}</FieldLabel>
@@ -283,18 +308,18 @@ function ListingDialog({
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='listing-out'>{t('integrations:catalog.outOfStock')}</FieldLabel>
-								<select
-									id='listing-out'
-									className={select}
-									value={outOfStockMode}
-									onChange={(event) => setOutOfStockMode(event.target.value as TOutOfStockMode)}
-								>
-									{OUT_OF_STOCK_MODES.map((mode) => (
-										<option key={mode} value={mode}>
-											{t(`integrations:catalog.outOfStock.${mode}`)}
-										</option>
-									))}
-								</select>
+								<Select value={outOfStockMode} onValueChange={(value: string | null) => setOutOfStockMode(value as TOutOfStockMode)}>
+									<SelectTrigger id='listing-out' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{OUT_OF_STOCK_MODES.map((mode) => (
+											<SelectItem key={mode} value={mode}>
+												{t(`integrations:catalog.outOfStock.${mode}`)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='listing-lead'>{t('integrations:catalog.leadTime')}</FieldLabel>

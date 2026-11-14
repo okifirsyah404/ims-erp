@@ -4,7 +4,15 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import {
 	Table,
 	TableBody,
@@ -166,23 +174,23 @@ export function ReconciliationPage() {
 
 			{canReconcile ? (
 				<div className='flex flex-wrap items-center gap-2 rounded-md border p-4'>
-					<select
-						className='h-9 w-56 rounded-md border bg-transparent px-2 text-sm'
-						value={accountId}
-						onChange={(event) => setAccountId(event.target.value)}
-					>
-						<option value='none'>{t('finance:reconciliation.cashAccount')}</option>
-						{accounts?.map((account) => (
-							<option key={account.id} value={account.id}>
-								{account.code} — {account.name}
-							</option>
-						))}
-					</select>
-					<Input
-						type='date'
+					<Select value={accountId} onValueChange={(value: string | null) => setAccountId(value ?? 'none')}>
+						<SelectTrigger className='w-56'>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='none'>{t('finance:reconciliation.cashAccount')}</SelectItem>
+							{accounts?.map((account) => (
+								<SelectItem key={account.id} value={account.id}>
+									{account.code} — {account.name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					<DatePicker
 						className='w-40'
 						value={reconciliationDate}
-						onChange={(event) => setReconciliationDate(event.target.value)}
+						onChange={setReconciliationDate}
 					/>
 					<Input
 						className='w-40'
@@ -310,29 +318,32 @@ export function ReconciliationPage() {
 												: t('finance:reconciliation.unmatched')}
 										</Badge>
 										{canReconcile && !item.matchedAt && reconciliation.status !== 'closed' ? (
-											<select
-												className='h-8 w-64 rounded-md border bg-transparent px-2 text-xs'
-												value=''
+											<Select
+												value='none'
 												disabled={match.isPending}
-												onChange={(event) =>
+												onValueChange={(value: string | null) =>
 													void match.mutateAsync({
 														itemId: item.id,
-														cashBankTransactionId:
-															event.target.value === '' ? null : event.target.value,
+														cashBankTransactionId: value == null || value === 'none' ? null : value,
 													})
 												}
 											>
-												<option value=''>
-													{t('finance:reconciliation.match')}
-												</option>
-												{movements?.rows.map((movement) => (
-													<option key={movement.id} value={movement.id}>
-														{movement.transactionDate}{' '}
-														{movement.direction === 'in' ? '+' : '−'}
-														{formatMoney(movement.amount)}
-													</option>
-												))}
-											</select>
+												<SelectTrigger className='w-64 text-xs'>
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value='none'>
+														{t('finance:reconciliation.match')}
+													</SelectItem>
+													{movements?.rows.map((movement) => (
+														<SelectItem key={movement.id} value={movement.id}>
+															{movement.transactionDate}{' '}
+															{movement.direction === 'in' ? '+' : '−'}
+															{formatMoney(movement.amount)}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
 										) : null}
 									</span>
 								</div>

@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
-import { Input } from '@ims-erp/ui/components/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import {
 	Table,
 	TableBody,
@@ -15,6 +16,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ims-erp/ui/components/table';
+import { Search } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatDateTime } from '@/lib/format';
 import { TICKET_STATUS_VARIANT, TICKET_STATUSES, ticketsQueryOptions, type TTicketStatus } from '@/lib/service-ticket-api';
@@ -48,33 +50,40 @@ function TicketListPage() {
 				)}
 			</div>
 			<div className='flex flex-wrap gap-2'>
-				<select
-					aria-label={t('projects:field.status')}
-					className='h-9 rounded-md border bg-transparent px-3 text-sm'
-					value={status}
-					onChange={(event) => {
-						setStatus(event.target.value as TTicketStatus | '');
+				<Select
+					value={status || 'all'}
+					onValueChange={(value: string | null) => {
+						setStatus(value === null || value === 'all' ? '' : (value as TTicketStatus));
 						setPage(1);
 					}}
 				>
-					<option value=''>{t('projects:list.allStatuses')}</option>
-					{TICKET_STATUSES.map((value) => (
-						<option key={value} value={value}>
-							{t(`projects:ticketStatus.${value}`)}
-						</option>
-					))}
-				</select>
-				<Input
-					type='search'
-					className='max-w-sm'
-					aria-label={t('projects:tickets.search')}
-					placeholder={t('projects:tickets.search')}
-					value={search}
-					onChange={(event) => {
-						setSearch(event.target.value);
-						setPage(1);
-					}}
-				/>
+					<SelectTrigger aria-label={t('projects:field.status')}>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('projects:list.allStatuses')}</SelectItem>
+						{TICKET_STATUSES.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`projects:ticketStatus.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+				<InputGroup className='max-w-sm'>
+					<InputGroupAddon align='inline-start'>
+						<Search aria-hidden='true' />
+					</InputGroupAddon>
+					<InputGroupInput
+						type='search'
+						aria-label={t('projects:tickets.search')}
+						placeholder={t('projects:tickets.search')}
+						value={search}
+						onChange={(event) => {
+							setSearch(event.target.value);
+							setPage(1);
+						}}
+					/>
+				</InputGroup>
 			</div>
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>

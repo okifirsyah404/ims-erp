@@ -11,6 +11,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import {
 	Field,
 	FieldGroup,
@@ -326,11 +327,10 @@ export function BorrowingForm() {
 							<FieldLabel htmlFor='dueAt'>
 								{t('assets:borrowingForm.dueAt')}
 							</FieldLabel>
-							<Input
+							<DatePicker
 								id='dueAt'
-								type='date'
 								value={dueAt}
-								onChange={(event) => setDueAt(event.target.value)}
+								onChange={setDueAt}
 							/>
 						</Field>
 

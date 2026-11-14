@@ -1,9 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { activeEmployeesQueryOptions } from '@/lib/hr-records-api';
-
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 /** Picks an active employee (`EMP-0001 — Name`). */
 export function EmployeeSelect({
@@ -25,20 +30,24 @@ export function EmployeeSelect({
 	const { t } = useTranslation('hr');
 	const { data } = useQuery(activeEmployeesQueryOptions());
 	return (
-		<select
-			id={id}
+		<Select
 			required={required}
-			aria-label={t('field.employee')}
-			className={className ?? select}
-			value={value}
-			onChange={(event) => onChange(event.target.value)}
+			value={value === '' ? 'none' : value}
+			onValueChange={(next: string | null) =>
+				onChange(next == null || next === 'none' ? '' : next)
+			}
 		>
-			<option value=''>{allowAll ?? t('pick.employee')}</option>
-			{(data ?? []).map((employee) => (
-				<option key={employee.id} value={employee.id}>
-					{employee.employeeCode} — {employee.fullName}
-				</option>
-			))}
-		</select>
+			<SelectTrigger id={id} className={className ?? 'w-full'} aria-label={t('field.employee')}>
+				<SelectValue />
+			</SelectTrigger>
+			<SelectContent>
+				<SelectItem value='none'>{allowAll ?? t('pick.employee')}</SelectItem>
+				{(data ?? []).map((employee) => (
+					<SelectItem key={employee.id} value={employee.id}>
+						{employee.employeeCode} — {employee.fullName}
+					</SelectItem>
+				))}
+			</SelectContent>
+		</Select>
 	);
 }

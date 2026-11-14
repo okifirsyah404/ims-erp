@@ -17,6 +17,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -129,10 +130,9 @@ export function AssetForm({ asset }: { asset?: TAsset }) {
 						value={acquisitionCost}
 						onChange={(event) => setAcquisitionCost(event.target.value)}
 					/>
-					<Input
-						type='date'
+					<DatePicker
 						value={acquisitionDate}
-						onChange={(event) => setAcquisitionDate(event.target.value)}
+						onChange={setAcquisitionDate}
 					/>
 					<Input
 						placeholder={t('register.location')}
