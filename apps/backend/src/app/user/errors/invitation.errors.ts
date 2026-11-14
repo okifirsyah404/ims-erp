@@ -49,13 +49,13 @@ export class InvitationNotPendingError extends UserManagementError {
 	}
 }
 
-/** Org invite missing organizationId/organizationRole, or an invalid role. */
+/** Org invite missing organizationId/organizationRoles, or an invalid role. */
 export class InvalidInvitationError extends UserManagementError {
 	constructor() {
 		super(
 			422,
 			'invitation.invalidPayload',
-			'Organization invites require both organizationId and a valid organizationRole',
+			'Organization invites require both organizationId and valid organizationRoles',
 		);
 	}
 
@@ -73,6 +73,15 @@ export class InvalidInvitationError extends UserManagementError {
 			'invitation.bulkLimited',
 			`Bulk limited to ${max} rows`,
 			{ max },
+		);
+	}
+
+	/** A bulk-file row names an organization slug no live organization has. */
+	static unknownOrganizationSlug(slug: string): InvalidInvitationError {
+		return new InvalidInvitationError().withKey(
+			'invitation.unknownOrganizationSlug',
+			`No organization has slug "${slug}"`,
+			{ slug },
 		);
 	}
 }

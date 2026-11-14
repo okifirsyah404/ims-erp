@@ -24,27 +24,28 @@ call the owning module's assert method first**.
 ### 2.1 The rule
 
 A foreign key may only connect two tables of the same module. `docs.dbml`
-contains 218 `Ref:` declarations and 0 cross-module refs.
+contains 233 `Ref:` declarations and 0 cross-module refs.
 
 Verified by parsing the file (`validate-dbml.ts`, `@dbml/core`):
 
 ```text
-parsed: 251 tables
+parsed: 270 tables
 cross-module refs: 0
 timestamp gaps: 0
+drizzle parity drift: 0
 ```
 
-The Inventory module owns two schemas (`warehouse` for physical structure,
-`inventory` for the stock ledger), so `inventory.*` tables keep real foreign
-keys into `warehouse.warehouses` and `warehouse.warehouse_bins`. A schema
-split inside a module is storage grouping, not an ownership boundary.
+Every module owns exactly one Postgres schema, so a `Ref:` that crosses a
+schema boundary would also cross a module boundary. The retired `warehouse`
+schema is the one historical exception: its tables were folded into
+`inventory` (ADR-0008), so what used to be an intra-module two-schema pair is
+now an ordinary intra-schema reference.
 
-### 2.2 The one exception
+### 2.2 No exception remains
 
-The `inventory` and `warehouse` schemas are two schemas of the **same**
-module (Inventory), so their mutual foreign keys (`inventory.*.warehouse_id
-→ warehouse.warehouses`, bin references) are intra-module, not cross-module.
-Every other schema boundary is crossed logically, never by a foreign key.
+There is no longer any module spanning two schemas. Warehouse and Inventory are
+one module inside one schema, so every schema boundary in the contract is also
+a module boundary and is crossed logically, never by a foreign key.
 
 ### 2.3 `ON DELETE` policy
 
@@ -128,6 +129,9 @@ only takes an id is not sufficient.
 | `location.*` | global reference data, not tenant scoped |
 | `inventory.*` | company-wide scope (ADR-0008) |
 | `assets.*` | company-wide scope (ERP-0036 D11) |
+| `company.*` | the one company behind every organization (ERP-0042) |
+| `code_number.series` | company-wide numbering authority (ERP-0009) |
+| `document.*` | company-wide documents allowed (ERP-0042) |
 
 Every other table that carries the column has `organization_id text NOT NULL`
 today. ADR-0014 flips the cross-module reference columns to nullable
@@ -283,11 +287,11 @@ approval" true under concurrency, without a lock.
 
 ### 7.2 Numbering
 
-`organization.document_sequences` is the single numbering authority. Allocation is a
+`code_number.series` is the single numbering authority. Allocation is a
 locked row update inside the same transaction as the insert:
 
 ```sql
-UPDATE organization.document_sequences
+UPDATE code_number.series
    SET next_number = next_number + 1
  WHERE organization_id = $1 AND module = $2 AND document_type = $3
  RETURNING next_number - 1;
@@ -396,9 +400,9 @@ split by ownership, with one side authoritative.
 | Goods and services | `catalog.items` | — |
 | Customer address | `crm.customer_addresses` (`kind` discriminator) | — |
 | General ledger balance | `accounting.journal_entries` + `journal_lines` | `accounting.account_balances` |
-| Role and permission | code, `packages/common/src/authorization/erp-permissions.ts` | `auth.members.role`, `auth.user_role_assignments` |
+| Role and permission | code, `packages/common/src/authorization/erp-permissions.ts` | `auth.members.role` |
 | Approval decision | `approval.approval_decisions` | the `status` of the business document |
-| Document version | `documents.documents` | `documents.document_templates.version` |
+| Document version | `document.documents` | `document.templates.version` |
 
 ## 10. What the database cannot guarantee
 

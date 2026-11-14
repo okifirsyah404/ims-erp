@@ -1,12 +1,13 @@
 # Data Model
 
 Schema, keys, constraints, and conventions. Current declarations:
-`apps/backend-elysia/drizzle/schemas/*.ts` (auth + per-feature schemas) and
-`apps/backend-elysia/drizzle/datatypes/unix-timestamp.ts`.
+`apps/backend/drizzle/schemas/*.ts` (auth + per-feature schemas) and
+`apps/backend/drizzle/datatypes/unix-timestamp.ts`.
 
-> 2026-10-28: written against the deleted backend-nest tree
-> (`apps/backend/src/providers/drizzle/...`); paths re-pointed, contents
-> re-verify against backend-elysia before acting.
+> 2026-11-13: `apps/backend-elysia` is now `apps/backend`. The schema list
+> below matches `docs/database/docs.dbml`: 27 modules, one Postgres schema each
+> (ERP-0042, ADR-0015; `notification` added by ADR-0016). `docs.dbml` is
+> canonical if the two disagree.
 
 ## PostgreSQL schemas
 
@@ -14,28 +15,48 @@ Schema, keys, constraints, and conventions. Current declarations:
   `organizations` (unique `slug`), `members`, `invitations`, phone/OTP/magic-link
   tables as generated. Timestamps are bigint milliseconds. FKs cascade to
   `users.id` for auth-owned tables.
-- **`erp`** — business-owned:
-  - `audit_logs` — `actor_id → auth.users.id ON DELETE SET NULL`, `actor_role`,
-    `action`, `resource_type`, `resource_id`, `metadata` (jsonb), `ip`,
-    `user_agent`; indexes on actor, action, (resource_type, resource_id).
-  - `customers` — `id`, `name`, `email`, `phone`, `status` (default
-    `'active'`), unix-ms timestamps, `deleted_at`; index on `status`. Planned
-    extension (Phase 2): `code` (unique), customer type, contact person,
-    structured Indonesian address references, tax identity.
-  - `investors` — same shape plus `ownership_share` (placeholder); exact
-    portion/reserve config is business data governed by owner approval.
-- **`catalog`** — website catalog (M04): `web_listings` — which inventory
-  item the public website shows (slug, price mode, out-of-stock mode).
-  `item_id` is a nullable logical reference to `inventory.items` (ADR-0014);
-  name, price, photo and stock always come from the item. Company-wide.
-- **`automation`** — M04 (ADR-0015): `outbox_messages` (ERP events to n8n:
-  status `pending|published|failed`, attempts, unique `dedupe_key` for
-  once-per-fact events), `faq_entries`, `whatsapp_conversations`
-  (`assistant|handoff|closed`, one per WhatsApp chat id; nullable `lead_id`
-  logical reference to `crm.leads`, ADR-0014) and
-  `whatsapp_messages` (inbound/outbound log, unique `(direction,
-  external_id)` for webhook dedupe). Company-wide; the workflow tables of
-  `docs.dbml` stay target-only.
+- **`company`** — the one legal company of the application (ADR-0011, ERP-0042):
+  - `profiles` — legal and trading name, `document_code` (the `{COMPANY}`
+    numbering token), tagline, tax id, letterhead logo and signature object
+    keys, and the values printed on documents (signatory name/title, default
+    terms, warranty texts). One row for the whole company, no
+    `organization_id`.
+  - `head_office_addresses` — the printed office address; `village_id` is a
+    logical reference to `location.villages.id` (ADR-0003).
+  - `contacts` — email/phone/website channels.
+  - `bank_accounts` — the company's own accounts printed on invoices (VAT and
+    non-VAT). Not operational balances: Finance owns
+    `finance.cash_bank_accounts`.
+  - `settings` — company-wide key/value store (`setting_group`, `setting_key`,
+    `value`, `value_type`, `is_secret` reserved `false`). Organization-scoped
+    settings stay in `organization.settings`.
+- **`code_number`** — the single numbering authority (ERP-0009, ERP-0042):
+  - `series` — one row per `code_type`, with `pattern`, `reset_policy`,
+    `next_number` and `last_issued_at`. Verbatim rename of
+    `organization.document_sequences` (`document_type` → `code_type`),
+    company-wide.
+- **`document`** — the issued document registry (ERP-0042):
+  - `templates` — document templates and their version.
+  - `documents` — the issued registry row per outward-facing document, keyed by
+    `source_type` + `source_id`; the business document stays in its owning
+    module.
+  - `files`, `signatures`, `access_logs`, `shares`, `tags`, `tag_links` —
+    stored file metadata, signature records, the read audit trail, revocable
+    public share tokens and tagging. `organization_id` is nullable: NULL means
+    company-wide (ADR-0011 pattern).
+- **`audit`** — `audit.audit_logs`: `actor_id` → `auth.users.id ON DELETE SET
+  NULL`, `actor_role`, `action`, `resource_type`, `resource_id`, `metadata`
+  (jsonb), `ip`, `user_agent`; indexes on actor, action, (resource_type,
+  resource_id). Append-only.
+- **`crm`** — `crm.customers`: `id`, `name`, `email`, `phone`, `status`
+  (default `'active'`), `code`, unix-ms timestamps, `deleted_at`, structured
+  Indonesian address references, tax identity.
+- **`investor`** — `investor.investors`: the customer shape plus
+  `ownership_share` (placeholder); exact portion/reserve config is business
+  data governed by owner approval.
+- **`erp`** — **retired**. The shared domain schema in the original plan was
+  never created; the tables above landed in their own feature schemas. Do not
+  add tables here.
 - **`inventory`** — inventory module (ADR-0008, ADR-0009):
   - `items` — SKU-level master. `item_kind` (`product|component|material|tool|service`,
     CHECK-guarded text, not an enum), `is_serialized`, `is_stock_tracked`,
@@ -109,6 +130,34 @@ Schema, keys, constraints, and conventions. Current declarations:
   - A warehouse's `organization_id` is **immutable after creation** (plan
     D-C), as is its `code`.
 
+- **`hr`** — employees (ERP-0034: invite-first, `organization_id` nullable =
+  company level) and the M08 stage 1 records (ERP-0059): `bank_accounts`
+  (one salary account per employee, masked without `employee:read_private`),
+  `attendance_records` (one per employee per day; sources `manual|import|leave`),
+  `leave_types`, `leave_requests` (`submitted|approved|rejected|cancelled`,
+  Sundays excluded, annual quota), `overtime_requests`, `employee_tasks`,
+  `salary_summaries` (per month; net = base + allowances + overtime + bonus −
+  deductions, `CHECK`ed; `draft|approved`, approved = locked). The records
+  carry no `organization_id`; they are scoped through the employee.
+
+- **`catalog`** — the item master target lives here, but `inventory` shipped
+  first (ADR-0008/ADR-0011), so this schema holds only what M04 added:
+  `web_listings` (what the public website shows of an inventory item —
+  `item_id` is a plain nullable id validated through the Inventory contract,
+  ADR-0014; one live listing per item, unique among live rows).
+
+- **`automation`** — M04 integrations. Built: `outbox_messages` (the
+  transactional outbox delivering ERP events to n8n, stages 1–2;
+  `organization_id` is nullable because the events are company-wide,
+  ADR-0012, and `dedupe_key` makes once-per-fact events idempotent),
+  `faq_entries`, `whatsapp_conversations` and `whatsapp_messages` (the
+  WhatsApp assistant: approved answers, one row per chat with the company
+  number, and the full message log). The workflow/credential tables here stay
+  target-only — n8n is the workflow engine.
+
+- **`notification`** — the caller's own inbox (ADR-0016): notification rows
+  and the seeded templates, read-through on a single realtime socket.
+
 ## Conventions (pinned decisions)
 
 - **Datetimes** — unix milliseconds in bigint columns via
@@ -141,8 +190,9 @@ Schema, keys, constraints, and conventions. Current declarations:
 
 One company; `auth.organizations`/`members` model internal structure
 (departments/teams/portal identity). Multiple organizations may exist inside
-that company, each with its own membership and per-organization `auth.roles`
-catalog (created organizations are provisioned with the full catalog).
+that company, each with its own membership; organization roles are a closed
+`erpRoleNames` enum stored comma-joined in `auth.members.role` (ERP-0041), not
+a per-organization role table.
 ERP master tables do **not** carry an `organization_id` tenant column — master
 data stays company-wide. If true multi-company arrives later this is a data
 migration plus repo-layer scoping change — recorded as the migration path in
@@ -169,9 +219,9 @@ write.
 
 ## Address reference tables (planned, Phase 2, ADR-0003)
 
-Source of truth: `apps/backend-elysia/database/seeders/raw/location/*` seeded
+Source of truth: `apps/backend/database/seeders/raw/location/*` seeded
 idempotently through the existing
-seeder runner into `erp` schema tables with official Indonesian codes
+seeder runner into `location.*` tables with official Indonesian codes
 (province → regency → district → village hierarchy restored via PK/FK chain —
 code-defined, never guessed). Customer address = free-text street + four
 reference ids. The browser fetches options through a cached API; addresses JSON
@@ -186,3 +236,6 @@ never ships in a frontend bundle.
   generated diff into the migration, never hand-edit auth tables.
 - Unknown journal state for the existing baseline (`migrations/meta`) must be
   verified before the first new generate/migrate run.
+- 2026-11-12: generate/migrate are blocked on main by a branching snapshot
+  chain; new migrations are hand-written and verified on a disposable
+  database with `database/migrate-reset.ts` (`runbook.md`, `project-audit.md`).

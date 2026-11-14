@@ -23,47 +23,40 @@ Hard rules:
   business separation-of-duties (self-approval, pre-approval execution)
   is enforced in services regardless of role combinations.
 
-### Static catalog vs dynamic per-organization roles
+### Closed role enum, no dynamic role table
 
-Two tiers — the catalog is **vocabulary**, `auth.roles` is the **grant**:
+Organization roles are a **closed enum**, not runtime data (ERP-0041):
 
 | Tier | What it is | Where |
 |---|---|---|
-| Shared catalog | Resource/action vocabulary + the seed grants for system roles | `packages/common/src/authorization/erp-permissions.ts` |
-| Live role rows | Actual per-organization grants, mutable at runtime | `auth.roles` (`permissions` jsonb, deny-by-default) |
+| Role vocabulary + grants | The 19 `erpRoleNames` and their `erpRoleGrants` resource/action sets | `packages/common/src/authorization/erp-permissions.ts` |
+| Storage | Comma-joined role keys on the membership row | `auth.members.role` (text) |
 
-- **Dynamic access control IS enabled.** `auth.members.role` holds
-  comma-separated role keys; the guard resolves them per validated
-  organization and unions their live `auth.roles.permissions`.
-- The static catalog is used **only as a fallback** when no live role row
-  matches a key. A live row always wins.
+- `auth.members.role` holds comma-separated role keys; the guard unions the
+  grants of every listed role. There is **no** per-organization role table and
+  no runtime-mutable permission row - `auth.roles` does not exist.
+  `StaticPermissionResolver` (`apps/backend/src/authorization/static-permissions.ts`)
+  reads the shared catalog directly.
 - There is exactly **one grant source**: server access control, client access
-  control, and the role seeder all consume `erp-permissions.ts`. Never layer a
+  control, and the seeders all consume `erp-permissions.ts`. Never layer a
   second local copy.
-- A global app admin with **no** live role row in the organization gets the
-  admin ceiling for mutation guards — never the owner ceiling.
+- A global app admin with **no** organization membership still has no ERP
+  access; mutation guards require a membership role.
 - `auth.members` is **hard-deleted** by Better Auth; it has no `deleted_at`
   column. Membership queries must never filter on one.
 
-### Rank and escalation guard
+### Escalation guard
 
-Roles carry a `rank`; mutations require the target to rank **strictly below**
-the caller (`targetRank >= callerRank` is rejected, server-side):
+Better Auth's membership and invitation endpoints are directly reachable, so
+`betterAuthHooks()` guards them server-side:
 
-| Role | Rank |
-|---|---|
-| owner | 100 |
-| admin | 80 |
-| hr | 60 |
-| member | 10 |
-| every other seeded catalog role | 50 (`DEFAULT_CATALOG_RANK`) |
-| custom roles | must rank strictly below their creator |
+- only an organization owner may grant or change the `owner` role;
+- organization admins may manage members/invitations only with the non-owner
+  ERP roles the role policy allows;
+- ordinary members can never grant privileged ERP roles;
+- the last owner cannot be removed or demoted.
 
-Source of truth: `SYSTEM_ROLE_RANKS` + `DEFAULT_CATALOG_RANK` in
-`apps/backend/database/seeders/seed/organization-roles.seeder.ts`.
-
-Schema validation is **not** the authorization boundary: `rank` accepts 1–100
-by design so the guard, not Zod, decides who may grant what.
+Source of truth: `apps/backend/src/providers/better-auth/ac/auth-hooks.ts`.
 
 
 ## Where things live
@@ -75,11 +68,11 @@ by design so the guard, not Zod, decides who may grant what.
 | Global role constants | `apps/backend/src/providers/better-auth/ac/admin-ac.ts` |
 | Privilege-escalation hooks (member/invitation endpoints) | `apps/backend/src/providers/better-auth/ac/auth-hooks.ts` |
 | Elysia guard (`erpGuard`, `erp` macro, ErpAuthError) | `apps/backend/src/authorization/elysia-auth.ts` |
-| Dynamic permission resolver (live `auth.roles` lookup + union) | `apps/backend/src/authorization/dynamic-permissions.ts` |
+| Dynamic permission resolver (closed-enum grants, no DB lookup) | `apps/backend/src/authorization/static-permissions.ts` |
 | `IPermissionResolver` / `PERMISSION_RESOLVER_TOKEN` contract | `apps/backend/src/authorization/permission-resolver.ts` |
 | Authorization DI registration | `apps/backend/src/authorization/container.ts` |
 | DI tokens (split from the provider so importing a token never opens a DB connection) | `apps/backend/src/di/tokens.ts` |
-| Role CRUD + rank/escalation guard | `apps/backend/src/app/user/services/role-management.service.ts` |
+| Role policy + account lifecycle | `apps/backend/src/app/user/services/user-admin.service.ts`, `invitation.service.ts` |
 | Client-side ac + roles (browser-safe re-composition) | `apps/web-admin/src/lib/erp-ac.ts` |
 | Frontend permission types + helpers | `apps/web-admin/src/lib/permissions.ts`, `use-permission.tsx` |
 
@@ -165,6 +158,27 @@ re-checks the same rule via `allowUserToCreateOrganization`. Multiple
 organizations are allowed (ADR-0012); the creation gate stays the same for
 every subsequent one.
 
+### Company-wide resources (ERP-0042)
+
+Three resources are company-wide, not organization-scoped: `company`,
+`code_number` and `document` (ADR-0015). They replaced `company_setting`, which
+used to carry the profile, the numbering and the settings in one vocabulary.
+
+| Resource | Actions | Guards |
+|---|---|---|
+| `company` | `read`, `update` | `GET /company/profile`, `PUT /company/profile`, the logo/signature uploads, `GET /company/settings`, `PUT /company/settings/:group/:key` |
+| `code_number` | `read`, `update` | `GET /code-numbers`, `PUT /code-numbers/:codeType` |
+| `document` | `read`, `create`, `update`, `submit`, `approve`, `issue`, `void`, `download` | the registry, files, signatures, shares, tags |
+
+"Company-wide" describes the **data scope**, never the authorization boundary:
+these routes still run the `erp` macro with a validated organization, and then
+check the permission. A caller with no permission in the validated organization
+cannot read the profile even though the profile has no `organization_id`
+column. Reads that genuinely need no organization context (the public share
+endpoint `/public/v1/documents/:token`) live on `sessionGuard()`-free public
+routes and are authorized by the token alone, with an expiry and a revocation
+flag checked on every request.
+
 ## Scoping a Drizzle query
 
 Every organization-scoped query filters by the validated organization id and
@@ -218,10 +232,9 @@ Two complementary layers:
    - Runs inside the Better Auth handler, so both the mounted auth routes and
      server-side `auth.api.*` calls are covered.
 
-2. **ERP rank guard.** The user-management services enforce the rank rule
-   above for every role and account mutation (`RankGuardError`). This is the
-   authority for the `/admin/roles` and `/admin/users` routes — the hook above
-   does not see them.
+2. **Service-level role policy.** The user-management services (`/admin/users`,
+   invitation claim) enforce the same role policy for account and membership
+   mutations; the hook above does not see those routes.
 
 Global role changes remain exclusively within `admin()` endpoints.
 
@@ -292,11 +305,11 @@ table as they land; the catalog resources (`audit_log:read`,
   `prod`/`production` (ADR-0007): production organizations are created through
   the API by an application admin, and the first organization is not assumed
   to exist. A skip is logged, never thrown, so later seeders still run.
-- **Role seeding is insert-only.** It seeds `auth.roles` rows from the shared
-  catalog but never overwrites existing grants. Re-syncing `isSystem` rows after
-  a catalog change is a separate, explicit operation:
-  `refreshSystemRoleGrants()`, run via
-  `apps/backend/scripts/refresh-role-grants.ts`.
+- **Role seeding is a drift check, not a write.** Since ERP-0041 the role
+  catalog is a closed enum in `@ims-erp/common`; there are no role rows to
+  seed. `organization-roles.seeder.ts` only verifies the old
+  `auth.organization_role` enum type is gone and logs the catalog, so a stale
+  database is reported loudly.
 - Credentials: `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_USERNAME` /
   `INITIAL_ADMIN_PASSWORD` (dev-only defaults; see `.env.example`). Values
   are never logged. There is no auto-promotion of existing users.
@@ -328,3 +341,12 @@ module lands.
 
 Audit writes are no longer a gap: `audit.audit_logs` and `AuditService` exist,
 and the user-management actions listed under **Audit** already append to it.
+
+Company, Code Number and Document are built (ERP-0042): their routes exist and
+are guarded by the `erp` macro plus the `company:*`, `code_number:*` and
+`document:*` permissions. The document **signature request** flow (ERP-0048) is
+not built: `document.signatures` has no request rows yet, so per-signer rules
+(who may sign, in which order, and the `sign` / `request_sign` actions added to
+the `document` resource) stay documented here and must be wired when it lands.
+The `document.*` settings group holds only
+`document.signature_request_expiry_days`, which that flow writes.

@@ -46,18 +46,25 @@ export class OrganizationBootstrapController {
 		}).post(
 			'',
 			async ({ request, body, erp, status }) => {
-				const row = await organizationService.createOrganization(
+				const result = await organizationService.createOrganization(
 					request.headers,
 					{ ...body, creatorUserId: erp.session.user.id },
+					{
+						userId: erp.session.user.id,
+						email: erp.session.user.email,
+						ip: request.headers.get('x-forwarded-for'),
+						userAgent: request.headers.get('user-agent'),
+					},
+					erp.session.user.email,
 				);
-				return status(201, created(row));
+				return status(201, created(result));
 			},
 			{
 				body: createOrganizationSchema,
 				erpSession: { policy: requireGlobalAdmin },
 				detail: {
 					description:
-						'Creates an organization owned by the calling application administrator. Multiple organizations are supported.',
+						'Creates an organization owned by the calling application administrator. Multiple organizations are supported. Nested `users` attach at creation: existing active users join directly, unknown emails are invited (per-item isolated outcomes in the response).',
 				},
 			},
 		);

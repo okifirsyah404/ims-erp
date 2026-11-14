@@ -1,4 +1,5 @@
 import { presignObjectUrl, s3Client } from '@providers/s3/s3';
+import { toWebp } from '@utils/image.util';
 import { avatarCustomObjectKey } from '../constants/avatar-keys';
 import type { TUserSelect } from '@drizzle/schemas/auth.schema';
 import type { TPaginationResult } from '@ims-erp/common';
@@ -32,56 +33,11 @@ export type TUserProfile = Omit<TUserSelect, 'image'> & { image: string | null }
 /** Reason recorded by Better Auth when a user is soft-deleted. */
 const DELETED_BAN_REASON = 'deleted';
 
-/** Allowed avatar content types mapped to their S3 key extension. */
-const AVATAR_TYPE_TO_EXT = {
-	'image/png': 'png',
-	'image/jpeg': 'jpg',
-	'image/webp': 'webp',
-} as const;
-
-/** Magic-byte signatures for the allowed avatar content types. */
-const AVATAR_MAGIC_BYTES: Array<{
-	type: keyof typeof AVATAR_TYPE_TO_EXT;
-	test: (bytes: Uint8Array) => boolean;
-}> = [
-	{
-		type: 'image/png',
-		test: (b) =>
-			b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47,
-	},
-	{
-		type: 'image/jpeg',
-		test: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
-	},
-	{
-		type: 'image/webp',
-		test: (b) =>
-			b[0] === 0x52 &&
-			b[1] === 0x49 &&
-			b[2] === 0x46 &&
-			b[3] === 0x46 &&
-			b[8] === 0x57 &&
-			b[9] === 0x45 &&
-			b[10] === 0x42 &&
-			b[11] === 0x50,
-	},
-];
-
 /** Maximum accepted avatar upload size (2 MiB). */
 export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 
-/**
- * Sniffs the real content type of an uploaded avatar from its magic
- * bytes (never trusting the client-declared Content-Type).
- *
- * @returns The sniffed type, or `null` when no allowed signature matches
- */
-export function sniffAvatarType(bytes: Uint8Array) {
-	for (const signature of AVATAR_MAGIC_BYTES) {
-		if (signature.test(bytes)) return signature.type;
-	}
-	return null;
-}
+/** Longest side of a stored avatar in pixels (2x the 72px render size). */
+const AVATAR_RENDER_SIZE = 144;
 
 /**
  * Application service orchestrating the user module.
@@ -167,21 +123,23 @@ export class UserService {
 	}
 
 	/**
-	 * Stores a user-uploaded avatar: writes the file to S3 under the
-	 * custom-key namespace (the generated `avatar.webp` stays untouched as
-	 * fallback) and points `users.image` at the new key.
+	 * Stores a user-uploaded avatar: normalises the bytes to WebP (any
+	 * supported format in, WebP out — the client is never asked to convert),
+	 * writes it to S3 under the custom-key namespace (the generated
+	 * `avatar.webp` stays untouched as fallback) and points `users.image` at
+	 * the new key.
+	 *
+	 * @param bytes - Raw uploaded image bytes, already size-capped by the controller
 	 *
 	 * @returns The refreshed profile with a fresh presigned URL
 	 * @throws UserNotFoundError When the caller no longer exists
+	 * @throws UnsupportedImageError When the bytes cannot be decoded
 	 */
-	async setSelfAvatar(
-		userId: string,
-		file: { data: ArrayBuffer; type: string },
-	): Promise<TUserProfile> {
+	async setSelfAvatar(userId: string, bytes: Uint8Array): Promise<TUserProfile> {
 		await this.ensureExists(userId);
-		const ext = AVATAR_TYPE_TO_EXT[file.type as keyof typeof AVATAR_TYPE_TO_EXT];
-		const key = avatarCustomObjectKey(userId, ext);
-		await s3Client.write(key, Buffer.from(file.data));
+		const webp = await toWebp(bytes, { maxSize: AVATAR_RENDER_SIZE });
+		const key = avatarCustomObjectKey(userId);
+		await s3Client.write(key, webp, { type: 'image/webp' });
 		await this.userRepository.update(userId, { image: key });
 		const refreshed = await this.getUser(userId);
 		if (!refreshed) throw new UserNotFoundError(userId);

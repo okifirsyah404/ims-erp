@@ -23,12 +23,15 @@ const cs: TTicketContext = { organizationId: 'org', actorUserId: 'cs', canManage
 const tech: TTicketContext = { organizationId: 'org', actorUserId: 'tech', canManage: false };
 
 let tickets: TServiceTicketSelect[];
+/** Registry calls made by the service (ERP-0044). */
+let registered: { code: string; sourceId: string; documentType: string }[];
 let service: ServiceTicketService;
 let published: Record<string, unknown>[];
 
 beforeEach(() => {
 	tickets = [];
 	published = [];
+	registered = [];
 	const roles: Record<string, string> = { cs: 'customer_service', tech: 'technician', sales: 'sales' };
 	service = new ServiceTicketService(
 		{
@@ -66,6 +69,13 @@ beforeEach(() => {
 			publish: async (_topic, _aggregate, data) => {
 				published.push(data);
 				return null;
+			},
+		},
+		{
+			// ERP-0044: registry side effect is asserted through `registered`.
+			register: async (input) => {
+				registered.push(input);
+				return {} as never;
 			},
 		},
 	);
@@ -113,6 +123,10 @@ describe('service tickets', () => {
 		expect(published.map((event) => event.change)).toEqual(['created', 'assigned', 'started', 'resolved', 'reopened', 'resolved', 'closed']);
 		expect(published[1]).toMatchObject({ code: '0001/TKT/IMS/XI/26', status: 'new', assignee: { userId: 'tech', name: 'User tech' }, customer: { id: CUSTOMER } });
 		expect(published[published.length - 1]).toMatchObject({ status: 'closed', resolution: 'Ganti sensor + kabel', serviceCost: 20_000_000 });
+		// ERP-0044: the closed ticket is registered once (opening and resolving are not).
+		expect(registered).toEqual([
+			expect.objectContaining({ code: '0001/TKT/IMS/XI/26', documentType: 'service_ticket', sourceId: ticket.id }),
+		]);
 	});
 
 	test('a technician only sees tickets assigned to them; a manager works any ticket', async () => {

@@ -13,6 +13,7 @@ import {
 } from '../contracts/organization.contract';
 import { ORGANIZATION_SERVICE_TOKEN } from '../constants/di';
 import { OrganizationService } from '../services/organization.service';
+import { organizationImageFrom } from '../utils/organization-image';
 import {
 	LastOrganizationError,
 	LastOwnerError,
@@ -49,6 +50,37 @@ import {
  * @throws 409 On slug conflicts, double delete/restore, last-owner
  * protection, or deleting the final live organization
  */
+/**
+ * Session-only plugin for `GET /organizations/mine`: the caller's own
+ * memberships. No organization context is required (the switcher needs the
+ * list before any org is active), so it does not ride `erpGuard`.
+ */
+export class OrganizationMembershipController {
+	static plugin() {
+		const organizationService = container.resolve<OrganizationService>(
+			ORGANIZATION_SERVICE_TOKEN,
+		);
+
+		return domainPlugin({
+			name: 'organizations-mine',
+			prefix: '/organizations',
+			tags: ['Organization'],
+			guards: 'session',
+		}).get(
+			'/mine',
+			async ({ erp }) =>
+				ok(await organizationService.listMyOrganizations(erp.session.user.id)),
+			{
+				erpSession: { session: true },
+				detail: {
+					description:
+						"Lists the caller's live organizations with their role string. Session only; no active organization needed.",
+				},
+			},
+		);
+	}
+}
+
 export class OrganizationController {
 	/**
 	 * Builds the Elysia plugin mounting the organization-scoped routes.
@@ -169,6 +201,55 @@ export class OrganizationController {
 				{
 					params: organizationIdParamsSchema,
 					erp: { permission: ['organization:delete'] },
+				},
+			)
+			// Profile image: replace (multipart WebP `file`)
+			.post(
+				'/:organizationId/image-profile',
+				async ({ request, params, body }) => {
+					const result = await organizationService.setImage(
+						request.headers,
+						params.organizationId,
+						organizationImageFrom(body),
+					);
+					return ok(result);
+				},
+				{
+					params: organizationIdParamsSchema,
+					erp: { permission: ['organization:update'] },
+					detail: {
+						description:
+							'Uploads the organization profile image (multipart `file`, WebP ≤ 2MB; magic bytes validated)',
+					},
+				},
+			)
+			// Profile image: read (presigned URL)
+			.get(
+				'/:organizationId/image-profile',
+				async ({ params }) =>
+					ok({ url: await organizationService.getImage(params.organizationId) }),
+				{
+					params: organizationIdParamsSchema,
+					erp: { permission: ['organization:read'] },
+					detail: {
+						description: 'Presigned URL of the organization profile image (null before the first upload)',
+					},
+				},
+			)
+			// Profile image: clear
+			.delete(
+				'/:organizationId/image-profile',
+				async ({ request, params }) => {
+					const result = await organizationService.setImage(
+						request.headers,
+						params.organizationId,
+						null,
+					);
+					return ok(result);
+				},
+				{
+					params: organizationIdParamsSchema,
+					erp: { permission: ['organization:update'] },
 				},
 			)
 			// Members: list

@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import type { NavKey } from '@ims-erp/locales';
+import type { Permission } from '@/lib/permissions';
 
 export type SidebarItem = {
 	/**
@@ -12,4 +13,29 @@ export type SidebarItem = {
 	icon?: LucideIcon;
 	isActive?: boolean;
 	items?: SidebarItem[];
+	/**
+	 * Organization permission(s) that show this item. All listed permissions
+	 * must hold in the active organization.
+	 *
+	 * @remarks
+	 * UX only: the backend enforces the route. Items with no `permission`,
+	 * no `open`, and no `appAdminOnly` are hidden (deny by default).
+	 */
+	permission?: Permission | Permission[];
+	/** Shown to every logged-in user with an internal role in some organization. */
+	internalRole?: true;
+	/** Shown to any logged-in user, no role check (e.g. Notifications). */
+	open?: true;
+	/** Shown only to application administrators. */
+	appAdminOnly?: true;
+	/**
+	 * Shown to application administrators or to a warehouse person in charge
+	 * (ADR-0017).
+	 *
+	 * @remarks
+	 * A PIC grant is a row in `inventory.warehouse_managers`, not an
+	 * organization permission, so this cannot be expressed as a `permission`
+	 * string. The caller resolves the fact from `GET /warehouses/mine`.
+	 */
+	warehousePic?: true;
 };

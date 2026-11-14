@@ -20,15 +20,31 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ims-erp/ui/components/table';
-import {
-	ADMIN_PERMISSIONS,
-	cancelInvitation,
-	deleteInvitation,
-	invitationsQueryOptions,
-	resendInvitation,
-	type TInvitation,
-} from '@/lib/admin-api';
+import { ADMIN_PERMISSIONS, type TInvitation } from '@/lib/admin-api';
 import { usePermission } from '@/lib/use-permission';
+
+/**
+ * Where the panel reads and mutates invitations.
+ *
+ * @remarks
+ * The same panel serves the application-admin users page (`/admin/invitations`)
+ * and an organization's members tab (`/organizations/:id/invitations`). The
+ * two differ only in endpoint and cache key, so they are injected rather than
+ * duplicated.
+ */
+export type TInvitationSource = {
+	/** Query for the pending rows (list only `status: 'pending'`). */
+	queryOptions: {
+		queryKey: readonly unknown[];
+		queryFn: () => Promise<{ rows: TInvitation[] }>;
+		staleTime?: number;
+	};
+	resend: (invitationId: string) => Promise<void>;
+	cancel: (invitationId: string) => Promise<void>;
+	remove: (invitationId: string) => Promise<void>;
+	/** Query keys to invalidate after an action (list, audit, members…). */
+	invalidate: readonly (readonly unknown[])[];
+};
 
 /**
  * Pending invitations panel: who is still outstanding, when their token
@@ -38,32 +54,29 @@ import { usePermission } from '@/lib/use-permission';
  * Invitation tokens never leave the backend (only their hash is stored), so
  * this panel can show expiry and status but never the invite link itself.
  * "Expired" is derived from `expiresAt` client-side for display; the backend
- * re-checks the real token on claim.
+ * re-checks the real token on claim. Actions are permission-gated in the UI
+ * and re-authorized by the backend.
  */
 export function PendingInvitationsPanel({
-	organizationId,
+	source,
 }: {
-	organizationId: string;
+	source: TInvitationSource;
 }) {
 	const queryClient = useQueryClient();
-	const canCreate = usePermission(ADMIN_PERMISSIONS.createMembers);
-	const canDelete = usePermission(ADMIN_PERMISSIONS.deleteMembers);
+	const canCreate = usePermission(ADMIN_PERMISSIONS.createInvitations);
+	const canDelete = usePermission(ADMIN_PERMISSIONS.cancelInvitations);
 	const { t } = useTranslation(['admin', 'common']);
 
-	const { data, isPending } = useQuery({
-		...invitationsQueryOptions(organizationId, 'pending'),
-	});
+	const { data, isPending } = useQuery(source.queryOptions);
 
 	async function refresh() {
-		await Promise.all([
-			queryClient.invalidateQueries({ queryKey: ['admin-invitations'] }),
-			queryClient.invalidateQueries({ queryKey: ['admin-audit'] }),
-		]);
+		await Promise.all(
+			source.invalidate.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+		);
 	}
 
 	const resend = useMutation({
-		mutationFn: (invitationId: string) =>
-			resendInvitation(organizationId, invitationId),
+		mutationFn: (invitationId: string) => source.resend(invitationId),
 		onSuccess: async () => {
 			toast.success(t('invitations.resent'));
 			await refresh();
@@ -72,8 +85,7 @@ export function PendingInvitationsPanel({
 	});
 
 	const cancel = useMutation({
-		mutationFn: (invitationId: string) =>
-			cancelInvitation(organizationId, invitationId),
+		mutationFn: (invitationId: string) => source.cancel(invitationId),
 		onSuccess: async () => {
 			toast.success(t('invitations.cancelled'));
 			await refresh();
@@ -82,8 +94,7 @@ export function PendingInvitationsPanel({
 	});
 
 	const remove = useMutation({
-		mutationFn: (invitationId: string) =>
-			deleteInvitation(organizationId, invitationId),
+		mutationFn: (invitationId: string) => source.remove(invitationId),
 		onSuccess: async () => {
 			toast.success(t('invitations.deleted'));
 			await refresh();
@@ -211,7 +222,7 @@ function InvitationRow({
 							{t('invitations.resend')}
 						</Button>
 					)}
-					{canCreate && (
+					{canDelete && (
 						<Button variant='ghost' size='sm' disabled={busy} onClick={onCancel}>
 							{t('common:action.cancel')}
 						</Button>

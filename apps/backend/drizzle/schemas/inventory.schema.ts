@@ -413,6 +413,51 @@ export const warehouseOrganizations = inventorySchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
+ * inventory.warehouse_managers
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Per-user, per-warehouse person-in-charge grant (ADR-0017).
+ *
+ * @remarks
+ * A second access path to warehouses only: a PIC may read, update, archive,
+ * import and export their warehouse, while create stays application-admin-only.
+ * It is not an organization role and it grants no stock operation — stock stays
+ * on the organization `warehouse` role plus the warehouse↔organization link.
+ *
+ * Unlike `warehouse_organizations`, the grant deliberately ignores that link
+ * (ADR-0017 decision 3): a PIC keeps access when their warehouse is not linked
+ * to the active organization, and other organizations still cannot see it.
+ *
+ * `user_id` and `assigned_by` are logical references to `auth.users.id` —
+ * cross-module FKs are forbidden, so they stay nullable and presence is
+ * asserted by the service before an assignment is written. A NULL `user_id`
+ * row grants nothing; the normal write path never creates one.
+ */
+export const warehouseManagers = inventorySchema.table(
+	'warehouse_managers',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		warehouseId: uuid('warehouse_id')
+			.notNull()
+			.references(() => warehouses.id, { onDelete: 'cascade' }),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		userId: text('user_id'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		assignedBy: text('assigned_by'),
+		...softDeleteTimestamps,
+	},
+	(table) => [
+		uniqueIndex('warehouse_managers_uq')
+			.on(table.warehouseId, table.userId)
+			.where(sql`deleted_at IS NULL`),
+		index('warehouse_managers_user_id_idx').on(table.userId),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
  * inventory.items
  * ------------------------------------------------------------------------ */
 
@@ -429,7 +474,11 @@ export const items = inventorySchema.table(
 			.primaryKey()
 			.default(sql`uuidv7()`),
 		organizationId: organizationId(),
+		/** Human reference from the numbering authority (ERP-0043); immutable. */
+		code: varchar('code', { length: 32 }).notNull(),
 		sku: varchar('sku', { length: 64 }).notNull(),
+		/** Optional manufacturer serial of a serialized item master (ERP-0043). */
+		serialNumber: text('serial_number'),
 		name: text('name').notNull(),
 		description: text('description'),
 		itemKind: text('item_kind').notNull(),
@@ -470,6 +519,10 @@ export const items = inventorySchema.table(
 		...softDeleteTimestamps,
 	},
 	(table) => [
+		...scopedUnique(table.organizationId, table.code, {
+			orgScoped: 'inventory_items_org_code_uq',
+			global: 'inventory_items_global_code_uq',
+		}),
 		...scopedUnique(table.organizationId, table.sku, {
 			orgScoped: 'inventory_items_org_sku_uq',
 			global: 'inventory_items_global_sku_uq',
@@ -915,6 +968,7 @@ export const inventoryRelations = defineRelationsPart(
 		warehouses,
 		warehouseAddresses,
 		warehouseStorages,
+		warehouseManagers,
 		itemCategories,
 		items,
 		stockMovements,
@@ -930,6 +984,16 @@ export const inventoryRelations = defineRelationsPart(
 			storages: r.many.warehouseStorages({
 				from: r.warehouses.id,
 				to: r.warehouseStorages.warehouseId,
+			}),
+			managers: r.many.warehouseManagers({
+				from: r.warehouses.id,
+				to: r.warehouseManagers.warehouseId,
+			}),
+		},
+		warehouseManagers: {
+			warehouse: r.one.warehouses({
+				from: r.warehouseManagers.warehouseId,
+				to: r.warehouses.id,
 			}),
 		},
 		warehouseAddresses: {
@@ -992,6 +1056,9 @@ export type TWarehouseAddressInsert = typeof warehouseAddresses.$inferInsert;
 
 export type TWarehouseStorageSelect = typeof warehouseStorages.$inferSelect;
 export type TWarehouseStorageInsert = typeof warehouseStorages.$inferInsert;
+
+export type TWarehouseManagerSelect = typeof warehouseManagers.$inferSelect;
+export type TWarehouseManagerInsert = typeof warehouseManagers.$inferInsert;
 
 export type TStockMovementSelect = typeof stockMovements.$inferSelect;
 export type TStockMovementInsert = typeof stockMovements.$inferInsert;

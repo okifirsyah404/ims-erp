@@ -58,6 +58,7 @@ export function ItemForm({
 	const isEdit = item != null;
 
 	const [sku, setSku] = useState(item?.sku ?? '');
+	const [serialNumber, setSerialNumber] = useState(item?.serialNumber ?? '');
 	const [name, setName] = useState(item?.name ?? '');
 	const [itemKind, setItemKind] = useState<TItemKind>(item?.itemKind ?? 'product');
 	const [categoryId, setCategoryId] = useState(item?.categoryId ?? '');
@@ -88,6 +89,7 @@ export function ItemForm({
 		event.preventDefault();
 		const shared = {
 			name,
+			serialNumber: serialNumber.trim() || null,
 			description: description || null,
 			categoryId: categoryId || null,
 			unitLabel,
@@ -130,6 +132,16 @@ export function ItemForm({
 				<CardContent>
 					<form onSubmit={handleSubmit}>
 						<FieldGroup>
+							{isEdit && (
+								<Field>
+									<FieldLabel htmlFor='code'>{t('inventory:items.code')}</FieldLabel>
+									<Input id='code' value={item?.code ?? ''} readOnly disabled />
+									<FieldDescription>
+										{t('inventory:items.codeAutoHint')}
+									</FieldDescription>
+								</Field>
+							)}
+
 							<Field>
 								<FieldLabel htmlFor='sku'>{t('inventory:items.sku')}</FieldLabel>
 								<Input
@@ -140,6 +152,18 @@ export function ItemForm({
 									readOnly={isEdit}
 									disabled={isEdit}
 									onChange={(event) => setSku(event.target.value)}
+								/>
+							</Field>
+
+							<Field>
+								<FieldLabel htmlFor='serialNumber'>
+									{t('inventory:items.serialNumber')}
+								</FieldLabel>
+								<Input
+									id='serialNumber'
+									value={serialNumber}
+									maxLength={200}
+									onChange={(event) => setSerialNumber(event.target.value)}
 								/>
 							</Field>
 

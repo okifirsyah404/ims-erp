@@ -115,12 +115,17 @@ let suppliers: SupplierService;
 let orderRepo: FakeOrders;
 let orders: PurchaseOrderService;
 let numbered: unknown[];
+/** Registry calls made by the service (ERP-0044). */
+let registered: { code: string; sourceId: string; documentType: string }[];
+let voided: string[];
 
 beforeEach(() => {
 	supplierRepo = new FakeSuppliers();
 	suppliers = new SupplierService(supplierRepo, { getVillage: async () => null });
 	orderRepo = new FakeOrders();
 	numbered = [];
+	registered = [];
+	voided = [];
 	orders = new PurchaseOrderService(
 		orderRepo,
 		suppliers,
@@ -134,6 +139,17 @@ beforeEach(() => {
 			next: async (_type: string, options?: unknown) => {
 				numbered.push(options);
 				return 'PO/IMS-HIT/HW/1026/001';
+			},
+		},
+		{
+			// ERP-0044: registry side effects are asserted through `registered` / `voided`.
+			register: async (input) => {
+				registered.push(input);
+				return {} as never;
+			},
+			voidBySource: async (module, sourceType, sourceId) => {
+				voided.push(`${module}/${sourceType}/${sourceId}`);
+				return 1;
 			},
 		},
 	);
@@ -209,6 +225,10 @@ describe('purchase orders', () => {
 		const approved = await orders.decide('owner', order.id, { decision: 'approve' });
 		expect(approved).toMatchObject({ status: 'approved', code: 'PO/IMS-HIT/HW/1026/001', approvedBy: 'owner' });
 		expect(numbered[0]).toMatchObject({ context: { supplier: 'HIT', category: 'HW' } });
+		// ERP-0044: approval registers the PO with the code just allocated.
+		expect(registered).toEqual([
+			expect.objectContaining({ code: 'PO/IMS-HIT/HW/1026/001', documentType: 'purchase_order', sourceId: order.id }),
+		]);
 		expect((await orders.markSent('purchasing', order.id)).status).toBe('sent');
 	});
 
@@ -219,6 +239,8 @@ describe('purchase orders', () => {
 		await expect(orders.cancel('owner', order.id, 'x')).rejects.toBeInstanceOf(PurchaseOrderStateError);
 		orderRepo.received.clear();
 		expect((await orders.cancel('owner', order.id, 'Salah pemasok')).status).toBe('cancelled');
+		// ERP-0044: a cancelled PO is voided in the registry.
+		expect(voided).toEqual([`procurement/purchase_order/${order.id}`]);
 		await expect(orders.cancel('owner', order.id, 'lagi')).rejects.toBeInstanceOf(PurchaseOrderStateError);
 	});
 });

@@ -1,142 +1,255 @@
-# Notification Module (M04: n8n events, WhatsApp)
-
-> Rewritten 2026-11-07 for the Elysia backend. The earlier text described the
-> deleted NestJS stub (`modules/notification/**`); it is superseded.
+# Notification Module
 
 ## Purpose and boundary
 
-Outbound business notifications and, next, the WhatsApp assistant (M04,
-owner decisions of 2026-11-07 in `docs/plan/progress.md`):
+Owns the in-app notification inbox: the message a user sees in the bell menu,
+its unread badge, and the templates that produce it. It is the **first consumer
+of the single realtime socket** (`/ws`), not the owner of that socket — the
+transport lives in `apps/backend/src/providers/realtime/` so later features
+(chat, live counters) reuse it without opening a second connection.
 
-- **ERP events → n8n** (implemented): module `apps/backend/src/app/automation`
-  owns the outbox (`automation.outbox_messages`). Business modules call
-  `OutboxService.publish` (DI `OUTBOX_SERVICE_TOKEN`) after their change is
-  saved; n8n is the workflow engine that turns an event into a WhatsApp
-  (through WAHA) or email message. The ERP never sends those messages
-  itself and stores no templates.
-- **WhatsApp assistant** (implemented, M04 4d): WAHA posts customer chats
-  straight to an ERP webhook; FAQ base, provider-neutral AI port, handoff
-  queue, conversation log. The AI never grants discounts or transacts.
-  Same module (`automation`), tables `faq_entries`,
-  `whatsapp_conversations`, `whatsapp_messages`.
-- Auth OTP/magic-link delivery is not here yet (still Better Auth's own
-  senders).
+The module does **not** decide business content. A caller names a template code
+and supplies variables; the module renders, stores and pushes.
 
-## The event contract (what n8n receives)
+Planned later scope (unchanged from the original v5.1 targets, not built here):
+email/WhatsApp delivery channels, notification preferences, Web Push, and the
+WhatsApp AI handoff of M04 stage 2.
 
-`POST <N8N_WEBHOOK_URL>` with a JSON body
+## Current state (2026-11-14)
 
-```json
-{ "id": "<uuid, event id>", "topic": "lead.created", "occurredAt": "<ISO>",
-  "aggregate": { "type": "lead", "id": "<uuid>" }, "data": { … } }
+**Backend module, REST surface, producers, seeders and the web-admin bell all
+landed.** Phases 0–7 of `docs/plan/plans/ws-notification.md`:
+
+- `docs/database/docs.dbml` — `notification.notification_templates` and
+  `notification.notifications` moved out of the `automation` schema.
+- `docs/database/module-ownership.md` — module 27.
+- ADR-0016 — why the module is app-scope and why there is one socket.
+- `apps/backend/drizzle/schemas/notification.schema.ts` — the two tables,
+  their indexes, checks and the one intra-module FK.
+- `apps/backend/database/migrations/20261113150000_erp0047_notification_schema/`
+  — applied to the local database through `drizzle:migrate-reset`.
+- `apps/backend/src/providers/realtime/` — the shared `/ws` transport
+  (envelope, in-process hub, gateway). It is not notification-specific and
+  later features reuse it.
+- `apps/backend/src/app/notification/` — the module: repository over both
+  tables, `NotificationService` (list, unread count, mark read, mark all read),
+  `ExportedNotificationService` (the only cross-module entry point), the
+  `send`/`prune` BullMQ queue and its worker, and the controller mounting the
+  inbox routes.
+- `apps/backend/database/seeders/seed/notification-templates.seeder.ts` and
+  `notification-demo.seeder.ts` — the four canonical templates (every
+  environment) and three demo rows for the seed admin (dev only).
+
+Client side (Phase 7):
+
+- `apps/web-admin/src/lib/realtime/{realtime-client,realtime-store,use-realtime}.ts`
+  — one socket to `/ws` with backoff reconnect and a `type` → handler registry;
+  the zustand store holds the connection status only.
+- `apps/web-admin/src/lib/notification-api.ts` — query options, mutations and
+  the socket handlers; server data stays in TanStack Query.
+- `apps/web-admin/src/lib/notification-text.ts` — localized title/body per
+  `templateCode`, falling back to the stored English text.
+- `apps/web-admin/src/components/notification/notification-bell.tsx` — header
+  bell with the unread badge and the popover; `NavUser` sits beside it in the
+  header, and the sidebar footer is gone.
+
+## Seed data
+
+| Seeder | Environment | Anchored on |
+|---|---|---|
+| `notification-templates.seeder.ts` | all | template `code` (live rows only) |
+| `notification-demo.seeder.ts` | dev only | `(user_id, source_id)` with `source_type='seed_demo'` |
+
+Templates are reference data: a database without them makes every producer job
+skip at runtime ("template missing or inactive"). Demo rows exist so the bell
+has something to render — one fixed user, not the whole directory, so the
+unread badge stays meaningful. The demo seeder stores `title`/`body`
+pre-rendered because importing the worker would construct a BullMQ `Queue` at
+module load and open a Redis connection from a seeder.
+
+`test/unit/notification-seeders.test.ts` guards the duplication: every code in
+`NOTIFICATION_TEMPLATE_CODES` must have exactly one seed row, and each seed's
+`{{placeholders}}` must match its declared `variables`.
+
+## Producers (landed)
+
+`OrganizationService` is the first producer, through
+`EXPORTED_NOTIFICATION_SERVICE_TOKEN` only:
+
+| Path | Template | Variables | Tag |
+|---|---|---|---|
+| `addMember` | `org.member_added` | `organizationName`, `role` | organization name |
+| `createOrganization` (creator) | `org.org_created` | `organizationName` | organization name |
+| `createOrganization` (nested **active** user) | `org.member_added` | `organizationName`, `role` | organization name |
+| `InvitationService.claim` (org path, after the membership exists) | `org.member_added` | `organizationName`, `role` | organization name |
+
+Rules that keep this honest:
+
+- A nested **invited** user is notified once, at claim — never at create. One
+  membership yields one notification, and an invite email is not an in-app
+  notification.
+- `role` is the Better Auth comma-joined list rendered for humans
+  (`admin, sales`).
+- `sourceId` is the member row id where one exists, else the organization id,
+  so the enqueued job id is deterministic and a replay cannot double-notify.
+- `ExportedNotificationService` takes its dispatcher through
+  `NOTIFICATION_DISPATCHER_TOKEN`. A defaulted constructor parameter emits no
+  design type, and tsyringe then fails the entire graph at boot with
+  `TypeInfo not known for "Object"`.
+
+## HTTP surface
+
+App-scope, so the plugin rides the **session guard only** (no `erp` macro, no
+`x-organization-id`): a user reads their inbox from every organization they
+belong to, and a fresh login has no active organization yet. The caller's id
+always comes from the resolved session — never from a path or body field.
+
+| Method | Path | Behaviour |
+|---|---|---|
+| GET | `/notifications` | paginated list for the caller, newest first; `unreadOnly=true` filters |
+| GET | `/notifications/unread-count` | `{ count }` |
+| PATCH | `/notifications/:id/read` | 404 when the row is not the caller's; a non-uuid id is a 400 |
+| POST | `/notifications/read-all` | marks every unread row of the caller, returns `{ changed }` |
+
+## How a notification is produced
+
+1. A producer (e.g. `OrganizationService.addMember`) injects
+   `EXPORTED_NOTIFICATION_SERVICE_TOKEN` and calls
+   `notify({ userIds, templateCode, variables, tags, sourceId })`.
+2. That service enqueues one BullMQ `send` job per recipient and returns. A
+   queue failure is logged, never thrown — the business write has already
+   succeeded by then.
+3. The worker resolves the template by `template_code`, renders
+   `{{variable}}` placeholders into the English `title`/`body`, inserts the row
+   as `status='sent'` with `sent_at`, and publishes
+   `notification.created` to the recipient's open sockets.
+4. A missing or inactive template **skips** the job rather than retrying: a
+   retry cannot create a template, and a poison job would block the queue.
+
+## Data ownership
+
+Schema `notification`, app-scope (no `organization_id`):
+
+| Table | Holds |
+|---|---|
+| `notification.notification_templates` | copy per `module.event` code, its channel and declared variables |
+| `notification.notifications` | one row per recipient: `user_id`, `template_code`, `title`, `body`, `tags`, `variables`, `metadata`, `status`, `sent_at`, `read_at`, `source_type`/`source_id` |
+
+Rules:
+
+- The tenant is **not** in the row. A notification is per user and is readable
+  from every organization that user belongs to; the organization context is a
+  display **tag** (the organization name), never a filter.
+- Rows are created by the module's BullMQ worker as `status='sent'` and turned
+  `read` by the recipient. There is no `queued` round-trip: the job is the
+  queue.
+- Prune is a repeat job that **hard deletes** `status='read'` rows past the
+  retention window. They are delivery records, not business data, so the
+  soft-delete rule does not apply to them.
+- `template_code` is denormalized onto the row, so a later template edit never
+  rewrites what a user already received.
+
+## Contract
+
+`ExportedNotificationService` — the **only** cross-module entry point, resolved
+through `EXPORTED_NOTIFICATION_SERVICE_TOKEN`:
+
+```ts
+notify({
+  userIds: string[];
+  templateCode: NotificationTemplateCode;  // 'module.event'
+  variables?: Record<string, string>;
+  tags?: string[];                // display labels, e.g. [organizationName]
+  sourceType?: string;
+  sourceId?: string;
+  metadata?: Record<string, unknown>;  // deep-link extras; never authorization
+}): Promise<void>;
 ```
 
-Headers: `X-Erp-Event-Id`, `X-Erp-Event-Type`, `X-Erp-Timestamp` (unix ms),
-`X-Erp-Signature: sha256=<hex HMAC-SHA256 of "<timestamp>.<raw body>" with
-N8N_WEBHOOK_SECRET>`. The receiver must verify the signature and dedupe on
-the event id (a retry re-sends the same id). Any 2xx counts as delivered;
-5xx / 408 / 429 / network errors are retried (5 attempts, backoff from 30 s);
-other 4xx stop the retries. Every attempt is logged on the row and shown at
-`/integrations/webhooks`, where an admin can send again.
+It enqueues one BullMQ job per recipient (duplicates and blanks collapsed) and
+never throws into the caller's request path: a queue outage is logged, the
+business write still succeeds (same contract as the avatar queue hook).
 
-Amounts are integer IDR minor units (divide by 100 for rupiah). Topics:
+Read-side guards live on `NotificationService` (token
+`NOTIFICATION_SERVICE_TOKEN`, used by the Phase 4 controllers):
+`list(userId, query)`, `unreadCount(userId)`, `markRead(id, userId)`,
+`markAllRead(userId)`, `assertOwnedBy(id, userId)`. Every one takes the caller's
+`userId`; there is no "any user" variant. A notification id that belongs to
+another user returns **404**, never 403 — probing must not reveal existence,
+and the repository's WHERE clause makes the two cases identical.
 
-| Topic | Published by | `data` (main fields) |
-| --- | --- | --- |
-| `lead.created` | CRM: manual lead, website inquiry | `leadId`, `reference`, `name`, `companyName`, `phone`, `whatsapp`, `email`, `source`, `channel`, `needs`, `ownerUserId` |
-| `invoice.issued` | Sales: invoice issued | `invoiceId`, `code`, `title`, `customer{id,code,name,email,phone,whatsapp}`, `salesOrderCode`, `issueDate`, `dueDate`, `grandTotal`, `outstandingTotal`, `currencyCode` |
-| `receipt.recorded` | Sales: receipt recorded | `receiptId`, `code`, `receivedDate`, `amount`, `method`, `invoice{id,code,status,grandTotal,paidTotal,outstandingTotal}`, `customer{…}` |
-| `service_ticket.updated` | After-sales: every ticket change | `ticketId`, `code`, `change` (`created / assigned / started / resolved / reopened / closed`), `status`, `customer{id,name,phone,whatsapp,email}`, `reporterName`, `reporterContact`, `assignee{userId,name}`, `resolution`, `serviceCost` |
-| `whatsapp.handoff` | WhatsApp assistant: chat handed to an admin | `conversationId`, `phone`, `contactName`, `reason` (`no_provider / not_found / human_requested / restricted / error`), `question` |
-| `license.due` | Licensing: daily job | `contractId`, `code`, `threshold` (30 / 7 / 0), `stage` (`ending / ended`), `daysLeft`, `endDate`, `graceEndsOn`, `application{code,name}`, `customer{…}` |
+## Realtime envelope
 
-`license.due` runs from the BullMQ queue `licensing-due` (cron
-`SCHEDULER_LICENSE_DUE_CRON`, default `0 8 * * *` Asia/Jakarta, only with
-`SCHEDULER_ENABLED=true`). Each contract, end date and threshold is published
-once (`outbox_messages.dedupe_key`), so a re-run or a missed day never
-duplicates a reminder.
+The socket is shared, so every message is wrapped:
 
-## WhatsApp assistant
+```ts
+{ type: string; status: 'success' | 'error'; sentAt: number; data: unknown }
+```
 
-Flow: WAHA → `POST /integrations/whatsapp/webhook` (no session; WAHA's
-`X-Webhook-Hmac` = hex HMAC-SHA512 of the raw body with
-`WAHA_WEBHOOK_SECRET`, compared in constant time; refused with 503 when the
-key is not configured, 401 when wrong). Only `message` events from personal
-chats are used (our own messages, groups, status and channels are ignored).
-The message is stored once — unique `(direction, external_id)` on the
-WhatsApp message id — and queued on BullMQ `whatsapp-inbound` (3 attempts);
-WAHA gets 200 at once.
+`status` is the delivery result of the message itself; `data.status` carries the
+domain status (`sent`, `read`). Notification types are `notification.created`,
+`notification.updated` and `notification.unread_count`. Chat later adds
+`chat.message` on the same socket.
 
-`AssistantService.process`, in this order:
+The transport lives in `apps/backend/src/providers/realtime/` (envelope builder,
+in-process hub, gateway), not in this module: the module only calls
+`IRealtimeHub.publish(userId, realtimeMessage(type, data))`.
 
-1. Chat with an admin (`handoff`) → the assistant stays silent.
-2. Empty or media-only message → handoff `not_found`.
-3. Discount, special price, payment, order or refund words
-   (`utils/assistant.ts` `isRestricted`) → handoff `restricted` with a
-   refusal reply; the AI is not called.
-4. Asking for a person → handoff `human_requested`.
-5. No AI provider configured → handoff `no_provider`.
-6. The model gets a fixed system prompt with only the matching active FAQ
-   entries (word overlap) and published catalog products
-   (`CatalogService.matchProducts`), plus the last turns. It answers or
-   says it is unsure (→ handoff `not_found`); an answer that itself
-   mentions discounts/payments is not sent (→ handoff `restricted`); a
-   provider error → handoff `error`.
+The client half (`src/lib/realtime/`) opens exactly one socket per
+authenticated shell, from `MainLayout`. It reconnects with exponential backoff
+(1s doubling, capped at 30s) and **refetches on open** rather than buffering:
+frames sent while the socket was down are not replayed, so the server is the
+only safe reconciliation. `notification.created` and `notification.updated`
+invalidate the list and the count; `notification.unread_count` writes its number
+straight into the query cache, because it already carries the answer.
 
-A handoff sends one holding reply, marks the chat `handoff` and publishes
-`whatsapp.handoff` to n8n so someone is alerted. An admin reply takes the
-chat over (assigned to the admin); **resume** gives it back to the
-assistant; **close** ends it and the next customer message reopens it with
-the assistant. Every inbound and outbound message is logged with its
-status; a failed send can be resent.
+## Retention
 
-The model port (`IAssistantModel`) is provider-neutral; the one adapter is
-an OpenAI-compatible `POST <AI_BASE_URL>/chat/completions` (text only, no
-tools) — not yet tried against a real provider. The model cannot change
-ERP data whatever the prompt says: it has no tools, and its text is checked
-again before sending.
+`prune` is a BullMQ repeat job (`upsertJobScheduler`, key `prune`), declared at
+boot when `SCHEDULER_ENABLED` is on. Each run **hard-deletes** rows with
+`status='read'` and `read_at` older than `NOTIFICATION_RETENTION_DAYS`
+(default 90); the cron is `SCHEDULER_NOTIFICATION_RETENTION_CRON` (default
+`0 4 * * *`). Unread rows are never pruned — an unread notification is
+undelivered information, not stale storage.
 
-Lead capture (ERP-0021): **Create lead** on a chat
-(`POST …/conversations/:id/lead`, `whatsapp:reply`) calls CRM's contract
-`LeadService.captureFromChat` — an unassigned `whatsapp` lead with the
-contact name, number and the customer's last messages, published as
-`lead.created` — and links it in `whatsapp_conversations.lead_id` (once per
-chat, conditional update).
+## Consumers
 
-Endpoints: `/automation/whatsapp/status | conversations | conversations/:id
-| …/reply | …/lead | …/resume | …/close | messages/:id/retry` and `/automation/faq`.
-Permissions `whatsapp:read | reply | manage_faq` (admin all; sales manager
-and customer service read + reply; marketing read + FAQ). Web:
-`/integrations/whatsapp-ai`, `…/$conversationId`, `…/faq`.
-
-## Configuration
-
-Step-by-step setup: `docs/user-guide/whatsapp-n8n-setup.en.md` (and `.id.md`).
-
-`N8N_WEBHOOK_URL`, `N8N_WEBHOOK_SECRET` (min 16 chars) — both optional;
-without them events stay `pending` with "not configured" and can be sent
-from the log once set. `WAHA_URL`, `WAHA_API_KEY`, `WAHA_SESSION` (default
-`default`), `WAHA_WEBHOOK_SECRET` (min 16) for WhatsApp; `AI_BASE_URL`,
-`AI_API_KEY`, `AI_MODEL` for the optional AI provider. In WAHA, point the
-session's webhook at `<APP_URL>/integrations/whatsapp/webhook`, event
-`message`, with the HMAC key = `WAHA_WEBHOOK_SECRET`. None of these is ever
-logged; adapters never echo URLs or keys.
-
-## Rules
-
-- `publish` never throws into the business action; a queue outage leaves the
-  event `pending` for a manual send.
-- Permissions: `automation:read_log` (log), `automation:execute` (send);
-  admin role.
-- Company-wide (ADR-0012); unix-ms timestamps; soft delete.
+- Organization: member added, organization created, invitation claimed (landed
+  2026-11-14, Phase 5).
+- Planned: sales invoice issued, document signature requested, licensing expiry.
 
 ## Tests
 
-`whatsapp-assistant.test.ts` (signature, parsing, dedupe, guards incl.
-injection attempts, no provider, unsure / failing / risky answers, admin
-takeover, resend); `outbox.service.test.ts` (publish/queue, dedupe key, delivery outcomes,
-signature and headers, no URL leak); event assertions in
-`lead.service.test.ts`, `invoice.service.test.ts`,
-`service-ticket.service.test.ts`, `licensing.service.test.ts` (thresholds,
-once per threshold). E2E against a local fake receiver: see `progress.md`
-(M04 4b, 4c, 4d).
+`apps/backend/test/unit/` (unit, no Postgres/Redis):
+
+- `notification.exported-service.test.ts` — one job per recipient, duplicates
+  collapsed, defaults filled, a queue outage swallowed, one failing recipient
+  not dropping the others.
+- `notification.worker.test.ts` — placeholder render (incl. a missing variable
+  and a null template), deterministic `jobId` with no `:`, row created as
+  `sent` with the rendered copy and tags, `notification.created` published, a
+  missing template skipped, prune cutoff arithmetic.
+- `notification.service.test.ts` — list scoped to the caller and mapped to the
+  wire shape, `markRead` publishing `notification.updated` + the new unread
+  count, another user's row rejected as 404 with nothing published.
+- `notification.controller.test.ts` — the HTTP surface end to end through the
+  real guard and service over a repository double: 401 envelope, caller-scoped
+  list and ordering, `unreadOnly`, malformed page, unread count, mark read,
+  another user's row → 404, non-uuid id → 400, `read-all`, plus the same 400
+  asserted against a **listening** server (`.listen()` serves the compiled
+  route, which is where the shared validation handler used to throw).
+- `notification.producers.test.ts` — the three producer paths: `addMember`,
+  `createOrganization` (creator vs nested active user), the invitation claim,
+  and the outage contract exercised with the **real**
+  `ExportedNotificationService` over a throwing dispatcher.
+- `notification-seeders.test.ts` — the seeded template list matches
+  `NOTIFICATION_TEMPLATE_CODES` one-to-one, and each template declares exactly
+  the variables its own placeholders use.
+
+`apps/backend/test/unit/realtime.{hub,gateway}.test.ts` cover the transport the
+worker publishes through (envelope, upgrade rejected without a session).
+
+`apps/web-admin/test/unit/` (Phase 7): `realtime-client.test.ts` pins the
+backoff curve and the `ws`/`wss` URL derivation; `notification-realtime.test.ts`
+pins that a `notification.unread_count` frame lands in the badge cache and that
+a malformed frame leaves the badge alone.

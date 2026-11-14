@@ -15,7 +15,7 @@ import {
 	sql,
 } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import { cacheIdKey } from '@utils/cache.util';
+
 import type { ICacheClient } from '@cache/cache.client';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { TUserSelect } from '@drizzle/schemas/auth.schema';
@@ -65,6 +65,22 @@ export class UserManagementRepository implements IUserManagementRepository {
 			.select()
 			.from(users)
 			.where(and(ilike(users.email, email), isNull(users.deletedAt)))
+			.limit(1);
+		return row ?? null;
+	}
+
+	async findActiveByEmail(email: string): Promise<TUserSelect | null> {
+		const [row] = await this.database
+			.select()
+			.from(users)
+			.where(
+				and(
+					ilike(users.email, email),
+					isNull(users.deletedAt),
+					// Pending rows are invitation placeholders, not accounts.
+					sql`${users.status} <> 'pending'`,
+				),
+			)
 			.limit(1);
 		return row ?? null;
 	}

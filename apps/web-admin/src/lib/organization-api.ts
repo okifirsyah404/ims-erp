@@ -16,7 +16,13 @@ export type TOrganization = {
 	id: string;
 	name: string;
 	slug: string;
+	/**
+	 * Presigned image URL on list responses (the backend signs the stored
+	 * object key on read, since the client cannot). `null` when unset.
+	 */
 	logo: string | null;
+	/** Optional free-text organization description; `null` when unset. */
+	description: string | null;
 	metadata: Record<string, unknown> | null;
 	createdAt: string;
 	deletedAt: string | null;
@@ -42,10 +48,16 @@ async function request<T>(
 	path: string,
 	init?: RequestInit,
 ): Promise<TApiResponse<T>> {
+	// FormData must carry the browser-generated multipart boundary: setting any
+	// Content-Type here breaks the body parse (400 from the server).
+	const isFormData =
+		typeof FormData !== 'undefined' && init?.body instanceof FormData;
 	const response = await fetch(`${API_URL}${path}`, {
 		credentials: 'include',
 		headers:
-			init?.body != null ? { 'Content-Type': 'application/json' } : undefined,
+			init?.body != null && !isFormData
+				? { 'Content-Type': 'application/json' }
+				: undefined,
 		...init,
 	});
 	// Parse defensively: error responses (auth redirect, empty body, HTML)
@@ -98,21 +110,70 @@ export async function getOrganization(organizationId: string) {
 	return envelope.data;
 }
 
+/** Result of the create flow: the org plus per-user outcomes (ERP-0041). */
+export type TCreateOrganizationResult = {
+	organization: TOrganization;
+	members: Array<
+		| { email: string; status: 'added'; memberId: string }
+		| { email: string; status: 'invited'; invitationId: string }
+		| { email: string; status: 'skipped'; reason: string }
+		| { email: string; status: 'failed'; error: string }
+	>;
+};
+
 export async function createOrganization(input: {
 	name: string;
 	slug: string;
 	logo?: string | null;
+	/** Optional free-text description (trimmed server-side; empty clears). */
+	description?: string | null;
+	/** Nested users: active emails join directly, unknown emails get invited. */
+	users?: Array<{ email: string; name: string; roles: string[] }>;
+	/** Deliver invitation emails (default true). */
+	sendInvites?: boolean;
 }) {
-	const envelope = await request<TOrganization>('/organizations', {
+	const envelope = await request<TCreateOrganizationResult>('/organizations', {
 		method: 'POST',
 		body: JSON.stringify(input),
 	});
 	return envelope.data;
 }
 
+/** Uploads the org profile image; the server normalises it to WebP. */
+export async function uploadOrganizationImage(
+	organizationId: string,
+	file: Blob,
+) {
+	const body = new FormData();
+	// The server decides the format from the bytes; the name is only a hint.
+	body.append('file', file, `logo.${file.type === 'image/png' ? 'png' : 'webp'}`);
+	await request(`/organizations/${organizationId}/image-profile`, {
+		method: 'POST',
+		body,
+	});
+}
+
+export async function deleteOrganizationImage(organizationId: string) {
+	await request(`/organizations/${organizationId}/image-profile`, {
+		method: 'DELETE',
+	});
+}
+
+export async function getOrganizationImage(organizationId: string) {
+	const envelope = await request<{ url: string | null }>(
+		`/organizations/${organizationId}/image-profile`,
+	);
+	return envelope.data?.url ?? null;
+}
+
 export async function updateOrganization(
 	organizationId: string,
-	input: { name?: string; logo?: string | null },
+	input: {
+		name?: string;
+		logo?: string | null;
+		/** Trimmed server-side; an empty string clears it. */
+		description?: string | null;
+	},
 ) {
 	const envelope = await request<TOrganization>(
 		`/organizations/${organizationId}`,
@@ -152,7 +213,7 @@ export async function listMembers(
 
 export async function addMember(
 	organizationId: string,
-	input: { userId: string; role: string },
+	input: { userId: string; roles: string[] },
 ) {
 	const envelope = await request<{ id: string }>(
 		`/organizations/${organizationId}/members`,
@@ -164,11 +225,11 @@ export async function addMember(
 export async function updateMemberRole(
 	organizationId: string,
 	memberId: string,
-	role: string,
+	roles: string[],
 ) {
 	const envelope = await request<{ id: string; role: string }>(
 		`/organizations/${organizationId}/members/${memberId}`,
-		{ method: 'PATCH', body: JSON.stringify({ role }) },
+		{ method: 'PATCH', body: JSON.stringify({ roles }) },
 	);
 	return envelope.data;
 }
@@ -183,6 +244,26 @@ export async function removeMember(organizationId: string, memberId: string) {
 export const organizationsQueryOptions = queryOptions({
 	queryKey: ['organizations'] as const,
 	queryFn: () => listOrganizations({ includeDeleted: true }),
+});
+
+/** The caller's memberships (`GET /organizations/mine`); `role` is comma-joined. */
+export type TMyOrganization = {
+	id: string;
+	name: string;
+	slug: string;
+	logo: string | null;
+	role: string;
+};
+
+export async function listMyOrganizations(): Promise<TMyOrganization[]> {
+	const envelope = await request<TMyOrganization[]>('/organizations/mine');
+	return envelope.data ?? [];
+}
+
+/** Separate key from `organizationsQueryOptions`: membership rows, not the admin list. */
+export const myOrganizationsQueryOptions = queryOptions({
+	queryKey: ['my-organizations'] as const,
+	queryFn: listMyOrganizations,
 });
 
 export function organizationQueryOptions(organizationId: string) {

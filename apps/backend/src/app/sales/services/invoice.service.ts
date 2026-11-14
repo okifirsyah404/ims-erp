@@ -9,8 +9,10 @@ import type {
 import type { TPaginationResult } from '@ims-erp/common';
 import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
 import type { OutboxService } from '@app/automation/services/outbox.service';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import type { DocumentService } from '@app/document';
 import {
 	LEDGER_REPOSITORY_TOKEN,
 	POSTING_SERVICE_TOKEN,
@@ -71,10 +73,13 @@ export class InvoiceService {
 		@inject(POSTING_SERVICE_TOKEN) private readonly posting: PostingService,
 		@inject(AR_ACCOUNT_RESOLVER_TOKEN)
 		private readonly arResolver: ArAccountResolverService,
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: NumberingService,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: CodeNumberService,
 		@inject(OUTBOX_SERVICE_TOKEN)
 		private readonly outbox: Pick<OutboxService, 'publish'>,
+		/** ERP-0044: issued invoices and receipts are registered documents. */
+		@inject(DOCUMENT_SERVICE_TOKEN)
+		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
 	) {}
 
 	async list(
@@ -184,12 +189,9 @@ export class InvoiceService {
 
 	/**
 	 * Issues the invoice: the ledger event of F4. One transaction covers the
-	 * status stamp, the journal (DR AR / CR revenue / CR tax payable) and the
-	 * `ar_open_items` row. Idempotent through the JE idempotency key.
-	 */
-	/**
-	 * Issues the invoice, then publishes `invoice.issued` to n8n (M04) once the
-	 * transaction has committed.
+	 * status stamp, the journal (DR AR / CR revenue / CR tax payable), the
+	 * `ar_open_items` row and the document registry (ERP-0044); `invoice.issued`
+	 * goes to n8n (M04) once that transaction has committed.
 	 */
 	async issue(ctx: TInvoiceActionContext, id: string): Promise<TInvoiceSelect> {
 		const issued = await this.issueInTransaction(ctx, id);
@@ -280,6 +282,24 @@ export class InvoiceService {
 				},
 				tx,
 			);
+			// ERP-0044: the tax invoice joins the registry with its own code.
+			// `code` is nullable in the schema (legacy drafts) but `create`
+			// always allocates it, so a coded draft is the only issuable state.
+			if (invoice.code) {
+				await this.documents.register(
+					{
+						code: invoice.code,
+						documentType: 'sales_invoice',
+						module: 'sales',
+						sourceType: 'invoice',
+						sourceId: invoice.id,
+						organizationId: ctx.organizationId,
+						issuedOn: issueDate,
+						issuedByUserId: ctx.actorUserId,
+					},
+					tx,
+				);
+			}
 			return issued ?? invoice;
 		});
 	}
@@ -408,6 +428,17 @@ export class InvoiceService {
 			receivedBy: ctx.actorUserId,
 		});
 		if (!receipt) throw new ReceiptExceedsOutstandingError();
+		// ERP-0044: a receipt (kuitansi) is an issued document too.
+		await this.documents.register({
+			code: receipt.code,
+			documentType: 'receipt',
+			module: 'sales',
+			sourceType: 'receipt',
+			sourceId: receipt.id,
+			organizationId: ctx.organizationId,
+			issuedOn: receipt.receivedDate,
+			issuedByUserId: ctx.actorUserId,
+		});
 		// n8n event (M04), with the invoice as it stands after the payment.
 		const paid = (await this.repo.findById(ctx.organizationId, invoiceId)) ?? invoice;
 		await this.outbox.publish('receipt.recorded', { type: 'receipt', id: receipt.id }, receiptRecordedEvent(receipt, paid));
@@ -429,6 +460,8 @@ export class InvoiceService {
 			reason,
 		);
 		if (!reversed) throw new ReceiptAlreadyReversedError();
+		// ERP-0044: a reversed receipt is a dead document.
+		await this.documents.voidBySource('sales', 'receipt', id);
 		return reversed;
 	}
 }

@@ -1,6 +1,7 @@
 import openapi from '@elysia/openapi';
 import { auth } from '@providers/better-auth/auth';
 import { OpenAPI } from '@providers/better-auth/open-api-extractor.auth';
+import { realtimeGateway } from '@providers/realtime/realtime.gateway';
 import Elysia from 'elysia';
 
 import { accountingModule } from './accounting';
@@ -9,10 +10,15 @@ import { assetsModule } from './assets';
 import { auditModule } from './audit';
 import { automationModule } from './automation';
 import { catalogModule } from './catalog';
+import { codeNumberModule } from './code-number';
+import { companyModule } from './company';
 import { crmModule } from './crm';
+import { documentModule } from './document';
+import { hrModule } from './hr';
 import { inventoryModule } from './inventory';
 import { licensingModule } from './licensing';
 import { locationModule } from './location';
+import { notificationModule } from './notification';
 import { organizationModule } from './organization';
 import { procurementModule } from './procurement';
 import { projectsModule } from './projects';
@@ -71,6 +77,10 @@ export function createApp() {
 					documentation: betterAuthOpenApiDocument,
 				}),
 			)
+			// The single realtime socket (`/ws`). Mounted before the feature
+			// modules so no module can shadow the upgrade path; the hub it
+			// publishes into is registered by `registerProvider`.
+			.use(realtimeGateway())
 			.use(locationModule())
 			.use(salesModule())
 			.use(procurementModule())
@@ -87,12 +97,20 @@ export function createApp() {
 			// Cross-cutting audit read surface (`GET /admin/audit`), mounted with
 			// the `/admin` surfaces it shares a prefix with.
 			.use(auditModule())
+			// The caller's own inbox (`/notifications`). App-scope: session guard
+			// only, so it does not sit under `/admin` and needs no organization
+			// context.
+			.use(notificationModule())
 			.use(organizationModule())
+			.use(companyModule())
+			.use(codeNumberModule())
+			.use(documentModule())
 			.use(crmModule())
 			.use(inventoryModule())
 			// Assets owns equipment and borrowing (ERP-0036); `/borrowings`
 			// moved here from inventory.
 			.use(assetsModule())
 			.use(accountingModule())
+			.use(hrModule())
 	);
 }

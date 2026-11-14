@@ -237,7 +237,10 @@ flowchart TB
     INV[inventory — items, warehouses, stock ledger, serial units, adjustments]
     PRJ[projects — projects, tasks, evidence, costs, BAST]
     AS[aftersales — warranty certificates, service tickets]
-    ORG[organization — company profile, numbering]
+    ORG[organization - internal organizations, settings]
+    COMPANY[company - profile, contacts, bank accounts, settings]
+    CODE[code_number - numbering series]
+    DOC[document - issued document registry]
     SALES -->|CustomerService| CRM
     SALES -->|ItemService, StockService| INV
     FIN -->|SalesBillingService| SALES
@@ -248,7 +251,10 @@ flowchart TB
     AS -->|HandoverService, ProjectLookupService| PRJ
     AS -->|SalesFulfilmentService| SALES
     AS -->|CustomerService| CRM
-    SALES & FIN & PROC & PRJ & AS -->|NumberingService, CompanyProfileService| ORG
+    SALES & FIN & PROC & PRJ & AS -->|CodeNumberService.next| CODE
+    SALES & FIN & PROC & PRJ & AS -->|CompanyService.getProfile| COMPANY
+    CODE -->|CompanyService.getProfile| COMPANY
+    SALES & FIN & PROC & PRJ & AS -->|DocumentService.issue| DOC
 ```
 
 ## 7. Cost (HPP) in stock

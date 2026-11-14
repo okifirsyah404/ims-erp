@@ -19,6 +19,8 @@ import tax from './tax';
 import hr from './hr';
 import claim from './claim';
 import integrations from './integrations';
+import documents from './documents';
+import notifications from './notifications';
 
 /**
  * English resources, grouped by namespace. This bundle is the source of
@@ -46,6 +48,8 @@ export const en = {
 	hr,
 	claim,
 	integrations,
+	documents,
+	notifications,
 } as const;
 
 export type Namespace = keyof typeof en;

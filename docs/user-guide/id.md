@@ -20,6 +20,7 @@ Panduan ini menjelaskan cara memakai modul M02 (CRM & Penjualan), M05
 8. [Proyek, BAST, garansi, tiket servis](#8-proyek-bast-garansi-tiket-servis)
 9. [Dokumen cetak dan penomoran](#9-dokumen-cetak-dan-penomoran)
 10. [Catatan](#10-catatan)
+11. [Notifikasi](#11-notifikasi)
 
 Ringkasan alur lengkap: lihat diagram
 [Alur menyeluruh](diagrams.md#1-end-to-end-flow-activity).
@@ -61,20 +62,31 @@ Aturan umum: **dokumen yang dibuat sendiri tidak bisa disetujui sendiri**
 
 Dilakukan sekali oleh admin/owner.
 
-1. **Pengaturan → Profil Perusahaan**: nama resmi, alamat, telepon, email,
-   logo, tanda tangan, nama & jabatan penandatangan, rekening bank (PPN dan
-   non-PPN), syarat SPH/invoice bawaan, teks garansi (cakupan, pengecualian,
-   layanan). Semua dokumen cetak mengambil data dari sini.
-2. **Pengaturan → Penomoran Dokumen**: periksa pola nomor tiap dokumen
-   (lihat [bagian 9](#9-dokumen-cetak-dan-penomoran)).
-3. **Data induk**:
+1. **Pengaturan → Perusahaan**: nama resmi, nama dagang, kode perusahaan,
+   tagline, NPWP, alamat, kode pos, telepon, email, situs web. Kode perusahaan
+   adalah isi `{COMPANY}` di setiap nomor dokumen, jadi isi ini dulu - pratinjau
+   nomor akan kosong sampai terisi.
+2. **Pengaturan → Penomoran Kode**: periksa pola nomor dan kebijakan mulai-ulang
+   setiap jenis kode (lihat [bagian 9](#9-dokumen-cetak-dan-penomoran)).
+   Perubahan hanya berlaku untuk nomor yang terbit setelahnya; nomor yang sudah
+   terbit tidak pernah berubah.
+3. **Pengaturan → Dokumen**: unggah logo kop surat. Di bawahnya ada grup
+   pengaturan `document` yang menyimpan nilai yang dibaca modul dokumen.
+4. **Data induk**:
    - **CRM → Pelanggan** (kode pelanggan dipakai di nomor surat garansi).
    - **Inventaris → Barang**: SKU, nama, jenis, satuan, kategori, harga jual,
-     foto untuk SPH, centang *bernomor seri* bila setiap unit punya SN.
+     foto untuk SPH, centang *bernomor seri* bila setiap unit punya SN. Kode
+     barang dibuat otomatis dari jenisnya dan tidak bisa diubah kemudian.
    - **Pengadaan → Pemasok** (data bank hanya terlihat oleh yang berhak).
    - **Inventaris → Gudang** dan lokasi simpan (hanya admin global).
-4. **Stok awal** bila barang sudah ada di gudang: lihat
+5. **Stok awal** bila barang sudah ada di gudang: lihat
    [bagian 7.2](#72-stok-awal-dan-penyesuaian).
+
+> Nama & jabatan penandatangan, rekening bank pada invoice, syarat SPH/invoice
+> bawaan dan teks garansi **tidak bisa lagi diedit dari antarmuka** (sejak
+> 2026-11-13): masing-masing akan punya halaman sendiri. Nilai yang sudah
+> tersimpan tetap tercetak di dokumen; instalasi baru mencetak dokumen tanpa
+> baris penandatangan sampai halaman tersebut ada.
 
 ## 4. Penjualan: SPH → revisi → Deal → sales order
 
@@ -319,9 +331,37 @@ Menu **Proyek**. Diagram:
    Begitu finance mencatat pelunasan, draf aktif sendiri dan kunci berlanjut
    ke periode baru.
 
-### 8.7 Katalog website, event n8n, dan WhatsApp AI (M04)
+### 8.6 Karyawan, absensi, cuti, dan gaji (M08)
 
-Bernomor 8.7 karena 8.6 adalah bagian HR di cabangnya sendiri.
+1. **Karyawan & Kehadiran → Karyawan → Karyawan baru** membuat data
+   karyawan sekaligus mengirim email undangan untuk akun loginnya. Di
+   halaman karyawan tambahkan **rekening bank** gaji dan lihat **sisa cuti**
+   tahun ini. Peran tanpa akses data pribadi melihat NIK dan nomor rekening
+   sebagian tersembunyi. Yang tampil adalah karyawan organisasi Anda
+   ditambah karyawan tingkat perusahaan.
+2. **Absensi**: pilih tanggal, isi status tiap karyawan (hadir, izin, sakit,
+   cuti, alpa, libur) dan jam masuk / pulang bila perlu, lalu **Simpan hari
+   ini** ("Isi baris kosong dengan Hadir" mempercepat). Atau **Impor**: unduh
+   template, isi di Excel, unggah. Bila ada baris yang salah, tidak ada yang
+   diimpor dan baris yang salah ditampilkan. **Rekap bulanan** menghitung
+   status per karyawan.
+3. **Cuti**: HR **mencatat cuti** karyawan (jenis, dari, sampai); hari
+   Minggu tidak dihitung dan cuti tahunan tidak boleh lebih dari 12 hari
+   setahun (pengajuan yang menunggu ikut dihitung). Orang lain selain
+   pencatat **Menyetujui** atau **Menolak**; hari yang disetujui otomatis
+   masuk absensi. **Batalkan** mengembalikan harinya.
+4. **Lembur**: HR mencatat tanggal dan jamnya; orang lain menyetujui. Jam
+   yang disetujui tampil di samping karyawan pada ringkasan gaji.
+5. **Tugas**: tugas sederhana untuk karyawan dengan tenggat; tandai
+   **Selesai** atau **Batal**.
+6. **Penggajian** (ringkasan gaji): pilih bulan, **Isi dari bulan lalu** (menyalin
+   gaji pokok dan tunjangan bulan lalu; bulan pertama mulai dari 0), lalu
+   ubah baris (tunjangan, lembur, bonus, potongan; gaji bersih dihitung)
+   atau **Impor** file. Owner klik **Setujui bulan ini**, lalu bulan itu terkunci.
+   Belum ada hitung gaji otomatis, slip gaji, atau jurnal (tahap 2 menunggu
+   aturan gaji dari finance).
+
+### 8.7 Katalog website, event n8n, dan WhatsApp AI (M04)
 
 1. **Integrasi → Katalog Website**: pilih barang yang tampil di website
    (harga atau "minta penawaran", perilaku saat stok habis) lalu
@@ -366,7 +406,7 @@ Bernomor 8.7 karena 8.6 adalah bagian HR di cabangnya sendiri.
 | Tiket servis | `0001/TKT/IMS/XI/26` | saat dibuat | — |
 
 Cetak memakai tombol **Cetak** di halaman dokumen lalu fitur cetak/simpan
-PDF browser. Pola nomor diatur di **Pengaturan → Penomoran Dokumen**.
+PDF browser. Pola nomor diatur di **Pengaturan → Penomoran Kode**.
 
 ## 10. Catatan
 
@@ -409,3 +449,34 @@ PDF browser. Pola nomor diatur di **Pengaturan → Penomoran Dokumen**.
   hutang pemasok, retur penjualan/pembelian, SLA tiket.
 - Diagram topologi jaringan pada contoh garansi tidak dibuat di sistem
   (keputusan owner 2026-11-06).
+
+## 11. Notifikasi
+
+Lonceng di pojok kanan atas header (di sebelah menu akun) menampilkan
+notifikasi dalam aplikasi. Angka pada lencana menunjukkan jumlah yang belum
+dibaca.
+
+1. **Membaca**: klik lonceng. Notifikasi terbaru tampil paling atas; setiap
+   item menampilkan judul, isi, dan tag (misalnya nama organisasi).
+2. **Membuka item**: klik item tersebut. Item langsung ditandai sudah dibaca,
+   lalu:
+   - notifikasi organisasi membuka halaman organisasi tersebut;
+   - notifikasi keanggotaan membuka **Organisasi**;
+   - notifikasi lain hanya ditandai sudah dibaca.
+3. **Tandai semua dibaca**: tautan di bagian atas popover.
+4. **Pembaruan langsung**: notifikasi baru muncul tanpa memuat ulang halaman.
+   Jika lonceng menampilkan **Live updates unavailable** (titik merah), koneksi
+   sedang terputus; aplikasi menyambung ulang sendiri. Muat ulang halaman bila
+   titik merah tetap ada cukup lama.
+5. **Retensi**: notifikasi yang sudah dibaca dihapus setelah masa retensi yang
+   diatur administrator sistem (bawaan 90 hari). Notifikasi yang belum dibaca
+   tetap disimpan.
+
+Notifikasi hanya dikirim kepada orang yang bersangkutan. Yang Anda lihat
+bergantung pada akun Anda, bukan pada organisasi yang sedang dibuka. Pop-up
+browser atau ponsel belum tersedia.
+
+> Keterbatasan yang diketahui (2026-11-14): sejauh ini hanya kejadian
+> organisasi (anggota ditambahkan, organisasi dibuat) yang mengirim notifikasi.
+> Templat invoice diterbitkan dan permintaan tanda tangan sudah ada, tetapi
+> belum ada modul yang mengirimnya.

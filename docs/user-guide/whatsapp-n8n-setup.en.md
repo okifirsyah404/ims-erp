@@ -2,7 +2,7 @@
 
 For the person who connects the ERP to WAHA, n8n and an AI provider. The
 technical contract is in `docs/architecture/modules/notification.md` and
-ADR-0015; this guide is the step-by-step version. Indonesian version:
+ADR-0020; this guide is the step-by-step version. Indonesian version:
 [whatsapp-n8n-setup.id.md](whatsapp-n8n-setup.id.md) (keep both in step).
 
 > **Status (2026-11-12):** the ERP side is implemented and tested against a
@@ -144,4 +144,4 @@ always handed to an admin, before and after the model call.
 - [ ] Each n8n topic tested once with a real event; a bad signature is rejected.
 - [ ] Manual "send again" of a delivered event does not send a second message (dedupe).
 - [ ] Discount request is refused and handed off.
-- [ ] Owner approves live messaging (ADR-0015), then switch to the live number.
+- [ ] Owner approves live messaging (ADR-0020), then switch to the live number.

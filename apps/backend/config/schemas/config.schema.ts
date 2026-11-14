@@ -128,6 +128,10 @@ export const SchedulerConfigSchema = z.object({
 	licenseDueCron: z.string().min(1),
 	/** Guest PII is nulled this many months after `closed_at`. */
 	guestPiiRetentionMonths: z.number().int().min(1),
+	/** Cron for the read-notification prune; daily by default. */
+	notificationRetentionCron: z.string().min(1),
+	/** Read notifications are hard-deleted this many days after `read_at`. */
+	notificationRetentionDays: z.number().int().min(1),
 });
 
 /** M04 integrations: the n8n webhook of ERP events (server config only). */

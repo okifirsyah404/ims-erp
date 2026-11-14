@@ -11,6 +11,14 @@ import type { TAdminUserRow, TUserListRequest } from './admin-listing.types';
 export interface IUserManagementRepository {
 	findById(id: string): Promise<TUserSelect | null>;
 	findByEmail(email: string): Promise<TUserSelect | null>;
+
+	/**
+	 * Finds a live, non-pending (active/deactivated) user by email — the
+	 * cross-module "is this email already a real account" check (nested
+	 * users on organization creation, ERP-0041). Pending pre-created rows
+	 * do not count: they are invitation placeholders, not accounts.
+	 */
+	findActiveByEmail(email: string): Promise<TUserSelect | null>;
 	/** True when no live user holds the username (claim availability). */
 	isUsernameAvailable(username: string): Promise<boolean>;
 	/** True when no live, active user holds the phone. */

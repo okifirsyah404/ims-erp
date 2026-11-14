@@ -17,9 +17,9 @@ import {
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
 import { PasswordInput } from '@/components/password-input';
+import { CountryPhoneField } from '@/components/form/country-phone-field';
 
 const USERNAME_RE = /^[a-zA-Z0-9_]+$/;
-const PHONE_RE = /^[+0-9()\-\s]+$/;
 
 /**
  * Claim-invitation form: shows the read-only invitee context resolved from
@@ -78,7 +78,8 @@ export function ClaimInvitationForm({
 			setError(t('form.passwordShort'));
 			return;
 		}
-		if (phone.length < 6 || !PHONE_RE.test(phone)) {
+		if (!phone) {
+			// The field emits `''` until country + number form a valid E.164.
 			setError(t('form.phoneInvalid'));
 			return;
 		}
@@ -158,15 +159,7 @@ export function ClaimInvitationForm({
 									<FieldLabel htmlFor='claim-phone'>
 										{t('form.phone')}
 									</FieldLabel>
-									<input
-										id='claim-phone'
-										type='tel'
-										className='flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs'
-										value={phone}
-										required
-										placeholder='+6281234567890'
-										onChange={(event) => setPhone(event.target.value)}
-									/>
+									<CountryPhoneField id='claim-phone' onChange={setPhone} />
 								</Field>
 								{error && <p className='text-sm text-destructive'>{error}</p>}
 								<Button type='submit' className='w-full' disabled={pending}>

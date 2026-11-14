@@ -1,5 +1,3 @@
-import type { TMemberRole } from './organization.contract';
-
 /**
  * Organization as returned by the Better Auth gateway (server-side shape).
  */
@@ -8,6 +6,8 @@ export type TGatewayOrganization = {
 	name: string;
 	slug: string;
 	logo: string | null;
+	/** Optional free-text description; `null` when unset. */
+	description: string | null;
 	metadata: Record<string, unknown> | null;
 	createdAt: Date;
 	deletedAt: Date | null;
@@ -39,20 +39,21 @@ export type TGatewayFullOrganization = TGatewayOrganization & {
  * repository keeps the only direct write to `deletedAt`.
  */
 export interface IOrganizationAuthGateway {
-	/** Creates an organization; the creator becomes its owner. */
+	/**
+	 * Creates an organization; the creator becomes its owner. `headers`, when
+	 * present, make Better Auth resolve the session, enforce
+	 * `allowUserToCreateOrganization`, and activate the new organization for
+	 * that session.
+	 */
 	createOrganization(input: {
 		name: string;
 		slug: string;
 		logo?: string | null;
+		/** Optional free-text description. */
+		description?: string;
 		metadata?: Record<string, unknown>;
-		/** Creator to add as owner; `role` applies to that membership. */
+		/** Creator to add as owner; role applies to that membership. */
 		userId?: string;
-		role?: TMemberRole;
-		/**
-		 * Caller headers. When present Better Auth resolves the session,
-		 * enforces `allowUserToCreateOrganization`, and activates the new
-		 * organization for that session.
-		 */
 		headers?: Headers;
 	}): Promise<TGatewayOrganization>;
 
@@ -64,7 +65,13 @@ export interface IOrganizationAuthGateway {
 		headers: Headers,
 		input: {
 			organizationId: string;
-			data: { name?: string; logo?: string | null; metadata?: Record<string, unknown> };
+			data: {
+				name?: string;
+				logo?: string | null;
+				/** `null` clears the description. */
+				description?: string | null;
+				metadata?: Record<string, unknown>;
+			};
 		},
 	): Promise<TGatewayOrganization>;
 
@@ -78,13 +85,14 @@ export interface IOrganizationAuthGateway {
 	addMember(input: {
 		organizationId: string;
 		userId: string;
-		role: TMemberRole;
+		/** Comma-joined closed ERP roles (ERP-0041 multi-role). */
+		roles: string[];
 	}): Promise<{ id: string }>;
 
 	/** Requires caller headers (Better Auth checks `member:update`). */
 	updateMemberRole(
 		headers: Headers,
-		input: { organizationId: string; memberId: string; role: TMemberRole },
+		input: { organizationId: string; memberId: string; role: string },
 	): Promise<{ member: { id: string; role: string } }>;
 
 	/** Requires caller headers (Better Auth checks `member:delete`). */

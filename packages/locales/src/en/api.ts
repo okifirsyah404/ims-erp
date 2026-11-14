@@ -13,7 +13,8 @@ const api = {
 	'common.notFound': 'Not found',
 	'common.conflict': 'Conflict',
 	'common.unsupportedMediaType': 'Unsupported media type',
-	'common.imageInvalid': 'Upload a PNG, JPG or WebP image of at most {{max}} MB',
+	'common.imageInvalid': 'Upload a PNG, JPG, WebP or HEIC image of at most {{max}} MB',
+	'common.fileInvalid': 'Upload a PDF, PNG, JPG or WebP file of at most {{max}} MB',
 	'common.payloadTooLarge': 'Payload too large',
 	'common.authenticationRequired': 'Authentication required',
 
@@ -157,6 +158,9 @@ const api = {
 		'Warehouse "{{warehouseCode}}" is inactive; its storages cannot be changed',
 	'inventory.warehousePicInvalid':
 		'The responsible employee is unknown, inactive, or not from a linked organization',
+	'inventory.warehouseManagerExists':
+		'This user is already a person in charge of the warehouse',
+	'inventory.warehouseManagerUserNotFound': 'User not found',
 	'inventory.movementNotFound': 'Stock movement not found',
 	'inventory.movementAlreadyReversed':
 		'This stock movement has already been reversed',
@@ -197,14 +201,20 @@ const api = {
 	'user.globalAdminRequired': 'Global administrator role required',
 	'user.fileFieldExpected': 'Expected a multipart file field',
 	'user.avatarTooLarge': 'Avatar must be 2 MiB or smaller',
-	'user.avatarUnsupportedType': 'Avatar must be a PNG, JPEG, or WebP image',
+	'user.avatarUnsupportedType': 'Avatar must be a PNG, JPG, WebP or HEIC image',
 
 	'organization.lastOrganization':
 		'This is your last organization and cannot be removed',
 	'organization.notFound': 'Organization not found',
-	'organization.companyProfileRequired':
+	'company.profileRequired':
 		'Fill in the company profile (with its document code) first',
-	'numbering.unknownDocumentType': 'Unknown document type',
+	'company.settingInvalid': 'The value does not match its type',
+	'numbering.unknownCodeType': 'Unknown code type',
+	'document.notFound': 'Document not found',
+	'document.notVoidable': 'This document cannot be voided',
+	'document.fileNotFound': 'File not found',
+	'document.shareNotFound': 'This link is invalid or has expired',
+	'document.fileNotAllowed': 'A void document cannot take files',
 	'numbering.pattern.length': 'The pattern must be 1-100 characters',
 	'numbering.pattern.unknownToken': 'Unknown token {{token}}',
 	'numbering.pattern.tokenNotForType':
@@ -234,6 +244,7 @@ const api = {
 	'invitation.inactive': 'This invitation is no longer active',
 	'invitation.expired': 'This invitation link has expired',
 	'invitation.bulkLimited': 'Bulk limited to {{max}} rows',
+	'invitation.unknownOrganizationSlug': 'No organization has slug "{{slug}}"',
 	'invitation.claimUserMissing': 'Invited user no longer exists',
 	'invitation.claimAlreadyActive': 'This account is already active',
 	'invitation.claimInvalid': 'Invalid claim data',
@@ -303,6 +314,29 @@ const api = {
 	'hr.companyEmployeeForbidden': 'Company-level employees are managed by application admins only',
 	'hr.employeeEmailTaken': 'Another employee already uses this login email or code',
 	'hr.employeeInvite': 'The employee invitation failed',
+	'hr.notFound.employee': 'Employee not found',
+	'hr.notFound.leaveType': 'Leave type not found',
+	'hr.notFound.leave': 'Leave request not found',
+	'hr.notFound.overtime': 'Overtime record not found',
+	'hr.notFound.task': 'Task not found',
+	'hr.notFound.salary': 'Salary summary not found',
+	'hr.employeeState.inactive': 'The employee is inactive',
+	'hr.leave.dates': 'The end date is before the start date',
+	'hr.leave.noWorkingDays': 'The range has no working day (Sundays are not counted)',
+	'hr.leave.typeInactive': 'This leave type is not active',
+	'hr.leave.overlap': 'The employee already has leave in these dates',
+	'hr.leave.quota': 'Not enough leave left this year: {{remaining}} day(s) left, {{requested}} requested',
+	'hr.requestState.decide': 'Only a submitted request can be approved or rejected',
+	'hr.requestState.cancel': 'This request is already rejected or cancelled',
+	'hr.selfDecision': 'Someone other than the person who recorded it must decide',
+	'hr.salary.locked': 'This salary summary is approved and locked',
+	'hr.salary.nothingToApprove': 'This period has no draft summary to approve',
+	'hr.salary.netNegative': 'Deductions are larger than the pay',
+	'hr.import.type': 'Upload an .xlsx or .csv file',
+	'hr.import.size': 'The file is larger than 2 MB',
+	'hr.import.empty': 'The file has no data rows',
+	'hr.import.tooMany': 'The file has more than 2000 rows',
+	'hr.attendanceTimes': 'The check-out time is before the check-in time',
 
 	// Tax (ERP-0016)
 	'accounting.taxTypeNotFound': 'Tax type not found',
@@ -416,6 +450,8 @@ const api = {
 	'catalog.listing.item': 'This item already has a listing',
 	'catalog.listing.itemUnavailable': 'The item is archived or inactive',
 	'catalog.listing.noPrice': 'The item has no selling price; use quotation pricing',
+
+	'notification.notFound': 'Notification not found',
 } as const;
 
 export default api;

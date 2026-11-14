@@ -9,7 +9,8 @@ const api: Record<keyof typeof en, string> = {
 	'common.notFound': 'Tidak ditemukan',
 	'common.conflict': 'Konflik',
 	'common.unsupportedMediaType': 'Tipe media tidak didukung',
-	'common.imageInvalid': 'Unggah gambar PNG, JPG, atau WebP maksimal {{max}} MB',
+	'common.imageInvalid': 'Unggah gambar PNG, JPG, WebP, atau HEIC maksimal {{max}} MB',
+	'common.fileInvalid': 'Unggah file PDF, PNG, JPG, atau WebP maksimal {{max}} MB',
 	'common.payloadTooLarge': 'Data yang dikirim terlalu besar',
 	'common.authenticationRequired': 'Autentikasi diperlukan',
 
@@ -153,6 +154,9 @@ const api: Record<keyof typeof en, string> = {
 		'Gudang "{{warehouseCode}}" tidak aktif; penyimpanannya tidak dapat diubah',
 	'inventory.warehousePicInvalid':
 		'Karyawan penanggung jawab tidak dikenal, tidak aktif, atau bukan dari organisasi yang terhubung',
+	'inventory.warehouseManagerExists':
+		'Pengguna ini sudah menjadi penanggung jawab gudang',
+	'inventory.warehouseManagerUserNotFound': 'Pengguna tidak ditemukan',
 	'inventory.movementNotFound': 'Pergerakan stok tidak ditemukan',
 	'inventory.movementAlreadyReversed':
 		'Pergerakan stok ini sudah dibalik sebelumnya',
@@ -192,14 +196,20 @@ const api: Record<keyof typeof en, string> = {
 	'user.globalAdminRequired': 'Peran administrator global diperlukan',
 	'user.fileFieldExpected': 'Diperlukan kolom berkas multipart',
 	'user.avatarTooLarge': 'Avatar maksimal 2 MiB',
-	'user.avatarUnsupportedType': 'Avatar harus berupa gambar PNG, JPEG, atau WebP',
+	'user.avatarUnsupportedType': 'Avatar harus berupa gambar PNG, JPG, WebP, atau HEIC',
 
 	'organization.lastOrganization':
 		'Ini organisasi terakhir Anda dan tidak dapat dihapus',
 	'organization.notFound': 'Organisasi tidak ditemukan',
-	'organization.companyProfileRequired':
+	'company.profileRequired':
 		'Lengkapi profil perusahaan (beserta kode dokumen) terlebih dahulu',
-	'numbering.unknownDocumentType': 'Jenis dokumen tidak dikenal',
+	'company.settingInvalid': 'Nilai tidak sesuai dengan tipenya',
+	'numbering.unknownCodeType': 'Jenis kode tidak dikenal',
+	'document.notFound': 'Dokumen tidak ditemukan',
+	'document.notVoidable': 'Dokumen ini tidak dapat dibatalkan',
+	'document.fileNotFound': 'File tidak ditemukan',
+	'document.shareNotFound': 'Tautan ini tidak valid atau sudah kedaluwarsa',
+	'document.fileNotAllowed': 'Dokumen yang dibatalkan tidak dapat menerima file',
 	'numbering.pattern.length': 'Pola harus 1-100 karakter',
 	'numbering.pattern.unknownToken': 'Token {{token}} tidak dikenal',
 	'numbering.pattern.tokenNotForType':
@@ -230,6 +240,7 @@ const api: Record<keyof typeof en, string> = {
 	'invitation.inactive': 'Undangan ini sudah tidak aktif',
 	'invitation.expired': 'Tautan undangan ini sudah kedaluwarsa',
 	'invitation.bulkLimited': 'Maksimal {{max}} baris',
+	'invitation.unknownOrganizationSlug': 'Tidak ada organisasi dengan slug "{{slug}}"',
 	'invitation.claimUserMissing': 'Pengguna yang diundang tidak lagi tersedia',
 	'invitation.claimAlreadyActive': 'Akun ini sudah aktif',
 	'invitation.claimInvalid': 'Data klaim tidak valid',
@@ -303,6 +314,29 @@ const api: Record<keyof typeof en, string> = {
 	'hr.companyEmployeeForbidden': 'Karyawan company-level hanya dikelola oleh admin aplikasi',
 	'hr.employeeEmailTaken': 'Email atau kode login sudah dipakai karyawan lain',
 	'hr.employeeInvite': 'Invitasi karyawan gagal',
+	'hr.notFound.employee': 'Karyawan tidak ditemukan',
+	'hr.notFound.leaveType': 'Jenis cuti tidak ditemukan',
+	'hr.notFound.leave': 'Pengajuan cuti tidak ditemukan',
+	'hr.notFound.overtime': 'Catatan lembur tidak ditemukan',
+	'hr.notFound.task': 'Tugas tidak ditemukan',
+	'hr.notFound.salary': 'Ringkasan gaji tidak ditemukan',
+	'hr.employeeState.inactive': 'Karyawan tidak aktif',
+	'hr.leave.dates': 'Tanggal selesai sebelum tanggal mulai',
+	'hr.leave.noWorkingDays': 'Rentang tanggal tidak berisi hari kerja (Minggu tidak dihitung)',
+	'hr.leave.typeInactive': 'Jenis cuti ini tidak aktif',
+	'hr.leave.overlap': 'Karyawan sudah punya cuti di tanggal tersebut',
+	'hr.leave.quota': 'Sisa cuti tahun ini tidak cukup: sisa {{remaining}} hari, diajukan {{requested}}',
+	'hr.requestState.decide': 'Hanya pengajuan yang menunggu yang bisa disetujui atau ditolak',
+	'hr.requestState.cancel': 'Pengajuan ini sudah ditolak atau dibatalkan',
+	'hr.selfDecision': 'Persetujuan harus oleh orang lain, bukan yang mencatat pengajuan',
+	'hr.salary.locked': 'Ringkasan gaji ini sudah disetujui dan terkunci',
+	'hr.salary.nothingToApprove': 'Tidak ada draf ringkasan gaji di periode ini',
+	'hr.salary.netNegative': 'Potongan lebih besar dari pendapatan',
+	'hr.import.type': 'Unggah file .xlsx atau .csv',
+	'hr.import.size': 'Ukuran file lebih dari 2 MB',
+	'hr.import.empty': 'File tidak berisi baris data',
+	'hr.import.tooMany': 'File berisi lebih dari 2000 baris',
+	'hr.attendanceTimes': 'Jam pulang lebih awal dari jam masuk',
 
 	// Pajak (ERP-0016)
 	'accounting.taxTypeNotFound': 'Jenis pajak tidak ditemukan',
@@ -419,6 +453,8 @@ const api: Record<keyof typeof en, string> = {
 	'catalog.listing.item': 'Barang ini sudah punya listing',
 	'catalog.listing.itemUnavailable': 'Barang sudah diarsipkan atau tidak aktif',
 	'catalog.listing.noPrice': 'Barang belum punya harga jual; gunakan harga lewat penawaran',
+
+	'notification.notFound': 'Notifikasi tidak ditemukan',
 };
 
 export default api;

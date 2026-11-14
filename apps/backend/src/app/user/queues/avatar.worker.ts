@@ -6,6 +6,7 @@ import { container } from 'tsyringe';
 import { queueConnection } from '@providers/queue/queue.connection';
 import type { QueueWorker } from '@providers/queue/worker-registry';
 import { s3Client } from '@providers/s3/s3';
+import { toWebp } from '@utils/image.util';
 import { avatarObjectKey } from '../constants/avatar-keys';
 import { USER_REPOSITORY_TOKEN } from '../constants/di';
 import type { IUserRepository } from '../contracts/user.repository.interface';
@@ -91,7 +92,10 @@ export async function processAvatarJob(
 	job: { data: AvatarJobData },
 ): Promise<void> {
 	const { userId, name } = job.data;
-	const buffer = await generateAvatarWebp(userId, name);
+	// Third-party API: re-encode so the stored object is always WebP.
+	const buffer = await toWebp(await generateAvatarWebp(userId, name), {
+		maxSize: AVATAR_SIZE,
+	});
 
 	await mkdir(TMP_DIR, { recursive: true });
 	const tmpPath = path.join(TMP_DIR, `${userId}.webp`);

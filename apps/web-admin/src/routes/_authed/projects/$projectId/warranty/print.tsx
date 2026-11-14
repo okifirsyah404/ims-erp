@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { WarrantyDocument } from '@/components/projects/warranty-document';
-import { companyProfileQueryOptions } from '@/lib/company-settings-api';
+import { companyProfileQueryOptions } from '@/lib/company-api';
 import { warrantyQueryOptions } from '@/lib/handover-api';
 
 /** `/projects/$projectId/warranty/print` — the printable warranty certificate. */

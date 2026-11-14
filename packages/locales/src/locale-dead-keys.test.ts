@@ -59,6 +59,10 @@ const CONCATENATED = SOURCES.map((file) => readFileSync(file, 'utf8')).join('\n'
 const DYNAMIC_PREFIXES = [
 	'common:status.',
 	'status.',
+	// Company setting value types, rendered from the stored `valueType`.
+	'settings:settings.type.',
+	// The detail page labels the access trail with the server's action value.
+	'documents:action.',
 	// `t(`inventory:kind.${kind}`)` — an item's kind selects its own label.
 	'inventory:kind.',
 	// The ledger and the adjustment workflow label their enums the same way:
@@ -120,6 +124,12 @@ const DYNAMIC_PREFIXES = [
 	'hr:status.',
 	'hr:employmentType.',
 	'hr:workType.',
+	// M08 records: server values composed into label keys.
+	'hr:request.status.',
+	'hr:request.done.',
+	'hr:import.error.',
+	'hr:taskStatus.',
+	'hr:salary.state.',
 	'licensing:keys.source.',
 	'licensing:keys.status.',
 	'licensing:events.kind.',
@@ -146,6 +156,12 @@ const DYNAMIC_PREFIXES = [
 	'projects.file.',
 	'aftersales.ticketRef.',
 	'aftersales.ticketState.',
+	'hr.notFound.',
+	'hr.employeeState.',
+	'hr.leave.',
+	'hr.requestState.',
+	'hr.salary.',
+	'hr.import.',
 	'licensing.notFound.',
 	'licensing.contract.',
 	'licensing.state.',
@@ -188,6 +204,12 @@ const DYNAMIC_PREFIXES = [
 	'finance:aging.bucket.',
 	'finance:reconciliation.status.',
 	'finance:closing.item.',
+	// Organization info dashboard composes role, project status, activity
+	// action and account type labels from dummy data values.
+	'orgDashboard.roles.',
+	'orgDashboard.projects.status.',
+	'orgDashboard.activity.actions.',
+	'orgDashboard.cash.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

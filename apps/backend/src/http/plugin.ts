@@ -13,13 +13,19 @@
  */
 import { type AnyElysia, Elysia } from 'elysia';
 import { ZodError } from 'zod';
-import { erpGuard, sessionGuard } from '@authorization/elysia-auth';
+import { erpGuard, sessionGuard, warehouseGuard } from '@authorization/elysia-auth';
 import { translator } from '@providers/i18n/translator';
 import { toErrorResponse } from './errors';
 import { errorEnvelope } from './response';
 
 /** Guard combinations a module can declare. */
-export type TGuardSet = 'none' | 'session' | 'erp' | 'erp+session';
+export type TGuardSet =
+	| 'none'
+	| 'session'
+	| 'erp'
+	| 'erp+session'
+	/** Session guard plus the warehouse person-in-charge guard (ADR-0017). */
+	| 'session+warehouse';
 
 /** Options describing one module's plugin. */
 export type TDomainPluginOptions = {
@@ -32,6 +38,44 @@ export type TDomainPluginOptions = {
 	/** Which authorization guards to mount. Defaults to `none`. */
 	guards?: TGuardSet;
 };
+
+/** One field-level message for the error envelope. */
+type TValidationDetail = { field: string | null; message: string };
+
+/**
+ * Reads the offending field and message out of Elysia's `ValidationError`.
+ *
+ * @remarks
+ * Elysia keeps the first validator error on `valueError` for both validator
+ * families, but with different `path` shapes: Zod issues carry an array
+ * (`['id']`) and TypeBox carries a JSON-pointer string (`'/id'`). Its
+ * `message` is a stringified JSON blob, so it is only the fallback.
+ *
+ * `error.value` is deliberately never stringified: it holds the raw request
+ * input, and touching it used to throw (`No default value`) and turn every
+ * validation failure into a 500.
+ *
+ * @param error - The caught `ValidationError`
+ */
+function validationDetail(error: unknown): TValidationDetail {
+	const valueError = (error as { valueError?: unknown } | null)?.valueError;
+	if (valueError && typeof valueError === 'object') {
+		const { path, message } = valueError as {
+			path?: unknown;
+			message?: unknown;
+		};
+		const segments = Array.isArray(path) ? path : [path];
+		const field = segments
+			.filter((segment): segment is string => typeof segment === 'string')
+			.join('.')
+			.replace(/^\./, '');
+		if (typeof message === 'string' && message.length > 0) {
+			return { field: field || null, message };
+		}
+	}
+	const fallback = (error as { message?: unknown } | null)?.message;
+	return { field: null, message: typeof fallback === 'string' ? fallback : '' };
+}
 
 /**
  * Creates the domain plugin builder.
@@ -61,6 +105,9 @@ export function domainPlugin(
 	if (guards === 'session' || guards === 'erp+session') {
 		app = app.use(sessionGuard());
 	}
+	if (guards === 'session+warehouse') {
+		app = app.use(sessionGuard()).use(warehouseGuard());
+	}
 
 	return app.onError({ as: 'local' }, (ctx) => {
 		const { code, error, set } = ctx;
@@ -68,12 +115,16 @@ export function domainPlugin(
 
 		if (code === 'VALIDATION') {
 			set.status = 400;
-			return errorEnvelope(400, t('common.validationFailed'), [
-				{
-					field: error.value ? String(error.value) : null,
-					message: error.message,
-				},
-			]);
+			// `field` is the offending property NAME, never its value. The
+			// previous `String(error.value)` stringified the request input
+			// (`[object Object]`), and with Zod-backed schemas Elysia puts the
+			// raw input there — a `ZodError`-shaped value whose `toString()`
+			// throws (`No default value`), which turned every validation
+			// failure into a 500 once the route was served from `.listen()`.
+			// `.listen()` compiles routes (AOT), so `app.handle()` in tests
+			// never reproduced it.
+			const detail = validationDetail(error);
+			return errorEnvelope(400, t('common.validationFailed'), [detail]);
 		}
 		if (code === 'PARSE' || error instanceof ZodError) {
 			set.status = 400;

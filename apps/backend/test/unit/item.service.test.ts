@@ -27,7 +27,9 @@ function makeItem(overrides: Partial<TItemSelect> = {}): TItemSelect {
 	return {
 		id: '01920000-0000-7000-8000-000000000001',
 		organizationId: 'org-a',
+		code: 'PRD-00001',
 		sku: 'CTRL-01',
+		serialNumber: null,
 		name: 'Door controller',
 		description: null,
 		itemKind: 'product',
@@ -117,8 +119,8 @@ function makeService(seed?: {
 		findActiveByIds: async (ids) => items.filter((i) => ids.includes(i.id) && i.isActive),
 		findBySku: async (org, sku) =>
 			items.find((i) => i.organizationId === org && i.sku === sku) ?? null,
-		create: async (data) => {
-			const row = makeItem({ ...data, id: crypto.randomUUID() } as never);
+		create: async (data, code) => {
+			const row = makeItem({ ...data, code, id: crypto.randomUUID() } as never);
 			items.push(row);
 			return row;
 		},
@@ -186,6 +188,7 @@ function makeService(seed?: {
 			serialUnitRepository,
 			{ findById: async (id) => categories.get(id) ?? null },
 			new AuditWriterDouble(),
+			{ next: async (codeType) => `${codeType}-code` },
 		),
 		items,
 		units,
@@ -205,6 +208,8 @@ describe('ItemService — item shape rules', () => {
 		} as TItemCreateData);
 
 		expect(created.sku).toBe('CTRL-01');
+		// ERP-0043: the code comes from the numbering authority, per kind.
+		expect(created.code).toBe('item_product-code');
 		expect(items).toHaveLength(1);
 	});
 

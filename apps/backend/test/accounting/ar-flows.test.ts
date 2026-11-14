@@ -6,7 +6,7 @@
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import type { CodeNumberService } from '@app/code-number';
 import type {
 	TAccountingPeriodSelect,
 	TChartOfAccountSelect,
@@ -113,6 +113,9 @@ function makeHarness() {
 	const arItems: TArOpenItemSelect[] = [];
 	const paymentsRows = new Map<string, TPaymentSelect>();
 	const allocations: TPaymentAllocationSelect[] = [];
+	/** Registry calls made by the invoice service (ERP-0044). */
+	const registered: { code: string; sourceId: string; documentType: string }[] = [];
+	const voided: string[] = [];
 	let seq = 0;
 	const now = () => new Date();
 	const id = (p: string) => `${p}-${++seq}`;
@@ -264,7 +267,7 @@ function makeHarness() {
 
 	const numbering = {
 		next: async (type: string) => `${type}-${String(++seq).padStart(6, '0')}`,
-	} as unknown as NumberingService;
+	} as unknown as CodeNumberService;
 
 	const tx = new Proxy({} as never, {}) as never;
 	const dbLike = {
@@ -325,6 +328,17 @@ function makeHarness() {
 				return null;
 			},
 		},
+		{
+			// ERP-0044: registry side effect is asserted through `registered`.
+			register: async (input) => {
+				registered.push(input);
+				return {} as never;
+			},
+			voidBySource: async (module, sourceType, sourceId) => {
+				voided.push(`${module}/${sourceType}/${sourceId}`);
+				return 1;
+			},
+		},
 	);
 
 	return {
@@ -339,6 +353,8 @@ function makeHarness() {
 		invoiceItemsRows,
 		arItems,
 		paymentsRows,
+		registered,
+		voided,
 		cashAccounts,
 		cashTxRows,
 		links,
@@ -402,6 +418,15 @@ describe('InvoiceService (F4)', () => {
 		// One invoice.issued event to n8n after the commit (M04).
 		expect(h.events.map((event) => event.topic)).toEqual(['invoice.issued']);
 		expect(h.events[0]!.data).toMatchObject({ invoiceId: issued.id, grandTotal: 1_000_000 });
+		// ERP-0044: issuing registers the invoice in the document registry.
+		expect(h.registered).toEqual([
+			expect.objectContaining({
+				code: issued.code,
+				documentType: 'sales_invoice',
+				sourceType: 'invoice',
+				sourceId: issued.id,
+			}),
+		]);
 	});
 
 	test('issue with tax posts three lines including CR tax payable', async () => {

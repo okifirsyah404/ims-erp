@@ -13,8 +13,12 @@
  *   untouched.
  *
  * Organization roles are a CLOSED enum: the 19 values of
- * `@ims-erp/common erpRoleNames`, stored as the Postgres enum type
- * `organization_role` (`org_role` column, NULL on app-path invites).
+ * `@ims-erp/common erpRoleNames`, stored comma-joined in the text
+ * `org_role` column (NULL on app-path invites) — the same storage shape
+ * Better Auth uses for `auth.members.role`, so multi-role invites are
+ * supported natively (ERP-0041). Validity is enforced by the zod closed
+ * enum at every boundary; the old Postgres enum type
+ * `auth.organization_role` was dropped in the ERP-0041 migration.
  * There is no per-organization dynamic role table.
  */
 import { defineRelationsPart } from 'drizzle-orm';
@@ -22,27 +26,11 @@ import {
 	boolean,
 	integer,
 	index,
-	pgEnum,
 	text,
 	timestamp,
 	uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { erpRoleNames } from '@ims-erp/common';
 import { authSchema, organizations, users } from './auth.schema';
-
-/**
- * Postgres enum for the closed ERP organization role catalog (lives in the
- * `auth` schema). Values mirror `erpRoleNames`; the guardian seeder keeps
- * the type in sync with the catalog (`CREATE TYPE` + `ADD VALUE IF NOT
- * EXISTS`).
- */
-export const organizationRole = pgEnum(
-	'auth.organization_role',
-	erpRoleNames,
-);
-
-/** The Postgres enum name (used by the migration + guardian seeder). */
-export const ORGANIZATION_ROLE_ENUM = 'auth.organization_role' as const;
 
 /**
  * Invitation kind. `app` = application-admin invite (no organization),
@@ -84,9 +72,11 @@ export const userInvitations = authSchema.table(
 		organizationId: text('organization_id').references(() => organizations.id, {
 			onDelete: 'cascade',
 		}),
-		// Org path only: the closed ERP organization role (Postgres enum
-		// `organization_role`). NULL on the app-admin path.
-		orgRole: organizationRole('org_role'),
+		// Org path only: the comma-joined closed ERP organization roles
+		// (e.g. 'admin,finance'), validated by the zod closed enum at every
+		// boundary. NULL on the app-admin path. Same storage shape as
+		// `auth.members.role` (Better Auth multi-role convention).
+		orgRole: text('org_role'),
 		tokenHash: text('token_hash').notNull(),
 		status: text('status', { enum: USER_INVITATION_STATUSES })
 			.default('pending')

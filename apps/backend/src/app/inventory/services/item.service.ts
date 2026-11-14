@@ -1,5 +1,7 @@
 import type { TTx } from '@drizzle/types';
 import { inject, injectable } from 'tsyringe';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
 import { InventoryAuditWriter } from './inventory-audit.writer';
 import { SYSTEM_AUDIT_ACTOR } from '../constants/audit-actor';
 import type { TInventoryAuditActor } from '../constants/audit-actor';
@@ -55,6 +57,29 @@ const STATUSES_BY_KIND: Record<ItemKind, readonly UnitStatus[]> = {
 	component: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
 	material: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
 };
+
+/**
+ * Code type each item kind is numbered with (ERP-0043).
+ *
+ * @remarks
+ * One series per kind, so a product can never consume a material number.
+ * `itemKind` arrives as a plain `text` value from the schema insert type, so
+ * {@link itemCodeType} narrows it instead of indexing this map directly.
+ */
+const ITEM_CODE_TYPES = {
+	product: 'item_product',
+	material: 'item_material',
+	component: 'item_component',
+} as const satisfies Record<ItemKind, string>;
+
+/** Narrows a stored `item_kind` to its code type. */
+function itemCodeType(kind: string) {
+	const codeType = ITEM_CODE_TYPES[kind as ItemKind];
+	if (!codeType) {
+		throw new InventoryRuleViolationError(`Unknown item kind: ${kind}`);
+	}
+	return codeType;
+}
 
 /**
  * Transition matrix and inventory rules.
@@ -128,6 +153,9 @@ export class ItemService {
 		private readonly categoryRepository: Pick<IItemCategoryRepository, 'findById'>,
 		/** Fire-and-forget audit writer (hardening plan D3). */
 		private readonly audit: InventoryAuditWriter,
+		/** ERP-0043: item codes are allocated, never typed. */
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: Pick<CodeNumberService, 'next'>,
 	) {}
 
 	/**
@@ -172,6 +200,11 @@ export class ItemService {
 	/**
 	 * Creates an item.
 	 *
+	 * @remarks
+	 * ERP-0043: the item `code` is allocated by the numbering authority per
+	 * kind (`PRD-`/`MAT-`/`CMP-`); the client never sends it. `sku` and
+	 * `serialNumber` stay user-typed, and the code is immutable afterwards.
+	 *
 	 * @throws {InventoryRuleViolationError} When the kind/data combination is
 	 * impossible (e.g. a serialized service)
 	 * @throws {ItemSkuTakenError} When the SKU is already used for this tenant
@@ -189,14 +222,20 @@ export class ItemService {
 		);
 		if (existing) throw new ItemSkuTakenError();
 
-		const item = await this.itemRepository.create(data);
+		const code = await this.numbering.next(itemCodeType(data.itemKind));
+		const item = await this.itemRepository.create(data, code);
 		await this.audit.record({
 			actor,
 			action: 'item.created',
 			targetType: 'item',
 			targetId: item.id,
 			organizationId: item.organizationId,
-			meta: { sku: item.sku, name: item.name, itemKind: item.itemKind },
+			meta: {
+				code: item.code,
+				sku: item.sku,
+				name: item.name,
+				itemKind: item.itemKind,
+			},
 		});
 		return item;
 	}

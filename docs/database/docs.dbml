@@ -1,6 +1,6 @@
 Project "ENTRAGATE ERP" {
   database_type: 'PostgreSQL'
-  Note: "Canonical persistence contract for ENTRAGATE ERP. 24 Postgres schemas owned by 24 modules. Module isolation is a hard rule: a Ref may only connect tables owned by the same module; Warehouse and Inventory are one module spanning two schemas, so inventory tables keep real FKs into warehouse.*. Cross-module links are logical id columns plus a column note, never a foreign key. Datetimes are unix milliseconds in bigint. Money is exact integer IDR minor units in bigint plus a currency_code column. Tenant scope is organization_id (text, references auth.organizations.id logically). Soft delete is deleted_at (bigint, nullable) on every business table except append-only ledgers and projections, which document their exemption in their table note. Status vocabularies are text guarded by Checks blocks, never native enums, so no enum type can leak into the public schema. Composite tenant foreign keys and partial unique indexes for soft-deleted codes are implemented directly in the Drizzle schema files, which DBML cannot express. Better Auth owned tables (auth.users, auth.sessions, auth.accounts, auth.verifications, auth.organizations, auth.members, auth.invitations, auth.passkeys, auth.apikeys) are the exception to the soft-delete rule: only auth.users and auth.organizations carry deleted_at, the rest are hard deleted by Better Auth itself, so their tables must never gain a deleted_at column nor be queried with one."
+  Note: "Canonical persistence contract for ENTRAGATE ERP. 27 Postgres schemas owned by 27 modules. Module isolation is a hard rule: a Ref may only connect tables owned by the same module, and every module owns exactly one schema - there is no two-schema module. Cross-module links are logical id columns plus a column note, never a foreign key. Datetimes are unix milliseconds in bigint. Money is exact integer IDR minor units in bigint plus a currency_code column. Tenant scope is organization_id (text, references auth.organizations.id logically). Soft delete is deleted_at (bigint, nullable) on every business table except append-only ledgers and projections, which document their exemption in their table note. Status vocabularies are text guarded by Checks blocks, never native enums, so no enum type can leak into the public schema. Composite tenant foreign keys and partial unique indexes for soft-deleted codes are implemented directly in the Drizzle schema files, which DBML cannot express. Better Auth owned tables (auth.users, auth.sessions, auth.accounts, auth.verifications, auth.organizations, auth.members, auth.invitations, auth.passkeys, auth.apikeys) are the exception to the soft-delete rule: only auth.users and auth.organizations carry deleted_at, the rest are hard deleted by Better Auth itself, so their tables must never gain a deleted_at column nor be queried with one."
 }
 
 TableGroup "Identity" {
@@ -14,12 +14,10 @@ TableGroup "Identity" {
   auth.passkeys
   auth.apikeys
   auth.user_profiles
-  auth.user_role_assignments
   auth.portal_identities
   auth.user_preferences
   auth.identity_verifications
   auth.user_devices
-  auth.roles
   auth.user_invitations
 }
 
@@ -30,16 +28,25 @@ TableGroup "Location" {
   location.villages
 }
 
+TableGroup "Company" {
+  company.profiles
+  company.head_office_addresses
+  company.contacts
+  company.bank_accounts
+  company.settings
+}
+
 TableGroup "Organization" {
-  organization.company_profiles
   organization.branches
   organization.departments
   organization.positions
   organization.cost_centers
-  organization.company_bank_accounts
   organization.fiscal_settings
-  organization.document_sequences
-  organization.company_settings
+  organization.settings
+}
+
+TableGroup "Code Number" {
+  code_number.series
 }
 
 TableGroup "CRM" {
@@ -57,7 +64,6 @@ TableGroup "CRM" {
 }
 
 TableGroup "Catalog" {
-  catalog.web_listings
   catalog.item_categories
   catalog.units
   catalog.items
@@ -108,6 +114,7 @@ TableGroup "Inventory" {
   inventory.warehouses
   inventory.warehouse_addresses
   inventory.warehouse_storages
+  inventory.warehouse_managers
   inventory.item_categories
   inventory.items
   inventory.stock_movements
@@ -242,15 +249,15 @@ TableGroup "After-Sales" {
   aftersales.sla_policies
 }
 
-TableGroup "Documents" {
-  documents.document_templates
-  documents.documents
-  documents.document_files
-  documents.document_signatures
-  documents.document_access_logs
-  documents.document_shares
-  documents.document_tags
-  documents.document_tag_links
+TableGroup "Document" {
+  document.templates
+  document.documents
+  document.files
+  document.signatures
+  document.access_logs
+  document.shares
+  document.tags
+  document.tag_links
 }
 
 TableGroup "Approval" {
@@ -310,8 +317,6 @@ TableGroup "Automation" {
   automation.scheduled_jobs
   automation.job_executions
   automation.outbox_messages
-  automation.notification_templates
-  automation.notifications
 }
 
 TableGroup "Licensing" {
@@ -338,6 +343,11 @@ TableGroup "Audit" {
   audit.audit_logs
 }
 
+TableGroup "Notification" {
+  notification.notification_templates
+  notification.notifications
+}
+
 // ---------------------------------------------------------------------------
 // MODULE: Identity  (schema: auth — 9 Better Auth core tables + 6 ERP-owned extension tables)
 // auth.* are Better Auth owned tables. Reproduced from
@@ -361,11 +371,21 @@ Table auth.users {
   bio text
   username text [unique]
   display_username text
+  claimed_at timestamp [note: "When an invited user claimed the invitation (status pending -> active). The true 'joined the application' date; created_at only records the admin's pre-creation of the pending row. ERP-owned extension column."]
+  phone text [note: "Contact phone captured at invitation claim. Partial unique index users_phone_live_idx WHERE phone IS NOT NULL, so the planned phone login can never hit a migration wall. ERP-owned extension column."]
   status text [note: "User lifecycle for the invitation-only flow: pending (pre-created by invitation, no credentials) | active | deactivated (sessions revoked, memberships kept). ERP-owned extension column; default 'active'."]
+  gender text [note: "Personal field moved from hr.employees (ERP-0034). API contract: male | female only."]
+  birth_date bigint [note: "Unix milliseconds at Asia/Jakarta midnight. Personal field moved from hr.employees (ERP-0034)."]
+  birth_place text [note: "Personal field moved from hr.employees (ERP-0034)."]
+  marital_status text [note: "Personal field moved from hr.employees (ERP-0034)."]
   Note: "Better Auth system user. Superadmin flag for the admin plugin."
   Indexes {
     email [unique, name: 'users_email_key']
     username [unique, name: 'users_username_key']
+  }
+  Checks {
+    `gender IS NULL OR gender IN ('male', 'female')`
+    `marital_status IS NULL OR marital_status IN ('single', 'married', 'divorced', 'widowed')`
   }
 }
 
@@ -425,7 +445,8 @@ Table auth.organizations {
   id text [pk]
   name text [not null]
   slug text [not null, unique]
-  logo text
+  logo text [note: "Object-storage key of the organization profile image (`organizations/<id>/logo.webp` uploaded, or `organizations/<id>/logo-generated.webp` for the generated fallback; WebP). Presigned on read; never an expiring URL."]
+  description text [note: "Optional free-text organization description. Validated at the HTTP boundary (trimmed, max 2000 chars); no DB length limit."]
   created_at timestamp [not null]
   metadata text
   Note: "Better Auth organization. An internal organization of the company; multiple may exist inside one company. Not a tenancy boundary - ERP master data is shared company-wide. See ADR-0001 and ADR-0007."
@@ -438,7 +459,7 @@ Table auth.members {
   id text [pk]
   organization_id text [not null]
   user_id text [not null]
-  role text [not null, default: 'member', note: "Comma-separated ERP role keys. Resolved per validated organization against the live auth.roles rows and unioned across the listed roles; the shared catalog in packages/common/src/authorization/erp-permissions.ts is only the fallback vocabulary when no live role row matches."]
+  role text [not null, default: 'member', note: "Comma-separated closed ERP role keys (erpRoleNames in @ims-erp/common), unioned across the listed roles. There is no dynamic role table: ERP authorization reads the shared erpRoleGrants catalog directly (ERP-0041)."]
   created_at timestamp [not null]
   Note: "Better Auth organization membership. HARD DELETED by Better Auth - there is no deleted_at column, so membership queries must never filter on one. Deactivating a user keeps these rows; removing a member deletes them."
   Indexes {
@@ -533,28 +554,6 @@ Table auth.user_profiles {
   }
 }
 
-Table auth.user_role_assignments {
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  user_id text [not null]
-  role text [not null]
-  scope_type text [not null, default: 'organization']
-  scope_id text
-  granted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  granted_at bigint [not null]
-  revoked_at bigint
-  Note: "Extra ERP roles on top of the Better Auth organization membership role. Deny by default, additive only."
-  Indexes {
-    user_id [name: 'user_role_assignments_user_id_idx']
-    (user_id, role, scope_type, scope_id) [name: 'user_role_assignments_scope_uq']
-  }
-  Checks {
-    `scope_type IN ('organization', 'branch', 'department', 'project', 'self')`
-  }
-}
-
 Table auth.portal_identities {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
@@ -637,14 +636,11 @@ Ref: auth.invitations.organization_id > auth.organizations.id [delete: cascade]
 Ref: auth.invitations.inviter_id > auth.users.id [delete: cascade]
 Ref: auth.passkeys.user_id > auth.users.id [delete: cascade]
 Ref: auth.user_profiles.user_id > auth.users.id [delete: cascade]
-Ref: auth.user_role_assignments.user_id > auth.users.id [delete: cascade]
 Ref: auth.portal_identities.user_id > auth.users.id [delete: cascade]
 Ref: auth.user_preferences.user_id > auth.users.id [delete: cascade]
 Ref: auth.identity_verifications.user_id > auth.users.id [delete: cascade]
 Ref: auth.user_devices.user_id > auth.users.id [delete: cascade]
-Ref: auth.roles.organization_id > auth.organizations.id [delete: cascade]
 Ref: auth.user_invitations.organization_id > auth.organizations.id [delete: cascade]
-Ref: auth.user_invitations.role_id > auth.roles.id [delete: set null]
 Ref: auth.user_invitations.invited_by > auth.users.id [delete: cascade]
 
 // ---------------------------------------------------------------------------
@@ -654,22 +650,6 @@ Ref: auth.user_invitations.invited_by > auth.users.id [delete: cascade]
 // drizzle/schemas/role.schema.ts. Never edit by hand.
 // ---------------------------------------------------------------------------
 
-Table auth.roles {
-  deleted_at timestamp
-  id text [pk]
-  organization_id text [not null]
-  name text [not null]
-  rank integer [not null]
-  permissions jsonb [not null, note: "Permission grant { resource: action[] } using the shared catalog vocabulary (@ims-erp/common erpStatements). Deny-by-default."]
-  is_system boolean [not null, default: false]
-  created_at timestamp [not null, default: `now()`]
-  updated_at timestamp [not null, default: `now()`]
-  Note: "Per-organization dynamic role master data. Live grant source for ERP authorization: the guard resolves the caller's memberships against these rows per validated organization. rank drives the server-side escalation guard in the user-management module - SYSTEM_ROLE_RANKS in database/seeders/seed/organization-roles.seeder.ts sets owner=100, admin=80, hr=60, member=10, and every other seeded catalog role gets DEFAULT_CATALOG_RANK=50; custom roles must rank strictly below their creator. is_system rows are seeded from the shared ERP catalog and cannot be deleted. Partial unique (organization_id, name) WHERE deleted_at IS NULL."
-  Indexes {
-    organization_id [name: 'roles_organizationId_idx']
-  }
-}
-
 Table auth.user_invitations {
   deleted_at timestamp
   id text [pk]
@@ -677,7 +657,7 @@ Table auth.user_invitations {
   email text [not null]
   name text [note: "App-admin path input; pre-creates the user and prefills the profile form on claim."]
   organization_id text
-  role_id text
+  org_role text [note: "Comma-joined closed ERP role keys ('admin,finance') assigned to the membership on claim. NULL on app-path invites. Was the Postgres enum organization_role before multi-role support (ERP-0041); validity is enforced by the zod closed enum at every boundary."]
   token_hash text [not null, unique, note: "SHA-256 of the emailed single-use token; raw token never stored. Replaced on resend (old token dies)."]
   status text [not null, default: 'pending', note: "pending -> accepted on claim; cancelled by admin; expired by sweeper (3-day expiry)."]
   invited_by text [not null]
@@ -770,29 +750,21 @@ Ref: location.districts.regency_id > location.regencies.id [delete: cascade]
 Ref: location.villages.district_id > location.districts.id [delete: cascade]
 
 // ---------------------------------------------------------------------------
-// MODULE: Organization  (schema: organization)
-// Company profile, branches, departments, positions, cost centres, bank
-// accounts, fiscal settings, document numbering, settings key value.
-// Tenant scoped by organization_id, except company_profiles,
-// company_bank_accounts and document_sequences, which are company-wide
-// (ADR-0011: one company, organizations are internal departments).
+// MODULE: Company  (schema: company)
+// The one legal company behind every organization (ADR-0011): profile, head
+// office addresses, contacts, bank accounts, company-wide settings. All rows
+// are company-wide — no organization_id column anywhere in this schema.
 // ---------------------------------------------------------------------------
 
-Table organization.company_profiles {
+Table company.profiles {
   id uuid [pk, default: `uuidv7()`]
   legal_name varchar(200) [not null]
   trading_name varchar(200)
   document_code varchar(16) [not null, note: "Company code in document numbers (the {COMPANY} token), upper-case letters and digits."]
   tagline varchar(300)
   tax_id varchar(32) [note: "NPWP number of the company."]
-  email varchar(200)
-  phone varchar(100)
-  website varchar(200)
-  logo_object_key text [note: "Object-storage key of the letterhead logo (PNG, JPG or WebP)."]
+  logo_object_key text [note: "Object-storage key of the letterhead logo. Stored as WebP: the server re-encodes any accepted upload (PNG/JPG/WebP/GIF/BMP/TIFF/HEIC/AVIF, ≤ 2 MB) to WebP."]
   signature_object_key text [note: "Object-storage key of the signature and stamp image printed above the signatory name."]
-  address_line text [note: "Free-text address as printed on the letterhead."]
-  address_village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
-  postal_code varchar(10)
   signatory_name varchar(200)
   signatory_title varchar(100)
   default_quotation_terms text
@@ -805,12 +777,96 @@ Table organization.company_profiles {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Legal and display profile of the one company (letterhead, signatory, default terms). Company-wide, no organization_id (ADR-0011): organizations are internal departments. One live row, enforced by the partial unique index company_profiles_singleton_uq ON ((true)) WHERE deleted_at IS NULL in the Drizzle schema."
+  Note: "Legal and display profile of the one company (letterhead, signatory, default terms). Company-wide, no organization_id (ADR-0011): one company per application; organizations (tenants) sit under it and do not own it. Whether an organization is a subsidiary is out of scope. Addresses, phone numbers, email and the website moved to company.head_office_addresses and company.contacts (ERP-0042). One live row, enforced by the partial unique index profiles_singleton_uq ON ((true)) WHERE deleted_at IS NULL in the Drizzle schema."
   Checks {
     `status IN ('active', 'inactive')`
     `document_code ~ '^[A-Z0-9]+$'`
   }
 }
+
+Table company.head_office_addresses {
+  id uuid [pk, default: `uuidv7()`]
+  label varchar(100) [not null, default: 'head_office', note: "Free label distinguishing several office addresses."]
+  address_line text [not null, note: "Free-text address as printed on the letterhead."]
+  village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
+  postal_code varchar(10)
+  is_primary boolean [not null, default: false, note: "The address printed on the letterhead; at most one live row."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Office address of the company, company-wide (ADR-0011). The primary address is what printed documents use. Partial unique index is_primary WHERE deleted_at IS NULL AND is_primary in the Drizzle schema."
+}
+
+Table company.contacts {
+  id uuid [pk, default: `uuidv7()`]
+  contact_type text [not null]
+  value varchar(200) [not null]
+  label varchar(100)
+  is_primary boolean [not null, default: false, note: "The contact shown on the letterhead per type; at most one live row per type."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Company contact channel, company-wide (ADR-0011). Email/phone/website columns left company.profiles in ERP-0042. Partial unique index (contact_type, is_primary) WHERE deleted_at IS NULL AND is_primary in the Drizzle schema."
+  Indexes {
+    value [name: 'contacts_value_idx']
+  }
+  Checks {
+    `contact_type IN ('phone', 'email', 'whatsapp', 'fax', 'other')`
+  }
+}
+
+Table company.bank_accounts {
+  id uuid [pk, default: `uuidv7()`]
+  code varchar(32) [not null]
+  bank_name varchar(100) [not null]
+  bank_code varchar(20)
+  branch_name varchar(100)
+  account_number varchar(50) [not null]
+  account_holder varchar(200) [not null]
+  currency_code varchar(3) [not null, default: 'IDR']
+  invoice_usage text [note: "Account printed on invoices with VAT (vat) or without VAT (non_vat); null for other accounts."]
+  is_primary boolean [not null, default: false]
+  is_active boolean [not null, default: true]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Company owned bank account, company-wide (ADR-0011). Was organization.company_bank_accounts until ERP-0042. Finance owns its own operational cash and bank accounts, this is the master reference. Partial unique indexes in the Drizzle schema: code and invoice_usage are unique among live rows."
+  Indexes {
+    account_number [name: 'bank_accounts_account_number_idx']
+  }
+  Checks {
+    `invoice_usage IS NULL OR invoice_usage IN ('vat', 'non_vat')`
+  }
+}
+
+Table company.settings {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  setting_group text [not null]
+  setting_key text [not null]
+  setting_value text
+  value_type text [not null, default: 'string']
+  is_secret boolean [not null, default: false]
+  description text
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Company-wide configuration key value store (ERP-0042). Organization-scoped settings live in organization.settings. Secret values are never read back by the client. ERP-0045: is_secret is reserved and always false; the API neither accepts nor returns it, and no secret read path exists yet (the write-only rule applies when dynamic secrets are built)."
+  Indexes {
+    (setting_group, setting_key) [unique, name: 'company_settings_scope_uq']
+  }
+  Checks {
+    `value_type IN ('string', 'number', 'boolean', 'json', 'date')`
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MODULE: Organization  (schema: organization)
+// Internal departments of the one company (ADR-0007/ADR-0011): branches,
+// departments, positions, cost centres, fiscal settings, per-organization
+// settings. Every table is tenant scoped by organization_id (logical
+// reference to auth.organizations.id).
+// ---------------------------------------------------------------------------
 
 Table organization.branches {
   id uuid [pk, default: `uuidv7()`]
@@ -895,30 +951,6 @@ Table organization.cost_centers {
   }
 }
 
-Table organization.company_bank_accounts {
-  id uuid [pk, default: `uuidv7()`]
-  code varchar(32) [not null]
-  bank_name varchar(100) [not null]
-  bank_code varchar(20)
-  branch_name varchar(100)
-  account_number varchar(50) [not null]
-  account_holder varchar(200) [not null]
-  currency_code varchar(3) [not null, default: 'IDR']
-  invoice_usage text [note: "Account printed on invoices with VAT (vat) or without VAT (non_vat); null for other accounts."]
-  is_primary boolean [not null, default: false]
-  is_active boolean [not null, default: true]
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
-  Note: "Company owned bank account, company-wide (ADR-0011). Finance owns its own operational cash and bank accounts, this is the master reference. Partial unique indexes in the Drizzle schema: code and invoice_usage are unique among live rows."
-  Indexes {
-    account_number [name: 'company_bank_accounts_account_number_idx']
-  }
-  Checks {
-    `invoice_usage IS NULL OR invoice_usage IN ('vat', 'non_vat')`
-  }
-}
-
 Table organization.fiscal_settings {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
@@ -941,10 +973,15 @@ Table organization.fiscal_settings {
   }
 }
 
-Table organization.document_sequences {
+// MODULE: CodeNumber  (schema: code_number)
+// The one numbering authority (ERP-0009): one code series per code type for
+// the whole company. Was organization.document_sequences until ERP-0042.
+// ---------------------------------------------------------------------------
+
+Table code_number.series {
   id uuid [pk, default: `uuidv7()`]
-  module varchar(32) [not null, note: "Owning module of the document type (sales, crm, procurement, inventory, assets, projects, aftersales, licensing)."]
-  document_type varchar(32) [not null]
+  module varchar(32) [not null, note: "Owning module of the code type (sales, crm, procurement, inventory, assets, projects, aftersales, licensing)."]
+  code_type varchar(32) [not null]
   pattern varchar(100) [note: "Token pattern, e.g. {SEQ:4}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YY}; null means the code default for the type."]
   reset_policy text [note: "null means the code default for the type."]
   period_key varchar(7) [not null, note: "Period the counter belongs to: 2026 (yearly), 2026-11 (monthly), all (never). A new period starts again at 1."]
@@ -953,14 +990,14 @@ Table organization.document_sequences {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "One numbering series per document type for the whole company (ADR-0011); the one numbering authority (ERP-0009) — main's per-organization sequences were merged into it on 2026-11-06 (migration merge_main_reconcile), inventory and asset codes keep their shape as default patterns. Allocation is one atomic INSERT ... ON CONFLICT DO UPDATE ... RETURNING in the owning repository. Partial unique index on document_type WHERE deleted_at IS NULL in the Drizzle schema."
+  Note: "One code series per code type for the whole company (ADR-0011); the one numbering authority (ERP-0009) - main's per-organization sequences were merged into it on 2026-11-06 (migration merge_main_reconcile), inventory and asset codes keep their shape as default patterns. Was organization.document_sequences (column document_type renamed code_type) until ERP-0042. ERP-0043 added item_product/item_material/item_component (PRD/MAT/CMP, {TYPE}-{SEQ:5}, reset never) so an item code is allocated like any other. Allocation is one atomic INSERT ... ON CONFLICT DO UPDATE ... RETURNING in the owning repository. Partial unique index on code_type WHERE deleted_at IS NULL in the Drizzle schema."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
     `next_number > 0`
   }
 }
 
-Table organization.company_settings {
+Table organization.settings {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
@@ -973,9 +1010,9 @@ Table organization.company_settings {
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Company wide configuration key value store. Secret values are never read back by the client."
+  Note: "Organization-scoped configuration key value store (ERP-0042; was the planned organization.company_settings). Company-wide settings live in company.settings. Secret values are never read back by the client."
   Indexes {
-    (organization_id, setting_group, setting_key) [unique, name: 'company_settings_scope_uq']
+    (organization_id, setting_group, setting_key) [unique, name: 'organization_settings_scope_uq']
   }
   Checks {
     `value_type IN ('string', 'number', 'boolean', 'json', 'date')`
@@ -1257,10 +1294,9 @@ Table crm.customer_credit_limits {
 // MODULE: Catalog  (schema: catalog)
 // Unified goods and service master: categories, units, items, variants,
 // conversions, bundles, attributes, documents, price lists and prices.
-// Tenant scoped. Item prices are exact integer minor units. The item master
-// itself moved to inventory.items (ADR-0011); the scaffold tables here are
-// target-only. web_listings (M04 stage 1, company-wide) is built: what the
-// public website shows of an inventory item.
+// Tenant scoped. Item prices are exact integer minor units.
+// Built so far: `web_listings` (M04 stage 1) — company-wide, what the public
+// website shows of an inventory item. Everything else here is target-only.
 // ---------------------------------------------------------------------------
 
 Table catalog.web_listings {
@@ -1450,7 +1486,7 @@ Table catalog.item_documents {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   item_id uuid [not null]
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   document_type text [not null]
   created_at bigint [not null]
   Note: "Attachment of a product manual, datasheet or certificate to an item."
@@ -1804,7 +1840,7 @@ Table sales.contracts {
   start_date date
   end_date date
   signed_on date
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   notes text
   created_at bigint [not null]
   updated_at bigint [not null]
@@ -2470,10 +2506,10 @@ Ref: procurement.purchase_return_items.purchase_return_id > procurement.purchase
 Ref: procurement.purchase_return_items.purchase_order_item_id > procurement.purchase_order_items.id [delete: set null]
 
 
-// MODULE: Inventory, warehouse schema  (same module as Inventory below)
-// Warehouse master: warehouses and their zones and bins. Same module as
-// Inventory; the split schema is storage grouping, not an ownership boundary,
-// so Inventory tables keep real foreign keys into warehouse.*.
+// MODULE: Inventory  (schema: inventory)
+// Warehouse master: warehouses and their storages. Same module as the stock
+// ledger below; the schema was folded into inventory (ADR-0008), so these
+// foreign keys are ordinary intra-module references.
 // Tenant scoped.
 // ---------------------------------------------------------------------------
 
@@ -2485,6 +2521,7 @@ Table inventory.warehouses {
   responsible_employee_id uuid [note: "Display-only person in charge (ADR-0010); grants no access. Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
   is_default boolean [not null, default: false]
   is_active boolean [not null, default: true]
+  image_url text [note: "DEVIATION (shipped): dbml originally omitted this column. Optional display image URL for the warehouse card."]
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
@@ -2550,10 +2587,27 @@ Table inventory.warehouse_organizations {
   }
 }
 
+Table inventory.warehouse_managers {
+  id uuid [pk, default: `uuidv7()`]
+  warehouse_id uuid [not null]
+  user_id text [note: "The person in charge. Logical reference to auth.users.id; cross-module FK intentionally omitted (ADR-0014). Nullable per the cross-module rule: presence is asserted by the Inventory service before an assignment is written, and a NULL row grants nothing. Validated through the Identity module contract."]
+  assigned_by text [note: "Application admin who made the assignment. Logical reference to auth.users.id; cross-module FK intentionally omitted."]
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Per-user, per-warehouse person-in-charge grant (ADR-0017). A second access path to warehouses only - it is not an organization role and it grants no stock operation. A PIC may read, update, archive, import and export their warehouse; create stays application-admin-only. Unlike warehouse_organizations, this grant deliberately ignores the warehouse-organization link (ADR-0017 decision 3), so a PIC keeps access when the warehouse is not linked to their active organization. Assign and unassign are application-admin-only and audited; a soft-deleted row grants nothing."
+  Indexes {
+    (warehouse_id, user_id) [unique, name: 'warehouse_managers_uq', note: 'WHERE deleted_at IS NULL']
+    user_id [name: 'warehouse_managers_user_id_idx']
+  }
+}
+
 Table inventory.items {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Null means global/company-wide (ADR-0008). Logical reference to auth.organizations.id; cross-module FK intentionally omitted."]
-  sku varchar(64) [not null]
+  code varchar(32) [not null, note: "Human reference, allocated by the numbering authority (ERP-0043): item_product -> PRD-00001, item_material -> MAT-00001, item_component -> CMP-00001. Immutable after create."]
+  sku varchar(64) [not null, note: "Manufacturer/business SKU, typed by the user. Unique per tenant; immutable after create."]
+  serial_number text [note: "Optional manufacturer serial of a serialized item master (ERP-0043). Per-unit serials stay in inventory.serial_tracked_items."]
   name text [not null]
   description text
   item_kind text [not null]
@@ -2574,8 +2628,10 @@ Table inventory.items {
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
-  Note: "Item master at SKU level. One item master for the whole ERP; catalog.items is superseded by this table (ADR-0008). Status exists only on serialized units, never here. ERP-0036 D9: item_kind is product|component|material only — physical tools are assets (assets.assets) and services are neither stocked nor serialized, so the former service clause is gone."
+  Note: "Item master at SKU level. One item master for the whole ERP; catalog.items is superseded by this table (ADR-0008). Status exists only on serialized units, never here. ERP-0036 D9: item_kind is product|component|material only - physical tools are assets (assets.assets) and services are neither stocked nor serialized, so the former service clause is gone. ERP-0043 added code (numbering authority) and serial_number; sku stays user-typed."
   Indexes {
+    (organization_id, code) [unique, name: 'inventory_items_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
+    (code) [unique, name: 'inventory_items_global_code_uq', note: 'WHERE organization_id IS NULL']
     (organization_id, sku) [unique, name: 'inventory_items_org_sku_uq', note: 'WHERE organization_id IS NOT NULL']
     (sku) [unique, name: 'inventory_items_global_sku_uq', note: 'WHERE organization_id IS NULL']
     item_kind [name: 'inventory_items_kind_idx']
@@ -2831,6 +2887,7 @@ Table inventory.serial_tracked_items {
 Ref: inventory.warehouse_addresses.warehouse_id > inventory.warehouses.id [delete: cascade]
 Ref: inventory.warehouse_storages.warehouse_id > inventory.warehouses.id [delete: cascade]
 Ref: inventory.warehouse_organizations.warehouse_id > inventory.warehouses.id [delete: cascade]
+Ref: inventory.warehouse_managers.warehouse_id > inventory.warehouses.id [delete: cascade]
 Ref: inventory.items.category_id > inventory.item_categories.id [delete: restrict]
 Ref: inventory.stock_movements.item_id > inventory.items.id [delete: restrict]
 Ref: inventory.stock_movements.warehouse_id > inventory.warehouses.id [delete: restrict]
@@ -3268,7 +3325,12 @@ Table projects.project_work_plans {
 // MODULE: HR  (schema: hr)
 // Employee master, addresses, contracts, attendance, leave, discipline,
 // training, certifications, salary components, bank accounts, emergency
-// contacts, documents, transfers and separation. Tenant scoped.
+// contacts, documents, transfers and separation. Built: employees
+// (ERP-0034, organization or company level) and the M08 stage 1 records
+// bank_accounts, attendance_records, leave_types, leave_requests,
+// overtime_requests, employee_tasks and salary_summaries. The M08 records
+// carry no organization_id: they belong to an employee and are visible to
+// whoever can see that employee. The other tables are target-only.
 // ---------------------------------------------------------------------------
 
 Table hr.employees {
@@ -3278,20 +3340,16 @@ Table hr.employees {
   full_name text [not null]
   legal_name text
   nickname text
-  gender text
-  birth_date date
-  birth_place text
-  national_id text
-  marital_status text
-  email text
-  phone text
-  whatsapp text
+  national_id varchar(32)
+  email varchar(320)
+  phone varchar(100)
+  whatsapp varchar(100)
   photo_object_key text
   employment_status text [not null, default: 'active']
   employment_type text [not null, default: 'permanent']
   work_type text [not null, default: 'onsite']
-  hire_date date
-  termination_date date
+  hire_date bigint [note: "DEVIATION (shipped): unix milliseconds, not a business `date`. ERP-0034 shipped this column as bigint (unix-timestamp custom type) and the migration matches; changing it needs a new migration."]
+  termination_date bigint [note: "DEVIATION (shipped): unix milliseconds, not a business `date`. Same reason as hire_date."]
   department_id uuid [note: "Logical reference to organization.departments.id. Cross-module FK intentionally omitted. Validated through the Organization module contract."]
   position_id uuid [note: "Logical reference to organization.positions.id. Cross-module FK intentionally omitted. Validated through the Organization module contract."]
   branch_id uuid [note: "Logical reference to organization.branches.id. Cross-module FK intentionally omitted. Validated through the Organization module contract."]
@@ -3310,10 +3368,8 @@ Table hr.employees {
     (organization_id, full_name) [name: 'employees_org_name_idx']
   }
   Checks {
-    `gender IN ('male', 'female', 'other')`
-    `marital_status IN ('single', 'married', 'divorced', 'widowed')`
-    `employment_status IN ('active', 'on_leave', 'suspended', 'terminated')`
-    `employment_type IN ('permanent', 'contract', 'freelance', 'intern')`
+    `employment_status IN ('active', 'inactive', 'terminated')`
+    `employment_type IN ('permanent', 'contract', 'probation', 'internship', 'outsourced')`
     `work_type IN ('onsite', 'remote', 'hybrid')`
     `termination_date IS NULL OR hire_date IS NULL OR termination_date >= hire_date`
   }
@@ -3356,7 +3412,7 @@ Table hr.employment_contracts {
   currency_code varchar(3) [not null, default: 'IDR']
   status text [not null, default: 'draft']
   signed_on date
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   approved_at bigint
   created_at bigint [not null]
@@ -3376,35 +3432,28 @@ Table hr.employment_contracts {
 }
 
 Table hr.attendance_records {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   employee_id uuid [not null]
-  attendance_date date [not null]
-  check_in_at bigint
-  check_out_at bigint
-  work_minutes integer [not null, default: 0]
-  overtime_minutes integer [not null, default: 0]
-  late_minutes integer [not null, default: 0]
-  status text [not null, default: 'present']
-  source text [not null, default: 'manual']
-  latitude numeric(10,7)
-  longitude numeric(10,7)
+  attendance_date date [not null, note: "Business date (Asia/Jakarta)."]
+  status text [not null]
+  check_in_at bigint [note: "Unix ms (UTC)."]
+  check_out_at bigint [note: "Unix ms (UTC)."]
+  source text [not null, default: 'manual', note: "manual, import, or leave (written by an approved leave request)."]
+  leave_request_id uuid
   notes text
+  recorded_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "One attendance row per employee per day. Times are unix milliseconds in UTC."
+  deleted_at bigint
+  Note: "One attendance row per employee per day (M08 stage 1, company-wide), entered by HR/admin or imported. Unique (employee_id, attendance_date) among live rows."
   Indexes {
-    (organization_id, employee_id, attendance_date) [unique, name: 'attendance_records_day_uq']
     attendance_date [name: 'attendance_records_date_idx']
-    status [name: 'attendance_records_status_idx']
+    leave_request_id [name: 'attendance_records_leave_request_id_idx']
   }
   Checks {
-    `status IN ('present', 'absent', 'leave', 'sick', 'permit', 'holiday', 'remote')`
-    `source IN ('manual', 'device', 'mobile', 'import')`
-    `work_minutes >= 0`
-    `overtime_minutes >= 0`
-    `late_minutes >= 0`
+    `status IN ('present', 'permit', 'sick', 'leave', 'absent', 'holiday')`
+    `source IN ('manual', 'import', 'leave')`
+    `check_out_at IS NULL OR check_in_at IS NULL OR check_out_at >= check_in_at`
   }
 }
 
@@ -3438,54 +3487,125 @@ Table hr.attendance_corrections {
 
 Table hr.leave_types {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [not null, note: "Unique among live rows."]
   name text [not null]
-  max_days_per_year numeric(8,2)
-  is_paid boolean [not null, default: true]
-  carry_forward boolean [not null, default: false]
-  requires_approval boolean [not null, default: true]
+  attendance_status text [not null, default: 'leave', note: "Attendance status written for the approved days."]
+  uses_quota boolean [not null, default: false, note: "Counts against the annual quota."]
+  annual_quota_days integer [not null, default: 0]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Leave type definition."
-  Indexes {
-    (organization_id, code) [unique, name: 'leave_types_org_code_uq']
+  Note: "Leave type (M08 stage 1, company-wide). Seeded: annual leave (12 days, quota), sick, permit."
+  Checks {
+    `attendance_status IN ('leave', 'sick', 'permit')`
+    `annual_quota_days >= 0`
   }
 }
 
 Table hr.leave_requests {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  leave_type_id uuid [not null]
   employee_id uuid [not null]
+  leave_type_id uuid [not null]
   start_date date [not null]
   end_date date [not null]
-  total_days numeric(8,2) [not null, default: 1]
+  days integer [not null, note: "Working days in the range (Sundays excluded), counted by the service."]
   reason text
-  status text [not null, default: 'requested']
-  requested_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  requested_at bigint [not null]
-  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  approved_at bigint
-  rejected_reason text
-  cancelled_at bigint
+  status text [not null, default: 'submitted']
+  recorded_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. HR records the request for the employee; nullable per ADR-0014, always set by the service."]
+  decided_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Never the recorder."]
+  decided_at bigint
+  decision_note text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Leave request of an employee."
+  deleted_at bigint
+  Note: "Leave request recorded by HR (M08 stage 1, company-wide). Approval writes attendance rows; cancelling an approved request removes them."
   Indexes {
-    (organization_id, code) [unique, name: 'leave_requests_org_code_uq']
     employee_id [name: 'leave_requests_employee_id_idx']
-    leave_type_id [name: 'leave_requests_leave_type_id_idx']
     status [name: 'leave_requests_status_idx']
   }
   Checks {
-    `status IN ('requested', 'approved', 'rejected', 'cancelled', 'taken')`
+    `status IN ('submitted', 'approved', 'rejected', 'cancelled')`
     `end_date >= start_date`
-    `total_days > 0`
+    `days > 0`
+  }
+}
+
+Table hr.overtime_requests {
+  id uuid [pk, default: `uuidv7()`]
+  employee_id uuid [not null]
+  work_date date [not null]
+  hours numeric(5,2) [not null]
+  reason text
+  status text [not null, default: 'submitted']
+  recorded_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Nullable per ADR-0014, always set by the service."]
+  decided_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Never the recorder."]
+  decided_at bigint
+  decision_note text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Overtime recorded by HR and approved (M08 stage 1, company-wide); approved hours feed the salary summary by hand."
+  Indexes {
+    employee_id [name: 'overtime_requests_employee_id_idx']
+    work_date [name: 'overtime_requests_work_date_idx']
+  }
+  Checks {
+    `status IN ('submitted', 'approved', 'rejected', 'cancelled')`
+    `hours > 0 AND hours <= 24`
+  }
+}
+
+Table hr.employee_tasks {
+  id uuid [pk, default: `uuidv7()`]
+  employee_id uuid [not null]
+  title varchar(200) [not null]
+  description text
+  due_date date
+  status text [not null, default: 'open']
+  done_at bigint
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Simple task assigned to an employee outside projects (M08 stage 1); project tasks live in projects.project_tasks."
+  Indexes {
+    employee_id [name: 'employee_tasks_employee_id_idx']
+    status [name: 'employee_tasks_status_idx']
+  }
+  Checks {
+    `status IN ('open', 'done', 'cancelled')`
+  }
+}
+
+Table hr.salary_summaries {
+  id uuid [pk, default: `uuidv7()`]
+  period varchar(7) [not null, note: "YYYY-MM."]
+  employee_id uuid [not null]
+  employee_name text [not null, note: "Snapshot."]
+  base_salary bigint [not null, default: 0, note: "IDR minor units, like every amount here."]
+  allowances bigint [not null, default: 0]
+  overtime_pay bigint [not null, default: 0]
+  bonus bigint [not null, default: 0]
+  deductions bigint [not null, default: 0]
+  net_pay bigint [not null]
+  notes text
+  status text [not null, default: 'draft']
+  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  approved_at bigint
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Monthly salary summary per employee, entered or imported by HR/finance and approved by the owner; approved rows are locked (M08 stage 1). Unique (period, employee_id) among live rows. Payroll automation (stage 2) and the journal (M09) are not built."
+  Indexes {
+    period [name: 'salary_summaries_period_idx']
+    employee_id [name: 'salary_summaries_employee_id_idx']
+  }
+  Checks {
+    `status IN ('draft', 'approved')`
+    `base_salary >= 0 AND allowances >= 0 AND overtime_pay >= 0 AND bonus >= 0 AND deductions >= 0`
+    `net_pay = base_salary + allowances + overtime_pay + bonus - deductions`
   }
 }
 
@@ -3530,7 +3650,7 @@ Table hr.training_records {
   hours numeric(8,2)
   certificate_number text
   status text [not null, default: 'planned']
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Training attended by an employee."
@@ -3554,7 +3674,7 @@ Table hr.certifications {
   expiry_date date
   certificate_number text
   status text [not null, default: 'valid']
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Certification of an employee, for example a technician licence."
@@ -3598,22 +3718,14 @@ Table hr.employee_salary_components {
 
 Table hr.bank_accounts {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   employee_id uuid [not null]
-  bank_name text [not null]
-  account_number text [not null]
-  account_holder text [not null]
-  is_primary boolean [not null, default: false]
-  is_verified boolean [not null, default: false]
-  notes text
+  bank_name varchar(100) [not null]
+  account_number varchar(50) [not null, note: "Masked for callers without employee:read_private."]
+  account_holder varchar(200) [not null]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Bank account of an employee, used by the payroll payment batch. Restricted access."
-  Indexes {
-    employee_id [name: 'bank_accounts_employee_id_idx']
-    account_number [name: 'bank_accounts_account_number_idx']
-  }
+  Note: "Salary bank account of an employee, one live row per employee (M08 stage 1). Restricted access."
 }
 
 Table hr.employee_emergencies {
@@ -3639,7 +3751,7 @@ Table hr.employee_documents {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   employee_id uuid [not null]
-  document_id uuid [not null, note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [not null, note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   document_type text [not null]
   valid_from date
   valid_to date
@@ -3713,16 +3825,20 @@ Table hr.separation_records {
 Ref: hr.employees.manager_employee_id > hr.employees.id [delete: set null]
 Ref: hr.employee_addresses.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.employment_contracts.employee_id > hr.employees.id [delete: cascade]
-Ref: hr.attendance_records.employee_id > hr.employees.id [delete: cascade]
+Ref: hr.attendance_records.employee_id > hr.employees.id [delete: restrict]
+Ref: hr.attendance_records.leave_request_id > hr.leave_requests.id [delete: restrict]
 Ref: hr.attendance_corrections.attendance_record_id > hr.attendance_records.id [delete: cascade]
 Ref: hr.attendance_corrections.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.leave_requests.leave_type_id > hr.leave_types.id [delete: restrict]
-Ref: hr.leave_requests.employee_id > hr.employees.id [delete: cascade]
+Ref: hr.leave_requests.employee_id > hr.employees.id [delete: restrict]
+Ref: hr.overtime_requests.employee_id > hr.employees.id [delete: restrict]
+Ref: hr.employee_tasks.employee_id > hr.employees.id [delete: restrict]
+Ref: hr.salary_summaries.employee_id > hr.employees.id [delete: restrict]
 Ref: hr.disciplinary_records.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.training_records.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.certifications.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.employee_salary_components.employee_id > hr.employees.id [delete: cascade]
-Ref: hr.bank_accounts.employee_id > hr.employees.id [delete: cascade]
+Ref: hr.bank_accounts.employee_id > hr.employees.id [delete: restrict]
 Ref: hr.employee_emergencies.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.employee_documents.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.employee_transfers.employee_id > hr.employees.id [delete: cascade]
@@ -3840,7 +3956,7 @@ Table payroll.payslips {
   payment_status text [not null, default: 'unpaid']
   payment_date date
   published_at bigint
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Payslip of one employee in one payroll run."
@@ -3957,7 +4073,7 @@ Table payroll.payroll_payments {
   status text [not null, default: 'draft']
   executed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   executed_at bigint
-  proof_document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  proof_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Payment batch of a payroll run. Execution is only allowed on an approved run."
@@ -4170,7 +4286,7 @@ Table finance.expense_settlement_items {
   currency_code varchar(3) [not null, default: 'IDR']
   is_advance_offset boolean [not null, default: false]
   project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract."]
-  receipt_document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  receipt_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   Note: "Line of an expense settlement."
   Indexes {
@@ -4428,7 +4544,7 @@ Table finance.expense_claim_items {
   amount bigint [not null, default: 0]
   tax_amount bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
-  receipt_document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  receipt_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   Note: "Line of an expense claim."
   Indexes {
@@ -4442,18 +4558,15 @@ Table finance.expense_claim_items {
 
 Table finance.payment_allocations {
   updated_at bigint [not null]
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   payment_id uuid [not null]
   target_type text [not null]
   sales_invoice_id uuid
   supplier_bill_id uuid
-  allocated_amount bigint [not null]
-  currency_code varchar(3) [not null, default: 'IDR']
-  allocated_at bigint [not null]
+  amount bigint [not null]
   created_at bigint [not null]
-  Note: "Allocation of one payment to one target document (a sales invoice or a supplier bill), for documents settled in several instalments."
+  Note: "Allocation of one payment to one target document (a sales invoice or a supplier bill), for documents settled in several instalments. DEVIATION (shipped): the column is `amount` (not allocated_amount) and there is no currency_code, allocated_at or deleted_at - the row inherits the payment's currency and instant, and is cascade-deleted with the payment. Changing this needs a new migration."
   Indexes {
     (payment_id, target_type, sales_invoice_id, supplier_bill_id) [unique, name: 'payment_allocations_uq']
     sales_invoice_id [name: 'payment_allocations_sales_invoice_id_idx']
@@ -4462,7 +4575,7 @@ Table finance.payment_allocations {
   Checks {
     `target_type IN ('sales_invoice', 'supplier_bill')`
     `(target_type = 'sales_invoice' AND sales_invoice_id IS NOT NULL) OR (target_type = 'supplier_bill' AND supplier_bill_id IS NOT NULL)`
-    `allocated_amount > 0`
+    `amount > 0`
   }
 }
 
@@ -4480,8 +4593,7 @@ Table finance.ar_open_items {
   status text [not null, default: 'open']
   created_at bigint [not null]
   updated_at bigint [not null]
-  deleted_at bigint
-  Note: "Accounts receivable open-item sub-ledger. Finance's own mirror of what is still owed per issued invoice, updated through the posting flow. Never computed by reading sales tables. Aging reports are built on this table."
+  Note: "Accounts receivable open-item sub-ledger. Finance's own mirror of what is still owed per issued invoice, updated through the posting flow. Never computed by reading sales tables. Aging reports are built on this table. DEVIATION (shipped): no deleted_at - the row is a running balance cleared by status, never soft-deleted (projection exemption)."
   Indexes {
     (organization_id, sales_invoice_id) [unique, name: 'ar_open_items_org_invoice_uq']
     customer_id [name: 'ar_open_items_customer_id_idx']
@@ -4511,8 +4623,7 @@ Table finance.ap_open_items {
   status text [not null, default: 'open']
   created_at bigint [not null]
   updated_at bigint [not null]
-  deleted_at bigint
-  Note: "Accounts payable open-item sub-ledger, the AP twin of finance.ar_open_items."
+  Note: "Accounts payable open-item sub-ledger, the AP twin of finance.ar_open_items. DEVIATION (shipped): no deleted_at - the row is a running balance cleared by status, never soft-deleted (projection exemption)."
   Indexes {
     (organization_id, supplier_bill_id) [unique, name: 'ap_open_items_org_bill_uq']
     supplier_id [name: 'ap_open_items_supplier_id_idx']
@@ -4784,7 +4895,7 @@ Table accounting.tax_corrections {
   amount bigint [not null]
   currency_code varchar(3) [not null, default: 'IDR']
   reason text [not null]
-  evidence_document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  evidence_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_by text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
@@ -5025,7 +5136,8 @@ Table assets.assets {
   borrowed_since bigint [note: "Renamed from assigned_at (D8). Written only by syncCustody in the same transaction as borrow issue / return / disposal / loss."]
   supplier_id uuid [note: "Logical reference to procurement.suppliers.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
   purchase_order_id uuid [note: "Logical reference to procurement.purchase_orders.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  image_url text [note: "DEVIATION (shipped): dbml originally omitted this column. Optional display image URL for the asset card; ERP-0036 D19. Not an object-storage key like image_object_key elsewhere."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
@@ -5071,7 +5183,7 @@ Table assets.asset_maintenances {
   description text
   status text [not null, default: 'scheduled']
   next_service_date date
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Maintenance record of an asset. The next service date drives the maintenance schedule."
@@ -5159,7 +5271,7 @@ Table assets.asset_documents {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null means global/company-wide (ADR-0008 scope rule)."]
   asset_id uuid [not null]
-  document_id uuid [not null, note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [not null, note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   document_type text [not null]
   created_at bigint [not null]
   Note: "Attachment of an invoice, a manual or a certificate to an asset."
@@ -5819,7 +5931,7 @@ Table aftersales.service_contracts {
   currency_code varchar(3) [not null, default: 'IDR']
   status text [not null, default: 'draft']
   auto_renew boolean [not null, default: false]
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Recurring service contract with a customer."
@@ -5838,15 +5950,18 @@ Table aftersales.service_contracts {
 
 
 // ---------------------------------------------------------------------------
-// MODULE: Documents  (schema: documents)
-// Document master, templates, files, signatures, access log, shares, tags.
-// Tenant scoped. The file bytes live in object storage, this module owns the
-// metadata and the access rules.
+// MODULE: Document  (schema: document)
+// Document registry, templates, files, signatures, access log, shares, tags.
+// Registry + issuance (ERP-0042): business documents stay in their owning
+// module's tables; this module owns the issued copy of the document, its
+// files and signatures. The file bytes live in object storage, this module
+// owns the metadata and the access rules. organization_id is nullable:
+// NULL means company-wide (ADR-0011 pattern of inventory and assets).
 // ---------------------------------------------------------------------------
 
-Table documents.document_templates {
+Table document.templates {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide template. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
   name text [not null]
   document_type text [not null]
@@ -5858,19 +5973,19 @@ Table documents.document_templates {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Reusable document template. A new version is a new row, an issued document keeps pointing at the version it used."
+  Note: "Reusable document template. A new version is a new row, an issued document keeps pointing at the version it used. The numbering_pattern here is display-only; the numbering authority is code_number.series."
   Indexes {
-    (organization_id, code, version) [unique, name: 'document_templates_code_version_uq']
+    (organization_id, code, version) [unique, name: 'templates_code_version_uq']
   }
   Checks {
     `version > 0`
   }
 }
 
-Table documents.documents {
+Table document.documents {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide document. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
   document_type text [not null]
   title text [not null]
@@ -5888,7 +6003,7 @@ Table documents.documents {
   supersedes_document_id uuid
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Document master. A document is never hard deleted, a new version supersedes the old one."
+  Note: "Document master (registry + issuance). A document is never hard deleted, a new version supersedes the old one. The unique index on (organization_id, code) is a partial index in the Drizzle schema so a company-wide (NULL organization) row and tenant rows never collide."
   Indexes {
     (organization_id, code) [unique, name: 'documents_org_code_uq']
     template_id [name: 'documents_template_id_idx']
@@ -5901,12 +6016,12 @@ Table documents.documents {
   }
 }
 
-Table documents.document_files {
+Table document.files {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   document_id uuid [not null]
   file_name text [not null]
   storage_key text [not null]
@@ -5917,20 +6032,20 @@ Table documents.document_files {
   uploaded_at bigint [not null]
   Note: "Binary attachment of a document. The storage key never contains a public URL."
   Indexes {
-    document_id [name: 'document_files_document_id_idx']
-    storage_key [unique, name: 'document_files_storage_key_uq']
+    document_id [name: 'files_document_id_idx']
+    storage_key [unique, name: 'files_storage_key_uq']
   }
   Checks {
     `size_bytes >= 0`
   }
 }
 
-Table documents.document_signatures {
+Table document.signatures {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   document_id uuid [not null]
   signer_type text [not null]
   signer_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
@@ -5941,7 +6056,7 @@ Table documents.document_signatures {
   certificate_serial text
   Note: "Signature evidence of a document."
   Indexes {
-    document_id [name: 'document_signatures_document_id_idx']
+    document_id [name: 'signatures_document_id_idx']
   }
   Checks {
     `signer_type IN ('internal', 'customer', 'partner')`
@@ -5949,12 +6064,12 @@ Table documents.document_signatures {
   }
 }
 
-Table documents.document_access_logs {
+Table document.access_logs {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   document_id uuid [not null]
   accessed_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   action text [not null]
@@ -5963,22 +6078,23 @@ Table documents.document_access_logs {
   user_agent text
   Note: "Access trail of a document. Audit reads are never cached and never skipped."
   Indexes {
-    document_id [name: 'document_access_logs_document_id_idx']
-    accessed_at [name: 'document_access_logs_accessed_at_idx']
+    document_id [name: 'access_logs_document_id_idx']
+    accessed_at [name: 'access_logs_accessed_at_idx']
   }
   Checks {
     `action IN ('view', 'download', 'print', 'share', 'delete')`
   }
 }
 
-Table documents.document_shares {
+Table document.shares {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   document_id uuid [not null]
   share_type text [not null]
+  token uuid [note: "Opaque public-link token, never the row id. Unique across every tenant because the public route resolves it without a session."]
   shared_with_type text
   shared_with_id text
   shared_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
@@ -5987,51 +6103,53 @@ Table documents.document_shares {
   is_revoked boolean [not null, default: false]
   Note: "External sharing of a document, for example a portal share with a customer."
   Indexes {
-    document_id [name: 'document_shares_document_id_idx']
-    (share_type, shared_with_type, shared_with_id) [name: 'document_shares_target_idx']
+    document_id [name: 'shares_document_id_idx']
+    (share_type, shared_with_type, shared_with_id) [name: 'shares_target_idx']
+    token [unique, name: 'shares_token_uq']
+    (token, expires_at) [name: 'shares_token_live_idx']
   }
   Checks {
     `share_type IN ('internal', 'customer', 'portal', 'public_link')`
   }
 }
 
-Table documents.document_tags {
+Table document.tags {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide tag. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   tag text [not null]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Free form tag applied to documents."
   Indexes {
-    (organization_id, tag) [unique, name: 'document_tags_org_tag_uq']
+    (organization_id, tag) [unique, name: 'tags_org_tag_uq']
   }
 }
 
-Table documents.document_tag_links {
+Table document.tag_links {
   updated_at bigint [not null]
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   document_id uuid [not null]
   document_tag_id uuid [not null]
   created_at bigint [not null]
   Note: "Link between a document and a tag."
   Indexes {
-    (document_id, document_tag_id) [unique, name: 'document_tag_links_uq']
-    document_tag_id [name: 'document_tag_links_tag_id_idx']
+    (document_id, document_tag_id) [unique, name: 'tag_links_uq']
+    document_tag_id [name: 'tag_links_tag_id_idx']
   }
 }
 
-Ref: documents.documents.template_id > documents.document_templates.id [delete: set null]
-Ref: documents.documents.supersedes_document_id > documents.documents.id [delete: set null]
-Ref: documents.document_files.document_id > documents.documents.id [delete: cascade]
-Ref: documents.document_signatures.document_id > documents.documents.id [delete: cascade]
-Ref: documents.document_access_logs.document_id > documents.documents.id [delete: cascade]
-Ref: documents.document_shares.document_id > documents.documents.id [delete: cascade]
-Ref: documents.document_tag_links.document_id > documents.documents.id [delete: cascade]
-Ref: documents.document_tag_links.document_tag_id > documents.document_tags.id [delete: cascade]
+Ref: document.documents.template_id > document.templates.id [delete: set null]
+Ref: document.documents.supersedes_document_id > document.documents.id [delete: set null]
+Ref: document.files.document_id > document.documents.id [delete: cascade]
+Ref: document.signatures.document_id > document.documents.id [delete: cascade]
+Ref: document.access_logs.document_id > document.documents.id [delete: cascade]
+Ref: document.shares.document_id > document.documents.id [delete: cascade]
+Ref: document.tag_links.document_id > document.documents.id [delete: cascade]
+Ref: document.tag_links.document_tag_id > document.tags.id [delete: cascade]
 
 // ---------------------------------------------------------------------------
 // MODULE: Approval  (schema: approval)
@@ -6767,7 +6885,7 @@ Table investor.investor_reports {
   status text [not null, default: 'draft']
   published_at bigint
   published_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Investor report, the artefact shared with the investor portal."
@@ -6793,7 +6911,7 @@ Table investor.investor_meetings {
   attendees text
   minutes text
   status text [not null, default: 'scheduled']
-  document_id uuid [note: "Logical reference to documents.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Investor meeting record with its minutes."
@@ -7067,10 +7185,10 @@ Ref: commerce.commerce_order_items.commerce_order_id > commerce.commerce_orders.
 // ---------------------------------------------------------------------------
 // MODULE: Automation  (schema: automation)
 // Integrations and encrypted credentials, workflows and steps, workflow runs,
-// scheduled jobs and executions, outbox, notification templates and
-// notifications. Tenant scoped. Secrets are never stored in clear text.
-// M04 builds outbox_messages (stages 1-2) and the WhatsApp assistant tables
-// faq_entries, whatsapp_conversations, whatsapp_messages (stage 2), all
+// scheduled jobs and executions, and the transactional outbox. Tenant scoped.
+// Secrets are never stored in clear text.
+// Built so far (M04): outbox_messages (stages 1-2) and the WhatsApp assistant
+// tables faq_entries, whatsapp_conversations, whatsapp_messages (stage 2), all
 // company-wide (ADR-0012); n8n is the workflow engine, so the workflow tables
 // here stay target-only.
 // ---------------------------------------------------------------------------
@@ -7279,22 +7397,23 @@ Table automation.job_executions {
 }
 
 Table automation.outbox_messages {
-  id uuid [pk, default: `uuidv7()`, note: "Also the event id the receiver (n8n) dedupes on."]
-  topic varchar(64) [not null, note: "Event type, e.g. lead.created."]
+  id uuid [pk, default: `uuidv7()`, note: "Also the event id n8n dedupes on."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted (ADR-0014). Nullable: M04 publishes company-wide events (ADR-0012), so the publishers leave it unset; a future tenant-scoped event fills it."]
+  topic varchar(64) [not null, note: "lead.created, invoice.issued, receipt.recorded, license.due, service_ticket.updated, whatsapp.handoff."]
   aggregate_type varchar(64)
   aggregate_id text
-  payload jsonb [not null]
+  payload jsonb [not null, note: "The event body POSTed to n8n."]
   status text [not null, default: 'pending']
   attempts smallint [not null, default: 0]
   last_attempt_at bigint
   published_at bigint
-  response_status smallint [note: "HTTP status of the last attempt, if any."]
-  error_message varchar(500) [note: "Last failure, without secrets."]
-  dedupe_key varchar(200) [note: "Set for events that must be published once per business fact (e.g. license.due:<contract>:<end date>:<threshold>); a repeat publish is skipped."]
+  response_status smallint [note: "HTTP status of the last delivery attempt."]
+  error_message varchar(500)
+  dedupe_key varchar(200) [note: "Once-per-fact events (license.due:<contract>:<end>:<threshold>); a repeat publish is skipped. Unique when set."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "ERP events delivered to the n8n webhook (M04 stages 1-2, company-wide: lead.created, invoice.issued, receipt.recorded, license.due, service_ticket.updated): written when the business change is saved, then POSTed with the event id and an HMAC signature; retried by the queue and by hand."
+  Note: "Transactional outbox (M04 stages 1-2). The event is recorded with the business change, then delivered to the n8n webhook by a background queue that retries; a queue or webhook outage never fails the business action. Company-wide per ADR-0012."
   Indexes {
     status [name: 'outbox_messages_status_idx']
     topic [name: 'outbox_messages_topic_idx']
@@ -7311,15 +7430,15 @@ Table automation.faq_entries {
   id uuid [pk, default: `uuidv7()`]
   question varchar(300) [not null]
   answer text [not null]
-  keywords varchar(500) [note: "Comma separated words that also match this entry."]
-  is_active boolean [not null, default: true, note: "Only active entries are given to the WhatsApp assistant."]
+  keywords varchar(500) [note: "Comma-separated words that also match this entry."]
+  is_active boolean [not null, default: true]
   sort_order integer [not null, default: 0]
   created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Approved answers the WhatsApp assistant may use (M04 stage 2, company-wide). The assistant answers only from these and the published catalog."
+  Note: "Approved answers the WhatsApp assistant may use (M04 stage 2). Company-wide (ADR-0012)."
   Indexes {
     is_active [name: 'faq_entries_is_active_idx']
   }
@@ -7327,20 +7446,20 @@ Table automation.faq_entries {
 
 Table automation.whatsapp_conversations {
   id uuid [pk, default: `uuidv7()`]
-  chat_id varchar(128) [not null, note: "WhatsApp chat id from WAHA, e.g. 628123456789@c.us; replies go here."]
-  phone varchar(32) [not null, note: "Digits of the sender's number."]
-  contact_name varchar(200) [note: "WhatsApp profile name, as sent by WAHA."]
+  chat_id varchar(128) [not null, note: "WAHA chat id, e.g. 628123456789@c.us; replies go here. Unique among live rows."]
+  phone varchar(32) [not null]
+  contact_name varchar(200)
   status text [not null, default: 'assistant']
-  handoff_reason text
+  handoff_reason text [note: "no_provider, not_found, human_requested, restricted, error."]
   handoff_at bigint
   assigned_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  lead_id uuid [note: "Logical reference to crm.leads.id. Cross-module FK intentionally omitted. Validated through the CRM module contract. Set when an admin turns the chat into a lead."]
+  lead_id uuid [note: "Logical reference to crm.leads.id. Cross-module FK intentionally omitted. Set when an admin turns the chat into a lead."]
   last_message_at bigint [not null]
   last_inbound_at bigint
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "One WhatsApp chat with the company number (M04 stage 2). assistant = the AI answers; handoff = waiting for or with an admin, the AI stays silent; closed = done (the next message reopens it with the assistant)."
+  Note: "One WhatsApp chat with the company number (M04 stage 2). Company-wide (ADR-0012)."
   Indexes {
     chat_id [unique, name: 'whatsapp_conversations_chat_id_key']
     (status, last_message_at) [name: 'whatsapp_conversations_status_idx']
@@ -7356,17 +7475,17 @@ Table automation.whatsapp_messages {
   conversation_id uuid [not null]
   direction text [not null]
   author text [not null]
-  external_id varchar(128) [note: "WhatsApp message id; inbound webhooks are deduped on it."]
+  external_id varchar(128) [note: "WhatsApp message id; inbound webhooks are deduped on (direction, external_id)."]
   body text [not null]
   status text [not null]
-  faq_entry_id uuid [note: "The FAQ entry the assistant's answer was based on, if any."]
+  faq_entry_id uuid [note: "Answer used by the assistant, when the reply came from the FAQ."]
   sent_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  error_message varchar(500) [note: "Last send failure, without secrets."]
+  error_message varchar(500)
   attempts smallint [not null, default: 0]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Every inbound and outbound WhatsApp message of a conversation, with the assistant's and admins' replies (M04 stage 2 log)."
+  Note: "Every WhatsApp message of a conversation (M04 stage 2 log). Company-wide (ADR-0012)."
   Indexes {
     (conversation_id, created_at) [name: 'whatsapp_messages_conversation_idx']
     (direction, external_id) [unique, name: 'whatsapp_messages_direction_external_id_key']
@@ -7380,62 +7499,8 @@ Table automation.whatsapp_messages {
   }
 }
 
-Table automation.notification_templates {
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  name text [not null]
-  channel text [not null]
-  subject_template text
-  body_template text
-  variables text
-  is_active boolean [not null, default: true]
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
-  Note: "Template of a customer facing notification."
-  Indexes {
-    (organization_id, code) [unique, name: 'notification_templates_org_code_uq']
-    channel [name: 'notification_templates_channel_idx']
-  }
-  Checks {
-    `channel IN ('email', 'whatsapp', 'in_app', 'webhook')`
-  }
-}
-
-Table automation.notifications {
-  updated_at bigint [not null]
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  notification_template_id uuid
-  recipient_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  recipient_type text [not null]
-  recipient_value text [not null]
-  channel text [not null]
-  subject text
-  body text
-  status text [not null, default: 'queued']
-  scheduled_at bigint
-  sent_at bigint
-  read_at bigint
-  error_message text
-  source_type text
-  source_id text
-  created_at bigint [not null]
-  Note: "One notification sent or queued for one recipient."
-  Indexes {
-    notification_template_id [name: 'notifications_template_id_idx']
-    recipient_user_id [name: 'notifications_recipient_user_id_idx']
-    status [name: 'notifications_status_idx']
-    scheduled_at [name: 'notifications_scheduled_at_idx']
-  }
-  Checks {
-    `recipient_type IN ('user', 'customer', 'investor', 'supplier', 'employee', 'phone', 'email')`
-    `channel IN ('email', 'whatsapp', 'in_app', 'webhook')`
-    `status IN ('queued', 'sending', 'sent', 'delivered', 'read', 'failed', 'cancelled')`
-  }
-}
+Ref: automation.whatsapp_messages.conversation_id > automation.whatsapp_conversations.id [delete: restrict]
+Ref: automation.whatsapp_messages.faq_entry_id > automation.faq_entries.id [delete: set null]
 
 Ref: automation.integration_credentials.integration_id > automation.integrations.id [delete: cascade]
 Ref: automation.workflow_steps.workflow_id > automation.workflows.id [delete: cascade]
@@ -7443,9 +7508,6 @@ Ref: automation.workflow_runs.workflow_id > automation.workflows.id [delete: res
 Ref: automation.workflow_step_runs.workflow_run_id > automation.workflow_runs.id [delete: cascade]
 Ref: automation.workflow_step_runs.workflow_step_id > automation.workflow_steps.id [delete: set null]
 Ref: automation.job_executions.scheduled_job_id > automation.scheduled_jobs.id [delete: set null]
-Ref: automation.notifications.notification_template_id > automation.notification_templates.id [delete: set null]
-Ref: automation.whatsapp_messages.conversation_id > automation.whatsapp_conversations.id [delete: restrict]
-Ref: automation.whatsapp_messages.faq_entry_id > automation.faq_entries.id [delete: set null]
 
 // ---------------------------------------------------------------------------
 // MODULE: Licensing  (schema: licensing)
@@ -7770,7 +7832,7 @@ Table ticket.tickets {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Customer issue ticket. The customer portal identity (auth.portal_identities) links the auth user to the customer; a portal user may list and read only tickets of its own linked customer in its own organization, enforced server-side. Numbering via organization.document_sequences."
+  Note: "Customer issue ticket. The customer portal identity (auth.portal_identities) links the auth user to the customer; a portal user may list and read only tickets of its own linked customer in its own organization, enforced server-side. Numbering via code_number.series."
   Indexes {
     (organization_id, code) [unique, name: 'tickets_org_code_uq']
     (organization_id, customer_id) [name: 'tickets_org_customer_idx']
@@ -7886,6 +7948,72 @@ Table audit.audit_logs {
 }
 
 // ---------------------------------------------------------------------------
+// MODULE: Notification  (schema: notification)
+// In-app notifications and their templates. App-scope, not tenant scope: a
+// notification belongs to one user and is readable from every organization,
+// so there is no organization_id column and the organization context travels
+// as a tag (the organization name). Created by the notification worker from a
+// BullMQ job and pushed over the single realtime socket (/ws).
+// ---------------------------------------------------------------------------
+
+Table notification.notification_templates {
+  id uuid [pk, default: `uuidv7()`]
+  code varchar(64) [not null]
+  name text [not null]
+  channel text [not null, default: 'in_app']
+  subject_template text
+  body_template text [not null]
+  variables jsonb [note: "Declared variable names of the template, e.g. [\"organizationName\",\"role\"]."]
+  is_active boolean [not null, default: true]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Copy of one notification event, keyed by `module.event` code (org.member_added). App-scope: one template serves every organization. The client renders it from code + variables through i18n; the server renders the English body as a fallback for non-UI consumers."
+  Indexes {
+    code [unique, name: 'notification_templates_code_uq']
+    channel [name: 'notification_templates_channel_idx']
+  }
+  Checks {
+    `channel IN ('email', 'whatsapp', 'in_app', 'webhook')`
+  }
+}
+
+Table notification.notifications {
+  id uuid [pk, default: `uuidv7()`]
+  notification_template_id uuid
+  user_id text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  template_code varchar(64) [not null, note: "Denormalized `module.event` code of the template at send time, so the client can render the copy without a join and a later template edit never rewrites history."]
+  title text [not null]
+  body text
+  tags jsonb [not null, default: `'[]'::jsonb`, note: "Free-form labels shown as chips, e.g. [\"Entragate org\"]. The organization name is the tag for organization events; there is no organization_id column."]
+  variables jsonb [note: "Interpolation values for the template, e.g. { organizationName, role }."]
+  metadata jsonb [note: "Producer-supplied extras (navigation target, deep-link params). Never used for authorization."]
+  channel text [not null, default: 'in_app']
+  status text [not null, default: 'sent']
+  sent_at bigint
+  read_at bigint
+  source_type text
+  source_id text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "One in-app notification for one user. App-scope (no organization_id): the list is per user across every organization. Created as `sent` by the worker, which then pushes it over the realtime socket; `read` is set by the recipient."
+  Indexes {
+    user_id [name: 'notifications_user_id_idx']
+    (user_id, status) [name: 'notifications_user_status_idx']
+    status [name: 'notifications_status_idx']
+    created_at [name: 'notifications_created_at_idx']
+    notification_template_id [name: 'notifications_template_id_idx']
+  }
+  Checks {
+    `channel IN ('email', 'whatsapp', 'in_app', 'webhook')`
+    `status IN ('queued', 'sending', 'sent', 'delivered', 'read', 'failed', 'cancelled')`
+  }
+}
+
+Ref: notification.notifications.notification_template_id > notification.notification_templates.id [delete: set null]
+
+// ---------------------------------------------------------------------------
 // LEGACY: transitional table kept for reference, scheduled for removal.
 // ---------------------------------------------------------------------------
 
@@ -7894,7 +8022,6 @@ TableGroup "Legacy transitional" {
 }
 
 Table sales.payments {
-  deleted_at bigint
   id text [pk]
   organization_id text [not null]
   quotation_id text [not null]

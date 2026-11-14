@@ -21,8 +21,8 @@ import {
 } from '../constants/di';
 import type { StockService } from './stock.service';
 import type { TTx } from '@drizzle/types';
-import type { NumberingService } from '@app/organization/services/numbering.service';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { CodeNumberService } from '@app/code-number';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import {
 	AdjustmentHasNoLinesError,
 	AdjustmentNotFoundError,
@@ -156,8 +156,8 @@ export class AdjustmentService {
 		 * ERP-0009 numbering authority: adjustment codes are sequence-allocated
 		 * inside the creating transaction (hardening plan D4).
 		 */
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: Pick<CodeNumberService, 'next'>,
 		/** Fire-and-forget audit writer (hardening plan D3). */
 		private readonly audit: InventoryAuditWriter,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,

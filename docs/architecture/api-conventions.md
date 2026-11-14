@@ -69,3 +69,42 @@ conventions carry over from the prior backend implementation.
   namespace; organization/scoping prefix when the authorization boundary
   applies.
 - Writers evict after commit — even when the write matched nothing.
+
+## Notification endpoints
+
+Notification is app-scope (`ADR-0016`): the list is per user, **not** per
+organization. These routes ride the session guard only — no `erp` macro, no
+`x-organization-id`, because a notification must be readable from every
+organization the user belongs to.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/notifications` | paginated, newest first, filters on `user_id` only |
+| GET | `/notifications/unread-count` | `{ count }`, cheap enough for the badge |
+| PATCH | `/notifications/:id/read` | 404 when the row belongs to another user |
+| POST | `/notifications/read-all` | marks every unread row of the caller |
+
+A notification id belonging to another user returns **404**, never 403: probing
+must not reveal existence. Read state is the only mutable field.
+
+## Realtime socket
+
+One WebSocket for the whole application: `GET /ws` (upgrade). Authentication is
+the Better Auth session cookie presented with the upgrade request; without a
+session the upgrade is rejected with the standard 401 envelope and no message
+handling runs. Implementation: `apps/backend/src/providers/realtime/`.
+
+Every frame is the same envelope, whatever the feature:
+
+```jsonc
+{ "type": "notification.created", "status": "success", "sentAt": 1735689600000, "data": { /* event payload */ } }
+```
+
+- `type` names the event; the prefix is the feature (`notification.`,
+  `chat.`). A new realtime feature adds a type, never a second socket.
+- `status` is the delivery result of the frame (`success` | `error`).
+- `sentAt` is unix milliseconds, matching the database convention.
+- `data.status` carries the domain status (`sent`, `read`), which is a
+  different thing from the frame's `status`.
+- REST remains the source of truth: the socket only accelerates. A client that
+  was offline catches up from `GET /notifications` on reconnect.

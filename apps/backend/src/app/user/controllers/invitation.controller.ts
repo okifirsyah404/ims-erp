@@ -8,14 +8,18 @@ import {
 	usernameAvailableQuerySchema,
 } from '../contracts/invitation.contract';
 import {
+	INVITATION_EMPLOYEE_PORT_TOKEN,
 	INVITATION_SERVICE_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
 } from '../constants/di';
+import type { IInvitationEmployeePort } from '../contracts/invitation-employee.port';
 import type { InvitationService, TActor } from '../../user/services/invitation.service';
 import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
 import { UserManagementError } from '../errors/invitation.errors';
+import { GLOBAL_ADMIN_ROLE, hasAppRole } from '@providers/better-auth/ac/admin-ac';
 import { NotGlobalAdminError } from '@http/errors';
 import { domainPlugin } from '@http/plugin';
+import { buildInvitationTemplate } from '../utils/invitation-template';
 import { created, errorEnvelope, ok, okPaginated } from '@http/response';
 
 /**
@@ -38,7 +42,7 @@ function actorFrom(erp: ErpContext, request: Request): TActor {
  * control.
  */
 function requireGlobalAdmin({ erp }: { erp: { session: { user: { role?: string | null } } } }): void {
-	if (erp.session.user.role !== 'admin') {
+	if (!hasAppRole(erp.session.user.role, GLOBAL_ADMIN_ROLE)) {
 		throw new NotGlobalAdminError();
 	}
 }
@@ -62,6 +66,9 @@ export class InvitationController {
 		const invitationService = container.resolve<InvitationService>(
 			INVITATION_SERVICE_TOKEN,
 		);
+		const employeePort = container.resolve<IInvitationEmployeePort<unknown>>(
+			INVITATION_EMPLOYEE_PORT_TOKEN,
+		);
 
 		return domainPlugin({
 			name: 'user-management-invitations',
@@ -83,11 +90,13 @@ export class InvitationController {
 				async (ctx) => {
 					const actor = actorFrom(ctx.erp, ctx.request);
 					const parsed = createInvitationSchema.parse(ctx.body);
+					// Invite and employee creation are one step (ERP-0034): the port
+					// is implemented by HR, so this controller never imports HR.
 					if (Array.isArray(parsed)) {
-						const result = await invitationService.inviteBulk(parsed, actor);
+						const result = await employeePort.inviteBulk(parsed, actor);
 						return created(result);
 					}
-					const result = await invitationService.invite(parsed, actor);
+					const result = await employeePort.invite(parsed, actor);
 					return created(result);
 				},
 				{ erp: { policy: requireGlobalAdmin } },
@@ -101,13 +110,24 @@ export class InvitationController {
 						// Org-scoped callers are pinned to their own organization;
 						// global admins may pass any organizationId filter.
 						organizationId:
-							erp.session.user.role === 'admin'
+							hasAppRole(erp.session.user.role, GLOBAL_ADMIN_ROLE)
 								? parsed.organizationId
 								: erp.organizationId,
 						page: 1,
 						limit: 50,
 					});
 					return okPaginated(result);
+				},
+				{ erp: { policy: requireGlobalAdmin } },
+			)
+			.get(
+				'/template',
+				({ set, request }) => {
+					const format = new URL(request.url).searchParams.get('format') === 'csv' ? 'csv' : 'xlsx';
+					const file = buildInvitationTemplate(format);
+					set.headers['content-type'] = file.contentType;
+					set.headers['content-disposition'] = `attachment; filename="${file.fileName}"`;
+					return file.body;
 				},
 				{ erp: { policy: requireGlobalAdmin } },
 			)

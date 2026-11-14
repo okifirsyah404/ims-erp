@@ -104,7 +104,9 @@ function ItemDetailPage() {
 							<h1 className='text-2xl font-bold'>{item.name}</h1>
 							<Badge variant='outline'>{t(`inventory:kind.${item.itemKind}`)}</Badge>
 						</div>
-						<p className='font-mono text-xs text-muted-foreground'>{item.sku}</p>
+						<p className='font-mono text-xs text-muted-foreground'>
+							{item.code} · {item.sku}
+						</p>
 					</div>
 					<div className='flex gap-2'>
 						<Button

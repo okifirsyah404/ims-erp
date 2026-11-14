@@ -25,8 +25,8 @@ import {
 	MOVEMENT_TYPES_ASSET,
 	TOOL_SET_STATUSES,
 } from '@drizzle/schemas/asset.schema';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { ASSET_REPOSITORY_TOKEN, ASSET_OPERATIONS_REPOSITORY_TOKEN } from '../constants/di';
@@ -70,8 +70,8 @@ export class AssetOperationsService {
 		@inject(ASSET_OPERATIONS_REPOSITORY_TOKEN)
 		private readonly operations: IAssetOperationsRepository,
 		/** ERP-0009 numbering authority (D15). */
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: Pick<CodeNumberService, 'next'>,
 		/** Fire-and-forget audit writer, shared with the inventory module. */
 		private readonly audit: InventoryAuditWriter,
 		/** Inventory owns warehouses/storages; Assets validates through this port. */

@@ -23,6 +23,12 @@ export const outboxMessages = automationSchema.table(
 		id: uuid('id')
 			.primaryKey()
 			.default(sql`uuidv7()`),
+		/**
+		 * Logical reference to auth.organizations.id — cross-module FK omitted
+		 * (ADR-0014). Nullable: M04 publishes company-wide events (ADR-0012), so
+		 * the publishers leave it unset; a future tenant-scoped event fills it.
+		 */
+		organizationId: text('organization_id'),
 		topic: varchar('topic', { length: 64 }).notNull(),
 		aggregateType: varchar('aggregate_type', { length: 64 }),
 		aggregateId: text('aggregate_id'),

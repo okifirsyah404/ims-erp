@@ -226,6 +226,10 @@ export function installStockDoubles(): void {
 		async findById(id) {
 			return id === WAREHOUSE.id ? WAREHOUSE : null;
 		},
+		async findAlive(ids) {
+			if (ids && !ids.includes(WAREHOUSE.id)) return [];
+			return [WAREHOUSE];
+		},
 		// ERP-0031: the test warehouse is linked to ORG_A (the fixture's member
 		// org), so actor-driven stock writes pass the controller link gate.
 		async isLinked(warehouseId, organizationId) {

@@ -1,8 +1,8 @@
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
 import { isUniqueViolation } from '@drizzle/errors';
 import type { LeadChannel } from '@drizzle/schemas/crm.schema';
-import type { DocumentType } from '@drizzle/schemas/organization.schema';
+import type { CodeType } from '@drizzle/schemas/code-number.schema';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
 import { leadCreatedEvent } from '../utils/lead-event';
@@ -28,7 +28,7 @@ export type TInquiryReceipt = {
 	replayed: boolean;
 };
 
-const REFERENCE_TYPE: Record<LeadChannel, DocumentType> = {
+const REFERENCE_TYPE: Record<LeadChannel, CodeType> = {
 	rfq: 'web_rfq',
 	contact: 'web_contact',
 	demo: 'web_demo',
@@ -116,8 +116,8 @@ export class WebsiteInquiryService {
 	constructor(
 		@inject(LEAD_REPOSITORY_TOKEN)
 		private readonly leads: Pick<ILeadRepository, 'createInquiry' | 'findByIdempotencyKey'>,
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: Pick<CodeNumberService, 'next'>,
 		@inject(OBJECT_STORAGE_TOKEN)
 		private readonly storage: Pick<IObjectStorage, 'put'>,
 		@inject(OUTBOX_SERVICE_TOKEN)

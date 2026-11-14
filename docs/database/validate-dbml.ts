@@ -12,7 +12,7 @@
 // Exits non-zero on any violation. No SQL export: docs.dbml is a design
 // reference for the hand-written Drizzle schemas, not a DDL source.
 import { Parser } from "@dbml/core";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const SRC = join(import.meta.dir, "docs.dbml");
@@ -41,7 +41,10 @@ let dups = 0;
 // are adopted, and no new ref may target it.
 // "item_categories": inventory.item_categories supersedes the unbuilt
 // catalog.item_categories (ADR-0011), the same way inventory.items does.
-const DUP_ALLOWED = new Set(["payments", "items", "item_categories"]);
+// "bank_accounts": company.bank_accounts (company master, ERP-0042) and
+// hr.bank_accounts (employee salary accounts) are different entities; refs
+// always use the schema-qualified name.
+const DUP_ALLOWED = new Set(["payments", "items", "item_categories", "bank_accounts", "settings"]);
 for (const t of tables) {
   if (nameMap.has(t.name) && nameMap.get(t.name) !== t.schema && !DUP_ALLOWED.has(t.name)) {
     console.error(`DUPLICATE table name: ${t.schema}.${t.name} also in ${nameMap.get(t.name)}`); dups++;
@@ -85,6 +88,11 @@ const TIMESTAMP_EXEMPT = new Set([
   "inventory.stock_balances",
   // serial/lot rows are stock facts closed by disposition, not business entities
   "inventory.serial_tracked_items", "inventory.lot_batches",
+  // allocation line of a payment: cascade-deleted with the payment, never
+  // soft-deleted on its own
+  "finance.payment_allocations",
+  // open-item sub-ledgers: running balances cleared by status, not soft-deleted
+  "finance.ar_open_items", "finance.ap_open_items",
 ]);
 
 const gaps = [];
@@ -102,7 +110,59 @@ for (const t of tables) {
 console.log(`timestamp gaps: ${gaps.length}`);
 gaps.forEach(g => console.error("  " + g));
 
-if (dups || cross || gaps.length) process.exit(1);
+// ---------------------------------------------------------------------------
+// 5. Drizzle schema parity: every table and column that exists in
+//    apps/backend/drizzle/schemas must exist in docs.dbml.
+//
+// docs.dbml is canonical and describes the target, so it legitimately carries
+// tables and columns that are not built yet (the 150 unbuilt target tables,
+// planned columns such as hr.employees.department_id). The reverse is a bug:
+// a shipped table or column that the contract does not mention means the
+// contract lies about the database. That is what this check catches.
+// ---------------------------------------------------------------------------
+const SCHEMA_DIR = join(import.meta.dir, "../../apps/backend/drizzle/schemas");
+const dbmlFields = new Map(tables.map(t => [`${t.schema}.${t.name}`, new Set(t.fields)]));
+
+const drift = [];
+for (const file of readdirSync(SCHEMA_DIR).filter(f => f.endsWith(".schema.ts"))) {
+  const src = readFileSync(join(SCHEMA_DIR, file), "utf8");
+  // A file either declares its own pgSchema() or reuses one imported from a
+  // sibling schema file (role.schema.ts reuses authSchema).
+  let schemaName = /export const \w+ = pgSchema\(\s*["']([a-z_]+)["']\s*\)/.exec(src)?.[1];
+  if (!schemaName) {
+    const alias = /(\w+Schema)\.table\(/.exec(src)?.[1];
+    const from = alias && new RegExp(`import\\s*\\{[^}]*\\b${alias}\\b[^}]*\\}\\s*from\\s*["']\\./([a-z0-9-]+)\\.schema["']`).exec(src)?.[1];
+    if (from) {
+      const dep = readFileSync(join(SCHEMA_DIR, `${from}.schema.ts`), "utf8");
+      schemaName = new RegExp(`export const ${alias} = pgSchema\\(\\s*["']([a-z_]+)["']`).exec(dep)?.[1];
+    }
+  }
+  if (!schemaName) {
+    drift.push(`${file}: no pgSchema() declaration and no imported schema found`);
+    continue;
+  }
+  // Table blocks: `.table('name', {` ... up to the next table marker.
+  const marks = [...src.matchAll(/\.table\(\s*["']([a-z_0-9]+)["']\s*,/g)];
+  marks.forEach((mark, i) => {
+    const from = mark.index + mark[0].length;
+    const to = i + 1 < marks.length ? marks[i + 1].index : src.length;
+    const block = src.slice(from, to);
+    const full = `${schemaName}.${mark[1]}`;
+    const declared = dbmlFields.get(full);
+    if (!declared) {
+      drift.push(`${full} (${file}): table missing from docs.dbml`);
+      return;
+    }
+    // Column definitions look like `camelCase: sqlType('snake_case', ...)`.
+    for (const col of block.matchAll(/^\s{1,4}[a-zA-Z0-9_]+:\s*[a-zA-Z0-9_]+\(\s*["']([a-z_0-9]+)["']/gm)) {
+      if (!declared.has(col[1])) drift.push(`${full}.${col[1]} (${file}): column missing from docs.dbml`);
+    }
+  });
+}
+console.log(`drizzle parity drift: ${drift.length}`);
+drift.forEach(d => console.error("  " + d));
+
+if (dups || cross || gaps.length || drift.length) process.exit(1);
 console.log("OK");
 // @dbml/core leaves an open handle on Windows; force-exit or bun never returns
 process.exit(0);

@@ -29,6 +29,9 @@ let keys: TLicenseKeySelect[];
 let numbers: number;
 let paid: Record<string, number>;
 let events: { eventType: string; licenseContractId?: string | null; actorUserId?: string | null; description?: string | null }[];
+/** Registry calls made by the service (ERP-0044). */
+let registered: { code: string; sourceId: string; documentType: string }[];
+let voided: string[];
 let service: LicensingService;
 let notices: { data: Record<string, unknown>; dedupeKey?: string }[];
 let dedupeKeys: Set<string>;
@@ -50,6 +53,8 @@ beforeEach(() => {
 	events = [];
 	notices = [];
 	dedupeKeys = new Set();
+	registered = [];
+	voided = [];
 	service = new LicensingService(
 		{
 			listApplications: async () => applications,
@@ -131,6 +136,17 @@ beforeEach(() => {
 				return {} as never;
 			},
 		},
+		{
+			// ERP-0044: registry side effects are asserted through `registered` / `voided`.
+			register: async (input) => {
+				registered.push(input);
+				return {} as never;
+			},
+			voidBySource: async (module, sourceType, sourceId) => {
+				voided.push(`${module}/${sourceType}/${sourceId}`);
+				return 1;
+			},
+		},
 	);
 });
 
@@ -172,6 +188,11 @@ describe('license contracts', () => {
 		const terminated = await service.terminate(manager, id, 'Customer stopped');
 		expect(terminated).toMatchObject({ status: 'terminated', terminationReason: 'Customer stopped' });
 		await expect(service.terminate(manager, id, 'again')).rejects.toBeInstanceOf(ContractStateError);
+		// ERP-0044: only the activation is registered, and terminating voids it.
+		expect(registered).toEqual([
+			expect.objectContaining({ code: '0001/LIC/IMS/XI/26', documentType: 'license_contract', sourceId: id }),
+		]);
+		expect(voided).toEqual([`licensing/license_contract/${id}`]);
 		// Every staff override is logged with the actor.
 		expect(events.map((event) => [event.eventType, event.actorUserId, event.description])).toEqual([
 			['suspended', 'manager', 'Unpaid'],

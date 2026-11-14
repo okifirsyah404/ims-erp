@@ -2,7 +2,7 @@
 
 Untuk orang yang menghubungkan ERP dengan WAHA, n8n, dan penyedia AI.
 Kontrak teknisnya ada di `docs/architecture/modules/notification.md` dan
-ADR-0015; panduan ini versi langkah demi langkahnya. Versi Inggris:
+ADR-0020; panduan ini versi langkah demi langkahnya. Versi Inggris:
 [whatsapp-n8n-setup.en.md](whatsapp-n8n-setup.en.md) (keduanya diubah
 bersamaan).
 
@@ -146,4 +146,4 @@ refund selalu diserahkan ke admin, sebelum dan sesudah pemanggilan model.
 - [ ] Setiap topik n8n diuji sekali dengan event nyata; tanda tangan salah ditolak.
 - [ ] "Kirim ulang" manual atas event yang sudah terkirim tidak mengirim pesan kedua (dedupe).
 - [ ] Permintaan diskon ditolak dan diserahkan ke admin.
-- [ ] Owner menyetujui pesan live (ADR-0015), lalu pindah ke nomor live.
+- [ ] Owner menyetujui pesan live (ADR-0020), lalu pindah ke nomor live.

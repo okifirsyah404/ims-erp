@@ -2,7 +2,8 @@
 
 import { useRouter } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Bell, ChevronsUpDown, LogOut, User } from 'lucide-react';
+import { cn } from 'cn';
+import { LogOut, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { authClient } from '@/lib/auth-client';
@@ -12,6 +13,7 @@ import {
 	AvatarFallback,
 	AvatarImage,
 } from '@ims-erp/ui/components/avatar';
+import { Button } from '@ims-erp/ui/components/button';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -20,12 +22,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@ims-erp/ui/components/dropdown-menu';
-import {
-	SidebarMenu,
-	SidebarMenuButton,
-	SidebarMenuItem,
-	useSidebar,
-} from '@ims-erp/ui/components/sidebar';
+import { useSidebar } from '@ims-erp/ui/components/sidebar';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import LanguageSwitcher from '../language-switcher';
 import ThemeSwitcher from './theme-switcher';
@@ -43,17 +40,20 @@ function initials(name: string): string {
  * Identity block shown both in the trigger and inside the menu. Pending
  * renders a skeleton that mirrors the real geometry (so nothing shifts when
  * data lands); errors fall back to neutral labels instead of blanking or
- * crashing the sidebar. Skeletons are never shown for a terminal error, or
+ * crashing the shell. Skeletons are never shown for a terminal error, or
  * the UI would look like it is loading forever.
  */
 function UserIdentity({
 	user,
 	isPending,
 	isError,
+	className,
 }: {
 	user: TSelfUser | undefined;
 	isPending: boolean;
 	isError: boolean;
+	/** Applied to the text block, so the header trigger can hide it on mobile. */
+	className?: string;
 }) {
 	const { t } = useTranslation('nav');
 
@@ -66,7 +66,7 @@ function UserIdentity({
 			>
 				<div aria-hidden='true' className='contents'>
 					<Skeleton className='h-8 w-8 shrink-0 rounded-lg motion-reduce:animate-none' />
-					<div className='grid flex-1 gap-1 text-left leading-tight'>
+					<div className={cn('grid flex-1 gap-1 text-left leading-tight', className)}>
 						<Skeleton className='h-3.5 w-24 rounded-sm motion-reduce:animate-none' />
 						<Skeleton className='h-3 w-32 rounded-sm motion-reduce:animate-none' />
 					</div>
@@ -89,7 +89,9 @@ function UserIdentity({
 					{initials(name)}
 				</AvatarFallback>
 			</Avatar>
-			<div className='grid flex-1 text-left text-sm leading-tight'>
+			<div
+				className={cn('grid flex-1 text-left text-sm leading-tight', className)}
+			>
 				<span className='truncate font-medium'>
 					{isError ? t('user.account') : name}
 				</span>
@@ -99,6 +101,10 @@ function UserIdentity({
 	);
 }
 
+/**
+ * Account menu in the top header (moved out of the sidebar footer in
+ * ERP-0047 Phase 7 so notifications and identity share one place).
+ */
 export function NavUser() {
 	const { data: user, isPending, isError } = useQuery(selfUserQueryOptions);
 
@@ -112,71 +118,70 @@ export function NavUser() {
 	}
 
 	return (
-		<SidebarMenu>
-			<SidebarMenuItem>
-				<DropdownMenu>
-					<DropdownMenuTrigger
-						render={
-							<SidebarMenuButton
-								size='lg'
-								className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
-							/>
-						}
+		<DropdownMenu>
+			{/* Header trigger is avatar-only; name and email live in the menu. */}
+			<DropdownMenuTrigger
+				render={
+					<Button
+						variant='ghost'
+						className='h-auto p-1'
+						aria-label={user?.name ?? t('user.account')}
+						aria-busy={isPending || undefined}
+					/>
+				}
+			>
+				{isPending ? (
+					<Skeleton className='h-8 w-8 rounded-lg motion-reduce:animate-none' />
+				) : (
+					<Avatar className='h-8 w-8 rounded-lg'>
+						{user?.image && !isError && (
+							<AvatarImage src={user.image} alt={user.name} />
+						)}
+						<AvatarFallback className='rounded-lg'>
+							{initials(user?.name ?? '')}
+						</AvatarFallback>
+					</Avatar>
+				)}
+			</DropdownMenuTrigger>
+			<DropdownMenuContent
+				className='w-(--anchor-width) min-w-56'
+				side={isMobile ? 'bottom' : 'right'}
+				align='end'
+				sideOffset={4}
+			>
+				{/* Profile row: a real menu item (not a label), so it is
+				    focusable and announced as an action. */}
+				<DropdownMenuItem
+					className='gap-2 p-2'
+					onClick={() => router.navigate({ to: '/profiles' })}
+				>
+					<UserIdentity user={user} isPending={isPending} isError={isError} />
+				</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				<DropdownMenuGroup>
+					<ThemeSwitcher />
+				</DropdownMenuGroup>
+				<DropdownMenuSeparator />
+				{/* Language lives next to the theme control: both are
+				    preferences about how the shell is presented. */}
+				<DropdownMenuGroup>
+					<LanguageSwitcher />
+				</DropdownMenuGroup>
+				<DropdownMenuSeparator />
+				<DropdownMenuGroup>
+					<DropdownMenuItem
+						onClick={() => router.navigate({ to: '/account' })}
 					>
-						<UserIdentity user={user} isPending={isPending} isError={isError} />
-						<ChevronsUpDown className='ml-auto size-4' />
-					</DropdownMenuTrigger>
-					<DropdownMenuContent
-						className='w-(--anchor-width) min-w-56'
-						side={isMobile ? 'bottom' : 'right'}
-						align='end'
-						sideOffset={4}
-					>
-						{/* Profile row: a real menu item (not a label), so it is
-						    focusable and announced as an action. */}
-						<DropdownMenuItem
-							className='gap-2 p-2'
-							onClick={() => router.navigate({ to: '/profiles' })}
-						>
-							<UserIdentity
-								user={user}
-								isPending={isPending}
-								isError={isError}
-							/>
-						</DropdownMenuItem>
-						<DropdownMenuSeparator />
-						<DropdownMenuGroup>
-							<ThemeSwitcher />
-						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-						{/* Language lives next to the theme control: both are
-						    preferences about how the shell is presented. */}
-						<DropdownMenuGroup>
-							<LanguageSwitcher />
-						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-						<DropdownMenuGroup>
-							<DropdownMenuItem
-								onClick={() => router.navigate({ to: '/account' })}
-							>
-								<User />
-								{t('user.account')}
-							</DropdownMenuItem>
-							<DropdownMenuItem
-							// onClick={() => router.navigate({ to: '/notifications' })}
-							>
-								<Bell />
-								{t('user.notifications')}
-							</DropdownMenuItem>
-						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem onClick={handleSignOut} className='text-red-600'>
-							<LogOut />
-							{t('user.logOut')}
-						</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
-			</SidebarMenuItem>
-		</SidebarMenu>
+						<User />
+						{t('user.account')}
+					</DropdownMenuItem>
+				</DropdownMenuGroup>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem onClick={handleSignOut} className='text-red-600'>
+					<LogOut />
+					{t('user.logOut')}
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }

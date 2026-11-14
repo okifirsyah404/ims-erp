@@ -92,7 +92,8 @@ export const createWarehouseSchema = z
 		 * global inventory is a first-class concept (ADR-0008).
 		 */
 		organizationId: z.string().min(1).nullable().default(null),
-		code: z.string().min(1).max(32),
+		/** Omit to let the numbering authority allocate `WH-0001` (ERP-0042). */
+		code: z.string().min(1).max(32).nullish().transform((value) => value ?? null),
 		name: z.string().min(1),
 		responsibleEmployeeId: z.uuid().nullable().optional(),
 		isDefault: z.boolean().default(false),
@@ -165,6 +166,37 @@ export const nestedIdParamSchema = idParamSchema.extend({
 /** Path params for the warehouse↔organization link routes (ERP-0031). */
 export const warehouseLinkParamSchema = idParamSchema.extend({
 	organizationId: z.string().min(1).max(64),
+});
+
+/**
+ * Body for granting person-in-charge access (ADR-0017).
+ *
+ * @remarks
+ * `userId` is a logical reference to `auth.users.id`; the service validates it
+ * through the Identity module before writing. Chatty ids are rejected here so
+ * a truncated copy/paste cannot reach the database.
+ */
+export const assignManagerSchema = z
+	.object({
+		userId: z.string().min(1).max(64),
+	})
+	.strict();
+
+/** Path params for revoking a person-in-charge grant (ADR-0017). */
+export const managerParamSchema = idParamSchema.extend({
+	userId: z.string().min(1).max(64),
+});
+
+/**
+ * Query for the person-in-charge picker (ADR-0017).
+ *
+ * @remarks
+ * `search` is optional: without it the first page of accounts is returned,
+ * which is what an empty picker shows.
+ */
+export const managerCandidateQuerySchema = z.object({
+	search: z.string().min(1).max(200).optional(),
+	limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
 export { idParamSchema };

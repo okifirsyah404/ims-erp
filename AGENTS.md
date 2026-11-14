@@ -42,7 +42,7 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
 | `bun install`                                                   | repo root                         | ✅ verified 2026-10-28/29 — clean installs (nest removal, dicebear add)                                                                                                                    |
 | `bun run dev`                                                   | repo root                         | ✅ verified 2026-10-29 — `turbo run dev`; live HTTP bring-up (auth 200, Redis, 401 envelope)                                                                                               |
 | `bun run lint` / `test` / `typecheck`                           | repo root, fans out per workspace | ✅ verified 2026-11-02 — backend 131/131, web-admin 21/21, typecheck clean                                                                                                                 |
-| `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend`                    | ✅ verified 2026-10-29/30 — migrations applied; seed idempotent (run twice). All use `bunx --bun drizzle-kit`; the `--bun` flag is required because the DB driver is `drizzle-orm/bun-sql`. Seed content is faker-generated (deterministic, `faker.seed`) since 2026-11-03; re-verified 2026-11-03 with `@faker-js/faker@10.6.0` |
+| `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend`                    | ✅ verified 2026-10-29/30 — migrations applied; seed idempotent (run twice). All use `bunx --bun drizzle-kit`; the `--bun` flag is required because the DB driver is `drizzle-orm/bun-sql`. Seed content is faker-generated (deterministic, `faker.seed`) since 2026-11-03; re-verified 2026-11-03 with `@faker-js/faker@10.6.0`. ⚠️ 2026-11-12: `generate` / `migrate` are **blocked on main** (branching snapshot chain) — hand-written migrations + `database/migrate-reset.ts` on a disposable DB; see `runbook.md` |
 
 > The previous NestJS backend (`apps/backend-nest`, package `backend`) was
 > deleted 2026-10-28; its verified-command history is superseded. Docker
@@ -171,7 +171,7 @@ the same change); a backend-only move is an incomplete change.
 Creating, updating, or deleting a feature module — and any backend feature
 work that adds or changes endpoints, services, repositories, Drizzle schemas,
 or migrations — passes through two gates **before** code and one **after** it.
-The schema contract is 253 tables across 24 modules; nobody holds it in their
+The schema contract is 270 tables across 27 modules; nobody holds it in their
 head, and inventing a column or a cross-module link is the most expensive
 mistake available here.
 

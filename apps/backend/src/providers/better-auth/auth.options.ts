@@ -83,6 +83,29 @@ export const betterAuthOptions = {
 				required: false,
 				input: false,
 			},
+			// Personal fields moved from hr.employees (ERP-0034). Written only
+			// by the user service (never through the Better Auth API surface,
+			// hence `input: false`). `gender` is male|female only (API contract).
+			gender: {
+				type: 'string' as const,
+				required: false,
+				input: false,
+			},
+			birthDate: {
+				type: 'date' as const,
+				required: false,
+				input: false,
+			},
+			birthPlace: {
+				type: 'string' as const,
+				required: false,
+				input: false,
+			},
+			maritalStatus: {
+				type: 'string' as const,
+				required: false,
+				input: false,
+			},
 		},
 	},
 	emailAndPassword: betterAuthEmailAndPasswordOptions,

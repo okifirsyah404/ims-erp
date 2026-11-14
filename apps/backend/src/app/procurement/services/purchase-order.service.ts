@@ -1,7 +1,9 @@
 import { ITEM_SERVICE_TOKEN } from '@app/inventory/constants/di';
 import type { ItemService } from '@app/inventory/services/item.service';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import type { DocumentService } from '@app/document';
 import { isUniqueViolation } from '@drizzle/errors';
 import {
 	PURCHASE_CATEGORY_CODES,
@@ -77,8 +79,11 @@ export class PurchaseOrderService {
 		private readonly suppliers: Pick<SupplierService, 'getActiveSupplier'>,
 		@inject(ITEM_SERVICE_TOKEN)
 		private readonly items: Pick<ItemService, 'getActiveItems'>,
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: Pick<CodeNumberService, 'next'>,
+		/** ERP-0044: approved purchase orders are recorded in the registry. */
+		@inject(DOCUMENT_SERVICE_TOKEN)
+		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
 	) {}
 
 	private async require(id: string): Promise<TPurchaseOrderSelect> {
@@ -192,6 +197,18 @@ export class PurchaseOrderService {
 				rejectionReason: null,
 			});
 			if (!approved) throw new PurchaseOrderStateError('notSubmitted');
+			// ERP-0044: the approved PO is the outward-facing document; the
+			// code is allocated above, so the registry copies it verbatim.
+			await this.documents.register({
+				code: approved.code ?? code,
+				documentType: 'purchase_order',
+				module: 'procurement',
+				sourceType: 'purchase_order',
+				sourceId: approved.id,
+				organizationId: null,
+				issuedOn: approved.orderDate,
+				issuedByUserId: actorUserId,
+			});
 			return approved;
 		} catch (error) {
 			if (isUniqueViolation(error)) throw new PurchaseOrderCodeTakenError(code);
@@ -216,6 +233,8 @@ export class PurchaseOrderService {
 			cancelledReason: reason,
 		});
 		if (!updated) throw new PurchaseOrderStateError('notCancellable');
+		// ERP-0044: a cancelled PO is a dead document in the registry.
+		await this.documents.voidBySource('procurement', 'purchase_order', id);
 		return updated;
 	}
 }

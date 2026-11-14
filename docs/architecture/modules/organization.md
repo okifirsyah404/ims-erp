@@ -8,11 +8,18 @@
 
 Internal organizations of one company (ADR-0001, extended by ADR-0007)
 modeled through Better Auth's `organization` plugin: the organization row, its
-membership, and member role administration. **Not** a tenant dimension — no
+membership, and member role administration. **Not** a tenant dimension - no
 `organization_id` columns on master data (migration path recorded in
 ADR-0001, deliberately unbuilt). Invitations are out of scope for v1 (direct
 member add only); company profile/address data belongs to a future settings
 owner, not here.
+
+> **Scope shrank 2026-11-13 (ERP-0042).** The company profile, the invoice bank
+> accounts and the numbering series no longer live here. They moved to three
+> sibling modules with their own Postgres schemas: `src/app/company`
+> (`company.*`), `src/app/code-number` (`code_number.series`) and
+> `src/app/document` (`document.*`). This module now owns only the organization
+> row, its members, roles, and `organization.settings`.
 
 ## Multiple organizations
 
@@ -26,10 +33,10 @@ former single-organization invariant is gone; there is no 422 on create.
   `allowUserToCreateOrganization` plugin option.
 - **Ownership**: the creator becomes `owner`, and Better Auth activates the
   new organization for that session.
-- **Role catalog**: every created organization is provisioned with the full
-  per-organization `auth.roles` catalog (`seedRolesForOrganization`).
-  Permissions stay per-organization data, editable by that organization's
-  owner.
+- **Role catalog**: roles are a closed enum (`erpRoleNames` in
+  `@ims-erp/common`), so a created organization needs no per-organization role
+  rows. The creator becomes `owner`; further role changes go through
+  `auth.members.role`.
 - **Last organization**: deleting the final live organization responds
   **409** (`LastOrganizationError`). Delete is a soft delete, so the service
   also unsets the caller's `activeOrganizationId`; other members are released

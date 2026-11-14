@@ -1,0 +1,12 @@
+{
+  "name": "elysia-layered-architecture",
+  "version": "1.5.0",
+  "description": "Layered architecture convention for Elysia backend domains — controller/service/repository boundaries, contracts-first structure (including ports for external systems), module entry point index.ts exporting a <module>Module() Elysia factory that mounts every controller in route order, optional module-owned queues, route-ordering and macro-typing conventions, response-envelope placement, and boundary parsing rules.",
+  "author": "OpenAgentic",
+  "date": "2026-10",
+  "dependsOn": ["elysiajs"],
+  "references": [
+    "https://elysiajs.com",
+    "https://zod.dev"
+  ]
+}

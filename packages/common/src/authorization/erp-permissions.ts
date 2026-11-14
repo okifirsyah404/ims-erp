@@ -21,7 +21,10 @@ import { z } from 'zod';
 
 export const erpStatements = {
 	// Organization settings
-	company_setting: ['read', 'update'],
+	/** Company-wide letterhead/profile (ERP-0042; was `company_setting`). */
+	company: ['read', 'update'],
+	/** Numbering series (ERP-0042; was `company_setting`). */
+	code_number: ['read', 'update'],
 	branch: ['read', 'create', 'update', 'archive'],
 	department: ['read', 'create', 'update', 'archive'],
 	master_data: ['read', 'create', 'update', 'archive', 'import', 'export'],
@@ -50,10 +53,17 @@ export const erpStatements = {
 	settlement: ['read', 'create', 'update', 'submit', 'verify', 'approve', 'reject'],
 
 	// HR and payroll
-	employee: ['read', 'create', 'update', 'archive', 'export'],
+	/**
+	 * `read_private`: see the salary bank account unmasked (M08; HR,
+	 * finance, owner).
+	 */
+	employee: ['read', 'create', 'update', 'archive', 'export', 'read_private'],
 	employment_contract: ['read', 'create', 'update', 'approve', 'export'],
-	attendance: ['read', 'check_in', 'check_out', 'request_correction', 'approve_correction', 'export'],
+	/** `record`: enter or import attendance for employees (M08, HR/admin). */
+	attendance: ['read', 'check_in', 'check_out', 'request_correction', 'approve_correction', 'export', 'record'],
 	leave: ['read', 'create', 'cancel', 'approve', 'reject'],
+	/** Overtime recorded by HR and approved by someone else (M08). */
+	overtime: ['read', 'create', 'cancel', 'approve', 'reject'],
 	disciplinary_record: ['read', 'create', 'update', 'approve'],
 	payroll: ['read', 'create', 'calculate', 'update', 'submit', 'approve', 'export'],
 	payroll_payment: ['read', 'execute'],
@@ -214,8 +224,6 @@ export const erpRoleNames = [
 	'hr',
 	'customer_service',
 	'marketing',
-	'investor',
-	'customer',
 	'auditor',
 ] as const;
 
@@ -246,8 +254,6 @@ export const erpRoleLabels: Record<
 	hr: { en: 'Human Resource', id: 'Sumber Daya Manusia' },
 	customer_service: { en: 'Customer Service', id: 'Layanan Pelanggan' },
 	marketing: { en: 'Marketing', id: 'Pemasaran' },
-	investor: { en: 'Investor', id: 'Investor' },
-	customer: { en: 'Customer', id: 'Pelanggan' },
 	auditor: { en: 'Auditor', id: 'Auditor' },
 };
 
@@ -280,6 +286,58 @@ export type TOrganizationRole = ErpRoleName;
 const allErpStatements = Object.fromEntries(
 	Object.entries(erpStatements).map(([resource, actions]) => [resource, actions]),
 ) as ErpPermissionRequest;
+
+/**
+ * Global (application) roles that are NOT organization roles (ADR-0018).
+ * Stored on `user.role` via Better Auth `admin()`, which supports several
+ * roles per user as a comma-joined string. They grant no organization
+ * permission; they only identify portal users. Portal grants live here, not
+ * in `erpRoleGrants`.
+ */
+export const appRoleNames = ['investor', 'customer'] as const;
+
+export type AppRoleName = (typeof appRoleNames)[number];
+
+/**
+ * Splits a comma-joined role string (`user.role` or `member.role`) into its
+ * trimmed, non-empty role names.
+ */
+export function parseRoleList(role: string | null | undefined): string[] {
+	if (!role) return [];
+	return role
+		.split(',')
+		.map((r) => r.trim())
+		.filter((r) => r !== '');
+}
+
+/** True when a comma-joined role string holds `name`. */
+export function hasRole(role: string | null | undefined, name: string): boolean {
+	return parseRoleList(role).includes(name);
+}
+
+export const appRoleGrants: Record<AppRoleName, ErpPermissionRequest> = {
+	// Read-only investor portal; "published/shared" record-level checks apply.
+	investor: {
+		investor_portal: [
+			'read_commitment',
+			'read_deposit',
+			'read_allocation',
+			'read_distribution',
+			'read_report',
+		],
+	},
+
+	// Customer portal; scoped to the caller's own customer relationship.
+	customer: {
+		customer_portal: [
+			'read_project',
+			'read_document',
+			'read_invoice',
+			'create_ticket',
+			'read_ticket',
+		],
+	},
+};
 
 /**
  * Role grants as plain data (browser-safe). Values are per-resource action
@@ -322,7 +380,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		member: ['create', 'read', 'update', 'delete'],
 		invitation: ['create', 'cancel'],
 		ac: ['read'],
-		company_setting: ['read', 'update'],
+		company: ['read', 'update'],
+		code_number: ['read', 'update'],
 		branch: ['read', 'create', 'update', 'archive'],
 		department: ['read', 'create', 'update', 'archive'],
 		master_data: ['read', 'create', 'update', 'archive', 'import', 'export'],
@@ -332,6 +391,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		automation: ['read', 'read_log', 'execute'],
 		// WhatsApp inbox and FAQ (M04 stage 2).
 		whatsapp: ['read', 'reply', 'manage_faq'],
+		// Records attendance with HR (M08, decision 2026-11-07).
+		attendance: ['read', 'record'],
 		product: ['read'],
 		asset_borrowing: [
 			'read',
@@ -542,6 +603,10 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		bill: ['read', 'create', 'record'],
 		cash_bank: ['read', 'create', 'update', 'reconcile', 'export'],
 		payroll_payment: ['read', 'execute'],
+		// Enters the monthly salary summaries with HR; the owner approves
+		// (M08, decision 2026-11-07).
+		employee: ['read', 'read_private'],
+		payroll: ['read', 'create', 'update', 'export'],
 		financial_report: ['read', 'export'],
 		tax: ['read', 'export'],
 		product: ['read', 'read_cost'],
@@ -582,14 +647,22 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		ac: ['read'],
 		dashboard: ['read'],
 		master_data: ['read'],
-		employee: ['read', 'create', 'update', 'archive', 'export'],
+		employee: ['read', 'create', 'update', 'archive', 'export', 'read_private'],
 		employment_contract: ['read', 'create', 'update', 'approve', 'export'],
-		attendance: ['read', 'check_in', 'check_out', 'request_correction', 'approve_correction', 'export'],
+		attendance: ['read', 'check_in', 'check_out', 'request_correction', 'approve_correction', 'export', 'record'],
 		leave: ['read', 'create', 'cancel', 'approve', 'reject'],
+		overtime: ['read', 'create', 'cancel', 'approve', 'reject'],
+		// Tasks given to employees outside projects (M08).
+		task: ['read', 'create', 'update'],
 		disciplinary_record: ['read', 'create', 'update', 'approve'],
 		payroll: ['read', 'create', 'calculate', 'update', 'submit', 'export'],
 		payslip: ['read', 'publish', 'download'],
 		document: ['read', 'create', 'download'],
+		// Invites org members (and creates their employee record) and sees the
+		// members tab. No `member:create|update|delete`: HR does not manage
+		// organization membership itself.
+		member: ['read'],
+		invitation: ['create', 'cancel'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -626,35 +699,14 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
-	// Read-only investor portal; "published/shared" record-level checks apply.
-	investor: {
-		investor_portal: [
-			'read_commitment',
-			'read_deposit',
-			'read_allocation',
-			'read_distribution',
-			'read_report',
-		],
-	},
-
-	// Customer portal; scoped to the caller's own customer relationship.
-	customer: {
-		customer_portal: [
-			'read_project',
-			'read_document',
-			'read_invoice',
-			'create_ticket',
-			'read_ticket',
-		],
-	},
-
 	// Read/export only inside an explicitly assigned audit scope; sensitive
 	// HR/payroll access still requires explicit scope assignment at the
 	// record level. No business mutations.
 	auditor: {
 		ac: ['read'],
 		audit_log: ['read', 'export'],
-		company_setting: ['read'],
+		company: ['read'],
+		code_number: ['read'],
 		branch: ['read'],
 		department: ['read'],
 		master_data: ['read', 'export'],
