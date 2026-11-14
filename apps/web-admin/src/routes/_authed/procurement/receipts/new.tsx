@@ -8,6 +8,13 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { toast } from '@/components/toast';
 import { todayBusinessDate } from '@/lib/format';
@@ -23,8 +30,6 @@ export const Route = createFileRoute('/_authed/procurement/receipts/new')({
 });
 
 type TLineDraft = { quantity: string; serials: string };
-
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 function NewGoodsReceiptPage() {
 	const { t } = useTranslation(['procurement', 'common']);
@@ -96,56 +101,71 @@ function NewGoodsReceiptPage() {
 						<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 							<Field className='sm:col-span-2'>
 								<FieldLabel htmlFor='gr-po'>{t('procurement:po.code')}</FieldLabel>
-								<select
-									id='gr-po'
+								<Select
 									required
-									className={select}
-									value={purchaseOrderId}
-									onChange={(event) => {
-										setPurchaseOrderId(event.target.value);
+									value={purchaseOrderId || 'none'}
+									onValueChange={(value: string | null) => {
+										setPurchaseOrderId(value === 'none' || value == null ? '' : value);
 										setLines({});
 									}}
 								>
-									<option value=''>{t('procurement:receipts.pickOrder')}</option>
-									{(orders.data ?? []).map((row) => (
-										<option key={row.id} value={row.id}>
-											{row.code} — {row.supplierName} — {row.subject}
-										</option>
-									))}
-								</select>
+									<SelectTrigger id='gr-po' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='none'>{t('procurement:receipts.pickOrder')}</SelectItem>
+										{(orders.data ?? []).map((row) => (
+											<SelectItem key={row.id} value={row.id}>
+												{row.code} — {row.supplierName} — {row.subject}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 								{orders.data?.length === 0 && <FieldDescription>{t('procurement:receipts.noOrders')}</FieldDescription>}
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='gr-warehouse'>{t('procurement:receipt.warehouse')}</FieldLabel>
-								<select
-									id='gr-warehouse'
+								<Select
 									required
-									className={select}
-									value={warehouseId}
-									onChange={(event) => {
-										setWarehouseId(event.target.value);
+									value={warehouseId || 'none'}
+									onValueChange={(value: string | null) => {
+										setWarehouseId(value === 'none' || value == null ? '' : value);
 										setBinId('');
 									}}
 								>
-									<option value=''>{t('procurement:receipts.pickWarehouse')}</option>
-									{(warehouses.data ?? []).map((row) => (
-										<option key={row.id} value={row.id}>
-											{row.code} — {row.name}
-										</option>
-									))}
-								</select>
+									<SelectTrigger id='gr-warehouse' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='none'>{t('procurement:receipts.pickWarehouse')}</SelectItem>
+										{(warehouses.data ?? []).map((row) => (
+											<SelectItem key={row.id} value={row.id}>
+												{row.code} — {row.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='gr-bin'>{t('procurement:receipt.bin')}</FieldLabel>
-								<select id='gr-bin' className={select} value={binId} onChange={(event) => setBinId(event.target.value)} disabled={!warehouse}>
-									<option value=''>{t('procurement:receipts.noBin')}</option>
-									{(warehouse?.storages ?? []).map((storage) => (
-										<option key={storage.id} value={storage.id}>
-											{storage.code}
-											{storage.name ? ` — ${storage.name}` : ''}
-										</option>
-									))}
-								</select>
+								<Select
+									disabled={!warehouse}
+									value={binId || 'none'}
+									onValueChange={(value: string | null) => setBinId(value === 'none' || value == null ? '' : value)}
+								>
+									<SelectTrigger id='gr-bin' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='none'>{t('procurement:receipts.noBin')}</SelectItem>
+										{(warehouse?.storages ?? []).map((storage) => (
+											<SelectItem key={storage.id} value={storage.id}>
+												{storage.code}
+												{storage.name ? ` — ${storage.name}` : ''}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='gr-date'>{t('procurement:receipt.date')}</FieldLabel>

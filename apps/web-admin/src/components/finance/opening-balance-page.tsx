@@ -6,6 +6,13 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
 import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
+import {
 	Table,
 	TableBody,
 	TableCell,
@@ -114,20 +121,21 @@ export function OpeningBalancePage() {
 
 			{canEdit && !hasPosted ? (
 				<div className='flex flex-wrap items-center gap-2 rounded-md border p-4'>
-					<select
-						className='h-9 w-72 rounded-md border bg-transparent px-2 text-sm'
-						value={accountId}
-						onChange={(event) => setAccountId(event.target.value)}
-					>
-						<option value='none'>{t('finance:opening.account')}</option>
-						{accounts?.rows
-							.filter((account) => account.isActive && account.isPostable)
-							.map((account) => (
-								<option key={account.id} value={account.id}>
-									{account.code} — {account.name}
-								</option>
-							))}
-					</select>
+					<Select value={accountId} onValueChange={(value: string | null) => setAccountId(value ?? 'none')}>
+						<SelectTrigger className='w-72'>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='none'>{t('finance:opening.account')}</SelectItem>
+							{accounts?.rows
+								.filter((account) => account.isActive && account.isPostable)
+								.map((account) => (
+									<SelectItem key={account.id} value={account.id}>
+										{account.code} — {account.name}
+									</SelectItem>
+								))}
+						</SelectContent>
+					</Select>
 					<Input
 						type='date'
 						className='w-40'

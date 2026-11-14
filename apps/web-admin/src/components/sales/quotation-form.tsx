@@ -7,7 +7,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from '@ims-erp/ui/components/input-group';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { Search } from 'lucide-react';
 import { customerQueryOptions, customersQueryOptions } from '@/lib/customer-api';
 import { formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
 import { ITEM_UNIT_LABELS, listItems, type TItem, type TItemUnitLabel } from '@/lib/inventory-api';
@@ -35,7 +48,6 @@ type TLineDraft = {
 type TScheduleDraft = { key: string; label: string; percent: string };
 
 const newKey = () => crypto.randomUUID();
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 /**
  * Create/edit form for a quotation (SPH). Money is typed in rupiah and sent
@@ -191,60 +203,72 @@ export function QuotationForm({
 					<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 						<Field>
 							<FieldLabel htmlFor='quotation-customer-search'>{t('sales:form.customerSearch')}</FieldLabel>
-							<Input
-								id='quotation-customer-search'
-								type='search'
-								value={customerSearch}
-								onChange={(e) => setCustomerSearch(e.target.value)}
-								placeholder={t('sales:form.customerSearchHint')}
-							/>
+							<InputGroup>
+								<InputGroupAddon align='inline-start'>
+									<Search aria-hidden='true' />
+								</InputGroupAddon>
+								<InputGroupInput
+									id='quotation-customer-search'
+									type='search'
+									value={customerSearch}
+									onChange={(e) => setCustomerSearch(e.target.value)}
+									placeholder={t('sales:form.customerSearchHint')}
+								/>
+							</InputGroup>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='quotation-customer'>{t('sales:quotation.customer')}</FieldLabel>
-							<select
-								id='quotation-customer'
+							<Select
 								required
-								className={select}
-								value={customerId}
-								onChange={(e) => {
-									setCustomerId(e.target.value);
+								value={customerId === '' ? 'none' : customerId}
+								onValueChange={(value: string | null) => {
+									setCustomerId(value == null || value === 'none' ? '' : value);
 									setContactId('');
 								}}
 							>
-								<option value=''>{t('sales:form.pickCustomer')}</option>
-								{!pickedInList && chosen && (
-									<option value={chosen.id}>
-										{chosen.code} — {chosen.name}
-									</option>
-								)}
-								{customerOptions.map((row) => (
-									<option key={row.id} value={row.id}>
-										{row.code} — {row.name}
-									</option>
-								))}
-							</select>
+								<SelectTrigger id='quotation-customer' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='none'>{t('sales:form.pickCustomer')}</SelectItem>
+									{!pickedInList && chosen && (
+										<SelectItem value={chosen.id}>
+											{chosen.code} — {chosen.name}
+										</SelectItem>
+									)}
+									{customerOptions.map((row) => (
+										<SelectItem key={row.id} value={row.id}>
+											{row.code} — {row.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='quotation-contact'>{t('sales:quotation.contact')}</FieldLabel>
-							<select
-								id='quotation-contact'
-								className={select}
-								value={contactId}
+							<Select
+								value={contactId === '' ? 'none' : contactId}
 								disabled={!chosen || chosen.contacts.length === 0}
-								onChange={(e) => {
-									setContactId(e.target.value);
-									const contact = chosen?.contacts.find((row) => row.id === e.target.value);
+								onValueChange={(value: string | null) => {
+									const next = value == null || value === 'none' ? '' : value;
+									setContactId(next);
+									const contact = chosen?.contacts.find((row) => row.id === next);
 									if (contact && attention.trim() === '') setAttention(contact.name);
 								}}
 							>
-								<option value=''>{t('sales:form.noContact')}</option>
-								{chosen?.contacts.map((contact) => (
-									<option key={contact.id} value={contact.id}>
-										{contact.name}
-										{contact.position ? ` (${contact.position})` : ''}
-									</option>
-								))}
-							</select>
+								<SelectTrigger id='quotation-contact' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='none'>{t('sales:form.noContact')}</SelectItem>
+									{chosen?.contacts.map((contact) => (
+										<SelectItem key={contact.id} value={contact.id}>
+											{contact.name}
+											{contact.position ? ` (${contact.position})` : ''}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='quotation-attention'>{t('sales:quotation.attention')}</FieldLabel>
@@ -387,18 +411,21 @@ export function QuotationForm({
 							</Field>
 							<Field>
 								<FieldLabel htmlFor={`line-unit-${line.key}`}>{t('sales:line.unit')}</FieldLabel>
-								<select
-									id={`line-unit-${line.key}`}
-									className={select}
+								<Select
 									value={line.unit}
-									onChange={(e) => patchLine(line.key, { unit: e.target.value as TItemUnitLabel })}
+									onValueChange={(value: string | null) => patchLine(line.key, { unit: value as TItemUnitLabel })}
 								>
-									{ITEM_UNIT_LABELS.map((unit) => (
-										<option key={unit} value={unit}>
-											{unit}
-										</option>
-									))}
-								</select>
+									<SelectTrigger id={`line-unit-${line.key}`} className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{ITEM_UNIT_LABELS.map((unit) => (
+											<SelectItem key={unit} value={unit}>
+												{unit}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field className='sm:col-span-2'>
 								<FieldLabel htmlFor={`line-price-${line.key}`}>{t('sales:line.unitPrice')}</FieldLabel>
@@ -434,13 +461,18 @@ export function QuotationForm({
 
 					<div className='flex flex-col gap-2 rounded-md border border-dashed p-3'>
 						<FieldLabel htmlFor='quotation-item-search'>{t('sales:form.addItem')}</FieldLabel>
-						<Input
-							id='quotation-item-search'
-							type='search'
-							value={itemSearch}
-							placeholder={t('sales:form.itemSearchHint')}
-							onChange={(e) => setItemSearch(e.target.value)}
-						/>
+						<InputGroup>
+							<InputGroupAddon align='inline-start'>
+								<Search aria-hidden='true' />
+							</InputGroupAddon>
+							<InputGroupInput
+								id='quotation-item-search'
+								type='search'
+								value={itemSearch}
+								placeholder={t('sales:form.itemSearchHint')}
+								onChange={(e) => setItemSearch(e.target.value)}
+							/>
+						</InputGroup>
 						{deferredItemSearch !== '' && (
 							<ul className='flex max-h-56 flex-col overflow-y-auto rounded-md border'>
 								{(items.data?.rows ?? []).map((item) => (

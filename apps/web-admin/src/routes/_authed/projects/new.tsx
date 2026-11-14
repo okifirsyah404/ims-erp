@@ -7,7 +7,10 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { Search } from 'lucide-react';
 import { toast } from '@/components/toast';
 import { formatIdr } from '@/lib/format';
 import { createProject, openDealsQueryOptions, projectStaffQueryOptions } from '@/lib/project-api';
@@ -16,8 +19,6 @@ import { createProject, openDealsQueryOptions, projectStaffQueryOptions } from '
 export const Route = createFileRoute('/_authed/projects/new')({
 	component: NewProjectPage,
 });
-
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 function NewProjectPage() {
 	const { t } = useTranslation(['projects', 'common']);
@@ -74,18 +75,33 @@ function NewProjectPage() {
 						<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 							<Field>
 								<FieldLabel htmlFor='project-deal-search'>{t('projects:new.searchDeal')}</FieldLabel>
-								<Input id='project-deal-search' type='search' value={dealSearch} onChange={(event) => setDealSearch(event.target.value)} />
+								<InputGroup>
+									<InputGroupAddon align='inline-start'>
+										<Search aria-hidden='true' />
+									</InputGroupAddon>
+									<InputGroupInput
+										id='project-deal-search'
+										type='search'
+										value={dealSearch}
+										onChange={(event) => setDealSearch(event.target.value)}
+									/>
+								</InputGroup>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='project-deal'>{t('projects:field.deal')}</FieldLabel>
-								<select id='project-deal' required className={select} value={salesOrderId} onChange={(event) => setSalesOrderId(event.target.value)}>
-									<option value=''>{t('projects:new.pickDeal')}</option>
-									{open.map((row) => (
-										<option key={row.id} value={row.id}>
-											{row.code} — {row.quotationCode} — {row.customerName}
-										</option>
-									))}
-								</select>
+								<Select value={salesOrderId || 'none'} onValueChange={(value: string | null) => setSalesOrderId(value === null || value === 'none' ? '' : value)}>
+									<SelectTrigger id='project-deal' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='none'>{t('projects:new.pickDeal')}</SelectItem>
+										{open.map((row) => (
+											<SelectItem key={row.id} value={row.id}>
+												{row.code} — {row.quotationCode} — {row.customerName}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 								{deals.data && open.length === 0 && <FieldDescription>{t('projects:new.noDeals')}</FieldDescription>}
 							</Field>
 							{deal && (
@@ -98,14 +114,19 @@ function NewProjectPage() {
 							)}
 							<Field>
 								<FieldLabel htmlFor='project-pic'>{t('projects:field.pic')}</FieldLabel>
-								<select id='project-pic' required className={select} value={picUserId} onChange={(event) => setPicUserId(event.target.value)}>
-									<option value=''>{t('projects:new.pickPic')}</option>
-									{(staff.data?.pics ?? []).map((person) => (
-										<option key={person.userId} value={person.userId}>
-											{person.name}
-										</option>
-									))}
-								</select>
+								<Select value={picUserId || 'none'} onValueChange={(value: string | null) => setPicUserId(value === null || value === 'none' ? '' : value)}>
+									<SelectTrigger id='project-pic' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='none'>{t('projects:new.pickPic')}</SelectItem>
+										{(staff.data?.pics ?? []).map((person) => (
+											<SelectItem key={person.userId} value={person.userId}>
+												{person.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='project-site'>{t('projects:field.site')}</FieldLabel>

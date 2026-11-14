@@ -15,6 +15,7 @@ import {
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { ProjectCostsCard } from '@/components/projects/project-costs-card';
 import { ProjectDocumentsCard } from '@/components/projects/project-documents-card';
@@ -51,7 +52,6 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
 }
 
 type TDialog = 'edit' | 'close' | 'cancel' | null;
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 function EditFields({ project, onChange }: { project: TProjectDetail; onChange: (draft: TDraft) => void }) {
 	const { t } = useTranslation(['projects']);
@@ -73,26 +73,36 @@ function EditFields({ project, onChange }: { project: TProjectDetail; onChange: 
 		<FieldGroup className='grid gap-4 py-4 sm:grid-cols-2'>
 			<Field>
 				<FieldLabel htmlFor='edit-pic'>{t('projects:field.pic')}</FieldLabel>
-				<select id='edit-pic' className={select} value={draft.picUserId} onChange={(event) => set({ picUserId: event.target.value })}>
-					{!staff.data?.pics.some((person) => person.userId === draft.picUserId) && project.pic && (
-						<option value={project.pic.userId}>{project.pic.name}</option>
-					)}
-					{(staff.data?.pics ?? []).map((person) => (
-						<option key={person.userId} value={person.userId}>
-							{person.name}
-						</option>
-					))}
-				</select>
+				<Select value={draft.picUserId} onValueChange={(value: string | null) => set({ picUserId: value ?? '' })}>
+					<SelectTrigger id='edit-pic' className='w-full'>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						{!staff.data?.pics.some((person) => person.userId === draft.picUserId) && project.pic && (
+							<SelectItem value={project.pic.userId}>{project.pic.name}</SelectItem>
+						)}
+						{(staff.data?.pics ?? []).map((person) => (
+							<SelectItem key={person.userId} value={person.userId}>
+								{person.name}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 			</Field>
 			<Field>
 				<FieldLabel htmlFor='edit-stage'>{t('projects:field.stage')}</FieldLabel>
-				<select id='edit-stage' className={select} value={draft.stage} onChange={(event) => set({ stage: event.target.value as TProjectStage })}>
-					{PROJECT_STAGES.filter((stage) => stage !== 'warranty').map((stage) => (
-						<option key={stage} value={stage}>
-							{t(`projects:stage.${stage}`)}
-						</option>
-					))}
-				</select>
+				<Select value={draft.stage} onValueChange={(value: string | null) => set({ stage: value as TProjectStage })}>
+					<SelectTrigger id='edit-stage' className='w-full'>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						{PROJECT_STAGES.filter((stage) => stage !== 'warranty').map((stage) => (
+							<SelectItem key={stage} value={stage}>
+								{t(`projects:stage.${stage}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 			</Field>
 			<Field className='sm:col-span-2'>
 				<FieldLabel htmlFor='edit-site'>{t('projects:field.site')}</FieldLabel>

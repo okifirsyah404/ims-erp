@@ -9,6 +9,13 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { CircleAlert, PenLine } from 'lucide-react';
 import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
@@ -88,22 +95,25 @@ export function TaxCorrections() {
 			</div>
 
 			<div className='flex flex-wrap items-center gap-2'>
-				<select
-					className='h-9 max-w-72 rounded-md border bg-transparent px-3 text-sm'
-					value={recordId}
-					onChange={(event) =>
-						void navigate({ search: { recordId: event.target.value || undefined } })
+				<Select
+					value={recordId === '' ? 'none' : recordId}
+					onValueChange={(value: string | null) =>
+						void navigate({ search: { recordId: value == null || value === 'none' ? undefined : value } })
 					}
-					aria-label={t('tax:records.title')}
 				>
-					<option value=''>{t('tax:records.title')}</option>
-					{(records.data?.rows ?? []).map((row) => (
-						<option key={row.id} value={row.id}>
-							{row.code} — {row.periodYear}-
-							{String(row.periodMonth).padStart(2, '0')} ({row.filingStatus})
-						</option>
-					))}
-				</select>
+					<SelectTrigger className='max-w-72' aria-label={t('tax:records.title')}>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='none'>{t('tax:records.title')}</SelectItem>
+						{(records.data?.rows ?? []).map((row) => (
+							<SelectItem key={row.id} value={row.id}>
+								{row.code} — {row.periodYear}-
+								{String(row.periodMonth).padStart(2, '0')} ({row.filingStatus})
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 			</div>
 
 			{recordId === '' ? (

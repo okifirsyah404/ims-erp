@@ -214,20 +214,21 @@ export function CashBankPage() {
 						value={openingBalance}
 						onChange={(event) => setOpeningBalance(event.target.value)}
 					/>
-					<select
-						className='h-9 w-64 rounded-md border bg-transparent px-2 text-sm'
-						value={glAccountId}
-						onChange={(event) => setGlAccountId(event.target.value)}
-					>
-						<option value='none'>{t('finance:cashBank.glLink')} — {t('finance:common.none')}</option>
-						{glAccounts?.rows
-							.filter((account) => account.isActive && account.isPostable)
-							.map((account) => (
-								<option key={account.id} value={account.id}>
-									{account.code} — {account.name}
-								</option>
-							))}
-					</select>
+					<Select value={glAccountId} onValueChange={(value: string | null) => setGlAccountId(value ?? 'none')}>
+						<SelectTrigger className='w-64'>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='none'>{t('finance:cashBank.glLink')} — {t('finance:common.none')}</SelectItem>
+							{glAccounts?.rows
+								.filter((account) => account.isActive && account.isPostable)
+								.map((account) => (
+									<SelectItem key={account.id} value={account.id}>
+										{account.code} — {account.name}
+									</SelectItem>
+								))}
+						</SelectContent>
+					</Select>
 					<Button
 						size='sm'
 						disabled={createAccount.isPending || !code || !name}
@@ -279,29 +280,30 @@ export function CashBankPage() {
 									</TableCell>
 									<TableCell>
 										{canUpdate ? (
-											<select
-												className='h-8 w-56 rounded-md border bg-transparent px-2 text-xs'
+											<Select
 												value={account.glAccountId ?? 'none'}
 												disabled={linkGl.isPending}
-												onChange={(event) =>
+												onValueChange={(value: string | null) =>
 													void linkGl.mutateAsync({
 														id: account.id,
-														glAccountId:
-															event.target.value === 'none'
-																? null
-																: event.target.value,
+														glAccountId: value == null || value === 'none' ? null : value,
 													})
 												}
 											>
-												<option value='none'>{t('finance:common.none')}</option>
-												{glAccounts?.rows
-													.filter((gl) => gl.isActive && gl.isPostable)
-													.map((gl) => (
-														<option key={gl.id} value={gl.id}>
-															{gl.code} — {gl.name}
-														</option>
-													))}
-											</select>
+												<SelectTrigger className='w-56 text-xs'>
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value='none'>{t('finance:common.none')}</SelectItem>
+													{glAccounts?.rows
+														.filter((gl) => gl.isActive && gl.isPostable)
+														.map((gl) => (
+															<SelectItem key={gl.id} value={gl.id}>
+																{gl.code} — {gl.name}
+															</SelectItem>
+														))}
+												</SelectContent>
+											</Select>
 										) : account.glAccountId ? (
 											<Badge variant='secondary'>{t('finance:accounts.isActive')}</Badge>
 										) : (
@@ -321,18 +323,19 @@ export function CashBankPage() {
 
 			{canCreate ? (
 				<div className='flex flex-wrap items-center gap-2 rounded-md border p-4'>
-					<select
-						className='h-9 w-56 rounded-md border bg-transparent px-2 text-sm'
-						value={movementAccountId}
-						onChange={(event) => setMovementAccountId(event.target.value)}
-					>
-						<option value='none'>{t('finance:payments.cashAccount')}</option>
-						{accounts?.map((account) => (
-							<option key={account.id} value={account.id}>
-								{account.code} — {account.name}
-							</option>
-						))}
-					</select>
+					<Select value={movementAccountId} onValueChange={(value: string | null) => setMovementAccountId(value ?? 'none')}>
+						<SelectTrigger className='w-56'>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='none'>{t('finance:payments.cashAccount')}</SelectItem>
+							{accounts?.map((account) => (
+								<SelectItem key={account.id} value={account.id}>
+									{account.code} — {account.name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 					<Input
 						type='date'
 						className='w-40'
@@ -363,25 +366,26 @@ export function CashBankPage() {
 						value={movementAmount}
 						onChange={(event) => setMovementAmount(event.target.value)}
 					/>
-					<select
-						className='h-9 w-64 rounded-md border bg-transparent px-2 text-sm'
-						value={counterpartAccountId}
-						onChange={(event) => setCounterpartAccountId(event.target.value)}
-					>
-						<option value='none'>{t('finance:cashBank.counterpart')}</option>
-						{glAccounts?.rows
-							.filter(
-								(account) =>
-									account.isActive &&
-									account.isPostable &&
-									!account.code.startsWith('1-1'),
-							)
-							.map((account) => (
-								<option key={account.id} value={account.id}>
-									{account.code} — {account.name}
-								</option>
-							))}
-					</select>
+					<Select value={counterpartAccountId} onValueChange={(value: string | null) => setCounterpartAccountId(value ?? 'none')}>
+						<SelectTrigger className='w-64'>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='none'>{t('finance:cashBank.counterpart')}</SelectItem>
+							{glAccounts?.rows
+								.filter(
+									(account) =>
+										account.isActive &&
+										account.isPostable &&
+										!account.code.startsWith('1-1'),
+								)
+								.map((account) => (
+									<SelectItem key={account.id} value={account.id}>
+										{account.code} — {account.name}
+									</SelectItem>
+								))}
+						</SelectContent>
+					</Select>
 					<Input
 						className='w-56'
 						placeholder={t('finance:common.description')}

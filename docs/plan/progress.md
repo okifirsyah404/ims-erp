@@ -12,6 +12,53 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-15 - Web admin UI consistency: shadcn `Select` everywhere, search icon prefix
+
+Every native `<select>` in `apps/web-admin` that was not already a
+`packages/ui` component is now the shadcn `Select` (`Select`, `SelectTrigger`,
+`SelectValue`, `SelectContent`, `SelectItem`), and every `type='search'` input
+is an `InputGroup` with a `Search` (lucide) prefix. 85 native selects across 51
+files and 25 search inputs; the `const select = '...'` class strings they used
+are gone. `NativeSelect` usages (`components/assets/borrowing-form.tsx`,
+`assets/asset-detail.tsx`) and `inventory/adjustment-form.tsx` were already
+`packages/ui` components and were left alone.
+
+**Bug found and fixed in `packages/ui`, not at the call sites.** Base UI's
+`SelectValue` reads the trigger label from the root's `items` prop, not from the
+`SelectItem` children (the popup unmounts while closed). Without `items` every
+filter trigger rendered its raw value — the pre-existing `hr/employees` status
+filter already showed `all` on `main`, so this was not introduced here but the
+conversion multiplied it. `packages/ui/src/components/select.tsx` now wraps
+`SelectPrimitive.Root` and derives `items` from the `SelectItem` children when
+the caller does not pass it, so all 110 call sites get labels with no per-file
+churn.
+
+Behaviour notes: empty/placeholder options use a `'none'` (or `'all'`) sentinel
+mapped back to `''`/`undefined`/`null` in the handler; `disabled`, `id` (moved
+to `SelectTrigger` so `<label htmlFor>` still works) and `aria-label` are
+preserved. `required` no longer triggers the browser's native form validation —
+each affected form already guards its submit button on the same state
+(`!salesOrderId`, `!bastId`, `!itemId`, ...), so submission behaviour is
+unchanged but the browser tooltip is gone.
+
+Verified:
+
+- `bun run --filter '@ims-erp/web-admin' lint` → exit 0 (pre-existing warnings only)
+- `bunx tsc -b` in `apps/web-admin` → clean; `bun run --filter '@ims-erp/ui' typecheck` → exit 0
+- `bun run --filter '@ims-erp/ui' lint` → exit 0
+- `bun run --filter '@ims-erp/web-admin' test` → 100 pass, 0 fail
+- Browser walkthrough on the dev server: `/crm/leads`, `/crm/customers`,
+  `/hr/employees`, `/projects`, `/procurement/purchase-orders`,
+  `/projects/new`, `/procurement/purchase-orders/new` — trigger labels render
+  ("All statuses", "Pick a supplier", "Hardware"), the search boxes carry the
+  icon, and selecting an option updates the trigger and the query.
+  `/integrations/webhooks` could not be checked: the page fetches
+  `http://localhost:3001/api/auth/get-session` and is blocked by CORS, a local
+  env issue unrelated to this change.
+
+`docs/database/` was reviewed and is unchanged (no schema, contract, or
+lifecycle change). No locale keys were added or removed.
+
 ## 2026-11-15 - M04 lands on the current mainline: `main` merged into `feat/m04-on-main`
 
 Branch `feat/m04-on-main` was 106 commits behind `main`; the M04 code (website

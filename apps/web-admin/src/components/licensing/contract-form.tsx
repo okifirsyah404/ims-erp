@@ -6,13 +6,18 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { customersQueryOptions } from '@/lib/customer-api';
 import { minorToRupiah, rupiahToMinor } from '@/lib/format';
 import { applicationsQueryOptions, BILLING_CYCLES, type TBillingCycle, type TContractInput, type TLicenseContract } from '@/lib/license-api';
 import { salesOrdersQueryOptions } from '@/lib/sales-order-api';
-
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 /**
  * The draft contract form (new and edit). Customers are the active ones;
@@ -75,34 +80,46 @@ export function ContractForm({
 					<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 						<Field>
 							<FieldLabel htmlFor='contract-customer'>{t('licensing:field.customer')}</FieldLabel>
-							<select
-								id='contract-customer'
+							<Select
 								required
-								className={select}
-								value={customerId}
-								onChange={(event) => {
-									setCustomerId(event.target.value);
+								value={customerId === '' ? 'none' : customerId}
+								onValueChange={(value: string | null) => {
+									setCustomerId(value === 'none' || value == null ? '' : value);
 									setSalesOrderId('');
 								}}
 							>
-								<option value=''>{t('licensing:pick.customer')}</option>
-								{(customers.data?.rows ?? []).map((customer) => (
-									<option key={customer.id} value={customer.id}>
-										{customer.code} — {customer.name}
-									</option>
-								))}
-							</select>
+								<SelectTrigger id='contract-customer' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='none'>{t('licensing:pick.customer')}</SelectItem>
+									{(customers.data?.rows ?? []).map((customer) => (
+										<SelectItem key={customer.id} value={customer.id}>
+											{customer.code} — {customer.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='contract-application'>{t('licensing:field.application')}</FieldLabel>
-							<select id='contract-application' required className={select} value={applicationId} onChange={(event) => setApplicationId(event.target.value)}>
-								<option value=''>{t('licensing:pick.application')}</option>
-								{pickable.map((app) => (
-									<option key={app.id} value={app.id}>
-										{app.code} — {app.name}
-									</option>
-								))}
-							</select>
+							<Select
+								required
+								value={applicationId === '' ? 'none' : applicationId}
+								onValueChange={(value: string | null) => setApplicationId(value === 'none' || value == null ? '' : value)}
+							>
+								<SelectTrigger id='contract-application' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='none'>{t('licensing:pick.application')}</SelectItem>
+									{pickable.map((app) => (
+										<SelectItem key={app.id} value={app.id}>
+											{app.code} — {app.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='contract-package'>{t('licensing:field.package')}</FieldLabel>
@@ -110,20 +127,23 @@ export function ContractForm({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='contract-order'>{t('licensing:field.salesOrder')}</FieldLabel>
-							<select
-								id='contract-order'
-								className={select}
-								value={salesOrderId}
+							<Select
 								disabled={!customerId}
-								onChange={(event) => setSalesOrderId(event.target.value)}
+								value={salesOrderId === '' ? 'none' : salesOrderId}
+								onValueChange={(value: string | null) => setSalesOrderId(value === 'none' || value == null ? '' : value)}
 							>
-								<option value=''>{t('licensing:pick.noOrder')}</option>
-								{customerOrders.map((order) => (
-									<option key={order.id} value={order.id}>
-										{order.code} — {order.title}
-									</option>
-								))}
-							</select>
+								<SelectTrigger id='contract-order' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='none'>{t('licensing:pick.noOrder')}</SelectItem>
+									{customerOrders.map((order) => (
+										<SelectItem key={order.id} value={order.id}>
+											{order.code} — {order.title}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='contract-start'>{t('licensing:field.startDate')}</FieldLabel>
@@ -136,13 +156,21 @@ export function ContractForm({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='contract-cycle'>{t('licensing:field.billingCycle')}</FieldLabel>
-							<select id='contract-cycle' className={select} value={billingCycle} onChange={(event) => setBillingCycle(event.target.value as TBillingCycle)}>
-								{BILLING_CYCLES.map((cycle) => (
-									<option key={cycle} value={cycle}>
-										{t(`licensing:cycle.${cycle}`)}
-									</option>
-								))}
-							</select>
+							<Select
+								value={billingCycle}
+								onValueChange={(value: string | null) => setBillingCycle(value as TBillingCycle)}
+							>
+								<SelectTrigger id='contract-cycle' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{BILLING_CYCLES.map((cycle) => (
+										<SelectItem key={cycle} value={cycle}>
+											{t(`licensing:cycle.${cycle}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='contract-value'>{t('licensing:field.valueRp')}</FieldLabel>

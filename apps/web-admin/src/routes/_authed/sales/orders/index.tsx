@@ -2,10 +2,22 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Search } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
-import { Input } from '@ims-erp/ui/components/input';
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from '@ims-erp/ui/components/input-group';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import {
 	Table,
 	TableBody,
@@ -49,33 +61,40 @@ function SalesOrderListPage() {
 			</div>
 
 			<div className='flex flex-wrap items-center gap-2'>
-				<Input
-					type='search'
-					className='max-w-sm'
-					aria-label={t('sales:orders.search')}
-					placeholder={t('sales:orders.search')}
-					value={search}
-					onChange={(e) => {
-						setSearch(e.target.value);
-						setPage(1);
-					}}
-				/>
-				<select
-					aria-label={t('sales:quotation.status')}
-					className='h-9 rounded-md border bg-transparent px-3 text-sm'
-					value={status}
-					onChange={(e) => {
-						setStatus(e.target.value as TSalesOrderStatus | '');
+				<InputGroup className='max-w-sm'>
+					<InputGroupAddon align='inline-start'>
+						<Search aria-hidden='true' />
+					</InputGroupAddon>
+					<InputGroupInput
+						type='search'
+						aria-label={t('sales:orders.search')}
+						placeholder={t('sales:orders.search')}
+						value={search}
+						onChange={(e) => {
+							setSearch(e.target.value);
+							setPage(1);
+						}}
+					/>
+				</InputGroup>
+				<Select
+					value={status || 'all'}
+					onValueChange={(value: string | null) => {
+						setStatus(value === 'all' || value == null ? '' : (value as TSalesOrderStatus));
 						setPage(1);
 					}}
 				>
-					<option value=''>{t('sales:quotations.allStatuses')}</option>
-					{SALES_ORDER_STATUSES.map((value) => (
-						<option key={value} value={value}>
-							{t(`sales:orderStatus.${value}`)}
-						</option>
-					))}
-				</select>
+					<SelectTrigger aria-label={t('sales:quotation.status')} className='w-44'>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('sales:quotations.allStatuses')}</SelectItem>
+						{SALES_ORDER_STATUSES.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`sales:orderStatus.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 			</div>
 
 			{isPending ? null : isError ? (

@@ -2,11 +2,23 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Search } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
-import { Input } from '@ims-erp/ui/components/input';
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from '@ims-erp/ui/components/input-group';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import {
 	Table,
 	TableBody,
@@ -68,30 +80,37 @@ function SupplierListPage() {
 				{canCreate && <Button onClick={() => setCreating(true)}>{t('procurement:suppliers.new')}</Button>}
 			</div>
 			<div className='flex flex-wrap items-center gap-2'>
-				<Input
-					type='search'
-					className='max-w-sm'
-					aria-label={t('procurement:suppliers.search')}
-					placeholder={t('procurement:suppliers.search')}
-					value={search}
-					onChange={(e) => {
-						setSearch(e.target.value);
-						setPage(1);
-					}}
-				/>
-				<select
-					aria-label={t('procurement:supplier.status')}
-					className='h-9 rounded-md border bg-transparent px-3 text-sm'
-					value={status}
-					onChange={(e) => {
-						setStatus(e.target.value as 'active' | 'inactive' | '');
+				<InputGroup className='max-w-sm'>
+					<InputGroupAddon align='inline-start'>
+						<Search aria-hidden='true' />
+					</InputGroupAddon>
+					<InputGroupInput
+						type='search'
+						aria-label={t('procurement:suppliers.search')}
+						placeholder={t('procurement:suppliers.search')}
+						value={search}
+						onChange={(e) => {
+							setSearch(e.target.value);
+							setPage(1);
+						}}
+					/>
+				</InputGroup>
+				<Select
+					value={status || 'all'}
+					onValueChange={(value: string | null) => {
+						setStatus(value === 'all' || value == null ? '' : (value as 'active' | 'inactive'));
 						setPage(1);
 					}}
 				>
-					<option value=''>{t('procurement:suppliers.allStatuses')}</option>
-					<option value='active'>{t('common:status.active')}</option>
-					<option value='inactive'>{t('common:status.inactive')}</option>
-				</select>
+					<SelectTrigger aria-label={t('procurement:supplier.status')} className='w-44'>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('procurement:suppliers.allStatuses')}</SelectItem>
+						<SelectItem value='active'>{t('common:status.active')}</SelectItem>
+						<SelectItem value='inactive'>{t('common:status.inactive')}</SelectItem>
+					</SelectContent>
+				</Select>
 			</div>
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>

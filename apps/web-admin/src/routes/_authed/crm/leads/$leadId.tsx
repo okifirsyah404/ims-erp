@@ -18,6 +18,7 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { ConvertLeadDialog } from '@/components/crm/convert-lead-dialog';
 import { LeadFormDialog } from '@/components/crm/lead-form-dialog';
@@ -215,18 +216,18 @@ function LeadDetailPage() {
 								<>
 									<Field>
 										<FieldLabel htmlFor='lead-status'>{t('crm:lead.status')}</FieldLabel>
-										<select
-											id='lead-status'
-											className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
-											value={statusChoice}
-											onChange={(e) => setNextStatus(e.target.value as TLeadStatus)}
-										>
-											{[...LEAD_OPEN_STATUSES, 'lost' as const].map((value) => (
-												<option key={value} value={value}>
-													{t(`crm:leadStatus.${value}`)}
-												</option>
-											))}
-										</select>
+										<Select value={statusChoice} onValueChange={(value: string | null) => setNextStatus(value as TLeadStatus)}>
+											<SelectTrigger id='lead-status' className='w-full'>
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												{[...LEAD_OPEN_STATUSES, 'lost' as const].map((value) => (
+													<SelectItem key={value} value={value}>
+														{t(`crm:leadStatus.${value}`)}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
 									</Field>
 									{statusChoice === 'lost' && lead.status !== 'lost' && (
 										<Field>
@@ -264,25 +265,28 @@ function LeadDetailPage() {
 							{canManage ? (
 								<Field>
 									<FieldLabel htmlFor='lead-assignee'>{t('crm:lead.assignee')}</FieldLabel>
-									<select
-										id='lead-assignee'
-										className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
-										value={lead.ownerUserId ?? ''}
+									<Select
+										value={lead.ownerUserId ?? 'none'}
 										disabled={submitting}
-										onChange={(e) =>
-											void run(() => assignLead(lead.id, e.target.value || null), t('crm:lead.assigned'))
+										onValueChange={(value: string | null) =>
+											void run(() => assignLead(lead.id, value && value !== 'none' ? value : null), t('crm:lead.assigned'))
 										}
 									>
-										<option value=''>{t('crm:lead.unassigned')}</option>
-										{lead.assignee && !assignees.data?.some((p) => p.userId === lead.assignee?.userId) && (
-											<option value={lead.assignee.userId}>{lead.assignee.name}</option>
-										)}
-										{(assignees.data ?? []).map((person) => (
-											<option key={person.userId} value={person.userId}>
-												{person.name}
-											</option>
-										))}
-									</select>
+										<SelectTrigger id='lead-assignee' className='w-full'>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value='none'>{t('crm:lead.unassigned')}</SelectItem>
+											{lead.assignee && !assignees.data?.some((p) => p.userId === lead.assignee?.userId) && (
+												<SelectItem value={lead.assignee.userId}>{lead.assignee.name}</SelectItem>
+											)}
+											{(assignees.data ?? []).map((person) => (
+												<SelectItem key={person.userId} value={person.userId}>
+													{person.name}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
 								</Field>
 							) : (
 								<Detail label={t('crm:lead.assignee')} value={lead.assignee?.name ?? t('crm:lead.unassigned')} />
@@ -321,18 +325,18 @@ function LeadDetailPage() {
 							<div className='grid gap-3 sm:grid-cols-2'>
 								<Field>
 									<FieldLabel htmlFor='activity-type'>{t('crm:activities.type')}</FieldLabel>
-									<select
-										id='activity-type'
-										className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
-										value={activityType}
-										onChange={(e) => setActivityType(e.target.value as TLeadActivityType)}
-									>
-										{LEAD_ACTIVITY_TYPES.map((value) => (
-											<option key={value} value={value}>
-												{t(`crm:activityType.${value}`)}
-											</option>
-										))}
-									</select>
+									<Select value={activityType} onValueChange={(value: string | null) => setActivityType(value as TLeadActivityType)}>
+										<SelectTrigger id='activity-type' className='w-full'>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											{LEAD_ACTIVITY_TYPES.map((value) => (
+												<SelectItem key={value} value={value}>
+													{t(`crm:activityType.${value}`)}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
 								</Field>
 								<Field>
 									<FieldLabel htmlFor='activity-follow-up'>{t('crm:activities.nextFollowUp')}</FieldLabel>

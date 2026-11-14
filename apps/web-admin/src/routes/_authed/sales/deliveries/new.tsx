@@ -8,6 +8,13 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { toast } from '@/components/toast';
 import {
@@ -30,8 +37,6 @@ export const Route = createFileRoute('/_authed/sales/deliveries/new')({
 
 type TLineDraft = { quantity: string; serials: string[]; remarks: string };
 type TRecipient = { projectName: string; projectLocation: string; recipientName: string; recipientAddress: string; recipientPic: string; recipientContact: string };
-
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 const recipientOf = (order: TDeliverableOrder | undefined): TRecipient => ({
 	projectName: order?.title ?? '',
@@ -179,59 +184,74 @@ function NewDeliveryNotePage() {
 						<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 							<Field className='sm:col-span-2'>
 								<FieldLabel htmlFor='dn-order'>{t('sales:delivery.order')}</FieldLabel>
-								<select
-									id='dn-order'
+								<Select
 									required
-									className={select}
-									value={salesOrderId}
-									onChange={(event) => {
-										setSalesOrderId(event.target.value);
+									value={salesOrderId || 'none'}
+									onValueChange={(value: string | null) => {
+										setSalesOrderId(value === 'none' || value == null ? '' : value);
 										setLines({});
 									}}
 								>
-									<option value=''>{t('sales:deliveries.pickOrder')}</option>
-									{(orders.data ?? []).map((row) => (
-										<option key={row.id} value={row.id}>
-											{row.code} — {row.customerName} — {row.title}
-										</option>
-									))}
-								</select>
+									<SelectTrigger id='dn-order' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='none'>{t('sales:deliveries.pickOrder')}</SelectItem>
+										{(orders.data ?? []).map((row) => (
+											<SelectItem key={row.id} value={row.id}>
+												{row.code} — {row.customerName} — {row.title}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 								{orders.data?.length === 0 && <FieldDescription>{t('sales:deliveries.noOrders')}</FieldDescription>}
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='dn-warehouse'>{t('sales:delivery.warehouse')}</FieldLabel>
-								<select
-									id='dn-warehouse'
+								<Select
 									required
-									className={select}
-									value={warehouseId}
-									onChange={(event) => {
-										setWarehouseId(event.target.value);
+									value={warehouseId || 'none'}
+									onValueChange={(value: string | null) => {
+										setWarehouseId(value === 'none' || value == null ? '' : value);
 										setBinId('');
 										setLines((current) =>
 											Object.fromEntries(Object.entries(current).map(([id, line]) => [id, { ...line, serials: [] }])),
 										);
 									}}
 								>
-									<option value=''>{t('sales:deliveries.pickWarehouse')}</option>
-									{(warehouses.data ?? []).map((row) => (
-										<option key={row.id} value={row.id}>
-											{row.code} — {row.name}
-										</option>
-									))}
-								</select>
+									<SelectTrigger id='dn-warehouse' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='none'>{t('sales:deliveries.pickWarehouse')}</SelectItem>
+										{(warehouses.data ?? []).map((row) => (
+											<SelectItem key={row.id} value={row.id}>
+												{row.code} — {row.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='dn-bin'>{t('sales:delivery.bin')}</FieldLabel>
-								<select id='dn-bin' className={select} value={binId} onChange={(event) => setBinId(event.target.value)} disabled={!warehouse}>
-									<option value=''>{t('sales:deliveries.noBin')}</option>
-									{(warehouse?.storages ?? []).map((storage) => (
-										<option key={storage.id} value={storage.id}>
-											{storage.code}
-											{storage.name ? ` — ${storage.name}` : ''}
-										</option>
-									))}
-								</select>
+								<Select
+									disabled={!warehouse}
+									value={binId || 'none'}
+									onValueChange={(value: string | null) => setBinId(value === 'none' || value == null ? '' : value)}
+								>
+									<SelectTrigger id='dn-bin' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='none'>{t('sales:deliveries.noBin')}</SelectItem>
+										{(warehouse?.storages ?? []).map((storage) => (
+											<SelectItem key={storage.id} value={storage.id}>
+												{storage.code}
+												{storage.name ? ` — ${storage.name}` : ''}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='dn-date'>{t('sales:delivery.date')}</FieldLabel>

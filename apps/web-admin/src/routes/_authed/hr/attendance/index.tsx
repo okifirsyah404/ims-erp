@@ -7,6 +7,7 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Input } from '@ims-erp/ui/components/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { ImportDialog } from '@/components/hr/import-dialog';
 import { toast } from '@/components/toast';
@@ -27,8 +28,6 @@ import { usePermission } from '@/lib/use-permission';
 export const Route = createFileRoute('/_authed/hr/attendance/')({
 	component: AttendancePage,
 });
-
-const select = 'h-8 rounded-md border bg-transparent px-2 text-sm';
 
 function AttendancePage() {
 	const { t } = useTranslation(['hr', 'common']);
@@ -158,22 +157,25 @@ function DaySheet({ date, rows, canRecord }: { date: string; rows: TAttendanceDa
 													{t(`hr:status.${row.record!.status}`)} · {t('hr:attendance.fromLeave')}
 												</Badge>
 											) : (
-												<select
-													aria-label={t('hr:field.status')}
-													className={select}
+												<Select
+													value={entry?.status ?? 'none'}
 													disabled={!editable(row)}
-													value={entry?.status ?? ''}
-													onChange={(event) => change(row.employee.id, { status: event.target.value as TAttendanceStatus })}
+													onValueChange={(value: string | null) => change(row.employee.id, { status: value as TAttendanceStatus })}
 												>
-													<option value='' disabled>
-														{t('hr:attendance.notRecorded')}
-													</option>
-													{ATTENDANCE_STATUSES.map((status) => (
-														<option key={status} value={status}>
-															{t(`hr:status.${status}`)}
-														</option>
-													))}
-												</select>
+													<SelectTrigger aria-label={t('hr:field.status')} className='h-8 w-full'>
+														<SelectValue />
+													</SelectTrigger>
+													<SelectContent>
+														<SelectItem value='none' disabled>
+															{t('hr:attendance.notRecorded')}
+														</SelectItem>
+														{ATTENDANCE_STATUSES.map((status) => (
+															<SelectItem key={status} value={status}>
+																{t(`hr:status.${status}`)}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
 											)}
 										</TableCell>
 										<TableCell>

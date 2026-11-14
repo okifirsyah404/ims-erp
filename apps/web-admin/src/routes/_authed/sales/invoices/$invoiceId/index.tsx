@@ -23,6 +23,13 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ims-erp/ui/components/table';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { toast } from '@/components/toast';
 import { formatBusinessDate, formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
@@ -329,18 +336,18 @@ function InvoiceDetailPage() {
 									<div className='grid gap-4 sm:grid-cols-2'>
 										<Field>
 											<FieldLabel htmlFor='receipt-method'>{t('finance:receipt.method')}</FieldLabel>
-											<select
-												id='receipt-method'
-												className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
-												value={method}
-												onChange={(e) => setMethod(e.target.value as TReceiptMethod)}
-											>
-												{RECEIPT_METHODS.map((value) => (
-													<option key={value} value={value}>
-														{t(`finance:method.${value}`)}
-													</option>
-												))}
-											</select>
+											<Select value={method} onValueChange={(value: string | null) => setMethod(value as TReceiptMethod)}>
+												<SelectTrigger id='receipt-method' className='w-full'>
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													{RECEIPT_METHODS.map((value) => (
+														<SelectItem key={value} value={value}>
+															{t(`finance:method.${value}`)}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
 										</Field>
 										<Field>
 											<FieldLabel htmlFor='receipt-reference'>{t('finance:receipt.reference')}</FieldLabel>

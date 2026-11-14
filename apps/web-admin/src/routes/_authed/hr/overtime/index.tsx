@@ -9,6 +9,7 @@ import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { EmployeeSelect } from '@/components/hr/employee-select';
@@ -76,22 +77,25 @@ function OvertimePage() {
 				{canCreate && <Button onClick={() => setRecording(true)}>{t('hr:overtime.new')}</Button>}
 			</div>
 			<div className='flex flex-wrap gap-2'>
-				<select
-					aria-label={t('hr:field.status')}
-					className='h-9 rounded-md border bg-transparent px-3 text-sm'
-					value={status}
-					onChange={(event) => {
-						setStatus(event.target.value as TRequestStatus | '');
+				<Select
+					value={status || 'all'}
+					onValueChange={(value: string | null) => {
+						setStatus(value === null || value === 'all' ? '' : (value as TRequestStatus));
 						setPage(1);
 					}}
 				>
-					<option value=''>{t('hr:request.allStatuses')}</option>
-					{REQUEST_STATUSES.map((value) => (
-						<option key={value} value={value}>
-							{t(`hr:request.status.${value}`)}
-						</option>
-					))}
-				</select>
+					<SelectTrigger aria-label={t('hr:field.status')}>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('hr:request.allStatuses')}</SelectItem>
+						{REQUEST_STATUSES.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`hr:request.status.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 				<Input
 					type='month'
 					className='w-44'
