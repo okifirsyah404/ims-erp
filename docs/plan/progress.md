@@ -18,6 +18,25 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - Website / customer portal integration gap analysis (ERP-0022, ERP-0020)
+
+Owner asked whether the portal is "full API" and whether the website repo's
+needs were analysed. Honest answer: stage 1 covers 16 of the 51 `PortalSource`
+operations, and the website repo had only been read for the portal contract.
+Docs only, on `feat/m07-customer-portal`: `docs/plan/plans/website-integration.md`
+maps every operation of `PortalSource` (51), `CatalogSource` (9, all on PR
+#84) and `WebsiteSource` (10, 3 on main) to an ERP route, status and owner
+module, and lists 11 owner decisions. Two conflict with the 2026-11-14
+choices and would change the portal schema before its PR: **D1** the
+website assumes open sign-up (and checkout needs a portal sign-in), **D2**
+it assumes several members per company. Also found: the website's
+signed-in RFQ/cart/checkout calls send only the customer token, so those
+ERP routes must be `portal`-guarded. Counts re-checked from the interfaces.
+No code changed; `docs/database/` reviewed and unchanged.
+
+Next executable task: owner decides D1 and D2 (then adjust the branch), the
+rest of the decisions as each step starts (order in the document).
+
 ## 2026-11-14 - ERP-0022 customer portal, stage 1 (M07 T26 + M12 T25 account part)
 
 Branch `feat/m07-customer-portal` from `origin/main` (`f64788d`). Owner asked

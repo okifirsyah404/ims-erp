@@ -1,6 +1,8 @@
 # Customer Portal Module (ERP-0022, stage 1)
 
 Decision record: [ADR-0018](../decisions/ADR-0018-customer-portal-api.md).
+Full gap analysis against the website repo (all 51 portal, 9 catalog and 10
+website operations, open owner decisions): `docs/plan/plans/website-integration.md`.
 
 ## Purpose and boundary
 
