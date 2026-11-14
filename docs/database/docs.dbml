@@ -5038,6 +5038,28 @@ Table accounting.journal_templates {
   }
 }
 
+Table accounting.report_archives {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  period_year integer [not null]
+  period_month integer [not null]
+  report_type text [not null]
+  payload jsonb [not null]
+  generated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  generated_at bigint [not null]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Immutable snapshot of a financial statement for a closed month (M12 T30, SOP S13). Append-only in practice: no update or delete route exists, and a reopened period is re-archived - the unique index keeps the write idempotent. The timestamp pair is present only because every table in this schema carries it."
+  Indexes {
+    (organization_id, period_year, period_month, report_type) [unique, name: 'report_archives_scope_uq']
+  }
+  Checks {
+    `period_month BETWEEN 1 AND 12`
+    `report_type IN ('profit_and_loss', 'balance_sheet', 'cash_flow')`
+  }
+}
+
 Ref: accounting.chart_of_accounts.parent_account_id > accounting.chart_of_accounts.id [delete: restrict]
 Ref: accounting.journal_entries.accounting_period_id > accounting.accounting_periods.id [delete: restrict]
 Ref: accounting.journal_entries.reversed_by_entry_id > accounting.journal_entries.id [delete: set null]
@@ -5050,7 +5072,6 @@ Ref: accounting.account_balances.account_id > accounting.chart_of_accounts.id [d
 Ref: accounting.account_balances.accounting_period_id > accounting.accounting_periods.id [delete: cascade]
 Ref: accounting.bank_account_links.chart_of_account_id > accounting.chart_of_accounts.id [delete: restrict]
 Ref: accounting.withholding_tax_records.tax_type_id > accounting.tax_types.id [delete: restrict]
-
 
 // ---------------------------------------------------------------------------
 // MODULE: Assets  (schema: assets)

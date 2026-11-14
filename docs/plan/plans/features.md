@@ -14,7 +14,11 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-15.
+Last synced: 2026-11-15. Full inventory of what has no code yet:
+`plans/2026-11-15_0538_todo_undone.md` (revision 2 — it corrects five
+"missing feature" claims that actually ship, e.g. the report API and the
+assets operations surface). §7 item 3 (statement exports + monthly archive +
+`/reports` UI) landed the same day; see progress 2026-11-15 "M12 T30".
 
 > **Sidebar shell note (2026-11-05):** the web-admin sidebar now renders the
 > full M01–M12 nav map (see `progress.md`, "UI — full ERP sidebar shell").
@@ -586,7 +590,24 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - Auth module + runtime verification — ERP-0003. Evidence: Better Auth in
   Elysia chain, `sessionGuard`/`erpGuard`; progress 2026-10-29 live HTTP
   verified.
-- Exports, monthly report archive — T30. Evidence: none.
+- Report API: `GET /reports/profit-and-loss`, `/balance-sheet`, `/cash-flow` in
+  `accounting/controllers/payment.controller.ts` over `report.service.ts`.
+- Statement CSV exports — T30 (partial). `GET /reports/{profit-and-loss,
+  balance-sheet,cash-flow}.csv` gated `financial_report:export`;
+  `accounting/utils/report-csv.ts`, `test/unit/report-csv.test.ts`.
+- Monthly report archive — T30 (partial). `accounting.report_archives`
+  (migration `20261115090001_same_guardsmen`), `ReportArchiveService`,
+  `GET|POST /reports/archives`, `/reports/monthly-archives` page,
+  `test/unit/report-archive.service.test.ts`,
+  `scripts/smoke-report-archives.ts` 11/11 live. Evidence: progress 2026-11-15
+  "M12 T30".
+- Reports UI: `/reports` renders `ReportsPage` (was a stub). Evidence: progress
+  2026-11-15 "M12 T30".
+
+### planned
+- XLSX/PDF exports for statements (CSV only today) — T30.
+- Browser walk-through of `/reports` and `/reports/monthly-archives`; no
+  real-PG test exists for any module.
 - Customer accounts + protected docs — T25, ERP-0022. Evidence: dbml
   `auth.portal_identities` only.
 - Cross-account security UAT — T31. Evidence: none.

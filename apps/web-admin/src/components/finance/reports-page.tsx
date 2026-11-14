@@ -6,13 +6,14 @@ import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
 import { Button } from '@ims-erp/ui/components/button';
 import { useState } from 'react';
-import { FileSpreadsheet } from 'lucide-react';
+import { FileSpreadsheet, Download } from 'lucide-react';
 import { EmptyState } from '@/components/empty-state';
 import {
 	balanceSheetQueryOptions,
 	cashFlowQueryOptions,
 	profitAndLossQueryOptions,
 } from '@/lib/finance-api';
+import { downloadFile } from '@/lib/download';
 import { usePermission } from '@/lib/use-permission';
 
 const formatMoney = (minor: number) => (minor / 100).toLocaleString();
@@ -82,6 +83,36 @@ export function ReportsPage() {
 				<Button size='sm' onClick={run}>
 					{t('finance:reports.run')}
 				</Button>
+			</div>
+
+			<div className='flex flex-wrap items-center gap-2'>
+				<ExportButton
+					disabled={applied.startDate === ''}
+					onClick={() =>
+						downloadFile(
+							`/reports/profit-and-loss.csv?startDate=${applied.startDate}&endDate=${applied.endDate}`,
+							`profit-and-loss-${applied.startDate}_${applied.endDate}.csv`,
+						)
+					}
+				/>
+				<ExportButton
+					disabled={applied.asOfDate === ''}
+					onClick={() =>
+						downloadFile(
+							`/reports/balance-sheet.csv?asOfDate=${applied.asOfDate}`,
+							`balance-sheet-${applied.asOfDate}.csv`,
+						)
+					}
+				/>
+				<ExportButton
+					disabled={applied.startDate === ''}
+					onClick={() =>
+						downloadFile(
+							`/reports/cash-flow.csv?startDate=${applied.startDate}&endDate=${applied.endDate}`,
+							`cash-flow-${applied.startDate}_${applied.endDate}.csv`,
+						)
+					}
+				/>
 			</div>
 
 			<Tabs defaultValue='pl'>
@@ -204,8 +235,30 @@ export function ReportsPage() {
 	);
 }
 
-function ReportSection({
-	title,
+function ExportButton({
+	disabled,
+	onClick,
+}: {
+	disabled: boolean;
+	onClick: () => Promise<void>;
+}) {
+	const { t } = useTranslation('finance');
+	const canExport = usePermission('financial_report.export');
+	if (!canExport) return null;
+	return (
+		<Button
+			size='sm'
+			variant='outline'
+			disabled={disabled}
+			onClick={() => void onClick()}
+		>
+			<Download className='size-4' />
+			{t('reports.export')}
+		</Button>
+	);
+}
+
+function ReportSection({	title,
 	rows,
 	total,
 }: {

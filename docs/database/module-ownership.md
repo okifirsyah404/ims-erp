@@ -51,7 +51,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 | 12 | HR | `hr` | 16 | 17 | 44 |
 | 13 | Payroll | `payroll` | 11 | 10 | 28 |
 | 14 | Finance | `finance` | 16 | 14 | 46 |
-| 15 | Accounting | `accounting` | 13 | 12 | 24 |
+| 15 | Accounting | `accounting` | 14 | 12 | 24 |
 | 16 | Assets | `assets` | 14 | 16 | 33 |
 | 17 | After-Sales | `aftersales` | 15 | 0 | 39 |
 | 18 | Document | `document` | 8 | 8 | 14 |
@@ -64,10 +64,16 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 | 25 | Ticketing | `ticket` | 5 | 5 | 14 |
 | 26 | Audit | `audit` | 1 | 0 | 1 |
 | 27 | Notification | `notification` | 2 | 1 | 1 |
-| | **Total** | **27 schemas** | **268** | **231** | **524** |
+| | **Total** | **27 schemas** | **275** | **231** | **524** |
 
 Counts are re-derived from `docs.dbml` on every validation run. The parser
 also reports an empty `public` schema (0 tables); it is not a module.
+
+> **Known drift, 2026-11-15.** Only the Accounting row (14) and the table total
+> (275) reflect the current `docs.dbml`; the other per-module rows were last
+> recounted before 2026-11-13 and are low (for example `sales` is 16,
+> `inventory` 15, `hr` 19, `automation` 12). A full recount is tracked in
+> `../plan/plans/2026-11-15_0538_todo_undone.md` §6.
 
 There is no longer any two-schema module. The physical warehouse tables moved
 into `inventory` (ADR-0008): `inventory.warehouses`, `inventory.warehouse_addresses`

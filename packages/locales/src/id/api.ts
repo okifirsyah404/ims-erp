@@ -423,6 +423,9 @@ const api: Record<keyof typeof en, string> = {
 		'Tindakan rekonsiliasi tersebut tidak diizinkan untuk dokumen ini',
 	'accounting.reportPeriodInvalid':
 		'Rentang tanggal laporan tidak valid',
+	'accounting.reportArchiveNotFound': 'Arsip laporan tidak ditemukan',
+	'accounting.reportArchivePeriodOpen':
+		'Periode masih terbuka; tutup dulu sebelum mengarsipkan',
 
 	// Faktur (F4) — kunci sales
 	'sales.invoiceNotFound': 'Faktur tidak ditemukan',

@@ -12,6 +12,161 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-15 - M12 T30: statement CSV exports + monthly report archive (branch `feat/reports-surface`)
+
+Item 3 of `plans/2026-11-15_0538_todo_undone.md` §7. The report **API** already
+existed; what was missing was the export surface, the monthly archive, and the
+`/reports/*` UI. All three now exist.
+
+**Backend**
+
+- New table `accounting.report_archives` (`docs.dbml` first, then Drizzle,
+  then generated migration `20261115090001_same_guardsmen`): unique scope index
+  `(organization_id, period_year, period_month, report_type)`, CHECKs on the
+  month range and the report type. Applied to `ims_erp_local`; columns, index
+  and both constraints verified through `pg_catalog`.
+- `ReportArchiveRepository` (insert / list / find, no update, no delete),
+  `ReportArchiveService.archivePeriod` (refuses an `open` period, accepts
+  `closed`/`locked`, idempotent on the scope index), two new domain errors
+  (`accounting.reportArchiveNotFound`, `accounting.reportArchivePeriodOpen`)
+  with en+id copy.
+- `utils/report-csv.ts` flattens each statement to one CSV row per line plus
+  total rows; UTF-8 BOM, RFC 4180 quoting, same convention as the tax recap.
+- Routes on the accounting module: `GET /reports/profit-and-loss.csv`,
+  `/reports/balance-sheet.csv`, `/reports/cash-flow.csv` (gated
+  `financial_report:export`), and `GET /reports/archives`,
+  `GET /reports/archives/:id` (`financial_report:read`),
+  `POST /reports/archives` (`accounting_period:close`).
+
+**Web admin**
+
+- `/reports` renders the real `ReportsPage` (it was a `ComingSoonPage`), and
+  `/reports/monthly-archives` is a working page: list of frozen statements with
+  the headline figure per type, an archive-month form, pagination.
+- `Export CSV` buttons on the reports page behind `financial_report.export`,
+  using a new `lib/download.ts` (fetch with `credentials: 'include'` + blob
+  save, so the server keeps the permission check).
+- `finance-api.ts` gained `reportArchivesQueryOptions`, `reportArchiveQueryOptions`,
+  `archiveMonth`; locales `archives.*` + `type.*` in en and id.
+
+**Defects found and fixed while proving it**
+
+- `generated_by uuid` was wrong: `auth.users.id` is a 32-char nanoid, so every
+  `POST /reports/archives` from a real session answered 500 with
+  `Failed query: insert into accounting.report_archives`. Changed to `text`,
+  matching `accounting_periods.closed_by` / `reopened_by`, and the migration was
+  regenerated (the old one was never applied anywhere but this dev DB).
+- `POST /reports/archives` returned HTTP 200 with `status: 201` in the body.
+  The repo convention is `status(201, created(...))`; fixed.
+- The insert also needed an explicit `updatedAt`, which Drizzle's `$onUpdate`
+  does not fill on insert.
+
+**Evidence**
+
+- `bun test` backend 1067 pass / 0 fail (81 files, +11 new: `report-csv.test.ts`
+  8, `report-archive.service.test.ts` 6), web-admin 100 pass, locales 94 pass.
+- `bunx tsc --noEmit` clean in both apps; `bun run lint` 0 errors (6
+  pre-existing warnings, none in the touched files).
+- `bun docs/database/validate-dbml.ts` -> `parsed: 275 tables, 235 refs`,
+  `cross-module refs: 0`, `timestamp gaps: 0`, `drizzle parity drift: 0`, `OK`.
+- `scripts/smoke-report-archives.ts` 11 pass / 0 fail over real HTTP against the
+  local server: archive list, the three CSV exports (content type, BOM, header
+  row, attachment filename), a closed month accepted with `201`, an open month
+  refused with `409`.
+- The archive write path was proven end to end on `ims_erp_local` (close
+  `2026-01` -> 3 rows -> repeat call 0 rows -> list 3 rows) and the scratch rows
+  and period were deleted afterwards, so the dev database is back to its prior
+  state.
+
+**Still open**
+
+- `POST /periods` needs `accounting_period:create`, which the permission
+  catalogue never grants (`accounting_period: ['read','close','reopen']` in
+  `packages/common/src/authorization/erp-permissions.ts`). A period is therefore
+  only created lazily by posting or by SQL. Not fixed here - it is a
+  pre-existing gap that needs a decision, not a guess.
+- No browser walk-through of the two pages yet, and no real-PG integration test
+  (the repo has none for any module).
+- `docs/database/` was updated (`docs.dbml` table + note) because this change
+  adds a table.
+
+## 2026-11-15 - Undone-work inventory, revision 2: `plans/2026-11-15_0538_todo_undone.md`
+
+Wrote and then corrected `docs/plan/plans/2026-11-15_0538_todo_undone.md`:
+every module and feature that has **no code**. Revision 1 read the plans and
+`docs.dbml` only; revision 2 read the endpoint list, the web-admin route tree
+and the test tree as well, which falsified five of revision 1's claims. No
+application code, migration, seeder or test changed.
+
+**Five corrections.** These are the reason revision 2 exists - each was a
+"missing feature" that actually ships:
+
+- Reporting has a backend: `GET /reports/profit-and-loss`, `/balance-sheet`,
+  `/cash-flow` live in `accounting/controllers/payment.controller.ts` over
+  `report.service.ts`. What is missing is the UI (`reports/index.tsx` and
+  `reports/monthly-archives/index.tsx` are `ComingSoonPage`), the export
+  surface, and the archive.
+- M06 assets are built: `asset-operations.controller.ts` serves
+  `POST /assets/:id/condition-checks`, `/maintenances`, `/depreciations`,
+  `/documents`, `/disposals` (+ approve/execute/cancel), `/tool-sets` CRUD, and
+  the `/assets/*` pages are real components. Missing: the **GL journal** for
+  depreciation - `recordDepreciation` writes `assets.asset_depreciations` and
+  never calls the posting engine (grep: no `posting` in
+  `asset-operations.service.ts`).
+- Document templates have `GET` and `POST /documents/templates`; missing are
+  update/delete, the renderer, and the UI (`documents/templates.tsx` is a stub).
+- Seven modules have zero code, not eight: `payroll`, `approval`, `budgeting`,
+  `investor`, `commerce`, `ticket`, plus the dashboard. Reporting has a backend.
+- The table counts: 274 table blocks, **145 unbuilt**, measured
+  schema-qualified so a same-named table in another module does not count as
+  built. `bun docs/database/validate-dbml.ts` prints `parsed: 274 tables, 235
+  refs` / `cross-module refs: 0` / `timestamp gaps: 0` / `drizzle parity drift:
+  0` / `OK`. Cross-check: 94 missing in shipped modules + 51 in the six unbuilt
+  schemas = 145. Modules whose schema is complete: location, company,
+  code_number, assets, document, audit, notification. Stale prose remains in
+  `module-ownership.md` (268 tables / 524 refs) and `features.md` (270 tables,
+  150 unbuilt).
+
+**New findings, recorded not fixed:**
+
+- **`finance` has no module.** `module-ownership.md` lists Finance as module 14
+  owning the `finance` schema, but no `src/app/finance` exists: `accountingModule()`
+  serves `/payments`, `/bills`, `/cash-bank/*`, `/ar/aging`, `/ap/aging`, and
+  `accounting/repositories/*` imports both `accounting.schema` and
+  `finance.schema`. That contradicts the one-schema-per-module rule in the
+  `elysia-module` skill; either rename the module or split it.
+- **Phantom backlog IDs**: ERP-0048 (signature requests), ERP-0049 (user
+  signature image) and ERP-0050 (document templates) are cited by code comments
+  and `features.md`, with no row in `backlog.md`.
+- **`docs/architecture/modules/README.md` is stale**: it still calls finance,
+  tax and asset-project "owner to be created", location and organization
+  "scaffold", and user "partially implemented"; all five ship controllers and
+  services.
+- **`features.md` M12 mislabelled three rows** (fixed in this change): "Exports,
+  monthly report archive - T30. Evidence: none", "Customer accounts +
+  protected docs - T25. Evidence: dbml only" and "Cross-account security UAT -
+  T31. Evidence: none" sat under `### implemented` while their own evidence said
+  nothing exists. They now sit under `### planned`, and the report API that does
+  exist is recorded as its own implemented row.
+- **Live route drift**: `apps/web-admin/src/lib/invoice-api.ts` posts to
+  `/invoices/:id/void`; `sales/controllers/invoice.controller.ts` serves
+  `POST /invoices/:id/cancel` only, so the void action is broken against main.
+- **No real-PostgreSQL test anywhere** - `test/helpers/mock-db.ts` is the only
+  database double and `test/accounting/*` types its fixture as `BunSQLDatabase`
+  without connecting. **No committed e2e**: no `playwright.config.*` or
+  `cypress.config.*` exists; the five `apps/backend/scripts/smoke-*.ts` run by
+  hand.
+- Carried over from revision 1: ERP-0010 is `planned` while `src/app/accounting`
+  ships COA/journals/posting/periods/reversals/AR-AP/bank rec/month-end close;
+  ERP-0039 is used twice (org invitations and M04 stage 1); ERP-0037 appears
+  twice in `features.md`; ADR-0010 is still `proposed` while ERP-0031/0032/0033
+  depend on it; six UAT scripts written 2026-11-12 never ran.
+
+`backlog.md` reviewed: no status moved, because nothing was built. `features.md`
+carries one pointer line to the new file. `docs/database/` reviewed and
+unchanged - no schema, column, index, constraint or cross-module reference
+changed; `validate-dbml.ts` was still run and printed `OK`.
+
 ## 2026-11-15 - The remaining native date inputs: month, time and datetime
 
 The last non-date native inputs followed `DatePicker`: 4 `type='month'`, 2
