@@ -138,6 +138,8 @@ const nav_: Record<keyof typeof nav, string> = {
 	'breadcrumb.print': 'Cetak',
 	'breadcrumb.purchaseOrderNew': 'Purchase order baru',
 	'breadcrumb.goodsReceiptNew': 'Terima barang',
+	'breadcrumb.whatsappFaq': 'FAQ asisten',
+	'breadcrumb.whatsappChat': 'Percakapan',
 };
 
 export default nav_;

@@ -1295,7 +1295,37 @@ Table crm.customer_credit_limits {
 // Unified goods and service master: categories, units, items, variants,
 // conversions, bundles, attributes, documents, price lists and prices.
 // Tenant scoped. Item prices are exact integer minor units.
+// Built so far: `web_listings` (M04 stage 1) — company-wide, what the public
+// website shows of an inventory item. Everything else here is target-only.
 // ---------------------------------------------------------------------------
+
+Table catalog.web_listings {
+  id uuid [pk, default: `uuidv7()`]
+  item_id uuid [note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Nullable per ADR-0014; required by the catalog service. One live listing per item."]
+  slug varchar(120) [not null, note: "Website product slug. Unique among live rows (partial index in the Drizzle schema)."]
+  is_published boolean [not null, default: false]
+  published_at bigint
+  specs varchar(400) [note: "Short specification line for the product card; empty uses the item specification."]
+  price_mode text [not null, default: 'list', note: "list: the item selling price is shown; rfq: no price, the website asks for a quotation."]
+  price_caption varchar(120)
+  out_of_stock_mode text [not null, default: 'request', note: "Shown when nothing is available: out, preorder or request."]
+  lead_time_label varchar(60)
+  applications jsonb [not null, default: `'[]'`, note: "Use-case tags (string array)."]
+  popularity integer [not null, default: 0, note: "Manual weight for the popular sort."]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "What the public website shows of an inventory item (M04 stage 1, company-wide). Name, category, price, photo and stock come from inventory at read time."
+  Indexes {
+    is_published [name: 'web_listings_published_idx']
+  }
+  Checks {
+    `price_mode IN ('list', 'rfq')`
+    `out_of_stock_mode IN ('out', 'preorder', 'request')`
+    `popularity >= 0`
+  }
+}
 
 Table catalog.item_categories {
   id uuid [pk, default: `uuidv7()`]
@@ -7157,6 +7187,10 @@ Ref: commerce.commerce_order_items.commerce_order_id > commerce.commerce_orders.
 // Integrations and encrypted credentials, workflows and steps, workflow runs,
 // scheduled jobs and executions, and the transactional outbox. Tenant scoped.
 // Secrets are never stored in clear text.
+// Built so far (M04): outbox_messages (stages 1-2) and the WhatsApp assistant
+// tables faq_entries, whatsapp_conversations, whatsapp_messages (stage 2), all
+// company-wide (ADR-0012); n8n is the workflow engine, so the workflow tables
+// here stay target-only.
 // ---------------------------------------------------------------------------
 
 Table automation.integrations {
@@ -7363,31 +7397,110 @@ Table automation.job_executions {
 }
 
 Table automation.outbox_messages {
-  updated_at bigint [not null]
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  topic text [not null]
-  aggregate_type text
+  id uuid [pk, default: `uuidv7()`, note: "Also the event id n8n dedupes on."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted (ADR-0014). Nullable: M04 publishes company-wide events (ADR-0012), so the publishers leave it unset; a future tenant-scoped event fills it."]
+  topic varchar(64) [not null, note: "lead.created, invoice.issued, receipt.recorded, license.due, service_ticket.updated, whatsapp.handoff."]
+  aggregate_type varchar(64)
   aggregate_id text
-  payload text
+  payload jsonb [not null, note: "The event body POSTed to n8n."]
   status text [not null, default: 'pending']
   attempts smallint [not null, default: 0]
-  available_at bigint
+  last_attempt_at bigint
   published_at bigint
-  error_message text
+  response_status smallint [note: "HTTP status of the last delivery attempt."]
+  error_message varchar(500)
+  dedupe_key varchar(200) [note: "Once-per-fact events (license.due:<contract>:<end>:<threshold>); a repeat publish is skipped. Unique when set."]
   created_at bigint [not null]
-  Note: "Transactional outbox. The event is written in the same transaction as the business change, then published after the commit."
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Transactional outbox (M04 stages 1-2). The event is recorded with the business change, then delivered to the n8n webhook by a background queue that retries; a queue or webhook outage never fails the business action. Company-wide per ADR-0012."
   Indexes {
     status [name: 'outbox_messages_status_idx']
-    available_at [name: 'outbox_messages_available_at_idx']
+    topic [name: 'outbox_messages_topic_idx']
     (aggregate_type, aggregate_id) [name: 'outbox_messages_aggregate_idx']
+    dedupe_key [unique, name: 'outbox_messages_dedupe_key_key']
   }
   Checks {
-    `status IN ('pending', 'published', 'failed', 'dead')`
+    `status IN ('pending', 'published', 'failed')`
     `attempts >= 0`
   }
 }
+
+Table automation.faq_entries {
+  id uuid [pk, default: `uuidv7()`]
+  question varchar(300) [not null]
+  answer text [not null]
+  keywords varchar(500) [note: "Comma-separated words that also match this entry."]
+  is_active boolean [not null, default: true]
+  sort_order integer [not null, default: 0]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Approved answers the WhatsApp assistant may use (M04 stage 2). Company-wide (ADR-0012)."
+  Indexes {
+    is_active [name: 'faq_entries_is_active_idx']
+  }
+}
+
+Table automation.whatsapp_conversations {
+  id uuid [pk, default: `uuidv7()`]
+  chat_id varchar(128) [not null, note: "WAHA chat id, e.g. 628123456789@c.us; replies go here. Unique among live rows."]
+  phone varchar(32) [not null]
+  contact_name varchar(200)
+  status text [not null, default: 'assistant']
+  handoff_reason text [note: "no_provider, not_found, human_requested, restricted, error."]
+  handoff_at bigint
+  assigned_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  lead_id uuid [note: "Logical reference to crm.leads.id. Cross-module FK intentionally omitted. Set when an admin turns the chat into a lead."]
+  last_message_at bigint [not null]
+  last_inbound_at bigint
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "One WhatsApp chat with the company number (M04 stage 2). Company-wide (ADR-0012)."
+  Indexes {
+    chat_id [unique, name: 'whatsapp_conversations_chat_id_key']
+    (status, last_message_at) [name: 'whatsapp_conversations_status_idx']
+  }
+  Checks {
+    `status IN ('assistant', 'handoff', 'closed')`
+    `handoff_reason IS NULL OR handoff_reason IN ('no_provider', 'not_found', 'human_requested', 'restricted', 'error')`
+  }
+}
+
+Table automation.whatsapp_messages {
+  id uuid [pk, default: `uuidv7()`]
+  conversation_id uuid [not null]
+  direction text [not null]
+  author text [not null]
+  external_id varchar(128) [note: "WhatsApp message id; inbound webhooks are deduped on (direction, external_id)."]
+  body text [not null]
+  status text [not null]
+  faq_entry_id uuid [note: "Answer used by the assistant, when the reply came from the FAQ."]
+  sent_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  error_message varchar(500)
+  attempts smallint [not null, default: 0]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Every WhatsApp message of a conversation (M04 stage 2 log). Company-wide (ADR-0012)."
+  Indexes {
+    (conversation_id, created_at) [name: 'whatsapp_messages_conversation_idx']
+    (direction, external_id) [unique, name: 'whatsapp_messages_direction_external_id_key']
+    status [name: 'whatsapp_messages_status_idx']
+  }
+  Checks {
+    `direction IN ('inbound', 'outbound')`
+    `author IN ('customer', 'assistant', 'admin', 'system')`
+    `status IN ('received', 'processed', 'pending', 'sent', 'failed')`
+    `attempts >= 0`
+  }
+}
+
+Ref: automation.whatsapp_messages.conversation_id > automation.whatsapp_conversations.id [delete: restrict]
+Ref: automation.whatsapp_messages.faq_entry_id > automation.faq_entries.id [delete: set null]
 
 Ref: automation.integration_credentials.integration_id > automation.integrations.id [delete: cascade]
 Ref: automation.workflow_steps.workflow_id > automation.workflows.id [delete: cascade]

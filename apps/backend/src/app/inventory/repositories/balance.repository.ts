@@ -2,7 +2,7 @@ import { DRIZZLE_TOKEN } from '@di/provider';
 import { stockBalances } from '@drizzle/schemas/inventory.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, count, eq, gt, isNull, sql } from 'drizzle-orm';
+import { and, count, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import type {
 	IBalanceRepository,
@@ -300,6 +300,16 @@ export class BalanceRepository implements IBalanceRepository {
 			.update(stockBalances)
 			.set({ averageCost: cost.averageCost, totalValue: cost.totalValue, updatedAt: new Date() })
 			.where(keyPredicate(key));
+	}
+
+	async availableByItems(itemIds: string[]) {
+		if (itemIds.length === 0) return [];
+		const rows = await this.database
+			.select({ itemId: stockBalances.itemId, available: sql<string>`coalesce(sum(${stockBalances.quantityAvailable}), 0)` })
+			.from(stockBalances)
+			.where(inArray(stockBalances.itemId, itemIds))
+			.groupBy(stockBalances.itemId);
+		return rows.map((row) => ({ itemId: row.itemId, available: Number(row.available) }));
 	}
 
 	/** Hard-deletes a balance row. */
