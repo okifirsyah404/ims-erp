@@ -20,7 +20,7 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 ## 2026-11-14 - ERP-0051: investor and customer move to app roles (ADR-0018), login gate in code
 
-Branch `refactor/app-roles-investor-customer` (from `main`). Changes are uncommitted.
+Branch `refactor/app-roles-investor-customer` (from `main`), commit `d63dfdc`.
 Status: **implemented, partially verified**. Not accepted.
 
 What changed:
@@ -41,9 +41,12 @@ What changed:
 - ADR-0018 written (`proposed`). ADR-0017 §8 and §9 amended in place.
 
 Commands and outcomes:
-- `bun test` (backend): 934 pass, 0 fail, 71 files. The first run had 98 failures (500 instead of
-  403): the gate queried the DB in route tests. Fixed by stubbing `session.auth` in
-  `test/authorization/test-app.ts`.
+- `bun test test/unit/global-role-contract.test.ts` (backend): 3 pass - `createUserSchema` and
+  `setUserRoleSchema` accept only `globalRoles`.
+- `bun test test/authorization/login-gate.guard.test.ts` (backend): 4 pass - `sessionGuard` answers
+  403 (not 401) when the gate closes, for every fixture role, and 401 with no session. The harness
+  gate is now a controllable stub (`setLoginGateAllowed` in `test/authorization/test-app.ts`).
+- Full backend suite after those additions: 941 pass, 0 fail, 73 files; `bunx tsc --noEmit` clean.
 - `bun test test/unit/login-gate.test.ts test/authorization/permission-matrix.test.ts` (backend): 32 pass.
 - `bun test` (web-admin): 97 pass, 0 fail, 16 files.
 - `bun run build` in `packages/common`: needed; web-admin and backend read `dist`, which was stale.
@@ -54,8 +57,9 @@ Commands and outcomes:
 
 Not verified yet:
 - Migration not run on a disposable database. Next: `drizzle:migrate` on a throwaway DB, inspect result.
-- No DB-backed login-gate test. The route harness stubs the gate open; `login-gate.test.ts`
-  covers the pure predicate only.
+- No DB-backed login-gate test: the repo has no test that touches a real database (DB is always
+  mocked, `bun-test` skill). The guard wiring is covered over HTTP with a stubbed gate
+  (`login-gate.guard.test.ts`); the gate's DB query is covered by neither.
 - Manual checks (ADR-0017 verification list) not run against a live server: investor-only denied,
   investor plus internal allowed, PIC without membership denied, admin without membership allowed.
 - Warehouse PIC (Phase 1-2, `inventory.warehouse_managers`, `warehouseGuard`) still not started.
@@ -63,6 +67,47 @@ Not verified yet:
 Docs: `docs/database/` reviewed, unchanged (no table or column change).
 
 Next executable task: run the migration on a disposable DB, then add the DB-backed login-gate test.
+## 2026-11-14 - ERP-0052: migration snapshot graph repaired, `drizzle:migrate` replays from empty
+
+Branch `fix/migration-journal-conflict` (worktree `B:\ims\erp-migration-fix`, from `main` @ `a997778`).
+
+Problem: `bun run drizzle:migrate` refused to run at all - `Conflicting migrations detected. Found 1
+conflict across 2 migrations`, with `drizzle-kit generate --fix-conflicts` as the offered fix. That
+fix deletes 14 migration folders (including the custom `20261106111000_stock_balances_nulls_not_distinct`),
+so it was not run. Same failure on unmodified `main`, so it predates this work.
+
+Cause (snapshot metadata only, no SQL was wrong):
+- `20261106173111_erp0016_tax_slice1/snapshot.json` had `prevIds` = `add_asset_image_url`, making a
+  second branch off that node instead of continuing from `20261106165521_merge_main_reconcile`.
+- `20261109090000_sales_owns_invoice_receipt/snapshot.json` reused the snapshot id of
+  `20261107090000_drop_dynamic_roles_org_role_enum` (`d536237d-...`) and pointed at the same parent,
+  so two nodes shared one id.
+
+Fix: two links corrected - `erp0016.prevIds` → `ad2beb0a-...` (`merge_main_reconcile`), and
+`sales_owns` given a fresh unique id with `prevIds` → `d536237d-...`. No migration SQL edited,
+deleted or reordered; no schema change.
+
+Commands and outcomes:
+- `bunx --bun drizzle-kit migrate` against fresh `ims_erp_migrate_check` (recreated empty first):
+  `migrations applied successfully`. Result: 55 journal rows, 115 tables, 21 schemas - identical to
+  `ims_erp_local`. Second run: no-op, success.
+- `bunx --bun drizzle-kit check` on `main`: fails at conflict detection. After the fix it gets past
+  that and stops on a different, pre-existing problem: `Cannot reconstruct the state of migration
+  20261106221731_m09_finance_stage1: The create delta adds columns ["finance","receipts","received_date"]`.
+  `20261106110700` and `20261106221731` both create `finance.receipts` with different shapes; the
+  reconciling `20261106170000_drop_merge_side_finance_receipts` has no snapshot, so the chain cannot
+  see the `DROP SCHEMA finance CASCADE`. Rebuilding that baseline is separate work - recorded as open
+  in `backlog.md` (ERP-0052).
+- `bun install --frozen-lockfile` in the worktree: 885 packages (worktrees start without
+  `node_modules`). `.env` copied in locally, never committed.
+
+Docs: `docs/database/` reviewed, unchanged (no table or column change).
+
+Not verified: `drizzle-kit check` / `generate` still unusable for the 2026-11-06..11-09 merge window
+(see above). `drizzle:seed` was not run on the throwaway database.
+
+Next executable task: run the ERP-0048 migration (`refactor/app-roles-investor-customer`) against a
+freshly replayed database now that `drizzle:migrate` works.
 
 ## 2026-11-14 - Role-based nav: Phase 4 complete (ERP-0051, web-admin side)
 
