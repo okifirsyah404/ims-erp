@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { AdminOnly } from '@/components/inventory/admin-only';
+import { WarehouseAccessGate } from '@/components/inventory/warehouse-access-gate';
 import { WarehouseList } from '@/components/inventory/warehouse-list';
 
 /** Lifecycle filter values. `archived` replaces the old include-archived toggle. */
@@ -38,8 +38,8 @@ export const Route = createFileRoute('/_authed/inventory/warehouses/')({
 
 function WarehousesPage() {
 	return (
-		<AdminOnly>
+		<WarehouseAccessGate>
 			<WarehouseList />
-		</AdminOnly>
+		</WarehouseAccessGate>
 	);
 }

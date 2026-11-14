@@ -63,6 +63,12 @@ ADR-0001's multi-tenancy migration path is ever executed.
 `location.*` tables are global reference data and carry no
 `organization_id`.
 
+**App-scope tables carry no tenant column at all.** `notification.*` is
+deliberately app-scope: a notification belongs to one user, is readable from
+every organization that user belongs to, and the organization context travels
+as a display tag (the organization name). Do not add `organization_id` there;
+the list endpoint filters by `user_id` only.
+
 ### 1.3 Datetimes
 
 Two different kinds, never mixed up.
@@ -135,7 +141,7 @@ Percentages use `numeric(9,4)` and rates `numeric(18,6)`.
 | Reuse after soft delete | allowed, see the partial unique index `WHERE deleted_at IS NULL` in the Drizzle schemas |
 
 Codes are the human reference of a document (`SPH-2026-0001`, `PO-2026-0007`)
-and are allocated from `organization.document_sequences`, never generated ad hoc.
+and are allocated from `code_number.series`, never generated ad hoc.
 
 **Nullable `organization_id` and codes.** A unique index ignores `NULL`, so
 `(organization_id, code)` alone lets two rows without an organization share a
@@ -194,7 +200,7 @@ with a status instead of a deletion timestamp
 `sales.quotation_status_history`, `sales.order_status_history`,
 `ticket.ticket_status_history`, `approval.approval_decisions`,
 `approval.approval_policy_versions`, `automation.outbox_messages`,
-`audit.audit_logs`, `documents.document_access_logs`).
+`audit.audit_logs`, `document.access_logs`).
 
 ### 1.9 Audit columns
 
@@ -240,9 +246,18 @@ attached to the record).
 | codes, slugs, short labels | `varchar(32)` / `varchar(64)` / `varchar(128)` |
 | names, descriptions, notes | `text` |
 | structured but schema-less payloads (templates, config, criteria) | `text` holding JSON |
+| structured payloads the ERP filters or searches inside | `jsonb` |
 
 Structured payloads are stored as JSON text, not `jsonb`, because the shape
 is owned by the calling module and the ERP does not query inside it.
+
+**`jsonb` exception — notification payloads.** `notification.notifications`
+uses `jsonb` for `tags`, `variables` and `metadata`, and
+`notification.notification_templates` for `variables`, because those are
+read as structured values by the API (tags are rendered as chips, variables
+are interpolated by the client, metadata carries navigation targets). Never
+store authorization facts in them: a `metadata` or `tags` value is display
+data, and permission checks read the database columns, not the payload.
 
 ### 1.13 Index conventions
 
@@ -339,8 +354,8 @@ A posted ledger row is never edited. A correction is a compensating row.
 
 ### 3.5 Draft → published → archived
 
-Used by the content tables: `commerce.web_pages`, `documents.documents`,
-`investor.investor_reports`, `automation.notification_templates`.
+Used by the content tables: `commerce.web_pages`, `document.documents`,
+`investor.investor_reports`, `notification.notification_templates`.
 
 ## 4. Per-module glossary
 
@@ -430,9 +445,11 @@ Used by the content tables: `commerce.web_pages`, `documents.documents`,
 | serial tracked item | a unit tracked by serial number. Serialized **products** only since ERP-0036: a physical tool is an asset, not an item. |
 | cycle count | a periodic stock count; the variance becomes an adjustment. |
 
-Note: the warehouse schema (`warehouse.warehouses`, `warehouse.warehouse_zones`,
-`warehouse.warehouse_bins`) holds the physical structure of the same
-Inventory module; it is storage grouping, not a separate module.
+Note: the physical structure of the Inventory module lives in the same schema
+(`inventory.warehouses`, `inventory.warehouse_addresses`,
+`inventory.warehouse_storages`). The separate `warehouse` schema in the
+original plan was retired (ADR-0008); it was storage grouping, never a
+separate module.
 
 ### Ticketing
 
@@ -627,7 +644,17 @@ reconcile.
 | workflow run | one execution of a workflow. |
 | scheduled job | a database driven recurring job. The queue transport stays in Redis. |
 | outbox message | a transactional outbox event, published after the commit. |
-| notification | one message queued or sent to one recipient. |
+
+### Notification
+
+| Term | Meaning |
+|---|---|
+| template | the copy of one event, keyed by a `module.event` code (`org.member_added`). One template serves every organization. |
+| template code | the stable `module.event` identifier. Events are snake_case, the prefix is the owning module (`org.`, `sales.`, `document.`). |
+| notification | one in-app message for one user, created as `sent` and turned `read` by the recipient. |
+| tag | a free-form display label rendered as a chip. The organization name is the tag for organization events; there is no `organization_id` column. |
+| variables | interpolation values for the template (`{ organizationName, role }`), used by the client to render localized copy. |
+| status | delivery state: `queued`, `sending`, `sent`, `delivered`, `read`, `failed`, `cancelled`. Only `sent` and `read` are produced today. |
 
 ### Licensing
 
@@ -662,7 +689,7 @@ reconcile.
 | kwitansi | `sales.receipts` |
 | BAST (Berita Acceptance Serah Terima) | `projects.project_handover` |
 | lapangan (daily report) | `projects.project_daily_reports` |
-| NPWP | `organization.company_profiles.tax_id` |
+| NPWP | `company.profiles.tax_id` |
 | kabupaten / kota | `location.regencies` |
 | kecamatan | `location.districts` |
 | kelurahan / desa | `location.villages` |

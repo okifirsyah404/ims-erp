@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import { Letterhead } from '@/components/sales/quotation-document';
-import type { TCompanyProfile } from '@/lib/company-settings-api';
+import type { TCompanyProfile } from '@/lib/company-api';
 import { formatBusinessDate } from '@/lib/format';
 import type { TWarranty } from '@/lib/handover-api';
 import { numberToWords } from '@/lib/terbilang';

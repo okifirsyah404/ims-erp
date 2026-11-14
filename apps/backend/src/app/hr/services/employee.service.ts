@@ -1,13 +1,12 @@
 import type { TEmployeeInsert, TEmployeeSelect } from '@drizzle/schemas/hr.schema';
 import type { TTx } from '@drizzle/types';
 import { inject, injectable } from 'tsyringe';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
-import { INVITATION_SERVICE_TOKEN } from '@app/user/constants/di';
-import type { InvitationService } from '@app/user/services/invitation.service';
-import { AppError } from '@http/errors';
-import { maskTail } from '../utils/hr';
-import { EMPLOYEE_REPOSITORY_TOKEN } from '../constants/di';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
+import { USER_PERSONAL_FIELDS_PORT_TOKEN } from '@app/user/constants/di';
+import type { IUserPersonalFieldsPort } from '@app/user/contracts/user-personal-fields.port';
+import { EMPLOYEE_INVITE_SERVICE_TOKEN, EMPLOYEE_REPOSITORY_TOKEN } from '../constants/di';
+import type { EmployeeInviteService } from './employee-invite.service';
 import type { IEmployeeRepository } from '../contracts/employee.repository.interface';
 import type {
 	TEmployeeDto,
@@ -42,8 +41,8 @@ export type TEmployeeContext = {
 	canManage: boolean;
 	/**
 	 * `employee:read_private` (M08 owner decision 2026-11-07): without it the
-	 * NIK is masked on reads and never written back on updates. Absent =
-	 * allowed (internal callers).
+	 * NIK is masked on reads and never written back on updates. Absent = allowed
+	 * (internal callers).
 	 */
 	canReadPrivate?: boolean;
 };
@@ -54,52 +53,8 @@ function masked(ctx: TEmployeeContext, dto: TEmployeeDto): TEmployeeDto {
 	return { ...dto, nationalId: maskTail(dto.nationalId ?? null) } as TEmployeeDto;
 }
 
-/** Parses a `YYYY-MM-DD` business date into the instant at Jakarta midnight. */
-function jakartaDate(value: string | null | undefined): Date | null {
-	if (!value) return null;
-	return new Date(`${value}T00:00:00+07:00`);
-}
-
-/** Strips the invite-only fields from the API body into a DB insert shape. */
-function toRow(body: {
-	fullName: string;
-	legalName?: string | null;
-	nickname?: string | null;
-	gender?: 'male' | 'female' | null;
-	birthDate?: string | null;
-	birthPlace?: string | null;
-	nationalId?: string | null;
-	maritalStatus?: string | null;
-	email?: string | null;
-	phone?: string | null;
-	whatsapp?: string | null;
-	employmentStatus?: string;
-	employmentType?: string;
-	workType?: string;
-	hireDate?: string | null;
-	terminationDate?: string | null;
-	managerEmployeeId?: string | null;
-}): Omit<TEmployeeInsert, 'employeeCode' | 'createdAt'> {
-	return {
-		fullName: body.fullName,
-		legalName: body.legalName ?? null,
-		nickname: body.nickname ?? null,
-		gender: body.gender ?? null,
-		birthDate: jakartaDate(body.birthDate),
-		birthPlace: body.birthPlace ?? null,
-		nationalId: body.nationalId ?? null,
-		maritalStatus: body.maritalStatus ?? null,
-		email: body.email ?? null,
-		phone: body.phone ?? null,
-		whatsapp: body.whatsapp ?? null,
-		employmentStatus: body.employmentStatus,
-		employmentType: body.employmentType,
-		workType: body.workType,
-		hireDate: jakartaDate(body.hireDate),
-		terminationDate: jakartaDate(body.terminationDate),
-		managerEmployeeId: body.managerEmployeeId ?? null,
-	};
-}
+import { jakartaDate, personalPatchFrom, withPersonalFields } from './employee.mappers';
+import { maskTail } from '../utils/hr';
 
 /**
  * Employee master data (ERP-0034).
@@ -122,10 +77,12 @@ export class EmployeeService {
 	constructor(
 		@inject(EMPLOYEE_REPOSITORY_TOKEN)
 		private readonly repository: IEmployeeRepository,
-		@inject(INVITATION_SERVICE_TOKEN)
-		private readonly invitations: InvitationService,
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: NumberingService,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: CodeNumberService,
+		@inject(USER_PERSONAL_FIELDS_PORT_TOKEN)
+		private readonly personalFields: IUserPersonalFieldsPort,
+		@inject(EMPLOYEE_INVITE_SERVICE_TOKEN)
+		private readonly inviteService: EmployeeInviteService,
 	) {}
 
 	/**
@@ -139,7 +96,8 @@ export class EmployeeService {
 			organizationIds,
 			includeCompany: true,
 		});
-		return { meta: page.meta, data: page.data.map((row) => masked(ctx, toDto(row))) };
+		const data = await Promise.all(page.data.map((row) => this.withPersonal(row)));
+		return { meta: page.meta, data: data.map((dto) => masked(ctx, dto)) };
 	}
 
 	/** One employee; a non-admin only sees own-org or company-level rows. */
@@ -153,7 +111,12 @@ export class EmployeeService {
 		) {
 			throw new EmployeeNotFoundError();
 		}
-		return masked(ctx, toDto(row));
+		return this.withPersonal(row).then((dto) => masked(ctx, dto));
+	}
+
+	/** Joins personal fields from `auth.users` onto an employee row. */
+	private withPersonal(row: TEmployeeSelect): Promise<TEmployeeDto> {
+		return withPersonalFields(this.personalFields, row);
 	}
 
 	/**
@@ -204,42 +167,22 @@ export class EmployeeService {
 			if (!ok) throw new EmployeeNotFoundError();
 		}
 
-		// Invitation pipeline (user module): pre-creates the user row.
-		let userId: string;
-		try {
-			const result = await this.invitations.invite(
-				{
-					email: body.email,
-					name: body.fullName,
-					organizationId: organizationId ?? undefined,
-					organizationRole: organizationId ? (body.organizationRole ?? 'member') : undefined,
-				},
-				{
-					userId: ctx.actor.userId,
-					email: ctx.actor.email,
-					ip: ctx.actor.ip ?? undefined,
-					userAgent: ctx.actor.userAgent ?? undefined,
-				},
-			);
-			userId = result.userId;
-		} catch (error) {
-			if (error instanceof AppError) {
-				throw new EmployeeInviteError(error.message);
-			}
-			throw error;
-		}
-
-		const row = await this.repository.insert({
-			...toRow(body),
-			employmentStatus: body.employmentStatus,
-			employmentType: body.employmentType,
-			workType: body.workType,
-			employeeCode,
-			organizationId,
-			userId,
-			createdAt: new Date(),
-		});
-		return toDto(row);
+		// Invite and insert happen in EmployeeInviteService (owns rollback).
+		return (await this.inviteService.invite(
+			{
+				email: body.email,
+				name: body.fullName,
+				organizationId: organizationId ?? undefined,
+				organizationRoles: body.organizationRoles,
+				employee: body,
+			},
+			{
+				userId: ctx.actor.userId,
+				email: ctx.actor.email,
+				ip: ctx.actor.ip ?? undefined,
+				userAgent: ctx.actor.userAgent ?? undefined,
+			},
+		)).employee;
 	}
 
 	/** Patch of mutable fields; identity columns (`user_id`, org) never change. */
@@ -275,11 +218,7 @@ export class EmployeeService {
 			...(body.fullName !== undefined ? { fullName: body.fullName } : {}),
 			...(body.legalName !== undefined ? { legalName: body.legalName } : {}),
 			...(body.nickname !== undefined ? { nickname: body.nickname } : {}),
-			...(body.gender !== undefined ? { gender: body.gender } : {}),
-			...(body.birthDate !== undefined ? { birthDate: jakartaDate(body.birthDate) } : {}),
-			...(body.birthPlace !== undefined ? { birthPlace: body.birthPlace } : {}),
 			...(body.nationalId !== undefined && ctx.canReadPrivate !== false ? { nationalId: body.nationalId } : {}),
-			...(body.maritalStatus !== undefined ? { maritalStatus: body.maritalStatus } : {}),
 			...(body.email !== undefined ? { email: body.email } : {}),
 			...(body.phone !== undefined ? { phone: body.phone } : {}),
 			...(body.whatsapp !== undefined ? { whatsapp: body.whatsapp } : {}),
@@ -292,7 +231,10 @@ export class EmployeeService {
 		};
 		const updated = await this.repository.update(id, patch);
 		if (!updated) throw new EmployeeNotFoundError();
-		return toDto(updated);
+		if (row.userId) {
+			await this.personalFields.update(row.userId, personalPatchFrom(body));
+		}
+		return this.withPersonal(updated).then((dto) => masked(ctx, dto));
 	}
 
 	/** Soft delete. Company-level rows need a platform admin. */
@@ -328,11 +270,6 @@ export class EmployeeService {
 	private async nextCode(tx?: TTx): Promise<string> {
 		return this.numbering.next('employee', { tx });
 	}
-}
-
-/** Select row → API DTO (instants already serialize as ISO through JSON). */
-function toDto(row: TEmployeeSelect): TEmployeeDto {
-	return row as unknown as TEmployeeDto;
 }
 
 export type { TEmployeeDto };

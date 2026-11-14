@@ -109,12 +109,8 @@ export const employees = hrSchema.table(
 		fullName: text('full_name').notNull(),
 		legalName: text('legal_name'),
 		nickname: text('nickname'),
-		gender: text('gender'),
-		birthDate: unixTimestampNullable('birth_date'),
-		birthPlace: text('birth_place'),
 		/** National identity number (NIK). */
 		nationalId: varchar('national_id', { length: 32 }),
-		maritalStatus: text('marital_status'),
 		email: varchar('email', { length: 320 }),
 		phone: varchar('phone', { length: 100 }),
 		whatsapp: varchar('whatsapp', { length: 100 }),

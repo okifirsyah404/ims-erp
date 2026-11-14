@@ -9,7 +9,8 @@ const api: Record<keyof typeof en, string> = {
 	'common.notFound': 'Tidak ditemukan',
 	'common.conflict': 'Konflik',
 	'common.unsupportedMediaType': 'Tipe media tidak didukung',
-	'common.imageInvalid': 'Unggah gambar PNG, JPG, atau WebP maksimal {{max}} MB',
+	'common.imageInvalid': 'Unggah gambar PNG, JPG, WebP, atau HEIC maksimal {{max}} MB',
+	'common.fileInvalid': 'Unggah file PDF, PNG, JPG, atau WebP maksimal {{max}} MB',
 	'common.payloadTooLarge': 'Data yang dikirim terlalu besar',
 	'common.authenticationRequired': 'Autentikasi diperlukan',
 
@@ -153,6 +154,9 @@ const api: Record<keyof typeof en, string> = {
 		'Gudang "{{warehouseCode}}" tidak aktif; penyimpanannya tidak dapat diubah',
 	'inventory.warehousePicInvalid':
 		'Karyawan penanggung jawab tidak dikenal, tidak aktif, atau bukan dari organisasi yang terhubung',
+	'inventory.warehouseManagerExists':
+		'Pengguna ini sudah menjadi penanggung jawab gudang',
+	'inventory.warehouseManagerUserNotFound': 'Pengguna tidak ditemukan',
 	'inventory.movementNotFound': 'Pergerakan stok tidak ditemukan',
 	'inventory.movementAlreadyReversed':
 		'Pergerakan stok ini sudah dibalik sebelumnya',
@@ -192,14 +196,20 @@ const api: Record<keyof typeof en, string> = {
 	'user.globalAdminRequired': 'Peran administrator global diperlukan',
 	'user.fileFieldExpected': 'Diperlukan kolom berkas multipart',
 	'user.avatarTooLarge': 'Avatar maksimal 2 MiB',
-	'user.avatarUnsupportedType': 'Avatar harus berupa gambar PNG, JPEG, atau WebP',
+	'user.avatarUnsupportedType': 'Avatar harus berupa gambar PNG, JPG, WebP, atau HEIC',
 
 	'organization.lastOrganization':
 		'Ini organisasi terakhir Anda dan tidak dapat dihapus',
 	'organization.notFound': 'Organisasi tidak ditemukan',
-	'organization.companyProfileRequired':
+	'company.profileRequired':
 		'Lengkapi profil perusahaan (beserta kode dokumen) terlebih dahulu',
-	'numbering.unknownDocumentType': 'Jenis dokumen tidak dikenal',
+	'company.settingInvalid': 'Nilai tidak sesuai dengan tipenya',
+	'numbering.unknownCodeType': 'Jenis kode tidak dikenal',
+	'document.notFound': 'Dokumen tidak ditemukan',
+	'document.notVoidable': 'Dokumen ini tidak dapat dibatalkan',
+	'document.fileNotFound': 'File tidak ditemukan',
+	'document.shareNotFound': 'Tautan ini tidak valid atau sudah kedaluwarsa',
+	'document.fileNotAllowed': 'Dokumen yang dibatalkan tidak dapat menerima file',
 	'numbering.pattern.length': 'Pola harus 1-100 karakter',
 	'numbering.pattern.unknownToken': 'Token {{token}} tidak dikenal',
 	'numbering.pattern.tokenNotForType':
@@ -230,6 +240,7 @@ const api: Record<keyof typeof en, string> = {
 	'invitation.inactive': 'Undangan ini sudah tidak aktif',
 	'invitation.expired': 'Tautan undangan ini sudah kedaluwarsa',
 	'invitation.bulkLimited': 'Maksimal {{max}} baris',
+	'invitation.unknownOrganizationSlug': 'Tidak ada organisasi dengan slug "{{slug}}"',
 	'invitation.claimUserMissing': 'Pengguna yang diundang tidak lagi tersedia',
 	'invitation.claimAlreadyActive': 'Akun ini sudah aktif',
 	'invitation.claimInvalid': 'Data klaim tidak valid',
@@ -427,6 +438,8 @@ const api: Record<keyof typeof en, string> = {
 	'sales.receiptReversed': 'Kwitansi sudah dibatalkan',
 	'sales.invoiceNotPayable':
 		'Hanya faktur berstatus terbit atau sebagian dibayar yang dapat menerima pembayaran',
+
+	'notification.notFound': 'Notifikasi tidak ditemukan',
 };
 
 export default api;

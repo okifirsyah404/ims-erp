@@ -26,6 +26,8 @@ let receipts: (TGoodsReceiptSelect & { items: TGoodsReceiptItemSelect[] })[];
 let movements: { unitCost?: number | null; quantity: string; referenceType?: string | null }[];
 let units: { serialNumber?: string; purchaseOrderLineId?: string | null; stockMovementId?: string | null }[];
 let committed: boolean;
+/** Registry calls made by the service (ERP-0044). */
+let registered: { code: string; sourceId: string }[];
 let service: GoodsReceiptService;
 
 beforeEach(() => {
@@ -38,6 +40,7 @@ beforeEach(() => {
 	movements = [];
 	units = [];
 	committed = false;
+	registered = [];
 	service = new GoodsReceiptService(
 		{
 			async paginate() {
@@ -100,6 +103,13 @@ beforeEach(() => {
 			paginate: async () => ({ meta: { page: 1, limit: 100, total: 1, totalPages: 1 }, data: [{ id: WAREHOUSE, code: 'WH1', name: 'Gudang' }] }) as never,
 			getWarehouse: async () => ({ id: WAREHOUSE, code: 'WH1', name: 'Gudang', storages: [] }) as never,
 		},
+		{
+			// ERP-0044: registry side effect is asserted through `registered`.
+			register: async (input) => {
+				registered.push(input);
+				return {} as never;
+			},
+		},
 	);
 });
 
@@ -113,6 +123,15 @@ describe('goods receipts', () => {
 		expect(movements).toEqual([expect.objectContaining({ movementType: 'receipt', quantity: '40.5', unitCost: 10_000, referenceType: 'goods_receipt' })]);
 		expect(order.status).toBe('partially_received');
 		expect(committed).toBe(true);
+		// ERP-0044: the BPB is registered with its own code.
+		expect(registered).toEqual([
+			expect.objectContaining({
+				code: '0001/BPB/IMS/XI/26',
+				documentType: 'goods_receipt',
+				sourceType: 'goods_receipt',
+				sourceId: receipt.id,
+			}),
+		]);
 	});
 
 	test('serialized items need one unique serial per unit and become in-stock units', async () => {

@@ -8,7 +8,7 @@
  */
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import type { CodeNumberService } from '@app/code-number';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type { LedgerRepository } from '../../src/app/accounting/repositories/ledger.repository';
 import { PostingService } from '../../src/app/accounting/services/posting.service';
@@ -164,7 +164,7 @@ function makeHarness() {
 
 	const numbering = {
 		next: async (type: string) => `${type}-${String(++allocSeq).padStart(6, '0')}`,
-	} as unknown as NumberingService;
+	} as unknown as CodeNumberService;
 
 	const service = new PostingService(
 		{} as unknown as BunSQLDatabase, // unused by these rules; tx doubles cover I/O

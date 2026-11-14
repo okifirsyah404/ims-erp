@@ -42,6 +42,8 @@ export type FixtureState = {
 	users: Record<string, TestUser>;
 	/** Simulated removal: header keys that lost membership mid-session. */
 	revoked: Set<string>;
+	/** Login gate state for the stubbed `session.auth` seam (ADR-0018). */
+	loginGateAllowed: boolean;
 };
 
 export const ORG_A = 'org-a';const ORG_B = 'org-b';
@@ -133,13 +135,24 @@ export const fixture = {
 let state: FixtureState = {
 	users: { ...fixture.users },
 	revoked: new Set(['user-revoked']),
+	loginGateAllowed: true,
 };
 
 export function resetFixture(): void {
 	state = {
 		users: { ...fixture.users },
 		revoked: new Set(['user-revoked']),
+		loginGateAllowed: true,
 	};
+}
+
+/**
+ * Closes or opens the stubbed web-admin login gate (ADR-0018).
+ *
+ * @param allowed - false makes `sessionGuard` reject every session with 403
+ */
+export function setLoginGateAllowed(allowed: boolean): void {
+	state.loginGateAllowed = allowed;
 }
 
 /**
@@ -170,6 +183,22 @@ export function installPermissionResolverMock(): void {
  * when the session user is a member of the queried id.
  */
 export function installAuthMock(): void {
+	// The login gate reads the database (ADR-0018). Route tests in this harness
+	// have no database, so the gate is stubbed here. Default: open. A test that
+	// exercises the guard wiring sets `state.loginGateAllowed = false`, which
+	// makes `sessionGuard` answer 403 exactly as the real gate does. The gate's
+	// own rule is covered by test/unit/login-gate.test.ts (pure predicate).
+	mock.module('@providers/better-auth/options/session.auth', () => ({
+		isWebAdminSessionAllowed: async () => state.loginGateAllowed,
+		sessionAutoActivateOrganizationHook: async () => undefined,
+		loadMembershipsForGate: async () => [],
+		assertWebAdminAllowed: async () => {
+			if (!state.loginGateAllowed) {
+				const { APIError } = await import('better-auth/api');
+				throw new APIError('FORBIDDEN', { message: 'gate closed by test' });
+			}
+		},
+	}));
 	mock.module('@providers/better-auth/auth', () => ({
 		auth: {
 			api: {
@@ -231,7 +260,7 @@ import type { IQuotationRepository } from '../../src/app/sales/contracts/quotati
 import type { TPaymentRepository } from '../../src/app/sales/contracts/payment.repository.interface';
 import { CUSTOMER_SERVICE_TOKEN, LEAD_SERVICE_TOKEN } from '../../src/app/crm/constants/di';
 import { ITEM_SERVICE_TOKEN } from '../../src/app/inventory/constants/di';
-import { NUMBERING_SERVICE_TOKEN } from '../../src/app/organization/constants/di';
+import { CODE_NUMBER_SERVICE_TOKEN } from '../../src/app/code-number';
 import { USER_SERVICE_TOKEN } from '../../src/app/user/constants/di';
 import { OBJECT_STORAGE_TOKEN } from '../../src/providers/s3/object-storage';
 
@@ -351,7 +380,7 @@ export function installSalesMocks() {
 			},
 		} as never,
 	});
-	container.register(NUMBERING_SERVICE_TOKEN, {
+	container.register(CODE_NUMBER_SERVICE_TOKEN, {
 		useValue: { next: async () => `${sequence + 1}/QT/IMS/XI/26` } as never,
 	});
 	container.register(USER_SERVICE_TOKEN, { useValue: { getUser: async () => null } as never });
@@ -429,6 +458,16 @@ export async function buildTestApp() {
 	const { erpGuard } = await import('../../src/authorization/elysia-auth');
 
 	const { QUOTATION_SERVICE_TOKEN } = await import('../../src/app/sales/constants/di');
+	// ERP-0044: the registry is a side effect; this suite only needs it to exist.
+	const { DOCUMENT_SERVICE_TOKEN } = await import(
+		'../../src/app/document/constants/di'
+	);
+	container.register(DOCUMENT_SERVICE_TOKEN, {
+		useValue: {
+			register: async () => ({}) as never,
+			voidBySource: async () => 0,
+		} as never,
+	});
 	container.register(SALES_SERVICE_TOKEN, { useClass: SalesService });
 	container.register(QUOTATION_SERVICE_TOKEN, { useClass: QuotationService });
 

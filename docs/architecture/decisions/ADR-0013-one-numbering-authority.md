@@ -1,5 +1,12 @@
 # ADR-0013 — One Numbering Authority
 
+> **Renamed 2026-11-13 (ERP-0042).** The numbering authority moved out of
+> `organization` into its own module and Postgres schema: the table is now
+> `code_number.series` (verbatim rename, `document_type` → `code_type`) and the
+> service is `CodeNumberService.next(codeType, { date, context, tx })`, token
+> `CODE_NUMBER_SERVICE_TOKEN`. The decision below is unchanged; only the names
+> and the owning module moved.
+
 - **Status:** accepted by the module owner (2026-11-06, while resolving the
   conflicts of PR #58: "Satukan ke punya kita"). Programmer A (Oki) to
   acknowledge in that PR, because it replaces his ERP-0009

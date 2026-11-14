@@ -81,6 +81,7 @@ export function ItemKindList({
 						<Table>
 							<TableHeader>
 								<TableRow>
+									<TableHead>{t('inventory:items.code')}</TableHead>
 									<TableHead>{t('inventory:items.sku')}</TableHead>
 									<TableHead>{t('inventory:items.name')}</TableHead>
 									<TableHead>{t('inventory:items.category')}</TableHead>
@@ -93,6 +94,9 @@ export function ItemKindList({
 							<TableBody>
 								{rows.map((row) => (
 									<TableRow key={row.id}>
+										<TableCell className='font-mono text-xs'>
+											{row.code}
+										</TableCell>
 										<TableCell className='font-mono text-xs'>
 											{row.sku}
 										</TableCell>

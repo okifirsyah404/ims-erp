@@ -344,6 +344,11 @@ function fakeWarehouses(): IWarehouseRepository {
 		async findById(id) {
 			return WAREHOUSES.find((row) => row.id === id) ?? null;
 		},
+		async findAlive(ids) {
+			return ids
+				? WAREHOUSES.filter((row) => ids.includes(row.id))
+				: WAREHOUSES;
+		},
 		// ERP-0031: service-level link assert — link every fake warehouse to a
 		// test org so internal flows pass.
 		async isLinked(warehouseId, organizationId) {

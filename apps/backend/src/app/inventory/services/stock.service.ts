@@ -33,8 +33,8 @@ import {
 } from '../errors/inventory.errors';
 import type { TTx } from '@drizzle/types';
 import { applyMovementCost, type TCostState } from '../utils/moving-average';
-import type { NumberingService } from '@app/organization/services/numbering.service';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { CodeNumberService } from '@app/code-number';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import { InventoryAuditWriter } from './inventory-audit.writer';
 
 /** One balance row decorated with readable item and warehouse names. */
@@ -128,8 +128,8 @@ export class StockService {
 		 * inside the posting transaction (hardening plan D4), replacing the
 		 * former random-suffix scheme.
 		 */
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: Pick<CodeNumberService, 'next'>,
 		/** Fire-and-forget audit writer (hardening plan D3). */
 		private readonly audit: InventoryAuditWriter,
 		/**

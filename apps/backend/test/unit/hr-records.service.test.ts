@@ -265,6 +265,7 @@ describe('employee scope and bank account', () => {
 			} as never,
 			{} as never,
 			{} as never,
+			{} as never,
 		);
 		const base = { actor: { userId: 'u', email: 'u@x' }, organizationId: ORG, isPlatformAdmin: false, canManage: true };
 		expect((await service.get({ ...base, canReadPrivate: false }, E1)).nationalId).toBe('••••••••••••0123');

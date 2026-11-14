@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import type { TCompanyProfile } from '@/lib/company-settings-api';
+import type { TCompanyProfile } from '@/lib/company-api';
 import { formatBusinessDate } from '@/lib/format';
 import type { TPurchaseOrderDetail } from '@/lib/procurement-api';
 import { terbilangRupiah } from '@/lib/terbilang';

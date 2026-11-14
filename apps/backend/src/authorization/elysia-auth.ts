@@ -3,6 +3,9 @@
  *
  * One plugin, one macro:
  *   `erpGuard()`  - registers the `erp` macro and error mapping.
+ *   `sessionGuard()` - registers the `erpSession` macro (session only).
+ *   `warehouseGuard()` - registers the `warehouse` macro (person in charge,
+ *                        ADR-0017).
  *
  * The macro options:
  *   permission: ['quotation:read', 'quotation:approve']  (ALL must pass)
@@ -30,12 +33,18 @@
  */
 import Elysia, { type Context } from 'elysia';
 import { container } from 'tsyringe';
+import { isWebAdminSessionAllowed } from '@providers/better-auth/options/session.auth';
 import { auth } from '@providers/better-auth/auth';
+import { GLOBAL_ADMIN_ROLE, hasAppRole } from '@providers/better-auth/ac/admin-ac';
 import type { ErpResource } from '@ims-erp/common';
 import {
 	PERMISSION_RESOLVER_TOKEN,
 	type IPermissionResolver,
 } from './permission-resolver';
+import {
+	WAREHOUSE_PIC_RESOLVER_TOKEN,
+	type IWarehousePicResolver,
+} from './warehouse-pic-resolver';
 
 export const ORGANIZATION_HEADER = 'x-organization-id';
 
@@ -271,11 +280,23 @@ export function erpGuard() {
  * {@link erpGuard} so their type stays non-nullable for existing consumers.
  * Like `erpGuard`, it accepts an optional `policy` hook for record-level
  * checks that must run before the handler.
- * Shares the `ErpAuthError` mapping by being mounted alongside `erpGuard()`.
+ *
+ * Maps its own `ErpAuthError` (2026-11-14): it used to rely on being mounted
+ * next to `erpGuard()`, so a module that rode the session guard **alone**
+ * answered an unauthenticated call with Elysia's default plain-text body
+ * instead of the API envelope. The ERP-0047 notification routes are the first
+ * session-only surface with no `erp` macro, which exposed it.
  */
 export function sessionGuard() {
 	return new Elysia({ name: 'session-guard' })
 		.error({ ErpAuthError })
+		.onError({ as: 'global' }, ({ code, error, set }) => {
+			if (code === 'ErpAuthError') {
+				set.status = error.status;
+				return envelope(error.status, error.message);
+			}
+			return undefined;
+		})
 		.macro({
 			erpSession: (options: {
 				/** Object-form macro enablement flag (no behavior of its own). */
@@ -290,11 +311,117 @@ export function sessionGuard() {
 					if (!session) {
 						throw new ErpAuthError(401, 'Authentication required');
 					}
+					// ADR-0018 / ADR-0017 §8: re-check the web-admin login gate on
+					// every request so sessions created before the gate are rejected.
+					// Failure is 403 (authenticated, not allowed), not 401.
+					if (!(await isWebAdminSessionAllowed(session.user.id))) {
+						throw new ErpAuthError(403, 'Web-admin access requires an internal organization role');
+					}
 					const erp = { session };
 					// Session-only guard has no other preconditions, so the
 					// record-level hook runs here (mirrors `erpGuard`'s policy).
 					if (options.policy) await options.policy({ erp });
 					return { erp };
+				},
+			}),
+		});
+}
+
+/** The warehouse actions a person in charge may perform (ADR-0017 §2). */
+export type TWarehouseAction =
+	| 'read'
+	| 'update'
+	| 'archive'
+	| 'import'
+	| 'export';
+
+/**
+ * Guard for warehouse routes a person in charge may call (ADR-0017 §5).
+ *
+ * @remarks
+ * A second authorization path next to {@link erpGuard}, deliberately narrow:
+ * it answers "may this user act on **this** warehouse?" and nothing else. It
+ * never reads organization roles and never requires an active organization —
+ * a PIC keeps access even when the warehouse is not linked to their active
+ * organization (ADR-0017 §3). Stock stays on `erpGuard` + the
+ * warehouse↔organization link; this guard grants no stock operation.
+ *
+ * The PIC lookup is a port ({@link IWarehousePicResolver}) so this file stays
+ * free of Drizzle, mirroring how `erpGuard` reaches the permission resolver.
+ *
+ * Status mapping:
+ * - no session → 401
+ * - web-admin login gate closed → 403
+ * - application admin → allowed, without a PIC row
+ * - PIC of this warehouse → allowed
+ * - PIC of *another* warehouse → 404, so existence is not leaked (ADR-0017 §7)
+ * - no live PIC row at all → 403
+ *
+ * Create, assign, and unassign deliberately stay on `requireGlobalAdmin`.
+ */
+export function warehouseGuard() {
+	const picResolver = container.resolve<IWarehousePicResolver>(
+		WAREHOUSE_PIC_RESOLVER_TOKEN,
+	);
+
+	return new Elysia({ name: 'warehouse-guard' })
+		.error({ ErpAuthError })
+		.onError({ as: 'global' }, ({ code, error, set }) => {
+			if (code === 'ErpAuthError') {
+				set.status = error.status;
+				return envelope(error.status, error.message);
+			}
+			return undefined;
+		})
+		.macro({
+			warehouse: (options: {
+				/** The action the route performs. All five are PIC rights. */
+				action: TWarehouseAction;
+			}) => ({
+				resolve: async (
+					context: Context,
+				): Promise<{
+					erp: { session: SessionPayload };
+					warehouse: { id: string; action: TWarehouseAction };
+				}> => {
+					const session = await resolveSession(context.request.headers);
+					if (!session) {
+						throw new ErpAuthError(401, 'Authentication required');
+					}
+					if (!(await isWebAdminSessionAllowed(session.user.id))) {
+						throw new ErpAuthError(
+							403,
+							'Web-admin access requires an internal organization role',
+						);
+					}
+
+					const warehouseId = (context.params as { id?: string } | undefined)?.id;
+					if (!warehouseId) {
+						throw new ErpAuthError(
+							403,
+							'Warehouse route requires a warehouse id',
+						);
+					}
+
+					const erp = { session };
+					const warehouse = { id: warehouseId, action: options.action };
+					if (hasAppRole(session.user.role, GLOBAL_ADMIN_ROLE)) {
+						return { erp, warehouse };
+					}
+
+					const managed = await picResolver.listWarehouseIdsForUser(
+						session.user.id,
+					);
+					if (managed.length === 0) {
+						throw new ErpAuthError(
+							403,
+							'Warehouse person-in-charge access required',
+						);
+					}
+					if (!managed.includes(warehouseId)) {
+						throw new ErpAuthError(404, 'Warehouse not found');
+					}
+					return { erp, warehouse };
 				},
 			}),
 		});

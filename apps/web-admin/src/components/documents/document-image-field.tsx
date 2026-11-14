@@ -3,12 +3,18 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { toast } from '@/components/toast';
-import { DOCUMENT_IMAGE_ACCEPT, DOCUMENT_IMAGE_MAX_BYTES } from '@/lib/document-image-api';
+import { DOCUMENT_IMAGE_MAX_BYTES } from '@/lib/document-image-api';
+import { encodeWebp, rejectImageFile } from '@/lib/image-file';
 
 /**
- * Preview, upload and removal of one image printed on documents. The
- * caller does the request and refreshes its data; this only picks and
- * checks the file (the server checks again).
+ * Preview, upload and removal of one image printed on documents (company
+ * logo and signature, item photos).
+ *
+ * @remarks
+ * The picked file is converted to WebP **here**, so every caller (and every
+ * future one) gets a small, predictable upload without repeating the canvas
+ * code: longest side 1024px, quality 0.9. The caller only does the request and
+ * refreshes its data; the server validates the bytes again.
  */
 export function DocumentImageField({
 	label,
@@ -22,12 +28,14 @@ export function DocumentImageField({
 	hint?: string;
 	imageUrl: string | null | undefined;
 	disabled?: boolean;
+	/** Receives the WebP-converted file, named `<original>.webp`. */
 	onUpload: (file: File) => Promise<void>;
 	onRemove: () => Promise<void>;
 }) {
 	const { t } = useTranslation('common');
 	const id = useId();
 	const [busy, setBusy] = useState(false);
+	const [dragging, setDragging] = useState(false);
 
 	async function run(action: () => Promise<void>) {
 		setBusy(true);
@@ -40,39 +48,94 @@ export function DocumentImageField({
 		}
 	}
 
+	/** Validates, converts to WebP, then hands the result to the caller. */
+	async function accept(file: File | null | undefined) {
+		const rejected = rejectImageFile(file);
+		if (rejected === 'type') {
+			toast.error(t('image.wrongType'));
+			return;
+		}
+		if (rejected === 'size' || !file) {
+			toast.error(t('image.sourceTooLarge'));
+			return;
+		}
+
+		await run(async () => {
+			const webp = await encodeWebp(file);
+			if (webp.size > DOCUMENT_IMAGE_MAX_BYTES) {
+				toast.error(t('image.tooLarge'));
+				return;
+			}
+			const name = `${file.name.replace(/\.[^.]+$/, '')}.webp`;
+			await onUpload(new File([webp], name, { type: 'image/webp' }));
+		});
+	}
+
 	return (
 		<div className='flex flex-col gap-2'>
 			<label htmlFor={id} className='text-sm font-medium'>
 				{label}
 			</label>
-			<div className='flex h-32 w-full max-w-xs items-center justify-center overflow-hidden rounded-md border bg-muted/30'>
+			<label
+				htmlFor={id}
+				className={`flex h-32 w-full max-w-xs cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-md border border-dashed bg-muted/30 px-3 text-center transition-colors ${
+					dragging ? 'border-primary bg-primary/5' : ''
+				} ${busy ? 'cursor-wait opacity-60' : ''}`}
+				onDragOver={(event) => {
+					event.preventDefault();
+					if (!disabled) setDragging(true);
+				}}
+				onDragLeave={() => setDragging(false)}
+				onDrop={(event) => {
+					event.preventDefault();
+					setDragging(false);
+					if (disabled || busy) return;
+					void accept(event.dataTransfer.files?.[0]);
+				}}
+			>
 				{imageUrl ? (
 					<img src={imageUrl} alt={label} className='max-h-full max-w-full object-contain' />
 				) : (
-					<span className='text-xs text-muted-foreground'>{t('image.none')}</span>
+					<>
+						<span className='text-xs text-muted-foreground'>{t('image.none')}</span>
+						{!disabled && (
+							<span className='text-xs text-muted-foreground'>{t('image.drop')}</span>
+						)}
+					</>
 				)}
-			</div>
+			</label>
 			{!disabled && (
 				<div className='flex flex-wrap items-center gap-2'>
 					<input
 						id={id}
 						type='file'
-						accept={DOCUMENT_IMAGE_ACCEPT}
+						accept='image/*'
 						disabled={busy}
-						className='text-sm file:mr-2 file:rounded-md file:border file:bg-transparent file:px-3 file:py-1'
+						className='hidden'
 						onChange={(event) => {
 							const file = event.target.files?.[0];
 							event.target.value = '';
 							if (!file) return;
-							if (file.size > DOCUMENT_IMAGE_MAX_BYTES) {
-								toast.error(t('image.tooLarge'));
-								return;
-							}
-							void run(() => onUpload(file));
+							void accept(file);
 						}}
 					/>
+					<Button
+						type='button'
+						variant='outline'
+						size='sm'
+						disabled={busy}
+						onClick={() => document.getElementById(id)?.click()}
+					>
+						{busy ? t('image.converting') : imageUrl ? t('image.replace') : t('image.choose')}
+					</Button>
 					{imageUrl && (
-						<Button type='button' variant='outline' size='sm' disabled={busy} onClick={() => void run(onRemove)}>
+						<Button
+							type='button'
+							variant='outline'
+							size='sm'
+							disabled={busy}
+							onClick={() => void run(onRemove)}
+						>
 							{t('image.remove')}
 						</Button>
 					)}

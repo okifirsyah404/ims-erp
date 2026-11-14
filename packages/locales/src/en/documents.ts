@@ -1,0 +1,63 @@
+/**
+ * Document registry copy (`/documents`).
+ *
+ * @remarks
+ * English is the source of truth; `id` mirrors this key set exactly.
+ */
+const documents = {
+	'title': 'Documents',
+	'description':
+		'Every issued document with its number, type and status. Business records stay in their own module; this registry holds the issued copy.',
+	'entries': 'Issued documents',
+	'count': '{{count}} documents',
+	'empty': 'No documents yet.',
+	'noPermission': 'You do not have permission to see documents.',
+	'search': 'Search',
+	'searchPlaceholder': 'Number or title',
+	'code': 'Number',
+	'type': 'Type',
+	'documentTitle': 'Title',
+	'issuedOn': 'Issued on',
+	'status': 'Status',
+	'allStatuses': 'All statuses',
+	'void': 'Void',
+	'voided': 'Document voided',
+	'status.draft': 'Draft',
+	'status.issued': 'Issued',
+	'status.void': 'Void',
+	'status.archived': 'Archived',
+	'back': 'Back to documents',
+	'overview': 'Details',
+	'source': 'Source',
+	'files': 'Files',
+	'filesHint': 'PDF or image scans attached to this document.',
+	'uploadFile': 'Upload file',
+	'fileName': 'File',
+	'fileSize': 'Size',
+	'uploadedAt': 'Uploaded',
+	'fileUploaded': 'File uploaded',
+	'fileDeleted': 'File removed',
+	'noFiles': 'No files attached yet.',
+	'shares': 'Share links',
+	'sharesHint': 'A link anyone can open without signing in, until it expires or is revoked.',
+	'createShare': 'Create link',
+	'expiresInDays': '{{count}} days',
+	'shareCreated': 'Share link created',
+	'shareRevoked': 'Share link revoked',
+	'noShares': 'No share links yet.',
+	'link': 'Link',
+	'expiresAt': 'Expires',
+	'copyLink': 'Copy',
+	'linkCopied': 'Link copied',
+	'revoke': 'Revoke',
+	'accessTrail': 'Access trail',
+	'accessTrailHint': 'Who viewed, downloaded or shared this document, newest first.',
+	'noAccess': 'No access recorded yet.',
+	'action.view': 'Viewed',
+	'action.download': 'Downloaded',
+	'action.print': 'Printed',
+	'action.share': 'Shared',
+	'action.delete': 'File removed',
+};
+
+export default documents;

@@ -33,6 +33,8 @@ declare module 'i18next' {
 		tax: typeof en.tax;
 		hr: typeof en.hr;
 		claim: typeof en.claim;
+		documents: typeof en.documents;
+		notifications: typeof en.notifications;
 	}
 
 	interface CustomTypeOptions {

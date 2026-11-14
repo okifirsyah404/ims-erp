@@ -14,10 +14,15 @@ import {
  * @remarks
  * `email`, `name`, `username`, and `role` act as optional search filters
  * (case-insensitive partial match); `banned` is an exact boolean filter.
+ * `search` is the picker variant: one term matched against name **or** email
+ * **or** username, for callers that offer a single search box (the warehouse
+ * person-in-charge picker).
  */
 export type TUserPaginationRequest = TPaginationRequest &
 	Partial<Pick<TUserInsert, 'email' | 'name' | 'username' | 'role'>> & {
 		banned?: boolean;
+		/** Free-text term matched against name, email, or username. */
+		search?: string;
 	};
 
 /**
@@ -26,8 +31,9 @@ export type TUserPaginationRequest = TPaginationRequest &
  * @remarks
  * Module-boundary exception (see the `elysia-module` skill, rule 3.3): the
  * user module projects over the auth schema because Better Auth owns the
- * identity tables. This repository touches ONLY the `deletedAt` column —
- * that is the full extent of the user module's direct write surface.
+ * identity tables. Direct writes are limited to `deletedAt` and the personal
+ * fields moved here from `hr.employees` (ERP-0034: gender, birth_date,
+ * birth_place, marital_status), which Better Auth does not manage.
  * `role`, `banned`, `banReason`, `banExpires`, passwords, and sessions are
  * Better Auth–owned state and must be mutated exclusively through the
  * Better Auth admin API (see `IUserAuthGateway`), never via Drizzle.

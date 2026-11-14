@@ -13,7 +13,8 @@ const api = {
 	'common.notFound': 'Not found',
 	'common.conflict': 'Conflict',
 	'common.unsupportedMediaType': 'Unsupported media type',
-	'common.imageInvalid': 'Upload a PNG, JPG or WebP image of at most {{max}} MB',
+	'common.imageInvalid': 'Upload a PNG, JPG, WebP or HEIC image of at most {{max}} MB',
+	'common.fileInvalid': 'Upload a PDF, PNG, JPG or WebP file of at most {{max}} MB',
 	'common.payloadTooLarge': 'Payload too large',
 	'common.authenticationRequired': 'Authentication required',
 
@@ -157,6 +158,9 @@ const api = {
 		'Warehouse "{{warehouseCode}}" is inactive; its storages cannot be changed',
 	'inventory.warehousePicInvalid':
 		'The responsible employee is unknown, inactive, or not from a linked organization',
+	'inventory.warehouseManagerExists':
+		'This user is already a person in charge of the warehouse',
+	'inventory.warehouseManagerUserNotFound': 'User not found',
 	'inventory.movementNotFound': 'Stock movement not found',
 	'inventory.movementAlreadyReversed':
 		'This stock movement has already been reversed',
@@ -197,14 +201,20 @@ const api = {
 	'user.globalAdminRequired': 'Global administrator role required',
 	'user.fileFieldExpected': 'Expected a multipart file field',
 	'user.avatarTooLarge': 'Avatar must be 2 MiB or smaller',
-	'user.avatarUnsupportedType': 'Avatar must be a PNG, JPEG, or WebP image',
+	'user.avatarUnsupportedType': 'Avatar must be a PNG, JPG, WebP or HEIC image',
 
 	'organization.lastOrganization':
 		'This is your last organization and cannot be removed',
 	'organization.notFound': 'Organization not found',
-	'organization.companyProfileRequired':
+	'company.profileRequired':
 		'Fill in the company profile (with its document code) first',
-	'numbering.unknownDocumentType': 'Unknown document type',
+	'company.settingInvalid': 'The value does not match its type',
+	'numbering.unknownCodeType': 'Unknown code type',
+	'document.notFound': 'Document not found',
+	'document.notVoidable': 'This document cannot be voided',
+	'document.fileNotFound': 'File not found',
+	'document.shareNotFound': 'This link is invalid or has expired',
+	'document.fileNotAllowed': 'A void document cannot take files',
 	'numbering.pattern.length': 'The pattern must be 1-100 characters',
 	'numbering.pattern.unknownToken': 'Unknown token {{token}}',
 	'numbering.pattern.tokenNotForType':
@@ -234,6 +244,7 @@ const api = {
 	'invitation.inactive': 'This invitation is no longer active',
 	'invitation.expired': 'This invitation link has expired',
 	'invitation.bulkLimited': 'Bulk limited to {{max}} rows',
+	'invitation.unknownOrganizationSlug': 'No organization has slug "{{slug}}"',
 	'invitation.claimUserMissing': 'Invited user no longer exists',
 	'invitation.claimAlreadyActive': 'This account is already active',
 	'invitation.claimInvalid': 'Invalid claim data',
@@ -424,6 +435,8 @@ const api = {
 	'sales.receiptReversed': 'The receipt is already reversed',
 	'sales.invoiceNotPayable':
 		'Only issued or partially paid invoices can receive payments',
+
+	'notification.notFound': 'Notification not found',
 } as const;
 
 export default api;

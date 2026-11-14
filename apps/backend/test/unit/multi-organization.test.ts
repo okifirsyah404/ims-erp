@@ -20,7 +20,17 @@ function service() {
 			return { id: `org-${created}` };
 		},
 	} as unknown as IOrganizationAuthGateway;
-	return { service: new OrganizationService(repository, gateway), created: () => created };
+	return {
+		service: new OrganizationService(
+			repository,
+			gateway,
+			undefined as never,
+			undefined as never,
+			undefined as never,
+			undefined as never,
+		),
+		created: () => created,
+	};
 }
 
 describe('multiple organizations (ADR-0012)', () => {

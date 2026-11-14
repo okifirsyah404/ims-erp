@@ -5,8 +5,8 @@ import type {
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { DRIZZLE_TOKEN } from '@di/provider';
-import { NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { CodeNumberService } from '@app/code-number';
 import {
 	AR_ACCOUNT_RESOLVER_TOKEN,
 	CASH_BANK_SERVICE_TOKEN,
@@ -76,8 +76,8 @@ export class PaymentService {
 		@inject(CASH_BANK_SERVICE_TOKEN) private readonly cashBank: CashBankService,
 		@inject(AR_ACCOUNT_RESOLVER_TOKEN)
 		private readonly arResolver: ArAccountResolverService,
-		@inject(NUMBERING_SERVICE_TOKEN)
-		private readonly numbering: NumberingService,
+		@inject(CODE_NUMBER_SERVICE_TOKEN)
+		private readonly numbering: CodeNumberService,
 	) {}
 
 	async get(organizationId: string, id: string): Promise<TPaymentSelect> {

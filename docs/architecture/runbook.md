@@ -46,6 +46,7 @@ loaded per-workspace from `.env`).
 | `bun run scripts/smoke-admin-api.ts` | 18 checks over `/admin/users`, `/admin/roles`, `/admin/roles/permissions`, `/admin/audit`, `/admin/invitations`, the escalation guard, and every member denial (403) | ✅ verified 2026-11-02 — 18 passed / 0 failed |
 | `bun run scripts/smoke-cache-invalidation.ts` | the shared `auth.users` cache: an admin deactivate/restore/soft-delete is visible on the self-service read path **immediately** (no 5-minute staleness) | ✅ verified 2026-11-02 — 9 passed / 0 failed, idempotent |
 | `bun run scripts/smoke-avatar-worker.ts` | the avatar BullMQ worker was **started through the worker registry** and is subscribed to the queue: dispatches a job and waits for the worker to consume it (state leaves `waiting`) | ✅ verified 2026-11-02 — consumed, idempotent |
+| `bun run scripts/smoke-login-gate.ts` | the web-admin login gate on the real Better Auth instance (ADR-0017 §8, ADR-0018): app admin without membership signs in, portal role alone is refused with 403, portal role plus an internal membership signs in. Creates and removes its own users | ✅ verified 2026-11-14 — 8/8 cases on a disposable database. Needs `POSTGRES_URL` pointed at a throwaway database, never the dev one |
 
 Both scripts sign in as the seeded admin (`admin@local.com`) and/or member
 (`member.seed@entragate.local`) and reference the seeded organization id.
@@ -63,6 +64,29 @@ a regression. To assert the rendered image outside Compose, point
 
 > The backend dev log prints full session cookies. Do not paste it into
 > issues, chats or commits.
+
+## Realtime socket (`/ws`) and reverse proxies
+
+The API exposes one WebSocket endpoint, `GET /ws` (ADR-0016), authenticated by
+the Better Auth session cookie presented with the upgrade request. A proxy in
+front of `apps/backend` must forward the upgrade or the browser sees a 401/hang
+instead of a socket:
+
+| Proxy | Requirement |
+|---|---|
+| nginx | `location /ws { proxy_pass http://backend:3001; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $host; proxy_read_timeout 3600s; }`. The default `proxy_read_timeout 60s` silently drops an idle socket. |
+| Caddy | nothing to add — `reverse_proxy` forwards `Upgrade` by default. |
+| Traefik | nothing to add for a standard HTTP router; do not enable a per-route `passHostHeader: false` unless the cookie domain allows it, or the session cookie will not be sent on upgrade. |
+| Cloudflare / any CDN | must not buffer the endpoint; keep `/ws` out of the cache rules. |
+
+Verified locally (2026-11-13): a raw upgrade without a session returns
+`401 {"message":"Authentication required"}`; with a session the socket opens
+and `hub.publish` reaches the client. Unit coverage lives in
+`apps/backend/test/unit/realtime.hub.test.ts` and `realtime.gateway.test.ts`.
+
+The hub is **in-process** (`Map<userId, sockets>`). Running more than one API
+instance requires Redis pub/sub fanout first — until then each instance only
+knows its own connections.
 
 ## Database (apps/backend)
 

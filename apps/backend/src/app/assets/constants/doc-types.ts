@@ -4,7 +4,7 @@
  * @remarks
  * Document types of the one numbering service
  * (`organization.document_sequences`, company-wide); every asset document
- * code comes from `NumberingService.next` inside the document's transaction
+ * code comes from `CodeNumberService.next` inside the document's transaction
  * — no `Math.random()`, no local counters (hardening plan Phase A-2).
  */
 export const ASSET_DOC_TYPES = {

@@ -32,9 +32,9 @@ import {
 import {
 	RESET_POLICIES,
 	previewNumbering,
-	type TNumberingSetting,
+	type TCodeNumberSetting,
 	type TResetPolicy,
-} from '@/lib/company-settings-api';
+} from '@/lib/company-api';
 
 /** Waits this long after the last keystroke before asking for a preview. */
 const PREVIEW_DELAY_MS = 400;
@@ -48,16 +48,16 @@ export function NumberingTable({
 	canEdit,
 	onEdit,
 }: {
-	settings: TNumberingSetting[];
+	settings: TCodeNumberSetting[];
 	canEdit: boolean;
-	onEdit: (setting: TNumberingSetting) => void;
+	onEdit: (setting: TCodeNumberSetting) => void;
 }) {
 	const { t } = useTranslation(['settings', 'common']);
 	return (
 		<Table>
 			<TableHeader>
 				<TableRow>
-					<TableHead>{t('settings:numbering.documentType')}</TableHead>
+					<TableHead>{t('settings:numbering.codeType')}</TableHead>
 					<TableHead>{t('settings:numbering.pattern')}</TableHead>
 					<TableHead>{t('settings:numbering.resetPolicy')}</TableHead>
 					<TableHead>{t('settings:numbering.nextNumber')}</TableHead>
@@ -66,10 +66,10 @@ export function NumberingTable({
 			</TableHeader>
 			<TableBody>
 				{settings.map((setting) => (
-					<TableRow key={setting.documentType}>
+					<TableRow key={setting.codeType}>
 						<TableCell>
 							<div className='font-medium'>
-								{t(`settings:numbering.type.${setting.documentType}`)}
+								{t(`settings:numbering.type.${setting.codeType}`)}
 							</div>
 							<Badge variant={setting.isDefault ? 'outline' : 'secondary'}>
 								{setting.isDefault ? t('settings:numbering.default') : t('settings:numbering.custom')}
@@ -102,7 +102,7 @@ export function NumberingDialog({
 	onClose,
 	onSave,
 }: {
-	setting: TNumberingSetting;
+	setting: TCodeNumberSetting;
 	submitting: boolean;
 	onClose: () => void;
 	onSave: (input: { pattern: string; resetPolicy: TResetPolicy }) => void;
@@ -118,12 +118,12 @@ export function NumberingDialog({
 	}, [pattern, resetPolicy]);
 
 	const preview = useQuery({
-		queryKey: ['document-numbering', 'preview', setting.documentType, debounced],
-		queryFn: () => previewNumbering(setting.documentType, debounced),
+		queryKey: ['code-numbers', 'preview', setting.codeType, debounced],
+		queryFn: () => previewNumbering(setting.codeType, debounced),
 		enabled: debounced.pattern.trim().length > 0,
 		retry: false,
 	});
-	const typeLabel = t(`settings:numbering.type.${setting.documentType}`);
+	const typeLabel = t(`settings:numbering.type.${setting.codeType}`);
 
 	return (
 		<Dialog open onOpenChange={(open) => !open && onClose()}>

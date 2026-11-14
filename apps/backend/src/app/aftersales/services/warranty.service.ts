@@ -1,8 +1,11 @@
 import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
 import type { CustomerService } from '@app/crm/services/customer.service';
-import { COMPANY_PROFILE_SERVICE_TOKEN, NUMBERING_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { CompanyProfileService } from '@app/organization/services/company-profile.service';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import { COMPANY_SERVICE_TOKEN } from '@app/company';
+import type { CompanyService } from '@app/company';
+import type { CodeNumberService } from '@app/code-number';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import type { DocumentService } from '@app/document';
 import { HANDOVER_SERVICE_TOKEN } from '@app/projects/constants/di';
 import type { HandoverService } from '@app/projects/services/handover.service';
 import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/projects/constants/di';
@@ -60,9 +63,11 @@ export class WarrantyService {
 		@inject(HANDOVER_SERVICE_TOKEN) private readonly projects: Pick<HandoverService, 'requireProject' | 'findBast'>,
 		@inject(SALES_FULFILMENT_SERVICE_TOKEN) private readonly sales: Pick<SalesFulfilmentService, 'shippedLines' | 'orderLines' | 'findShipmentBySerial'>,
 		@inject(CUSTOMER_SERVICE_TOKEN) private readonly customers: Pick<CustomerService, 'get'>,
-		@inject(COMPANY_PROFILE_SERVICE_TOKEN) private readonly profile: Pick<CompanyProfileService, 'get'>,
-		@inject(NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(COMPANY_SERVICE_TOKEN) private readonly profile: Pick<CompanyService, 'get'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN) private readonly numbering: Pick<CodeNumberService, 'next'>,
 		@inject(PROJECT_LOOKUP_SERVICE_TOKEN) private readonly lookup: Pick<ProjectLookupService, 'liveProjectOfOrder' | 'getProject'>,
+		/** ERP-0044: issued certificates are registered documents. */
+		@inject(DOCUMENT_SERVICE_TOKEN) private readonly documents: Pick<DocumentService, 'register'>,
 	) {}
 
 	/** The project's certificate, or `null`. */
@@ -131,7 +136,19 @@ export class WarrantyService {
 			context: { customer: customerNumberCode(customer?.code) },
 		});
 		try {
-			return await this.certificates.create(code, ctx.actorUserId, data);
+			const certificate = await this.certificates.create(code, ctx.actorUserId, data);
+			// ERP-0044: the certificate the customer holds is a registered document.
+			await this.documents.register({
+				code: certificate.code,
+				documentType: 'warranty',
+				module: 'aftersales',
+				sourceType: 'warranty',
+				sourceId: certificate.id,
+				organizationId: null,
+				issuedOn: certificate.issueDate,
+				issuedByUserId: ctx.actorUserId,
+			});
+			return certificate;
 		} catch (error) {
 			if (isUniqueViolation(error)) throw new WarrantyExistsError();
 			throw error;

@@ -7,7 +7,12 @@ import type { InjectionToken } from 'tsyringe';
 import { s3Client } from './s3';
 
 export interface IObjectStorage {
-	put(key: string, data: Blob, contentType: string): Promise<void>;
+	/**
+	 * Writes an object. `data` accepts a `Blob`/`File` straight from a
+	 * multipart upload or raw bytes — server-generated images (normalised
+	 * WebP) are written as a `Uint8Array`/`Buffer`.
+	 */
+	put(key: string, data: Blob | Uint8Array, contentType: string): Promise<void>;
 	/** Presigned GET URL; `attachment` (default) or `inline` disposition. */
 	presignGet(key: string, options: { fileName: string; expiresIn?: number; inline?: boolean }): string;
 }

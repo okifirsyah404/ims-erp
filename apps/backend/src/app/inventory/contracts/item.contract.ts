@@ -40,11 +40,19 @@ export const itemListQuerySchema = inventoryPaginationSchema.extend({
 		.optional(),
 });
 
-/** Body for creating an item. */
+/**
+ * Body for creating an item.
+ *
+ * @remarks
+ * `code` is deliberately absent: ERP-0043 allocates it from the numbering
+ * authority (`PRD-`/`MAT-`/`CMP-` per kind), and `.strict()` rejects a client
+ * that tries to send one. `sku` stays user-typed and required.
+ */
 export const createItemSchema = z
 	.object({
 		organizationId: z.string().min(1).nullable().optional(),
 		sku: z.string().min(1).max(64),
+		serialNumber: z.string().trim().max(200).nullable().optional(),
 		name: z.string().min(1),
 		description: z.string().nullable().optional(),
 		itemKind: z.enum(ITEM_KINDS),
@@ -68,11 +76,12 @@ export const createItemSchema = z
 	})
 	.strict();
 
-/** Body for updating an item. `sku` and `itemKind` are immutable. */
+/** Body for updating an item. `code`, `sku` and `itemKind` are immutable. */
 export const updateItemSchema = z
 	.object({
 		name: z.string().min(1).optional(),
 		description: z.string().nullable().optional(),
+		serialNumber: z.string().trim().max(200).nullable().optional(),
 		categoryId: z.uuid().nullable().optional(),
 		brand: z.string().trim().max(100).nullable().optional(),
 		specification: z.string().max(4000).nullable().optional(),

@@ -28,10 +28,11 @@ const logger = pino({
  * role get suffixed anchors (`hr.seed.01@entragate.local` / `hr_seed_01`).
  *
  * Not listed here: `owner` (the initial admin, seeded by
- * organization.seeder.ts); `investor` and `customer` (portal identities
- * that arrive with their portal modules — they must link to CRM/investor
- * rows, not back-office accounts). Role semantics come from the shared
- * catalog (`erpRoleNames` / `erpRoleGrants`) — no duplicate definitions.
+ * organization.seeder.ts). `investor` and `customer` are application roles
+ * (ADR-0018), not organization roles, so they are never seeded as members;
+ * portal identities arrive with their portal modules. Role semantics come
+ * from the shared catalog (`erpRoleNames` / `erpRoleGrants`) — no duplicate
+ * definitions.
  */
 export type TMemberSeedEntry = {
 	role: ErpRoleName;

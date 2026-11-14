@@ -32,17 +32,31 @@ import { container } from 'tsyringe';
 import { createApp } from './app/app';
 import { registerAudit } from './app/audit';
 import { registerLocation } from './app/location/container';
-import { registerOrganization } from './app/organization';
 import { registerSales } from './app/sales/container';
 import { registerUser, startAvatarWorker } from './app/user';
+import { registerOrganization, startOrgLogoWorker } from './app/organization';
+import {
+	createNotificationQueue,
+	registerNotification,
+	registerNotificationSchedules,
+	startNotificationWorker,
+} from './app/notification';
+import { registerCompany } from './app/company';
+import { registerCodeNumber } from './app/code-number';
+import { registerDocument } from './app/document';
 import { registerAuthorization } from './authorization/container';
 
 registerProvider(container);
 registerLocation(container);
 registerSales(container);
-// Organization first: its NumberingService (the one numbering authority,
-// ERP-0009) is injected into the document services of every module.
+// Company first, then code numbers: CodeNumberService reads the company
+// document code ({COMPANY}) through COMPANY_SERVICE_TOKEN. Both are injected
+// into the document services of every module.
+registerCompany(container);
+registerCodeNumber(container);
 registerOrganization(container);
+registerNotification(container);
+registerDocument(container);
 // Audit before the modules that resolve AUDIT_SERVICE_TOKEN eagerly
 // (registerInventory builds the shared InventoryAuditWriter at
 // registration time; registerAssets documents the same expectation).
@@ -124,7 +138,12 @@ const bootstrap = new Elysia()
 // (tests/scripts without SMTP), so booting with no mail server still works.
 const mailWorker = startMailWorker();
 startWorkers(
-	[startAvatarWorker(), ...(mailWorker ? [mailWorker] : [])],
+	[
+		startAvatarWorker(),
+		startOrgLogoWorker(),
+		startNotificationWorker(),
+		...(mailWorker ? [mailWorker] : []),
+	],
 	(error) => pinoLogger.error({ err: error }, 'background worker error'),
 );
 if (mailWorker) {
@@ -143,6 +162,14 @@ if (inventoryScheduler) {
 	pinoLogger.info(
 		'inventory scheduler registered (late sweep + PII retention)',
 	);
+}
+
+// Notification retention (ERP-0047): hard-deletes read rows past the window.
+// Shares the `scheduler.enabled` switch with the inventory sweeps, so scripts
+// and tests never open a repeatable-job connection.
+if (appConfig.scheduler.enabled) {
+	await registerNotificationSchedules(createNotificationQueue());
+	pinoLogger.info('notification retention schedule registered');
 }
 
 process.on('SIGTERM', async () => {

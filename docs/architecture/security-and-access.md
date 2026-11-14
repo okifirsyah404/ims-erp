@@ -165,6 +165,27 @@ re-checks the same rule via `allowUserToCreateOrganization`. Multiple
 organizations are allowed (ADR-0012); the creation gate stays the same for
 every subsequent one.
 
+### Company-wide resources (ERP-0042)
+
+Three resources are company-wide, not organization-scoped: `company`,
+`code_number` and `document` (ADR-0015). They replaced `company_setting`, which
+used to carry the profile, the numbering and the settings in one vocabulary.
+
+| Resource | Actions | Guards |
+|---|---|---|
+| `company` | `read`, `update` | `GET /company/profile`, `PUT /company/profile`, the logo/signature uploads, `GET /company/settings`, `PUT /company/settings/:group/:key` |
+| `code_number` | `read`, `update` | `GET /code-numbers`, `PUT /code-numbers/:codeType` |
+| `document` | `read`, `create`, `update`, `submit`, `approve`, `issue`, `void`, `download` | the registry, files, signatures, shares, tags |
+
+"Company-wide" describes the **data scope**, never the authorization boundary:
+these routes still run the `erp` macro with a validated organization, and then
+check the permission. A caller with no permission in the validated organization
+cannot read the profile even though the profile has no `organization_id`
+column. Reads that genuinely need no organization context (the public share
+endpoint `/public/v1/documents/:token`) live on `sessionGuard()`-free public
+routes and are authorized by the token alone, with an expiry and a revocation
+flag checked on every request.
+
 ## Scoping a Drizzle query
 
 Every organization-scoped query filters by the validated organization id and
@@ -328,3 +349,12 @@ module lands.
 
 Audit writes are no longer a gap: `audit.audit_logs` and `AuditService` exist,
 and the user-management actions listed under **Audit** already append to it.
+
+Company, Code Number and Document are built (ERP-0042): their routes exist and
+are guarded by the `erp` macro plus the `company:*`, `code_number:*` and
+`document:*` permissions. The document **signature request** flow (ERP-0048) is
+not built: `document.signatures` has no request rows yet, so per-signer rules
+(who may sign, in which order, and the `sign` / `request_sign` actions added to
+the `document` resource) stay documented here and must be wired when it lands.
+The `document.*` settings group holds only
+`document.signature_request_expiry_days`, which that flow writes.

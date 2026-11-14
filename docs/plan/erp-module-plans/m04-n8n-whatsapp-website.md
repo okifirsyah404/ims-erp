@@ -123,7 +123,7 @@ Common DoD in [README.md](README.md), plus:
 | Profile page | `commerce.web_pages`, `web_menus`, `web_menu_items` | none |
 | Webhook / outbox / log | `automation.outbox_messages`, `integrations`, `integration_credentials` | none |
 | n8n workflows / runs | `automation.workflows`, `workflow_steps`, `workflow_runs`, `workflow_step_runs` | none |
-| Notifications | `automation.notification_templates`, `notifications` | none |
+| Notifications | `notification.notification_templates`, `notifications` (moved out of `automation`, ADR-0016) | none — in-app substrate planned as ERP-0047 |
 
 - Status: **planned**. No public site exists.
 - `beyond-baseline`: the `automation` workflow engine tables (`workflows`,

@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-08.
+Last synced: 2026-11-14.
 
 > **Sidebar shell note (2026-11-05):** the web-admin sidebar now renders the
 > full M01–M12 nav map (see `progress.md`, "UI — full ERP sidebar shell").
@@ -22,6 +22,108 @@ Last synced: 2026-11-08.
 > `ComingSoonPage` stub route (e.g. `/finance/tax/*`, `/procurement/*`,
 > `/crm/*`); a stub is UI scaffolding, **not** feature status. Status here
 > still means real, working functionality.
+
+---
+
+## Cross-cutting: role-based nav, login gate, warehouse PIC (ERP-0051)
+
+Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`accepted` 2026-11-14).
+
+### verified
+- Role-based sidebar in web-admin (`permission` / `open` / `internalRole` /
+  `appAdminOnly`), switcher limited to internal-role organizations, logo fallback,
+  route guard in `_authed` (redirect + toast), organization switch re-checks the
+  current route, `/organizations/new` app-admin only, Settings needs an active
+  organization. Evidence: `progress.md` 2026-11-14 "Phase 4 complete" (browser
+  checks, 97 tests).
+- Login gate and app roles (ADR-0018), branch `refactor/app-roles-investor-customer`:
+  investor/customer moved to Better Auth app roles, `hasRole` multi-role checks,
+  gate in `session.create.before` + `sessionGuard`, `create-user`/`set-role`
+  restricted to `globalRoles`, migration
+  `20261114120000_erp0048_investor_customer_app_roles` (mixed rows keep internal
+  roles, portal-only rows deleted, portal `org_role` cleared on pending
+  invitations, second run a no-op), `scripts/smoke-login-gate.ts` 8/8 against the
+  real Better Auth instance. Evidence: `progress.md` 2026-11-14 "ERP-0051: investor
+  and customer move to app roles".
+- Warehouse person-in-charge Phase 1: `inventory.warehouse_managers` schema,
+  hand-written migration `20261114150000_erp0051_warehouse_managers`, deterministic
+  seeder. Evidence: `progress.md` 2026-11-14 "warehouse PIC Phase 1", `docs.dbml`
+  Inventory table + intra-module Ref, throwaway-DB replay (57 journal rows / 116
+  tables) and 3 idempotent seeder runs.
+- Warehouse person-in-charge Phase 2: `warehouseGuard` (401/403/404 split,
+  app-admin bypass), Drizzle-free `IWarehousePicResolver` port,
+  `WarehouseManagerRepository` + `WarehouseManagerService` (assign 409/404,
+  idempotent unassign, audit `warehouse.manager_assigned`/`_removed`), PIC routes on
+  read/update/archive/address/storages, `GET /warehouses/mine` (warehouses +
+  storages). Evidence: `progress.md` 2026-11-14 "warehouse PIC Phase 2", backend
+  979 pass / 0 fail (service unit tests + denial tests), `validate-dbml.ts` OK
+  (`docs/database/` unchanged).
+- Warehouse person-in-charge Phase 4 item 8 (`11085e1`): `warehousePic` nav flag +
+  `isPic` on `NavContext`, `useWarehouseAccess()` as the single gate,
+  `AdminWarehouseList`/`PicWarehouseList`, `WarehouseAccessGate`, PIC detail tab
+  split (items tabs are org-permission gated, so a PIC sees `storage` only),
+  `/inventory/warehouses/new` short-circuited in `canOpenPath` as app-admin only,
+  manager read surface `GET /warehouses/:id/managers` +
+  `GET /warehouses/manager-candidates?search=` (picker cannot use `GET /admin/users`,
+  which needs `member:read` plus an organization), persons-in-charge assign/unassign
+  tab. Evidence: `progress.md` 2026-11-14 "Phase 4 item 8".
+- Warehouse person-in-charge Phase 5: `apps/backend/scripts/smoke-warehouse-pic.ts`
+  47 pass / 0 fail over real HTTP against a freshly seeded disposable database
+  (login gate, 401s, app admin without membership, PIC rights and denials,
+  internal member without grant, investor+internal and multi-org, direct admin-route
+  denial, assign/unassign round trip, PIC of a warehouse with no
+  `inventory.warehouse_organizations` row) plus a real-browser pass (Edge, Vite 5173
+  + backend 3001) covering the PIC nav item, the PIC-only warehouse list, the
+  `/new` redirect, the multi-org switcher hiding the item, investor-only and
+  customer-only logins rejected, direct-URL denial, and assign/unassign. Evidence:
+  `progress.md` 2026-11-14 "ERP-0051: warehouse PIC Phase 5"; gates backend 999
+  pass, web-admin 100 pass, locales 90 pass, react-email 5 pass, typecheck and lint
+  clean; `docs/database/` unchanged. Plan `side-nav-role-based.md` complete.
+  Not covered: the PIC `import`/`export` rights, because no warehouse route uses
+  those actions yet — covered indirectly on 2026-11-14 by 6 action-matrix tests in
+  `warehouse-authorization.test.ts` (the guard is action-agnostic and the controller
+  declares only `read`/`update`/`archive`), and Phase 5 was re-run 47/47 against a
+  freshly reset `ims_erp_local`.
+
+### planned
+- Nothing open for ERP-0051 itself. Delivery follow-ups are tracked separately in
+  `docs/plan/plans/erp-0051-follow-ups.md` (ERP-0053 … ERP-0058): one route-guard
+  behaviour bug, four documentation drifts, and one schema-helper gap.
+
+---
+
+## Cross-cutting: migration history (ERP-0052)
+
+Decision: ADR-0019 (`accepted` 2026-11-14).
+
+### verified
+- Migration history squashed to **19 migrations, one per Postgres schema**,
+  generated from `drizzle/schemas` (1 `base` + 18 chained `diff` snapshots), so
+  `bunx --bun drizzle-kit check` reports `Everything's fine` and
+  `drizzle-kit generate` reports `No schema changes` against the repo's own
+  `drizzle.config.ts` for the first time since the ERP-0011 merge. Root causes:
+  11 migrations without `snapshot.json`, the unrecorded
+  `DROP SCHEMA "finance" CASCADE` in `20261106170000`, and `generate` emitting a
+  base snapshot when the out folder is empty. DDL the builder cannot express
+  (`NULLS NOT DISTINCT` on both `stock_balances` scope indexes, the
+  `deleted_at IS NULL` predicate on the two `items` code indexes, the
+  intra-module `sales.receipts` -> `sales.invoices` FK) is kept as a documented
+  tail in the owning migration. The cross-schema FK
+  `receipts_payment_id_payments_id_fkey` (sales -> finance) was dropped - it
+  violated `elysia-module` rule 3.2 / ADR-0014 - so the database now has zero
+  cross-schema foreign keys. Evidence: `progress.md` 2026-11-14 "ERP-0052";
+  `drizzle:migrate-reset` on `ims_erp_local` -> 19 journal rows, 116 tables;
+  `drizzle:migrate` afterwards a no-op; probe column produced a real `ALTER TABLE`
+  diff; schema fingerprint equal to the old chain except two auto-named
+  constraints; `smoke-warehouse-pic.ts` 47/47; backend 1005 pass, web-admin 100,
+  locales 90, react-email 5; typecheck, lint, `validate-dbml.ts` green.
+
+### planned
+- Teach `inventory.schema.ts`'s `scopedUnique()` helper the `deleted_at IS NULL`
+  predicate so the snapshot matches the `items` code indexes the database carries.
+  Cosmetic today - `generate` diffs against the snapshot, so it does not try to
+  drop them (probed 2026-11-14) - but the two should not drift. Recorded in
+  ADR-0019 consequences; not a regression of the squash.
 
 ---
 
@@ -35,7 +137,41 @@ Last synced: 2026-11-08.
   (sample data via `apps/web-admin/src/lib/dashboard-api.ts`, `dashboard`
   locale namespace). Scaffold only — **not feature status**; figures are
   placeholders until the real API replaces the mock fetcher.
-
+- Organization info dashboard, dummy data — ERP-0040 (2026-11-12): tab `info`
+  of the organization detail page renders users-by-role, projects, sales,
+  inventory, activity, profit & loss, cash & bank cards with two BarCharts
+  (existing `@ims-erp/ui/components/chart`, Recharts v3). Hardcoded dummy
+  data (`apps/web-admin/src/lib/org-dashboard-data.ts`), en/id keys complete;
+  **not feature status** — real wiring blocked on the owning modules.
+- Org CRUD robustness — ERP-0041 (2026-11-12, **verified**): backend + web-admin
+  UI (org-create nested users, image-profile icon dropzone with drag & drop on
+  the create and edit pages, member/invite multi-role checkbox grid, bulk paste
+  with `|` role separator) + backend unit tests (12 org-create-nested, 5
+  employee-invite); migration verified on a
+  disposable DB. Live browser walk-through done: WebP upload → MinIO
+  presigned read, multi-role bulk invite stored `technician,sales`, retried
+  invite reuses a leftover employee row. Logo picking is a drag & drop
+  dropzone on both form pages; object key `organizations/<id>/logo.webp`
+  (plural, like `users/<id>/avatar.webp`) re-verified with the real seed asset.
+  The create page is now org details only (nested users removed by user
+  decision; `POST /organizations` still accepts `users` for API callers) and
+  the image input downscales to 512px client-side, caps the source at 20MB and
+  falls back to the generated key `logo-generated.webp` behind a conditional
+  `logo IS NULL` write. The organization list presigns each card logo on the
+  server (a raw object key rendered as a broken image) with an initials fallback
+  on load error. The list grid is `1 / sm:2 / lg:3 / 2xl:4` (a 4-up grid at
+  `lg` produced 180px cards) and its header stacks below `sm`. The optional
+  organization `description` (new nullable `text` column, 2000-char zod cap)
+  is created/edited in a textarea and shown on the info dashboard, which also
+  exposed and fixed a stale-`findById` cache bug on PATCH. **Server-side image
+  normalisation** (same slice, 2026-11-13): the user never converts to WebP by
+  hand — `apps/backend/src/utils/image.util.ts` (`Bun.Image`, no new dependency)
+  sniffs PNG/JPG/WebP/GIF/BMP/TIFF/HEIC/AVIF and re-encodes every stored image
+  (org logo, DiceBear-generated org logo and avatar, user avatar, document
+  images) to WebP, downscaled to 512px (avatar 144px). The web admin keeps a
+  canvas fast path (`encodeImage`, WebP with a PNG fallback) and can no longer
+  fail with "WebP encoding failed"; the 2 MB upload cap is unchanged because the
+  client downscales first. Evidence: progress 2026-11-12 and 2026-11-13.
 
 ## M02 CRM and Sales
 
@@ -110,6 +246,52 @@ Last synced: 2026-11-08.
   Evidence: none.
 - AI FAQ + n8n integration — T27, ERP-0021. Evidence: none.
 - Notifications, human handoff, WhatsApp logs — T28, ERP-0021. Evidence: none.
+  Note: the **in-app** notification substrate is not part of M04; it is
+  `ERP-0047` (below) and its WhatsApp/email channels attach to that model later.
+
+## Notification + realtime (ERP-0047)
+
+### verified
+- In-app notification module (schema `notification`, app-scope, organization as
+  tag) + single realtime socket `/ws` + header bell with unread badge.
+  Plan: `docs/plan/plans/ws-notification.md` (Phase 0-9). Evidence: Phase 0 done
+  2026-11-13 — `docs/database/docs.dbml` module 27, `module-ownership.md`,
+  `implementation-phases.md`, `data-dictionary.md`,
+  `docs/architecture/modules/notification.md`, ADR-0016,
+  `api-conventions.md`; `validate-dbml.ts` OK (268 tables, 231 refs, 0
+  cross-module), `gen-logical-references.ts` 524 refs. Phase 1 done
+  2026-11-13: `drizzle/schemas/notification.schema.ts` +
+  `database/migrations/20261113150000_erp0047_notification_schema/` applied
+  through `drizzle:migrate-reset` (2 tables, 9 indexes, 3 checks, 1 intra-module
+  FK), `tsc -b --noEmit` clean. Phase 2 done 2026-11-13: `src/providers/
+  realtime/` (`realtime.message.ts`, `realtime.hub.ts`, `realtime.gateway.ts`),
+  `/ws` mounted in `createApp()`, hub in `registerProvider`; session-less
+  upgrade 401, authenticated socket opens, `publish` delivers
+  `{ type, status, sentAt, data }`. Phase 3 done 2026-11-13: `src/app/
+  notification/` (repository, `NotificationService`, `ExportedNotificationService`,
+  queue `send`/`prune` + worker), retention config keys, worker started in
+  `src/index.ts`; live send/list/markRead/prune verified. Phase 4 done
+  2026-11-14: `notification.controller.ts` (`GET /notifications`,
+  `GET /notifications/unread-count`, `PATCH /notifications/:id/read`,
+  `POST /notifications/read-all`) mounted via `notificationModule()` under the
+  session guard only; `sessionGuard()` maps its own `ErpAuthError`, and the
+  shared `domainPlugin` `VALIDATION` branch was fixed (it 500-ed every
+  validation failure on a listening server). Phase 5 done 2026-11-14: adding a
+  member (`OrganizationService.addMember`), creating an organization (creator +
+  nested active users) and a successful invitation claim all produce
+  `org.member_added`/`org.org_created` through `ExportedNotificationService`;
+  a `NOTIFICATION_DISPATCHER_TOKEN` was added because the defaulted constructor
+  parameter made tsyringe fail at boot. Phase 6 done 2026-11-14: the four
+  templates are seeded in every environment and three demo rows for the seed
+  admin in dev, both idempotent (4+3 then 0+0 inserted), guarded by a drift test
+  that keeps the code vocabulary, the seed list and the declared variables in
+  sync. Phase 7 done 2026-11-14: header bell with unread badge and popover,
+  one `/ws` socket client with backoff reconnect and a `type` → handler
+  registry, `NavUser` moved into the header, `notifications` locale namespace
+  in en+id. Verified live (badge updates without reload, reconnect after a
+  backend restart, Indonesian copy). Phase 8 done 2026-11-14: automated gates
+  green, WS smoke test committed, live HTTP inbox and browser live badge verified;
+  second-user live arrival verified in two runs (see `progress.md`). Verified.
 
 ## M05 Inventory and Purchasing
 
@@ -178,7 +360,14 @@ Last synced: 2026-11-08.
   validation (422 `inventory.warehousePicInvalid`), web-admin
   `/hr/employees` pages, seeder. Evidence: `apps/backend/src/app/hr`,
   `apps/web-admin/src/components/hr`, `progress.md` 2026-11-10. Deferred:
-  manager picker UI, export.
+  manager picker UI, export. Follow-up 2026-11-12: invite-creates-employee
+  on both scopes (`EmployeeInviteService` behind `IInvitationEmployeePort`),
+  rollback on insert failure, personal fields on `auth.users` via
+  `IUserPersonalFieldsPort` (migration pending disposable-DB run), `hr`
+  invite rights. Bulk invite via CSV/XLSX file upload added 2026-11-12
+  (shared parser in `packages/common`, client-side parse + template
+  download endpoints, `organizationSlug` resolution; evidence in
+  `progress.md`).
 
 ### blocked
 - Supplier payables and the M09 payable handoff of receipts — ERP-0035.
@@ -259,8 +448,10 @@ Last synced: 2026-11-08.
   Evidence: `progress.md` 2026-11-10.
 - Attendance (manual + import), leave (12-day quota, no self-approval),
   overtime, employee tasks, salary summary approved and locked by the owner,
-  salary bank account — T10, ERP-0040. Evidence: `progress.md` 2026-11-12
-  (`hr-records.service.test.ts`, e2e). Not yet accepted by the owner.
+  salary bank account — T10, ERP-0059. Evidence: `progress.md` 2026-11-12
+  (`hr-records.service.test.ts`, e2e); rebased on `main` @ `2b28fc46`
+  2026-11-15 (squashed migration baseline, `hasAppRole`, `CodeNumberService`),
+  see `progress.md` 2026-11-15. Not yet accepted by the owner.
 
 ### planned
 - Payslips, approval, payroll journals — T20, ERP-0018. Evidence: none.
@@ -351,6 +542,18 @@ Last synced: 2026-11-08.
   `apps/backend/src/app/organization`, UI `/organizations/*`; progress
   2026-10-31, 2026-11-02 live smoke. Pending: browser acceptance. Note:
   organizations = internal departments, consistent with v5.1 (ADR-0010).
+- Organization-scoped invitations + one shared invite dialog — ERP-0039
+  (2026-11-12). Org admins list/resend/cancel/delete their own pending
+  invitations (`/organizations/:organizationId/invitations`, path org
+  authoritative, out-of-scope → 404) without the app-admin-only
+  `/admin/invitations`; `components/invite/invite-dialog.tsx` serves both
+  `/admin/users` (org picker incl. explicit “no organization”) and the
+  organization Members tab; claim phone is E.164 (`libphonenumber-js`).
+  Evidence: `apps/backend/src/app/organization/controllers/
+  organization-invitation.controller.ts`,
+  `test/unit/invitation.service.test.ts` (12),
+  `apps/web-admin/test/unit/invite-parse.test.ts` (10), browser run in
+  `progress.md` 2026-11-12. Pending: reviewer sign-off, PR.
 
 ## Backlog-only (no module)
 
@@ -363,8 +566,14 @@ Last synced: 2026-11-08.
 - ERP-0024 UAT, reconciliation, backup drill.
 - ERP-0025 Release preparation.
 - ERP-0037 Nullable cross-module references (ADR-0014 schema flip).
+- ERP-0045b Organization settings KV CRUD (`organization.settings`) — split out of
+  ERP-0045, not built.
 
 ### in-progress
+- ERP-0046 Dependabot bun config moved to the workspace root (`directory: "/"`)
+  so the single root `bun.lock` is updated with the manifests. Evidence:
+  `.github/dependabot.yml`, `progress.md` 2026-11-13. Not verified until a
+  dependabot PR lands with `bun.lock` in its diff and green CI.
 - ERP-0037 Port M02/M05/M07 onto main (ADR-0011): steps 1-2 implemented
   2026-11-05 (numbering, company profile, role grants; item categories,
   fixed units, brand/specification/active on items) and 3a (customers +
@@ -373,11 +582,80 @@ Last synced: 2026-11-08.
   Evidence: `progress.md` 2026-11-05, `test/unit/item-category.service.test.ts`.
 
 ### implemented
-- ERP-0009 Document numbering (company-wide series, settings page).
-  Evidence: `apps/backend/src/app/organization`, `test/unit/numbering.service.test.ts`,
-  `progress.md` 2026-11-05.
-- ERP-0008 (part) Company profile + invoice bank accounts. Evidence:
-  `test/unit/company-profile.service.test.ts`, `progress.md` 2026-11-05.
+- ERP-0045c Settings section (2026-11-13). Sidebar `Settings` after
+  Administration: Company, Code numbering, Document. `/settings/company`,
+  `/settings/code-numbers`, `/settings/documents`; `/admin/company` and
+  `/admin/code-numbers` redirect. Company form cut to identity + contact;
+  `documentCode` relabelled "Company code"; Signatory, Bank accounts, Default
+  terms, Warranty certificate and Logo/signature removed from the page; the logo
+  moved to `/settings/documents` (the company signature image was dropped from
+  that page the same day — signatures get their own module). `PUT
+  /company/profile` is now a patch (`companyProfilePatchSchema`) so the removed
+  fields keep their stored value.
+  Evidence: `progress.md` 2026-11-13 ERP-0045c and the `/settings/documents`
+  entry after it; backend 872 tests, web-admin 70, locales 86, build + lint
+  clean. Verified in the browser: the form shows only identity + contact,
+  "Company code" label, a tagline-only save keeps `signatoryName` and the bank
+  account, both old `/admin/*` URLs redirect, `/settings/documents` has one logo
+  field and no signature field, and the `document` settings card is empty until
+  ERP-0048 writes its key.
+- ERP-0045 Company settings KV CRUD (2026-11-13, `company.settings` only;
+  `organization.settings` split into ERP-0045b). `GET /company/settings`,
+  `PUT /company/settings/:group/:key`, permissions `company:read` /
+  `company:update`, no delete route; service-side value check per `value_type`
+  (string/number/boolean/json/date) plus the DB CHECK; single-statement upsert
+  on the live `(setting_group, setting_key)` partial unique index.
+  `is_secret` stays reserved (`false`): the API neither accepts nor returns it.
+  UI `CompanySettingsCard` on `/admin/company`. Evidence: `progress.md`
+  2026-11-13 ERP-0045; `test/unit/company.service.test.ts` 15 pass.
+- ERP-0044 Document registry wiring + files + public share links (2026-11-13).
+  11 outward-facing types register through `DocumentService.register` and void
+  with `voidBySource`; `document.files` upload/list/soft-delete/presigned download
+  with `access_logs`; `document.shares` with its own `token` uuid, mandatory
+  expiry, revocable, anonymous `GET /public/v1/documents/:token`; detail page
+  `/documents/$documentId`. Migration `20261113140000_erp0044_document_share_token`.
+  Evidence: `progress.md` 2026-11-13 ERP-0044. Not `verified`: no live HTTP or
+  browser pass on the share and download routes.
+- ERP-0043 Item codes per kind (2026-11-13). `item_product`/`item_material`/
+  `item_component` code types (`PRD-00001`/`MAT-00001`/`CMP-00001`,
+  `{TYPE}-{SEQ:5}`, reset never, module `inventory`); `inventory.items.code`
+  generated by the numbering authority and immutable, `inventory.items.serial_number`
+  nullable, `sku` stays manual and required. Migration
+  `20261113130000_erp0043_item_codes` (deterministic per-kind backfill, ADR-0008
+  unique index pair, 3 series rows). Asset needed no change - `AST-` was already
+  allocated and no `sku` column was added. Evidence: `progress.md` 2026-11-13.
+- Sidebar (2026-11-13): Documents section below CRM & Sales, with Files
+  (`/documents/files`), Signatures (Document Signature, Request Signature, My Signature,
+  placeholders until ERP-0048/0049), Templates (placeholder until ERP-0050).
+  The same day ERP-0045c moved Company and Code numbering out of Administration
+  into a new `Settings` section, so Administration now holds the organization
+  pages and the audit log only. Evidence: `progress.md` 2026-11-13 "sidebar"
+  (top entry), commit `7b1f699` for the first arrangement, ERP-0045c for the move.
+- ERP-0042 Decoupled `organization` into `company` + `document` +
+  `code_number` (2026-11-13). Three Postgres schemas, one append-only migration
+  each; `company.profiles/head_office_addresses/contacts/bank_accounts/settings`,
+  `code_number.series` (verbatim rename of `organization.document_sequences`,
+  `document_type`→`code_type`, 32 code types incl. `warehouse` and the three
+  item kinds),
+  `document.templates/documents/files/signatures/access_logs/shares/tags/tag_links`;
+  `organization.company_settings` split into `company.settings` +
+  `organization.settings`. Contracts `CompanyService.getProfile(tx?)`,
+  `CodeNumberService.next(codeType, {date, context, tx})`,
+  `DocumentService.issue(...)`. Permissions `company:*` / `code_number:*` /
+  `document:*` replace `company_setting:*`. API `/company/profile` +
+  `/code-numbers`; UI `/documents`, `/settings/company`,
+  `/settings/code-numbers` (the `/admin/*` pages and `/admin/settings` were
+  replaced by ERP-0045c). Docs: `architecture/modules/{company,code-number,document}.md`
+  and ADR-0015. Evidence: `apps/backend/src/app/{company,code-number,document}`,
+  `test/unit/{company,code-number}.service.test.ts`, migrations
+  `2026111312*_erp0042_*` verified on a disposable DB, `progress.md` 2026-11-13.
+- ERP-0009 Code numbering (company-wide series, settings page). Moved to
+  `code_number` by ERP-0042.
+  Evidence: `apps/backend/src/app/code-number`, `test/unit/code-number.service.test.ts`,
+  `progress.md` 2026-11-05 and 2026-11-13.
+- ERP-0008 (part) Company profile + invoice bank accounts. Moved to `company`
+  by ERP-0042. Evidence:
+  `test/unit/company.service.test.ts`, `progress.md` 2026-11-05 and 2026-11-13.
 - ERP-0030 Faker seeders + `faker` skill. Evidence: `apps/backend/database/
   seeders`, `test/unit/inventory-seeder.data.test.ts`,
   `member-seed-config.test.ts`; run-twice verified 2026-11-03.

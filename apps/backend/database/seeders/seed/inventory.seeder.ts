@@ -16,6 +16,7 @@ import {
 	warehouses,
 } from '../../../drizzle/schemas/inventory.schema';
 import { organizations } from '../../../drizzle/schemas/auth.schema';
+import { codeNumberSeries } from '../../../drizzle/schemas/code-number.schema';
 import { village } from '../../../drizzle/schemas/location.schema';
 import { SEED_ORGANIZATION_SLUG } from './organization.seeder';
 import { isProductionEnv } from '../../../config/providers/env';
@@ -46,6 +47,8 @@ const ITEMS_PER_KIND = 4;
 
 /** One seeded item plus, for serialized kinds, the units to register. */
 type TSeedItem = {
+	/** Human reference allocated by the numbering authority (ERP-0043). */
+	code: string;
 	sku: string;
 	name: string;
 	itemKind: 'product' | 'component' | 'material';
@@ -88,6 +91,17 @@ function generateSeedItems(): TSeedItem[] {
 
 	const kinds: TSeedItem['itemKind'][] = ['product', 'component', 'material'];
 
+	/**
+	 * Code prefix per kind, mirroring `CODE_TYPE_CODES` in the numbering
+	 * authority. Seeded rows get `PRD-00001` style codes so they look exactly
+	 * like codes the API allocates (ERP-0043).
+	 */
+	const codePrefix: Record<TSeedItem['itemKind'], string> = {
+		product: 'PRD',
+		component: 'CMP',
+		material: 'MAT',
+	};
+
 	const items: TSeedItem[] = [];
 	let index = 0;
 
@@ -95,9 +109,11 @@ function generateSeedItems(): TSeedItem[] {
 		for (let i = 0; i < ITEMS_PER_KIND; i++) {
 			index += 1;
 			const sku = `ITEM-${String(index).padStart(3, '0')}`;
+			const code = `${codePrefix[itemKind]}-${String(i + 1).padStart(5, '0')}`;
 
 			if (itemKind === 'material') {
 				items.push({
+					code,
 					sku,
 					name: safeMaterial(),
 					itemKind,
@@ -116,6 +132,7 @@ function generateSeedItems(): TSeedItem[] {
 
 			// product and component share the same shape.
 			items.push({
+				code,
 				sku,
 				name: safeName(),
 				itemKind,
@@ -217,6 +234,7 @@ export async function seedInventory(): Promise<void> {
 	await ensureStorage(orgWarehouse, 'B1', 'Shelf B1');
 
 	await ensureItems(organizationId, orgWarehouse);
+	await ensureItemCodeSeries();
 	await seedStock({ organizationId, globalWarehouse, orgWarehouse });
 
 	logger.info(
@@ -575,6 +593,7 @@ async function ensureItem(
 		.insert(items)
 		.values({
 			organizationId,
+			code: seed.code,
 			sku: seed.sku,
 			name: seed.name,
 			itemKind: seed.itemKind,
@@ -591,6 +610,51 @@ async function ensureItem(
 		.returning({ id: items.id });
 
 	return created.id;
+}
+
+/**
+ * Pushes the item code series past the seeded codes (ERP-0043).
+ *
+ * @remarks
+ * The seeder writes item rows directly, so it must also move the numbering
+ * counter: without this the first item created through the API would be handed
+ * `PRD-00005` again and collide with a seeded row. Idempotent - an existing
+ * live series with a counter that already covers the seed is left alone.
+ */
+async function ensureItemCodeSeries(): Promise<void> {
+	const now = new Date();
+	for (const [codeType, module] of [
+		['item_product', 'inventory'],
+		['item_component', 'inventory'],
+		['item_material', 'inventory'],
+	] as const) {
+		const seeded = SEED_ITEMS.filter(
+			(seed) =>
+				(codeType === 'item_product' && seed.itemKind === 'product') ||
+				(codeType === 'item_component' && seed.itemKind === 'component') ||
+				(codeType === 'item_material' && seed.itemKind === 'material'),
+		).length;
+
+		await drizzleDB
+			.insert(codeNumberSeries)
+			.values({
+				module,
+				codeType,
+				resetPolicy: 'never',
+				periodKey: 'all',
+				nextNumber: seeded + 1,
+				createdAt: now,
+				updatedAt: now,
+			})
+			.onConflictDoUpdate({
+				target: codeNumberSeries.codeType,
+				targetWhere: sql`deleted_at IS NULL`,
+				set: {
+					nextNumber: sql`GREATEST(${codeNumberSeries.nextNumber}, ${seeded + 1})`,
+					updatedAt: now,
+				},
+			});
+	}
 }
 
 /**

@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import { QuotationForm } from '@/components/sales/quotation-form';
 import { toast } from '@/components/toast';
-import { companyProfileQueryOptions } from '@/lib/company-settings-api';
+import { companyProfileQueryOptions } from '@/lib/company-api';
 import { createQuotation } from '@/lib/quotation-api';
 
 /** A quotation may start from a customer, or from a converted lead. */

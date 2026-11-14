@@ -8,11 +8,18 @@
 
 Internal organizations of one company (ADR-0001, extended by ADR-0007)
 modeled through Better Auth's `organization` plugin: the organization row, its
-membership, and member role administration. **Not** a tenant dimension — no
+membership, and member role administration. **Not** a tenant dimension - no
 `organization_id` columns on master data (migration path recorded in
 ADR-0001, deliberately unbuilt). Invitations are out of scope for v1 (direct
 member add only); company profile/address data belongs to a future settings
 owner, not here.
+
+> **Scope shrank 2026-11-13 (ERP-0042).** The company profile, the invoice bank
+> accounts and the numbering series no longer live here. They moved to three
+> sibling modules with their own Postgres schemas: `src/app/company`
+> (`company.*`), `src/app/code-number` (`code_number.series`) and
+> `src/app/document` (`document.*`). This module now owns only the organization
+> row, its members, roles, and `organization.settings`.
 
 ## Multiple organizations
 

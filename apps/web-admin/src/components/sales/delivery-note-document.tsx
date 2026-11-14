@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import type { TCompanyProfile } from '@/lib/company-settings-api';
+import type { TCompanyProfile } from '@/lib/company-api';
 import type { TDeliveryNoteDetail } from '@/lib/delivery-note-api';
 import { formatBusinessDate } from '@/lib/format';
 

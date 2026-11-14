@@ -51,7 +51,7 @@ Legend: **verified working** / **partially implemented** / **scaffold only** /
 | `customer` domain | partially implemented | schema + migration real; repository has only `findById` variants with a questionable scope-compare pattern; controller/service empty; 2 pre-written specs |
 | `investors`, `audit_logs` schema | schema only | `erp-schema.ts` + baseline migration; no code |
 | employee, expense, inventory, notification, organization, payment, product, purchasing, reporting, sales, supplier, warehouse modules (12) | scaffold only | each has a `*.module.ts` registered in `app.module.ts` plus empty controller/service; no DTOs, no queries |
-| Database migrations | verified present | `database/migrations/20261025064638_create_auth_schema/` creates `auth` schema (Better Auth tables, bigint timestamps, FKs/unique slug) **and** `erp` schema (`audit_logs`, `customers`, `investors`) in one baseline; timestamps are bigint unix ms; no `migrations/meta` journal observed (check before adding `generate`) |
+| Database migrations | verified present | **19 migrations, one per Postgres schema** (squashed 2026-11-14, ADR-0019); `20261028042701_create_auth_schema/` creates the `auth` schema (Better Auth tables, bigint timestamps, FKs/unique slug) plus the ERP-owned `auth.user_invitations`; each later folder adds exactly one schema. Timestamps are bigint unix ms. `drizzle-kit check` and `generate` both run clean against `drizzle.config.ts`. The pre-squash history (57 folders, no `migrations/meta` journal) is in git history only |
 | Seeders | partially implemented | `database/seeders/` with runner + `auth.seeder.ts` and raw Indonesian address JSON (provinces/regencies/districts/villages); ERP-domain seeders absent |
 | web-admin routes | scaffold only | only `/` ("Welcome Home!") and `/login`; `routeTree.gen.ts` generated; no authenticated layout wired to routes |
 | web-admin shell | scaffold only | `main-sidebar.tsx` is untouched shadcn sample data ("Acme Inc", Playground/Models nav) |
@@ -88,14 +88,24 @@ Failing suites, grouped by cause:
 Found while rebuilding M08 (PR #83) and M04 (PR #84) on `main` @ 89940c0.
 Not caused by those PRs; recorded here per the Definition of Done.
 
+Re-checked 2026-11-15 on `feat/m08-hr-on-main` after merging `main` @ `2b28fc46`:
+
+- **Resolved by ERP-0052** (migration history squashed to one migration per
+  schema, ADR-0019): `drizzle-kit generate` / `migrate` now run on the linear
+  chain (`drizzle-kit check` → `Everything's fine`), and the
+  `push --explain` drift on `auth.organization_role` / `sales.receipts` is
+  gone with the regenerated snapshots.
+- **Resolved 2026-11-15**: `docs.dbml` `hr.employees` now matches the built
+  table (nullable `organization_id`, `date` hire/termination columns, `text`
+  `user_id`), so that row was dropped.
+- **Still open** — the rows below.
+
 | Issue | Evidence | Workaround used | Owner action |
 |---|---|---|---|
-| `drizzle-kit generate` / `migrate` refuse to run | two snapshot branches from `20261106103434_add_asset_image_url`; two snapshots with id `d536237d…`; hand-written migrations without snapshots (`20261106170000_…`, `20261112000000_erp0034_hr_employees`) | hand-written migrations; `bun run database/migrate-reset.ts` (drizzle-orm migrator, no conflict check) on a **disposable** database only | one agreed snapshot-chain repair; never `--fix-conflicts` (it deletes 14 applied migrations) |
-| Schema and migrations disagree | `drizzle-kit push --explain` on a fresh database wants to create `auth.organization_role` and drop two `sales.receipts` FKs | none | reconcile in one migration |
-| `DRIZZLE_TOKEN` injected in a service | `sales/services/invoice.service.ts` (uses `this.database.transaction`) — AGENTS hard rule: no service may inject it | none (M04 only added an outbox dependency) | move the transaction behind the repository / transaction runner |
+| `DRIZZLE_TOKEN` injected in a service | `sales/services/invoice.service.ts` (three `this.database.transaction` calls) plus `accounting/services/{bank-reconciliation,cash-bank,month-end-close}.service.ts` — AGENTS hard rule: no service may inject it | none (M04 only added an outbox dependency) | move the transaction behind the repository / transaction runner |
+| `hr.employees` status vocabulary drifts from `docs.dbml` | DBML: `employment_status IN ('active', 'on_leave', 'suspended', 'terminated')`, `employment_type IN ('permanent', 'contract', 'freelance', 'intern')`. Drizzle `hr.schema.ts`: `employment_status IN ('active', 'inactive', 'terminated')`, `employment_type IN ('permanent', 'contract', 'probation', 'internship', 'outsourced')` | none — the built schema is authoritative for now; ERP-0034 code only writes `active` / `inactive` / `terminated` | pick one vocabulary, then sync `docs.dbml` and the Drizzle check constraints together (a real migration) |
 | Port 3000 clash in dev | `@ims-erp/react-email` preview also binds 3000; the backend gets `127.0.0.1`, the preview `[::1]` | call the backend on `127.0.0.1:3000` | give the preview its own port |
-| No local DB/Redis ports | `docker-compose.yml` publishes no Postgres/Redis ports; `.env` expects 15432/16379 | override file outside the repo (see `runbook.md`) | add a local override to the repo |
-| `docs.dbml` `hr.employees` is the target, not ERP-0034 as built | DBML: `organization_id NOT NULL`, `date` columns, department/position ids; Drizzle: nullable org, bigint dates | none | sync the DBML table |
+| No local DB/Redis ports | `docker-compose.yml` publishes no Postgres/Redis ports (only backend 3001 and web-admin 8080); `.env` expects 15432/16379 | override file outside the repo (see `runbook.md`) | add a local override to the repo |
 | JSON columns are `jsonb` | `data-dictionary.md` 1.12 says structured payloads are JSON `text`; 14+ `docs.dbml` columns use `jsonb` | M04 follows the existing `jsonb` practice | decide and fix the dictionary or the columns |
 
 ## Known risks and blockers

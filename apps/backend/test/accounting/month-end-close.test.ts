@@ -7,7 +7,7 @@
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import type { CodeNumberService } from '@app/code-number';
 import type {
 	TAccountingPeriodSelect,
 	TChartOfAccountSelect,
@@ -326,7 +326,7 @@ function makeHarness() {
 
 	const numbering = {
 		next: async (type: string) => `${type}-${String(++seq).padStart(6, '0')}`,
-	} as unknown as NumberingService;
+	} as unknown as CodeNumberService;
 
 	const tx = new Proxy({} as never, {}) as never;
 	const dbLike = {

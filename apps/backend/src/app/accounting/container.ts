@@ -39,7 +39,7 @@ import {
  * @remarks
  * Called from `src/index.ts`. Controllers resolve inside `plugin()`, so this
  * must run before `createApp()`. Numbering is registered by the organization
- * module (`NUMBERING_SERVICE_TOKEN`); accounting only consumes it.
+ * module (`CODE_NUMBER_SERVICE_TOKEN`); accounting only consumes it.
  */
 export function registerAccounting(container: DependencyContainer): void {
 	container.register(TAX_REPOSITORY_TOKEN, { useClass: TaxRepository });

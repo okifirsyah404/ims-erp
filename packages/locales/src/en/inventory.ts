@@ -19,6 +19,9 @@ const inventory = {
 	'items.empty': 'No items yet for this organization.',
 	'items.emptyTitle': 'Nothing here yet',
 	'items.sku': 'SKU',
+	'items.code': 'Code',
+	'items.codeAutoHint': 'Generated automatically from the numbering series.',
+	'items.serialNumber': 'Serial number',
 	'items.name': 'Name',
 	'items.kind': 'Kind',
 	'items.tracking': 'Tracking',
@@ -200,6 +203,25 @@ const inventory = {
 	'warehouses.linkRemoved': 'Organization unlinked',
 	'warehouses.noLinkedOrganizations': 'No organizations linked yet.',
 	'warehouses.linkedSince': 'Linked since',
+	'warehouses.noAccess':
+		'Warehouses are available to application administrators and to assigned persons in charge.',
+	'warehouses.managersTab': 'Persons in charge',
+	'warehouses.managersTitle': 'Persons in charge',
+	'warehouses.managersHint':
+		'People who may read, update, archive, import and export this warehouse without an organization role.',
+	'warehouses.noManagers': 'No person in charge assigned yet.',
+	'warehouses.assignManager': 'Assign a person in charge',
+	'warehouses.assignManagerPlaceholder': 'Search an account by name or email',
+	'warehouses.assignManagerEmpty': 'No matching account.',
+	'warehouses.assignManagerAction': 'Assign',
+	'warehouses.unassignManagerAction': 'Unassign',
+	'warehouses.unassignManagerConfirm':
+		'Revoke this person-in-charge access to the warehouse?',
+	'warehouses.managerAssigned': 'Person in charge assigned',
+	'warehouses.managerUnassigned': 'Person in charge unassigned',
+	'warehouses.managerAccount': 'Account',
+	'warehouses.managerAssignedAt': 'Assigned since',
+	'warehouses.managerUnknownAccount': 'Deleted account',
 
 	// Warehouse create / edit form.
 	'warehouseForm.new': 'New warehouse',

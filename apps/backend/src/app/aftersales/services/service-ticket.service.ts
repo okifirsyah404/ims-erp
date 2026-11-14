@@ -1,7 +1,10 @@
 import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
 import type { CustomerService } from '@app/crm/services/customer.service';
-import { NUMBERING_SERVICE_TOKEN, ORGANIZATION_SERVICE_TOKEN } from '@app/organization/constants/di';
-import type { NumberingService } from '@app/organization/services/numbering.service';
+import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import { ORGANIZATION_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { CodeNumberService } from '@app/code-number';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import type { DocumentService } from '@app/document';
 import type { OrganizationService } from '@app/organization/services/organization.service';
 import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/projects/constants/di';
 import type { ProjectLookupService } from '@app/projects/services/project-lookup.service';
@@ -56,7 +59,9 @@ export class ServiceTicketService {
 		@inject(ORGANIZATION_SERVICE_TOKEN) private readonly organizations: Pick<OrganizationService, 'getMemberRole' | 'listMembers'>,
 		@inject(PERMISSION_RESOLVER_TOKEN) private readonly permissions: Pick<IPermissionResolver, 'hasPermission'>,
 		@inject(USER_SERVICE_TOKEN) private readonly users: Pick<UserService, 'getUser'>,
-		@inject(NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<NumberingService, 'next'>,
+		@inject(CODE_NUMBER_SERVICE_TOKEN) private readonly numbering: Pick<CodeNumberService, 'next'>,
+		/** ERP-0044: finished tickets are recorded in the registry. */
+		@inject(DOCUMENT_SERVICE_TOKEN) private readonly documents: Pick<DocumentService, 'register'>,
 	) {}
 
 	private async view(ticket: TServiceTicketSelect): Promise<TTicketView> {
@@ -187,6 +192,17 @@ export class ServiceTicketService {
 			closedAt: now,
 		});
 		if (!updated) throw new TicketStateError('close');
+		// ERP-0044: a closed ticket is the service report the customer signed.
+		await this.documents.register({
+			code: updated.code,
+			documentType: 'service_ticket',
+			module: 'aftersales',
+			sourceType: 'service_ticket',
+			sourceId: updated.id,
+			organizationId: null,
+			issuedOn: businessDateOf(now),
+			issuedByUserId: ctx.actorUserId,
+		});
 		return this.view(updated);
 	}
 }

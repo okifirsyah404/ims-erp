@@ -1,0 +1,5245 @@
+{
+	"type": "diff",
+	"version": "9",
+	"dialect": "postgres",
+	"id": "dfa72baf-1289-40ea-bbe9-d0f84e15cd94",
+	"prevIds": [
+		"d8633684-9d83-471f-9436-fee8ce7261e5"
+	],
+	"footprints": [
+		{
+			"statementType": "create_schema",
+			"statementTarget": [
+				"schema",
+				"accounting"
+			],
+			"writes": [
+				"s|sch|accounting",
+				"n|sch|accounting",
+				"e|sch|accounting"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"account_balances"
+			],
+			"writes": [
+				"s|tbl|accounting.account_balances",
+				"n|tbl|accounting.account_balances",
+				"e|tbl|accounting.account_balances",
+				"n|rel|accounting.account_balances",
+				"n|type|accounting.account_balances",
+				"n|rel|accounting.account_balances_pkey"
+			],
+			"reads": [
+				"n|sch|accounting"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"accounting_periods"
+			],
+			"writes": [
+				"s|tbl|accounting.accounting_periods",
+				"n|tbl|accounting.accounting_periods",
+				"e|tbl|accounting.accounting_periods",
+				"n|rel|accounting.accounting_periods",
+				"n|type|accounting.accounting_periods",
+				"n|rel|accounting.accounting_periods_pkey"
+			],
+			"reads": [
+				"n|sch|accounting"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"bank_account_links"
+			],
+			"writes": [
+				"s|tbl|accounting.bank_account_links",
+				"n|tbl|accounting.bank_account_links",
+				"e|tbl|accounting.bank_account_links",
+				"n|rel|accounting.bank_account_links",
+				"n|type|accounting.bank_account_links",
+				"n|rel|accounting.bank_account_links_pkey"
+			],
+			"reads": [
+				"n|sch|accounting"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"chart_of_accounts"
+			],
+			"writes": [
+				"s|tbl|accounting.chart_of_accounts",
+				"n|tbl|accounting.chart_of_accounts",
+				"e|tbl|accounting.chart_of_accounts",
+				"n|rel|accounting.chart_of_accounts",
+				"n|type|accounting.chart_of_accounts",
+				"n|rel|accounting.chart_of_accounts_pkey"
+			],
+			"reads": [
+				"n|sch|accounting"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"journal_entries"
+			],
+			"writes": [
+				"s|tbl|accounting.journal_entries",
+				"n|tbl|accounting.journal_entries",
+				"e|tbl|accounting.journal_entries",
+				"n|rel|accounting.journal_entries",
+				"n|type|accounting.journal_entries",
+				"n|rel|accounting.journal_entries_pkey"
+			],
+			"reads": [
+				"n|sch|accounting"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"journal_lines"
+			],
+			"writes": [
+				"s|tbl|accounting.journal_lines",
+				"n|tbl|accounting.journal_lines",
+				"e|tbl|accounting.journal_lines",
+				"n|rel|accounting.journal_lines",
+				"n|type|accounting.journal_lines",
+				"n|rel|accounting.journal_lines_pkey"
+			],
+			"reads": [
+				"n|sch|accounting"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"opening_balances"
+			],
+			"writes": [
+				"s|tbl|accounting.opening_balances",
+				"n|tbl|accounting.opening_balances",
+				"e|tbl|accounting.opening_balances",
+				"n|rel|accounting.opening_balances",
+				"n|type|accounting.opening_balances",
+				"n|rel|accounting.opening_balances_pkey"
+			],
+			"reads": [
+				"n|sch|accounting"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"tax_corrections"
+			],
+			"writes": [
+				"s|tbl|accounting.tax_corrections",
+				"n|tbl|accounting.tax_corrections",
+				"e|tbl|accounting.tax_corrections",
+				"n|rel|accounting.tax_corrections",
+				"n|type|accounting.tax_corrections",
+				"n|rel|accounting.tax_corrections_pkey"
+			],
+			"reads": [
+				"n|sch|accounting"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"tax_records"
+			],
+			"writes": [
+				"s|tbl|accounting.tax_records",
+				"n|tbl|accounting.tax_records",
+				"e|tbl|accounting.tax_records",
+				"n|rel|accounting.tax_records",
+				"n|type|accounting.tax_records",
+				"n|rel|accounting.tax_records_pkey"
+			],
+			"reads": [
+				"n|sch|accounting"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"tax_types"
+			],
+			"writes": [
+				"s|tbl|accounting.tax_types",
+				"n|tbl|accounting.tax_types",
+				"e|tbl|accounting.tax_types",
+				"n|rel|accounting.tax_types",
+				"n|type|accounting.tax_types",
+				"n|rel|accounting.tax_types_pkey"
+			],
+			"reads": [
+				"n|sch|accounting"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"withholding_tax_records"
+			],
+			"writes": [
+				"s|tbl|accounting.withholding_tax_records",
+				"n|tbl|accounting.withholding_tax_records",
+				"e|tbl|accounting.withholding_tax_records",
+				"n|rel|accounting.withholding_tax_records",
+				"n|type|accounting.withholding_tax_records",
+				"n|rel|accounting.withholding_tax_records_pkey"
+			],
+			"reads": [
+				"n|sch|accounting"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"account_balances",
+				"account_balances_account_period_uq"
+			],
+			"writes": [
+				"s|idx|accounting.account_balances_account_period_uq",
+				"n|idx|accounting.account_balances_account_period_uq",
+				"e|idx|accounting.account_balances_account_period_uq",
+				"n|rel|accounting.account_balances_account_period_uq"
+			],
+			"reads": [
+				"n|tbl|accounting.account_balances",
+				"n|sch|accounting",
+				"n|col|accounting.account_balances.account_id",
+				"n|col|accounting.account_balances.accounting_period_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"accounting_periods",
+				"accounting_periods_org_code_uq"
+			],
+			"writes": [
+				"s|idx|accounting.accounting_periods_org_code_uq",
+				"n|idx|accounting.accounting_periods_org_code_uq",
+				"e|idx|accounting.accounting_periods_org_code_uq",
+				"n|rel|accounting.accounting_periods_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|accounting.accounting_periods",
+				"n|sch|accounting",
+				"n|col|accounting.accounting_periods.organization_id",
+				"n|col|accounting.accounting_periods.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"accounting_periods",
+				"accounting_periods_period_uq"
+			],
+			"writes": [
+				"s|idx|accounting.accounting_periods_period_uq",
+				"n|idx|accounting.accounting_periods_period_uq",
+				"e|idx|accounting.accounting_periods_period_uq",
+				"n|rel|accounting.accounting_periods_period_uq"
+			],
+			"reads": [
+				"n|tbl|accounting.accounting_periods",
+				"n|sch|accounting",
+				"n|col|accounting.accounting_periods.organization_id",
+				"n|col|accounting.accounting_periods.period_year",
+				"n|col|accounting.accounting_periods.period_month"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"bank_account_links",
+				"bank_account_links_cash_bank_account_id_uq"
+			],
+			"writes": [
+				"s|idx|accounting.bank_account_links_cash_bank_account_id_uq",
+				"n|idx|accounting.bank_account_links_cash_bank_account_id_uq",
+				"e|idx|accounting.bank_account_links_cash_bank_account_id_uq",
+				"n|rel|accounting.bank_account_links_cash_bank_account_id_uq"
+			],
+			"reads": [
+				"n|tbl|accounting.bank_account_links",
+				"n|sch|accounting",
+				"n|col|accounting.bank_account_links.cash_bank_account_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"bank_account_links",
+				"bank_account_links_chart_of_account_id_idx"
+			],
+			"writes": [
+				"s|idx|accounting.bank_account_links_chart_of_account_id_idx",
+				"n|idx|accounting.bank_account_links_chart_of_account_id_idx",
+				"e|idx|accounting.bank_account_links_chart_of_account_id_idx",
+				"n|rel|accounting.bank_account_links_chart_of_account_id_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.bank_account_links",
+				"n|sch|accounting",
+				"n|col|accounting.bank_account_links.chart_of_account_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"chart_of_accounts",
+				"chart_of_accounts_org_code_uq"
+			],
+			"writes": [
+				"s|idx|accounting.chart_of_accounts_org_code_uq",
+				"n|idx|accounting.chart_of_accounts_org_code_uq",
+				"e|idx|accounting.chart_of_accounts_org_code_uq",
+				"n|rel|accounting.chart_of_accounts_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|accounting.chart_of_accounts",
+				"n|sch|accounting",
+				"n|col|accounting.chart_of_accounts.organization_id",
+				"n|col|accounting.chart_of_accounts.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"chart_of_accounts",
+				"chart_of_accounts_parent_account_id_idx"
+			],
+			"writes": [
+				"s|idx|accounting.chart_of_accounts_parent_account_id_idx",
+				"n|idx|accounting.chart_of_accounts_parent_account_id_idx",
+				"e|idx|accounting.chart_of_accounts_parent_account_id_idx",
+				"n|rel|accounting.chart_of_accounts_parent_account_id_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.chart_of_accounts",
+				"n|sch|accounting",
+				"n|col|accounting.chart_of_accounts.parent_account_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"chart_of_accounts",
+				"chart_of_accounts_account_type_idx"
+			],
+			"writes": [
+				"s|idx|accounting.chart_of_accounts_account_type_idx",
+				"n|idx|accounting.chart_of_accounts_account_type_idx",
+				"e|idx|accounting.chart_of_accounts_account_type_idx",
+				"n|rel|accounting.chart_of_accounts_account_type_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.chart_of_accounts",
+				"n|sch|accounting",
+				"n|col|accounting.chart_of_accounts.account_type"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"journal_entries",
+				"journal_entries_org_code_uq"
+			],
+			"writes": [
+				"s|idx|accounting.journal_entries_org_code_uq",
+				"n|idx|accounting.journal_entries_org_code_uq",
+				"e|idx|accounting.journal_entries_org_code_uq",
+				"n|rel|accounting.journal_entries_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|accounting.journal_entries",
+				"n|sch|accounting",
+				"n|col|accounting.journal_entries.organization_id",
+				"n|col|accounting.journal_entries.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"journal_entries",
+				"journal_entries_idempotency_uq"
+			],
+			"writes": [
+				"s|idx|accounting.journal_entries_idempotency_uq",
+				"n|idx|accounting.journal_entries_idempotency_uq",
+				"e|idx|accounting.journal_entries_idempotency_uq",
+				"n|rel|accounting.journal_entries_idempotency_uq"
+			],
+			"reads": [
+				"n|tbl|accounting.journal_entries",
+				"n|sch|accounting",
+				"n|col|accounting.journal_entries.organization_id",
+				"n|col|accounting.journal_entries.idempotency_key"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"journal_entries",
+				"journal_entries_period_id_idx"
+			],
+			"writes": [
+				"s|idx|accounting.journal_entries_period_id_idx",
+				"n|idx|accounting.journal_entries_period_id_idx",
+				"e|idx|accounting.journal_entries_period_id_idx",
+				"n|rel|accounting.journal_entries_period_id_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.journal_entries",
+				"n|sch|accounting",
+				"n|col|accounting.journal_entries.accounting_period_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"journal_entries",
+				"journal_entries_status_idx"
+			],
+			"writes": [
+				"s|idx|accounting.journal_entries_status_idx",
+				"n|idx|accounting.journal_entries_status_idx",
+				"e|idx|accounting.journal_entries_status_idx",
+				"n|rel|accounting.journal_entries_status_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.journal_entries",
+				"n|sch|accounting",
+				"n|col|accounting.journal_entries.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"journal_entries",
+				"journal_entries_entry_date_idx"
+			],
+			"writes": [
+				"s|idx|accounting.journal_entries_entry_date_idx",
+				"n|idx|accounting.journal_entries_entry_date_idx",
+				"e|idx|accounting.journal_entries_entry_date_idx",
+				"n|rel|accounting.journal_entries_entry_date_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.journal_entries",
+				"n|sch|accounting",
+				"n|col|accounting.journal_entries.entry_date"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"journal_entries",
+				"journal_entries_source_idx"
+			],
+			"writes": [
+				"s|idx|accounting.journal_entries_source_idx",
+				"n|idx|accounting.journal_entries_source_idx",
+				"e|idx|accounting.journal_entries_source_idx",
+				"n|rel|accounting.journal_entries_source_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.journal_entries",
+				"n|sch|accounting",
+				"n|col|accounting.journal_entries.source_type",
+				"n|col|accounting.journal_entries.source_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"journal_lines",
+				"journal_lines_entry_id_idx"
+			],
+			"writes": [
+				"s|idx|accounting.journal_lines_entry_id_idx",
+				"n|idx|accounting.journal_lines_entry_id_idx",
+				"e|idx|accounting.journal_lines_entry_id_idx",
+				"n|rel|accounting.journal_lines_entry_id_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.journal_lines",
+				"n|sch|accounting",
+				"n|col|accounting.journal_lines.journal_entry_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"journal_lines",
+				"journal_lines_account_id_idx"
+			],
+			"writes": [
+				"s|idx|accounting.journal_lines_account_id_idx",
+				"n|idx|accounting.journal_lines_account_id_idx",
+				"e|idx|accounting.journal_lines_account_id_idx",
+				"n|rel|accounting.journal_lines_account_id_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.journal_lines",
+				"n|sch|accounting",
+				"n|col|accounting.journal_lines.account_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"journal_lines",
+				"journal_lines_line_no_uq"
+			],
+			"writes": [
+				"s|idx|accounting.journal_lines_line_no_uq",
+				"n|idx|accounting.journal_lines_line_no_uq",
+				"e|idx|accounting.journal_lines_line_no_uq",
+				"n|rel|accounting.journal_lines_line_no_uq"
+			],
+			"reads": [
+				"n|tbl|accounting.journal_lines",
+				"n|sch|accounting",
+				"n|col|accounting.journal_lines.journal_entry_id",
+				"n|col|accounting.journal_lines.line_no"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"opening_balances",
+				"opening_balances_account_date_uq"
+			],
+			"writes": [
+				"s|idx|accounting.opening_balances_account_date_uq",
+				"n|idx|accounting.opening_balances_account_date_uq",
+				"e|idx|accounting.opening_balances_account_date_uq",
+				"n|rel|accounting.opening_balances_account_date_uq"
+			],
+			"reads": [
+				"n|tbl|accounting.opening_balances",
+				"n|sch|accounting",
+				"n|col|accounting.opening_balances.account_id",
+				"n|col|accounting.opening_balances.as_of_date"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"tax_corrections",
+				"tax_corrections_tax_record_id_idx"
+			],
+			"writes": [
+				"s|idx|accounting.tax_corrections_tax_record_id_idx",
+				"n|idx|accounting.tax_corrections_tax_record_id_idx",
+				"e|idx|accounting.tax_corrections_tax_record_id_idx",
+				"n|rel|accounting.tax_corrections_tax_record_id_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.tax_corrections",
+				"n|sch|accounting",
+				"n|col|accounting.tax_corrections.tax_record_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"tax_corrections",
+				"tax_corrections_evidence_document_id_idx"
+			],
+			"writes": [
+				"s|idx|accounting.tax_corrections_evidence_document_id_idx",
+				"n|idx|accounting.tax_corrections_evidence_document_id_idx",
+				"e|idx|accounting.tax_corrections_evidence_document_id_idx",
+				"n|rel|accounting.tax_corrections_evidence_document_id_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.tax_corrections",
+				"n|sch|accounting",
+				"n|col|accounting.tax_corrections.evidence_document_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"tax_records",
+				"tax_records_org_code_uq"
+			],
+			"writes": [
+				"s|idx|accounting.tax_records_org_code_uq",
+				"n|idx|accounting.tax_records_org_code_uq",
+				"e|idx|accounting.tax_records_org_code_uq",
+				"n|rel|accounting.tax_records_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|accounting.tax_records",
+				"n|sch|accounting",
+				"n|col|accounting.tax_records.organization_id",
+				"n|col|accounting.tax_records.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"tax_records",
+				"tax_records_org_type_period_uq"
+			],
+			"writes": [
+				"s|idx|accounting.tax_records_org_type_period_uq",
+				"n|idx|accounting.tax_records_org_type_period_uq",
+				"e|idx|accounting.tax_records_org_type_period_uq",
+				"n|rel|accounting.tax_records_org_type_period_uq"
+			],
+			"reads": [
+				"n|tbl|accounting.tax_records",
+				"n|sch|accounting",
+				"n|col|accounting.tax_records.organization_id",
+				"n|col|accounting.tax_records.tax_type_id",
+				"n|col|accounting.tax_records.period_year",
+				"n|col|accounting.tax_records.period_month"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"tax_records",
+				"tax_records_tax_type_id_idx"
+			],
+			"writes": [
+				"s|idx|accounting.tax_records_tax_type_id_idx",
+				"n|idx|accounting.tax_records_tax_type_id_idx",
+				"e|idx|accounting.tax_records_tax_type_id_idx",
+				"n|rel|accounting.tax_records_tax_type_id_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.tax_records",
+				"n|sch|accounting",
+				"n|col|accounting.tax_records.tax_type_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"tax_records",
+				"tax_records_period_idx"
+			],
+			"writes": [
+				"s|idx|accounting.tax_records_period_idx",
+				"n|idx|accounting.tax_records_period_idx",
+				"e|idx|accounting.tax_records_period_idx",
+				"n|rel|accounting.tax_records_period_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.tax_records",
+				"n|sch|accounting",
+				"n|col|accounting.tax_records.organization_id",
+				"n|col|accounting.tax_records.period_year",
+				"n|col|accounting.tax_records.period_month"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"tax_types",
+				"tax_types_org_code_effective_uq"
+			],
+			"writes": [
+				"s|idx|accounting.tax_types_org_code_effective_uq",
+				"n|idx|accounting.tax_types_org_code_effective_uq",
+				"e|idx|accounting.tax_types_org_code_effective_uq",
+				"n|rel|accounting.tax_types_org_code_effective_uq"
+			],
+			"reads": [
+				"n|tbl|accounting.tax_types",
+				"n|sch|accounting",
+				"n|col|accounting.tax_types.organization_id",
+				"n|col|accounting.tax_types.code",
+				"n|col|accounting.tax_types.effective_from"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"tax_types",
+				"tax_types_effective_from_idx"
+			],
+			"writes": [
+				"s|idx|accounting.tax_types_effective_from_idx",
+				"n|idx|accounting.tax_types_effective_from_idx",
+				"e|idx|accounting.tax_types_effective_from_idx",
+				"n|rel|accounting.tax_types_effective_from_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.tax_types",
+				"n|sch|accounting",
+				"n|col|accounting.tax_types.effective_from"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"withholding_tax_records",
+				"withholding_tax_records_org_code_uq"
+			],
+			"writes": [
+				"s|idx|accounting.withholding_tax_records_org_code_uq",
+				"n|idx|accounting.withholding_tax_records_org_code_uq",
+				"e|idx|accounting.withholding_tax_records_org_code_uq",
+				"n|rel|accounting.withholding_tax_records_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|accounting.withholding_tax_records",
+				"n|sch|accounting",
+				"n|col|accounting.withholding_tax_records.organization_id",
+				"n|col|accounting.withholding_tax_records.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"withholding_tax_records",
+				"withholding_tax_records_tax_type_id_idx"
+			],
+			"writes": [
+				"s|idx|accounting.withholding_tax_records_tax_type_id_idx",
+				"n|idx|accounting.withholding_tax_records_tax_type_id_idx",
+				"e|idx|accounting.withholding_tax_records_tax_type_id_idx",
+				"n|rel|accounting.withholding_tax_records_tax_type_id_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.withholding_tax_records",
+				"n|sch|accounting",
+				"n|col|accounting.withholding_tax_records.tax_type_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"accounting",
+				"withholding_tax_records",
+				"withholding_tax_records_counterparty_idx"
+			],
+			"writes": [
+				"s|idx|accounting.withholding_tax_records_counterparty_idx",
+				"n|idx|accounting.withholding_tax_records_counterparty_idx",
+				"e|idx|accounting.withholding_tax_records_counterparty_idx",
+				"n|rel|accounting.withholding_tax_records_counterparty_idx"
+			],
+			"reads": [
+				"n|tbl|accounting.withholding_tax_records",
+				"n|sch|accounting",
+				"n|col|accounting.withholding_tax_records.counterparty_type",
+				"n|col|accounting.withholding_tax_records.counterparty_id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"account_balances"
+			],
+			"writes": [
+				"s|fk|accounting.account_balances.account_balances_account_id_chart_of_accounts_id_fkey",
+				"n|fk|accounting.account_balances.account_balances_account_id_chart_of_accounts_id_fkey",
+				"e|fk|accounting.account_balances.account_balances_account_id_chart_of_accounts_id_fkey",
+				"n|con|accounting.account_balances.account_balances_account_id_chart_of_accounts_id_fkey"
+			],
+			"reads": [
+				"n|tbl|accounting.account_balances",
+				"n|sch|accounting",
+				"n|tbl|accounting.chart_of_accounts",
+				"n|sch|accounting",
+				"n|col|accounting.account_balances.account_id",
+				"n|col|accounting.chart_of_accounts.id",
+				"e|uniqueness|accounting.chart_of_accounts.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"account_balances"
+			],
+			"writes": [
+				"s|fk|accounting.account_balances.account_balances_uAjXjI3C2vZg_fkey",
+				"n|fk|accounting.account_balances.account_balances_uAjXjI3C2vZg_fkey",
+				"e|fk|accounting.account_balances.account_balances_uAjXjI3C2vZg_fkey",
+				"n|con|accounting.account_balances.account_balances_uAjXjI3C2vZg_fkey"
+			],
+			"reads": [
+				"n|tbl|accounting.account_balances",
+				"n|sch|accounting",
+				"n|tbl|accounting.accounting_periods",
+				"n|sch|accounting",
+				"n|col|accounting.account_balances.accounting_period_id",
+				"n|col|accounting.accounting_periods.id",
+				"e|uniqueness|accounting.accounting_periods.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"bank_account_links"
+			],
+			"writes": [
+				"s|fk|accounting.bank_account_links.bank_account_links_p6TVhuHQoduP_fkey",
+				"n|fk|accounting.bank_account_links.bank_account_links_p6TVhuHQoduP_fkey",
+				"e|fk|accounting.bank_account_links.bank_account_links_p6TVhuHQoduP_fkey",
+				"n|con|accounting.bank_account_links.bank_account_links_p6TVhuHQoduP_fkey"
+			],
+			"reads": [
+				"n|tbl|accounting.bank_account_links",
+				"n|sch|accounting",
+				"n|tbl|accounting.chart_of_accounts",
+				"n|sch|accounting",
+				"n|col|accounting.bank_account_links.chart_of_account_id",
+				"n|col|accounting.chart_of_accounts.id",
+				"e|uniqueness|accounting.chart_of_accounts.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"journal_entries"
+			],
+			"writes": [
+				"s|fk|accounting.journal_entries.journal_entries_accounting_period_id_accounting_periods_id_fkey",
+				"n|fk|accounting.journal_entries.journal_entries_accounting_period_id_accounting_periods_id_fkey",
+				"e|fk|accounting.journal_entries.journal_entries_accounting_period_id_accounting_periods_id_fkey",
+				"n|con|accounting.journal_entries.journal_entries_accounting_period_id_accounting_periods_id_fkey"
+			],
+			"reads": [
+				"n|tbl|accounting.journal_entries",
+				"n|sch|accounting",
+				"n|tbl|accounting.accounting_periods",
+				"n|sch|accounting",
+				"n|col|accounting.journal_entries.accounting_period_id",
+				"n|col|accounting.accounting_periods.id",
+				"e|uniqueness|accounting.accounting_periods.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"journal_lines"
+			],
+			"writes": [
+				"s|fk|accounting.journal_lines.journal_lines_journal_entry_id_journal_entries_id_fkey",
+				"n|fk|accounting.journal_lines.journal_lines_journal_entry_id_journal_entries_id_fkey",
+				"e|fk|accounting.journal_lines.journal_lines_journal_entry_id_journal_entries_id_fkey",
+				"n|con|accounting.journal_lines.journal_lines_journal_entry_id_journal_entries_id_fkey"
+			],
+			"reads": [
+				"n|tbl|accounting.journal_lines",
+				"n|sch|accounting",
+				"n|tbl|accounting.journal_entries",
+				"n|sch|accounting",
+				"n|col|accounting.journal_lines.journal_entry_id",
+				"n|col|accounting.journal_entries.id",
+				"e|uniqueness|accounting.journal_entries.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"journal_lines"
+			],
+			"writes": [
+				"s|fk|accounting.journal_lines.journal_lines_account_id_chart_of_accounts_id_fkey",
+				"n|fk|accounting.journal_lines.journal_lines_account_id_chart_of_accounts_id_fkey",
+				"e|fk|accounting.journal_lines.journal_lines_account_id_chart_of_accounts_id_fkey",
+				"n|con|accounting.journal_lines.journal_lines_account_id_chart_of_accounts_id_fkey"
+			],
+			"reads": [
+				"n|tbl|accounting.journal_lines",
+				"n|sch|accounting",
+				"n|tbl|accounting.chart_of_accounts",
+				"n|sch|accounting",
+				"n|col|accounting.journal_lines.account_id",
+				"n|col|accounting.chart_of_accounts.id",
+				"e|uniqueness|accounting.chart_of_accounts.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"opening_balances"
+			],
+			"writes": [
+				"s|fk|accounting.opening_balances.opening_balances_account_id_chart_of_accounts_id_fkey",
+				"n|fk|accounting.opening_balances.opening_balances_account_id_chart_of_accounts_id_fkey",
+				"e|fk|accounting.opening_balances.opening_balances_account_id_chart_of_accounts_id_fkey",
+				"n|con|accounting.opening_balances.opening_balances_account_id_chart_of_accounts_id_fkey"
+			],
+			"reads": [
+				"n|tbl|accounting.opening_balances",
+				"n|sch|accounting",
+				"n|tbl|accounting.chart_of_accounts",
+				"n|sch|accounting",
+				"n|col|accounting.opening_balances.account_id",
+				"n|col|accounting.chart_of_accounts.id",
+				"e|uniqueness|accounting.chart_of_accounts.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"tax_corrections"
+			],
+			"writes": [
+				"s|fk|accounting.tax_corrections.tax_corrections_tax_record_id_tax_records_id_fkey",
+				"n|fk|accounting.tax_corrections.tax_corrections_tax_record_id_tax_records_id_fkey",
+				"e|fk|accounting.tax_corrections.tax_corrections_tax_record_id_tax_records_id_fkey",
+				"n|con|accounting.tax_corrections.tax_corrections_tax_record_id_tax_records_id_fkey"
+			],
+			"reads": [
+				"n|tbl|accounting.tax_corrections",
+				"n|sch|accounting",
+				"n|tbl|accounting.tax_records",
+				"n|sch|accounting",
+				"n|col|accounting.tax_corrections.tax_record_id",
+				"n|col|accounting.tax_records.id",
+				"e|uniqueness|accounting.tax_records.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"tax_records"
+			],
+			"writes": [
+				"s|fk|accounting.tax_records.tax_records_tax_type_id_tax_types_id_fkey",
+				"n|fk|accounting.tax_records.tax_records_tax_type_id_tax_types_id_fkey",
+				"e|fk|accounting.tax_records.tax_records_tax_type_id_tax_types_id_fkey",
+				"n|con|accounting.tax_records.tax_records_tax_type_id_tax_types_id_fkey"
+			],
+			"reads": [
+				"n|tbl|accounting.tax_records",
+				"n|sch|accounting",
+				"n|tbl|accounting.tax_types",
+				"n|sch|accounting",
+				"n|col|accounting.tax_records.tax_type_id",
+				"n|col|accounting.tax_types.id",
+				"e|uniqueness|accounting.tax_types.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"accounting",
+				"withholding_tax_records"
+			],
+			"writes": [
+				"s|fk|accounting.withholding_tax_records.withholding_tax_records_tax_type_id_tax_types_id_fkey",
+				"n|fk|accounting.withholding_tax_records.withholding_tax_records_tax_type_id_tax_types_id_fkey",
+				"e|fk|accounting.withholding_tax_records.withholding_tax_records_tax_type_id_tax_types_id_fkey",
+				"n|con|accounting.withholding_tax_records.withholding_tax_records_tax_type_id_tax_types_id_fkey"
+			],
+			"reads": [
+				"n|tbl|accounting.withholding_tax_records",
+				"n|sch|accounting",
+				"n|tbl|accounting.tax_types",
+				"n|sch|accounting",
+				"n|col|accounting.withholding_tax_records.tax_type_id",
+				"n|col|accounting.tax_types.id",
+				"e|uniqueness|accounting.tax_types.id"
+			]
+		}
+	],
+	"deltas": [
+		{
+			"op": "create",
+			"row": {
+				"name": "accounting",
+				"entityType": "schemas"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"name": "account_balances",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"name": "accounting_periods",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"name": "bank_account_links",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"name": "chart_of_accounts",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"name": "journal_entries",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"name": "journal_lines",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"name": "opening_balances",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"name": "tax_corrections",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"name": "tax_records",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"name": "tax_types",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"name": "withholding_tax_records",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "account_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "accounting_period_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "balance_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "debit_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "credit_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "closing_balance",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "calculated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "period_year",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "period_month",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "start_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "end_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'open'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "closed_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "closed_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "reopened_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "reopened_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "bank_account_links",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "bank_account_links",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "bank_account_links",
+				"name": "cash_bank_account_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "bank_account_links",
+				"name": "chart_of_account_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "bank_account_links",
+				"name": "is_active",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "true",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "bank_account_links",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "bank_account_links",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "bank_account_links",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "account_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "normal_balance",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'debit'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "parent_account_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "level",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "1",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "is_postable",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "true",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "is_system",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "false",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "is_active",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "true",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "cash_flow_category",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "description",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "accounting_period_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "entry_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "description",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "source_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "source_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "idempotency_key",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "source_module",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'accounting'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'draft'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "total_debit",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "total_credit",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "prepared_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "submitted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "approved_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "approved_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "posted_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "posted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "reversed_by_entry_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "journal_entry_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "line_no",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "account_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "debit",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "credit",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "description",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "cost_center_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "project_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "party_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "party_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "account_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "as_of_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "debit_balance",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "credit_balance",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "description",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "posted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "tax_record_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "reason",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "evidence_document_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "created_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "tax_type_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "period_year",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "period_month",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "taxable_base",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "tax_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "filing_status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'draft'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "filed_on",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "verified_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "notes",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "tax_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "rate",
+				"type": "numeric(9,4)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'0'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "base_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'gross'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "is_inclusive",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "false",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "effective_from",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "effective_to",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "is_active",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "true",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "tax_type_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "counterparty_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "counterparty_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "base_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "tax_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "transaction_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "period_year",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "period_month",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'recorded'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "account_balances_account_period_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "account_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "accounting_period_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "accounting_periods_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "accounting_periods_period_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "period_year",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "period_month",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "bank_account_links",
+				"name": "bank_account_links_cash_bank_account_id_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "cash_bank_account_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "bank_account_links",
+				"name": "bank_account_links_chart_of_account_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "chart_of_account_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "chart_of_accounts_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "chart_of_accounts_parent_account_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "parent_account_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "chart_of_accounts_account_type_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "account_type",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "journal_entries_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "journal_entries_idempotency_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "idempotency_key",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "idempotency_key IS NOT NULL AND status <> 'void'",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "journal_entries_period_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "accounting_period_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "journal_entries_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "journal_entries_entry_date_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "entry_date",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "journal_entries_source_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "source_type",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "source_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "journal_lines_entry_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "journal_entry_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "journal_lines_account_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "account_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "journal_lines_line_no_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "journal_entry_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "line_no",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "opening_balances_account_date_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "account_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "as_of_date",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "tax_corrections_tax_record_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "tax_record_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "tax_corrections_evidence_document_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "evidence_document_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "tax_records_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "tax_records_org_type_period_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "tax_type_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "period_year",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "period_month",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "tax_records_tax_type_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "tax_type_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "tax_records_period_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "period_year",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "period_month",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "tax_types_org_code_effective_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "effective_from",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "tax_types_effective_from_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "effective_from",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "withholding_tax_records_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "withholding_tax_records_tax_type_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "tax_type_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "withholding_tax_records_counterparty_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "counterparty_type",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "counterparty_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "account_balances_account_id_chart_of_accounts_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"account_id"
+				],
+				"schemaTo": "accounting",
+				"tableTo": "chart_of_accounts",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "account_balances_uAjXjI3C2vZg_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"accounting_period_id"
+				],
+				"schemaTo": "accounting",
+				"tableTo": "accounting_periods",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "bank_account_links",
+				"name": "bank_account_links_p6TVhuHQoduP_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"chart_of_account_id"
+				],
+				"schemaTo": "accounting",
+				"tableTo": "chart_of_accounts",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "journal_entries_accounting_period_id_accounting_periods_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"accounting_period_id"
+				],
+				"schemaTo": "accounting",
+				"tableTo": "accounting_periods",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "journal_lines_journal_entry_id_journal_entries_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"journal_entry_id"
+				],
+				"schemaTo": "accounting",
+				"tableTo": "journal_entries",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "journal_lines_account_id_chart_of_accounts_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"account_id"
+				],
+				"schemaTo": "accounting",
+				"tableTo": "chart_of_accounts",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "opening_balances_account_id_chart_of_accounts_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"account_id"
+				],
+				"schemaTo": "accounting",
+				"tableTo": "chart_of_accounts",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "tax_corrections_tax_record_id_tax_records_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"tax_record_id"
+				],
+				"schemaTo": "accounting",
+				"tableTo": "tax_records",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "tax_records_tax_type_id_tax_types_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"tax_type_id"
+				],
+				"schemaTo": "accounting",
+				"tableTo": "tax_types",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "withholding_tax_records_tax_type_id_tax_types_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"tax_type_id"
+				],
+				"schemaTo": "accounting",
+				"tableTo": "tax_types",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "account_balances_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "accounting_periods_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "bank_account_links",
+				"name": "bank_account_links_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "chart_of_accounts_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "journal_entries_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "journal_lines_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "opening_balances_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "tax_corrections_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "tax_records_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "tax_types_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "withholding_tax_records_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "account_balances_debit_check",
+				"value": "debit_total >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "account_balances",
+				"name": "account_balances_credit_check",
+				"value": "credit_total >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "accounting_periods_month_check",
+				"value": "period_month BETWEEN 1 AND 12",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "accounting_periods_range_check",
+				"value": "end_date >= start_date",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "accounting_periods",
+				"name": "accounting_periods_status_check",
+				"value": "status IN ('open', 'closed', 'locked')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "chart_of_accounts_type_check",
+				"value": "account_type IN ('asset', 'liability', 'equity', 'revenue', 'expense')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "chart_of_accounts_normal_balance_check",
+				"value": "normal_balance IN ('debit', 'credit')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "chart_of_accounts_cash_flow_category_check",
+				"value": "cash_flow_category IS NULL OR cash_flow_category IN ('operating', 'investing', 'financing')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "chart_of_accounts",
+				"name": "chart_of_accounts_level_check",
+				"value": "level >= 1",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "journal_entries_status_check",
+				"value": "status IN ('draft', 'submitted', 'approved', 'posted', 'reversed', 'void')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "journal_entries_total_debit_check",
+				"value": "total_debit >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "journal_entries_total_credit_check",
+				"value": "total_credit >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "journal_entries_balanced_check",
+				"value": "total_debit = total_credit",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_entries",
+				"name": "journal_entries_source_module_check",
+				"value": "source_module IN ('accounting', 'finance', 'sales', 'procurement', 'inventory', 'assets', 'payroll', 'organization')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "journal_lines_debit_check",
+				"value": "debit >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "journal_lines_credit_check",
+				"value": "credit >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "journal_lines",
+				"name": "journal_lines_one_side_check",
+				"value": "(debit > 0 AND credit = 0) OR (credit > 0 AND debit = 0)",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "opening_balances_debit_check",
+				"value": "debit_balance >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "opening_balances",
+				"name": "opening_balances_credit_check",
+				"value": "credit_balance >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "tax_corrections_amount_check",
+				"value": "amount <> 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_corrections",
+				"name": "tax_corrections_reason_check",
+				"value": "char_length(trim(reason)) > 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "tax_records_period_month_check",
+				"value": "period_month BETWEEN 1 AND 12",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "tax_records_taxable_base_check",
+				"value": "taxable_base >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "tax_records_tax_amount_check",
+				"value": "tax_amount >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_records",
+				"name": "tax_records_filing_status_check",
+				"value": "filing_status IN ('draft', 'verified', 'filed', 'corrected')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "tax_types_tax_type_check",
+				"value": "tax_type IN ('ppn', 'pph', 'ppn_input', 'ppn_output', 'other')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "tax_types_base_type_check",
+				"value": "base_type IN ('gross', 'net', 'specific')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "tax_types_rate_check",
+				"value": "rate >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "tax_types",
+				"name": "tax_types_effective_range_check",
+				"value": "effective_to IS NULL OR effective_to >= effective_from",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "withholding_base_amount_check",
+				"value": "base_amount >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "withholding_tax_amount_check",
+				"value": "tax_amount >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "accounting",
+				"table": "withholding_tax_records",
+				"name": "withholding_status_check",
+				"value": "status IN ('recorded', 'verified', 'paid', 'reversed')",
+				"entityType": "checks"
+			}
+		}
+	]
+}

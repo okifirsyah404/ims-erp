@@ -1,40 +1,68 @@
 /**
  * Images printed on documents (letterhead logo, signature and stamp, item
- * photos). One rule set for every upload: PNG, JPG or WebP up to 2 MB, stored
- * under a fresh key so an issued document that snapshotted the old key keeps
- * its picture.
+ * photos). One rule set for every upload: any image the server can decode
+ * (PNG, JPG, WebP, GIF, BMP, TIFF, HEIC, AVIF) up to 2 MB, normalised to WebP
+ * and stored under a fresh key so an issued document that snapshotted the old
+ * key keeps its picture.
  */
 import { AppError } from '@http/errors';
+import { fileBytes, toWebp, UnsupportedImageError } from '@utils/image.util';
 import type { IObjectStorage } from './object-storage';
-
-const IMAGE_TYPES: Record<string, string> = {
-	'image/png': 'png',
-	'image/jpeg': 'jpg',
-	'image/webp': 'webp',
-};
 
 export const MAX_DOCUMENT_IMAGE_MB = 2;
 
-/** Not an image we print, or too large. */
+/** Not a decodable image, or too large. */
 export class DocumentImageInvalidError extends AppError {
 	constructor() {
-		super(422, 'common.imageInvalid', 'Upload a PNG, JPG or WebP image', { max: MAX_DOCUMENT_IMAGE_MB });
+		super(
+			422,
+			'common.imageInvalid',
+			'Upload a PNG, JPG, WebP or HEIC image',
+			{ max: MAX_DOCUMENT_IMAGE_MB },
+		);
 	}
 }
 
-/** The multipart `file` field, or a 422 when it is missing or not an image. */
+/**
+ * The multipart `file` field, or a 422 when it is missing or oversized.
+ *
+ * @remarks
+ * Only shape and size are checked here; the format is decided from the actual
+ * bytes in {@link storeDocumentImage}, because the multipart `Content-Type` is
+ * client-supplied.
+ */
 export function documentImageFrom(body: unknown): File {
-	const file = body && typeof body === 'object' ? (body as { file?: unknown }).file : undefined;
-	if (!(file instanceof File) || !IMAGE_TYPES[file.type] || file.size === 0 || file.size > MAX_DOCUMENT_IMAGE_MB * 1024 * 1024) {
+	const file =
+		body && typeof body === 'object' ? (body as { file?: unknown }).file : undefined;
+	if (
+		!(file instanceof File) ||
+		file.size === 0 ||
+		file.size > MAX_DOCUMENT_IMAGE_MB * 1024 * 1024
+	) {
 		throw new DocumentImageInvalidError();
 	}
 	return file;
 }
 
-/** Stores the image under `<prefix>/<uuid>.<ext>` and returns the key. */
-export async function storeDocumentImage(storage: IObjectStorage, prefix: string, file: File): Promise<string> {
-	const key = `${prefix}/${crypto.randomUUID()}.${IMAGE_TYPES[file.type]}`;
-	await storage.put(key, file, file.type);
+/**
+ * Normalises the image to WebP and stores it under `<prefix>/<uuid>.webp`.
+ *
+ * @throws DocumentImageInvalidError when the bytes cannot be decoded
+ */
+export async function storeDocumentImage(
+	storage: IObjectStorage,
+	prefix: string,
+	file: File,
+): Promise<string> {
+	let webp: Buffer;
+	try {
+		webp = await toWebp(await fileBytes(file));
+	} catch (error) {
+		if (error instanceof UnsupportedImageError) throw new DocumentImageInvalidError();
+		throw error;
+	}
+	const key = `${prefix}/${crypto.randomUUID()}.webp`;
+	await storage.put(key, webp, 'image/webp');
 	return key;
 }
 

@@ -176,10 +176,14 @@ export class ItemRepository implements IItemRepository {
 	}
 
 	/** Inserts an item. */
-	async create(data: TItemCreateData): Promise<TItemSelect> {
+	async create(data: TItemCreateData, code: string): Promise<TItemSelect> {
 		const [row] = await this.database
 			.insert(items)
-			.values({ ...data, createdAt: data.createdAt ?? new Date() } as never)
+			.values({
+				...data,
+				code,
+				createdAt: data.createdAt ?? new Date(),
+			} as never)
 			.returning();
 		return row;
 	}

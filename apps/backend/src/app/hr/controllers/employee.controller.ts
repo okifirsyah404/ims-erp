@@ -1,5 +1,5 @@
 import type { ErpContext } from '@authorization/elysia-auth';
-import { GLOBAL_ADMIN_ROLE } from '@providers/better-auth/ac/admin-ac';
+import { GLOBAL_ADMIN_ROLE, hasAppRole } from '@providers/better-auth/ac/admin-ac';
 import { domainPlugin } from '@http/plugin';
 import { created, ok, okPaginated } from '@http/response';
 import { container } from 'tsyringe';
@@ -34,7 +34,7 @@ function contextFrom(erp: ErpContext): TEmployeeContext {
 			userAgent: erp.session.session.userAgent ?? null,
 		},
 		organizationId: erp.organizationId,
-		isPlatformAdmin: erp.session.user.role === GLOBAL_ADMIN_ROLE,
+		isPlatformAdmin: hasAppRole(erp.session.user.role, GLOBAL_ADMIN_ROLE),
 		canManage: true,
 	};
 }

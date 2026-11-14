@@ -10,48 +10,18 @@ updates:
       actions:
         update-types: ["minor", "patch"]
 
-  # Backend workspace
+  # Bun workspace root. The single bun.lock lives here, so every workspace
+  # manifest must be updated from "/" - a per-workspace entry bumps
+  # package.json without the lockfile and CI fails on --frozen-lockfile.
   - package-ecosystem: bun
-    directory: /apps/backend
+    directory: "/"
     schedule:
       interval: daily
     open-pull-requests-limit: 10
     ignore:
       - dependency-name: "typescript"
     groups:
-      backend-minor-patch:
-        update-types: ["minor", "patch"]
-
-  # Web admin workspace
-  - package-ecosystem: bun
-    directory: /apps/web-admin
-    schedule:
-      interval: daily
-    ignore:
-      - dependency-name: "typescript"
-    groups:
-      webadmin-minor-patch:
-        update-types: ["minor", "patch"]
-
-  # Shared packages
-  - package-ecosystem: bun
-    directory: /packages/common
-    schedule:
-      interval: daily
-    ignore:
-      - dependency-name: "typescript"
-    groups:
-      common-minor-patch:
-        update-types: ["minor", "patch"]
-
-  - package-ecosystem: bun
-    directory: /packages/ui
-    schedule:
-      interval: daily
-    ignore:
-      - dependency-name: "typescript"
-    groups:
-      ui-minor-patch:
+      workspace-minor-patch:
         update-types: ["minor", "patch"]
 
   # Dockerfile base images

@@ -1,11 +1,15 @@
 import { container } from 'tsyringe';
-import { requireGlobalAdmin } from '@authorization/require-global-admin';
+import { isGlobalAdmin, requireGlobalAdmin } from '@authorization/require-global-admin';
+import type { TWarehouseAction } from '@authorization/elysia-auth';
 import { domainPlugin } from '@http/plugin';
 import { created, ok, okPaginated } from '@http/response';
 import {
+	assignManagerSchema,
 	createStorageSchema,
 	createWarehouseSchema,
 	idParamSchema,
+	managerCandidateQuerySchema,
+	managerParamSchema,
 	nestedIdParamSchema,
 	storageListQuerySchema,
 	updateStorageSchema,
@@ -15,8 +19,12 @@ import {
 	warehouseLinkSchema,
 	warehouseListQuerySchema,
 } from '../contracts/warehouse.contract';
-import { WAREHOUSE_SERVICE_TOKEN } from '../constants/di';
+import {
+	WAREHOUSE_MANAGER_SERVICE_TOKEN,
+	WAREHOUSE_SERVICE_TOKEN,
+} from '../constants/di';
 import type { WarehouseService } from '../services/warehouse.service';
+import type { WarehouseManagerService } from '../services/warehouse-manager.service';
 import type { TInventoryAuditActor } from '../constants/audit-actor';
 
 /**
@@ -35,21 +43,27 @@ function auditActor(session: { user: { id: string; email?: string | null } }, re
  * REST controller for warehouses, their 1:1 addresses, and their storages.
  *
  * @remarks
- * **Authorization.** Every route rides `sessionGuard` + the
- * {@link requireGlobalAdmin} policy. There is no `warehouse:*` permission
- * check: no organization role holds one (ADR-0008), so being an application
- * administrator *is* the check. A non-admin receives 403
- * `user.globalAdminRequired` — note that reads also 403 rather than returning
- * an empty list, because an empty list would read as "no warehouses exist"
- * instead of "you may not see them".
+ * **Authorization.** Two guards share this plugin (ADR-0017):
+ *
+ * - `sessionGuard` + {@link requireGlobalAdmin} on the application-admin
+ *   surface: the paginated list, create, organization links, and
+ *   person-in-charge assign/unassign. There is no `warehouse:*` organization
+ *   permission to consult: no organization role holds one (ADR-0008), so being
+ *   an application administrator *is* the check. A non-admin receives 403
+ *   `user.globalAdminRequired` — reads included, because an empty list would
+ *   read as "no warehouses exist" instead of "you may not see them".
+ * - `warehouseGuard` (`warehouse` macro) on the per-warehouse routes a person
+ *   in charge may call: read, update, archive, import, export. A PIC of
+ *   *another* warehouse gets 404, not 403, so existence is not leaked.
+ *   `GET /warehouses/mine` is session-only and answers "which warehouses may
+ *   I see" for the sidebar and pickers.
  *
  * **Tenant scope.** These handlers must **not** read `ctx.erp.organizationId`:
- * `sessionGuard` intentionally does not resolve it (it is exclusive to
- * `erpGuard`). Scope comes from the request instead — `organizationId` on
- * create (defaulting to `null` = global, plan §6 D-C) and the `scope` query
+ * neither guard resolves it. Scope comes from the request instead —
+ * `organizationId` on create (frozen at `null` = global) and the `scope` query
  * filter on list. That is legitimate here precisely because the guard already
- * proved the caller is a platform admin; there is no tenant to protect an
- * admin from.
+ * proved the caller is an application admin; there is no tenant to protect an
+ * admin from. A PIC's scope is their own grant, not an organization.
  */
 export class WarehouseController {
 	/**
@@ -61,6 +75,9 @@ export class WarehouseController {
 		const warehouseService = container.resolve<WarehouseService>(
 			WAREHOUSE_SERVICE_TOKEN,
 		);
+		const managerService = container.resolve<WarehouseManagerService>(
+			WAREHOUSE_MANAGER_SERVICE_TOKEN,
+		);
 
 		/** Shared route options: session only, admin policy, no org context. */
 		const adminRoute = (description: string) => ({
@@ -68,11 +85,26 @@ export class WarehouseController {
 			detail: { description },
 		});
 
+		/**
+		 * Route options for a warehouse a person in charge may touch (ADR-0017).
+		 *
+		 * @remarks
+		 * `warehouseGuard` resolves the session itself and answers 401/403/404;
+		 * the resolved `erp.session` is what `auditActor` needs, so the handlers
+		 * below are identical to their admin counterparts.
+		 */
+		const picRoute = (action: TWarehouseAction, description: string) => ({
+			warehouse: { action },
+			detail: { description },
+		});
+
 		return domainPlugin({
 			name: 'inventory-warehouses',
 			prefix: '/warehouses',
 			tags: ['Inventory'],
-			guards: 'session',
+			// Both macros are mounted; each route opts into exactly one:
+			// `erpSession` for application admins, `warehouse` for a PIC.
+			guards: 'session+warehouse',
 		})
 			.get(
 				'',
@@ -82,11 +114,39 @@ export class WarehouseController {
 					),
 				adminRoute('Paginated warehouse list across every scope'),
 			)
+			// Static before `/:id`: the sidebar and pickers call this.
+			.get(
+				'/mine',
+				async ({ erp }) =>
+					ok(
+						await managerService.listMine(
+							erp.session.user.id,
+							isGlobalAdmin({ erp }),
+						),
+					),
+				{
+					erpSession: { session: true },
+					detail: {
+						description:
+							'Warehouses the caller is a person in charge of, each with its bins (ADR-0017). Application admins get every live warehouse',
+					},
+				},
+			)
+			.get(
+				'/manager-candidates',
+				async ({ query }) => {
+					const { search, limit } = managerCandidateQuerySchema.parse(query);
+					return ok(await managerService.searchCandidates(search, limit));
+				},
+				adminRoute(
+					'Accounts an application admin may assign as a warehouse person in charge (ADR-0017)',
+				),
+			)
 			.get(
 				'/:id',
 				async ({ params }) =>
 					ok(await warehouseService.getWarehouse(idParamSchema.parse(params).id)),
-				adminRoute('One warehouse with its address and storages'),
+				picRoute('read', 'One warehouse with its address and storages'),
 			)
 			.post(
 				'',
@@ -114,7 +174,8 @@ export class WarehouseController {
 							auditActor(erp.session, request),
 						),
 					),
-				adminRoute(
+				picRoute(
+					'update',
 					'Updates a warehouse. Code and scope are immutable after creation',
 				),
 			)
@@ -125,7 +186,7 @@ export class WarehouseController {
 						idParamSchema.parse(params).id,
 						auditActor(erp.session, request),
 					)),
-				adminRoute('Archives a warehouse that holds no live units'),
+				picRoute('archive', 'Archives a warehouse that holds no live units'),
 			)
 			// 1:1 address: PUT upserts, GET reads, DELETE removes. No POST —
 			// there is never a second address to create.
@@ -137,7 +198,7 @@ export class WarehouseController {
 					);
 					return ok(warehouse.address);
 				},
-				adminRoute('The warehouse address, or null when unset'),
+				picRoute('read', 'The warehouse address, or null when unset'),
 			)
 			.put(
 				'/:id/address',
@@ -148,7 +209,7 @@ export class WarehouseController {
 							warehouseAddressSchema.parse(body),
 						),
 					),
-				adminRoute('Creates or replaces the warehouse address (strict 1:1)'),
+				picRoute('update', 'Creates or replaces the warehouse address (strict 1:1)'),
 			)
 			.delete(
 				'/:id/address',
@@ -158,7 +219,7 @@ export class WarehouseController {
 							idParamSchema.parse(params).id,
 						),
 					}),
-				adminRoute('Removes the warehouse address (idempotent)'),
+				picRoute('update', 'Removes the warehouse address (idempotent)'),
 			)
 			.get(
 				'/:id/storages',
@@ -169,7 +230,7 @@ export class WarehouseController {
 							storageListQuerySchema.parse(query),
 						),
 					),
-				adminRoute('Storages (bins) of a warehouse'),
+				picRoute('read', 'Storages (bins) of a warehouse'),
 			)
 			.post(
 				'/:id/storages',
@@ -184,7 +245,10 @@ export class WarehouseController {
 							),
 						),
 					),
-				adminRoute('Adds a storage (bin) to a warehouse'),
+				// Creating a *storage* is `update` on the warehouse: the PIC
+				// grant has no `create` action, and that action belongs to the
+				// warehouse itself, not to its bins (ADR-0017 §2).
+				picRoute('update', 'Adds a storage (bin) to a warehouse'),
 			)
 			.patch(
 				'/:id/storages/:storageId',
@@ -199,7 +263,7 @@ export class WarehouseController {
 						),
 					);
 				},
-				adminRoute('Updates a storage. Code is immutable'),
+				picRoute('update', 'Updates a storage. Code is immutable'),
 			)
 			.delete(
 				'/:id/storages/:storageId',
@@ -213,7 +277,58 @@ export class WarehouseController {
 						),
 					);
 				},
-				adminRoute('Archives a storage'),
+				picRoute('archive', 'Archives a storage'),
+			)
+			/* ------------- persons in charge (ADR-0017) ------------- */
+			.get(
+				'/:id/managers',
+				async ({ params }) =>
+					ok(
+						await managerService.listManagers(
+							idParamSchema.parse(params).id,
+						),
+					),
+				adminRoute('Live persons in charge of a warehouse (ADR-0017)'),
+			)
+			.post(
+				'/:id/managers',
+				async ({ params, body, erp, request, status }) => {
+					const { userId } = assignManagerSchema.parse(body);
+					const assignment = await managerService.assign(
+						idParamSchema.parse(params).id,
+						userId,
+						auditActor(erp.session, request),
+					);
+					return status(201, created(assignment));
+				},
+				{
+					erpSession: { policy: requireGlobalAdmin },
+					body: assignManagerSchema,
+					detail: {
+						description:
+							'Grants a user person-in-charge access to a warehouse (ADR-0017). 409 when the grant already exists',
+					},
+				},
+			)
+			.delete(
+				'/:id/managers/:userId',
+				async ({ params, erp, request }) => {
+					const parsed = managerParamSchema.parse(params);
+					return ok(
+						await managerService.unassign(
+							parsed.id,
+							parsed.userId,
+							auditActor(erp.session, request),
+						),
+					);
+				},
+				{
+					erpSession: { policy: requireGlobalAdmin },
+					detail: {
+						description:
+							'Revokes a person-in-charge grant (ADR-0017). Idempotent: `removed: false` when no live grant exists',
+					},
+				},
 			)
 			/* ------------------- organization links (ERP-0031) ------------------- */
 			.get(

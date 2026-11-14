@@ -16,6 +16,7 @@ import {
 	inArray,
 	isNotNull,
 	isNull,
+	or,
 } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import { cacheIdKey, cacheListKey } from '@utils/cache.util';
@@ -58,8 +59,9 @@ export class UserRepository implements IUserRepository {
 	async paginate(
 		request: TUserPaginationRequest,
 	): Promise<TPaginationResult<TUserSelect>> {
-		const { page, limit, email, name, username, role, banned } = request;
+		const { page, limit, email, name, username, role, banned, search } = request;
 
+		const term = search ? `%${search}%` : undefined;
 		const filters = [
 			isNull(users.deletedAt),
 			email ? ilike(users.email, `%${email}%`) : undefined,
@@ -67,6 +69,14 @@ export class UserRepository implements IUserRepository {
 			username ? ilike(users.username, `%${username}%`) : undefined,
 			role ? eq(users.role, role) : undefined,
 			banned === undefined ? undefined : eq(users.banned, banned),
+			// Picker search: one box, three columns (OR).
+			term
+				? or(
+						ilike(users.name, term),
+						ilike(users.email, term),
+						ilike(users.username, term),
+					)
+				: undefined,
 		].filter(Boolean);
 		const where = and(...filters);
 

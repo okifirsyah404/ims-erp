@@ -65,8 +65,10 @@ CREATE TABLE "auth"."organizations" (
 	"name" text NOT NULL,
 	"slug" text NOT NULL UNIQUE,
 	"logo" text,
+	"description" text,
 	"created_at" timestamp NOT NULL,
-	"metadata" text
+	"metadata" text,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."passkeys" (
@@ -108,7 +110,19 @@ CREATE TABLE "auth"."users" (
 	"banned" boolean DEFAULT false,
 	"ban_reason" text,
 	"ban_expires" timestamp,
-	"bio" text
+	"bio" text,
+	"username" text UNIQUE,
+	"display_username" text,
+	"deleted_at" timestamp,
+	"status" text DEFAULT 'active',
+	"claimed_at" timestamp,
+	"phone" text,
+	"gender" text,
+	"birth_date" bigint,
+	"birth_place" text,
+	"marital_status" text,
+	CONSTRAINT "users_gender_check" CHECK (gender IS NULL OR gender IN ('male', 'female')),
+	CONSTRAINT "users_marital_status_check" CHECK (marital_status IS NULL OR marital_status IN ('single', 'married', 'divorced', 'widowed'))
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."verifications" (
@@ -116,6 +130,25 @@ CREATE TABLE "auth"."verifications" (
 	"identifier" text NOT NULL,
 	"value" text NOT NULL,
 	"expires_at" timestamp NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "auth"."user_invitations" (
+	"id" text PRIMARY KEY,
+	"type" text DEFAULT 'app' NOT NULL,
+	"email" text NOT NULL,
+	"name" text,
+	"organization_id" text,
+	"org_role" text,
+	"token_hash" text NOT NULL,
+	"status" text DEFAULT 'pending' NOT NULL,
+	"invited_by" text NOT NULL,
+	"expires_at" timestamp NOT NULL,
+	"resent_count" integer DEFAULT 0 NOT NULL,
+	"delivery_failed" boolean DEFAULT false NOT NULL,
+	"claimed_at" timestamp,
+	"deleted_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -132,11 +165,18 @@ CREATE UNIQUE INDEX "organizations_slug_uidx" ON "auth"."organizations" ("slug")
 CREATE INDEX "passkeys_userId_idx" ON "auth"."passkeys" ("user_id");--> statement-breakpoint
 CREATE INDEX "passkeys_credentialID_idx" ON "auth"."passkeys" ("credential_id");--> statement-breakpoint
 CREATE INDEX "sessions_userId_idx" ON "auth"."sessions" ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "users_phone_live_idx" ON "auth"."users" ("phone") WHERE phone IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "verifications_identifier_idx" ON "auth"."verifications" ("identifier");--> statement-breakpoint
+CREATE UNIQUE INDEX "user_invitations_token_hash_idx" ON "auth"."user_invitations" ("token_hash");--> statement-breakpoint
+CREATE INDEX "user_invitations_email_idx" ON "auth"."user_invitations" ("email");--> statement-breakpoint
+CREATE INDEX "user_invitations_organizationId_idx" ON "auth"."user_invitations" ("organization_id");--> statement-breakpoint
+CREATE INDEX "user_invitations_status_idx" ON "auth"."user_invitations" ("status");--> statement-breakpoint
 ALTER TABLE "auth"."accounts" ADD CONSTRAINT "accounts_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."invitations" ADD CONSTRAINT "invitations_organization_id_organizations_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "auth"."organizations"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."invitations" ADD CONSTRAINT "invitations_inviter_id_users_id_fkey" FOREIGN KEY ("inviter_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."members" ADD CONSTRAINT "members_organization_id_organizations_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "auth"."organizations"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."members" ADD CONSTRAINT "members_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."passkeys" ADD CONSTRAINT "passkeys_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;--> statement-breakpoint
-ALTER TABLE "auth"."sessions" ADD CONSTRAINT "sessions_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+ALTER TABLE "auth"."sessions" ADD CONSTRAINT "sessions_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "auth"."user_invitations" ADD CONSTRAINT "user_invitations_organization_id_organizations_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "auth"."organizations"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "auth"."user_invitations" ADD CONSTRAINT "user_invitations_invited_by_users_id_fkey" FOREIGN KEY ("invited_by") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
