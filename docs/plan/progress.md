@@ -76,11 +76,45 @@ M08 references are `ERP-0059` to avoid main's reserved `ERP-0053`…`ERP-0058`.
 - `bun docs/database/validate-dbml.ts` → `parsed: 272 tables, 236 refs`,
   `cross-module refs: 0`, `timestamp gaps: 0`, `OK`.
 
-**Not verified — explicitly skipped.** No disposable database was available
-(Docker Desktop not running, nothing on 15432/16379), so
-`drizzle:migrate` from empty, the run-twice seeder check and
-`drizzle-kit push --explain` were **not** run. Owner decision for this merge;
-the migration is inspected but not applied anywhere.
+**Database gates — run later the same day on a local PostgreSQL 5432 / Redis
+6379 (native services, Docker not involved).** Disposable database
+`ims_erp_m08_browser` (dropped afterwards):
+
+- `POSTGRES_URL=…/ims_erp_m08_browser bun run drizzle:migrate` → `migrations
+  applied successfully` from an empty database: all 20 folders including
+  `20261114173050_lush_darkstar` replayed in order.
+- `bun run drizzle:seed` twice → first run created 29 employees, 4 leave types,
+  4 notification templates, 3 demo notifications; second run reported
+  `created 0` / `inserted 0` for every seeder. Idempotent.
+- `drizzle-kit push --explain` still **not** run (not needed for this merge;
+  the chain is linear and `drizzle-kit check` is clean).
+
+**Browser pass (Edge via `browse`, backend `:3001`, web-admin `:5173`,
+2026-11-15).**
+
+- Sign-in `admin@local.com` → shell renders; `/hr/employees` lists 29 seeded
+  employees, `/hr/attendance` renders the day grid, `/hr/leave`,
+  `/hr/overtime`, `/hr/tasks`, `/hr/payroll` render their empty states.
+- Write path exercised through the UI: set the first attendance row to
+  `present` and clicked **Save day** → toast `saved, 0 leave day(s) kept`, and
+  `hr.attendance_records` holds one row (`status=present`, `source=manual`,
+  `recorded_by` = the signed-in user).
+- NIK masking, both directions: with `national_id` set to
+  `3201234567890123` on `EMP-00011`, the org `owner` account
+  (`admin@local.com`) reads `3201234567890123` from list and detail, while the
+  org `admin` account (`admin.seed@entragate.local`, no
+  `employee:read_private`) reads `••••••••••••0123` from both.
+- Sidebar gating as org `admin`: Overtime, Payroll and Tasks are hidden
+  (`overtime.read` / `payroll.read` / `task.read` absent), Leave hidden, and
+  the **New employee** / **Archive** controls are gone; Attendance stays.
+  Direct `/hr/payroll` returns **403 `Insufficient permissions`** from the
+  backend — the server-side fact holds.
+- Kept as observed, pre-existing from `main`: the route guard still renders
+  `/hr/payroll` for that account instead of redirecting (ERP-0053 follow-up,
+  `canOpenPath` fails open), and the realtime bell briefly shows
+  `Live updates unavailable` on first mount in dev (React double-mount closes
+  the socket before it opens; a raw `ws://localhost:3001/ws` handshake
+  succeeds and stays open). Neither is caused by this merge.
 
 **`docs/database/`:** reviewed and changed (the `manager_employee_id` `Ref`
 above); `validate-dbml.ts` printed `OK`. `project-audit.md` re-checked: the
@@ -8024,10 +8058,12 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 merged in on 2026-11-15 (see that entry): conflicts resolved, the two orphan M08
 migrations replaced by `20261114173050_lush_darkstar`, `hasAppRole` adopted,
 gates green (typecheck 4/4, lint 5/5, backend 1021 / web-admin 100 / locales 90
-/ react-email 5 tests, `validate-dbml.ts` `OK`). **DB gates skipped by owner
-decision** — no disposable database, so `drizzle:migrate` from empty, the
-run-twice seed and `push --explain` are still owed before this can be
-`accepted`. ERP-0053 stays `implemented`.
+/ react-email 5 tests, `validate-dbml.ts` `OK`). The database gates were then
+run too: `drizzle:migrate` from empty, the seeder twice (second run inserted
+nothing) and a browser pass with a real attendance write and both NIK-masking
+directions — evidence in the 2026-11-15 entry. ERP-0053 stays `implemented`
+until the owner signs off; the only gate still unrun is
+`drizzle-kit push --explain`, which this merge does not need.
 
 **ERP-0047 is verified** (2026-11-14, see the Phase 8 complete entry above). Nothing open in its plan. The docs changes for this step are uncommitted. The original Phase 8 scope, for reference:
 `bunx tsc -b --noEmit` in both apps, `bun run test`, `bun run lint`,
