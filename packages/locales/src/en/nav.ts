@@ -122,6 +122,8 @@ const nav = {
 	'organization.switchFailed': 'Could not switch organization',
 	'organization.switched': 'Organization switched',
 
+	'access.denied': 'You do not have access to that page.',
+
 	'user.loadingAccount': 'Loading account…',
 	'user.account': 'Account',
 	'user.logOut': 'Log out',

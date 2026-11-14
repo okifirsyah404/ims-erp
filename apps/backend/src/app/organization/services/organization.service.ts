@@ -268,6 +268,23 @@ export class OrganizationService {
 	}
 
 	/**
+	 * Organizations the caller belongs to, with logo presigned and the caller's
+	 * own role string (comma-joined, ADR-0007 multi-role).
+	 */
+	async listMyOrganizations(
+		userId: string,
+	): Promise<{ id: string; name: string; slug: string; logo: string | null; role: string }[]> {
+		const rows = await this.repository.findMembershipsForUser(userId);
+		return rows.map(({ organization, role }) => ({
+			id: organization.id,
+			name: organization.name,
+			slug: organization.slug,
+			logo: organization.logo ? presignObjectUrl(organization.logo) : null,
+			role,
+		}));
+	}
+
+	/**
 	 * Paginated organization listing (soft-deleted excluded unless asked).
 	 *
 	 * @remarks

@@ -121,6 +121,8 @@ const nav_: Record<keyof typeof nav, string> = {
 	'organization.switchFailed': 'Tidak dapat mengganti organisasi',
 	'organization.switched': 'Organisasi diganti',
 
+	'access.denied': 'Anda tidak memiliki akses ke halaman tersebut.',
+
 	'user.loadingAccount': 'Memuat akun…',
 	'user.account': 'Akun',
 	'user.logOut': 'Keluar',
