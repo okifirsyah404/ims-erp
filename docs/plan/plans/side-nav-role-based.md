@@ -231,6 +231,10 @@ New table `inventory.warehouse_managers`:
 - Browser: all seven checklist scenarios plus the assign/unassign round trip confirmed in Edge. Result
   per scenario recorded in `progress.md`.
 - Not covered by either: the `import`/`export` PIC rights — no warehouse route uses those actions yet.
+  **Pinned 2026-11-14:** 6 tests in `warehouse-authorization.test.ts` prove the guard is action-agnostic
+  for all five declared actions and that the controller declares only `read`/`update`/`archive`; the day an
+  import/export route lands, that source check fails. The whole Phase 5 set was re-run against a freshly
+  reset `ims_erp_local` (47/47).
 
 ## Phase 6 — Docs in the same change
 

@@ -80,7 +80,10 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`accepted` 2
   pass, web-admin 100 pass, locales 90 pass, react-email 5 pass, typecheck and lint
   clean; `docs/database/` unchanged. Plan `side-nav-role-based.md` complete.
   Not covered: the PIC `import`/`export` rights, because no warehouse route uses
-  those actions yet.
+  those actions yet — covered indirectly on 2026-11-14 by 6 action-matrix tests in
+  `warehouse-authorization.test.ts` (the guard is action-agnostic and the controller
+  declares only `read`/`update`/`archive`), and Phase 5 was re-run 47/47 against a
+  freshly reset `ims_erp_local`.
 
 ### planned
 - Nothing open for ERP-0051.

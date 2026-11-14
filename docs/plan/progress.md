@@ -18,6 +18,67 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0051: dev DB reset to a fresh migrate + import/export guard proof
+
+Branch `refactor/app-roles-investor-customer`. The earlier Phase 5 evidence ran on a disposable database
+because `ims_erp_local` predated the PIC table and was recorded never-to-migrate. That constraint is gone:
+`drizzle:migrate-reset` replays the whole migration chain, so the dev DB was rebuilt from zero and the same
+checks were re-run against it.
+
+**Backup first** (the reset drops every application schema):
+`pg_dump` → `%TEMP%\opencode\ims_erp_local_backup_20261114_210952.sql`, 11,893,114 bytes. Before the reset
+the DB held 21 tables, 40 `auth.users`, 2 `inventory.warehouses`, and no `inventory.warehouse_managers`.
+
+**Reset:**
+```
+cd apps/backend
+bun run drizzle:migrate-reset
+```
+Outcome: every app schema dropped, migrations replayed, seeders ran - `Migrate-reset complete` after 9.4s
+(6.7s of it seeding). After: **116 tables, 57 journal rows**, `inventory.warehouse_managers` present, 2 live
+PIC grants (`GLOBAL-MAIN` and `WH-MAIN` → `warehouse.seed@entragate.local`), 40 `auth.users`, organization
+`Entragate` = `LwhLYWKg7I9qkzTSHXPqQColX3To0u5r`.
+
+**Full Phase 5 smoke re-run against `ims_erp_local`** (backend on 3001, `SCHEDULER_ENABLED=false`):
+`bun run scripts/smoke-warehouse-pic.ts LwhLYWKg7I9qkzTSHXPqQColX3To0u5r` → **47 passed, 0 failed**. The
+same cases as the disposable-DB run, now on the real dev database. Cleanup verified afterwards: 0 leftover
+`pic-check%` users, 2 warehouses, 2 live grants - the seeded rows were read, not mutated.
+
+**The `import`/`export` question, answered.** Phase 5 recorded those two PIC rights as unexercised. Reading
+the guard shows why: `warehouseGuard` copies `options.action` into the returned `warehouse` context and
+never branches on it, so authorization is identical for all five values. `warehouse.controller.ts` passes
+only `read` (2 routes), `update` (4) and `archive` (2) through its `picRoute(...)` helper - `import` and
+`export` appear nowhere outside the `TWarehouseAction` union.
+
+New tests in `test/authorization/warehouse-authorization.test.ts` (`warehouse routes — the guard is
+action-agnostic (ADR-0017 §2)`, 6 cases) pin that down instead of leaving it as prose:
+- every declared action (all five, `import`/`export` included) is allowed for a PIC of that warehouse, and
+  the action survives into the context;
+- every declared action gives 404 for a PIC of another warehouse;
+- every declared action gives 403 with no live grant, and 401 with no session;
+- `import`-style actions still admit an application admin with no grant;
+- a source scan asserts the controller declares exactly `archive`, `read`, `update` - so the day an
+  import/export route lands, this test fails and sends the reader back to this entry.
+
+Verified the tests can fail: temporarily making the guard reject `export` turned 3 of them red (151 pass /
+3 fail); reverted, back to 154 pass / 0 fail with `elysia-auth.ts` byte-identical to HEAD.
+
+**Correction to my own earlier claim.** I told the user the default test suite never touches a real database.
+That is true for the suite, but not for this work: the 47-case smoke script *is* a live HTTP check, and it
+now runs against `ims_erp_local`. What the *unit* suite covers remains mocked, which is why the guard
+matrix above is a unit test and the 47 cases are the live proof.
+
+Gates after the new tests: `bun run typecheck` 4/4 successful; `bun run lint` 5/5, 0 errors; `bun run test`
+5/5 - **backend 1005 pass / 0 fail** (999 + 6 new), web-admin 100, locales 90, react-email 5.
+`bun run docs/database/validate-dbml.ts` → `269 tables, 232 refs, cross-module refs: 0, timestamp gaps: 0,
+OK`. `docs/database/` unchanged (no schema delta).
+
+Cleanup: backend stopped, port 3001 free. `ims_erp_local` is left in its fresh, seeded state.
+
+Next executable task: none for ERP-0051. Open follow-ups, not claimed: ERP-0052 (`drizzle-kit
+generate`/`check` still blocked by the duplicate `finance.receipts` migration - note the *replay* path used
+here works, only snapshot generation does not) and the actual warehouse import/export endpoints.
+
 ## 2026-11-14 - ERP-0051: warehouse PIC Phase 5 (live HTTP smoke + browser pass)
 
 Phase 5 of `plans/side-nav-role-based.md` executed on branch `refactor/app-roles-investor-customer`.
@@ -94,6 +155,11 @@ Observations and gaps:
   this change (`warehouse-list.tsx` had the same call before `11085e1`); not fixed here.
 
 Cleanup: both servers stopped, `ims_erp_pic_check` dropped. No dev-database migration was attempted.
+
+**Superseded 2026-11-14:** the disposable-database workaround above is no longer needed. `ims_erp_local`
+was reset through `drizzle:migrate-reset` and the same 47 cases were re-run against it - see
+"2026-11-14 - ERP-0051: dev DB reset to a fresh migrate + import/export guard proof" at the top of this
+file.
 
 Next executable task: none for ERP-0051 (plan `side-nav-role-based.md` complete). Open follow-ups, not
 claimed: ERP-0052 (`drizzle-kit generate`/`check` blocked by duplicate `finance.receipts` migration) and a

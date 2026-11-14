@@ -131,3 +131,13 @@
     assign/unassign controls work end to end. Full evidence, including the two
     corrections the run forced, is in `docs/plan/progress.md` under
     "2026-11-14 - ERP-0051: warehouse PIC Phase 5".
+  - Dev-database reset + `import`/`export`: done 2026-11-14. The earlier Phase 5
+    evidence used a disposable database because `ims_erp_local` predated the PIC
+    table; `drizzle:migrate-reset` now rebuilds it (11.9 MB `pg_dump` backup
+    first, then 116 tables / 57 journal rows, seeders clean) and the same 47
+    cases pass against it. Two rights in decision 2, `import` and `export`, are
+    declared but have no route; 6 action-matrix tests in
+    `warehouse-authorization.test.ts` prove `warehouseGuard` is action-agnostic
+    across all five actions and that the controller declares only
+    `read`/`update`/`archive`, so a future import/export route breaks the test
+    rather than the assumption. Backend 1005 pass / 0 fail.

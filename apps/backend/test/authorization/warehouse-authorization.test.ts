@@ -16,9 +16,15 @@
  */
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { Elysia } from 'elysia';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import { container } from 'tsyringe';
 import type { TWarehouseSelect } from '@drizzle/schemas/inventory.schema';
+import {
+	type TWarehouseAction,
+	warehouseGuard,
+} from '../../src/authorization/elysia-auth';
 import {
 	fixture,
 	installAuthMock,
@@ -151,6 +157,34 @@ const FORBIDDEN_USERS = [
 	'technician',
 	'member',
 ] as const;
+
+/** Every action `warehouseGuard` accepts (ADR-0017 §2), read from the type. */
+const ALL_ACTIONS: readonly TWarehouseAction[] = [
+	'read',
+	'update',
+	'archive',
+	'import',
+	'export',
+];
+
+/**
+ * The actions the warehouse controller actually passes to `warehouseGuard`.
+ *
+ * @remarks
+ * Read from the source rather than restated here, so the "import/export are
+ * declared but unused" claim in `progress.md` is checked against the code
+ * instead of a copy of it that could drift. The controller routes every PIC
+ * handler through `picRoute('<action>', ...)`, so those call sites are the
+ * complete list.
+ */
+function readWarehouseActions(): string[] {
+	const source = readFileSync(
+		join(import.meta.dir, '../../src/app/inventory/controllers/warehouse.controller.ts'),
+		'utf8',
+	);
+	const found = [...source.matchAll(/picRoute\('([a-z]+)'/g)].map((match) => match[1]);
+	return [...new Set(found)];
+}
 
 beforeAll(async () => {
 	installAuthMock();
@@ -580,6 +614,89 @@ describe('warehouse routes — person in charge (ADR-0017)', () => {
 			}),
 		);
 		expect(response.status).toBe(403);
+	});
+});
+
+/**
+ * The guard accepts five actions (ADR-0017 §2), but only `read`, `update` and
+ * `archive` are reachable today: no warehouse route performs `import` or
+ * `export` yet. `warehouseGuard` reads `options.action` only to copy it into
+ * the `warehouse` context and never branches on it, so the three covered
+ * actions are the whole decision.
+ *
+ * These tests pin that down instead of leaving it as prose. If the guard ever
+ * starts varying by action, or an import/export route appears, the assumption
+ * recorded in `progress.md` stops being true and these tests fail.
+ */
+describe('warehouse routes — the guard is action-agnostic (ADR-0017 §2)', () => {
+	const PIC = 'member';
+
+	/** Builds the smallest app that mounts the real guard for one action. */
+	const guardFor = (action: TWarehouseAction) =>
+		new Elysia()
+			.use(warehouseGuard())
+			.get(
+				'/probe/:id',
+				({ warehouse }: { warehouse: { id: string; action: string } }) =>
+					warehouse,
+				{ warehouse: { action } },
+			);
+
+	test('every declared action is allowed for a PIC of that warehouse', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		for (const action of ALL_ACTIONS) {
+			const response = await guardFor(action).handle(
+				jsonRequest('GET', `/probe/${WAREHOUSE_ID}`, PIC),
+			);
+			expect({ action, status: response.status }).toEqual({ action, status: 200 });
+			const body = (await response.json()) as { action: string };
+			expect({ action, echoed: body.action }).toEqual({ action, echoed: action });
+		}
+	});
+
+	test('every declared action gives 404 for a PIC of another warehouse', async () => {
+		picGrants.set(fixture.users[PIC].id, [OTHER_WAREHOUSE_ID]);
+		for (const action of ALL_ACTIONS) {
+			const response = await guardFor(action).handle(
+				jsonRequest('GET', `/probe/${WAREHOUSE_ID}`, PIC),
+			);
+			expect({ action, status: response.status }).toEqual({ action, status: 404 });
+		}
+	});
+
+	test('every declared action gives 403 without a live grant', async () => {
+		for (const action of ALL_ACTIONS) {
+			const response = await guardFor(action).handle(
+				jsonRequest('GET', `/probe/${WAREHOUSE_ID}`, PIC),
+			);
+			expect({ action, status: response.status }).toEqual({ action, status: 403 });
+		}
+	});
+
+	test('every declared action gives 401 without a session', async () => {
+		for (const action of ALL_ACTIONS) {
+			const response = await guardFor(action).handle(
+				jsonRequest('GET', `/probe/${WAREHOUSE_ID}`),
+			);
+			expect({ action, status: response.status }).toEqual({ action, status: 401 });
+		}
+	});
+
+	test('every declared action admits an application admin with no grant', async () => {
+		const response = await guardFor('export').handle(
+			jsonRequest('GET', `/probe/${WAREHOUSE_ID}`, 'globalAdmin'),
+		);
+		expect(response.status).toBe(200);
+	});
+
+	test('no warehouse route declares import or export yet', () => {
+		// The routes that exist. `import`/`export` land here when a warehouse
+		// import/export endpoint is built; until then the PIC rights for those
+		// two actions are declared in the type but never exercised.
+		const declared = readWarehouseActions();
+		expect(declared).not.toContain('import');
+		expect(declared).not.toContain('export');
+		expect([...declared].sort()).toEqual(['archive', 'read', 'update']);
 	});
 });
 
