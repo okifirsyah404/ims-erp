@@ -44,9 +44,14 @@ touched):
   child rows were orphaned by the deletes. `auth.invitations` (Better Auth's own organization-plugin
   table, unused by the app's invitation flow, 0 rows on `ims_erp_local`) still has a `role` column
   that this migration does not touch - nothing writes to it today.
+- Live login gate, new script `scripts/smoke-login-gate.ts` run against the disposable database (the
+  real Better Auth instance, so `session.create.before` fires as in production): 8/8 cases - app admin
+  without membership 200, `admin,investor` 200, `investor` alone 403, `customer` alone 403, plain
+  `user` without membership 403, `investor` + `sales` membership 200, `customer` + `sales` 200,
+  `user` + `warehouse` 200. Users and memberships removed afterwards. Documented in `runbook.md`.
 
-Not verified: live-server behaviour (ADR-0017 verification list), and the gate's own DB query still
-has no test.
+Not verified: the PIC half of the ADR-0017 verification list (no `warehouse_managers` table yet), and
+the gate's own DB query still has no automated test (it is covered live, not in `bun test`).
 
 Docs: `docs/database/` reviewed, unchanged (no table or column change; the migration only moves data
 between existing columns).
@@ -94,8 +99,9 @@ Not verified yet:
 - No DB-backed login-gate test: the repo has no test that touches a real database (DB is always
   mocked, `bun-test` skill). The guard wiring is covered over HTTP with a stubbed gate
   (`login-gate.guard.test.ts`); the gate's DB query is covered by neither.
-- Manual checks (ADR-0017 verification list) not run against a live server: investor-only denied,
-  investor plus internal allowed, PIC without membership denied, admin without membership allowed.
+- Manual checks (ADR-0017 verification list): the gate half is verified live by
+  `scripts/smoke-login-gate.ts` (8/8 cases, see the entry above). PIC cases are not testable yet -
+  `inventory.warehouse_managers` does not exist.
 - Warehouse PIC (Phase 1-2, `inventory.warehouse_managers`, `warehouseGuard`) still not started.
 
 Docs: `docs/database/` reviewed, unchanged (no table or column change).
