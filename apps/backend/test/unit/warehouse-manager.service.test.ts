@@ -65,6 +65,19 @@ function makeService(options: {
 				? ({ warehouseId, userId } as TWarehouseManagerSelect)
 				: null;
 		},
+		async listByWarehouse(warehouseId) {
+			return [...grants]
+				.filter((key) => key.startsWith(`${warehouseId}:`))
+				.map(
+					(key) =>
+						({
+							warehouseId,
+							userId: key.split(':')[1]!,
+							assignedBy: null,
+							createdAt: new Date(0),
+						}) as TWarehouseManagerSelect,
+				);
+		},
 		async assign(input) {
 			grants.add(`${input.warehouseId}:${input.userId}`);
 			return { ...input, id: 'assignment' } as never;
@@ -95,7 +108,17 @@ function makeService(options: {
 		storageRepository,
 		{
 			async getUser(id: string) {
-				return users.has(id) ? ({ id, email: `${id}@test.local` } as never) : null;
+				return users.has(id) ? ({ id, name: id, email: `${id}@test.local` } as never) : null;
+			},
+			async paginateUsers(request: { search?: string; limit: number }) {
+				const rows = [...users]
+					.filter((id) => !request.search || id.includes(request.search))
+					.slice(0, request.limit)
+					.map((id) => ({ id, name: id, email: `${id}@test.local` }));
+				return {
+					data: rows,
+					meta: { page: 1, limit: request.limit, total: rows.length, totalPages: 1 },
+				} as never;
 			},
 		},
 		audit,
@@ -178,5 +201,50 @@ describe('WarehouseManagerService.listMine', () => {
 	test('no grant yields an empty list, not an error', async () => {
 		const { service } = makeService({});
 		expect(await service.listMine(USER_ID, false)).toEqual([]);
+	});
+});
+
+describe('WarehouseManagerService.listManagers', () => {
+	test('decorates live grants with the account name and email', async () => {
+		const { service } = makeService({
+			grants: new Set([`${WAREHOUSE.id}:${USER_ID}`]),
+		});
+		const rows = await service.listManagers(WAREHOUSE.id);
+		expect(rows).toEqual([
+			{
+				userId: USER_ID,
+				name: USER_ID,
+				email: `${USER_ID}@test.local`,
+				assignedBy: null,
+				assignedAt: new Date(0),
+			},
+		]);
+	});
+
+	test('keeps a grant whose account is gone, with null name/email', async () => {
+		const { service } = makeService({
+			grants: new Set([`${WAREHOUSE.id}:${USER_ID}`]),
+			users: [],
+		});
+		const rows = await service.listManagers(WAREHOUSE.id);
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({ userId: USER_ID, name: null, email: null });
+	});
+
+	test('rejects an unknown warehouse with 404', async () => {
+		const { service } = makeService({ warehouses: [] });
+		await expect(service.listManagers(WAREHOUSE.id)).rejects.toBeInstanceOf(
+			WarehouseNotFoundError,
+		);
+	});
+});
+
+describe('WarehouseManagerService.searchCandidates', () => {
+	test('filters by term and maps to id/name/email', async () => {
+		const { service } = makeService({ users: ['user-anna', 'user-budi'] });
+		const rows = await service.searchCandidates('anna');
+		expect(rows).toEqual([
+			{ id: 'user-anna', name: 'user-anna', email: 'user-anna@test.local' },
+		]);
 	});
 });

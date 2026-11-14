@@ -8,6 +8,7 @@ import {
 	createStorageSchema,
 	createWarehouseSchema,
 	idParamSchema,
+	managerCandidateQuerySchema,
 	managerParamSchema,
 	nestedIdParamSchema,
 	storageListQuerySchema,
@@ -130,6 +131,16 @@ export class WarehouseController {
 							'Warehouses the caller is a person in charge of, each with its bins (ADR-0017). Application admins get every live warehouse',
 					},
 				},
+			)
+			.get(
+				'/manager-candidates',
+				async ({ query }) => {
+					const { search, limit } = managerCandidateQuerySchema.parse(query);
+					return ok(await managerService.searchCandidates(search, limit));
+				},
+				adminRoute(
+					'Accounts an application admin may assign as a warehouse person in charge (ADR-0017)',
+				),
 			)
 			.get(
 				'/:id',
@@ -269,6 +280,16 @@ export class WarehouseController {
 				picRoute('archive', 'Archives a storage'),
 			)
 			/* ------------- persons in charge (ADR-0017) ------------- */
+			.get(
+				'/:id/managers',
+				async ({ params }) =>
+					ok(
+						await managerService.listManagers(
+							idParamSchema.parse(params).id,
+						),
+					),
+				adminRoute('Live persons in charge of a warehouse (ADR-0017)'),
+			)
 			.post(
 				'/:id/managers',
 				async ({ params, body, erp, request, status }) => {

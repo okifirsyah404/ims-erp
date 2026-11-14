@@ -76,6 +76,27 @@ export class WarehouseManagerRepository implements IWarehouseManagerRepository {
 	}
 
 	/**
+	 * Alive assignments of one warehouse, oldest first.
+	 *
+	 * @param warehouseId - The warehouse
+	 * @returns Live assignment rows (a soft-deleted grant is excluded)
+	 */
+	async listByWarehouse(
+		warehouseId: string,
+	): Promise<TWarehouseManagerSelect[]> {
+		return this.database
+			.select()
+			.from(warehouseManagers)
+			.where(
+				and(
+					eq(warehouseManagers.warehouseId, warehouseId),
+					isNull(warehouseManagers.deletedAt),
+				),
+			)
+			.orderBy(asc(warehouseManagers.createdAt));
+	}
+
+	/**
 	 * Creates an alive assignment, reviving a soft-deleted one for the pair.
 	 *
 	 * @remarks

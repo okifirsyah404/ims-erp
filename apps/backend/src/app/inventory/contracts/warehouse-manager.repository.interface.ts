@@ -18,6 +18,9 @@ export interface IWarehouseManagerRepository extends IWarehousePicResolver {
 		userId: string,
 	): Promise<TWarehouseManagerSelect | null>;
 
+	/** Alive assignments of one warehouse, oldest first (admin listing). */
+	listByWarehouse(warehouseId: string): Promise<TWarehouseManagerSelect[]>;
+
 	/**
 	 * Creates an alive assignment, reviving a soft-deleted one for the pair.
 	 *

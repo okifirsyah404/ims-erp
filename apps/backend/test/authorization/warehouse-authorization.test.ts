@@ -129,6 +129,8 @@ const ROUTES: ReadonlyArray<{
 		path: `/warehouses/${WAREHOUSE_ID}/storages/${STORAGE_ID}`,
 	},
 	// Admin-only surface added with ADR-0017 (person-in-charge assignment).
+	{ method: 'GET', path: `/warehouses/${WAREHOUSE_ID}/managers` },
+	{ method: 'GET', path: '/warehouses/manager-candidates' },
 	{
 		method: 'POST',
 		path: `/warehouses/${WAREHOUSE_ID}/managers`,
@@ -363,6 +365,20 @@ beforeAll(async () => {
 			async listMine(userId: string, isAppAdmin: boolean) {
 				const ids = isAppAdmin ? [WAREHOUSE_ID] : (picGrants.get(userId) ?? []);
 				return ids.map((id) => ({ ...seed, id, storages: [] }));
+			},
+			async listManagers(warehouseId: string) {
+				return (picGrants.get('member') ?? [])
+					.filter((id) => id === warehouseId)
+					.map(() => ({
+						userId: 'member',
+						name: 'Fixture Member',
+						email: 'member@test.local',
+						assignedBy: null,
+						assignedAt: new Date(0),
+					}));
+			},
+			async searchCandidates() {
+				return [];
 			},
 			async assign(warehouseId: string, userId: string) {
 				return { warehouseId, userId } as never;

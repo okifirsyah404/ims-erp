@@ -29,6 +29,29 @@ export type TWarehouseManaged = TWarehouseSelect & {
 };
 
 /**
+ * One live person-in-charge grant, decorated for the admin screen.
+ *
+ * @remarks
+ * `name`/`email` are resolved through the Identity facade at read time; both
+ * are `null` when the referenced account no longer exists (the grant is a
+ * logical reference, so it can outlive its user).
+ */
+export type TWarehouseManagerView = {
+	userId: string;
+	name: string | null;
+	email: string | null;
+	assignedBy: string | null;
+	assignedAt: Date;
+};
+
+/** One assignable account for the PIC picker. */
+export type TWarehouseManagerCandidate = {
+	id: string;
+	name: string;
+	email: string;
+};
+
+/**
  * Person-in-charge application service (ADR-0017).
  *
  * @remarks
@@ -60,7 +83,7 @@ export class WarehouseManagerService {
 		private readonly storageRepository: IWarehouseStorageRepository,
 		/** Target-user validation and the app-admin warehouse list. */
 		@inject(USER_SERVICE_TOKEN)
-		private readonly users: Pick<UserService, 'getUser'>,
+		private readonly users: Pick<UserService, 'getUser' | 'paginateUsers'>,
 		/** Fire-and-forget audit writer (hardening plan D3). */
 		private readonly audit: InventoryAuditWriter,
 	) {}
@@ -93,6 +116,72 @@ export class WarehouseManagerService {
 				storages: await this.storageRepository.listByWarehouse(warehouse.id),
 			})),
 		);
+	}
+
+	/**
+	 * Live person-in-charge grants of one warehouse, decorated with the
+	 * account's name and email.
+	 *
+	 * @param warehouseId - The warehouse
+	 * @returns Live assignments, oldest first; empty when nobody is assigned
+	 * @throws {WarehouseNotFoundError} When the warehouse does not exist
+	 *
+	 * @remarks
+	 * `user_id` is a logical reference, so an assignment can outlive its
+	 * account. Such a row still appears (an admin has to be able to revoke it)
+	 * with `name`/`email` null. A row whose `user_id` is NULL grants nothing and
+	 * is skipped — it can only come from a direct database edit, since
+	 * {@link assign} validates the user before writing.
+	 */
+	async listManagers(warehouseId: string): Promise<TWarehouseManagerView[]> {
+		const warehouse = await this.warehouseRepository.findById(warehouseId);
+		if (!warehouse) throw new WarehouseNotFoundError();
+
+		const rows = await this.managerRepository.listByWarehouse(warehouseId);
+		const assigned = rows.filter(
+			(row): row is TWarehouseManagerSelect & { userId: string } =>
+				row.userId !== null,
+		);
+		return Promise.all(
+			assigned.map(async (row) => {
+				const user = await this.users.getUser(row.userId);
+				return {
+					userId: row.userId,
+					name: user?.name ?? null,
+					email: user?.email ?? null,
+					assignedBy: row.assignedBy,
+					assignedAt: row.createdAt,
+				};
+			}),
+		);
+	}
+
+	/**
+	 * Accounts an application admin may pick as a person in charge.
+	 *
+	 * @param term - Optional free-text term (name, email, or username)
+	 * @param limit - Maximum candidates returned
+	 * @returns Live accounts ordered by name
+	 *
+	 * @remarks
+	 * Read through the Identity facade, never `auth.users` directly. There is
+	 * no organization filter: a PIC does not need a membership (ADR-0017 §3),
+	 * and the caller is an application admin.
+	 */
+	async searchCandidates(
+		term: string | undefined,
+		limit = 20,
+	): Promise<TWarehouseManagerCandidate[]> {
+		const page = await this.users.paginateUsers({
+			page: 1,
+			limit,
+			...(term ? { search: term } : {}),
+		});
+		return page.data.map((user) => ({
+			id: user.id,
+			name: user.name,
+			email: user.email,
+		}));
 	}
 
 	/**

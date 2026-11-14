@@ -187,4 +187,16 @@ export const managerParamSchema = idParamSchema.extend({
 	userId: z.string().min(1).max(64),
 });
 
+/**
+ * Query for the person-in-charge picker (ADR-0017).
+ *
+ * @remarks
+ * `search` is optional: without it the first page of accounts is returned,
+ * which is what an empty picker shows.
+ */
+export const managerCandidateQuerySchema = z.object({
+	search: z.string().min(1).max(200).optional(),
+	limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
 export { idParamSchema };

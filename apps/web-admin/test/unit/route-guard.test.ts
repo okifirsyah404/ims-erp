@@ -14,10 +14,18 @@ type Session = {
 	session: { userId: string; activeOrganizationId?: string | null };
 };
 
-/** Fake QueryClient: `orgs` for my-organizations, `grants` maps permission -> bool. */
-function fakeClient(orgs: { role: string }[], grants: Record<string, boolean> = {}) {
+/**
+ * Fake QueryClient: `orgs` for my-organizations, `grants` maps permission ->
+ * bool, `warehouses` for the person-in-charge list.
+ */
+function fakeClient(
+	orgs: { role: string }[],
+	grants: Record<string, boolean> = {},
+	warehouses: { id: string }[] = [],
+) {
 	return {
-		ensureQueryData: async () => orgs,
+		ensureQueryData: async (opts: { queryKey: unknown[] }) =>
+			opts.queryKey[0] === 'warehouses' ? warehouses : orgs,
 		fetchQuery: async (opts: { queryKey: unknown[] }) => {
 			const permission = String(opts.queryKey[3]);
 			return grants[permission] === true;
@@ -70,6 +78,31 @@ describe('canOpenPath', () => {
 
 	test('path with no nav leaf is allowed here (backend still enforces)', async () => {
 		expect(await canOpenPath('/account', investorOnly, fakeClient([]))).toBe(true);
+	});
+
+	test('warehouse page: allowed for an app admin or a person in charge', async () => {
+		expect(
+			await canOpenPath('/inventory/warehouses', admin, fakeClient([])),
+		).toBe(true);
+		expect(
+			await canOpenPath(
+				'/inventory/warehouses/wh-1',
+				investorOnly,
+				fakeClient([], {}, [{ id: 'wh-1' }]),
+			),
+		).toBe(true);
+		// No grant and no admin role: the sidebar hides it, so the route denies.
+		expect(
+			await canOpenPath('/inventory/warehouses', investorOnly, fakeClient([])),
+		).toBe(false);
+	});
+
+	test('creating a warehouse stays app-admin only, even for a person in charge', async () => {
+		const picClient = fakeClient([], {}, [{ id: 'wh-1' }]);
+		expect(await canOpenPath('/inventory/warehouses/new', admin, picClient)).toBe(true);
+		expect(
+			await canOpenPath('/inventory/warehouses/new', investorOnly, picClient),
+		).toBe(false);
 	});
 
 	test('lookup failure fails closed', async () => {
