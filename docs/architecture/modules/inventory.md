@@ -48,13 +48,22 @@ Slices S0 and S1 are implemented; S2–S4 are planned.
 
 What exists in code today:
 
-- `apps/backend/drizzle/schemas/inventory.schema.ts` — all 10 tables, the
+- `apps/backend/drizzle/schemas/inventory.schema.ts` - all 10 tables, the
   vocabularies, and the transition matrix tables.
-- `apps/backend/database/migrations/20261102133850_talented_jubilee/` — the
-  migration. Proven against real PostgreSQL 18 by
-  `database/verify-inventory-constraints.ts` (29 assertions, idempotent), and
-  the **whole** migration chain replays cleanly (no index-name collisions).
-- `apps/backend/src/app/inventory/**` — `ItemService`, repositories,
+- `apps/backend/database/migrations/20261028043801_create_inventory_schema/` -
+  the migration (one migration per schema since ADR-0019). The **whole**
+  migration chain replays cleanly (no index-name collisions).
+
+  > Proven against real PostgreSQL 18 until 2026-11-14 by
+  > `database/verify-inventory-constraints.ts` (29 assertions). That script was
+  > deleted: it replayed `database/migrations/` through a hardcoded six-schema
+  > `DROP` list, so it silently stopped working as schemas were added, and it
+  > was outside the test suite's reach. Its unique contribution - asserting that
+  > the CHECK constraints actually reject bad rows against a live server - is
+  > currently **not** covered (the backend suite runs against `test/helpers/mock-db.ts`,
+  > never a real connection). See `docs/plan/progress.md` 2026-11-14 "removed the
+  > two stale one-shot database scripts".
+- `apps/backend/src/app/inventory/**` - `ItemService`, repositories,
   contracts, controller, DI container, typed errors.
 - `apps/web-admin/src/lib/inventory-api.ts`, `components/inventory/*`, and the
   `/inventory/products|components|materials|tools` + `/inventory/items/*`
@@ -129,8 +138,10 @@ DBML marked *planned, not implemented*.
 
 - `test/unit/item-status-matrix.test.ts` — the per-kind transition matrix.
 - `test/unit/item.service.test.ts` — item rules (SKU scoping, archive guards).
-- `test/authorization/inventory-authorization.test.ts` — guard boundaries,
+- `test/authorization/inventory-authorization.test.ts` - guard boundaries,
   including that org roles hold no `warehouse:*`.
-- `database/verify-inventory-constraints.ts` — real-PostgreSQL proof of the
-  partial-unique pairs, CHECK constraints, and movement/event pairing. Not a
-  unit test: run it explicitly against a disposable database.
+
+No test in this suite opens a database connection: every one runs against
+`test/helpers/mock-db.ts`. The real-PostgreSQL constraint proof that used to sit
+next to this list (`database/verify-inventory-constraints.ts`) was removed on
+2026-11-14; nothing replaces it yet.

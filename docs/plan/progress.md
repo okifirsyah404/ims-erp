@@ -18,6 +18,58 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - Removed the two stale one-shot database scripts
+
+Branch `refactor/app-roles-investor-customer`. `apps/backend/database/` held three TypeScript
+files beside `migrations/` and `seeders/`; only one of them belonged there. Two were removed.
+
+**Kept: `migrate-reset.ts`.** Wired to `package.json` as `drizzle:migrate-reset`, it owns the
+`schema drop + migrate + seed` cycle over the sibling `migrations/` folder and is the sanctioned
+rebuild path recorded in ADR-0019. It stays where it is.
+
+**Removed: `cleanup-tool-items.ts`** (ERP-0036, written 2026-11-06). A one-shot data script that
+hard-deleted `tool`/`service` items, their serialized units and ledger rows, behind a `--apply`
+flag. It did its job once - the dry run reported `items: 8, byKind {tool: 4, service: 4}, units:
+12` and the apply succeeded - and is now a permanent no-op: `ITEM_KINDS` is
+`product|component|material`, so the query can never match again. Destructive data movement
+belongs in a migration, not in a script that outlives its purpose.
+
+**Removed: `verify-inventory-constraints.ts`** (plan `inventory-and-assets-hardening.md` Phase I-5,
+written in `a9b28213`, extended in `e6677d16`, `52fee532`, `60d058d6` and `b0929a92`). A manual
+verifier
+that dropped six hardcoded schemas, replayed `database/migrations/` and asserted the CHECK
+constraints against real PostgreSQL 18. It was outside `bun run test` (the backend suite never
+opens a connection - every test runs against `test/helpers/mock-db.ts`) and outside the four
+`typecheck` workspaces, so nothing ever caught it rotting. Re-run before deletion against a fresh
+database it reported **14 failures**:
+
+- `column "code" of relation "items" violates not-null constraint` (ERP-0043 added
+  `inventory.items.code NOT NULL`, the verifier still inserted without it) - 2 checks;
+- `relation "organization.document_sequences" does not exist` (relocated to
+  `code_number.document_sequences` by ADR-0015/ERP-0042) - 4 checks;
+- 4 checks that *passed when they should have been rejected* (`unknown status`,
+  `provisional serial outside pre_order`, `zero quantity`, `borrowing_out without borrowing
+  reference`) - the worst mode, because it reported safety that was not there;
+- `TypeError: undefined is not an object` in 2 balance checks, and the D17 concurrency smoke
+  reporting `expected exactly 3 winners, got 0`;
+- a second run could not even start: `schema "accounting" already exists`.
+
+**Docs updated** so nothing points at the deleted files: `docs/architecture/modules/inventory.md`
+(both the evidence list and the Tests list),
+`docs/plan/plans/assets-equipment-location-and-borrowing.md` (Slice 2 step 1 + the Slice 2
+wrap-up), `docs/plan/plans/inventory-and-assets-hardening.md` (rows I-5 and D-5, and the Phase I-5
+section), and the two 2026-11-06 claims in this file, which now carry a supersede note.
+
+**Honest gap this opens:** no test or script currently asserts that the inventory/asset CHECK
+constraints reject bad rows against a live server - the backend suite mocks the database entirely.
+That proof existed until this change and has no successor. Recorded in
+`docs/architecture/modules/inventory.md`; the cheapest replacement is a small live-DB smoke under
+`apps/backend/scripts/` (the maintained convention - `smoke-warehouse-pic.ts` and nine siblings),
+run on demand against a disposable database rather than from `bun run test`.
+
+**Gates after the deletion:** `bun run typecheck` 4/4, `bun run lint` 5/5 (0 errors), `bun run test`
+5/5 - backend 1005 pass / 0 fail, web-admin 100, locales 90, react-email 5.
+
 ## 2026-11-14 - ERP-0052: migration history squashed to one migration per schema
 
 Branch `refactor/app-roles-investor-customer`. Closes ERP-0052: `drizzle-kit check` and
@@ -5302,6 +5354,9 @@ What landed:
   operations custody/location, kind×status matrix, item/inventory suites), and
   `verify-inventory-constraints.ts` now probes `assets.borrowing*` plus `ready`.
 
+> **Superseded 2026-11-14:** that verifier was deleted after rotting to 14
+> failing checks; see the entry at the top of this file.
+
 ```text
 bun run typecheck                      → clean
 bun run test                           → 526 pass, 0 fail (27 files, 979 expects)
@@ -6180,6 +6235,10 @@ of this is uncommitted working-tree state. Design: `docs/plan/plans/inventory.md
   - `database/verify-inventory-constraints.ts` → **ALL CHECKS PASSED**, run
     twice consecutively (the script now drops `inventory` and replays the
     migration, so it is repeatable).
+
+    > **Superseded 2026-11-14:** the script was deleted; by then it failed 14 of
+    > its own checks and could no longer run twice (the `DROP` list never grew
+    > past six schemas). The "repeatable" claim above held on 2026-11-06 only.
   - The **entire migration chain** (all 8 directories, in order) replays on a
     fresh database with `ON_ERROR_STOP=1` → 0 failures.
   - `pg_indexes` shows **zero** duplicate index names across schemas, and the
