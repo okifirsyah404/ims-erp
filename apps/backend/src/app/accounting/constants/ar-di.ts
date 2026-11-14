@@ -6,6 +6,8 @@ import type { SupplierBillService } from '../services/supplier-bill.service';
 import type { ReportService } from '../services/report.service';
 import type { BankReconciliationService } from '../services/bank-reconciliation.service';
 import type { MonthEndCloseService } from '../services/month-end-close.service';
+import type { ReportArchiveRepository } from '../repositories/report-archive.repository';
+import type { ReportArchiveService } from '../services/report-archive.service';
 
 /**
  * F4 tokens for the invoice/AR slice.
@@ -32,3 +34,8 @@ export const BANK_RECONCILIATION_SERVICE_TOKEN: InjectionToken<BankReconciliatio
 	Symbol('BANK_RECONCILIATION_SERVICE_TOKEN');
 export const MONTH_END_CLOSE_SERVICE_TOKEN: InjectionToken<MonthEndCloseService> =
 	Symbol('MONTH_END_CLOSE_SERVICE_TOKEN');
+
+export const REPORT_ARCHIVE_REPOSITORY_TOKEN: InjectionToken<ReportArchiveRepository> =
+	Symbol('REPORT_ARCHIVE_REPOSITORY_TOKEN');
+export const REPORT_ARCHIVE_SERVICE_TOKEN: InjectionToken<ReportArchiveService> =
+	Symbol('REPORT_ARCHIVE_SERVICE_TOKEN');

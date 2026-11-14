@@ -151,6 +151,20 @@ export const closeChecklistQuerySchema = z.object({
 	periodMonth: z.coerce.number().int().min(1).max(12),
 });
 
+/* ----------------------------- report archive (M12 T30) ----------------------------- */
+
+export const reportArchiveListQuerySchema = z.object({
+	page: z.coerce.number().int().positive().default(1),
+	limit: z.coerce.number().int().positive().max(100).default(20),
+	periodYear: z.coerce.number().int().min(2000).max(2100).optional(),
+	periodMonth: z.coerce.number().int().min(1).max(12).optional(),
+});
+
+export const reportArchiveCreateSchema = z.object({
+	periodYear: z.number().int().min(2000).max(2100),
+	periodMonth: z.number().int().min(1).max(12),
+});
+
 export const paymentVoidSchema = z.object({
 	reason: z.string().min(1),
 });
