@@ -413,6 +413,51 @@ export const warehouseOrganizations = inventorySchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
+ * inventory.warehouse_managers
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Per-user, per-warehouse person-in-charge grant (ADR-0017).
+ *
+ * @remarks
+ * A second access path to warehouses only: a PIC may read, update, archive,
+ * import and export their warehouse, while create stays application-admin-only.
+ * It is not an organization role and it grants no stock operation — stock stays
+ * on the organization `warehouse` role plus the warehouse↔organization link.
+ *
+ * Unlike `warehouse_organizations`, the grant deliberately ignores that link
+ * (ADR-0017 decision 3): a PIC keeps access when their warehouse is not linked
+ * to the active organization, and other organizations still cannot see it.
+ *
+ * `user_id` and `assigned_by` are logical references to `auth.users.id` —
+ * cross-module FKs are forbidden, so they stay nullable and presence is
+ * asserted by the service before an assignment is written. A NULL `user_id`
+ * row grants nothing; the normal write path never creates one.
+ */
+export const warehouseManagers = inventorySchema.table(
+	'warehouse_managers',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		warehouseId: uuid('warehouse_id')
+			.notNull()
+			.references(() => warehouses.id, { onDelete: 'cascade' }),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		userId: text('user_id'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		assignedBy: text('assigned_by'),
+		...softDeleteTimestamps,
+	},
+	(table) => [
+		uniqueIndex('warehouse_managers_uq')
+			.on(table.warehouseId, table.userId)
+			.where(sql`deleted_at IS NULL`),
+		index('warehouse_managers_user_id_idx').on(table.userId),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
  * inventory.items
  * ------------------------------------------------------------------------ */
 
@@ -923,6 +968,7 @@ export const inventoryRelations = defineRelationsPart(
 		warehouses,
 		warehouseAddresses,
 		warehouseStorages,
+		warehouseManagers,
 		itemCategories,
 		items,
 		stockMovements,
@@ -938,6 +984,16 @@ export const inventoryRelations = defineRelationsPart(
 			storages: r.many.warehouseStorages({
 				from: r.warehouses.id,
 				to: r.warehouseStorages.warehouseId,
+			}),
+			managers: r.many.warehouseManagers({
+				from: r.warehouses.id,
+				to: r.warehouseManagers.warehouseId,
+			}),
+		},
+		warehouseManagers: {
+			warehouse: r.one.warehouses({
+				from: r.warehouseManagers.warehouseId,
+				to: r.warehouses.id,
 			}),
 		},
 		warehouseAddresses: {

@@ -18,6 +18,48 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0051: warehouse PIC Phase 1 (schema, migration, seeder)
+
+Branch `refactor/app-roles-investor-customer`. Phase 1 of `plans/side-nav-role-based.md`: the
+`inventory.warehouse_managers` table only. Gate 1 (`docs/database/`) read: `docs.dbml` (header,
+Inventory module, `warehouse_organizations` as the nearest sibling), `module-ownership.md` §10,
+`integrity-and-consistency.md` §4-5, `data-dictionary.md` §1.3/1.9/1.10/1.13, `logical-references.md`
+(`auth.users.id` → Identity). `implementation-phases.md` skipped: no sequencing question. Gate 2
+(`grill-me` → `grilling`) run before coding; five answers recorded - stay on this branch, add
+`updated_at` via the shared `softDeleteTimestamps` pair, hand-write the migration, keep `user_id`
+nullable with no CHECK, add a small deterministic seeder.
+
+Shape: `id uuid pk uuidv7()`, `warehouse_id uuid NOT NULL` (intra-module FK → `inventory.warehouses`,
+`ON DELETE CASCADE`), `user_id text` and `assigned_by text` as logical references to `auth.users.id`
+(cross-module FK omitted, nullable, per ADR-0014), `created_at` / `updated_at` / `deleted_at` from
+`softDeleteTimestamps`. Partial unique `warehouse_managers_uq (warehouse_id, user_id) WHERE
+deleted_at IS NULL`, index `warehouse_managers_user_id_idx`. No `organization_id` (the grant
+deliberately ignores the warehouse↔organization link, ADR-0017 decision 3) and no status vocabulary.
+
+Commands and outcomes:
+- `bun docs/database/validate-dbml.ts`: `parsed: 269 tables, 232 refs`, `cross-module refs: 0`,
+  `timestamp gaps: 0`, `OK`.
+- `ims_erp_migrate_check` dropped and recreated empty, `POSTGRES_URL` pointed at it, `bun run
+  drizzle:migrate`: `migrations applied successfully`; 57 journal rows (56 → 57), 116 tables
+  (115 → 116), 21 schemas unchanged. Columns verified in `information_schema` (`id`/`warehouse_id`/
+  `created_at` NOT NULL, `user_id`/`assigned_by`/`updated_at`/`deleted_at` nullable), indexes
+  `warehouse_managers_pkey` / `_uq` / `_user_id_idx` present, FK `..._warehouse_id_warehouses_id_fkey`
+  with `confdeltype = c` (cascade). Second `migrate` run a no-op.
+- `bun run drizzle:seed` three times on that database: `created: 2` then `created: 0`, `created: 0`;
+  final table state 2 rows / 2 distinct warehouses / 1 distinct user, one PIC per live warehouse.
+- `bun test` (backend): 941 pass, 0 fail. `bunx tsc --noEmit`: exit 0. `bun run lint` (`oxlint`):
+  no errors, only the pre-existing warnings already recorded in `project-audit.md`.
+
+Deviation, deliberate: the migration is hand-written with no `snapshot.json`, like ERP-0041..0048,
+because `drizzle-kit generate` is still blocked by the duplicate `finance.receipts` creation tracked
+as ERP-0052. Append-only; no historical migration or snapshot touched.
+
+Not done: `warehouseGuard`, `GET /inventory/warehouses/mine`, assign/unassign routes and the PIC UI
+(Phase 2 and Phase 4 item 8) - both blocked on ADR-0017 acceptance. `docs/database/` was updated
+(`docs.dbml` TableGroup entry, table, intra-module Ref).
+
+Next executable task: owner review of ADR-0017 (accept or reject) before Phase 2 starts.
+
 ## 2026-11-14 - ERP-0051: ERP-0048 migration applied to a throwaway DB and inspected
 
 Branch `refactor/app-roles-investor-customer`. Merge `cff48eb` brings `fix/migration-journal-conflict`

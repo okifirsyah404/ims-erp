@@ -1,7 +1,10 @@
 # ADR-0017 — Warehouse Person-in-Charge Access and Web-Admin Login Gate
 
 - **Status:** proposed (2026-11-14). Not accepted until the owner signs off.
-  Backend PIC work stays on `fix/side-nav-role-based` and is not merged before
+  Phase 1 (the `inventory.warehouse_managers` table, its migration and seeder)
+  landed on `refactor/app-roles-investor-customer` because it depends on the
+  ADR-0018 login gate to be testable; `fix/side-nav-role-based` keeps the
+  Phase 4 web-admin work as its own record. Phases 2-5 are not merged before
   acceptance.
 - **Amends:** ADR-0008 §3 (warehouse access) and ADR-0010 §5 (access = role +
   link), §7 (org `admin` and `warehouse` role), §10 (`responsible_employee_id`
@@ -91,3 +94,13 @@
   and the login hook; manual check with an investor-only user, an
   investor-plus-internal user, a PIC without an organization link, and an
   application admin without membership.
+- **Verification progress:**
+  - Login hook: done 2026-11-14 - `login-gate.guard.test.ts` (stubbed gate over
+    HTTP) plus `scripts/smoke-login-gate.ts` against the real Better Auth
+    instance, 8/8 cases including investor-only (403), investor-plus-internal
+    (200) and admin-without-membership (200).
+  - Phase 1 schema: done 2026-11-14 - table, hand-written migration replayed on
+    a throwaway database (columns, indexes and cascade FK inspected), seeder
+    idempotent across three runs, `validate-dbml.ts` `OK`.
+  - `warehouseGuard` denial tests and the PIC-without-link manual check: pending,
+    blocked on Phase 2.
