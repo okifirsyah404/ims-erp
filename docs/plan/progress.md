@@ -100,8 +100,12 @@ done in a merge commit.
 
 Gate for M04 itself: nothing changed in what is *verified*. Live WhatsApp and
 n8n still need a WAHA instance, a dedicated number and an AI provider
-(ADR-0020 stays `proposed`); the catalog, outbox and web screens were
-re-checked in the browser after this merge (see the next entry).
+(ADR-0020 stays `proposed`). Browser verification of the merged web screens
+(`/integrations/website-catalog`, `/integrations/whatsapp-ai`, `…/faq`,
+`/integrations/webhooks`, `/settings/company`, `/settings/code-numbers`) is
+**not yet done**: the dev stack starts and those routes load with no console
+errors, but each redirects to `/login` without a session, so the pages were
+not walked through with data. Pending the owner's login in the browser.
 
 ## 2026-11-12 - WA/n8n guide (T32), plan-doc cleanup, UAT scripts (ERP-0024)
 
