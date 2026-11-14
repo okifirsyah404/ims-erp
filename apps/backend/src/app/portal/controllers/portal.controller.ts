@@ -30,6 +30,7 @@ import {
 	warrantyDetail,
 } from '../utils/portal-presenter';
 import { formPayload } from '../utils/form-payload';
+import { PortalNotFoundError } from '../errors/portal.errors';
 
 /** The presenter for one request: its language, today on the Jakarta clock. */
 function presenter(ctx: unknown): TPresenter {
@@ -117,7 +118,17 @@ export class PortalController {
 	static plugin() {
 		const auth = container.resolve(PORTAL_AUTH_SERVICE_TOKEN);
 		const service = container.resolve(PORTAL_SERVICE_TOKEN);
-		const id = (params: unknown) => portalIdParamSchema.parse(params).id;
+		// A malformed id is answered 404 like an unknown one: the portal reads 404 as "not found".
+		const id = (params: unknown) => {
+			const parsed = portalIdParamSchema.safeParse(params);
+			if (!parsed.success) throw new PortalNotFoundError();
+			return parsed.data.id;
+		};
+		const productId = (params: unknown) => {
+			const parsed = portalProductParamSchema.safeParse(params);
+			if (!parsed.success) throw new PortalNotFoundError();
+			return parsed.data.id;
+		};
 
 		return domainPlugin({ name: 'portal', prefix: '/portal/v1', tags: ['Customer portal'], guards: 'portal' })
 			.post(
@@ -235,7 +246,7 @@ export class PortalController {
 			})
 			.get(
 				'/products/:id/warranty',
-				async (ctx) => ok(warrantyDetail(presenter(ctx), await service.getDevice(ctx.portal, portalProductParamSchema.parse(ctx.params).id))),
+				async (ctx) => ok(warrantyDetail(presenter(ctx), await service.getDevice(ctx.portal, productId(ctx.params)))),
 				{ portal: true, detail: { description: "A device's warranty: period, coverage and exclusions" } },
 			);
 	}

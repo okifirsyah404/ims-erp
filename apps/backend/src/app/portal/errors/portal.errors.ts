@@ -44,3 +44,10 @@ export class PortalAttachmentsUnsupportedError extends AppError {
 		super(422, 'portal.attachmentsUnsupported', 'Attachments are not supported yet');
 	}
 }
+
+/** A malformed id in a portal URL: answered like an unknown record (the portal reads 404 as "not found"). */
+export class PortalNotFoundError extends AppError {
+	constructor() {
+		super(404, 'common.notFound', 'Not found');
+	}
+}

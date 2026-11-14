@@ -18,6 +18,37 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - Customer portal: every screen checked, stage-2 screens show "Coming soon"
+
+Owner reported `PortalNotConfiguredError … "listQuotations"` and asked to check
+the whole portal. A crawler (Playwright, signed in as the test individual)
+opened all 37 portal screens plus fake-id detail URLs: 8 answered 500 —
+orders, tracking, payments, quotations, book service, documents,
+notifications, wishlist — because their data comes only from stage-2
+operations. Astro renders page errors as a 500 response (they never reach the
+middleware), so the website now checks before rendering.
+
+Website repo (working tree, still uncommitted there):
+- `src/pages/coming-soon.astro` (signed-in layout, "Coming soon", back to home
+  / contact support);
+- `src/middleware.ts` `SCREEN_OPERATIONS`: a screen whose operations are not
+  in `erp-routes.ts` is rewritten to `/coming-soon`;
+  `src/services/portal/index.ts` `isConnected(operation)` (always true in
+  demo mode);
+- `src/pages/search.astro`: orders/quotations/invoices empty when not
+  connected (`unlessNotConnected`).
+
+ERP: a malformed id on a portal route answered 400, which the portal shows as
+an error page; now 404 (`PortalNotFoundError`, `common.notFound`), which the
+portal shows as "We couldn't find that". `tsc` clean;
+`customer-portal.test.ts` 24 pass.
+
+Re-crawl after restarting both dev servers: all 37 screens 200 (the 8 stage-2
+screens show "Coming soon", screenshot checked); `/projects/x`,
+`/warranty/x`, `/support/x`, `/sites/x` → 404 page; a real ticket detail
+200. Form actions that need unconnected operations already answer "This
+feature isn't connected yet" (unchanged).
+
 ## 2026-11-14 - ERP-0022 website portal wired to the ERP and tried in a browser
 
 Owner: "lanjut menyambungkan router di repo website dulu agar bisa dicoba
