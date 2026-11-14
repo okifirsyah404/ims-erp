@@ -5,6 +5,7 @@ import { closeDB, drizzleDB } from '../../drizzle/db';
 import { seedLocations } from './seed/location.seeder';
 import { seedAuth } from './seed/auth.seeder';
 import { seedInventory } from './seed/inventory.seeder';
+import { seedWarehouseManagers } from './seed/warehouse-managers.seeder';
 import { seedAssets } from './seed/assets.seeder';
 import { seedTax } from './seed/tax.seeder';
 import { seedOrganization } from './seed/organization.seeder';
@@ -49,6 +50,9 @@ export async function runSeeders(): Promise<void> {
 	// category rows above; asset placements then reference the warehouse and
 	// storage rows it creates.
 	await seedInventory();
+	// Needs the live warehouse rows above and the seeded `warehouse` role
+	// account from `seedOrganizationMembers` (ADR-0017).
+	await seedWarehouseManagers();
 	await seedAssets();
 	await seedTax();
 	await seedHrEmployees();

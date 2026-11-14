@@ -122,6 +122,14 @@ export interface IWarehouseRepository {
 	findById(id: string): Promise<TWarehouseSelect | null>;
 
 	/**
+	 * Alive warehouses, optionally narrowed to a set of ids, ordered by name.
+	 *
+	 * @param ids - `undefined` means every alive warehouse (application-admin
+	 *   view); an empty array means none
+	 */
+	findAlive(ids?: readonly string[]): Promise<TWarehouseSelect[]>;
+
+	/**
 	 * Whether an alive `warehouse_organizations` link row exists for the pair
 	 * (ERP-0031).
 	 */

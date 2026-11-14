@@ -4,6 +4,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { hasRole } from '@ims-erp/common';
 import { useSession } from '@/lib/auth-client';
 import {
 	organizationsQueryOptions,
@@ -75,7 +76,7 @@ function OrganizationsPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const { data: session } = useSession();
-	const canCreate = session?.user?.role === 'admin';
+	const canCreate = hasRole(session?.user?.role, 'admin');
 	const { data, isPending } = useQuery({ ...organizationsQueryOptions });
 	const { t } = useTranslation(['admin', 'common']);
 

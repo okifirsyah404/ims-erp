@@ -37,11 +37,11 @@ import type { SidebarItem } from './sidebar-item';
  * - `permission`: shown when the active organization holds it.
  * - `open`: shown to every logged-in user with an internal role.
  * - `appAdminOnly`: shown to application administrators only.
+ * - `warehousePic`: shown to application administrators or to a warehouse
+ *   person in charge (ADR-0017). A PIC grant is a table row, not an
+ *   organization permission, so it is its own flag.
  * - none of the above: hidden. Used for modules whose permission is not in
  *   the catalog yet (`erpStatements`), so the item cannot be gated honestly.
- *
- * Warehouse (`appAdminOnly`) becomes "app admin or PIC" once the
- * `/warehouses/mine` endpoint lands (ADR-0017, plan Phase 4).
  */
 export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarItem[] }[] = [
 	// M01 - Dashboard.
@@ -132,8 +132,9 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 	{
 		labelKey: 'section.inventory',
 		items: [
-			// PIC access (ADR-0017) comes in Phase 4 via `/warehouses/mine`.
-			{ titleKey: 'item.warehouses', url: '/inventory/warehouses', icon: Warehouse, appAdminOnly: true },
+			// App admins see every warehouse; a person in charge sees the ones
+			// granted to them (ADR-0017, resolved from `/warehouses/mine`).
+			{ titleKey: 'item.warehouses', url: '/inventory/warehouses', icon: Warehouse, warehousePic: true },
 			{ titleKey: 'item.inventoryValue', url: '/inventory/stock/value', icon: Calculator, permission: 'stock.read' },
 			{
 				titleKey: 'item.items',

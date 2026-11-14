@@ -18,6 +18,613 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0051: delivery follow-ups recorded as a separate plan
+
+Branch `refactor/app-roles-investor-customer`. Reviewing the PR #101 delivery left six items
+that are not missing features, so they are recorded in
+`docs/plan/plans/erp-0051-follow-ups.md` instead of reopening `side-nav-role-based.md`:
+
+- **ERP-0053** - `canOpenPath` fails open for a path no nav leaf covers
+  (`route-guard.ts:45`). `/inventory/items/$itemId` and `$itemId.edit` are real pages with no
+  gate; the only leaf under `/inventory/items` is `/inventory/items/new` with `product.create`,
+  which does not prefix-match either. The only behaviour bug in the set.
+- **ERP-0054** - ADR-0018 still reads `proposed` while its code is shipped and `features.md`
+  says `verified`.
+- **ERP-0055** - plan decision 6 ("Administration section: app admins only") contradicts the
+  shipped tree, where `/organizations` carries `permission: 'organization.read'`. The shipped
+  behaviour matches the backend (`GET /organizations` is session-only, `GET /organizations/:id`
+  needs `organization:read`), so decision 6 is the stale text.
+- **ERP-0056** - `docs/database/module-ownership.md:402-408` says the database has three
+  schemas; it has nineteen, and there is no `investor` schema at all.
+- **ERP-0057** - `progress.md` quotes a per-build seeded organization id
+  (`LwhLYWKg7I9qkzTSHXPqQColX3To0u5r`) that no longer exists; the current dev database holds
+  `h7fUe07E5C4vzig3hE6yXzh73sM87EHs`.
+- **ERP-0058** - `scopedUnique()` does not model the `deleted_at IS NULL` predicate on the two
+  `items` code indexes; already recorded as known in ADR-0019.
+
+`features.md` and the `side-nav-role-based.md` header now point at the new file, so ERP-0051
+stays closed. `backlog.md` has no ERP-0053…ERP-0058 rows yet; the file states that and asks the
+next worker to add them when work starts rather than duplicating the ledger.
+
+`docs/database/` reviewed: no table, column, index, constraint, logical reference or status
+vocabulary changed. The stale sentence in `module-ownership.md` is prose, tracked as ERP-0056,
+not a schema change.
+
+## 2026-11-14 - ERP-0051: CI caught a unit suite that needed a live database
+
+Branch `refactor/app-roles-investor-customer`, PR #101. The first CI run on this branch failed
+`Unit Test Backend`: **559 pass, 7 fail**, all seven in `test/unit/notification.controller.test.ts`.
+
+**Cause, and why it hid locally.** ADR-0018 put the login gate inside `sessionGuard`
+(`isWebAdminSessionAllowed`), and that gate reads `auth.users` + `auth.members` through
+`drizzleDB`. The notification route suite mounts the real `sessionGuard` and stubs only
+`@providers/better-auth/auth`, so the gate reached for a real connection. On this machine a
+Postgres server answers, the query succeeds and the suite passes; on CI there is no database, the
+driver raises `PostgresError: Failed to connect`, and because that is not an `APIError` the gate
+rethrows it - a 500 where the test expects a 200 envelope. The suite had been green locally for
+the whole branch, which is exactly why 14 unpushed commits were a risk.
+
+**Fix.** `test/unit/notification.controller.test.ts` now also stubs
+`@providers/better-auth/options/session.auth`, the same four exports and the same shape that
+`test/authorization/test-app.ts` has used since the gate landed. The gate's own rule stays covered
+by `test/unit/login-gate.test.ts` (pure predicate) and `test/authorization/login-gate.guard.test.ts`.
+
+**Verified with the database made unreachable**, so the result cannot be a local-DB artefact:
+
+```
+cd apps/backend
+POSTGRES_HOST=127.0.0.1 POSTGRES_PORT=1 bun test ./test/unit   # 566 pass, 0 fail
+bun test                                                       # 1005 pass, 0 fail
+bunx tsc --noEmit                                              # exit 0
+```
+
+**Also removed** the now-unused `erpRoleNames` import in
+`src/providers/better-auth/ac/organization-ac.ts` - residue from ADR-0018, which took `investor`
+and `customer` out of that catalog.
+
+`docs/database/` reviewed: no table, column, index, constraint, logical reference or status
+vocabulary changed, so it is unchanged.
+
+## 2026-11-14 - Removed the two stale one-shot database scripts
+
+Branch `refactor/app-roles-investor-customer`. `apps/backend/database/` held three TypeScript
+files beside `migrations/` and `seeders/`; only one of them belonged there. Two were removed.
+
+**Kept: `migrate-reset.ts`.** Wired to `package.json` as `drizzle:migrate-reset`, it owns the
+`schema drop + migrate + seed` cycle over the sibling `migrations/` folder and is the sanctioned
+rebuild path recorded in ADR-0019. It stays where it is.
+
+**Removed: `cleanup-tool-items.ts`** (ERP-0036, written 2026-11-06). A one-shot data script that
+hard-deleted `tool`/`service` items, their serialized units and ledger rows, behind a `--apply`
+flag. It did its job once - the dry run reported `items: 8, byKind {tool: 4, service: 4}, units:
+12` and the apply succeeded - and is now a permanent no-op: `ITEM_KINDS` is
+`product|component|material`, so the query can never match again. Destructive data movement
+belongs in a migration, not in a script that outlives its purpose.
+
+**Removed: `verify-inventory-constraints.ts`** (plan `inventory-and-assets-hardening.md` Phase I-5,
+written in `a9b28213`, extended in `e6677d16`, `52fee532`, `60d058d6` and `b0929a92`). A manual
+verifier
+that dropped six hardcoded schemas, replayed `database/migrations/` and asserted the CHECK
+constraints against real PostgreSQL 18. It was outside `bun run test` (the backend suite never
+opens a connection - every test runs against `test/helpers/mock-db.ts`) and outside the four
+`typecheck` workspaces, so nothing ever caught it rotting. Re-run before deletion against a fresh
+database it reported **14 failures**:
+
+- `column "code" of relation "items" violates not-null constraint` (ERP-0043 added
+  `inventory.items.code NOT NULL`, the verifier still inserted without it) - 2 checks;
+- `relation "organization.document_sequences" does not exist` (relocated to
+  `code_number.document_sequences` by ADR-0015/ERP-0042) - 4 checks;
+- 4 checks that *passed when they should have been rejected* (`unknown status`,
+  `provisional serial outside pre_order`, `zero quantity`, `borrowing_out without borrowing
+  reference`) - the worst mode, because it reported safety that was not there;
+- `TypeError: undefined is not an object` in 2 balance checks, and the D17 concurrency smoke
+  reporting `expected exactly 3 winners, got 0`;
+- a second run could not even start: `schema "accounting" already exists`.
+
+**Docs updated** so nothing points at the deleted files: `docs/architecture/modules/inventory.md`
+(both the evidence list and the Tests list),
+`docs/plan/plans/assets-equipment-location-and-borrowing.md` (Slice 2 step 1 + the Slice 2
+wrap-up), `docs/plan/plans/inventory-and-assets-hardening.md` (rows I-5 and D-5, and the Phase I-5
+section), and the two 2026-11-06 claims in this file, which now carry a supersede note.
+
+**Honest gap this opens:** no test or script currently asserts that the inventory/asset CHECK
+constraints reject bad rows against a live server - the backend suite mocks the database entirely.
+That proof existed until this change and has no successor. Recorded in
+`docs/architecture/modules/inventory.md`; the cheapest replacement is a small live-DB smoke under
+`apps/backend/scripts/` (the maintained convention - `smoke-warehouse-pic.ts` and nine siblings),
+run on demand against a disposable database rather than from `bun run test`.
+
+**Gates after the deletion:** `bun run typecheck` 4/4, `bun run lint` 5/5 (0 errors), `bun run test`
+5/5 - backend 1005 pass / 0 fail, web-admin 100, locales 90, react-email 5.
+
+## 2026-11-14 - ERP-0052: migration history squashed to one migration per schema
+
+Branch `refactor/app-roles-investor-customer`. Closes ERP-0052: `drizzle-kit check` and
+`drizzle-kit generate` now both work against the repo's own config, for the first time since the
+ERP-0011 merge. Decision recorded as **ADR-0019**.
+
+**Root causes** (all four had to be fixed; the reported error was only the first symptom):
+1. Eleven migrations carried no `snapshot.json` - every hand-written one from `20261113150000`
+   onward. `generate` diffs against the *last* snapshot, so those changes were invisible.
+2. `20261106170000_drop_merge_side_finance_receipts` runs `DROP SCHEMA "finance" CASCADE` but has
+   no snapshot, so the deletion was never recorded. `20261106221731` therefore looked like a second
+   creation of `finance.receipts` - the "Two migrations gave one name to two different entities"
+   error. `20261109090000_sales_owns_invoice_receipt` was just the next conflict in line.
+3. On this drizzle-kit version (`1.0.0-rc.5`) `generate` writes a **base** snapshot, not a `diff`,
+   whenever the out folder has no snapshot yet. My first build script moved each generated folder
+   out of `--out` immediately, so every step saw an empty folder and produced a cumulative base -
+   visible as 19 base snapshots instead of 1 base + 18 diffs. Fixed by leaving the folders in
+   `--out` and copying at the end; the script now asserts `base` first and `prevIds` chaining.
+4. After removing only the immediate conflict, `generate` asked for **40** interactive
+   rename/create hints, so repairing the graph was not viable.
+
+**What replaced it:** 19 migrations, one per Postgres schema, in dependency order - `auth` (with
+`role`), `accounting`, `aftersales`, `assets`, `audit`, `code_number`, `company`, `crm`, `document`,
+`finance`, `hr`, `inventory`, `licensing`, `location`, `notification`, `organization`,
+`procurement`, `projects`, `sales`. The first is a `base` snapshot generated from
+`drizzle/schemas`; the next 18 are `diff` snapshots chained by `prevIds`. Each folder adds exactly
+one schema, so provenance survives the squash. Table adds per folder: 10, 11, 2, 14, 1, 1, 5, 5, 8,
+10, 1, 12, 6, 4, 2, 1, 5, 5, 12 = **115**.
+
+**Hand-written tails kept** (drizzle cannot express them; documented inline in the SQL):
+`create_inventory_schema` carries `NULLS NOT DISTINCT` on both `stock_balances` scope indexes (the
+bug `20261105185010` fixed - `inventory.schema.ts` explains why the builder cannot express it) and
+the `deleted_at IS NULL` predicate on the two `items` code indexes (SQL `IF NOT EXISTS` made
+`20261113130000` a no-op, so the live DB keeps the stricter definition).
+`create_sales_schema` carries the intra-module `sales.receipts` -> `sales.invoices` FK.
+
+**One foreign key deliberately dropped:** `receipts_payment_id_payments_id_fkey`
+(`sales.receipts` -> `finance.payments`). It violates `elysia-module` rule 3.2 / ADR-0014, it was
+created only by hand-written SQL (`sales.schema.ts` models `paymentId` as a plain id), and no code
+depends on it (the only `paymentId` outside the schema file is a TypeScript type in
+`web-admin/src/lib/finance-api.ts`). The database now has **zero** cross-schema foreign keys -
+verified by `pg_constraint` where child namespace <> parent namespace: 0 rows.
+
+**Evidence** (`ims_erp_local`, backup taken first at
+`%TEMP%\opencode\ims_erp_local_backup_20261114_210952.sql`):
+- `bun run drizzle:migrate-reset` -> 19 journal rows, 116 tables, 2 live PIC grants, 40 `auth.users`,
+  seeds complete in 9.9s.
+- `bunx --bun drizzle-kit check` (repo config) -> `Everything's fine`; `bunx --bun drizzle-kit
+  generate` -> `No schema changes, nothing to migrate`.
+- Positive test in a scratch copy of the chain: adding a probe column produced
+  `ALTER TABLE "inventory"."warehouses" ADD COLUMN "probe_column" text;` (a diff, not a base);
+  probe reverted, `git diff` on `drizzle/schemas` clean.
+- Replay of the new chain on an empty database (`ims_erp_squash_check`): 116 tables, and a
+  schema fingerprint (tables, columns, indexes, constraints, enums - 3759 lines) equal to the old
+  chain's except for two constraint *names* (the `hr.employees` manager FK and the
+  `notification.notifications` template FK now use drizzle's auto-generated names) plus the dropped
+  cross-schema FK. Both fingerprints stored under `%TEMP%\opencode\fp-*.txt`.
+- `drizzle:migrate` on the already-migrated DB is a no-op (still 19 journal rows, 116 tables).
+- `scripts/smoke-warehouse-pic.ts` re-run against the freshly rebuilt DB: **47 passed, 0 failed**.
+- Gates: `bun run typecheck` 4/4, `bun run lint` 5/5 (0 errors, pre-existing warnings only),
+  `bun run test` 5/5 - backend **1005 pass / 0 fail**, web-admin 100, locales 90, react-email 5;
+  `bun run docs/database/validate-dbml.ts` -> `269 tables, 232 refs, cross-module refs: 0,
+  timestamp gaps: 0, OK`.
+
+**Upgrade path:** a database migrated by the old 57-folder chain **cannot** be upgraded in place -
+the first squashed migration starts with `CREATE SCHEMA`, which fails against an existing database
+(verified). Rebuild it with `bun run drizzle:migrate-reset`. Acceptable while no production server
+exists (ADR-0019 decision 6).
+
+**Known follow-up, not introduced here:** `inventory.schema.ts`'s `scopedUnique()` helper does not
+model the `deleted_at IS NULL` predicate that the `items` code indexes carry in the database, so the
+snapshot understates them. It is **not** an active problem: a probe `drizzle:generate` against the
+squashed chain emitted only the probe's own `ALTER TABLE`, so `generate` diffs against the snapshot
+and will not try to drop those indexes. Worth closing so the two stay in sync if the indexes are
+ever edited; recorded in ADR-0019 consequences.
+
+**Superseded:** the `57 journal rows` / `57 migration folders` figures in the entries below describe
+the pre-squash tree. They are left as written (append-only); the migration tree they refer to no
+longer exists.
+
+## 2026-11-14 - ERP-0051: dev DB reset to a fresh migrate + import/export guard proof
+
+Branch `refactor/app-roles-investor-customer`. The earlier Phase 5 evidence ran on a disposable database
+because `ims_erp_local` predated the PIC table and was recorded never-to-migrate. That constraint is gone:
+`drizzle:migrate-reset` replays the whole migration chain, so the dev DB was rebuilt from zero and the same
+checks were re-run against it.
+
+**Backup first** (the reset drops every application schema):
+`pg_dump` → `%TEMP%\opencode\ims_erp_local_backup_20261114_210952.sql`, 11,893,114 bytes. Before the reset
+the DB held 21 tables, 40 `auth.users`, 2 `inventory.warehouses`, and no `inventory.warehouse_managers`.
+
+**Reset:**
+```
+cd apps/backend
+bun run drizzle:migrate-reset
+```
+Outcome: every app schema dropped, migrations replayed, seeders ran - `Migrate-reset complete` after 9.4s
+(6.7s of it seeding). After: **116 tables, 57 journal rows**, `inventory.warehouse_managers` present, 2 live
+PIC grants (`GLOBAL-MAIN` and `WH-MAIN` → `warehouse.seed@entragate.local`), 40 `auth.users`, organization
+`Entragate` = `LwhLYWKg7I9qkzTSHXPqQColX3To0u5r`.
+
+**Full Phase 5 smoke re-run against `ims_erp_local`** (backend on 3001, `SCHEDULER_ENABLED=false`):
+`bun run scripts/smoke-warehouse-pic.ts LwhLYWKg7I9qkzTSHXPqQColX3To0u5r` → **47 passed, 0 failed**. The
+same cases as the disposable-DB run, now on the real dev database. Cleanup verified afterwards: 0 leftover
+`pic-check%` users, 2 warehouses, 2 live grants - the seeded rows were read, not mutated.
+
+**The `import`/`export` question, answered.** Phase 5 recorded those two PIC rights as unexercised. Reading
+the guard shows why: `warehouseGuard` copies `options.action` into the returned `warehouse` context and
+never branches on it, so authorization is identical for all five values. `warehouse.controller.ts` passes
+only `read` (2 routes), `update` (4) and `archive` (2) through its `picRoute(...)` helper - `import` and
+`export` appear nowhere outside the `TWarehouseAction` union.
+
+New tests in `test/authorization/warehouse-authorization.test.ts` (`warehouse routes — the guard is
+action-agnostic (ADR-0017 §2)`, 6 cases) pin that down instead of leaving it as prose:
+- every declared action (all five, `import`/`export` included) is allowed for a PIC of that warehouse, and
+  the action survives into the context;
+- every declared action gives 404 for a PIC of another warehouse;
+- every declared action gives 403 with no live grant, and 401 with no session;
+- `import`-style actions still admit an application admin with no grant;
+- a source scan asserts the controller declares exactly `archive`, `read`, `update` - so the day an
+  import/export route lands, this test fails and sends the reader back to this entry.
+
+Verified the tests can fail: temporarily making the guard reject `export` turned 3 of them red (151 pass /
+3 fail); reverted, back to 154 pass / 0 fail with `elysia-auth.ts` byte-identical to HEAD.
+
+**Correction to my own earlier claim.** I told the user the default test suite never touches a real database.
+That is true for the suite, but not for this work: the 47-case smoke script *is* a live HTTP check, and it
+now runs against `ims_erp_local`. What the *unit* suite covers remains mocked, which is why the guard
+matrix above is a unit test and the 47 cases are the live proof.
+
+Gates after the new tests: `bun run typecheck` 4/4 successful; `bun run lint` 5/5, 0 errors; `bun run test`
+5/5 - **backend 1005 pass / 0 fail** (999 + 6 new), web-admin 100, locales 90, react-email 5.
+`bun run docs/database/validate-dbml.ts` → `269 tables, 232 refs, cross-module refs: 0, timestamp gaps: 0,
+OK`. `docs/database/` unchanged (no schema delta).
+
+Cleanup: backend stopped, port 3001 free. `ims_erp_local` is left in its fresh, seeded state.
+
+Next executable task: none for ERP-0051. Open follow-ups, not claimed: ERP-0052 (`drizzle-kit
+generate`/`check` still blocked by the duplicate `finance.receipts` migration - note the *replay* path used
+here works, only snapshot generation does not) and the actual warehouse import/export endpoints.
+
+## 2026-11-14 - ERP-0051: warehouse PIC Phase 5 (live HTTP smoke + browser pass)
+
+Phase 5 of `plans/side-nav-role-based.md` executed on branch `refactor/app-roles-investor-customer`.
+Evidence split by agreement: backend **enforcement** measured by me over real HTTP; **rendering**
+measured by me in a real browser (Edge, through the browse tool), not handed off.
+
+Environment: the dev DB `ims_erp_local` has no `inventory.warehouse_managers` table and is recorded
+never-to-migrate, and `drizzle:migrate` is still blocked by the ERP-0052 duplicate
+`finance.receipts` migration. All Phase 5 evidence therefore comes from a disposable database:
+
+```
+# create ims_erp_pic_check, then
+POSTGRES_DB=ims_erp_pic_check bun run drizzle:push --force   # 115 tables
+POSTGRES_DB=ims_erp_pic_check bun run drizzle:seed           # clean
+POSTGRES_DB=ims_erp_pic_check bun run drizzle:seed           # idempotent: created: 0, inserted: 0
+POSTGRES_DB=ims_erp_pic_check APP_PORT=3001 SCHEDULER_ENABLED=false bun run src/index.ts
+POSTGRES_DB=ims_erp_pic_check bun run scripts/smoke-warehouse-pic.ts <organizationId>
+```
+
+**Backend enforcement - `apps/backend/scripts/smoke-warehouse-pic.ts`, 47 pass / 0 fail.** The script
+creates its own accounts and grant, removes them at the end, and only reads seeded rows. Sections and
+cases: login gate (app admin without membership 200, investor-only 403, customer-only 403,
+investor+internal 200); no session (`/warehouses/mine`, `/warehouses/:id` → 401); app admin without
+membership (`/mine` 200 listing every live warehouse, any `/:id` 200, `/:id/managers` 200,
+`/manager-candidates` 200 with rows); PIC (`/mine` 200 returning exactly the granted warehouse with its
+`storages`, own `/:id` 200, another warehouse 404 so existence is not leaked, admin list 403,
+`POST /warehouses` 403, assign 403, managers list 403, organization links 403); internal member with no
+grant (`/mine` 200 and empty - not 403, `/:id` 403); investor app role with an internal membership
+(`/mine` 200 empty, `/organizations/mine` only internal-role organizations); direct admin-route calls
+403; assign/unassign round trip (201, duplicate 409, unknown user 404, the new grant immediately widens
+`/mine` and `/:id`, unassign 200 then idempotent 200, access refused again as 404); PIC of a warehouse
+with **no** `inventory.warehouse_organizations` row (decision 3: 200, appears in `/mine`, PATCH 200,
+PUT/GET address 200, `POST /storages` 201, PUT another address 404, archive 200).
+
+Two corrections the run forced, both kept in the script as comments:
+- Fixture emails must be lowercase. Better Auth normalizes addresses, so a mixed-case fixture answered
+  401 `INVALID_EMAIL_OR_PASSWORD` while the lowercase form works.
+- The `GET /items` 403 assertion was dropped: item reads ride the active organization's permissions and
+  every web-admin account holds an internal org role, so 200 is legitimate. Hiding the item tabs from a
+  PIC is a UX rule, not a route denial.
+- The first run renamed and re-addressed seeded warehouses, so the DB was recreated before the recorded
+  run and every write case now targets a warehouse the script creates itself.
+
+**Browser pass - 7 scenarios, all confirmed** (`localhost:5173` Vite + backend on 3001, disposable DB,
+one fixture account per role, password `fixture123456`):
+1. App admin without membership: full sidebar, 2 warehouses, `New warehouse` + `Filters` present, all
+   six detail tabs (Products, Components, Materials, Storage, Organizations, Persons in charge).
+2. PIC without an organization link: `Warehouses` appears in the sidebar, list shows only
+   `PIC-UNLINKED`, **zero** create controls, detail renders only the `Storage` tab, and a direct
+   `/inventory/warehouses/new` redirects to `/`.
+3. Multi-org user: switcher lists `Entragate` and `Second Co` only; switching applies (header becomes
+   `Second Co`); the warehouse nav item disappears there (deny-by-default on the new org's permissions).
+4. Investor-only: login rejected, inline message "Web-admin access requires an internal organization
+   role", stays on `/login`.
+5. Customer-only: same rejection.
+6. Investor + internal membership: signs in; no warehouse nav item (no grant).
+7. Direct URL without permission: `/inventory/warehouses`, `/inventory/warehouses/:id`,
+   `/inventory/warehouses/new`, `/admin/users` each redirect to `/` with the toast "You do not have
+   access to that page."
+8. Assign/unassign in the UI: picker search `no-grant` resolves the account, `Assign` adds the row with
+   a date and shows "Person in charge assigned"; `Unassign` (behind a `window.confirm`) removes the row
+   and shows "Person in charge unassigned".
+
+Observations and gaps:
+- `Unassign` is guarded by `window.confirm`; an automated browser driver has to accept the dialog. Fine
+  for a human, worth knowing for future UI automation.
+- The PIC grant carries `import`/`export` actions in `TWarehouseAction`, but no warehouse route uses
+  them today (routes use `read`/`update`/`archive` only), so those two rights are unexercised. They land
+  automatically when a warehouse import/export route appears.
+- Better Auth `trustedOrigins` allows only `appConfig.app.url` + `http://localhost:5173`, so a browser
+  pass must run Vite on 5173 with the backend on 3001; a Vite on 5174 answers 403 `Invalid origin`.
+- Two pre-existing Base UI `nativeButton` console warnings appear on the warehouse list and detail
+  (`<Button render={<Link/>}>` without `nativeButton={false}`). The pattern is repo-wide and predates
+  this change (`warehouse-list.tsx` had the same call before `11085e1`); not fixed here.
+
+Cleanup: both servers stopped, `ims_erp_pic_check` dropped. No dev-database migration was attempted.
+
+**Superseded 2026-11-14:** the disposable-database workaround above is no longer needed. `ims_erp_local`
+was reset through `drizzle:migrate-reset` and the same 47 cases were re-run against it - see
+"2026-11-14 - ERP-0051: dev DB reset to a fresh migrate + import/export guard proof" at the top of this
+file.
+
+Next executable task: none for ERP-0051 (plan `side-nav-role-based.md` complete). Open follow-ups, not
+claimed: ERP-0052 (`drizzle-kit generate`/`check` blocked by duplicate `finance.receipts` migration) and a
+PIC `import`/`export` route when warehouse import/export lands.
+
+Gates re-run at the end of this entry: `bun run typecheck` 4/4 tasks, `bun run lint` 5/5 (warnings
+only), `bun run test` 5/5 - backend 999 pass, web-admin 100 pass, locales 90 pass, react-email 5 pass,
+0 fail. `docs/database/` reviewed and unchanged (no table, column, index, constraint, or cross-module
+link delta in Phase 4.8/5).
+
+## 2026-11-14 - ERP-0051: warehouse PIC Phase 4.8 (PIC UI + manager read surface)
+
+Commit `11085e1` (26 files, +1004/-86).
+
+Web admin:
+- `lib/use-warehouse-access.ts` is the single source of `isAppAdmin` / `isPic` / `canAccess` /
+  `isPending` (the grant query is skipped for app admins). The sidebar, list, detail page, route guard,
+  and the new `components/inventory/warehouse-access-gate.tsx` all read it; the gate replaces
+  `AdminOnly` on the warehouse routes.
+- Nav: a dedicated `warehousePic` flag on `SidebarItem` plus `isPic` on `NavContext`, because a PIC
+  grant is a table row, not a permission string. `leafVisible` order is `appAdminOnly` → `warehousePic`
+  → `open` → `internalRole` → `permission`; a parent section hides when no child passes.
+- `canOpenPath` resolves the PIC fact from `/warehouses/mine` and short-circuits
+  `/inventory/warehouses/new` to app-admin only (a PIC grant has no `create`).
+- List split into `AdminWarehouseList` (paginated, filters, create) and `PicWarehouseList`
+  (`/warehouses/mine`, no create, client-side search), sharing `useWarehouseLifecycle`.
+- Detail page hides the item tabs and the Organizations tab for a PIC and adds a Persons-in-charge tab
+  for app admins only.
+
+Backend manager read surface:
+- `GET /warehouses/:id/managers` (app admin) returns live assignments decorated with account
+  name/email; rows with a NULL `user_id` are skipped.
+- `GET /warehouses/manager-candidates?search=&limit=` (app admin) searches every account through
+  `UserService.paginateUsers`, which gained a `search` term over name/email/username. `GET /admin/users`
+  cannot serve the picker: it needs `member:read` plus an organization context, and a PIC may have no
+  membership at all (ADR-0017 decision 3).
+
+i18n: 19 new `warehouses.*` keys in both `en` and `id`.
+
+Tests added/extended: `filter-nav.test` (`warehousePic`), `route-guard.test` (PIC allow, create denied),
+`warehouse-manager.service.test` (`listManagers`, `searchCandidates`), warehouse authorization fakes.
+
+## 2026-11-14 - ERP-0051: warehouse PIC Phase 2 (guard, routes, assignment service)
+
+Branch `refactor/app-roles-investor-customer`. ADR-0017 accepted by the owner; Phase 2 authorized
+(grilled: auth seam port, 403/404 split accepted, `mine` includes storages, route/idempotency rules
+accepted).
+
+What landed:
+- `src/authorization/warehouse-pic-resolver.ts` - `IWarehousePicResolver` +
+  `WAREHOUSE_PIC_RESOLVER_TOKEN`, the guard's Drizzle-free port. `WarehouseManagerRepository`
+  implements it and `registerInventory` wires it with `useFactory`, so `warehouseGuard` never touches
+  Drizzle (mirrors how `erpGuard` reaches `IPermissionResolver`).
+- `warehouseGuard()` + `TWarehouseAction` in `src/authorization/elysia-auth.ts`. Status mapping: no
+  session 401; login gate closed 403; application admin allowed without a grant; PIC of `:id` allowed;
+  PIC of another warehouse 404 (existence not leaked); no live grant at all 403.
+- `'session+warehouse'` guard set in `src/http/plugin.ts`; both macros mount, each route opts into
+  exactly one.
+- `WarehouseManagerRepository` (alive-only reads, revive-on-assign, soft unassign) and
+  `WarehouseManagerService` (`listMine`, `assign`, `unassign`, audit). Duplicate assign 409
+  `inventory.warehouseManagerExists`; unknown/deleted user 404 `inventory.warehouseManagerUserNotFound`
+  (checked through `UserService.getUser`, never `auth.users` directly); unassign idempotent
+  `{ removed }`. Audit actions `warehouse.manager_assigned` / `warehouse.manager_removed`.
+- `IWarehouseRepository.findAlive(ids?)` (one query for both the PIC view and the app-admin view).
+- Routes: `warehouseGuard` on `GET/PATCH/DELETE /:id`, `GET/PUT/DELETE /:id/address`,
+  `GET/POST /:id/storages`, `PATCH/DELETE /:id/storages/:storageId`. `POST /:id/storages` is
+  `update` on the warehouse (the grant has no `create`; `create` belongs to the warehouse itself).
+  Create, list, organization links, and `POST/DELETE /:id/managers` stay `requireGlobalAdmin`.
+  `GET /warehouses/mine` is session-only and returns warehouses + `storages`; app admins get every
+  live warehouse.
+- `assignManagerSchema` / `managerParamSchema` in `warehouse.contract.ts`; three new domain errors;
+  `en`/`id` locale keys for `inventory.warehouseManagerExists` and
+  `inventory.warehouseManagerUserNotFound`.
+
+Commands and outcomes:
+- `bun test` (backend): 979 pass, 0 fail across 74 files. New coverage:
+  `test/unit/warehouse-manager.service.test.ts` (9 tests: assign audit, 404 unknown warehouse/user,
+  409 duplicate, unassign audit + idempotency, `listMine` PIC/admin/empty) and PIC denial cases in
+  `test/authorization/warehouse-authorization.test.ts` (PIC read/update/storages allowed, PIC of
+  another warehouse 404, no/soft-deleted grant 403, PIC create 403, PIC assign 403, `/mine` 401/200
+  cases).
+- `bunx tsc --noEmit`: exit 0. `bun run lint` (`oxlint`): exit 0, pre-existing warnings only.
+- `bun run test` in `apps/web-admin`: 97 pass, 0 fail. `packages/locales` `bun test`: 90 pass, 0 fail
+  (parity + dead-key guards green with the new keys).
+- `bun docs/database/validate-dbml.ts`: `parsed: 269 tables, 232 refs`, `cross-module refs: 0`,
+  `timestamp gaps: 0`, `OK`. `docs/database/` reviewed and unchanged: Phase 2 adds no table, column,
+  index, constraint, or cross-module link (the table and its Ref landed in Phase 1).
+
+Next executable task: Phase 4 item 8 (PIC nav item + warehouse UI in `apps/web-admin`), then the
+remaining plan phases.
+
+## 2026-11-14 - ERP-0051: warehouse PIC Phase 1 (schema, migration, seeder)
+
+Branch `refactor/app-roles-investor-customer`. Phase 1 of `plans/side-nav-role-based.md`: the
+`inventory.warehouse_managers` table only. Gate 1 (`docs/database/`) read: `docs.dbml` (header,
+Inventory module, `warehouse_organizations` as the nearest sibling), `module-ownership.md` §10,
+`integrity-and-consistency.md` §4-5, `data-dictionary.md` §1.3/1.9/1.10/1.13, `logical-references.md`
+(`auth.users.id` → Identity). `implementation-phases.md` skipped: no sequencing question. Gate 2
+(`grill-me` → `grilling`) run before coding; five answers recorded - stay on this branch, add
+`updated_at` via the shared `softDeleteTimestamps` pair, hand-write the migration, keep `user_id`
+nullable with no CHECK, add a small deterministic seeder.
+
+Shape: `id uuid pk uuidv7()`, `warehouse_id uuid NOT NULL` (intra-module FK → `inventory.warehouses`,
+`ON DELETE CASCADE`), `user_id text` and `assigned_by text` as logical references to `auth.users.id`
+(cross-module FK omitted, nullable, per ADR-0014), `created_at` / `updated_at` / `deleted_at` from
+`softDeleteTimestamps`. Partial unique `warehouse_managers_uq (warehouse_id, user_id) WHERE
+deleted_at IS NULL`, index `warehouse_managers_user_id_idx`. No `organization_id` (the grant
+deliberately ignores the warehouse↔organization link, ADR-0017 decision 3) and no status vocabulary.
+
+Commands and outcomes:
+- `bun docs/database/validate-dbml.ts`: `parsed: 269 tables, 232 refs`, `cross-module refs: 0`,
+  `timestamp gaps: 0`, `OK`.
+- `ims_erp_migrate_check` dropped and recreated empty, `POSTGRES_URL` pointed at it, `bun run
+  drizzle:migrate`: `migrations applied successfully`; 57 journal rows (56 → 57), 116 tables
+  (115 → 116), 21 schemas unchanged. Columns verified in `information_schema` (`id`/`warehouse_id`/
+  `created_at` NOT NULL, `user_id`/`assigned_by`/`updated_at`/`deleted_at` nullable), indexes
+  `warehouse_managers_pkey` / `_uq` / `_user_id_idx` present, FK `..._warehouse_id_warehouses_id_fkey`
+  with `confdeltype = c` (cascade). Second `migrate` run a no-op.
+- `bun run drizzle:seed` three times on that database: `created: 2` then `created: 0`, `created: 0`;
+  final table state 2 rows / 2 distinct warehouses / 1 distinct user, one PIC per live warehouse.
+- `bun test` (backend): 941 pass, 0 fail. `bunx tsc --noEmit`: exit 0. `bun run lint` (`oxlint`):
+  no errors, only the pre-existing warnings already recorded in `project-audit.md`.
+
+Deviation, deliberate: the migration is hand-written with no `snapshot.json`, like ERP-0041..0048,
+because `drizzle-kit generate` is still blocked by the duplicate `finance.receipts` creation tracked
+as ERP-0052. Append-only; no historical migration or snapshot touched.
+
+Not done: `warehouseGuard`, `GET /inventory/warehouses/mine`, assign/unassign routes and the PIC UI
+(Phase 2 and Phase 4 item 8) - both blocked on ADR-0017 acceptance. `docs/database/` was updated
+(`docs.dbml` TableGroup entry, table, intra-module Ref).
+
+Next executable task: owner review of ADR-0017 (accept or reject) before Phase 2 starts.
+
+## 2026-11-14 - ERP-0051: ERP-0048 migration applied to a throwaway DB and inspected
+
+Branch `refactor/app-roles-investor-customer`. Merge `cff48eb` brings `fix/migration-journal-conflict`
+(`32b6c33`, ERP-0052) in so `drizzle-kit migrate` can run at all. Two doc conflicts were resolved by
+keeping both entries (ERP-0052 row added, ERP-0051 row kept).
+
+The migration `20261114120000_erp0048_investor_customer_app_roles` was rewritten before this run: its
+first form deleted every `members` row whose `role` ended up empty, which also destroyed rows that were
+already empty for unrelated reasons. It now deletes only rows whose roles are *all* portal roles, then
+strips portal tokens from the mixed rows.
+
+Commands and outcomes (database `ims_erp_migrate_check`, disposable; the dev database was never
+touched):
+- `bunx --bun drizzle-kit migrate` from empty: 56 journal rows, 115 tables, 21 schemas; second run a
+  no-op.
+- Data behaviour, with fixture rows injected after rolling the journal back to 55 and re-applying:
+  `investor` / `customer` / `" investor "` / `investor,` memberships deleted; `sales,investor`,
+  `investor,sales` → `sales`; `sales, customer ,owner` → `sales,owner`; `owner` untouched; a
+  pre-existing empty-role row **survives** (the point of the rewrite). `user_invitations.org_role`
+  `investor` / `customer` → NULL, `sales` and NULL untouched.
+- `bun run database/seeders/index.ts` twice on the migrated database: 40 users / 40 members both runs
+  (idempotent), zero memberships holding a portal role.
+- Reference check: no table has a foreign key to `auth.members` or `auth.user_invitations`, so no
+  child rows were orphaned by the deletes. `auth.invitations` (Better Auth's own organization-plugin
+  table, unused by the app's invitation flow, 0 rows on `ims_erp_local`) still has a `role` column
+  that this migration does not touch - nothing writes to it today.
+- Live login gate, new script `scripts/smoke-login-gate.ts` run against the disposable database (the
+  real Better Auth instance, so `session.create.before` fires as in production): 8/8 cases - app admin
+  without membership 200, `admin,investor` 200, `investor` alone 403, `customer` alone 403, plain
+  `user` without membership 403, `investor` + `sales` membership 200, `customer` + `sales` 200,
+  `user` + `warehouse` 200. Users and memberships removed afterwards. Documented in `runbook.md`.
+
+Not verified: the PIC half of the ADR-0017 verification list (no `warehouse_managers` table yet), and
+the gate's own DB query still has no automated test (it is covered live, not in `bun test`).
+
+Docs: `docs/database/` reviewed, unchanged (no table or column change; the migration only moves data
+between existing columns). `ADR-0018` §Risks and §Verification updated to match the results above -
+the earlier text still claimed the migration was unrun and a DB-backed gate test was missing.
+
+Next executable task: owner review of ADR-0017 / ADR-0018; then warehouse PIC Phase 1-2.
+
+## 2026-11-14 - ERP-0051: investor and customer move to app roles (ADR-0018), login gate in code
+
+Branch `refactor/app-roles-investor-customer` (from `main`), commit `d63dfdc`.
+Status: **implemented, partially verified**. Not accepted.
+
+What changed:
+- `investor` and `customer` removed from organization roles (`erpRoleNames`, `erpRoleLabels`,
+  `erpRoleGrants`, backend and web-admin `organization-ac.ts`/`erp-ac.ts`).
+- Added as Better Auth `admin()` app roles: `appRoleNames`, `appRoleGrants` (portal grants,
+  data only), `parseRoleList`, `hasRole` in `@ims-erp/common`. Server `admin-ac.ts` and
+  `plugins/admin.auth.ts` declare the roles; web-admin `adminClient` mirrors them.
+- Every `user.role === 'admin'` check (backend and web-admin) replaced by `hasRole` / `hasAppRole`
+  (multi-role, comma-joined `user.role`).
+- Login gate (ADR-0017 §8 amended by ADR-0018): `providers/better-auth/ac/login-gate.ts`
+  (`isWebAdminAllowed`). Enforced in `session.create.before` (`session.auth.ts`) and re-checked
+  per request in `sessionGuard` (403). `erpGuard` unchanged. PIC without membership is rejected.
+- Login hook default org = first membership with an internal role.
+- Migration `20261114120000_erp0048_investor_customer_app_roles`: strips portal tokens from mixed
+  `members.role` rows, deletes portal-only rows, NULLs `user_invitations.org_role` for portal roles.
+  Dev-only; no production data.
+- ADR-0018 written (`proposed`). ADR-0017 §8 and §9 amended in place.
+
+Commands and outcomes:
+- `bun test test/unit/global-role-contract.test.ts` (backend): 3 pass - `createUserSchema` and
+  `setUserRoleSchema` accept only `globalRoles`.
+- `bun test test/authorization/login-gate.guard.test.ts` (backend): 4 pass - `sessionGuard` answers
+  403 (not 401) when the gate closes, for every fixture role, and 401 with no session. The harness
+  gate is now a controllable stub (`setLoginGateAllowed` in `test/authorization/test-app.ts`).
+- Full backend suite after those additions: 941 pass, 0 fail, 73 files; `bunx tsc --noEmit` clean.
+- `bun test test/unit/login-gate.test.ts test/authorization/permission-matrix.test.ts` (backend): 32 pass.
+- `bun test` (web-admin): 97 pass, 0 fail, 16 files.
+- `bun run build` in `packages/common`: needed; web-admin and backend read `dist`, which was stale.
+- `bun run typecheck` (root): pass. `bunx tsc --noEmit` (web-admin): clean.
+- `bun run lint` (root): 0 errors, 12 warnings (pre-existing, in files not changed here).
+- `bun docs/database/validate-dbml.ts`: OK (268 tables, 0 cross-module refs). No schema change.
+- Seeders: no `investor`/`customer` role written. Comment in `organization-members.seeder.ts` updated.
+
+Not verified yet:
+- No DB-backed login-gate test: the repo has no test that touches a real database (DB is always
+  mocked, `bun-test` skill). The guard wiring is covered over HTTP with a stubbed gate
+  (`login-gate.guard.test.ts`); the gate's DB query is covered by neither.
+- Manual checks (ADR-0017 verification list): the gate half is verified live by
+  `scripts/smoke-login-gate.ts` (8/8 cases, see the entry above). PIC cases are not testable yet -
+  `inventory.warehouse_managers` does not exist.
+- Warehouse PIC (Phase 1-2, `inventory.warehouse_managers`, `warehouseGuard`) still not started.
+
+Docs: `docs/database/` reviewed, unchanged (no table or column change).
+
+Next executable task: owner review of ADR-0017 / ADR-0018, then warehouse PIC Phase 1-2. The
+migration itself is applied and inspected - see the entry above.
+## 2026-11-14 - ERP-0052: migration snapshot graph repaired, `drizzle:migrate` replays from empty
+
+Branch `fix/migration-journal-conflict` (worktree `B:\ims\erp-migration-fix`, from `main` @ `a997778`).
+
+Problem: `bun run drizzle:migrate` refused to run at all - `Conflicting migrations detected. Found 1
+conflict across 2 migrations`, with `drizzle-kit generate --fix-conflicts` as the offered fix. That
+fix deletes 14 migration folders (including the custom `20261106111000_stock_balances_nulls_not_distinct`),
+so it was not run. Same failure on unmodified `main`, so it predates this work.
+
+Cause (snapshot metadata only, no SQL was wrong):
+- `20261106173111_erp0016_tax_slice1/snapshot.json` had `prevIds` = `add_asset_image_url`, making a
+  second branch off that node instead of continuing from `20261106165521_merge_main_reconcile`.
+- `20261109090000_sales_owns_invoice_receipt/snapshot.json` reused the snapshot id of
+  `20261107090000_drop_dynamic_roles_org_role_enum` (`d536237d-...`) and pointed at the same parent,
+  so two nodes shared one id.
+
+Fix: two links corrected - `erp0016.prevIds` → `ad2beb0a-...` (`merge_main_reconcile`), and
+`sales_owns` given a fresh unique id with `prevIds` → `d536237d-...`. No migration SQL edited,
+deleted or reordered; no schema change.
+
+Commands and outcomes:
+- `bunx --bun drizzle-kit migrate` against fresh `ims_erp_migrate_check` (recreated empty first):
+  `migrations applied successfully`. Result: 55 journal rows, 115 tables, 21 schemas - identical to
+  `ims_erp_local`. Second run: no-op, success.
+- `bunx --bun drizzle-kit check` on `main`: fails at conflict detection. After the fix it gets past
+  that and stops on a different, pre-existing problem: `Cannot reconstruct the state of migration
+  20261106221731_m09_finance_stage1: The create delta adds columns ["finance","receipts","received_date"]`.
+  `20261106110700` and `20261106221731` both create `finance.receipts` with different shapes; the
+  reconciling `20261106170000_drop_merge_side_finance_receipts` has no snapshot, so the chain cannot
+  see the `DROP SCHEMA finance CASCADE`. Rebuilding that baseline is separate work - recorded as open
+  in `backlog.md` (ERP-0052).
+- `bun install --frozen-lockfile` in the worktree: 885 packages (worktrees start without
+  `node_modules`). `.env` copied in locally, never committed.
+
+Docs: `docs/database/` reviewed, unchanged (no table or column change).
+
+Not verified: `drizzle-kit check` / `generate` still unusable for the 2026-11-06..11-09 merge window
+(see above). `drizzle:seed` was not run on the throwaway database.
+
+Next executable task: run the ERP-0048 migration (`refactor/app-roles-investor-customer`) against a
+freshly replayed database now that `drizzle:migrate` works. **Done 2026-11-14** - see the entry above.
+
 ## 2026-11-14 - Role-based nav: Phase 4 complete (ERP-0051, web-admin side)
 
 Claimed `ERP-0051` in `backlog.md` (in-progress; PIC and login gate stay blocked on ADR-0017).
@@ -4814,6 +5421,9 @@ What landed:
   operations custody/location, kind×status matrix, item/inventory suites), and
   `verify-inventory-constraints.ts` now probes `assets.borrowing*` plus `ready`.
 
+> **Superseded 2026-11-14:** that verifier was deleted after rotting to 14
+> failing checks; see the entry at the top of this file.
+
 ```text
 bun run typecheck                      → clean
 bun run test                           → 526 pass, 0 fail (27 files, 979 expects)
@@ -5692,6 +6302,10 @@ of this is uncommitted working-tree state. Design: `docs/plan/plans/inventory.md
   - `database/verify-inventory-constraints.ts` → **ALL CHECKS PASSED**, run
     twice consecutively (the script now drops `inventory` and replays the
     migration, so it is repeatable).
+
+    > **Superseded 2026-11-14:** the script was deleted; by then it failed 14 of
+    > its own checks and could no longer run twice (the `DROP` list never grew
+    > past six schemas). The "repeatable" claim above held on 2026-11-06 only.
   - The **entire migration chain** (all 8 directories, in order) replays on a
     fresh database with `ON_ERROR_STOP=1` → 0 failures.
   - `pg_indexes` shows **zero** duplicate index names across schemas, and the

@@ -1,5 +1,6 @@
 import { container } from 'tsyringe';
 import type { ErpContext } from '@authorization/elysia-auth';
+import { GLOBAL_ADMIN_ROLE, hasAppRole } from '@providers/better-auth/ac/admin-ac';
 import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok, okPaginated } from '@http/response';
 import {
@@ -218,7 +219,7 @@ function resolveOrganizationId(
 	requested: string | null | undefined,
 	erp: ErpContext,
 ): string | null {
-	if (erp.session.user.role === 'admin') {
+	if (hasAppRole(erp.session.user.role, GLOBAL_ADMIN_ROLE)) {
 		return requested ?? erp.organizationId;
 	}
 	if (requested && requested !== erp.organizationId) {

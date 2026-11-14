@@ -46,6 +46,7 @@ loaded per-workspace from `.env`).
 | `bun run scripts/smoke-admin-api.ts` | 18 checks over `/admin/users`, `/admin/roles`, `/admin/roles/permissions`, `/admin/audit`, `/admin/invitations`, the escalation guard, and every member denial (403) | ✅ verified 2026-11-02 — 18 passed / 0 failed |
 | `bun run scripts/smoke-cache-invalidation.ts` | the shared `auth.users` cache: an admin deactivate/restore/soft-delete is visible on the self-service read path **immediately** (no 5-minute staleness) | ✅ verified 2026-11-02 — 9 passed / 0 failed, idempotent |
 | `bun run scripts/smoke-avatar-worker.ts` | the avatar BullMQ worker was **started through the worker registry** and is subscribed to the queue: dispatches a job and waits for the worker to consume it (state leaves `waiting`) | ✅ verified 2026-11-02 — consumed, idempotent |
+| `bun run scripts/smoke-login-gate.ts` | the web-admin login gate on the real Better Auth instance (ADR-0017 §8, ADR-0018): app admin without membership signs in, portal role alone is refused with 403, portal role plus an internal membership signs in. Creates and removes its own users | ✅ verified 2026-11-14 — 8/8 cases on a disposable database. Needs `POSTGRES_URL` pointed at a throwaway database, never the dev one |
 
 Both scripts sign in as the seeded admin (`admin@local.com`) and/or member
 (`member.seed@entragate.local`) and reference the seeded organization id.

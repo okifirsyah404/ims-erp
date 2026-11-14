@@ -140,6 +140,25 @@ export class WarehouseRepository implements IWarehouseRepository {
 	}
 
 	/**
+	 * Alive warehouses, optionally narrowed to a set of ids.
+	 *
+	 * @param ids - `undefined` returns every alive warehouse (application-admin
+	 *   view); an empty array returns none, without a round trip
+	 */
+	async findAlive(ids?: readonly string[]): Promise<TWarehouseSelect[]> {
+		if (ids && ids.length === 0) return [];
+		return this.database
+			.select()
+			.from(warehouses)
+			.where(
+				ids
+					? and(isNull(warehouses.deletedAt), inArray(warehouses.id, [...ids]))
+					: isNull(warehouses.deletedAt),
+			)
+			.orderBy(asc(warehouses.name));
+	}
+
+	/**
 	 * Whether an alive link row exists between the warehouse and the org
 	 * (ERP-0031). Soft-deleted links do not count — unlinking must cut access
 	 * immediately.

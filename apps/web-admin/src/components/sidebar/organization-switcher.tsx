@@ -22,6 +22,7 @@ import {
 	useSidebar,
 } from '@ims-erp/ui/components/sidebar';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
+import { hasRole } from '@ims-erp/common';
 import { getSession, useSession } from '@/lib/auth-client';
 import { canOpenPath } from '@/lib/route-guard';
 import {
@@ -54,7 +55,7 @@ export function OrganizationSwitcher() {
 	const queryClient = useQueryClient();
 	const { t } = useTranslation('nav');
 	const { data: session, isPending: sessionPending } = useSession();
-	const isAppAdmin = session?.user?.role === 'admin';
+	const isAppAdmin = hasRole(session?.user?.role, 'admin');
 
 	// Membership rows with role + logo. App admins get the same list, filtered
 	// to internal roles like everyone else (ADR-0017 §8).

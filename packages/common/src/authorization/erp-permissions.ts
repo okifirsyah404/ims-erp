@@ -211,8 +211,6 @@ export const erpRoleNames = [
 	'hr',
 	'customer_service',
 	'marketing',
-	'investor',
-	'customer',
 	'auditor',
 ] as const;
 
@@ -243,8 +241,6 @@ export const erpRoleLabels: Record<
 	hr: { en: 'Human Resource', id: 'Sumber Daya Manusia' },
 	customer_service: { en: 'Customer Service', id: 'Layanan Pelanggan' },
 	marketing: { en: 'Marketing', id: 'Pemasaran' },
-	investor: { en: 'Investor', id: 'Investor' },
-	customer: { en: 'Customer', id: 'Pelanggan' },
 	auditor: { en: 'Auditor', id: 'Auditor' },
 };
 
@@ -277,6 +273,58 @@ export type TOrganizationRole = ErpRoleName;
 const allErpStatements = Object.fromEntries(
 	Object.entries(erpStatements).map(([resource, actions]) => [resource, actions]),
 ) as ErpPermissionRequest;
+
+/**
+ * Global (application) roles that are NOT organization roles (ADR-0018).
+ * Stored on `user.role` via Better Auth `admin()`, which supports several
+ * roles per user as a comma-joined string. They grant no organization
+ * permission; they only identify portal users. Portal grants live here, not
+ * in `erpRoleGrants`.
+ */
+export const appRoleNames = ['investor', 'customer'] as const;
+
+export type AppRoleName = (typeof appRoleNames)[number];
+
+/**
+ * Splits a comma-joined role string (`user.role` or `member.role`) into its
+ * trimmed, non-empty role names.
+ */
+export function parseRoleList(role: string | null | undefined): string[] {
+	if (!role) return [];
+	return role
+		.split(',')
+		.map((r) => r.trim())
+		.filter((r) => r !== '');
+}
+
+/** True when a comma-joined role string holds `name`. */
+export function hasRole(role: string | null | undefined, name: string): boolean {
+	return parseRoleList(role).includes(name);
+}
+
+export const appRoleGrants: Record<AppRoleName, ErpPermissionRequest> = {
+	// Read-only investor portal; "published/shared" record-level checks apply.
+	investor: {
+		investor_portal: [
+			'read_commitment',
+			'read_deposit',
+			'read_allocation',
+			'read_distribution',
+			'read_report',
+		],
+	},
+
+	// Customer portal; scoped to the caller's own customer relationship.
+	customer: {
+		customer_portal: [
+			'read_project',
+			'read_document',
+			'read_invoice',
+			'create_ticket',
+			'read_ticket',
+		],
+	},
+};
 
 /**
  * Role grants as plain data (browser-safe). Values are per-resource action
@@ -615,28 +663,6 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		customer: ['read'],
 		document: ['read', 'download'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
-	},
-
-	// Read-only investor portal; "published/shared" record-level checks apply.
-	investor: {
-		investor_portal: [
-			'read_commitment',
-			'read_deposit',
-			'read_allocation',
-			'read_distribution',
-			'read_report',
-		],
-	},
-
-	// Customer portal; scoped to the caller's own customer relationship.
-	customer: {
-		customer_portal: [
-			'read_project',
-			'read_document',
-			'read_invoice',
-			'create_ticket',
-			'read_ticket',
-		],
 	},
 
 	// Read/export only inside an explicitly assigned audit scope; sensitive

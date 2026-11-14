@@ -154,6 +154,9 @@ const api: Record<keyof typeof en, string> = {
 		'Gudang "{{warehouseCode}}" tidak aktif; penyimpanannya tidak dapat diubah',
 	'inventory.warehousePicInvalid':
 		'Karyawan penanggung jawab tidak dikenal, tidak aktif, atau bukan dari organisasi yang terhubung',
+	'inventory.warehouseManagerExists':
+		'Pengguna ini sudah menjadi penanggung jawab gudang',
+	'inventory.warehouseManagerUserNotFound': 'Pengguna tidak ditemukan',
 	'inventory.movementNotFound': 'Pergerakan stok tidak ditemukan',
 	'inventory.movementAlreadyReversed':
 		'Pergerakan stok ini sudah dibalik sebelumnya',

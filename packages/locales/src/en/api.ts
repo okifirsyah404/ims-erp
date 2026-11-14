@@ -158,6 +158,9 @@ const api = {
 		'Warehouse "{{warehouseCode}}" is inactive; its storages cannot be changed',
 	'inventory.warehousePicInvalid':
 		'The responsible employee is unknown, inactive, or not from a linked organization',
+	'inventory.warehouseManagerExists':
+		'This user is already a person in charge of the warehouse',
+	'inventory.warehouseManagerUserNotFound': 'User not found',
 	'inventory.movementNotFound': 'Stock movement not found',
 	'inventory.movementAlreadyReversed':
 		'This stock movement has already been reversed',

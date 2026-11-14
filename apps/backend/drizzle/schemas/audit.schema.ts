@@ -70,6 +70,9 @@ export const AUDIT_ACTIONS = [
 	'warehouse.archived',
 	'warehouse.linked',
 	'warehouse.unlinked',
+	// ADR-0017: person-in-charge grants, admin-only and audited.
+	'warehouse.manager_assigned',
+	'warehouse.manager_removed',
 	'storage.created',
 	'storage.updated',
 	'storage.archived',

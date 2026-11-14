@@ -191,6 +191,25 @@ const inventory = {
 	'warehouses.linkRemoved': 'Tautan organisasi diputus',
 	'warehouses.noLinkedOrganizations': 'Belum ada organisasi yang tertaut.',
 	'warehouses.linkedSince': 'Tertaut sejak',
+	'warehouses.noAccess':
+		'Gudang tersedia bagi administrator aplikasi dan penanggung jawab yang ditugaskan.',
+	'warehouses.managersTab': 'Penanggung jawab',
+	'warehouses.managersTitle': 'Penanggung jawab',
+	'warehouses.managersHint':
+		'Orang yang dapat membaca, mengubah, mengarsipkan, mengimpor, dan mengekspor gudang ini tanpa peran organisasi.',
+	'warehouses.noManagers': 'Belum ada penanggung jawab yang ditugaskan.',
+	'warehouses.assignManager': 'Tugaskan penanggung jawab',
+	'warehouses.assignManagerPlaceholder': 'Cari akun berdasarkan nama atau email',
+	'warehouses.assignManagerEmpty': 'Tidak ada akun yang cocok.',
+	'warehouses.assignManagerAction': 'Tugaskan',
+	'warehouses.unassignManagerAction': 'Cabut tugas',
+	'warehouses.unassignManagerConfirm':
+		'Cabut akses penanggung jawab ini ke gudang?',
+	'warehouses.managerAssigned': 'Penanggung jawab ditugaskan',
+	'warehouses.managerUnassigned': 'Tugas penanggung jawab dicabut',
+	'warehouses.managerAccount': 'Akun',
+	'warehouses.managerAssignedAt': 'Ditugaskan sejak',
+	'warehouses.managerUnknownAccount': 'Akun terhapus',
 
 	// Warehouse create / edit form.
 	'warehouseForm.new': 'Gudang baru',
