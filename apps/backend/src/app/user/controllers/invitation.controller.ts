@@ -16,6 +16,7 @@ import type { IInvitationEmployeePort } from '../contracts/invitation-employee.p
 import type { InvitationService, TActor } from '../../user/services/invitation.service';
 import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
 import { UserManagementError } from '../errors/invitation.errors';
+import { GLOBAL_ADMIN_ROLE, hasAppRole } from '@providers/better-auth/ac/admin-ac';
 import { NotGlobalAdminError } from '@http/errors';
 import { domainPlugin } from '@http/plugin';
 import { buildInvitationTemplate } from '../utils/invitation-template';
@@ -41,7 +42,7 @@ function actorFrom(erp: ErpContext, request: Request): TActor {
  * control.
  */
 function requireGlobalAdmin({ erp }: { erp: { session: { user: { role?: string | null } } } }): void {
-	if (erp.session.user.role !== 'admin') {
+	if (!hasAppRole(erp.session.user.role, GLOBAL_ADMIN_ROLE)) {
 		throw new NotGlobalAdminError();
 	}
 }
@@ -109,7 +110,7 @@ export class InvitationController {
 						// Org-scoped callers are pinned to their own organization;
 						// global admins may pass any organizationId filter.
 						organizationId:
-							erp.session.user.role === 'admin'
+							hasAppRole(erp.session.user.role, GLOBAL_ADMIN_ROLE)
 								? parsed.organizationId
 								: erp.organizationId,
 						page: 1,

@@ -5,11 +5,8 @@ import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
 import { USER_PERSONAL_FIELDS_PORT_TOKEN } from '@app/user/constants/di';
 import type { IUserPersonalFieldsPort } from '@app/user/contracts/user-personal-fields.port';
-import type { TUserPersonalFields, TUserPersonalFieldsPatch } from '@app/user/contracts/user-personal-fields.contract';
-import { AppError } from '@http/errors';
 import { EMPLOYEE_INVITE_SERVICE_TOKEN, EMPLOYEE_REPOSITORY_TOKEN } from '../constants/di';
 import type { EmployeeInviteService } from './employee-invite.service';
-import type { TCreateEmployee } from '../contracts/hr.contract';
 import type { IEmployeeRepository } from '../contracts/employee.repository.interface';
 import type {
 	TEmployeeDto,
@@ -42,9 +39,22 @@ export type TEmployeeContext = {
 	isPlatformAdmin: boolean;
 	/** Organization-level `employee:*` grant decided by `erpGuard`. */
 	canManage: boolean;
+	/**
+	 * `employee:read_private` (M08 owner decision 2026-11-07): without it the
+	 * NIK is masked on reads and never written back on updates. Absent = allowed
+	 * (internal callers).
+	 */
+	canReadPrivate?: boolean;
 };
 
-import { jakartaDate, personalPatchFrom, toRow, withPersonalFields } from './employee.mappers';
+/** The NIK shown to a caller without `employee:read_private`. */
+function masked(ctx: TEmployeeContext, dto: TEmployeeDto): TEmployeeDto {
+	if (ctx.canReadPrivate !== false) return dto;
+	return { ...dto, nationalId: maskTail(dto.nationalId ?? null) } as TEmployeeDto;
+}
+
+import { jakartaDate, personalPatchFrom, withPersonalFields } from './employee.mappers';
+import { maskTail } from '../utils/hr';
 
 /**
  * Employee master data (ERP-0034).
@@ -87,7 +97,7 @@ export class EmployeeService {
 			includeCompany: true,
 		});
 		const data = await Promise.all(page.data.map((row) => this.withPersonal(row)));
-		return { meta: page.meta, data };
+		return { meta: page.meta, data: data.map((dto) => masked(ctx, dto)) };
 	}
 
 	/** One employee; a non-admin only sees own-org or company-level rows. */
@@ -101,7 +111,7 @@ export class EmployeeService {
 		) {
 			throw new EmployeeNotFoundError();
 		}
-		return this.withPersonal(row);
+		return this.withPersonal(row).then((dto) => masked(ctx, dto));
 	}
 
 	/** Joins personal fields from `auth.users` onto an employee row. */
@@ -208,7 +218,7 @@ export class EmployeeService {
 			...(body.fullName !== undefined ? { fullName: body.fullName } : {}),
 			...(body.legalName !== undefined ? { legalName: body.legalName } : {}),
 			...(body.nickname !== undefined ? { nickname: body.nickname } : {}),
-			...(body.nationalId !== undefined ? { nationalId: body.nationalId } : {}),
+			...(body.nationalId !== undefined && ctx.canReadPrivate !== false ? { nationalId: body.nationalId } : {}),
 			...(body.email !== undefined ? { email: body.email } : {}),
 			...(body.phone !== undefined ? { phone: body.phone } : {}),
 			...(body.whatsapp !== undefined ? { whatsapp: body.whatsapp } : {}),
@@ -224,7 +234,7 @@ export class EmployeeService {
 		if (row.userId) {
 			await this.personalFields.update(row.userId, personalPatchFrom(body));
 		}
-		return this.withPersonal(updated);
+		return this.withPersonal(updated).then((dto) => masked(ctx, dto));
 	}
 
 	/** Soft delete. Company-level rows need a platform admin. */

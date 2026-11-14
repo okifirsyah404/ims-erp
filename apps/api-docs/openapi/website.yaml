@@ -6,7 +6,7 @@ info:
     The ERP API used by the website repo (`entragate-platform`):
 
     - **Customer portal** (`/portal/v1`) — `apps/customer`. A signed-in customer
-      sees only their own customer's records (ERP-0022, ADR-0018).
+      sees only their own customer's records (ERP-0022, ADR-0020).
     - **Public website** (`/public/v1`) — `apps/web` forms (RFQ, contact, demo).
 
     Every call is **server to server**: the browser never talks to the ERP.

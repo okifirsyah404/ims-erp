@@ -116,6 +116,7 @@ TableGroup "Inventory" {
   inventory.warehouses
   inventory.warehouse_addresses
   inventory.warehouse_storages
+  inventory.warehouse_managers
   inventory.item_categories
   inventory.items
   inventory.stock_movements
@@ -588,7 +589,7 @@ Table auth.portal_identities {
   last_login_at bigint
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Links a portal login to a business record (ERP-0022, customer portal, ADR-0018). For customers: one live identity per contact and per user (partial unique indexes on live rows in the Drizzle schema); several contacts of one customer may each have a login with a role. Individuals sign up themselves (email code); businesses are invited by staff, then an owner invites colleagues. The user is never an organization member, so every ERP route and the web admin refuse it; the portal routes accept only an active identity. Revoking sets status 'revoked' and deleted_at; a new invitation creates a new row."
+  Note: "Links a portal login to a business record (ERP-0022, customer portal, ADR-0020). For customers: one live identity per contact and per user (partial unique indexes on live rows in the Drizzle schema); several contacts of one customer may each have a login with a role. Individuals sign up themselves (email code); businesses are invited by staff, then an owner invites colleagues. The user is never an organization member, so every ERP route and the web admin refuse it; the portal routes accept only an active identity. Revoking sets status 'revoked' and deleted_at; a new invitation creates a new row."
   Indexes {
     user_id [unique, name: 'portal_identities_user_id_uq']
     (portal_type, contact_id) [unique, name: 'portal_identities_contact_uq']
@@ -2603,6 +2604,21 @@ Table inventory.warehouse_organizations {
   }
 }
 
+Table inventory.warehouse_managers {
+  id uuid [pk, default: `uuidv7()`]
+  warehouse_id uuid [not null]
+  user_id text [note: "The person in charge. Logical reference to auth.users.id; cross-module FK intentionally omitted (ADR-0014). Nullable per the cross-module rule: presence is asserted by the Inventory service before an assignment is written, and a NULL row grants nothing. Validated through the Identity module contract."]
+  assigned_by text [note: "Application admin who made the assignment. Logical reference to auth.users.id; cross-module FK intentionally omitted."]
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Per-user, per-warehouse person-in-charge grant (ADR-0017). A second access path to warehouses only - it is not an organization role and it grants no stock operation. A PIC may read, update, archive, import and export their warehouse; create stays application-admin-only. Unlike warehouse_organizations, this grant deliberately ignores the warehouse-organization link (ADR-0017 decision 3), so a PIC keeps access when the warehouse is not linked to their active organization. Assign and unassign are application-admin-only and audited; a soft-deleted row grants nothing."
+  Indexes {
+    (warehouse_id, user_id) [unique, name: 'warehouse_managers_uq', note: 'WHERE deleted_at IS NULL']
+    user_id [name: 'warehouse_managers_user_id_idx']
+  }
+}
+
 Table inventory.items {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Null means global/company-wide (ADR-0008). Logical reference to auth.organizations.id; cross-module FK intentionally omitted."]
@@ -2888,6 +2904,7 @@ Table inventory.serial_tracked_items {
 Ref: inventory.warehouse_addresses.warehouse_id > inventory.warehouses.id [delete: cascade]
 Ref: inventory.warehouse_storages.warehouse_id > inventory.warehouses.id [delete: cascade]
 Ref: inventory.warehouse_organizations.warehouse_id > inventory.warehouses.id [delete: cascade]
+Ref: inventory.warehouse_managers.warehouse_id > inventory.warehouses.id [delete: cascade]
 Ref: inventory.items.category_id > inventory.item_categories.id [delete: restrict]
 Ref: inventory.stock_movements.item_id > inventory.items.id [delete: restrict]
 Ref: inventory.stock_movements.warehouse_id > inventory.warehouses.id [delete: restrict]
@@ -3325,7 +3342,12 @@ Table projects.project_work_plans {
 // MODULE: HR  (schema: hr)
 // Employee master, addresses, contracts, attendance, leave, discipline,
 // training, certifications, salary components, bank accounts, emergency
-// contacts, documents, transfers and separation. Tenant scoped.
+// contacts, documents, transfers and separation. Built: employees
+// (ERP-0034, organization or company level) and the M08 stage 1 records
+// bank_accounts, attendance_records, leave_types, leave_requests,
+// overtime_requests, employee_tasks and salary_summaries. The M08 records
+// carry no organization_id: they belong to an employee and are visible to
+// whoever can see that employee. The other tables are target-only.
 // ---------------------------------------------------------------------------
 
 Table hr.employees {
@@ -3427,35 +3449,28 @@ Table hr.employment_contracts {
 }
 
 Table hr.attendance_records {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   employee_id uuid [not null]
-  attendance_date date [not null]
-  check_in_at bigint
-  check_out_at bigint
-  work_minutes integer [not null, default: 0]
-  overtime_minutes integer [not null, default: 0]
-  late_minutes integer [not null, default: 0]
-  status text [not null, default: 'present']
-  source text [not null, default: 'manual']
-  latitude numeric(10,7)
-  longitude numeric(10,7)
+  attendance_date date [not null, note: "Business date (Asia/Jakarta)."]
+  status text [not null]
+  check_in_at bigint [note: "Unix ms (UTC)."]
+  check_out_at bigint [note: "Unix ms (UTC)."]
+  source text [not null, default: 'manual', note: "manual, import, or leave (written by an approved leave request)."]
+  leave_request_id uuid
   notes text
+  recorded_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "One attendance row per employee per day. Times are unix milliseconds in UTC."
+  deleted_at bigint
+  Note: "One attendance row per employee per day (M08 stage 1, company-wide), entered by HR/admin or imported. Unique (employee_id, attendance_date) among live rows."
   Indexes {
-    (organization_id, employee_id, attendance_date) [unique, name: 'attendance_records_day_uq']
     attendance_date [name: 'attendance_records_date_idx']
-    status [name: 'attendance_records_status_idx']
+    leave_request_id [name: 'attendance_records_leave_request_id_idx']
   }
   Checks {
-    `status IN ('present', 'absent', 'leave', 'sick', 'permit', 'holiday', 'remote')`
-    `source IN ('manual', 'device', 'mobile', 'import')`
-    `work_minutes >= 0`
-    `overtime_minutes >= 0`
-    `late_minutes >= 0`
+    `status IN ('present', 'permit', 'sick', 'leave', 'absent', 'holiday')`
+    `source IN ('manual', 'import', 'leave')`
+    `check_out_at IS NULL OR check_in_at IS NULL OR check_out_at >= check_in_at`
   }
 }
 
@@ -3489,54 +3504,125 @@ Table hr.attendance_corrections {
 
 Table hr.leave_types {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [not null, note: "Unique among live rows."]
   name text [not null]
-  max_days_per_year numeric(8,2)
-  is_paid boolean [not null, default: true]
-  carry_forward boolean [not null, default: false]
-  requires_approval boolean [not null, default: true]
+  attendance_status text [not null, default: 'leave', note: "Attendance status written for the approved days."]
+  uses_quota boolean [not null, default: false, note: "Counts against the annual quota."]
+  annual_quota_days integer [not null, default: 0]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Leave type definition."
-  Indexes {
-    (organization_id, code) [unique, name: 'leave_types_org_code_uq']
+  Note: "Leave type (M08 stage 1, company-wide). Seeded: annual leave (12 days, quota), sick, permit."
+  Checks {
+    `attendance_status IN ('leave', 'sick', 'permit')`
+    `annual_quota_days >= 0`
   }
 }
 
 Table hr.leave_requests {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  leave_type_id uuid [not null]
   employee_id uuid [not null]
+  leave_type_id uuid [not null]
   start_date date [not null]
   end_date date [not null]
-  total_days numeric(8,2) [not null, default: 1]
+  days integer [not null, note: "Working days in the range (Sundays excluded), counted by the service."]
   reason text
-  status text [not null, default: 'requested']
-  requested_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  requested_at bigint [not null]
-  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  approved_at bigint
-  rejected_reason text
-  cancelled_at bigint
+  status text [not null, default: 'submitted']
+  recorded_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. HR records the request for the employee; nullable per ADR-0014, always set by the service."]
+  decided_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Never the recorder."]
+  decided_at bigint
+  decision_note text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Leave request of an employee."
+  deleted_at bigint
+  Note: "Leave request recorded by HR (M08 stage 1, company-wide). Approval writes attendance rows; cancelling an approved request removes them."
   Indexes {
-    (organization_id, code) [unique, name: 'leave_requests_org_code_uq']
     employee_id [name: 'leave_requests_employee_id_idx']
-    leave_type_id [name: 'leave_requests_leave_type_id_idx']
     status [name: 'leave_requests_status_idx']
   }
   Checks {
-    `status IN ('requested', 'approved', 'rejected', 'cancelled', 'taken')`
+    `status IN ('submitted', 'approved', 'rejected', 'cancelled')`
     `end_date >= start_date`
-    `total_days > 0`
+    `days > 0`
+  }
+}
+
+Table hr.overtime_requests {
+  id uuid [pk, default: `uuidv7()`]
+  employee_id uuid [not null]
+  work_date date [not null]
+  hours numeric(5,2) [not null]
+  reason text
+  status text [not null, default: 'submitted']
+  recorded_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Nullable per ADR-0014, always set by the service."]
+  decided_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Never the recorder."]
+  decided_at bigint
+  decision_note text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Overtime recorded by HR and approved (M08 stage 1, company-wide); approved hours feed the salary summary by hand."
+  Indexes {
+    employee_id [name: 'overtime_requests_employee_id_idx']
+    work_date [name: 'overtime_requests_work_date_idx']
+  }
+  Checks {
+    `status IN ('submitted', 'approved', 'rejected', 'cancelled')`
+    `hours > 0 AND hours <= 24`
+  }
+}
+
+Table hr.employee_tasks {
+  id uuid [pk, default: `uuidv7()`]
+  employee_id uuid [not null]
+  title varchar(200) [not null]
+  description text
+  due_date date
+  status text [not null, default: 'open']
+  done_at bigint
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Simple task assigned to an employee outside projects (M08 stage 1); project tasks live in projects.project_tasks."
+  Indexes {
+    employee_id [name: 'employee_tasks_employee_id_idx']
+    status [name: 'employee_tasks_status_idx']
+  }
+  Checks {
+    `status IN ('open', 'done', 'cancelled')`
+  }
+}
+
+Table hr.salary_summaries {
+  id uuid [pk, default: `uuidv7()`]
+  period varchar(7) [not null, note: "YYYY-MM."]
+  employee_id uuid [not null]
+  employee_name text [not null, note: "Snapshot."]
+  base_salary bigint [not null, default: 0, note: "IDR minor units, like every amount here."]
+  allowances bigint [not null, default: 0]
+  overtime_pay bigint [not null, default: 0]
+  bonus bigint [not null, default: 0]
+  deductions bigint [not null, default: 0]
+  net_pay bigint [not null]
+  notes text
+  status text [not null, default: 'draft']
+  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  approved_at bigint
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Monthly salary summary per employee, entered or imported by HR/finance and approved by the owner; approved rows are locked (M08 stage 1). Unique (period, employee_id) among live rows. Payroll automation (stage 2) and the journal (M09) are not built."
+  Indexes {
+    period [name: 'salary_summaries_period_idx']
+    employee_id [name: 'salary_summaries_employee_id_idx']
+  }
+  Checks {
+    `status IN ('draft', 'approved')`
+    `base_salary >= 0 AND allowances >= 0 AND overtime_pay >= 0 AND bonus >= 0 AND deductions >= 0`
+    `net_pay = base_salary + allowances + overtime_pay + bonus - deductions`
   }
 }
 
@@ -3649,22 +3735,14 @@ Table hr.employee_salary_components {
 
 Table hr.bank_accounts {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   employee_id uuid [not null]
-  bank_name text [not null]
-  account_number text [not null]
-  account_holder text [not null]
-  is_primary boolean [not null, default: false]
-  is_verified boolean [not null, default: false]
-  notes text
+  bank_name varchar(100) [not null]
+  account_number varchar(50) [not null, note: "Masked for callers without employee:read_private."]
+  account_holder varchar(200) [not null]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Bank account of an employee, used by the payroll payment batch. Restricted access."
-  Indexes {
-    employee_id [name: 'bank_accounts_employee_id_idx']
-    account_number [name: 'bank_accounts_account_number_idx']
-  }
+  Note: "Salary bank account of an employee, one live row per employee (M08 stage 1). Restricted access."
 }
 
 Table hr.employee_emergencies {
@@ -3764,16 +3842,20 @@ Table hr.separation_records {
 Ref: hr.employees.manager_employee_id > hr.employees.id [delete: set null]
 Ref: hr.employee_addresses.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.employment_contracts.employee_id > hr.employees.id [delete: cascade]
-Ref: hr.attendance_records.employee_id > hr.employees.id [delete: cascade]
+Ref: hr.attendance_records.employee_id > hr.employees.id [delete: restrict]
+Ref: hr.attendance_records.leave_request_id > hr.leave_requests.id [delete: restrict]
 Ref: hr.attendance_corrections.attendance_record_id > hr.attendance_records.id [delete: cascade]
 Ref: hr.attendance_corrections.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.leave_requests.leave_type_id > hr.leave_types.id [delete: restrict]
-Ref: hr.leave_requests.employee_id > hr.employees.id [delete: cascade]
+Ref: hr.leave_requests.employee_id > hr.employees.id [delete: restrict]
+Ref: hr.overtime_requests.employee_id > hr.employees.id [delete: restrict]
+Ref: hr.employee_tasks.employee_id > hr.employees.id [delete: restrict]
+Ref: hr.salary_summaries.employee_id > hr.employees.id [delete: restrict]
 Ref: hr.disciplinary_records.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.training_records.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.certifications.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.employee_salary_components.employee_id > hr.employees.id [delete: cascade]
-Ref: hr.bank_accounts.employee_id > hr.employees.id [delete: cascade]
+Ref: hr.bank_accounts.employee_id > hr.employees.id [delete: restrict]
 Ref: hr.employee_emergencies.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.employee_documents.employee_id > hr.employees.id [delete: cascade]
 Ref: hr.employee_transfers.employee_id > hr.employees.id [delete: cascade]

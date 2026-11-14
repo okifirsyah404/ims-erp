@@ -11,7 +11,7 @@ import {
 import { erpRoleNames } from '@ims-erp/common';
 
 describe('organization access control', () => {
-	test('defines all 19 ERP roles', () => {
+	test('defines every organization role (ADR-0018: no investor/customer)', () => {
 		for (const role of erpRoleNames) {
 			expect(erpRoles[role]).toBeDefined();
 		}
@@ -66,10 +66,16 @@ describe('organization access control', () => {
 		expect(authorizeErpPermissions(['sales_manager'], { payment: ['execute'] })).toBe(false);
 	});
 
-	test('finance executes payments but has no HR record access', () => {
+	test('finance executes payments and enters salary summaries, but has no other HR record access', () => {
 		expect(authorizeErpPermissions(['finance'], { payment: ['execute'] })).toBe(true);
-		expect(authorizeErpPermissions(['finance'], { employee: ['read'] })).toBe(false);
-		expect(authorizeErpPermissions(['finance'], { payroll: ['read'] })).toBe(false);
+		// M08 decision 2026-11-07: HR/finance enter the monthly salary summary,
+		// the owner approves it.
+		expect(authorizeErpPermissions(['finance'], { payroll: ['read', 'create', 'update'] })).toBe(true);
+		expect(authorizeErpPermissions(['finance'], { employee: ['read', 'read_private'] })).toBe(true);
+		expect(authorizeErpPermissions(['finance'], { payroll: ['approve'] })).toBe(false);
+		expect(authorizeErpPermissions(['finance'], { attendance: ['read'] })).toBe(false);
+		expect(authorizeErpPermissions(['finance'], { leave: ['read'] })).toBe(false);
+		expect(authorizeErpPermissions(['finance'], { employee: ['create'] })).toBe(false);
 	});
 
 	test('hr prepares payroll but cannot approve or execute it', () => {
@@ -94,19 +100,11 @@ describe('organization access control', () => {
 		expect(authorizeErpPermissions(['freelancer'], { payroll: ['read'] })).toBe(false);
 	});
 
-	test('investor portal role is limited to portal reads', () => {
-		expect(
-			authorizeErpPermissions(['investor'], {
-				investor_portal: ['read_commitment', 'read_report'],
-			}),
-		).toBe(true);
+	test('investor and customer are app roles, not organization roles (ADR-0018)', () => {
+		// They hold no organization grant at all, so no ERP permission passes.
+		expect(authorizeErpPermissions(['investor'], { investor_portal: ['read_report'] })).toBe(false);
+		expect(authorizeErpPermissions(['customer'], { customer_portal: ['create_ticket'] })).toBe(false);
 		expect(authorizeErpPermissions(['investor'], { invoice: ['read'] })).toBe(false);
-		expect(authorizeErpPermissions(['investor'], { financial_report: ['read'] })).toBe(false);
-	});
-
-	test('customer portal role is limited to portal actions', () => {
-		expect(authorizeErpPermissions(['customer'], { customer_portal: ['create_ticket'] })).toBe(true);
-		expect(authorizeErpPermissions(['customer'], { invoice: ['read'] })).toBe(false);
 	});
 
 	test('marketing has no integration secrets or automation execution', () => {

@@ -1,5 +1,6 @@
 import { container } from 'tsyringe';
 import type { ErpContext } from '@authorization/elysia-auth';
+import { GLOBAL_ADMIN_ROLE, hasAppRole } from '@providers/better-auth/ac/admin-ac';
 import { PERMISSION_RESOLVER_TOKEN } from '@authorization/permission-resolver';
 import type { IPermissionResolver } from '@authorization/permission-resolver';
 import { domainPlugin } from '@http/plugin';
@@ -141,7 +142,7 @@ export class AdjustmentController {
 					// ERP-0031: the target warehouse must be linked to the caller's
 					// organization. A global admin bypasses; unlinked is a 404 so
 					// warehouse ids cannot be probed.
-					if (erp.session.user.role !== 'admin') {
+					if (!hasAppRole(erp.session.user.role, GLOBAL_ADMIN_ROLE)) {
 						await stockServiceForLinks.assertWarehouseLinkedFor(
 							parsed.warehouseId,
 							erp.organizationId,

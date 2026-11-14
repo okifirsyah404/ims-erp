@@ -35,6 +35,13 @@ const HIDDEN_ROUTE_IDS = new Set(['__root__', '/_authed']);
 /** Static labels keyed by fullPath template. Values are `nav` i18next keys. */
 const LABELS: Record<string, NavKey> = {
 	'/': 'breadcrumb.home',
+	'/hr': 'item.hr',
+	'/hr/employees': 'item.employees',
+	'/hr/attendance': 'item.attendance',
+	'/hr/leave': 'item.leave',
+	'/hr/overtime': 'item.overtime',
+	'/hr/payroll': 'item.payroll',
+	'/hr/tasks': 'item.hrTasks',
 	'/organizations/': 'breadcrumb.organizations',
 	'/organizations/new': 'breadcrumb.organizationNew',
 	'/organizations/$organizationId/edit': 'breadcrumb.organizationEdit',

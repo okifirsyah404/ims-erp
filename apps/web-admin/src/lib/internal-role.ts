@@ -1,13 +1,12 @@
-/**
- * Roles that do not grant access to web-admin (ADR-0017 §8). A membership
- * holding only these is not offered in the organization switcher.
- */
-const NON_INTERNAL_ROLES: readonly string[] = ['investor', 'customer'];
+import { erpRoleNames, parseRoleList } from '@ims-erp/common';
 
-/** True when a comma-joined `member.role` holds at least one internal role. */
+const INTERNAL_ROLES: ReadonlySet<string> = new Set(erpRoleNames);
+
+/**
+ * True when a comma-joined `member.role` holds at least one internal
+ * organization role (ADR-0017 §8, amended by ADR-0018). Investor and customer
+ * are app roles, not organization roles, so they never count.
+ */
 export function hasInternalRole(role: string): boolean {
-	return role
-		.split(',')
-		.map((r) => r.trim())
-		.some((r) => r !== '' && !NON_INTERNAL_ROLES.includes(r));
+	return parseRoleList(role).some((r) => INTERNAL_ROLES.has(r));
 }

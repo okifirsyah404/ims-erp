@@ -30,7 +30,8 @@ export class BetterAuthUserGateway implements IUserAuthGateway {
 					email: input.email,
 					password: input.password,
 					name: input.name,
-					// ponytail: same role-literal limitation as setRole below.
+					// ADR-0018: the role is validated by the contract (globalRoles),
+					// but admin() types the body as the default "user"|"admin" union.
 					role: input.role as 'admin' | undefined,
 					data: { username: input.username, bio: input.bio },
 				},
@@ -80,10 +81,9 @@ export class BetterAuthUserGateway implements IUserAuthGateway {
 	): Promise<void> {
 		await this.call(() =>
 			auth.api.setRole({
-				// ponytail: admin plugin types role as the default "user"|"admin"
-				// literal union; custom global roles are accepted at runtime.
-				// Ceiling: tighten when Better Auth exposes configurable role
-				// generics on setRole.
+				// ADR-0018: `role` is already restricted to `globalRoles` by
+				// `setUserRoleSchema`; admin() still types the body as the default
+				// "user"|"admin" union, so the cast is a type-only widening.
 				body: { userId, role: input.role as 'admin' },
 				headers,
 			}),
