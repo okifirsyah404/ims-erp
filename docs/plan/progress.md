@@ -18,6 +18,41 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0051: CI caught a unit suite that needed a live database
+
+Branch `refactor/app-roles-investor-customer`, PR #101. The first CI run on this branch failed
+`Unit Test Backend`: **559 pass, 7 fail**, all seven in `test/unit/notification.controller.test.ts`.
+
+**Cause, and why it hid locally.** ADR-0018 put the login gate inside `sessionGuard`
+(`isWebAdminSessionAllowed`), and that gate reads `auth.users` + `auth.members` through
+`drizzleDB`. The notification route suite mounts the real `sessionGuard` and stubs only
+`@providers/better-auth/auth`, so the gate reached for a real connection. On this machine a
+Postgres server answers, the query succeeds and the suite passes; on CI there is no database, the
+driver raises `PostgresError: Failed to connect`, and because that is not an `APIError` the gate
+rethrows it - a 500 where the test expects a 200 envelope. The suite had been green locally for
+the whole branch, which is exactly why 14 unpushed commits were a risk.
+
+**Fix.** `test/unit/notification.controller.test.ts` now also stubs
+`@providers/better-auth/options/session.auth`, the same four exports and the same shape that
+`test/authorization/test-app.ts` has used since the gate landed. The gate's own rule stays covered
+by `test/unit/login-gate.test.ts` (pure predicate) and `test/authorization/login-gate.guard.test.ts`.
+
+**Verified with the database made unreachable**, so the result cannot be a local-DB artefact:
+
+```
+cd apps/backend
+POSTGRES_HOST=127.0.0.1 POSTGRES_PORT=1 bun test ./test/unit   # 566 pass, 0 fail
+bun test                                                       # 1005 pass, 0 fail
+bunx tsc --noEmit                                              # exit 0
+```
+
+**Also removed** the now-unused `erpRoleNames` import in
+`src/providers/better-auth/ac/organization-ac.ts` - residue from ADR-0018, which took `investor`
+and `customer` out of that catalog.
+
+`docs/database/` reviewed: no table, column, index, constraint, logical reference or status
+vocabulary changed, so it is unchanged.
+
 ## 2026-11-14 - Removed the two stale one-shot database scripts
 
 Branch `refactor/app-roles-investor-customer`. `apps/backend/database/` held three TypeScript
