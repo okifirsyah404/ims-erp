@@ -18,6 +18,44 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - API reference with Zudoku (`apps/api-docs`) for the website and portal API
+
+Owner asked what the ERP gained for the portal (answered in the session: the
+portal branch's DB, modules, security, web admin and docs) and for readable
+API docs with https://zudoku.dev. Owner choices: a new workspace
+`apps/api-docs` in this repo; scope = what the website uses (`/portal/v1`
+and `/public/v1`), not the ~400 internal web-admin routes.
+
+Why a curated spec: the ERP's generated `/docs/json` lists the routes (406,
+22 portal) but has no request or response schemas, because the controllers
+validate with zod inside the handlers — Zudoku would render empty pages.
+
+Built (branch `feat/m07-customer-portal`):
+- `apps/api-docs/openapi/website.yaml` — OpenAPI 3.1, 26 operations
+  (23 portal incl. `/me` and ticket `confirm`, 3 public website), envelope and
+  error schemas, `portalBearer` / `websiteApiKey` security, the portal view
+  shapes (from `portal-presenter.ts`), limits and examples.
+- `apps/api-docs` (Zudoku 0.93.2, React 19): `zudoku.config.tsx`, guide pages
+  `introduction`, `authentication`, `conventions`, `website-setup`;
+  `dev` on port 3100 (3000 is the backend).
+- Drift guard `apps/backend/test/unit/api-docs-drift.test.ts`: builds the
+  portal and public-website controllers (services faked) and compares their
+  mounted routes with the spec; every operation needs an `operationId` and a
+  summary. Negative check done: renaming `/portal/v1/badges` in the spec made
+  the test fail; restored.
+- Corrections found while writing it: the envelope is `{ requestId, status,
+  message, timestamp, data }` (+ `errors`), not `{ success, message, data }`
+  as written earlier in `modules/customer-portal.md`, the gap analysis and the
+  website's `erp-routes.ts` comment — fixed; the default response language
+  without `Accept-Language` is English (`DEFAULT_LANGUAGE = 'en'`).
+
+Verification: `bun install` (375 packages; `bun.lock` updated for zudoku);
+drift test 2 pass; YAML validated (PyYAML and `Bun.YAML`); `bun run build`
+in `apps/api-docs` → built, prerendered 16 routes; `bun run dev` → `/introduction`,
+`/api`, `/api/portal-support` 200, screenshots checked (guide page, endpoint
+page with schema, example response and cURL). The catalog API (`/public/v1/
+catalog/*`) is added to the spec once PR #84 lands. Runbook command row added.
+
 ## 2026-11-14 - Customer portal: every screen checked, stage-2 screens show "Coming soon"
 
 Owner reported `PortalNotConfiguredError … "listQuotations"` and asked to check

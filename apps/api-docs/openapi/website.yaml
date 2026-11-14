@@ -1,0 +1,1002 @@
+openapi: 3.1.0
+info:
+  title: Entragate ERP — Website & Customer Portal API
+  version: 1.0.0-stage1
+  description: |
+    The ERP API used by the website repo (`entragate-platform`):
+
+    - **Customer portal** (`/portal/v1`) — `apps/customer`. A signed-in customer
+      sees only their own customer's records (ERP-0022, ADR-0018).
+    - **Public website** (`/public/v1`) — `apps/web` forms (RFQ, contact, demo).
+
+    Every call is **server to server**: the browser never talks to the ERP.
+    Successful responses are wrapped in the ERP envelope (set
+    `ERP_RESPONSE_ENVELOPE=data` in the website). Labels in portal responses
+    follow `Accept-Language` (`id` or `en`); dates are on the Asia/Jakarta clock;
+    money is **whole rupiah**.
+
+    This file is curated by hand and checked against the routes by
+    `apps/backend/test/unit/api-docs-drift.test.ts`.
+servers:
+  - url: http://localhost:3000
+    description: Local ERP backend
+tags:
+  - name: Portal — account
+    description: Sign-in, sign-up (individuals), passwords, members.
+  - name: Portal — home
+  - name: Portal — projects
+  - name: Portal — support
+    description: Service tickets with a message thread.
+  - name: Portal — devices
+    description: Devices on the customer's warranty certificates.
+  - name: Public website
+    description: Website forms; authenticated with the website's API key.
+
+paths:
+  # ---------------------------------------------------------------- account
+  /portal/v1/auth/login:
+    post:
+      tags: [Portal — account]
+      operationId: login
+      summary: Sign in
+      description: |
+        Email and password. A staff login, an unknown email and a wrong password
+        all answer the same `401`. After **5 failures** the email is locked for
+        **15 minutes** (`423`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                accountType: { type: string, enum: [individual, business], description: Sent by the portal; ignored. }
+            example: { email: wulan@example.com, password: Rahasia-Wulan-2026, accountType: individual }
+      responses:
+        '200':
+          description: Signed in.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties:
+                      data:
+                        type: object
+                        required: [ok, user, tokens]
+                        properties:
+                          ok: { type: boolean, const: true }
+                          user: { $ref: '#/components/schemas/PortalUser' }
+                          tokens: { $ref: '#/components/schemas/AuthTokens' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/InvalidCredentials' }
+        '423': { $ref: '#/components/responses/Locked' }
+
+  /portal/v1/auth/register:
+    post:
+      tags: [Portal — account]
+      operationId: register
+      summary: Sign up (individuals)
+      description: |
+        Owner decision D1: **individuals** sign up themselves; a **business** is
+        invited by staff (`403`). A 6-digit code goes to the email (10 minutes,
+        5 attempts). An email that already has an account gets the same answer
+        and no email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountType, name, email, password]
+              properties:
+                accountType: { type: string, enum: [individual, business] }
+                name: { type: string, maxLength: 200 }
+                email: { type: string, format: email }
+                phone: { type: string, maxLength: 30, pattern: '^[0-9+()\-\s]*$' }
+                password: { type: string, minLength: 8, maxLength: 128 }
+      responses:
+        '200':
+          description: Code sent (or the email already has an account).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties:
+                      data: { type: object, properties: { email: { type: string, format: email } } }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '403':
+          description: Business sign-up — businesses are invited.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+
+  /portal/v1/auth/verify-email:
+    post:
+      tags: [Portal — account]
+      operationId: verifyEmail
+      summary: Confirm the sign-up code
+      description: |
+        The right code creates the CRM customer (type individual, code `PRT-…`),
+        its primary contact and an **owner** login, and signs the person in.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email: { type: string, format: email }
+                code: { type: string, pattern: '^\d{6}$' }
+      responses:
+        '200':
+          description: Verified and signed in.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          user: { $ref: '#/components/schemas/PortalUser' }
+                          tokens: { $ref: '#/components/schemas/AuthTokens' }
+        '400':
+          description: Wrong, expired or used code.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+
+  /portal/v1/auth/verify-email/resend:
+    post:
+      tags: [Portal — account]
+      operationId: resendVerification
+      summary: Send a new sign-up code
+      description: Same answer for any email.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/EmailOnly' } } }
+      responses:
+        '200': { $ref: '#/components/responses/Empty' }
+
+  /portal/v1/auth/password-reset:
+    post:
+      tags: [Portal — account]
+      operationId: requestPasswordReset
+      summary: Forgot password
+      description: Emails `<PORTAL_URL>/reset-password?token=…` (1 hour) to an active portal login. Same answer for any email.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/EmailOnly' } } }
+      responses:
+        '200': { $ref: '#/components/responses/Empty' }
+
+  /portal/v1/auth/password-reset/confirm:
+    post:
+      tags: [Portal — account]
+      operationId: resetPassword
+      summary: Set a password from an emailed link
+      description: Also sets the **first** password after a staff invitation (link valid 3 days).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: { type: string }
+                password: { type: string, minLength: 8, maxLength: 128 }
+      responses:
+        '200': { $ref: '#/components/responses/Empty' }
+        '400':
+          description: Invalid or expired link (or a too short password).
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+
+  /portal/v1/auth/logout:
+    post:
+      tags: [Portal — account]
+      operationId: logout
+      summary: Sign out
+      security: [{ portalBearer: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/Empty' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /portal/v1/account/password:
+    post:
+      tags: [Portal — account]
+      operationId: changePassword
+      summary: Change the password
+      security: [{ portalBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current, next]
+              properties:
+                current: { type: string }
+                next: { type: string, minLength: 8, maxLength: 128 }
+      responses:
+        '200': { $ref: '#/components/responses/Empty' }
+        '400':
+          description: The current password is wrong.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /portal/v1/me:
+    get:
+      tags: [Portal — account]
+      operationId: me
+      summary: The signed-in person
+      description: ERP extra (not a `PortalSource` operation).
+      security: [{ portalBearer: [] }]
+      responses:
+        '200':
+          description: The person and their company.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { $ref: '#/components/schemas/PortalUser' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /portal/v1/account:
+    get:
+      tags: [Portal — account]
+      operationId: getAccount
+      summary: Account, company and members
+      description: |
+        Members are real (one login per customer contact, owner decision D2).
+        Sites, notification channels and security are defaults — not stored yet.
+      security: [{ portalBearer: [] }]
+      responses:
+        '200':
+          description: Account settings.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { $ref: '#/components/schemas/AccountSettings' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /portal/v1/account/members:
+    post:
+      tags: [Portal — account]
+      operationId: inviteMember
+      summary: Invite a colleague (owners)
+      description: Creates a contact and a login with the role; the person gets a "set your password" email. Other roles get `403`.
+      security: [{ portalBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email: { type: string, format: email }
+                name: { type: string, maxLength: 200 }
+                role: { type: string, enum: [approver, finance, viewer] }
+      responses:
+        '201':
+          description: Invited.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { $ref: '#/components/schemas/CompanyMember' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403':
+          description: Only an owner can manage members.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '409':
+          description: The email belongs to a staff login or another portal login.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+
+  /portal/v1/account/members/{id}:
+    delete:
+      tags: [Portal — account]
+      operationId: removeMember
+      summary: Remove a colleague (owners)
+      security: [{ portalBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { $ref: '#/components/responses/Empty' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403':
+          description: Only an owner can manage members.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: You cannot remove your own access.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+
+  # ------------------------------------------------------------------- home
+  /portal/v1/home:
+    get:
+      tags: [Portal — home]
+      operationId: getHome
+      summary: Home screen
+      description: Active project and open tickets. Quotations, activity and notifications are empty in stage 1.
+      security: [{ portalBearer: [] }]
+      responses:
+        '200':
+          description: Home summary.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { $ref: '#/components/schemas/HomeSummary' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /portal/v1/badges:
+    get:
+      tags: [Portal — home]
+      operationId: getBadges
+      summary: Navigation counters
+      description: Only `openTickets` is counted in stage 1.
+      security: [{ portalBearer: [] }]
+      responses:
+        '200':
+          description: Counters.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { $ref: '#/components/schemas/NavBadges' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  # --------------------------------------------------------------- projects
+  /portal/v1/projects:
+    get:
+      tags: [Portal — projects]
+      operationId: listProjects
+      summary: The customer's projects
+      description: Never contract values, costs, margins, notes or staff ids.
+      security: [{ portalBearer: [] }]
+      responses:
+        '200':
+          description: Projects, newest first.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { type: array, items: { $ref: '#/components/schemas/ProjectSummary' } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /portal/v1/projects/{id}:
+    get:
+      tags: [Portal — projects]
+      operationId: getProject
+      summary: One project
+      description: Milestones per stage, issued BASTs and customer-visible files (signed links, valid **5 minutes**). Another customer's project is `404`.
+      security: [{ portalBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: Project detail.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { $ref: '#/components/schemas/ProjectDetail' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------------------------------------------- support
+  /portal/v1/tickets:
+    get:
+      tags: [Portal — support]
+      operationId: listTickets
+      summary: The customer's tickets
+      security: [{ portalBearer: [] }]
+      responses:
+        '200':
+          description: Tickets, newest first.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { type: array, items: { $ref: '#/components/schemas/TicketSummary' } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      tags: [Portal — support]
+      operationId: createTicket
+      summary: Open a ticket
+      description: |
+        JSON, or the portal's multipart form (`payload` = the JSON below). The
+        ticket gets channel `portal` and goes to the after-sales queue. A
+        `productId` from `GET /portal/v1/products` fills in the project and the
+        device. **Photos are refused (`422`) in stage 1.**
+      security: [{ portalBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTicketInput' }
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                payload: { type: string, description: CreateTicketInput as JSON }
+      responses:
+        '201':
+          description: Opened.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          id: { type: string, format: uuid }
+                          number: { type: string, example: 0005/TKT/IMS/XI/26 }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404':
+          description: The `productId` is not one of the customer's devices.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '422':
+          description: Attachments are not supported yet.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+
+  /portal/v1/tickets/{id}:
+    get:
+      tags: [Portal — support]
+      operationId: getTicket
+      summary: One ticket with its messages
+      description: Only customer-visible messages; internal notes and the service cost never appear. Another customer's ticket is `404`.
+      security: [{ portalBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: Ticket detail.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { $ref: '#/components/schemas/TicketDetail' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /portal/v1/tickets/{id}/messages:
+    post:
+      tags: [Portal — support]
+      operationId: postTicketMessage
+      summary: Write on the ticket
+      description: JSON `{ text }` or the multipart form (`payload`). A closed ticket takes no messages (`422`).
+      security: [{ portalBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties: { text: { type: string, minLength: 1, maxLength: 4000 } }
+      responses:
+        '201':
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          id: { type: string, format: uuid }
+                          authorType: { type: string, enum: [staff, customer] }
+                          authorName: { type: string }
+                          body: { type: string }
+                          createdAt: { type: integer, description: Unix milliseconds }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: The ticket is closed, or attachments were sent.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+
+  /portal/v1/tickets/{id}/confirm:
+    post:
+      tags: [Portal — support]
+      operationId: confirmTicket
+      summary: Confirm the fix
+      description: ERP extra. A **resolved** ticket becomes closed with the confirmation channel `portal`; otherwise `422`.
+      security: [{ portalBearer: [] }]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: Closed.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { $ref: '#/components/schemas/TicketDetail' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: The ticket is not resolved.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+
+  # ---------------------------------------------------------------- devices
+  /portal/v1/products:
+    get:
+      tags: [Portal — devices]
+      operationId: listProducts
+      summary: The customer's devices
+      description: One device per line of the customer's warranty certificates; id `<certificate uuid>:<line>`.
+      security: [{ portalBearer: [] }]
+      responses:
+        '200':
+          description: Devices.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { type: array, items: { $ref: '#/components/schemas/RegisteredProduct' } } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /portal/v1/products/{id}/warranty:
+    get:
+      tags: [Portal — devices]
+      operationId: getWarranty
+      summary: A device's warranty
+      security: [{ portalBearer: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: '`<certificate uuid>:<line>` from `GET /portal/v1/products`.'
+          schema: { type: string, pattern: '^[0-9a-f-]{36}:\d{1,3}$' }
+      responses:
+        '200':
+          description: Warranty detail.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { $ref: '#/components/schemas/WarrantyDetail' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # --------------------------------------------------------- public website
+  /public/v1/rfq:
+    post:
+      tags: [Public website]
+      operationId: submitRfq
+      summary: Request for quotation
+      description: |
+        Becomes a CRM lead. JSON, or multipart (`payload` = JSON, `attachments` =
+        up to 10 files, 25 MB each, PDF / DWG / JPG / PNG). Send an
+        `Idempotency-Key`: a replay answers `200` with the first reference.
+      security: [{ websiteApiKey: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RfqSubmission' }
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                payload: { type: string, description: RfqSubmission as JSON }
+                attachments: { type: array, items: { type: string, format: binary } }
+      responses:
+        '201': { $ref: '#/components/responses/RfqReceipt' }
+        '200': { $ref: '#/components/responses/RfqReceipt' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/WebsiteKeyRequired' }
+
+  /public/v1/contact:
+    post:
+      tags: [Public website]
+      operationId: sendContactMessage
+      summary: Contact message
+      security: [{ websiteApiKey: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [topic, name, email, message, source]
+              properties:
+                topic: { type: string, enum: [sales, support, partnership, careers] }
+                name: { type: string, maxLength: 120 }
+                company: { type: string, maxLength: 160 }
+                email: { type: string, format: email }
+                phone: { type: string, minLength: 6, maxLength: 30 }
+                message: { type: string, maxLength: 3000 }
+                source: { type: string, const: web }
+      responses:
+        '201': { $ref: '#/components/responses/Reference' }
+        '200': { $ref: '#/components/responses/Reference' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/WebsiteKeyRequired' }
+
+  /public/v1/demo:
+    post:
+      tags: [Public website]
+      operationId: requestDemo
+      summary: Demo request
+      security: [{ websiteApiKey: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, whatsapp, organisation, format, date, time, source]
+              properties:
+                name: { type: string, maxLength: 120 }
+                jobTitle: { type: string, maxLength: 120 }
+                email: { type: string, format: email }
+                whatsapp: { type: string, minLength: 6, maxLength: 30 }
+                organisation: { type: string, maxLength: 160 }
+                industry: { type: string, maxLength: 80 }
+                interests: { type: array, maxItems: 12, items: { type: string, maxLength: 60 } }
+                sites: { type: string, maxLength: 60 }
+                dailyEntries: { type: string, maxLength: 60 }
+                format: { type: string, enum: [online, onsite, showroom] }
+                date: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$', description: Business date, Asia/Jakarta }
+                time: { type: string, pattern: '^\d{2}:\d{2}$', description: WIB }
+                source: { type: string, const: web }
+      responses:
+        '201': { $ref: '#/components/responses/Reference' }
+        '200': { $ref: '#/components/responses/Reference' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/WebsiteKeyRequired' }
+
+components:
+  securitySchemes:
+    portalBearer:
+      type: http
+      scheme: bearer
+      description: |
+        The `tokens.accessToken` from `login` or `verifyEmail`. Valid only on
+        `/portal/v1` (never on ERP routes); sessions last 7 days and there is no
+        refresh token.
+    websiteApiKey:
+      type: http
+      scheme: bearer
+      description: The website's ERP API key (`ERP_API_TOKEN`), issued in the ERP. Never sent from a browser.
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: A malformed id answers `404` like an unknown one.
+      schema: { type: string, format: uuid }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, minLength: 8, maxLength: 100, pattern: '^[A-Za-z0-9._:-]+$' }
+
+  responses:
+    Empty:
+      description: Done.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - properties: { data: { type: 'null' } }
+    ValidationFailed:
+      description: The body failed validation (`errors[].field` / `message`).
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Unauthenticated:
+      description: Missing, expired or revoked portal session.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    InvalidCredentials:
+      description: Wrong email or password (also for staff logins).
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Locked:
+      description: Too many failed sign-ins; try again in 15 minutes.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    NotFound:
+      description: Unknown, malformed, or another customer's record.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    WebsiteKeyRequired:
+      description: Missing or invalid website API key.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Reference:
+      description: Saved (`201`), or an `Idempotency-Key` replay (`200`).
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - properties: { data: { type: object, properties: { reference: { type: string } } } }
+    RfqReceipt:
+      description: Saved (`201`), or an `Idempotency-Key` replay (`200`).
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - properties:
+                  data:
+                    type: object
+                    properties:
+                      reference: { type: string }
+                      linkedToAccount: { type: boolean, description: Always false until signed-in RFQs are built. }
+
+  schemas:
+    Envelope:
+      type: object
+      required: [requestId, status, message, timestamp, data]
+      properties:
+        requestId: { type: string, format: uuid }
+        status: { type: integer, example: 200 }
+        message: { type: string, example: OK }
+        timestamp: { type: integer, description: Unix milliseconds }
+        data: {}
+    ErrorEnvelope:
+      type: object
+      required: [requestId, status, message, timestamp, data, errors]
+      properties:
+        requestId: { type: string, format: uuid }
+        status: { type: integer, example: 404 }
+        message: { type: string, description: In the caller's language (`Accept-Language`). }
+        timestamp: { type: integer }
+        data: { type: 'null' }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: [string, 'null'] }
+              message: { type: string }
+    EmailOnly:
+      type: object
+      required: [email]
+      properties: { email: { type: string, format: email } }
+    AuthTokens:
+      type: object
+      required: [accessToken, expiresAt]
+      properties:
+        accessToken: { type: string, description: 'Send as `Authorization: Bearer …` on `/portal/v1`.' }
+        expiresAt: { type: string, format: date-time }
+    PortalUser:
+      type: object
+      required: [id, name, initials, email, accountType, verified]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        initials: { type: string, maxLength: 4 }
+        email: { type: string, format: email }
+        phone: { type: string }
+        accountType: { type: string, enum: [individual, business] }
+        verified: { type: boolean }
+        company:
+          type: object
+          description: Business customers only.
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            npwp: { type: string }
+            shortName: { type: string }
+    CompanyMember:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        initials: { type: string }
+        role: { type: string, enum: [owner, approver, finance, viewer] }
+        admin: { type: boolean, description: True for owners. }
+        status: { type: string, enum: [active, invited], description: '`invited` until the password is set.' }
+        lastActiveLabel: { type: string }
+    AccountSettings:
+      type: object
+      properties:
+        personal: { type: object, properties: { name: { type: string }, email: { type: string }, phone: { type: string } } }
+        company: { type: object, properties: { name: { type: string }, shortName: { type: string }, npwp: { type: string }, verified: { type: boolean } } }
+        members: { type: array, items: { $ref: '#/components/schemas/CompanyMember' } }
+        sites: { type: array, items: {}, description: Empty in stage 1. }
+        notifications: { type: object, properties: { push: { type: boolean }, email: { type: boolean }, whatsapp: { type: boolean } } }
+        security: { type: object, properties: { faceId: { type: boolean }, twoStep: { type: boolean }, passwordChangedLabel: { type: string }, activeDevices: { type: integer } } }
+        preferences: { type: object, properties: { language: { type: string, enum: [en, id] }, currency: { type: string, const: IDR }, appearance: { type: string } } }
+    NavBadges:
+      type: object
+      properties:
+        activeOrders: { type: integer }
+        quotationsAwaiting: { type: integer }
+        openTickets: { type: integer }
+        unreadNotifications: { type: integer }
+    HomeSummary:
+      type: object
+      properties:
+        activeProject:
+          allOf:
+            - $ref: '#/components/schemas/ProjectSummary'
+            - properties: { index: { type: integer }, total: { type: integer } }
+        quotations: { type: array, items: {}, description: Empty in stage 1. }
+        openTickets: { type: array, maxItems: 3, items: { $ref: '#/components/schemas/TicketSummary' } }
+        activity: { type: array, items: {}, description: Empty in stage 1. }
+        unreadNotifications: { type: integer }
+    ProjectSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        site: { type: string }
+        status: { type: string, enum: [on_track, action_needed, handed_over] }
+        stage: { type: integer, description: '1–7: preparation, delivery, installation, testing, training, handover, warranty' }
+        stageCount: { type: integer, const: 7 }
+        stageLabel: { type: string }
+        progress: { type: number, minimum: 0, maximum: 1, description: Done tasks / all tasks. }
+        nextLabel: { type: string }
+        completionLabel: { type: string }
+        team: { type: array, items: { type: object, properties: { initials: { type: string }, name: { type: string } } } }
+    ProjectDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProjectSummary'
+        - type: object
+          properties:
+            daysLeft: { type: integer }
+            openTasks: { type: integer }
+            milestones:
+              type: array
+              items:
+                type: object
+                properties:
+                  title: { type: string }
+                  dateLabel: { type: string }
+                  state: { type: string, enum: [done, current, upcoming] }
+                  tasks: { type: array, items: { type: object, properties: { label: { type: string }, done: { type: boolean } } } }
+                  tasksDone: { type: integer }
+                  tasksTotal: { type: integer }
+            documents: { type: array, items: { $ref: '#/components/schemas/PortalDocument' } }
+            manager: { type: object, properties: { name: { type: string }, role: { type: string } } }
+    PortalDocument:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        meta: { type: string }
+        kind: { type: string, enum: [pdf, dwg, zip, file] }
+        url: { type: string, format: uri, description: Signed object-storage link (5 minutes); absent for BASTs (printed in the ERP). }
+    TicketSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        number: { type: string, example: 0005/TKT/IMS/XI/26 }
+        subject: { type: string }
+        shortSubject: { type: string }
+        status: { type: string, enum: [new, in_progress, awaiting_you, resolved], description: '`awaiting_you` after a staff reply or when a fix waits for confirmation.' }
+        priority: { type: string, enum: [low, normal, urgent], description: Always `normal` in stage 1. }
+        lastMessage:
+          type: object
+          properties:
+            author: { type: string }
+            role: { type: string }
+            initials: { type: string }
+            text: { type: string }
+            ago: { type: string }
+            unread: { type: integer }
+        resolvedLabel: { type: string }
+    TicketDetail:
+      allOf:
+        - $ref: '#/components/schemas/TicketSummary'
+        - type: object
+          properties:
+            stage: { type: integer, description: '0 created, 1 assigned, 2 in progress, 4 resolved' }
+            agent: { type: object, properties: { name: { type: string }, initials: { type: string }, online: { type: boolean }, replyLabel: { type: string } } }
+            messages:
+              type: array
+              items:
+                type: object
+                properties:
+                  kind: { type: string, enum: [message, event] }
+                  id: { type: string }
+                  from: { type: string, enum: [customer, agent] }
+                  author: { type: string }
+                  text: { type: string }
+                  time: { type: string }
+                  icon: { type: string }
+            quickReplies: { type: array, items: { type: string } }
+            createdLabel: { type: string }
+            device: { type: object, properties: { name: { type: string }, serial: { type: string } } }
+            activity: { type: array, items: { type: object, properties: { title: { type: string }, description: { type: string }, dateLabel: { type: string }, state: { type: string } } } }
+            canConfirm: { type: boolean, description: ERP extra — true when `POST …/confirm` is allowed. }
+    CreateTicketInput:
+      type: object
+      required: [subject, description]
+      properties:
+        category: { type: string, enum: [hardware, software, installation, billing, warranty, other], default: other }
+        priority: { type: string, enum: [low, normal, urgent], default: normal }
+        productId: { type: string, description: A device id from `GET /portal/v1/products`. }
+        subject: { type: string, maxLength: 200 }
+        description: { type: string, maxLength: 3500 }
+      example: { category: hardware, priority: normal, subject: Barrier gate tidak menutup, description: Sejak pagi palang tidak turun setelah kendaraan lewat. }
+    RegisteredProduct:
+      type: object
+      properties:
+        id: { type: string, example: '0190a1b2-0000-7000-8000-00000000ce01:0' }
+        name: { type: string }
+        serialLabel: { type: string }
+        site: { type: string }
+        siteKey: { type: string }
+        warrantyStatus: { type: string, enum: [active, expiring, expired], description: '`expiring` = 60 days or less.' }
+        monthsLeft: { type: integer }
+        daysLeft: { type: integer }
+        progress: { type: number, minimum: 0, maximum: 1 }
+    WarrantyDetail:
+      type: object
+      properties:
+        productId: { type: string }
+        certificate: { type: string }
+        plan: { type: string }
+        productName: { type: string }
+        serial: { type: string }
+        installedLabel: { type: string }
+        monthsRemaining: { type: integer }
+        termMonths: { type: integer }
+        periodLabel: { type: string }
+        coverage: { type: array, items: { type: object, properties: { title: { type: string }, detail: { type: string }, covered: { type: boolean } } } }
+        history: { type: array, items: {}, description: Empty in stage 1. }
+        certificateFile: { $ref: '#/components/schemas/PortalDocument' }
+    RfqSubmission:
+      type: object
+      required: [company, project, items, source]
+      description: At least one product or one software solution.
+      properties:
+        company:
+          type: object
+          required: [contactName, email, phone]
+          properties:
+            name: { type: string, maxLength: 200 }
+            contactName: { type: string, maxLength: 120 }
+            email: { type: string, format: email }
+            phone: { type: string, minLength: 6, maxLength: 30 }
+        project:
+          type: object
+          required: [siteLocation, type]
+          properties:
+            siteName: { type: string, maxLength: 160 }
+            siteLocation: { type: string, maxLength: 160 }
+            targetInstallation: { type: string, maxLength: 80 }
+            budgetRange: { type: string, maxLength: 120 }
+            type: { type: string, enum: [new-installation, upgrade, multi-site, government] }
+        items:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required: [productSlug, quantity]
+            properties:
+              productSlug: { type: string, maxLength: 120 }
+              quantity: { type: integer, minimum: 1, maximum: 999 }
+              options: { type: object, additionalProperties: { type: string } }
+        solutions: { type: array, maxItems: 6, items: { type: string } }
+        notes: { type: string, maxLength: 2000 }
+        sendCopyToPortal: { type: boolean, default: false }
+        source: { type: string, const: web }

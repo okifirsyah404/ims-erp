@@ -1,6 +1,9 @@
 # Customer Portal Module (ERP-0022, stage 1)
 
 Decision record: [ADR-0018](../decisions/ADR-0018-customer-portal-api.md).
+Readable API reference (Zudoku): `apps/api-docs` — `bun run dev` there, then
+http://localhost:3100 (spec `apps/api-docs/openapi/website.yaml`, kept in step by
+`apps/backend/test/unit/api-docs-drift.test.ts`).
 Full gap analysis against the website repo (all 51 portal, 9 catalog and 10
 website operations, open owner decisions): `docs/plan/plans/website-integration.md`.
 
@@ -35,7 +38,8 @@ answer 503. The portal sets `ERP_API_BASE_URL` to the ERP and these routes.
 
 ## Route map for `PortalRoutes` (website `packages/api-client`)
 
-Responses use the ERP envelope `{ success, message, data }` — configure the
+Responses use the ERP envelope `{ requestId, status, message, timestamp, data }`
+(errors add `errors[]`) — configure the
 adapter with `unwrap` for `data`. Send `Accept-Language: id` or `en` for the
 labels. Authenticated routes need `Authorization: Bearer <accessToken>`.
 

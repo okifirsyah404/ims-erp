@@ -37,7 +37,7 @@ Conventions both apps assume:
 
 - Server-to-server only (browser never calls the ERP). No CORS needed.
 - Envelope: set `ERP_RESPONSE_ENVELOPE=data` — the ERP answers
-  `{ success, message, data }`. Errors: the client reads `message` (string), which
+  `{ requestId, status, message, timestamp, data }`. Errors: the client reads `message` (string), which
   our error envelope has; login failures fall back to the status code (401
   wrong credentials, 423 locked).
 - Money is **whole rupiah** (`Money = number`). The ERP stores minor units:
