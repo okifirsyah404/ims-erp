@@ -23,7 +23,7 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 Owner: "Payment gateway dibikin dinamis karna ada 2 kemungkinan menggunakan
 xendit/singapay"; customers pay after staff confirmation; no sandbox account
 yet, so build with faked responses. Branch `feat/m02-payment-gateway`,
-stacked on `fix/m02-invoice-billing` (PR #98), because the invoice page it
+stacked on `fix/m02-invoice-billing` (PR #98) as **PR #99**, because the invoice page it
 extends is broken on `main` until #98 merges. Decisions: ADR-0019 (proposed).
 
 **Gate 1.** Read `docs/database/docs.dbml` (Sales, Finance, Automation,
