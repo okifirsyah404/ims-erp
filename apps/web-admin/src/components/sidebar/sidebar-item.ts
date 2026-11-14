@@ -28,4 +28,14 @@ export type SidebarItem = {
 	open?: true;
 	/** Shown only to application administrators. */
 	appAdminOnly?: true;
+	/**
+	 * Shown to application administrators or to a warehouse person in charge
+	 * (ADR-0017).
+	 *
+	 * @remarks
+	 * A PIC grant is a row in `inventory.warehouse_managers`, not an
+	 * organization permission, so this cannot be expressed as a `permission`
+	 * string. The caller resolves the fact from `GET /warehouses/mine`.
+	 */
+	warehousePic?: true;
 };

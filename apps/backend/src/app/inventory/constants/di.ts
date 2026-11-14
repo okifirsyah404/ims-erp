@@ -12,6 +12,7 @@ import type { ISerialUnitRepository } from '../contracts/serial-unit.repository.
 import type { IWarehouseRepository } from '../contracts/warehouse.repository.interface';
 import type { IWarehouseAddressRepository } from '../contracts/warehouse-address.repository.interface';
 import type { IWarehouseStorageRepository } from '../contracts/warehouse-storage.repository.interface';
+import type { IWarehouseManagerRepository } from '../contracts/warehouse-manager.repository.interface';
 import type { IMovementRepository } from '../contracts/movement.repository.interface';
 import type { IBalanceRepository } from '../contracts/balance.repository.interface';
 import type { IAdjustmentRepository } from '../contracts/adjustment.repository.interface';
@@ -19,6 +20,7 @@ import type { IWarehouseBorrowingGuard } from '../contracts/warehouse-borrowing-
 import type { ItemService } from '../services/item.service';
 import type { ItemImageService } from '../services/item-image.service';
 import type { WarehouseService } from '../services/warehouse.service';
+import type { WarehouseManagerService } from '../services/warehouse-manager.service';
 import type { ExportedWarehouseService } from '../services/exported-warehouse.service';
 import type { StockService } from '../services/stock.service';
 import type { AdjustmentService } from '../services/adjustment.service';
@@ -46,6 +48,11 @@ export const WAREHOUSE_STORAGE_REPOSITORY_TOKEN: InjectionToken<IWarehouseStorag
 	Symbol('WAREHOUSE_STORAGE_REPOSITORY');
 export const WAREHOUSE_SERVICE_TOKEN: InjectionToken<WarehouseService> =
 	Symbol('WAREHOUSE_SERVICE');
+/** Person-in-charge assignments (ADR-0017). */
+export const WAREHOUSE_MANAGER_REPOSITORY_TOKEN: InjectionToken<IWarehouseManagerRepository> =
+	Symbol('WAREHOUSE_MANAGER_REPOSITORY');
+export const WAREHOUSE_MANAGER_SERVICE_TOKEN: InjectionToken<WarehouseManagerService> =
+	Symbol('WAREHOUSE_MANAGER_SERVICE');
 /**
  * Cross-module export facade over warehouse reads (name resolution for
  * storage-location display). Depends only on the warehouse repository, so

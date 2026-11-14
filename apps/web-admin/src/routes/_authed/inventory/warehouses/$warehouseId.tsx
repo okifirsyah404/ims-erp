@@ -28,14 +28,19 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { MapPin, PackageOpen } from 'lucide-react';
-import { AdminOnly } from '@/components/inventory/admin-only';
+import { WarehouseAccessGate } from '@/components/inventory/warehouse-access-gate';
 import { StorageDialog, useArchiveStorage } from '@/components/inventory/storage-dialog';
 import { WarehouseItemTable } from '@/components/inventory/warehouse-item-table';
 import { WarehouseOrganizationsTab } from '@/components/inventory/warehouse-organizations-tab';
+import { WarehouseManagersTab } from '@/components/inventory/warehouse-managers-tab';
 import { EmptyState } from '@/components/empty-state';
+import { useWarehouseAccess } from '@/lib/use-warehouse-access';
 import { warehouseQueryOptions } from '@/lib/warehouse-api';
 
-/** `/inventory/warehouses/$warehouseId` — one warehouse, four tabs. */
+/**
+ * `/inventory/warehouses/$warehouseId` — one warehouse, read-only item tabs
+ * plus the storage, organization, and person-in-charge tabs.
+ */
 export const Route = createFileRoute('/_authed/inventory/warehouses/$warehouseId')({
 	component: WarehouseDetailPage,
 });
@@ -54,13 +59,14 @@ function WarehouseDetailPage() {
 function WarehouseDetail() {
 	const { t } = useTranslation(['inventory', 'common']);
 	const { warehouseId } = useParams({ from: Route.id });
+	const { isAppAdmin } = useWarehouseAccess();
 	const { data: warehouse, isPending, isError } = useQuery(
 		warehouseQueryOptions(warehouseId),
 	);
 
 	if (isPending) {
 		return (
-			<AdminOnly>
+			<WarehouseAccessGate>
 				<div className='flex flex-col gap-6' aria-busy='true'>
 					{/* Header */}
 					<div className='flex flex-wrap items-start justify-between gap-4'>
@@ -108,17 +114,17 @@ function WarehouseDetail() {
 						</Card>
 					</div>
 				</div>
-			</AdminOnly>
+			</WarehouseAccessGate>
 		);
 	}
 
 	if (isError || !warehouse) {
 		return (
-			<AdminOnly>
+			<WarehouseAccessGate>
 				<p className='text-sm text-muted-foreground'>
 					{t('inventory:warehouses.notFound')}
 				</p>
-			</AdminOnly>
+			</WarehouseAccessGate>
 		);
 	}
 
@@ -131,7 +137,7 @@ function WarehouseDetail() {
 	];
 
 	return (
-		<AdminOnly>
+		<WarehouseAccessGate>
 			<div className='flex flex-col gap-6'>
 				<div className='flex flex-wrap items-start justify-between gap-4'>
 					<div>
@@ -215,32 +221,54 @@ function WarehouseDetail() {
 				</Card>
 
 				{/* Tabs ------------------------------------------------------- */}
-				<Tabs defaultValue='products'>
+				{/* Item tabs read `/inventory/items`, which is organization
+				    permission-gated; a PIC grant confers no stock reads, so they
+				    are hidden for anyone but an app admin. */}
+				<Tabs defaultValue={isAppAdmin ? 'products' : 'storage'}>
 					<TabsList>
-						<TabsTrigger value='products'>
-							{t('inventory:warehouses.products')}
-						</TabsTrigger>
-						<TabsTrigger value='components'>
-							{t('inventory:warehouses.components')}
-						</TabsTrigger>
-						<TabsTrigger value='materials'>
-							{t('inventory:warehouses.materials')}
-						</TabsTrigger>
+						{isAppAdmin ? (
+							<>
+								<TabsTrigger value='products'>
+									{t('inventory:warehouses.products')}
+								</TabsTrigger>
+								<TabsTrigger value='components'>
+									{t('inventory:warehouses.components')}
+								</TabsTrigger>
+								<TabsTrigger value='materials'>
+									{t('inventory:warehouses.materials')}
+								</TabsTrigger>
+							</>
+						) : null}
 						<TabsTrigger value='storage'>
 							{t('inventory:warehouses.storageTab')}
 						</TabsTrigger>
-						<TabsTrigger value='organizations'>
-							{t('inventory:warehouses.organizationsTab')}
-						</TabsTrigger>
+						{/* Organization links and person-in-charge assignment are
+						    application-admin facts; a PIC has no business here. */}
+						{isAppAdmin ? (
+							<TabsTrigger value='organizations'>
+								{t('inventory:warehouses.organizationsTab')}
+							</TabsTrigger>
+						) : null}
+						{isAppAdmin ? (
+							<TabsTrigger value='managers'>
+								{t('inventory:warehouses.managersTab')}
+							</TabsTrigger>
+						) : null}
 					</TabsList>
 					<TabsContent value='products'>
-						<WarehouseItemTable warehouseId={warehouseId} itemKind='product' />
+						{isAppAdmin ? (
+							<WarehouseItemTable warehouseId={warehouseId} itemKind='product' />
+						) : null}
 					</TabsContent>
 					<TabsContent value='components'>
-						<WarehouseItemTable warehouseId={warehouseId} itemKind='component' />
+						{isAppAdmin ? (
+							<WarehouseItemTable warehouseId={warehouseId} itemKind='component' />
+						) : null}
 					</TabsContent>
 					<TabsContent value='materials'>
-						<WarehouseItemTable warehouseId={warehouseId} itemKind='material' />
+						{isAppAdmin ? (
+							<WarehouseItemTable warehouseId={warehouseId} itemKind='material' />
+						) : null}
 					</TabsContent>
 					<TabsContent value='storage'>
 						<StorageTab
@@ -249,11 +277,18 @@ function WarehouseDetail() {
 						/>
 					</TabsContent>
 					<TabsContent value='organizations'>
-						<WarehouseOrganizationsTab warehouseId={warehouseId} />
+						{isAppAdmin ? (
+							<WarehouseOrganizationsTab warehouseId={warehouseId} />
+						) : null}
+					</TabsContent>
+					<TabsContent value='managers'>
+						{isAppAdmin ? (
+							<WarehouseManagersTab warehouseId={warehouseId} />
+						) : null}
 					</TabsContent>
 				</Tabs>
 			</div>
-		</AdminOnly>
+		</WarehouseAccessGate>
 	);
 }
 

@@ -12,6 +12,7 @@ import { codeNumberModule } from './code-number';
 import { companyModule } from './company';
 import { crmModule } from './crm';
 import { documentModule } from './document';
+import { hrModule } from './hr';
 import { inventoryModule } from './inventory';
 import { licensingModule } from './licensing';
 import { locationModule } from './location';
@@ -106,5 +107,6 @@ export function createApp() {
 			// moved here from inventory.
 			.use(assetsModule())
 			.use(accountingModule())
+			.use(hrModule())
 	);
 }

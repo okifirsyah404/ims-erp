@@ -22,7 +22,7 @@
  * @throws {NotGlobalAdminError} 403 when the caller is not a platform admin
  */
 import { NotGlobalAdminError } from '@http/errors';
-import { GLOBAL_ADMIN_ROLE } from '@providers/better-auth/ac/admin-ac';
+import { GLOBAL_ADMIN_ROLE, hasAppRole } from '@providers/better-auth/ac/admin-ac';
 import type { SessionPayload } from './elysia-auth';
 
 export type TRequireGlobalAdminContext = {
@@ -37,7 +37,7 @@ export type TRequireGlobalAdminContext = {
 export function requireGlobalAdmin({
 	erp,
 }: TRequireGlobalAdminContext): void {
-	if (erp.session.user.role !== GLOBAL_ADMIN_ROLE) {
+	if (!hasAppRole(erp.session.user.role, GLOBAL_ADMIN_ROLE)) {
 		throw new NotGlobalAdminError(
 			'Application administrator role required',
 			'user.globalAdminRequired',
@@ -54,5 +54,5 @@ export function requireGlobalAdmin({
 export function isGlobalAdmin({
 	erp,
 }: TRequireGlobalAdminContext): boolean {
-	return erp.session.user.role === GLOBAL_ADMIN_ROLE;
+	return hasAppRole(erp.session.user.role, GLOBAL_ADMIN_ROLE);
 }

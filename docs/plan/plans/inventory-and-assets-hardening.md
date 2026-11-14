@@ -27,7 +27,7 @@ All phases shipped. Commits on `fix/inventory-module-hardening`.
 | I-2 ERP-0009 numbering | ✅ done | `6670e56` | `organization.document_sequences` + atomic allocate-in-tx service; `Math.random()` codes removed (MV/ADJ/BRW) |
 | I-3 Audit | ✅ done | `ccf8b47` | Audit rows for adjustment/borrowing workflows + master-data CRUD with before/after snapshots; per-operation ledger events |
 | I-4 Adjustment posting | ✅ done | `182480b` | Atomic `claimForPost` inside ONE posting transaction; rollback releases the claim; no partial posting |
-| I-5 Verifier | ✅ done | `e6677d1` | `verify-inventory-constraints.ts`: CHECKs, ledger-vs-balance, ERP-0009 20-way concurrency, atomic claim, D17 negative-stock smoke — all PASS on real PG 18 |
+| I-5 Verifier | ✅ done | `e6677d1` | `verify-inventory-constraints.ts`: CHECKs, ledger-vs-balance, ERP-0009 20-way concurrency, atomic claim, D17 negative-stock smoke - all PASS on real PG 18. **Script deleted 2026-11-14** after rotting to 14 failing checks; no live-DB constraint proof remains |
 | A-1 Schema & migrations | ✅ done | `1c5fef1` | 11 asset tables per docs.dbml; `assets.status` adds `'inactive'` (D18 deviation); verified clean on fresh PG 18 |
 | A-2 Numbering & permissions | ✅ done | `2f768fd` | Register/category CRUD over ERP-0009 codes (`AST-REG`, `AST-CAT`); `asset:*` matrix wired; audit vocabulary |
 | A-3 Services & API | ✅ done | `ead5c9e` | Custody (D12), depreciation (D14), disposal workflow (D21), maintenance, condition checks, documents, tool sets; atomic claims for return/execution; 18 unit tests |
@@ -46,7 +46,7 @@ org+code indexes for asset tables.
 | D2 | Negative stock closed by **both**: (a) pessimistic `SELECT … FOR UPDATE` row lock in `applyDelta`, and (b) CHECK constraints `quantity_on_hand >= 0`, `quantity_reserved >= 0` on `stock_balances` (defense-in-depth; symmetric with existing `quantity_after >= 0` on `stock_movements`). |
 | D3 | Audit scope: financial-control events (adjustment submit/approve/reject/post, borrowing issue/return) **+ master-data CRUD** (item, warehouse, storage create/update/delete with before/after snapshots) **+ per-operation ledger events** (postMovement invocation, reversals — not per ledger row). |
 | D4 | Document numbering via ERP-0009: create `organization.document_sequences` (per-org, per-doc-type rows: prefix, `next_number`); allocation by `UPDATE … SET next_number = next_number + 1 … RETURNING next_number - 1` inside the document's transaction; **gaps from rollbacks are acceptable** (documented). Replaces all `Math.random()` code generation (movement, borrowing, adjustment). Formats preserved: `MV-…`, `ADJ-…`, `BRW-YYYYMM-####` with serial part sequence-allocated. |
-| D5 | Verification = extend `apps/backend/database/verify-inventory-constraints.ts` only (no testcontainers/persistent test DB). CI shape unchanged. |
+| D5 | Verification = extend `apps/backend/database/verify-inventory-constraints.ts` only (no testcontainers/persistent test DB). CI shape unchanged. **Superseded 2026-11-14:** that script was deleted; the backend suite still needs no DB (it mocks via `test/helpers/mock-db.ts`), so CI shape is unchanged but the live-DB constraint checks are gone |
 | D6 | Plan doc follows house style of `warehouse-hardening.md` (phased, D-decisions, acceptance criteria). |
 | D7 | Seeder must route through `applyDelta` (it currently hand-rolls balance updates, violating the "applyDelta is the ONLY way" contract). |
 | D8 | DB role permissions (no DELETE/TRUNCATE on ledger tables) **deferred** — ops/environment-specific follow-up, noted in plan. |
@@ -115,6 +115,15 @@ Extend `apps/backend/database/verify-inventory-constraints.ts` to assert (D5):
 - `document_sequences` integrity (no duplicate allocations, monotonic per row);
 - adjustment atomic-claim behavior (concurrent double-post rejected);
 - concurrency smoke: parallel posts cannot produce negative stock (D17).
+
+> **Shipped 2026-11-06, then the script was deleted 2026-11-14.** All five
+> assertion groups passed on real PostgreSQL 18 when the phase closed. The
+> verifier later rotted (missing `items.code`, `organization.document_sequences`
+> relocated to `code_number`, a hardcoded six-schema `DROP` that made a second
+> run fail) and was removed rather than repaired. Nothing currently asserts
+> these invariants against a live database - the backend suite runs entirely on
+> `test/helpers/mock-db.ts`. See `docs/plan/progress.md` 2026-11-14 "removed the
+> two stale one-shot database scripts".
 
 ## Part II — Asset module (M06, full build)
 

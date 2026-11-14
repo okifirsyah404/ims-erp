@@ -82,6 +82,7 @@ import { Route as AuthedHrEmployeesNewRouteImport } from './routes/_authed/hr/em
 import { Route as AuthedHrLeaveIndexRouteImport } from './routes/_authed/hr/leave/index'
 import { Route as AuthedHrOvertimeIndexRouteImport } from './routes/_authed/hr/overtime/index'
 import { Route as AuthedHrPayrollIndexRouteImport } from './routes/_authed/hr/payroll/index'
+import { Route as AuthedHrTasksIndexRouteImport } from './routes/_authed/hr/tasks/index'
 import { Route as AuthedInventoryCategoriesIndexRouteImport } from './routes/_authed/inventory/categories/index'
 import { Route as AuthedInventoryComponentsIndexRouteImport } from './routes/_authed/inventory/components/index'
 import { Route as AuthedInventoryItemsItemIdRouteImport } from './routes/_authed/inventory/items/$itemId'
@@ -548,6 +549,11 @@ const AuthedHrOvertimeIndexRoute = AuthedHrOvertimeIndexRouteImport.update({
 const AuthedHrPayrollIndexRoute = AuthedHrPayrollIndexRouteImport.update({
   id: '/hr/payroll/',
   path: '/hr/payroll/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHrTasksIndexRoute = AuthedHrTasksIndexRouteImport.update({
+  id: '/hr/tasks/',
+  path: '/hr/tasks/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedInventoryCategoriesIndexRoute =
@@ -1063,6 +1069,7 @@ export interface FileRoutesByFullPath {
   '/hr/leave/': typeof AuthedHrLeaveIndexRoute
   '/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
   '/hr/payroll/': typeof AuthedHrPayrollIndexRoute
+  '/hr/tasks/': typeof AuthedHrTasksIndexRoute
   '/inventory/categories/': typeof AuthedInventoryCategoriesIndexRoute
   '/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
@@ -1206,6 +1213,7 @@ export interface FileRoutesByTo {
   '/hr/leave': typeof AuthedHrLeaveIndexRoute
   '/hr/overtime': typeof AuthedHrOvertimeIndexRoute
   '/hr/payroll': typeof AuthedHrPayrollIndexRoute
+  '/hr/tasks': typeof AuthedHrTasksIndexRoute
   '/inventory/categories': typeof AuthedInventoryCategoriesIndexRoute
   '/inventory/components': typeof AuthedInventoryComponentsIndexRoute
   '/inventory/materials': typeof AuthedInventoryMaterialsIndexRoute
@@ -1353,6 +1361,7 @@ export interface FileRoutesById {
   '/_authed/hr/leave/': typeof AuthedHrLeaveIndexRoute
   '/_authed/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
   '/_authed/hr/payroll/': typeof AuthedHrPayrollIndexRoute
+  '/_authed/hr/tasks/': typeof AuthedHrTasksIndexRoute
   '/_authed/inventory/categories/': typeof AuthedInventoryCategoriesIndexRoute
   '/_authed/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
   '/_authed/inventory/materials/': typeof AuthedInventoryMaterialsIndexRoute
@@ -1500,6 +1509,7 @@ export interface FileRouteTypes {
     | '/hr/leave/'
     | '/hr/overtime/'
     | '/hr/payroll/'
+    | '/hr/tasks/'
     | '/inventory/categories/'
     | '/inventory/components/'
     | '/inventory/materials/'
@@ -1643,6 +1653,7 @@ export interface FileRouteTypes {
     | '/hr/leave'
     | '/hr/overtime'
     | '/hr/payroll'
+    | '/hr/tasks'
     | '/inventory/categories'
     | '/inventory/components'
     | '/inventory/materials'
@@ -1789,6 +1800,7 @@ export interface FileRouteTypes {
     | '/_authed/hr/leave/'
     | '/_authed/hr/overtime/'
     | '/_authed/hr/payroll/'
+    | '/_authed/hr/tasks/'
     | '/_authed/inventory/categories/'
     | '/_authed/inventory/components/'
     | '/_authed/inventory/materials/'
@@ -2363,6 +2375,13 @@ declare module '@tanstack/react-router' {
       path: '/hr/payroll'
       fullPath: '/hr/payroll/'
       preLoaderRoute: typeof AuthedHrPayrollIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/tasks/': {
+      id: '/_authed/hr/tasks/'
+      path: '/hr/tasks'
+      fullPath: '/hr/tasks/'
+      preLoaderRoute: typeof AuthedHrTasksIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/inventory/categories/': {
@@ -3037,6 +3056,7 @@ interface AuthedRouteChildren {
   AuthedHrLeaveIndexRoute: typeof AuthedHrLeaveIndexRoute
   AuthedHrOvertimeIndexRoute: typeof AuthedHrOvertimeIndexRoute
   AuthedHrPayrollIndexRoute: typeof AuthedHrPayrollIndexRoute
+  AuthedHrTasksIndexRoute: typeof AuthedHrTasksIndexRoute
   AuthedInventoryCategoriesIndexRoute: typeof AuthedInventoryCategoriesIndexRoute
   AuthedInventoryComponentsIndexRoute: typeof AuthedInventoryComponentsIndexRoute
   AuthedInventoryMaterialsIndexRoute: typeof AuthedInventoryMaterialsIndexRoute
@@ -3174,6 +3194,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedHrLeaveIndexRoute: AuthedHrLeaveIndexRoute,
   AuthedHrOvertimeIndexRoute: AuthedHrOvertimeIndexRoute,
   AuthedHrPayrollIndexRoute: AuthedHrPayrollIndexRoute,
+  AuthedHrTasksIndexRoute: AuthedHrTasksIndexRoute,
   AuthedInventoryCategoriesIndexRoute: AuthedInventoryCategoriesIndexRoute,
   AuthedInventoryComponentsIndexRoute: AuthedInventoryComponentsIndexRoute,
   AuthedInventoryMaterialsIndexRoute: AuthedInventoryMaterialsIndexRoute,

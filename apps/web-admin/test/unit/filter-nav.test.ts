@@ -2,10 +2,16 @@ import { describe, expect, test } from 'bun:test';
 import { filterNav } from '../../src/components/sidebar/filter-nav';
 import type { SidebarItem } from '../../src/components/sidebar/sidebar-item';
 
-const ctx = (perms: string[], isAppAdmin = false, hasInternalRole = true) => ({
+const ctx = (
+	perms: string[],
+	isAppAdmin = false,
+	hasInternalRole = true,
+	isPic = false,
+) => ({
 	can: (list: string[]) => list.every((p) => perms.includes(p)),
 	isAppAdmin,
 	hasInternalRole,
+	isPic,
 });
 
 const sec = (items: SidebarItem[]) => ({ labelKey: 'section.x' as SidebarItem['titleKey'], items });
@@ -40,6 +46,13 @@ describe('filterNav', () => {
 	test('appAdminOnly ignores permissions and needs admin', () => {
 		const items = [leaf('a', { appAdminOnly: true })];
 		expect(filterNav([sec(items)], ctx(['x.y']))).toEqual([]);
+		expect(filterNav([sec(items)], ctx([], true))[0].items).toHaveLength(1);
+	});
+
+	test('warehousePic shows for an app admin or a person in charge, nobody else', () => {
+		const items = [leaf('a', { warehousePic: true })];
+		expect(filterNav([sec(items)], ctx([]))).toEqual([]);
+		expect(filterNav([sec(items)], ctx([], false, true, true))[0].items).toHaveLength(1);
 		expect(filterNav([sec(items)], ctx([], true))[0].items).toHaveLength(1);
 	});
 

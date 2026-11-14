@@ -27,22 +27,103 @@ Last synced: 2026-11-14.
 
 ## Cross-cutting: role-based nav, login gate, warehouse PIC (ERP-0051)
 
-Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`proposed`).
+Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`accepted` 2026-11-14).
 
-### in-progress
+### verified
 - Role-based sidebar in web-admin (`permission` / `open` / `internalRole` /
   `appAdminOnly`), switcher limited to internal-role organizations, logo fallback,
   route guard in `_authed` (redirect + toast), organization switch re-checks the
   current route, `/organizations/new` app-admin only, Settings needs an active
-  organization. Done: Phase 4 web-admin (all of the above). Open: PIC nav item
-  and PIC UI (ADR-0017), login gate (Phase 3).
-  Evidence: `progress.md` 2026-11-14 "Phase 4 complete" (browser checks, 97 tests).
+  organization. Evidence: `progress.md` 2026-11-14 "Phase 4 complete" (browser
+  checks, 97 tests).
+- Login gate and app roles (ADR-0018), branch `refactor/app-roles-investor-customer`:
+  investor/customer moved to Better Auth app roles, `hasRole` multi-role checks,
+  gate in `session.create.before` + `sessionGuard`, `create-user`/`set-role`
+  restricted to `globalRoles`, migration
+  `20261114120000_erp0048_investor_customer_app_roles` (mixed rows keep internal
+  roles, portal-only rows deleted, portal `org_role` cleared on pending
+  invitations, second run a no-op), `scripts/smoke-login-gate.ts` 8/8 against the
+  real Better Auth instance. Evidence: `progress.md` 2026-11-14 "ERP-0051: investor
+  and customer move to app roles".
+- Warehouse person-in-charge Phase 1: `inventory.warehouse_managers` schema,
+  hand-written migration `20261114150000_erp0051_warehouse_managers`, deterministic
+  seeder. Evidence: `progress.md` 2026-11-14 "warehouse PIC Phase 1", `docs.dbml`
+  Inventory table + intra-module Ref, throwaway-DB replay (57 journal rows / 116
+  tables) and 3 idempotent seeder runs.
+- Warehouse person-in-charge Phase 2: `warehouseGuard` (401/403/404 split,
+  app-admin bypass), Drizzle-free `IWarehousePicResolver` port,
+  `WarehouseManagerRepository` + `WarehouseManagerService` (assign 409/404,
+  idempotent unassign, audit `warehouse.manager_assigned`/`_removed`), PIC routes on
+  read/update/archive/address/storages, `GET /warehouses/mine` (warehouses +
+  storages). Evidence: `progress.md` 2026-11-14 "warehouse PIC Phase 2", backend
+  979 pass / 0 fail (service unit tests + denial tests), `validate-dbml.ts` OK
+  (`docs/database/` unchanged).
+- Warehouse person-in-charge Phase 4 item 8 (`11085e1`): `warehousePic` nav flag +
+  `isPic` on `NavContext`, `useWarehouseAccess()` as the single gate,
+  `AdminWarehouseList`/`PicWarehouseList`, `WarehouseAccessGate`, PIC detail tab
+  split (items tabs are org-permission gated, so a PIC sees `storage` only),
+  `/inventory/warehouses/new` short-circuited in `canOpenPath` as app-admin only,
+  manager read surface `GET /warehouses/:id/managers` +
+  `GET /warehouses/manager-candidates?search=` (picker cannot use `GET /admin/users`,
+  which needs `member:read` plus an organization), persons-in-charge assign/unassign
+  tab. Evidence: `progress.md` 2026-11-14 "Phase 4 item 8".
+- Warehouse person-in-charge Phase 5: `apps/backend/scripts/smoke-warehouse-pic.ts`
+  47 pass / 0 fail over real HTTP against a freshly seeded disposable database
+  (login gate, 401s, app admin without membership, PIC rights and denials,
+  internal member without grant, investor+internal and multi-org, direct admin-route
+  denial, assign/unassign round trip, PIC of a warehouse with no
+  `inventory.warehouse_organizations` row) plus a real-browser pass (Edge, Vite 5173
+  + backend 3001) covering the PIC nav item, the PIC-only warehouse list, the
+  `/new` redirect, the multi-org switcher hiding the item, investor-only and
+  customer-only logins rejected, direct-URL denial, and assign/unassign. Evidence:
+  `progress.md` 2026-11-14 "ERP-0051: warehouse PIC Phase 5"; gates backend 999
+  pass, web-admin 100 pass, locales 90 pass, react-email 5 pass, typecheck and lint
+  clean; `docs/database/` unchanged. Plan `side-nav-role-based.md` complete.
+  Not covered: the PIC `import`/`export` rights, because no warehouse route uses
+  those actions yet — covered indirectly on 2026-11-14 by 6 action-matrix tests in
+  `warehouse-authorization.test.ts` (the guard is action-agnostic and the controller
+  declares only `read`/`update`/`archive`), and Phase 5 was re-run 47/47 against a
+  freshly reset `ims_erp_local`.
 
 ### planned
-- Login gate (reject investor/customer-only sessions) and default organization
-  at login. Evidence: none.
-- Warehouse person-in-charge (`inventory.warehouse_managers`, `warehouseGuard`).
-  Evidence: none. Blocked until ADR-0017 is accepted.
+- Nothing open for ERP-0051 itself. Delivery follow-ups are tracked separately in
+  `docs/plan/plans/erp-0051-follow-ups.md` (ERP-0053 … ERP-0058): one route-guard
+  behaviour bug, four documentation drifts, and one schema-helper gap.
+
+---
+
+## Cross-cutting: migration history (ERP-0052)
+
+Decision: ADR-0019 (`accepted` 2026-11-14).
+
+### verified
+- Migration history squashed to **19 migrations, one per Postgres schema**,
+  generated from `drizzle/schemas` (1 `base` + 18 chained `diff` snapshots), so
+  `bunx --bun drizzle-kit check` reports `Everything's fine` and
+  `drizzle-kit generate` reports `No schema changes` against the repo's own
+  `drizzle.config.ts` for the first time since the ERP-0011 merge. Root causes:
+  11 migrations without `snapshot.json`, the unrecorded
+  `DROP SCHEMA "finance" CASCADE` in `20261106170000`, and `generate` emitting a
+  base snapshot when the out folder is empty. DDL the builder cannot express
+  (`NULLS NOT DISTINCT` on both `stock_balances` scope indexes, the
+  `deleted_at IS NULL` predicate on the two `items` code indexes, the
+  intra-module `sales.receipts` -> `sales.invoices` FK) is kept as a documented
+  tail in the owning migration. The cross-schema FK
+  `receipts_payment_id_payments_id_fkey` (sales -> finance) was dropped - it
+  violated `elysia-module` rule 3.2 / ADR-0014 - so the database now has zero
+  cross-schema foreign keys. Evidence: `progress.md` 2026-11-14 "ERP-0052";
+  `drizzle:migrate-reset` on `ims_erp_local` -> 19 journal rows, 116 tables;
+  `drizzle:migrate` afterwards a no-op; probe column produced a real `ALTER TABLE`
+  diff; schema fingerprint equal to the old chain except two auto-named
+  constraints; `smoke-warehouse-pic.ts` 47/47; backend 1005 pass, web-admin 100,
+  locales 90, react-email 5; typecheck, lint, `validate-dbml.ts` green.
+
+### planned
+- Teach `inventory.schema.ts`'s `scopedUnique()` helper the `deleted_at IS NULL`
+  predicate so the snapshot matches the `items` code indexes the database carries.
+  Cosmetic today - `generate` diffs against the snapshot, so it does not try to
+  drop them (probed 2026-11-14) - but the two should not drift. Recorded in
+  ADR-0019 consequences; not a regression of the squash.
 
 ---
 
@@ -365,9 +446,17 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`proposed`).
 
 ## M08 Employees and Attendance
 
+### done
+- Employees (invite-first, organization or company level) — ERP-0034.
+  Evidence: `progress.md` 2026-11-10.
+- Attendance (manual + import), leave (12-day quota, no self-approval),
+  overtime, employee tasks, salary summary approved and locked by the owner,
+  salary bank account — T10, ERP-0059. Evidence: `progress.md` 2026-11-12
+  (`hr-records.service.test.ts`, e2e); rebased on `main` @ `2b28fc46`
+  2026-11-15 (squashed migration baseline, `hasAppRole`, `CodeNumberService`),
+  see `progress.md` 2026-11-15. Not yet accepted by the owner.
+
 ### planned
-- Employees, manual attendance, leave, overtime, salary/bonus summary — T10,
-  ERP-0008. Evidence: dbml `hr` only.
 - Payslips, approval, payroll journals — T20, ERP-0018. Evidence: none.
 
 ### blocked

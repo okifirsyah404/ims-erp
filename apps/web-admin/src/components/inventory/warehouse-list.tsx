@@ -38,10 +38,13 @@ import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	archiveWarehouse,
+	myWarehousesQueryOptions,
 	updateWarehouse,
 	warehousesQueryOptions,
+	type TWarehouseManaged,
 	type TWarehouseWithCounts,
 } from '@/lib/warehouse-api';
+import { useWarehouseAccess } from '@/lib/use-warehouse-access';
 
 /** The route API for `/inventory/warehouses` (validated search params). */
 const routeApi = getRouteApi('/_authed/inventory/warehouses/');
@@ -59,32 +62,28 @@ type TSortDir = 'asc' | 'desc';
  * The warehouse list.
  *
  * @remarks
- * Card grid modeled on the organizations page: one card per warehouse with
- * scope/status badges and the backend-computed kind counts, plus URL-backed
- * search, an include-archived toggle, and server-side pagination. The only
- * callers are application administrators, so every scope is shown at once —
- * the scope badge tells them apart.
+ * Card grid modeled on the organizations page. Two sources, one grid:
+ * an application admin sees every warehouse through the paginated admin
+ * listing; a person in charge sees only the warehouses granted to them
+ * (ADR-0017, `GET /warehouses/mine`) and gets no create action, because
+ * `create` is not part of a PIC grant.
  */
 export function WarehouseList() {
-	const { t } = useTranslation(['inventory', 'common']);
-	const navigate = routeApi.useNavigate();
+	const { isAppAdmin, isPending } = useWarehouseAccess();
+	if (isPending) return null;
+	return isAppAdmin ? <AdminWarehouseList /> : <PicWarehouseList />;
+}
+
+/**
+ * Archive and active-toggle mutations shared by both lists.
+ *
+ * @remarks
+ * A PIC holds `update` and `archive` (ADR-0017 §2), so the same two actions
+ * belong on both screens.
+ */
+function useWarehouseLifecycle() {
+	const { t } = useTranslation(['inventory']);
 	const queryClient = useQueryClient();
-	const search = routeApi.useSearch();
-	const [searchDraft, setSearchDraft] = useState(search.search ?? '');
-
-	const page = search.page ?? 1;
-
-	const { data, isPending, isError, error } = useQuery({
-		...warehousesQueryOptions({
-			page,
-			limit: PAGE_SIZE,
-			search: search.search,
-			status: search.status,
-			sortBy: search.sortBy,
-			sortDir: search.sortDir,
-		}),
-		placeholderData: (previous) => previous,
-	});
 
 	const archive = useMutation({
 		mutationFn: (warehouseId: string) => archiveWarehouse(warehouseId),
@@ -108,6 +107,32 @@ export function WarehouseList() {
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
+
+	return { archive, toggleActive };
+}
+
+/** The application-admin list: every warehouse, filters, and pagination. */
+function AdminWarehouseList() {
+	const { t } = useTranslation(['inventory', 'common']);
+	const navigate = routeApi.useNavigate();
+	const search = routeApi.useSearch();
+	const [searchDraft, setSearchDraft] = useState(search.search ?? '');
+
+	const page = search.page ?? 1;
+
+	const { data, isPending, isError, error } = useQuery({
+		...warehousesQueryOptions({
+			page,
+			limit: PAGE_SIZE,
+			search: search.search,
+			status: search.status,
+			sortBy: search.sortBy,
+			sortDir: search.sortDir,
+		}),
+		placeholderData: (previous) => previous,
+	});
+
+	const { archive, toggleActive } = useWarehouseLifecycle();
 
 	const rows = data?.rows ?? [];
 	const pagination = data?.pagination;
@@ -241,6 +266,100 @@ export function WarehouseList() {
 						void navigate({ search: (prev) => ({ ...prev, page: nextPage }) })
 					}
 				/>
+			)}
+		</div>
+	);
+}
+
+/**
+ * The warehouse list for a person in charge (ADR-0017).
+ *
+ * @remarks
+ * Source is `GET /warehouses/mine` — session-only, no organization context, so
+ * it works for a PIC with no membership. No create button (a PIC grant has no
+ * `create`) and no pagination (a PIC manages a handful of warehouses); the
+ * search box filters in the browser. The card shows the bin count instead of
+ * the kind counts, which come from the admin listing.
+ */
+function PicWarehouseList() {
+	const { t } = useTranslation(['inventory', 'common']);
+	const [term, setTerm] = useState('');
+	const { data, isPending, isError, error } = useQuery(myWarehousesQueryOptions());
+	const { archive, toggleActive } = useWarehouseLifecycle();
+
+	const needle = term.trim().toLowerCase();
+	const rows = (data ?? []).filter(
+		(warehouse) =>
+			!needle ||
+			warehouse.name.toLowerCase().includes(needle) ||
+			warehouse.code.toLowerCase().includes(needle),
+	);
+
+	return (
+		<div className='flex flex-col gap-6'>
+			<div>
+				<h1 className='text-2xl font-bold'>{t('inventory:warehouses.title')}</h1>
+				<p className='text-sm text-muted-foreground'>
+					{t('inventory:warehouses.description')}
+				</p>
+			</div>
+
+			<InputGroup className='w-64'>
+				<InputGroupAddon align='inline-start'>
+					<Search aria-hidden='true' />
+				</InputGroupAddon>
+				<InputGroupInput
+					type='search'
+					aria-label={t('inventory:warehouses.searchPlaceholder')}
+					placeholder={t('inventory:warehouses.searchPlaceholder')}
+					value={term}
+					onChange={(event) => setTerm(event.target.value)}
+				/>
+			</InputGroup>
+
+			{isError ? (
+				<EmptyState
+					icon={CircleAlert}
+					title={t('common:error.failed')}
+					description={error instanceof Error ? error.message : undefined}
+					className='border'
+				/>
+			) : rows.length === 0 && !isPending ? (
+				<EmptyState
+					icon={Warehouse}
+					title={t('inventory:warehouses.emptyTitle')}
+					description={t('inventory:warehouses.empty')}
+					className='border'
+				/>
+			) : (
+				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+					{isPending
+						? Array.from({ length: 3 }, (_, index) => (
+								<WarehouseCard key={index} busy={false} />
+							))
+						: rows.map((warehouse) => (
+								<WarehouseCard
+									key={warehouse.id}
+									warehouse={warehouse}
+									busy={toggleActive.isPending || archive.isPending}
+									onToggleActive={() =>
+										toggleActive.mutate({
+											warehouseId: warehouse.id,
+											isActive: !warehouse.isActive,
+										})
+									}
+									onArchive={() => {
+										if (
+											window.confirm(
+												`${t('inventory:warehouses.archiveConfirmTitle')}\n\n${t('inventory:warehouses.archiveConfirmBody')}`,
+											)
+										) {
+											archive.mutate(warehouse.id);
+										}
+									}}
+								/>
+							))}
+				</div>
 			)}
 		</div>
 	);
@@ -411,7 +530,9 @@ function WarehouseFiltersPopover({
 /**
  * One warehouse card.
  *
- * @param warehouse - The row, or omitted for a pending placeholder card
+ * @param warehouse - The row, or omitted for a pending placeholder card. A
+ *   person-in-charge row carries bins but no kind counts, so the stats row
+ *   falls back to the bin count.
  */
 function WarehouseCard({
 	warehouse,
@@ -419,7 +540,7 @@ function WarehouseCard({
 	onToggleActive,
 	onArchive,
 }: {
-	warehouse?: TWarehouseWithCounts;
+	warehouse?: TWarehouseWithCounts | TWarehouseManaged;
 	busy: boolean;
 	onToggleActive?: () => void;
 	onArchive?: () => void;
@@ -449,13 +570,17 @@ function WarehouseCard({
 		);
 	}
 
-	const stats: Array<[string, number]> = [
-		[t('inventory:warehouses.products'), warehouse.productsCount],
-		[t('inventory:warehouses.components'), warehouse.componentsCount],
-		[t('inventory:warehouses.materials'), warehouse.materialsCount],
-		[t('inventory:warehouses.equipments'), warehouse.equipmentsCount],
-		[t('inventory:warehouses.storages'), warehouse.storagesCount],
-	];
+	// Kind counts come from the admin listing only; a PIC row has bins instead.
+	const stats: Array<[string, number]> =
+		'productsCount' in warehouse
+			? [
+					[t('inventory:warehouses.products'), warehouse.productsCount],
+					[t('inventory:warehouses.components'), warehouse.componentsCount],
+					[t('inventory:warehouses.materials'), warehouse.materialsCount],
+					[t('inventory:warehouses.equipments'), warehouse.equipmentsCount],
+					[t('inventory:warehouses.storages'), warehouse.storagesCount],
+				]
+			: [[t('inventory:warehouses.storages'), warehouse.storages.length]];
 
 	return (
 		<Link
@@ -509,7 +634,10 @@ function WarehouseCard({
 					</div>
 				</CardHeader>
 				<CardContent>
-					<div className='grid grid-cols-5 gap-2 text-center text-sm'>
+					<div
+						className='grid gap-2 text-center text-sm'
+						style={{ gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}
+					>
 						{stats.map(([label, value]) => (
 							<div key={label} className='flex flex-col'>
 								<span className='font-semibold text-foreground tabular-nums'>

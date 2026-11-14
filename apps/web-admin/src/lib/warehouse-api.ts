@@ -176,6 +176,89 @@ export type TWarehouseLinked = TWarehouse & {
 };
 
 /**
+ * A warehouse the caller is a person in charge of (ADR-0017).
+ *
+ * @remarks
+ * `GET /warehouses/mine` is session-only: it answers "which warehouses may I
+ * manage" for the sidebar and the PIC screens. Application admins get every
+ * live warehouse from the same endpoint; a caller with no grant gets an empty
+ * array, not a 403.
+ */
+export type TWarehouseManaged = TWarehouse & {
+	storages: TWarehouseStorage[];
+};
+
+/** One live person-in-charge grant, as the admin screen shows it. */
+export type TWarehouseManager = {
+	userId: string;
+	/** `null` when the referenced account no longer exists. */
+	name: string | null;
+	email: string | null;
+	assignedBy: string | null;
+	assignedAt: string;
+};
+
+/** One assignable account for the person-in-charge picker. */
+export type TWarehouseManagerCandidate = {
+	id: string;
+	name: string;
+	email: string;
+};
+
+/** Lists the warehouses the caller manages (or all, for an app admin). */
+export async function listMyWarehouses() {
+	const envelope = await request<TWarehouseManaged[]>('/warehouses/mine');
+	return envelope.data ?? [];
+}
+
+/** Lists the live persons in charge of a warehouse (admin only). */
+export async function listWarehouseManagers(warehouseId: string) {
+	const envelope = await request<TWarehouseManager[]>(
+		`/warehouses/${warehouseId}/managers`,
+	);
+	return envelope.data ?? [];
+}
+
+/** Searches assignable accounts for the person-in-charge picker (admin only). */
+export async function searchWarehouseManagerCandidates(search?: string) {
+	const query = search ? `?search=${encodeURIComponent(search)}` : '';
+	const envelope = await request<TWarehouseManagerCandidate[]>(
+		`/warehouses/manager-candidates${query}`,
+	);
+	return envelope.data ?? [];
+}
+
+/** Grants a user person-in-charge access to a warehouse (admin only). */
+export async function assignWarehouseManager(
+	warehouseId: string,
+	userId: string,
+) {
+	const envelope = await request<TWarehouseManager>(
+		`/warehouses/${warehouseId}/managers`,
+		{ method: 'POST', body: JSON.stringify({ userId }) },
+	);
+	if (!envelope.data) throw new Error('Empty response');
+	return envelope.data;
+}
+
+/**
+ * Revokes a person-in-charge grant (admin only, idempotent).
+ *
+ * @returns `removed: false` when no live grant existed.
+ */
+export async function unassignWarehouseManager(
+	warehouseId: string,
+	userId: string,
+) {
+	const envelope = await request<{ removed: boolean }>(
+		`/warehouses/${warehouseId}/managers/${userId}`,
+		{ method: 'DELETE' },
+	);
+	if (!envelope.data) throw new Error('Empty response');
+	return envelope.data;
+}
+
+/**
  * Lists warehouses linked to the caller's active organization.
  *
  * Organization-scoped (not admin-only): mounted on the `erp` guard and
@@ -384,4 +467,33 @@ export const linkedWarehousesQueryOptions = () =>
 	queryOptions({
 		queryKey: ['warehouses', 'linked'],
 		queryFn: () => listLinkedWarehouses(),
+	});
+
+/**
+ * Query options for the warehouses the caller manages (ADR-0017).
+ *
+ * @remarks
+ * Session-only on the backend, so it works for a person in charge without an
+ * active organization. The sidebar and the route guard read it through
+ * `ensureQueryData` on a cache miss, which is why the key is stable and takes
+ * no parameters.
+ */
+export const myWarehousesQueryOptions = () =>
+	queryOptions({
+		queryKey: ['warehouses', 'mine'],
+		queryFn: () => listMyWarehouses(),
+	});
+
+/** Query options for a warehouse's live persons in charge (admin only). */
+export const warehouseManagersQueryOptions = (warehouseId: string) =>
+	queryOptions({
+		queryKey: ['warehouses', warehouseId, 'managers'],
+		queryFn: () => listWarehouseManagers(warehouseId),
+	});
+
+/** Query options for the person-in-charge picker search (admin only). */
+export const warehouseManagerCandidatesQueryOptions = (search: string) =>
+	queryOptions({
+		queryKey: ['warehouses', 'manager-candidates', search],
+		queryFn: () => searchWarehouseManagerCandidates(search || undefined),
 	});

@@ -1,1 +1,0 @@
-ALTER TABLE "inventory"."warehouses" ADD COLUMN "image_url" text;

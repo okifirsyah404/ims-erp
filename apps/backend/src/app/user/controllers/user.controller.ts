@@ -17,6 +17,7 @@ import {
 	UserNotFoundError,
 } from '../errors/user.errors';
 import { translator } from '@providers/i18n/translator';
+import { GLOBAL_ADMIN_ROLE, hasAppRole } from '@providers/better-auth/ac/admin-ac';
 import { NotGlobalAdminError } from '@http/errors';
 import { domainPlugin } from '@http/plugin';
 import { created, errorEnvelope, noContent, ok } from '@http/response';
@@ -33,7 +34,7 @@ import { created, errorEnvelope, noContent, ok } from '@http/response';
  * authorization inside Better Auth.
  */
 function requireGlobalAdmin({ erp }: { erp: ErpContext }): void {
-	if (erp.session.user.role !== 'admin') {
+	if (!hasAppRole(erp.session.user.role, GLOBAL_ADMIN_ROLE)) {
 		throw new NotGlobalAdminError();
 	}
 }

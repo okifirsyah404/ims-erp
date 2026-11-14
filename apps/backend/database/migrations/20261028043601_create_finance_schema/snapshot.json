@@ -1,0 +1,5084 @@
+{
+	"type": "diff",
+	"version": "9",
+	"dialect": "postgres",
+	"id": "9955549c-f01d-4dd2-9c04-c0e4fb850349",
+	"prevIds": [
+		"46904a0e-8210-4b22-8ffd-e3dda6ba2410"
+	],
+	"footprints": [
+		{
+			"statementType": "create_schema",
+			"statementTarget": [
+				"schema",
+				"finance"
+			],
+			"writes": [
+				"s|sch|finance",
+				"n|sch|finance",
+				"e|sch|finance"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"finance",
+				"ap_open_items"
+			],
+			"writes": [
+				"s|tbl|finance.ap_open_items",
+				"n|tbl|finance.ap_open_items",
+				"e|tbl|finance.ap_open_items",
+				"n|rel|finance.ap_open_items",
+				"n|type|finance.ap_open_items",
+				"n|rel|finance.ap_open_items_pkey"
+			],
+			"reads": [
+				"n|sch|finance"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"finance",
+				"ar_open_items"
+			],
+			"writes": [
+				"s|tbl|finance.ar_open_items",
+				"n|tbl|finance.ar_open_items",
+				"e|tbl|finance.ar_open_items",
+				"n|rel|finance.ar_open_items",
+				"n|type|finance.ar_open_items",
+				"n|rel|finance.ar_open_items_pkey"
+			],
+			"reads": [
+				"n|sch|finance"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"finance",
+				"bank_reconciliation_items"
+			],
+			"writes": [
+				"s|tbl|finance.bank_reconciliation_items",
+				"n|tbl|finance.bank_reconciliation_items",
+				"e|tbl|finance.bank_reconciliation_items",
+				"n|rel|finance.bank_reconciliation_items",
+				"n|type|finance.bank_reconciliation_items",
+				"n|rel|finance.bank_reconciliation_items_pkey"
+			],
+			"reads": [
+				"n|sch|finance"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"finance",
+				"bank_reconciliations"
+			],
+			"writes": [
+				"s|tbl|finance.bank_reconciliations",
+				"n|tbl|finance.bank_reconciliations",
+				"e|tbl|finance.bank_reconciliations",
+				"n|rel|finance.bank_reconciliations",
+				"n|type|finance.bank_reconciliations",
+				"n|rel|finance.bank_reconciliations_pkey"
+			],
+			"reads": [
+				"n|sch|finance"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"finance",
+				"cash_bank_accounts"
+			],
+			"writes": [
+				"s|tbl|finance.cash_bank_accounts",
+				"n|tbl|finance.cash_bank_accounts",
+				"e|tbl|finance.cash_bank_accounts",
+				"n|rel|finance.cash_bank_accounts",
+				"n|type|finance.cash_bank_accounts",
+				"n|rel|finance.cash_bank_accounts_pkey"
+			],
+			"reads": [
+				"n|sch|finance"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"finance",
+				"cash_bank_transactions"
+			],
+			"writes": [
+				"s|tbl|finance.cash_bank_transactions",
+				"n|tbl|finance.cash_bank_transactions",
+				"e|tbl|finance.cash_bank_transactions",
+				"n|rel|finance.cash_bank_transactions",
+				"n|type|finance.cash_bank_transactions",
+				"n|rel|finance.cash_bank_transactions_pkey"
+			],
+			"reads": [
+				"n|sch|finance"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"finance",
+				"payment_allocations"
+			],
+			"writes": [
+				"s|tbl|finance.payment_allocations",
+				"n|tbl|finance.payment_allocations",
+				"e|tbl|finance.payment_allocations",
+				"n|rel|finance.payment_allocations",
+				"n|type|finance.payment_allocations",
+				"n|rel|finance.payment_allocations_pkey"
+			],
+			"reads": [
+				"n|sch|finance"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"finance",
+				"payment_terms"
+			],
+			"writes": [
+				"s|tbl|finance.payment_terms",
+				"n|tbl|finance.payment_terms",
+				"e|tbl|finance.payment_terms",
+				"n|rel|finance.payment_terms",
+				"n|type|finance.payment_terms",
+				"n|rel|finance.payment_terms_pkey"
+			],
+			"reads": [
+				"n|sch|finance"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"finance",
+				"payments"
+			],
+			"writes": [
+				"s|tbl|finance.payments",
+				"n|tbl|finance.payments",
+				"e|tbl|finance.payments",
+				"n|rel|finance.payments",
+				"n|type|finance.payments",
+				"n|rel|finance.payments_pkey"
+			],
+			"reads": [
+				"n|sch|finance"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"finance",
+				"supplier_bills"
+			],
+			"writes": [
+				"s|tbl|finance.supplier_bills",
+				"n|tbl|finance.supplier_bills",
+				"e|tbl|finance.supplier_bills",
+				"n|rel|finance.supplier_bills",
+				"n|type|finance.supplier_bills",
+				"n|rel|finance.supplier_bills_pkey"
+			],
+			"reads": [
+				"n|sch|finance"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"ap_open_items",
+				"ap_open_items_org_bill_uq"
+			],
+			"writes": [
+				"s|idx|finance.ap_open_items_org_bill_uq",
+				"n|idx|finance.ap_open_items_org_bill_uq",
+				"e|idx|finance.ap_open_items_org_bill_uq",
+				"n|rel|finance.ap_open_items_org_bill_uq"
+			],
+			"reads": [
+				"n|tbl|finance.ap_open_items",
+				"n|sch|finance",
+				"n|col|finance.ap_open_items.organization_id",
+				"n|col|finance.ap_open_items.supplier_bill_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"ap_open_items",
+				"ap_open_items_supplier_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.ap_open_items_supplier_id_idx",
+				"n|idx|finance.ap_open_items_supplier_id_idx",
+				"e|idx|finance.ap_open_items_supplier_id_idx",
+				"n|rel|finance.ap_open_items_supplier_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.ap_open_items",
+				"n|sch|finance",
+				"n|col|finance.ap_open_items.supplier_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"ap_open_items",
+				"ap_open_items_status_idx"
+			],
+			"writes": [
+				"s|idx|finance.ap_open_items_status_idx",
+				"n|idx|finance.ap_open_items_status_idx",
+				"e|idx|finance.ap_open_items_status_idx",
+				"n|rel|finance.ap_open_items_status_idx"
+			],
+			"reads": [
+				"n|tbl|finance.ap_open_items",
+				"n|sch|finance",
+				"n|col|finance.ap_open_items.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"ap_open_items",
+				"ap_open_items_due_date_idx"
+			],
+			"writes": [
+				"s|idx|finance.ap_open_items_due_date_idx",
+				"n|idx|finance.ap_open_items_due_date_idx",
+				"e|idx|finance.ap_open_items_due_date_idx",
+				"n|rel|finance.ap_open_items_due_date_idx"
+			],
+			"reads": [
+				"n|tbl|finance.ap_open_items",
+				"n|sch|finance",
+				"n|col|finance.ap_open_items.due_date"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"ar_open_items",
+				"ar_open_items_org_invoice_uq"
+			],
+			"writes": [
+				"s|idx|finance.ar_open_items_org_invoice_uq",
+				"n|idx|finance.ar_open_items_org_invoice_uq",
+				"e|idx|finance.ar_open_items_org_invoice_uq",
+				"n|rel|finance.ar_open_items_org_invoice_uq"
+			],
+			"reads": [
+				"n|tbl|finance.ar_open_items",
+				"n|sch|finance",
+				"n|col|finance.ar_open_items.organization_id",
+				"n|col|finance.ar_open_items.sales_invoice_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"ar_open_items",
+				"ar_open_items_customer_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.ar_open_items_customer_id_idx",
+				"n|idx|finance.ar_open_items_customer_id_idx",
+				"e|idx|finance.ar_open_items_customer_id_idx",
+				"n|rel|finance.ar_open_items_customer_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.ar_open_items",
+				"n|sch|finance",
+				"n|col|finance.ar_open_items.customer_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"ar_open_items",
+				"ar_open_items_status_idx"
+			],
+			"writes": [
+				"s|idx|finance.ar_open_items_status_idx",
+				"n|idx|finance.ar_open_items_status_idx",
+				"e|idx|finance.ar_open_items_status_idx",
+				"n|rel|finance.ar_open_items_status_idx"
+			],
+			"reads": [
+				"n|tbl|finance.ar_open_items",
+				"n|sch|finance",
+				"n|col|finance.ar_open_items.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"ar_open_items",
+				"ar_open_items_due_date_idx"
+			],
+			"writes": [
+				"s|idx|finance.ar_open_items_due_date_idx",
+				"n|idx|finance.ar_open_items_due_date_idx",
+				"e|idx|finance.ar_open_items_due_date_idx",
+				"n|rel|finance.ar_open_items_due_date_idx"
+			],
+			"reads": [
+				"n|tbl|finance.ar_open_items",
+				"n|sch|finance",
+				"n|col|finance.ar_open_items.due_date"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"bank_reconciliation_items",
+				"bank_reconciliation_items_reconciliation_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.bank_reconciliation_items_reconciliation_id_idx",
+				"n|idx|finance.bank_reconciliation_items_reconciliation_id_idx",
+				"e|idx|finance.bank_reconciliation_items_reconciliation_id_idx",
+				"n|rel|finance.bank_reconciliation_items_reconciliation_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.bank_reconciliation_items",
+				"n|sch|finance",
+				"n|col|finance.bank_reconciliation_items.bank_reconciliation_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"bank_reconciliation_items",
+				"bank_reconciliation_items_transaction_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.bank_reconciliation_items_transaction_id_idx",
+				"n|idx|finance.bank_reconciliation_items_transaction_id_idx",
+				"e|idx|finance.bank_reconciliation_items_transaction_id_idx",
+				"n|rel|finance.bank_reconciliation_items_transaction_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.bank_reconciliation_items",
+				"n|sch|finance",
+				"n|col|finance.bank_reconciliation_items.cash_bank_transaction_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"bank_reconciliations",
+				"bank_reconciliations_org_code_uq"
+			],
+			"writes": [
+				"s|idx|finance.bank_reconciliations_org_code_uq",
+				"n|idx|finance.bank_reconciliations_org_code_uq",
+				"e|idx|finance.bank_reconciliations_org_code_uq",
+				"n|rel|finance.bank_reconciliations_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|finance.bank_reconciliations",
+				"n|sch|finance",
+				"n|col|finance.bank_reconciliations.organization_id",
+				"n|col|finance.bank_reconciliations.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"bank_reconciliations",
+				"bank_reconciliations_account_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.bank_reconciliations_account_id_idx",
+				"n|idx|finance.bank_reconciliations_account_id_idx",
+				"e|idx|finance.bank_reconciliations_account_id_idx",
+				"n|rel|finance.bank_reconciliations_account_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.bank_reconciliations",
+				"n|sch|finance",
+				"n|col|finance.bank_reconciliations.cash_bank_account_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"bank_reconciliations",
+				"bank_reconciliations_date_idx"
+			],
+			"writes": [
+				"s|idx|finance.bank_reconciliations_date_idx",
+				"n|idx|finance.bank_reconciliations_date_idx",
+				"e|idx|finance.bank_reconciliations_date_idx",
+				"n|rel|finance.bank_reconciliations_date_idx"
+			],
+			"reads": [
+				"n|tbl|finance.bank_reconciliations",
+				"n|sch|finance",
+				"n|col|finance.bank_reconciliations.reconciliation_date"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"cash_bank_accounts",
+				"cash_bank_accounts_org_code_uq"
+			],
+			"writes": [
+				"s|idx|finance.cash_bank_accounts_org_code_uq",
+				"n|idx|finance.cash_bank_accounts_org_code_uq",
+				"e|idx|finance.cash_bank_accounts_org_code_uq",
+				"n|rel|finance.cash_bank_accounts_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|finance.cash_bank_accounts",
+				"n|sch|finance",
+				"n|col|finance.cash_bank_accounts.organization_id",
+				"n|col|finance.cash_bank_accounts.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"cash_bank_accounts",
+				"cash_bank_accounts_account_number_idx"
+			],
+			"writes": [
+				"s|idx|finance.cash_bank_accounts_account_number_idx",
+				"n|idx|finance.cash_bank_accounts_account_number_idx",
+				"e|idx|finance.cash_bank_accounts_account_number_idx",
+				"n|rel|finance.cash_bank_accounts_account_number_idx"
+			],
+			"reads": [
+				"n|tbl|finance.cash_bank_accounts",
+				"n|sch|finance",
+				"n|col|finance.cash_bank_accounts.account_number"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"cash_bank_transactions",
+				"cash_bank_transactions_org_code_uq"
+			],
+			"writes": [
+				"s|idx|finance.cash_bank_transactions_org_code_uq",
+				"n|idx|finance.cash_bank_transactions_org_code_uq",
+				"e|idx|finance.cash_bank_transactions_org_code_uq",
+				"n|rel|finance.cash_bank_transactions_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|finance.cash_bank_transactions",
+				"n|sch|finance",
+				"n|col|finance.cash_bank_transactions.organization_id",
+				"n|col|finance.cash_bank_transactions.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"cash_bank_transactions",
+				"cash_bank_transactions_account_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.cash_bank_transactions_account_id_idx",
+				"n|idx|finance.cash_bank_transactions_account_id_idx",
+				"e|idx|finance.cash_bank_transactions_account_id_idx",
+				"n|rel|finance.cash_bank_transactions_account_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.cash_bank_transactions",
+				"n|sch|finance",
+				"n|col|finance.cash_bank_transactions.cash_bank_account_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"cash_bank_transactions",
+				"cash_bank_transactions_date_idx"
+			],
+			"writes": [
+				"s|idx|finance.cash_bank_transactions_date_idx",
+				"n|idx|finance.cash_bank_transactions_date_idx",
+				"e|idx|finance.cash_bank_transactions_date_idx",
+				"n|rel|finance.cash_bank_transactions_date_idx"
+			],
+			"reads": [
+				"n|tbl|finance.cash_bank_transactions",
+				"n|sch|finance",
+				"n|col|finance.cash_bank_transactions.transaction_date"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"cash_bank_transactions",
+				"cash_bank_transactions_source_idx"
+			],
+			"writes": [
+				"s|idx|finance.cash_bank_transactions_source_idx",
+				"n|idx|finance.cash_bank_transactions_source_idx",
+				"e|idx|finance.cash_bank_transactions_source_idx",
+				"n|rel|finance.cash_bank_transactions_source_idx"
+			],
+			"reads": [
+				"n|tbl|finance.cash_bank_transactions",
+				"n|sch|finance",
+				"n|col|finance.cash_bank_transactions.source_type",
+				"n|col|finance.cash_bank_transactions.source_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"payment_allocations",
+				"payment_allocations_payment_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.payment_allocations_payment_id_idx",
+				"n|idx|finance.payment_allocations_payment_id_idx",
+				"e|idx|finance.payment_allocations_payment_id_idx",
+				"n|rel|finance.payment_allocations_payment_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.payment_allocations",
+				"n|sch|finance",
+				"n|col|finance.payment_allocations.payment_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"payment_allocations",
+				"payment_allocations_sales_invoice_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.payment_allocations_sales_invoice_id_idx",
+				"n|idx|finance.payment_allocations_sales_invoice_id_idx",
+				"e|idx|finance.payment_allocations_sales_invoice_id_idx",
+				"n|rel|finance.payment_allocations_sales_invoice_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.payment_allocations",
+				"n|sch|finance",
+				"n|col|finance.payment_allocations.sales_invoice_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"payment_allocations",
+				"payment_allocations_supplier_bill_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.payment_allocations_supplier_bill_id_idx",
+				"n|idx|finance.payment_allocations_supplier_bill_id_idx",
+				"e|idx|finance.payment_allocations_supplier_bill_id_idx",
+				"n|rel|finance.payment_allocations_supplier_bill_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.payment_allocations",
+				"n|sch|finance",
+				"n|col|finance.payment_allocations.supplier_bill_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"payment_terms",
+				"payment_terms_org_code_uq"
+			],
+			"writes": [
+				"s|idx|finance.payment_terms_org_code_uq",
+				"n|idx|finance.payment_terms_org_code_uq",
+				"e|idx|finance.payment_terms_org_code_uq",
+				"n|rel|finance.payment_terms_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|finance.payment_terms",
+				"n|sch|finance",
+				"n|col|finance.payment_terms.organization_id",
+				"n|col|finance.payment_terms.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"payments",
+				"payments_org_code_uq"
+			],
+			"writes": [
+				"s|idx|finance.payments_org_code_uq",
+				"n|idx|finance.payments_org_code_uq",
+				"e|idx|finance.payments_org_code_uq",
+				"n|rel|finance.payments_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|finance.payments",
+				"n|sch|finance",
+				"n|col|finance.payments.organization_id",
+				"n|col|finance.payments.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"payments",
+				"payments_sales_invoice_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.payments_sales_invoice_id_idx",
+				"n|idx|finance.payments_sales_invoice_id_idx",
+				"e|idx|finance.payments_sales_invoice_id_idx",
+				"n|rel|finance.payments_sales_invoice_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.payments",
+				"n|sch|finance",
+				"n|col|finance.payments.sales_invoice_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"payments",
+				"payments_supplier_bill_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.payments_supplier_bill_id_idx",
+				"n|idx|finance.payments_supplier_bill_id_idx",
+				"e|idx|finance.payments_supplier_bill_id_idx",
+				"n|rel|finance.payments_supplier_bill_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.payments",
+				"n|sch|finance",
+				"n|col|finance.payments.supplier_bill_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"payments",
+				"payments_status_idx"
+			],
+			"writes": [
+				"s|idx|finance.payments_status_idx",
+				"n|idx|finance.payments_status_idx",
+				"e|idx|finance.payments_status_idx",
+				"n|rel|finance.payments_status_idx"
+			],
+			"reads": [
+				"n|tbl|finance.payments",
+				"n|sch|finance",
+				"n|col|finance.payments.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"payments",
+				"payments_counterparty_idx"
+			],
+			"writes": [
+				"s|idx|finance.payments_counterparty_idx",
+				"n|idx|finance.payments_counterparty_idx",
+				"e|idx|finance.payments_counterparty_idx",
+				"n|rel|finance.payments_counterparty_idx"
+			],
+			"reads": [
+				"n|tbl|finance.payments",
+				"n|sch|finance",
+				"n|col|finance.payments.organization_id",
+				"n|col|finance.payments.counterparty_type",
+				"n|col|finance.payments.counterparty_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"payments",
+				"payments_cash_bank_account_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.payments_cash_bank_account_id_idx",
+				"n|idx|finance.payments_cash_bank_account_id_idx",
+				"e|idx|finance.payments_cash_bank_account_id_idx",
+				"n|rel|finance.payments_cash_bank_account_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.payments",
+				"n|sch|finance",
+				"n|col|finance.payments.cash_bank_account_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"supplier_bills",
+				"supplier_bills_org_code_uq"
+			],
+			"writes": [
+				"s|idx|finance.supplier_bills_org_code_uq",
+				"n|idx|finance.supplier_bills_org_code_uq",
+				"e|idx|finance.supplier_bills_org_code_uq",
+				"n|rel|finance.supplier_bills_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|finance.supplier_bills",
+				"n|sch|finance",
+				"n|col|finance.supplier_bills.organization_id",
+				"n|col|finance.supplier_bills.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"supplier_bills",
+				"supplier_bills_supplier_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.supplier_bills_supplier_id_idx",
+				"n|idx|finance.supplier_bills_supplier_id_idx",
+				"e|idx|finance.supplier_bills_supplier_id_idx",
+				"n|rel|finance.supplier_bills_supplier_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.supplier_bills",
+				"n|sch|finance",
+				"n|col|finance.supplier_bills.supplier_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"supplier_bills",
+				"supplier_bills_purchase_order_id_idx"
+			],
+			"writes": [
+				"s|idx|finance.supplier_bills_purchase_order_id_idx",
+				"n|idx|finance.supplier_bills_purchase_order_id_idx",
+				"e|idx|finance.supplier_bills_purchase_order_id_idx",
+				"n|rel|finance.supplier_bills_purchase_order_id_idx"
+			],
+			"reads": [
+				"n|tbl|finance.supplier_bills",
+				"n|sch|finance",
+				"n|col|finance.supplier_bills.purchase_order_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"supplier_bills",
+				"supplier_bills_status_idx"
+			],
+			"writes": [
+				"s|idx|finance.supplier_bills_status_idx",
+				"n|idx|finance.supplier_bills_status_idx",
+				"e|idx|finance.supplier_bills_status_idx",
+				"n|rel|finance.supplier_bills_status_idx"
+			],
+			"reads": [
+				"n|tbl|finance.supplier_bills",
+				"n|sch|finance",
+				"n|col|finance.supplier_bills.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"finance",
+				"supplier_bills",
+				"supplier_bills_due_date_idx"
+			],
+			"writes": [
+				"s|idx|finance.supplier_bills_due_date_idx",
+				"n|idx|finance.supplier_bills_due_date_idx",
+				"e|idx|finance.supplier_bills_due_date_idx",
+				"n|rel|finance.supplier_bills_due_date_idx"
+			],
+			"reads": [
+				"n|tbl|finance.supplier_bills",
+				"n|sch|finance",
+				"n|col|finance.supplier_bills.due_date"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"finance",
+				"bank_reconciliation_items"
+			],
+			"writes": [
+				"s|fk|finance.bank_reconciliation_items.bank_reconciliation_items_LO96nU6SLCO6_fkey",
+				"n|fk|finance.bank_reconciliation_items.bank_reconciliation_items_LO96nU6SLCO6_fkey",
+				"e|fk|finance.bank_reconciliation_items.bank_reconciliation_items_LO96nU6SLCO6_fkey",
+				"n|con|finance.bank_reconciliation_items.bank_reconciliation_items_LO96nU6SLCO6_fkey"
+			],
+			"reads": [
+				"n|tbl|finance.bank_reconciliation_items",
+				"n|sch|finance",
+				"n|tbl|finance.bank_reconciliations",
+				"n|sch|finance",
+				"n|col|finance.bank_reconciliation_items.bank_reconciliation_id",
+				"n|col|finance.bank_reconciliations.id",
+				"e|uniqueness|finance.bank_reconciliations.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"finance",
+				"bank_reconciliation_items"
+			],
+			"writes": [
+				"s|fk|finance.bank_reconciliation_items.bank_reconciliation_items_5ntduObVqjWU_fkey",
+				"n|fk|finance.bank_reconciliation_items.bank_reconciliation_items_5ntduObVqjWU_fkey",
+				"e|fk|finance.bank_reconciliation_items.bank_reconciliation_items_5ntduObVqjWU_fkey",
+				"n|con|finance.bank_reconciliation_items.bank_reconciliation_items_5ntduObVqjWU_fkey"
+			],
+			"reads": [
+				"n|tbl|finance.bank_reconciliation_items",
+				"n|sch|finance",
+				"n|tbl|finance.cash_bank_transactions",
+				"n|sch|finance",
+				"n|col|finance.bank_reconciliation_items.cash_bank_transaction_id",
+				"n|col|finance.cash_bank_transactions.id",
+				"e|uniqueness|finance.cash_bank_transactions.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"finance",
+				"bank_reconciliations"
+			],
+			"writes": [
+				"s|fk|finance.bank_reconciliations.bank_reconciliations_uOpNUxTRLd4E_fkey",
+				"n|fk|finance.bank_reconciliations.bank_reconciliations_uOpNUxTRLd4E_fkey",
+				"e|fk|finance.bank_reconciliations.bank_reconciliations_uOpNUxTRLd4E_fkey",
+				"n|con|finance.bank_reconciliations.bank_reconciliations_uOpNUxTRLd4E_fkey"
+			],
+			"reads": [
+				"n|tbl|finance.bank_reconciliations",
+				"n|sch|finance",
+				"n|tbl|finance.cash_bank_accounts",
+				"n|sch|finance",
+				"n|col|finance.bank_reconciliations.cash_bank_account_id",
+				"n|col|finance.cash_bank_accounts.id",
+				"e|uniqueness|finance.cash_bank_accounts.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"finance",
+				"cash_bank_transactions"
+			],
+			"writes": [
+				"s|fk|finance.cash_bank_transactions.cash_bank_transactions_OiQ8fTWxqUGx_fkey",
+				"n|fk|finance.cash_bank_transactions.cash_bank_transactions_OiQ8fTWxqUGx_fkey",
+				"e|fk|finance.cash_bank_transactions.cash_bank_transactions_OiQ8fTWxqUGx_fkey",
+				"n|con|finance.cash_bank_transactions.cash_bank_transactions_OiQ8fTWxqUGx_fkey"
+			],
+			"reads": [
+				"n|tbl|finance.cash_bank_transactions",
+				"n|sch|finance",
+				"n|tbl|finance.cash_bank_accounts",
+				"n|sch|finance",
+				"n|col|finance.cash_bank_transactions.cash_bank_account_id",
+				"n|col|finance.cash_bank_accounts.id",
+				"e|uniqueness|finance.cash_bank_accounts.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"finance",
+				"payment_allocations"
+			],
+			"writes": [
+				"s|fk|finance.payment_allocations.payment_allocations_payment_id_payments_id_fkey",
+				"n|fk|finance.payment_allocations.payment_allocations_payment_id_payments_id_fkey",
+				"e|fk|finance.payment_allocations.payment_allocations_payment_id_payments_id_fkey",
+				"n|con|finance.payment_allocations.payment_allocations_payment_id_payments_id_fkey"
+			],
+			"reads": [
+				"n|tbl|finance.payment_allocations",
+				"n|sch|finance",
+				"n|tbl|finance.payments",
+				"n|sch|finance",
+				"n|col|finance.payment_allocations.payment_id",
+				"n|col|finance.payments.id",
+				"e|uniqueness|finance.payments.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"finance",
+				"payments"
+			],
+			"writes": [
+				"s|fk|finance.payments.payments_cash_bank_account_id_cash_bank_accounts_id_fkey",
+				"n|fk|finance.payments.payments_cash_bank_account_id_cash_bank_accounts_id_fkey",
+				"e|fk|finance.payments.payments_cash_bank_account_id_cash_bank_accounts_id_fkey",
+				"n|con|finance.payments.payments_cash_bank_account_id_cash_bank_accounts_id_fkey"
+			],
+			"reads": [
+				"n|tbl|finance.payments",
+				"n|sch|finance",
+				"n|tbl|finance.cash_bank_accounts",
+				"n|sch|finance",
+				"n|col|finance.payments.cash_bank_account_id",
+				"n|col|finance.cash_bank_accounts.id",
+				"e|uniqueness|finance.cash_bank_accounts.id"
+			]
+		}
+	],
+	"deltas": [
+		{
+			"op": "create",
+			"row": {
+				"name": "finance",
+				"entityType": "schemas"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"name": "ap_open_items",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"name": "ar_open_items",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"name": "bank_reconciliation_items",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"name": "bank_reconciliations",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"name": "cash_bank_accounts",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"name": "cash_bank_transactions",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"name": "payment_allocations",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"name": "payment_terms",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"name": "payments",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"name": "supplier_bills",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "supplier_bill_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "supplier_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "bill_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "due_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "original_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "paid_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "outstanding_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'open'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "sales_invoice_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "customer_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "invoice_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "due_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "original_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "paid_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "outstanding_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'open'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "bank_reconciliation_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "cash_bank_transaction_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "statement_reference",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "statement_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "is_matched",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "false",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "notes",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "cash_bank_account_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "reconciliation_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "statement_balance",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "book_balance",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "difference",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'draft'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "reconciled_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "reconciled_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "notes",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "account_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'bank'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "bank_name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "account_number",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "account_holder",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "opening_balance",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "current_balance",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "is_active",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "true",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "cash_bank_account_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "transaction_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "direction",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "source_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "source_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "description",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "reference_number",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'posted'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "balance_after",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "posted_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "posted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "payment_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "target_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "sales_invoice_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "supplier_bill_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "days",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "discount_percent",
+				"type": "numeric(5,2)",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "discount_days",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "is_active",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "true",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payment_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "direction",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "counterparty_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "counterparty_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "sales_invoice_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "supplier_bill_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "employee_advance_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payment_method",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'bank_transfer'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payment_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'draft'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "requested_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "requested_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "submitted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "approved_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "approved_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "executed_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "executed_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "cash_bank_account_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "reference_number",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "notes",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "voided_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "void_reason",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "supplier_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "purchase_order_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "bill_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "due_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "subtotal",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "tax_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "grand_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "paid_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "outstanding_total",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'draft'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "approved_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "approved_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "ap_open_items_org_bill_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "supplier_bill_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "ap_open_items_supplier_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "supplier_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "ap_open_items_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "ap_open_items_due_date_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "due_date",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "ar_open_items_org_invoice_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "sales_invoice_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "ar_open_items_customer_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "customer_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "ar_open_items_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "ar_open_items_due_date_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "due_date",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "bank_reconciliation_items_reconciliation_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "bank_reconciliation_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "bank_reconciliation_items_transaction_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "cash_bank_transaction_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "bank_reconciliations_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "bank_reconciliations_account_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "cash_bank_account_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "bank_reconciliations_date_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "reconciliation_date",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "cash_bank_accounts_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "cash_bank_accounts_account_number_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "account_number",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "cash_bank_transactions_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "cash_bank_transactions_account_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "cash_bank_account_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "cash_bank_transactions_date_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "transaction_date",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "cash_bank_transactions_source_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "source_type",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "source_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "payment_allocations_payment_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "payment_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "payment_allocations_sales_invoice_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "sales_invoice_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "payment_allocations_supplier_bill_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "supplier_bill_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "payment_terms_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payments_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payments_sales_invoice_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "sales_invoice_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payments_supplier_bill_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "supplier_bill_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payments_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payments_counterparty_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "counterparty_type",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "counterparty_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payments_cash_bank_account_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "cash_bank_account_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "supplier_bills_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "supplier_bills_supplier_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "supplier_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "supplier_bills_purchase_order_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "purchase_order_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "supplier_bills_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "supplier_bills_due_date_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "due_date",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "bank_reconciliation_items_LO96nU6SLCO6_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"bank_reconciliation_id"
+				],
+				"schemaTo": "finance",
+				"tableTo": "bank_reconciliations",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "bank_reconciliation_items_5ntduObVqjWU_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"cash_bank_transaction_id"
+				],
+				"schemaTo": "finance",
+				"tableTo": "cash_bank_transactions",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "SET NULL",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "bank_reconciliations_uOpNUxTRLd4E_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"cash_bank_account_id"
+				],
+				"schemaTo": "finance",
+				"tableTo": "cash_bank_accounts",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "cash_bank_transactions_OiQ8fTWxqUGx_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"cash_bank_account_id"
+				],
+				"schemaTo": "finance",
+				"tableTo": "cash_bank_accounts",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "payment_allocations_payment_id_payments_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"payment_id"
+				],
+				"schemaTo": "finance",
+				"tableTo": "payments",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payments_cash_bank_account_id_cash_bank_accounts_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"cash_bank_account_id"
+				],
+				"schemaTo": "finance",
+				"tableTo": "cash_bank_accounts",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "ap_open_items_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "ar_open_items_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliation_items",
+				"name": "bank_reconciliation_items_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "bank_reconciliations_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "cash_bank_accounts_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "cash_bank_transactions_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "payment_allocations_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "payment_terms_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payments_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "supplier_bills_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "ap_open_items_status_check",
+				"value": "status IN ('open', 'partially_paid', 'paid', 'void')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "ap_open_items_original_check",
+				"value": "original_amount >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "ap_open_items_paid_check",
+				"value": "paid_amount >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "ap_open_items_outstanding_check",
+				"value": "outstanding_amount >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ap_open_items",
+				"name": "ap_open_items_consistency_check",
+				"value": "outstanding_amount = original_amount - paid_amount",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "ar_open_items_status_check",
+				"value": "status IN ('open', 'partially_paid', 'paid', 'void')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "ar_open_items_original_check",
+				"value": "original_amount >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "ar_open_items_paid_check",
+				"value": "paid_amount >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "ar_open_items_outstanding_check",
+				"value": "outstanding_amount >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "ar_open_items",
+				"name": "ar_open_items_consistency_check",
+				"value": "outstanding_amount = original_amount - paid_amount",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "bank_reconciliations",
+				"name": "bank_reconciliations_status_check",
+				"value": "status IN ('draft', 'in_progress', 'reconciled', 'closed')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "cash_bank_accounts_type_check",
+				"value": "account_type IN ('cash', 'bank', 'ewallet', 'clearing')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_accounts",
+				"name": "cash_bank_accounts_opening_check",
+				"value": "opening_balance >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "cash_bank_transactions_direction_check",
+				"value": "direction IN ('in', 'out')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "cash_bank_transactions_amount_check",
+				"value": "amount > 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "cash_bank_transactions",
+				"name": "cash_bank_transactions_status_check",
+				"value": "status IN ('posted', 'reversed')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "payment_allocations_target_check",
+				"value": "target_type IN ('sales_invoice', 'supplier_bill')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "payment_allocations_target_present_check",
+				"value": "(target_type = 'sales_invoice' AND sales_invoice_id IS NOT NULL) OR (target_type = 'supplier_bill' AND supplier_bill_id IS NOT NULL)",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_allocations",
+				"name": "payment_allocations_amount_check",
+				"value": "amount > 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "payment_terms_days_check",
+				"value": "days >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payment_terms",
+				"name": "payment_terms_discount_check",
+				"value": "discount_percent IS NULL OR (discount_percent >= 0 AND discount_percent <= 100)",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payments_type_check",
+				"value": "payment_type IN ('receipt', 'disbursement', 'refund', 'advance_disbursement', 'payroll', 'profit_distribution', 'investment')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payments_direction_check",
+				"value": "direction IN ('in', 'out')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payments_status_check",
+				"value": "status IN ('draft', 'submitted', 'approved', 'executed', 'reversed', 'void', 'cancelled')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payments_amount_check",
+				"value": "amount > 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "payments",
+				"name": "payments_method_check",
+				"value": "payment_method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque', 'offset')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "supplier_bills_status_check",
+				"value": "status IN ('draft', 'approved', 'partially_paid', 'paid', 'overdue', 'void')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "supplier_bills_subtotal_check",
+				"value": "subtotal >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "supplier_bills_tax_total_check",
+				"value": "tax_total >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "supplier_bills_grand_total_check",
+				"value": "grand_total >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "supplier_bills_paid_total_check",
+				"value": "paid_total >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "finance",
+				"table": "supplier_bills",
+				"name": "supplier_bills_outstanding_total_check",
+				"value": "outstanding_total >= 0",
+				"entityType": "checks"
+			}
+		}
+	]
+}

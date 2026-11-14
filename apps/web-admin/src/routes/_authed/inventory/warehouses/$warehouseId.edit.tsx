@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/components/toast';
 
-import { AdminOnly } from '@/components/inventory/admin-only';
+import { WarehouseAccessGate } from '@/components/inventory/warehouse-access-gate';
 import { WarehouseForm } from '@/components/inventory/warehouse-form';
 import {
 	updateWarehouse,
@@ -61,16 +61,16 @@ function EditWarehousePage() {
 
 	if (isError || !warehouse) {
 		return (
-			<AdminOnly>
+			<WarehouseAccessGate>
 				<p className='text-sm text-muted-foreground'>
 					{t('inventory:warehouses.notFound')}
 				</p>
-			</AdminOnly>
+			</WarehouseAccessGate>
 		);
 	}
 
 	return (
-		<AdminOnly>
+		<WarehouseAccessGate>
 			<WarehouseForm
 				warehouse={warehouse}
 				submitting={submitting}
@@ -82,6 +82,6 @@ function EditWarehousePage() {
 					})
 				}
 			/>
-		</AdminOnly>
+		</WarehouseAccessGate>
 	);
 }
