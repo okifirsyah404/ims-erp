@@ -81,6 +81,8 @@ touched).
   receipt), invoices / down payments / receipts lists — no page errors, no
   failing API calls; the raw `status.cancelled` label found here was fixed.
 
+Opened as **PR #98** to `main` for programmer A's review.
+
 **Found for programmer A (M09, not changed here):**
 - Issuing needs the chart of accounts codes `1-1300` / `4-1000` / `2-1000`
   (created in the test through `POST /accounts` as the accountant).
