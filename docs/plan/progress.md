@@ -18,6 +18,41 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0051: ERP-0048 migration applied to a throwaway DB and inspected
+
+Branch `refactor/app-roles-investor-customer`. Merge `cff48eb` brings `fix/migration-journal-conflict`
+(`32b6c33`, ERP-0052) in so `drizzle-kit migrate` can run at all. Two doc conflicts were resolved by
+keeping both entries (ERP-0052 row added, ERP-0051 row kept).
+
+The migration `20261114120000_erp0048_investor_customer_app_roles` was rewritten before this run: its
+first form deleted every `members` row whose `role` ended up empty, which also destroyed rows that were
+already empty for unrelated reasons. It now deletes only rows whose roles are *all* portal roles, then
+strips portal tokens from the mixed rows.
+
+Commands and outcomes (database `ims_erp_migrate_check`, disposable; the dev database was never
+touched):
+- `bunx --bun drizzle-kit migrate` from empty: 56 journal rows, 115 tables, 21 schemas; second run a
+  no-op.
+- Data behaviour, with fixture rows injected after rolling the journal back to 55 and re-applying:
+  `investor` / `customer` / `" investor "` / `investor,` memberships deleted; `sales,investor`,
+  `investor,sales` → `sales`; `sales, customer ,owner` → `sales,owner`; `owner` untouched; a
+  pre-existing empty-role row **survives** (the point of the rewrite). `user_invitations.org_role`
+  `investor` / `customer` → NULL, `sales` and NULL untouched.
+- `bun run database/seeders/index.ts` twice on the migrated database: 40 users / 40 members both runs
+  (idempotent), zero memberships holding a portal role.
+- Reference check: no table has a foreign key to `auth.members` or `auth.user_invitations`, so no
+  child rows were orphaned by the deletes. `auth.invitations` (Better Auth's own organization-plugin
+  table, unused by the app's invitation flow, 0 rows on `ims_erp_local`) still has a `role` column
+  that this migration does not touch - nothing writes to it today.
+
+Not verified: live-server behaviour (ADR-0017 verification list), and the gate's own DB query still
+has no test.
+
+Docs: `docs/database/` reviewed, unchanged (no table or column change; the migration only moves data
+between existing columns).
+
+Next executable task: owner review of ADR-0017 / ADR-0018; then warehouse PIC Phase 1-2.
+
 ## 2026-11-14 - ERP-0051: investor and customer move to app roles (ADR-0018), login gate in code
 
 Branch `refactor/app-roles-investor-customer` (from `main`), commit `d63dfdc`.
@@ -56,7 +91,6 @@ Commands and outcomes:
 - Seeders: no `investor`/`customer` role written. Comment in `organization-members.seeder.ts` updated.
 
 Not verified yet:
-- Migration not run on a disposable database. Next: `drizzle:migrate` on a throwaway DB, inspect result.
 - No DB-backed login-gate test: the repo has no test that touches a real database (DB is always
   mocked, `bun-test` skill). The guard wiring is covered over HTTP with a stubbed gate
   (`login-gate.guard.test.ts`); the gate's DB query is covered by neither.
@@ -66,7 +100,8 @@ Not verified yet:
 
 Docs: `docs/database/` reviewed, unchanged (no table or column change).
 
-Next executable task: run the migration on a disposable DB, then add the DB-backed login-gate test.
+Next executable task: owner review of ADR-0017 / ADR-0018, then warehouse PIC Phase 1-2. The
+migration itself is applied and inspected - see the entry above.
 ## 2026-11-14 - ERP-0052: migration snapshot graph repaired, `drizzle:migrate` replays from empty
 
 Branch `fix/migration-journal-conflict` (worktree `B:\ims\erp-migration-fix`, from `main` @ `a997778`).
@@ -107,7 +142,7 @@ Not verified: `drizzle-kit check` / `generate` still unusable for the 2026-11-06
 (see above). `drizzle:seed` was not run on the throwaway database.
 
 Next executable task: run the ERP-0048 migration (`refactor/app-roles-investor-customer`) against a
-freshly replayed database now that `drizzle:migrate` works.
+freshly replayed database now that `drizzle:migrate` works. **Done 2026-11-14** - see the entry above.
 
 ## 2026-11-14 - Role-based nav: Phase 4 complete (ERP-0051, web-admin side)
 

@@ -35,15 +35,17 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`proposed`).
   route guard in `_authed` (redirect + toast), organization switch re-checks the
   current route, `/organizations/new` app-admin only, Settings needs an active
   organization. Done: Phase 4 web-admin (all of the above). Login gate and app roles
-  implemented on branch `refactor/app-roles-investor-customer` (ADR-0018), not yet
-  verified against a DB or live server. Open: PIC nav item and PIC UI (ADR-0017).
-  Evidence: `progress.md` 2026-11-14 "Phase 4 complete" (browser checks, 97 tests).
+  implemented on branch `refactor/app-roles-investor-customer` (ADR-0018), migration
+  `20261114120000_erp0048_investor_customer_app_roles` applied to a throwaway
+  database and inspected (mixed rows keep internal roles, portal-only rows deleted,
+  portal `org_role` cleared on pending invitations, second run a no-op). Open: PIC
+  nav item and PIC UI (ADR-0017), live-server checks.
+  Evidence: `progress.md` 2026-11-14 "Phase 4 complete" (browser checks, 97 tests)
+  and "ERP-0051: investor and customer move to app roles".
 
 ### planned
 - Warehouse person-in-charge (`inventory.warehouse_managers`, `warehouseGuard`).
   Evidence: none. Blocked until ADR-0017 is accepted.
-- Login gate DB-backed verification and migration run (ADR-0018). Code exists, see
-  `progress.md` 2026-11-14 "ERP-0051: investor and customer move to app roles".
 
 ---
 
