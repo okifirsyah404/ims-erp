@@ -120,6 +120,17 @@ Legend: ✅ main · 🟡 PR #84 (open) · 🟦 branch `feat/m07-customer-portal`
 | RFQ | `listRfqs`, `requestRfqClaim`, `confirmRfqClaim` | — | ❌ | CRM leads by customer/email + email OTP |
 | — | — (ERP extra) | `GET /portal/v1/me` | 🟦 | portal |
 
+## Wiring status (2026-11-14)
+
+The website repo's `apps/customer/src/services/portal/erp-routes.ts` now maps
+the 21 built operations (not committed there: that repo has no commits yet).
+`.env.example` documents `ERP_RESPONSE_ENVELOPE=data`. Home and profile show
+empty sections for operations that are not connected yet
+(`unlessNotConnected` in `apps/customer/src/services/errors.ts`) instead of an
+error page. A browser walk-through against the local ERP passed: individual
+sign-up → emailed code → signed in → home, projects, warranty, support →
+new ticket (numbered by the ERP, listed) → profile → sign out → sign in again.
+
 ## Decisions taken
 
 - **D1 (2026-11-14): individuals sign up themselves, businesses by

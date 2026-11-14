@@ -18,6 +18,44 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0022 website portal wired to the ERP and tried in a browser
+
+Owner: "lanjut menyambungkan router di repo website dulu agar bisa dicoba
+langsung". Website repo `entragate-platform` (its `master` has no commits
+yet, so nothing was committed there; changes are in its working tree):
+- `apps/customer/src/services/portal/erp-routes.ts`: the 21 built operations
+  (`refreshSession` left out on purpose: 7-day Better Auth sessions, no
+  refresh token; stage-2 operations left out).
+- `apps/customer/.env.example`: `ERP_RESPONSE_ENVELOPE=data`; a local
+  gitignored `.env` (`ERP_API_BASE_URL=http://localhost:3000`,
+  `PORTAL_DATA_SOURCE=erp`).
+- `apps/customer/src/services/errors.ts` `unlessNotConnected`; home
+  (orders, invoices, quotations) and profile (counters) use it — before, both
+  pages answered 500 because they call stage-2 operations.
+
+ERP fix found by the walk-through: the portal sends tickets as multipart and
+Elysia already parses the `payload` field into an object, so
+`POST /portal/v1/tickets` answered 400. `formPayload` moved to
+`src/app/portal/utils/form-payload.ts` and accepts a parsed object; unit test
+added (`customer-portal.test.ts` → 24 pass); `bunx tsc --noEmit` clean.
+
+Browser walk-through (Playwright with the installed Chromium; ERP backend on
+the disposable `ims_erp_portal`, `PORTAL_URL=http://localhost:4322`; portal
+`astro dev --background` on port 4322 because 4321 was taken): all steps
+pass — individual sign-up → `/verify-email` → code (read from the backend's
+"mail disabled" log: SMTP is off) → signed in → `/`, `/projects`,
+`/warranty`, `/support` 200 → new ticket → `/support/submitted`, listed as
+`0005/TKT/IMS/XI/26` with the message → `/profile` 200 → `POST /logout` →
+sign in again with the password. Screenshots checked (home, support).
+`astro check` cannot run in the website repo (it does not support the
+installed TypeScript 7) — pre-existing tooling gap there.
+Seen, not ours: the support page shows static copy ("average first reply 12
+min", "SLA reply < 4 hours") and the desktop home quick-actions card overflows.
+
+Next executable task: owner tries the portal (`docs/architecture/modules/
+customer-portal.md`), then the PR for `feat/m07-customer-portal`; the
+website repo needs its first commit by its owner.
+
 ## 2026-11-14 - ERP-0022 portal logins per contact with roles, individual sign-up (D1/D2)
 
 Owner decisions after the gap analysis below (`docs/plan/plans/website-integration.md`):

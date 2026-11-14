@@ -22,6 +22,8 @@ import type { IPortalSessionGateway, TPortalSession } from '../../src/app/portal
 import { PortalInvalidCredentialsError, PortalLockedError, PortalProductNotFoundError } from '../../src/app/portal/errors/portal.errors';
 import { PortalAuthService } from '../../src/app/portal/services/portal-auth.service';
 import { PortalService } from '../../src/app/portal/services/portal.service';
+import { formPayload } from '../../src/app/portal/utils/form-payload';
+import { PortalAttachmentsUnsupportedError } from '../../src/app/portal/errors/portal.errors';
 import { projectDetail, ticketDetail, ticketSummary, type TPresenter } from '../../src/app/portal/utils/portal-presenter';
 import { ProjectPortalService } from '../../src/app/projects/services/project-portal.service';
 import type { IPortalAuthGateway, IPortalIdentityRepository, TPortalCustomerIdentity } from '../../src/app/user/contracts/portal-account.contract';
@@ -578,5 +580,16 @@ describe('portal guard', () => {
 		const ok = await call({ authorization: 'Bearer good-token' });
 		expect(ok.status).toBe(200);
 		expect(await ok.json()).toEqual({ customerId: CUST_A });
+	});
+});
+
+describe('portal form payload', () => {
+	test('JSON body, multipart payload as a string or already parsed; files refused in stage 1', () => {
+		const input = { subject: 'Gate', description: 'Tidak membuka' };
+		expect(formPayload(input)).toEqual(input);
+		expect(formPayload({ payload: JSON.stringify(input) })).toEqual(input);
+		expect(formPayload({ payload: input })).toEqual(input);
+		expect(formPayload({ payload: input, photos: new File([], 'empty.jpg') })).toEqual(input);
+		expect(() => formPayload({ payload: input, photos: [new File(['x'], 'a.jpg')] })).toThrow(PortalAttachmentsUnsupportedError);
 	});
 });

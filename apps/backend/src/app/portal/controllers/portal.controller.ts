@@ -17,7 +17,6 @@ import {
 	portalTicketSchema,
 	portalVerifySchema,
 } from '../contracts/portal.contract';
-import { PortalAttachmentsUnsupportedError } from '../errors/portal.errors';
 import {
 	accountSettings,
 	companyMember,
@@ -30,6 +29,7 @@ import {
 	ticketSummary,
 	warrantyDetail,
 } from '../utils/portal-presenter';
+import { formPayload } from '../utils/form-payload';
 
 /** The presenter for one request: its language, today on the Jakarta clock. */
 function presenter(ctx: unknown): TPresenter {
@@ -42,24 +42,6 @@ function presenter(ctx: unknown): TPresenter {
 	};
 }
 
-/**
- * Reads a JSON body or the portal's multipart form (`payload` = JSON, files
- * under `photos` / `attachments`). Files are refused in stage 1.
- */
-function formPayload(body: unknown): unknown {
-	if (!body || typeof body !== 'object') return body;
-	const record = body as Record<string, unknown>;
-	const files = [record.photos, record.attachments].flat().filter((file) => file instanceof Blob && file.size > 0);
-	if (files.length > 0) throw new PortalAttachmentsUnsupportedError();
-	if (typeof record.payload === 'string') {
-		try {
-			return JSON.parse(record.payload);
-		} catch {
-			return null;
-		}
-	}
-	return body;
-}
 
 /**
  * Sign-in and passwords of the customer portal (`/portal/v1/auth`,
