@@ -26,6 +26,11 @@ export async function canOpenPath(
 	session: GuardSession,
 	queryClient: QueryClient,
 ): Promise<boolean> {
+	// Creating an organization is platform administration, not an org
+	// permission: the nav leaf for `/organizations` only carries
+	// `organization.read`.
+	if (pathname === '/organizations/new') return session.user.role === 'admin';
+
 	const leaf: SidebarItem | null = findNavLeaf(navSections, pathname);
 	if (!leaf || leaf.url === '/') return true;
 

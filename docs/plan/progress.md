@@ -18,6 +18,42 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - Role-based nav: Phase 4 complete (ERP-0051, web-admin side)
+
+Claimed `ERP-0051` in `backlog.md` (in-progress; PIC and login gate stay blocked on ADR-0017).
+
+- `/organizations/new` is app-admin only in `canOpenPath`. It was previously derived from the
+  `/organizations` nav leaf (`organization.read`), which a non-admin org owner also holds.
+- Decision 9: `organization-switcher.tsx` re-checks the current route after a switch, using a
+  fresh `getSession()`. If the new organization does not allow the page → toast + `navigate('/')`.
+- Plan correction: Phase 4.3 says "one `organization.hasPermission` call with every nav
+  permission". That is not possible - the endpoint returns one boolean for the whole set, so
+  per-item filtering needs one call per permission. `useQueries` is the correct shape; the plan
+  text is wrong, the code is not.
+- Plan correction: Phase 4.5 "unify the cache key" was replaced by a separate
+  `['my-organizations']` key (`GET /organizations/mine`), approved earlier.
+
+Commands and outcomes:
+- `bun test` (web-admin): 97 pass, 0 fail, 16 files.
+- `bunx tsc -b` (web-admin): exit 0.
+- Browser (`localhost:5173`, dev DB):
+  - `orgadmin.test` (`admin` in Entragate, `sales` in Live Org):
+    - `/organizations/new` → redirected to `/` with the denied toast.
+    - No active organization (session `set-active` null) → `/settings/company` redirected to `/`
+      with the toast; sidebar showed Dashboard + Notifications only, so Settings is hidden
+      without an active organization.
+    - `/crm/customers` with Live Org active → switch to Entragate (no `customer.read`) →
+      redirected to `/` with the denied toast.
+    - `/documents/files` (allowed in both) → switch Entragate → Live Org → stayed on the page,
+      toast "Organization switched". No false redirect.
+  - `admin`: `/organizations/new` renders "New organization"; `/crm/customers` renders (member
+    of Entragate as owner), no redirect.
+
+Not verified: warehouse PIC nav item and PIC UI (Phase 4.8) - blocked on ADR-0017 and
+`/warehouses/mine`; the item stays `appAdminOnly`.
+
+Docs: `docs/database/` reviewed, unchanged (no schema change).
+
 ## 2026-11-14 - Role-based nav: Phase 4 part 3 (route guard in `_authed`)
 
 - `lib/route-guard.ts` `canOpenPath`: finds the governing nav leaf (`findNavLeaf`, longest url

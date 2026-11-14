@@ -1,12 +1,12 @@
 # Role-Based Sidebar, Route Guards, and Warehouse Person-in-Charge
 
-> Status: **planned** (approved through grilling, 2026-11-14). Nothing shipped.
+> Status: **in-progress** (approved through grilling, 2026-11-14). Phase 0 and
+> Phase 4 (web-admin) shipped on the branch; Phases 1-3 and 4.8 wait on ADR-0017.
 > Branch: `fix/side-nav-role-based`.
 > Scope: `apps/web-admin` (sidebar, switcher, route guards) plus the backend
 > pieces it depends on (login gate, warehouse person-in-charge access).
-> Backlog: **no `ERP-*` ID claimed** (pure fix plus one new ADR-backed
-> capability; see "Backlog" below).
-> Decisions: ADR-0017 (`proposed`, to be written in Phase 0).
+> Backlog: **`ERP-0051`**.
+> Decisions: ADR-0017 (`proposed`).
 
 ## Problem
 
@@ -153,18 +153,24 @@ New table `inventory.warehouse_managers`:
      a custom predicate, not a permission string.
 2. **`filterNav(sections, { can, isAppAdmin, isPic })`** (pure, in
    `nav-config.ts` or a sibling file). Unit tests in `apps/web-admin/test/unit`.
-3. **Permission batch hook**: one `organization.hasPermission` call with every
-   nav permission, cached under `['erp-has-permission', userId, activeOrgId]`.
-   Skeleton per section while pending.
+3. **Permission batch hook**: one `organization.hasPermission` call *per*
+   permission (`useQueries`), cached under
+   `['erp-has-permission', userId, activeOrgId, permission]`. Skeleton per
+   section while pending. **Corrected at build time:** the endpoint answers one
+   boolean for the whole permission set, so a single call cannot filter items
+   individually; the original wording was wrong.
 4. **`main-sidebar.tsx`**: replace the "organization-only users" comment. Use
    `filterNav`.
 5. **Switcher** (`organization-switcher.tsx`):
    - List only organizations with an internal role (decision 10).
    - Logo from `TOrganization.logo`, fallback `Building2`.
-   - Invalidate `['erp-has-permission']` and `['erp-organizations']` after switch.
+   - Invalidate `['erp-has-permission']`, `['my-organizations']` and
+     `['organizations']` after switch.
    - Re-check the current route (decision 9).
-   - Unify the cache key with `organizationsQueryOptions` (currently
-     `['organizations']`). Upload/delete logo invalidates both keys.
+   - **Changed at build time:** membership rows come from `GET /organizations/mine`
+     under `['my-organizations']`, separate from the admin list
+     (`['organizations']`), instead of unifying the two keys. Upload/delete logo
+     invalidates both.
 6. **Route guard** in `routes/_authed` `beforeLoad`:
    - Map URL prefix → permission or predicate (same source as nav).
    - `/admin/*` and `/organizations/new` → app admin only.

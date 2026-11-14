@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronsUpDown, Building2, Plus, Settings } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/components/toast';
 
@@ -22,7 +22,8 @@ import {
 	useSidebar,
 } from '@ims-erp/ui/components/sidebar';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
-import { useSession } from '@/lib/auth-client';
+import { getSession, useSession } from '@/lib/auth-client';
+import { canOpenPath } from '@/lib/route-guard';
 import {
 	myOrganizationsQueryOptions,
 	organizationsQueryOptions,
@@ -49,6 +50,7 @@ import { switchOrganization } from '@/lib/use-permission';
 export function OrganizationSwitcher() {
 	const { isMobile } = useSidebar();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const queryClient = useQueryClient();
 	const { t } = useTranslation('nav');
 	const { data: session, isPending: sessionPending } = useSession();
@@ -75,6 +77,17 @@ export function OrganizationSwitcher() {
 				queryClient.invalidateQueries({ queryKey: myOrganizationsQueryOptions.queryKey }),
 				queryClient.invalidateQueries({ queryKey: organizationsQueryOptions.queryKey }),
 			]);
+			// Decision 9: the current page may not exist in the new
+			// organization. Re-check it against the fresh session.
+			const { data: nextSession } = await getSession();
+			if (
+				nextSession &&
+				!(await canOpenPath(location.pathname, nextSession, queryClient))
+			) {
+				toast.error(t('access.denied'));
+				await navigate({ to: '/' });
+				return;
+			}
 			toast.success(t('organization.switched'));
 		} catch {
 			toast.error(t('organization.switchFailed'));
