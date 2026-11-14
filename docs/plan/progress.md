@@ -18,6 +18,263 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-15 - merge `main` into `feat/m08-hr-on-main` (PR #83), M08 rebased on the squashed migration baseline
+
+Worktree `B:\ims\erp-m08-merge`, branch `feat/m08-hr-on-main`, merge of
+`origin/main` @ `2b28fc46` (no rebase, no force-push; PR #83 stays open).
+Base-main wins where the two disagree, except the deliberate deviations listed
+below.
+
+**Conflicts resolved (7).**
+
+- `apps/backend/database/seeders/index.ts` — union: `seedHrEmployees` →
+  `seedLeaveTypes` → `seedNotificationTemplates` → `seedNotificationDemo`.
+- `apps/backend/src/app/app.ts` — both `documentModule` and `hrModule` mounted.
+- `apps/backend/src/app/hr/services/employee.service.ts` — took main's shape
+  (`toRow`/`withPersonal` mappers, `EmployeeInviteService`,
+  `CodeNumberService`, `IUserPersonalFieldsPort`) and re-applied the M08 NIK
+  masking on top: `canReadPrivate` on the context, `maskTail` on read/list/
+  update responses, and the `nationalId` write gate on update.
+- `apps/web-admin/src/components/sidebar/nav-config.ts` — `overtime` gated by
+  `overtime.read`, `payroll` by `payroll.read`, M08 `hrTasks` by `task.read`.
+- `docs/database/logical-references.md` — took main's file and regenerated.
+- `docs/plan/backlog.md`, `docs/plan/progress.md` — main entries first, the
+  M08 2026-11-12 entries kept after the header.
+
+**Migrations.** Both orphan M08 folders (`20261112000000_erp0034_hr_employees`,
+`20261112100000_m08_hr_records`) were deleted; `bun run drizzle:generate` on the
+squashed 19-folder baseline produced `20261114173050_lush_darkstar`
+(`migration.sql` + `snapshot.json`, `prevIds` = `f3e62ffa…` sales snapshot).
+The SQL was read: 7 tables (`attendance_records`, `bank_accounts`,
+`employee_tasks`, `leave_requests`, `leave_types`, `overtime_requests`,
+`salary_summaries`) with their checks, partial unique indexes, and
+`ON DELETE RESTRICT` FKs. `bunx --bun drizzle-kit check` → `Everything's fine`.
+
+**Semantics.** `GLOBAL_ADMIN_ROLE` string compares became `hasAppRole(...)`
+(`hr/controllers/hr-context.ts`, comma-joined `user.role`, ADR-0018) and
+`parseRoleList` from `@ims-erp/common`. `docs.dbml` gained the missing
+`Ref: hr.employees.manager_employee_id > hr.employees.id [delete: set null]`.
+Both employee pickers are kept (`/hr/employees/picker` from main and
+`/hr/active-employees` from M08).
+
+**Deliberate deviation.** M08's `restrict` FK deletes were kept over main's
+`cascade` for `attendance_records`, `leave_requests` and `bank_accounts` —
+records must not disappear with an employee.
+
+**Renumbering.** M08's backlog row is `ERP-0053` (main assigned `ERP-0040` to
+the organization info dashboard); `progress.md`/`data-model.md`/`features.md`
+M08 references are `ERP-0059` to avoid main's reserved `ERP-0053`…`ERP-0058`.
+
+**Gates (executed here).**
+
+- `bun run typecheck` → 4/4 tasks successful.
+- `bun run lint` → 5/5 tasks successful (warnings only; none new in `hr/`).
+- `bun run test` → backend 1021 pass, web-admin 100 pass, locales 90 pass,
+  react-email 5 pass, 0 fail.
+- `bun docs/database/gen-logical-references.ts` → `526 refs across 41 targets,
+  236 intra-module refs`.
+- `bun docs/database/validate-dbml.ts` → `parsed: 272 tables, 236 refs`,
+  `cross-module refs: 0`, `timestamp gaps: 0`, `OK`.
+
+**Database gates — run later the same day on a local PostgreSQL 5432 / Redis
+6379 (native services, Docker not involved).** Disposable database
+`ims_erp_m08_browser` (dropped afterwards):
+
+- `POSTGRES_URL=…/ims_erp_m08_browser bun run drizzle:migrate` → `migrations
+  applied successfully` from an empty database: all 20 folders including
+  `20261114173050_lush_darkstar` replayed in order.
+- `bun run drizzle:seed` twice → first run created 29 employees, 4 leave types,
+  4 notification templates, 3 demo notifications; second run reported
+  `created 0` / `inserted 0` for every seeder. Idempotent.
+- `drizzle-kit push --explain` still **not** run (not needed for this merge;
+  the chain is linear and `drizzle-kit check` is clean).
+
+**Browser pass (Edge via `browse`, backend `:3001`, web-admin `:5173`,
+2026-11-15).**
+
+- Sign-in `admin@local.com` → shell renders; `/hr/employees` lists 29 seeded
+  employees, `/hr/attendance` renders the day grid, `/hr/leave`,
+  `/hr/overtime`, `/hr/tasks`, `/hr/payroll` render their empty states.
+- Write path exercised through the UI: set the first attendance row to
+  `present` and clicked **Save day** → toast `saved, 0 leave day(s) kept`, and
+  `hr.attendance_records` holds one row (`status=present`, `source=manual`,
+  `recorded_by` = the signed-in user).
+- NIK masking, both directions: with `national_id` set to
+  `3201234567890123` on `EMP-00011`, the org `owner` account
+  (`admin@local.com`) reads `3201234567890123` from list and detail, while the
+  org `admin` account (`admin.seed@entragate.local`, no
+  `employee:read_private`) reads `••••••••••••0123` from both.
+- Sidebar gating as org `admin`: Overtime, Payroll and Tasks are hidden
+  (`overtime.read` / `payroll.read` / `task.read` absent), Leave hidden, and
+  the **New employee** / **Archive** controls are gone; Attendance stays.
+  Direct `/hr/payroll` returns **403 `Insufficient permissions`** from the
+  backend — the server-side fact holds.
+- Kept as observed, pre-existing from `main`: the route guard still renders
+  `/hr/payroll` for that account instead of redirecting (ERP-0053 follow-up,
+  `canOpenPath` fails open), and the realtime bell briefly shows
+  `Live updates unavailable` on first mount in dev (React double-mount closes
+  the socket before it opens; a raw `ws://localhost:3001/ws` handshake
+  succeeds and stays open). Neither is caused by this merge.
+
+**`docs/database/`:** reviewed and changed (the `manager_employee_id` `Ref`
+above); `validate-dbml.ts` printed `OK`. `project-audit.md` re-checked: the
+snapshot-chain and `docs.dbml` `hr.employees` rows are resolved and dropped,
+the `hr.employees` status-vocabulary drift (`on_leave`/`suspended`/`freelance`/
+`intern` in DBML vs `inactive`/`probation`/`internship`/`outsourced` in Drizzle)
+is recorded as still open and not fixed here.
+
+## 2026-11-12 - tooling: local skills copied into `.claude/skills/`
+
+11 local skills from `.agents/skills/` copied into `.claude/skills/` (the
+broken `tsyringe` symlink placeholder was replaced with a real copy), and
+each was checked against its source with `diff -rq`. Details are in
+`.agents/docs/skills.md`. Only tooling changed: no app code changed and
+there is no backlog item to move. `docs/database/` was not touched.
+
+## 2026-11-12 - M08 compliance pass against AGENTS.md (ERP-0059) and main-wide doc fixes
+
+Owner asked to check M08 (PR #83) against `AGENTS.md` and `README.md` and fix
+the gaps.
+
+- **Skills read:** `elysia-module`, `elysia-layered-architecture`,
+  `elysia-tsyringe`, `tsyringe`. `hrModule()` factory, module-internal access
+  only (`HrPeopleService` over ERP-0034 employees), one `:id` per position
+  (`/hr/employees/:id` and `/:id/bank-account`), `container.resolve` only
+  inside `plugin()`: conform.
+- **Gate 1 completed:** `integrity-and-consistency.md`, `data-dictionary.md`
+  and `logical-references.md` now read in addition to `docs.dbml`, ADR-0012
+  and ADR-0014; `implementation-phases.md` skipped (no dependency on an
+  unlanded step). Checked: leave/overtime decisions and the salary approval
+  are conditional updates; separation of duties (recorder cannot decide);
+  money `CHECK`s and the net-pay identity; partial unique indexes on
+  `deleted_at IS NULL`; actor columns `recorded_by` / `decided_by` /
+  `approved_by` / `created_by`; cross-module references nullable (fixed in
+  the entry below). No further change needed.
+- **Phase 3 (ERP-0008 employees):** model + permissions + tests + idempotent
+  seeder + permission-scoped bank reads: met. Output "`data-model.md`
+  updates": the `hr` schema is now listed.
+- **Main-wide docs (DoD 2):** the pre-existing issues found on main are in
+  `project-audit.md` ("Pre-existing issues on main found 2026-11-12",
+  including `DRIZZLE_TOKEN` in `sales/services/invoice.service.ts`);
+  `runbook.md`, the `AGENTS.md` command-status table, `README.md` step 4
+  and `data-model.md` migration policy now say that drizzle-kit
+  generate/migrate are blocked on main and how migrations are verified
+  meanwhile.
+- `bun run lint` → 0 errors (warnings unchanged from main: backend 6,
+  web-admin 11, ui 19; none in HR files). `graphify update .` not run:
+  graphify is not installed on this machine.
+
+No code change in this entry; `docs/database/` unchanged; no backlog status
+move.
+
+## 2026-11-12 - ERP-0059 fix: recorded_by nullable (ADR-0014)
+
+`hr.leave_requests.recorded_by` and `hr.overtime_requests.recorded_by`
+reference `auth.users`, so per ADR-0014 they are nullable (the services
+always set them). Changed in `docs.dbml` (gen-logical-references → 535
+refs, validate-dbml OK), the Drizzle schema and the unmerged hand-written
+migration `20261112100000_m08_hr_records` (not applied to any shared
+database). Disposable `ims_erp_m08` rebuilt with `migrate-reset`: migrations
+and seed complete; `drizzle-kit push --explain` shows no `hr` difference.
+`bunx tsc --noEmit` clean; `hr-records.service.test.ts` 16 pass.
+
+## 2026-11-12 - ERP-0059: M08 stage 1 rebuilt on ERP-0034 employees
+
+Status: **implemented** on branch `feat/m08-hr-on-main` (from `origin/main`
+89940c0), not yet accepted by the owner. Replaces PR #64
+(`feat/m08-employees-attendance`), whose own `hr.employees` collided with
+ERP-0034. Owner decision 2026-11-12: keep ERP-0034's employees and stack the
+M08 records on them (option 1).
+
+Gate 1: `docs.dbml` MODULE HR (unchanged on main since the base; employees
+table as ERP-0034 left it), ADR-0012 (multi-organization: only transaction
+documents whose plan says so carry `organization_id`), ADR-0014 (nullable
+cross-module references), `module-ownership.md` (hr owns `hr`). Gate 2
+answers (manual fallback):
+- Ownership: `hr` schema; employees stay ERP-0034's; M08 adds
+  `bank_accounts`, `attendance_records`, `leave_types`, `leave_requests`,
+  `overtime_requests`, `employee_tasks`, `salary_summaries` (intra-schema
+  FKs to `employees`).
+- Tenant: no `organization_id` on the M08 tables; a record is scoped through
+  its employee with ERP-0034's rule (company-level + active organization; an
+  application admin sees all) — lists, reads, decisions, imports and salary
+  approval included.
+- Soft delete on all; money bigint minor units; business dates `date`;
+  status vocabularies unchanged from the M08 design (2026-11-07).
+- Base salary: ERP-0034 employees carry none and the DBML's
+  `employment_contracts` / `employee_salary_components` are not built, so
+  "Fill from last month" copies last month's base and allowances (0 for the
+  first month). Position field dropped (DBML has `position_id` → not built).
+- Employee codes are unique per organization in ERP-0034, so an import code
+  that matches two visible employees is reported (`employeeAmbiguous`).
+
+Built:
+- `docs.dbml` HR section: the seven M08 tables (from the M08 branch) with
+  ERP-0034's `employees` kept as is; `bun docs/database/gen-logical-references.ts`
+  → 535 refs; `bun docs/database/validate-dbml.ts` → OK.
+- Migration `20261112100000_m08_hr_records`, **hand-written**: `drizzle-kit
+  generate` and `migrate` refuse to run on main (pre-existing two-branch
+  snapshot conflict, see findings). The SQL is the drizzle-kit output of the
+  M08 schema minus the schema and employees statements. Applied to a fresh
+  disposable database `ims_erp_m08` with `bun run database/migrate-reset.ts`
+  (drizzle-orm migrator, all migrations); `drizzle-kit push --explain`
+  against it shows **no difference for any `hr` table**.
+- Backend `src/app/hr`: `HrPeopleService` / `HrPeopleRepository` (scope,
+  bank account), attendance / leave+overtime / task / salary services,
+  repositories and controllers ported with the scope; `hrModule()` mounts
+  them **and ERP-0034's `EmployeeController`, which main never mounted**
+  (`/hr/employees` answered 404). ERP-0034 reads mask the NIK without
+  `employee:read_private` and an update never writes a masked NIK back.
+- Permissions: `employee:read_private`, `attendance:record`, statement
+  `overtime`; HR gets them plus `task`; admin `attendance:read, record`;
+  finance `employee:read, read_private`, `payroll:read, create, update,
+  export` (decision 2026-11-07); `permission-matrix.test.ts` finance case
+  updated. `packages/common` rebuilt.
+- Seeder `hr-leave-types.seeder.ts` (every environment): run twice on
+  `ims_erp_m08` → inserted 4, then 0.
+- Web: pages attendance / leave / overtime / payroll / tasks (stubs on main
+  replaced), `lib/hr-records-api.ts`, bank account + leave balance cards on
+  the ERP-0034 employee page, Tasks in the sidebar, HR crumbs; `hr` locale
+  keys merged (en/id), dead-key prefixes and parity allowances.
+- Docs: `docs/architecture/modules/employee.md` rewritten; user guide 8.6
+  (en/id).
+
+Verification: `NODE_ENV=test bun test` (apps/backend) → 824 pass
+(`hr-records.service.test.ts` 16); `bunx tsc --noEmit` clean; web `bun run
+build` OK; locales 82 pass. E2E against `ims_erp_m08` (dev `.env`
+`POSTGRES_DB` switched temporarily, restored afterwards): `/hr/employees`
+200; NIK and bank account masked for admin, clear for HR; day sheet saved;
+leave 5 days, self-approval 403, another HR approves, 5 leave days in the
+month recap; overtime 2.50 h approved; task created; finance saves a salary
+row; generate → 29 rows; finance approve 403, owner approves; edit after
+lock 409; finance reads attendance 403. Screenshots of attendance, payroll
+and the employee page checked.
+
+Findings on main (pre-existing, not changed here):
+- `drizzle-kit generate` / `migrate` blocked: two snapshot branches from
+  `20261106103434_add_asset_image_url`, two snapshots with id `d536237d…`,
+  and hand-written migrations without snapshots. Only the drizzle-orm
+  migrator (`migrate-reset`) applies migrations. Needs one agreed repair.
+- `drizzle-kit push --explain` on a fresh database still wants to create
+  `auth.organization_role` and drop two `sales.receipts` FKs: the schema and
+  the migrations disagree there.
+- `@ims-erp/react-email` dev preview also takes port 3000; whichever starts
+  first wins `localhost`, so the web app can talk to the preview instead of
+  the backend.
+- `docker-compose.yml` publishes no Postgres/Redis ports for local dev; the
+  runbook's `up postgres redis` needs a local override (used one outside
+  the repo).
+- `docs.dbml` `hr.employees` still shows the target design (NOT NULL
+  `organization_id`, `date` columns) rather than ERP-0034 as built.
+
+The developer database `ims_erp_sync` holds the old M08 branch schema; this
+branch runs on a fresh database (`migrate-reset`).
+
+PR #83 (`feat/m08-hr-on-main` → `main`) opened 2026-11-12; PR #64 closed as
+superseded. Next executable task: review of #83 (programmer A), then
+rebuild M04 (PR #65) on main the same way (invoice/receipt events now on the
+sales module).
+
 ## 2026-11-14 - ERP-0051: delivery follow-ups recorded as a separate plan
 
 Branch `refactor/app-roles-investor-customer`. Reviewing the PR #101 delivery left six items
@@ -7796,6 +8053,17 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
   in-progress until ERP-0010..0013 are decided in `backlog.md`; Stage 2 is open.
 
 ## Next executable task
+
+**Owner review of PR #83** (`feat/m08-hr-on-main`, M08 / ERP-0053). `main` was
+merged in on 2026-11-15 (see that entry): conflicts resolved, the two orphan M08
+migrations replaced by `20261114173050_lush_darkstar`, `hasAppRole` adopted,
+gates green (typecheck 4/4, lint 5/5, backend 1021 / web-admin 100 / locales 90
+/ react-email 5 tests, `validate-dbml.ts` `OK`). The database gates were then
+run too: `drizzle:migrate` from empty, the seeder twice (second run inserted
+nothing) and a browser pass with a real attendance write and both NIK-masking
+directions — evidence in the 2026-11-15 entry. ERP-0053 stays `implemented`
+until the owner signs off; the only gate still unrun is
+`drizzle-kit push --explain`, which this merge does not need.
 
 **ERP-0047 is verified** (2026-11-14, see the Phase 8 complete entry above). Nothing open in its plan. The docs changes for this step are uncommitted. The original Phase 8 scope, for reference:
 `bunx tsc -b --noEmit` in both apps, `bun run test`, `bun run lint`,

@@ -13,6 +13,7 @@ import { seedOrganizationMembers } from './seed/organization-members.seeder';
 import { seedOrganizationRoles } from './seed/organization-roles.seeder';
 import { seedCompany } from './seed/company.seeder';
 import { seedItemCategories } from './seed/item-category.seeder';
+import { seedLeaveTypes } from './seed/hr-leave-types.seeder';
 import { seedHrEmployees } from './seed/hr.seeder';
 import { seedNotificationTemplates } from './seed/notification-templates.seeder';
 import { seedNotificationDemo } from './seed/notification-demo.seeder';
@@ -56,6 +57,8 @@ export async function runSeeders(): Promise<void> {
 	await seedAssets();
 	await seedTax();
 	await seedHrEmployees();
+	// M08 leave types are reference rows the attendance/leave records depend on.
+	await seedLeaveTypes();
 	// Notification templates are reference rows (every environment); the demo
 	// rows that reference them are dev-only and need the seed admin, which
 	// `seedAuth` created above.

@@ -207,9 +207,9 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 					{ titleKey: 'item.employees', url: '/hr/employees', permission: 'employee.read' },
 					{ titleKey: 'item.attendance', url: '/hr/attendance', permission: 'attendance.read' },
 					{ titleKey: 'item.leave', url: '/hr/leave', permission: 'leave.read' },
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.overtime', url: '/hr/overtime' },
+					{ titleKey: 'item.overtime', url: '/hr/overtime', permission: 'overtime.read' },
 					{ titleKey: 'item.payroll', url: '/hr/payroll', permission: 'payroll.read' },
+					{ titleKey: 'item.hrTasks', url: '/hr/tasks', permission: 'task.read' },
 				],
 			},
 		],

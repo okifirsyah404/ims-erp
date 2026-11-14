@@ -112,6 +112,12 @@ bun run drizzle:seed       # seed initial data (incl. admin bootstrap)
 bun run drizzle:studio     # browse the DB (optional)
 ```
 
+> **Note (2026-11-12):** `drizzle:generate` and `drizzle:migrate` are currently
+> blocked on `main` by a branching migration snapshot chain. Until it is
+> repaired, set up a fresh database with `bun run database/migrate-reset.ts`
+> (drops every schema, migrates and seeds — **disposable databases only**).
+> Details: `docs/architecture/runbook.md`.
+
 ### 5. Run the apps
 
 From the repo root:

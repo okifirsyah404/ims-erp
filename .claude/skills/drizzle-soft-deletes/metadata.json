@@ -1,0 +1,14 @@
+{
+  "name": "drizzle-soft-deletes",
+  "version": "1.0.0",
+  "description": "Soft-delete convention — nullable deleted_at (bigint unix ms via unixTimestampNullable); NULL = alive, feature code never hard-deletes, partial unique indexes, per-table purge retention.",
+  "author": "OpenAgentic",
+  "date": "2026-10",
+  "dependsOn": "drizzle-unix-timestamp",
+  "references": [
+    "https://orm.drizzle.team/docs/select",
+    "https://orm.drizzle.team/docs/indexes-constraints",
+    "https://orm.drizzle.team/docs/rqb-v2",
+    "https://orm.drizzle.team/docs/delete"
+  ]
+}

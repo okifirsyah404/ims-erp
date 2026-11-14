@@ -3,6 +3,7 @@ import { GLOBAL_ADMIN_ROLE, hasAppRole } from '@providers/better-auth/ac/admin-a
 import { domainPlugin } from '@http/plugin';
 import { created, ok, okPaginated } from '@http/response';
 import { container } from 'tsyringe';
+import { hrContext } from './hr-context';
 import { EMPLOYEE_SERVICE_TOKEN } from '../constants/di';
 import {
 	createEmployeeSchema,
@@ -53,12 +54,18 @@ export class EmployeeController {
 	static plugin() {
 		const service = container.resolve<EmployeeService>(EMPLOYEE_SERVICE_TOKEN);
 		const id = (params: unknown) => idParamSchema.parse(params).id;
+		// `employee:read_private` decides whether the NIK is shown (M08).
+		const records = hrContext();
+		const withPrivate = async (erp: ErpContext): Promise<TEmployeeContext> => ({
+			...contextFrom(erp),
+			canReadPrivate: (await records(erp)).canReadPrivate,
+		});
 
 		return domainPlugin({ name: 'hr', prefix: '/hr/employees', tags: ['HR'], guards: 'erp' })
 			.get(
 				'',
 				async ({ query, erp }) =>
-					okPaginated(await service.list(contextFrom(erp), employeeListQuerySchema.parse(query))),
+					okPaginated(await service.list(await withPrivate(erp), employeeListQuerySchema.parse(query))),
 				{ erp: { permission: ['employee:read'] }, detail: { description: "Own organization's employees plus company-level ones" } },
 			)
 			.get(
@@ -79,7 +86,7 @@ export class EmployeeController {
 			)
 			.get(
 				'/:id',
-				async ({ params, erp }) => ok(await service.get(contextFrom(erp), id(params))),
+				async ({ params, erp }) => ok(await service.get(await withPrivate(erp), id(params))),
 				{ erp: { permission: ['employee:read'] }, detail: { description: 'One employee (own org or company-level)' } },
 			)
 			.post(
@@ -108,7 +115,7 @@ export class EmployeeController {
 			.patch(
 				'/:id',
 				async ({ params, body, erp }) =>
-					ok(await service.update(contextFrom(erp), id(params), updateEmployeeSchema.parse(body))),
+					ok(await service.update(await withPrivate(erp), id(params), updateEmployeeSchema.parse(body))),
 				{ erp: { permission: ['employee:update'] }, detail: { description: 'Edits mutable employee fields' } },
 			)
 			.delete(

@@ -95,8 +95,8 @@ Use the package scripts — all run drizzle-kit under the Bun runtime
 driver is `drizzle-orm/bun-sql`:
 
 ```powershell
-bun run drizzle:generate   # from schema diff (config: apps/backend/drizzle.config.ts) — verified 2026-10-29/30
-bun run drizzle:migrate    # apply migrations — verified 2026-10-29/30
+bun run drizzle:generate   # from schema diff (config: apps/backend/drizzle.config.ts) — verified 2026-10-29/30; BLOCKED on main since 2026-11-09 (see below)
+bun run drizzle:migrate    # apply migrations — verified 2026-10-29/30; BLOCKED on main since 2026-11-09 (see below)
 bun run drizzle:push       # disposable DBs only
 bun run drizzle:studio     # inspect
 bun run drizzle:seed       # seed runners (database/seeders) — verified idempotent (run twice)
@@ -105,6 +105,35 @@ bun run drizzle:seed       # seed runners (database/seeders) — verified idempo
 `auth:generate` is intentionally not listed: the `@better-auth/cli` 1.4.x
 generator regresses `drizzle/schemas/auth.schema.ts` and its script path is
 stale — hand-write auth-schema deltas instead (root `AGENTS.md` hard rule).
+
+**State on main (verified 2026-11-12):** `drizzle-kit generate` and
+`drizzle-kit migrate` stop with "Conflicting migrations detected" (the
+snapshot chain branches; see `project-audit.md`, "Pre-existing issues").
+Until it is repaired:
+
+- New migrations are **hand-written** (`database/migrations/<ts>_<name>/migration.sql`,
+  no snapshot), headed by a comment saying why, with SQL copied from a
+  drizzle-kit run where possible.
+- Apply and verify on a **disposable** database only:
+
+```powershell
+docker exec ims-erp-postgres-1 sh -c 'createdb -U "$POSTGRES_USER" ims_erp_scratch'
+# point POSTGRES_URL / POSTGRES_DB at ims_erp_scratch for these commands only
+bun run database/migrate-reset.ts          # drops every schema, migrates, seeds
+bun run database/seeders/index.ts          # second seed run: must insert nothing new
+bunx --bun drizzle-kit push --explain      # prints the diff, executes nothing
+```
+
+- Never use `drizzle-kit generate --fix-conflicts`.
+
+Local infra: `docker-compose.yml` publishes no Postgres/Redis ports; the dev
+`.env` expects 15432/16379. Use an override file kept outside the repo:
+
+```yaml
+services:
+  postgres: { ports: ["15432:5432"] }
+  redis: { ports: ["16379:6379"] }
+```
 
 Rules:
 - Never run `drizzle-kit push` or migrations against a database you cannot

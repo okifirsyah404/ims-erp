@@ -84,6 +84,19 @@ v1.1.0 by decision — this section is the canonical record.
   by capping it below the guard, or privileged callers lose legitimate paths.
 
 
+## Claude Code copies (`.claude/skills/`)
+
+2026-11-12: `.claude/skills/` was missing the local skills, so Claude Code
+could not invoke them. Copied from `.agents/skills/` (full directory copies,
+same layout as the existing entries, verified identical with `diff -rq`):
+`bun-test`, `drizzle-soft-deletes`, `drizzle-unix-timestamp`,
+`elysia-layered-architecture`, `elysia-module`, `elysia-tsyringe`, `faker`,
+`graphify`, `repository-cache`, `tanstack-router-auth`, `tsyringe`. The
+previous `.claude/skills/tsyringe` was a checked-in symlink placeholder
+(text file pointing at `B:/ims/erp/...`, `core.symlinks=false`) and was
+replaced with a real copy. `.agents/skills/` stays the source — edit there,
+then re-copy. No remote fetch; lockfile unchanged.
+
 ## Gaps
 
 - No skill installed for PostgreSQL/SQL review beyond the Drizzle ones;
