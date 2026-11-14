@@ -24,7 +24,7 @@ Owner: M03 means license codes the ERP generates so each own application
 (gym, e-ticketing, visitor, …) can be activated. The API itself exists on
 `main` since 2026-11-06 (ERP-0019 stage 2). This change adds the
 documentation application teams need. Branch `docs/m03-licensing-api`,
-stacked on `feat/m07-customer-portal`, because `apps/api-docs` lives in
+stacked on `feat/m07-customer-portal` as **PR #100**, because `apps/api-docs` lives in
 PR #97.
 
 - `apps/api-docs/openapi/licensing.yaml`: `validate` / `activate` /
