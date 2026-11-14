@@ -1,11 +1,11 @@
 # ADR-0017 — Warehouse Person-in-Charge Access and Web-Admin Login Gate
 
-- **Status:** proposed (2026-11-14). Not accepted until the owner signs off.
-  Phase 1 (the `inventory.warehouse_managers` table, its migration and seeder)
-  landed on `refactor/app-roles-investor-customer` because it depends on the
-  ADR-0018 login gate to be testable; `fix/side-nav-role-based` keeps the
-  Phase 4 web-admin work as its own record. Phases 2-5 are not merged before
-  acceptance.
+- **Status:** accepted (2026-11-14). Phase 1 (the `inventory.warehouse_managers` table, its migration
+  and seeder) and Phase 2 (the `warehouseGuard`, the PIC routes and the assignment service) landed on
+  `refactor/app-roles-investor-customer`; `fix/side-nav-role-based` keeps the Phase 4 web-admin work as
+  its own record. Phase 2 was grilled before coding: the guard reaches the inventory module through a
+  port rather than Drizzle, the 403/404 split below is confirmed, `GET /warehouses/mine` returns
+  storages, and the route/idempotency rules below are the agreed ones.
 - **Amends:** ADR-0008 §3 (warehouse access) and ADR-0010 §5 (access = role +
   link), §7 (org `admin` and `warehouse` role), §10 (`responsible_employee_id`
   stays display-only, but a PIC grant is now a separate, real access path).
@@ -102,5 +102,11 @@
   - Phase 1 schema: done 2026-11-14 - table, hand-written migration replayed on
     a throwaway database (columns, indexes and cascade FK inspected), seeder
     idempotent across three runs, `validate-dbml.ts` `OK`.
-  - `warehouseGuard` denial tests and the PIC-without-link manual check: pending,
-    blocked on Phase 2.
+  - `warehouseGuard` denial tests: done 2026-11-14 - `warehouse-authorization.test.ts`
+    proves PIC read/update/storage access, PIC of another warehouse → 404 (not 403),
+    no live or soft-deleted grant → 403, PIC create → 403, PIC assign → 403, and
+    `GET /warehouses/mine` 401/200/empty/app-admin cases. `WarehouseManagerService`
+    has its own unit tests (409 duplicate, 404 unknown user/warehouse, idempotent
+    unassign, `listMine`). Backend 979 pass / 0 fail; typecheck and lint clean.
+  - PIC-without-link manual check: still pending - it needs the PIC UI (Phase 4
+    item 8) to be exercised in a browser.

@@ -83,6 +83,9 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 		async findById(id) {
 			return rows.find((row) => row.id === id) ?? null;
 		},
+		async findAlive(ids) {
+			return ids ? rows.filter((row) => ids.includes(row.id)) : rows;
+		},
 		async isLinked(warehouseId, organizationId) {
 			return links.some(
 				(link) =>

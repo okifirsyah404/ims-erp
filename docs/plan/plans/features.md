@@ -27,14 +27,19 @@ Last synced: 2026-11-14.
 
 ## Cross-cutting: role-based nav, login gate, warehouse PIC (ERP-0051)
 
-Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`proposed`).
+Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`accepted` 2026-11-14).
 
 ### in-progress
 - Warehouse person-in-charge Phase 1: `inventory.warehouse_managers` schema, hand-written migration
   `20261114150000_erp0051_warehouse_managers`, deterministic seeder. Evidence: `progress.md`
   2026-11-14 "warehouse PIC Phase 1", `docs.dbml` Inventory table + intra-module Ref, throwaway-DB
-  replay (57 journal rows / 116 tables) and 3 idempotent seeder runs. Open: `warehouseGuard`,
-  `GET /warehouses/mine`, assign/unassign routes, PIC nav item and UI - blocked on ADR-0017 acceptance.
+  replay (57 journal rows / 116 tables) and 3 idempotent seeder runs.
+- Warehouse person-in-charge Phase 2: `warehouseGuard` (401/403/404 split, app-admin bypass),
+  Drizzle-free `IWarehousePicResolver` port, `WarehouseManagerRepository` + `WarehouseManagerService`
+  (assign 409/404, idempotent unassign, audit), PIC routes on read/update/archive/address/storages,
+  `GET /warehouses/mine` (warehouses + storages). Evidence: `progress.md` 2026-11-14 "warehouse PIC
+  Phase 2", backend 979 pass / 0 fail (service unit tests + denial tests), typecheck and lint clean,
+  `validate-dbml.ts` OK (`docs/database/` unchanged). Open: PIC nav item and warehouse UI.
 - Role-based sidebar in web-admin (`permission` / `open` / `internalRole` /
   `appAdminOnly`), switcher limited to internal-role organizations, logo fallback,
   route guard in `_authed` (redirect + toast), organization switch re-checks the
@@ -49,9 +54,9 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`proposed`).
   and "ERP-0051: investor and customer move to app roles".
 
 ### planned
-- Warehouse person-in-charge Phases 2-5 (`warehouseGuard`, `GET /warehouses/mine`,
-  assign/unassign routes with audit, PIC nav item and UI). Evidence: none; Phase 1 schema
-  is in place. Blocked until ADR-0017 is accepted.
+- Warehouse person-in-charge Phases 3-5 (PIC nav item and UI, then the remaining
+  plan phases). Evidence: none; Phases 1-2 backend are in place. ADR-0017 accepted
+  2026-11-14.
 
 ---
 

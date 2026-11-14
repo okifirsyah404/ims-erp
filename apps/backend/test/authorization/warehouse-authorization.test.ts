@@ -33,6 +33,19 @@ let app: Elysia<any, any, any, any, any, any>;
 
 const WAREHOUSE_ID = '01920000-0000-7000-8000-0000000000aa';
 const STORAGE_ID = '01920000-0000-7000-8000-0000000000bb';
+/** A second warehouse the PIC is *not* assigned to (ADR-0017 404 case). */
+const OTHER_WAREHOUSE_ID = '01920000-0000-7000-8000-0000000000dd';
+
+/**
+ * Live person-in-charge grants, keyed by user id (ADR-0017).
+ *
+ * @remarks
+ * Stands in for `inventory.warehouse_managers`: the guard only asks "which
+ * warehouse ids does this user manage", so the fake is a set. A user absent
+ * from the map holds no live grant — the same answer the repository gives when
+ * every row is soft-deleted.
+ */
+const picGrants = new Map<string, string[]>();
 
 const baseHeaders = (session?: string): Headers => {
 	const headers = new Headers({ 'content-type': 'application/json' });
@@ -115,6 +128,16 @@ const ROUTES: ReadonlyArray<{
 		method: 'DELETE',
 		path: `/warehouses/${WAREHOUSE_ID}/storages/${STORAGE_ID}`,
 	},
+	// Admin-only surface added with ADR-0017 (person-in-charge assignment).
+	{
+		method: 'POST',
+		path: `/warehouses/${WAREHOUSE_ID}/managers`,
+		body: { userId: 'user-warehouse' },
+	},
+	{
+		method: 'DELETE',
+		path: `/warehouses/${WAREHOUSE_ID}/managers/user-warehouse`,
+	},
 ];
 
 /** Organization roles that must never reach a warehouse route. */
@@ -142,6 +165,10 @@ beforeAll(async () => {
 		},
 		async findById(id) {
 			return id === seed.id ? seed : null;
+		},
+		async findAlive(ids) {
+			if (ids && !ids.includes(seed.id)) return [];
+			return [seed];
 		},
 		// ERP-0031: linked only to the fixture's member org.
 		async isLinked(warehouseId, organizationId) {
@@ -255,10 +282,17 @@ beforeAll(async () => {
 	const {
 		WAREHOUSE_REPOSITORY_TOKEN,
 		WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
-	WAREHOUSE_BORROWING_GUARD_TOKEN,
+		WAREHOUSE_BORROWING_GUARD_TOKEN,
 		WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 		WAREHOUSE_SERVICE_TOKEN,
+		WAREHOUSE_MANAGER_SERVICE_TOKEN,
 	} = await import('../../src/app/inventory/constants/di');
+	const { WAREHOUSE_PIC_RESOLVER_TOKEN } = await import(
+		'../../src/authorization/warehouse-pic-resolver'
+	);
+	const { CODE_NUMBER_SERVICE_TOKEN } = await import(
+		'../../src/app/code-number/constants/di'
+	);
 	const { WarehouseService } = await import(
 		'../../src/app/inventory/services/warehouse.service'
 	);
@@ -308,12 +342,42 @@ beforeAll(async () => {
 			},
 		} as never,
 	});
+	container.register(CODE_NUMBER_SERVICE_TOKEN, {
+		useValue: { next: async () => 'WH-00001' } as never,
+	});
 	container.register(WAREHOUSE_SERVICE_TOKEN, { useClass: WarehouseService });
+
+	// ADR-0017: the guard reads this port (never Drizzle). Live grants come
+	// from `picGrants`; an empty/absent entry is "no live assignment".
+	container.register(WAREHOUSE_PIC_RESOLVER_TOKEN, {
+		useValue: {
+			async listWarehouseIdsForUser(userId: string) {
+				return picGrants.get(userId) ?? [];
+			},
+		},
+	});
+	// Assignment routes stay admin-only; the service is faked here because the
+	// authorization wall is what this file proves, not the assignment CRUD.
+	container.register(WAREHOUSE_MANAGER_SERVICE_TOKEN, {
+		useValue: {
+			async listMine(userId: string, isAppAdmin: boolean) {
+				const ids = isAppAdmin ? [WAREHOUSE_ID] : (picGrants.get(userId) ?? []);
+				return ids.map((id) => ({ ...seed, id, storages: [] }));
+			},
+			async assign(warehouseId: string, userId: string) {
+				return { warehouseId, userId } as never;
+			},
+			async unassign() {
+				return { removed: true };
+			},
+		} as never,
+	});
 
 	app = new Elysia().use(sessionGuard()).use(WarehouseController.plugin());
 });
 
 beforeEach(() => {
+	picGrants.clear();
 	resetFixture();
 });
 
@@ -406,5 +470,142 @@ describe('warehouse routes — application admin is allowed', () => {
 			jsonRequest('GET', '/warehouses', 'globalAdminOwner'),
 		);
 		expect(response.status).toBe(200);
+	});
+});
+
+describe('warehouse routes — person in charge (ADR-0017)', () => {
+	const PIC = 'member';
+
+	test('a PIC of this warehouse can read it', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		const response = await app.handle(
+			jsonRequest('GET', `/warehouses/${WAREHOUSE_ID}`, PIC),
+		);
+		expect(response.status).toBe(200);
+	});
+
+	test('a PIC of this warehouse can update it', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		const response = await app.handle(
+			jsonRequest('PATCH', `/warehouses/${WAREHOUSE_ID}`, PIC, {
+				name: 'Renamed by PIC',
+			}),
+		);
+		expect(response.status).toBe(200);
+	});
+
+	test('a PIC of this warehouse can manage its storages', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		const read = await app.handle(
+			jsonRequest('GET', `/warehouses/${WAREHOUSE_ID}/storages`, PIC),
+		);
+		expect(read.status).toBe(200);
+
+		const created = await app.handle(
+			jsonRequest('POST', `/warehouses/${WAREHOUSE_ID}/storages`, PIC, {
+				code: 'A2',
+			}),
+		);
+		expect(created.status).toBe(201);
+	});
+
+	test('a PIC of another warehouse gets 404, not 403 (existence is not leaked)', async () => {
+		picGrants.set(fixture.users[PIC].id, [OTHER_WAREHOUSE_ID]);
+		const read = await app.handle(
+			jsonRequest('GET', `/warehouses/${WAREHOUSE_ID}`, PIC),
+		);
+		expect(read.status).toBe(404);
+
+		const update = await app.handle(
+			jsonRequest('PATCH', `/warehouses/${WAREHOUSE_ID}`, PIC, {
+				name: 'Nope',
+			}),
+		);
+		expect(update.status).toBe(404);
+	});
+
+	test('a user with no live grant gets 403, not 404', async () => {
+		// Empty grant list = every assignment row is soft-deleted (or none ever
+		// existed). The guard cannot tell the warehouse apart from one that does
+		// not exist, so it must refuse without confirming anything.
+		const response = await app.handle(
+			jsonRequest('GET', `/warehouses/${WAREHOUSE_ID}`, PIC),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test('a soft-deleted grant grants nothing', async () => {
+		// The resolver only reports live rows; clearing the map is the same
+		// answer the repository gives after `unassign`.
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		picGrants.delete(fixture.users[PIC].id);
+		const response = await app.handle(
+			jsonRequest('GET', `/warehouses/${WAREHOUSE_ID}`, PIC),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test('a PIC cannot create a warehouse', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		const response = await app.handle(
+			jsonRequest('POST', '/warehouses', PIC, {
+				code: 'NEW',
+				name: 'New warehouse',
+			}),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test('a PIC cannot assign another person in charge', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		const response = await app.handle(
+			jsonRequest('POST', `/warehouses/${WAREHOUSE_ID}/managers`, PIC, {
+				userId: 'user-sales',
+			}),
+		);
+		expect(response.status).toBe(403);
+	});
+});
+
+describe('GET /warehouses/mine (ADR-0017)', () => {
+	const PIC = 'member';
+
+	test('without a session returns 401', async () => {
+		const response = await app.handle(jsonRequest('GET', '/warehouses/mine'));
+		expect(response.status).toBe(401);
+	});
+
+	test('a PIC sees only the warehouses they manage', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		const response = await app.handle(
+			jsonRequest('GET', '/warehouses/mine', PIC),
+		);
+		expect(response.status).toBe(200);
+		const body = (await response.json()) as {
+			data: Array<{ id: string; storages: unknown[] }>;
+		};
+		expect(body.data.map((row) => row.id)).toEqual([WAREHOUSE_ID]);
+		expect(body.data[0]).toHaveProperty('storages');
+	});
+
+	test('a user with no grant gets an empty list, not 403', async () => {
+		// "Which warehouses may I see" has a valid answer for every session:
+		// none. 403 would make the sidebar unable to distinguish "no access"
+		// from "not signed in".
+		const response = await app.handle(
+			jsonRequest('GET', '/warehouses/mine', PIC),
+		);
+		expect(response.status).toBe(200);
+		const body = (await response.json()) as { data: unknown[] };
+		expect(body.data).toEqual([]);
+	});
+
+	test('an application admin sees every live warehouse', async () => {
+		const response = await app.handle(
+			jsonRequest('GET', '/warehouses/mine', 'globalAdmin'),
+		);
+		expect(response.status).toBe(200);
+		const body = (await response.json()) as { data: Array<{ id: string }> };
+		expect(body.data.map((row) => row.id)).toEqual([WAREHOUSE_ID]);
 	});
 });

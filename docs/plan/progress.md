@@ -18,7 +18,56 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
-## 2026-11-14 - ERP-0051: warehouse PIC Phase 1 (schema, migration, seeder)
+## 2026-11-14 - ERP-0051: warehouse PIC Phase 2 (guard, routes, assignment service)
+
+Branch `refactor/app-roles-investor-customer`. ADR-0017 accepted by the owner; Phase 2 authorized
+(grilled: auth seam port, 403/404 split accepted, `mine` includes storages, route/idempotency rules
+accepted).
+
+What landed:
+- `src/authorization/warehouse-pic-resolver.ts` - `IWarehousePicResolver` +
+  `WAREHOUSE_PIC_RESOLVER_TOKEN`, the guard's Drizzle-free port. `WarehouseManagerRepository`
+  implements it and `registerInventory` wires it with `useFactory`, so `warehouseGuard` never touches
+  Drizzle (mirrors how `erpGuard` reaches `IPermissionResolver`).
+- `warehouseGuard()` + `TWarehouseAction` in `src/authorization/elysia-auth.ts`. Status mapping: no
+  session 401; login gate closed 403; application admin allowed without a grant; PIC of `:id` allowed;
+  PIC of another warehouse 404 (existence not leaked); no live grant at all 403.
+- `'session+warehouse'` guard set in `src/http/plugin.ts`; both macros mount, each route opts into
+  exactly one.
+- `WarehouseManagerRepository` (alive-only reads, revive-on-assign, soft unassign) and
+  `WarehouseManagerService` (`listMine`, `assign`, `unassign`, audit). Duplicate assign 409
+  `inventory.warehouseManagerExists`; unknown/deleted user 404 `inventory.warehouseManagerUserNotFound`
+  (checked through `UserService.getUser`, never `auth.users` directly); unassign idempotent
+  `{ removed }`. Audit actions `warehouse.manager_assigned` / `warehouse.manager_removed`.
+- `IWarehouseRepository.findAlive(ids?)` (one query for both the PIC view and the app-admin view).
+- Routes: `warehouseGuard` on `GET/PATCH/DELETE /:id`, `GET/PUT/DELETE /:id/address`,
+  `GET/POST /:id/storages`, `PATCH/DELETE /:id/storages/:storageId`. `POST /:id/storages` is
+  `update` on the warehouse (the grant has no `create`; `create` belongs to the warehouse itself).
+  Create, list, organization links, and `POST/DELETE /:id/managers` stay `requireGlobalAdmin`.
+  `GET /warehouses/mine` is session-only and returns warehouses + `storages`; app admins get every
+  live warehouse.
+- `assignManagerSchema` / `managerParamSchema` in `warehouse.contract.ts`; three new domain errors;
+  `en`/`id` locale keys for `inventory.warehouseManagerExists` and
+  `inventory.warehouseManagerUserNotFound`.
+
+Commands and outcomes:
+- `bun test` (backend): 979 pass, 0 fail across 74 files. New coverage:
+  `test/unit/warehouse-manager.service.test.ts` (9 tests: assign audit, 404 unknown warehouse/user,
+  409 duplicate, unassign audit + idempotency, `listMine` PIC/admin/empty) and PIC denial cases in
+  `test/authorization/warehouse-authorization.test.ts` (PIC read/update/storages allowed, PIC of
+  another warehouse 404, no/soft-deleted grant 403, PIC create 403, PIC assign 403, `/mine` 401/200
+  cases).
+- `bunx tsc --noEmit`: exit 0. `bun run lint` (`oxlint`): exit 0, pre-existing warnings only.
+- `bun run test` in `apps/web-admin`: 97 pass, 0 fail. `packages/locales` `bun test`: 90 pass, 0 fail
+  (parity + dead-key guards green with the new keys).
+- `bun docs/database/validate-dbml.ts`: `parsed: 269 tables, 232 refs`, `cross-module refs: 0`,
+  `timestamp gaps: 0`, `OK`. `docs/database/` reviewed and unchanged: Phase 2 adds no table, column,
+  index, constraint, or cross-module link (the table and its Ref landed in Phase 1).
+
+Next executable task: Phase 4 item 8 (PIC nav item + warehouse UI in `apps/web-admin`), then the
+remaining plan phases.
+
+
 
 Branch `refactor/app-roles-investor-customer`. Phase 1 of `plans/side-nav-role-based.md`: the
 `inventory.warehouse_managers` table only. Gate 1 (`docs/database/`) read: `docs.dbml` (header,

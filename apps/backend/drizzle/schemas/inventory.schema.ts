@@ -1057,6 +1057,9 @@ export type TWarehouseAddressInsert = typeof warehouseAddresses.$inferInsert;
 export type TWarehouseStorageSelect = typeof warehouseStorages.$inferSelect;
 export type TWarehouseStorageInsert = typeof warehouseStorages.$inferInsert;
 
+export type TWarehouseManagerSelect = typeof warehouseManagers.$inferSelect;
+export type TWarehouseManagerInsert = typeof warehouseManagers.$inferInsert;
+
 export type TStockMovementSelect = typeof stockMovements.$inferSelect;
 export type TStockMovementInsert = typeof stockMovements.$inferInsert;
 

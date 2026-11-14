@@ -1,12 +1,15 @@
 # Role-Based Sidebar, Route Guards, and Warehouse Person-in-Charge
 
-> Status: **in-progress** (approved through grilling, 2026-11-14). Phase 0 and
-> Phase 4 (web-admin) shipped on the branch; Phases 1-3 and 4.8 wait on ADR-0017.
-> Branch: `fix/side-nav-role-based`.
+> Status: **in-progress** (ADR-0017 accepted 2026-11-14). Phase 0 and Phase 4
+> (web-admin) shipped on the branch; Phase 1 (PIC schema) and Phase 2 (backend
+> authorization) shipped on `refactor/app-roles-investor-customer`. Phase 3 (login
+> gate) shipped there too (ADR-0018). Remaining: Phase 4 item 8 (PIC nav item and UI).
+> Branch: `refactor/app-roles-investor-customer` (`fix/side-nav-role-based` keeps
+> the Phase 4 web-admin record).
 > Scope: `apps/web-admin` (sidebar, switcher, route guards) plus the backend
 > pieces it depends on (login gate, warehouse person-in-charge access).
 > Backlog: **`ERP-0051`**.
-> Decisions: ADR-0017 (`proposed`).
+> Decisions: ADR-0017 (`accepted`), ADR-0018 (app roles + login gate).
 
 ## Problem
 
@@ -94,6 +97,11 @@ New table `inventory.warehouse_managers`:
 
 ## Phase 2 — Backend authorization
 
+> Done 2026-11-14 on `refactor/app-roles-investor-customer`. Evidence:
+> `progress.md` "warehouse PIC Phase 2"; denial tests in
+> `test/authorization/warehouse-authorization.test.ts`; service unit tests in
+> `test/unit/warehouse-manager.service.test.ts`.
+
 1. **`warehouseGuard`** (new, next to `erpGuard` in `src/authorization/`):
    - Requires a Better Auth session. No active organization required.
    - Allowed when the caller is app admin, or has an active PIC row for the
@@ -128,6 +136,10 @@ New table `inventory.warehouse_managers`:
 
 ## Phase 3 — Login gate and session
 
+> Done 2026-11-14 (ADR-0018 work on `refactor/app-roles-investor-customer`).
+> Evidence: `progress.md` "investor and customer move to app roles", the login
+> gate tests, and `scripts/smoke-login-gate.ts` (8/8 live cases).
+
 1. Verify the Better Auth version installed in `apps/backend` before writing code.
    Confirm the hook point (`databaseHooks.session.create.before` or equivalent).
 2. Hook logic:
@@ -143,6 +155,9 @@ New table `inventory.warehouse_managers`:
    → rejected.
 
 ## Phase 4 — Web-admin
+
+> Items 1-7 done 2026-11-14 (`progress.md` "Phase 4 complete"). Item 8 (PIC nav
+> item and warehouse UI) is the remaining work; the backend it needs is done.
 
 1. **Nav model** (`nav-config.ts`, `sidebar-item.ts`):
    - Add `permission?: Permission | Permission[]`, `open?: true`,
