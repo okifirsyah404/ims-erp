@@ -16,7 +16,7 @@ Schema, keys, constraints, and conventions. Current declarations:
   tables as generated. Timestamps are bigint milliseconds. FKs cascade to
   `users.id` for auth-owned tables. ERP-owned extension tables in the same
   schema include `user_invitations` and `portal_identities` (ERP-0022,
-  ADR-0018): a customer-portal login → `linked_entity_id` (logical reference
+  ADR-0020): a customer-portal login → `linked_entity_id` (logical reference
   to `crm.customers.id`) and `contact_id` (→ `crm.customer_contacts.id`),
   both nullable per ADR-0014, `portal_role owner|approver|finance|viewer`,
   status `active|suspended|revoked`, one live row per contact and per user.
@@ -135,6 +135,16 @@ Schema, keys, constraints, and conventions. Current declarations:
   - A warehouse's `organization_id` is **immutable after creation** (plan
     D-C), as is its `code`.
 
+- **`hr`** — employees (ERP-0034: invite-first, `organization_id` nullable =
+  company level) and the M08 stage 1 records (ERP-0059): `bank_accounts`
+  (one salary account per employee, masked without `employee:read_private`),
+  `attendance_records` (one per employee per day; sources `manual|import|leave`),
+  `leave_types`, `leave_requests` (`submitted|approved|rejected|cancelled`,
+  Sundays excluded, annual quota), `overtime_requests`, `employee_tasks`,
+  `salary_summaries` (per month; net = base + allowances + overtime + bonus −
+  deductions, `CHECK`ed; `draft|approved`, approved = locked). The records
+  carry no `organization_id`; they are scoped through the employee.
+
 ## Conventions (pinned decisions)
 
 - **Datetimes** — unix milliseconds in bigint columns via
@@ -212,3 +222,6 @@ never ships in a frontend bundle.
   generated diff into the migration, never hand-edit auth tables.
 - Unknown journal state for the existing baseline (`migrations/meta`) must be
   verified before the first new generate/migrate run.
+- 2026-11-12: generate/migrate are blocked on main by a branching snapshot
+  chain; new migrations are hand-written and verified on a disposable
+  database with `database/migrate-reset.ts` (`runbook.md`, `project-audit.md`).

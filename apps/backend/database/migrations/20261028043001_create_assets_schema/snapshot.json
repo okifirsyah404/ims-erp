@@ -1,0 +1,7379 @@
+{
+	"type": "diff",
+	"version": "9",
+	"dialect": "postgres",
+	"id": "d9a0a146-0611-4ff3-bcf8-5a2ef275caf3",
+	"prevIds": [
+		"f3270144-2baf-4099-a669-b0c354937096"
+	],
+	"footprints": [
+		{
+			"statementType": "create_schema",
+			"statementTarget": [
+				"schema",
+				"assets"
+			],
+			"writes": [
+				"s|sch|assets",
+				"n|sch|assets",
+				"e|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_categories"
+			],
+			"writes": [
+				"s|tbl|assets.asset_categories",
+				"n|tbl|assets.asset_categories",
+				"e|tbl|assets.asset_categories",
+				"n|rel|assets.asset_categories",
+				"n|type|assets.asset_categories",
+				"n|rel|assets.asset_categories_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_condition_checks"
+			],
+			"writes": [
+				"s|tbl|assets.asset_condition_checks",
+				"n|tbl|assets.asset_condition_checks",
+				"e|tbl|assets.asset_condition_checks",
+				"n|rel|assets.asset_condition_checks",
+				"n|type|assets.asset_condition_checks",
+				"n|rel|assets.asset_condition_checks_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_depreciations"
+			],
+			"writes": [
+				"s|tbl|assets.asset_depreciations",
+				"n|tbl|assets.asset_depreciations",
+				"e|tbl|assets.asset_depreciations",
+				"n|rel|assets.asset_depreciations",
+				"n|type|assets.asset_depreciations",
+				"n|rel|assets.asset_depreciations_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_disposals"
+			],
+			"writes": [
+				"s|tbl|assets.asset_disposals",
+				"n|tbl|assets.asset_disposals",
+				"e|tbl|assets.asset_disposals",
+				"n|rel|assets.asset_disposals",
+				"n|type|assets.asset_disposals",
+				"n|rel|assets.asset_disposals_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_documents"
+			],
+			"writes": [
+				"s|tbl|assets.asset_documents",
+				"n|tbl|assets.asset_documents",
+				"e|tbl|assets.asset_documents",
+				"n|rel|assets.asset_documents",
+				"n|type|assets.asset_documents",
+				"n|rel|assets.asset_documents_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_maintenances"
+			],
+			"writes": [
+				"s|tbl|assets.asset_maintenances",
+				"n|tbl|assets.asset_maintenances",
+				"e|tbl|assets.asset_maintenances",
+				"n|rel|assets.asset_maintenances",
+				"n|type|assets.asset_maintenances",
+				"n|rel|assets.asset_maintenances_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_movements"
+			],
+			"writes": [
+				"s|tbl|assets.asset_movements",
+				"n|tbl|assets.asset_movements",
+				"e|tbl|assets.asset_movements",
+				"n|rel|assets.asset_movements",
+				"n|type|assets.asset_movements",
+				"n|rel|assets.asset_movements_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_types"
+			],
+			"writes": [
+				"s|tbl|assets.asset_types",
+				"n|tbl|assets.asset_types",
+				"e|tbl|assets.asset_types",
+				"n|rel|assets.asset_types",
+				"n|type|assets.asset_types",
+				"n|rel|assets.asset_types_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"assets"
+			],
+			"writes": [
+				"s|tbl|assets.assets",
+				"n|tbl|assets.assets",
+				"e|tbl|assets.assets",
+				"n|rel|assets.assets",
+				"n|type|assets.assets",
+				"n|rel|assets.assets_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"borrowing_events"
+			],
+			"writes": [
+				"s|tbl|assets.borrowing_events",
+				"n|tbl|assets.borrowing_events",
+				"e|tbl|assets.borrowing_events",
+				"n|rel|assets.borrowing_events",
+				"n|type|assets.borrowing_events",
+				"n|rel|assets.borrowing_events_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"borrowing_lines"
+			],
+			"writes": [
+				"s|tbl|assets.borrowing_lines",
+				"n|tbl|assets.borrowing_lines",
+				"e|tbl|assets.borrowing_lines",
+				"n|rel|assets.borrowing_lines",
+				"n|type|assets.borrowing_lines",
+				"n|rel|assets.borrowing_lines_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"borrowings"
+			],
+			"writes": [
+				"s|tbl|assets.borrowings",
+				"n|tbl|assets.borrowings",
+				"e|tbl|assets.borrowings",
+				"n|rel|assets.borrowings",
+				"n|type|assets.borrowings",
+				"n|rel|assets.borrowings_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"tool_set_items"
+			],
+			"writes": [
+				"s|tbl|assets.tool_set_items",
+				"n|tbl|assets.tool_set_items",
+				"e|tbl|assets.tool_set_items",
+				"n|rel|assets.tool_set_items",
+				"n|type|assets.tool_set_items",
+				"n|rel|assets.tool_set_items_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_table",
+			"statementTarget": [
+				"table",
+				"assets",
+				"tool_sets"
+			],
+			"writes": [
+				"s|tbl|assets.tool_sets",
+				"n|tbl|assets.tool_sets",
+				"e|tbl|assets.tool_sets",
+				"n|rel|assets.tool_sets",
+				"n|type|assets.tool_sets",
+				"n|rel|assets.tool_sets_pkey"
+			],
+			"reads": [
+				"n|sch|assets"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_categories",
+				"asset_categories_org_code_uq"
+			],
+			"writes": [
+				"s|idx|assets.asset_categories_org_code_uq",
+				"n|idx|assets.asset_categories_org_code_uq",
+				"e|idx|assets.asset_categories_org_code_uq",
+				"n|rel|assets.asset_categories_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|assets.asset_categories",
+				"n|sch|assets",
+				"n|col|assets.asset_categories.organization_id",
+				"n|col|assets.asset_categories.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_categories",
+				"asset_categories_global_code_uq"
+			],
+			"writes": [
+				"s|idx|assets.asset_categories_global_code_uq",
+				"n|idx|assets.asset_categories_global_code_uq",
+				"e|idx|assets.asset_categories_global_code_uq",
+				"n|rel|assets.asset_categories_global_code_uq"
+			],
+			"reads": [
+				"n|tbl|assets.asset_categories",
+				"n|sch|assets",
+				"n|col|assets.asset_categories.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_categories",
+				"asset_categories_parent_category_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_categories_parent_category_id_idx",
+				"n|idx|assets.asset_categories_parent_category_id_idx",
+				"e|idx|assets.asset_categories_parent_category_id_idx",
+				"n|rel|assets.asset_categories_parent_category_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_categories",
+				"n|sch|assets",
+				"n|col|assets.asset_categories.parent_category_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_condition_checks",
+				"asset_condition_checks_asset_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_condition_checks_asset_id_idx",
+				"n|idx|assets.asset_condition_checks_asset_id_idx",
+				"e|idx|assets.asset_condition_checks_asset_id_idx",
+				"n|rel|assets.asset_condition_checks_asset_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_condition_checks",
+				"n|sch|assets",
+				"n|col|assets.asset_condition_checks.asset_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_condition_checks",
+				"asset_condition_checks_check_date_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_condition_checks_check_date_idx",
+				"n|idx|assets.asset_condition_checks_check_date_idx",
+				"e|idx|assets.asset_condition_checks_check_date_idx",
+				"n|rel|assets.asset_condition_checks_check_date_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_condition_checks",
+				"n|sch|assets",
+				"n|col|assets.asset_condition_checks.check_date"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_depreciations",
+				"asset_depreciations_period_uq"
+			],
+			"writes": [
+				"s|idx|assets.asset_depreciations_period_uq",
+				"n|idx|assets.asset_depreciations_period_uq",
+				"e|idx|assets.asset_depreciations_period_uq",
+				"n|rel|assets.asset_depreciations_period_uq"
+			],
+			"reads": [
+				"n|tbl|assets.asset_depreciations",
+				"n|sch|assets",
+				"n|col|assets.asset_depreciations.asset_id",
+				"n|col|assets.asset_depreciations.period_year",
+				"n|col|assets.asset_depreciations.period_month"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_depreciations",
+				"asset_depreciations_period_year_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_depreciations_period_year_idx",
+				"n|idx|assets.asset_depreciations_period_year_idx",
+				"e|idx|assets.asset_depreciations_period_year_idx",
+				"n|rel|assets.asset_depreciations_period_year_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_depreciations",
+				"n|sch|assets",
+				"n|col|assets.asset_depreciations.period_year"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_disposals",
+				"asset_disposals_org_code_uq"
+			],
+			"writes": [
+				"s|idx|assets.asset_disposals_org_code_uq",
+				"n|idx|assets.asset_disposals_org_code_uq",
+				"e|idx|assets.asset_disposals_org_code_uq",
+				"n|rel|assets.asset_disposals_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|assets.asset_disposals",
+				"n|sch|assets",
+				"n|col|assets.asset_disposals.organization_id",
+				"n|col|assets.asset_disposals.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_disposals",
+				"asset_disposals_global_code_uq"
+			],
+			"writes": [
+				"s|idx|assets.asset_disposals_global_code_uq",
+				"n|idx|assets.asset_disposals_global_code_uq",
+				"e|idx|assets.asset_disposals_global_code_uq",
+				"n|rel|assets.asset_disposals_global_code_uq"
+			],
+			"reads": [
+				"n|tbl|assets.asset_disposals",
+				"n|sch|assets",
+				"n|col|assets.asset_disposals.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_disposals",
+				"asset_disposals_asset_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_disposals_asset_id_idx",
+				"n|idx|assets.asset_disposals_asset_id_idx",
+				"e|idx|assets.asset_disposals_asset_id_idx",
+				"n|rel|assets.asset_disposals_asset_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_disposals",
+				"n|sch|assets",
+				"n|col|assets.asset_disposals.asset_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_disposals",
+				"asset_disposals_status_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_disposals_status_idx",
+				"n|idx|assets.asset_disposals_status_idx",
+				"e|idx|assets.asset_disposals_status_idx",
+				"n|rel|assets.asset_disposals_status_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_disposals",
+				"n|sch|assets",
+				"n|col|assets.asset_disposals.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_documents",
+				"asset_documents_asset_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_documents_asset_id_idx",
+				"n|idx|assets.asset_documents_asset_id_idx",
+				"e|idx|assets.asset_documents_asset_id_idx",
+				"n|rel|assets.asset_documents_asset_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_documents",
+				"n|sch|assets",
+				"n|col|assets.asset_documents.asset_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_documents",
+				"asset_documents_document_id_uq"
+			],
+			"writes": [
+				"s|idx|assets.asset_documents_document_id_uq",
+				"n|idx|assets.asset_documents_document_id_uq",
+				"e|idx|assets.asset_documents_document_id_uq",
+				"n|rel|assets.asset_documents_document_id_uq"
+			],
+			"reads": [
+				"n|tbl|assets.asset_documents",
+				"n|sch|assets",
+				"n|col|assets.asset_documents.document_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_maintenances",
+				"asset_maintenances_org_code_uq"
+			],
+			"writes": [
+				"s|idx|assets.asset_maintenances_org_code_uq",
+				"n|idx|assets.asset_maintenances_org_code_uq",
+				"e|idx|assets.asset_maintenances_org_code_uq",
+				"n|rel|assets.asset_maintenances_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|assets.asset_maintenances",
+				"n|sch|assets",
+				"n|col|assets.asset_maintenances.organization_id",
+				"n|col|assets.asset_maintenances.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_maintenances",
+				"asset_maintenances_global_code_uq"
+			],
+			"writes": [
+				"s|idx|assets.asset_maintenances_global_code_uq",
+				"n|idx|assets.asset_maintenances_global_code_uq",
+				"e|idx|assets.asset_maintenances_global_code_uq",
+				"n|rel|assets.asset_maintenances_global_code_uq"
+			],
+			"reads": [
+				"n|tbl|assets.asset_maintenances",
+				"n|sch|assets",
+				"n|col|assets.asset_maintenances.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_maintenances",
+				"asset_maintenances_asset_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_maintenances_asset_id_idx",
+				"n|idx|assets.asset_maintenances_asset_id_idx",
+				"e|idx|assets.asset_maintenances_asset_id_idx",
+				"n|rel|assets.asset_maintenances_asset_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_maintenances",
+				"n|sch|assets",
+				"n|col|assets.asset_maintenances.asset_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_maintenances",
+				"asset_maintenances_status_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_maintenances_status_idx",
+				"n|idx|assets.asset_maintenances_status_idx",
+				"e|idx|assets.asset_maintenances_status_idx",
+				"n|rel|assets.asset_maintenances_status_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_maintenances",
+				"n|sch|assets",
+				"n|col|assets.asset_maintenances.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_maintenances",
+				"asset_maintenances_next_service_date_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_maintenances_next_service_date_idx",
+				"n|idx|assets.asset_maintenances_next_service_date_idx",
+				"e|idx|assets.asset_maintenances_next_service_date_idx",
+				"n|rel|assets.asset_maintenances_next_service_date_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_maintenances",
+				"n|sch|assets",
+				"n|col|assets.asset_maintenances.next_service_date"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_movements",
+				"asset_movements_asset_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_movements_asset_id_idx",
+				"n|idx|assets.asset_movements_asset_id_idx",
+				"e|idx|assets.asset_movements_asset_id_idx",
+				"n|rel|assets.asset_movements_asset_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_movements",
+				"n|sch|assets",
+				"n|col|assets.asset_movements.asset_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_movements",
+				"asset_movements_moved_at_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_movements_moved_at_idx",
+				"n|idx|assets.asset_movements_moved_at_idx",
+				"e|idx|assets.asset_movements_moved_at_idx",
+				"n|rel|assets.asset_movements_moved_at_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_movements",
+				"n|sch|assets",
+				"n|col|assets.asset_movements.moved_at"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_movements",
+				"asset_movements_movement_type_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_movements_movement_type_idx",
+				"n|idx|assets.asset_movements_movement_type_idx",
+				"e|idx|assets.asset_movements_movement_type_idx",
+				"n|rel|assets.asset_movements_movement_type_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_movements",
+				"n|sch|assets",
+				"n|col|assets.asset_movements.movement_type"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_movements",
+				"asset_movements_from_warehouse_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_movements_from_warehouse_id_idx",
+				"n|idx|assets.asset_movements_from_warehouse_id_idx",
+				"e|idx|assets.asset_movements_from_warehouse_id_idx",
+				"n|rel|assets.asset_movements_from_warehouse_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_movements",
+				"n|sch|assets",
+				"n|col|assets.asset_movements.from_warehouse_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_movements",
+				"asset_movements_to_warehouse_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_movements_to_warehouse_id_idx",
+				"n|idx|assets.asset_movements_to_warehouse_id_idx",
+				"e|idx|assets.asset_movements_to_warehouse_id_idx",
+				"n|rel|assets.asset_movements_to_warehouse_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_movements",
+				"n|sch|assets",
+				"n|col|assets.asset_movements.to_warehouse_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_types",
+				"asset_types_code_uq"
+			],
+			"writes": [
+				"s|idx|assets.asset_types_code_uq",
+				"n|idx|assets.asset_types_code_uq",
+				"e|idx|assets.asset_types_code_uq",
+				"n|rel|assets.asset_types_code_uq"
+			],
+			"reads": [
+				"n|tbl|assets.asset_types",
+				"n|sch|assets",
+				"n|col|assets.asset_types.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"asset_types",
+				"asset_types_is_active_idx"
+			],
+			"writes": [
+				"s|idx|assets.asset_types_is_active_idx",
+				"n|idx|assets.asset_types_is_active_idx",
+				"e|idx|assets.asset_types_is_active_idx",
+				"n|rel|assets.asset_types_is_active_idx"
+			],
+			"reads": [
+				"n|tbl|assets.asset_types",
+				"n|sch|assets",
+				"n|col|assets.asset_types.is_active"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"assets",
+				"assets_code_uq"
+			],
+			"writes": [
+				"s|idx|assets.assets_code_uq",
+				"n|idx|assets.assets_code_uq",
+				"e|idx|assets.assets_code_uq",
+				"n|rel|assets.assets_code_uq"
+			],
+			"reads": [
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.assets.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"assets",
+				"assets_serial_uq"
+			],
+			"writes": [
+				"s|idx|assets.assets_serial_uq",
+				"n|idx|assets.assets_serial_uq",
+				"e|idx|assets.assets_serial_uq",
+				"n|rel|assets.assets_serial_uq"
+			],
+			"reads": [
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.assets.serial_number"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"assets",
+				"assets_asset_type_idx"
+			],
+			"writes": [
+				"s|idx|assets.assets_asset_type_idx",
+				"n|idx|assets.assets_asset_type_idx",
+				"e|idx|assets.assets_asset_type_idx",
+				"n|rel|assets.assets_asset_type_idx"
+			],
+			"reads": [
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.assets.asset_type"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"assets",
+				"assets_category_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.assets_category_id_idx",
+				"n|idx|assets.assets_category_id_idx",
+				"e|idx|assets.assets_category_id_idx",
+				"n|rel|assets.assets_category_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.assets.category_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"assets",
+				"assets_custodian_employee_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.assets_custodian_employee_id_idx",
+				"n|idx|assets.assets_custodian_employee_id_idx",
+				"e|idx|assets.assets_custodian_employee_id_idx",
+				"n|rel|assets.assets_custodian_employee_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.assets.custodian_employee_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"assets",
+				"assets_status_idx"
+			],
+			"writes": [
+				"s|idx|assets.assets_status_idx",
+				"n|idx|assets.assets_status_idx",
+				"e|idx|assets.assets_status_idx",
+				"n|rel|assets.assets_status_idx"
+			],
+			"reads": [
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.assets.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"assets",
+				"assets_warehouse_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.assets_warehouse_id_idx",
+				"n|idx|assets.assets_warehouse_id_idx",
+				"e|idx|assets.assets_warehouse_id_idx",
+				"n|rel|assets.assets_warehouse_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.assets.warehouse_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"assets",
+				"assets_storage_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.assets_storage_id_idx",
+				"n|idx|assets.assets_storage_id_idx",
+				"e|idx|assets.assets_storage_id_idx",
+				"n|rel|assets.assets_storage_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.assets.storage_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"assets",
+				"assets_serial_number_idx"
+			],
+			"writes": [
+				"s|idx|assets.assets_serial_number_idx",
+				"n|idx|assets.assets_serial_number_idx",
+				"e|idx|assets.assets_serial_number_idx",
+				"n|rel|assets.assets_serial_number_idx"
+			],
+			"reads": [
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.assets.serial_number"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"borrowing_events",
+				"borrowing_events_borrowing_occurred_idx"
+			],
+			"writes": [
+				"s|idx|assets.borrowing_events_borrowing_occurred_idx",
+				"n|idx|assets.borrowing_events_borrowing_occurred_idx",
+				"e|idx|assets.borrowing_events_borrowing_occurred_idx",
+				"n|rel|assets.borrowing_events_borrowing_occurred_idx"
+			],
+			"reads": [
+				"n|tbl|assets.borrowing_events",
+				"n|sch|assets",
+				"n|col|assets.borrowing_events.borrowing_id",
+				"n|col|assets.borrowing_events.occurred_at"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"borrowing_events",
+				"borrowing_events_line_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.borrowing_events_line_id_idx",
+				"n|idx|assets.borrowing_events_line_id_idx",
+				"e|idx|assets.borrowing_events_line_id_idx",
+				"n|rel|assets.borrowing_events_line_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.borrowing_events",
+				"n|sch|assets",
+				"n|col|assets.borrowing_events.borrowing_line_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"borrowing_lines",
+				"borrowing_lines_borrowing_asset_uq"
+			],
+			"writes": [
+				"s|idx|assets.borrowing_lines_borrowing_asset_uq",
+				"n|idx|assets.borrowing_lines_borrowing_asset_uq",
+				"e|idx|assets.borrowing_lines_borrowing_asset_uq",
+				"n|rel|assets.borrowing_lines_borrowing_asset_uq"
+			],
+			"reads": [
+				"n|tbl|assets.borrowing_lines",
+				"n|sch|assets",
+				"n|col|assets.borrowing_lines.borrowing_id",
+				"n|col|assets.borrowing_lines.asset_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"borrowing_lines",
+				"borrowing_lines_asset_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.borrowing_lines_asset_id_idx",
+				"n|idx|assets.borrowing_lines_asset_id_idx",
+				"e|idx|assets.borrowing_lines_asset_id_idx",
+				"n|rel|assets.borrowing_lines_asset_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.borrowing_lines",
+				"n|sch|assets",
+				"n|col|assets.borrowing_lines.asset_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"borrowing_lines",
+				"borrowing_lines_open_idx"
+			],
+			"writes": [
+				"s|idx|assets.borrowing_lines_open_idx",
+				"n|idx|assets.borrowing_lines_open_idx",
+				"e|idx|assets.borrowing_lines_open_idx",
+				"n|rel|assets.borrowing_lines_open_idx"
+			],
+			"reads": [
+				"n|tbl|assets.borrowing_lines",
+				"n|sch|assets",
+				"n|col|assets.borrowing_lines.due_at"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"borrowings",
+				"borrowings_org_code_uq"
+			],
+			"writes": [
+				"s|idx|assets.borrowings_org_code_uq",
+				"n|idx|assets.borrowings_org_code_uq",
+				"e|idx|assets.borrowings_org_code_uq",
+				"n|rel|assets.borrowings_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|assets.borrowings",
+				"n|sch|assets",
+				"n|col|assets.borrowings.organization_id",
+				"n|col|assets.borrowings.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"borrowings",
+				"borrowings_global_code_uq"
+			],
+			"writes": [
+				"s|idx|assets.borrowings_global_code_uq",
+				"n|idx|assets.borrowings_global_code_uq",
+				"e|idx|assets.borrowings_global_code_uq",
+				"n|rel|assets.borrowings_global_code_uq"
+			],
+			"reads": [
+				"n|tbl|assets.borrowings",
+				"n|sch|assets",
+				"n|col|assets.borrowings.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"borrowings",
+				"borrowings_status_idx"
+			],
+			"writes": [
+				"s|idx|assets.borrowings_status_idx",
+				"n|idx|assets.borrowings_status_idx",
+				"e|idx|assets.borrowings_status_idx",
+				"n|rel|assets.borrowings_status_idx"
+			],
+			"reads": [
+				"n|tbl|assets.borrowings",
+				"n|sch|assets",
+				"n|col|assets.borrowings.status"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"borrowings",
+				"borrowings_borrower_user_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.borrowings_borrower_user_id_idx",
+				"n|idx|assets.borrowings_borrower_user_id_idx",
+				"e|idx|assets.borrowings_borrower_user_id_idx",
+				"n|rel|assets.borrowings_borrower_user_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.borrowings",
+				"n|sch|assets",
+				"n|col|assets.borrowings.borrower_user_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"borrowings",
+				"borrowings_borrower_customer_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.borrowings_borrower_customer_id_idx",
+				"n|idx|assets.borrowings_borrower_customer_id_idx",
+				"e|idx|assets.borrowings_borrower_customer_id_idx",
+				"n|rel|assets.borrowings_borrower_customer_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.borrowings",
+				"n|sch|assets",
+				"n|col|assets.borrowings.borrower_customer_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"borrowings",
+				"borrowings_due_at_idx"
+			],
+			"writes": [
+				"s|idx|assets.borrowings_due_at_idx",
+				"n|idx|assets.borrowings_due_at_idx",
+				"e|idx|assets.borrowings_due_at_idx",
+				"n|rel|assets.borrowings_due_at_idx"
+			],
+			"reads": [
+				"n|tbl|assets.borrowings",
+				"n|sch|assets",
+				"n|col|assets.borrowings.due_at"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"tool_set_items",
+				"tool_set_items_tool_set_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.tool_set_items_tool_set_id_idx",
+				"n|idx|assets.tool_set_items_tool_set_id_idx",
+				"e|idx|assets.tool_set_items_tool_set_id_idx",
+				"n|rel|assets.tool_set_items_tool_set_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.tool_set_items",
+				"n|sch|assets",
+				"n|col|assets.tool_set_items.tool_set_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"tool_set_items",
+				"tool_set_items_asset_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.tool_set_items_asset_id_idx",
+				"n|idx|assets.tool_set_items_asset_id_idx",
+				"e|idx|assets.tool_set_items_asset_id_idx",
+				"n|rel|assets.tool_set_items_asset_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.tool_set_items",
+				"n|sch|assets",
+				"n|col|assets.tool_set_items.asset_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"tool_set_items",
+				"tool_set_items_uq"
+			],
+			"writes": [
+				"s|idx|assets.tool_set_items_uq",
+				"n|idx|assets.tool_set_items_uq",
+				"e|idx|assets.tool_set_items_uq",
+				"n|rel|assets.tool_set_items_uq"
+			],
+			"reads": [
+				"n|tbl|assets.tool_set_items",
+				"n|sch|assets",
+				"n|col|assets.tool_set_items.tool_set_id",
+				"n|col|assets.tool_set_items.asset_id"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"tool_sets",
+				"tool_sets_org_code_uq"
+			],
+			"writes": [
+				"s|idx|assets.tool_sets_org_code_uq",
+				"n|idx|assets.tool_sets_org_code_uq",
+				"e|idx|assets.tool_sets_org_code_uq",
+				"n|rel|assets.tool_sets_org_code_uq"
+			],
+			"reads": [
+				"n|tbl|assets.tool_sets",
+				"n|sch|assets",
+				"n|col|assets.tool_sets.organization_id",
+				"n|col|assets.tool_sets.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"tool_sets",
+				"tool_sets_global_code_uq"
+			],
+			"writes": [
+				"s|idx|assets.tool_sets_global_code_uq",
+				"n|idx|assets.tool_sets_global_code_uq",
+				"e|idx|assets.tool_sets_global_code_uq",
+				"n|rel|assets.tool_sets_global_code_uq"
+			],
+			"reads": [
+				"n|tbl|assets.tool_sets",
+				"n|sch|assets",
+				"n|col|assets.tool_sets.code"
+			]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"assets",
+				"tool_sets",
+				"tool_sets_custodian_employee_id_idx"
+			],
+			"writes": [
+				"s|idx|assets.tool_sets_custodian_employee_id_idx",
+				"n|idx|assets.tool_sets_custodian_employee_id_idx",
+				"e|idx|assets.tool_sets_custodian_employee_id_idx",
+				"n|rel|assets.tool_sets_custodian_employee_id_idx"
+			],
+			"reads": [
+				"n|tbl|assets.tool_sets",
+				"n|sch|assets",
+				"n|col|assets.tool_sets.custodian_employee_id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_categories"
+			],
+			"writes": [
+				"s|fk|assets.asset_categories.asset_categories_asset_type_asset_types_code_fkey",
+				"n|fk|assets.asset_categories.asset_categories_asset_type_asset_types_code_fkey",
+				"e|fk|assets.asset_categories.asset_categories_asset_type_asset_types_code_fkey",
+				"n|con|assets.asset_categories.asset_categories_asset_type_asset_types_code_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.asset_categories",
+				"n|sch|assets",
+				"n|tbl|assets.asset_types",
+				"n|sch|assets",
+				"n|col|assets.asset_categories.asset_type",
+				"n|col|assets.asset_types.code",
+				"e|uniqueness|assets.asset_types.code"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_condition_checks"
+			],
+			"writes": [
+				"s|fk|assets.asset_condition_checks.asset_condition_checks_asset_id_assets_id_fkey",
+				"n|fk|assets.asset_condition_checks.asset_condition_checks_asset_id_assets_id_fkey",
+				"e|fk|assets.asset_condition_checks.asset_condition_checks_asset_id_assets_id_fkey",
+				"n|con|assets.asset_condition_checks.asset_condition_checks_asset_id_assets_id_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.asset_condition_checks",
+				"n|sch|assets",
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.asset_condition_checks.asset_id",
+				"n|col|assets.assets.id",
+				"e|uniqueness|assets.assets.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_depreciations"
+			],
+			"writes": [
+				"s|fk|assets.asset_depreciations.asset_depreciations_asset_id_assets_id_fkey",
+				"n|fk|assets.asset_depreciations.asset_depreciations_asset_id_assets_id_fkey",
+				"e|fk|assets.asset_depreciations.asset_depreciations_asset_id_assets_id_fkey",
+				"n|con|assets.asset_depreciations.asset_depreciations_asset_id_assets_id_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.asset_depreciations",
+				"n|sch|assets",
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.asset_depreciations.asset_id",
+				"n|col|assets.assets.id",
+				"e|uniqueness|assets.assets.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_disposals"
+			],
+			"writes": [
+				"s|fk|assets.asset_disposals.asset_disposals_asset_id_assets_id_fkey",
+				"n|fk|assets.asset_disposals.asset_disposals_asset_id_assets_id_fkey",
+				"e|fk|assets.asset_disposals.asset_disposals_asset_id_assets_id_fkey",
+				"n|con|assets.asset_disposals.asset_disposals_asset_id_assets_id_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.asset_disposals",
+				"n|sch|assets",
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.asset_disposals.asset_id",
+				"n|col|assets.assets.id",
+				"e|uniqueness|assets.assets.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_documents"
+			],
+			"writes": [
+				"s|fk|assets.asset_documents.asset_documents_asset_id_assets_id_fkey",
+				"n|fk|assets.asset_documents.asset_documents_asset_id_assets_id_fkey",
+				"e|fk|assets.asset_documents.asset_documents_asset_id_assets_id_fkey",
+				"n|con|assets.asset_documents.asset_documents_asset_id_assets_id_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.asset_documents",
+				"n|sch|assets",
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.asset_documents.asset_id",
+				"n|col|assets.assets.id",
+				"e|uniqueness|assets.assets.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_maintenances"
+			],
+			"writes": [
+				"s|fk|assets.asset_maintenances.asset_maintenances_asset_id_assets_id_fkey",
+				"n|fk|assets.asset_maintenances.asset_maintenances_asset_id_assets_id_fkey",
+				"e|fk|assets.asset_maintenances.asset_maintenances_asset_id_assets_id_fkey",
+				"n|con|assets.asset_maintenances.asset_maintenances_asset_id_assets_id_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.asset_maintenances",
+				"n|sch|assets",
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.asset_maintenances.asset_id",
+				"n|col|assets.assets.id",
+				"e|uniqueness|assets.assets.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"asset_movements"
+			],
+			"writes": [
+				"s|fk|assets.asset_movements.asset_movements_asset_id_assets_id_fkey",
+				"n|fk|assets.asset_movements.asset_movements_asset_id_assets_id_fkey",
+				"e|fk|assets.asset_movements.asset_movements_asset_id_assets_id_fkey",
+				"n|con|assets.asset_movements.asset_movements_asset_id_assets_id_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.asset_movements",
+				"n|sch|assets",
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.asset_movements.asset_id",
+				"n|col|assets.assets.id",
+				"e|uniqueness|assets.assets.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"assets"
+			],
+			"writes": [
+				"s|fk|assets.assets.assets_asset_type_asset_types_code_fkey",
+				"n|fk|assets.assets.assets_asset_type_asset_types_code_fkey",
+				"e|fk|assets.assets.assets_asset_type_asset_types_code_fkey",
+				"n|con|assets.assets.assets_asset_type_asset_types_code_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|tbl|assets.asset_types",
+				"n|sch|assets",
+				"n|col|assets.assets.asset_type",
+				"n|col|assets.asset_types.code",
+				"e|uniqueness|assets.asset_types.code"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"borrowing_events"
+			],
+			"writes": [
+				"s|fk|assets.borrowing_events.borrowing_events_borrowing_id_borrowings_id_fkey",
+				"n|fk|assets.borrowing_events.borrowing_events_borrowing_id_borrowings_id_fkey",
+				"e|fk|assets.borrowing_events.borrowing_events_borrowing_id_borrowings_id_fkey",
+				"n|con|assets.borrowing_events.borrowing_events_borrowing_id_borrowings_id_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.borrowing_events",
+				"n|sch|assets",
+				"n|tbl|assets.borrowings",
+				"n|sch|assets",
+				"n|col|assets.borrowing_events.borrowing_id",
+				"n|col|assets.borrowings.id",
+				"e|uniqueness|assets.borrowings.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"borrowing_events"
+			],
+			"writes": [
+				"s|fk|assets.borrowing_events.borrowing_events_borrowing_line_id_borrowing_lines_id_fkey",
+				"n|fk|assets.borrowing_events.borrowing_events_borrowing_line_id_borrowing_lines_id_fkey",
+				"e|fk|assets.borrowing_events.borrowing_events_borrowing_line_id_borrowing_lines_id_fkey",
+				"n|con|assets.borrowing_events.borrowing_events_borrowing_line_id_borrowing_lines_id_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.borrowing_events",
+				"n|sch|assets",
+				"n|tbl|assets.borrowing_lines",
+				"n|sch|assets",
+				"n|col|assets.borrowing_events.borrowing_line_id",
+				"n|col|assets.borrowing_lines.id",
+				"e|uniqueness|assets.borrowing_lines.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"borrowing_lines"
+			],
+			"writes": [
+				"s|fk|assets.borrowing_lines.borrowing_lines_borrowing_id_borrowings_id_fkey",
+				"n|fk|assets.borrowing_lines.borrowing_lines_borrowing_id_borrowings_id_fkey",
+				"e|fk|assets.borrowing_lines.borrowing_lines_borrowing_id_borrowings_id_fkey",
+				"n|con|assets.borrowing_lines.borrowing_lines_borrowing_id_borrowings_id_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.borrowing_lines",
+				"n|sch|assets",
+				"n|tbl|assets.borrowings",
+				"n|sch|assets",
+				"n|col|assets.borrowing_lines.borrowing_id",
+				"n|col|assets.borrowings.id",
+				"e|uniqueness|assets.borrowings.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"borrowing_lines"
+			],
+			"writes": [
+				"s|fk|assets.borrowing_lines.borrowing_lines_asset_id_assets_id_fkey",
+				"n|fk|assets.borrowing_lines.borrowing_lines_asset_id_assets_id_fkey",
+				"e|fk|assets.borrowing_lines.borrowing_lines_asset_id_assets_id_fkey",
+				"n|con|assets.borrowing_lines.borrowing_lines_asset_id_assets_id_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.borrowing_lines",
+				"n|sch|assets",
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.borrowing_lines.asset_id",
+				"n|col|assets.assets.id",
+				"e|uniqueness|assets.assets.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"tool_set_items"
+			],
+			"writes": [
+				"s|fk|assets.tool_set_items.tool_set_items_tool_set_id_tool_sets_id_fkey",
+				"n|fk|assets.tool_set_items.tool_set_items_tool_set_id_tool_sets_id_fkey",
+				"e|fk|assets.tool_set_items.tool_set_items_tool_set_id_tool_sets_id_fkey",
+				"n|con|assets.tool_set_items.tool_set_items_tool_set_id_tool_sets_id_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.tool_set_items",
+				"n|sch|assets",
+				"n|tbl|assets.tool_sets",
+				"n|sch|assets",
+				"n|col|assets.tool_set_items.tool_set_id",
+				"n|col|assets.tool_sets.id",
+				"e|uniqueness|assets.tool_sets.id"
+			]
+		},
+		{
+			"statementType": "create_fk",
+			"statementTarget": [
+				"table",
+				"assets",
+				"tool_set_items"
+			],
+			"writes": [
+				"s|fk|assets.tool_set_items.tool_set_items_asset_id_assets_id_fkey",
+				"n|fk|assets.tool_set_items.tool_set_items_asset_id_assets_id_fkey",
+				"e|fk|assets.tool_set_items.tool_set_items_asset_id_assets_id_fkey",
+				"n|con|assets.tool_set_items.tool_set_items_asset_id_assets_id_fkey"
+			],
+			"reads": [
+				"n|tbl|assets.tool_set_items",
+				"n|sch|assets",
+				"n|tbl|assets.assets",
+				"n|sch|assets",
+				"n|col|assets.tool_set_items.asset_id",
+				"n|col|assets.assets.id",
+				"e|uniqueness|assets.assets.id"
+			]
+		}
+	],
+	"deltas": [
+		{
+			"op": "create",
+			"row": {
+				"name": "assets",
+				"entityType": "schemas"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "asset_categories",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "asset_condition_checks",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "asset_depreciations",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "asset_disposals",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "asset_documents",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "asset_maintenances",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "asset_movements",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "asset_types",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "assets",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "borrowing_events",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "borrowing_lines",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "borrowings",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "tool_set_items",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"name": "tool_sets",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "parent_category_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "asset_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'equipment'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "default_useful_life_months",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "default_depreciation_method",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'straight_line'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "is_active",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "true",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "asset_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "check_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "condition",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "findings",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "checked_by_user_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "next_check_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'recorded'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "asset_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "period_year",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "period_month",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "depreciation_method",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'straight_line'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "depreciation_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "opening_book_value",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "closing_book_value",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "calculated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "journal_entry_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "asset_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "disposal_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "disposal_method",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'scrap'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "proceeds_amount",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "book_value_at_disposal",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "gain_loss",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "buyer_name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'draft'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "requested_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "approved_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "approved_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "executed_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_documents",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_documents",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_documents",
+				"name": "asset_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_documents",
+				"name": "document_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_documents",
+				"name": "document_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_documents",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_documents",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_documents",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "asset_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "maintenance_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'preventive'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "scheduled_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "performed_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "performed_by_employee_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "vendor_name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "cost",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "description",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'scheduled'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "next_service_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "document_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "asset_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "movement_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'transfer'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "from_warehouse_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "from_storage_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "to_warehouse_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "to_storage_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "from_location",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "to_location",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "moved_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "moved_by_user_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "condition",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "notes",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "default_useful_life_months",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "default_depreciation_method",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'straight_line'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "is_active",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "true",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "description",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "category_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "asset_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'equipment'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "serial_number",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "barcode",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "acquisition_date",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "acquisition_cost",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "salvage_value",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "accumulated_depreciation",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "book_value",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "currency_code",
+				"type": "varchar(3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'IDR'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "useful_life_months",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "depreciation_method",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'straight_line'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "depreciation_started_on",
+				"type": "date",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "condition",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'good'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'ready'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "deactivation_reason",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "location_description",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "warehouse_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "storage_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "custodian_employee_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "borrowed_since",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "supplier_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "purchase_order_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "document_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "image_url",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "borrowing_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "borrowing_line_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "event_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "asset_movement_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "actor_user_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "occurred_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "note",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "borrowing_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "asset_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "origin_warehouse_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "origin_storage_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "issued_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "due_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "returned_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "returned_condition",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "marked_late_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "marked_lost_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "lost_reported_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "site_address_text",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "project_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "notes",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'requested'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "purpose",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'internal_use'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrower_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "tool_set_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrower_user_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrower_customer_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "guest_name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "guest_phone",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "guest_id_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "guest_id_number",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "guest_address_text",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "guest_id_document_ref",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "requested_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "requested_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "approved_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "approved_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "issued_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "issued_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "due_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "closed_by",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "closed_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "notes",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "tool_set_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "asset_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "quantity",
+				"type": "numeric(18,3)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'1'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "uuidv7()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "organization_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "code",
+				"type": "varchar(32)",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "name",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "description",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "custodian_employee_id",
+				"type": "uuid",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "status",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "'available'",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "created_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "updated_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "deleted_at",
+				"type": "bigint",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "asset_categories_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "organization_id IS NOT NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "asset_categories_global_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "organization_id IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "asset_categories_parent_category_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "parent_category_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "asset_condition_checks_asset_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "asset_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "asset_condition_checks_check_date_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "check_date",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "asset_depreciations_period_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "asset_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "period_year",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "period_month",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "asset_depreciations_period_year_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "period_year",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "asset_disposals_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "organization_id IS NOT NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "asset_disposals_global_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "organization_id IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "asset_disposals_asset_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "asset_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "asset_disposals_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_documents",
+				"name": "asset_documents_asset_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "asset_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_documents",
+				"name": "asset_documents_document_id_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "document_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "asset_maintenances_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "organization_id IS NOT NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "asset_maintenances_global_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "organization_id IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "asset_maintenances_asset_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "asset_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "asset_maintenances_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "asset_maintenances_next_service_date_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "next_service_date",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "asset_movements_asset_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "asset_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "asset_movements_moved_at_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "moved_at",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "asset_movements_movement_type_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "movement_type",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "asset_movements_from_warehouse_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "from_warehouse_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "asset_movements_to_warehouse_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "to_warehouse_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "asset_types_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "asset_types_is_active_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "is_active",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_serial_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "coalesce(\"organization_id\", '')",
+						"isExpression": true,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "serial_number",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "\"serial_number\" IS NOT NULL AND \"deleted_at\" IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_asset_type_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "asset_type",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_category_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "category_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_custodian_employee_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "custodian_employee_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_warehouse_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "warehouse_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_storage_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "storage_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_serial_number_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "serial_number",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "borrowing_events_borrowing_occurred_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "borrowing_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "occurred_at",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "borrowing_events_line_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "borrowing_line_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "borrowing_lines_borrowing_asset_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "borrowing_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "asset_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "borrowing_lines_asset_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "asset_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "borrowing_lines_open_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "due_at",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": "returned_at IS NULL AND marked_lost_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrowings_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "organization_id IS NOT NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrowings_global_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "organization_id IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrowings_status_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "status",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrowings_borrower_user_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "borrower_user_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrowings_borrower_customer_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "borrower_customer_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrowings_due_at_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "due_at",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "tool_set_items_tool_set_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "tool_set_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "tool_set_items_asset_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "asset_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "tool_set_items_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "tool_set_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "asset_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": "deleted_at IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "tool_sets_org_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "organization_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					},
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "organization_id IS NOT NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "tool_sets_global_code_uq",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "code",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "organization_id IS NULL",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "tool_sets_custodian_employee_id_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "custodian_employee_id",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "asset_categories_asset_type_asset_types_code_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"asset_type"
+				],
+				"schemaTo": "assets",
+				"tableTo": "asset_types",
+				"columnsTo": [
+					"code"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "asset_condition_checks_asset_id_assets_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"asset_id"
+				],
+				"schemaTo": "assets",
+				"tableTo": "assets",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "asset_depreciations_asset_id_assets_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"asset_id"
+				],
+				"schemaTo": "assets",
+				"tableTo": "assets",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "asset_disposals_asset_id_assets_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"asset_id"
+				],
+				"schemaTo": "assets",
+				"tableTo": "assets",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_documents",
+				"name": "asset_documents_asset_id_assets_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"asset_id"
+				],
+				"schemaTo": "assets",
+				"tableTo": "assets",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "asset_maintenances_asset_id_assets_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"asset_id"
+				],
+				"schemaTo": "assets",
+				"tableTo": "assets",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "asset_movements_asset_id_assets_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"asset_id"
+				],
+				"schemaTo": "assets",
+				"tableTo": "assets",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_asset_type_asset_types_code_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"asset_type"
+				],
+				"schemaTo": "assets",
+				"tableTo": "asset_types",
+				"columnsTo": [
+					"code"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "borrowing_events_borrowing_id_borrowings_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"borrowing_id"
+				],
+				"schemaTo": "assets",
+				"tableTo": "borrowings",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "borrowing_events_borrowing_line_id_borrowing_lines_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"borrowing_line_id"
+				],
+				"schemaTo": "assets",
+				"tableTo": "borrowing_lines",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "borrowing_lines_borrowing_id_borrowings_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"borrowing_id"
+				],
+				"schemaTo": "assets",
+				"tableTo": "borrowings",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "borrowing_lines_asset_id_assets_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"asset_id"
+				],
+				"schemaTo": "assets",
+				"tableTo": "assets",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "tool_set_items_tool_set_id_tool_sets_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"tool_set_id"
+				],
+				"schemaTo": "assets",
+				"tableTo": "tool_sets",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "CASCADE",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "tool_set_items_asset_id_assets_id_fkey",
+				"nameExplicit": false,
+				"columns": [
+					"asset_id"
+				],
+				"schemaTo": "assets",
+				"tableTo": "assets",
+				"columnsTo": [
+					"id"
+				],
+				"onUpdate": "NO ACTION",
+				"onDelete": "RESTRICT",
+				"entityType": "fks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "asset_categories_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "asset_condition_checks_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "asset_depreciations_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "asset_disposals_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_documents",
+				"name": "asset_documents_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "asset_maintenances_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "asset_movements_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "asset_types_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "borrowing_events_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "borrowing_lines_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrowings_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "tool_set_items_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "tool_sets_pkey",
+				"columns": [
+					"id"
+				],
+				"nameExplicit": false,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_categories",
+				"name": "asset_categories_dep_method_check",
+				"value": "\"default_depreciation_method\" IN ('straight_line', 'declining_balance', 'none')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "asset_condition_checks_condition_check",
+				"value": "\"condition\" IN ('new', 'good', 'fair', 'poor', 'damaged')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_condition_checks",
+				"name": "asset_condition_checks_status_check",
+				"value": "\"status\" IN ('recorded', 'followed_up', 'closed')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "asset_depreciations_period_month_check",
+				"value": "\"period_month\" BETWEEN 1 AND 12",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "asset_depreciations_method_check",
+				"value": "\"depreciation_method\" IN ('straight_line', 'declining_balance', 'none')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "asset_depreciations_amount_check",
+				"value": "\"depreciation_amount\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_depreciations",
+				"name": "asset_depreciations_closing_check",
+				"value": "\"closing_book_value\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "asset_disposals_method_check",
+				"value": "\"disposal_method\" IN ('sale', 'scrap', 'donation', 'transfer', 'trade_in')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "asset_disposals_status_check",
+				"value": "\"status\" IN ('draft', 'submitted', 'approved', 'executed', 'cancelled')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "asset_disposals_proceeds_check",
+				"value": "\"proceeds_amount\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_disposals",
+				"name": "asset_disposals_book_value_check",
+				"value": "\"book_value_at_disposal\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_documents",
+				"name": "asset_documents_type_check",
+				"value": "\"document_type\" IN ('invoice', 'manual', 'certificate', 'photo', 'contract')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "asset_maintenances_type_check",
+				"value": "\"maintenance_type\" IN ('preventive', 'corrective', 'calibration', 'inspection')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "asset_maintenances_status_check",
+				"value": "\"status\" IN ('scheduled', 'in_progress', 'completed', 'cancelled')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_maintenances",
+				"name": "asset_maintenances_cost_check",
+				"value": "\"cost\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_movements",
+				"name": "asset_movements_type_check",
+				"value": "\"movement_type\" IN ('receipt', 'transfer', 'borrow_out', 'borrow_return', 'project_site', 'disposal', 'lost')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "asset_types_dep_method_check",
+				"value": "default_depreciation_method IN ('straight_line', 'declining_balance', 'none')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "asset_types",
+				"name": "asset_types_useful_life_check",
+				"value": "default_useful_life_months IS NULL OR default_useful_life_months > 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_status_check",
+				"value": "\"status\" IN ('ready', 'borrowed', 'maintenance', 'inactive', 'disposed', 'lost')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_condition_check",
+				"value": "\"condition\" IN ('new', 'good', 'fair', 'poor', 'damaged')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_dep_method_check",
+				"value": "\"depreciation_method\" IN ('straight_line', 'declining_balance', 'none')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_acquisition_cost_check",
+				"value": "\"acquisition_cost\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_salvage_value_check",
+				"value": "\"salvage_value\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_accumulated_depreciation_check",
+				"value": "\"accumulated_depreciation\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_book_value_check",
+				"value": "\"book_value\" >= 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_useful_life_check",
+				"value": "\"useful_life_months\" IS NULL OR \"useful_life_months\" > 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_deactivation_reason_check",
+				"value": "(\"status\" = 'inactive' AND \"deactivation_reason\" IS NOT NULL) OR (\"status\" <> 'inactive' AND \"deactivation_reason\" IS NULL)",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "assets",
+				"name": "assets_storage_requires_warehouse_check",
+				"value": "\"storage_id\" IS NULL OR \"warehouse_id\" IS NOT NULL",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "borrowing_events_type_check",
+				"value": "event_type IN ('requested', 'approved', 'rejected', 'issued', 'returned', 'marked_late', 'marked_lost', 'due_date_extended', 'cancelled', 'closed')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_events",
+				"name": "borrowing_events_movement_check",
+				"value": "(event_type IN ('issued', 'returned', 'marked_lost') AND asset_movement_id IS NOT NULL)\n\t\t\t\tOR (event_type NOT IN ('issued', 'returned', 'marked_lost') AND asset_movement_id IS NULL)",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "borrowing_lines_condition_check",
+				"value": "returned_condition IS NULL OR returned_condition IN ('good', 'damaged', 'incomplete')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "borrowing_lines_due_after_issue_check",
+				"value": "due_at IS NULL OR issued_at IS NULL OR due_at > issued_at",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowing_lines",
+				"name": "borrowing_lines_origin_storage_check",
+				"value": "origin_storage_id IS NULL OR origin_warehouse_id IS NOT NULL",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrowings_status_check",
+				"value": "status IN ('draft', 'requested', 'approved', 'rejected', 'issued', 'partially_returned', 'returned', 'closed', 'cancelled')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrowings_purpose_check",
+				"value": "purpose IN ('rental', 'internal_use', 'testing', 'warranty_service')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrowings_borrower_type_check",
+				"value": "borrower_type IN ('user', 'customer', 'guest')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrowings_guest_id_type_check",
+				"value": "guest_id_type IS NULL OR guest_id_type IN ('ktp', 'sim', 'passport', 'other')",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "borrowings",
+				"name": "borrowings_borrower_identity_check",
+				"value": "(borrower_type = 'user' AND borrower_user_id IS NOT NULL AND borrower_customer_id IS NULL AND guest_name IS NULL AND guest_phone IS NULL AND guest_id_number IS NULL)\n\t\t\t\tOR (borrower_type = 'customer' AND borrower_customer_id IS NOT NULL AND borrower_user_id IS NULL AND guest_name IS NULL AND guest_phone IS NULL AND guest_id_number IS NULL)\n\t\t\t\tOR (borrower_type = 'guest' AND guest_name IS NOT NULL AND guest_phone IS NOT NULL AND guest_id_number IS NOT NULL AND borrower_user_id IS NULL AND borrower_customer_id IS NULL)",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_set_items",
+				"name": "tool_set_items_quantity_check",
+				"value": "\"quantity\" > 0",
+				"entityType": "checks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "assets",
+				"table": "tool_sets",
+				"name": "tool_sets_status_check",
+				"value": "\"status\" IN ('available', 'lent', 'maintenance', 'retired')",
+				"entityType": "checks"
+			}
+		}
+	]
+}

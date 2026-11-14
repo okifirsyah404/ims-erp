@@ -1,0 +1,843 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "f6df7bf5-3315-42da-a6f1-2d3370311d95",
+  "prevIds": [
+    "f5faf282-5ab4-4898-af99-b4eac3aca616"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "aftersales",
+        "service_ticket_comments"
+      ],
+      "writes": [
+        "s|tbl|aftersales.service_ticket_comments",
+        "n|tbl|aftersales.service_ticket_comments",
+        "e|tbl|aftersales.service_ticket_comments",
+        "n|rel|aftersales.service_ticket_comments",
+        "n|type|aftersales.service_ticket_comments",
+        "n|rel|aftersales.service_ticket_comments_pkey"
+      ],
+      "reads": [
+        "n|sch|aftersales"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "auth",
+        "portal_identities"
+      ],
+      "writes": [
+        "s|tbl|auth.portal_identities",
+        "n|tbl|auth.portal_identities",
+        "e|tbl|auth.portal_identities",
+        "n|rel|auth.portal_identities",
+        "n|type|auth.portal_identities",
+        "n|rel|auth.portal_identities_pkey"
+      ],
+      "reads": [
+        "n|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "aftersales",
+        "service_ticket_comments",
+        "service_ticket_comments_ticket_created_idx"
+      ],
+      "writes": [
+        "s|idx|aftersales.service_ticket_comments_ticket_created_idx",
+        "n|idx|aftersales.service_ticket_comments_ticket_created_idx",
+        "e|idx|aftersales.service_ticket_comments_ticket_created_idx",
+        "n|rel|aftersales.service_ticket_comments_ticket_created_idx"
+      ],
+      "reads": [
+        "n|tbl|aftersales.service_ticket_comments",
+        "n|sch|aftersales",
+        "n|col|aftersales.service_ticket_comments.service_ticket_id",
+        "n|col|aftersales.service_ticket_comments.created_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "auth",
+        "portal_identities",
+        "portal_identities_user_id_uq"
+      ],
+      "writes": [
+        "s|idx|auth.portal_identities_user_id_uq",
+        "n|idx|auth.portal_identities_user_id_uq",
+        "e|idx|auth.portal_identities_user_id_uq",
+        "n|rel|auth.portal_identities_user_id_uq"
+      ],
+      "reads": [
+        "n|tbl|auth.portal_identities",
+        "n|sch|auth",
+        "n|col|auth.portal_identities.user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "auth",
+        "portal_identities",
+        "portal_identities_contact_uq"
+      ],
+      "writes": [
+        "s|idx|auth.portal_identities_contact_uq",
+        "n|idx|auth.portal_identities_contact_uq",
+        "e|idx|auth.portal_identities_contact_uq",
+        "n|rel|auth.portal_identities_contact_uq"
+      ],
+      "reads": [
+        "n|tbl|auth.portal_identities",
+        "n|sch|auth",
+        "n|col|auth.portal_identities.portal_type",
+        "n|col|auth.portal_identities.contact_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "auth",
+        "portal_identities",
+        "portal_identities_entity_idx"
+      ],
+      "writes": [
+        "s|idx|auth.portal_identities_entity_idx",
+        "n|idx|auth.portal_identities_entity_idx",
+        "e|idx|auth.portal_identities_entity_idx",
+        "n|rel|auth.portal_identities_entity_idx"
+      ],
+      "reads": [
+        "n|tbl|auth.portal_identities",
+        "n|sch|auth",
+        "n|col|auth.portal_identities.portal_type",
+        "n|col|auth.portal_identities.linked_entity_id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "aftersales",
+        "service_ticket_comments"
+      ],
+      "writes": [
+        "s|fk|aftersales.service_ticket_comments.service_ticket_comments_Zt41pz6B5eJe_fkey",
+        "n|fk|aftersales.service_ticket_comments.service_ticket_comments_Zt41pz6B5eJe_fkey",
+        "e|fk|aftersales.service_ticket_comments.service_ticket_comments_Zt41pz6B5eJe_fkey",
+        "n|con|aftersales.service_ticket_comments.service_ticket_comments_Zt41pz6B5eJe_fkey"
+      ],
+      "reads": [
+        "n|tbl|aftersales.service_ticket_comments",
+        "n|sch|aftersales",
+        "n|tbl|aftersales.service_tickets",
+        "n|sch|aftersales",
+        "n|col|aftersales.service_ticket_comments.service_ticket_id",
+        "n|col|aftersales.service_tickets.id",
+        "e|uniqueness|aftersales.service_tickets.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "auth",
+        "portal_identities"
+      ],
+      "writes": [
+        "s|fk|auth.portal_identities.portal_identities_user_id_users_id_fkey",
+        "n|fk|auth.portal_identities.portal_identities_user_id_users_id_fkey",
+        "e|fk|auth.portal_identities.portal_identities_user_id_users_id_fkey",
+        "n|con|auth.portal_identities.portal_identities_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|auth.portal_identities",
+        "n|sch|auth",
+        "n|tbl|auth.users",
+        "n|sch|auth",
+        "n|col|auth.portal_identities.user_id",
+        "n|col|auth.users.id",
+        "e|uniqueness|auth.users.id"
+      ]
+    },
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "aftersales",
+        "service_tickets"
+      ],
+      "writes": [
+        "s|ck|aftersales.service_tickets.service_tickets_channel_check"
+      ],
+      "reads": [
+        "n|tbl|aftersales.service_tickets",
+        "n|sch|aftersales",
+        "n|col|aftersales.service_tickets.channel",
+        "e|col|aftersales.service_tickets.channel"
+      ],
+      "sqlHash": "663e43723a8b0455"
+    },
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "aftersales",
+        "service_tickets"
+      ],
+      "writes": [
+        "s|ck|aftersales.service_tickets.service_tickets_confirmation_channel_check"
+      ],
+      "reads": [
+        "n|tbl|aftersales.service_tickets",
+        "n|sch|aftersales",
+        "n|col|aftersales.service_tickets.confirmation_channel",
+        "e|col|aftersales.service_tickets.confirmation_channel"
+      ],
+      "sqlHash": "fa01977f2f7f64e3"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "name": "service_ticket_comments",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "name": "portal_identities",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "service_ticket_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "author_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'staff'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "author_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "author_name",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "body",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "visibility",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'internal'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "portal_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "linked_entity_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "contact_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "portal_role",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'owner'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'active'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "last_login_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "service_ticket_comments_ticket_created_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "service_ticket_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "created_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "portal_identities_user_id_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "portal_identities_contact_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "portal_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "contact_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "portal_identities_entity_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "portal_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "linked_entity_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "service_ticket_comments_Zt41pz6B5eJe_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "service_ticket_id"
+        ],
+        "schemaTo": "aftersales",
+        "tableTo": "service_tickets",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "portal_identities_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "auth",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "service_ticket_comments_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "portal_identities_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "service_ticket_comments_visibility_check",
+        "value": "\"visibility\" IN ('internal', 'customer')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "service_ticket_comments_author_type_check",
+        "value": "\"author_type\" IN ('staff', 'customer')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "aftersales",
+        "table": "service_ticket_comments",
+        "name": "service_ticket_comments_customer_visible_check",
+        "value": "\"author_type\" = 'staff' OR \"visibility\" = 'customer'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "portal_identities_portal_type_check",
+        "value": "\"portal_type\" IN ('customer', 'investor', 'partner', 'technician')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "portal_identities_status_check",
+        "value": "\"status\" IN ('active', 'suspended', 'revoked')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "auth",
+        "table": "portal_identities",
+        "name": "portal_identities_portal_role_check",
+        "value": "\"portal_role\" IN ('owner', 'approver', 'finance', 'viewer')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"aftersales\",\"service_tickets\",\"service_tickets_channel_check\"]",
+      "set": {
+        "value": "\"channel\" IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'portal', 'other')"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"aftersales\",\"service_tickets\",\"service_tickets_confirmation_channel_check\"]",
+      "set": {
+        "value": "\"confirmation_channel\" IS NULL OR \"confirmation_channel\" IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'portal', 'other')"
+      }
+    }
+  ]
+}

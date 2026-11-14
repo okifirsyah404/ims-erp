@@ -16,9 +16,15 @@
  */
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { Elysia } from 'elysia';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import { container } from 'tsyringe';
 import type { TWarehouseSelect } from '@drizzle/schemas/inventory.schema';
+import {
+	type TWarehouseAction,
+	warehouseGuard,
+} from '../../src/authorization/elysia-auth';
 import {
 	fixture,
 	installAuthMock,
@@ -33,6 +39,19 @@ let app: Elysia<any, any, any, any, any, any>;
 
 const WAREHOUSE_ID = '01920000-0000-7000-8000-0000000000aa';
 const STORAGE_ID = '01920000-0000-7000-8000-0000000000bb';
+/** A second warehouse the PIC is *not* assigned to (ADR-0017 404 case). */
+const OTHER_WAREHOUSE_ID = '01920000-0000-7000-8000-0000000000dd';
+
+/**
+ * Live person-in-charge grants, keyed by user id (ADR-0017).
+ *
+ * @remarks
+ * Stands in for `inventory.warehouse_managers`: the guard only asks "which
+ * warehouse ids does this user manage", so the fake is a set. A user absent
+ * from the map holds no live grant — the same answer the repository gives when
+ * every row is soft-deleted.
+ */
+const picGrants = new Map<string, string[]>();
 
 const baseHeaders = (session?: string): Headers => {
 	const headers = new Headers({ 'content-type': 'application/json' });
@@ -115,6 +134,18 @@ const ROUTES: ReadonlyArray<{
 		method: 'DELETE',
 		path: `/warehouses/${WAREHOUSE_ID}/storages/${STORAGE_ID}`,
 	},
+	// Admin-only surface added with ADR-0017 (person-in-charge assignment).
+	{ method: 'GET', path: `/warehouses/${WAREHOUSE_ID}/managers` },
+	{ method: 'GET', path: '/warehouses/manager-candidates' },
+	{
+		method: 'POST',
+		path: `/warehouses/${WAREHOUSE_ID}/managers`,
+		body: { userId: 'user-warehouse' },
+	},
+	{
+		method: 'DELETE',
+		path: `/warehouses/${WAREHOUSE_ID}/managers/user-warehouse`,
+	},
 ];
 
 /** Organization roles that must never reach a warehouse route. */
@@ -126,6 +157,34 @@ const FORBIDDEN_USERS = [
 	'technician',
 	'member',
 ] as const;
+
+/** Every action `warehouseGuard` accepts (ADR-0017 §2), read from the type. */
+const ALL_ACTIONS: readonly TWarehouseAction[] = [
+	'read',
+	'update',
+	'archive',
+	'import',
+	'export',
+];
+
+/**
+ * The actions the warehouse controller actually passes to `warehouseGuard`.
+ *
+ * @remarks
+ * Read from the source rather than restated here, so the "import/export are
+ * declared but unused" claim in `progress.md` is checked against the code
+ * instead of a copy of it that could drift. The controller routes every PIC
+ * handler through `picRoute('<action>', ...)`, so those call sites are the
+ * complete list.
+ */
+function readWarehouseActions(): string[] {
+	const source = readFileSync(
+		join(import.meta.dir, '../../src/app/inventory/controllers/warehouse.controller.ts'),
+		'utf8',
+	);
+	const found = [...source.matchAll(/picRoute\('([a-z]+)'/g)].map((match) => match[1]);
+	return [...new Set(found)];
+}
 
 beforeAll(async () => {
 	installAuthMock();
@@ -142,6 +201,10 @@ beforeAll(async () => {
 		},
 		async findById(id) {
 			return id === seed.id ? seed : null;
+		},
+		async findAlive(ids) {
+			if (ids && !ids.includes(seed.id)) return [];
+			return [seed];
 		},
 		// ERP-0031: linked only to the fixture's member org.
 		async isLinked(warehouseId, organizationId) {
@@ -255,10 +318,17 @@ beforeAll(async () => {
 	const {
 		WAREHOUSE_REPOSITORY_TOKEN,
 		WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
-	WAREHOUSE_BORROWING_GUARD_TOKEN,
+		WAREHOUSE_BORROWING_GUARD_TOKEN,
 		WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 		WAREHOUSE_SERVICE_TOKEN,
+		WAREHOUSE_MANAGER_SERVICE_TOKEN,
 	} = await import('../../src/app/inventory/constants/di');
+	const { WAREHOUSE_PIC_RESOLVER_TOKEN } = await import(
+		'../../src/authorization/warehouse-pic-resolver'
+	);
+	const { CODE_NUMBER_SERVICE_TOKEN } = await import(
+		'../../src/app/code-number/constants/di'
+	);
 	const { WarehouseService } = await import(
 		'../../src/app/inventory/services/warehouse.service'
 	);
@@ -308,12 +378,56 @@ beforeAll(async () => {
 			},
 		} as never,
 	});
+	container.register(CODE_NUMBER_SERVICE_TOKEN, {
+		useValue: { next: async () => 'WH-00001' } as never,
+	});
 	container.register(WAREHOUSE_SERVICE_TOKEN, { useClass: WarehouseService });
+
+	// ADR-0017: the guard reads this port (never Drizzle). Live grants come
+	// from `picGrants`; an empty/absent entry is "no live assignment".
+	container.register(WAREHOUSE_PIC_RESOLVER_TOKEN, {
+		useValue: {
+			async listWarehouseIdsForUser(userId: string) {
+				return picGrants.get(userId) ?? [];
+			},
+		},
+	});
+	// Assignment routes stay admin-only; the service is faked here because the
+	// authorization wall is what this file proves, not the assignment CRUD.
+	container.register(WAREHOUSE_MANAGER_SERVICE_TOKEN, {
+		useValue: {
+			async listMine(userId: string, isAppAdmin: boolean) {
+				const ids = isAppAdmin ? [WAREHOUSE_ID] : (picGrants.get(userId) ?? []);
+				return ids.map((id) => ({ ...seed, id, storages: [] }));
+			},
+			async listManagers(warehouseId: string) {
+				return (picGrants.get('member') ?? [])
+					.filter((id) => id === warehouseId)
+					.map(() => ({
+						userId: 'member',
+						name: 'Fixture Member',
+						email: 'member@test.local',
+						assignedBy: null,
+						assignedAt: new Date(0),
+					}));
+			},
+			async searchCandidates() {
+				return [];
+			},
+			async assign(warehouseId: string, userId: string) {
+				return { warehouseId, userId } as never;
+			},
+			async unassign() {
+				return { removed: true };
+			},
+		} as never,
+	});
 
 	app = new Elysia().use(sessionGuard()).use(WarehouseController.plugin());
 });
 
 beforeEach(() => {
+	picGrants.clear();
 	resetFixture();
 });
 
@@ -406,5 +520,225 @@ describe('warehouse routes — application admin is allowed', () => {
 			jsonRequest('GET', '/warehouses', 'globalAdminOwner'),
 		);
 		expect(response.status).toBe(200);
+	});
+});
+
+describe('warehouse routes — person in charge (ADR-0017)', () => {
+	const PIC = 'member';
+
+	test('a PIC of this warehouse can read it', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		const response = await app.handle(
+			jsonRequest('GET', `/warehouses/${WAREHOUSE_ID}`, PIC),
+		);
+		expect(response.status).toBe(200);
+	});
+
+	test('a PIC of this warehouse can update it', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		const response = await app.handle(
+			jsonRequest('PATCH', `/warehouses/${WAREHOUSE_ID}`, PIC, {
+				name: 'Renamed by PIC',
+			}),
+		);
+		expect(response.status).toBe(200);
+	});
+
+	test('a PIC of this warehouse can manage its storages', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		const read = await app.handle(
+			jsonRequest('GET', `/warehouses/${WAREHOUSE_ID}/storages`, PIC),
+		);
+		expect(read.status).toBe(200);
+
+		const created = await app.handle(
+			jsonRequest('POST', `/warehouses/${WAREHOUSE_ID}/storages`, PIC, {
+				code: 'A2',
+			}),
+		);
+		expect(created.status).toBe(201);
+	});
+
+	test('a PIC of another warehouse gets 404, not 403 (existence is not leaked)', async () => {
+		picGrants.set(fixture.users[PIC].id, [OTHER_WAREHOUSE_ID]);
+		const read = await app.handle(
+			jsonRequest('GET', `/warehouses/${WAREHOUSE_ID}`, PIC),
+		);
+		expect(read.status).toBe(404);
+
+		const update = await app.handle(
+			jsonRequest('PATCH', `/warehouses/${WAREHOUSE_ID}`, PIC, {
+				name: 'Nope',
+			}),
+		);
+		expect(update.status).toBe(404);
+	});
+
+	test('a user with no live grant gets 403, not 404', async () => {
+		// Empty grant list = every assignment row is soft-deleted (or none ever
+		// existed). The guard cannot tell the warehouse apart from one that does
+		// not exist, so it must refuse without confirming anything.
+		const response = await app.handle(
+			jsonRequest('GET', `/warehouses/${WAREHOUSE_ID}`, PIC),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test('a soft-deleted grant grants nothing', async () => {
+		// The resolver only reports live rows; clearing the map is the same
+		// answer the repository gives after `unassign`.
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		picGrants.delete(fixture.users[PIC].id);
+		const response = await app.handle(
+			jsonRequest('GET', `/warehouses/${WAREHOUSE_ID}`, PIC),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test('a PIC cannot create a warehouse', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		const response = await app.handle(
+			jsonRequest('POST', '/warehouses', PIC, {
+				code: 'NEW',
+				name: 'New warehouse',
+			}),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test('a PIC cannot assign another person in charge', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		const response = await app.handle(
+			jsonRequest('POST', `/warehouses/${WAREHOUSE_ID}/managers`, PIC, {
+				userId: 'user-sales',
+			}),
+		);
+		expect(response.status).toBe(403);
+	});
+});
+
+/**
+ * The guard accepts five actions (ADR-0017 §2), but only `read`, `update` and
+ * `archive` are reachable today: no warehouse route performs `import` or
+ * `export` yet. `warehouseGuard` reads `options.action` only to copy it into
+ * the `warehouse` context and never branches on it, so the three covered
+ * actions are the whole decision.
+ *
+ * These tests pin that down instead of leaving it as prose. If the guard ever
+ * starts varying by action, or an import/export route appears, the assumption
+ * recorded in `progress.md` stops being true and these tests fail.
+ */
+describe('warehouse routes — the guard is action-agnostic (ADR-0017 §2)', () => {
+	const PIC = 'member';
+
+	/** Builds the smallest app that mounts the real guard for one action. */
+	const guardFor = (action: TWarehouseAction) =>
+		new Elysia()
+			.use(warehouseGuard())
+			.get(
+				'/probe/:id',
+				({ warehouse }: { warehouse: { id: string; action: string } }) =>
+					warehouse,
+				{ warehouse: { action } },
+			);
+
+	test('every declared action is allowed for a PIC of that warehouse', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		for (const action of ALL_ACTIONS) {
+			const response = await guardFor(action).handle(
+				jsonRequest('GET', `/probe/${WAREHOUSE_ID}`, PIC),
+			);
+			expect({ action, status: response.status }).toEqual({ action, status: 200 });
+			const body = (await response.json()) as { action: string };
+			expect({ action, echoed: body.action }).toEqual({ action, echoed: action });
+		}
+	});
+
+	test('every declared action gives 404 for a PIC of another warehouse', async () => {
+		picGrants.set(fixture.users[PIC].id, [OTHER_WAREHOUSE_ID]);
+		for (const action of ALL_ACTIONS) {
+			const response = await guardFor(action).handle(
+				jsonRequest('GET', `/probe/${WAREHOUSE_ID}`, PIC),
+			);
+			expect({ action, status: response.status }).toEqual({ action, status: 404 });
+		}
+	});
+
+	test('every declared action gives 403 without a live grant', async () => {
+		for (const action of ALL_ACTIONS) {
+			const response = await guardFor(action).handle(
+				jsonRequest('GET', `/probe/${WAREHOUSE_ID}`, PIC),
+			);
+			expect({ action, status: response.status }).toEqual({ action, status: 403 });
+		}
+	});
+
+	test('every declared action gives 401 without a session', async () => {
+		for (const action of ALL_ACTIONS) {
+			const response = await guardFor(action).handle(
+				jsonRequest('GET', `/probe/${WAREHOUSE_ID}`),
+			);
+			expect({ action, status: response.status }).toEqual({ action, status: 401 });
+		}
+	});
+
+	test('every declared action admits an application admin with no grant', async () => {
+		const response = await guardFor('export').handle(
+			jsonRequest('GET', `/probe/${WAREHOUSE_ID}`, 'globalAdmin'),
+		);
+		expect(response.status).toBe(200);
+	});
+
+	test('no warehouse route declares import or export yet', () => {
+		// The routes that exist. `import`/`export` land here when a warehouse
+		// import/export endpoint is built; until then the PIC rights for those
+		// two actions are declared in the type but never exercised.
+		const declared = readWarehouseActions();
+		expect(declared).not.toContain('import');
+		expect(declared).not.toContain('export');
+		expect([...declared].sort()).toEqual(['archive', 'read', 'update']);
+	});
+});
+
+describe('GET /warehouses/mine (ADR-0017)', () => {
+	const PIC = 'member';
+
+	test('without a session returns 401', async () => {
+		const response = await app.handle(jsonRequest('GET', '/warehouses/mine'));
+		expect(response.status).toBe(401);
+	});
+
+	test('a PIC sees only the warehouses they manage', async () => {
+		picGrants.set(fixture.users[PIC].id, [WAREHOUSE_ID]);
+		const response = await app.handle(
+			jsonRequest('GET', '/warehouses/mine', PIC),
+		);
+		expect(response.status).toBe(200);
+		const body = (await response.json()) as {
+			data: Array<{ id: string; storages: unknown[] }>;
+		};
+		expect(body.data.map((row) => row.id)).toEqual([WAREHOUSE_ID]);
+		expect(body.data[0]).toHaveProperty('storages');
+	});
+
+	test('a user with no grant gets an empty list, not 403', async () => {
+		// "Which warehouses may I see" has a valid answer for every session:
+		// none. 403 would make the sidebar unable to distinguish "no access"
+		// from "not signed in".
+		const response = await app.handle(
+			jsonRequest('GET', '/warehouses/mine', PIC),
+		);
+		expect(response.status).toBe(200);
+		const body = (await response.json()) as { data: unknown[] };
+		expect(body.data).toEqual([]);
+	});
+
+	test('an application admin sees every live warehouse', async () => {
+		const response = await app.handle(
+			jsonRequest('GET', '/warehouses/mine', 'globalAdmin'),
+		);
+		expect(response.status).toBe(200);
+		const body = (await response.json()) as { data: Array<{ id: string }> };
+		expect(body.data.map((row) => row.id)).toEqual([WAREHOUSE_ID]);
 	});
 });

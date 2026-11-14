@@ -1,6 +1,6 @@
 # Customer Portal Module (ERP-0022, stage 1)
 
-Decision record: [ADR-0018](../decisions/ADR-0018-customer-portal-api.md).
+Decision record: [ADR-0020](../decisions/ADR-0020-customer-portal-api.md).
 Readable API reference (Zudoku): `apps/api-docs` — `bun run dev` there, then
 http://localhost:3100 (spec `apps/api-docs/openapi/website.yaml`, kept in step by
 `apps/backend/test/unit/api-docs-drift.test.ts`).

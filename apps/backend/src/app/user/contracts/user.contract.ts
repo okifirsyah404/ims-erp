@@ -1,4 +1,16 @@
 import { z } from 'zod';
+import { globalRoles } from '@providers/better-auth/ac/admin-ac';
+
+/**
+ * Allowed application roles on `user.role` (ADR-0018).
+ *
+ * @remarks
+ * One closed list, shared by create and set-role, so an admin cannot write an
+ * arbitrary string into `user.role` (the column is free text and every role
+ * check reads it). Multi-role values (`"admin,investor"`) are still stored by
+ * Better Auth, but a write through this API sets exactly one role.
+ */
+const globalRoleSchema = z.enum(globalRoles);
 
 /**
  * Request/response contracts for the user module's first-party admin API.
@@ -20,7 +32,7 @@ export const createUserSchema = z.object({
 	password: z.string().min(8).max(72),
 	name: z.string().min(1).max(120),
 	username: z.string().min(3).max(30).optional(),
-	role: z.string().min(1).optional(),
+	role: globalRoleSchema.optional(),
 	bio: z.string().max(1000).optional(),
 });
 
@@ -69,7 +81,7 @@ export type TUserIdParams = z.infer<typeof userIdParamsSchema>;
 
 /** Body for the role change endpoint; Better Auth owns the `role` column. */
 export const setUserRoleSchema = z.object({
-	role: z.string().min(1).max(50),
+	role: globalRoleSchema,
 });
 
 export type TSetUserRole = z.infer<typeof setUserRoleSchema>;

@@ -208,6 +208,12 @@ describe('locale values', () => {
 			'hr:workType.hybrid',
 			// "Company-level" is the code's own term for organization_id NULL.
 			'hr:list.companyLevel',
+			// HR terms used verbatim in Indonesian (M08).
+			'hr:field.status',
+			'hr:bank.name',
+			'hr:import.file',
+			'hr:salary.bonus',
+			'hr:salary.total',
 			'hr:detail.companyLevel',
 			// Standard accounting vocabulary is identical in Indonesian.
 			'finance:normalBalance.debit',

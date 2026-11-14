@@ -307,3 +307,32 @@ export class ItemCategoryUnavailableError extends AppError {
 		super(422, 'inventory.categoryUnavailable', 'The item category is not available');
 	}
 }
+
+/** The user already holds a live assignment for the warehouse (ADR-0017). */
+export class WarehouseManagerExistsError extends AppError {
+	constructor() {
+		super(
+			409,
+			'inventory.warehouseManagerExists',
+			'This user is already a person in charge of the warehouse',
+		);
+	}
+}
+
+/**
+ * The user named in an assignment does not exist (or is deleted).
+ *
+ * @remarks
+ * 404 rather than 422: the request body is well-formed, the *target resource*
+ * is missing. The check goes through the Identity module contract, never
+ * straight to `auth.users` (cross-module reads go through the owning module).
+ */
+export class WarehouseManagerUserNotFoundError extends AppError {
+	constructor() {
+		super(
+			404,
+			'inventory.warehouseManagerUserNotFound',
+			'User not found',
+		);
+	}
+}

@@ -2,20 +2,20 @@ import { describe, expect, test } from 'bun:test';
 import { hasInternalRole } from '../../src/lib/internal-role';
 
 describe('hasInternalRole', () => {
-	test('investor or customer alone is not internal', () => {
+	test('investor or customer are not organization roles, so never internal', () => {
 		expect(hasInternalRole('investor')).toBe(false);
 		expect(hasInternalRole('customer')).toBe(false);
-		expect(hasInternalRole('investor,customer')).toBe(false);
 	});
 
-	test('any other role is internal, including freelancer and auditor', () => {
+	test('any organization role is internal, including freelancer and auditor', () => {
 		expect(hasInternalRole('sales')).toBe(true);
 		expect(hasInternalRole('freelancer')).toBe(true);
 		expect(hasInternalRole('auditor')).toBe(true);
 	});
 
-	test('investor plus an internal role is internal (split per role, trimmed)', () => {
-		expect(hasInternalRole('investor, sales')).toBe(true);
+	test('split per role, trimmed; one internal role is enough', () => {
+		expect(hasInternalRole('sales, finance')).toBe(true);
+		expect(hasInternalRole(' sales ')).toBe(true);
 	});
 
 	test('empty role string is not internal', () => {

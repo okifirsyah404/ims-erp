@@ -1,7 +1,7 @@
 import { createAuthClient } from 'better-auth/react'
 import { adminClient, organizationClient, usernameClient } from 'better-auth/client/plugins'
 import { currentLanguage } from '@/i18n'
-import { erpAccessControl, erpRoles } from './erp-ac'
+import { adminAccessControl, adminPluginRoles, erpAccessControl, erpRoles } from './erp-ac'
 
 export const authClient = createAuthClient({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000',
@@ -19,7 +19,10 @@ export const authClient = createAuthClient({
     },
   },
   plugins: [
-    adminClient(),
+    adminClient({
+      ac: adminAccessControl,
+      roles: adminPluginRoles,
+    }),
     // Mirrors the server's username() plugin; enables `signIn.username`.
     usernameClient(),
     // organizationClient mirrors the server's organization() plugin

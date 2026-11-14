@@ -1,12 +1,18 @@
 # Role-Based Sidebar, Route Guards, and Warehouse Person-in-Charge
 
-> Status: **in-progress** (approved through grilling, 2026-11-14). Phase 0 and
-> Phase 4 (web-admin) shipped on the branch; Phases 1-3 and 4.8 wait on ADR-0017.
-> Branch: `fix/side-nav-role-based`.
+> Status: **done / verified 2026-11-14** (ADR-0017 accepted 2026-11-14). Phase 0 and
+> Phase 4 (web-admin) shipped on the branch; Phase 1 (PIC schema), Phase 2 (backend
+> authorization), Phase 3 (login gate, ADR-0018), Phase 4 item 8 (PIC nav item and UI)
+> and Phase 5 (verification) all shipped on
+> `refactor/app-roles-investor-customer`. Nothing remains open in this plan.
+> Branch: `refactor/app-roles-investor-customer` (`fix/side-nav-role-based` keeps
+> the Phase 4 web-admin record).
 > Scope: `apps/web-admin` (sidebar, switcher, route guards) plus the backend
 > pieces it depends on (login gate, warehouse person-in-charge access).
 > Backlog: **`ERP-0051`**.
-> Decisions: ADR-0017 (`proposed`).
+> Decisions: ADR-0017 (`accepted`), ADR-0018 (app roles + login gate).
+> Delivery follow-ups: `erp-0051-follow-ups.md` (ERP-0053 … ERP-0058). They are
+> not part of this plan's scope and do not reopen it.
 
 ## Problem
 
@@ -94,6 +100,11 @@ New table `inventory.warehouse_managers`:
 
 ## Phase 2 — Backend authorization
 
+> Done 2026-11-14 on `refactor/app-roles-investor-customer`. Evidence:
+> `progress.md` "warehouse PIC Phase 2"; denial tests in
+> `test/authorization/warehouse-authorization.test.ts`; service unit tests in
+> `test/unit/warehouse-manager.service.test.ts`.
+
 1. **`warehouseGuard`** (new, next to `erpGuard` in `src/authorization/`):
    - Requires a Better Auth session. No active organization required.
    - Allowed when the caller is app admin, or has an active PIC row for the
@@ -128,6 +139,10 @@ New table `inventory.warehouse_managers`:
 
 ## Phase 3 — Login gate and session
 
+> Done 2026-11-14 (ADR-0018 work on `refactor/app-roles-investor-customer`).
+> Evidence: `progress.md` "investor and customer move to app roles", the login
+> gate tests, and `scripts/smoke-login-gate.ts` (8/8 live cases).
+
 1. Verify the Better Auth version installed in `apps/backend` before writing code.
    Confirm the hook point (`databaseHooks.session.create.before` or equivalent).
 2. Hook logic:
@@ -143,6 +158,9 @@ New table `inventory.warehouse_managers`:
    → rejected.
 
 ## Phase 4 — Web-admin
+
+> Items 1-7 done 2026-11-14 (`progress.md` "Phase 4 complete"). Item 8 (PIC nav
+> item and warehouse UI) is the remaining work; the backend it needs is done.
 
 1. **Nav model** (`nav-config.ts`, `sidebar-item.ts`):
    - Add `permission?: Permission | Permission[]`, `open?: true`,
@@ -181,6 +199,15 @@ New table `inventory.warehouse_managers`:
    warehouses. Create button hidden for PIC (decision 22). Manager assign UI
    for app admin only.
 
+   **Done 2026-11-14** (commit `11085e1`). Built shape: a dedicated
+   `warehousePic` nav flag (a PIC grant is a table row, not a permission string)
+   with `isPic` on `NavContext`; `useWarehouseAccess()` as the single source of
+   `isAppAdmin`/`isPic` for the sidebar, list, detail, and route guard;
+   `AdminWarehouseList` vs `PicWarehouseList` (`/warehouses/mine`, no create);
+   Persons-in-charge tab for app admins; `/inventory/warehouses/new` app-admin
+   only in `canOpenPath`. Item tabs are hidden for a PIC because item reads are
+   organization-permission gated. See `progress.md` "warehouse PIC Phase 4.8".
+
 ## Phase 5 — Verification
 
 - `bun run lint`, `bun run test`, `bun run typecheck` from repo root.
@@ -195,15 +222,36 @@ New table `inventory.warehouse_managers`:
   - Route typed directly without permission → redirected to `/`.
 - Use `bun run dev` for the manual pass. Do not claim verified without evidence.
 
+**Status: done 2026-11-14.** Evidence in `progress.md` "warehouse PIC Phase 5":
+
+- Root gates: `bun run typecheck` 4/4, `bun run lint` 5/5 (warnings only), `bun run test` 5/5 —
+  backend 999 pass, web-admin 100 pass, locales 90 pass, react-email 5 pass, 0 fail.
+- Backend enforcement: `apps/backend/scripts/smoke-warehouse-pic.ts`, **47 pass / 0 fail**, over real
+  HTTP against the real login gate and real `warehouse_managers` rows on a disposable DB. Also covers
+  the negative space a browser cannot show: 404 (not 403) for another warehouse, 401 without a session,
+  assign 409/404, idempotent unassign, and the grant taking effect without any organization link.
+- Browser: all seven checklist scenarios plus the assign/unassign round trip confirmed in Edge. Result
+  per scenario recorded in `progress.md`.
+- Not covered by either: the `import`/`export` PIC rights — no warehouse route uses those actions yet.
+  **Pinned 2026-11-14:** 6 tests in `warehouse-authorization.test.ts` prove the guard is action-agnostic
+  for all five declared actions and that the controller declares only `read`/`update`/`archive`; the day an
+  import/export route lands, that source check fails. The whole Phase 5 set was re-run against a freshly
+  reset `ims_erp_local` (47/47).
+
 ## Phase 6 — Docs in the same change
 
-- `docs/database/docs.dbml` updated, `validate-dbml.ts` prints `OK`.
-- `docs/architecture/decisions/ADR-0017-*.md` status moves to `accepted` only
+- `docs/database/docs.dbml` updated, `validate-dbml.ts` prints `OK`.- `docs/architecture/decisions/ADR-0017-*.md` status moves to `accepted` only
   after owner sign-off.
 - `docs/plan/progress.md`: dated entry with exact commands and results.
 - `docs/plan/backlog.md`: no `ERP-*` claimed. Record the fix as a non-ERP
   entry, or add a new ERP ID if the owner wants one. Owner decides.
 - `docs/plan/plans/features.md`: move this plan's status with the code.
+
+Phase 6 status: **done 2026-11-14** — `bun run docs/database/validate-dbml.ts` prints `269 tables,
+232 refs, cross-module refs: 0, timestamp gaps: 0, OK` (there is no root script by that name, so it is
+run by path); ADR-0017 moved to `accepted` with an owner-review note; `progress.md` carries dated Phase
+1/2/4.8/5 entries with commands and results; `backlog.md` records ERP-0051 as `verified`; `features.md`
+rolls it up under `verified`.
 
 ## Risks and open points
 

@@ -1,7 +1,10 @@
 import type { DependencyContainer } from 'tsyringe';
+import { WAREHOUSE_PIC_RESOLVER_TOKEN } from '@authorization/warehouse-pic-resolver';
+import type { IWarehouseManagerRepository as IWarehouseManagerRepositoryPort } from './contracts/warehouse-manager.repository.interface';
 import { ItemRepository } from './repositories/item.repository';
 import { SerialUnitRepository } from './repositories/serial-unit.repository';
 import { WarehouseRepository } from './repositories/warehouse.repository';
+import { WarehouseManagerRepository } from './repositories/warehouse-manager.repository';
 import { WarehouseAddressRepository } from './repositories/warehouse-address.repository';
 import { WarehouseStorageRepository } from './repositories/warehouse-storage.repository';
 import { MovementRepository } from './repositories/movement.repository';
@@ -16,6 +19,7 @@ import { ItemCategoryService } from './services/item-category.service';
 import { AUDIT_SERVICE_TOKEN } from '../audit/constants/di';
 import type { AuditService } from '../audit/services/audit.service';
 import { WarehouseService } from './services/warehouse.service';
+import { WarehouseManagerService } from './services/warehouse-manager.service';
 import { ExportedWarehouseService } from './services/exported-warehouse.service';
 import { StockService } from './services/stock.service';
 import { AdjustmentService } from './services/adjustment.service';
@@ -35,6 +39,8 @@ import {
 	STOCK_SERVICE_TOKEN,
 	WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
 	WAREHOUSE_BORROWING_GUARD_TOKEN,
+	WAREHOUSE_MANAGER_REPOSITORY_TOKEN,
+	WAREHOUSE_MANAGER_SERVICE_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
 	WAREHOUSE_SERVICE_TOKEN,
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
@@ -95,6 +101,21 @@ export function registerInventory(container: DependencyContainer): void {
 	);
 	container.register(WAREHOUSE_SERVICE_TOKEN, {
 		useClass: WarehouseService,
+	});
+	// ADR-0017: person-in-charge assignments. The repository doubles as the
+	// `warehouseGuard` port (it implements `IWarehousePicResolver`), so the
+	// guard never touches Drizzle.
+	container.register(WAREHOUSE_MANAGER_REPOSITORY_TOKEN, {
+		useClass: WarehouseManagerRepository,
+	});
+	container.register(WAREHOUSE_MANAGER_SERVICE_TOKEN, {
+		useClass: WarehouseManagerService,
+	});
+	container.register(WAREHOUSE_PIC_RESOLVER_TOKEN, {
+		useFactory: (c: DependencyContainer) =>
+			c.resolve<IWarehouseManagerRepositoryPort>(
+				WAREHOUSE_MANAGER_REPOSITORY_TOKEN,
+			),
 	});
 	// Cross-module export facade — repository-only, safe for other modules.
 	container.register(EXPORTED_WAREHOUSE_SERVICE_TOKEN, {

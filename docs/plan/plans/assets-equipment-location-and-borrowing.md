@@ -157,6 +157,13 @@ Order inside the slice matters: the CHECK tightens only after the rows are gone.
    - refuses to run when it finds a borrowing it cannot classify;
    - hard-deletes `items(kind='tool')` and their `serial_tracked_items`,
      cancelling any open borrowing with an audit row (D16).
+
+   > **Done, then deleted 2026-11-14.** The script ran its dry run and
+   > `--apply` on 2026-11-06 (8 items, 12 units removed) and is now a permanent
+   > no-op: no `tool`/`service` rows exist and `ITEM_KINDS` no longer admits
+   > them. It was removed from the tree rather than kept as a dead one-shot;
+   > `docs/plan/progress.md` 2026-11-14 "removed the two stale one-shot database
+   > scripts" has the reasoning.
 2. Trim `database/seeders/seed/inventory.seeder.ts` to
    `product|component|material`; delete the tool and service blocks
    (`:104-155`) and their kinds entry (`:88-94`).
@@ -279,6 +286,12 @@ gate set is green.
   `verify-inventory-constraints.ts` now probes `assets.borrowings` /
   `assets.borrowing_events`, and its D18 asset probes use `ready` instead of
   the retired `in_stock`.
+
+  > That verifier was **deleted** on 2026-11-14: by then it failed 14 of its own
+  > checks (missing `items.code`, `organization.document_sequences` moved to
+  > `code_number`, a hardcoded six-schema `DROP` that broke the second run), so
+  > the sentence above describes its state on 2026-11-06 only. No successor runs
+  > constraint checks against a live server.
 
 ```text
 bun run typecheck                      → clean (backend, locales, ui)
