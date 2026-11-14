@@ -14,13 +14,6 @@ export class PortalLockedError extends AppError {
 	}
 }
 
-/** Owner decision 2026-11-14: accounts come only from a staff invitation. */
-export class PortalSignupClosedError extends AppError {
-	constructor() {
-		super(403, 'portal.signupClosed', 'Portal accounts are created by invitation only');
-	}
-}
-
 export class PortalInvalidTokenError extends AppError {
 	constructor() {
 		super(400, 'portal.invalidToken', 'Invalid or expired link');

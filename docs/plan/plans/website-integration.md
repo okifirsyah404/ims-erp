@@ -81,19 +81,19 @@ Legend: ✅ main · 🟡 PR #84 (open) · 🟦 branch `feat/m07-customer-portal`
 | `getPaymentStatus` | — | ❌ | payment gateway (ERP-0020); D5 |
 | `trackOrder` (order number + contact) | — | ❌ | sales/delivery; D9 |
 
-### `PortalSource` (apps/customer) — 16/51 built (+2 ERP extras)
+### `PortalSource` (apps/customer) — 22/51 built (+2 ERP extras)
 
 | Group | Operation | ERP route | Status | Owner / blocker |
 | --- | --- | --- | --- | --- |
 | Auth | `login` | `POST /portal/v1/auth/login` | 🟦 | portal (lockout) |
-| | `register` | `POST /portal/v1/auth/register` → 403 | 🟦 (refuses) | **D1** |
-| | `verifyEmail`, `resendVerification` | — | ❌ | D1 (only needed with open sign-up) |
+| | `register` | `POST /portal/v1/auth/register` | 🟦 | Identity (D1: individuals; business → 403) |
+| | `verifyEmail`, `resendVerification` | `POST /portal/v1/auth/verify-email[/resend]` | 🟦 | Identity + CRM (customer, contact, owner login) |
 | | `requestPasswordReset` | `POST /portal/v1/auth/password-reset` | 🟦 | Identity |
 | | `resetPassword` | `POST /portal/v1/auth/password-reset/confirm` | 🟦 | Identity (also first password) |
 | | `logout` | `POST /portal/v1/auth/logout` | 🟦 | portal |
 | | `refreshSession` | — | ❌ | D3 (leave unset: 7-day sliding Better Auth sessions) |
 | | `changePassword` | `POST /portal/v1/account/password` | 🟦 | portal |
-| | `completeOnboarding` | — | ❌ | D2 (site address + member invites) |
+| | `completeOnboarding` | — | ❌ | sites (CRM `customer_addresses`, target only) + member invites |
 | Home | `getHome` | `GET /portal/v1/home` | 🟦 partial | quotations/activity/onboarding/account manager empty |
 | | `getBadges` | `GET /portal/v1/badges` | 🟦 partial | only `openTickets` |
 | | `listNotifications` | — | ❌ | notification module (ERP-0047, programmer A) — producer for portal users needed |
@@ -112,12 +112,24 @@ Legend: ✅ main · 🟡 PR #84 (open) · 🟦 branch `feat/m07-customer-portal`
 | | `lookupDevice`, `registerDevice` | — | ❌ | sales `findShipmentBySerial` exists; D10 |
 | Documents | `listDocuments` | — | ❌ | document registry (ERP-0044) + signed files; stage 2 |
 | Account | `getProfile` | — | ❌ | portal (counters) |
-| | `getAccount`, `updatePersonal`, `updateCompany`, `updateSettings` | — | ❌ | Identity + CRM; D2, D11 |
-| | `inviteMember`, `removeMember` | — | ❌ | **D2** |
+| | `getAccount` | `GET /portal/v1/account` | 🟦 | portal (members real; sites/settings defaults) |
+| | `updatePersonal`, `updateCompany`, `updateSettings` | — | ❌ | Identity + CRM; D11 |
+| | `inviteMember`, `removeMember` | `POST/DELETE /portal/v1/account/members` | 🟦 | Identity (owner only) |
 | | `saveSite`, `deleteSite` | — | ❌ | CRM `customer_addresses` (dbml target only) |
 | | `listWishlist`, `removeWishlistItem` | — | ❌ | commerce; D6 |
 | RFQ | `listRfqs`, `requestRfqClaim`, `confirmRfqClaim` | — | ❌ | CRM leads by customer/email + email OTP |
 | — | — (ERP extra) | `GET /portal/v1/me` | 🟦 | portal |
+
+## Decisions taken
+
+- **D1 (2026-11-14): individuals sign up themselves, businesses by
+  invitation.** An `individual` sign-up is verified by an emailed code; the
+  ERP then creates the CRM customer, its primary contact and an owner login.
+  A `business` sign-up is refused (staff invite the company).
+- **D2 (2026-11-14): one login per person (customer contact) with a role**
+  `owner | approver | finance | viewer`. Staff invite the first contact as
+  owner; an owner invites and removes colleagues from the portal. The web
+  admin refuses customer logins.
 
 ## Decisions needed from the owner
 
@@ -126,8 +138,8 @@ schema already built on `feat/m07-customer-portal`.
 
 | # | Question | What the website already assumes | Options / recommendation |
 | --- | --- | --- | --- |
-| **D1** ⚠ | Who may create a portal account? | Open sign-up (`/register`, email OTP verification, `individual` or `business`); website checkout requires a portal sign-in | (a) invite-only (current build) — retail buyers cannot check out online; (b) open sign-up creates a *new* CRM customer on verification, staff merge duplicates; (c) open sign-up for `individual` only, business accounts by invitation. **Recommend (c)** if online retail sales are wanted, else (a) and hide the register page |
-| **D2** ⚠ | One login per customer or several people per company? | Company members with roles (owner / approver / finance / viewer), approval limits, onboarding invites | (a) one login (current build); (b) one login per **contact** (`crm.customer_contacts`), member role on the identity — needs a dbml/schema change (identity unique on the contact, not the customer) before the PR. **Recommend (b)** for business customers; it also gives `acceptQuotation` a real approver |
+| **D1** ✅ decided (individuals sign up, businesses invited) | Who may create a portal account? | Open sign-up (`/register`, email OTP verification, `individual` or `business`); website checkout requires a portal sign-in | (a) invite-only (current build) — retail buyers cannot check out online; (b) open sign-up creates a *new* CRM customer on verification, staff merge duplicates; (c) open sign-up for `individual` only, business accounts by invitation. **Recommend (c)** if online retail sales are wanted, else (a) and hide the register page |
+| **D2** ✅ decided (one login per contact + role; web admin refuses customer logins) | One login per customer or several people per company? | Company members with roles (owner / approver / finance / viewer), approval limits, onboarding invites | (a) one login (current build); (b) one login per **contact** (`crm.customer_contacts`), member role on the identity — needs a dbml/schema change (identity unique on the contact, not the customer) before the PR. **Recommend (b)** for business customers; it also gives `acceptQuotation` a real approver |
 | D3 | Session refresh | Optional `refreshToken` | Leave `refreshSession` unset: Better Auth sessions slide for 7 days; on 401 the portal signs the user out. Recommend as is |
 | **D4** | May a customer accept an SPH online? What happens? | Accept with PO number + approver; request a revision with topics | Recommend: accept = record the customer's acceptance on the SPH and notify sales; sales still creates the sales order (Deal) — no automatic order |
 | **D5** | Online payment | VA BCA/Mandiri, QRIS, card, "invoice" (pay later) | Choose a gateway (Midtrans / Xendit / other) and get a sandbox; ERP-0020. Without it: only "invoice" payment and bank-transfer instructions |
@@ -173,7 +185,7 @@ schema already built on `feat/m07-customer-portal`.
 
 | Step | Content | Needs |
 | --- | --- | --- |
-| 0 | Decide D1, D2 (schema) and adjust `feat/m07-customer-portal` before its PR | owner |
+| 0 | ✅ D1, D2 decided and built on `feat/m07-customer-portal` (2026-11-14) | — |
 | 1 | Wire stage 1 routes in the website; run the portal against a staging ERP | website + ERP staging |
 | 2 | Read-only sales documents: orders, quotations, invoices, documents, profile, badges/home complete | invoice API fix on main; money conversion |
 | 3 | `acceptQuotation` / revision request, device lookup/register, ticket attachments, booking-as-ticket | D4, D7, D8, D10 |

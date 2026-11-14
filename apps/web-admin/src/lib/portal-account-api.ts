@@ -4,15 +4,21 @@ import { currentLanguage } from '@/i18n';
 
 /**
  * API client for customer-portal logins (`/admin/portal-accounts`,
- * ERP-0022). One login per customer; the customer sets the password from
- * the emailed link. `portal_account:read|invite|revoke`.
+ * ERP-0022). One login per person (customer contact) with a role (owner
+ * decision D2); the person sets the password from the emailed link.
+ * `portal_account:read|invite|revoke`.
  */
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
+export const PORTAL_ROLES = ['owner', 'approver', 'finance', 'viewer'] as const;
+export type TPortalRole = (typeof PORTAL_ROLES)[number];
+
 export type TPortalAccount = {
 	id: string;
 	customerId: string;
+	contactId: string | null;
+	role: TPortalRole;
 	status: 'active' | 'suspended' | 'revoked';
 	user: { id: string; name: string; email: string };
 	passwordSet: boolean;
@@ -36,15 +42,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<TApiRespons
 	return envelope;
 }
 
-export function portalAccountQueryOptions(customerId: string, enabled: boolean) {
+export function portalAccountsQueryOptions(customerId: string, enabled: boolean) {
 	return queryOptions({
 		queryKey: ['crm', 'portal-account', customerId] as const,
-		queryFn: async () => (await request<TPortalAccount | null>(`/admin/portal-accounts?customerId=${encodeURIComponent(customerId)}`)).data ?? null,
+		queryFn: async () => (await request<TPortalAccount[]>(`/admin/portal-accounts?customerId=${encodeURIComponent(customerId)}`)).data ?? [],
 		enabled,
 	});
 }
 
-export async function invitePortalAccount(input: { customerId: string; name: string; email: string }) {
+export async function invitePortalAccount(input: { customerId: string; name: string; email: string; role: TPortalRole }) {
 	return (await request<TPortalAccount>('/admin/portal-accounts', { method: 'POST', body: JSON.stringify(input) })).data;
 }
 

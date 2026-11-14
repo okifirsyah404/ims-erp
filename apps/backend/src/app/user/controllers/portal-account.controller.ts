@@ -15,14 +15,14 @@ export class PortalAccountController {
 		const id = (params: unknown) => portalAccountIdParamSchema.parse(params).id;
 
 		return domainPlugin({ name: 'user-portal-accounts', prefix: '/admin/portal-accounts', tags: ['Customer portal'], guards: 'erp' })
-			.get('', async ({ query }) => ok(await service.getForCustomer(portalAccountQuerySchema.parse(query).customerId)), {
+			.get('', async ({ query }) => ok(await service.listForCustomer(portalAccountQuerySchema.parse(query).customerId)), {
 				erp: { permission: ['portal_account:read'] },
-				detail: { description: "The customer's live portal login, or null" },
+				detail: { description: "The customer's live portal logins (one per contact)" },
 			})
 			.post(
 				'',
 				async ({ body, erp, status }) => status(201, created(await service.invite(erp.session.user.id, inviteCustomerPortalSchema.parse(body)))),
-				{ erp: { permission: ['portal_account:invite'] }, detail: { description: 'Creates the login and emails a "set your password" link' } },
+				{ erp: { permission: ['portal_account:invite'] }, detail: { description: 'Invites one person of the customer (role; new contact unless contactId) and emails a "set your password" link' } },
 			)
 			.post('/:id/resend', async ({ params }) => ok(await service.resend(id(params))), {
 				erp: { permission: ['portal_account:invite'] },

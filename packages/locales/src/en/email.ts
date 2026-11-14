@@ -36,6 +36,13 @@ const email = {
 	'portalInvitation.fallback':
 		'If the button does not work, copy and paste this link into your browser:',
 
+	// Customer portal sign-up code (ERP-0022): verifies the email of an
+	// individual who signed up.
+	'portalSignupCode.subject': '{{code}} is your {{app}} portal code',
+	'portalSignupCode.greeting': 'Hi {{name}},',
+	'portalSignupCode.body': 'Use this code to finish creating your {{app}} customer portal account.',
+	'portalSignupCode.expiry': 'The code expires in 10 minutes. If you did not sign up, ignore this email.',
+
 	// Organization invitation (invitation.type = 'org'): invite to join a
 	// specific organization with a role.
 	'organizationInvitation.subject': 'You are invited to join {{organization}}',

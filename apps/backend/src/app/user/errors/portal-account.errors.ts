@@ -7,10 +7,10 @@ export class PortalCustomerUnavailableError extends AppError {
 	}
 }
 
-/** The customer already has a live portal login (one per customer, owner decision 2026-11-14). */
+/** The contact already has a live portal login (one per person, owner decision D2). */
 export class PortalAccountExistsError extends AppError {
 	constructor() {
-		super(409, 'portal.accountExists', 'This customer already has a portal account');
+		super(409, 'portal.accountExists', 'This person already has a portal account');
 	}
 }
 
@@ -31,5 +31,39 @@ export class PortalAccountNotFoundError extends AppError {
 export class PortalNotConfiguredError extends AppError {
 	constructor() {
 		super(503, 'portal.notConfigured', 'The customer portal URL is not configured');
+	}
+}
+
+/** Owner decision D1: only individuals sign up; a company is invited by staff. */
+export class PortalBusinessSignupError extends AppError {
+	constructor() {
+		super(403, 'portal.businessByInvitation', 'Business accounts are created by invitation');
+	}
+}
+
+/** Wrong, expired or used sign-up code (5 attempts per code). */
+export class PortalInvalidCodeError extends AppError {
+	constructor() {
+		super(400, 'portal.invalidCode', 'Invalid or expired code');
+	}
+}
+
+/** Managing members is the owner's job (owner decision D2). */
+export class PortalOwnerOnlyError extends AppError {
+	constructor() {
+		super(403, 'portal.ownerOnly', 'Only an owner can manage members');
+	}
+}
+
+export class PortalRemoveSelfError extends AppError {
+	constructor() {
+		super(422, 'portal.removeSelf', 'You cannot remove your own access');
+	}
+}
+
+/** The contact does not exist or belongs to another customer. */
+export class PortalContactUnavailableError extends AppError {
+	constructor() {
+		super(422, 'portal.contactUnavailable', 'The contact is missing or belongs to another customer');
 	}
 }

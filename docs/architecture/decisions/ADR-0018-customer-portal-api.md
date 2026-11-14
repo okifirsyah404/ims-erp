@@ -17,13 +17,29 @@
      nullable per ADR-0014). It is **never an organization member**, so the
      `erp` guard refuses it on every ERP route; the `customer` role stays
      unused.
-  2. **One login per customer, invitation only** (owner). Staff invite from the
-     customer page (`/admin/portal-accounts`, `portal_account:*`); the email
-     links to the portal's `/reset-password?token=…`. The token is Better
-     Auth's own reset-password verification value (3 days for an invitation,
-     1 hour for "forgot password"), so passwords stay Better Auth's. The email
-     of a staff login is refused. Revoking marks the identity revoked and
+  2. **One login per person, with a role; individuals sign up, businesses
+     are invited** (owner decisions D1/D2 of 2026-11-14, taken after the
+     website gap analysis `docs/plan/plans/website-integration.md`; the first
+     choice the same morning — one login per customer, invitation only —
+     would have blocked online retail and the website's member screens). The
+     identity points at the CRM contact (`contact_id`, unique per contact)
+     with `portal_role` `owner | approver | finance | viewer`. Staff invite
+     from the customer page (`/admin/portal-accounts`, `portal_account:*`);
+     an owner invites and removes colleagues from the portal. Invitation
+     emails link to the portal's `/reset-password?token=…`; the token is
+     Better Auth's own reset-password verification value (3 days for an
+     invitation, 1 hour for "forgot password"), so passwords stay Better
+     Auth's. An `individual` signs up with a password and confirms a 6-digit
+     emailed code (10 minutes, 5 attempts, kept hashed in Redis); the
+     verification creates the CRM customer (`PRT-…` code), its primary
+     contact and an owner login, and signs in. A `business` sign-up is
+     refused. A staff email is refused; an already verified email gets the
+     same answer and no email. Revoking marks the identity revoked and
      deletes the user's sessions.
+  2a. **The web admin refuses customer logins**: `session.create.before`
+     refuses a session for a user with a portal identity unless the request
+     carries the portal sign-in marker (`x-erp-portal-signin` with a random
+     per-process nonce, sent only by the portal module's server-side calls).
   3. **The portal API is `/portal/v1`, owned by a `portal` module with no
      tables** (a backend-for-frontend). Sign-in returns Better Auth's signed
      session token as the portal's `accessToken`; the `portal` guard
@@ -52,9 +68,10 @@
      module in `docs.dbml` stays target-only.
 - **Consequences:** the portal works without any Better Auth plugin change;
   the website team configures `PortalRoutes` from
-  `docs/architecture/modules/customer-portal.md`. Shared logins per company
-  (one per customer) are a known limit; per-contact logins need a schema
-  change (unique index on the customer). Ticket photos/attachments, orders,
+  `docs/architecture/modules/customer-portal.md`. Roles gate only member
+  management today (owner); approver/finance gates arrive with quotations
+  and invoices. A pending sign-up leaves an unverified user without an
+  identity (it can never sign in). Ticket photos/attachments, orders,
   quotations, invoices, documents and notifications are stage 2. The UI copy
   lives partly in the API (`api` locale namespace), so label changes need a
   backend release.

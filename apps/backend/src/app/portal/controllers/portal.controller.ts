@@ -4,6 +4,7 @@ import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok } from '@http/response';
 import { resolveLanguage, translator } from '@providers/i18n/translator';
 import { PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
+import { portalMemberInviteSchema, portalSignupSchema } from '@app/user/contracts/portal-account.contract';
 import {
 	portalChangePasswordSchema,
 	portalIdParamSchema,
@@ -12,10 +13,14 @@ import {
 	portalPasswordConfirmSchema,
 	portalPasswordResetSchema,
 	portalProductParamSchema,
+	portalResendSchema,
 	portalTicketSchema,
+	portalVerifySchema,
 } from '../contracts/portal.contract';
-import { PortalAttachmentsUnsupportedError, PortalSignupClosedError } from '../errors/portal.errors';
+import { PortalAttachmentsUnsupportedError } from '../errors/portal.errors';
 import {
+	accountSettings,
+	companyMember,
 	deviceSummary,
 	portalUser,
 	projectDetail,
@@ -80,12 +85,26 @@ export class PortalAuthController {
 				},
 				{ detail: { description: 'Email + password sign-in; 401 wrong credentials, 423 locked after 5 failures' } },
 			)
+			.post('/register', async ({ body }) => ok(await auth.register(portalSignupSchema.parse(body))), {
+				detail: { description: 'Individuals sign up (a 6-digit code goes to the email); business → 403, invitation only' },
+			})
 			.post(
-				'/register',
-				() => {
-					throw new PortalSignupClosedError();
+				'/verify-email',
+				async (ctx) => {
+					const input = portalVerifySchema.parse(ctx.body);
+					const { context, expiresAt } = await auth.verifySignup(input.email, input.code);
+					const customer = await portal.customer(context);
+					return ok({ user: portalUser(context, customer), tokens: { accessToken: context.accessToken, expiresAt: expiresAt.toISOString() } });
 				},
-				{ detail: { description: 'Always 403: portal accounts are created by staff invitation' } },
+				{ detail: { description: 'The right code creates the customer and an owner login and signs in; 400 wrong/expired (5 attempts)' } },
+			)
+			.post(
+				'/verify-email/resend',
+				async ({ body }) => {
+					await auth.resendVerification(portalResendSchema.parse(body).email);
+					return noContent();
+				},
+				{ detail: { description: 'A new sign-up code for a pending sign-up; same answer for any email' } },
 			)
 			.post(
 				'/password-reset',
@@ -135,6 +154,28 @@ export class PortalController {
 					return noContent();
 				},
 				{ portal: true, detail: { description: 'Changes the password; 400 when the current one is wrong' } },
+			)
+			.get(
+				'/account',
+				async (ctx) => {
+					const [customer, members] = await Promise.all([service.customer(ctx.portal), service.members(ctx.portal)]);
+					return ok(accountSettings(presenter(ctx), ctx.portal, customer, members));
+				},
+				{ portal: true, detail: { description: 'Account, company and the members (logins) of the customer' } },
+			)
+			.post(
+				'/account/members',
+				async (ctx) =>
+					ctx.status(201, created(companyMember(presenter(ctx), await service.inviteMember(ctx.portal, portalMemberInviteSchema.parse(ctx.body))))),
+				{ portal: true, detail: { description: 'An owner invites a colleague (approver, finance, viewer); 403 for other roles' } },
+			)
+			.delete(
+				'/account/members/:id',
+				async (ctx) => {
+					await service.removeMember(ctx.portal, id(ctx.params));
+					return noContent();
+				},
+				{ portal: true, detail: { description: 'An owner removes a colleague (not themselves)' } },
 			)
 			.get('/me', async (ctx) => ok(portalUser(ctx.portal, await service.customer(ctx.portal))), {
 				portal: true,

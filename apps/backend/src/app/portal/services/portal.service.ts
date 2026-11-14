@@ -6,6 +6,9 @@ import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
 import type { CustomerService } from '@app/crm/services/customer.service';
 import { PROJECT_PORTAL_SERVICE_TOKEN } from '@app/projects/constants/di';
 import type { ProjectPortalService, TPortalProject, TPortalProjectDetail } from '@app/projects/services/project-portal.service';
+import { PORTAL_ACCOUNT_SERVICE_TOKEN } from '@app/user/constants/di';
+import type { TPortalAccountView, TPortalMemberInvite } from '@app/user/contracts/portal-account.contract';
+import type { PortalAccountService } from '@app/user/services/portal-account.service';
 import type { PortalContext } from '@authorization/portal-auth';
 import type { TCustomerSelect } from '@drizzle/schemas/crm.schema';
 import type { TWarrantyCertificateSelect } from '@drizzle/schemas/aftersales.schema';
@@ -33,7 +36,21 @@ export class PortalService {
 		>,
 		@inject(WARRANTY_SERVICE_TOKEN) private readonly warranties: Pick<WarrantyService, 'listForCustomer' | 'getForCustomer'>,
 		@inject(CUSTOMER_SERVICE_TOKEN) private readonly customers: Pick<CustomerService, 'getActiveCustomer'>,
+		@inject(PORTAL_ACCOUNT_SERVICE_TOKEN) private readonly accounts: Pick<PortalAccountService, 'members' | 'inviteMember' | 'removeMember'>,
 	) {}
+
+	/** The customer's logins (every member may see them; only owners change them). */
+	members(portal: PortalContext): Promise<TPortalAccountView[]> {
+		return this.accounts.members(portal);
+	}
+
+	inviteMember(portal: PortalContext, input: TPortalMemberInvite): Promise<TPortalAccountView> {
+		return this.accounts.inviteMember(portal, input);
+	}
+
+	removeMember(portal: PortalContext, id: string): Promise<void> {
+		return this.accounts.removeMember(portal, id);
+	}
 
 	customer(portal: PortalContext): Promise<TCustomerSelect | null> {
 		return this.customers.getActiveCustomer(portal.customerId);

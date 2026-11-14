@@ -1,6 +1,6 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
 import { portalIdentities, type TPortalIdentitySelect } from '@drizzle/schemas/portal.schema';
-import { and, eq, isNull, ne } from 'drizzle-orm';
+import { and, asc, eq, isNull, ne } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import type { IPortalIdentityRepository } from '../contracts/portal-account.contract';
@@ -10,13 +10,21 @@ import type { IPortalIdentityRepository } from '../contracts/portal-account.cont
 export class PortalIdentityRepository implements IPortalIdentityRepository {
 	constructor(@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase) {}
 
-	async findLiveByEntity(portalType: 'customer', entityId: string): Promise<TPortalIdentitySelect | null> {
+	async findLiveByContact(contactId: string): Promise<TPortalIdentitySelect | null> {
 		const [row] = await this.database
 			.select()
 			.from(portalIdentities)
-			.where(and(eq(portalIdentities.portalType, portalType), eq(portalIdentities.linkedEntityId, entityId), isNull(portalIdentities.deletedAt)))
+			.where(and(eq(portalIdentities.portalType, 'customer'), eq(portalIdentities.contactId, contactId), isNull(portalIdentities.deletedAt)))
 			.limit(1);
 		return row ?? null;
+	}
+
+	async listLiveByCustomer(customerId: string): Promise<TPortalIdentitySelect[]> {
+		return this.database
+			.select()
+			.from(portalIdentities)
+			.where(and(eq(portalIdentities.portalType, 'customer'), eq(portalIdentities.linkedEntityId, customerId), isNull(portalIdentities.deletedAt)))
+			.orderBy(asc(portalIdentities.createdAt));
 	}
 
 	async findLiveByUser(userId: string): Promise<TPortalIdentitySelect | null> {
@@ -37,7 +45,7 @@ export class PortalIdentityRepository implements IPortalIdentityRepository {
 		return row ?? null;
 	}
 
-	async create(data: { userId: string; portalType: 'customer'; linkedEntityId: string; createdBy: string }): Promise<TPortalIdentitySelect> {
+	async create(data: Parameters<IPortalIdentityRepository['create']>[0]): Promise<TPortalIdentitySelect> {
 		const now = new Date();
 		const [row] = await this.database
 			.insert(portalIdentities)

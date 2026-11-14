@@ -315,11 +315,13 @@ Last synced: 2026-11-14.
 
 ### implemented
 - Customer portal stage 1 — T26 + the account part of T25, ERP-0022
-  (ADR-0018): staff invite one portal login per customer; `/portal/v1`
-  sign-in (lockout), projects with milestones/BASTs/files (no costs), service
-  tickets opened, discussed and confirmed by the customer (staff thread with
-  internal notes), devices and warranties. Evidence: `src/app/portal`,
-  `test/unit/customer-portal.test.ts`, `progress.md` 2026-11-14 (e2e 32/32).
+  (ADR-0018): one login per customer contact with a role, staff invitations,
+  owners manage colleagues, individuals sign up with an emailed code, the web
+  admin refuses customer logins; `/portal/v1` sign-in (lockout), projects
+  with milestones/BASTs/files (no costs), service tickets opened, discussed
+  and confirmed by the customer (staff thread with internal notes), devices
+  and warranties. Evidence: `src/app/portal`,
+  `test/unit/customer-portal.test.ts`, `progress.md` 2026-11-14 (e2e 50/50).
   Gaps: the website adapter routes not wired; stage 2 (orders, quotations,
   invoices, documents, attachments) planned.
 - Projects from a deal: PIC, targets, stage, default checklist with

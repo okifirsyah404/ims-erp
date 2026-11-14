@@ -18,6 +18,76 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0022 portal logins per contact with roles, individual sign-up (D1/D2)
+
+Owner decisions after the gap analysis below (`docs/plan/plans/website-integration.md`):
+**D1** individuals sign up themselves, businesses are invited; **D2** one login
+per person (customer contact) with a role `owner | approver | finance |
+viewer`, owners manage colleagues, and the web admin refuses customer logins.
+The owner asked for a recommendation on D2 because "the current login is for
+internal users": explained that customers use the same Better Auth (AGENTS.md:
+no second auth system) but are separated by `portal_identities` (never
+organization members, only `/portal/v1`), then the owner chose the
+recommendation. Recorded in ADR-0018 (decision 2 rewritten, 2a added) and the
+gap analysis.
+
+Gate 1: `docs.dbml` Identity (`portal_identities`) and CRM
+(`customer_contacts`, `customers`), `logical-references.md` format (the
+generator only reads the standard note), `module-ownership.md` (CRM owns
+contacts → contract methods). Gate 2 (manual, on top of the stage-1 record):
+tenant company-wide; new cross-module reference `contact_id` → CRM, nullable,
+checked through `CustomerService.getContact`; role vocabulary as above;
+self-sign-up customer code `PRT-<base36 time><4 hex>` generated in CRM (no
+`code_number` change — that module is programmer A's); pending sign-ups live
+in Redis (code hashed, 10 min, 5 attempts); an unverified user without an
+identity can never sign in.
+
+**docs.dbml first**: `contact_id` (standard logical-reference note),
+`portal_role` + check, unique live index moved to `(portal_type,
+contact_id)`, `created_by` note. `gen-logical-references.ts` → `525 refs across
+41 targets, 232 intra-module refs`; `validate-dbml.ts` → OK.
+
+**Built** (branch `feat/m07-customer-portal`): Drizzle `portal.schema.ts`
+(+ `contactId`, `portalRole`), append-only migration
+`20261114110000_erp0022_portal_contacts_roles`; CRM
+`CustomerService.createFromPortalSignup`; Identity `PortalAccountService`
+rewritten (per-contact invitations with role, `listForCustomer`, `members`,
+`inviteMember`, `removeMember`, `startSignup`, `resendSignupCode`,
+`verifySignup`), adapter `setPassword` / `markEmailVerified`, mail
+`sendSignupCode` + `renderPortalSignupCodeEmail` + new `CodeEmail`
+(`packages/react-email`); `session.create.before` refuses sessions of portal
+users without the portal sign-in nonce (`providers/better-auth/portal-signin.ts`);
+portal `register`, `verify-email`, `verify-email/resend`, `GET /account`,
+`POST/DELETE /account/members`; web admin card lists all logins with roles and
+invites with a role. en/id keys (api, crm, email; `ALLOWED`/dynamic prefixes
+updated). Docs: ADR-0018, `modules/customer-portal.md`, gap analysis
+(22/51 operations), `data-model.md`, user guide 8.8 (en, id).
+
+**Verification**
+- `bun run typecheck` → 4/4 clean; `bun run lint` → 0 errors, warning counts
+  unchanged (none in the touched files).
+- Backend `bun test` → 942 pass, 4 fail (the same `Bun.Image` tests, Bun 1.4.1
+  on this machine); `customer-portal.test.ts` 23 pass (accounts, members,
+  sign-up incl. 5 wrong codes, sign-in, tickets, projects, devices, guard);
+  web-admin 74 pass; locales 90 pass; react-email 6 pass (new code email test).
+- Disposable `ims_erp_portal`: `migrate-reset.ts` → complete; `drizzle-kit
+  push --explain` → only main's `sales.receipts` FK drift.
+- E2E (backend alone, `PORTAL_URL` on the process, `.env` untouched): **50/50**
+  — stage-1 checks plus: account lists 1 owner; owner invites finance (201,
+  invited); staff sees 2 logins; finance signs in and gets 403 inviting; owner
+  removing self 422; owner removes finance → finance token 401; **the customer's
+  password on the web admin sign-in is refused with no session cookie**;
+  business sign-up 403; individual sign-up 200; unverified sign-in 401; wrong
+  code 400; right code signs in as `individual`; staff sees the new `PRT-`
+  individual customer; later password sign-in 200; signing up again with the
+  verified email answers 200 and leaves the password unchanged. SMTP is off on
+  this stack, so the code was read from the backend's "mail disabled" log line
+  (same behaviour as the existing reset/invitation mails).
+- Not done: website adapter wiring; browser check of the web admin card.
+
+`docs/database/` updated (above). Next executable task: owner review, then the
+PR for `feat/m07-customer-portal`; then wire the website routes.
+
 ## 2026-11-14 - Website / customer portal integration gap analysis (ERP-0022, ERP-0020)
 
 Owner asked whether the portal is "full API" and whether the website repo's

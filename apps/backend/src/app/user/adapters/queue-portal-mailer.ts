@@ -1,5 +1,5 @@
 import { dispatchMail } from '@providers/mailer/mailer.queue';
-import { renderPortalInvitationEmail, renderResetPasswordEmail } from '@providers/mailer/mailer.templates';
+import { renderPortalInvitationEmail, renderPortalSignupCodeEmail, renderResetPasswordEmail } from '@providers/mailer/mailer.templates';
 import type { IPortalMailer } from '../contracts/portal-account.contract';
 
 /**
@@ -15,5 +15,9 @@ export class QueuePortalMailer implements IPortalMailer {
 
 	async sendPasswordReset(input: { to: string; name: string; url: string }): Promise<void> {
 		await dispatchMail({ to: input.to, ...(await renderResetPasswordEmail({ name: input.name, url: input.url })) });
+	}
+
+	async sendSignupCode(input: { to: string; name: string; code: string }): Promise<void> {
+		await dispatchMail({ to: input.to, ...(await renderPortalSignupCodeEmail({ name: input.name, code: input.code })) });
 	}
 }

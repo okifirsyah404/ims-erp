@@ -24,6 +24,9 @@ export type PortalContext = {
 	userId: string;
 	identityId: string;
 	customerId: string;
+	/** The customer contact behind the login (owner decision D2). */
+	contactId: string | null;
+	role: 'owner' | 'approver' | 'finance' | 'viewer';
 	user: { id: string; name: string; email: string };
 	/** The access token of this request (for logout / password change). */
 	accessToken: string;

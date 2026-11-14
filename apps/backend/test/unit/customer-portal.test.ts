@@ -24,12 +24,18 @@ import { PortalAuthService } from '../../src/app/portal/services/portal-auth.ser
 import { PortalService } from '../../src/app/portal/services/portal.service';
 import { projectDetail, ticketDetail, ticketSummary, type TPresenter } from '../../src/app/portal/utils/portal-presenter';
 import { ProjectPortalService } from '../../src/app/projects/services/project-portal.service';
-import type { IPortalAuthGateway, IPortalIdentityRepository } from '../../src/app/user/contracts/portal-account.contract';
+import type { IPortalAuthGateway, IPortalIdentityRepository, TPortalCustomerIdentity } from '../../src/app/user/contracts/portal-account.contract';
 import {
 	PortalAccountExistsError,
+	PortalAccountNotFoundError,
+	PortalBusinessSignupError,
+	PortalContactUnavailableError,
 	PortalCustomerUnavailableError,
 	PortalEmailTakenError,
+	PortalInvalidCodeError,
 	PortalNotConfiguredError,
+	PortalOwnerOnlyError,
+	PortalRemoveSelfError,
 } from '../../src/app/user/errors/portal-account.errors';
 import { PortalAccountService } from '../../src/app/user/services/portal-account.service';
 import { PORTAL_SESSION_RESOLVER_TOKEN, type PortalContext } from '../../src/authorization/portal-auth';
@@ -38,9 +44,25 @@ const CUST_A = '0190a1b2-0000-7000-8000-0000000000a1';
 const CUST_B = '0190a1b2-0000-7000-8000-0000000000b2';
 const INACTIVE = '0190a1b2-0000-7000-8000-0000000000c3';
 
+const contacts: { id: string; customerId: string; name: string; email: string | null }[] = [];
+let createdCustomers: { id: string; name: string; email: string; phone: string | null }[];
+
 const customers = {
 	getActiveCustomer: async (id: string) =>
 		id === CUST_A || id === CUST_B ? ({ id, name: id === CUST_A ? 'PT Alfa' : 'PT Beta', customerType: 'company', status: 'active' } as never) : null,
+	getContact: async (customerId: string, contactId: string) => (contacts.find((row) => row.id === contactId && row.customerId === customerId) ?? null) as never,
+	async addContact(customerId: string, input: { name: string; email: string | null }) {
+		const row = { id: crypto.randomUUID(), customerId, name: input.name, email: input.email };
+		contacts.push(row);
+		return row as never;
+	},
+	async createFromPortalSignup(input: { name: string; email: string; phone: string | null }) {
+		const customer = { id: crypto.randomUUID(), ...input };
+		createdCustomers.push(customer);
+		const contact = { id: crypto.randomUUID(), customerId: customer.id, name: input.name, email: input.email };
+		contacts.push(contact);
+		return { customer: { ...customer, customerType: 'individual', status: 'active' }, contact } as never;
+	},
 };
 
 /* ------------------------------------------------------------------------ *
@@ -48,17 +70,19 @@ const customers = {
  * ------------------------------------------------------------------------ */
 
 let identities: TPortalIdentitySelect[];
-let users: { id: string; name: string; email: string; member: boolean; password: boolean }[];
-let mails: { kind: string; to: string; url: string }[];
+let users: { id: string; name: string; email: string; emailVerified: boolean; member: boolean; password: string | null }[];
+let mails: { kind: string; to: string; url?: string; code?: string }[];
 let revokedSessions: string[];
+let cache: Map<string, unknown>;
 let accounts: PortalAccountService;
 
 function fakeIdentities(): IPortalIdentityRepository {
 	const live = (row: TPortalIdentitySelect) => !row.deletedAt;
 	return {
-		findLiveByEntity: async (_type, entityId) => identities.find((row) => live(row) && row.linkedEntityId === entityId) ?? null,
+		findLiveByContact: async (contactId) => identities.find((row) => live(row) && row.contactId === contactId) ?? null,
 		findLiveByUser: async (userId) => identities.find((row) => live(row) && row.userId === userId) ?? null,
 		findLiveById: async (id) => identities.find((row) => live(row) && row.id === id) ?? null,
+		listLiveByCustomer: async (customerId) => identities.filter((row) => live(row) && row.linkedEntityId === customerId),
 		async create(data) {
 			const now = new Date();
 			const row = { ...data, id: crypto.randomUUID(), status: 'active', lastLoginAt: null, createdAt: now, updatedAt: now, deletedAt: null } as TPortalIdentitySelect;
@@ -78,16 +102,23 @@ function fakeIdentities(): IPortalIdentityRepository {
 }
 
 function fakeAuthGateway(): IPortalAuthGateway {
-	const pick = (user: (typeof users)[number] | undefined) => (user ? { id: user.id, name: user.name, email: user.email } : null);
+	const pick = (user: (typeof users)[number] | undefined) =>
+		user ? { id: user.id, name: user.name, email: user.email, emailVerified: user.emailVerified } : null;
 	return {
 		findUserByEmail: async (email) => pick(users.find((user) => user.email === email)),
 		findUserById: async (id) => pick(users.find((user) => user.id === id)),
 		async createUser(input) {
-			const user = { id: `u-${users.length + 1}`, ...input, member: false, password: false };
+			const user = { id: `u-${users.length + 1}`, ...input, member: false, password: null };
 			users.push(user);
 			return pick(user)!;
 		},
-		hasPassword: async (id) => users.find((user) => user.id === id)?.password ?? false,
+		async setPassword(userId, password) {
+			users.find((user) => user.id === userId)!.password = password;
+		},
+		async markEmailVerified(userId) {
+			users.find((user) => user.id === userId)!.emailVerified = true;
+		},
+		hasPassword: async (id) => Boolean(users.find((user) => user.id === id)?.password),
 		issuePasswordToken: async (userId) => `token-for-${userId}-0123456789`,
 		revokeSessions: async (userId) => {
 			revokedSessions.push(userId);
@@ -96,11 +127,24 @@ function fakeAuthGateway(): IPortalAuthGateway {
 	};
 }
 
+const fakeCache = () => ({
+	get: async <T>(key: string) => cache.get(key) as T | undefined,
+	set: async (key: string, value: unknown) => {
+		cache.set(key, value);
+	},
+	del: async (...keys: string[]) => {
+		for (const key of keys) cache.delete(key);
+	},
+});
+
 beforeEach(() => {
 	identities = [];
-	users = [{ id: 'staff-1', name: 'Staff', email: 'staff@entragate.local', member: true, password: true }];
+	contacts.length = 0;
+	createdCustomers = [];
+	users = [{ id: 'staff-1', name: 'Staff', email: 'staff@entragate.local', emailVerified: true, member: true, password: 'staff12345' }];
 	mails = [];
 	revokedSessions = [];
+	cache = new Map();
 	accounts = new PortalAccountService(
 		fakeIdentities(),
 		fakeAuthGateway(),
@@ -111,47 +155,60 @@ beforeEach(() => {
 			sendPasswordReset: async (input) => {
 				mails.push({ kind: 'reset', to: input.to, url: input.url });
 			},
+			sendSignupCode: async (input) => {
+				mails.push({ kind: 'code', to: input.to, code: input.code });
+			},
 		},
 		customers,
+		fakeCache(),
 	);
 	accounts.portalUrl = 'https://portal.example.com/';
 });
 
-describe('portal accounts', () => {
-	test('an invitation creates the login and emails a link to the portal reset page', async () => {
-		const account = await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id' });
+const owner = (identity: TPortalCustomerIdentity | null) => identity!;
+
+describe('portal accounts (staff invitations, D2)', () => {
+	test('an invitation creates a contact, an owner login and emails a link to the portal reset page', async () => {
+		const account = await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
 		expect(account.customerId).toBe(CUST_A);
+		expect(account.role).toBe('owner');
 		expect(account.passwordSet).toBe(false);
+		expect(contacts).toHaveLength(1);
+		expect(account.contactId).toBe(contacts[0]!.id);
 		expect(identities[0]!.createdBy).toBe('staff-1');
 		expect(mails).toEqual([{ kind: 'invite', to: 'budi@alfa.co.id', url: expect.stringMatching(/^https:\/\/portal\.example\.com\/reset-password\?token=/) }]);
 	});
 
-	test('one login per customer; staff emails and inactive customers are refused', async () => {
-		await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id' });
-		await expect(accounts.invite('staff-1', { customerId: CUST_A, name: 'Sari', email: 'sari@alfa.co.id' })).rejects.toBeInstanceOf(PortalAccountExistsError);
-		await expect(accounts.invite('staff-1', { customerId: CUST_B, name: 'Staff', email: 'staff@entragate.local' })).rejects.toBeInstanceOf(PortalEmailTakenError);
-		await expect(accounts.invite('staff-1', { customerId: CUST_B, name: 'Budi', email: 'budi@alfa.co.id' })).rejects.toBeInstanceOf(PortalEmailTakenError);
-		await expect(accounts.invite('staff-1', { customerId: INACTIVE, name: 'X', email: 'x@y.id' })).rejects.toBeInstanceOf(PortalCustomerUnavailableError);
+	test('several people per customer, one login per contact; staff emails, foreign contacts and inactive customers are refused', async () => {
+		await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
+		await accounts.invite('staff-1', { customerId: CUST_A, name: 'Sari', email: 'sari@alfa.co.id', role: 'finance' });
+		expect((await accounts.listForCustomer(CUST_A)).map((row) => row.role)).toEqual(['owner', 'finance']);
+		const budiContact = contacts[0]!.id;
+		await expect(accounts.invite('staff-1', { customerId: CUST_A, contactId: budiContact, name: 'B', email: 'b2@alfa.co.id', role: 'viewer' })).rejects.toBeInstanceOf(PortalAccountExistsError);
+		await expect(accounts.invite('staff-1', { customerId: CUST_B, contactId: budiContact, name: 'B', email: 'b3@alfa.co.id', role: 'viewer' })).rejects.toBeInstanceOf(PortalContactUnavailableError);
+		await expect(accounts.invite('staff-1', { customerId: CUST_B, name: 'Staff', email: 'staff@entragate.local', role: 'owner' })).rejects.toBeInstanceOf(PortalEmailTakenError);
+		await expect(accounts.invite('staff-1', { customerId: CUST_B, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' })).rejects.toBeInstanceOf(PortalEmailTakenError);
+		await expect(accounts.invite('staff-1', { customerId: INACTIVE, name: 'X', email: 'x@y.id', role: 'owner' })).rejects.toBeInstanceOf(PortalCustomerUnavailableError);
 	});
 
 	test('without PORTAL_URL nothing is created', async () => {
 		accounts.portalUrl = null;
-		await expect(accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id' })).rejects.toBeInstanceOf(PortalNotConfiguredError);
+		await expect(accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' })).rejects.toBeInstanceOf(PortalNotConfiguredError);
 		expect(identities).toHaveLength(0);
 	});
 
 	test('revoking ends the sessions; the login no longer resolves; a new invitation is possible', async () => {
-		const account = await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id' });
-		expect((await accounts.resolveCustomer(account.user.id))?.customerId).toBe(CUST_A);
+		const account = await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
+		expect((await accounts.resolveCustomer(account.user.id))?.role).toBe('owner');
 		await accounts.revoke(account.id);
 		expect(revokedSessions).toEqual([account.user.id]);
 		expect(await accounts.resolveCustomer(account.user.id)).toBeNull();
-		const again = await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id' });
+		const again = await accounts.invite('staff-1', { customerId: CUST_A, contactId: account.contactId!, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
 		expect(again.user.id).toBe(account.user.id);
 	});
 
 	test('a reset link goes only to an active portal login', async () => {
-		await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id' });
+		await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
 		mails = [];
 		await accounts.requestPasswordReset('nobody@x.id');
 		await accounts.requestPasswordReset('staff@entragate.local');
@@ -161,26 +218,88 @@ describe('portal accounts', () => {
 	});
 });
 
+describe('portal members (owners manage colleagues, D2)', () => {
+	test('an owner invites and removes colleagues of their own customer only', async () => {
+		const budi = await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
+		const caller = owner(await accounts.resolveCustomer(budi.user.id));
+		const sari = await accounts.inviteMember(caller, { email: 'sari@alfa.co.id', role: 'approver' });
+		expect(sari.role).toBe('approver');
+		expect(sari.customerId).toBe(CUST_A);
+		expect(identities.find((row) => row.id === sari.id)!.createdBy).toBe(budi.user.id);
+		const rina = await accounts.invite('staff-1', { customerId: CUST_B, name: 'Rina', email: 'rina@beta.co.id', role: 'owner' });
+		await expect(accounts.removeMember(caller, rina.id)).rejects.toBeInstanceOf(PortalAccountNotFoundError);
+		await expect(accounts.removeMember(caller, budi.id)).rejects.toBeInstanceOf(PortalRemoveSelfError);
+		await accounts.removeMember(caller, sari.id);
+		expect((await accounts.members(caller)).map((row) => row.user.email)).toEqual(['budi@alfa.co.id']);
+	});
+
+	test('only an owner manages members', async () => {
+		await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
+		const viewer = await accounts.invite('staff-1', { customerId: CUST_A, name: 'Vina', email: 'vina@alfa.co.id', role: 'viewer' });
+		const caller = owner(await accounts.resolveCustomer(viewer.user.id));
+		await expect(accounts.inviteMember(caller, { email: 'x@alfa.co.id', role: 'viewer' })).rejects.toBeInstanceOf(PortalOwnerOnlyError);
+		await expect(accounts.removeMember(caller, identities[0]!.id)).rejects.toBeInstanceOf(PortalOwnerOnlyError);
+	});
+});
+
+describe('portal sign-up of individuals (D1)', () => {
+	const signup = { accountType: 'individual' as const, name: 'Dewi', email: 'dewi@mail.id', phone: '0812 3456', password: 'Rahasia-123' };
+
+	test('a code by email; the right code creates the customer, its contact and an owner login', async () => {
+		expect(await accounts.startSignup(signup)).toEqual({ email: 'dewi@mail.id' });
+		const code = mails.find((mail) => mail.kind === 'code')!.code!;
+		expect(code).toMatch(/^\d{6}$/);
+		expect(users.find((user) => user.email === 'dewi@mail.id')).toMatchObject({ emailVerified: false, password: 'Rahasia-123' });
+		const identity = await accounts.verifySignup('dewi@mail.id', code);
+		expect(identity.role).toBe('owner');
+		expect(createdCustomers).toEqual([{ id: identity.customerId, name: 'Dewi', email: 'dewi@mail.id', phone: '0812 3456' }]);
+		expect(identity.contactId).toBe(contacts[0]!.id);
+		expect(users.find((user) => user.email === 'dewi@mail.id')!.emailVerified).toBe(true);
+		await expect(accounts.verifySignup('dewi@mail.id', code)).rejects.toBeInstanceOf(PortalInvalidCodeError);
+	});
+
+	test('businesses are refused; a known email gets the same answer and no email', async () => {
+		await expect(accounts.startSignup({ ...signup, accountType: 'business' })).rejects.toBeInstanceOf(PortalBusinessSignupError);
+		expect(await accounts.startSignup({ ...signup, email: 'staff@entragate.local' })).toEqual({ email: 'staff@entragate.local' });
+		expect(mails).toHaveLength(0);
+		expect(users.find((user) => user.id === 'staff-1')!.password).toBe('staff12345');
+	});
+
+	test('five wrong codes kill the sign-up; a resend gives a new code', async () => {
+		await accounts.startSignup(signup);
+		for (let attempt = 0; attempt < 5; attempt += 1) {
+			await expect(accounts.verifySignup('dewi@mail.id', '000000')).rejects.toBeInstanceOf(PortalInvalidCodeError);
+		}
+		const first = mails.find((mail) => mail.kind === 'code')!.code!;
+		await expect(accounts.verifySignup('dewi@mail.id', first)).rejects.toBeInstanceOf(PortalInvalidCodeError);
+		await accounts.startSignup(signup);
+		await accounts.resendSignupCode('dewi@mail.id');
+		const codes = mails.filter((mail) => mail.kind === 'code');
+		const latest = codes[codes.length - 1]!.code!;
+		expect((await accounts.verifySignup('dewi@mail.id', latest)).role).toBe('owner');
+		expect(createdCustomers).toHaveLength(1);
+	});
+});
+
 /* ------------------------------------------------------------------------ *
  * Sign-in
  * ------------------------------------------------------------------------ */
 
 describe('portal sign-in', () => {
 	let signedOut: string[];
-	let cache: Map<string, unknown>;
 	let auth: PortalAuthService;
 
 	beforeEach(async () => {
-		await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id' });
+		await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
+		users.find((user) => user.email === 'budi@alfa.co.id')!.password = 'rahasia123';
 		signedOut = [];
-		cache = new Map();
-		const passwords: Record<string, string> = { 'budi@alfa.co.id': 'rahasia123', 'staff@entragate.local': 'staff12345' };
 		const sessions: IPortalSessionGateway = {
 			async signIn(email, password) {
-				if (passwords[email] !== password) return null;
-				const user = users.find((item) => item.email === email)!;
+				const user = users.find((item) => item.email === email);
+				if (!user || user.password !== password) return null;
 				return { token: `session-${user.id}`, userId: user.id, expiresAt: new Date(Date.now() + 3600_000) } satisfies TPortalSession;
 			},
+			createSession: async (userId) => ({ token: `session-${userId}`, userId, expiresAt: new Date(Date.now() + 3600_000) }),
 			getSession: async (token) => (token.startsWith('session-') ? { token, userId: token.slice(8), expiresAt: new Date(Date.now() + 3600_000) } : null),
 			signOut: async (token) => {
 				signedOut.push(token);
@@ -188,20 +307,13 @@ describe('portal sign-in', () => {
 			changePassword: async () => true,
 			resetPassword: async () => true,
 		};
-		auth = new PortalAuthService(sessions, accounts, {
-			get: async <T>(key: string) => cache.get(key) as T | undefined,
-			set: async (key, value) => {
-				cache.set(key, value);
-			},
-			del: async (...keys) => {
-				for (const key of keys) cache.delete(key);
-			},
-		});
+		auth = new PortalAuthService(sessions, accounts, fakeCache());
 	});
 
-	test('the customer signs in and the token resolves to their customer', async () => {
+	test('the customer signs in and the token resolves to their customer and role', async () => {
 		const { context } = await auth.login({ email: 'budi@alfa.co.id', password: 'rahasia123' }, new Headers());
 		expect(context.customerId).toBe(CUST_A);
+		expect(context.role).toBe('owner');
 		expect((await auth.resolve(context.accessToken))?.customerId).toBe(CUST_A);
 		expect(identities[0]!.lastLoginAt).not.toBeNull();
 	});
@@ -218,6 +330,14 @@ describe('portal sign-in', () => {
 		}
 		await expect(auth.login({ email: 'budi@alfa.co.id', password: 'salah' }, new Headers())).rejects.toBeInstanceOf(PortalLockedError);
 		await expect(auth.login({ email: 'budi@alfa.co.id', password: 'rahasia123' }, new Headers())).rejects.toBeInstanceOf(PortalLockedError);
+	});
+
+	test('a verified sign-up is signed in at once', async () => {
+		await accounts.startSignup({ accountType: 'individual', name: 'Dewi', email: 'dewi@mail.id', phone: null, password: 'Rahasia-123' });
+		const code = mails.find((mail) => mail.kind === 'code')!.code!;
+		const { context } = await auth.verifySignup('dewi@mail.id', code);
+		expect(context.role).toBe('owner');
+		expect((await auth.resolve(context.accessToken))?.customerId).toBe(context.customerId);
 	});
 });
 
@@ -425,6 +545,7 @@ describe('portal devices', () => {
 			getForCustomer: async (customerId: string, id: string) => (customerId === CUST_A && id === certificate.id ? certificate : null),
 		},
 		customers,
+		{} as never,
 	);
 
 	test("a device is a certificate line; another customer's or a missing line is 404", async () => {

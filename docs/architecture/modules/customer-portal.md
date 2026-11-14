@@ -19,8 +19,11 @@ own tickets) + the account part of M12 T25 + warranties.
 | Tickets, message thread, customer confirmation | After-sales | `ServiceTicketService.*ForCustomer / *FromPortal`, `service_ticket_comments` |
 | Devices and warranty | After-sales | `WarrantyService.listForCustomer / getForCustomer` |
 
-Rules: one login per customer, staff invitation only (no sign-up); a portal
-user is never an organization member; every read is scoped to the customer of
+Rules (owner decisions D1/D2, 2026-11-14): one login per person (customer
+contact) with a role `owner | approver | finance | viewer`; individuals sign
+up themselves (emailed 6-digit code), businesses are invited by staff and an
+owner invites colleagues; a portal user is never an organization member and
+the web admin refuses its sign-in; every read is scoped to the customer of
 the session; another customer's record is 404; no costs, contract values,
 internal notes or staff ids in any response.
 
@@ -39,7 +42,9 @@ labels. Authenticated routes need `Authorization: Bearer <accessToken>`.
 | `PortalSource` operation | Method and ERP path | Notes |
 | --- | --- | --- |
 | `login` | `POST /portal/v1/auth/login` | `{ email, password, accountType? }` → `{ ok: true, user, tokens: { accessToken, expiresAt } }`; 401 wrong credentials, 423 locked (5 failures, 15 min) |
-| `register` | `POST /portal/v1/auth/register` | always 403 (invitation only) |
+| `register` | `POST /portal/v1/auth/register` | `{ accountType, name, email, phone?, password }` → `{ email }`; `business` → 403 (invitation); same answer for a known email |
+| `verifyEmail` | `POST /portal/v1/auth/verify-email` | `{ email, code }` → `{ user, tokens }` (creates customer, contact, owner login); 400 wrong/expired (5 attempts, 10 min) |
+| `resendVerification` | `POST /portal/v1/auth/verify-email/resend` | `{ email }`; always 200 |
 | `requestPasswordReset` | `POST /portal/v1/auth/password-reset` | `{ email }`; always 200 |
 | `resetPassword` | `POST /portal/v1/auth/password-reset/confirm` | `{ token, password }`; 400 invalid/expired. Also sets the first password after an invitation |
 | `logout` | `POST /portal/v1/auth/logout` | bearer |
@@ -56,18 +61,22 @@ labels. Authenticated routes need `Authorization: Bearer <accessToken>`.
 | — (new) | `POST /portal/v1/tickets/:id/confirm` | the customer confirms a resolved ticket → closed |
 | `listProducts` | `GET /portal/v1/products` | one device per warranty-certificate line, id `<certificate>:<line>` |
 | `getWarranty` | `GET /portal/v1/products/:id/warranty` | `WarrantyDetail` |
+| `getAccount` | `GET /portal/v1/account` | `AccountSettings` with the members; sites/notifications/security are defaults (not stored yet) |
+| `inviteMember` | `POST /portal/v1/account/members` | owner only: `{ email, name?, role: approver\|finance\|viewer }` → `CompanyMember`; 403 other roles |
+| `removeMember` | `DELETE /portal/v1/account/members/:id` | owner only; 422 for oneself |
 
 Not built yet (stage 2, routes left unset so the adapter throws
-`PortalNotConfiguredError`): `verifyEmail`, `resendVerification`,
-`refreshSession` (sessions are Better Auth's 7-day sessions, refreshed on use),
+`PortalNotConfiguredError`): `refreshSession` (sessions are Better Auth's 7-day sessions, refreshed on use),
 `completeOnboarding`, notifications, orders, quotations, invoices, payments,
 device registration and lookup, service booking, profile, documents,
-account/company/members/sites/settings, wishlist, public order lookup, RFQs.
+`updatePersonal`/`updateCompany`/`updateSettings`, sites, wishlist, public
+order lookup, RFQs.
 
 ## Staff side
 
-- Customer page → **Customer portal** card: invite (name, email), resend the
-  link, revoke. `portal_account:read | invite | revoke` (admin, owner, sales
+- Customer page → **Customer portal** card: every login of the customer with
+  its role and status; invite a person (name, email, role — a new contact is
+  created), resend the link, revoke. `portal_account:read | invite | revoke` (admin, owner, sales
   manager, customer service).
 - Ticket page → **Messages**: internal notes or replies visible to the
   customer; the customer's messages appear here. Writing needs

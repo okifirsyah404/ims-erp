@@ -153,6 +153,8 @@ const DYNAMIC_PREFIXES = [
 	// the server value in `portal-presenter.ts`.
 	'portal.stage.',
 	'portal.evidence.',
+	'portal.role.',
+	'crm:portal.role.',
 	// Borrowing workflow (ERP-0036): status, purpose, condition, and event
 	// type all arrive as server values, so the label key has to be composed.
 	'assets:borrowingStatus.',

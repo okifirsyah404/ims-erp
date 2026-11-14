@@ -1,4 +1,5 @@
 import { PORTAL_ACCOUNT_SERVICE_TOKEN } from '@app/user/constants/di';
+import type { TPortalSignup } from '@app/user/contracts/portal-account.contract';
 import type { PortalAccountService } from '@app/user/services/portal-account.service';
 import type { IPortalSessionResolver, PortalContext } from '@authorization/portal-auth';
 import type { ICacheClient } from '@cache/cache.client';
@@ -31,7 +32,11 @@ type TFailedLogins = { count: number; lockedUntil: number | null };
 export class PortalAuthService implements IPortalSessionResolver {
 	constructor(
 		@inject(PORTAL_SESSION_GATEWAY_TOKEN) private readonly sessions: IPortalSessionGateway,
-		@inject(PORTAL_ACCOUNT_SERVICE_TOKEN) private readonly accounts: Pick<PortalAccountService, 'resolveCustomer' | 'recordLogin' | 'requestPasswordReset'>,
+		@inject(PORTAL_ACCOUNT_SERVICE_TOKEN)
+		private readonly accounts: Pick<
+			PortalAccountService,
+			'resolveCustomer' | 'recordLogin' | 'requestPasswordReset' | 'startSignup' | 'verifySignup' | 'resendSignupCode'
+		>,
 		@inject(CACHE_CLIENT_TOKEN) private readonly cache: Pick<ICacheClient, 'get' | 'set' | 'del'>,
 	) {}
 
@@ -61,6 +66,24 @@ export class PortalAuthService implements IPortalSessionResolver {
 			context: { ...identity, accessToken: session.token },
 			expiresAt: session.expiresAt,
 		};
+	}
+
+	/** Owner decision D1: an individual signs up; a code goes to the email. */
+	register(body: TPortalSignup): Promise<{ email: string }> {
+		return this.accounts.startSignup(body);
+	}
+
+	resendVerification(email: string): Promise<void> {
+		return this.accounts.resendSignupCode(email);
+	}
+
+	/** The right code creates the customer and an owner login and signs the person in. */
+	async verifySignup(email: string, code: string): Promise<{ context: PortalContext; expiresAt: Date }> {
+		const identity = await this.accounts.verifySignup(email, code);
+		const session = await this.sessions.createSession(identity.userId);
+		if (!session) throw new PortalInvalidTokenError();
+		await this.accounts.recordLogin(identity.identityId);
+		return { context: { ...identity, accessToken: session.token }, expiresAt: session.expiresAt };
 	}
 
 	/** {@link IPortalSessionResolver}: bearer token → active customer identity. */

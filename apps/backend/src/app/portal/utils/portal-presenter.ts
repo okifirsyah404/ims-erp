@@ -9,6 +9,7 @@
  */
 import type { TPortalTicket, TPortalTicketDetail } from '@app/aftersales/contracts/service-ticket.contract';
 import type { TPortalProject, TPortalProjectDetail } from '@app/projects/services/project-portal.service';
+import type { TPortalAccountView } from '@app/user/contracts/portal-account.contract';
 import type { PortalContext } from '@authorization/portal-auth';
 import { PROJECT_STAGES, type ProjectStage } from '@drizzle/schemas/projects.schema';
 import type { TCustomerSelect } from '@drizzle/schemas/crm.schema';
@@ -79,6 +80,36 @@ export function portalUser(portal: PortalContext, customer: TCustomerSelect | nu
 					},
 				}
 			: {}),
+	};
+}
+
+/** One login of the customer as the portal's `CompanyMember`. */
+export function companyMember(p: TPresenter, account: TPortalAccountView) {
+	return {
+		id: account.id,
+		...(account.user.name ? { name: account.user.name } : {}),
+		email: account.user.email,
+		initials: initials(account.user.name || account.user.email),
+		role: account.role,
+		admin: account.role === 'owner',
+		status: account.passwordSet ? ('active' as const) : ('invited' as const),
+		lastActiveLabel: account.lastLoginAt ? agoLabel(p, account.lastLoginAt) : '',
+	};
+}
+
+/** The portal's `AccountSettings`; sites, notification channels and security are not stored yet. */
+export function accountSettings(p: TPresenter, portal: PortalContext, customer: TCustomerSelect | null, members: TPortalAccountView[]) {
+	const business = customer ? customer.customerType !== 'individual' : true;
+	return {
+		personal: { name: portal.user.name, email: portal.user.email, phone: '' },
+		...(customer && business
+			? { company: { name: customer.name, shortName: initials(customer.name), ...(customer.taxId ? { npwp: customer.taxId } : {}), verified: true } }
+			: {}),
+		members: members.map((member) => companyMember(p, member)),
+		sites: [],
+		notifications: { push: false, email: true, whatsapp: false },
+		security: { faceId: false, twoStep: false, passwordChangedLabel: '', activeDevices: 1 },
+		preferences: { language: p.language, currency: 'IDR' as const, appearance: 'system' as const },
 	};
 }
 

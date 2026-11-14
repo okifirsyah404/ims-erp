@@ -1,7 +1,9 @@
 import type { BetterAuthOptions } from 'better-auth';
 import { drizzleDB } from '../../../../drizzle/db';
 import { members } from '../../../../drizzle/schemas/auth.schema';
-import { asc, eq } from 'drizzle-orm';
+import { portalIdentities } from '../../../../drizzle/schemas/portal.schema';
+import { and, asc, eq, isNull } from 'drizzle-orm';
+import { PORTAL_SIGNIN_HEADER, PORTAL_SIGNIN_NONCE } from '../portal-signin';
 
 /**
  * Auto-activates the user's first organization membership on session
@@ -26,7 +28,7 @@ export const sessionAutoActivateOrganizationHook: NonNullable<
 	NonNullable<
 		NonNullable<BetterAuthOptions['databaseHooks']>['session']
 	>['create']
->['before'] = async (session) => {
+>['before'] = async (session, context) => {
 	if (session.activeOrganizationId) return;
 	const [membership] = await drizzleDB
 		.select({ organizationId: members.organizationId })
@@ -34,7 +36,18 @@ export const sessionAutoActivateOrganizationHook: NonNullable<
 		.where(eq(members.userId, session.userId))
 		.orderBy(asc(members.createdAt))
 		.limit(1);
-	if (!membership) return;
+	if (!membership) {
+		// ERP-0022 (owner decision D2): a customer-portal login may only get a
+		// session through the portal's own sign-in, never the web admin's.
+		const [identity] = await drizzleDB
+			.select({ id: portalIdentities.id })
+			.from(portalIdentities)
+			.where(and(eq(portalIdentities.userId, session.userId), isNull(portalIdentities.deletedAt)))
+			.limit(1);
+		const headers = (context as { headers?: Headers; request?: Request } | null | undefined)?.headers ?? context?.request?.headers;
+		if (identity && headers?.get(PORTAL_SIGNIN_HEADER) !== PORTAL_SIGNIN_NONCE) return false;
+		return;
+	}
 	return {
 		data: { ...session, activeOrganizationId: membership.organizationId },
 	};

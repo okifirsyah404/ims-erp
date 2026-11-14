@@ -6,6 +6,7 @@ import {
 } from '@ims-erp/locales';
 import {
 	AppInvitationEmail,
+	CodeEmail,
 	OrganizationInvitationEmail,
 	ResetPasswordEmail,
 	renderEmail,
@@ -140,6 +141,26 @@ export async function renderPortalInvitationEmail({
 	};
 	const { html, text } = await renderEmail(<AppInvitationEmail url={url} texts={texts} />);
 	return { subject: t(language, 'email:portalInvitation.subject', { app: appName() }), html, text };
+}
+
+/** Customer-portal sign-up code (ERP-0022, owner decision D1). */
+export async function renderPortalSignupCodeEmail({
+	name,
+	code,
+	language = DEFAULT_LANGUAGE,
+}: {
+	name: string;
+	code: string;
+	language?: LanguageCode;
+}): Promise<Omit<MailPayload, 'to'>> {
+	const texts = {
+		greeting: t(language, 'email:portalSignupCode.greeting', { name }),
+		body: t(language, 'email:portalSignupCode.body', { app: appName() }),
+		expiry: t(language, 'email:portalSignupCode.expiry'),
+		footer: t(language, 'email:footer.noReply', { app: appName() }),
+	};
+	const { html, text } = await renderEmail(<CodeEmail code={code} texts={texts} />);
+	return { subject: t(language, 'email:portalSignupCode.subject', { app: appName(), code }), html, text };
 }
 
 /** Organization-invitation input; superset of the base template input. */

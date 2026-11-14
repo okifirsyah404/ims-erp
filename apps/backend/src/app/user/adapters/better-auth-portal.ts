@@ -3,7 +3,7 @@ import { runWithEndpointContext } from '@better-auth/core/context';
 import type { AuthEndpointContext } from '@better-auth/core/context';
 import { auth } from '@providers/better-auth/auth';
 import { injectable } from 'tsyringe';
-import type { IPortalAuthGateway } from '../contracts/portal-account.contract';
+import type { IPortalAuthGateway, TAuthUser } from '../contracts/portal-account.contract';
 
 /** Synthetic endpoint context for server-side internal-adapter calls (no caller session). */
 function internalContext(): AuthEndpointContext {
@@ -11,10 +11,8 @@ function internalContext(): AuthEndpointContext {
 	return { headers, request: new Request('http://internal/portal-account', { headers }), context: {} as never } as unknown as AuthEndpointContext;
 }
 
-type TAuthUser = { id: string; name: string; email: string };
-
 const pick = (user: TAuthUser | null | undefined): TAuthUser | null =>
-	user ? { id: user.id, name: user.name, email: user.email } : null;
+	user ? { id: user.id, name: user.name, email: user.email, emailVerified: Boolean(user.emailVerified) } : null;
 
 /**
  * Better Auth implementation of {@link IPortalAuthGateway} (ERP-0022).
@@ -39,16 +37,28 @@ export class BetterAuthPortalGateway implements IPortalAuthGateway {
 		return this.run(async (ctx) => pick((await ctx.internalAdapter.findUserById(id)) as TAuthUser | null));
 	}
 
-	createUser(input: { name: string; email: string }) {
+	createUser(input: { name: string; email: string; emailVerified: boolean }) {
 		return this.run(async (ctx) => {
-			const user = (await ctx.internalAdapter.createUser({
-				name: input.name,
-				email: input.email,
-				emailVerified: true,
-				status: 'active',
-			} as never, { method: 'admin' })) as TAuthUser;
+			const user = (await ctx.internalAdapter.createUser(
+				{ name: input.name, email: input.email, emailVerified: input.emailVerified, status: 'active' } as never,
+				{ method: input.emailVerified ? 'admin' : 'email-password' },
+			)) as TAuthUser;
 			return pick(user) as TAuthUser;
 		});
+	}
+
+	/** Mirrors Better Auth's own set-password path: hash, then upsert the credential account. */
+	async setPassword(userId: string, password: string): Promise<void> {
+		await this.run(async (ctx) => {
+			const hashed = await ctx.password.hash(password);
+			const account = await ctx.internalAdapter.findCredentialAccount(userId);
+			if (account) await ctx.internalAdapter.updatePassword(userId, hashed);
+			else await ctx.internalAdapter.createAccount({ userId, providerId: 'credential', accountId: userId, password: hashed });
+		});
+	}
+
+	async markEmailVerified(userId: string): Promise<void> {
+		await this.run(async (ctx) => ctx.internalAdapter.updateUser(userId, { emailVerified: true }));
 	}
 
 	hasPassword(userId: string) {

@@ -342,18 +342,27 @@ Menu **Projects**. Diagram:
 
 Numbered 8.8 because 8.6 (HR) and 8.7 (M04) are on their own branches.
 
-1. **CRM → Customers → (a customer) → Customer portal**: enter the name and
-   the email the customer signs in with → **Invite to portal**. One login per
-   customer. The customer gets an email to set a password (valid 3 days).
-2. The card shows **Waiting for password** until the customer sets it, then
-   **Active** and the last sign-in. **Resend link** sends a new password
-   email; **Revoke access** ends every session (you can invite again later).
+1. **CRM → Customers → (a customer) → Customer portal**: enter the person's
+   name, the email they sign in with and the **role** (Owner, Approver,
+   Finance, Viewer) → **Invite to portal**. One login per person; a company
+   can have several. The person gets an email to set a password (valid 3
+   days). Invite at least one **Owner** per company: owners invite and remove
+   their colleagues themselves in the portal.
+2. The card lists every login with its role: **Waiting for password** until
+   the person sets it, then **Active** and the last sign-in. **Resend link**
+   sends a new password email; **Revoke access** ends every session (you can
+   invite again later).
+2a. Individual customers can also **sign up themselves** in the portal: they
+   confirm a 6-digit code sent to their email, and the ERP creates the
+   customer (code `PRT-…`, type Individual) with its contact. Companies
+   cannot sign up; they are invited.
 3. In the portal the customer sees their projects (stage, checklist, BASTs
    and the function test / training / signed BAST / photo files — never
    costs or internal notes), their devices and warranties, and their service
    tickets; they can open a ticket, write messages and confirm a fix.
-4. The email of a staff login cannot be used for the portal. After 5 wrong
-   passwords the portal locks that email for 15 minutes.
+4. The email of a staff login cannot be used for the portal, and a customer
+   login cannot sign in to the web admin. After 5 wrong passwords the portal
+   locks that email for 15 minutes.
 
 ## 9. Printed documents and numbering
 

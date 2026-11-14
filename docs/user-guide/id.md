@@ -341,20 +341,27 @@ Menu **Proyek**. Diagram:
 
 Bernomor 8.8 karena 8.6 (HR) dan 8.7 (M04) ada di branch masing-masing.
 
-1. **CRM → Pelanggan → (pelanggan) → Portal pelanggan**: isi nama dan email
-   yang dipakai pelanggan untuk masuk → **Undang ke portal**. Satu login per
-   pelanggan. Pelanggan menerima email untuk membuat kata sandi (berlaku 3
-   hari).
-2. Kartu menampilkan **Menunggu kata sandi** sampai pelanggan membuatnya,
-   lalu **Aktif** dan waktu terakhir masuk. **Kirim ulang tautan** mengirim
-   email kata sandi baru; **Cabut akses** mengakhiri semua sesi (bisa
-   diundang lagi nanti).
+1. **CRM → Pelanggan → (pelanggan) → Portal pelanggan**: isi nama orang,
+   email yang dipakai untuk masuk, dan **peran** (Pemilik, Penyetuju,
+   Keuangan, Pemantau) → **Undang ke portal**. Satu login per orang; satu
+   perusahaan bisa punya beberapa. Orang tersebut menerima email untuk
+   membuat kata sandi (berlaku 3 hari). Undang minimal satu **Pemilik** per
+   perusahaan: pemilik mengundang dan mencabut rekannya sendiri di portal.
+2. Kartu menampilkan setiap login dengan perannya: **Menunggu kata sandi**
+   sampai kata sandi dibuat, lalu **Aktif** dan waktu terakhir masuk. **Kirim
+   ulang tautan** mengirim email kata sandi baru; **Cabut akses** mengakhiri
+   semua sesi (bisa diundang lagi nanti).
+2a. Pelanggan individu juga bisa **mendaftar sendiri** di portal: mereka
+   memasukkan kode 6 digit yang dikirim ke email, lalu ERP membuat pelanggan
+   (kode `PRT-…`, tipe Individu) beserta kontaknya. Perusahaan tidak bisa
+   mendaftar sendiri; mereka diundang.
 3. Di portal pelanggan melihat proyeknya (tahap, checklist, BAST, dan file uji
    fungsi / pelatihan / BAST bertanda tangan / foto — tidak pernah biaya atau
    catatan internal), perangkat dan garansinya, serta tiket servisnya;
    pelanggan bisa membuat tiket, menulis pesan, dan mengonfirmasi perbaikan.
-4. Email login staf tidak bisa dipakai untuk portal. Setelah 5 kali salah
-   kata sandi, portal mengunci email itu selama 15 menit.
+4. Email login staf tidak bisa dipakai untuk portal, dan login pelanggan tidak
+   bisa masuk ke web-admin. Setelah 5 kali salah kata sandi, portal mengunci
+   email itu selama 15 menit.
 
 ## 9. Dokumen cetak dan penomoran
 

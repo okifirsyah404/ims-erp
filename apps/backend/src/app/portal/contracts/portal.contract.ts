@@ -36,6 +36,10 @@ export const portalTicketSchema = z.object({
 
 export const portalMessageSchema = z.object({ text: z.string().trim().min(1).max(4000) });
 
+/** `verifyEmail` / `resendVerification` of the sign-up (owner decision D1). */
+export const portalVerifySchema = z.object({ email: z.string().trim().toLowerCase().email().max(254), code: z.string().trim().regex(/^\d{6}$/) });
+export const portalResendSchema = z.object({ email: z.string().trim().toLowerCase().email().max(254) });
+
 export const portalIdParamSchema = z.object({ id: z.string().uuid() });
 /** Devices are certificate lines: `<certificate uuid>:<line index>`. */
 export const portalProductParamSchema = z.object({ id: z.string().regex(/^[0-9a-f-]{36}:\d{1,3}$/i) });
@@ -50,6 +54,8 @@ export type TPortalSession = { token: string; userId: string; expiresAt: Date };
 export interface IPortalSessionGateway {
 	/** Email + password sign-in; `null` on wrong credentials. */
 	signIn(email: string, password: string, headers: Headers): Promise<TPortalSession | null>;
+	/** A session for a user who just verified a sign-up code. */
+	createSession(userId: string): Promise<TPortalSession | null>;
 	/** The live session behind an access token, or `null`. */
 	getSession(token: string): Promise<TPortalSession | null>;
 	signOut(token: string): Promise<void>;
