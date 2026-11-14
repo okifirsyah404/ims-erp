@@ -159,6 +159,11 @@ export const builtInOrgStatements = {
 	member: ['create', 'read', 'update', 'delete'],
 	invitation: ['create', 'cancel'],
 	ac: ['create', 'read', 'update', 'delete'],
+	// Better Auth `apiKey` plugin, organization-owned keys: the key is issued
+	// and revoked as the acting member, so Better Auth checks (and the ERP
+	// records) the real issuer. Granted with `license:manage_api` only; the
+	// plugin's own HTTP routes are disabled (`auth.options.ts`).
+	apiKey: ['create', 'read', 'update', 'delete'],
 } as const satisfies Record<string, readonly string[]>;
 
 /** Restricted portal statement vocabularies (not internal back-office). */export const portalStatements = {
@@ -365,6 +370,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		organization: ['create', 'read', 'update', 'delete'],
 		member: ['create', 'read', 'update', 'delete'],
 		invitation: ['create', 'cancel'],
+		apiKey: ['create', 'read', 'update', 'delete'],
 	},
 
 	// Organization administration + non-sensitive master data. No payroll,
@@ -466,6 +472,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		product: ['read'],
 		// M03 license register and its API keys (decisions 2026-11-06).
 		license: ['read', 'create', 'activate', 'extend', 'revoke', 'read_key', 'manage_api'],
+		// Issues the license API keys as themselves (pairs with `manage_api`).
+		apiKey: ['create', 'read', 'update'],
 		document: ['read', 'download'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},

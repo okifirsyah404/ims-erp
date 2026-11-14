@@ -305,7 +305,7 @@ const api: Record<keyof typeof en, string> = {
 	'licensing.refused.seat_limit': 'Semua aktivasi kunci ini sudah terpakai',
 	'licensing.refused.not_activated': 'Instalasi ini belum diaktivasi',
 	'licensing.apiKey.ownOnly': 'Kunci API hanya untuk aplikasi milik perusahaan yang aktif',
-	'licensing.apiKey.noOwner': 'Organisasi tidak punya owner untuk menerbitkan kunci',
+	'licensing.apiKey.notPermitted': 'Peran Anda tidak bisa menerbitkan atau mencabut kunci API lisensi',
 	'licensing.apiKey.notFound': 'Kunci API tidak ditemukan',
 	'licensing.activationNotFound': 'Aktivasi tidak ditemukan atau sudah dilepas',
 

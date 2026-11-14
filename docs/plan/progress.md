@@ -18,6 +18,78 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-15 - ERP-0019: license API keys issued as the acting member (PR #100 review)
+
+Review comment from programmer A on PR #100: "Pake API key bawaan
+better-auth aja, jadi bisa track issuernya siapa."
+
+**Findings.**
+- The license API already used Better Auth's API key plugin (config
+  `licensing`, `elk_`). But `adapters/better-auth-api-keys.ts` issued and
+  revoked every key **as the organization owner**, so Better Auth never saw
+  the real issuer.
+- Better Auth's `auth.apikeys` has no creator column: only `reference_id`,
+  the owner.
+
+**Owner decision (2026-11-15).** Keep keys organization-owned, so they
+survive staff leaving; issue them as the acting member. A user-owned key
+would have died with the issuer's account.
+
+Branch `fix/m03-api-key-issuer` from `origin/main` (`c7ae98d`).
+
+**Change**
+- **Catalog.** `@ims-erp/common` `builtInOrgStatements` gains Better Auth's
+  `apiKey: create, read, update, delete`. Owner: all four. Sales manager:
+  `create, read, update`, next to `license:manage_api`.
+- **Adapter and service.** The adapter issues and revokes with `userId` =
+  the actor and puts `issuedBy` in the key metadata.
+  `LicenseApiService.ownerOf` is gone. A Better Auth refusal
+  (`INSUFFICIENT_API_KEY_PERMISSIONS`, `USER_NOT_MEMBER_OF_ORGANIZATION`)
+  becomes `ApiKeyIssueError('notPermitted')` (403). The locale key
+  `licensing.apiKey.noOwner` is replaced by `licensing.apiKey.notPermitted`
+  (en/id).
+- **Security fix found on the way.** Better Auth's own HTTP routes
+  `/api/auth/api-key/create|get|list|update|delete|delete-all-expired-api-keys`
+  were open. The owner could already mint keys of **any** config (including
+  website `ewk_` keys) directly, bypassing the ERP checks, and the new grant
+  would have extended that to sales managers. They are now closed with
+  `disabledPaths` (`auth.options.ts`). Better Auth applies `disabledPaths` in
+  its HTTP router only (checked in `better-auth@1.7.18`
+  `dist/api/index.mjs`), so the server-side `auth.api` calls of the ERP and of
+  `scripts/create-website-api-key.ts` still work.
+- **List and web.** `GET /licenses/applications/:id/api-keys` returns
+  `createdByName` / `revokedByName`, from the organization's members. The API
+  keys screen gets an "Issued by" column and "Revoked by …"; en/id keys added.
+- **Tests.**
+  - `license-api.service.test.ts`: issued and revoked as the actor; a
+    refusal gives 403; the names are returned.
+  - `permission-matrix.test.ts`: every role with `license:manage_api` holds
+    `apiKey` create + update, and no other role does.
+- `docs/database/` was reviewed and is unchanged: no table or column
+  changed; the issuer goes in the existing Better Auth `metadata` column.
+
+**Verification**
+- `bun run typecheck`: 4/4. `bun run lint`: 0 errors; the only warning in
+  the area is in `social-providers.auth.ts`, which was not touched.
+- Backend `bun test`: 1021 pass, 4 fail (the known `Bun.Image` tests, Bun
+  1.4.1 here). Locales 90; web-admin 100.
+- Fresh disposable `ims_erp_lic`: migrate and development seed.
+- Live e2e: **18/18**.
+  - The sales manager (not the owner) registers an own application and
+    issues a key (201, `elk_`).
+  - `auth.apikeys`: `reference_id` = the organization and
+    `metadata.issuedBy` = the sales manager. The licensing row's
+    `created_by` = the sales manager.
+  - The key authenticates on `/licensing/v1/validate`, and the list names
+    the issuer.
+  - `sales` (no `manage_api`) gets 403.
+  - All five Better Auth `/api/auth/api-key/*` routes answer 404, and no key
+    was created through them.
+  - Revoke by the sales manager: Better Auth key disabled, `/licensing/v1`
+    answers 401, and the list names who revoked it.
+- `scripts/create-website-api-key.ts` still creates an `ewk_` key (`website`
+  config). Its output was discarded, so no secret was printed.
+
 ## 2026-11-15 - ERP-0054 `docs.dbml` vs Drizzle parity (branch `docs/dbml-schema-parity`)
 
 Question that started it: does `apps/backend/drizzle/schemas/` match
