@@ -18,6 +18,124 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - ERP-0051: warehouse PIC Phase 5 (live HTTP smoke + browser pass)
+
+Phase 5 of `plans/side-nav-role-based.md` executed on branch `refactor/app-roles-investor-customer`.
+Evidence split by agreement: backend **enforcement** measured by me over real HTTP; **rendering**
+measured by me in a real browser (Edge, through the browse tool), not handed off.
+
+Environment: the dev DB `ims_erp_local` has no `inventory.warehouse_managers` table and is recorded
+never-to-migrate, and `drizzle:migrate` is still blocked by the ERP-0052 duplicate
+`finance.receipts` migration. All Phase 5 evidence therefore comes from a disposable database:
+
+```
+# create ims_erp_pic_check, then
+POSTGRES_DB=ims_erp_pic_check bun run drizzle:push --force   # 115 tables
+POSTGRES_DB=ims_erp_pic_check bun run drizzle:seed           # clean
+POSTGRES_DB=ims_erp_pic_check bun run drizzle:seed           # idempotent: created: 0, inserted: 0
+POSTGRES_DB=ims_erp_pic_check APP_PORT=3001 SCHEDULER_ENABLED=false bun run src/index.ts
+POSTGRES_DB=ims_erp_pic_check bun run scripts/smoke-warehouse-pic.ts <organizationId>
+```
+
+**Backend enforcement - `apps/backend/scripts/smoke-warehouse-pic.ts`, 47 pass / 0 fail.** The script
+creates its own accounts and grant, removes them at the end, and only reads seeded rows. Sections and
+cases: login gate (app admin without membership 200, investor-only 403, customer-only 403,
+investor+internal 200); no session (`/warehouses/mine`, `/warehouses/:id` → 401); app admin without
+membership (`/mine` 200 listing every live warehouse, any `/:id` 200, `/:id/managers` 200,
+`/manager-candidates` 200 with rows); PIC (`/mine` 200 returning exactly the granted warehouse with its
+`storages`, own `/:id` 200, another warehouse 404 so existence is not leaked, admin list 403,
+`POST /warehouses` 403, assign 403, managers list 403, organization links 403); internal member with no
+grant (`/mine` 200 and empty - not 403, `/:id` 403); investor app role with an internal membership
+(`/mine` 200 empty, `/organizations/mine` only internal-role organizations); direct admin-route calls
+403; assign/unassign round trip (201, duplicate 409, unknown user 404, the new grant immediately widens
+`/mine` and `/:id`, unassign 200 then idempotent 200, access refused again as 404); PIC of a warehouse
+with **no** `inventory.warehouse_organizations` row (decision 3: 200, appears in `/mine`, PATCH 200,
+PUT/GET address 200, `POST /storages` 201, PUT another address 404, archive 200).
+
+Two corrections the run forced, both kept in the script as comments:
+- Fixture emails must be lowercase. Better Auth normalizes addresses, so a mixed-case fixture answered
+  401 `INVALID_EMAIL_OR_PASSWORD` while the lowercase form works.
+- The `GET /items` 403 assertion was dropped: item reads ride the active organization's permissions and
+  every web-admin account holds an internal org role, so 200 is legitimate. Hiding the item tabs from a
+  PIC is a UX rule, not a route denial.
+- The first run renamed and re-addressed seeded warehouses, so the DB was recreated before the recorded
+  run and every write case now targets a warehouse the script creates itself.
+
+**Browser pass - 7 scenarios, all confirmed** (`localhost:5173` Vite + backend on 3001, disposable DB,
+one fixture account per role, password `fixture123456`):
+1. App admin without membership: full sidebar, 2 warehouses, `New warehouse` + `Filters` present, all
+   six detail tabs (Products, Components, Materials, Storage, Organizations, Persons in charge).
+2. PIC without an organization link: `Warehouses` appears in the sidebar, list shows only
+   `PIC-UNLINKED`, **zero** create controls, detail renders only the `Storage` tab, and a direct
+   `/inventory/warehouses/new` redirects to `/`.
+3. Multi-org user: switcher lists `Entragate` and `Second Co` only; switching applies (header becomes
+   `Second Co`); the warehouse nav item disappears there (deny-by-default on the new org's permissions).
+4. Investor-only: login rejected, inline message "Web-admin access requires an internal organization
+   role", stays on `/login`.
+5. Customer-only: same rejection.
+6. Investor + internal membership: signs in; no warehouse nav item (no grant).
+7. Direct URL without permission: `/inventory/warehouses`, `/inventory/warehouses/:id`,
+   `/inventory/warehouses/new`, `/admin/users` each redirect to `/` with the toast "You do not have
+   access to that page."
+8. Assign/unassign in the UI: picker search `no-grant` resolves the account, `Assign` adds the row with
+   a date and shows "Person in charge assigned"; `Unassign` (behind a `window.confirm`) removes the row
+   and shows "Person in charge unassigned".
+
+Observations and gaps:
+- `Unassign` is guarded by `window.confirm`; an automated browser driver has to accept the dialog. Fine
+  for a human, worth knowing for future UI automation.
+- The PIC grant carries `import`/`export` actions in `TWarehouseAction`, but no warehouse route uses
+  them today (routes use `read`/`update`/`archive` only), so those two rights are unexercised. They land
+  automatically when a warehouse import/export route appears.
+- Better Auth `trustedOrigins` allows only `appConfig.app.url` + `http://localhost:5173`, so a browser
+  pass must run Vite on 5173 with the backend on 3001; a Vite on 5174 answers 403 `Invalid origin`.
+- Two pre-existing Base UI `nativeButton` console warnings appear on the warehouse list and detail
+  (`<Button render={<Link/>}>` without `nativeButton={false}`). The pattern is repo-wide and predates
+  this change (`warehouse-list.tsx` had the same call before `11085e1`); not fixed here.
+
+Cleanup: both servers stopped, `ims_erp_pic_check` dropped. No dev-database migration was attempted.
+
+Next executable task: none for ERP-0051 (plan `side-nav-role-based.md` complete). Open follow-ups, not
+claimed: ERP-0052 (`drizzle-kit generate`/`check` blocked by duplicate `finance.receipts` migration) and a
+PIC `import`/`export` route when warehouse import/export lands.
+
+Gates re-run at the end of this entry: `bun run typecheck` 4/4 tasks, `bun run lint` 5/5 (warnings
+only), `bun run test` 5/5 - backend 999 pass, web-admin 100 pass, locales 90 pass, react-email 5 pass,
+0 fail. `docs/database/` reviewed and unchanged (no table, column, index, constraint, or cross-module
+link delta in Phase 4.8/5).
+
+## 2026-11-14 - ERP-0051: warehouse PIC Phase 4.8 (PIC UI + manager read surface)
+
+Commit `11085e1` (26 files, +1004/-86).
+
+Web admin:
+- `lib/use-warehouse-access.ts` is the single source of `isAppAdmin` / `isPic` / `canAccess` /
+  `isPending` (the grant query is skipped for app admins). The sidebar, list, detail page, route guard,
+  and the new `components/inventory/warehouse-access-gate.tsx` all read it; the gate replaces
+  `AdminOnly` on the warehouse routes.
+- Nav: a dedicated `warehousePic` flag on `SidebarItem` plus `isPic` on `NavContext`, because a PIC
+  grant is a table row, not a permission string. `leafVisible` order is `appAdminOnly` → `warehousePic`
+  → `open` → `internalRole` → `permission`; a parent section hides when no child passes.
+- `canOpenPath` resolves the PIC fact from `/warehouses/mine` and short-circuits
+  `/inventory/warehouses/new` to app-admin only (a PIC grant has no `create`).
+- List split into `AdminWarehouseList` (paginated, filters, create) and `PicWarehouseList`
+  (`/warehouses/mine`, no create, client-side search), sharing `useWarehouseLifecycle`.
+- Detail page hides the item tabs and the Organizations tab for a PIC and adds a Persons-in-charge tab
+  for app admins only.
+
+Backend manager read surface:
+- `GET /warehouses/:id/managers` (app admin) returns live assignments decorated with account
+  name/email; rows with a NULL `user_id` are skipped.
+- `GET /warehouses/manager-candidates?search=&limit=` (app admin) searches every account through
+  `UserService.paginateUsers`, which gained a `search` term over name/email/username. `GET /admin/users`
+  cannot serve the picker: it needs `member:read` plus an organization context, and a PIC may have no
+  membership at all (ADR-0017 decision 3).
+
+i18n: 19 new `warehouses.*` keys in both `en` and `id`.
+
+Tests added/extended: `filter-nav.test` (`warehousePic`), `route-guard.test` (PIC allow, create denied),
+`warehouse-manager.service.test` (`listManagers`, `searchCandidates`), warehouse authorization fakes.
+
 ## 2026-11-14 - ERP-0051: warehouse PIC Phase 2 (guard, routes, assignment service)
 
 Branch `refactor/app-roles-investor-customer`. ADR-0017 accepted by the owner; Phase 2 authorized
@@ -67,7 +185,7 @@ Commands and outcomes:
 Next executable task: Phase 4 item 8 (PIC nav item + warehouse UI in `apps/web-admin`), then the
 remaining plan phases.
 
-
+## 2026-11-14 - ERP-0051: warehouse PIC Phase 1 (schema, migration, seeder)
 
 Branch `refactor/app-roles-investor-customer`. Phase 1 of `plans/side-nav-role-based.md`: the
 `inventory.warehouse_managers` table only. Gate 1 (`docs/database/`) read: `docs.dbml` (header,

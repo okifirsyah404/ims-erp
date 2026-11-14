@@ -196,6 +196,15 @@ New table `inventory.warehouse_managers`:
    warehouses. Create button hidden for PIC (decision 22). Manager assign UI
    for app admin only.
 
+   **Done 2026-11-14** (commit `11085e1`). Built shape: a dedicated
+   `warehousePic` nav flag (a PIC grant is a table row, not a permission string)
+   with `isPic` on `NavContext`; `useWarehouseAccess()` as the single source of
+   `isAppAdmin`/`isPic` for the sidebar, list, detail, and route guard;
+   `AdminWarehouseList` vs `PicWarehouseList` (`/warehouses/mine`, no create);
+   Persons-in-charge tab for app admins; `/inventory/warehouses/new` app-admin
+   only in `canOpenPath`. Item tabs are hidden for a PIC because item reads are
+   organization-permission gated. See `progress.md` "warehouse PIC Phase 4.8".
+
 ## Phase 5 — Verification
 
 - `bun run lint`, `bun run test`, `bun run typecheck` from repo root.
@@ -209,6 +218,18 @@ New table `inventory.warehouse_managers`:
   - Customer-only → login rejected.
   - Route typed directly without permission → redirected to `/`.
 - Use `bun run dev` for the manual pass. Do not claim verified without evidence.
+
+**Status: done 2026-11-14.** Evidence in `progress.md` "warehouse PIC Phase 5":
+
+- Root gates: `bun run typecheck` 4/4, `bun run lint` 5/5 (warnings only), `bun run test` 5/5 —
+  backend 999 pass, web-admin 100 pass, locales 90 pass, react-email 5 pass, 0 fail.
+- Backend enforcement: `apps/backend/scripts/smoke-warehouse-pic.ts`, **47 pass / 0 fail**, over real
+  HTTP against the real login gate and real `warehouse_managers` rows on a disposable DB. Also covers
+  the negative space a browser cannot show: 404 (not 403) for another warehouse, 401 without a session,
+  assign 409/404, idempotent unassign, and the grant taking effect without any organization link.
+- Browser: all seven checklist scenarios plus the assign/unassign round trip confirmed in Edge. Result
+  per scenario recorded in `progress.md`.
+- Not covered by either: the `import`/`export` PIC rights — no warehouse route uses those actions yet.
 
 ## Phase 6 — Docs in the same change
 

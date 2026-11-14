@@ -29,34 +29,61 @@ Last synced: 2026-11-14.
 
 Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`accepted` 2026-11-14).
 
-### in-progress
-- Warehouse person-in-charge Phase 1: `inventory.warehouse_managers` schema, hand-written migration
-  `20261114150000_erp0051_warehouse_managers`, deterministic seeder. Evidence: `progress.md`
-  2026-11-14 "warehouse PIC Phase 1", `docs.dbml` Inventory table + intra-module Ref, throwaway-DB
-  replay (57 journal rows / 116 tables) and 3 idempotent seeder runs.
-- Warehouse person-in-charge Phase 2: `warehouseGuard` (401/403/404 split, app-admin bypass),
-  Drizzle-free `IWarehousePicResolver` port, `WarehouseManagerRepository` + `WarehouseManagerService`
-  (assign 409/404, idempotent unassign, audit), PIC routes on read/update/archive/address/storages,
-  `GET /warehouses/mine` (warehouses + storages). Evidence: `progress.md` 2026-11-14 "warehouse PIC
-  Phase 2", backend 979 pass / 0 fail (service unit tests + denial tests), typecheck and lint clean,
-  `validate-dbml.ts` OK (`docs/database/` unchanged). Open: PIC nav item and warehouse UI.
+### verified
 - Role-based sidebar in web-admin (`permission` / `open` / `internalRole` /
   `appAdminOnly`), switcher limited to internal-role organizations, logo fallback,
   route guard in `_authed` (redirect + toast), organization switch re-checks the
   current route, `/organizations/new` app-admin only, Settings needs an active
-  organization. Done: Phase 4 web-admin (all of the above). Login gate and app roles
-  implemented on branch `refactor/app-roles-investor-customer` (ADR-0018), migration
-  `20261114120000_erp0048_investor_customer_app_roles` applied to a throwaway
-  database and inspected (mixed rows keep internal roles, portal-only rows deleted,
-  portal `org_role` cleared on pending invitations, second run a no-op). Open: PIC
-  nav item and PIC UI (ADR-0017), live-server checks.
-  Evidence: `progress.md` 2026-11-14 "Phase 4 complete" (browser checks, 97 tests)
-  and "ERP-0051: investor and customer move to app roles".
+  organization. Evidence: `progress.md` 2026-11-14 "Phase 4 complete" (browser
+  checks, 97 tests).
+- Login gate and app roles (ADR-0018), branch `refactor/app-roles-investor-customer`:
+  investor/customer moved to Better Auth app roles, `hasRole` multi-role checks,
+  gate in `session.create.before` + `sessionGuard`, `create-user`/`set-role`
+  restricted to `globalRoles`, migration
+  `20261114120000_erp0048_investor_customer_app_roles` (mixed rows keep internal
+  roles, portal-only rows deleted, portal `org_role` cleared on pending
+  invitations, second run a no-op), `scripts/smoke-login-gate.ts` 8/8 against the
+  real Better Auth instance. Evidence: `progress.md` 2026-11-14 "ERP-0051: investor
+  and customer move to app roles".
+- Warehouse person-in-charge Phase 1: `inventory.warehouse_managers` schema,
+  hand-written migration `20261114150000_erp0051_warehouse_managers`, deterministic
+  seeder. Evidence: `progress.md` 2026-11-14 "warehouse PIC Phase 1", `docs.dbml`
+  Inventory table + intra-module Ref, throwaway-DB replay (57 journal rows / 116
+  tables) and 3 idempotent seeder runs.
+- Warehouse person-in-charge Phase 2: `warehouseGuard` (401/403/404 split,
+  app-admin bypass), Drizzle-free `IWarehousePicResolver` port,
+  `WarehouseManagerRepository` + `WarehouseManagerService` (assign 409/404,
+  idempotent unassign, audit `warehouse.manager_assigned`/`_removed`), PIC routes on
+  read/update/archive/address/storages, `GET /warehouses/mine` (warehouses +
+  storages). Evidence: `progress.md` 2026-11-14 "warehouse PIC Phase 2", backend
+  979 pass / 0 fail (service unit tests + denial tests), `validate-dbml.ts` OK
+  (`docs/database/` unchanged).
+- Warehouse person-in-charge Phase 4 item 8 (`11085e1`): `warehousePic` nav flag +
+  `isPic` on `NavContext`, `useWarehouseAccess()` as the single gate,
+  `AdminWarehouseList`/`PicWarehouseList`, `WarehouseAccessGate`, PIC detail tab
+  split (items tabs are org-permission gated, so a PIC sees `storage` only),
+  `/inventory/warehouses/new` short-circuited in `canOpenPath` as app-admin only,
+  manager read surface `GET /warehouses/:id/managers` +
+  `GET /warehouses/manager-candidates?search=` (picker cannot use `GET /admin/users`,
+  which needs `member:read` plus an organization), persons-in-charge assign/unassign
+  tab. Evidence: `progress.md` 2026-11-14 "Phase 4 item 8".
+- Warehouse person-in-charge Phase 5: `apps/backend/scripts/smoke-warehouse-pic.ts`
+  47 pass / 0 fail over real HTTP against a freshly seeded disposable database
+  (login gate, 401s, app admin without membership, PIC rights and denials,
+  internal member without grant, investor+internal and multi-org, direct admin-route
+  denial, assign/unassign round trip, PIC of a warehouse with no
+  `inventory.warehouse_organizations` row) plus a real-browser pass (Edge, Vite 5173
+  + backend 3001) covering the PIC nav item, the PIC-only warehouse list, the
+  `/new` redirect, the multi-org switcher hiding the item, investor-only and
+  customer-only logins rejected, direct-URL denial, and assign/unassign. Evidence:
+  `progress.md` 2026-11-14 "ERP-0051: warehouse PIC Phase 5"; gates backend 999
+  pass, web-admin 100 pass, locales 90 pass, react-email 5 pass, typecheck and lint
+  clean; `docs/database/` unchanged. Plan `side-nav-role-based.md` complete.
+  Not covered: the PIC `import`/`export` rights, because no warehouse route uses
+  those actions yet.
 
 ### planned
-- Warehouse person-in-charge Phases 3-5 (PIC nav item and UI, then the remaining
-  plan phases). Evidence: none; Phases 1-2 backend are in place. ADR-0017 accepted
-  2026-11-14.
+- Nothing open for ERP-0051.
 
 ---
 
