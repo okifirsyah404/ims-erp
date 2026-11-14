@@ -3,7 +3,7 @@
 	"private": true,
 	"version": "0.0.0",
 	"type": "module",
-	"description": "API reference for the website and the customer portal (Zudoku), built from openapi/website.yaml",
+	"description": "API reference for the website, the customer portal and the license API of own applications (Zudoku), built from openapi/*.yaml",
 	"scripts": {
 		"dev": "zudoku dev --port 3100",
 		"build": "zudoku build",

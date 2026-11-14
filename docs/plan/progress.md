@@ -18,6 +18,48 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - M03 license API docs for own applications (Zudoku)
+
+Owner: M03 means license codes the ERP generates so each own application
+(gym, e-ticketing, visitor, …) can be activated. The API itself exists on
+`main` since 2026-11-06 (ERP-0019 stage 2). This change adds the
+documentation application teams need. Branch `docs/m03-licensing-api`,
+stacked on `feat/m07-customer-portal`, because `apps/api-docs` lives in
+PR #97.
+
+- `apps/api-docs/openapi/licensing.yaml`: `validate` / `activate` /
+  `deactivate`, the `elk_` bearer, 120 calls a minute, the envelope, the
+  status vocabulary (`ok`, `grace`, `expired`, `not_started`, `suspended`,
+  `terminated`, `revoked`, `unknown`, `not_activated`) and the refusal codes
+  (404 / 403 / 409). Everything is taken from `license-api.service.ts`,
+  `licensing.errors.ts` and `utils/license.ts`.
+- `pages/licensing-integration.md`: what the ERP does (application, contract,
+  API key, activations log) and what the app does (activate at setup,
+  validate on start-up and every few hours, deactivate on uninstall). It also
+  covers a stable `instanceId`, offline caching up to `graceEndsOn`, the
+  grace period, the rate limit and secrets, with TypeScript and curl
+  examples.
+- `zudoku.config.tsx`: a second API (`/licensing-api`) and an "Own
+  applications" navigation group. The introduction links the guide.
+- `api-docs-drift.test.ts`: also checks `/licensing/v1` against
+  `LicenseApiController`, and requires an operationId and a summary in both
+  specs.
+- `licensing-subscription.md`: the envelope was described as
+  `{ success, message, data }` and is now corrected. The doc links the
+  Zudoku pages.
+- No code behaviour, schema or locale changed. `docs/database/` was
+  reviewed and is unchanged.
+
+**Verification**
+- Drift test: `bun test test/unit/api-docs-drift.test.ts` passes 3/3.
+  Renaming a documented path makes it fail (2 pass / 1 fail); after the
+  revert it passes 3/3 again.
+- `bunx tsc --noEmit` (apps/backend): clean.
+- `bun run build` (apps/api-docs): 20 routes prerendered, including
+  `licensing-api` and `licensing-integration`.
+- Browser (Playwright, the static `dist` served by request interception):
+  both pages render, with no page errors.
+
 ## 2026-11-14 - PR #97 opened for the customer portal
 
 `feat/m07-customer-portal` merged with `origin/main` (`a997778`, conflict

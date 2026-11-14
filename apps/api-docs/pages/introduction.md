@@ -9,7 +9,12 @@ The Entragate ERP exposes two APIs to the website repo (`entragate-platform`):
 | Customer portal | `/portal/v1` | `apps/customer` | The customer's portal session (bearer) |
 | Public website | `/public/v1` | `apps/web` (RFQ, contact, demo forms) | The website's ERP API key (bearer) |
 
-Both are called **server to server** — from the Astro server, never from the
+A third API is for the company's **own applications** (gym, e-ticketing,
+visitor management, …): the **license API** (`/licensing/v1`, the
+application's `elk_` API key). See
+[License integration](/licensing-integration).
+
+Both website APIs are called **server to server** — from the Astro server, never from the
 browser. The portal's ERP adapter passes responses straight to its screens, so
 portal responses already have the portal's view shapes (`PortalSource` types in
 `packages/api-client/src/services/portal.ts`).
