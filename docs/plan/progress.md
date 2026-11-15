@@ -14,7 +14,7 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 ## 2026-11-15 - ERP-0061 M05 purchase returns (retur pembelian), replacement only
 
-Branch `feat/m05-purchase-returns` from `origin/main` (`aa3a7ad`).
+Branch `feat/m05-purchase-returns` from `origin/main` (`aa3a7ad`), PR #108.
 
 **Number check.** Before taking ERP-0061: `origin/main`, every remote branch
 and the heads of the seven open PRs (#97 to #107) were checked. The highest
