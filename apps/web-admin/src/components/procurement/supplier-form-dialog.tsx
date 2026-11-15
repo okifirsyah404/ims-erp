@@ -11,6 +11,13 @@ import {
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { SUPPLIER_TYPES, type TSupplier, type TSupplierInput, type TSupplierType } from '@/lib/procurement-api';
 
@@ -88,18 +95,21 @@ export function SupplierFormDialog({
 						{field('code', { required: true, maxLength: 32, pattern: '[A-Za-z0-9]+', className: 'uppercase' }, t('procurement:supplier.codeHint'))}
 						<Field>
 							<FieldLabel htmlFor='supplier-type'>{t('procurement:supplier.supplierType')}</FieldLabel>
-							<select
-								id='supplier-type'
-								className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
+							<Select
 								value={supplierType}
-								onChange={(event) => setSupplierType(event.target.value as TSupplierType)}
+								onValueChange={(value: string | null) => setSupplierType(value as TSupplierType)}
 							>
-								{SUPPLIER_TYPES.map((value) => (
-									<option key={value} value={value}>
-										{t(`procurement:supplierType.${value}`)}
-									</option>
-								))}
-							</select>
+								<SelectTrigger id='supplier-type' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{SUPPLIER_TYPES.map((value) => (
+										<SelectItem key={value} value={value}>
+											{t(`procurement:supplierType.${value}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						{field('name', { required: true, maxLength: 200 })}
 						{field('legalName', { maxLength: 200 })}

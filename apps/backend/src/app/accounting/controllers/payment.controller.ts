@@ -18,29 +18,49 @@ import {
 	reconciliationListQuerySchema,
 	reconciliationMatchSchema,
 	closeChecklistQuerySchema,
+	reportArchiveCreateSchema,
+	reportArchiveListQuerySchema,
 	supplierBillCreateSchema,
 	supplierBillListQuerySchema,
 	type TAgingBucket,
 } from '../contracts/payment.contract';
 import { ledgerIdParamSchema } from '../contracts/ledger.contract';
 import {
+	balanceSheetToCsv,
+	cashFlowToCsv,
+	profitAndLossToCsv,
+} from '../utils/report-csv';
+import {
 	BANK_RECONCILIATION_SERVICE_TOKEN,
 	MONTH_END_CLOSE_SERVICE_TOKEN,
 	PAYMENT_SERVICE_TOKEN,
+	REPORT_ARCHIVE_SERVICE_TOKEN,
 	REPORT_SERVICE_TOKEN,
 	SUPPLIER_BILL_SERVICE_TOKEN,
 } from '../constants/ar-di';
 import type { PaymentService } from '../services/payment.service';
 import type { SupplierBillService } from '../services/supplier-bill.service';
 import type { ReportService } from '../services/report.service';
+import type { ReportArchiveService } from '../services/report-archive.service';
 import type { BankReconciliationService } from '../services/bank-reconciliation.service';
 import type { MonthEndCloseService } from '../services/month-end-close.service';
 import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
 import type { LedgerRepository } from '../repositories/ledger.repository';
 
+/** Sets the CSV download headers and returns the body unchanged. */
+function csvResponse(
+	set: { status?: number | string; headers: Record<string, string> },
+	filename: string,
+	body: string,
+): string {
+	set.status = 200;
+	set.headers['content-type'] = 'text/csv; charset=utf-8';
+	set.headers['content-disposition'] = `attachment; filename="${filename}"`;
+	return body;
+}
+
 /**
- * REST controller for the payments + AR slice (M09 F4).
- *
+ * REST controller for the payments + AR slice (M09 F4). *
  * @remarks
  * Permissions follow the D5 workflow: `payment:create` (draft),
  * `payment:submit`, `payment:approve` (one approver role), `payment:execute`,
@@ -61,6 +81,9 @@ export class PaymentController {
 			);
 		const close = container.resolve<MonthEndCloseService>(
 			MONTH_END_CLOSE_SERVICE_TOKEN,
+		);
+		const archives = container.resolve<ReportArchiveService>(
+			REPORT_ARCHIVE_SERVICE_TOKEN,
 		);
 		const ledgerRepo = container.resolve<LedgerRepository>(
 			LEDGER_REPOSITORY_TOKEN,
@@ -476,6 +499,125 @@ export class PaymentController {
 					detail: {
 						description:
 							'Direct-method cash flow classified by cash_flow_category (D11)',
+					},
+				},
+			)
+			/* ---------------- statement exports (M12 T30) ---------------- */
+			.get(
+				'/reports/profit-and-loss.csv',
+				async ({ query, erp, set }) => {
+					const { startDate, endDate } = profitAndLossQuerySchema.parse(query);
+					const report = await reports.profitAndLoss(
+						{ organizationId: erp.organizationId },
+						startDate,
+						endDate,
+					);
+					return csvResponse(
+						set,
+						`profit-and-loss-${startDate}_${endDate}.csv`,
+						profitAndLossToCsv(report),
+					);
+				},
+				{
+					erp: { permission: ['financial_report:export'] },
+					detail: { description: 'Income statement as CSV' },
+				},
+			)
+			.get(
+				'/reports/balance-sheet.csv',
+				async ({ query, erp, set }) => {
+					const { asOfDate } = balanceSheetQuerySchema.parse(query);
+					const report = await reports.balanceSheet(
+						{ organizationId: erp.organizationId },
+						asOfDate,
+					);
+					return csvResponse(
+						set,
+						`balance-sheet-${asOfDate}.csv`,
+						balanceSheetToCsv(report),
+					);
+				},
+				{
+					erp: { permission: ['financial_report:export'] },
+					detail: { description: 'Balance sheet as CSV' },
+				},
+			)
+			.get(
+				'/reports/cash-flow.csv',
+				async ({ query, erp, set }) => {
+					const { startDate, endDate } = cashFlowQuerySchema.parse(query);
+					const report = await reports.cashFlow(
+						{ organizationId: erp.organizationId },
+						startDate,
+						endDate,
+					);
+					return csvResponse(
+						set,
+						`cash-flow-${startDate}_${endDate}.csv`,
+						cashFlowToCsv(report),
+					);
+				},
+				{
+					erp: { permission: ['financial_report:export'] },
+					detail: { description: 'Cash flow statement as CSV' },
+				},
+			)
+			/* ---------------- monthly report archive (M12 T30) ---------------- */
+			.get(
+				'/reports/archives',
+				async ({ query, erp }) =>
+					okPaginated(
+						await archives.list(
+							erp.organizationId,
+							reportArchiveListQuerySchema.parse(query),
+							reportArchiveListQuerySchema.parse(query),
+						),
+					),
+				{
+					erp: { permission: ['financial_report:read'] },
+					detail: {
+						description:
+							'Frozen monthly statements, newest period first',
+					},
+				},
+			)
+			.get(
+				'/reports/archives/:id',
+				async ({ params, erp }) =>
+					ok(
+						await archives.get(
+							erp.organizationId,
+							ledgerIdParamSchema.parse(params).id,
+						),
+					),
+				{
+					erp: { permission: ['financial_report:read'] },
+					detail: {
+						description: 'One archived statement, payload included',
+					},
+				},
+			)
+			.post(
+				'/reports/archives',
+				async ({ body, erp, status }) => {
+					const { periodYear, periodMonth } =
+						reportArchiveCreateSchema.parse(body);
+					return status(
+						201,
+						created(
+							await archives.archivePeriod(
+								ctxOf(erp),
+								periodYear,
+								periodMonth,
+							),
+						),
+					);
+				},
+				{
+					erp: { permission: ['accounting_period:close'] },
+					detail: {
+						description:
+							'Archives the three statements of a closed month; idempotent per scope',
 					},
 				},
 			)

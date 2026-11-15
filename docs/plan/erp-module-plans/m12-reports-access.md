@@ -115,7 +115,7 @@ Common DoD in [README.md](README.md), plus:
 | Plan item | `docs.dbml` | Code |
 |---|---|---|
 | Login, sessions | `auth` (Better Auth core: users, sessions, accounts, verifications, passkeys, apikeys) | shipped (Better Auth in the Elysia chain) |
-| Roles / permissions | `auth.roles`, `user_role_assignments` | shipped: `/admin/roles`, `/admin/users`, `/admin/invitations` with web-admin UI |
+| Roles / permissions | code (`@ims-erp/common` `erpRoleNames`) on `auth.members.role` | shipped: `/admin/users`, `/admin/invitations` with web-admin UI |
 | Audit | `audit.audit_logs` | shipped: `audit` module + `/admin/audit` UI |
 | Self-service profile | `auth.user_profiles`, `user_preferences` | shipped: `/users/me*` (profile, avatar) |
 | Portal identities | `auth.portal_identities` | none |

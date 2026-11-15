@@ -22,6 +22,13 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ims-erp/ui/components/table';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { CreateOrderDialog } from '@/components/sales/create-order-dialog';
 import { toast } from '@/components/toast';
@@ -462,18 +469,18 @@ function QuotationDetailPage() {
 						<FieldGroup className='py-4'>
 							<Field>
 								<FieldLabel htmlFor='lost-reason'>{t('sales:quotation.lostReason')}</FieldLabel>
-								<select
-									id='lost-reason'
-									className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
-									value={lostReason}
-									onChange={(e) => setLostReason(e.target.value as TQuotationLostReason)}
-								>
-									{QUOTATION_LOST_REASONS.map((reason) => (
-										<option key={reason} value={reason}>
-											{t(`sales:lostReason.${reason}`)}
-										</option>
-									))}
-								</select>
+								<Select value={lostReason} onValueChange={(value: string | null) => setLostReason(value as TQuotationLostReason)}>
+									<SelectTrigger id='lost-reason' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{QUOTATION_LOST_REASONS.map((reason) => (
+											<SelectItem key={reason} value={reason}>
+												{t(`sales:lostReason.${reason}`)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='lost-note'>{t('sales:quotation.lostNote')}</FieldLabel>

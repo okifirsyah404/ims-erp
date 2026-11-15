@@ -381,6 +381,8 @@ function ticketService(): ServiceTicketService {
 		{ hasPermission: async () => true },
 		{ getUser: async (id: string) => ({ id, name: `User ${id}` }) as never },
 		{ next: async () => '0001/TKT/IMS/XI/26' },
+		// M04: ticket events go to the outbox; not under test here.
+		{ publish: async () => {} } as never,
 		{ register: async () => ({}) as never },
 		{
 			list: async (ticketId, visibility) => comments.filter((row) => row.serviceTicketId === ticketId && (!visibility || row.visibility === visibility)),

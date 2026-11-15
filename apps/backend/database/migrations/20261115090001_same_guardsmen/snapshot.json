@@ -1,0 +1,318 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "122be409-8c9e-4766-870e-0de0e7130e23",
+  "prevIds": [
+    "a963ede9-a904-446c-ad01-7f0554efb4b0"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "accounting",
+        "report_archives"
+      ],
+      "writes": [
+        "s|tbl|accounting.report_archives",
+        "n|tbl|accounting.report_archives",
+        "e|tbl|accounting.report_archives",
+        "n|rel|accounting.report_archives",
+        "n|type|accounting.report_archives",
+        "n|rel|accounting.report_archives_pkey"
+      ],
+      "reads": [
+        "n|sch|accounting"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "accounting",
+        "report_archives",
+        "report_archives_scope_uq"
+      ],
+      "writes": [
+        "s|idx|accounting.report_archives_scope_uq",
+        "n|idx|accounting.report_archives_scope_uq",
+        "e|idx|accounting.report_archives_scope_uq",
+        "n|rel|accounting.report_archives_scope_uq"
+      ],
+      "reads": [
+        "n|tbl|accounting.report_archives",
+        "n|sch|accounting",
+        "n|col|accounting.report_archives.organization_id",
+        "n|col|accounting.report_archives.period_year",
+        "n|col|accounting.report_archives.period_month",
+        "n|col|accounting.report_archives.report_type"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "name": "report_archives",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "period_year",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "period_month",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "report_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "payload",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "generated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "generated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "report_archives_scope_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "period_year",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "period_month",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "report_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "report_archives_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "report_archives_month_check",
+        "value": "period_month BETWEEN 1 AND 12",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "accounting",
+        "table": "report_archives",
+        "name": "report_archives_type_check",
+        "value": "report_type IN ('profit_and_loss', 'balance_sheet', 'cash_flow')",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

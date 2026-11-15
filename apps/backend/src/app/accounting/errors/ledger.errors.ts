@@ -361,3 +361,29 @@ export class ReportPeriodInvalidError extends AppError {
 		super(422, 'accounting.reportPeriodInvalid', 'Report date range is invalid');
 	}
 }
+
+/* ----------------------------- report archive (M12 T30) ----------------------------- */
+
+export class ReportArchiveNotFoundError extends AppError {
+	constructor() {
+		super(404, 'accounting.reportArchiveNotFound', 'Report archive not found');
+	}
+}
+
+/**
+ * Archiving requires a closed or locked period.
+ *
+ * @remarks
+ * Archiving an open month would freeze numbers that still move, and a frozen
+ * statement is exactly what SOP S13 promises the owner. Reopening a period
+ * unlocks the re-archive instead.
+ */
+export class ReportArchivePeriodOpenError extends AppError {
+	constructor(periodYear: number, periodMonth: number) {
+		super(
+			409,
+			'accounting.reportArchivePeriodOpen',
+			`Period ${periodYear}-${String(periodMonth).padStart(2, '0')} is still open; close it before archiving`,
+		);
+	}
+}

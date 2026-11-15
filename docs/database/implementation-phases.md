@@ -22,7 +22,7 @@ The database today has three schemas and 16 tables.
 > their table counts are unchanged; only the folder that creates them is now
 > named after the schema.
 
-The target is 27 schemas, 268 tables.
+The target is 27 schemas, 270 tables.
 
 ## The gap between the two
 
@@ -83,7 +83,7 @@ no dependency on anything.
 | Schema | Tables | Note |
 |---|---|---|
 | `audit` | 1 | `audit.audit_logs`. Append-only, `organization_id` nullable |
-| `auth` | 6 | the ERP extension tables: `user_profiles`, `user_role_assignments`, `portal_identities`, `user_preferences`, `identity_verifications`, `user_devices` (the 9 Better Auth core tables already exist from the auth setup) |
+| `auth` | 6 | the ERP extension tables: `user_profiles`, `portal_identities`, `user_preferences`, `identity_verifications`, `user_devices`, `user_invitations` (the 9 Better Auth core tables already exist from the auth setup) |
 | `organization` | 9 | `branches`, `departments`, `positions`, `cost_centers`, `fiscal_settings`, `settings` (as originally planned; since ERP-0042 the company profile, bank accounts and the numbering series live in the Company and Code Number modules` |
 
 **Explicitly not created.** The `erp` schema. `architecture.md` and
@@ -100,9 +100,9 @@ apps/backend/drizzle/schemas/organization.schema.ts  (new)
 
 The Identity module owns a single `auth` schema: Better Auth's 9 core tables
 (generated from the adapter table map) plus the 6 ERP extension tables
-(`user_profiles`, `user_role_assignments`, `portal_identities`,
-`user_preferences`, `identity_verifications`, `user_devices`) declared in
-`identity.schema.ts` under `pgSchema('auth')`. No cross-schema FK exists
+(`user_profiles`, `portal_identities`,
+`user_preferences`, `identity_verifications`, `user_devices`,
+`user_invitations`) declared in `identity.schema.ts` under `pgSchema('auth')`. No cross-schema FK exists
 anywhere; every other module references `auth.users.id` /
 `auth.organizations.id` logically.
 
@@ -712,8 +712,8 @@ schema, point at `docs/database/docs.dbml`), `docs/architecture/architecture.md`
 
 - [ ] `bun run drizzle:seed` twice, both runs clean.
 - [ ] `bun run typecheck`, `bun run lint`, `bun test` pass.
-- [ ] The 27 schemas exist and the table count is 268.
-- [ ] `docs.dbml` parses and reports 268 tables, 231 refs, 0 cross-module
+- [ ] The 27 schemas exist and the table count is 270.
+- [ ] `docs.dbml` parses and reports 270 tables, 233 refs, 0 cross-module
       refs, 0 enums, 0 tables without a note.
 - [ ] `data-model.md` and `architecture.md` match the database.
 

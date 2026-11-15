@@ -12,7 +12,855 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
-> **Docs-first, 2026-11-13.** The ERP-0042..ERP-0045c entries below were written
+## 2026-11-15 - PR #97 brought onto main again (`aa3a7ad`): ADR-0022, migration after M04
+
+`origin/main` moved on after this morning's merge: the M04 merge (#84), the
+web-admin shadcn work (#105) and the reports surface (#106). It was merged
+into `feat/m07-customer-portal`.
+
+- **ADR clash again.** The M04 outbox record took **ADR-0020** on its merge,
+  while this branch's reservation (README index) was not on main yet. All
+  branches were checked: the highest number in use is ADR-0021 (payment
+  gateway, PR #99). The customer portal record is now **ADR-0022**: the file
+  was renamed and only the portal's references changed (README index,
+  `modules/customer-portal.md`, `data-model.md`, `docs.dbml` note,
+  `website.yaml`, the `session.auth.ts` comments, backlog ERP-0022,
+  features, and this branch's portal entries). The M04 references to
+  ADR-0020 are untouched.
+- **Migration regenerated after M04's.** `20261114182159_erp0022_customer_portal`
+  sat on the same parent snapshot as main's
+  `20261115090000_m04_catalog_automation_schemas`; a later `generate` would
+  have re-created the portal tables. It was removed and generated again:
+  `20261115090002_erp0022_customer_portal`, the same DDL (the two tables and
+  the ticket channel checks). `drizzle-kit check`: "Everything's fine".
+- **Code conflicts.**
+  - `service-ticket.service.ts`: main's `this.changed(ticket, 'created')`
+    (ticket events) is kept.
+  - `index.ts`: the imports are combined (licensing due worker, catalog,
+    automation, portal).
+  - The ticket pages keep main's shadcn `Select` with this branch's
+    `STAFF_TICKET_CHANNELS` (staff cannot pick `portal`).
+  - The dead-key prefixes of both sides are kept.
+  - `customer-portal.test.ts` passes the new outbox argument of
+    `ServiceTicketService`.
+- **Docs.** The user guide puts M04 at 8.7 and the portal at 8.8. Backlog
+  rows: ERP-0021 and ERP-0039 from main, ERP-0022 from this branch.
+  `logical-references.md` was regenerated; `validate-dbml.ts` prints OK.
+
+**Verification**
+- `bun run typecheck`: 4/4. `bun run lint`: 0 errors.
+- Backend `bun test`: 1089 pass, 4 fail (the known `Bun.Image` tests).
+  Portal + ticket suites: 28. web-admin 100; locales 94; API-docs drift 2/2.
+  `apps/api-docs` build: 16 routes.
+- **Not run:** the regenerated migration was not applied to a disposable
+  database, and the portal e2e was not re-run. Docker Desktop's engine is down
+  on this machine (`dockerDesktopLinuxEngine` pipe missing, Redis closed).
+  Both are to be repeated when Docker is back.
+
+## 2026-11-15 - M12 T30: statement CSV exports + monthly report archive (branch `feat/reports-surface`)
+
+Item 3 of `plans/2026-11-15_0538_todo_undone.md` §7. The report **API** already
+existed; what was missing was the export surface, the monthly archive, and the
+`/reports/*` UI. All three now exist.
+
+**Backend**
+
+- New table `accounting.report_archives` (`docs.dbml` first, then Drizzle,
+  then generated migration `20261115090001_same_guardsmen`): unique scope index
+  `(organization_id, period_year, period_month, report_type)`, CHECKs on the
+  month range and the report type. Applied to `ims_erp_local`; columns, index
+  and both constraints verified through `pg_catalog`.
+- `ReportArchiveRepository` (insert / list / find, no update, no delete),
+  `ReportArchiveService.archivePeriod` (refuses an `open` period, accepts
+  `closed`/`locked`, idempotent on the scope index), two new domain errors
+  (`accounting.reportArchiveNotFound`, `accounting.reportArchivePeriodOpen`)
+  with en+id copy.
+- `utils/report-csv.ts` flattens each statement to one CSV row per line plus
+  total rows; UTF-8 BOM, RFC 4180 quoting, same convention as the tax recap.
+- Routes on the accounting module: `GET /reports/profit-and-loss.csv`,
+  `/reports/balance-sheet.csv`, `/reports/cash-flow.csv` (gated
+  `financial_report:export`), and `GET /reports/archives`,
+  `GET /reports/archives/:id` (`financial_report:read`),
+  `POST /reports/archives` (`accounting_period:close`).
+
+**Web admin**
+
+- `/reports` renders the real `ReportsPage` (it was a `ComingSoonPage`), and
+  `/reports/monthly-archives` is a working page: list of frozen statements with
+  the headline figure per type, an archive-month form, pagination.
+- `Export CSV` buttons on the reports page behind `financial_report.export`,
+  using a new `lib/download.ts` (fetch with `credentials: 'include'` + blob
+  save, so the server keeps the permission check).
+- `finance-api.ts` gained `reportArchivesQueryOptions`, `reportArchiveQueryOptions`,
+  `archiveMonth`; locales `archives.*` + `type.*` in en and id.
+
+**Defects found and fixed while proving it**
+
+- `generated_by uuid` was wrong: `auth.users.id` is a 32-char nanoid, so every
+  `POST /reports/archives` from a real session answered 500 with
+  `Failed query: insert into accounting.report_archives`. Changed to `text`,
+  matching `accounting_periods.closed_by` / `reopened_by`, and the migration was
+  regenerated (the old one was never applied anywhere but this dev DB).
+- `POST /reports/archives` returned HTTP 200 with `status: 201` in the body.
+  The repo convention is `status(201, created(...))`; fixed.
+- The insert also needed an explicit `updatedAt`, which Drizzle's `$onUpdate`
+  does not fill on insert.
+
+**Evidence**
+
+- `bun test` backend 1067 pass / 0 fail (81 files, +11 new: `report-csv.test.ts`
+  8, `report-archive.service.test.ts` 6), web-admin 100 pass, locales 94 pass.
+- `bunx tsc --noEmit` clean in both apps; `bun run lint` 0 errors (6
+  pre-existing warnings, none in the touched files).
+- `bun docs/database/validate-dbml.ts` -> `parsed: 275 tables, 235 refs`,
+  `cross-module refs: 0`, `timestamp gaps: 0`, `drizzle parity drift: 0`, `OK`.
+- `scripts/smoke-report-archives.ts` 11 pass / 0 fail over real HTTP against the
+  local server: archive list, the three CSV exports (content type, BOM, header
+  row, attachment filename), a closed month accepted with `201`, an open month
+  refused with `409`.
+- The archive write path was proven end to end on `ims_erp_local` (close
+  `2026-01` -> 3 rows -> repeat call 0 rows -> list 3 rows) and the scratch rows
+  and period were deleted afterwards, so the dev database is back to its prior
+  state.
+
+**Still open**
+
+- `POST /periods` needs `accounting_period:create`, which the permission
+  catalogue never grants (`accounting_period: ['read','close','reopen']` in
+  `packages/common/src/authorization/erp-permissions.ts`). A period is therefore
+  only created lazily by posting or by SQL. Not fixed here - it is a
+  pre-existing gap that needs a decision, not a guess.
+- No browser walk-through of the two pages yet, and no real-PG integration test
+  (the repo has none for any module).
+- `docs/database/` was updated (`docs.dbml` table + note) because this change
+  adds a table.
+
+## 2026-11-15 - Undone-work inventory, revision 2: `plans/2026-11-15_0538_todo_undone.md`
+
+Wrote and then corrected `docs/plan/plans/2026-11-15_0538_todo_undone.md`:
+every module and feature that has **no code**. Revision 1 read the plans and
+`docs.dbml` only; revision 2 read the endpoint list, the web-admin route tree
+and the test tree as well, which falsified five of revision 1's claims. No
+application code, migration, seeder or test changed.
+
+**Five corrections.** These are the reason revision 2 exists - each was a
+"missing feature" that actually ships:
+
+- Reporting has a backend: `GET /reports/profit-and-loss`, `/balance-sheet`,
+  `/cash-flow` live in `accounting/controllers/payment.controller.ts` over
+  `report.service.ts`. What is missing is the UI (`reports/index.tsx` and
+  `reports/monthly-archives/index.tsx` are `ComingSoonPage`), the export
+  surface, and the archive.
+- M06 assets are built: `asset-operations.controller.ts` serves
+  `POST /assets/:id/condition-checks`, `/maintenances`, `/depreciations`,
+  `/documents`, `/disposals` (+ approve/execute/cancel), `/tool-sets` CRUD, and
+  the `/assets/*` pages are real components. Missing: the **GL journal** for
+  depreciation - `recordDepreciation` writes `assets.asset_depreciations` and
+  never calls the posting engine (grep: no `posting` in
+  `asset-operations.service.ts`).
+- Document templates have `GET` and `POST /documents/templates`; missing are
+  update/delete, the renderer, and the UI (`documents/templates.tsx` is a stub).
+- Seven modules have zero code, not eight: `payroll`, `approval`, `budgeting`,
+  `investor`, `commerce`, `ticket`, plus the dashboard. Reporting has a backend.
+- The table counts: 274 table blocks, **145 unbuilt**, measured
+  schema-qualified so a same-named table in another module does not count as
+  built. `bun docs/database/validate-dbml.ts` prints `parsed: 274 tables, 235
+  refs` / `cross-module refs: 0` / `timestamp gaps: 0` / `drizzle parity drift:
+  0` / `OK`. Cross-check: 94 missing in shipped modules + 51 in the six unbuilt
+  schemas = 145. Modules whose schema is complete: location, company,
+  code_number, assets, document, audit, notification. Stale prose remains in
+  `module-ownership.md` (268 tables / 524 refs) and `features.md` (270 tables,
+  150 unbuilt).
+
+**New findings, recorded not fixed:**
+
+- **`finance` has no module.** `module-ownership.md` lists Finance as module 14
+  owning the `finance` schema, but no `src/app/finance` exists: `accountingModule()`
+  serves `/payments`, `/bills`, `/cash-bank/*`, `/ar/aging`, `/ap/aging`, and
+  `accounting/repositories/*` imports both `accounting.schema` and
+  `finance.schema`. That contradicts the one-schema-per-module rule in the
+  `elysia-module` skill; either rename the module or split it.
+- **Phantom backlog IDs**: ERP-0048 (signature requests), ERP-0049 (user
+  signature image) and ERP-0050 (document templates) are cited by code comments
+  and `features.md`, with no row in `backlog.md`.
+- **`docs/architecture/modules/README.md` is stale**: it still calls finance,
+  tax and asset-project "owner to be created", location and organization
+  "scaffold", and user "partially implemented"; all five ship controllers and
+  services.
+- **`features.md` M12 mislabelled three rows** (fixed in this change): "Exports,
+  monthly report archive - T30. Evidence: none", "Customer accounts +
+  protected docs - T25. Evidence: dbml only" and "Cross-account security UAT -
+  T31. Evidence: none" sat under `### implemented` while their own evidence said
+  nothing exists. They now sit under `### planned`, and the report API that does
+  exist is recorded as its own implemented row.
+- **Live route drift**: `apps/web-admin/src/lib/invoice-api.ts` posts to
+  `/invoices/:id/void`; `sales/controllers/invoice.controller.ts` serves
+  `POST /invoices/:id/cancel` only, so the void action is broken against main.
+- **No real-PostgreSQL test anywhere** - `test/helpers/mock-db.ts` is the only
+  database double and `test/accounting/*` types its fixture as `BunSQLDatabase`
+  without connecting. **No committed e2e**: no `playwright.config.*` or
+  `cypress.config.*` exists; the five `apps/backend/scripts/smoke-*.ts` run by
+  hand.
+- Carried over from revision 1: ERP-0010 is `planned` while `src/app/accounting`
+  ships COA/journals/posting/periods/reversals/AR-AP/bank rec/month-end close;
+  ERP-0039 is used twice (org invitations and M04 stage 1); ERP-0037 appears
+  twice in `features.md`; ADR-0010 is still `proposed` while ERP-0031/0032/0033
+  depend on it; six UAT scripts written 2026-11-12 never ran.
+
+`backlog.md` reviewed: no status moved, because nothing was built. `features.md`
+carries one pointer line to the new file. `docs/database/` reviewed and
+unchanged - no schema, column, index, constraint or cross-module reference
+changed; `validate-dbml.ts` was still run and printed `OK`.
+
+## 2026-11-15 - The remaining native date inputs: month, time and datetime
+
+The last non-date native inputs followed `DatePicker`: 4 `type='month'`, 2
+`type='time'` and 2 `type='datetime-local'` across 6 files now use
+`MonthPicker`, `TimePicker` and `DateTimePicker` from `packages/ui`. No native
+`type='date' | 'month' | 'time' | 'datetime-local'` input is left in
+`apps/web-admin`.
+
+Each keeps the value contract its call site already held, so handlers only lost
+their `event.target.value`:
+
+- `MonthPicker` — `YYYY-MM` (`todayBusinessDate().slice(0, 7)`), year stepper
+  plus a 12-month grid.
+- `TimePicker` — `HH:mm`, two scrollable columns; `step` defaults to 1 so no
+  stored minute is unreachable, and an empty value still maps to `null` in the
+  attendance handler.
+- `DateTimePicker` — `YYYY-MM-DDTHH:mm`, the exact shape
+  `toDateTimeInput`/`fromDateTimeInput` produce, so the CRM dialogs did not
+  change. Calendar and time sit in one popover; picking either half fills the
+  other with today / `00:00` so the emitted value is always complete.
+
+All three share the `DatePicker` shell: `Button variant="outline"` trigger,
+`data-empty` for the placeholder colour, a suffix icon in
+`--muted-foreground` (so it follows light/dark — measured
+`oklch(0.551 0.0234 264.364)` in light), and the off-screen `required` input that
+keeps native form validation working. `parseTime`/`formatTime` moved to
+`packages/ui/src/lib/time.ts` so `TimePicker` and `DateTimePicker` share one
+parser instead of a component file exporting helpers.
+
+Verified:
+
+- `@ims-erp/ui` `typecheck` and `lint` → exit 0
+- `bunx tsc -b` in `apps/web-admin` → clean; `lint` → exit 0; `test` → 100 pass, 0 fail
+- Browser: `/hr/attendance` "Monthly recap" shows `November 2026` and the popover
+  opens the 2026 month grid, picking March updates the trigger to
+  `March 2026`; the day sheet's In/Out columns render `--:--` disabled for
+  non-editable rows. `/crm/leads` "New lead" opens `dd/mm/yyyy --:--`, and
+  picking the 20th, hour 09 and minute 30 sets `Nov 20, 2026 09:30`.
+  `/hr/payroll` shows `November 2026` with the suffix icon.
+
+`docs/database/` was reviewed and is unchanged. No locale keys added or removed.
+
+## 2026-11-15 - Web admin date inputs become a `DatePicker`
+
+Every `type='date'` input in `apps/web-admin` (40 across 28 files) is now
+`DatePicker` from `packages/ui`, built from `Popover` + `Calendar` as the shadcn
+date-picker docs prescribe. `captionLayout="dropdown"` gives the month and year
+dropdowns of the "Date of Birth" example, so a date in another year is two
+clicks instead of a paging walk.
+
+The component keeps the repo's existing date contract: `value` is the
+`YYYY-MM-DD` business-date string every call site already held, and `onChange`
+returns that same string. No call site had to convert to `Date` or back, which
+is why the whole conversion is a swap plus dropping `type='date'`.
+
+Two details that are easy to get wrong and are handled in the component:
+
+- **Suffix icon follows the theme.** The calendar icon renders in
+  `--muted-foreground` rather than a hardcoded colour. Measured in the browser:
+  `oklch(0.551 0.0234 264.364)` in light and `oklch(0.7155 0 0)` in dark, and
+  the popover calendar re-themes with it.
+- **`required` still blocks submit.** A popover trigger is a button, not a form
+  control, so `required` renders an off-screen `required` input carrying the
+  value; `checkValidity()` on it is `true` when a date is set. It is omitted
+  when `disabled` so a disabled picker never blocks a form.
+- `min`/`max` map to the calendar's `disabled` matchers, and `YYYY-MM-DD` is
+  parsed by hand — `new Date('2026-11-15')` is UTC and lands a day early west of
+  Greenwich.
+
+`type='month'`, `type='time'` and `type='datetime-local'` are untouched: this
+slice covers date-only inputs, which is what the request named.
+
+Verified:
+
+- `bun run --filter '@ims-erp/ui' typecheck` and `lint` → exit 0
+- `bunx tsc -b` in `apps/web-admin` → clean
+- `bun run --filter '@ims-erp/web-admin' lint` → exit 0; `test` → 100 pass, 0 fail
+- Browser: `/projects/new` shows `dd/mm/yyyy` placeholders with the suffix icon,
+  the popover opens a calendar with month and year dropdowns (123 years), and
+  picking the 20th sets `Nov 20, 2026`; toggling the root `dark` class re-colours
+  both the icon and the calendar. `/hr/leave` "Record leave" renders two
+  DatePickers with the hidden `required` inputs bound to the form and valid.
+
+`docs/database/` was reviewed and is unchanged. No locale keys added or removed.
+
+## 2026-11-15 - Web admin UI consistency: shadcn `Select` everywhere, search icon prefix
+
+Every native `<select>` in `apps/web-admin` that was not already a
+`packages/ui` component is now the shadcn `Select` (`Select`, `SelectTrigger`,
+`SelectValue`, `SelectContent`, `SelectItem`), and every `type='search'` input
+is an `InputGroup` with a `Search` (lucide) prefix. 85 native selects across 51
+files and 25 search inputs; the `const select = '...'` class strings they used
+are gone. `NativeSelect` usages (`components/assets/borrowing-form.tsx`,
+`assets/asset-detail.tsx`) and `inventory/adjustment-form.tsx` were already
+`packages/ui` components and were left alone.
+
+**Bug found and fixed in `packages/ui`, not at the call sites.** Base UI's
+`SelectValue` reads the trigger label from the root's `items` prop, not from the
+`SelectItem` children (the popup unmounts while closed). Without `items` every
+filter trigger rendered its raw value — the pre-existing `hr/employees` status
+filter already showed `all` on `main`, so this was not introduced here but the
+conversion multiplied it. `packages/ui/src/components/select.tsx` now wraps
+`SelectPrimitive.Root` and derives `items` from the `SelectItem` children when
+the caller does not pass it, so all 110 call sites get labels with no per-file
+churn.
+
+Behaviour notes: empty/placeholder options use a `'none'` (or `'all'`) sentinel
+mapped back to `''`/`undefined`/`null` in the handler; `disabled`, `id` (moved
+to `SelectTrigger` so `<label htmlFor>` still works) and `aria-label` are
+preserved. `required` no longer triggers the browser's native form validation —
+each affected form already guards its submit button on the same state
+(`!salesOrderId`, `!bastId`, `!itemId`, ...), so submission behaviour is
+unchanged but the browser tooltip is gone.
+
+Verified:
+
+- `bun run --filter '@ims-erp/web-admin' lint` → exit 0 (pre-existing warnings only)
+- `bunx tsc -b` in `apps/web-admin` → clean; `bun run --filter '@ims-erp/ui' typecheck` → exit 0
+- `bun run --filter '@ims-erp/ui' lint` → exit 0
+- `bun run --filter '@ims-erp/web-admin' test` → 100 pass, 0 fail
+- Browser walkthrough on the dev server: `/crm/leads`, `/crm/customers`,
+  `/hr/employees`, `/projects`, `/procurement/purchase-orders`,
+  `/projects/new`, `/procurement/purchase-orders/new` — trigger labels render
+  ("All statuses", "Pick a supplier", "Hardware"), the search boxes carry the
+  icon, and selecting an option updates the trigger and the query.
+  `/integrations/webhooks` could not be checked: the page fetches
+  `http://localhost:3001/api/auth/get-session` and is blocked by CORS, a local
+  env issue unrelated to this change.
+
+`docs/database/` was reviewed and is unchanged (no schema, contract, or
+lifecycle change). No locale keys were added or removed.
+
+## 2026-11-15 - M04 lands on the current mainline: `main` merged into `feat/m04-on-main`
+
+Branch `feat/m04-on-main` was 106 commits behind `main`; the M04 code (website
+catalog, outbox to n8n, WhatsApp assistant) had never reached `main` at all —
+the "carried onto main 2026-11-12" wording in `backlog.md` was wrong and is
+withdrawn. Forty files were changed on both sides, 28 of them conflicting
+(`git merge-tree --write-tree`), and the other 12 auto-merged into code that
+would have compiled or run differently than either branch intended.
+
+`git merge main` on `feat/m04-on-main`, then:
+
+1. **Migrations.** Dropped the five hand-written, snapshot-less M04
+   migrations (`20261113090000`..`090400`) that main's ERP-0052 squash had
+   superseded, then `drizzle-kit generate` on main's 20-migration chain
+   produced one migration for the M04 schemas:
+   `20261115090000_m04_catalog_automation_schemas` (2 `CREATE SCHEMA`, 5
+   tables, 2 intra-module FKs, 14 indexes, 9 checks). `drizzle-kit check`
+   → `Everything's fine`, and `generate` afterwards → `No schema changes`.
+2. **Backend.** `app.ts` mounts main's `realtimeGateway`/`notification`/
+   `company`/`code-number`/`document`/`hr` modules plus M04's
+   `catalogModule()` and `automationModule()`; `index.ts` keeps main's
+   registration order, registers automation before CRM, and starts every
+   worker (avatar, org logo, notification, outbox, WhatsApp, mail, license
+   due) from the one `startWorkers` array with both schedules behind
+   `scheduler.enabled`. The three conflicting services keep main's seams
+   (`CODE_NUMBER_SERVICE_TOKEN` — `NUMBERING_SERVICE_TOKEN` is gone from
+   main — and `DOCUMENT_SERVICE_TOKEN`) **plus** M04's `OUTBOX_SERVICE_TOKEN`:
+   `invoice.issue` still splits into `issue` + `issueInTransaction` so
+   `invoice.issued` publishes after the commit, and `receipt.recorded` sits
+   next to the ERP-0044 `documents.register`; `serviceTicket.close` registers
+   the document then publishes `'closed'`; licensing keeps documents and
+   `publishDueNotices` together.
+3. **`automation.outbox_messages.organization_id`** is `text` **nullable**
+   (elysia-module 3.2/3.3, ADR-0014): M04 publishes company-wide events
+   (ADR-0012), so no publisher fills it and no query filters on it; the
+   column reserves the tenant scope. `docs.dbml` was rewritten to the
+   **shipped** shape rather than main's target shape (`topic varchar(64)`,
+   `payload jsonb NOT NULL`, `last_attempt_at`/`response_status` instead of
+   `available_at`, status without `dead`, plus `dedupe_key`), and
+   `catalog.web_listings`, `automation.faq_entries`,
+   `automation.whatsapp_conversations` and `automation.whatsapp_messages`
+   were added.
+4. **Permissions.** `erpStatements.whatsapp` (new) and M04's grants, dropped
+   for `investor`/`customer` because main moved those to application roles
+   (ADR-0018); main's `company`/`code_number` split kept.
+5. **Web/UI.** `nav-config.ts` taken from main — it already pointed at
+   `/integrations/{website-catalog,whatsapp-ai,webhooks}`, which only exist
+   on this branch, so the merge is what makes those three live; `item.
+   notifications` kept from main (see the open defect below);
+   `routeTree.gen.ts` regenerated by the router plugin (93 `integrations`
+   references), never hand-merged.
+6. **Docs.** `docs/architecture/modules/automation.md` created and
+   `notification.md` taken from main (the old branch file described M04 under
+   the name that now belongs to ERP-0047); `data-model.md` gained the
+   `catalog`/`automation`/`notification` entries; user guide has both 8.6 (M08)
+   and 8.7 (M04). The M04 ADR was **renumbered ADR-0015 → ADR-0020** because
+   main claimed ADR-0015 for the company/document/code_number split;
+   `README.md` indexes both.
+7. **`docs/database/logical-references.md` regenerated**, not merged.
+
+Verification (this machine, `ims_erp_local` + disposable
+`ims_m04_merge_check`):
+
+- `bun install` — no changes; `bun run typecheck` (backend, after adding the
+  `documents` double to `sales-invoice-events.test.ts`), `bun run lint`
+  (0 errors, 6 pre-existing warnings), `bun run test` — backend **1056 pass**,
+  web-admin **100**, locales **94**, react-email **5**, 0 fail;
+  `bun run --cwd apps/web-admin build` clean.
+- `drizzle:migrate-reset` on `ims_m04_merge_check` → **21 migrations, 128
+  tables**, `automation.*` (4) and `catalog.web_listings` present; a second
+  `drizzle:migrate` is a no-op (21/128); `drizzle:seed` twice → `inserted: 0`
+  both times.
+- `drizzle:migrate` on the dev DB appended only the new migration (19 → 21
+  journal rows, 116 → 128 tables).
+- `docs/database/validate-dbml.ts` → 274 tables, 235 refs, 0 cross-module,
+  0 timestamp gaps, 0 drizzle parity drift, `OK`;
+  `gen-logical-references.ts` → 531 refs across 41 targets.
+
+**Open defect inherited from `main` (not caused by this merge):**
+`nav-config.ts` shows **Notifications → `/integrations/notifications`**, but
+neither branch has that route (main's notification UI is the header bell,
+`components/notification/notification-bell.tsx`). `SidebarItem.url` is a
+plain `string`, so typecheck passes and the link 404s when clicked. Fixing it
+means either dropping the item or building an inbox page — tracked here, not
+done in a merge commit.
+
+Gate for M04 itself: nothing changed in what is *verified*. Live WhatsApp and
+n8n still need a WAHA instance, a dedicated number and an AI provider
+(ADR-0020 stays `proposed`). Browser verification of the merged web screens
+(`/integrations/website-catalog`, `/integrations/whatsapp-ai`, `…/faq`,
+`/integrations/webhooks`, `/settings/company`, `/settings/code-numbers`) is
+**not yet done**: the dev stack starts and those routes load with no console
+errors, but each redirects to `/login` without a session, so the pages were
+not walked through with data. Pending the owner's login in the browser.
+
+## 2026-11-12 - WA/n8n guide (T32), plan-doc cleanup, UAT scripts (ERP-0024)
+
+Owner asked for three small items on `feat/m04-on-main`. Docs only — no
+code, migration, seeder or test changed; `docs/database/` reviewed and
+unchanged (no table, column or reference touched).
+
+1. **WA/n8n setup guide (M04 T32 handover):**
+   `docs/user-guide/whatsapp-n8n-setup.en.md` and `.id.md` — `.env`
+   variables, WAHA webhook (URL, `message` event, HMAC key), n8n webhook
+   with a signature-check Code node and dedupe on `X-Erp-Event-Id`, one
+   flow per topic, AI provider, troubleshooting by status code, go-live
+   checklist. Facts checked against `adapters/waha.ts`,
+   `adapters/n8n-webhook.ts`, `utils/assistant.ts` and the web labels. The
+   n8n snippet is **not** tried against a real n8n instance. Linked from
+   `docs/user-guide/README.md` and `notification.md`.
+2. **Plan-doc cleanup:** `features.md` M02 "planned" no longer lists
+   customers/leads and invoices/DP/receipts (they were already under
+   implemented); the stale "ERP-0037 port in-progress" block (the port is
+   ERP-0038) replaced; ERP-0038 → implemented (PR #58 → PR #68, merged to
+   main 2026-11-09); ERP-0006 → implemented (location module, seeder,
+   cache, test — built by programmer A; found while checking); ERP-0037
+   (nullable cross-module refs) stays `planned`: `sales.quotations`
+   `customer_id` is still `NOT NULL`. Last synced 2026-11-12.
+3. **UAT scripts (ERP-0024 → in-progress):** `docs/plan/uat/README.md` plus
+   one file per owned module (M02 13 cases, M03 11, M04 11, M05 11, M07 9,
+   M08 10), each with steps, expected result, Pass/Fail/Blocked and a
+   sign-off table. Cases come from each plan's Acceptance interpretation
+   (U01–U32 Excel text is not in the repo). Not testable yet and marked
+   N/T: payment gateway callbacks (ERP-0020), customer portal (ERP-0022),
+   payroll journal (ERP-0018). Expected results were checked against the
+   error codes in the services (e.g. licensing keys, receipt overpayment).
+
+**Found, pre-existing on main (not fixed here, owner/programmer A to
+decide):** the web billing card and invoice page call
+`GET /invoices/orders/:id/summary`, `POST /invoices` with `term`, and
+`POST /invoices/:id/void`; main's Sales invoice controller (since the PR
+#68 merge) has only list/get/create (explicit items)/update/cancel (draft
+only)/issue/receipts. Creating an invoice from a sales order and voiding an
+issued invoice therefore fail in the browser on main. Recorded in the M02
+UAT script (cases 09–11) and backlog ERP-0038.
+
+Verification: `bun docs/database/validate-dbml.ts` → OK; locale and code
+untouched (no test run needed for docs).
+
+Next executable task: programmer A reviews PR #83 and #84; then run the UAT
+scripts on a staging database with the owner (M02 first — after the invoice
+API mismatch is fixed), and set up the sandbox WAHA + n8n with the guide.
+
+## 2026-11-12 - ERP-0021 lead capture from WhatsApp chats
+
+Closes the Phase 6 gap recorded in the compliance pass below. Owner said
+"kerjakan"; the open choice (automatic on handoff vs an admin button) was
+taken as **an admin button** — no lead is made from spam or chit-chat, and
+the admin decides.
+
+Gate 1: `docs.dbml` `crm.leads` (source `whatsapp`, `whatsapp` column,
+nullable `owner_user_id`), `module-ownership.md` (CRM owns leads; the link
+needs a contract method on the owning side), `logical-references.md`,
+`integrity-and-consistency.md` 7.1, `data-dictionary.md` 1.10/1.14;
+`implementation-phases.md` skipped (no dependency on an unlanded step).
+Gate 2 (manual): ownership — CRM creates the lead through the new contract
+`LeadService.captureFromChat`; automation keeps only the link; tenant — leads
+and chats are company-wide; new column
+`automation.whatsapp_conversations.lead_id` is a nullable logical reference
+(ADR-0014); lead unassigned (`owner_user_id` null, like a website inquiry),
+`created_by` the admin; permission `whatsapp:reply`; once per chat via a
+conditional `UPDATE … WHERE lead_id IS NULL` (two admins at the same instant
+could leave one unlinked duplicate lead in CRM — accepted, documented); no
+service-level DI cycle (WhatsappService → LeadService → OutboxService).
+
+Built: `docs.dbml` first (gen-logical-references → 539 refs, validate-dbml
+OK), Drizzle `leadId`, hand-written migration
+`20261113090400_m04_whatsapp_lead_link` (one nullable column);
+`POST /automation/whatsapp/conversations/:id/lead`; web "Create lead" /
+"Open lead" (only with `lead.read`; otherwise "Lead created in CRM"); en/id
+keys; ADR-0015, `notification.md`, `data-model.md`, user guide 8.7, backlog
+ERP-0021 (partial note removed), features.
+
+Verification: `bunx tsc --noEmit` clean; `bun run lint` → 0 errors (warnings
+unchanged from main); `NODE_ENV=test bun test` (apps/backend) → 843 pass;
+web `bun run build` OK; locales 86 pass; new tests — CRM contract
+(`lead.service.test.ts`) and chat → lead incl. idempotency
+(`whatsapp-assistant.test.ts`); disposable `ims_erp_m04` rebuilt with
+`database/migrate-reset.ts` → migrations and seed complete, `drizzle-kit
+push --explain` → no automation/catalog/crm difference. E2E on the dev stack
+against `ims_erp_m04` (temporary `POSTGRES_DB` and `WAHA_WEBHOOK_SECRET`,
+restored): two signed webhook messages → chat handed off (`no_provider`);
+customer service "Create lead" → 200, linked; second click → same lead;
+sales manager reads the lead (`whatsapp`, unassigned, number and both
+questions in `needs`); one `lead.created` outbox event; `sales` (no
+`whatsapp:*`) → 403; screenshot of the chat page checked.
+
+## 2026-11-12 - M04 compliance pass against AGENTS.md (ERP-0039, ERP-0021)
+
+Owner asked to check M04 (PR #84) against `AGENTS.md` and `README.md` and fix
+the gaps. What was missing before and what was done:
+
+- **Skills read before the fixes:** `elysia-module`,
+  `elysia-layered-architecture`, `elysia-tsyringe`, `tsyringe`. Module entry
+  factories, cross-module access (type + token only; publishers inject
+  `OUTBOX_SERVICE_TOKEN`, the assistant `CATALOG_SERVICE_TOKEN`), one path-
+  param name per position, worker handles in `startWorkers`, and
+  `container.resolve` only in `plugin()` / worker start: conform. No
+  service-level DI cycle (assistant → catalog → licensing → outbox).
+- **Gate 1 completed:** `docs.dbml`, `module-ownership.md`,
+  `integrity-and-consistency.md`, `data-dictionary.md` and
+  `logical-references.md` (regenerated) read for the M04 tables;
+  `implementation-phases.md` skipped (no dependency on an unlanded step).
+  Findings fixed:
+  - integrity 7.1 (state transitions are conditional updates): WhatsApp
+    handoff / resume / close now update only from the expected statuses
+    (`updateConversation(..., from)`); a second handoff sends no second reply
+    or event; resume / close of a chat already in that state → 409
+    `automation.whatsappState.*` (en/id). The outbox `recordAttempt` no
+    longer overwrites a `published` event.
+  - data-dictionary 1.10 (actor columns): `whatsapp_messages.sent_by_user_id`
+    renamed `sent_by` (`docs.dbml` first, Drizzle, the unmerged migration
+    `20261113090300_m04_whatsapp_assistant`, code, tests).
+  - data-dictionary 1.12 says structured payloads are JSON `text`; M04 keeps
+    `jsonb` for `outbox_messages.payload` like 14 existing `docs.dbml` columns
+    (CRM submissions, sales snapshots). Recorded, not changed.
+  - `whatsapp_conversations.chat_id` is a full (not partial) unique index:
+    a soft-deleted chat is revived by the upsert, never duplicated.
+- **Phase 6 (ERP-0021) check:** FAQ/catalog-only answers, human handoff,
+  untrusted-message tests, sandbox/mock gating, webhook authenticity,
+  idempotency, retries: met. **Lead capture from WhatsApp chats is not
+  built** → ERP-0021 marked partial in `backlog.md`. Exit criterion "outbox
+  decision recorded": ADR-0015 (proposed) written and indexed in
+  `docs/architecture/README.md`.
+- **Phase 3 output:** `data-model.md` now lists the `catalog` and
+  `automation` schemas.
+
+Commands and results: `bun docs/database/gen-logical-references.ts` → 538
+refs; `bun docs/database/validate-dbml.ts` → OK; `bunx tsc --noEmit` clean;
+`bun run lint` → 0 errors (warnings unchanged from main: backend 6,
+web-admin 11, ui 19; none in M04 files); `NODE_ENV=test bun test`
+(apps/backend) → 841 pass (new: conditional handoff/resume/close, outbox
+race); web `bun run build` OK; locales 86 pass. Disposable `ims_erp_m04`
+rebuilt with `bun run database/migrate-reset.ts` → migrations and seed
+complete; `drizzle-kit push --explain` → no catalog/automation difference.
+`graphify update .` not run: graphify is not installed on this machine.
+
+## 2026-11-12 - M04 carried onto main (ERP-0039, ERP-0021)
+
+Status: **implemented** on branch `feat/m04-on-main` (from `origin/main`
+89940c0), not yet accepted by the owner. Replaces PR #65 (based on
+`merge/main-sync`). The four M04 commits (4a `1cd2799`, 4b `e6f407d`, 4c
+`41053ee`, 4d `ee8f52d`; sections below) were cherry-picked and adapted:
+
+- **Module entry factories** (main mounts modules): `catalogModule()` and
+  `automationModule()`; `index.ts` starts the outbox, WhatsApp and
+  license-due workers next to main's mail worker.
+- **Billing events moved to sales:** invoices and receipts belong to sales
+  on main (the finance module is gone), so `invoice.issued` is published by
+  `sales/services/invoice.service.ts` after the issue transaction commits,
+  and `receipt.recorded` after a receipt, with the invoice re-read
+  (`sales/utils/invoice-events.ts`). `ar-flows.test.ts` asserts the event;
+  new `sales-invoice-events.test.ts` (3 tests).
+- **ADR-0014:** `catalog.web_listings.item_id` is nullable (`docs.dbml`,
+  Drizzle, SQL); an unlinked listing is hidden and cannot be published.
+  The other M04 cross-module references were already nullable.
+- **Migrations** renamed after main's newest and **hand-written** (no
+  `snapshot.json`), like `20261112000000_erp0034_hr_employees`, because
+  drizzle-kit generate/migrate are blocked on main:
+  `20261113090000_m04_catalog_web_listings`,
+  `20261113090100_m04_automation_outbox`,
+  `20261113090200_m04_outbox_dedupe_key`,
+  `20261113090300_m04_whatsapp_assistant` (the SQL is the drizzle-kit
+  output of the M04 branch; the sections below use the old names).
+
+Verification: `bun docs/database/gen-logical-references.ts` → 538 refs,
+`validate-dbml.ts` OK; `bunx tsc --noEmit` clean; `NODE_ENV=test bun test`
+(apps/backend) → 839 pass; web `bun run build` OK; locales 86 pass.
+Fresh disposable database `ims_erp_m04`: `bun run database/migrate-reset.ts`
+→ migrations complete, seed complete; seeder run again → no new rows;
+`drizzle-kit push --explain` shows **no difference for any catalog or
+automation table** (only main's pre-existing `auth.organization_role` and
+`sales.receipts` FK drift). Smoke test on the dev stack against
+`ims_erp_m04` (`POSTGRES_DB` switched temporarily, restored): lead →
+`lead.created` outbox row `pending` ("not configured"); catalog listings
+200; public catalog without key 401; WhatsApp webhook without a configured
+key 503; FAQ by marketing 201, by customer service 403. Invoice issue and
+receipt events are covered by the unit tests above (an invoice flow on the
+dev stack needs the chart of accounts set up).
+
+Next executable task: review of PR #83 (M08) and PR #84 (M04; #65 closed as
+superseded) by programmer A;
+both edit `app.ts`, `index.ts`, permissions and locales, so the second to
+merge needs a small rebase.
+
+## M04 n8n, WhatsApp, website: gate 1, decisions and slices, 2026-11-07
+
+Status: **implemented** (4a catalog API, 4b outbox to n8n, 4c stage 2
+events, 4d WhatsApp assistant), not yet accepted by the owner. Live use
+needs WAHA, a dedicated WhatsApp number (sandbox first), n8n flows and an
+AI provider — none exist yet.
+
+Next executable task: owner review of M04 on `feat/m04-integrations` (PR
+with base `merge/main-sync`); then the go-live checklist in
+`docs/architecture/modules/notification.md` (WAHA webhook + HMAC key, n8n
+flows per event, AI provider) on a sandbox number.
+Branch `feat/m04-integrations` (from `merge/main-sync`, so PR #58 stays as
+reviewed).
+
+Gate 1 (read): `docs/plan/erp-module-plans/m04-n8n-whatsapp-website.md`
+(stage 1: public catalog + profile, requirements form → lead, one ERP event
+to n8n with outbox log and manual retry; stage 2: WhatsApp AI on FAQ +
+catalog, notifications, handoff to an admin, logs; the AI must never grant
+discounts or transact — enforced by what it can call); docs.dbml MODULE
+Catalog / Commerce / Automation (scaffolds; the automation workflow engine
+is beyond baseline because n8n is the engine); the website repo
+`entragate-platform` (`CatalogSource` contract: list / get / categories /
+facets / stock / pricing / solutions / search / price cart, ERP routes
+still empty); the website form → lead API already built in M02
+(`/public/v1`, ADR-0011 step 3b).
+
+Owner decisions (2026-11-07):
+1. **WhatsApp via WAHA** (self-hosted WhatsApp HTTP API, not the official
+   Business API): no template approval, but a risk of the number being
+   banned — a dedicated number and a sandbox number first.
+2. **No n8n yet**; n8n and WAHA are not added to the dev docker compose
+   for now — the ERP side is built and tested against a fake receiver.
+3. **Events**: stage 1 `lead.created` (n8n notifies the sales admin);
+   stage 2 `invoice.issued`, `receipt.recorded`, `license.due`,
+   `service_ticket.updated`; one outbox with send log, manual retry and an
+   event id the receiver dedupes on.
+4. **AI in scope (stage 2), logic in the ERP**: WAHA → n8n → an ERP endpoint
+   that reads the FAQ and published catalog, asks the AI, answers or hands
+   off, and logs the conversation; n8n only relays. **AI provider not chosen
+   yet**: the ERP gets a provider-neutral port; with no provider configured
+   every message is handed off to an admin.
+5. **Routing (2026-11-07, refines 4)**: WAHA runs separately from the ERP.
+   Customer chat goes WAHA → the ERP's inbound webhook directly (HMAC
+   verified, deduped on the WhatsApp message id, answered at once and
+   processed on the BullMQ queue), and replies go back through a WAHA
+   adapter. n8n is used for the business events (the outbox): ERP → n8n →
+   WAHA / email.
+
+### 4a — website catalog API (implemented 2026-11-07)
+
+- `docs/database/docs.dbml` MODULE Catalog: header (item master moved to
+  inventory; scaffold target-only) + new `catalog.web_listings`
+  (company-wide); `validate-dbml.ts` → OK. Drizzle
+  `drizzle/schemas/catalog.schema.ts`; migration
+  `20261107092348_catalog_web_listings` (generated, inspected, applied).
+- Inventory contract `ItemCatalogService` (`ITEM_CATALOG_SERVICE_TOKEN`:
+  live items with category, available stock over every warehouse —
+  new `BalanceRepository.availableByItems` —, photo URL); test doubles of
+  the balance repository extended.
+- Module `src/app/catalog`: admin `/catalog/listings` (`catalog:read |
+  create | update | publish | archive`; sales manager gains `catalog`,
+  marketing had it) and public `/public/v1/catalog` (website key):
+  `products`, `products/:slug`, `products/:slug/image` (no key; 302 to a
+  short-lived photo URL; the link is only given when `APP_URL` is https),
+  `categories`, `facets`, `stock`, `pricing`, `solutions` (own licensable
+  applications, M03), `search`, `cart/price`. Whole-rupiah money; quotation
+  listings have no price and are not purchasable in the cart; untracked
+  items are "request"; stock is "ready" when available > 0, else the
+  listing's out-of-stock mode. Repeated query keys (`?slug=a&slug=b`) are
+  read as arrays (bug found in e2e, fixed).
+- Web `/integrations/website-catalog` (list, publish / hide, edit, remove,
+  item picker with slug suggestion); locale namespace `integrations`.
+- Website route map for `entragate-platform` (`apps/web/src/lib/server/
+  catalog/index.ts`): `listProducts: /public/v1/catalog/products`,
+  `getProduct: /public/v1/catalog/products/:slug`, `listCategories:
+  /public/v1/catalog/categories`, `getFacets: /public/v1/catalog/facets`,
+  `getStock: /public/v1/catalog/stock`, `getPricing:
+  /public/v1/catalog/pricing`, `listSolutions:
+  /public/v1/catalog/solutions`, `search: /public/v1/catalog/search`,
+  `priceCart: /public/v1/catalog/cart/price` (envelope: `unwrap` data).
+- Verification: backend 688 pass (new `catalog.service.test.ts` 7),
+  typecheck / lint clean, web build OK, locales 70 pass; e2e: listing
+  created and published on the screen (sales manager), a quotation listing
+  and a hidden one via the API; public API with a temporary website key
+  (disabled afterwards): no key 401, hidden product 404, products / product
+  / categories / facets / stock / pricing / search / cart as expected.
+
+### 4b — ERP events to n8n: the outbox (implemented 2026-11-07)
+
+- `docs/database/docs.dbml` MODULE Automation: header note (n8n is the
+  workflow engine; the ERP keeps only the outbox) and
+  `automation.outbox_messages` rewritten company-wide (topic, aggregate,
+  payload, status `pending | published | failed`, attempts, last response);
+  `bun docs/database/gen-logical-references.ts` then
+  `bun docs/database/validate-dbml.ts` → OK. Drizzle
+  `drizzle/schemas/automation.schema.ts`; migration
+  `20261107093321_automation_outbox` (generated, inspected, applied with
+  `NODE_ENV=development bun run drizzle:migrate`).
+- Module `src/app/automation`: `OutboxService.publish` writes the event (row
+  id = event id n8n dedupes on) and queues it on BullMQ `automation-outbox`
+  (5 attempts, exponential backoff from 30 s); it never throws into the
+  business action — a queue outage leaves the event `pending` for a manual
+  send. Adapter `adapters/n8n-webhook.ts` posts the envelope with
+  `X-Erp-Event-Id`, `X-Erp-Event-Type`, `X-Erp-Timestamp` and
+  `X-Erp-Signature: sha256=<HMAC of "timestamp.body">`, 10 s timeout, never
+  logs or echoes the URL. 5xx / 408 / 429 / network errors retry; other 4xx
+  are final; no webhook configured keeps the event `pending`.
+- Config `N8N_WEBHOOK_URL` / `N8N_WEBHOOK_SECRET` (optional; secret min 16
+  chars; names in `.env.example`).
+- CRM publishes `lead.created` from `LeadService.create` and
+  `WebsiteInquiryService.capture` (`crm/utils/lead-event.ts`).
+- Admin `/automation/outbox` (`automation:read_log`), `/summary`,
+  `/:id/retry` (`automation:execute`); admin role gains `automation`. Web
+  `/integrations/webhooks` (log, filters, "Send now", not-configured alert);
+  locale keys `integrations:outbox.*` en/id.
+- Verification: `NODE_ENV=test bun test` (apps/backend) → 694 pass (new
+  `outbox.service.test.ts` 5, `lead.service.test.ts` + 1); `bun run
+  typecheck` / `bun run lint` clean; locales 70 pass; web build OK. E2E
+  against a local fake receiver (HMAC checked, first call 503, dedupe on
+  event id; temporary `.env` entries removed afterwards): lead with no
+  webhook → `pending` "not configured"; lead with webhook → 503 → BullMQ
+  retry → `published` after 2 attempts; manual send of the pending one →
+  `published`; resending a published event sends nothing; screenshot of the
+  log screen checked. Note: two stale dev stacks were running at once and
+  answered with an old env — stop ports 3000/5173/5174 before restarting.
+
+### 4c — stage 2 events to n8n (implemented 2026-11-07)
+
+- `docs/database/docs.dbml`: `automation.outbox_messages.dedupe_key`
+  (varchar 200, unique) for once-per-fact events; gen-logical-references +
+  validate-dbml → OK. Migration `20261107094748_outbox_dedupe_key`
+  (generated, inspected: one column + unique index; applied).
+  `OutboxService.publish(..., { dedupeKey })` skips a repeated key
+  (`onConflictDoNothing`), nothing queued.
+- Publishers (payload builders are pure utils): Finance `invoice.issued`
+  (on issue) and `receipt.recorded` (with the invoice after the payment) —
+  `finance/utils/finance-events.ts`; After-sales `service_ticket.updated` on
+  every change (`created / assigned / started / resolved / reopened /
+  closed`, customer contact via the CRM contract) —
+  `aftersales/utils/ticket-event.ts`; Licensing `license.due` from
+  `LicensingService.publishDueNotices` (thresholds 30 / 7 days / ended in
+  grace, `dueNoticeThreshold` in `utils/license.ts`; dedupe key
+  `license.due:<contract>:<end date>:<threshold>`; paid renewals activated
+  first).
+- Daily job: BullMQ queue `licensing-due` (`licensing/queues/`), scheduler
+  `license-due-notices`, cron `SCHEDULER_LICENSE_DUE_CRON` (default
+  `0 8 * * *`, tz Asia/Jakarta), only with `SCHEDULER_ENABLED=true`;
+  schedule registration failure is logged, not fatal.
+- Event contract for whoever builds the n8n flows:
+  `docs/architecture/modules/notification.md` (rewritten; the old NestJS
+  text was stale).
+- Verification: `NODE_ENV=test bun test` (apps/backend) → 697 pass (new:
+  outbox dedupe, `license.due` thresholds + once-per-threshold, event
+  assertions in invoice and ticket tests); `bun run typecheck` /
+  `bun run lint` clean. E2E (dev DB, fake receiver checking the HMAC,
+  temporary `.env` entries with `SCHEDULER_ENABLED=true` and a per-minute
+  cron, all removed afterwards; the temporary job scheduler removed from
+  Redis): customer → quotation → approval → sales order → invoice issued →
+  receipt → ticket → license contract ending in 10 days; the receiver got
+  `invoice.issued`, `receipt.recorded` (status `partially_paid`),
+  `service_ticket.updated` (`created`) and one `license.due` (threshold
+  30) across several scheduler runs, all signed and `published`. E2E data
+  (customer `E2E-4C` and its documents) stays in the dev database.
+
+### 4d — WhatsApp assistant (implemented 2026-11-07)
+
+Gate 1: `docs.dbml` MODULE Automation (no conversation/FAQ tables existed;
+`notifications` / `notification_templates` stay target-only because n8n
+sends the messages), `module-ownership.md` §21 (automation owns
+notifications/integrations; queues stay in the Redis worker), M04 plan
+stage 2 + controls (AI cannot discount or transact, enforced by what it can
+call; inbound webhooks verified; secrets in server config). Skipped
+`implementation-phases.md` (no dependency on an unlanded step).
+
+Gate 2 (manual fallback; `grilling` is not installed) — answers:
+- Ownership: `automation` schema (this module), tables `faq_entries`,
+  `whatsapp_conversations`, `whatsapp_messages`; catalog data through the
+  catalog contract (`CatalogService.matchProducts`), never its tables.
+- Tenant: company-wide (ADR-0012), no `organization_id`.
+- Soft delete: `deleted_at` on all three; FAQ removal is a soft delete;
+  chats and messages are a log, never deleted by feature code.
+- Types: unix-ms timestamps; no money or quantity columns.
+- Logical references: only `auth.users.id` (`created_by`, `updated_by`,
+  `assigned_user_id`, `sent_by_user_id`) with the standard note. No link to
+  a CRM customer or lead yet (deferred: an admin creates the lead).
+- Vocabularies: conversation `assistant | handoff | closed`; handoff reason
+  `no_provider | not_found | human_requested | restricted | error`;
+  message direction `inbound | outbound`, author `customer | assistant |
+  admin | system`, status `received | processed | pending | sent | failed`.
+- Dedupe: unique `(direction, external_id)`; one conversation per
+  `chat_id` (unique), a closed chat reopens with the assistant.
+- Deferred: per-chat rate limit, media handling (media = handoff), CRM
+  lead/customer linking, OTP delivery.
+
+Built:
+- `docs.dbml` (3 tables + 2 intra-module refs) → gen-logical-references +
+  validate-dbml OK; Drizzle in `automation.schema.ts`; migration
+  `20261107095923_whatsapp_assistant` (generated, inspected, applied).
+- `src/app/automation`: `WhatsappService` (receive, send, handoff, inbox),
+  `AssistantService` (guards → AI → re-check), `FaqService`;
+  `adapters/waha.ts` (sendText), `adapters/openai-compatible.ts` (optional
+  model, text only); `utils/assistant.ts` (HMAC-SHA512 check, WAHA parsing,
+  restricted / human patterns, FAQ ranking, holding replies); queue
+  `whatsapp-inbound` + worker; controllers `/integrations/whatsapp/webhook`
+  (public, signed), `/automation/whatsapp/*`, `/automation/faq`; outbox
+  topic `whatsapp.handoff`. Config `WAHA_URL`, `WAHA_API_KEY`,
+  `WAHA_SESSION`, `WAHA_WEBHOOK_SECRET`, `AI_BASE_URL`, `AI_API_KEY`,
+  `AI_MODEL` (names in `.env.example`).
+- Permissions: statement `whatsapp: read | reply | manage_faq`; admin all,
+  sales manager + customer service read/reply, marketing read/FAQ;
+  `packages/common` rebuilt; `bun scripts/refresh-role-grants.ts` → 5 roles.
+- Web: `/integrations/whatsapp-ai` (status alerts, tabs with counts,
+  search), `/$conversationId` (log, admin reply, resend, hand back, close),
+  `/faq` (CRUD); locale keys en/id; the dead "Notifications" nav item
+  (no page existed; notifications are n8n events) removed with its key.
+- User guide 8.7 (en/id; 8.6 is HR on its branch); module doc
+  `notification.md` updated.
+- Verification: backend 709 pass (`whatsapp-assistant.test.ts` 12),
+  `bun run typecheck` / `bun run lint` clean (no new warnings), web build
+  OK, locales 70 pass. E2E with temporary `.env` entries (removed), a fake
+  WAHA and a fake OpenAI-compatible model: FAQ created by marketing
+  (customer service gets 403); FAQ question → assistant reply sent through
+  WAHA with the FAQ in the model's context; the same webhook twice → one
+  reply; bad signature → 401; discount request → refusal + handoff
+  `restricted`, model not called; off-FAQ question → handoff `not_found`;
+  admin reply sent and the chat assigned; two `whatsapp.handoff` outbox
+  events; sales → 403 on the inbox; screenshots of list, chat and FAQ
+  pages checked. E2E chats and FAQ entries stay in the dev database.
+- Not verified: a real WAHA instance, a real AI provider, n8n flows.
+
+`docs/database/` updated (3 tables, Automation header); the
+`whatsapp.handoff` topic needs no schema change.
 > on branch `refactor/company-document-numbering`. The code for them lives on
 > that branch; this documentation set was written there first and then copied
 > to the `erp` repository, so a reader on an older branch sees the docs before
@@ -210,7 +1058,7 @@ The owner asked for a recommendation on D2 because "the current login is for
 internal users": explained that customers use the same Better Auth (AGENTS.md:
 no second auth system) but are separated by `portal_identities` (never
 organization members, only `/portal/v1`), then the owner chose the
-recommendation. Recorded in ADR-0020 (decision 2 rewritten, 2a added) and the
+recommendation. Recorded in ADR-0022 (decision 2 rewritten, 2a added) and the
 gap analysis.
 
 Gate 1: `docs.dbml` Identity (`portal_identities`) and CRM
@@ -242,7 +1090,7 @@ users without the portal sign-in nonce (`providers/better-auth/portal-signin.ts`
 portal `register`, `verify-email`, `verify-email/resend`, `GET /account`,
 `POST/DELETE /account/members`; web admin card lists all logins with roles and
 invites with a role. en/id keys (api, crm, email; `ALLOWED`/dynamic prefixes
-updated). Docs: ADR-0020, `modules/customer-portal.md`, gap analysis
+updated). Docs: ADR-0022, `modules/customer-portal.md`, gap analysis
 (22/51 operations), `data-model.md`, user guide 8.8 (en, id).
 
 **Verification**
@@ -312,7 +1160,7 @@ portal UI = the website repo (ERP gives the API); login = staff invitation +
 password set from the email (no sign-up); one login per customer; portal
 tickets = after-sales service tickets (not the `ticket.*` module); stage 1 =
 account + projects + tickets + warranty. Resolved by me and recorded in
-ADR-0020: a portal user is never an organization member (the unused
+ADR-0022: a portal user is never an organization member (the unused
 `customer` role stays unused); no Better Auth `bearer` plugin (token valid
 only on `/portal/v1`); lockout in Redis (5 failures, 15 min); separate portal
 DTOs (no money, no internal notes); responses in the portal's `PortalSource`
@@ -358,7 +1206,7 @@ refs: 0, timestamp gaps: 0, OK`.
 - Web admin: customer page **Customer portal** card; ticket page **Messages**
   thread; `portal` channel shown, not selectable by staff. en/id keys (crm,
   projects, api, email).
-- Docs: ADR-0020, `modules/customer-portal.md` (route map for the website's
+- Docs: ADR-0022, `modules/customer-portal.md` (route map for the website's
   `PortalRoutes`), `data-model.md`, module and ADR indexes, user guide 8.4 +
   8.8 (en, id), `.env.example`.
 
@@ -397,6 +1245,80 @@ refs: 0, timestamp gaps: 0, OK`.
 `docs/database/` updated (above). Next executable task: owner review and PR
 for `feat/m07-customer-portal`; then wire the website adapter routes
 (`modules/customer-portal.md`) and run the portal against this API.
+## 2026-11-15 - ERP-0054 `docs.dbml` vs Drizzle parity (branch `docs/dbml-schema-parity`)
+
+Question that started it: does `apps/backend/drizzle/schemas/` match
+`docs/database/docs.dbml`? Table-name sets already agreed in one direction -
+`docs.dbml` 272 tables, Drizzle and the migrations both 122, and no migration
+table was missing from the contract. The gap was column-level: 11 shipped
+tables disagreed, plus two target tables that contradicted shipped code.
+
+**Fixed in `docs.dbml` (canonical; migrations are append-only, so the shipped
+shape wins and carries a `DEVIATION (shipped)` note):**
+
+- `auth.users`: added `claimed_at`, `phone`.
+- `auth.user_invitations`: removed `role_id` (code uses only `org_role`).
+- `assets.assets`, `inventory.warehouses`: added `image_url`.
+- `finance.payment_allocations`: `amount` (was `allocated_amount`), no
+  `currency_code` / `allocated_at` / `deleted_at`; check is `amount > 0`.
+- `finance.ap_open_items` / `finance.ar_open_items` / `sales.payments`: removed
+  the invented `deleted_at` (all three are shipped without it).
+- `validate-dbml.ts` timestamp-exempt set grew three entries for the above:
+  `finance.payment_allocations` (cascade-deleted with its payment, never
+  soft-deleted on its own) and the two open-item sub-ledgers (running balances
+  cleared by `status`, projections by nature).
+- `hr.employees`: `hire_date` / `termination_date` `date` -> `bigint`; widened
+  `national_id varchar(32)`, `email varchar(320)`, `phone` / `whatsapp
+  varchar(100)`; vocabulary checks now `active|inactive|terminated` and
+  `permanent|contract|probation|internship|outsourced` to match
+  `hr.schema.ts`. The four planned `department_id` / `position_id` /
+  `branch_id` / `cost_center_id` columns stay - they are target columns, not
+  shipped ones, and the parity check is one-way.
+- `auth.roles` + `auth.user_role_assignments` removed, and the `auth.members`
+  role note rewritten: ERP-0041 made organization roles a closed
+  `erpRoleNames` enum read from `@ims-erp/common`, so there is no dynamic role
+  table to consult (`static-permissions.ts`, `role.schema.ts` header). The same
+  stale claim was corrected in `data-model.md`, `module-ownership.md`,
+  `integrity-and-consistency.md`, `security-and-access.md` (the whole "dynamic
+  per-organization roles" and "rank guard" sections described files that no
+  longer exist), `modules/organization.md`, `m12-reports-access.md`, and a
+  superseded note added to `plans/assets-equipment-location-and-borrowing.md`
+  (D15/B3 built on `auth.roles.permissions`).
+
+**`validate-dbml.ts` gained section 5 - Drizzle parity (one-way).** Every
+`.table('name', {...})` block and every
+`camelCase: sqlType('snake_case', ...)` column in
+`apps/backend/drizzle/schemas/*.schema.ts` must exist in `docs.dbml`; a
+shipped table or column the contract does not mention is the bug. The reverse
+is not checked, because `docs.dbml` describes the target (150 unbuilt tables).
+The check resolves a file that reuses an imported `pgSchema` instead of
+declaring its own (`role.schema.ts` -> `auth`). Exit condition is now
+`if (dups || cross || gaps.length || drift.length) process.exit(1)`.
+
+**Stale counts corrected.** `AGENTS.md` "253 tables / 24 modules" ->
+"270 tables / 27 modules"; `implementation-phases.md` target 268 -> 270 tables
+and exit criteria 268/231 -> 270/233; `integrity-and-consistency.md`
+268/231 -> 270/233.
+
+**Commands and outcomes (all on this branch):**
+
+- `bun docs/database/gen-logical-references.ts` -> `regenerated: 525 refs
+  across 41 targets, 233 intra-module refs`.
+- `bun docs/database/validate-dbml.ts` -> `parsed: 270 tables, 233 refs` /
+  `cross-module refs: 0` / `timestamp gaps: 0` / `drizzle parity drift: 0` /
+  `OK`. Before the fixes it reported 11 drifting tables plus a
+  `role.schema.ts: no pgSchema() declaration` false positive.
+- Gate probed, not assumed: adding `probeCol: text('probe_col')` to
+  `audit.audit_logs` produced `drizzle parity drift: 1` +
+  `audit.audit_logs.probe_col (audit.schema.ts): column missing from docs.dbml`
+  and exit 1; removing it returned `OK`. `bunx oxlint docs/database/` clean for
+  `validate-dbml.ts` (three pre-existing warnings in
+  `gen-logical-references.ts` are untouched).
+
+No migration, Drizzle schema, seeder or test file changed: the database is
+untouched, only the contract and its validator moved. `docs/database/` was
+updated (required: column sets and two table removals changed).
+
 ## 2026-11-15 - merge `main` into `feat/m08-hr-on-main` (PR #83), M08 rebased on the squashed migration baseline
 
 Worktree `B:\ims\erp-m08-merge`, branch `feat/m08-hr-on-main`, merge of

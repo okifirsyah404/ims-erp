@@ -7,8 +7,10 @@ import { registerProcurement } from '@app/procurement';
 import { registerProjects } from '@app/projects';
 import { registerAftersales } from '@app/aftersales';
 import { registerHr } from '@app/hr';
-import { registerLicensing } from '@app/licensing';
+import { registerLicenseDueSchedule, registerLicensing, startLicenseDueWorker } from '@app/licensing';
 import { registerPortal } from '@app/portal';
+import { registerCatalog } from '@app/catalog';
+import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
 import { registerAssets } from '@app/assets';
 import { registerAccounting } from '@app/accounting';
 import { appConfig } from '@config/providers/config';
@@ -64,6 +66,8 @@ registerDocument(container);
 registerAudit(container);
 registerInventory(container);
 registerAssets(container);
+// Automation before the modules that publish events (CRM, …).
+registerAutomation(container);
 registerCrm(container);
 registerProcurement(container);
 registerProjects(container);
@@ -73,6 +77,7 @@ registerLicensing(container);
 // Customer portal (ERP-0022): composes user, CRM, projects and after-sales.
 registerPortal(container);
 registerAccounting(container);
+registerCatalog(container);
 registerUser(container);
 registerAuthorization(container);
 
@@ -140,15 +145,26 @@ const bootstrap = new Elysia()
 // Mail worker is nullable: `null` when no transport is configured
 // (tests/scripts without SMTP), so booting with no mail server still works.
 const mailWorker = startMailWorker();
+// `startLicenseDueWorker` is `null` unless `scheduler.enabled` (M04 reminders).
+const licenseDueWorker = startLicenseDueWorker();
 startWorkers(
 	[
 		startAvatarWorker(),
 		startOrgLogoWorker(),
 		startNotificationWorker(),
+		startOutboxWorker(),
+		startWhatsappWorker(),
 		...(mailWorker ? [mailWorker] : []),
+		...(licenseDueWorker ? [licenseDueWorker] : []),
 	],
 	(error) => pinoLogger.error({ err: error }, 'background worker error'),
 );
+if (licenseDueWorker) {
+	await registerLicenseDueSchedule().then(
+		() => pinoLogger.info('license.due reminder schedule registered'),
+		(error: unknown) => pinoLogger.error({ err: error }, 'license.due schedule not registered'),
+	);
+}
 if (mailWorker) {
 	pinoLogger.info('mail worker started (SMTP transport)');
 }

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
@@ -410,7 +411,7 @@ function ContractDetailPage() {
 									</Field>
 									<Field>
 										<FieldLabel htmlFor='key-expires'>{t('licensing:keys.expiresOn')}</FieldLabel>
-										<Input id='key-expires' type='date' value={expiresOn} onChange={(event) => setExpiresOn(event.target.value)} />
+										<DatePicker id='key-expires' value={expiresOn} onChange={setExpiresOn} />
 										<FieldDescription>{t('licensing:keys.expiresHint')}</FieldDescription>
 									</Field>
 									<Field>

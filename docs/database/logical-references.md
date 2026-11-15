@@ -55,10 +55,10 @@ Table crm.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 527 |
+| Logical reference columns | 534 |
 | Distinct targets | 41 |
 | Cross-module `Ref:` declarations | 0 |
-| Intra-module `Ref:` declarations | 237 |
+| Intra-module `Ref:` declarations | 236 |
 
 Counts are re-derived on every run of `validate-dbml.ts`, which parses
 `docs.dbml` with `@dbml/core` and fails the run if a `Ref:` crosses a module
@@ -68,200 +68,17 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 | Target | Owner | Referring columns |
 |---|---|---|
-| `auth.organizations.id` | Identity | 181 || `auth.users.id` | Identity | 179 || `hr.employees.id` | HR | 19 || `crm.customers.id` | CRM | 18 || `document.documents.id` | Document | 17 || `catalog.items.id` | Catalog | 11 || `location.villages.id` | Location | 9 || `projects.projects.id` | Projects | 9 || `inventory.warehouses.id` | Inventory | 7 || `inventory.warehouse_storages.id` | Inventory | 6 || `organization.departments.id` | Organization | 6 || `inventory.items.id` | Inventory | 5 || `location.districts.id` | Location | 5 || `location.provinces.id` | Location | 5 || `location.regencies.id` | Location | 5 || `crm.customer_contacts.id` | CRM | 4 || `procurement.suppliers.id` | Procurement | 4 || `organization.positions.id` | Organization | 3 || `sales.invoices.id` | Sales | 3 || `sales.sales_orders.id` | Sales | 3 || `auth.portal_identities.id` | Identity | 2 || `catalog.units.id` | Catalog | 2 || `finance.payments.id` | Finance | 2 || `inventory.stock_movements.id` | Inventory | 2 || `organization.branches.id` | Organization | 2 || `organization.cost_centers.id` | Organization | 2 || `procurement.purchase_orders.id` | Procurement | 2 || `accounting.chart_of_accounts.id` | Accounting | 1 || `accounting.journal_entries.id` | Accounting | 1 || `aftersales.service_tickets.id` | After-Sales | 1 || `assets.assets.id` | Assets | 1 || `catalog.item_categories.id` | Catalog | 1 || `catalog.item_variants.id` | Catalog | 1 || `crm.customer_groups.id` | CRM | 1 || `crm.leads.id` | CRM | 1 || `finance.cash_bank_accounts.id` | Finance | 1 || `finance.cash_bank_transactions.id` | Finance | 1 || `finance.payment_terms.id` | Finance | 1 || `hr.bank_accounts.id` | HR | 1 || `payroll.salary_components.id` | Payroll | 1 || `projects.project_handover.id` | Projects | 1 |
+| `auth.users.id` | Identity | 184 || `auth.organizations.id` | Identity | 181 || `hr.employees.id` | HR | 19 || `crm.customers.id` | CRM | 18 || `document.documents.id` | Document | 17 || `catalog.items.id` | Catalog | 11 || `location.villages.id` | Location | 9 || `projects.projects.id` | Projects | 9 || `inventory.warehouses.id` | Inventory | 7 || `inventory.items.id` | Inventory | 6 || `inventory.warehouse_storages.id` | Inventory | 6 || `organization.departments.id` | Organization | 6 || `location.districts.id` | Location | 5 || `location.provinces.id` | Location | 5 || `location.regencies.id` | Location | 5 || `crm.customer_contacts.id` | CRM | 4 || `procurement.suppliers.id` | Procurement | 4 || `organization.positions.id` | Organization | 3 || `sales.invoices.id` | Sales | 3 || `sales.sales_orders.id` | Sales | 3 || `auth.portal_identities.id` | Identity | 2 || `catalog.units.id` | Catalog | 2 || `crm.leads.id` | CRM | 2 || `finance.payments.id` | Finance | 2 || `inventory.stock_movements.id` | Inventory | 2 || `organization.branches.id` | Organization | 2 || `organization.cost_centers.id` | Organization | 2 || `procurement.purchase_orders.id` | Procurement | 2 || `accounting.chart_of_accounts.id` | Accounting | 1 || `accounting.journal_entries.id` | Accounting | 1 || `aftersales.service_tickets.id` | After-Sales | 1 || `assets.assets.id` | Assets | 1 || `catalog.item_categories.id` | Catalog | 1 || `catalog.item_variants.id` | Catalog | 1 || `crm.customer_groups.id` | CRM | 1 || `finance.cash_bank_accounts.id` | Finance | 1 || `finance.cash_bank_transactions.id` | Finance | 1 || `finance.payment_terms.id` | Finance | 1 || `hr.bank_accounts.id` | HR | 1 || `payroll.salary_components.id` | Payroll | 1 || `projects.project_handover.id` | Projects | 1 |
 ## The 41 targets in full
 
-### `auth.organizations.id` - owner Identity, 181 referring columns
-
-- `accounting.account_balances`  ->  `organization_id`
-- `accounting.accounting_periods`  ->  `organization_id`
-- `accounting.accounting_settings`  ->  `organization_id`
-- `accounting.bank_account_links`  ->  `organization_id`
-- `accounting.chart_of_accounts`  ->  `organization_id`
-- `accounting.journal_entries`  ->  `organization_id`
-- `accounting.journal_lines`  ->  `organization_id`
-- `accounting.journal_templates`  ->  `organization_id`
-- `accounting.opening_balances`  ->  `organization_id`
-- `accounting.tax_corrections`  ->  `organization_id`
-- `accounting.tax_records`  ->  `organization_id`
-- `accounting.tax_types`  ->  `organization_id`
-- `accounting.withholding_tax_records`  ->  `organization_id`
-- `aftersales.maintenance_plans`  ->  `organization_id`
-- `aftersales.maintenance_schedules`  ->  `organization_id`
-- `aftersales.maintenance_visit_tasks`  ->  `organization_id`
-- `aftersales.maintenance_visits`  ->  `organization_id`
-- `aftersales.satisfaction_surveys`  ->  `organization_id`
-- `aftersales.service_contracts`  ->  `organization_id`
-- `aftersales.service_parts_usage`  ->  `organization_id`
-- `aftersales.service_technicians`  ->  `organization_id`
-- `aftersales.service_work_orders`  ->  `organization_id`
-- `aftersales.sla_policies`  ->  `organization_id`
-- `aftersales.spare_parts`  ->  `organization_id`
-- `aftersales.warranty_claims`  ->  `organization_id`
-- `aftersales.warranty_policies`  ->  `organization_id`
-- `approval.approval_decisions`  ->  `organization_id`
-- `approval.approval_delegations`  ->  `organization_id`
-- `approval.approval_policies`  ->  `organization_id`
-- `approval.approval_policy_versions`  ->  `organization_id`
-- `approval.approval_requests`  ->  `organization_id`
-- `approval.approval_stages`  ->  `organization_id`
-- `approval.approval_thresholds`  ->  `organization_id`
-- `assets.asset_categories`  ->  `organization_id`
-- `assets.asset_condition_checks`  ->  `organization_id`
-- `assets.asset_depreciations`  ->  `organization_id`
-- `assets.asset_disposals`  ->  `organization_id`
-- `assets.asset_documents`  ->  `organization_id`
-- `assets.asset_maintenances`  ->  `organization_id`
-- `assets.asset_movements`  ->  `organization_id`
-- `assets.assets`  ->  `organization_id`
-- `assets.tool_set_items`  ->  `organization_id`
-- `assets.tool_sets`  ->  `organization_id`
-- `automation.integration_credentials`  ->  `organization_id`
-- `automation.integrations`  ->  `organization_id`
-- `automation.job_executions`  ->  `organization_id`
-- `automation.outbox_messages`  ->  `organization_id`
-- `automation.scheduled_jobs`  ->  `organization_id`
-- `automation.workflow_runs`  ->  `organization_id`
-- `automation.workflow_step_runs`  ->  `organization_id`
-- `automation.workflow_steps`  ->  `organization_id`
-- `automation.workflows`  ->  `organization_id`
-- `budgeting.budget_executions`  ->  `organization_id`
-- `budgeting.budget_items`  ->  `organization_id`
-- `budgeting.budget_periods`  ->  `organization_id`
-- `budgeting.budget_revision_items`  ->  `organization_id`
-- `budgeting.budget_revisions`  ->  `organization_id`
-- `budgeting.budgets`  ->  `organization_id`
-- `budgeting.cash_flow_items`  ->  `organization_id`
-- `budgeting.cash_flow_plans`  ->  `organization_id`
-- `catalog.item_attributes`  ->  `organization_id`
-- `catalog.item_bundles`  ->  `organization_id`
-- `catalog.item_categories`  ->  `organization_id`
-- `catalog.item_cost_histories`  ->  `organization_id`
-- `catalog.item_documents`  ->  `organization_id`
-- `catalog.item_prices`  ->  `organization_id`
-- `catalog.item_suppliers`  ->  `organization_id`
-- `catalog.item_uom_conversions`  ->  `organization_id`
-- `catalog.item_variants`  ->  `organization_id`
-- `catalog.items`  ->  `organization_id`
-- `catalog.price_lists`  ->  `organization_id`
-- `catalog.units`  ->  `organization_id`
-- `commerce.catalog_publication_items`  ->  `organization_id`
-- `commerce.catalog_publications`  ->  `organization_id`
-- `commerce.commerce_order_items`  ->  `organization_id`
-- `commerce.commerce_orders`  ->  `organization_id`
-- `commerce.promotion_rules`  ->  `organization_id`
-- `commerce.promotions`  ->  `organization_id`
-- `commerce.web_menu_items`  ->  `organization_id`
-- `commerce.web_menus`  ->  `organization_id`
-- `commerce.web_pages`  ->  `organization_id`
-- `crm.customer_addresses`  ->  `organization_id`
-- `crm.customer_credit_limits`  ->  `organization_id`
-- `crm.customer_groups`  ->  `organization_id`
-- `crm.customer_interactions`  ->  `organization_id`
-- `crm.customer_segment_members`  ->  `organization_id`
-- `crm.customer_segments`  ->  `organization_id`
-- `finance.ap_open_items`  ->  `organization_id`
-- `finance.ar_open_items`  ->  `organization_id`
-- `finance.bank_reconciliation_items`  ->  `organization_id`
-- `finance.bank_reconciliations`  ->  `organization_id`
-- `finance.cash_bank_accounts`  ->  `organization_id`
-- `finance.cash_bank_transactions`  ->  `organization_id`
-- `finance.credit_memos`  ->  `organization_id`
-- `finance.employee_advances`  ->  `organization_id`
-- `finance.expense_claim_items`  ->  `organization_id`
-- `finance.expense_claims`  ->  `organization_id`
-- `finance.expense_settlement_items`  ->  `organization_id`
-- `finance.expense_settlements`  ->  `organization_id`
-- `finance.payment_allocations`  ->  `organization_id`
-- `finance.payment_terms`  ->  `organization_id`
-- `finance.payments`  ->  `organization_id`
-- `finance.supplier_bills`  ->  `organization_id`
-- `hr.attendance_corrections`  ->  `organization_id`
-- `hr.certifications`  ->  `organization_id`
-- `hr.disciplinary_records`  ->  `organization_id`
-- `hr.employee_addresses`  ->  `organization_id`
-- `hr.employee_documents`  ->  `organization_id`
-- `hr.employee_emergencies`  ->  `organization_id`
-- `hr.employee_salary_components`  ->  `organization_id`
-- `hr.employee_transfers`  ->  `organization_id`
-- `hr.employees`  ->  `organization_id`
-- `hr.employment_contracts`  ->  `organization_id`
-- `hr.separation_records`  ->  `organization_id`
-- `hr.training_records`  ->  `organization_id`
-- `inventory.stock_adjustment_items`  ->  `organization_id`
-- `inventory.stock_adjustments`  ->  `organization_id`
-- `inventory.stock_reservations`  ->  `organization_id`
-- `inventory.stock_transfer_items`  ->  `organization_id`
-- `inventory.stock_transfers`  ->  `organization_id`
-- `inventory.warehouse_organizations`  ->  `organization_id`
-- `investor.capital_commitments`  ->  `organization_id`
-- `investor.capital_deposits`  ->  `organization_id`
-- `investor.fund_allocations`  ->  `organization_id`
-- `investor.investor_addresses`  ->  `organization_id`
-- `investor.investor_meetings`  ->  `organization_id`
-- `investor.investor_reports`  ->  `organization_id`
-- `investor.investors`  ->  `organization_id`
-- `investor.profit_distribution_runs`  ->  `organization_id`
-- `investor.profit_share_scheme_entries`  ->  `organization_id`
-- `investor.profit_share_schemes`  ->  `organization_id`
-- `investor.profit_shares`  ->  `organization_id`
-- `licensing.license_entitlement_usages`  ->  `organization_id`
-- `licensing.license_entitlements`  ->  `organization_id`
-- `licensing.license_packages`  ->  `organization_id`
-- `licensing.subscription_schedules`  ->  `organization_id`
-- `organization.branches`  ->  `organization_id`
-- `organization.cost_centers`  ->  `organization_id`
-- `organization.departments`  ->  `organization_id`
-- `organization.fiscal_settings`  ->  `organization_id`
-- `organization.positions`  ->  `organization_id`
-- `organization.settings`  ->  `organization_id`
-- `payroll.bpjs_registrations`  ->  `organization_id`
-- `payroll.payroll_adjustments`  ->  `organization_id`
-- `payroll.payroll_inputs`  ->  `organization_id`
-- `payroll.payroll_payment_items`  ->  `organization_id`
-- `payroll.payroll_payments`  ->  `organization_id`
-- `payroll.payroll_periods`  ->  `organization_id`
-- `payroll.payroll_runs`  ->  `organization_id`
-- `payroll.payslip_acknowledgements`  ->  `organization_id`
-- `payroll.payslip_items`  ->  `organization_id`
-- `payroll.payslips`  ->  `organization_id`
-- `payroll.salary_components`  ->  `organization_id`
-- `procurement.purchase_request_items`  ->  `organization_id`
-- `procurement.purchase_requests`  ->  `organization_id`
-- `procurement.purchase_return_items`  ->  `organization_id`
-- `procurement.purchase_returns`  ->  `organization_id`
-- `procurement.supplier_addresses`  ->  `organization_id`
-- `procurement.supplier_contacts`  ->  `organization_id`
-- `projects.project_changes`  ->  `organization_id`
-- `projects.project_daily_reports`  ->  `organization_id`
-- `projects.project_kpi_definitions`  ->  `organization_id`
-- `projects.project_kpi_evaluations`  ->  `organization_id`
-- `projects.project_milestones`  ->  `organization_id`
-- `projects.project_phases`  ->  `organization_id`
-- `projects.project_site_assignments`  ->  `organization_id`
-- `projects.project_task_dependencies`  ->  `organization_id`
-- `projects.project_types`  ->  `organization_id`
-- `projects.project_work_plans`  ->  `organization_id`
-- `sales.contracts`  ->  `organization_id`
-- `sales.discount_requests`  ->  `organization_id`
-- `sales.invoice_items`  ->  `organization_id`
-- `sales.invoices`  ->  `organization_id`
-- `sales.receipts`  ->  `organization_id`
-- `sales.sales_returns`  ->  `organization_id`
-- `sales.sales_targets`  ->  `organization_id`
-- `ticket.ticket_attachments`  ->  `organization_id`
-- `ticket.ticket_categories`  ->  `organization_id`
-- `ticket.ticket_messages`  ->  `organization_id`
-- `ticket.ticket_status_history`  ->  `organization_id`
-- `ticket.tickets`  ->  `organization_id`
-
-### `auth.users.id` - owner Identity, 179 referring columns
+### `auth.users.id` - owner Identity, 184 referring columns
 
 - `accounting.accounting_periods`  ->  `closed_by`
 - `accounting.accounting_periods`  ->  `reopened_by`
 - `accounting.journal_entries`  ->  `approved_by`
 - `accounting.journal_entries`  ->  `posted_by`
 - `accounting.journal_entries`  ->  `prepared_by`
+- `accounting.report_archives`  ->  `generated_by`
 - `accounting.tax_corrections`  ->  `created_by`
 - `accounting.tax_records`  ->  `verified_by`
 - `aftersales.service_ticket_comments`  ->  `author_user_id`
@@ -285,15 +102,19 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `assets.borrowings`  ->  `borrower_user_id`
 - `audit.audit_logs`  ->  `actor_user_id`
 - `auth.portal_identities`  ->  `created_by`
-- `auth.user_role_assignments`  ->  `granted_by`
+- `automation.faq_entries`  ->  `created_by`
+- `automation.faq_entries`  ->  `updated_by`
 - `automation.integrations`  ->  `created_by_user_id`
 - `automation.job_executions`  ->  `triggered_by_user_id`
+- `automation.whatsapp_conversations`  ->  `assigned_user_id`
+- `automation.whatsapp_messages`  ->  `sent_by`
 - `automation.workflow_runs`  ->  `initiated_by_user_id`
 - `automation.workflows`  ->  `created_by_user_id`
 - `budgeting.budget_revisions`  ->  `approved_by_user_id`
 - `budgeting.budget_revisions`  ->  `requested_by_user_id`
 - `budgeting.budgets`  ->  `approved_by_user_id`
 - `budgeting.budgets`  ->  `submitted_by_user_id`
+- `catalog.web_listings`  ->  `created_by`
 - `code_number.series`  ->  `updated_by`
 - `commerce.catalog_publications`  ->  `published_by_user_id`
 - `commerce.promotions`  ->  `created_by_user_id`
@@ -437,6 +258,190 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `ticket.tickets`  ->  `assignee_user_id`
 - `ticket.tickets`  ->  `created_by`
 
+### `auth.organizations.id` - owner Identity, 181 referring columns
+
+- `accounting.account_balances`  ->  `organization_id`
+- `accounting.accounting_periods`  ->  `organization_id`
+- `accounting.accounting_settings`  ->  `organization_id`
+- `accounting.bank_account_links`  ->  `organization_id`
+- `accounting.chart_of_accounts`  ->  `organization_id`
+- `accounting.journal_entries`  ->  `organization_id`
+- `accounting.journal_lines`  ->  `organization_id`
+- `accounting.journal_templates`  ->  `organization_id`
+- `accounting.opening_balances`  ->  `organization_id`
+- `accounting.report_archives`  ->  `organization_id`
+- `accounting.tax_corrections`  ->  `organization_id`
+- `accounting.tax_records`  ->  `organization_id`
+- `accounting.tax_types`  ->  `organization_id`
+- `accounting.withholding_tax_records`  ->  `organization_id`
+- `aftersales.maintenance_plans`  ->  `organization_id`
+- `aftersales.maintenance_schedules`  ->  `organization_id`
+- `aftersales.maintenance_visit_tasks`  ->  `organization_id`
+- `aftersales.maintenance_visits`  ->  `organization_id`
+- `aftersales.satisfaction_surveys`  ->  `organization_id`
+- `aftersales.service_contracts`  ->  `organization_id`
+- `aftersales.service_parts_usage`  ->  `organization_id`
+- `aftersales.service_technicians`  ->  `organization_id`
+- `aftersales.service_work_orders`  ->  `organization_id`
+- `aftersales.sla_policies`  ->  `organization_id`
+- `aftersales.spare_parts`  ->  `organization_id`
+- `aftersales.warranty_claims`  ->  `organization_id`
+- `aftersales.warranty_policies`  ->  `organization_id`
+- `approval.approval_decisions`  ->  `organization_id`
+- `approval.approval_delegations`  ->  `organization_id`
+- `approval.approval_policies`  ->  `organization_id`
+- `approval.approval_policy_versions`  ->  `organization_id`
+- `approval.approval_requests`  ->  `organization_id`
+- `approval.approval_stages`  ->  `organization_id`
+- `approval.approval_thresholds`  ->  `organization_id`
+- `assets.asset_categories`  ->  `organization_id`
+- `assets.asset_condition_checks`  ->  `organization_id`
+- `assets.asset_depreciations`  ->  `organization_id`
+- `assets.asset_disposals`  ->  `organization_id`
+- `assets.asset_documents`  ->  `organization_id`
+- `assets.asset_maintenances`  ->  `organization_id`
+- `assets.asset_movements`  ->  `organization_id`
+- `assets.assets`  ->  `organization_id`
+- `assets.tool_set_items`  ->  `organization_id`
+- `assets.tool_sets`  ->  `organization_id`
+- `automation.integration_credentials`  ->  `organization_id`
+- `automation.integrations`  ->  `organization_id`
+- `automation.job_executions`  ->  `organization_id`
+- `automation.scheduled_jobs`  ->  `organization_id`
+- `automation.workflow_runs`  ->  `organization_id`
+- `automation.workflow_step_runs`  ->  `organization_id`
+- `automation.workflow_steps`  ->  `organization_id`
+- `automation.workflows`  ->  `organization_id`
+- `budgeting.budget_executions`  ->  `organization_id`
+- `budgeting.budget_items`  ->  `organization_id`
+- `budgeting.budget_periods`  ->  `organization_id`
+- `budgeting.budget_revision_items`  ->  `organization_id`
+- `budgeting.budget_revisions`  ->  `organization_id`
+- `budgeting.budgets`  ->  `organization_id`
+- `budgeting.cash_flow_items`  ->  `organization_id`
+- `budgeting.cash_flow_plans`  ->  `organization_id`
+- `catalog.item_attributes`  ->  `organization_id`
+- `catalog.item_bundles`  ->  `organization_id`
+- `catalog.item_categories`  ->  `organization_id`
+- `catalog.item_cost_histories`  ->  `organization_id`
+- `catalog.item_documents`  ->  `organization_id`
+- `catalog.item_prices`  ->  `organization_id`
+- `catalog.item_suppliers`  ->  `organization_id`
+- `catalog.item_uom_conversions`  ->  `organization_id`
+- `catalog.item_variants`  ->  `organization_id`
+- `catalog.items`  ->  `organization_id`
+- `catalog.price_lists`  ->  `organization_id`
+- `catalog.units`  ->  `organization_id`
+- `commerce.catalog_publication_items`  ->  `organization_id`
+- `commerce.catalog_publications`  ->  `organization_id`
+- `commerce.commerce_order_items`  ->  `organization_id`
+- `commerce.commerce_orders`  ->  `organization_id`
+- `commerce.promotion_rules`  ->  `organization_id`
+- `commerce.promotions`  ->  `organization_id`
+- `commerce.web_menu_items`  ->  `organization_id`
+- `commerce.web_menus`  ->  `organization_id`
+- `commerce.web_pages`  ->  `organization_id`
+- `crm.customer_addresses`  ->  `organization_id`
+- `crm.customer_credit_limits`  ->  `organization_id`
+- `crm.customer_groups`  ->  `organization_id`
+- `crm.customer_interactions`  ->  `organization_id`
+- `crm.customer_segment_members`  ->  `organization_id`
+- `crm.customer_segments`  ->  `organization_id`
+- `finance.ap_open_items`  ->  `organization_id`
+- `finance.ar_open_items`  ->  `organization_id`
+- `finance.bank_reconciliation_items`  ->  `organization_id`
+- `finance.bank_reconciliations`  ->  `organization_id`
+- `finance.cash_bank_accounts`  ->  `organization_id`
+- `finance.cash_bank_transactions`  ->  `organization_id`
+- `finance.credit_memos`  ->  `organization_id`
+- `finance.employee_advances`  ->  `organization_id`
+- `finance.expense_claim_items`  ->  `organization_id`
+- `finance.expense_claims`  ->  `organization_id`
+- `finance.expense_settlement_items`  ->  `organization_id`
+- `finance.expense_settlements`  ->  `organization_id`
+- `finance.payment_allocations`  ->  `organization_id`
+- `finance.payment_terms`  ->  `organization_id`
+- `finance.payments`  ->  `organization_id`
+- `finance.supplier_bills`  ->  `organization_id`
+- `hr.attendance_corrections`  ->  `organization_id`
+- `hr.certifications`  ->  `organization_id`
+- `hr.disciplinary_records`  ->  `organization_id`
+- `hr.employee_addresses`  ->  `organization_id`
+- `hr.employee_documents`  ->  `organization_id`
+- `hr.employee_emergencies`  ->  `organization_id`
+- `hr.employee_salary_components`  ->  `organization_id`
+- `hr.employee_transfers`  ->  `organization_id`
+- `hr.employees`  ->  `organization_id`
+- `hr.employment_contracts`  ->  `organization_id`
+- `hr.separation_records`  ->  `organization_id`
+- `hr.training_records`  ->  `organization_id`
+- `inventory.stock_adjustment_items`  ->  `organization_id`
+- `inventory.stock_adjustments`  ->  `organization_id`
+- `inventory.stock_reservations`  ->  `organization_id`
+- `inventory.stock_transfer_items`  ->  `organization_id`
+- `inventory.stock_transfers`  ->  `organization_id`
+- `inventory.warehouse_organizations`  ->  `organization_id`
+- `investor.capital_commitments`  ->  `organization_id`
+- `investor.capital_deposits`  ->  `organization_id`
+- `investor.fund_allocations`  ->  `organization_id`
+- `investor.investor_addresses`  ->  `organization_id`
+- `investor.investor_meetings`  ->  `organization_id`
+- `investor.investor_reports`  ->  `organization_id`
+- `investor.investors`  ->  `organization_id`
+- `investor.profit_distribution_runs`  ->  `organization_id`
+- `investor.profit_share_scheme_entries`  ->  `organization_id`
+- `investor.profit_share_schemes`  ->  `organization_id`
+- `investor.profit_shares`  ->  `organization_id`
+- `licensing.license_entitlement_usages`  ->  `organization_id`
+- `licensing.license_entitlements`  ->  `organization_id`
+- `licensing.license_packages`  ->  `organization_id`
+- `licensing.subscription_schedules`  ->  `organization_id`
+- `organization.branches`  ->  `organization_id`
+- `organization.cost_centers`  ->  `organization_id`
+- `organization.departments`  ->  `organization_id`
+- `organization.fiscal_settings`  ->  `organization_id`
+- `organization.positions`  ->  `organization_id`
+- `organization.settings`  ->  `organization_id`
+- `payroll.bpjs_registrations`  ->  `organization_id`
+- `payroll.payroll_adjustments`  ->  `organization_id`
+- `payroll.payroll_inputs`  ->  `organization_id`
+- `payroll.payroll_payment_items`  ->  `organization_id`
+- `payroll.payroll_payments`  ->  `organization_id`
+- `payroll.payroll_periods`  ->  `organization_id`
+- `payroll.payroll_runs`  ->  `organization_id`
+- `payroll.payslip_acknowledgements`  ->  `organization_id`
+- `payroll.payslip_items`  ->  `organization_id`
+- `payroll.payslips`  ->  `organization_id`
+- `payroll.salary_components`  ->  `organization_id`
+- `procurement.purchase_request_items`  ->  `organization_id`
+- `procurement.purchase_requests`  ->  `organization_id`
+- `procurement.purchase_return_items`  ->  `organization_id`
+- `procurement.purchase_returns`  ->  `organization_id`
+- `procurement.supplier_addresses`  ->  `organization_id`
+- `procurement.supplier_contacts`  ->  `organization_id`
+- `projects.project_changes`  ->  `organization_id`
+- `projects.project_daily_reports`  ->  `organization_id`
+- `projects.project_kpi_definitions`  ->  `organization_id`
+- `projects.project_kpi_evaluations`  ->  `organization_id`
+- `projects.project_milestones`  ->  `organization_id`
+- `projects.project_phases`  ->  `organization_id`
+- `projects.project_site_assignments`  ->  `organization_id`
+- `projects.project_task_dependencies`  ->  `organization_id`
+- `projects.project_types`  ->  `organization_id`
+- `projects.project_work_plans`  ->  `organization_id`
+- `sales.contracts`  ->  `organization_id`
+- `sales.discount_requests`  ->  `organization_id`
+- `sales.invoice_items`  ->  `organization_id`
+- `sales.invoices`  ->  `organization_id`
+- `sales.receipts`  ->  `organization_id`
+- `sales.sales_returns`  ->  `organization_id`
+- `sales.sales_targets`  ->  `organization_id`
+- `ticket.ticket_attachments`  ->  `organization_id`
+- `ticket.ticket_categories`  ->  `organization_id`
+- `ticket.ticket_messages`  ->  `organization_id`
+- `ticket.ticket_status_history`  ->  `organization_id`
+- `ticket.tickets`  ->  `organization_id`
+
 ### `hr.employees.id` - owner HR, 19 referring columns
 
 - `aftersales.maintenance_schedules`  ->  `default_assignee_employee_id`
@@ -548,6 +553,15 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `procurement.goods_receipts`  ->  `warehouse_id`
 - `sales.delivery_notes`  ->  `warehouse_id`
 
+### `inventory.items.id` - owner Inventory (warehouse schema), 6 referring columns
+
+- `catalog.web_listings`  ->  `item_id`
+- `procurement.goods_receipt_items`  ->  `item_id`
+- `procurement.purchase_order_items`  ->  `item_id`
+- `sales.delivery_note_items`  ->  `item_id`
+- `sales.quotation_items`  ->  `item_id`
+- `sales.sales_order_items`  ->  `item_id`
+
 ### `inventory.warehouse_storages.id` - owner Inventory (warehouse schema), 6 referring columns
 
 - `assets.asset_movements`  ->  `from_storage_id`
@@ -565,14 +579,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `hr.employee_transfers`  ->  `to_department_id`
 - `hr.employees`  ->  `department_id`
 - `procurement.purchase_requests`  ->  `department_id`
-
-### `inventory.items.id` - owner Inventory (warehouse schema), 5 referring columns
-
-- `procurement.goods_receipt_items`  ->  `item_id`
-- `procurement.purchase_order_items`  ->  `item_id`
-- `sales.delivery_note_items`  ->  `item_id`
-- `sales.quotation_items`  ->  `item_id`
-- `sales.sales_order_items`  ->  `item_id`
 
 ### `location.districts.id` - owner Location, 5 referring columns
 
@@ -640,6 +646,11 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `procurement.purchase_request_items`  ->  `unit_id`
 - `sales.invoice_items`  ->  `unit_id`
 
+### `crm.leads.id` - owner CRM, 2 referring columns
+
+- `automation.whatsapp_conversations`  ->  `lead_id`
+- `sales.quotations`  ->  `lead_id`
+
 ### `finance.payments.id` - owner Finance, 2 referring columns
 
 - `investor.profit_shares`  ->  `payment_id`
@@ -692,10 +703,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 ### `crm.customer_groups.id` - owner CRM, 1 referring column
 
 - `catalog.price_lists`  ->  `customer_group_id`
-
-### `crm.leads.id` - owner CRM, 1 referring column
-
-- `sales.quotations`  ->  `lead_id`
 
 ### `finance.cash_bank_accounts.id` - owner Finance, 1 referring column
 

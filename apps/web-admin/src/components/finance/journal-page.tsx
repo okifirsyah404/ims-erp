@@ -5,7 +5,15 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import {
 	Table,
 	TableBody,
@@ -134,11 +142,10 @@ export function JournalPage() {
 			{canPost && showForm ? (
 				<div className='space-y-3 rounded-md border p-4'>
 					<div className='flex flex-wrap items-center gap-2'>
-						<Input
-							type='date'
+						<DatePicker
 							className='w-44'
 							value={entryDate}
-							onChange={(event) => setEntryDate(event.target.value)}
+							onChange={setEntryDate}
 						/>
 						<Input
 							className='w-72'
@@ -150,30 +157,34 @@ export function JournalPage() {
 					<div className='space-y-2'>
 						{lines.map((line, index) => (
 							<div key={index} className='flex items-center gap-2'>
-								<select
-									className='h-9 w-72 rounded-md border bg-transparent px-2 text-sm'
-									value={line.accountId}
-									onChange={(event) =>
+								<Select
+									value={line.accountId === '' ? 'none' : line.accountId}
+									onValueChange={(value: string | null) =>
 										setLines((previous) =>
 											previous.map((row, rowIndex) =>
 												rowIndex === index
-													? { ...row, accountId: event.target.value }
+													? { ...row, accountId: value == null || value === 'none' ? '' : value }
 													: row,
 											),
 										)
 									}
 								>
-									<option value=''>
-										{t('finance:journal.line.account')}
-									</option>
-									{accounts?.rows
-										.filter((account) => account.isActive && account.isPostable)
-										.map((account) => (
-											<option key={account.id} value={account.id}>
-												{account.code} — {account.name}
-											</option>
-										))}
-								</select>
+									<SelectTrigger className='w-72'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='none'>
+											{t('finance:journal.line.account')}
+										</SelectItem>
+										{accounts?.rows
+											.filter((account) => account.isActive && account.isPostable)
+											.map((account) => (
+												<SelectItem key={account.id} value={account.id}>
+													{account.code} — {account.name}
+												</SelectItem>
+											))}
+									</SelectContent>
+								</Select>
 								<Input
 									className='w-36'
 									placeholder={t('finance:journal.debit')}

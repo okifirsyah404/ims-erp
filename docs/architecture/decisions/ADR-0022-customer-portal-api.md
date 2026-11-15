@@ -1,10 +1,11 @@
-# ADR-0020 - Customer Portal: Portal Identities and the `/portal/v1` API
+# ADR-0022 - Customer Portal: Portal Identities and the `/portal/v1` API
 
 - **Status:** proposed (2026-11-14). Records the owner decisions of 2026-11-14
   (ERP-0022 stage 1); becomes accepted with the owner's review of the PR.
-  Renumbered 2026-11-15 from 0018: main took ADR-0018 (investor and customer
-  app roles) and ADR-0019 (migration baseline) in parallel (PR #101). Numbers
-  are now checked against main, every remote branch and open PRs before use.
+  Renumbered twice on 2026-11-15: from 0018, because main took ADR-0018
+  (investor and customer app roles) and ADR-0019 (migration baseline) in
+  parallel (PR #101); then from 0020, because the M04 outbox record took
+  ADR-0020 when it was merged. ADR-0021 is the payment gateway (PR #99).
 - **Context:** M07 T26 (project status and own tickets) and the account part
   of M12 T25 need customers to sign in. The portal UI already exists in the
   website repo (`entragate-platform`, `apps/customer`, Astro SSR): its server
