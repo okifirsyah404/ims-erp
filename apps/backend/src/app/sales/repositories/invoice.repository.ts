@@ -14,8 +14,12 @@ import {
 	count,
 	desc,
 	eq,
+	gte,
 	ilike,
+	inArray,
+	isNotNull,
 	isNull,
+	lte,
 	ne,
 	or,
 	sql,
@@ -23,11 +27,16 @@ import {
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
-import type { TInvoiceRepository } from '../contracts/invoice.repository.interface';
+import type {
+	TInvoiceRepository,
+	TInvoiceSummary,
+} from '../contracts/invoice.repository.interface';
 import type { TReceiptData } from '../contracts/invoice.repository.interface';
 import type { TReceiptListQuery } from '../contracts/invoice.contract';
 import { likePattern } from '@drizzle/search';
 import { paymentStatus } from '../utils/payment-status';
+import { fillSummary } from '../utils/invoice-summary';
+import { INVOICED_STATUSES } from '../contracts/invoice.repository.interface';
 
 /**
  * Drizzle implementation of the invoice repository (M09 F4).
@@ -119,6 +128,48 @@ export class InvoiceRepository implements TInvoiceRepository {
 				totalPages: Math.ceil(total / pagination.limit) || 1,
 			},
 		};
+	}
+
+	async summary(
+		organizationId: string,
+		range: { from: string; to: string; groupBy: 'month' | 'day' },
+	): Promise<TInvoiceSummary> {
+		// Bucket key straight from `issue_date` (`YYYY-MM-DD` as text): `YYYY-MM`
+		// for months, the full date for days. No format parameter - PostgreSQL
+		// does not treat `to_char(x, $1)` in the select and `to_char(x, $2)` in
+		// the group by as the same expression.
+		const period =
+			range.groupBy === 'month'
+				? sql<string>`left(${invoices.issueDate}::text, 7)`
+				: sql<string>`${invoices.issueDate}::text`;
+		const rows = await this.database
+			.select({
+				period,
+				invoiced: sql<string>`coalesce(sum(${invoices.grandTotal}), 0)::bigint`,
+				count: sql<string>`count(*)::int`,
+			})
+			.from(invoices)
+			.where(
+				and(
+					eq(invoices.organizationId, organizationId),
+					isNull(invoices.deletedAt),
+					isNotNull(invoices.issueDate),
+					gte(invoices.issueDate, range.from),
+					lte(invoices.issueDate, range.to),
+					inArray(invoices.status, [...INVOICED_STATUSES]),
+				),
+			)
+			.groupBy(period)
+			.orderBy(period);
+		// bun-sql returns `bigint`/`int` aggregates as strings; money stays exact.
+		return fillSummary(
+			range,
+			rows.map((row) => ({
+				period: row.period,
+				invoiced: Number(row.invoiced),
+				count: Number(row.count),
+			})),
+		);
 	}
 
 	async insert(
