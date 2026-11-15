@@ -8,6 +8,8 @@ import { SalesService } from './services/sales.service';
 import { DeliveryNoteRepository } from './repositories/delivery-note.repository';
 import { DeliveryNoteService } from './services/delivery-note.service';
 import { SalesFulfilmentService } from './services/sales-fulfilment.service';
+import { SalesReturnRepository } from './repositories/sales-return.repository';
+import { SalesReturnService } from './services/sales-return.service';
 import { InvoiceRepository } from './repositories/invoice.repository';
 import { InvoiceService } from './services/invoice.service';
 import { InvoiceLookupService } from './services/invoice-lookup.service';
@@ -23,6 +25,8 @@ import {
 	DELIVERY_NOTE_SERVICE_TOKEN,
 	SALES_FULFILMENT_SERVICE_TOKEN,
 	INVOICE_LOOKUP_SERVICE_TOKEN,
+	SALES_RETURN_REPOSITORY_TOKEN,
+	SALES_RETURN_SERVICE_TOKEN,
 } from './constants/di';
 import {
 	INVOICE_REPOSITORY_TOKEN,
@@ -53,6 +57,8 @@ export function registerSales(container: DependencyContainer): void {
 		useClass: InvoiceRepository,
 	});
 	container.register(INVOICE_SERVICE_TOKEN, { useClass: InvoiceService });
+	container.register(SALES_RETURN_REPOSITORY_TOKEN, { useClass: SalesReturnRepository });
+	container.register(SALES_RETURN_SERVICE_TOKEN, { useClass: SalesReturnService });
 	container.register(INVOICE_LOOKUP_SERVICE_TOKEN, {
 		useClass: InvoiceLookupService,
 	});

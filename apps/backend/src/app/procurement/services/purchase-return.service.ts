@@ -96,7 +96,7 @@ export class PurchaseReturnService {
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stock: Pick<StockService, 'postMovement'>,
 		@inject(ITEM_SERVICE_TOKEN)
-		private readonly items: Pick<ItemService, 'getItem' | 'inStockSerials' | 'returnUnits'>,
+		private readonly items: Pick<ItemService, 'getItem' | 'supplierReturnableSerials' | 'returnUnits'>,
 		@inject(WAREHOUSE_SERVICE_TOKEN)
 		private readonly warehouses: Pick<WarehouseService, 'getWarehouse'>,
 		@inject(CODE_NUMBER_SERVICE_TOKEN)
@@ -148,7 +148,8 @@ export class PurchaseReturnService {
 				const isSerialized = item?.isSerialized ?? false;
 				let serialNumbers: string[] = [];
 				if (isSerialized) {
-					const inStock = new Set(await this.items.inStockSerials(line.itemId, receipt.warehouseId));
+					// ERP-0062: units a customer returned damaged go back too.
+					const inStock = new Set(await this.items.supplierReturnableSerials(line.itemId, receipt.warehouseId));
 					const onReturns = new Set(used.serialNumbers);
 					serialNumbers = (line.serialNumbers ?? []).filter((serial) => inStock.has(serial) && !onReturns.has(serial));
 				}

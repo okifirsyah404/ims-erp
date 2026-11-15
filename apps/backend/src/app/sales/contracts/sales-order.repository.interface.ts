@@ -76,6 +76,12 @@ export interface ISalesOrderRepository {
 
 	/** `confirmed → in_progress` with a history row (first shipment); no-op otherwise. */
 	markInProgress(salesOrderId: string, actorUserId: string, note: string, tx: TTx): Promise<void>;
+
+	/**
+	 * Sales returns (ERP-0062): `delivered | completed → in_progress` with a
+	 * history row, so the replacement can be delivered; no-op otherwise.
+	 */
+	reopenForReplacement(salesOrderId: string, actorUserId: string, note: string, tx: TTx): Promise<void>;
 }
 
 /** What one delivery note takes from each order line. */

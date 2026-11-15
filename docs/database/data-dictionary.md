@@ -338,6 +338,9 @@ draft → submitted → approved → executed
 `procurement.purchase_returns` names its executed state `shipped` (ERP-0061):
 `draft → submitted → approved → shipped`, rejection back to `draft`,
 `cancelled` before shipping.
+`sales.sales_returns` names it `received` (ERP-0062): `draft -> submitted ->
+approved -> received`, rejection back to `draft`, `cancelled` before
+receiving.
 
 ### 3.3 Open → closed
 

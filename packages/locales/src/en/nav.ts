@@ -48,6 +48,7 @@ const nav = {
 	'item.goodsReceipts': 'Goods Receipts',
 	'item.purchaseReturns': 'Purchase Returns',
 	'item.deliveryNotes': 'Delivery Notes',
+	'item.salesReturns': 'Sales Returns',
 	'breadcrumb.deliveryNoteNew': 'New delivery note',
 	'item.assets': 'Assets & Equipment',
 	'item.assetRegister': 'Asset Register',
@@ -141,6 +142,7 @@ const nav = {
 	'breadcrumb.purchaseOrderNew': 'New purchase order',
 	'breadcrumb.goodsReceiptNew': 'Receive goods',
 	'breadcrumb.purchaseReturnNew': 'Return goods',
+	'breadcrumb.salesReturnNew': 'Customer return',
 	'breadcrumb.whatsappFaq': 'Assistant FAQ',
 	'breadcrumb.whatsappChat': 'Conversation',
 } as const;

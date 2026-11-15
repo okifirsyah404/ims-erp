@@ -12,6 +12,152 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-16 - ERP-0062 M02 sales returns (retur penjualan), replacement only
+
+Branch `feat/m02-sales-returns`, stacked on `feat/m05-purchase-returns` (PR
+#108). The returns need #108's outbound stock fix to ship delivery notes,
+and #108's `returned` unit status.
+
+**Number check.** `origin/main`, every remote branch and the heads of the
+eight open PRs (#97 to #108) were checked. The highest id was ERP-0061, so
+this is ERP-0062. Nothing moved on `main` since 2026-11-15.
+
+**Gate 1 (read).**
+- `docs.dbml` Sales (sales_returns scaffold, delivery notes, order lines)
+  and Inventory (serial units).
+- `module-ownership.md`, `integrity-and-consistency.md`, and
+  `data-dictionary.md` §3.2.
+- `logical-references.md`, regenerated.
+- Skipped: `implementation-phases.md` (no dependency on an unlanded step).
+
+**Gate 2 (owner decisions 2026-11-16 plus the manual grill).**
+- **Outcome.** Replacement only, like purchase returns: the goods come back
+  into stock, the order quantity is released, and the replacement leaves on
+  a normal delivery note. There is no credit memo, and the invoice is not
+  touched.
+- **Condition.** Set per line when the warehouse receives:
+  - `good`: the units go back to `in_stock`;
+  - `damaged`: the units become `damaged`, a new unit status.
+  - A `damaged` unit is never offered for a delivery. It can still go back
+    to the supplier: purchase returns now accept `in_stock` or `damaged`
+    units.
+  - Non-serialized damaged goods are kept apart by receiving them into a
+    storage (optional per line).
+- **Ownership.** `sales` owns the return. Stock and units change only
+  through `StockService.postMovement` and the new
+  `ItemService.receiveCustomerUnits`. The order is released through the
+  sales order repository (same module).
+- **Tenant, soft delete, money and dates.**
+  - Company-wide like delivery notes, so there is no `organization_id`.
+  - `deleted_at` on both tables.
+  - Money is IDR minor units: `unit_price` is the order price, and
+    `unit_cost` is the delivery line's issue cost, booked back by
+    `return_in`.
+  - `return_date` is a Jakarta business date; `*_at` columns are unix ms.
+- **References.**
+  - `customer_id`, `warehouse_id`, line `bin_id`, `stock_movement_id` and the
+    `*_by` columns are plain nullable logical ids.
+  - The links to the delivery note, its lines, the order lines and the order
+    are real FKs (`restrict`) inside `sales`.
+- **Status vocabulary.**
+  - Return: `draft -> submitted -> approved -> received`; rejection goes back
+    to draft; `cancelled` before receiving.
+  - Unit transitions: `sold -> in_stock | damaged` and
+    `damaged -> in_stock | returned | lost`.
+  - `ItemService.transitionUnit` has no HTTP caller today. If a manual
+    endpoint is ever added, it must exclude these document-owned edges (noted
+    in the test).
+
+**What changed**
+- **`docs/database`**
+  - `docs.dbml`: rewrote `sales.sales_returns` and added
+    `sales.sales_return_items`; FKs; the `damaged` unit status.
+  - `data-dictionary.md` §3.2: `received` is the executed state.
+  - `logical-references.md`: regenerated.
+  - `validate-dbml.ts`: `OK` (276 tables, 0 cross-module refs, 0 timestamp
+    gaps, 0 parity drift).
+- **Drizzle and migration**
+  - `sales.schema.ts`: two tables, `SALES_RETURN_STATUSES` and
+    `SALES_RETURN_CONDITIONS`.
+  - `inventory.schema.ts`: `damaged` added to the statuses, transitions and
+    CHECK.
+  - Code type `sales_return` (`RTJ`).
+  - `bun run drizzle:generate` produced the migration, renamed to
+    `20261115202516_erp0062_sales_returns`. Inspected: two tables, indexes,
+    FKs and the unit status CHECK swap.
+- **Backend**
+  - `/sales-returns`: list, `returnable-deliveries`, detail, create, patch,
+    submit, decision, receive and cancel.
+  - The delivery cost is hidden without `product:read_cost`.
+  - New `SalesOrderRepository.reopenForReplacement`.
+  - en/id `api` messages.
+- **Permissions.** `sales_return: read, create, update, submit, approve,
+  receive, cancel`.
+  - Sales: create, update, submit, cancel.
+  - Sales manager: also approve.
+  - Warehouse: read and receive.
+  - Finance and auditor: read.
+  - Owner: all.
+- **Web admin**
+  - `/sales/returns`: list, new (also from a delivery note via
+    `?deliveryNoteId=`), detail with a receiving dialog (condition and
+    storage per line), and edit.
+  - The delivery note page has a "Return goods" action.
+  - Unit status label `damaged`; numbering type `sales_return`.
+- **Fix found on the way: the delivery note pages were refused to everyone.**
+  - The cause: the nav leaf had no permission, the same bug as the goods
+    receipt leaf in #108.
+  - The backend reads delivery notes with `stock:read` **or**
+    `sales_order:read`, so the nav gained an `anyPermission` option,
+    honoured by the sidebar filter and the route guard.
+
+**Verification**
+- Backend and web-admin `tsc` clean. `bun run lint`: 0 errors, with no
+  warning in the new files.
+- Tests:
+  - Backend `bun test`: 1090 pass, 4 fail (the known `Bun.Image` / toWebp
+    tests).
+  - Updated tests: `item-status-matrix.test.ts` (`sold` may now only go to
+    `in_stock` / `damaged`; `returned` is terminal) and `item.service.test.ts`
+    (an illegal-edge example that is still illegal).
+  - New: `test/unit/sales-return.service.test.ts`, 8 pass.
+  - Locales: 94 pass. The id strings for `return.order` and `return.status`
+    were translated (the untranslated-copy guard).
+  - web-admin: 100 pass.
+- **Disposable DB `ims_erp_v_srt`.** Migrated from empty; `drizzle-kit
+  check` printed "Everything's fine"; seed ran twice.
+- **API e2e on `APP_PORT=3010`: 28/28.**
+  - Set-up: PO + BPB for stock, quotation → SO → delivery note **shipped**
+    (proves #108's outbound fix).
+  - Access: technician 403, warehouse cannot create, sales cannot approve or
+    receive.
+  - Refused with 422: over-quantity and a foreign serial. The Indonesian
+    message is returned.
+  - Lifecycle: approve numbered `.../RTJ/...`; receive (serial damaged,
+    plain good); a missing condition and a double receive return 422.
+  - After receiving: two `return_in` movements; the order released (1/2 and
+    4/6 delivered) and deliverable again; the damaged serial cannot be
+    delivered.
+  - The replacement delivery note was shipped. The damaged serial went back
+    to the supplier on a purchase return.
+  - Cancel path checked; a received return cannot be cancelled.
+- **DB check after the run.**
+  - Plain item: 10 - 6 + 2 - 2 = 4.
+  - Serial `-B`: `sold -> damaged -> returned` (no warehouse, no customer).
+  - Serials `-A` and `-C`: `sold`.
+- **Browser walk-through** (built web-admin):
+  - Sales opens the delivery note (the page now opens for sales) and clicks
+    "Retur barang"; the form opens with the note preselected.
+  - Sales ticks the serial, sets qty 1, saves and submits.
+  - The sales manager approves (`RTJ`).
+  - The warehouse receives: serial "Rusak", plain "Layak jual". The detail
+    shows both conditions.
+  - The list shows it.
+  - No page errors and no 4xx/5xx.
+
+**Not done.** No printed return document and no reviewer sign-off.
+`docs/database/` was updated (see above).
+
 ## 2026-11-15 - ERP-0061 M05 purchase returns (retur pembelian), replacement only
 
 Branch `feat/m05-purchase-returns` from `origin/main` (`aa3a7ad`), PR #108.

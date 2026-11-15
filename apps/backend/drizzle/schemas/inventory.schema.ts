@@ -102,17 +102,21 @@ export const UNIT_STATUSES = [
 	'applied_warranty',
 	/** Sent back to the supplier on a purchase return (ERP-0061); terminal. */
 	'returned',
+	/** Back from a customer but not sellable (ERP-0062); never delivered. */
+	'damaged',
 ] as const;
 export type UnitStatus = (typeof UNIT_STATUSES)[number];
 
 /** Universal transitions allowed for every kind. */
 export const UNIT_STATUS_TRANSITIONS: Record<UnitStatus, UnitStatus[]> = {
 	pre_order: ['in_stock', 'lost'],
-	in_stock: ['sold', 'applied_warranty', 'lost', 'returned'],
+	in_stock: ['sold', 'applied_warranty', 'lost', 'returned', 'damaged'],
 	lost: [],
-	sold: [],
+	// ERP-0062: a customer return brings a sold unit back, sellable or not.
+	sold: ['in_stock', 'damaged'],
 	applied_warranty: ['in_stock', 'lost'],
 	returned: [],
+	damaged: ['in_stock', 'returned', 'lost'],
 };
 
 /**
@@ -945,7 +949,7 @@ export const serialTrackedItems = inventorySchema.table(
 		),
 		check(
 			'serial_tracked_items_status_check',
-			sql`status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned')`,
+			sql`status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged')`,
 		),
 		// A provisional serial only ever exists on a not-yet-received unit.
 		check(

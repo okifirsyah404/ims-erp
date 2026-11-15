@@ -126,6 +126,8 @@ import { Route as AuthedSalesOrdersOrderIdRouteImport } from './routes/_authed/s
 import { Route as AuthedSalesQuotesIndexRouteImport } from './routes/_authed/sales/quotes/index'
 import { Route as AuthedSalesQuotesNewRouteImport } from './routes/_authed/sales/quotes/new'
 import { Route as AuthedSalesReceiptsIndexRouteImport } from './routes/_authed/sales/receipts/index'
+import { Route as AuthedSalesReturnsIndexRouteImport } from './routes/_authed/sales/returns/index'
+import { Route as AuthedSalesReturnsNewRouteImport } from './routes/_authed/sales/returns/new'
 import { Route as AuthedSettingsCodeNumbersIndexRouteImport } from './routes/_authed/settings/code-numbers/index'
 import { Route as AuthedSettingsCompanyIndexRouteImport } from './routes/_authed/settings/company/index'
 import { Route as AuthedSettingsDocumentsIndexRouteImport } from './routes/_authed/settings/documents/index'
@@ -160,6 +162,8 @@ import { Route as AuthedSalesInvoicesInvoiceIdPrintRouteImport } from './routes/
 import { Route as AuthedSalesQuotesQuotationIdIndexRouteImport } from './routes/_authed/sales/quotes/$quotationId/index'
 import { Route as AuthedSalesQuotesQuotationIdEditRouteImport } from './routes/_authed/sales/quotes/$quotationId/edit'
 import { Route as AuthedSalesQuotesQuotationIdPrintRouteImport } from './routes/_authed/sales/quotes/$quotationId/print'
+import { Route as AuthedSalesReturnsSalesReturnIdIndexRouteImport } from './routes/_authed/sales/returns/$salesReturnId/index'
+import { Route as AuthedSalesReturnsSalesReturnIdEditRouteImport } from './routes/_authed/sales/returns/$salesReturnId/edit'
 import { Route as AuthedOrganizationsOrganizationIdMembersMemberIdEditRouteImport } from './routes/_authed/organizations/$organizationId.members.$memberId.edit'
 import { Route as AuthedProjectsProjectIdBastBastIdIndexRouteImport } from './routes/_authed/projects/$projectId/bast/$bastId/index'
 import { Route as AuthedProjectsProjectIdBastBastIdPrintRouteImport } from './routes/_authed/projects/$projectId/bast/$bastId/print'
@@ -818,6 +822,16 @@ const AuthedSalesReceiptsIndexRoute =
     path: '/sales/receipts/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedSalesReturnsIndexRoute = AuthedSalesReturnsIndexRouteImport.update({
+  id: '/sales/returns/',
+  path: '/sales/returns/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSalesReturnsNewRoute = AuthedSalesReturnsNewRouteImport.update({
+  id: '/sales/returns/new',
+  path: '/sales/returns/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedSettingsCodeNumbersIndexRoute =
   AuthedSettingsCodeNumbersIndexRouteImport.update({
     id: '/settings/code-numbers/',
@@ -1022,6 +1036,18 @@ const AuthedSalesQuotesQuotationIdPrintRoute =
     path: '/sales/quotes/$quotationId/print',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedSalesReturnsSalesReturnIdIndexRoute =
+  AuthedSalesReturnsSalesReturnIdIndexRouteImport.update({
+    id: '/sales/returns/$salesReturnId/',
+    path: '/sales/returns/$salesReturnId/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedSalesReturnsSalesReturnIdEditRoute =
+  AuthedSalesReturnsSalesReturnIdEditRouteImport.update({
+    id: '/sales/returns/$salesReturnId/edit',
+    path: '/sales/returns/$salesReturnId/edit',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute =
   AuthedOrganizationsOrganizationIdMembersMemberIdEditRouteImport.update({
     id: '/members/$memberId/edit',
@@ -1103,6 +1129,7 @@ export interface FileRoutesByFullPath {
   '/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
+  '/sales/returns/new': typeof AuthedSalesReturnsNewRoute
   '/subscription/$contractId/edit': typeof AuthedSubscriptionContractIdEditRoute
   '/admin/audit/': typeof AuthedAdminAuditIndexRoute
   '/admin/code-numbers/': typeof AuthedAdminCodeNumbersIndexRoute
@@ -1159,6 +1186,7 @@ export interface FileRoutesByFullPath {
   '/sales/orders/': typeof AuthedSalesOrdersIndexRoute
   '/sales/quotes/': typeof AuthedSalesQuotesIndexRoute
   '/sales/receipts/': typeof AuthedSalesReceiptsIndexRoute
+  '/sales/returns/': typeof AuthedSalesReturnsIndexRoute
   '/settings/code-numbers/': typeof AuthedSettingsCodeNumbersIndexRoute
   '/settings/company/': typeof AuthedSettingsCompanyIndexRoute
   '/settings/documents/': typeof AuthedSettingsDocumentsIndexRoute
@@ -1178,6 +1206,7 @@ export interface FileRoutesByFullPath {
   '/sales/invoices/$invoiceId/print': typeof AuthedSalesInvoicesInvoiceIdPrintRoute
   '/sales/quotes/$quotationId/edit': typeof AuthedSalesQuotesQuotationIdEditRoute
   '/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
+  '/sales/returns/$salesReturnId/edit': typeof AuthedSalesReturnsSalesReturnIdEditRoute
   '/finance/investors/profit-sharing/': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
@@ -1192,6 +1221,7 @@ export interface FileRoutesByFullPath {
   '/sales/deliveries/$deliveryNoteId/': typeof AuthedSalesDeliveriesDeliveryNoteIdIndexRoute
   '/sales/invoices/$invoiceId/': typeof AuthedSalesInvoicesInvoiceIdIndexRoute
   '/sales/quotes/$quotationId/': typeof AuthedSalesQuotesQuotationIdIndexRoute
+  '/sales/returns/$salesReturnId/': typeof AuthedSalesReturnsSalesReturnIdIndexRoute
   '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
   '/projects/$projectId/bast/$bastId/print': typeof AuthedProjectsProjectIdBastBastIdPrintRoute
   '/projects/$projectId/bast/$bastId/': typeof AuthedProjectsProjectIdBastBastIdIndexRoute
@@ -1256,6 +1286,7 @@ export interface FileRoutesByTo {
   '/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
+  '/sales/returns/new': typeof AuthedSalesReturnsNewRoute
   '/subscription/$contractId/edit': typeof AuthedSubscriptionContractIdEditRoute
   '/admin/audit': typeof AuthedAdminAuditIndexRoute
   '/admin/code-numbers': typeof AuthedAdminCodeNumbersIndexRoute
@@ -1312,6 +1343,7 @@ export interface FileRoutesByTo {
   '/sales/orders': typeof AuthedSalesOrdersIndexRoute
   '/sales/quotes': typeof AuthedSalesQuotesIndexRoute
   '/sales/receipts': typeof AuthedSalesReceiptsIndexRoute
+  '/sales/returns': typeof AuthedSalesReturnsIndexRoute
   '/settings/code-numbers': typeof AuthedSettingsCodeNumbersIndexRoute
   '/settings/company': typeof AuthedSettingsCompanyIndexRoute
   '/settings/documents': typeof AuthedSettingsDocumentsIndexRoute
@@ -1331,6 +1363,7 @@ export interface FileRoutesByTo {
   '/sales/invoices/$invoiceId/print': typeof AuthedSalesInvoicesInvoiceIdPrintRoute
   '/sales/quotes/$quotationId/edit': typeof AuthedSalesQuotesQuotationIdEditRoute
   '/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
+  '/sales/returns/$salesReturnId/edit': typeof AuthedSalesReturnsSalesReturnIdEditRoute
   '/finance/investors/profit-sharing': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/finance/investors/registry': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections': typeof AuthedFinanceTaxCorrectionsIndexRoute
@@ -1345,6 +1378,7 @@ export interface FileRoutesByTo {
   '/sales/deliveries/$deliveryNoteId': typeof AuthedSalesDeliveriesDeliveryNoteIdIndexRoute
   '/sales/invoices/$invoiceId': typeof AuthedSalesInvoicesInvoiceIdIndexRoute
   '/sales/quotes/$quotationId': typeof AuthedSalesQuotesQuotationIdIndexRoute
+  '/sales/returns/$salesReturnId': typeof AuthedSalesReturnsSalesReturnIdIndexRoute
   '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
   '/projects/$projectId/bast/$bastId/print': typeof AuthedProjectsProjectIdBastBastIdPrintRoute
   '/projects/$projectId/bast/$bastId': typeof AuthedProjectsProjectIdBastBastIdIndexRoute
@@ -1413,6 +1447,7 @@ export interface FileRoutesById {
   '/_authed/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
   '/_authed/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/_authed/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
+  '/_authed/sales/returns/new': typeof AuthedSalesReturnsNewRoute
   '/_authed/subscription/$contractId/edit': typeof AuthedSubscriptionContractIdEditRoute
   '/_authed/admin/audit/': typeof AuthedAdminAuditIndexRoute
   '/_authed/admin/code-numbers/': typeof AuthedAdminCodeNumbersIndexRoute
@@ -1469,6 +1504,7 @@ export interface FileRoutesById {
   '/_authed/sales/orders/': typeof AuthedSalesOrdersIndexRoute
   '/_authed/sales/quotes/': typeof AuthedSalesQuotesIndexRoute
   '/_authed/sales/receipts/': typeof AuthedSalesReceiptsIndexRoute
+  '/_authed/sales/returns/': typeof AuthedSalesReturnsIndexRoute
   '/_authed/settings/code-numbers/': typeof AuthedSettingsCodeNumbersIndexRoute
   '/_authed/settings/company/': typeof AuthedSettingsCompanyIndexRoute
   '/_authed/settings/documents/': typeof AuthedSettingsDocumentsIndexRoute
@@ -1488,6 +1524,7 @@ export interface FileRoutesById {
   '/_authed/sales/invoices/$invoiceId/print': typeof AuthedSalesInvoicesInvoiceIdPrintRoute
   '/_authed/sales/quotes/$quotationId/edit': typeof AuthedSalesQuotesQuotationIdEditRoute
   '/_authed/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
+  '/_authed/sales/returns/$salesReturnId/edit': typeof AuthedSalesReturnsSalesReturnIdEditRoute
   '/_authed/finance/investors/profit-sharing/': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/_authed/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/_authed/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
@@ -1502,6 +1539,7 @@ export interface FileRoutesById {
   '/_authed/sales/deliveries/$deliveryNoteId/': typeof AuthedSalesDeliveriesDeliveryNoteIdIndexRoute
   '/_authed/sales/invoices/$invoiceId/': typeof AuthedSalesInvoicesInvoiceIdIndexRoute
   '/_authed/sales/quotes/$quotationId/': typeof AuthedSalesQuotesQuotationIdIndexRoute
+  '/_authed/sales/returns/$salesReturnId/': typeof AuthedSalesReturnsSalesReturnIdIndexRoute
   '/_authed/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
   '/_authed/projects/$projectId/bast/$bastId/print': typeof AuthedProjectsProjectIdBastBastIdPrintRoute
   '/_authed/projects/$projectId/bast/$bastId/': typeof AuthedProjectsProjectIdBastBastIdIndexRoute
@@ -1570,6 +1608,7 @@ export interface FileRouteTypes {
     | '/sales/deliveries/new'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
+    | '/sales/returns/new'
     | '/subscription/$contractId/edit'
     | '/admin/audit/'
     | '/admin/code-numbers/'
@@ -1626,6 +1665,7 @@ export interface FileRouteTypes {
     | '/sales/orders/'
     | '/sales/quotes/'
     | '/sales/receipts/'
+    | '/sales/returns/'
     | '/settings/code-numbers/'
     | '/settings/company/'
     | '/settings/documents/'
@@ -1645,6 +1685,7 @@ export interface FileRouteTypes {
     | '/sales/invoices/$invoiceId/print'
     | '/sales/quotes/$quotationId/edit'
     | '/sales/quotes/$quotationId/print'
+    | '/sales/returns/$salesReturnId/edit'
     | '/finance/investors/profit-sharing/'
     | '/finance/investors/registry/'
     | '/finance/tax/corrections/'
@@ -1659,6 +1700,7 @@ export interface FileRouteTypes {
     | '/sales/deliveries/$deliveryNoteId/'
     | '/sales/invoices/$invoiceId/'
     | '/sales/quotes/$quotationId/'
+    | '/sales/returns/$salesReturnId/'
     | '/organizations/$organizationId/members/$memberId/edit'
     | '/projects/$projectId/bast/$bastId/print'
     | '/projects/$projectId/bast/$bastId/'
@@ -1723,6 +1765,7 @@ export interface FileRouteTypes {
     | '/sales/deliveries/new'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
+    | '/sales/returns/new'
     | '/subscription/$contractId/edit'
     | '/admin/audit'
     | '/admin/code-numbers'
@@ -1779,6 +1822,7 @@ export interface FileRouteTypes {
     | '/sales/orders'
     | '/sales/quotes'
     | '/sales/receipts'
+    | '/sales/returns'
     | '/settings/code-numbers'
     | '/settings/company'
     | '/settings/documents'
@@ -1798,6 +1842,7 @@ export interface FileRouteTypes {
     | '/sales/invoices/$invoiceId/print'
     | '/sales/quotes/$quotationId/edit'
     | '/sales/quotes/$quotationId/print'
+    | '/sales/returns/$salesReturnId/edit'
     | '/finance/investors/profit-sharing'
     | '/finance/investors/registry'
     | '/finance/tax/corrections'
@@ -1812,6 +1857,7 @@ export interface FileRouteTypes {
     | '/sales/deliveries/$deliveryNoteId'
     | '/sales/invoices/$invoiceId'
     | '/sales/quotes/$quotationId'
+    | '/sales/returns/$salesReturnId'
     | '/organizations/$organizationId/members/$memberId/edit'
     | '/projects/$projectId/bast/$bastId/print'
     | '/projects/$projectId/bast/$bastId'
@@ -1879,6 +1925,7 @@ export interface FileRouteTypes {
     | '/_authed/sales/deliveries/new'
     | '/_authed/sales/orders/$orderId'
     | '/_authed/sales/quotes/new'
+    | '/_authed/sales/returns/new'
     | '/_authed/subscription/$contractId/edit'
     | '/_authed/admin/audit/'
     | '/_authed/admin/code-numbers/'
@@ -1935,6 +1982,7 @@ export interface FileRouteTypes {
     | '/_authed/sales/orders/'
     | '/_authed/sales/quotes/'
     | '/_authed/sales/receipts/'
+    | '/_authed/sales/returns/'
     | '/_authed/settings/code-numbers/'
     | '/_authed/settings/company/'
     | '/_authed/settings/documents/'
@@ -1954,6 +2002,7 @@ export interface FileRouteTypes {
     | '/_authed/sales/invoices/$invoiceId/print'
     | '/_authed/sales/quotes/$quotationId/edit'
     | '/_authed/sales/quotes/$quotationId/print'
+    | '/_authed/sales/returns/$salesReturnId/edit'
     | '/_authed/finance/investors/profit-sharing/'
     | '/_authed/finance/investors/registry/'
     | '/_authed/finance/tax/corrections/'
@@ -1968,6 +2017,7 @@ export interface FileRouteTypes {
     | '/_authed/sales/deliveries/$deliveryNoteId/'
     | '/_authed/sales/invoices/$invoiceId/'
     | '/_authed/sales/quotes/$quotationId/'
+    | '/_authed/sales/returns/$salesReturnId/'
     | '/_authed/organizations/$organizationId/members/$memberId/edit'
     | '/_authed/projects/$projectId/bast/$bastId/print'
     | '/_authed/projects/$projectId/bast/$bastId/'
@@ -2802,6 +2852,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSalesReceiptsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/sales/returns/': {
+      id: '/_authed/sales/returns/'
+      path: '/sales/returns'
+      fullPath: '/sales/returns/'
+      preLoaderRoute: typeof AuthedSalesReturnsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/sales/returns/new': {
+      id: '/_authed/sales/returns/new'
+      path: '/sales/returns/new'
+      fullPath: '/sales/returns/new'
+      preLoaderRoute: typeof AuthedSalesReturnsNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/settings/code-numbers/': {
       id: '/_authed/settings/code-numbers/'
       path: '/settings/code-numbers'
@@ -3040,6 +3104,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSalesQuotesQuotationIdPrintRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/sales/returns/$salesReturnId/': {
+      id: '/_authed/sales/returns/$salesReturnId/'
+      path: '/sales/returns/$salesReturnId'
+      fullPath: '/sales/returns/$salesReturnId/'
+      preLoaderRoute: typeof AuthedSalesReturnsSalesReturnIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/sales/returns/$salesReturnId/edit': {
+      id: '/_authed/sales/returns/$salesReturnId/edit'
+      path: '/sales/returns/$salesReturnId/edit'
+      fullPath: '/sales/returns/$salesReturnId/edit'
+      preLoaderRoute: typeof AuthedSalesReturnsSalesReturnIdEditRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/organizations/$organizationId/members/$memberId/edit': {
       id: '/_authed/organizations/$organizationId/members/$memberId/edit'
       path: '/members/$memberId/edit'
@@ -3211,6 +3289,7 @@ interface AuthedRouteChildren {
   AuthedSalesDeliveriesNewRoute: typeof AuthedSalesDeliveriesNewRoute
   AuthedSalesOrdersOrderIdRoute: typeof AuthedSalesOrdersOrderIdRoute
   AuthedSalesQuotesNewRoute: typeof AuthedSalesQuotesNewRoute
+  AuthedSalesReturnsNewRoute: typeof AuthedSalesReturnsNewRoute
   AuthedSubscriptionContractIdEditRoute: typeof AuthedSubscriptionContractIdEditRoute
   AuthedAssetsBorrowingsIndexRoute: typeof AuthedAssetsBorrowingsIndexRoute
   AuthedAssetsCategoriesIndexRoute: typeof AuthedAssetsCategoriesIndexRoute
@@ -3263,6 +3342,7 @@ interface AuthedRouteChildren {
   AuthedSalesOrdersIndexRoute: typeof AuthedSalesOrdersIndexRoute
   AuthedSalesQuotesIndexRoute: typeof AuthedSalesQuotesIndexRoute
   AuthedSalesReceiptsIndexRoute: typeof AuthedSalesReceiptsIndexRoute
+  AuthedSalesReturnsIndexRoute: typeof AuthedSalesReturnsIndexRoute
   AuthedSettingsCodeNumbersIndexRoute: typeof AuthedSettingsCodeNumbersIndexRoute
   AuthedSettingsCompanyIndexRoute: typeof AuthedSettingsCompanyIndexRoute
   AuthedSettingsDocumentsIndexRoute: typeof AuthedSettingsDocumentsIndexRoute
@@ -3280,6 +3360,7 @@ interface AuthedRouteChildren {
   AuthedSalesInvoicesInvoiceIdPrintRoute: typeof AuthedSalesInvoicesInvoiceIdPrintRoute
   AuthedSalesQuotesQuotationIdEditRoute: typeof AuthedSalesQuotesQuotationIdEditRoute
   AuthedSalesQuotesQuotationIdPrintRoute: typeof AuthedSalesQuotesQuotationIdPrintRoute
+  AuthedSalesReturnsSalesReturnIdEditRoute: typeof AuthedSalesReturnsSalesReturnIdEditRoute
   AuthedFinanceInvestorsProfitSharingIndexRoute: typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   AuthedFinanceInvestorsRegistryIndexRoute: typeof AuthedFinanceInvestorsRegistryIndexRoute
   AuthedFinanceTaxCorrectionsIndexRoute: typeof AuthedFinanceTaxCorrectionsIndexRoute
@@ -3294,6 +3375,7 @@ interface AuthedRouteChildren {
   AuthedSalesDeliveriesDeliveryNoteIdIndexRoute: typeof AuthedSalesDeliveriesDeliveryNoteIdIndexRoute
   AuthedSalesInvoicesInvoiceIdIndexRoute: typeof AuthedSalesInvoicesInvoiceIdIndexRoute
   AuthedSalesQuotesQuotationIdIndexRoute: typeof AuthedSalesQuotesQuotationIdIndexRoute
+  AuthedSalesReturnsSalesReturnIdIndexRoute: typeof AuthedSalesReturnsSalesReturnIdIndexRoute
   AuthedProjectsProjectIdBastBastIdPrintRoute: typeof AuthedProjectsProjectIdBastBastIdPrintRoute
   AuthedProjectsProjectIdBastBastIdIndexRoute: typeof AuthedProjectsProjectIdBastBastIdIndexRoute
 }
@@ -3359,6 +3441,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSalesDeliveriesNewRoute: AuthedSalesDeliveriesNewRoute,
   AuthedSalesOrdersOrderIdRoute: AuthedSalesOrdersOrderIdRoute,
   AuthedSalesQuotesNewRoute: AuthedSalesQuotesNewRoute,
+  AuthedSalesReturnsNewRoute: AuthedSalesReturnsNewRoute,
   AuthedSubscriptionContractIdEditRoute: AuthedSubscriptionContractIdEditRoute,
   AuthedAssetsBorrowingsIndexRoute: AuthedAssetsBorrowingsIndexRoute,
   AuthedAssetsCategoriesIndexRoute: AuthedAssetsCategoriesIndexRoute,
@@ -3417,6 +3500,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSalesOrdersIndexRoute: AuthedSalesOrdersIndexRoute,
   AuthedSalesQuotesIndexRoute: AuthedSalesQuotesIndexRoute,
   AuthedSalesReceiptsIndexRoute: AuthedSalesReceiptsIndexRoute,
+  AuthedSalesReturnsIndexRoute: AuthedSalesReturnsIndexRoute,
   AuthedSettingsCodeNumbersIndexRoute: AuthedSettingsCodeNumbersIndexRoute,
   AuthedSettingsCompanyIndexRoute: AuthedSettingsCompanyIndexRoute,
   AuthedSettingsDocumentsIndexRoute: AuthedSettingsDocumentsIndexRoute,
@@ -3445,6 +3529,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSalesQuotesQuotationIdEditRoute: AuthedSalesQuotesQuotationIdEditRoute,
   AuthedSalesQuotesQuotationIdPrintRoute:
     AuthedSalesQuotesQuotationIdPrintRoute,
+  AuthedSalesReturnsSalesReturnIdEditRoute:
+    AuthedSalesReturnsSalesReturnIdEditRoute,
   AuthedFinanceInvestorsProfitSharingIndexRoute:
     AuthedFinanceInvestorsProfitSharingIndexRoute,
   AuthedFinanceInvestorsRegistryIndexRoute:
@@ -3468,6 +3554,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedSalesInvoicesInvoiceIdIndexRoute,
   AuthedSalesQuotesQuotationIdIndexRoute:
     AuthedSalesQuotesQuotationIdIndexRoute,
+  AuthedSalesReturnsSalesReturnIdIndexRoute:
+    AuthedSalesReturnsSalesReturnIdIndexRoute,
   AuthedProjectsProjectIdBastBastIdPrintRoute:
     AuthedProjectsProjectIdBastBastIdPrintRoute,
   AuthedProjectsProjectIdBastBastIdIndexRoute:

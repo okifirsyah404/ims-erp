@@ -3,6 +3,7 @@ import { DRIZZLE_TOKEN } from '@di/provider';
 import {
 	TSerialTrackedItemSelect,
 	serialTrackedItems,
+	type UnitStatus,
 } from '@drizzle/schemas/inventory.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
@@ -194,6 +195,50 @@ export class SerialUnitRepository implements ISerialUnitRepository {
 		return rows.map((row) => row.serialNumber);
 	}
 
+	async listSerialsInStatuses(itemId: string, warehouseId: string, statuses: readonly UnitStatus[]): Promise<string[]> {
+		const rows = await this.database
+			.select({ serialNumber: serialTrackedItems.serialNumber })
+			.from(serialTrackedItems)
+			.where(
+				and(
+					eq(serialTrackedItems.itemId, itemId),
+					eq(serialTrackedItems.warehouseId, warehouseId),
+					inArray(serialTrackedItems.status, [...statuses]),
+					isNull(serialTrackedItems.deletedAt),
+				),
+			)
+			.orderBy(asc(serialTrackedItems.serialNumber));
+		return rows.map((row) => row.serialNumber);
+	}
+
+	async receiveFromCustomer(
+		itemId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; binId: string | null; status: 'in_stock' | 'damaged'; stockMovementId: string | null },
+		tx: TTx,
+	): Promise<string[]> {
+		if (serialNumbers.length === 0) return [];
+		const rows = await tx
+			.update(serialTrackedItems)
+			.set({
+				status: data.status,
+				warehouseId: data.warehouseId,
+				binId: data.binId,
+				customerId: null,
+				stockMovementId: data.stockMovementId,
+			})
+			.where(
+				and(
+					eq(serialTrackedItems.itemId, itemId),
+					inArray(serialTrackedItems.serialNumber, [...serialNumbers]),
+					eq(serialTrackedItems.status, 'sold'),
+					isNull(serialTrackedItems.deletedAt),
+				),
+			)
+			.returning({ serialNumber: serialTrackedItems.serialNumber });
+		return rows.map((row) => row.serialNumber);
+	}
+
 	async returnToSupplier(
 		itemId: string,
 		serialNumbers: readonly string[],
@@ -209,7 +254,7 @@ export class SerialUnitRepository implements ISerialUnitRepository {
 					eq(serialTrackedItems.itemId, itemId),
 					inArray(serialTrackedItems.serialNumber, [...serialNumbers]),
 					eq(serialTrackedItems.warehouseId, data.warehouseId),
-					eq(serialTrackedItems.status, 'in_stock'),
+					inArray(serialTrackedItems.status, ['in_stock', 'damaged']),
 					isNull(serialTrackedItems.deletedAt),
 				),
 			)

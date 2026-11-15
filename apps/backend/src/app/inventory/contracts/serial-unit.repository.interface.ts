@@ -86,10 +86,27 @@ export interface ISerialUnitRepository {
 		tx: TTx,
 	): Promise<string[]>;
 
+	/** Serial numbers of the item's units in `statuses` in one warehouse. */
+	listSerialsInStatuses(itemId: string, warehouseId: string, statuses: readonly UnitStatus[]): Promise<string[]>;
+
+	/**
+	 * Takes sold units back from a customer (ERP-0062), guarded on
+	 * `status = 'sold'`: custody returns to the warehouse, `in_stock` or
+	 * `damaged`, and the customer link is cleared.
+	 *
+	 * @returns The serial numbers actually taken back
+	 */
+	receiveFromCustomer(
+		itemId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; binId: string | null; status: 'in_stock' | 'damaged'; stockMovementId: string | null },
+		tx: TTx,
+	): Promise<string[]>;
+
 	/**
 	 * Marks the listed units returned to the supplier (ERP-0061), guarded on
-	 * `status = 'in_stock'` and the warehouse inside the update; custody
-	 * leaves the warehouse.
+	 * `status IN ('in_stock', 'damaged')` and the warehouse inside the
+	 * update; custody leaves the warehouse.
 	 *
 	 * @returns The serial numbers actually returned
 	 */
