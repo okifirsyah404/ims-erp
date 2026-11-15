@@ -1,3 +1,5 @@
+import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
+import type { OutboxService } from '@app/automation/services/outbox.service';
 import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
 import type { CustomerService } from '@app/crm/services/customer.service';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
@@ -36,6 +38,7 @@ import {
 	TicketReferenceError,
 	TicketStateError,
 } from '../errors/service-ticket.errors';
+import { type TicketChange, ticketUpdatedEvent } from '../utils/ticket-event';
 import type { TWarrantyCheck, WarrantyService } from './warranty.service';
 
 /** Server-derived caller context (see the controller). */
@@ -60,7 +63,7 @@ export type TTicketComment = TServiceTicketCommentSelect;
  * stored on the ticket. `new → in_progress → resolved → closed`; resolved
  * may reopen; closing needs the customer's confirmation. Ticket managers
  * see and work every ticket; everyone else only the tickets assigned to
- * them.
+ * them. Every change publishes `service_ticket.updated` to n8n (M04).
  */
 @injectable()
 export class ServiceTicketService {
@@ -73,6 +76,7 @@ export class ServiceTicketService {
 		@inject(PERMISSION_RESOLVER_TOKEN) private readonly permissions: Pick<IPermissionResolver, 'hasPermission'>,
 		@inject(USER_SERVICE_TOKEN) private readonly users: Pick<UserService, 'getUser'>,
 		@inject(CODE_NUMBER_SERVICE_TOKEN) private readonly numbering: Pick<CodeNumberService, 'next'>,
+		@inject(OUTBOX_SERVICE_TOKEN) private readonly outbox: Pick<OutboxService, 'publish'>,
 		/** ERP-0044: finished tickets are recorded in the registry. */
 		@inject(DOCUMENT_SERVICE_TOKEN) private readonly documents: Pick<DocumentService, 'register'>,
 		/** ERP-0022: the ticket's message thread (staff notes and replies, customer messages). */
@@ -82,6 +86,15 @@ export class ServiceTicketService {
 	private async view(ticket: TServiceTicketSelect): Promise<TTicketView> {
 		const user = ticket.assigneeUserId ? await this.users.getUser(ticket.assigneeUserId) : null;
 		return { ...ticket, assignee: user ? { userId: user.id, name: user.name } : null };
+	}
+
+	/** Publishes `service_ticket.updated` to n8n (M04 stage 2) and returns the view. */
+	private async changed(ticket: TServiceTicketSelect, change: TicketChange): Promise<TTicketView> {
+		const view = await this.view(ticket);
+		const customer = await this.customers.getActiveCustomer(ticket.customerId);
+		const contact = customer ? { phone: customer.phone, whatsapp: customer.whatsapp, email: customer.email } : null;
+		await this.outbox.publish('service_ticket.updated', { type: 'service_ticket', id: ticket.id }, ticketUpdatedEvent(ticket, change, view.assignee, contact));
+		return view;
 	}
 
 	private async require(ctx: TTicketContext, id: string): Promise<TServiceTicketSelect> {
@@ -161,7 +174,7 @@ export class ServiceTicketService {
 			warrantyCode: check.warrantyCode,
 			createdBy: actorUserId,
 		});
-		return ticket;
+		return this.changed(ticket, 'created');
 	}
 
 	async assign(ctx: TTicketContext, id: string, assigneeUserId: string): Promise<TTicketView> {
@@ -169,14 +182,14 @@ export class ServiceTicketService {
 		if (!(await this.canWork(ctx.organizationId, assigneeUserId))) throw new TicketAssigneeError();
 		const updated = await this.tickets.transition(id, ['new', 'in_progress'], { assigneeUserId });
 		if (!updated) throw new TicketStateError('assign');
-		return this.view(updated);
+		return this.changed(updated, 'assigned');
 	}
 
 	async start(ctx: TTicketContext, id: string): Promise<TTicketView> {
 		this.assertWorker(ctx, await this.require(ctx, id));
 		const updated = await this.tickets.transition(id, ['new'], { status: 'in_progress' });
 		if (!updated) throw new TicketStateError('start');
-		return this.view(updated);
+		return this.changed(updated, 'started');
 	}
 
 	async resolve(ctx: TTicketContext, id: string, body: { resolution: string; serviceCost: number }): Promise<TTicketView> {
@@ -189,14 +202,14 @@ export class ServiceTicketService {
 			resolvedAt: new Date(),
 		});
 		if (!updated) throw new TicketStateError('resolve');
-		return this.view(updated);
+		return this.changed(updated, 'resolved');
 	}
 
 	async reopen(ctx: TTicketContext, id: string): Promise<TTicketView> {
 		this.assertWorker(ctx, await this.require(ctx, id));
 		const updated = await this.tickets.transition(id, ['resolved'], { status: 'in_progress', resolvedBy: null, resolvedAt: null });
 		if (!updated) throw new TicketStateError('reopen');
-		return this.view(updated);
+		return this.changed(updated, 'reopened');
 	}
 
 	/** Resolved → closed with the customer's confirmation. */
@@ -223,7 +236,7 @@ export class ServiceTicketService {
 			issuedOn: businessDateOf(now),
 			issuedByUserId: ctx.actorUserId,
 		});
-		return this.view(updated);
+		return this.changed(updated, 'closed');
 	}
 	/* -------------------------------------------------------------------- *
 	 * Message thread (ERP-0022)

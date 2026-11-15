@@ -6,9 +6,11 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { EmployeeSelect } from '@/components/hr/employee-select';
@@ -69,22 +71,25 @@ function TasksPage() {
 				{canCreate && <Button onClick={() => setCreating(true)}>{t('hr:tasks.new')}</Button>}
 			</div>
 			<div className='flex flex-wrap gap-2'>
-				<select
-					aria-label={t('hr:field.status')}
-					className='h-9 rounded-md border bg-transparent px-3 text-sm'
-					value={status}
-					onChange={(event) => {
-						setStatus(event.target.value as TTaskStatus | '');
+				<Select
+					value={status || 'all'}
+					onValueChange={(value: string | null) => {
+						setStatus(value === null || value === 'all' ? '' : (value as TTaskStatus));
 						setPage(1);
 					}}
 				>
-					<option value=''>{t('hr:tasks.allStatuses')}</option>
-					{TASK_STATUSES.map((value) => (
-						<option key={value} value={value}>
-							{t(`hr:taskStatus.${value}`)}
-						</option>
-					))}
-				</select>
+					<SelectTrigger aria-label={t('hr:field.status')}>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('hr:tasks.allStatuses')}</SelectItem>
+						{TASK_STATUSES.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`hr:taskStatus.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 				<EmployeeSelect
 					className='h-9 max-w-xs rounded-md border bg-transparent px-3 text-sm'
 					value={employeeFilter}
@@ -197,7 +202,7 @@ function TasksPage() {
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='task-due'>{t('hr:tasks.due')}</FieldLabel>
-								<Input id='task-due' type='date' value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
+								<DatePicker id='task-due' value={dueDate} onChange={setDueDate} />
 							</Field>
 						</FieldGroup>
 						<DialogFooter>

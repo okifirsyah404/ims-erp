@@ -128,6 +128,22 @@ export function loadEnvConfig(
 			},
 		},
 
+		integrations: {
+			// M04: the n8n webhook that receives ERP events, and the shared
+			// secret of its HMAC signature. Server config only; never logged.
+			n8nWebhookUrl: process.env.N8N_WEBHOOK_URL || null,
+			n8nWebhookSecret: process.env.N8N_WEBHOOK_SECRET || null,
+			// M04 stage 2: WAHA posts chats to the ERP and sends the replies;
+			// the AI provider is optional (none = hand every chat to an admin).
+			wahaUrl: process.env.WAHA_URL || null,
+			wahaApiKey: process.env.WAHA_API_KEY || null,
+			wahaSession: process.env.WAHA_SESSION || 'default',
+			wahaWebhookSecret: process.env.WAHA_WEBHOOK_SECRET || null,
+			aiBaseUrl: process.env.AI_BASE_URL || null,
+			aiApiKey: process.env.AI_API_KEY || null,
+			aiModel: process.env.AI_MODEL || null,
+		},
+
 		scheduler: {
 			// Off by default: a unit test or a one-off script must never open a
 			// Redis worker connection.
@@ -138,6 +154,8 @@ export function loadEnvConfig(
 			lateSweepCron: process.env.SCHEDULER_LATE_SWEEP_CRON ?? '*/15 * * * *',
 			retentionSweepCron:
 				process.env.SCHEDULER_RETENTION_SWEEP_CRON ?? '0 3 * * *',
+			// M04: daily license.due reminders, Asia/Jakarta clock (08:00 WIB).
+			licenseDueCron: process.env.SCHEDULER_LICENSE_DUE_CRON ?? '0 8 * * *',
 			guestPiiRetentionMonths:
 				process.env.GUEST_PII_RETENTION_MONTHS == null
 					? 24

@@ -13,6 +13,12 @@
 > `docs/plan/plans/inventory.md` (ADR-0008 / ADR-0009 decisions),
 > `docs/plan/plans/warehouse-hardening.md` (warehouse/storage CRUD + UI).
 > Contract home: `docs/database/docs.dbml` (canonical, edited first).
+>
+> **Superseded in part (2026-11-15, ERP-0041):** grants no longer live in an
+> `auth.roles.permissions` jsonb column - organization roles are a closed enum
+> in `@ims-erp/common` and `auth.roles` does not exist. D15/B3 and the Stage 0
+> `UPDATE auth.roles ...` steps below are void: renaming a resource is now a
+> pure code edit in `erp-permissions.ts`.
 
 ## Why
 

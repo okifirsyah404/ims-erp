@@ -2,10 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Search } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
-import { Input } from '@ims-erp/ui/components/input';
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from '@ims-erp/ui/components/input-group';
 import {
 	Table,
 	TableBody,
@@ -40,17 +45,21 @@ function ReceiptsPage() {
 				<h1 className='text-2xl font-bold'>{t('finance:receipts.title')}</h1>
 				<p className='text-sm text-muted-foreground'>{t('finance:receipts.description')}</p>
 			</div>
-			<Input
-				type='search'
-				className='max-w-sm'
-				aria-label={t('finance:receipts.search')}
-				placeholder={t('finance:receipts.search')}
-				value={search}
-				onChange={(e) => {
-					setSearch(e.target.value);
-					setPage(1);
-				}}
-			/>
+			<InputGroup className='max-w-sm'>
+				<InputGroupAddon align='inline-start'>
+					<Search aria-hidden='true' />
+				</InputGroupAddon>
+				<InputGroupInput
+					type='search'
+					aria-label={t('finance:receipts.search')}
+					placeholder={t('finance:receipts.search')}
+					value={search}
+					onChange={(e) => {
+						setSearch(e.target.value);
+						setPage(1);
+					}}
+				/>
+			</InputGroup>
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (

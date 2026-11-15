@@ -662,8 +662,60 @@ export function cashFlowQueryOptions(startDate: string, endDate: string) {
 	});
 }
 
-/* ------------------------- month-end close (F7) --------------------------- */
+/* --------------------- monthly report archive (M12 T30) -------------------- */
 
+export const REPORT_ARCHIVE_TYPES = [
+	'profit_and_loss',
+	'balance_sheet',
+	'cash_flow',
+] as const;
+export type TReportArchiveType = (typeof REPORT_ARCHIVE_TYPES)[number];
+
+export type TReportArchive = {
+	id: string;
+	organizationId: string;
+	periodYear: number;
+	periodMonth: number;
+	reportType: TReportArchiveType;
+	payload: TProfitAndLoss | TBalanceSheet | TCashFlowStatement;
+	generatedBy: string | null;
+	generatedAt: string;
+};
+
+export function reportArchivesQueryOptions(params: {
+	page: number;
+	limit: number;
+	periodYear?: number;
+}) {
+	const search = new URLSearchParams({
+		page: String(params.page),
+		limit: String(params.limit),
+	});
+	if (params.periodYear != null) {
+		search.set('periodYear', String(params.periodYear));
+	}
+	return queryOptions({
+		queryKey: ['report-archives', params],
+		queryFn: () =>
+			getDataPaginated<TReportArchive>(`/reports/archives?${search}`),
+	});
+}
+
+export function reportArchiveQueryOptions(id: string) {
+	return queryOptions({
+		queryKey: ['report-archive', id],
+		queryFn: () => getData<TReportArchive>(`/reports/archives/${id}`),
+	});
+}
+
+export function archiveMonth(periodYear: number, periodMonth: number) {
+	return sendData<TReportArchive[]>('/reports/archives', 'POST', {
+		periodYear,
+		periodMonth,
+	});
+}
+
+/* ------------------------- month-end close (F7) --------------------------- */
 export type TCloseChecklistItem = {
 	key: string;
 	label: string;

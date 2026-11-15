@@ -33,10 +33,10 @@ former single-organization invariant is gone; there is no 422 on create.
   `allowUserToCreateOrganization` plugin option.
 - **Ownership**: the creator becomes `owner`, and Better Auth activates the
   new organization for that session.
-- **Role catalog**: every created organization is provisioned with the full
-  per-organization `auth.roles` catalog (`seedRolesForOrganization`).
-  Permissions stay per-organization data, editable by that organization's
-  owner.
+- **Role catalog**: roles are a closed enum (`erpRoleNames` in
+  `@ims-erp/common`), so a created organization needs no per-organization role
+  rows. The creator becomes `owner`; further role changes go through
+  `auth.members.role`.
 - **Last organization**: deleting the final live organization responds
   **409** (`LastOrganizationError`). Delete is a soft delete, so the service
   also unsets the caller's `activeOrganizationId`; other members are released

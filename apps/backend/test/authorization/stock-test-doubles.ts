@@ -169,6 +169,9 @@ export function installStockDoubles(): void {
 		async remove() {
 			return false;
 		},
+		async availableByItems() {
+			return [];
+		},
 	};
 
 	const adjustments: IAdjustmentRepository = {

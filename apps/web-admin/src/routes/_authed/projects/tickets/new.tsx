@@ -8,6 +8,7 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { toast } from '@/components/toast';
 import { customersQueryOptions } from '@/lib/customer-api';
@@ -19,8 +20,6 @@ import { checkWarranty, createTicket, STAFF_TICKET_CHANNELS, type TTicketChannel
 export const Route = createFileRoute('/_authed/projects/tickets/new')({
 	component: NewTicketPage,
 });
-
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 function NewTicketPage() {
 	const { t, i18n } = useTranslation(['projects', 'common']);
@@ -118,43 +117,49 @@ function NewTicketPage() {
 							</div>
 							<Field>
 								<FieldLabel htmlFor='ticket-customer'>{t('projects:ticket.customer')}</FieldLabel>
-								<select
-									id='ticket-customer'
-									required
-									className={select}
-									value={customerId}
-									onChange={(event) => {
-										setCustomerId(event.target.value);
+								<Select
+									value={customerId || 'none'}
+									onValueChange={(value: string | null) => {
+										setCustomerId(value === null || value === 'none' ? '' : value);
 										setProjectId('');
 									}}
 								>
-									<option value=''>{t('projects:ticket.pickCustomer')}</option>
-									{(customers.data?.rows ?? []).map((customer) => (
-										<option key={customer.id} value={customer.id}>
-											{customer.code} — {customer.name}
-										</option>
-									))}
-								</select>
+									<SelectTrigger id='ticket-customer' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='none'>{t('projects:ticket.pickCustomer')}</SelectItem>
+										{(customers.data?.rows ?? []).map((customer) => (
+											<SelectItem key={customer.id} value={customer.id}>
+												{customer.code} — {customer.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='ticket-project'>{t('projects:ticket.project')}</FieldLabel>
-								<select
-									id='ticket-project'
-									className={select}
-									value={projectId}
+								<Select
+									value={projectId || 'none'}
 									disabled={!customerId}
-									onChange={(event) => {
-										setProjectId(event.target.value);
-										void runCheck({ serialNumber: serialNumber.trim() || undefined, projectId: event.target.value || undefined });
+									onValueChange={(value: string | null) => {
+										const next = value === null || value === 'none' ? '' : value;
+										setProjectId(next);
+										void runCheck({ serialNumber: serialNumber.trim() || undefined, projectId: next || undefined });
 									}}
 								>
-									<option value=''>{t('projects:ticket.noProject')}</option>
-									{customerProjects.map((project) => (
-										<option key={project.id} value={project.id}>
-											{project.code} — {project.title}
-										</option>
-									))}
-								</select>
+									<SelectTrigger id='ticket-project' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='none'>{t('projects:ticket.noProject')}</SelectItem>
+										{customerProjects.map((project) => (
+											<SelectItem key={project.id} value={project.id}>
+												{project.code} — {project.title}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field className='sm:col-span-2'>
 								<FieldLabel htmlFor='ticket-device'>{t('projects:ticket.device')}</FieldLabel>
@@ -170,13 +175,18 @@ function NewTicketPage() {
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='ticket-channel'>{t('projects:ticket.channel')}</FieldLabel>
-								<select id='ticket-channel' className={select} value={channel} onChange={(event) => setChannel(event.target.value as TTicketChannel)}>
-									{STAFF_TICKET_CHANNELS.map((value) => (
-										<option key={value} value={value}>
-											{t(`projects:channel.${value}`)}
-										</option>
-									))}
-								</select>
+								<Select value={channel} onValueChange={(value: string | null) => setChannel(value as TTicketChannel)}>
+									<SelectTrigger id='ticket-channel' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{STAFF_TICKET_CHANNELS.map((value) => (
+											<SelectItem key={value} value={value}>
+												{t(`projects:channel.${value}`)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field className='sm:col-span-2'>
 								<FieldLabel htmlFor='ticket-complaint'>{t('projects:ticket.complaint')}</FieldLabel>

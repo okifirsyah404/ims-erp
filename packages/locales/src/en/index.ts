@@ -18,6 +18,7 @@ import licensing from './licensing';
 import tax from './tax';
 import hr from './hr';
 import claim from './claim';
+import integrations from './integrations';
 import documents from './documents';
 import notifications from './notifications';
 
@@ -46,6 +47,7 @@ export const en = {
 	tax,
 	hr,
 	claim,
+	integrations,
 	documents,
 	notifications,
 } as const;

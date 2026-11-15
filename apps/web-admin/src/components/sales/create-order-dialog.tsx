@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import {
 	Dialog,
 	DialogContent,
@@ -66,22 +67,20 @@ export function CreateOrderDialog({
 						<div className='grid gap-4 sm:grid-cols-2'>
 							<Field>
 								<FieldLabel htmlFor='order-date'>{t('sales:order.date')}</FieldLabel>
-								<Input
+								<DatePicker
 									id='order-date'
-									type='date'
 									required
 									value={orderDate}
-									onChange={(e) => setOrderDate(e.target.value)}
+									onChange={setOrderDate}
 								/>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='order-delivery'>{t('sales:order.deliveryDate')}</FieldLabel>
-								<Input
+								<DatePicker
 									id='order-delivery'
-									type='date'
 									min={orderDate}
 									value={deliveryDate}
-									onChange={(e) => setDeliveryDate(e.target.value)}
+									onChange={setDeliveryDate}
 								/>
 							</Field>
 						</div>

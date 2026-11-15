@@ -6,8 +6,12 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
+import { MonthPicker } from '@ims-erp/ui/components/month-picker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
+import { TimePicker } from '@ims-erp/ui/components/time-picker';
 import { ImportDialog } from '@/components/hr/import-dialog';
 import { toast } from '@/components/toast';
 import { todayBusinessDate } from '@/lib/format';
@@ -27,8 +31,6 @@ import { usePermission } from '@/lib/use-permission';
 export const Route = createFileRoute('/_authed/hr/attendance/')({
 	component: AttendancePage,
 });
-
-const select = 'h-8 rounded-md border bg-transparent px-2 text-sm';
 
 function AttendancePage() {
 	const { t } = useTranslation(['hr', 'common']);
@@ -61,14 +63,13 @@ function AttendancePage() {
 					))}
 				</div>
 				{view === 'day' ? (
-					<Input type='date' className='w-44' aria-label={t('hr:field.date')} value={date} onChange={(event) => event.target.value && setDate(event.target.value)} />
+					<DatePicker className='w-44' aria-label={t('hr:field.date')} value={date} onChange={setDate} />
 				) : (
-					<Input
-						type='month'
+					<MonthPicker
 						className='w-44'
 						aria-label={t('hr:attendance.period')}
 						value={period}
-						onChange={(event) => event.target.value && setPeriod(event.target.value)}
+						onChange={setPeriod}
 					/>
 				)}
 			</div>
@@ -158,42 +159,43 @@ function DaySheet({ date, rows, canRecord }: { date: string; rows: TAttendanceDa
 													{t(`hr:status.${row.record!.status}`)} · {t('hr:attendance.fromLeave')}
 												</Badge>
 											) : (
-												<select
-													aria-label={t('hr:field.status')}
-													className={select}
+												<Select
+													value={entry?.status ?? 'none'}
 													disabled={!editable(row)}
-													value={entry?.status ?? ''}
-													onChange={(event) => change(row.employee.id, { status: event.target.value as TAttendanceStatus })}
+													onValueChange={(value: string | null) => change(row.employee.id, { status: value as TAttendanceStatus })}
 												>
-													<option value='' disabled>
-														{t('hr:attendance.notRecorded')}
-													</option>
-													{ATTENDANCE_STATUSES.map((status) => (
-														<option key={status} value={status}>
-															{t(`hr:status.${status}`)}
-														</option>
-													))}
-												</select>
+													<SelectTrigger aria-label={t('hr:field.status')} className='h-8 w-full'>
+														<SelectValue />
+													</SelectTrigger>
+													<SelectContent>
+														<SelectItem value='none' disabled>
+															{t('hr:attendance.notRecorded')}
+														</SelectItem>
+														{ATTENDANCE_STATUSES.map((status) => (
+															<SelectItem key={status} value={status}>
+																{t(`hr:status.${status}`)}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
 											)}
 										</TableCell>
 										<TableCell>
-											<Input
-												type='time'
-												className='h-8 w-28'
+											<TimePicker
+												className='w-28'
 												aria-label={t('hr:attendance.checkIn')}
 												disabled={!editable(row) || !entry}
 												value={entry?.checkIn ?? ''}
-												onChange={(event) => change(row.employee.id, { checkIn: event.target.value || null })}
+												onChange={(value) => change(row.employee.id, { checkIn: value || null })}
 											/>
 										</TableCell>
 										<TableCell>
-											<Input
-												type='time'
-												className='h-8 w-28'
+											<TimePicker
+												className='w-28'
 												aria-label={t('hr:attendance.checkOut')}
 												disabled={!editable(row) || !entry}
 												value={entry?.checkOut ?? ''}
-												onChange={(event) => change(row.employee.id, { checkOut: event.target.value || null })}
+												onChange={(value) => change(row.employee.id, { checkOut: value || null })}
 											/>
 										</TableCell>
 										<TableCell>

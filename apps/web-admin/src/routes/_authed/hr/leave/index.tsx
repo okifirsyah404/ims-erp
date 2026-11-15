@@ -6,9 +6,11 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
-import { Input } from '@ims-erp/ui/components/input';
+import { MonthPicker } from '@ims-erp/ui/components/month-picker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { EmployeeSelect } from '@/components/hr/employee-select';
@@ -34,7 +36,6 @@ export const Route = createFileRoute('/_authed/hr/leave/')({
 	component: LeavePage,
 });
 
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 function LeavePage() {
 	const { t, i18n } = useTranslation(['hr', 'common']);
@@ -76,29 +77,31 @@ function LeavePage() {
 				{canCreate && <Button onClick={() => setRecording(true)}>{t('hr:leave.new')}</Button>}
 			</div>
 			<div className='flex flex-wrap gap-2'>
-				<select
-					aria-label={t('hr:field.status')}
-					className='h-9 rounded-md border bg-transparent px-3 text-sm'
-					value={status}
-					onChange={(event) => {
-						setStatus(event.target.value as TRequestStatus | '');
+				<Select
+					value={status || 'all'}
+					onValueChange={(value: string | null) => {
+						setStatus(value === null || value === 'all' ? '' : (value as TRequestStatus));
 						setPage(1);
 					}}
 				>
-					<option value=''>{t('hr:request.allStatuses')}</option>
-					{REQUEST_STATUSES.map((value) => (
-						<option key={value} value={value}>
-							{t(`hr:request.status.${value}`)}
-						</option>
-					))}
-				</select>
-				<Input
-					type='month'
+					<SelectTrigger aria-label={t('hr:field.status')}>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('hr:request.allStatuses')}</SelectItem>
+						{REQUEST_STATUSES.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`hr:request.status.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+				<MonthPicker
 					className='w-44'
 					aria-label={t('hr:attendance.period')}
 					value={period}
-					onChange={(event) => {
-						setPeriod(event.target.value);
+					onChange={(value) => {
+						setPeriod(value);
 						setPage(1);
 					}}
 				/>
@@ -213,14 +216,19 @@ function RecordLeaveDialog({ onClose }: { onClose: () => void }) {
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='leave-type'>{t('hr:leave.type')}</FieldLabel>
-							<select id='leave-type' required className={select} value={leaveTypeId} onChange={(event) => setLeaveTypeId(event.target.value)}>
-								<option value=''>—</option>
-								{(types.data ?? []).map((item) => (
-									<option key={item.id} value={item.id}>
-										{item.name}
-									</option>
-								))}
-							</select>
+							<Select value={leaveTypeId || 'none'} onValueChange={(value: string | null) => setLeaveTypeId(value === null || value === 'none' ? '' : value)}>
+								<SelectTrigger id='leave-type' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='none'>—</SelectItem>
+									{(types.data ?? []).map((item) => (
+										<SelectItem key={item.id} value={item.id}>
+											{item.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 							{type?.usesQuota && balance && (
 								<FieldDescription>
 									{t('hr:balance.line', {
@@ -235,11 +243,11 @@ function RecordLeaveDialog({ onClose }: { onClose: () => void }) {
 						<div className='grid gap-4 sm:grid-cols-2'>
 							<Field>
 								<FieldLabel htmlFor='leave-start'>{t('hr:leave.start')}</FieldLabel>
-								<Input id='leave-start' type='date' required value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+								<DatePicker id='leave-start' required value={startDate} onChange={setStartDate} />
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='leave-end'>{t('hr:leave.end')}</FieldLabel>
-								<Input id='leave-end' type='date' required min={startDate} value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+								<DatePicker id='leave-end' required min={startDate} value={endDate} onChange={setEndDate} />
 							</Field>
 						</div>
 						<Field>

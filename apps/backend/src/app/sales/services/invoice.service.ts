@@ -7,6 +7,8 @@ import type {
 	TInvoiceSelect,
 } from '@drizzle/schemas/sales.schema';
 import type { TPaginationResult } from '@ims-erp/common';
+import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
+import type { OutboxService } from '@app/automation/services/outbox.service';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
@@ -37,6 +39,7 @@ import {
 	ReceiptNotFoundError,
 } from '../errors/invoice.errors';
 import { businessDateOf } from '@utils/business-date.util';
+import { invoiceIssuedEvent, receiptRecordedEvent } from '../utils/invoice-events';
 import type {
 	TCreateReceiptInput,
 	TReceiptListQuery,
@@ -72,6 +75,8 @@ export class InvoiceService {
 		private readonly arResolver: ArAccountResolverService,
 		@inject(CODE_NUMBER_SERVICE_TOKEN)
 		private readonly numbering: CodeNumberService,
+		@inject(OUTBOX_SERVICE_TOKEN)
+		private readonly outbox: Pick<OutboxService, 'publish'>,
 		/** ERP-0044: issued invoices and receipts are registered documents. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
@@ -184,10 +189,17 @@ export class InvoiceService {
 
 	/**
 	 * Issues the invoice: the ledger event of F4. One transaction covers the
-	 * status stamp, the journal (DR AR / CR revenue / CR tax payable) and the
-	 * `ar_open_items` row. Idempotent through the JE idempotency key.
+	 * status stamp, the journal (DR AR / CR revenue / CR tax payable), the
+	 * `ar_open_items` row and the document registry (ERP-0044); `invoice.issued`
+	 * goes to n8n (M04) once that transaction has committed.
 	 */
 	async issue(ctx: TInvoiceActionContext, id: string): Promise<TInvoiceSelect> {
+		const issued = await this.issueInTransaction(ctx, id);
+		await this.outbox.publish('invoice.issued', { type: 'invoice', id: issued.id }, invoiceIssuedEvent(issued));
+		return issued;
+	}
+
+	private async issueInTransaction(ctx: TInvoiceActionContext, id: string): Promise<TInvoiceSelect> {
 		return this.database.transaction(async (tx) => {
 			const invoice = await this.mustFind(ctx.organizationId, id, tx);
 			if (invoice.status !== 'draft') throw new InvoiceNotDraftError();
@@ -427,6 +439,9 @@ export class InvoiceService {
 			issuedOn: receipt.receivedDate,
 			issuedByUserId: ctx.actorUserId,
 		});
+		// n8n event (M04), with the invoice as it stands after the payment.
+		const paid = (await this.repo.findById(ctx.organizationId, invoiceId)) ?? invoice;
+		await this.outbox.publish('receipt.recorded', { type: 'receipt', id: receipt.id }, receiptRecordedEvent(receipt, paid));
 		return receipt;
 	}
 

@@ -5,6 +5,13 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Badge } from '@ims-erp/ui/components/badge';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { CircleAlert, Download, ReceiptText } from 'lucide-react';
 import { EmptyState } from '@/components/empty-state';
 import {
@@ -76,18 +83,21 @@ export function TaxRecap() {
 					onChange={(event) => setYear(Number(event.target.value))}
 					aria-label={t('tax:recap.year')}
 				/>
-				<select
-					className='h-9 rounded-md border bg-transparent px-3 text-sm'
-					value={month}
-					onChange={(event) => setMonth(Number(event.target.value))}
-					aria-label={t('tax:recap.month')}
+				<Select
+					value={String(month)}
+					onValueChange={(value: string | null) => setMonth(Number(value ?? 1))}
 				>
-					{MONTHS.map((value) => (
-						<option key={value} value={value}>
-							{value}
-						</option>
-					))}
-				</select>
+					<SelectTrigger aria-label={t('tax:recap.month')}>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						{MONTHS.map((value) => (
+							<SelectItem key={value} value={String(value)}>
+								{value}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 				<Button variant='outline' onClick={applyPeriod}>
 					{t('tax:period.apply')}
 				</Button>

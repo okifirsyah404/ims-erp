@@ -26,6 +26,8 @@ blocked`.
 | [company](company.md) | `src/app/company` | implemented 2026-11-13 (ERP-0042) - company profile, contacts, bank accounts, company-wide settings | ERP-0042 |
 | [code-number](code-number.md) | `src/app/code-number` | implemented 2026-11-13 (ERP-0042) - the one numbering authority (`code_number.series`) | ERP-0009, ERP-0042 |
 | [document](document.md) | `src/app/document` | implemented 2026-11-13 (ERP-0042) - issued document registry, files, signatures, shares, tags; PDF rendering out of scope | ERP-0042 |
+| [notification](notification.md) | `src/app/notification` | implemented 2026-11-13 (ADR-0016) - in-app inbox, templates, first consumer of the `/ws` socket | ERP-0047 |
+| [automation](automation.md) | `src/app/automation` | implemented 2026-11-07 (ADR-0020) - ERP events to n8n through an outbox, WhatsApp assistant (WAHA + FAQ + handoff) | ERP-0021 |
 | [location](location.md) | `src/app/location` | scaffold | T07 |
 
 ## Assessed / planned owners (no module directory yet)

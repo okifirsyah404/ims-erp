@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
@@ -81,7 +82,7 @@ export function BastForm({
 					<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 						<Field>
 							<FieldLabel htmlFor='bast-date'>{t('projects:bast.date')}</FieldLabel>
-							<Input id='bast-date' type='date' required value={value.bastDate} onChange={(event) => set({ bastDate: event.target.value })} />
+							<DatePicker id='bast-date' required value={value.bastDate} onChange={(bastDate) => set({ bastDate })} />
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='bast-contract'>{t('projects:bast.contractNumber')}</FieldLabel>

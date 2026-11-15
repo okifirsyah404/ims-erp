@@ -135,6 +135,12 @@ export const erpStatements = {
 	commerce_order: ['read', 'update', 'process', 'cancel'],
 	automation: ['read', 'create', 'update', 'activate', 'execute', 'read_log'],
 	/**
+	 * WhatsApp assistant (M04 stage 2): `read` chats and the FAQ, `reply`
+	 * to customers (take over, hand back, close, resend), `manage_faq` edit
+	 * the answers the assistant may use.
+	 */
+	whatsapp: ['read', 'reply', 'manage_faq'],
+	/**
 	 * `read_key`: see license keys unmasked (M03; keys are handed to customers).
 	 * `manage_api`: issue and revoke the machine keys own applications use for
 	 * the license API (M03 stage 2).
@@ -384,6 +390,10 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		master_data: ['read', 'create', 'update', 'archive', 'import', 'export'],
 		dashboard: ['read'],
 		employee: ['read'],
+		// Watches the n8n event log and sends failed events again (M04).
+		automation: ['read', 'read_log', 'execute'],
+		// WhatsApp inbox and FAQ (M04 stage 2).
+		whatsapp: ['read', 'reply', 'manage_faq'],
 		// Records attendance with HR (M08, decision 2026-11-07).
 		attendance: ['read', 'record'],
 		product: ['read'],
@@ -468,8 +478,12 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		sales_discount: ['request', 'approve'],
 		sales_order: ['read', 'create', 'update', 'submit', 'approve', 'cancel', 'export'],
 		product: ['read'],
+		// Website catalog listings with marketing (M04, decision 2026-11-07).
+		catalog: ['read', 'create', 'update', 'publish', 'archive'],
 		// M03 license register and its API keys (decisions 2026-11-06).
 		license: ['read', 'create', 'activate', 'extend', 'revoke', 'read_key', 'manage_api'],
+		// Answers WhatsApp chats handed off by the assistant (M04 stage 2).
+		whatsapp: ['read', 'reply'],
 		document: ['read', 'download'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
@@ -667,6 +681,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		warranty_claim: ['read', 'create', 'update', 'approve', 'reject', 'close'],
 		// Answers customers about their licenses (M03).
 		license: ['read', 'read_key'],
+		// Answers WhatsApp chats handed off by the assistant (M04 stage 2).
+		whatsapp: ['read', 'reply'],
 		document: ['read', 'download'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
@@ -680,6 +696,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		promotion: ['read', 'create', 'update', 'publish', 'archive'],
 		commerce_order: ['read', 'update', 'process', 'cancel'],
 		automation: ['read', 'read_log'],
+		// Keeps the assistant's FAQ answers (M04 stage 2).
+		whatsapp: ['read', 'manage_faq'],
 		product: ['read'],
 		customer: ['read'],
 		document: ['read', 'download'],

@@ -80,7 +80,7 @@ export async function isWebAdminSessionAllowed(userId: string): Promise<boolean>
 
 /**
  * Whether this session is the customer portal's own sign-in (ERP-0022,
- * ADR-0020): the request carries the portal module's per-process nonce and the
+ * ADR-0022): the request carries the portal module's per-process nonce and the
  * user holds an active portal identity. Such a session is for `/portal/v1`
  * only; it never gets an organization, and `sessionGuard` / `erpGuard` keep
  * refusing it on every web-admin route through the login gate.
@@ -108,7 +108,7 @@ async function isPortalSignIn(userId: string, context: unknown): Promise<boolean
  *
  * @remarks
  * Runs in `session.create.before` (ADR-0017 §8-9; the portal exception is
- * ADR-0020):
+ * ADR-0022):
  * - Rejects the session when the gate is closed (throws FORBIDDEN).
  * - When no organization is active, selects the first membership with an
  *   internal organization role. Memberships without one are never chosen.
