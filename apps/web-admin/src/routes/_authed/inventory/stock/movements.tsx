@@ -2,6 +2,11 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { MovementList } from '@/components/inventory/movement-list';
 
+/** Search params for the movement ledger (URL-backed pagination). */
+type TMovementsSearch = {
+	page?: number;
+};
+
 /**
  * `/inventory/stock/movements` — the append-only movement ledger.
  *
@@ -12,9 +17,21 @@ import { MovementList } from '@/components/inventory/movement-list';
  * a 403, which the component surfaces.
  */
 export const Route = createFileRoute('/_authed/inventory/stock/movements')({
+	validateSearch: (search: Record<string, unknown>): TMovementsSearch => ({
+		page: search.page ? Number(search.page) || 1 : undefined,
+	}),
 	component: MovementsPage,
 });
 
 function MovementsPage() {
-	return <MovementList />;
+	const { page } = Route.useSearch();
+	const navigate = Route.useNavigate();
+	return (
+		<MovementList
+			page={page ?? 1}
+			onPageChange={(next) =>
+				void navigate({ search: (prev) => ({ ...prev, page: next }) })
+			}
+		/>
+	);
 }

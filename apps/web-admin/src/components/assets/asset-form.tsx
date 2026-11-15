@@ -41,7 +41,20 @@ import {
  * fields; the code is allocated server-side. Edit omits server-owned
  * columns (code, status, valuation).
  */
-export function AssetForm({ asset }: { asset?: TAsset }) {
+export function AssetForm({
+	asset,
+	onSuccess,
+	onCancel,
+	compact = false,
+}: {
+	asset?: TAsset;
+	/** Called after a successful save instead of navigating (dialog usage). */
+	onSuccess?: () => void;
+	/** Called by Cancel instead of navigating (dialog usage). */
+	onCancel?: () => void;
+	/** Drops the page heading, for the create dialog. */
+	compact?: boolean;
+}) {
 	const { t } = useTranslation('assets');
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
@@ -75,23 +88,26 @@ export function AssetForm({ asset }: { asset?: TAsset }) {
 		onSuccess: async () => {
 			toast.success(asset ? t('updated') : t('created'));
 			await queryClient.invalidateQueries({ queryKey: ['assets'] });
-			void navigate({ to: '/assets/register' });
+			if (onSuccess) onSuccess();
+			else void navigate({ to: '/assets/register' });
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
 
 	return (
 		<div className='mx-auto max-w-xl space-y-4'>
-			<div>
-				<h1 className='text-xl font-semibold'>
-					{asset ? t('form.editAsset') : t('form.newAsset')}
-				</h1>
-				<p className='text-sm text-muted-foreground'>
-					{asset
-						? t('form.editAssetDescription')
-						: t('form.newAssetDescription')}
-				</p>
-			</div>
+			{compact ? null : (
+				<div>
+					<h1 className='text-xl font-semibold'>
+						{asset ? t('form.editAsset') : t('form.newAsset')}
+					</h1>
+					<p className='text-sm text-muted-foreground'>
+						{asset
+							? t('form.editAssetDescription')
+							: t('form.newAssetDescription')}
+					</p>
+				</div>
+			)}
 			<Card>
 				<CardHeader>
 					<CardTitle className='text-sm'>
@@ -144,7 +160,9 @@ export function AssetForm({ asset }: { asset?: TAsset }) {
 			<div className='flex justify-end gap-2'>
 				<Button
 					variant='outline'
-					onClick={() => void navigate({ to: '/assets/register' })}
+					onClick={() =>
+						onCancel ? onCancel() : void navigate({ to: '/assets/register' })
+					}
 				>
 					{t('form.cancel')}
 				</Button>

@@ -429,6 +429,18 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   `plans/warehouse-hardening.md` phases 1/2/2b done, UI
   `/inventory/warehouses/*`. Note: multi-warehouse rebaselined by ADR-0010
   (proposed 2026-11-04, owner sign-off pending).
+- Inventory & asset list UX — ERP-0063 (2026-11-16). Products/Components/
+  Materials and the asset register are card grids with the entity photo
+  (`components/item-thumb.tsx`, initials fallback); create moved into a dialog on
+  each list page (`ItemForm.compact` + `defaultItemKind`, `AssetForm`
+  `onSuccess`/`onCancel`), and both `/new` routes were deleted along with
+  `nav:item.newItem`; `page` is a URL search param on all six lists with the
+  page size fixed at 24 in the client, so `limit` never appears in the address
+  bar, and `useClampPage` rewrites a stale `page` back into range. Stock balances/movements and borrowings show the item/asset photo, which
+  the backend now projects (`findNamesByIds` returns `imageObjectKey`,
+  `ItemImageService.urlFor`, `IBorrowingRepository.listFirstAssetImages`).
+  Evidence: `progress.md` 2026-11-16. Gaps: the pager is unverified beyond one
+  page (seeded lists fit a single page).
 
 ### proposed (ADR-0010)
 - Warehouse↔organization links + scoped access — ERP-0031. Code landed
