@@ -188,6 +188,7 @@ TableGroup "Finance" {
   finance.bank_reconciliations
   finance.bank_reconciliation_items
   finance.supplier_bills
+  finance.supplier_bill_items
   finance.payment_terms
   finance.expense_claims
   finance.expense_claim_items
@@ -2492,6 +2493,7 @@ Ref: sales.sales_returns.sales_order_id > sales.sales_orders.id [delete: cascade
 Ref: sales.delivery_notes.sales_order_id > sales.sales_orders.id [delete: restrict]
 Ref: sales.delivery_note_items.delivery_note_id > sales.delivery_notes.id [delete: cascade]
 Ref: sales.delivery_note_items.sales_order_item_id > sales.sales_order_items.id [delete: restrict]
+Ref: finance.supplier_bill_items.supplier_bill_id > finance.supplier_bills.id [delete: cascade]
 Ref: procurement.supplier_contacts.supplier_id > procurement.suppliers.id [delete: cascade]
 Ref: procurement.supplier_addresses.supplier_id > procurement.suppliers.id [delete: cascade]
 Ref: procurement.purchase_request_items.purchase_request_id > procurement.purchase_requests.id [delete: cascade]
@@ -4448,6 +4450,7 @@ Table finance.supplier_bills {
   code varchar(32) [not null]
   supplier_id uuid [not null, note: "Logical reference to procurement.suppliers.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
   purchase_order_id uuid [note: "Logical reference to procurement.purchase_orders.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
+  supplier_invoice_number varchar(100) [note: "The supplier's own invoice number the bill was matched to (ERP-0012)."]
   bill_date date
   due_date date
   subtotal bigint [not null, default: 0]
@@ -4461,7 +4464,7 @@ Table finance.supplier_bills {
   approved_at bigint
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Accounts payable document of a supplier. Payments are rows of finance.payments."
+  Note: "Accounts payable document of a supplier. Payments are rows of finance.payments. A bill made from a purchase order (ERP-0012) carries lines in finance.supplier_bill_items and can never bill more than was received; recording it posts DR inventory (stock lines) / DR expense (other lines) / DR input tax / CR AP."
   Indexes {
     (organization_id, code) [unique, name: 'supplier_bills_org_code_uq']
     supplier_id [name: 'supplier_bills_supplier_id_idx']
@@ -4476,6 +4479,36 @@ Table finance.supplier_bills {
     `grand_total >= 0`
     `paid_total >= 0`
     `outstanding_total >= 0`
+  }
+}
+
+Table finance.supplier_bill_items {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  supplier_bill_id uuid [not null]
+  purchase_order_item_id uuid [note: "Logical reference to procurement.purchase_order_items.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
+  item_id uuid [note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  name text [not null]
+  unit varchar(32) [not null]
+  quantity numeric(18,3) [not null]
+  unit_price bigint [not null, default: 0, note: "The purchase order unit price (IDR minor units), VAT as the order states it."]
+  line_total bigint [not null, default: 0, note: "round(quantity x unit_price)."]
+  tax_base bigint [not null, default: 0, note: "Ex-VAT part of the line total (IDR minor units); what the line debits."]
+  is_stock boolean [not null, default: false, note: "Stock-tracked item: the line debits inventory instead of expense."]
+  sort_order integer [not null, default: 0]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Line of a supplier bill made from a purchase order (ERP-0012). Per purchase order line, live (not void) bill lines never exceed the quantity received."
+  Indexes {
+    supplier_bill_id [name: 'supplier_bill_items_supplier_bill_id_idx']
+    purchase_order_item_id [name: 'supplier_bill_items_purchase_order_item_id_idx']
+  }
+  Checks {
+    `quantity > 0`
+    `unit_price >= 0`
+    `line_total >= 0`
+    `tax_base >= 0`
   }
 }
 

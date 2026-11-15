@@ -12,6 +12,125 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-16 - ERP-0012 payables: supplier bills from purchase orders (unblocks ERP-0035)
+
+Branch `feat/m05-payables-from-receipts` from `origin/main` (`9dc2373`).
+ERP-0012 ("Purchasing & payables", `planned`) is the existing backlog row,
+so no new id was taken. ERP-0035 was `blocked (M09 payables)` on exactly
+this handoff.
+
+**Gate 1 (read).**
+- `docs.dbml`: Finance (`supplier_bills`, `ap_open_items`) and Procurement
+  (PO, PO lines, goods receipts).
+- `module-ownership.md`: the accounting module owns the `finance` schema;
+  procurement is company-wide.
+- `integrity-and-consistency.md`, `data-dictionary.md`, and
+  `logical-references.md` (regenerated).
+- Skipped: `implementation-phases.md`.
+
+**Gate 2 (owner decisions 2026-11-16 plus the manual grill).**
+- **Creation.** Finance creates the bill **from a purchase order**. The lines
+  are prefilled from the quantity received and not yet billed, and the bill
+  is matched to the supplier's own invoice (number, date, due date).
+- **Limit.** A bill never takes more than was received:
+  - per PO line, received minus the lines of live (not void) bills;
+  - counted across all organizations, because a PO is company-wide while
+    bills are per organization;
+  - serialized per order with a transaction-scoped advisory lock.
+- **Journal.** Recording posts DR Persediaan for stock lines, DR expense for
+  other lines (services), DR input tax and CR AP. The BPB posts no journal
+  (no GR/IR).
+  - The Persediaan code is **`1-1400`, provisional** like the other posting
+    codes; finance confirms it with the final COA.
+  - The account is looked up only when a bill has stock lines, so existing
+    bills keep working without it.
+- **Ownership.** Finance owns the bill lines. Procurement exposes the new
+  contract `PurchaseBillingService` (`PURCHASE_BILLING_SERVICE_TOKEN`) with
+  what an order received, the item stock flag and the order's VAT pricing.
+  Finance counts what it already billed, so Procurement never reads Finance
+  tables and there is no cycle.
+- **Columns.**
+  - Money is IDR minor units.
+  - `tax_base` is the line's share of the order DPP; the last line takes the
+    rounding rest, so the lines always add up to the bill subtotal.
+  - `purchase_order_item_id` and `item_id` are plain nullable logical ids.
+  - `supplier_bill_items` → `supplier_bills` is a real FK (cascade).
+  - Soft delete via `deleted_at`.
+
+**What changed**
+- **`docs/database`**
+  - `docs.dbml`: `finance.supplier_bills.supplier_invoice_number` and the new
+    `finance.supplier_bill_items`.
+  - `logical-references.md`: regenerated.
+  - `validate-dbml.ts`: `OK` (276 tables).
+- **Migration.** `bun run drizzle:generate` produced it, renamed to
+  `20261115205311_erp0012_supplier_bill_lines`: one table, one column,
+  indexes and the FK. Inspected.
+- **Backend**
+  - `GET /bills/billable-orders` and `POST /bills/from-purchase-order`
+    (`bill:create`).
+  - `GET /bills/:id` now returns the lines.
+  - `record` splits the debit between inventory and expense.
+  - en/id `api` messages.
+- **Web admin.** On `/finance/payables`, a "Bill from a purchase order" form:
+  pick the order, enter the supplier's invoice number, dates and the
+  quantities (prefilled to the billable quantity). The bill list shows the
+  supplier's invoice number. en/id locales.
+- **Fix found by the live run: P&L and balance sheet returned 500 once any
+  journal was posted.**
+  - The cause: `listAccountActivity`, `accountTotalsForPeriod` and the
+    cash-bank balance sum declared `sql<number>` over `::bigint`, but the
+    driver returns BigInt, so `number += bigint` threw.
+  - The fix: the five sums now `.mapWith(Number)`.
+  - This also unblocks the dashboard figures from #109.
+
+**Verification**
+- Backend and web-admin `tsc` clean. `bun run lint`: 0 errors.
+- Tests:
+  - Backend `bun test`: 1087 pass, 4 fail (the known `Bun.Image` / toWebp
+    tests).
+  - Accounting suites: 70 pass. Their fakes gained `findSupplierBillItems`
+    and the new constructor argument.
+  - New: `test/accounting/bill-from-order.test.ts`, 7 pass. It covers VAT
+    added and included (line tax bases add up to the DPP), over-billing
+    refused, a void bill freeing its quantity, unknown and duplicate lines,
+    the billable view, and the inventory/expense/tax/AP split.
+  - Locales: 94 pass. web-admin: 115 pass.
+- **Disposable DB `ims_erp_v_ap`.**
+  - Migrated from empty; `drizzle-kit check` printed "Everything's fine";
+    seed ran twice.
+  - `ITEM-006` was set to non-stock in this disposable DB only, to have a
+    service line.
+  - The 2026-11 period was opened with `seed-period.ts`.
+- **API e2e on `APP_PORT=3010`: 16/16.**
+  - Set-up: PO with VAT added (10 stock units at Rp 50.000 plus a service at
+    Rp 1.000.000). A sent PO with nothing received is not billable.
+  - BPB 6 + 1. Access: technician 403, purchasing cannot draft a bill.
+  - Billable view: 6 stock lines (flagged stock) and the service. Billing 7
+    is refused with 422, and the message is in Indonesian.
+  - The bill: subtotal 1.300.000, VAT 143.000, total 1.443.000, with the
+    supplier's invoice number. Billing the same goods again returns 422.
+  - Record: approved, with outstanding equal to the total.
+  - A second BPB of 4 makes exactly 4 billable. A void bill frees them. The
+    detail carries the lines.
+- **Journal checked in the DB:** DR 1-1400 Persediaan 300.000, DR 5-1000
+  Beban 1.000.000, DR 1-1800 PPN Masukan 143.000, CR 2-1100 Utang Usaha
+  1.443.000; the AP open item is 1.443.000, `open`.
+- **After the fix,** `/reports/profit-and-loss` returns 200 (expense
+  1.000.000) and `/reports/balance-sheet` returns 200.
+- **Browser check** (finance user on `/finance/payables`):
+  - The order list offers the billable POs.
+  - The lines are prefilled (4, and 0 for the billed service).
+  - The draft is created and listed with `INV/UI/001`.
+  - No page errors besides the P&L 500 that the fix above removes.
+
+**Not done.**
+- A purchase return after billing does not create a supplier credit note.
+- The Persediaan account code needs finance's confirmation.
+- No reviewer sign-off.
+
+`docs/database/` was updated (see above).
+
 ## 2026-11-16 - Sidebar: Components, Materials and Signatures restored (ERP-0062)
 
 Status: **implemented**. `docs/database/` reviewed: no table, column, index,

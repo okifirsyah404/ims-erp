@@ -26,6 +26,9 @@ import {
 	paymentAllocations,
 	payments,
 	supplierBills,
+	supplierBillItems,
+	type TSupplierBillItemInsert,
+	type TSupplierBillItemSelect,
 	type TApOpenItemSelect,
 	type TArOpenItemSelect,
 	type TCashBankAccountSelect,
@@ -40,7 +43,8 @@ import {
 } from '@drizzle/schemas/sales.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, asc, count, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lte, ne, sql } from 'drizzle-orm';
+import { quantityToMilli } from '@utils/money.util';
 import { inject, injectable } from 'tsyringe';
 
 /**
@@ -907,7 +911,7 @@ export class LedgerRepository {
 	): Promise<number> {
 		const [row] = await this.database
 			.select({
-				sum: sql<number>`coalesce(sum(CASE WHEN ${cashBankTransactions.direction} = 'in' THEN ${cashBankTransactions.amount} ELSE -${cashBankTransactions.amount} END), 0)::bigint`,
+				sum: sql<number>`coalesce(sum(CASE WHEN ${cashBankTransactions.direction} = 'in' THEN ${cashBankTransactions.amount} ELSE -${cashBankTransactions.amount} END), 0)::bigint`.mapWith(Number),
 			})
 			.from(cashBankTransactions)
 			.where(
@@ -1317,6 +1321,7 @@ export class LedgerRepository {
 			code: string;
 			supplierId: string;
 			purchaseOrderId: string | null;
+			supplierInvoiceNumber?: string | null;
 			billDate: string | null;
 			dueDate: string | null;
 			subtotal: number;
@@ -1338,6 +1343,80 @@ export class LedgerRepository {
 			.values({ ...row, createdAt: now, updatedAt: now })
 			.returning();
 		return created;
+	}
+
+	/** Lines of a bill made from a purchase order (ERP-0012). */
+	async insertSupplierBillItems(
+		rows: Omit<TSupplierBillItemInsert, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>[],
+		tx?: TTx,
+	): Promise<TSupplierBillItemSelect[]> {
+		if (rows.length === 0) return [];
+		const db = tx ?? this.database;
+		const now = new Date();
+		return db
+			.insert(supplierBillItems)
+			.values(rows.map((row) => ({ ...row, createdAt: now, updatedAt: now })))
+			.returning();
+	}
+
+	async findSupplierBillItems(
+		organizationId: string,
+		supplierBillId: string,
+		tx?: TTx,
+	): Promise<TSupplierBillItemSelect[]> {
+		const db = tx ?? this.database;
+		return db
+			.select()
+			.from(supplierBillItems)
+			.where(
+				and(
+					eq(supplierBillItems.supplierBillId, supplierBillId),
+					eq(supplierBillItems.organizationId, organizationId),
+					isNull(supplierBillItems.deletedAt),
+				),
+			)
+			.orderBy(asc(supplierBillItems.sortOrder));
+	}
+
+	/**
+	 * Quantity already billed per purchase order line on live (not void)
+	 * bills, in thousandths. Across every organization: a purchase order is
+	 * company-wide, so a line billed in one organization cannot be billed
+	 * again in another (ERP-0012).
+	 */
+	async billedQuantities(purchaseOrderItemIds: string[], tx?: TTx): Promise<Map<string, bigint>> {
+		const result = new Map<string, bigint>();
+		if (purchaseOrderItemIds.length === 0) return result;
+		const db = tx ?? this.database;
+		const rows = await db
+			.select({
+				purchaseOrderItemId: supplierBillItems.purchaseOrderItemId,
+				quantity: sql<string>`sum(${supplierBillItems.quantity})`,
+			})
+			.from(supplierBillItems)
+			.innerJoin(supplierBills, eq(supplierBills.id, supplierBillItems.supplierBillId))
+			.where(
+				and(
+					inArray(supplierBillItems.purchaseOrderItemId, purchaseOrderItemIds),
+					ne(supplierBills.status, 'void'),
+					isNull(supplierBills.deletedAt),
+					isNull(supplierBillItems.deletedAt),
+				),
+			)
+			.groupBy(supplierBillItems.purchaseOrderItemId);
+		for (const row of rows) {
+			if (row.purchaseOrderItemId) result.set(row.purchaseOrderItemId, quantityToMilli(Number(row.quantity).toFixed(3)));
+		}
+		return result;
+	}
+
+	/**
+	 * Serializes bills of one purchase order (ERP-0012): a transaction-scoped
+	 * advisory lock keyed on the order, so two finance users cannot both bill
+	 * the same received quantity.
+	 */
+	async lockPurchaseOrderBilling(purchaseOrderId: string, tx: TTx): Promise<void> {
+		await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`bill:${purchaseOrderId}`}, 0))`);
 	}
 
 	async findSupplierBillById(
@@ -1457,8 +1536,8 @@ export class LedgerRepository {
 		return db
 			.select({
 				accountId: journalLines.accountId,
-				debit: sql<number>`coalesce(sum(${journalLines.debit}), 0)::bigint`,
-				credit: sql<number>`coalesce(sum(${journalLines.credit}), 0)::bigint`,
+				debit: sql<number>`coalesce(sum(${journalLines.debit}), 0)::bigint`.mapWith(Number),
+				credit: sql<number>`coalesce(sum(${journalLines.credit}), 0)::bigint`.mapWith(Number),
 			})
 			.from(journalLines)
 			.innerJoin(
@@ -1805,8 +1884,8 @@ export class LedgerRepository {
 		return this.database
 			.select({
 				accountId: journalLines.accountId,
-				debit: sql<number>`coalesce(sum(${journalLines.debit}), 0)::bigint`,
-				credit: sql<number>`coalesce(sum(${journalLines.credit}), 0)::bigint`,
+				debit: sql<number>`coalesce(sum(${journalLines.debit}), 0)::bigint`.mapWith(Number),
+				credit: sql<number>`coalesce(sum(${journalLines.credit}), 0)::bigint`.mapWith(Number),
 			})
 			.from(journalLines)
 			.innerJoin(

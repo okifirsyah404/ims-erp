@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { container } from 'tsyringe';
 import type { ErpContext } from '@authorization/elysia-auth';
 import { domainPlugin } from '@http/plugin';
@@ -21,6 +22,7 @@ import {
 	reportArchiveCreateSchema,
 	reportArchiveListQuerySchema,
 	supplierBillCreateSchema,
+	supplierBillFromOrderSchema,
 	supplierBillListQuerySchema,
 	type TAgingBucket,
 } from '../contracts/payment.contract';
@@ -326,10 +328,28 @@ export class PaymentController {
 				},
 			)
 			.get(
+				'/bills/billable-orders',
+				async ({ query }) =>
+					ok(await bills.billableOrders(z.object({ search: z.string().trim().max(100).optional() }).parse(query).search)),
+				{
+					erp: { permission: ['bill:create'] },
+					detail: { description: 'Purchase orders with received goods that are not billed yet (ERP-0012)' },
+				},
+			)
+			.post(
+				'/bills/from-purchase-order',
+				async ({ body, erp, status }) =>
+					status(201, created(await bills.createFromPurchaseOrder(ctxOf(erp), supplierBillFromOrderSchema.parse(body)))),
+				{
+					erp: { permission: ['bill:create'] },
+					detail: { description: 'Drafts a supplier bill from received purchase order lines (ERP-0012)' },
+				},
+			)
+			.get(
 				'/bills/:id',
 				async ({ params, erp }) =>
 					ok(
-						await bills.get(
+						await bills.detail(
 							erp.organizationId,
 							ledgerIdParamSchema.parse(params).id,
 						),
@@ -383,7 +403,7 @@ export class PaymentController {
 					erp: { permission: ['bill:record'] },
 					detail: {
 						description:
-							'draft → approved: posts DR expense / DR input tax / CR AP and opens the AP sub-ledger row',
+							'draft → approved: posts DR inventory (stock lines) / DR expense / DR input tax / CR AP and opens the AP sub-ledger row',
 					},
 				},
 			)

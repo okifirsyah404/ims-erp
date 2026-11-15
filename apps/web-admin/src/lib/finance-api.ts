@@ -501,6 +501,7 @@ export type TSupplierBill = {
 	code: string;
 	supplierId: string | null;
 	purchaseOrderId: string | null;
+	supplierInvoiceNumber: string | null;
 	billDate: string | null;
 	dueDate: string | null;
 	subtotal: number;
@@ -538,6 +539,46 @@ export function createBill(input: {
 	notes?: string | null;
 }) {
 	return sendData<TSupplierBill>('/bills', 'POST', input);
+}
+
+/** A purchase order with received goods, as Finance bills it (ERP-0012). */
+export type TBillableOrder = {
+	id: string;
+	code: string | null;
+	subject: string;
+	supplierId: string;
+	supplierName: string;
+	vatMode: 'none' | 'included' | 'added';
+	vatRateBps: number;
+	lines: {
+		id: string;
+		itemId: string;
+		sku: string;
+		name: string;
+		unit: string;
+		unitPrice: number;
+		quantityReceived: string;
+		quantityBilled: string;
+		quantityBillable: string;
+		isStock: boolean;
+	}[];
+};
+
+export function billableOrdersQueryOptions() {
+	return queryOptions({
+		queryKey: ['bills', 'billable-orders'],
+		queryFn: () => getData<TBillableOrder[]>('/bills/billable-orders'),
+	});
+}
+
+export function createBillFromOrder(input: {
+	purchaseOrderId: string;
+	supplierInvoiceNumber: string;
+	billDate: string;
+	dueDate: string | null;
+	lines: { purchaseOrderItemId: string; quantity: string }[];
+}) {
+	return sendData<TSupplierBill>('/bills/from-purchase-order', 'POST', input);
 }
 
 export const cancelBill = (id: string) =>

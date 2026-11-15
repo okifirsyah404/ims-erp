@@ -10,9 +10,11 @@ import { SupplierController } from './controllers/supplier.controller';
 
 export { registerProcurement } from './container';
 export {
+	PURCHASE_BILLING_SERVICE_TOKEN,
 	PURCHASE_ORDER_SERVICE_TOKEN,
 	SUPPLIER_SERVICE_TOKEN,
 } from './constants/di';
+export type { PurchaseBillingService, TBillableOrder } from './services/purchase-billing.service';
 
 /** Elysia instance mounting every procurement controller, in route order. */
 export function procurementModule() {

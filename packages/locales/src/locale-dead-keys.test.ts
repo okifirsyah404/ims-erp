@@ -147,6 +147,8 @@ const DYNAMIC_PREFIXES = [
 	'finance.invoiceState.',
 	'procurement.poState.',
 	'procurement.receiptLine.',
+	'accounting.billLine.',
+	'finance:bills.fromOrder.vat.',
 	'sales.deliveryLine.',
 	'sales.deliveryState.',
 	'projects.deal.',

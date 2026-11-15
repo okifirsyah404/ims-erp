@@ -468,6 +468,8 @@ export const supplierBills = financeSchema.table(
 		supplierId: uuid('supplier_id').notNull(),
 		/** Logical ref to procurement.purchase_orders.id. */
 		purchaseOrderId: uuid('purchase_order_id'),
+		/** The supplier's own invoice number the bill was matched to (ERP-0012). */
+		supplierInvoiceNumber: varchar('supplier_invoice_number', { length: 100 }),
 		billDate: date('bill_date'),
 		dueDate: date('due_date'),
 		subtotal: moneyAmount('subtotal'),
@@ -503,6 +505,48 @@ export const supplierBills = financeSchema.table(
 		check('supplier_bills_grand_total_check', sql`grand_total >= 0`),
 		check('supplier_bills_paid_total_check', sql`paid_total >= 0`),
 		check('supplier_bills_outstanding_total_check', sql`outstanding_total >= 0`),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * finance.supplier_bill_items (ERP-0012): bills made from a purchase order
+ * ------------------------------------------------------------------------ */
+
+export const supplierBillItems = financeSchema.table(
+	'supplier_bill_items',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		supplierBillId: uuid('supplier_bill_id')
+			.notNull()
+			.references(() => supplierBills.id, { onDelete: 'cascade' }),
+		/** Logical ref to procurement.purchase_order_items.id. Validated via contract. */
+		purchaseOrderItemId: uuid('purchase_order_item_id'),
+		/** Logical ref to inventory.items.id. */
+		itemId: uuid('item_id'),
+		name: text('name').notNull(),
+		unit: varchar('unit', { length: 32 }).notNull(),
+		quantity: numeric('quantity', { precision: 18, scale: 3 }).notNull(),
+		/** The purchase order unit price, VAT as the order states it. */
+		unitPrice: moneyAmount('unit_price'),
+		/** round(quantity × unit_price). */
+		lineTotal: moneyAmount('line_total'),
+		/** Ex-VAT part of the line total; what the line debits. */
+		taxBase: moneyAmount('tax_base'),
+		/** Stock-tracked item: debits inventory instead of expense. */
+		isStock: boolean('is_stock').notNull().default(false),
+		sortOrder: integer('sort_order').notNull().default(0),
+		createdAt: unixTimestamp('created_at').notNull(),
+		updatedAt: unixTimestamp('updated_at')
+			.notNull()
+			.$onUpdate(() => new Date()),
+		deletedAt: unixTimestampNullable('deleted_at'),
+	},
+	(table) => [
+		index('supplier_bill_items_supplier_bill_id_idx').on(table.supplierBillId),
+		index('supplier_bill_items_purchase_order_item_id_idx').on(table.purchaseOrderItemId),
+		check('supplier_bill_items_quantity_check', sql`quantity > 0`),
+		check('supplier_bill_items_amounts_check', sql`unit_price >= 0 AND line_total >= 0 AND tax_base >= 0`),
 	],
 );
 
@@ -626,6 +670,8 @@ export type TBankReconciliationItemInsert =
 	typeof bankReconciliationItems.$inferInsert;
 export type TSupplierBillSelect = typeof supplierBills.$inferSelect;
 export type TSupplierBillInsert = typeof supplierBills.$inferInsert;
+export type TSupplierBillItemSelect = typeof supplierBillItems.$inferSelect;
+export type TSupplierBillItemInsert = typeof supplierBillItems.$inferInsert;
 export type TArOpenItemSelect = typeof arOpenItems.$inferSelect;
 export type TArOpenItemInsert = typeof arOpenItems.$inferInsert;
 export type TApOpenItemSelect = typeof apOpenItems.$inferSelect;
