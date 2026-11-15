@@ -12,6 +12,61 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-16 - Sidebar: Components, Materials and Signatures restored (ERP-0062)
+
+Status: **implemented**. `docs/database/` reviewed: no table, column, index,
+constraint, status vocabulary or cross-module link changed
+(`bun docs/database/validate-dbml.ts` -> OK).
+
+Cause: commit `950a7a3c` (2026-11-14, "filter sidebar and switcher by role and
+permission") switched the sidebar to deny-by-default `leafVisible()`, and the
+three items had no flag, so they silently disappeared while their routes still
+existed.
+
+- `packages/common/src/authorization/erp-permissions.ts`: the `document`
+  statement gains `signature_read`, `signature_request`, `signature_sign`
+  (vocabulary only; ERP-0048/ERP-0049 flows still unbuilt). Every role that
+  already held `document:read` (15 blocks) also gets `signature_read` +
+  `signature_sign`; `signature_request` goes to owner (blanket spread), admin,
+  operations_manager, sales_manager, project_manager, finance and hr. `member`
+  stays without document access.
+- `apps/web-admin/src/components/sidebar/nav-config.ts`: `item.components` and
+  `item.materials` gated on `product.read` (routes were already real
+  `ItemKindList` pages); `item.documentSignatures` / `item.requestSignature` /
+  `item.mySignature` gated on `document.signature_read` / `.signature_request`
+  / `.signature_sign`. No locale change needed (`nav.ts` en+id already carried
+  all three keys).
+- `apps/backend/test/authorization/authorization.test.ts`: new `document
+  signature grants` block - the three actions exist in the catalog, every
+  role holding `document:read` also holds `signature_read` + `signature_sign`,
+  and the `signature_request` holder list is exactly the seven roles above.
+- `docs/architecture/security-and-access.md`: `document` action list and the
+  signature-flow note updated.
+- Commands: `bun run build` in `packages/common` (the backend test resolves
+  `@ims-erp/common` from `dist`), then `bun test test/authorization/authorization.test.ts`
+  in `apps/backend` -> 30 pass / 0 fail. Full gates: backend `bun test`
+  2168 pass / 0 fail, web-admin 115 pass / 0 fail, `tsc -b` clean in both
+  workspaces and in `packages/common`, `bun run lint` 0 errors (200 pre-existing
+  warnings), `bun docs/database/validate-dbml.ts` -> OK (275 tables, 235 refs).
+- Browser-verified 2026-11-16 (in-app browser, Vite 5173 + backend 3001,
+  `admin` session, org `entragate`): sidebar shows `Documents > Files,
+  Signatures` with the three children (Document Signature, Request Signature,
+  My Signature) and `Items > Products, Components, Materials`; the three
+  `has-permission` POSTs for `document.signature_read|_request|_sign` return
+  `success: true`; `/documents/signatures/documents` renders its "Coming soon"
+  stub, `/inventory/components` lists 4 components and `/inventory/materials`
+  lists 4 materials, console clean.
+- **Gotcha worth remembering:** `@ims-erp/common` is consumed from `dist`, and
+  `bun run dev` (bun `--watch`) does not rebuild it or reload it into a running
+  backend. A catalog change therefore needs `bun run build` in
+  `packages/common` **and** a backend restart, otherwise `has-permission`
+  keeps answering `false` for the new actions and the nav item stays hidden
+  even though the source is correct. This is exactly what happened before the
+  browser check above.
+- Skipped on purpose: `templates`, `itemCategories`, `goodsReceipts`,
+  `deliveryNotes`, `downPayments`, `depreciation`, `bast`, `openingBalances`,
+  `documentSettings` stay hidden - they still have no catalog resource.
+
 ## 2026-11-15 - Dashboard real data, slice 1: client organization context (ERP-0060)
 
 Plan: `plans/dashboard-real-data.md` (grilled 2026-11-15, 24 locked decisions).
