@@ -8,6 +8,7 @@
  */
 import { describe, expect, test, beforeAll, beforeEach } from 'bun:test';
 import type { Elysia } from 'elysia';
+import { erpRoleGrants, erpStatements } from '@ims-erp/common';
 import {
 	buildTestApp,
 	fixture,
@@ -412,5 +413,47 @@ describe('static catalog authorization', () => {
 			jsonRequest('POST', '/sales/quotations', 'salesFinance', quotationBody()),
 		);
 		expect(response.status).toBe(201);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// 14. Document signature vocabulary (ERP-0048/ERP-0049, flow not built yet)
+// ---------------------------------------------------------------------------
+describe('document signature grants', () => {
+	const SIGNATURE_ACTIONS = ['signature_read', 'signature_sign'] as const;
+
+	test('the document statement carries the three signature actions', () => {
+		for (const action of [...SIGNATURE_ACTIONS, 'signature_request']) {
+			expect(erpStatements.document).toContain(action as never);
+		}
+	});
+
+	test('every role that reads documents may read and sign them', () => {
+		for (const [role, grants] of Object.entries(erpRoleGrants)) {
+			const document = (grants as Record<string, readonly string[]>).document;
+			if (!document?.includes('read')) continue;
+			expect({ role, actions: document }).toMatchObject({
+				role,
+				actions: expect.arrayContaining([...SIGNATURE_ACTIONS]),
+			});
+		}
+	});
+
+	test('only document-issuing roles may request a signature', () => {
+		const requesters = Object.entries(erpRoleGrants)
+			.filter(([, grants]) =>
+				(grants as Record<string, readonly string[]>).document?.includes('signature_request'),
+			)
+			.map(([role]) => role)
+			.sort();
+		expect(requesters).toEqual([
+			'admin',
+			'finance',
+			'hr',
+			'operations_manager',
+			'owner',
+			'project_manager',
+			'sales_manager',
+		]);
 	});
 });

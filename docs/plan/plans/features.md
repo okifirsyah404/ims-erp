@@ -93,6 +93,14 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`accepted` 2
 - Nothing open for ERP-0051 itself. Delivery follow-ups are tracked separately in
   `docs/plan/plans/erp-0051-follow-ups.md` (ERP-0053 … ERP-0058): one route-guard
   behaviour bug, four documentation drifts, and one schema-helper gap.
+- Sidebar regression fixed by ERP-0062 (2026-11-16): the deny-by-default
+  `leafVisible()` had silently dropped Components, Materials and the three
+  signature pages. Restored with `product.read` and the new
+  `document.signature_read` / `signature_request` / `signature_sign` actions
+  (catalog + grants in `packages/common`, nav gates, 3 grant tests). Evidence:
+  `progress.md` 2026-11-16; browser-verified (menu, `has-permission` true, both
+  inventory pages listing rows). Reminder: `packages/common` ships from `dist`,
+  so a catalog change needs `bun run build` there plus a backend restart.
 
 ---
 
