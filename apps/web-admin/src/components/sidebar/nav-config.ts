@@ -146,7 +146,6 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 					{ titleKey: 'item.materials', url: '/inventory/materials', permission: 'product.read' },
 					{ titleKey: 'item.stock', url: '/inventory/stock', permission: 'stock.read' },
 					{ titleKey: 'item.stockAdjustments', url: '/inventory/stock/adjustments', permission: 'stock_adjustment.read' },
-					{ titleKey: 'item.newItem', url: '/inventory/items/new', permission: 'product.create' },
 					// No catalog resource yet: hidden.
 					{ titleKey: 'item.itemCategories', url: '/inventory/categories' },
 					{ titleKey: 'item.itemMovements', url: '/inventory/stock/movements', permission: 'stock.read' },

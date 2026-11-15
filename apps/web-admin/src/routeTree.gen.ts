@@ -51,7 +51,6 @@ import { Route as AuthedAssetsDepreciationIndexRouteImport } from './routes/_aut
 import { Route as AuthedAssetsDisposalsIndexRouteImport } from './routes/_authed/assets/disposals/index'
 import { Route as AuthedAssetsRegisterIndexRouteImport } from './routes/_authed/assets/register/index'
 import { Route as AuthedAssetsRegisterAssetIdRouteImport } from './routes/_authed/assets/register/$assetId'
-import { Route as AuthedAssetsRegisterNewRouteImport } from './routes/_authed/assets/register/new'
 import { Route as AuthedAssetsServiceRecordsIndexRouteImport } from './routes/_authed/assets/service-records/index'
 import { Route as AuthedAssetsToolSetsIndexRouteImport } from './routes/_authed/assets/tool-sets/index'
 import { Route as AuthedCrmCustomersIndexRouteImport } from './routes/_authed/crm/customers/index'
@@ -91,7 +90,6 @@ import { Route as AuthedIntegrationsWhatsappAiFaqRouteImport } from './routes/_a
 import { Route as AuthedInventoryCategoriesIndexRouteImport } from './routes/_authed/inventory/categories/index'
 import { Route as AuthedInventoryComponentsIndexRouteImport } from './routes/_authed/inventory/components/index'
 import { Route as AuthedInventoryItemsItemIdRouteImport } from './routes/_authed/inventory/items/$itemId'
-import { Route as AuthedInventoryItemsNewRouteImport } from './routes/_authed/inventory/items/new'
 import { Route as AuthedInventoryMaterialsIndexRouteImport } from './routes/_authed/inventory/materials/index'
 import { Route as AuthedInventoryProductsIndexRouteImport } from './routes/_authed/inventory/products/index'
 import { Route as AuthedInventoryStockIndexRouteImport } from './routes/_authed/inventory/stock/index'
@@ -381,11 +379,6 @@ const AuthedAssetsRegisterAssetIdRoute =
     path: '/assets/register/$assetId',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedAssetsRegisterNewRoute = AuthedAssetsRegisterNewRouteImport.update({
-  id: '/assets/register/new',
-  path: '/assets/register/new',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedAssetsServiceRecordsIndexRoute =
   AuthedAssetsServiceRecordsIndexRouteImport.update({
     id: '/assets/service-records/',
@@ -609,11 +602,6 @@ const AuthedInventoryItemsItemIdRoute =
     path: '/inventory/items/$itemId',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedInventoryItemsNewRoute = AuthedInventoryItemsNewRouteImport.update({
-  id: '/inventory/items/new',
-  path: '/inventory/items/new',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedInventoryMaterialsIndexRoute =
   AuthedInventoryMaterialsIndexRouteImport.update({
     id: '/inventory/materials/',
@@ -1046,7 +1034,6 @@ export interface FileRoutesByFullPath {
   '/assets/borrowings/$borrowingId': typeof AuthedAssetsBorrowingsBorrowingIdRoute
   '/assets/borrowings/new': typeof AuthedAssetsBorrowingsNewRoute
   '/assets/register/$assetId': typeof AuthedAssetsRegisterAssetIdRoute
-  '/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
   '/documents/files/$documentId': typeof AuthedDocumentsFilesDocumentIdRoute
@@ -1058,7 +1045,6 @@ export interface FileRoutesByFullPath {
   '/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
-  '/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
   '/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
   '/inventory/stock/value': typeof AuthedInventoryStockValueRoute
@@ -1195,7 +1181,6 @@ export interface FileRoutesByTo {
   '/assets/borrowings/$borrowingId': typeof AuthedAssetsBorrowingsBorrowingIdRoute
   '/assets/borrowings/new': typeof AuthedAssetsBorrowingsNewRoute
   '/assets/register/$assetId': typeof AuthedAssetsRegisterAssetIdRoute
-  '/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
   '/documents/files/$documentId': typeof AuthedDocumentsFilesDocumentIdRoute
@@ -1207,7 +1192,6 @@ export interface FileRoutesByTo {
   '/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
-  '/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
   '/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
   '/inventory/stock/value': typeof AuthedInventoryStockValueRoute
@@ -1348,7 +1332,6 @@ export interface FileRoutesById {
   '/_authed/assets/borrowings/$borrowingId': typeof AuthedAssetsBorrowingsBorrowingIdRoute
   '/_authed/assets/borrowings/new': typeof AuthedAssetsBorrowingsNewRoute
   '/_authed/assets/register/$assetId': typeof AuthedAssetsRegisterAssetIdRoute
-  '/_authed/assets/register/new': typeof AuthedAssetsRegisterNewRoute
   '/_authed/crm/customers/$customerId': typeof AuthedCrmCustomersCustomerIdRoute
   '/_authed/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
   '/_authed/documents/files/$documentId': typeof AuthedDocumentsFilesDocumentIdRoute
@@ -1360,7 +1343,6 @@ export interface FileRoutesById {
   '/_authed/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/_authed/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/_authed/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
-  '/_authed/inventory/items/new': typeof AuthedInventoryItemsNewRoute
   '/_authed/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
   '/_authed/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
   '/_authed/inventory/stock/value': typeof AuthedInventoryStockValueRoute
@@ -1501,7 +1483,6 @@ export interface FileRouteTypes {
     | '/assets/borrowings/$borrowingId'
     | '/assets/borrowings/new'
     | '/assets/register/$assetId'
-    | '/assets/register/new'
     | '/crm/customers/$customerId'
     | '/crm/leads/$leadId'
     | '/documents/files/$documentId'
@@ -1513,7 +1494,6 @@ export interface FileRouteTypes {
     | '/integrations/whatsapp-ai/$conversationId'
     | '/integrations/whatsapp-ai/faq'
     | '/inventory/items/$itemId'
-    | '/inventory/items/new'
     | '/inventory/stock/adjust'
     | '/inventory/stock/movements'
     | '/inventory/stock/value'
@@ -1650,7 +1630,6 @@ export interface FileRouteTypes {
     | '/assets/borrowings/$borrowingId'
     | '/assets/borrowings/new'
     | '/assets/register/$assetId'
-    | '/assets/register/new'
     | '/crm/customers/$customerId'
     | '/crm/leads/$leadId'
     | '/documents/files/$documentId'
@@ -1662,7 +1641,6 @@ export interface FileRouteTypes {
     | '/integrations/whatsapp-ai/$conversationId'
     | '/integrations/whatsapp-ai/faq'
     | '/inventory/items/$itemId'
-    | '/inventory/items/new'
     | '/inventory/stock/adjust'
     | '/inventory/stock/movements'
     | '/inventory/stock/value'
@@ -1802,7 +1780,6 @@ export interface FileRouteTypes {
     | '/_authed/assets/borrowings/$borrowingId'
     | '/_authed/assets/borrowings/new'
     | '/_authed/assets/register/$assetId'
-    | '/_authed/assets/register/new'
     | '/_authed/crm/customers/$customerId'
     | '/_authed/crm/leads/$leadId'
     | '/_authed/documents/files/$documentId'
@@ -1814,7 +1791,6 @@ export interface FileRouteTypes {
     | '/_authed/integrations/whatsapp-ai/$conversationId'
     | '/_authed/integrations/whatsapp-ai/faq'
     | '/_authed/inventory/items/$itemId'
-    | '/_authed/inventory/items/new'
     | '/_authed/inventory/stock/adjust'
     | '/_authed/inventory/stock/movements'
     | '/_authed/inventory/stock/value'
@@ -2225,13 +2201,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAssetsRegisterAssetIdRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/assets/register/new': {
-      id: '/_authed/assets/register/new'
-      path: '/assets/register/new'
-      fullPath: '/assets/register/new'
-      preLoaderRoute: typeof AuthedAssetsRegisterNewRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/assets/service-records/': {
       id: '/_authed/assets/service-records/'
       path: '/assets/service-records'
@@ -2503,13 +2472,6 @@ declare module '@tanstack/react-router' {
       path: '/inventory/items/$itemId'
       fullPath: '/inventory/items/$itemId'
       preLoaderRoute: typeof AuthedInventoryItemsItemIdRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/inventory/items/new': {
-      id: '/_authed/inventory/items/new'
-      path: '/inventory/items/new'
-      fullPath: '/inventory/items/new'
-      preLoaderRoute: typeof AuthedInventoryItemsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/inventory/materials/': {
@@ -3103,7 +3065,6 @@ interface AuthedRouteChildren {
   AuthedAssetsBorrowingsBorrowingIdRoute: typeof AuthedAssetsBorrowingsBorrowingIdRoute
   AuthedAssetsBorrowingsNewRoute: typeof AuthedAssetsBorrowingsNewRoute
   AuthedAssetsRegisterAssetIdRoute: typeof AuthedAssetsRegisterAssetIdRoute
-  AuthedAssetsRegisterNewRoute: typeof AuthedAssetsRegisterNewRoute
   AuthedCrmCustomersCustomerIdRoute: typeof AuthedCrmCustomersCustomerIdRoute
   AuthedCrmLeadsLeadIdRoute: typeof AuthedCrmLeadsLeadIdRoute
   AuthedDocumentsFilesDocumentIdRoute: typeof AuthedDocumentsFilesDocumentIdRoute
@@ -3115,7 +3076,6 @@ interface AuthedRouteChildren {
   AuthedIntegrationsWhatsappAiConversationIdRoute: typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   AuthedIntegrationsWhatsappAiFaqRoute: typeof AuthedIntegrationsWhatsappAiFaqRoute
   AuthedInventoryItemsItemIdRoute: typeof AuthedInventoryItemsItemIdRouteWithChildren
-  AuthedInventoryItemsNewRoute: typeof AuthedInventoryItemsNewRoute
   AuthedInventoryStockAdjustRoute: typeof AuthedInventoryStockAdjustRoute
   AuthedInventoryStockMovementsRoute: typeof AuthedInventoryStockMovementsRoute
   AuthedInventoryStockValueRoute: typeof AuthedInventoryStockValueRoute
@@ -3240,7 +3200,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedAssetsBorrowingsBorrowingIdRoute,
   AuthedAssetsBorrowingsNewRoute: AuthedAssetsBorrowingsNewRoute,
   AuthedAssetsRegisterAssetIdRoute: AuthedAssetsRegisterAssetIdRoute,
-  AuthedAssetsRegisterNewRoute: AuthedAssetsRegisterNewRoute,
   AuthedCrmCustomersCustomerIdRoute: AuthedCrmCustomersCustomerIdRoute,
   AuthedCrmLeadsLeadIdRoute: AuthedCrmLeadsLeadIdRoute,
   AuthedDocumentsFilesDocumentIdRoute: AuthedDocumentsFilesDocumentIdRoute,
@@ -3254,7 +3213,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedIntegrationsWhatsappAiConversationIdRoute,
   AuthedIntegrationsWhatsappAiFaqRoute: AuthedIntegrationsWhatsappAiFaqRoute,
   AuthedInventoryItemsItemIdRoute: AuthedInventoryItemsItemIdRouteWithChildren,
-  AuthedInventoryItemsNewRoute: AuthedInventoryItemsNewRoute,
   AuthedInventoryStockAdjustRoute: AuthedInventoryStockAdjustRoute,
   AuthedInventoryStockMovementsRoute: AuthedInventoryStockMovementsRoute,
   AuthedInventoryStockValueRoute: AuthedInventoryStockValueRoute,

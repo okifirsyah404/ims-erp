@@ -26,7 +26,20 @@ export class ItemImageService {
 	) {}
 
 	withImageUrl(item: TItemSelect): TItemWithImage {
-		return { ...item, imageUrl: documentImageUrl(this.storage, item.imageObjectKey) };
+		return { ...item, imageUrl: this.urlFor(item.imageObjectKey) };
+	}
+
+	/**
+	 * Turns a stored object key into a short-lived URL.
+	 *
+	 * @param objectKey - The `image_object_key` column, or `null` for no photo
+	 * @returns The signed URL, or `null`
+	 * @remarks
+	 * Shared with list projections that resolve many items at once (stock rows
+	 * carry only the key).
+	 */
+	urlFor(objectKey: string | null): string | null {
+		return documentImageUrl(this.storage, objectKey);
 	}
 
 	/**
