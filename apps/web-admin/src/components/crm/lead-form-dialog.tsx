@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
+import { DateTimePicker } from '@ims-erp/ui/components/datetime-picker';
 import {
 	Dialog,
 	DialogContent,
@@ -11,6 +12,13 @@ import {
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { fromDateTimeInput, toDateTimeInput } from '@/lib/format';
 import { LEAD_SOURCES, type TLead, type TLeadInput, type TLeadSource } from '@/lib/lead-api';
@@ -104,18 +112,21 @@ export function LeadFormDialog({
 						<div className='grid gap-4 sm:grid-cols-3'>
 							<Field>
 								<FieldLabel htmlFor='lead-source'>{t('crm:lead.source')}</FieldLabel>
-								<select
-									id='lead-source'
-									className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
+								<Select
 									value={source}
-									onChange={(e) => setSource(e.target.value as TLeadSource)}
+									onValueChange={(value: string | null) => setSource(value as TLeadSource)}
 								>
-									{LEAD_SOURCES.map((value) => (
-										<option key={value} value={value}>
-											{t(`crm:leadSource.${value}`)}
-										</option>
-									))}
-								</select>
+									<SelectTrigger id='lead-source' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{LEAD_SOURCES.map((value) => (
+											<SelectItem key={value} value={value}>
+												{t(`crm:leadSource.${value}`)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='lead-value'>{t('crm:lead.estimatedValue')}</FieldLabel>
@@ -131,11 +142,10 @@ export function LeadFormDialog({
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='lead-follow-up'>{t('crm:lead.nextFollowUpAt')}</FieldLabel>
-								<Input
+								<DateTimePicker
 									id='lead-follow-up'
-									type='datetime-local'
 									value={nextFollowUpAt}
-									onChange={(e) => setNextFollowUpAt(e.target.value)}
+									onChange={setNextFollowUpAt}
 								/>
 							</Field>
 						</div>

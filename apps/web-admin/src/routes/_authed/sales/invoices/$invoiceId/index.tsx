@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import {
 	Dialog,
 	DialogContent,
@@ -23,6 +24,13 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ims-erp/ui/components/table';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { GatewayPaymentsCard } from '@/components/finance/gateway-payments-card';
 import { toast } from '@/components/toast';
@@ -281,22 +289,20 @@ function InvoiceDetailPage() {
 								<div className='grid gap-4 sm:grid-cols-2'>
 									<Field>
 										<FieldLabel htmlFor='issue-date'>{t('finance:invoice.issueDate')}</FieldLabel>
-										<Input
+										<DatePicker
 											id='issue-date'
-											type='date'
 											required
 											value={issueDate}
-											onChange={(e) => setIssueDate(e.target.value)}
+											onChange={setIssueDate}
 										/>
 									</Field>
 									<Field>
 										<FieldLabel htmlFor='issue-due'>{t('finance:invoice.dueDate')}</FieldLabel>
-										<Input
+										<DatePicker
 											id='issue-due'
-											type='date'
 											min={issueDate}
 											value={dueDate}
-											onChange={(e) => setDueDate(e.target.value)}
+											onChange={setDueDate}
 										/>
 									</Field>
 								</div>
@@ -320,30 +326,29 @@ function InvoiceDetailPage() {
 										</Field>
 										<Field>
 											<FieldLabel htmlFor='receipt-date'>{t('finance:receipt.date')}</FieldLabel>
-											<Input
+											<DatePicker
 												id='receipt-date'
-												type='date'
 												required
 												value={receivedDate}
-												onChange={(e) => setReceivedDate(e.target.value)}
+												onChange={setReceivedDate}
 											/>
 										</Field>
 									</div>
 									<div className='grid gap-4 sm:grid-cols-2'>
 										<Field>
 											<FieldLabel htmlFor='receipt-method'>{t('finance:receipt.method')}</FieldLabel>
-											<select
-												id='receipt-method'
-												className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
-												value={method}
-												onChange={(e) => setMethod(e.target.value as TReceiptMethod)}
-											>
-												{RECEIPT_METHODS.map((value) => (
-													<option key={value} value={value}>
-														{t(`finance:method.${value}`)}
-													</option>
-												))}
-											</select>
+											<Select value={method} onValueChange={(value: string | null) => setMethod(value as TReceiptMethod)}>
+												<SelectTrigger id='receipt-method' className='w-full'>
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													{RECEIPT_METHODS.map((value) => (
+														<SelectItem key={value} value={value}>
+															{t(`finance:method.${value}`)}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
 										</Field>
 										<Field>
 											<FieldLabel htmlFor='receipt-reference'>{t('finance:receipt.reference')}</FieldLabel>

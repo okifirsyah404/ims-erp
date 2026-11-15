@@ -24,14 +24,15 @@ call the owning module's assert method first**.
 ### 2.1 The rule
 
 A foreign key may only connect two tables of the same module. `docs.dbml`
-contains 231 `Ref:` declarations and 0 cross-module refs.
+contains 233 `Ref:` declarations and 0 cross-module refs.
 
 Verified by parsing the file (`validate-dbml.ts`, `@dbml/core`):
 
 ```text
-parsed: 268 tables
+parsed: 270 tables
 cross-module refs: 0
 timestamp gaps: 0
+drizzle parity drift: 0
 ```
 
 Every module owns exactly one Postgres schema, so a `Ref:` that crosses a
@@ -399,7 +400,7 @@ split by ownership, with one side authoritative.
 | Goods and services | `catalog.items` | — |
 | Customer address | `crm.customer_addresses` (`kind` discriminator) | — |
 | General ledger balance | `accounting.journal_entries` + `journal_lines` | `accounting.account_balances` |
-| Role and permission | code, `packages/common/src/authorization/erp-permissions.ts` | `auth.members.role`, `auth.user_role_assignments` |
+| Role and permission | code, `packages/common/src/authorization/erp-permissions.ts` | `auth.members.role` |
 | Approval decision | `approval.approval_decisions` | the `status` of the business document |
 | Document version | `document.documents` | `document.templates.version` |
 

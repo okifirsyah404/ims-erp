@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
-import { Input } from '@ims-erp/ui/components/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import {
 	Table,
 	TableBody,
@@ -15,6 +16,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ims-erp/ui/components/table';
+import { Search } from 'lucide-react';
 import { CustomerFormDialog } from '@/components/crm/customer-form-dialog';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
@@ -80,33 +82,40 @@ function CustomerListPage() {
 			</div>
 
 			<div className='flex flex-wrap gap-2'>
-				<Input
-					type='search'
-					className='max-w-xs'
-					aria-label={t('crm:customers.search')}
-					placeholder={t('crm:customers.search')}
-					value={search}
-					onChange={(event) => {
-						setSearch(event.target.value);
-						setPage(1);
-					}}
-				/>
-				<select
-					aria-label={t('crm:customer.status')}
-					className='h-9 rounded-md border bg-transparent px-3 text-sm'
-					value={status}
-					onChange={(event) => {
-						setStatus(event.target.value as TCustomerStatus | '');
+				<InputGroup className='max-w-xs'>
+					<InputGroupAddon align='inline-start'>
+						<Search aria-hidden='true' />
+					</InputGroupAddon>
+					<InputGroupInput
+						type='search'
+						aria-label={t('crm:customers.search')}
+						placeholder={t('crm:customers.search')}
+						value={search}
+						onChange={(event) => {
+							setSearch(event.target.value);
+							setPage(1);
+						}}
+					/>
+				</InputGroup>
+				<Select
+					value={status || 'all'}
+					onValueChange={(value: string | null) => {
+						setStatus(value === null || value === 'all' ? '' : (value as TCustomerStatus));
 						setPage(1);
 					}}
 				>
-					<option value=''>{t('crm:customers.filterAll')}</option>
-					{CUSTOMER_STATUSES.map((value) => (
-						<option key={value} value={value}>
-							{t(`crm:customerStatus.${value}`)}
-						</option>
-					))}
-				</select>
+					<SelectTrigger aria-label={t('crm:customer.status')}>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('crm:customers.filterAll')}</SelectItem>
+						{CUSTOMER_STATUSES.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`crm:customerStatus.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 			</div>
 
 			{isPending ? null : isError ? (

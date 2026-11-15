@@ -6,9 +6,12 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { MonthPicker } from '@ims-erp/ui/components/month-picker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { EmployeeSelect } from '@/components/hr/employee-select';
@@ -76,29 +79,31 @@ function OvertimePage() {
 				{canCreate && <Button onClick={() => setRecording(true)}>{t('hr:overtime.new')}</Button>}
 			</div>
 			<div className='flex flex-wrap gap-2'>
-				<select
-					aria-label={t('hr:field.status')}
-					className='h-9 rounded-md border bg-transparent px-3 text-sm'
-					value={status}
-					onChange={(event) => {
-						setStatus(event.target.value as TRequestStatus | '');
+				<Select
+					value={status || 'all'}
+					onValueChange={(value: string | null) => {
+						setStatus(value === null || value === 'all' ? '' : (value as TRequestStatus));
 						setPage(1);
 					}}
 				>
-					<option value=''>{t('hr:request.allStatuses')}</option>
-					{REQUEST_STATUSES.map((value) => (
-						<option key={value} value={value}>
-							{t(`hr:request.status.${value}`)}
-						</option>
-					))}
-				</select>
-				<Input
-					type='month'
+					<SelectTrigger aria-label={t('hr:field.status')}>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('hr:request.allStatuses')}</SelectItem>
+						{REQUEST_STATUSES.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`hr:request.status.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+				<MonthPicker
 					className='w-44'
 					aria-label={t('hr:attendance.period')}
 					value={period}
-					onChange={(event) => {
-						setPeriod(event.target.value);
+					onChange={(value) => {
+						setPeriod(value);
 						setPage(1);
 					}}
 				/>
@@ -185,7 +190,7 @@ function OvertimePage() {
 							<div className='grid gap-4 sm:grid-cols-2'>
 								<Field>
 									<FieldLabel htmlFor='overtime-date'>{t('hr:field.date')}</FieldLabel>
-									<Input id='overtime-date' type='date' required value={workDate} onChange={(event) => setWorkDate(event.target.value)} />
+									<DatePicker id='overtime-date' required value={workDate} onChange={setWorkDate} />
 								</Field>
 								<Field>
 									<FieldLabel htmlFor='overtime-hours'>{t('hr:overtime.hours')}</FieldLabel>

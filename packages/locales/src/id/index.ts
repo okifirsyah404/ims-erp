@@ -18,6 +18,7 @@ import licensing_ from './licensing';
 import tax_ from './tax';
 import hr_ from './hr';
 import claim_ from './claim';
+import integrations_ from './integrations';
 import documents_ from './documents';
 import notifications_ from './notifications';
 
@@ -43,6 +44,7 @@ export const id = {
 	tax: tax_,
 	hr: hr_,
 	claim: claim_,
+	integrations: integrations_,
 	documents: documents_,
 	notifications: notifications_,
 } as const;

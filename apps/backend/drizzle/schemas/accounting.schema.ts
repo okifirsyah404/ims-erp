@@ -25,6 +25,7 @@ import {
 	date,
 	index,
 	integer,
+	jsonb,
 	numeric,
 	pgSchema,
 	text,
@@ -697,6 +698,66 @@ export const bankAccountLinks = accountingSchema.table(
 	],
 );
 
+/* ------------------------------------------------------------------------ *
+ * accounting.report_archives
+ * ------------------------------------------------------------------------ */
+
+/** Financial statements frozen at period close (M12 T30, SOP S13). */
+export const REPORT_ARCHIVE_TYPES = [
+	'profit_and_loss',
+	'balance_sheet',
+	'cash_flow',
+] as const;
+export type ReportArchiveType = (typeof REPORT_ARCHIVE_TYPES)[number];
+
+/**
+ * Immutable snapshot of a statement for a closed month.
+ *
+ * @remarks
+ * The append-only rule is enforced in the service: there is no update or
+ * delete route, and `deleted_at` / `updated_at` exist only because every table
+ * in this schema carries the pair (see `validate-dbml.ts`). A reopened period
+ * is re-archived; the unique index keeps the write idempotent so a
+ * close/reopen/close cycle cannot mint duplicates.
+ */
+export const reportArchives = accountingSchema.table(
+	'report_archives',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		periodYear: integer('period_year').notNull(),
+		periodMonth: integer('period_month').notNull(),
+		reportType: text('report_type').notNull(),
+		/** The statement exactly as `ReportService` returned it. */
+		payload: jsonb('payload').notNull(),
+		generatedBy: text('generated_by'),
+		generatedAt: unixTimestamp('generated_at').notNull(),
+		createdAt: unixTimestamp('created_at').notNull(),
+		updatedAt: unixTimestamp('updated_at')
+			.notNull()
+			.$onUpdate(() => new Date()),
+		deletedAt: unixTimestampNullable('deleted_at'),
+	},
+	(table) => [
+		uniqueIndex('report_archives_scope_uq').on(
+			table.organizationId,
+			table.periodYear,
+			table.periodMonth,
+			table.reportType,
+		),
+		check(
+			'report_archives_month_check',
+			sql`period_month BETWEEN 1 AND 12`,
+		),
+		check(
+			'report_archives_type_check',
+			sql`report_type IN ('profit_and_loss', 'balance_sheet', 'cash_flow')`,
+		),
+	],
+);
+
 export type TTaxTypeSelect = typeof taxTypes.$inferSelect;
 export type TTaxTypeInsert = typeof taxTypes.$inferInsert;
 export type TTaxRecordSelect = typeof taxRecords.$inferSelect;
@@ -721,3 +782,5 @@ export type TAccountBalanceSelect = typeof accountBalances.$inferSelect;
 export type TAccountBalanceInsert = typeof accountBalances.$inferInsert;
 export type TBankAccountLinkSelect = typeof bankAccountLinks.$inferSelect;
 export type TBankAccountLinkInsert = typeof bankAccountLinks.$inferInsert;
+export type TReportArchiveSelect = typeof reportArchives.$inferSelect;
+export type TReportArchiveInsert = typeof reportArchives.$inferInsert;

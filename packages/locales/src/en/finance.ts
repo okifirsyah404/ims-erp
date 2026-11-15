@@ -379,6 +379,25 @@ const finance = {
 	'reports.cf.investing': 'Investing',
 	'reports.cf.financing': 'Financing',
 	'reports.cf.netChange': 'Net change in cash',
+	'reports.export': 'Export CSV',
+
+	/* monthly report archive (M12 T30) */
+	'archives.title': 'Monthly Report Archives',
+	'archives.description':
+		'Statements frozen when a month is closed. Figures here cannot change after a later posting.',
+	'archives.empty': 'No archived month yet. Close a period, then archive it.',
+	'archives.archive': 'Archive month',
+	'archives.year': 'Year',
+	'archives.month': 'Month',
+	'archives.generatedAt': 'Archived at',
+	'archives.netIncome': 'Net income',
+	'archives.totalAssets': 'Total assets',
+	'archives.netChangeInCash': 'Net change in cash',
+	'archives.archived': 'Archived {{count}} statements for {{period}}',
+	'archives.noneCreated': 'That month was already archived',
+	'type.profit_and_loss': 'Profit & Loss',
+	'type.balance_sheet': 'Balance Sheet',
+	'type.cash_flow': 'Cash Flow',
 
 	/* closing (period close + checklist) */
 	'closing.title': 'Period Closing',

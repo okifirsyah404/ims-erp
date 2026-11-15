@@ -124,12 +124,30 @@ export const SchedulerConfigSchema = z.object({
 	lateSweepCron: z.string().min(1),
 	/** Cron for the guest-PII retention sweep; daily by default (§11). */
 	retentionSweepCron: z.string().min(1),
+	/** Cron (Asia/Jakarta) for the `license.due` reminders to n8n; daily 08:00 by default (M04). */
+	licenseDueCron: z.string().min(1),
 	/** Guest PII is nulled this many months after `closed_at`. */
 	guestPiiRetentionMonths: z.number().int().min(1),
 	/** Cron for the read-notification prune; daily by default. */
 	notificationRetentionCron: z.string().min(1),
 	/** Read notifications are hard-deleted this many days after `read_at`. */
 	notificationRetentionDays: z.number().int().min(1),
+});
+
+/** M04 integrations: the n8n webhook of ERP events (server config only). */
+export const IntegrationsConfigSchema = z.object({
+	n8nWebhookUrl: z.url().nullable(),
+	n8nWebhookSecret: z.string().min(16).nullable(),
+	/** WAHA (self-hosted WhatsApp HTTP API) base URL, API key and session name. */
+	wahaUrl: z.url().nullable(),
+	wahaApiKey: z.string().min(1).nullable(),
+	wahaSession: z.string().min(1),
+	/** HMAC key WAHA signs its webhooks with (`X-Webhook-Hmac`, sha512). */
+	wahaWebhookSecret: z.string().min(16).nullable(),
+	/** OpenAI-compatible chat completions endpoint for the assistant; none = every chat goes to an admin. */
+	aiBaseUrl: z.url().nullable(),
+	aiApiKey: z.string().min(1).nullable(),
+	aiModel: z.string().min(1).nullable(),
 });
 
 /**
@@ -179,6 +197,7 @@ export const EnvConfigSchema = z.object({
 	auth: AuthConfigSchema,
 	scheduler: SchedulerConfigSchema,
 	paymentGateway: PaymentGatewayConfigSchema,
+	integrations: IntegrationsConfigSchema,
 });
 
 export type TInstanceConfig = z.infer<typeof InstanceConfigSchema>;

@@ -21,6 +21,8 @@ import { ArAccountResolverService } from './services/ar-account-resolver.service
 import { PaymentService } from './services/payment.service';
 import { SupplierBillService } from './services/supplier-bill.service';
 import { ReportService } from './services/report.service';
+import { ReportArchiveRepository } from './repositories/report-archive.repository';
+import { ReportArchiveService } from './services/report-archive.service';
 import { BankReconciliationService } from './services/bank-reconciliation.service';
 import { MonthEndCloseService } from './services/month-end-close.service';
 import {
@@ -28,6 +30,8 @@ import {
 	BANK_RECONCILIATION_SERVICE_TOKEN,
 	MONTH_END_CLOSE_SERVICE_TOKEN,
 	PAYMENT_SERVICE_TOKEN,
+	REPORT_ARCHIVE_REPOSITORY_TOKEN,
+	REPORT_ARCHIVE_SERVICE_TOKEN,
 	REPORT_SERVICE_TOKEN,
 	SUPPLIER_BILL_SERVICE_TOKEN,
 } from './constants/ar-di';
@@ -66,5 +70,11 @@ export function registerAccounting(container: DependencyContainer): void {
 	});
 	container.register(MONTH_END_CLOSE_SERVICE_TOKEN, {
 		useClass: MonthEndCloseService,
+	});
+	container.register(REPORT_ARCHIVE_REPOSITORY_TOKEN, {
+		useClass: ReportArchiveRepository,
+	});
+	container.register(REPORT_ARCHIVE_SERVICE_TOKEN, {
+		useClass: ReportArchiveService,
 	});
 }

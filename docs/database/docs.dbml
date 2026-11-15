@@ -14,12 +14,10 @@ TableGroup "Identity" {
   auth.passkeys
   auth.apikeys
   auth.user_profiles
-  auth.user_role_assignments
   auth.portal_identities
   auth.user_preferences
   auth.identity_verifications
   auth.user_devices
-  auth.roles
   auth.user_invitations
 }
 
@@ -374,6 +372,8 @@ Table auth.users {
   bio text
   username text [unique]
   display_username text
+  claimed_at timestamp [note: "When an invited user claimed the invitation (status pending -> active). The true 'joined the application' date; created_at only records the admin's pre-creation of the pending row. ERP-owned extension column."]
+  phone text [note: "Contact phone captured at invitation claim. Partial unique index users_phone_live_idx WHERE phone IS NOT NULL, so the planned phone login can never hit a migration wall. ERP-owned extension column."]
   status text [note: "User lifecycle for the invitation-only flow: pending (pre-created by invitation, no credentials) | active | deactivated (sessions revoked, memberships kept). ERP-owned extension column; default 'active'."]
   gender text [note: "Personal field moved from hr.employees (ERP-0034). API contract: male | female only."]
   birth_date bigint [note: "Unix milliseconds at Asia/Jakarta midnight. Personal field moved from hr.employees (ERP-0034)."]
@@ -460,7 +460,7 @@ Table auth.members {
   id text [pk]
   organization_id text [not null]
   user_id text [not null]
-  role text [not null, default: 'member', note: "Comma-separated ERP role keys. Resolved per validated organization against the live auth.roles rows and unioned across the listed roles; the shared catalog in packages/common/src/authorization/erp-permissions.ts is only the fallback vocabulary when no live role row matches."]
+  role text [not null, default: 'member', note: "Comma-separated closed ERP role keys (erpRoleNames in @ims-erp/common), unioned across the listed roles. There is no dynamic role table: ERP authorization reads the shared erpRoleGrants catalog directly (ERP-0041)."]
   created_at timestamp [not null]
   Note: "Better Auth organization membership. HARD DELETED by Better Auth - there is no deleted_at column, so membership queries must never filter on one. Deactivating a user keeps these rows; removing a member deletes them."
   Indexes {
@@ -555,28 +555,6 @@ Table auth.user_profiles {
   }
 }
 
-Table auth.user_role_assignments {
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  user_id text [not null]
-  role text [not null]
-  scope_type text [not null, default: 'organization']
-  scope_id text
-  granted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  granted_at bigint [not null]
-  revoked_at bigint
-  Note: "Extra ERP roles on top of the Better Auth organization membership role. Deny by default, additive only."
-  Indexes {
-    user_id [name: 'user_role_assignments_user_id_idx']
-    (user_id, role, scope_type, scope_id) [name: 'user_role_assignments_scope_uq']
-  }
-  Checks {
-    `scope_type IN ('organization', 'branch', 'department', 'project', 'self')`
-  }
-}
-
 Table auth.portal_identities {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
@@ -659,14 +637,11 @@ Ref: auth.invitations.organization_id > auth.organizations.id [delete: cascade]
 Ref: auth.invitations.inviter_id > auth.users.id [delete: cascade]
 Ref: auth.passkeys.user_id > auth.users.id [delete: cascade]
 Ref: auth.user_profiles.user_id > auth.users.id [delete: cascade]
-Ref: auth.user_role_assignments.user_id > auth.users.id [delete: cascade]
 Ref: auth.portal_identities.user_id > auth.users.id [delete: cascade]
 Ref: auth.user_preferences.user_id > auth.users.id [delete: cascade]
 Ref: auth.identity_verifications.user_id > auth.users.id [delete: cascade]
 Ref: auth.user_devices.user_id > auth.users.id [delete: cascade]
-Ref: auth.roles.organization_id > auth.organizations.id [delete: cascade]
 Ref: auth.user_invitations.organization_id > auth.organizations.id [delete: cascade]
-Ref: auth.user_invitations.role_id > auth.roles.id [delete: set null]
 Ref: auth.user_invitations.invited_by > auth.users.id [delete: cascade]
 
 // ---------------------------------------------------------------------------
@@ -676,22 +651,6 @@ Ref: auth.user_invitations.invited_by > auth.users.id [delete: cascade]
 // drizzle/schemas/role.schema.ts. Never edit by hand.
 // ---------------------------------------------------------------------------
 
-Table auth.roles {
-  deleted_at timestamp
-  id text [pk]
-  organization_id text [not null]
-  name text [not null]
-  rank integer [not null]
-  permissions jsonb [not null, note: "Permission grant { resource: action[] } using the shared catalog vocabulary (@ims-erp/common erpStatements). Deny-by-default."]
-  is_system boolean [not null, default: false]
-  created_at timestamp [not null, default: `now()`]
-  updated_at timestamp [not null, default: `now()`]
-  Note: "Per-organization dynamic role master data. Live grant source for ERP authorization: the guard resolves the caller's memberships against these rows per validated organization. rank drives the server-side escalation guard in the user-management module - SYSTEM_ROLE_RANKS in database/seeders/seed/organization-roles.seeder.ts sets owner=100, admin=80, hr=60, member=10, and every other seeded catalog role gets DEFAULT_CATALOG_RANK=50; custom roles must rank strictly below their creator. is_system rows are seeded from the shared ERP catalog and cannot be deleted. Partial unique (organization_id, name) WHERE deleted_at IS NULL."
-  Indexes {
-    organization_id [name: 'roles_organizationId_idx']
-  }
-}
-
 Table auth.user_invitations {
   deleted_at timestamp
   id text [pk]
@@ -699,7 +658,6 @@ Table auth.user_invitations {
   email text [not null]
   name text [note: "App-admin path input; pre-creates the user and prefills the profile form on claim."]
   organization_id text
-  role_id text
   org_role text [note: "Comma-joined closed ERP role keys ('admin,finance') assigned to the membership on claim. NULL on app-path invites. Was the Postgres enum organization_role before multi-role support (ERP-0041); validity is enforced by the zod closed enum at every boundary."]
   token_hash text [not null, unique, note: "SHA-256 of the emailed single-use token; raw token never stored. Replaced on resend (old token dies)."]
   status text [not null, default: 'pending', note: "pending -> accepted on claim; cancelled by admin; expired by sweeper (3-day expiry)."]
@@ -1338,7 +1296,37 @@ Table crm.customer_credit_limits {
 // Unified goods and service master: categories, units, items, variants,
 // conversions, bundles, attributes, documents, price lists and prices.
 // Tenant scoped. Item prices are exact integer minor units.
+// Built so far: `web_listings` (M04 stage 1) — company-wide, what the public
+// website shows of an inventory item. Everything else here is target-only.
 // ---------------------------------------------------------------------------
+
+Table catalog.web_listings {
+  id uuid [pk, default: `uuidv7()`]
+  item_id uuid [note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Nullable per ADR-0014; required by the catalog service. One live listing per item."]
+  slug varchar(120) [not null, note: "Website product slug. Unique among live rows (partial index in the Drizzle schema)."]
+  is_published boolean [not null, default: false]
+  published_at bigint
+  specs varchar(400) [note: "Short specification line for the product card; empty uses the item specification."]
+  price_mode text [not null, default: 'list', note: "list: the item selling price is shown; rfq: no price, the website asks for a quotation."]
+  price_caption varchar(120)
+  out_of_stock_mode text [not null, default: 'request', note: "Shown when nothing is available: out, preorder or request."]
+  lead_time_label varchar(60)
+  applications jsonb [not null, default: `'[]'`, note: "Use-case tags (string array)."]
+  popularity integer [not null, default: 0, note: "Manual weight for the popular sort."]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "What the public website shows of an inventory item (M04 stage 1, company-wide). Name, category, price, photo and stock come from inventory at read time."
+  Indexes {
+    is_published [name: 'web_listings_published_idx']
+  }
+  Checks {
+    `price_mode IN ('list', 'rfq')`
+    `out_of_stock_mode IN ('out', 'preorder', 'request')`
+    `popularity >= 0`
+  }
+}
 
 Table catalog.item_categories {
   id uuid [pk, default: `uuidv7()`]
@@ -2573,6 +2561,7 @@ Table inventory.warehouses {
   responsible_employee_id uuid [note: "Display-only person in charge (ADR-0010); grants no access. Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
   is_default boolean [not null, default: false]
   is_active boolean [not null, default: true]
+  image_url text [note: "DEVIATION (shipped): dbml originally omitted this column. Optional display image URL for the warehouse card."]
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
@@ -3391,16 +3380,16 @@ Table hr.employees {
   full_name text [not null]
   legal_name text
   nickname text
-  national_id text
-  email text
-  phone text
-  whatsapp text
+  national_id varchar(32)
+  email varchar(320)
+  phone varchar(100)
+  whatsapp varchar(100)
   photo_object_key text
   employment_status text [not null, default: 'active']
   employment_type text [not null, default: 'permanent']
   work_type text [not null, default: 'onsite']
-  hire_date date
-  termination_date date
+  hire_date bigint [note: "DEVIATION (shipped): unix milliseconds, not a business `date`. ERP-0034 shipped this column as bigint (unix-timestamp custom type) and the migration matches; changing it needs a new migration."]
+  termination_date bigint [note: "DEVIATION (shipped): unix milliseconds, not a business `date`. Same reason as hire_date."]
   department_id uuid [note: "Logical reference to organization.departments.id. Cross-module FK intentionally omitted. Validated through the Organization module contract."]
   position_id uuid [note: "Logical reference to organization.positions.id. Cross-module FK intentionally omitted. Validated through the Organization module contract."]
   branch_id uuid [note: "Logical reference to organization.branches.id. Cross-module FK intentionally omitted. Validated through the Organization module contract."]
@@ -3419,8 +3408,8 @@ Table hr.employees {
     (organization_id, full_name) [name: 'employees_org_name_idx']
   }
   Checks {
-    `employment_status IN ('active', 'on_leave', 'suspended', 'terminated')`
-    `employment_type IN ('permanent', 'contract', 'freelance', 'intern')`
+    `employment_status IN ('active', 'inactive', 'terminated')`
+    `employment_type IN ('permanent', 'contract', 'probation', 'internship', 'outsourced')`
     `work_type IN ('onsite', 'remote', 'hybrid')`
     `termination_date IS NULL OR hire_date IS NULL OR termination_date >= hire_date`
   }
@@ -4609,18 +4598,15 @@ Table finance.expense_claim_items {
 
 Table finance.payment_allocations {
   updated_at bigint [not null]
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   payment_id uuid [not null]
   target_type text [not null]
   sales_invoice_id uuid
   supplier_bill_id uuid
-  allocated_amount bigint [not null]
-  currency_code varchar(3) [not null, default: 'IDR']
-  allocated_at bigint [not null]
+  amount bigint [not null]
   created_at bigint [not null]
-  Note: "Allocation of one payment to one target document (a sales invoice or a supplier bill), for documents settled in several instalments."
+  Note: "Allocation of one payment to one target document (a sales invoice or a supplier bill), for documents settled in several instalments. DEVIATION (shipped): the column is `amount` (not allocated_amount) and there is no currency_code, allocated_at or deleted_at - the row inherits the payment's currency and instant, and is cascade-deleted with the payment. Changing this needs a new migration."
   Indexes {
     (payment_id, target_type, sales_invoice_id, supplier_bill_id) [unique, name: 'payment_allocations_uq']
     sales_invoice_id [name: 'payment_allocations_sales_invoice_id_idx']
@@ -4629,7 +4615,7 @@ Table finance.payment_allocations {
   Checks {
     `target_type IN ('sales_invoice', 'supplier_bill')`
     `(target_type = 'sales_invoice' AND sales_invoice_id IS NOT NULL) OR (target_type = 'supplier_bill' AND supplier_bill_id IS NOT NULL)`
-    `allocated_amount > 0`
+    `amount > 0`
   }
 }
 
@@ -4647,8 +4633,7 @@ Table finance.ar_open_items {
   status text [not null, default: 'open']
   created_at bigint [not null]
   updated_at bigint [not null]
-  deleted_at bigint
-  Note: "Accounts receivable open-item sub-ledger. Finance's own mirror of what is still owed per issued invoice, updated through the posting flow. Never computed by reading sales tables. Aging reports are built on this table."
+  Note: "Accounts receivable open-item sub-ledger. Finance's own mirror of what is still owed per issued invoice, updated through the posting flow. Never computed by reading sales tables. Aging reports are built on this table. DEVIATION (shipped): no deleted_at - the row is a running balance cleared by status, never soft-deleted (projection exemption)."
   Indexes {
     (organization_id, sales_invoice_id) [unique, name: 'ar_open_items_org_invoice_uq']
     customer_id [name: 'ar_open_items_customer_id_idx']
@@ -4678,8 +4663,7 @@ Table finance.ap_open_items {
   status text [not null, default: 'open']
   created_at bigint [not null]
   updated_at bigint [not null]
-  deleted_at bigint
-  Note: "Accounts payable open-item sub-ledger, the AP twin of finance.ar_open_items."
+  Note: "Accounts payable open-item sub-ledger, the AP twin of finance.ar_open_items. DEVIATION (shipped): no deleted_at - the row is a running balance cleared by status, never soft-deleted (projection exemption)."
   Indexes {
     (organization_id, supplier_bill_id) [unique, name: 'ap_open_items_org_bill_uq']
     supplier_id [name: 'ap_open_items_supplier_id_idx']
@@ -5096,6 +5080,28 @@ Table accounting.journal_templates {
   }
 }
 
+Table accounting.report_archives {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  period_year integer [not null]
+  period_month integer [not null]
+  report_type text [not null]
+  payload jsonb [not null]
+  generated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  generated_at bigint [not null]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Immutable snapshot of a financial statement for a closed month (M12 T30, SOP S13). Append-only in practice: no update or delete route exists, and a reopened period is re-archived - the unique index keeps the write idempotent. The timestamp pair is present only because every table in this schema carries it."
+  Indexes {
+    (organization_id, period_year, period_month, report_type) [unique, name: 'report_archives_scope_uq']
+  }
+  Checks {
+    `period_month BETWEEN 1 AND 12`
+    `report_type IN ('profit_and_loss', 'balance_sheet', 'cash_flow')`
+  }
+}
+
 Ref: accounting.chart_of_accounts.parent_account_id > accounting.chart_of_accounts.id [delete: restrict]
 Ref: accounting.journal_entries.accounting_period_id > accounting.accounting_periods.id [delete: restrict]
 Ref: accounting.journal_entries.reversed_by_entry_id > accounting.journal_entries.id [delete: set null]
@@ -5108,7 +5114,6 @@ Ref: accounting.account_balances.account_id > accounting.chart_of_accounts.id [d
 Ref: accounting.account_balances.accounting_period_id > accounting.accounting_periods.id [delete: cascade]
 Ref: accounting.bank_account_links.chart_of_account_id > accounting.chart_of_accounts.id [delete: restrict]
 Ref: accounting.withholding_tax_records.tax_type_id > accounting.tax_types.id [delete: restrict]
-
 
 // ---------------------------------------------------------------------------
 // MODULE: Assets  (schema: assets)
@@ -5195,6 +5200,7 @@ Table assets.assets {
   supplier_id uuid [note: "Logical reference to procurement.suppliers.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
   purchase_order_id uuid [note: "Logical reference to procurement.purchase_orders.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
   document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  image_url text [note: "DEVIATION (shipped): dbml originally omitted this column. Optional display image URL for the asset card; ERP-0036 D19. Not an object-storage key like image_object_key elsewhere."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
@@ -7244,6 +7250,10 @@ Ref: commerce.commerce_order_items.commerce_order_id > commerce.commerce_orders.
 // Integrations and encrypted credentials, workflows and steps, workflow runs,
 // scheduled jobs and executions, and the transactional outbox. Tenant scoped.
 // Secrets are never stored in clear text.
+// Built so far (M04): outbox_messages (stages 1-2) and the WhatsApp assistant
+// tables faq_entries, whatsapp_conversations, whatsapp_messages (stage 2), all
+// company-wide (ADR-0012); n8n is the workflow engine, so the workflow tables
+// here stay target-only.
 // ---------------------------------------------------------------------------
 
 Table automation.integrations {
@@ -7450,31 +7460,110 @@ Table automation.job_executions {
 }
 
 Table automation.outbox_messages {
-  updated_at bigint [not null]
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  topic text [not null]
-  aggregate_type text
+  id uuid [pk, default: `uuidv7()`, note: "Also the event id n8n dedupes on."]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted (ADR-0014). Nullable: M04 publishes company-wide events (ADR-0012), so the publishers leave it unset; a future tenant-scoped event fills it."]
+  topic varchar(64) [not null, note: "lead.created, invoice.issued, receipt.recorded, license.due, service_ticket.updated, whatsapp.handoff."]
+  aggregate_type varchar(64)
   aggregate_id text
-  payload text
+  payload jsonb [not null, note: "The event body POSTed to n8n."]
   status text [not null, default: 'pending']
   attempts smallint [not null, default: 0]
-  available_at bigint
+  last_attempt_at bigint
   published_at bigint
-  error_message text
+  response_status smallint [note: "HTTP status of the last delivery attempt."]
+  error_message varchar(500)
+  dedupe_key varchar(200) [note: "Once-per-fact events (license.due:<contract>:<end>:<threshold>); a repeat publish is skipped. Unique when set."]
   created_at bigint [not null]
-  Note: "Transactional outbox. The event is written in the same transaction as the business change, then published after the commit."
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Transactional outbox (M04 stages 1-2). The event is recorded with the business change, then delivered to the n8n webhook by a background queue that retries; a queue or webhook outage never fails the business action. Company-wide per ADR-0012."
   Indexes {
     status [name: 'outbox_messages_status_idx']
-    available_at [name: 'outbox_messages_available_at_idx']
+    topic [name: 'outbox_messages_topic_idx']
     (aggregate_type, aggregate_id) [name: 'outbox_messages_aggregate_idx']
+    dedupe_key [unique, name: 'outbox_messages_dedupe_key_key']
   }
   Checks {
-    `status IN ('pending', 'published', 'failed', 'dead')`
+    `status IN ('pending', 'published', 'failed')`
     `attempts >= 0`
   }
 }
+
+Table automation.faq_entries {
+  id uuid [pk, default: `uuidv7()`]
+  question varchar(300) [not null]
+  answer text [not null]
+  keywords varchar(500) [note: "Comma-separated words that also match this entry."]
+  is_active boolean [not null, default: true]
+  sort_order integer [not null, default: 0]
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Approved answers the WhatsApp assistant may use (M04 stage 2). Company-wide (ADR-0012)."
+  Indexes {
+    is_active [name: 'faq_entries_is_active_idx']
+  }
+}
+
+Table automation.whatsapp_conversations {
+  id uuid [pk, default: `uuidv7()`]
+  chat_id varchar(128) [not null, note: "WAHA chat id, e.g. 628123456789@c.us; replies go here. Unique among live rows."]
+  phone varchar(32) [not null]
+  contact_name varchar(200)
+  status text [not null, default: 'assistant']
+  handoff_reason text [note: "no_provider, not_found, human_requested, restricted, error."]
+  handoff_at bigint
+  assigned_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  lead_id uuid [note: "Logical reference to crm.leads.id. Cross-module FK intentionally omitted. Set when an admin turns the chat into a lead."]
+  last_message_at bigint [not null]
+  last_inbound_at bigint
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "One WhatsApp chat with the company number (M04 stage 2). Company-wide (ADR-0012)."
+  Indexes {
+    chat_id [unique, name: 'whatsapp_conversations_chat_id_key']
+    (status, last_message_at) [name: 'whatsapp_conversations_status_idx']
+  }
+  Checks {
+    `status IN ('assistant', 'handoff', 'closed')`
+    `handoff_reason IS NULL OR handoff_reason IN ('no_provider', 'not_found', 'human_requested', 'restricted', 'error')`
+  }
+}
+
+Table automation.whatsapp_messages {
+  id uuid [pk, default: `uuidv7()`]
+  conversation_id uuid [not null]
+  direction text [not null]
+  author text [not null]
+  external_id varchar(128) [note: "WhatsApp message id; inbound webhooks are deduped on (direction, external_id)."]
+  body text [not null]
+  status text [not null]
+  faq_entry_id uuid [note: "Answer used by the assistant, when the reply came from the FAQ."]
+  sent_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  error_message varchar(500)
+  attempts smallint [not null, default: 0]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Every WhatsApp message of a conversation (M04 stage 2 log). Company-wide (ADR-0012)."
+  Indexes {
+    (conversation_id, created_at) [name: 'whatsapp_messages_conversation_idx']
+    (direction, external_id) [unique, name: 'whatsapp_messages_direction_external_id_key']
+    status [name: 'whatsapp_messages_status_idx']
+  }
+  Checks {
+    `direction IN ('inbound', 'outbound')`
+    `author IN ('customer', 'assistant', 'admin', 'system')`
+    `status IN ('received', 'processed', 'pending', 'sent', 'failed')`
+    `attempts >= 0`
+  }
+}
+
+Ref: automation.whatsapp_messages.conversation_id > automation.whatsapp_conversations.id [delete: restrict]
+Ref: automation.whatsapp_messages.faq_entry_id > automation.faq_entries.id [delete: set null]
 
 Ref: automation.integration_credentials.integration_id > automation.integrations.id [delete: cascade]
 Ref: automation.workflow_steps.workflow_id > automation.workflows.id [delete: cascade]
@@ -7996,7 +8085,6 @@ TableGroup "Legacy transitional" {
 }
 
 Table sales.payments {
-  deleted_at bigint
   id text [pk]
   organization_id text [not null]
   quotation_id text [not null]

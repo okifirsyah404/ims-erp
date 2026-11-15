@@ -2,9 +2,21 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Search } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
-import { Input } from '@ims-erp/ui/components/input';
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from '@ims-erp/ui/components/input-group';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import {
 	Table,
 	TableBody,
@@ -73,33 +85,40 @@ function InventoryValuePage() {
 						))}
 					</div>
 					<div className='flex flex-wrap gap-2'>
-						<select
-							aria-label={t('inventory:value.warehouse')}
-							className='h-9 rounded-md border bg-transparent px-3 text-sm'
-							value={warehouseId}
-							onChange={(event) => {
-								setWarehouseId(event.target.value);
+						<Select
+							value={warehouseId || 'all'}
+							onValueChange={(value: string | null) => {
+								setWarehouseId(value === 'all' || value == null ? '' : value);
 								setPage(1);
 							}}
 						>
-							<option value=''>{t('inventory:value.allWarehouses')}</option>
-							{warehouseOptions.map((option) => (
-								<option key={option.id} value={option.id}>
-									{option.label}
-								</option>
-							))}
-						</select>
-						<Input
-							type='search'
-							className='max-w-sm'
-							aria-label={t('inventory:value.search')}
-							placeholder={t('inventory:value.search')}
-							value={search}
-							onChange={(event) => {
-								setSearch(event.target.value);
-								setPage(1);
-							}}
-						/>
+							<SelectTrigger aria-label={t('inventory:value.warehouse')} className='w-60'>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value='all'>{t('inventory:value.allWarehouses')}</SelectItem>
+								{warehouseOptions.map((option) => (
+									<SelectItem key={option.id} value={option.id}>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<InputGroup className='max-w-sm'>
+							<InputGroupAddon align='inline-start'>
+								<Search aria-hidden='true' />
+							</InputGroupAddon>
+							<InputGroupInput
+								type='search'
+								aria-label={t('inventory:value.search')}
+								placeholder={t('inventory:value.search')}
+								value={search}
+								onChange={(event) => {
+									setSearch(event.target.value);
+									setPage(1);
+								}}
+							/>
+						</InputGroup>
 					</div>
 					{data.data.length === 0 ? (
 						<Card>
