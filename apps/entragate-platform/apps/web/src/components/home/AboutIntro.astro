@@ -1,0 +1,66 @@
+---
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Check from "@lucide/astro/icons/check";
+import Button from "../ui/Button.astro";
+import Media from "../ui/Media.astro";
+import { routes } from "../../data/site";
+import { aboutChecks } from "../../data/home";
+import { images } from "../../lib/images";
+
+/** 01.01 Home · About IMS Intro (desktop JshHm / mobile zxrYm). */
+const eyebrow = "The Company Behind Entragate";
+---
+
+<section class="bg-white">
+  <!-- Desktop -->
+  <div class="container-page hidden items-center gap-20 py-28 xl:flex">
+    <div class="relative h-[520px] w-[600px] shrink-0">
+      <Media src={images.engineeringTeam} alt="The IMS engineering team" class="absolute top-0 left-0 h-[460px] w-[540px] rounded-xl" />
+      <div
+        class="absolute top-[340px] left-[380px] flex w-[220px] flex-col gap-1.5 rounded-card bg-blue-600 p-6 shadow-[0_20px_40px_#1F5BFF40]"
+      >
+        <span class="font-heading text-[28px] font-extrabold text-white">Since 2014</span>
+        <span class="text-[13px] leading-5 text-blue-100">Engineering access &amp; automation in Indonesia</span>
+      </div>
+    </div>
+    <div class="flex flex-1 flex-col gap-6">
+      <p class="text-[13px] font-bold tracking-[1.6px] text-blue-600 uppercase">{eyebrow}</p>
+      <h2 class="font-heading text-[40px] leading-[46px] font-extrabold tracking-[-1.2px] text-navy-900">
+        CV. Inti Multi Solusi — engineering smarter entrances since 2014.
+      </h2>
+      <p class="text-[17px] leading-7 text-fg-secondary">
+        IMS is an Indonesian technology company specializing in smart access systems, automation hardware and
+        integrated business software. Entragate is our product brand — combining in-house engineering, local
+        manufacturing partners and a dedicated software team.
+      </p>
+      <ul class="flex flex-col gap-3">
+        {
+          aboutChecks.map((item) => (
+            <li class="flex items-center gap-3 text-[15px] font-medium text-fg">
+              <span class="flex size-[22px] shrink-0 items-center justify-center rounded-pill bg-blue-50 text-blue-600">
+                <Check size={13} aria-hidden="true" />
+              </span>
+              {item}
+            </li>
+          ))
+        }
+      </ul>
+      <Button href={routes.about} variant="dark" icon={ArrowRight} class="w-fit">Discover IMS</Button>
+    </div>
+  </div>
+
+  <!-- Mobile -->
+  <div class="container-page flex flex-col gap-5 py-14 xl:hidden">
+    <div class="relative isolate flex h-60 flex-col justify-end overflow-hidden rounded-card p-3.5">
+      <Media src={images.engineeringTeam} alt="The IMS engineering team" class="absolute inset-0 -z-10 size-full" />
+      <span class="w-fit rounded-md bg-blue-600 px-3.5 py-2 font-heading text-[14px] font-extrabold text-white">Since 2014</span>
+    </div>
+    <p class="text-[12px] font-bold tracking-[1.4px] text-blue-600 uppercase">{eyebrow}</p>
+    <h2 class="font-heading text-[30px] font-extrabold tracking-[-1px] text-navy-900">CV. Inti Multi Solusi</h2>
+    <p class="text-[15px] leading-6 text-fg-secondary">
+      An Indonesian technology company specializing in smart access systems, automation hardware and integrated
+      business software.
+    </p>
+    <Button href={routes.about} variant="dark" size="lg" block icon={ArrowRight}>Discover IMS</Button>
+  </div>
+</section>

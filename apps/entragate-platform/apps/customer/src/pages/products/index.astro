@@ -1,0 +1,115 @@
+---
+import Search from "@lucide/astro/icons/search";
+import QrCode from "@lucide/astro/icons/qr-code";
+import ScanLine from "@lucide/astro/icons/scan-line";
+import MapPin from "@lucide/astro/icons/map-pin";
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+import Package from "@lucide/astro/icons/package";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import LargeHeader from "../../components/customer/LargeHeader.astro";
+import IconButton from "../../components/customer/IconButton.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import ProgressBar from "../../components/customer/ProgressBar.astro";
+import Media from "../../components/customer/Media.astro";
+import ProductsDesktop from "../../features/products/ProductsDesktop.astro";
+import { warrantyService } from "../../services";
+import { warrantyChip } from "../../lib/status";
+
+/** 08.05 My Registered Products. `?site=` filters by site chip. */
+const products = await warrantyService.products(Astro.locals.tokens!);
+const siteKeys = [...new Set(products.map((p) => p.siteKey))];
+const sites = [
+  { key: "all", label: "All sites" },
+  ...siteKeys.map((key) => ({ key, label: products.find((p) => p.siteKey === key)!.site.split(" · ")[0] })),
+];
+const site = siteKeys.includes(Astro.url.searchParams.get("site") ?? "") ? Astro.url.searchParams.get("site")! : "all";
+const list = site === "all" ? products : products.filter((p) => p.siteKey === site);
+const leftLabel = (p: (typeof products)[number]) =>
+  p.warrantyStatus === "expired" ? "Expired" : p.daysLeft !== undefined ? `${p.daysLeft} days left` : `${p.monthsLeft} months left`;
+---
+
+<CustomerLayout title="My Products" tab="profile" desktop="full">
+  <div class="hidden xl:block"><ProductsDesktop products={products} list={list} sites={sites} site={site} /></div>
+  <div class="xl:hidden">
+  <TopBar back="/profile">
+    <IconButton slot="action" label="Register a device by serial number" href="/products/register#manual"><Search size={20} aria-hidden="true" /></IconButton>
+  </TopBar>
+  <LargeHeader eyebrow={`${products.length} product${products.length === 1 ? "" : "s"} · ${siteKeys.length} site${siteKeys.length === 1 ? "" : "s"}`} title="My Products" class="!pt-0">
+    <IconButton slot="action" label="Scan a device QR" href="/products/register"><ScanLine size={20} aria-hidden="true" /></IconButton>
+  </LargeHeader>
+
+  <div class="flex flex-col gap-5 px-5 pt-3 pb-6">
+    <a href="/products/register" class="flex items-center gap-3.5 rounded-card bg-navy-900 p-4">
+      <span class="flex size-[52px] shrink-0 items-center justify-center rounded-control bg-cyan-400/15 text-cyan-400" aria-hidden="true"><QrCode size={24} /></span>
+      <span class="flex min-w-0 flex-1 flex-col gap-[3px]">
+        <span class="text-[15px] font-bold text-white">Register a new device</span>
+        <span class="text-[12.5px] leading-[18px] text-fg-on-dark-muted">Scan the QR on the device label to activate warranty</span>
+      </span>
+      <ChevronRight size={18} class="text-fg-on-dark-muted" aria-hidden="true" />
+    </a>
+
+    {
+      sites.length > 2 && (
+        <nav aria-label="Filter by site" class="scrollbar-none -mx-5 flex gap-2 overflow-x-auto px-5">
+          {sites.map((s) => (
+            <a
+              href={s.key === "all" ? "/products" : `/products?site=${s.key}`}
+              aria-current={s.key === site ? "true" : undefined}
+              class:list={[
+                "shrink-0 rounded-pill px-3.5 py-2 text-[13px] font-semibold",
+                s.key === site ? "bg-fg text-white" : "bg-surface text-fg-secondary",
+              ]}
+            >
+              {s.label}
+            </a>
+          ))}
+        </nav>
+      )
+    }
+
+    {
+      list.length === 0 ? (
+        <div class="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-10 text-center">
+          <Package size={28} class="text-blue-600" aria-hidden="true" />
+          <p class="font-heading text-[17px] font-bold text-fg">No registered devices yet</p>
+          <p class="text-[14px] text-fg-secondary">Register a device to activate its warranty and book service visits.</p>
+        </div>
+      ) : (
+        <ul class="flex flex-col gap-5">
+          {list.map((product) => {
+            const chip = warrantyChip[product.warrantyStatus];
+            const tone = product.warrantyStatus === "active" ? "success" : "warning";
+            return (
+              <li>
+                <a href={`/warranty/${product.id}`} class="app-card flex flex-col gap-3.5 p-3.5">
+                  <span class="flex items-center gap-3.5">
+                    <Media src={product.image} alt="" class="size-[72px] shrink-0 rounded-control bg-surface" />
+                    <span class="flex min-w-0 flex-1 flex-col gap-1">
+                      <span class="text-[15px] font-bold text-fg">{product.name}</span>
+                      <span class="text-[12px] text-fg-muted">{product.serialLabel}</span>
+                      <span class="flex items-center gap-[5px] text-[12px] font-medium text-fg-secondary">
+                        <MapPin size={12} aria-hidden="true" />
+                        {product.site}
+                      </span>
+                    </span>
+                  </span>
+                  <span class="flex flex-col gap-2 rounded-md bg-surface p-3">
+                    <span class="flex items-center justify-between gap-2.5">
+                      <StatusChip label={chip.label} tone={chip.tone} class="!bg-white" />
+                      <span class:list={["text-[12.5px] font-semibold", product.warrantyStatus === "active" ? "text-fg-secondary" : product.warrantyStatus === "expiring" ? "text-warning" : "text-danger"]}>
+                        {leftLabel(product)}
+                      </span>
+                    </span>
+                    <ProgressBar value={product.progress} tone={tone} label={`Warranty remaining for ${product.name}`} />
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+  </div>
+  </div>
+</CustomerLayout>

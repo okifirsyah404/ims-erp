@@ -1,0 +1,52 @@
+---
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+
+/**
+ * App / List Row (BUVct): leading icon tile (slot "icon"), title, subtitle, optional
+ * trailing text and chevron. Renders as a link when `href` is given.
+ */
+interface Props {
+  title: string;
+  subtitle?: string;
+  trailing?: string;
+  trailingClass?: string;
+  href?: string;
+  chevron?: boolean;
+  padding?: "card" | "flush";
+  titleClass?: string;
+  class?: string;
+}
+
+const {
+  title,
+  subtitle,
+  trailing,
+  trailingClass = "text-fg-secondary",
+  href,
+  chevron = Boolean(href),
+  padding = "card",
+  titleClass,
+  class: className,
+} = Astro.props;
+const Tag = href ? "a" : "div";
+---
+
+<Tag
+  href={href}
+  class:list={[
+    "flex items-center gap-3.5",
+    padding === "card" ? "px-4 py-3.5" : "py-3",
+    href && "transition-colors hover:bg-surface-subtle",
+    className,
+  ]}
+>
+  <slot name="icon" />
+  <span class="flex min-w-0 flex-1 flex-col gap-[3px]">
+    <span class:list={["text-[15px] font-semibold text-fg", titleClass]}>{title}</span>
+    {subtitle && <span class="text-[13px] text-fg-muted">{subtitle}</span>}
+    <slot />
+  </span>
+  {trailing && <span class:list={["shrink-0 text-[13px] font-semibold", trailingClass]}>{trailing}</span>}
+  <slot name="trailing" />
+  {chevron && <ChevronRight size={18} class="shrink-0 text-fg-muted" aria-hidden="true" />}
+</Tag>

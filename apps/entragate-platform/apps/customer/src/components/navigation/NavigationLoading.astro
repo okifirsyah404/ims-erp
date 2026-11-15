@@ -1,0 +1,81 @@
+---
+/**
+ * 05.01c Loading state. Server-rendered pages wait on the ERP, so when a navigation takes
+ * longer than ~180ms the screen swaps to the skeleton (mobile/tablet) or shows a top
+ * progress bar (desktop). The tab bar stays visible and interactive.
+ */
+const bar = "rounded-pill bg-[#DFE5EF]";
+---
+
+<div class="pointer-events-none fixed inset-0 z-30 hidden overflow-hidden bg-white max-xl:data-[loading]:block" data-nav-loading aria-hidden="true">
+  <div class="app-column flex animate-pulse flex-col motion-reduce:animate-none gap-6 px-5 pt-[calc(env(safe-area-inset-top)+64px)] md:max-w-[640px]">
+    <div class="flex items-center gap-3.5">
+      <span class="size-[52px] rounded-full bg-[#DFE5EF]"></span>
+      <span class="flex flex-1 flex-col gap-2.5"><span class:list={[bar, "h-3 w-[90px]"]}></span><span class:list={[bar, "h-4 w-[180px]"]}></span></span>
+    </div>
+    <span class="h-[210px] rounded-xl bg-[#DFE5EF]"></span>
+    <span class="flex flex-col gap-4 rounded-card p-[18px] ring-1 ring-border ring-inset">
+      <span class="flex items-center gap-3"><span class="size-12 rounded-control bg-[#DFE5EF]"></span><span class="flex flex-1 flex-col gap-2.5"><span class:list={[bar, "h-3.5 w-[140px]"]}></span><span class:list={[bar, "h-2.5 w-[100px]"]}></span></span></span>
+      <span class:list={[bar, "h-2"]}></span>
+    </span>
+    <span class="grid grid-cols-4 justify-items-center gap-2">
+      {Array.from({ length: 4 }, () => <span class="flex flex-col items-center gap-2.5"><span class="size-14 rounded-lg bg-[#DFE5EF]"></span><span class:list={[bar, "h-2.5 w-12"]}></span></span>)}
+    </span>
+    {
+      Array.from({ length: 3 }, () => (
+        <span class="flex items-center gap-3.5">
+          <span class="size-11 rounded-full bg-[#DFE5EF]"></span>
+          <span class="flex flex-1 flex-col gap-2.5"><span class:list={[bar, "h-3"]}></span><span class:list={[bar, "h-2.5 w-[160px]"]}></span></span>
+        </span>
+      ))
+    }
+  </div>
+</div>
+<div class="pointer-events-none fixed inset-x-0 top-0 z-50 hidden h-[3px] overflow-hidden xl:data-[loading]:block" data-nav-loading aria-hidden="true">
+  <span class="block h-full w-1/3 animate-[eg-nav-progress_1.1s_ease-in-out_infinite] bg-[linear-gradient(90deg,var(--eg-blue-600),var(--eg-cyan-400))]"></span>
+</div>
+<p class="sr-only" role="status" aria-live="polite" data-nav-status></p>
+
+<style is:global>
+  @keyframes eg-nav-progress {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(300%);
+    }
+  }
+</style>
+
+<script>
+  const layers = document.querySelectorAll<HTMLElement>("[data-nav-loading]");
+  const status = document.querySelector<HTMLElement>("[data-nav-status]");
+  let timer: number | undefined;
+
+  const show = () => {
+    layers.forEach((layer) => layer.setAttribute("data-loading", ""));
+    if (status) status.textContent = "Loading…";
+  };
+  const reset = () => {
+    window.clearTimeout(timer);
+    layers.forEach((layer) => layer.removeAttribute("data-loading"));
+    if (status) status.textContent = "";
+  };
+
+  document.addEventListener("click", (event) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = (event.target as Element | null)?.closest("a");
+    if (!link || link.target || link.hasAttribute("download") || link.dataset.back !== undefined) return;
+    const url = new URL(link.href, location.href);
+    if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search)) return;
+    window.clearTimeout(timer);
+    timer = window.setTimeout(show, 180);
+  });
+  document.addEventListener("submit", (event) => {
+    const form = event.target as HTMLFormElement;
+    if (event.defaultPrevented || (form.method || "get").toLowerCase() !== "get") return;
+    timer = window.setTimeout(show, 180);
+  });
+  // Back/forward cache restores the old DOM; never leave the skeleton up.
+  window.addEventListener("pageshow", reset);
+</script>

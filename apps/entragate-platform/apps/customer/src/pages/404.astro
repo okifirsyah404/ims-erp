@@ -1,0 +1,23 @@
+---
+import Compass from "@lucide/astro/icons/compass";
+import AppLayout from "../layouts/AppLayout.astro";
+
+/** Not found — Empty State (Hnd90) pattern. On demand so pages can rewrite to it. */
+export const prerender = false;
+const signedIn = Boolean(Astro.locals.user);
+---
+
+<AppLayout title="Not found">
+  <main class="app-column flex min-h-dvh flex-col items-center justify-center gap-4 px-8 text-center">
+    <span class="flex size-[88px] items-center justify-center rounded-pill bg-blue-50" aria-hidden="true">
+      <span class="flex size-[60px] items-center justify-center rounded-pill bg-white text-blue-600 ring-1 ring-blue-100 ring-inset">
+        <Compass size={26} />
+      </span>
+    </span>
+    <h1 class="font-heading text-[20px] font-extrabold text-navy-900">We couldn't find that</h1>
+    <p class="max-w-[300px] text-[14px] leading-[1.55] text-fg-secondary">It may have been removed, or you may not have access to it.</p>
+    <a href={signedIn ? "/" : "/welcome"} class="flex h-[54px] items-center justify-center rounded-control bg-blue-600 px-8 text-[16px] font-semibold text-white">
+      Back to home
+    </a>
+  </main>
+</AppLayout>

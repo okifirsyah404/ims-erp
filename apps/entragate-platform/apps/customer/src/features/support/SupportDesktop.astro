@@ -1,0 +1,223 @@
+---
+import MessageCircle from "@lucide/astro/icons/message-circle";
+import CalendarClock from "@lucide/astro/icons/calendar-clock";
+import MessageSquarePlus from "@lucide/astro/icons/message-square-plus";
+import Phone from "@lucide/astro/icons/phone";
+import Search from "@lucide/astro/icons/search";
+import LifeBuoy from "@lucide/astro/icons/life-buoy";
+import MessagesSquare from "@lucide/astro/icons/messages-square";
+import { PUBLIC_SUPPORT_PHONE } from "astro:env/client";
+import type { TicketDetail, TicketSummary } from "@entragate/api-client";
+import AppButton from "../../components/customer/AppButton.astro";
+import Segmented from "../../components/customer/Segmented.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import Timeline from "../../components/customer/Timeline.astro";
+import Media from "../../components/customer/Media.astro";
+import Conversation from "./Conversation.astro";
+import ChatComposer from "./ChatComposer";
+import { ticketChip } from "../../lib/status";
+import { firstReply, priorityLabel } from "../../lib/support";
+
+/** 06.06 Support — Desktop 1440: ticket list · conversation · ticket details. */
+interface Props {
+  list: TicketSummary[];
+  openCount: number;
+  tab: string;
+  query: string;
+  ticket: TicketDetail | null;
+  whatsapp?: string;
+}
+
+const { list, openCount, tab, query, ticket, whatsapp } = Astro.props;
+const suffix = (params: string) => (ticket ? `/support/${ticket.id}${params}` : `/support${params}`);
+const tabs = [
+  { key: "open", label: `Open · ${openCount}`, href: suffix("") },
+  { key: "resolved", label: "Resolved", href: suffix("?tab=resolved") },
+  { key: "all", label: "All", href: suffix("?tab=all") },
+];
+const keep = tab === "open" ? "" : `?tab=${tab}`;
+const open = ticket ? ticket.status !== "resolved" : false;
+const lastSpoken = ticket?.messages.findLast((m) => "from" in m);
+const quickReplies = ticket && open && lastSpoken && "from" in lastSpoken && lastSpoken.from === "agent" ? ticket.quickReplies : [];
+const stages = ["Created", "Assigned", "Diagnosed", "Technician visit", "Resolved"];
+const activity =
+  ticket?.activity ??
+  (ticket
+    ? stages.map((title, index) => ({
+        title,
+        dateLabel: index === 0 ? (ticket.createdLabel ?? "") : "",
+        state: index < ticket.stage ? ("done" as const) : index === ticket.stage ? ("current" as const) : ("upcoming" as const),
+      }))
+    : []);
+const phone = PUBLIC_SUPPORT_PHONE?.replace(/[^\d+]/g, "");
+const pane = "rounded-card bg-white ring-1 ring-border ring-inset";
+---
+
+<div class="flex flex-col gap-6">
+  <div class="flex items-end justify-between gap-2.5">
+    <div class="flex flex-col gap-1">
+      <h1 class="font-heading text-[32px] font-extrabold tracking-[-0.8px] text-fg">Support</h1>
+      <p class="text-[14px] text-fg-muted">{openCount} open ticket{openCount === 1 ? "" : "s"} · average first reply 12 min</p>
+    </div>
+    <div class="flex gap-2.5">
+      {
+        whatsapp ? (
+          <AppButton variant="outline" href={whatsapp} target="_blank" rel="noopener noreferrer"><MessageCircle slot="icon" size={18} class="text-success" aria-hidden="true" />WhatsApp</AppButton>
+        ) : (
+          <AppButton variant="outline" disabled title="WhatsApp support is not configured"><MessageCircle slot="icon" size={18} class="text-success" aria-hidden="true" />WhatsApp</AppButton>
+        )
+      }
+      <AppButton variant="outline" href="/support/book"><CalendarClock slot="icon" size={18} aria-hidden="true" />Book service</AppButton>
+      <AppButton href="/support/new"><MessageSquarePlus slot="icon" size={18} aria-hidden="true" />New ticket</AppButton>
+    </div>
+  </div>
+
+  <div class="flex h-[calc(100dvh-250px)] min-h-[600px] gap-5">
+    <div class="flex w-[340px] shrink-0 flex-col gap-3">
+      <form method="get" action="/support" role="search">
+        <label class="flex h-11 items-center gap-2.5 rounded-md bg-white px-4 ring-1 ring-border ring-inset focus-within:ring-[1.5px] focus-within:ring-blue-600">
+          <Search size={17} class="shrink-0 text-fg-muted" aria-hidden="true" />
+          <span class="sr-only">Search tickets</span>
+          <input type="search" name="q" value={query} maxlength="80" placeholder="Search tickets" class="min-w-0 flex-1 bg-transparent text-[14px] text-fg outline-none placeholder:text-fg-muted" />
+        </label>
+      </form>
+      {
+        query ? (
+          <p class="flex items-center justify-between gap-3 px-1 text-[13px] text-fg-secondary">
+            <span>{list.length} result{list.length === 1 ? "" : "s"} for “{query}”</span>
+            <a href="/support" class="font-semibold text-blue-600">Clear</a>
+          </p>
+        ) : (
+          <Segmented label="Ticket status" active={tab} items={tabs} />
+        )
+      }
+      <ul class="scrollbar-none flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-1">
+        {
+          list.length === 0 && (
+            <li class="flex flex-col items-center gap-2 rounded-lg bg-white px-5 py-8 text-center ring-1 ring-border ring-inset">
+              <LifeBuoy size={24} class="text-blue-600" aria-hidden="true" />
+              <span class="text-[14px] font-semibold text-fg">{query ? "No matching tickets" : "No tickets here"}</span>
+            </li>
+          )
+        }
+        {
+          list.map((t) => {
+            const chip = ticketChip[t.status];
+            const selected = t.id === ticket?.id;
+            const footer = t.status === "resolved" ? `Resolved${t.rating ? ` · rated ${"★".repeat(t.rating)}` : ""}` : t.lastMessage ? `${t.lastMessage.author}: ${t.lastMessage.text}` : "Awaiting assignment";
+            return (
+              <li>
+                <a
+                  href={`/support/${t.id}${keep}`}
+                  aria-current={selected ? "page" : undefined}
+                  class:list={[
+                    "flex flex-col gap-2 rounded-lg p-4 transition-colors",
+                    selected ? "bg-white ring-[1.5px] ring-blue-600 ring-inset" : "ring-1 ring-border ring-inset hover:bg-white",
+                  ]}
+                >
+                  <span class="flex items-center justify-between gap-2.5">
+                    <span class="text-[12px] font-semibold text-fg-muted">{t.number}</span>
+                    <StatusChip label={chip.label} tone={chip.tone} />
+                  </span>
+                  <span class="text-[14.5px] font-bold text-fg">{t.subject}</span>
+                  <span class="flex items-center gap-2">
+                    <span class="min-w-0 flex-1 truncate text-[12.5px] text-fg-secondary">{footer}</span>
+                    <span class="text-[11.5px] font-medium text-fg-muted">{t.status === "resolved" ? t.resolvedLabel : t.lastMessage?.ago}</span>
+                    {t.lastMessage && t.lastMessage.unread > 0 && t.status !== "resolved" && (
+                      <span class="flex size-5 items-center justify-center rounded-pill bg-blue-600 text-[11px] font-bold text-white">
+                        {t.lastMessage.unread}
+                        <span class="sr-only"> unread</span>
+                      </span>
+                    )}
+                  </span>
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </div>
+
+    {
+      ticket ? (
+        <>
+          <section class:list={[pane, "flex min-w-0 flex-1 flex-col overflow-hidden"]} aria-label={`Conversation · ${ticket.number}`}>
+            <header class="flex h-[75px] shrink-0 items-center gap-3 border-b border-border px-6">
+              <span class="relative">
+                <span class="flex size-11 items-center justify-center rounded-pill bg-[linear-gradient(135deg,var(--eg-blue-600)_14.6%,var(--eg-cyan-400)_85.4%)] font-heading text-[15px] font-extrabold text-white">{ticket.agent.initials}</span>
+                {ticket.agent.online && <span class="absolute top-8 left-8 size-3 rounded-full bg-success ring-2 ring-white" />}
+              </span>
+              <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span class="truncate text-[15px] font-bold text-fg">{ticket.agent.name}</span>
+                <span class:list={["truncate text-[12.5px] font-medium", ticket.agent.online ? "text-success" : "text-fg-muted"]}>
+                  {ticket.agent.online ? "Online" : "Offline"} · {ticket.number} · {ticket.shortSubject ?? ticket.subject}
+                </span>
+              </span>
+              {
+                phone ? (
+                  <a href={`tel:${phone}`} class="flex size-10 items-center justify-center rounded-pill bg-surface text-fg hover:bg-surface-2" aria-label="Call support"><Phone size={20} aria-hidden="true" /></a>
+                ) : (
+                  <span class="flex size-10 items-center justify-center rounded-pill bg-surface text-fg-muted" title="Support hotline is not configured"><Phone size={20} aria-hidden="true" /></span>
+                )
+              }
+            </header>
+            <div class="min-h-0 flex-1 overflow-y-auto" data-thread>
+              <Conversation messages={ticket.messages} latestId="latest-pane" class="p-6" />
+            </div>
+            {
+              open ? (
+                <ChatComposer client:visible variant="inline" ticketId={ticket.id} agentFirstName={ticket.agent.name.split(" ")[0]!} quickReplies={quickReplies} />
+              ) : (
+                <p class="border-t border-border px-6 py-4 text-center text-[13px] text-fg-secondary">
+                  This ticket is resolved. <a href="/support/new" class="font-semibold text-blue-600">Open a new ticket</a> if the issue comes back.
+                </p>
+              )
+            }
+          </section>
+
+          <aside class="scrollbar-none flex w-[300px] shrink-0 flex-col gap-4 overflow-y-auto" aria-label="Ticket details">
+            <section class:list={[pane, "flex flex-col gap-3 p-5"]}>
+              <h2 class="text-[15px] font-bold text-fg">Ticket details</h2>
+              <dl class="flex flex-col gap-3 text-[14px]">
+                <div class="flex justify-between gap-2.5"><dt class="text-fg-muted">Status</dt><dd class="font-semibold text-fg">{ticketChip[ticket.status].label}</dd></div>
+                <div class="flex justify-between gap-2.5">
+                  <dt class="text-fg-muted">Priority</dt>
+                  <dd class:list={["font-semibold", ticket.priority === "urgent" ? "text-danger" : "text-fg"]}>{ticket.priority === "urgent" ? "High" : priorityLabel[ticket.priority]}</dd>
+                </div>
+                <div class="flex justify-between gap-2.5"><dt class="text-fg-muted">SLA</dt><dd class="font-semibold text-fg">Reply {firstReply[ticket.priority]}</dd></div>
+                {ticket.createdLabel && <div class="flex justify-between gap-2.5"><dt class="text-fg-muted">Created</dt><dd class="font-semibold text-fg">{ticket.createdLabel}</dd></div>}
+              </dl>
+              {
+                ticket.device && (
+                  <div class="flex items-center gap-2.5 rounded-md bg-surface p-2.5">
+                    <Media src={ticket.device.image} alt="" class="size-10 shrink-0 rounded-md bg-white" />
+                    <span class="flex min-w-0 flex-col gap-px">
+                      <span class="truncate text-[13px] font-semibold text-fg">{ticket.device.name}</span>
+                      <span class="truncate text-[11.5px] text-fg-muted">{ticket.device.serial}</span>
+                    </span>
+                  </div>
+                )
+              }
+            </section>
+            <section class:list={[pane, "flex flex-col gap-3.5 p-5"]}>
+              <h2 class="text-[15px] font-bold text-fg">Ticket activity</h2>
+              <Timeline steps={activity} />
+            </section>
+          </aside>
+        </>
+      ) : (
+        <section class:list={[pane, "flex flex-1 flex-col items-center justify-center gap-3 px-10 text-center"]}>
+          <span class="flex size-14 items-center justify-center rounded-pill bg-blue-50 text-blue-600" aria-hidden="true"><MessagesSquare size={26} /></span>
+          <h2 class="font-heading text-[18px] font-bold text-fg">No conversation selected</h2>
+          <p class="max-w-[360px] text-[14px] text-fg-secondary">Pick a ticket to read the thread, or open a new ticket and our team will get back to you.</p>
+          <AppButton href="/support/new" class="mt-1"><MessageSquarePlus slot="icon" size={18} aria-hidden="true" />New ticket</AppButton>
+        </section>
+      )
+    }
+  </div>
+</div>
+
+<script>
+  // Keep the desktop thread pinned to the newest message.
+  document.querySelectorAll<HTMLElement>("[data-thread]").forEach((thread) => (thread.scrollTop = thread.scrollHeight));
+</script>

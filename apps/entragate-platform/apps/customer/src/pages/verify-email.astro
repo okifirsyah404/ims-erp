@@ -1,0 +1,79 @@
+---
+import { actions } from "astro:actions";
+import MailCheck from "@lucide/astro/icons/mail-check";
+import PenLine from "@lucide/astro/icons/pen-line";
+import AuthLayout from "../layouts/AuthLayout.astro";
+import { authBrands } from "../layouts/auth-brand";
+import TopBar from "../components/customer/TopBar.astro";
+import IconBadge from "../components/customer/IconBadge.astro";
+import OtpField from "../features/auth/OtpField";
+import { portalMode } from "../services/portal";
+import { DEMO_OTP_CODE } from "../services/portal/demo";
+
+/** 04.06 Verify email (OTP). */
+const verified = Astro.getActionResult(actions.auth.verifyEmail);
+if (verified?.data) {
+  if (verified.data.accountType === "business") return Astro.redirect("/setup", 303);
+  const returnTo = await Astro.session?.get("returnTo");
+  Astro.session?.delete("returnTo");
+  return Astro.redirect(returnTo ?? "/", 303);
+}
+const resent = Astro.getActionResult(actions.auth.resendCode);
+
+const pending = await Astro.session?.get("pendingVerification");
+if (!pending) return Astro.redirect("/login", 303);
+const error = verified?.error?.message ?? resent?.error?.message;
+---
+
+<AuthLayout title="Verify your email" brand={authBrands.verify}>
+  <TopBar back="/register/details" />
+  <div class="flex flex-1 flex-col gap-6 px-6 pt-4 pb-[max(24px,env(safe-area-inset-bottom))]">
+    <IconBadge><MailCheck /></IconBadge>
+    <div class="flex flex-col gap-2">
+      <h1 class="font-heading text-[26px] leading-[38px] font-extrabold tracking-[-0.6px] text-fg">Verify your email</h1>
+      <p class="text-[15px] leading-[22px] text-fg-secondary">
+        Enter the 6-digit code we sent to <span class="break-all">{pending.email}</span>
+      </p>
+    </div>
+
+    <form method="POST" action={actions.auth.verifyEmail} class="flex flex-col gap-6" id="otp-form">
+      <OtpField client:load name="code" invalid={Boolean(verified?.error)} />
+      {error && <p role="alert" class="-mt-3 text-[13px] font-semibold text-danger">{error}</p>}
+      {resent?.data && <p role="status" class="-mt-3 text-[13px] font-semibold text-success">A new code is on its way.</p>}
+    </form>
+
+    <form method="POST" action={actions.auth.resendCode} class="flex items-center justify-between gap-2.5 text-[14px]">
+      <span class="text-fg-muted">Didn’t get it?</span>
+      <button type="submit" class="font-semibold text-fg-muted enabled:text-blue-600" disabled data-resend data-seconds="38">
+        Resend code in 0:38
+      </button>
+    </form>
+
+    <button type="submit" form="otp-form" class="flex h-[54px] items-center justify-center rounded-control bg-blue-600 text-[16px] font-semibold text-white hover:bg-blue-700">
+      Verify &amp; continue
+    </button>
+    <a href="/register/details" class="flex items-center justify-center gap-1.5 text-[14px] font-semibold text-blue-600">
+      <PenLine size={16} aria-hidden="true" />
+      Change email address
+    </a>
+    {portalMode === "demo" && <p class="rounded-md bg-surface p-3 text-center text-[12px] text-fg-muted">Demo mode · code <strong class="text-fg">{DEMO_OTP_CODE}</strong></p>}
+  </div>
+</AuthLayout>
+
+<script>
+  const button = document.querySelector<HTMLButtonElement>("[data-resend]");
+  if (button) {
+    let seconds = Number(button.dataset.seconds ?? 38);
+    const tick = () => {
+      if (seconds <= 0) {
+        button.disabled = false;
+        button.textContent = "Resend code";
+        return;
+      }
+      button.textContent = `Resend code in 0:${String(seconds).padStart(2, "0")}`;
+      seconds -= 1;
+      setTimeout(tick, 1000);
+    };
+    tick();
+  }
+</script>

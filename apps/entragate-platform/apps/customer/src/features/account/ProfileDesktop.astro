@@ -1,0 +1,198 @@
+---
+import PenLine from "@lucide/astro/icons/pen-line";
+import UserRound from "@lucide/astro/icons/user-round";
+import BuildingComplex from "@lucide/astro/icons/building-complex";
+import MapPin from "@lucide/astro/icons/map-pin";
+import Bell from "@lucide/astro/icons/bell";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import FolderOpen from "@lucide/astro/icons/folder-open";
+import Heart from "@lucide/astro/icons/heart";
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+import GitBranch from "@lucide/astro/icons/git-branch";
+import UserPlus from "@lucide/astro/icons/user-plus";
+import LogOut from "@lucide/astro/icons/log-out";
+import type { AccountSettings, ProfileSummary } from "@entragate/api-client";
+import AppButton from "../../components/customer/AppButton.astro";
+import Avatar from "../../components/customer/Avatar.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import SettingToggle from "./SettingToggle";
+import InviteMemberSheet from "./InviteMemberSheet";
+import { memberChip, memberDetail } from "./memberRoles";
+
+/** 06.07 Profile, company & settings — Desktop 1440. */
+interface Props {
+  profile: ProfileSummary;
+  account: AccountSettings;
+}
+
+const { profile, account } = Astro.props;
+const user = Astro.locals.user!;
+const company = account.company;
+const me = account.members.find((m) => m.email === user.email);
+const canManage = Boolean(company && (me?.role === "owner" || me?.admin));
+const sections = [
+  { label: "Personal details", href: "/profile/personal", icon: UserRound },
+  { label: "Company & team", href: "/company", icon: BuildingComplex, current: true },
+  { label: "Sites & addresses", href: "/sites", icon: MapPin },
+  { label: "Notifications", href: "/notifications", icon: Bell },
+  { label: "Security", href: "/settings", icon: ShieldCheck },
+  { label: "Documents", href: "/documents", icon: FolderOpen },
+  { label: "Wishlist", href: "/wishlist", icon: Heart },
+];
+const stats = [
+  { label: "Orders", value: profile.stats.orders },
+  { label: "Projects", value: profile.stats.projects },
+  { label: "Devices", value: profile.stats.devices },
+  { label: "Tickets", value: profile.stats.tickets },
+];
+const notificationRows = [
+  { key: "push", label: "Push notifications" },
+  { key: "email", label: "Email updates" },
+  { key: "whatsapp", label: "WhatsApp updates" },
+] as const;
+const card = "rounded-card bg-white ring-1 ring-border ring-inset";
+---
+
+<div class="flex flex-col gap-7">
+  <h1 class="font-heading text-[34px] font-extrabold tracking-[-1px] text-fg">Profile &amp; settings</h1>
+  <div class="flex items-start gap-6">
+    <div class="flex w-[420px] shrink-0 flex-col gap-5">
+      <section class="relative isolate flex flex-col gap-[18px] overflow-hidden rounded-xl bg-[linear-gradient(132deg,var(--eg-navy-950)_19%,#132A5C_62%,var(--eg-blue-700)_81%)] p-6">
+        <span class="absolute -top-[100px] left-[210px] -z-10 size-[240px] rounded-full bg-[radial-gradient(closest-side,#22D3EE40,#22D3EE00)]" aria-hidden="true"></span>
+        <div class="flex items-center gap-3.5">
+          <Avatar initials={user.initials} size={64} class="!text-[22px] ring-3 ring-white/30" />
+          <div class="flex min-w-0 flex-1 flex-col gap-1">
+            <p class="font-heading text-[20px] font-extrabold text-white">{user.name}</p>
+            <p class="text-[12.5px] leading-[18px] text-fg-on-dark-muted">{[user.jobTitle, company?.name].filter(Boolean).join(" · ") || user.email}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <StatusChip tone="cyan" label={`${user.accountType === "business" ? "Business" : "Personal"}${user.verified ? " · Verified" : ""}`} />
+          <a href="/profile/personal" class="flex items-center gap-[5px] rounded-pill bg-white/12 px-2.5 py-[5px] text-[12px] font-semibold text-white hover:bg-white/20">
+            <PenLine size={12} aria-hidden="true" />Edit profile
+          </a>
+        </div>
+        <dl class="flex border-t border-white/15 pt-3.5">
+          {
+            stats.map((s) => (
+              <div class="flex flex-1 flex-col-reverse items-center gap-0.5">
+                <dt class="text-[11.5px] font-medium text-fg-on-dark-muted">{s.label}</dt>
+                <dd class="font-heading text-[18px] font-extrabold text-white">{s.value}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </section>
+
+      <nav aria-label="Account sections" class:list={[card, "py-1.5"]}>
+        <ul>
+          {
+            sections.map(({ label, href, icon: Icon, current }) => (
+              <li>
+                <a
+                  href={href}
+                  class:list={[
+                    "flex items-center gap-3 px-[18px] py-3 text-[14.5px] transition-colors",
+                    current && company ? "bg-blue-50 font-bold text-blue-700" : "font-medium text-fg hover:bg-surface",
+                  ]}
+                >
+                  <Icon size={18} class={current && company ? "text-blue-600" : "text-fg-secondary"} aria-hidden="true" />
+                  <span class="flex-1">{label}</span>
+                  <ChevronRight size={16} class="text-fg-muted" aria-hidden="true" />
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <form method="post" action="/logout">
+        <button type="submit" class="flex h-[52px] w-full items-center justify-center gap-2 rounded-control bg-danger-bg text-[15px] font-semibold text-danger hover:bg-danger-border/40">
+          <LogOut size={18} aria-hidden="true" />Sign out
+        </button>
+      </form>
+    </div>
+
+    <div class="flex min-w-0 flex-1 flex-col gap-5">
+      {
+        company && (
+          <section class:list={[card, "flex flex-col gap-[18px] p-6 shadow-[0_6px_18px_#0A1A3F0A]"]} aria-label="Company">
+            <div class="flex items-center gap-4">
+              <span class="flex size-16 shrink-0 items-center justify-center rounded-lg bg-navy-900 font-heading text-[20px] font-extrabold text-cyan-400" aria-hidden="true">{company.shortName}</span>
+              <div class="flex min-w-0 flex-1 flex-col gap-1">
+                <h2 class="font-heading text-[20px] font-extrabold text-fg">{company.name}</h2>
+                <p class="text-[13.5px] text-fg-muted">{[company.npwp && `NPWP ${company.npwp}`, company.industry].filter(Boolean).join(" · ")}</p>
+              </div>
+              <StatusChip tone="success" label={company.verified ? "Business · Verified" : "Verification pending"} />
+              {canManage && <AppButton variant="outline" href="/company/edit" class="h-10">Edit</AppButton>}
+            </div>
+            {company.approvalRule && (
+              <p class="flex items-center gap-3 rounded-md bg-[#E7FAFD] p-3.5 text-[13.5px] font-medium text-[#132A5C]">
+                <GitBranch size={18} class="shrink-0 text-blue-600" aria-hidden="true" />
+                <span class="flex-1">{company.approvalRule}</span>
+                {canManage && <a href="/support/new?category=other&subject=Change%20approval%20rule" class="font-semibold text-blue-600">Edit rule</a>}
+              </p>
+            )}
+          </section>
+        )
+      }
+
+      {
+        company && (
+          <section class:list={[card, "flex flex-col gap-1 px-6 pt-[22px] pb-2.5 shadow-[0_6px_18px_#0A1A3F0A]"]} aria-labelledby="team-title">
+            <div class="flex items-center justify-between gap-2.5 pb-2.5">
+              <h2 id="team-title" class="font-heading text-[18px] font-bold text-fg">Team members · {account.members.length}</h2>
+              {canManage && <AppButton href="#invite" class="h-[42px]"><UserPlus slot="icon" size={18} aria-hidden="true" />Invite member</AppButton>}
+            </div>
+            <ul class="divide-y divide-border">
+              {account.members.map((member) => {
+                const chip = memberChip(member);
+                return (
+                  <li class="flex items-center gap-3.5 py-3">
+                    <Avatar initials={member.initials} size={40} tone={member.status === "invited" ? "muted" : "gradient"} class="!text-[13px]" />
+                    <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span class="truncate text-[14.5px] font-semibold text-fg">{member.name ?? member.email}</span>
+                      <span class="truncate text-[12.5px] text-fg-muted">{member.status === "active" && member.role === "owner" ? member.email : memberDetail(member)}</span>
+                    </span>
+                    <StatusChip label={chip.label} tone={chip.tone} />
+                    {member.status === "invited" && canManage ? (
+                      <a href="/company" class="w-[90px] text-[12.5px] font-semibold text-blue-600">Manage</a>
+                    ) : (
+                      <span class="w-[90px] text-[12.5px] font-medium text-fg-muted">{member.lastActiveLabel}</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )
+      }
+
+      <div class="grid grid-cols-2 gap-5">
+        <section class:list={[card, "flex flex-col gap-3.5 p-[22px]"]} aria-labelledby="notif-title">
+          <h2 id="notif-title" class="font-heading text-[17px] font-bold text-fg">Notifications</h2>
+          {
+            notificationRows.map(({ key, label }) => (
+              <div class="flex items-center justify-between gap-2.5">
+                <span class="text-[14px] font-medium text-fg">{label}</span>
+                <SettingToggle client:visible setting={key} label={label} defaultChecked={account.notifications[key]} />
+              </div>
+            ))
+          }
+        </section>
+        <section class:list={[card, "flex flex-col gap-3.5 p-[22px]"]} aria-labelledby="security-title">
+          <div class="flex items-center justify-between">
+            <h2 id="security-title" class="font-heading text-[17px] font-bold text-fg">Security</h2>
+            <a href="/settings" class="text-[13.5px] font-semibold text-blue-600">Manage</a>
+          </div>
+          <dl class="flex flex-col gap-3.5 text-[14px]">
+            <div class="flex justify-between gap-2.5"><dt class="font-medium text-fg">2-step verification</dt><dd class:list={["text-[13.5px] font-semibold", account.security.twoStep ? "text-success" : "text-fg-muted"]}>{account.security.twoStep ? "On" : "Off"}</dd></div>
+            <div class="flex justify-between gap-2.5"><dt class="font-medium text-fg">Password</dt><dd class="text-[13.5px] font-semibold text-fg-muted"><a href="/settings/password" class="hover:text-blue-600">{account.security.passwordChangedLabel.replace("Last changed", "Changed")}</a></dd></div>
+            <div class="flex justify-between gap-2.5"><dt class="font-medium text-fg">Active devices</dt><dd class="text-[13.5px] font-semibold text-fg-muted">{account.security.activeDevices} device{account.security.activeDevices === 1 ? "" : "s"}</dd></div>
+          </dl>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+{canManage && <InviteMemberSheet client:idle />}

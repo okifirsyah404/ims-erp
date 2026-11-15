@@ -12,6 +12,69 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-15 - Website and customer portal moved into the monorepo (`apps/entragate-platform`)
+
+The owner copied the separate `entragate-platform` repository (public website
+and customer portal UI, Astro) into `apps/entragate-platform`.
+
+Owner choices:
+- keep the folder name;
+- keep the design source out of git;
+- keep the `@entragate/*` package names.
+
+Branch `chore/entragate-platform-workspace` from `origin/main` (`aa3a7ad`).
+
+**Found as copied (it did not work).**
+- It was a nested monorepo: its own `package.json` (workspaces), `bun.lock`
+  and `node_modules`. Bun does not do nested workspaces, so the root saw one
+  package, `entragate-platform`, and none of its apps.
+- Its `node_modules` were junctions into the old
+  `C:\laragon\www\Personal\entragate-platform\…`, which no longer
+  exists. `astro check` / `astro build` failed with "Cannot find module
+  …astro.mjs".
+- Root `turbo run dev/build` would have run its broken scripts.
+- `designs/entragate-final.pen` is ~14 MB (133 MB with exports).
+- `apps/customer/.env` exists locally; it was already git-ignored.
+
+**Change**
+- **Nested files removed.** The nested `package.json` and `bun.lock` were
+  removed (copies kept outside the repo); the dev scripts moved to the root
+  as `dev:website` / `dev:portal`. The broken `node_modules` were deleted.
+- **Root workspaces** gain `apps/entragate-platform/apps/*` and
+  `apps/entragate-platform/packages/*`. One `bun install` and one `bun.lock`;
+  the repo's Bun pin (1.4.2) applies.
+- **Tested versions kept.** The first root install resolved newer versions
+  than the website's own lockfile, which broke
+  `@lucide/astro/icons/*` imports (1.61.0 → 1.73.0). The website's direct
+  dependencies were pinned exactly to their old lockfile versions for one
+  install, then the original `^` ranges were restored; the lockfile keeps
+  the tested versions. Astro itself resolves 7.4.12 (patch over 7.4.2).
+- **TypeScript.** `typescript` ^7.0.2 → **^6.0.3**, like the rest of the
+  monorepo. `astro check` refuses TypeScript 7 ("does not currently support
+  TypeScript 7.0"); the old repository had the same problem, because its
+  lockfile resolved 7.0.2.
+- **Turbo.** `"typecheck": "astro check"` is added to both apps, so the root
+  `typecheck` covers them.
+- **Git.** The root `.gitignore` ignores `apps/entragate-platform/designs/`.
+  The nested `.gitignore` keeps `.env`, `dist/` and `.astro/` out. Only
+  `.env.example` files are committed; every secret value in them is empty.
+- **Docs.** `apps/entragate-platform/README.md` (apps, ports, commands, env,
+  where the design file lives) and runbook rows. The portal `.env.example`
+  comment described the ERP envelope as `{ success, message, data }`; it now
+  reads `{ requestId, status, message, timestamp, data }`.
+- `docs/database/` was reviewed and is unchanged.
+
+**Verification**
+- `astro check`: `@entragate/web` 167 files and `@entragate/customer` 147
+  files, **0 errors / 0 warnings / 0 hints** each.
+- `astro build`: both complete.
+- Root `bun run typecheck`: **6/6**. `bun run lint`: 0 errors.
+- Backend `bun test`: 1063 pass, 4 fail (the known `Bun.Image` tests, Bun
+  1.4.1 here). web-admin 100; locales 94. The web-admin `vite build` passes,
+  so the lockfile re-hoisting broke nothing in the ERP.
+- Not run here: the dev servers (`dev:website` / `dev:portal`), and a
+  browser walk-through from the new location.
+
 ## 2026-11-15 - M12 T30: statement CSV exports + monthly report archive (branch `feat/reports-surface`)
 
 Item 3 of `plans/2026-11-15_0538_todo_undone.md` §7. The report **API** already

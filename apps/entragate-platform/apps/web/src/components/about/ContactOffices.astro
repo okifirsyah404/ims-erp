@@ -1,0 +1,65 @@
+---
+import BuildingComplex from "@lucide/astro/icons/building-complex";
+import MapPin from "@lucide/astro/icons/map-pin";
+import Phone from "@lucide/astro/icons/phone";
+import Mail from "@lucide/astro/icons/mail";
+import { offices } from "../../data/about";
+
+/** 09.01 · Contact Information: head office and branches. */
+---
+
+<section class="bg-white" aria-labelledby="offices-title">
+  <div class="container-page flex flex-col gap-3 py-12 xl:flex-row xl:gap-6 xl:py-28">
+    <div class="flex flex-col gap-2.5 pb-2 xl:w-[400px] xl:shrink-0 xl:gap-4 xl:pt-2 xl:pr-10 xl:pb-0">
+      <p class="text-[12px] font-bold tracking-[1.4px] text-blue-600 uppercase xl:text-[13px] xl:tracking-[1.6px]">Contact</p>
+      <h2
+        id="offices-title"
+        class="font-heading text-[28px] leading-8 font-bold tracking-[-0.7px] text-navy-900 xl:text-[36px] xl:leading-10 xl:tracking-[-1.2px]"
+      >
+        Let’s talk about your site.
+      </h2>
+      <p class="hidden text-[15px] leading-6 text-fg-secondary xl:block">Our corporate sales team responds within one business day.</p>
+    </div>
+    {
+      offices.map((office) => {
+        const Icon = office.primary ? BuildingComplex : MapPin;
+        return (
+          <address
+            class:list={[
+              "flex flex-col gap-2.5 rounded-lg p-5 not-italic ring-1 ring-inset xl:flex-1 xl:gap-4 xl:p-7",
+              office.primary ? "bg-blue-50 ring-blue-100" : "bg-white ring-border",
+            ]}
+          >
+            <div class="flex items-center gap-2.5 xl:flex-col xl:items-start xl:gap-4">
+              <span
+                class:list={[
+                  "flex shrink-0 items-center justify-center text-blue-600 xl:size-10 xl:rounded-md",
+                  office.primary ? "xl:bg-white" : "xl:bg-surface",
+                ]}
+              >
+                <Icon size={18} aria-hidden="true" />
+              </span>
+              <h3 class="font-heading text-[16px] font-bold text-navy-900 xl:text-[17px]">{office.title}</h3>
+            </div>
+            <p class="text-[14px] leading-[21px] text-fg-secondary xl:leading-[22px]">{office.address}</p>
+            <div
+              class:list={[
+                "flex flex-col gap-2.5 xl:gap-2 xl:border-t xl:pt-3",
+                office.primary ? "xl:border-blue-100" : "xl:border-border",
+              ]}
+            >
+              <a href={office.phoneHref} class="flex items-center gap-2 text-[13px] font-medium text-fg hover:text-blue-600">
+                <Phone size={14} class="text-blue-600" aria-hidden="true" />
+                {office.phone}
+              </a>
+              <a href={`mailto:${office.email}`} class="flex items-center gap-2 text-[13px] font-medium text-fg hover:text-blue-600">
+                <Mail size={14} class="text-blue-600" aria-hidden="true" />
+                {office.email}
+              </a>
+            </div>
+          </address>
+        );
+      })
+    }
+  </div>
+</section>

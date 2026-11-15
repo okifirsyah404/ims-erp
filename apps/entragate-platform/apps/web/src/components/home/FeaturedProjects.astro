@@ -1,0 +1,95 @@
+---
+import ArrowUpRight from "@lucide/astro/icons/arrow-up-right";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Button from "../ui/Button.astro";
+import Media from "../ui/Media.astro";
+import SectionHeading from "../ui/SectionHeading.astro";
+import { routes } from "../../data/site";
+import { featuredProject, secondaryProjects } from "../../data/home";
+
+/** 01.01 Home · Featured Projects (desktop eFQ55 / mobile lcVRT). */
+const href = (slug: string) => `${routes.projects}/${slug}`;
+---
+
+<section class="bg-surface">
+  <!-- Desktop -->
+  <div class="container-page hidden flex-col gap-12 py-28 xl:flex">
+    <div class="flex items-end justify-between">
+      <SectionHeading class="w-[640px]" eyebrow="Featured Projects" title="Real installations. Measurable results." />
+      <Button href={routes.projects} variant="secondary" icon={ArrowUpRight}>View all projects</Button>
+    </div>
+    <div class="flex h-[620px] gap-5">
+      <article class="relative isolate flex flex-[760] flex-col justify-end overflow-hidden rounded-xl p-8">
+        <Media src={featuredProject.image} alt={featuredProject.title} class="absolute inset-0 -z-10 size-full" />
+        <div class="flex flex-col gap-4 rounded-lg bg-white/94 p-7 backdrop-blur-[10px]">
+          <ul class="flex gap-2">
+            {
+              featuredProject.tags.map((tag) => (
+                <li class="rounded-pill bg-surface-2 px-2.5 py-[5px] text-[12px] font-semibold text-fg-secondary">{tag}</li>
+              ))
+            }
+          </ul>
+          <h3 class="font-heading text-[26px] font-extrabold tracking-[-0.6px] text-navy-900">
+            <a href={href(featuredProject.slug)} class="hover:text-blue-600">{featuredProject.title}</a>
+          </h3>
+          <dl class="flex gap-10">
+            {
+              featuredProject.metrics.map((metric) => (
+                <div class="flex flex-col-reverse gap-0.5">
+                  <dt class="text-[13px] text-fg-muted">{metric.label}</dt>
+                  <dd class="font-heading text-[24px] font-extrabold text-blue-600">{metric.value}</dd>
+                </div>
+              ))
+            }
+          </dl>
+        </div>
+      </article>
+      <div class="flex flex-[532] flex-col gap-5">
+        {
+          secondaryProjects.map((project) => (
+            <article class="flex flex-1 items-center gap-5 rounded-card bg-white p-2.5 ring-1 ring-border ring-inset">
+              <Media src={project.image} alt={project.title} class="h-full w-[220px] shrink-0 rounded-lg" />
+              <div class="flex flex-1 flex-col gap-2.5 pr-4">
+                <p class="text-[11px] font-bold tracking-[1.2px] text-blue-600 uppercase">{project.eyebrow}</p>
+                <h3 class="font-heading text-[20px] font-bold text-fg">{project.title}</h3>
+                <p class="text-[14px] leading-[22px] text-fg-secondary">{project.description}</p>
+                <a
+                  href={href(project.slug)}
+                  class="flex w-fit items-center gap-1.5 pt-1.5 text-[14px] font-semibold text-blue-600 hover:underline"
+                >
+                  Read case study
+                  <ArrowRight size={15} aria-hidden="true" />
+                </a>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile -->
+  <div class="container-page flex flex-col gap-6 py-14 xl:hidden">
+    <SectionHeading eyebrow="Featured Projects" title="Real installations. Measurable results." />
+    <article class="flex flex-col overflow-hidden rounded-card bg-white ring-1 ring-border ring-inset">
+      <Media src={featuredProject.image} alt={featuredProject.title} class="h-[220px] w-full" />
+      <div class="flex flex-col gap-3 p-5">
+        <p class="text-[11px] font-bold tracking-[1.2px] text-blue-600 uppercase">{featuredProject.mobileEyebrow}</p>
+        <h3 class="font-heading text-[19px] font-extrabold text-navy-900">
+          <a href={href(featuredProject.slug)}>{featuredProject.title}</a>
+        </h3>
+        <dl class="flex justify-between pt-1.5">
+          {
+            featuredProject.metrics.map((metric) => (
+              <div class="flex flex-col-reverse gap-0.5">
+                <dt class="text-[12px] text-fg-muted">{metric.shortLabel}</dt>
+                <dd class="font-heading text-[20px] font-extrabold text-blue-600">{metric.value}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </div>
+    </article>
+    <Button href={routes.projects} variant="secondary" block icon={ArrowRight}>View all projects</Button>
+  </div>
+</section>

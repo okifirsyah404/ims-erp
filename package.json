@@ -6,12 +6,16 @@
 	"workspaces": [
 		"apps/*",
 		"packages/*",
-		"modules/*"
+		"modules/*",
+		"apps/entragate-platform/apps/*",
+		"apps/entragate-platform/packages/*"
 	],
 	"scripts": {
 		"build": "turbo run build",
 		"build:libs": "bun --filter '@ims-erp/config' build && bun --filter '@ims-erp/lib-cache' build",
 		"dev": "turbo run dev",
+		"dev:website": "bun run --filter '@entragate/web' dev",
+		"dev:portal": "bun run --filter '@entragate/customer' dev",
 		"test": "turbo run test",
 		"lint": "turbo run lint",
 		"typecheck": "turbo run typecheck",

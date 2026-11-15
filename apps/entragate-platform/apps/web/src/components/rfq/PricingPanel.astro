@@ -1,0 +1,80 @@
+---
+import CircleUserRound from "@lucide/astro/icons/circle-user-round";
+import { customerPortal } from "../../data/site";
+import { pricingNotes, type IndicativeQuote } from "../../data/pricing";
+import { formatRupiah } from "../../lib/format";
+import { icons } from "../../lib/icons";
+
+/** Pricing Panel (03.02, desktop): indicative totals, pricing explainer, portal link. */
+interface Props {
+  quote: IndicativeQuote;
+}
+
+const { quote } = Astro.props;
+---
+
+<aside class="hidden w-[420px] shrink-0 flex-col gap-4 self-start xl:sticky xl:top-[100px] xl:flex" aria-label="Indicative pricing">
+  <div class="flex flex-col gap-4 rounded-lg bg-white p-7 shadow-[0_16px_40px_#0A1A3F14] ring-1 ring-border ring-inset">
+    <h2 class="font-heading text-[22px] font-extrabold text-fg">Indicative pricing</h2>
+    <dl class="flex flex-col gap-4 text-[14px]">
+      <div class="flex justify-between gap-2.5">
+        <dt class="text-fg-muted">List price (<span data-quote="units">{quote.units}</span> units)</dt>
+        <dd class="font-semibold text-fg" data-quote="list">{formatRupiah(quote.listTotal)}</dd>
+      </div>
+      <div class="flex justify-between gap-2.5">
+        <dt class="text-fg-muted" data-quote="discount-label">
+          {quote.discountRate > 0 ? `Volume discount (est. ${Math.round(quote.discountRate * 100)}%)` : "Volume discount"}
+        </dt>
+        <dd class="font-semibold text-success" data-quote="discount">
+          {quote.discount > 0 ? `– ${formatRupiah(quote.discount)}` : "From 10 units"}
+        </dd>
+      </div>
+      <div class="flex justify-between gap-2.5">
+        <dt class="text-fg-muted">Installation</dt>
+        <dd class="font-semibold text-fg">Quoted on survey</dd>
+      </div>
+    </dl>
+    <div class="flex flex-col gap-1 rounded-md bg-surface p-[18px]">
+      <p class="text-[13px] font-semibold text-fg-muted">Estimated subtotal · excl. PPN 11%</p>
+      <p class="font-heading text-[30px] font-extrabold tracking-[-1px] text-navy-900" data-quote="subtotal">
+        {formatRupiah(quote.subtotal)}
+      </p>
+      <p class="text-[12px] text-fg-muted" data-quote="unpriced" hidden={quote.unpricedLines === 0}>
+        Project-priced items are quoted separately.
+      </p>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-3.5 rounded-lg bg-white p-6 shadow-card ring-1 ring-border ring-inset">
+    <h2 class="font-heading text-[17px] font-bold text-fg">How our pricing works</h2>
+    <ul class="flex flex-col gap-3.5">
+      {
+        pricingNotes.map((note) => {
+          const Icon = icons[note.icon];
+          return (
+            <li class="flex gap-3">
+              <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+                <Icon size={17} aria-hidden="true" />
+              </span>
+              <span class="flex flex-1 flex-col gap-0.5">
+                <span class="text-[14.5px] font-semibold text-fg">{note.title}</span>
+                <span class="text-[13px] text-fg-muted">{note.description}</span>
+              </span>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+
+  <div class="flex flex-col gap-2.5 rounded-lg bg-navy-900 p-[22px] shadow-card">
+    <h2 class="text-[16px] font-bold text-white">Already a customer?</h2>
+    <p class="text-[13.5px] leading-5 text-fg-on-dark-muted">
+      Track, compare and approve quotations in the Entragate Customer Portal.
+    </p>
+    <a href={customerPortal.home} class="flex w-fit items-center gap-1.5 text-[14px] font-bold text-cyan-400 hover:underline">
+      <CircleUserRound size={16} aria-hidden="true" />
+      Open Customer Portal
+    </a>
+  </div>
+</aside>

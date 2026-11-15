@@ -1,0 +1,75 @@
+---
+import SearchX from "@lucide/astro/icons/search-x";
+import CloudOff from "@lucide/astro/icons/cloud-off";
+import Button from "../ui/Button.astro";
+import EmptyState from "../ui/EmptyState.astro";
+import CatalogToolbar from "./CatalogToolbar.astro";
+import CatalogPagination from "./CatalogPagination.astro";
+import HelpCard from "./HelpCard.astro";
+import ProductCard from "../product/ProductCard.astro";
+import ProductCardCompact from "../product/ProductCardCompact.astro";
+import type { CatalogQuery, CatalogResult } from "../../lib/catalog";
+
+/**
+ * Results column of the 02.01 catalog: toolbar, product grid (or empty/error state) and
+ * pagination. Rendered by the page and by the `/products/results` fragment, which the
+ * catalog script swaps in without reloading the page.
+ */
+interface Props {
+  query: CatalogQuery;
+  result: CatalogResult | null;
+  catalogTotal: number;
+  sample: boolean;
+}
+
+const { query, result, catalogTotal, sample } = Astro.props;
+---
+
+{
+  result ? (
+    <>
+      <CatalogToolbar query={query} resultCount={result.total} catalogTotal={catalogTotal} sample={sample} />
+      {result.items.length === 0 ? (
+        <EmptyState
+          icon={SearchX}
+          title="No products match these filters"
+          description="Try removing a filter or searching for a different model, or ask our engineers for a recommendation."
+        >
+          <Button href="/products" size="md">Clear all filters</Button>
+        </EmptyState>
+      ) : (
+        <>
+          <ul class="hidden grid-cols-3 gap-5 xl:grid" data-catalog-list="desktop">
+            {result.items.map((product) => (
+              <li class="flex">
+                <ProductCard product={product} class="w-full" />
+              </li>
+            ))}
+          </ul>
+          <ul class="grid grid-cols-2 gap-x-3 gap-y-3.5 md:grid-cols-3 xl:hidden" data-catalog-list="mobile">
+            {result.items.map((product) => (
+              <li class="flex">
+                <ProductCardCompact product={product} class="w-full" />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <div data-catalog-pagination>
+        <CatalogPagination query={query} page={result.page} pageCount={result.pageCount} />
+      </div>
+    </>
+  ) : (
+    <EmptyState
+      icon={CloudOff}
+      title="The catalog is temporarily unavailable"
+      description="We couldn't load products right now. Please try again, or ask our sales team for a quotation."
+    >
+      <div class="flex gap-2.5">
+        <Button href={`/products${Astro.url.search}`} size="md" data-catalog-retry>Try again</Button>
+        <Button href="/quote" size="md" variant="secondary">Request a quote</Button>
+      </div>
+    </EmptyState>
+  )
+}
+<HelpCard variant="mobile" class="xl:hidden" />

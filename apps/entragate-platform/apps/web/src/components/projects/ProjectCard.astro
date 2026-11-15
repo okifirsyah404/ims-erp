@@ -1,0 +1,29 @@
+---
+import Media from "../ui/Media.astro";
+import type { Project } from "../../data/projects";
+import { routes } from "../../data/site";
+
+/** 01.02 · Project card (desktop 220px image, mobile 180px). */
+interface Props {
+  project: Project;
+  class?: string;
+}
+
+const { project, class: className } = Astro.props;
+---
+
+<a
+  href={`${routes.projects}/${project.slug}`}
+  class:list={[
+    "group flex flex-col overflow-hidden rounded-lg bg-white shadow-[0_8px_24px_#0A1A3F0D] ring-1 ring-border ring-inset transition-shadow hover:shadow-[0_16px_40px_#0A1A3F1A]",
+    className,
+  ]}
+  data-reveal
+>
+  <Media src={project.image} alt="" class="h-[180px] w-full transition-transform duration-500 group-hover:scale-[1.04] motion-reduce:transition-none xl:h-[220px]" />
+  <span class="flex flex-col gap-1.5 p-[18px] xl:gap-2 xl:p-[22px]">
+    <span class="text-[11px] font-bold tracking-[1.2px] text-blue-600 uppercase xl:text-[11.5px]">{project.eyebrow}</span>
+    <span class="font-heading text-[18px] font-bold text-fg xl:text-[20px]">{project.title}</span>
+    <span class="text-[13px] text-fg-muted xl:text-[14px]">{project.meta}</span>
+  </span>
+</a>

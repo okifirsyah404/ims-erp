@@ -1,0 +1,85 @@
+/*
+ * Entragate design tokens — source: designs/entragate-final.pen (00 — Design System).
+ * Raw CSS custom properties, framework-agnostic. Values mirror the .pen variables 1:1;
+ * update them here only when the approved design changes.
+ */
+:root {
+  /* Brand */
+  --eg-navy-950: #060f26;
+  --eg-navy-900: #0a1a3f;
+  --eg-navy-800: #132a5c;
+  --eg-blue-700: #1748d6;
+  --eg-blue-600: #1f5bff;
+  --eg-blue-100: #dce6ff;
+  --eg-blue-50: #eef3ff;
+  --eg-cyan-700: #0e8fa8;
+  --eg-cyan-400: #22d3ee;
+  --eg-cyan-50: #e7fafd;
+  --eg-gradient-accent-end: #16b4e0;
+
+  /* Neutrals & surfaces */
+  --eg-white: #ffffff;
+  --eg-surface: #f5f7fb;
+  --eg-surface-2: #edf1f7;
+  --eg-surface-subtle: #f8fafd;
+  --eg-canvas: #e9edf4;
+  --eg-skeleton: #dfe5ef;
+  --eg-border: #e2e7f0;
+  --eg-border-strong: #c9d1df;
+
+  /* Text */
+  --eg-text-primary: #0b1530;
+  --eg-text-secondary: #4a5670;
+  --eg-text-muted: #8790a5;
+  --eg-text-disabled: #b8c0cf;
+  --eg-text-on-dark: #ffffff;
+  --eg-text-on-dark-soft: #d3dcee;
+  --eg-text-on-dark-muted: #a9b6d3;
+
+  /* Status */
+  --eg-success: #12a150;
+  --eg-success-bg: #e6f7ee;
+  --eg-success-border: #bfe8d0;
+  --eg-warning: #c97a06;
+  --eg-warning-bg: #fdf3e1;
+  --eg-warning-border: #f3ddb0;
+  --eg-danger: #dc3545;
+  --eg-danger-bg: #fdecee;
+  --eg-danger-border: #f6c7cd;
+  --eg-rating: #f5a524;
+  --eg-whatsapp: #1faf5a;
+
+  /* Typography */
+  --eg-font-heading: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", system-ui, sans-serif;
+  --eg-font-body: "Inter Variable", "Inter", system-ui, sans-serif;
+
+  /* Type scale (px in design) */
+  --eg-text-display: 4rem; /* 64 */
+  --eg-text-h1: 3rem; /* 48 */
+  --eg-text-h2: 2.25rem; /* 36 */
+  --eg-text-h3: 1.75rem; /* 28 */
+  --eg-text-h4: 1.375rem; /* 22 */
+  --eg-text-title: 1.0625rem; /* 17 */
+  --eg-text-body-lg: 1rem; /* 16 */
+  --eg-text-body: 0.875rem; /* 14 */
+  --eg-text-caption: 0.75rem; /* 12 */
+  --eg-text-micro: 0.6875rem; /* 11 */
+
+  /* Radius */
+  --eg-radius-xs: 4px;
+  --eg-radius-sm: 8px;
+  --eg-radius-md: 12px;
+  --eg-radius-control: 16px;
+  --eg-radius-lg: 20px;
+  --eg-radius-card: 24px;
+  --eg-radius-xl: 28px;
+  --eg-radius-sheet: 32px;
+  --eg-radius-pill: 999px;
+
+  /* Elevation */
+  --eg-shadow-cta: 0 6px 16px #1f5bff33;
+  --eg-shadow-card: 0 8px 24px #0a1a3f0d;
+  --eg-shadow-tab: 0 2px 6px #0a1a3f1a;
+  --eg-shadow-float: 0 20px 40px #0a1a3f26;
+  --eg-shadow-photo: 0 30px 60px #0a1a3f2e;
+}

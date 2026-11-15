@@ -1,0 +1,105 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/plus-jakarta-sans";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * shadcn/ui semantic variables, resolved to the Entragate design tokens so every
+ * shadcn component inherits the approved palette. Light theme only (no dark frames
+ * exist in the design).
+ */
+@theme inline {
+  --font-heading: var(--eg-font-heading);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+}
+
+/* Entragate tokens (+ Tailwind mapping). Loaded after shadcn so token radii/colors win. */
+@import "@entragate/design-tokens/theme.css";
+
+:root {
+  --background: var(--eg-white);
+  --foreground: var(--eg-text-primary);
+  --card: var(--eg-white);
+  --card-foreground: var(--eg-text-primary);
+  --popover: var(--eg-white);
+  --popover-foreground: var(--eg-text-primary);
+  --primary: var(--eg-blue-600);
+  --primary-foreground: var(--eg-white);
+  --secondary: var(--eg-surface);
+  --secondary-foreground: var(--eg-text-primary);
+  --muted: var(--eg-surface);
+  --muted-foreground: var(--eg-text-muted);
+  --accent: var(--eg-blue-50);
+  --accent-foreground: var(--eg-blue-700);
+  --destructive: var(--eg-danger);
+  --border: var(--eg-border);
+  --input: var(--eg-border);
+  --ring: var(--eg-blue-600);
+  --radius: var(--eg-radius-md);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply bg-white font-body text-fg antialiased;
+    /* The design uses the font's native "normal" line-height unless specified. */
+    line-height: normal;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply min-h-dvh bg-white;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-blue-600;
+  }
+}
+
+/* App shell: the design's 390px column, centred on larger screens. */
+@utility app-column {
+  @apply mx-auto w-full max-w-[480px];
+}
+
+/* Bottom padding that clears the floating tab bar (66px capsule + 10px + safe area). */
+@utility pb-tabbar {
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+}
+
+@utility pb-safe {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Standard white card: 24px radius, soft shadow, 1px border (05.x cards). */
+@utility app-card {
+  @apply rounded-card bg-white shadow-[0_6px_18px_#0A1A3F0A] ring-1 ring-border ring-inset;
+}

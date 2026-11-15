@@ -1,0 +1,31 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+/** Icon Button (rsotk): 40px round surface button used in app headers. */
+type Props = {
+  label: string;
+  href?: string;
+  tone?: "surface" | "glass" | "white";
+  dot?: boolean;
+  class?: string;
+} & Omit<HTMLAttributes<"button">, "class">;
+
+const { label, href, tone = "surface", dot = false, class: className, ...rest } = Astro.props;
+const Tag = href ? "a" : "button";
+const tones = {
+  surface: "bg-surface text-fg hover:bg-surface-2",
+  glass: "bg-white/15 text-white backdrop-blur-[8px] hover:bg-white/25",
+  white: "bg-white text-fg ring-1 ring-border ring-inset",
+};
+---
+
+<Tag
+  href={href}
+  type={Tag === "button" ? "button" : undefined}
+  aria-label={label}
+  class:list={["relative flex size-10 shrink-0 items-center justify-center rounded-pill transition-colors", tones[tone], className]}
+  {...rest}
+>
+  <slot />
+  {dot && <span class="absolute top-2 left-6 size-[9px] rounded-full bg-danger ring-2 ring-surface" aria-hidden="true" />}
+</Tag>

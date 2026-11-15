@@ -1,0 +1,182 @@
+---
+import ChevronLeft from "@lucide/astro/icons/chevron-left";
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+import Hourglass from "@lucide/astro/icons/hourglass";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import PenLine from "@lucide/astro/icons/pen-line";
+import FileDown from "@lucide/astro/icons/file-down";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import Truck from "@lucide/astro/icons/truck";
+import FileText from "@lucide/astro/icons/file-text";
+import UserRound from "@lucide/astro/icons/user-round";
+import Wallet from "@lucide/astro/icons/wallet";
+import type { QuotationDetail } from "@entragate/api-client";
+import AppButton from "../../components/customer/AppButton.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import IconTile from "../../components/customer/IconTile.astro";
+import Media from "../../components/customer/Media.astro";
+import { formatRupiah } from "../../lib/format";
+import { quotationChip } from "../../lib/status";
+
+/** 06.04 Quotation Detail & Approval — Desktop 1440 (sticky approval panel). */
+interface Props {
+  quote: QuotationDetail;
+}
+
+const { quote } = Astro.props;
+const actionable = quote.status === "needs_approval" || quote.status === "revised";
+const chip = quote.status === "needs_approval" ? { label: "Awaiting your approval", tone: "warning" as const } : quotationChip[quote.status];
+const year = new Date().getFullYear();
+const terms = quote.terms
+  ? [
+      { icon: ShieldCheck, title: "Warranty", detail: quote.terms.warranty },
+      { icon: Truck, title: "Delivery", detail: quote.terms.delivery },
+      { icon: FileText, title: "Terms & conditions", detail: quote.terms.conditions },
+    ]
+  : [];
+const card = "rounded-card bg-white shadow-[0_6px_18px_#0A1A3F0A] ring-1 ring-border ring-inset";
+const signed = (amount: number) => (amount < 0 ? `– ${formatRupiah(-amount)}` : formatRupiah(amount));
+---
+
+<div class="flex flex-col gap-6">
+  <a href="/quotations" class="flex items-center gap-1.5 self-start text-[14px] font-semibold text-fg-muted hover:text-fg">
+    <ChevronLeft size={16} aria-hidden="true" />Quotations
+  </a>
+  <div class="flex flex-col gap-2">
+    <div class="flex gap-2">
+      <StatusChip label={chip.label} tone={chip.tone} />
+      <StatusChip label={`${quote.number} · v${quote.version}`} tone="neutral" class="!text-fg-secondary" />
+    </div>
+    <h1 class="font-heading text-[32px] font-extrabold tracking-[-0.8px] text-fg">{quote.heading}</h1>
+    <p class="text-[14px] text-fg-muted">Prepared by {quote.preparedBy} · Issued {quote.issuedLabel} {year} · Valid until {quote.validUntilLabel} {year}</p>
+  </div>
+
+  <div class="flex items-start gap-6">
+    <div class="flex min-w-0 flex-1 flex-col gap-6">
+      <section class:list={[card, "flex flex-col gap-1 px-6 pt-[22px] pb-2.5"]} aria-labelledby="lines-title">
+        <div class="flex items-center justify-between gap-2.5 pb-2.5">
+          <h2 id="lines-title" class="font-heading text-[17px] font-bold text-fg">Itemized pricing</h2>
+          <span class="text-[13px] font-semibold text-fg-muted">{quote.lineCount} items</span>
+        </div>
+        <ul>
+          {
+            quote.lines.map((line, index) => (
+              <li class:list={["flex items-center gap-4 py-3.5", index > 0 && "border-t border-border"]}>
+                <Media alt="" class="size-[52px] shrink-0 rounded-md bg-surface" />
+                <span class="flex min-w-0 flex-1 flex-col gap-[3px]">
+                  <span class="text-[15px] font-semibold text-fg">{line.name}</span>
+                  <span class="text-[13px] text-fg-muted">{line.detail}</span>
+                </span>
+                <span class="rounded-sm bg-surface px-2.5 py-1 text-[13px] font-bold text-fg-secondary">× {line.quantity}</span>
+                <span class="flex w-[150px] flex-col items-end gap-0.5">
+                  <span class="text-[13px] text-fg-muted">{formatRupiah(line.unitPrice)}</span>
+                  <span class="text-[11px] text-fg-muted">unit price</span>
+                </span>
+                <span class="w-[160px] text-right text-[15px] font-bold text-fg">{formatRupiah(line.amount)}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+
+      {
+        quote.milestones.length > 0 && (
+          <section class:list={[card, "flex flex-col gap-4 p-6"]} aria-labelledby="milestones-title">
+            <h2 id="milestones-title" class="font-heading text-[17px] font-bold text-fg">Payment milestones</h2>
+            <ol class="flex gap-3">
+              {quote.milestones.map((m) => {
+                const [pct, name] = m.label.includes(" · ") ? m.label.split(" · ") : [undefined, m.label];
+                return (
+                  <li class="flex flex-1 flex-col gap-2.5 rounded-lg bg-surface p-[18px]">
+                    <span class="flex items-center justify-between gap-2.5">
+                      {pct ? <span class="rounded-md bg-blue-600 px-2.5 py-1 text-[13px] font-extrabold text-white">{pct}</span> : <span />}
+                      <Wallet size={18} class="text-blue-600" aria-hidden="true" />
+                    </span>
+                    <span class="flex flex-col gap-0.5">
+                      <span class="text-[15px] font-bold text-fg">{name}</span>
+                      <span class="text-[12.5px] text-fg-muted">{m.note.split(" · ")[0]}</span>
+                    </span>
+                    <span class="font-heading text-[17px] font-extrabold text-navy-900">{formatRupiah(m.amount)}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        )
+      }
+
+      {
+        terms.length > 0 && (
+          <ul class="flex flex-col rounded-card bg-white py-1.5 ring-1 ring-border ring-inset">
+            {terms.map(({ icon: Icon, title, detail }, index) => (
+              <li class:list={["flex items-center gap-3.5 px-6 py-3.5", index > 0 && "border-t border-border"]}>
+                <IconTile tone="neutral"><Icon size={20} /></IconTile>
+                <span class="flex flex-1 flex-col gap-[3px]">
+                  <span class="text-[15px] font-semibold text-fg">{title}</span>
+                  <span class="text-[13px] text-fg-muted">{detail}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+
+    <aside class="sticky top-[107px] flex w-[400px] shrink-0 flex-col gap-4" aria-label="Approval">
+      <section class="flex flex-col gap-4 rounded-card bg-white p-6 shadow-[0_12px_32px_#0A1A3F14] ring-1 ring-border ring-inset">
+        {
+          actionable && quote.expiresInDays && (
+            <p class="flex items-center gap-2.5 rounded-md bg-warning-bg px-3.5 py-2.5 text-[13px] font-bold text-warning">
+              <Hourglass size={16} aria-hidden="true" />
+              Expires in {quote.expiresInDays} days · {quote.validUntilLabel}
+            </p>
+          )
+        }
+        <div class="flex flex-col gap-0.5">
+          <span class="text-[13px] font-medium text-fg-muted">Grand total incl. PPN 11%</span>
+          <span class="font-heading text-[32px] font-extrabold tracking-[-1px] text-navy-900">{formatRupiah(quote.total)}</span>
+        </div>
+        <dl class="flex flex-col gap-2.5 text-[14px]">
+          {
+            quote.breakdown.map((row) => (
+              <div class="flex justify-between gap-2.5">
+                <dt class="text-fg-muted">{row.label}</dt>
+                <dd class:list={["font-semibold", row.tone === "success" ? "text-success" : "text-fg"]}>{signed(row.amount)}</dd>
+              </div>
+            ))
+          }
+        </dl>
+        <span class="h-px bg-border" aria-hidden="true"></span>
+        {
+          actionable ? (
+            <>
+              <AppButton href="#accept" block><CircleCheck slot="icon" size={18} aria-hidden="true" />Accept quotation</AppButton>
+              <div class="flex gap-2.5">
+                <AppButton variant="outline" href="#revise" class="flex-1"><PenLine slot="icon" size={18} aria-hidden="true" />Request revision</AppButton>
+                <AppButton variant="outline" class="w-24" disabled title="PDF will be available once connected to the ERP"><FileDown slot="icon" size={18} aria-hidden="true" />PDF</AppButton>
+              </div>
+            </>
+          ) : (
+            <div class="flex flex-col gap-2.5">
+              <p class="text-[13px] text-fg-secondary">
+                {quote.status === "accepted" ? "Accepted — the order is being prepared." : "This quotation can no longer be accepted. Ask sales for an updated version."}
+              </p>
+              <AppButton variant="outline" block disabled title="PDF will be available once connected to the ERP"><FileDown slot="icon" size={18} aria-hidden="true" />Download PDF</AppButton>
+            </div>
+          )
+        }
+      </section>
+      <a href={`/support/new?quotation=${quote.id}`} class="flex items-center gap-3.5 rounded-card bg-white p-1.5 ring-1 ring-border ring-inset transition-colors hover:bg-surface">
+        <span class="flex flex-1 items-center gap-3.5 px-4 py-3.5">
+          <IconTile tone="navy" radius="full"><UserRound size={20} /></IconTile>
+          <span class="flex flex-1 flex-col gap-[3px]">
+            <span class="text-[15px] font-semibold text-fg">{quote.accountManager.name}</span>
+            <span class="text-[13px] text-fg-muted">{quote.accountManager.role} · {quote.accountManager.replyLabel}</span>
+          </span>
+          <span class="text-[13px] font-semibold text-blue-600">Chat</span>
+          <ChevronRight size={18} class="text-fg-muted" aria-hidden="true" />
+        </span>
+      </a>
+    </aside>
+  </div>
+</div>

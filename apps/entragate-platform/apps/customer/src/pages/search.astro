@@ -1,0 +1,130 @@
+---
+import Search from "@lucide/astro/icons/search";
+import Package from "@lucide/astro/icons/package";
+import FileText from "@lucide/astro/icons/file-text";
+import Receipt from "@lucide/astro/icons/receipt";
+import Headset from "@lucide/astro/icons/headset";
+import Cpu from "@lucide/astro/icons/cpu";
+import FolderKanban from "@lucide/astro/icons/folder-kanban";
+import SearchX from "@lucide/astro/icons/search-x";
+import CustomerLayout from "../layouts/CustomerLayout.astro";
+import TopBar from "../components/customer/TopBar.astro";
+import IconTile, { type TileTone } from "../components/customer/IconTile.astro";
+import { invoicesService, ordersService, projectsService, quotationsService, supportService, warrantyService } from "../services";
+import { unlessNotConnected } from "../services/errors";
+import { formatRupiah } from "../lib/format";
+
+/** Portal search — orders, projects, quotations, invoices, tickets and devices (`?q=`). */
+const tokens = Astro.locals.tokens!;
+const q = (Astro.url.searchParams.get("q") ?? "").trim().slice(0, 80);
+const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+const matches = (...fields: (string | undefined)[]) => terms.length > 0 && terms.every((t) => fields.join(" ").toLowerCase().includes(t));
+
+type Hit = { title: string; detail: string; href: string };
+type Group = { label: string; icon: typeof Package; tone: TileTone; hits: Hit[] };
+let groups: Group[] = [];
+if (terms.length) {
+  const [orders, projects, quotations, invoices, tickets, products] = await Promise.all([
+    unlessNotConnected(ordersService.list(tokens), [], "search.orders"),
+    projectsService.list(tokens),
+    unlessNotConnected(quotationsService.list(tokens), [], "search.quotations"),
+    unlessNotConnected(invoicesService.list(tokens), { outstanding: 0, paidThisYear: 0, overdue: 0, invoices: [] }, "search.invoices"),
+    supportService.list(tokens),
+    warrantyService.products(tokens),
+  ]);
+  groups = [
+    {
+      label: "Orders",
+      icon: Package,
+      tone: "info",
+      hits: orders.filter((o) => matches(o.number, o.title, o.statusLabel)).map((o) => ({ title: o.title, detail: `${o.number} · ${o.statusLabel}`, href: `/orders/${o.id}` })),
+    },
+    {
+      label: "Projects",
+      icon: FolderKanban,
+      tone: "success",
+      hits: projects.filter((p) => matches(p.id, p.code, p.name, p.site)).map((p) => ({ title: p.name, detail: `${p.code} · ${p.site}`, href: `/projects/${p.id}` })),
+    },
+    {
+      label: "Quotations",
+      icon: FileText,
+      tone: "warning",
+      hits: quotations.filter((x) => matches(x.number, x.title)).map((x) => ({ title: x.title, detail: `${x.number} · ${formatRupiah(x.total)}`, href: `/quotations/${x.id}` })),
+    },
+    {
+      label: "Invoices",
+      icon: Receipt,
+      tone: "neutral",
+      hits: invoices.invoices.filter((i) => matches(i.number, i.description)).map((i) => ({ title: i.number, detail: `${i.description} · ${formatRupiah(i.amount)}`, href: `/payments/${i.id}` })),
+    },
+    {
+      label: "Support tickets",
+      icon: Headset,
+      tone: "info",
+      hits: tickets.filter((t) => matches(t.number, t.subject)).map((t) => ({ title: t.subject, detail: t.number, href: `/support/${t.id}` })),
+    },
+    {
+      label: "Devices",
+      icon: Cpu,
+      tone: "success",
+      hits: products.filter((p) => matches(p.name, p.serialLabel, p.site)).map((p) => ({ title: p.name, detail: `${p.serialLabel} · ${p.site}`, href: `/warranty/${p.id}` })),
+    },
+  ].filter((g): g is Group => g.hits.length > 0);
+}
+const total = groups.reduce((sum, g) => sum + g.hits.length, 0);
+const suggestions = ["ENT-2026-0418", "Barrier gate", "QT-2026-0912", "INV-2026-0431"];
+---
+
+<CustomerLayout title={q ? `Search · ${q}` : "Search"} section="home">
+  <TopBar title="Search" back="/" />
+  <div class="flex flex-col gap-5 px-5 pt-1 pb-8">
+    <form method="get" action="/search" role="search">
+      <label class="flex h-12 items-center gap-2.5 rounded-md bg-surface px-4 focus-within:bg-white focus-within:ring-[1.5px] focus-within:ring-blue-600 focus-within:ring-inset">
+        <Search size={18} class="text-fg-muted" aria-hidden="true" />
+        <span class="sr-only">Search orders, quotations, invoices, tickets and devices</span>
+        <input type="search" name="q" value={q} maxlength="80" autofocus placeholder="Order no., product, invoice, ticket…" class="h-full min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-muted" />
+      </label>
+    </form>
+
+    {
+      !q ? (
+        <section class="flex flex-col gap-3" aria-label="Suggestions">
+          <h2 class="text-[11.5px] font-bold tracking-[1px] text-fg-muted uppercase">Try</h2>
+          <div class="flex flex-wrap gap-2">
+            {suggestions.map((s) => (
+              <a href={`/search?q=${encodeURIComponent(s)}`} class="rounded-pill bg-surface px-3.5 py-2 text-[13px] font-semibold text-fg-secondary hover:bg-surface-2">{s}</a>
+            ))}
+          </div>
+        </section>
+      ) : total === 0 ? (
+        <div class="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-10 text-center">
+          <SearchX size={28} class="text-blue-600" aria-hidden="true" />
+          <p class="font-heading text-[17px] font-bold text-fg">No results for “{q}”</p>
+          <p class="text-[14px] text-fg-secondary">Check the number on your document or try a product name.</p>
+        </div>
+      ) : (
+        <>
+          <p class="text-[13.5px] text-fg-secondary" role="status">{total} result{total === 1 ? "" : "s"} for “{q}”</p>
+          {groups.map(({ label, icon: Icon, tone, hits }) => (
+            <section class="flex flex-col gap-2.5">
+              <h2 class="text-[11.5px] font-bold tracking-[1px] text-fg-muted uppercase">{label}</h2>
+              <ul class="flex flex-col divide-y divide-border rounded-card bg-white ring-1 ring-border ring-inset">
+                {hits.map((hit) => (
+                  <li>
+                    <a href={hit.href} class="flex items-center gap-3.5 px-4 py-3.5 hover:bg-surface">
+                      <IconTile tone={tone}><Icon size={20} /></IconTile>
+                      <span class="flex min-w-0 flex-col gap-[3px]">
+                        <span class="truncate text-[15px] font-semibold text-fg">{hit.title}</span>
+                        <span class="truncate text-[13px] text-fg-muted">{hit.detail}</span>
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </>
+      )
+    }
+  </div>
+</CustomerLayout>

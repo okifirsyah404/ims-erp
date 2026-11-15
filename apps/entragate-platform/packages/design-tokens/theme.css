@@ -1,0 +1,70 @@
+/*
+ * Tailwind CSS v4 theme mapping for the Entragate tokens.
+ * Usage (after `@import "tailwindcss";`):  @import "@entragate/design-tokens/theme.css";
+ *
+ * Naming: colors keep the .pen variable names (navy-900, blue-600, surface…);
+ * text colors are exposed as `fg-*` to avoid `text-text-*` utilities.
+ */
+@import "./tokens.css";
+
+@theme inline {
+  --font-heading: var(--eg-font-heading);
+  --font-body: var(--eg-font-body);
+  --font-sans: var(--eg-font-body);
+
+  --color-navy-950: var(--eg-navy-950);
+  --color-navy-900: var(--eg-navy-900);
+  --color-navy-800: var(--eg-navy-800);
+  --color-blue-700: var(--eg-blue-700);
+  --color-blue-600: var(--eg-blue-600);
+  --color-blue-100: var(--eg-blue-100);
+  --color-blue-50: var(--eg-blue-50);
+  --color-cyan-700: var(--eg-cyan-700);
+  --color-cyan-400: var(--eg-cyan-400);
+  --color-cyan-50: var(--eg-cyan-50);
+  --color-accent-end: var(--eg-gradient-accent-end);
+
+  --color-surface: var(--eg-surface);
+  --color-surface-2: var(--eg-surface-2);
+  --color-surface-subtle: var(--eg-surface-subtle);
+  --color-canvas: var(--eg-canvas);
+  --color-skeleton: var(--eg-skeleton);
+  --color-border: var(--eg-border);
+  --color-border-strong: var(--eg-border-strong);
+
+  --color-fg: var(--eg-text-primary);
+  --color-fg-secondary: var(--eg-text-secondary);
+  --color-fg-muted: var(--eg-text-muted);
+  --color-fg-disabled: var(--eg-text-disabled);
+  --color-fg-on-dark: var(--eg-text-on-dark);
+  --color-fg-on-dark-soft: var(--eg-text-on-dark-soft);
+  --color-fg-on-dark-muted: var(--eg-text-on-dark-muted);
+
+  --color-success: var(--eg-success);
+  --color-success-bg: var(--eg-success-bg);
+  --color-success-border: var(--eg-success-border);
+  --color-warning: var(--eg-warning);
+  --color-warning-bg: var(--eg-warning-bg);
+  --color-warning-border: var(--eg-warning-border);
+  --color-danger: var(--eg-danger);
+  --color-danger-bg: var(--eg-danger-bg);
+  --color-danger-border: var(--eg-danger-border);
+  --color-rating: var(--eg-rating);
+  --color-whatsapp: var(--eg-whatsapp);
+
+  --radius-xs: var(--eg-radius-xs);
+  --radius-sm: var(--eg-radius-sm);
+  --radius-md: var(--eg-radius-md);
+  --radius-control: var(--eg-radius-control);
+  --radius-lg: var(--eg-radius-lg);
+  --radius-card: var(--eg-radius-card);
+  --radius-xl: var(--eg-radius-xl);
+  --radius-sheet: var(--eg-radius-sheet);
+  --radius-pill: var(--eg-radius-pill);
+
+  --shadow-cta: var(--eg-shadow-cta);
+  --shadow-card: var(--eg-shadow-card);
+  --shadow-tab: var(--eg-shadow-tab);
+  --shadow-float: var(--eg-shadow-float);
+  --shadow-photo: var(--eg-shadow-photo);
+}

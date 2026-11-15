@@ -1,0 +1,102 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import Eye from "@lucide/astro/icons/eye";
+import EyeOff from "@lucide/astro/icons/eye-off";
+
+/**
+ * App / Input Field (e3YBhQ): 13px label, 54px box (surface fill, white + blue ring on
+ * focus). Leading icon via the "icon" slot. Password fields get a show/hide toggle.
+ * `error` switches to the 04.08 danger state.
+ */
+type Props = {
+  label: string;
+  name: string;
+  error?: string;
+  /** Error styling without a message (e.g. credential errors shown in an alert). */
+  invalid?: boolean;
+  hint?: string;
+  multiline?: boolean;
+  class?: string;
+} & Omit<HTMLAttributes<"input">, "class" | "name">;
+
+const { label, name, error, invalid = false, hint, multiline = false, class: className, id = `f-${name}`, type = "text", value, ...rest } = Astro.props;
+const isPassword = type === "password";
+const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
+const hasError = Boolean(error) || invalid;
+---
+
+<div class:list={["flex flex-col gap-2", className]} data-field>
+  <label for={id} class:list={["text-[13px] font-semibold", hasError ? "text-danger" : "text-fg-secondary"]}>{label}</label>
+  <div
+    class:list={[
+      "group flex items-center gap-2.5 rounded-md px-4 ring-inset transition-colors",
+      multiline ? "items-start py-3.5" : "h-[54px]",
+      hasError
+        ? "bg-white ring-[1.5px] ring-danger"
+        : "bg-surface ring-1 ring-border focus-within:bg-white focus-within:ring-[1.5px] focus-within:ring-blue-600",
+    ]}
+  >
+    <span class="flex shrink-0 text-fg-muted [&>svg]:size-[18px]" aria-hidden="true"><slot name="icon" /></span>
+    {
+      multiline ? (
+        <textarea
+          id={id}
+          name={name}
+          rows={4}
+          aria-invalid={hasError ? "true" : undefined}
+          aria-describedby={describedBy}
+          class="min-h-[96px] w-full flex-1 resize-none bg-transparent text-[15px] leading-[1.45] text-fg outline-none placeholder:text-fg-muted"
+          {...(rest as HTMLAttributes<"textarea">)}
+        >{value}</textarea>
+      ) : (
+        <input
+          id={id}
+          name={name}
+          type={type}
+          value={value}
+          aria-invalid={hasError ? "true" : undefined}
+          aria-describedby={describedBy}
+          class:list={[
+            "h-full w-full min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-muted",
+            isPassword && "tracking-[2px] placeholder:tracking-normal",
+          ]}
+          {...rest}
+        />
+      )
+    }
+    <slot name="trailing" />
+    {
+      isPassword && (
+        <button
+          type="button"
+          class="flex shrink-0 text-fg-muted hover:text-fg"
+          aria-label="Show password"
+          aria-pressed="false"
+          data-password-toggle
+        >
+          <Eye size={18} class="block group-data-[shown]:hidden" aria-hidden="true" />
+          <EyeOff size={18} class="hidden group-data-[shown]:block" aria-hidden="true" />
+        </button>
+      )
+    }
+  </div>
+  {error && <p id={`${id}-error`} class="text-[12.5px] font-medium text-danger">{error}</p>}
+  {!error && hint && <p id={`${id}-hint`} class="text-[12.5px] text-fg-muted">{hint}</p>}
+</div>
+
+<script>
+  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-password-toggle]")) {
+    if (button.dataset.ready) continue;
+    button.dataset.ready = "1";
+    button.addEventListener("click", () => {
+      const box = button.parentElement!;
+      const input = box.querySelector("input")!;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      input.classList.toggle("tracking-[2px]", !show);
+      box.toggleAttribute("data-shown", show);
+      button.setAttribute("aria-pressed", String(show));
+      button.setAttribute("aria-label", show ? "Hide password" : "Show password");
+    });
+  }
+</script>

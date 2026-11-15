@@ -1,0 +1,39 @@
+---
+import { actions, isInputError } from "astro:actions";
+import BuildingComplex from "@lucide/astro/icons/building-complex";
+import Hash from "@lucide/astro/icons/hash";
+import Factory from "@lucide/astro/icons/factory";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import AppField from "../../components/customer/AppField.astro";
+import AppButton from "../../components/customer/AppButton.astro";
+import { customerService } from "../../services";
+
+/** Company & team › Edit company profile (owners/admins). Legal name changes are re-verified by Entragate. */
+const result = Astro.getActionResult(actions.account.updateCompany);
+if (result && !result.error) return Astro.redirect("/company", 303);
+const fields = result?.error && isInputError(result.error) ? result.error.fields : {};
+const formError = result?.error && !isInputError(result.error) ? result.error.message : undefined;
+const account = await customerService.account(Astro.locals.tokens!);
+if (!account.company) return Astro.redirect("/company", 303);
+const me = account.members.find((m) => m.email === Astro.locals.user!.email);
+if (!(me?.role === "owner" || me?.admin)) return Astro.redirect("/company", 303);
+const company = account.company;
+---
+
+<CustomerLayout title="Edit company" section="profile">
+  <TopBar title="Company profile" back="/company" />
+  <form method="POST" action={actions.account.updateCompany} class="flex flex-col gap-5 px-5 pt-2 pb-8" novalidate>
+    {formError && <p role="alert" class="rounded-md bg-danger-bg p-3.5 text-[13.5px] font-semibold text-danger ring-1 ring-danger-border ring-inset">{formError}</p>}
+    <AppField label="Registered company name" name="name" value={company.name} required minlength={3} maxlength={120} autocomplete="organization" error={fields.name?.[0]} hint="Changing the legal name sends your account for re-verification.">
+      <BuildingComplex slot="icon" />
+    </AppField>
+    <AppField label="NPWP" name="npwp" value={company.npwp} inputmode="numeric" placeholder="01.234.567.8-901.000" error={fields.npwp?.[0]}>
+      <Hash slot="icon" />
+    </AppField>
+    <AppField label="Industry" name="industry" value={company.industry} maxlength={80} error={fields.industry?.[0]}>
+      <Factory slot="icon" />
+    </AppField>
+    <AppButton type="submit" block>Save company profile</AppButton>
+  </form>
+</CustomerLayout>

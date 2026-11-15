@@ -1,0 +1,75 @@
+---
+import DoorClosed from "@lucide/astro/icons/door-closed";
+import MockStatus from "./MockStatus.astro";
+
+/** Entragate Access window body (02.04). */
+interface Props {
+  variant: "desktop" | "mobile";
+}
+
+const { variant } = Astro.props;
+type Tone = "success" | "info" | "danger";
+const doors: { name: string; status: string; tone: Tone; on: boolean }[] = [
+  { name: "Main Lobby · Flap 01-04", status: "Online", tone: "success", on: true },
+  { name: "Server Room", status: "Locked", tone: "info", on: true },
+  { name: "Parking B1 Barrier", status: "Online", tone: "success", on: true },
+  { name: "Rooftop Access", status: "Offline", tone: "danger", on: false },
+];
+const events = [
+  { time: "08:42", label: "Face ID · granted", dot: "bg-success" },
+  { time: "08:41", label: "Card 0921 · granted", dot: "bg-success" },
+  { time: "08:39", label: "QR · expired pass", dot: "bg-danger" },
+  { time: "08:37", label: "Anti-passback", dot: "bg-warning" },
+  { time: "08:35", label: "Face ID · granted", dot: "bg-success" },
+];
+const toggle = (on: boolean, size: "desktop" | "mobile") => [
+  "flex shrink-0 rounded-pill p-0.5",
+  on ? "justify-end bg-blue-600" : "bg-surface-2",
+  size === "desktop" ? "h-3.5 w-6" : "h-[13px] w-[22px]",
+];
+---
+
+{
+  variant === "desktop" ? (
+    <div class="flex min-h-0 flex-1 gap-2.5">
+      <div class="flex flex-1 flex-col gap-[7px] rounded-sm bg-white p-3 ring-1 ring-border ring-inset">
+        <span class="text-[10px] font-semibold text-fg">Doors &amp; gates</span>
+        {doors.map((d) => (
+          <div class="flex items-center gap-2 py-[5px]">
+            <span class="flex size-[22px] items-center justify-center rounded-sm bg-surface text-fg-secondary">
+              <DoorClosed size={11} />
+            </span>
+            <span class="flex-1 text-[9.5px] font-semibold text-fg">{d.name}</span>
+            <MockStatus label={d.status} tone={d.tone} />
+            <span class:list={toggle(d.on, "desktop")}>
+              <span class="size-2.5 rounded-full bg-white" />
+            </span>
+          </div>
+        ))}
+      </div>
+      <div class="flex w-[200px] shrink-0 flex-col gap-[7px] rounded-sm bg-white p-3 ring-1 ring-border ring-inset">
+        <span class="text-[10px] font-semibold text-fg">Event log</span>
+        {events.map((e) => (
+          <div class="flex items-center gap-[7px]">
+            <span class:list={["size-1.5 rounded-full", e.dot]} />
+            <span class="text-[9px] text-fg-muted">{e.time}</span>
+            <span class="text-[9.5px] font-medium text-fg">{e.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : (
+    <div class="flex flex-1 flex-col gap-1.5 rounded-sm bg-white p-2.5 ring-1 ring-border ring-inset">
+      {doors.map((d) => (
+        <div class="flex items-center gap-2 py-[3px]">
+          <DoorClosed size={11} class="shrink-0 text-fg-secondary" />
+          <span class="flex-1 text-[9.5px] font-semibold text-fg">{d.name}</span>
+          <MockStatus variant="mobile" label={d.status} tone={d.tone} />
+          <span class:list={toggle(d.on, "mobile")}>
+            <span class="size-[9px] rounded-full bg-white" />
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}

@@ -1,0 +1,72 @@
+---
+import UserCheck from "@lucide/astro/icons/user-check";
+import CalendarCheck from "@lucide/astro/icons/calendar-check";
+import FileText from "@lucide/astro/icons/file-text";
+import Download from "@lucide/astro/icons/download";
+import ImageIcon from "@lucide/astro/icons/image";
+import type { TicketMessage } from "@entragate/api-client";
+
+/** 08.03 / 06.06 conversation thread: date separators, events, bubbles, photos and files. */
+interface Props {
+  messages: TicketMessage[];
+  /** id of the newest entry (scroll target). */
+  latestId?: string;
+  class?: string;
+}
+
+const { messages, latestId = "latest", class: className } = Astro.props;
+const lastIndex = messages.length - 1;
+const outBubble = "rounded-[20px_20px_8px_20px] bg-blue-600 text-white";
+const inBubble = "rounded-[20px_20px_20px_8px] bg-surface text-fg";
+---
+
+<ol class:list={["flex flex-col gap-4", className]} aria-label="Conversation">
+  {
+    messages.map((m, index) => {
+      const id = index === lastIndex ? latestId : undefined;
+      if (m.kind === "date")
+        return (
+          <li id={id} class="flex items-center gap-3">
+            <span class="h-px flex-1 bg-border" />
+            <span class="text-[12px] font-semibold text-fg-muted">{m.label}</span>
+            <span class="h-px flex-1 bg-border" />
+          </li>
+        );
+      if (m.kind === "event")
+        return (
+          <li id={id} class="flex justify-center">
+            <span class="flex items-center gap-1.5 rounded-pill bg-surface px-3 py-[7px] text-[12px] font-medium text-fg-secondary">
+              {m.icon === "assign" ? <UserCheck size={13} aria-hidden="true" /> : <CalendarCheck size={13} aria-hidden="true" />}
+              {m.text}
+            </span>
+          </li>
+        );
+      const out = m.from === "customer";
+      const meta = out ? `${m.time}${"read" in m && m.read ? " · Read" : ""}` : `${"author" in m && m.author ? `${m.author} · ` : ""}${m.time}`;
+      const showMeta = m.kind === "message";
+      return (
+        <li id={id} class:list={["flex flex-col gap-1.5", out ? "items-end" : "items-start"]}>
+          <span class="sr-only">{out ? "You" : ("author" in m && m.author) || "Support"}:</span>
+          {m.kind === "photo" && (
+            <span class:list={["flex h-[150px] w-[220px] items-center justify-center rounded-[20px_20px_8px_20px] bg-surface text-fg-muted ring-1 ring-border ring-inset", !out && "rounded-[20px_20px_20px_8px]"]}>
+              <ImageIcon size={28} aria-hidden="true" />
+              <span class="sr-only">Photo</span>
+            </span>
+          )}
+          {m.kind === "message" && <p class:list={["max-w-[78%] px-3.5 py-3 text-[14px] leading-5", out ? outBubble : inBubble]}>{m.text}</p>}
+          {m.kind === "attachment" && (
+            <span class:list={["flex max-w-[85%] min-w-[260px] items-center gap-3 p-3", out ? outBubble : inBubble]}>
+              <span class="flex size-10 shrink-0 items-center justify-center rounded-md bg-danger-bg text-danger"><FileText size={18} aria-hidden="true" /></span>
+              <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span class="text-[13px] font-semibold break-all">{m.fileName}</span>
+                <span class="text-[11.5px] text-fg-muted">{m.size}</span>
+              </span>
+              <span class="text-blue-600/50" title="Downloads are available once connected to the ERP"><Download size={18} aria-hidden="true" /></span>
+            </span>
+          )}
+          {showMeta && <span class="text-[11px] font-medium text-fg-muted">{meta}</span>}
+        </li>
+      );
+    })
+  }
+</ol>

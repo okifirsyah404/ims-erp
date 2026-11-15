@@ -1,0 +1,242 @@
+---
+import SlidersHorizontal from "@lucide/astro/icons/sliders-horizontal";
+import ChevronUp from "@lucide/astro/icons/chevron-up";
+import Check from "@lucide/astro/icons/check";
+import { applications, availabilityOptions, catalogCategories, priceBounds } from "../../data/catalog";
+import type { CatalogFacets, CatalogQuery } from "../../lib/catalog";
+import { formatRupiah } from "../../lib/format";
+
+/**
+ * Filters sidebar (02.01 · Filters). A plain GET form, so filtering works without JS;
+ * the script submits on change for instant results. Rendered again inside the mobile
+ * filter sheet with a different `idPrefix`.
+ */
+interface Props {
+  query: CatalogQuery;
+  facets: CatalogFacets;
+  idPrefix: string;
+  /** Submit on every change (sidebar) or only via an explicit button (mobile sheet). */
+  autoSubmit?: boolean;
+  class?: string;
+}
+
+const { query, facets, idPrefix, autoSubmit = true, class: className } = Astro.props;
+const min = query.minPrice ?? priceBounds.min;
+const max = query.maxPrice ?? priceBounds.max;
+// Price inputs are only submitted once the user moves them, keeping URLs clean.
+const pricePristine = query.minPrice === null && query.maxPrice === null;
+const pct = (value: number) => ((value - priceBounds.min) / (priceBounds.max - priceBounds.min)) * 100;
+
+const groups = [
+  { id: "category", title: "Category" },
+  { id: "price", title: "Price range" },
+  { id: "availability", title: "Availability" },
+  { id: "application", title: "Application" },
+];
+const groupTitle = (id: string) => groups.find((g) => g.id === id)!.title;
+---
+
+<form
+  action="/products"
+  method="get"
+  class:list={["flex flex-col", className]}
+  data-filter-form
+  data-auto-submit={autoSubmit ? undefined : "false"}
+>
+  {query.q && <input type="hidden" name="q" value={query.q} />}
+  {query.sort !== "popular" && <input type="hidden" name="sort" value={query.sort} />}
+
+  <div class="flex items-center justify-between pb-5">
+    <h2 class="flex items-center gap-2 font-heading text-[16px] font-bold text-fg">
+      <SlidersHorizontal size={16} aria-hidden="true" />
+      Filters
+    </h2>
+    <a href="/products" class="text-[13px] font-semibold text-blue-600 hover:underline">Clear all</a>
+  </div>
+
+  <details open class="group/filter border-t border-border py-5">
+    <summary class="flex cursor-pointer list-none items-center justify-between text-[14px] font-bold text-fg">
+      {groupTitle("category")}
+      <ChevronUp size={16} class="text-fg-muted transition-transform group-not-open/filter:rotate-180" aria-hidden="true" />
+    </summary>
+    <fieldset class="mt-3.5 flex flex-col gap-3.5">
+      <legend class="sr-only">{groupTitle("category")}</legend>
+      {
+        catalogCategories.map((category) => (
+          <label class="flex cursor-pointer items-center gap-2.5">
+            <input
+              type="checkbox"
+              name="category"
+              value={category.slug}
+              checked={query.categories.includes(category.slug)}
+              class="peer sr-only"
+            />
+            <span class="flex size-[18px] shrink-0 items-center justify-center rounded-xs bg-white text-transparent ring-[1.5px] ring-border-strong ring-inset peer-checked:bg-blue-600 peer-checked:text-white peer-checked:ring-blue-600 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue-600">
+              <Check size={12} stroke-width={3} aria-hidden="true" />
+            </span>
+            <span class="flex-1 text-[14px] text-fg">{category.name}</span>
+            <span class="text-[12px] text-fg-muted">{facets.categories[category.slug] ?? 0}</span>
+          </label>
+        ))
+      }
+    </fieldset>
+  </details>
+
+  <details open class="group/filter border-t border-border py-5">
+    <summary class="flex cursor-pointer list-none items-center justify-between text-[14px] font-bold text-fg">
+      {groupTitle("price")}
+      <ChevronUp size={16} class="text-fg-muted transition-transform group-not-open/filter:rotate-180" aria-hidden="true" />
+    </summary>
+    <div class="mt-3.5 flex flex-col gap-3.5" data-price-range data-pristine={pricePristine ? "" : undefined}>
+      <div class="relative h-5">
+        <span class="absolute inset-x-0 top-2 h-1 rounded-pill bg-surface-2"></span>
+        <span
+          class="absolute top-2 h-1 rounded-pill bg-blue-600"
+          style={`left:${pct(min)}%;right:${100 - pct(max)}%`}
+          data-range-selection></span>
+        <label class="sr-only" for={`${idPrefix}-min`}>Minimum price</label>
+        <input
+          id={`${idPrefix}-min`}
+          type="range"
+          name="min"
+          min={priceBounds.min}
+          max={priceBounds.max}
+          step={priceBounds.step}
+          value={min}
+          class="range-thumb absolute inset-0"
+          data-range-min
+        />
+        <label class="sr-only" for={`${idPrefix}-max`}>Maximum price</label>
+        <input
+          id={`${idPrefix}-max`}
+          type="range"
+          name="max"
+          min={priceBounds.min}
+          max={priceBounds.max}
+          step={priceBounds.step}
+          value={max}
+          class="range-thumb absolute inset-0"
+          data-range-max
+        />
+      </div>
+      <div class="flex gap-2.5" aria-hidden="true">
+        <span class="flex-1 rounded-md px-3 py-2.5 text-[13px] font-medium text-fg ring-1 ring-border ring-inset" data-range-min-label>
+          {formatRupiah(min)}
+        </span>
+        <span class="flex-1 rounded-md px-3 py-2.5 text-[13px] font-medium text-fg ring-1 ring-border ring-inset" data-range-max-label>
+          {formatRupiah(max)}
+        </span>
+      </div>
+    </div>
+  </details>
+
+  <details open class="group/filter border-t border-border py-5">
+    <summary class="flex cursor-pointer list-none items-center justify-between text-[14px] font-bold text-fg">
+      {groupTitle("availability")}
+      <ChevronUp size={16} class="text-fg-muted transition-transform group-not-open/filter:rotate-180" aria-hidden="true" />
+    </summary>
+    <fieldset class="mt-3.5 flex flex-col gap-3.5">
+      <legend class="sr-only">{groupTitle("availability")}</legend>
+      {
+        availabilityOptions.map((option) => (
+          <label class="flex cursor-pointer items-center gap-2.5">
+            <input
+              type="checkbox"
+              name="availability"
+              value={option.value}
+              checked={query.availability.includes(option.value)}
+              class="peer sr-only"
+            />
+            <span class="flex size-[18px] shrink-0 items-center justify-center rounded-xs bg-white text-transparent ring-[1.5px] ring-border-strong ring-inset peer-checked:bg-blue-600 peer-checked:text-white peer-checked:ring-blue-600 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue-600">
+              <Check size={12} stroke-width={3} aria-hidden="true" />
+            </span>
+            <span class="flex-1 text-[14px] text-fg">{option.label}</span>
+            <span class="text-[12px] text-fg-muted">{facets.availability[option.value] ?? 0}</span>
+          </label>
+        ))
+      }
+    </fieldset>
+  </details>
+
+  <details open class="group/filter border-t border-border py-5">
+    <summary class="flex cursor-pointer list-none items-center justify-between text-[14px] font-bold text-fg">
+      {groupTitle("application")}
+      <ChevronUp size={16} class="text-fg-muted transition-transform group-not-open/filter:rotate-180" aria-hidden="true" />
+    </summary>
+    <fieldset class="mt-3.5 flex flex-wrap gap-2">
+      <legend class="sr-only">{groupTitle("application")}</legend>
+      {
+        applications.map((application) => (
+          <label class="cursor-pointer">
+            <input
+              type="checkbox"
+              name="application"
+              value={application}
+              checked={query.applications.includes(application)}
+              class="peer sr-only"
+            />
+            <span class="block rounded-pill bg-white px-3 py-1.5 text-[13px] font-medium text-fg-secondary ring-1 ring-border ring-inset peer-checked:bg-blue-50 peer-checked:font-semibold peer-checked:text-blue-600 peer-checked:ring-blue-100 peer-focus-visible:outline-2 peer-focus-visible:outline-blue-600">
+              {application}
+            </span>
+          </label>
+        ))
+      }
+    </fieldset>
+  </details>
+
+  <noscript>
+    <button type="submit" class="mt-2 w-full rounded-md bg-navy-900 px-4 py-3 text-[14px] font-semibold text-white">
+      Apply filters
+    </button>
+  </noscript>
+  <slot />
+</form>
+
+<script>
+  import { formatRupiah } from "../../lib/format";
+
+  for (const form of document.querySelectorAll<HTMLFormElement>("[data-filter-form]")) {
+    const range = form.querySelector<HTMLElement>("[data-price-range]");
+    const minInput = range?.querySelector<HTMLInputElement>("[data-range-min]");
+    const maxInput = range?.querySelector<HTMLInputElement>("[data-range-max]");
+
+    const syncRange = () => {
+      if (!range || !minInput || !maxInput) return;
+      const lo = Math.min(Number(minInput.value), Number(maxInput.value));
+      const hi = Math.max(Number(minInput.value), Number(maxInput.value));
+      const span = Number(minInput.max) - Number(minInput.min);
+      const selection = range.querySelector<HTMLElement>("[data-range-selection]");
+      if (selection) {
+        selection.style.left = `${((lo - Number(minInput.min)) / span) * 100}%`;
+        selection.style.right = `${100 - ((hi - Number(minInput.min)) / span) * 100}%`;
+      }
+      range.querySelector("[data-range-min-label]")!.textContent = formatRupiah(lo);
+      range.querySelector("[data-range-max-label]")!.textContent = formatRupiah(hi);
+    };
+
+    minInput?.addEventListener("input", syncRange);
+    maxInput?.addEventListener("input", syncRange);
+
+    const markDirty = () => range?.removeAttribute("data-pristine");
+    minInput?.addEventListener("input", markDirty);
+    maxInput?.addEventListener("input", markDirty);
+
+    form.addEventListener("formdata", (event) => {
+      if (!minInput || !maxInput) return;
+      if (range?.hasAttribute("data-pristine")) {
+        event.formData.delete("min");
+        event.formData.delete("max");
+        return;
+      }
+      // Normalise a crossed range before sending.
+      const lo = Math.min(Number(minInput.value), Number(maxInput.value));
+      const hi = Math.max(Number(minInput.value), Number(maxInput.value));
+      event.formData.set("min", String(lo));
+      event.formData.set("max", String(hi));
+    });
+
+    form.addEventListener("change", () => {
+      if (form.dataset.autoSubmit !== "false") form.requestSubmit();
+    });
+  }
+</script>
