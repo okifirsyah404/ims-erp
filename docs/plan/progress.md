@@ -56,6 +56,12 @@ into `feat/m07-customer-portal`.
   database, and the portal e2e was not re-run. Docker Desktop's engine is down
   on this machine (`dockerDesktopLinuxEngine` pipe missing, Redis closed).
   Both are to be repeated when Docker is back.
+- **Done later the same day (Docker back).** Disposable DB `ims_erp_v97`:
+  `drizzle:migrate` on a fresh DB applied the regenerated migration,
+  `drizzle-kit check` "Everything's fine", seed run twice. Backend on
+  `APP_PORT=3010` with `PORTAL_URL` set: the portal e2e (signup code,
+  invitation claim, sign-in gate, contacts, tickets and thread, staff
+  replies) passed **50/50**.
 
 ## 2026-11-15 - M12 T30: statement CSV exports + monthly report archive (branch `feat/reports-surface`)
 
