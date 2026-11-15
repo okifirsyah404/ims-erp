@@ -180,6 +180,7 @@ function makeService(seed?: {
 		},
 		listInStockSerials: async () => [],
 		sell: async () => [],
+		returnToSupplier: async () => [],
 	};
 
 	return {

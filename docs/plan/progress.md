@@ -12,6 +12,158 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-15 - ERP-0061 M05 purchase returns (retur pembelian), replacement only
+
+Branch `feat/m05-purchase-returns` from `origin/main` (`aa3a7ad`).
+
+**Number check.** Before taking ERP-0061: `origin/main`, every remote branch
+and the heads of the seven open PRs (#97 to #107) were checked. The highest
+backlog id anywhere was ERP-0060 (PR #102), and the highest ADR was ADR-0022
+(PR #97). No ADR was needed.
+
+**Gate 1 (read).**
+- `docs.dbml` Procurement and Inventory sections.
+- `module-ownership.md` (procurement is company-wide; inventory owns units and
+  the ledger).
+- `integrity-and-consistency.md` and `data-dictionary.md` (§3.2 status
+  vocabulary, money and quantity columns).
+- `logical-references.md`, regenerated after the edit.
+- Skipped: `implementation-phases.md`. Nothing depends on an unlanded step.
+
+**Gate 2 (owner decisions 2026-11-15 plus the manual grill).**
+- **Ownership.** Returns live in `procurement`. Stock and serial units change
+  only through the inventory services (`StockService.postMovement`, new
+  `ItemService.returnUnits`), never through inventory repositories.
+- **Tenant.** Company-wide like goods receipts (ADR-0011), so there is no
+  `organization_id`. The old scaffold (tenant org, `catalog.items`, PO-based,
+  `requested|approved|rejected|shipped|completed`) is replaced.
+- **Soft delete.** `deleted_at` on both tables. Draft lines are replaced as a
+  whole, as purchase orders already do.
+- **Money and quantity.** `unit_cost`, `line_total` and `total_amount` are
+  bigint IDR minor units at the BPB's ex-VAT cost; the total is informative.
+  Quantities are `numeric(18,3)`.
+- **Datetimes.** `return_date` is a Jakarta business date; `*_at` columns are
+  unix ms.
+- **Logical references.** `warehouse_id`, `bin_id` and `stock_movement_id`
+  point to inventory and the `*_by` columns to auth: all are plain nullable
+  ids with the standard notes. The FKs inside procurement (goods receipt,
+  goods receipt line, PO, PO line, supplier) are real FKs with `restrict`.
+- **Status vocabulary.**
+  - Return: `draft -> submitted -> approved -> shipped`; rejection goes back
+    to draft; `cancelled` before shipping.
+  - Unit: a new terminal status `returned`, reached from `in_stock` only.
+- **Business rules.**
+  - A line never takes more than the BPB line minus the live (not cancelled)
+    returns.
+  - A serialized line names serials of that BPB line that are still in stock
+    and not on another live return.
+  - Shipping re-checks the quantities under a lock on the return and its BPB.
+  - Stock leaves from the BPB's warehouse and storage.
+  - The returned quantity is taken off the PO line, and the PO goes back to
+    `partially_received` (or `sent` when nothing stays received).
+  - No credit note, refund or journal.
+
+**What changed**
+- **`docs/database`**
+  - `docs.dbml`: rewrote `procurement.purchase_returns` / `_items`, added the
+    `returned` unit status and the procurement header note.
+  - `data-dictionary.md`: §3.2 names `shipped` as the executed state.
+  - `logical-references.md`: regenerated.
+  - `validate-dbml.ts`: `OK` (0 cross-module refs, 0 timestamp gaps, 0 parity
+    drift).
+- **Drizzle and migration**
+  - `procurement.schema.ts`: two tables plus `PURCHASE_RETURN_STATUSES`.
+  - `inventory.schema.ts`: `returned` added to `UNIT_STATUSES`, the
+    transitions and the CHECK.
+  - Code type `purchase_return` (`RTB`).
+  - `bun run drizzle:generate` produced the migration, renamed to
+    `20261115125224_erp0061_purchase_returns`: two tables, indexes, FKs and
+    the serial status CHECK swap. Inspected.
+- **Backend**
+  - Contract, repository, service and controller under
+    `/purchase-returns`: list, `returnable-receipts`, detail, create, patch,
+    submit, decision, ship and cancel.
+  - Costs are hidden without `product:read_cost`.
+  - Errors are translated in `api` en/id.
+  - The document registry records the approved return and voids it on
+    cancel.
+- **Permissions.** `purchase_return: read, create, update, submit, approve,
+  ship, cancel`.
+  - Purchasing: create, update, submit, cancel.
+  - Operations manager: approve.
+  - Warehouse: ship.
+  - Owner: all.
+  - Auditor: read.
+- **Web admin**
+  - `/procurement/purchase-returns`: list with a status filter, new (also
+    from a BPB via `?goodsReceiptId=`), detail with the actions, and edit.
+  - The BPB detail page has a "Return goods" action.
+  - Sidebar and breadcrumbs.
+  - Unit status label `returned`.
+  - The numbering settings list `purchase_return`.
+  - en/id locales.
+- **Two fixes found by the live run, outside the new code**
+  - **Outbound stock was broken on main.** `BalanceRepository.applyDelta`
+    opened a missing balance at the delta with `INSERT ... ON CONFLICT DO
+    NOTHING`. Postgres checks CHECK constraints on the proposed row before
+    conflict arbitration, so any negative delta failed
+    `stock_balances_on_hand_check` even when the row existed. Reproduced in
+    `psql` on the disposable DB. The insert now opens at zero, and the
+    existing guarded UPDATE applies the delta (and still raises
+    `InsufficientStockError`). This also affects delivery notes, adjustments
+    out and transfers on main. It is in Oki's inventory area and is flagged
+    for his review.
+  - **The BPB pages were refused to every user.** The goods receipt nav leaf
+    had no permission, so `canOpenPath` denied it. It now carries
+    `stock.read`, the same grant as `GET /goods-receipts`.
+
+**Verification**
+- `bun run typecheck` (backend and web-admin `tsc` clean). `bun run lint`: 0
+  errors.
+- Tests:
+  - Backend `bun test`: 1078 pass, 4 fail (the known `Bun.Image` / toWebp
+    tests).
+  - `test/unit/purchase-return.service.test.ts`: 12 pass.
+  - `item-status-matrix.test.ts` was updated for `returned`.
+  - Locales: 94 pass, after adding the `returnLine` / `returnState` /
+    `returnStatus` dynamic prefixes.
+  - web-admin: 100 pass.
+- **Disposable DB `ims_erp_v_ret`.** `drizzle:migrate` on an empty DB
+  succeeded; `drizzle-kit check` printed "Everything's fine"; seed ran twice.
+  The constraint now reads `status IN (..., 'returned')`.
+- **API e2e on `APP_PORT=3010`: 34/34.**
+  - Access: technician 403, warehouse cannot create, purchasing cannot approve
+    or ship.
+  - Refused with 422: over-quantity, a foreign serial, a serial already on a
+    live return, and a second return taking what a draft holds. The Indonesian
+    message is returned for `Accept-Language: id`.
+  - Lifecycle: draft edit, reject with reason, approve numbered
+    `.../RTB/...`, ship, double ship 422, and cancel after shipping refused.
+  - After shipping: PO `partially_received` (2/3 and 7/10), two `return_out`
+    movements at the BPB warehouse, no costs for the warehouse role, and the
+    returnable list without the shipped serial.
+  - The replacement BPB set the PO back to `received`. Cancelling an approved
+    return freed its quantity.
+- **DB check after the run.** The plain item's balance is 10 + 10 - 3 + 3 =
+  20. Serial `-B` is `returned` with no warehouse; replacement `-B2` is
+  `in_stock`.
+- **Browser walk-through** (built web-admin, `VITE_API_URL=http://localhost:3010`):
+  - Purchasing opens the BPB and clicks "Retur barang"; the form opens with
+    the BPB preselected and only the 2 in-stock serials.
+  - Purchasing saves the draft and submits it.
+  - The operations manager approves (number `0007/RTB/DEV/XI/26`).
+  - The warehouse ships it from the dialog: status "Dikirim ke pemasok" with
+    the hint.
+  - The list shows it.
+  - No page errors and no 4xx/5xx.
+
+**Not done.** No printed return document; no reviewer sign-off; the stock
+fix needs Oki's review. `docs/database/` was updated (see above).
+
+Next executable task: review of the open PRs (#97, #98, #99, #100, #102,
+#104, #107 and this one), Oki's review of the stock balance fix; after each
+merge, the remaining PRs regenerate their migration on the new parent.
+
 ## 2026-11-15 - M12 T30: statement CSV exports + monthly report archive (branch `feat/reports-surface`)
 
 Item 3 of `plans/2026-11-15_0538_todo_undone.md` §7. The report **API** already

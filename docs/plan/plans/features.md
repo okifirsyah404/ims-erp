@@ -383,6 +383,13 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   `test/unit/adjustment.service.test.ts`, `test/unit/stock-valuation.service.test.ts`,
   `/inventory/stock/value`, `progress.md` 2026-11-06 (step 5b). Gaps:
   programmer A's review; the adjustment form's warehouse list is admin-only.
+- Purchase returns (retur pembelian) from a BPB, replacement only: one-level
+  approval, `return_out` stock movement and serial units `returned` on
+  shipping, the PO re-opened for the replacement — ERP-0061. Evidence:
+  `procurement/services/purchase-return.service.ts`,
+  `test/unit/purchase-return.service.test.ts`, `/procurement/purchase-returns`,
+  `progress.md` 2026-11-15 (API e2e 34/34, browser walk-through). Gaps:
+  reviewer sign-off, a printed return document, real-PG integration tests.
 - Stock ledger S3 — ERP-0028. Evidence:
   `apps/backend/src/app/inventory/services/stock.service.ts`,
   `test/unit/stock.service.test.ts` (22 tests), UI

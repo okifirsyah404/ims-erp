@@ -335,6 +335,10 @@ Used by `finance.payments`, `payroll.payroll_payments`, `sales.sales_returns`,
 draft → submitted → approved → executed
 ```
 
+`procurement.purchase_returns` names its executed state `shipped` (ERP-0061):
+`draft → submitted → approved → shipped`, rejection back to `draft`,
+`cancelled` before shipping.
+
 ### 3.3 Open → closed
 
 Used by `aftersales.service_tickets`, `accounting.accounting_periods`,

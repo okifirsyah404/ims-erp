@@ -159,8 +159,10 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				items: [
 					{ titleKey: 'item.suppliers', url: '/procurement/suppliers', permission: 'supplier.read' },
 					{ titleKey: 'item.purchaseOrders', url: '/procurement/purchase-orders', permission: 'purchase_order.read' },
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.goodsReceipts', url: '/procurement/receipts' },
+					// Same grant as `GET /goods-receipts` (ERP-0061: the leaf had none, so
+					// the route guard refused the BPB pages to everyone).
+					{ titleKey: 'item.goodsReceipts', url: '/procurement/receipts', permission: 'stock.read' },
+					{ titleKey: 'item.purchaseReturns', url: '/procurement/purchase-returns', permission: 'purchase_return.read' },
 				],
 			},
 			{

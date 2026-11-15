@@ -91,6 +91,9 @@ class FakeOrders implements IPurchaseOrderRepository {
 	async receive() {
 		return { ok: false as const, reason: 'notReceivable' as const };
 	}
+	async unreceive() {
+		return { ok: false as const, reason: 'notReturnable' as const };
+	}
 	async hasReceipts(id: string) {
 		return this.received.has(id);
 	}
