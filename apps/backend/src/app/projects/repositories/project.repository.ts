@@ -2,13 +2,14 @@ import { DRIZZLE_TOKEN } from '@di/provider';
 import { likePattern } from '@drizzle/search';
 import {
 	type TaskStatus,
+	PROJECT_STAGES,
 	projectCosts,
 	projectEvidence,
 	projects,
 	projectTasks,
 } from '@drizzle/schemas/projects.schema';
 import type { TPaginationResult } from '@ims-erp/common';
-import { and, asc, count, desc, eq, exists, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, exists, ilike, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import type {
@@ -16,6 +17,7 @@ import type {
 	TProjectCreateData,
 	TProjectHeaderData,
 	TProjectPaginationRequest,
+	TProjectStats,
 	TProjectTransition,
 	TTaskData,
 } from '../contracts/project.repository.interface';
@@ -79,6 +81,47 @@ export class ProjectRepository implements IProjectRepository {
 	async findById(id: string) {
 		const [row] = await this.database.select().from(projects).where(this.live(id)).limit(1);
 		return row ?? null;
+	}
+
+	async stats(request: { involvedUserId?: string; today: string }): Promise<TProjectStats> {
+		const visible = and(
+			isNull(projects.deletedAt),
+			request.involvedUserId ? this.involved(request.involvedUserId) : undefined,
+		);
+		const [byStatus, byStage, [overdueRow]] = await Promise.all([
+			this.database
+				.select({ status: projects.status, value: count() })
+				.from(projects)
+				.where(visible)
+				.groupBy(projects.status),
+			this.database
+				.select({ stage: projects.stage, value: count() })
+				.from(projects)
+				.where(and(visible, eq(projects.status, 'active')))
+				.groupBy(projects.stage),
+			this.database
+				.select({ value: count() })
+				.from(projects)
+				.where(
+					and(
+						visible,
+						eq(projects.status, 'active'),
+						lt(projects.targetEndDate, request.today),
+					),
+				),
+		]);
+		const statusCount = (status: string) =>
+			byStatus.find((row) => row.status === status)?.value ?? 0;
+		const stageCount = (stage: string) =>
+			byStage.find((row) => row.stage === stage)?.value ?? 0;
+		return {
+			active: statusCount('active'),
+			closed: statusCount('closed'),
+			cancelled: statusCount('cancelled'),
+			overdue: overdueRow?.value ?? 0,
+			// Zero-filled so the chart's stage axis never changes shape.
+			byStage: PROJECT_STAGES.map((stage) => ({ stage, count: stageCount(stage) })),
+		};
 	}
 
 	async isInvolved(projectId: string, userId: string): Promise<boolean> {

@@ -1,6 +1,7 @@
 import type { TApiPaginatedResponse, TApiResponse } from '@ims-erp/common';
 import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
+import { organizationHeaders } from './organization-store';
 
 /**
  * API client for projects (`/projects`, M07, ADR-0011 step 6a). Costs come
@@ -133,6 +134,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<TApiRespons
 	const response = await fetch(`${API_URL}${path}`, {
 		credentials: 'include',
 		headers: {
+			...organizationHeaders(),
 			// Server error messages come back in the UI language.
 			'Accept-Language': currentLanguage(),
 			...(json ? { 'Content-Type': 'application/json' } : {}),
@@ -168,6 +170,24 @@ export function projectQueryOptions(id: string) {
 		queryKey: ['projects', 'detail', id] as const,
 		queryFn: async () => (await request<TProjectDetail>(`/projects/${id}`)).data as TProjectDetail,
 		retry: false,
+	});
+}
+
+/** Counts by status/stage plus overdue (`GET /projects/stats`, M01 dashboard). */
+export type TProjectStats = {
+	active: number;
+	closed: number;
+	cancelled: number;
+	overdue: number;
+	byStage: Array<{ stage: TProjectStage; count: number }>;
+};
+
+export function projectStatsQueryOptions(organizationId: string | null) {
+	return queryOptions({
+		queryKey: ['projects', 'stats', organizationId] as const,
+		queryFn: async () => (await request<TProjectStats>('/projects/stats')).data as TProjectStats,
+		enabled: organizationId !== null,
+		staleTime: 60 * 1000,
 	});
 }
 

@@ -56,6 +56,26 @@ export const invoiceListQuerySchema = z.object({
 	customerId: z.string().uuid().optional(),
 });
 
+/**
+ * Window for the dashboard's invoiced-sales aggregate (M01).
+ *
+ * @remarks
+ * Business dates (Asia/Jakarta `YYYY-MM-DD`), inclusive. Buckets are keyed on
+ * `issue_date`; `draft`, `void` and `cancelled` invoices never count as
+ * invoiced.
+ */
+export const invoiceSummaryQuerySchema = z
+	.object({
+		from: isoDate,
+		to: isoDate,
+		groupBy: z.enum(['month', 'day']).default('month'),
+	})
+	.refine((query) => query.from <= query.to, {
+		message: 'from must not be after to',
+	});
+
+export type TInvoiceSummaryQuery = z.output<typeof invoiceSummaryQuerySchema>;
+
 export { ledgerIdParamSchema as invoiceIdParamSchema };
 
 /* ----------------------------- receipts (AR) ----------------------------- */

@@ -93,6 +93,14 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`accepted` 2
 - Nothing open for ERP-0051 itself. Delivery follow-ups are tracked separately in
   `docs/plan/plans/erp-0051-follow-ups.md` (ERP-0053 … ERP-0058): one route-guard
   behaviour bug, four documentation drifts, and one schema-helper gap.
+- Sidebar regression fixed by ERP-0062 (2026-11-16): the deny-by-default
+  `leafVisible()` had silently dropped Components, Materials and the three
+  signature pages. Restored with `product.read` and the new
+  `document.signature_read` / `signature_request` / `signature_sign` actions
+  (catalog + grants in `packages/common`, nav gates, 3 grant tests). Evidence:
+  `progress.md` 2026-11-16; browser-verified (menu, `has-permission` true, both
+  inventory pages listing rows). Reminder: `packages/common` ships from `dist`,
+  so a catalog change needs `bun run build` there plus a backend restart.
 
 ---
 
@@ -166,14 +174,35 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 
 ## M01 Dashboard
 
+### in-progress
+- Dashboard on real data — ERP-0060 (2026-11-15, plan
+  `plans/dashboard-real-data.md`): `/` is a client composition of existing
+  module endpoints (no backend `dashboard` module). Two read-only aggregates
+  added inside `sales` (`GET /invoices/summary`) and `projects`
+  (`GET /projects/stats`). Every widget is permission-gated; the mock is gone.
+  Slices 1-4 done 2026-11-15/16 (store and switcher, endpoints, real dashboard,
+  docs close-out). Browser-verified: organization switch across two
+  organizations and single-card degradation. Open before `verified`: permission
+  denial in the browser (no working non-admin account) and a screenshot.
+  Renumbered from ERP-0055 on 2026-11-16 (`plans/erp-0051-follow-ups.md` already
+  owns ERP-0055/ERP-0056).
+  Evidence: `progress.md` 2026-11-15/16, `test/unit/organization-store.test.ts`,
+  `test/unit/invoice-summary.test.ts`, `test/unit/dashboard-api.test.ts`,
+  `test/authorization/dashboard-aggregates.test.ts`.
+
 ### planned
 - Stage 1 widgets: sales, cash, profit, inventory, projects, subscriptions — T14.
-  Evidence: none. Blocked in practice by missing source modules.
+  Delivered on real data by ERP-0060 (slice 3, 2026-11-15) except open
+  quotations, which stay on `/sales/quotations`. Client composition, not a
+  backend `dashboard` module (plan D3); the M01 server-side gating requirement
+  is met per source endpoint. The invoiced-sales chart leads the page at full
+  width with 14 d / 1 m / 3 m / 6 m / 1 y / 5 y presets and a custom range
+  picker, and every query refetches each minute (both 2026-11-16). Evidence:
+  `progress.md` 2026-11-15/16.
 - Stage 2 widgets: gateway, payroll, verified subscriptions — T31. Evidence: none.
-- UI mock scaffold: `_authed.index.tsx` renders a dummy `DashboardPage`
-  (sample data via `apps/web-admin/src/lib/dashboard-api.ts`, `dashboard`
-  locale namespace). Scaffold only — **not feature status**; figures are
-  placeholders until the real API replaces the mock fetcher.
+- Audit as a business activity feed — ERP-0061: `GET /admin/audit` only knows
+  identity targets, so the dashboard reads invoices and receipts for the
+  activity widget. Evidence: none.
 - Organization info dashboard, dummy data — ERP-0040 (2026-11-12): tab `info`
   of the organization detail page renders users-by-role, projects, sales,
   inventory, activity, profit & loss, cash & bank cards with two BarCharts
@@ -797,3 +826,5 @@ Status wording from `progress.md`; none is `accepted`.
 - Shared HTTP envelope + `/admin/*` URL layout — `src/http/{response,errors,
   plugin}.ts`; `test/unit/http-response.test.ts`.
 - Toast bus — `apps/web-admin/src/components/toast.tsx`.
+
+

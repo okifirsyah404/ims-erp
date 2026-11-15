@@ -31,7 +31,11 @@ import type {
 	TTaskBodyRequest,
 	TUpdateProjectRequest,
 } from '../contracts/project.contract';
-import type { IProjectRepository, TTaskData } from '../contracts/project.repository.interface';
+import type {
+	IProjectRepository,
+	TProjectStats,
+	TTaskData,
+} from '../contracts/project.repository.interface';
 import {
 	ProjectChildNotFoundError,
 	ProjectCostVoidedError,
@@ -185,6 +189,21 @@ export class ProjectService {
 		const result = await this.repository.paginate({ ...query, involvedUserId: ctx.canViewAll ? undefined : ctx.actorUserId });
 		const people = await this.people(result.data.map((project) => project.picUserId));
 		return { meta: result.meta, data: result.data.map((project) => ({ ...project, pic: people.get(project.picUserId) ?? null })) };
+	}
+
+	/**
+	 * Dashboard counts (M01) over the caller's visible projects.
+	 *
+	 * @remarks
+	 * Reuses the {@link list} visibility rule: a caller without `canViewAll`
+	 * only counts projects they lead or hold a live task in, so the aggregate
+	 * cannot reveal a project the list would hide.
+	 */
+	async stats(ctx: TProjectContext): Promise<TProjectStats> {
+		return this.repository.stats({
+			involvedUserId: ctx.canViewAll ? undefined : ctx.actorUserId,
+			today: businessDateOf(),
+		});
 	}
 
 	/** Live deals for the "new project" picker, flagged when they already have one. */
