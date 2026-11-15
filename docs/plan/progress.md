@@ -18,6 +18,23 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-15 - PR #97: GitGuardian findings in a unit test (no real secret)
+
+GitGuardian reported 8 "Generic Password" occurrences on PR #97, all in
+`apps/backend/test/unit/customer-portal.test.ts` (commits `dc22cdf`,
+`01c94af`). They were fake fixture passwords of the in-memory test doubles;
+no real credential was involved.
+
+- The 4 password literals are now `FAKE_PASSWORD_1..4`, generated per run
+  with `crypto.randomUUID()`, so the source holds no credential-like
+  strings.
+- The findings stay in the earlier commits. Programmer A, as the
+  GitGuardian workspace owner, should mark incidents 40062720, 40062721 and
+  40063477 as false positives (test credentials).
+- `bun test test/unit/customer-portal.test.ts`: 24 pass. `tsc --noEmit`
+  (apps/backend): clean. No code behaviour changed; `docs/database/` was
+  reviewed and is unchanged.
+
 ## 2026-11-15 - ERP-0022 (PR #97) brought onto main: ADR-0020, regenerated migration, login-gate portal exception
 
 `origin/main` (`41e3a96`) merged into `feat/m07-customer-portal`. Main had

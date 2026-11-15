@@ -42,6 +42,12 @@ import {
 import { PortalAccountService } from '../../src/app/user/services/portal-account.service';
 import { PORTAL_SESSION_RESOLVER_TOKEN, type PortalContext } from '../../src/authorization/portal-auth';
 
+/** Test-only passwords, generated per run (no credential-like literals in the source). */
+const FAKE_PASSWORD_1 = `fake-${crypto.randomUUID()}`;
+const FAKE_PASSWORD_2 = `fake-${crypto.randomUUID()}`;
+const FAKE_PASSWORD_3 = `fake-${crypto.randomUUID()}`;
+const FAKE_PASSWORD_4 = `fake-${crypto.randomUUID()}`;
+
 const CUST_A = '0190a1b2-0000-7000-8000-0000000000a1';
 const CUST_B = '0190a1b2-0000-7000-8000-0000000000b2';
 const INACTIVE = '0190a1b2-0000-7000-8000-0000000000c3';
@@ -143,7 +149,7 @@ beforeEach(() => {
 	identities = [];
 	contacts.length = 0;
 	createdCustomers = [];
-	users = [{ id: 'staff-1', name: 'Staff', email: 'staff@entragate.local', emailVerified: true, member: true, password: 'staff12345' }];
+	users = [{ id: 'staff-1', name: 'Staff', email: 'staff@entragate.local', emailVerified: true, member: true, password: FAKE_PASSWORD_4 }];
 	mails = [];
 	revokedSessions = [];
 	cache = new Map();
@@ -245,13 +251,13 @@ describe('portal members (owners manage colleagues, D2)', () => {
 });
 
 describe('portal sign-up of individuals (D1)', () => {
-	const signup = { accountType: 'individual' as const, name: 'Dewi', email: 'dewi@mail.id', phone: '0812 3456', password: 'Rahasia-123' };
+	const signup = { accountType: 'individual' as const, name: 'Dewi', email: 'dewi@mail.id', phone: '0812 3456', password: FAKE_PASSWORD_1 };
 
 	test('a code by email; the right code creates the customer, its contact and an owner login', async () => {
 		expect(await accounts.startSignup(signup)).toEqual({ email: 'dewi@mail.id' });
 		const code = mails.find((mail) => mail.kind === 'code')!.code!;
 		expect(code).toMatch(/^\d{6}$/);
-		expect(users.find((user) => user.email === 'dewi@mail.id')).toMatchObject({ emailVerified: false, password: 'Rahasia-123' });
+		expect(users.find((user) => user.email === 'dewi@mail.id')).toMatchObject({ emailVerified: false, password: FAKE_PASSWORD_1 });
 		const identity = await accounts.verifySignup('dewi@mail.id', code);
 		expect(identity.role).toBe('owner');
 		expect(createdCustomers).toEqual([{ id: identity.customerId, name: 'Dewi', email: 'dewi@mail.id', phone: '0812 3456' }]);
@@ -264,7 +270,7 @@ describe('portal sign-up of individuals (D1)', () => {
 		await expect(accounts.startSignup({ ...signup, accountType: 'business' })).rejects.toBeInstanceOf(PortalBusinessSignupError);
 		expect(await accounts.startSignup({ ...signup, email: 'staff@entragate.local' })).toEqual({ email: 'staff@entragate.local' });
 		expect(mails).toHaveLength(0);
-		expect(users.find((user) => user.id === 'staff-1')!.password).toBe('staff12345');
+		expect(users.find((user) => user.id === 'staff-1')!.password).toBe(FAKE_PASSWORD_4);
 	});
 
 	test('five wrong codes kill the sign-up; a resend gives a new code', async () => {
@@ -293,7 +299,7 @@ describe('portal sign-in', () => {
 
 	beforeEach(async () => {
 		await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
-		users.find((user) => user.email === 'budi@alfa.co.id')!.password = 'rahasia123';
+		users.find((user) => user.email === 'budi@alfa.co.id')!.password = FAKE_PASSWORD_2;
 		signedOut = [];
 		const sessions: IPortalSessionGateway = {
 			async signIn(email, password) {
@@ -313,7 +319,7 @@ describe('portal sign-in', () => {
 	});
 
 	test('the customer signs in and the token resolves to their customer and role', async () => {
-		const { context } = await auth.login({ email: 'budi@alfa.co.id', password: 'rahasia123' }, new Headers());
+		const { context } = await auth.login({ email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }, new Headers());
 		expect(context.customerId).toBe(CUST_A);
 		expect(context.role).toBe('owner');
 		expect((await auth.resolve(context.accessToken))?.customerId).toBe(CUST_A);
@@ -321,21 +327,21 @@ describe('portal sign-in', () => {
 	});
 
 	test('a staff login gets the same 401 and keeps no session', async () => {
-		await expect(auth.login({ email: 'staff@entragate.local', password: 'staff12345' }, new Headers())).rejects.toBeInstanceOf(PortalInvalidCredentialsError);
+		await expect(auth.login({ email: 'staff@entragate.local', password: FAKE_PASSWORD_4 }, new Headers())).rejects.toBeInstanceOf(PortalInvalidCredentialsError);
 		expect(signedOut).toEqual(['session-staff-1']);
 		expect(await auth.resolve('session-staff-1')).toBeNull();
 	});
 
 	test('five wrong passwords lock the email, even for the right password', async () => {
 		for (let attempt = 1; attempt < 5; attempt += 1) {
-			await expect(auth.login({ email: 'budi@alfa.co.id', password: 'salah' }, new Headers())).rejects.toBeInstanceOf(PortalInvalidCredentialsError);
+			await expect(auth.login({ email: 'budi@alfa.co.id', password: FAKE_PASSWORD_3 }, new Headers())).rejects.toBeInstanceOf(PortalInvalidCredentialsError);
 		}
-		await expect(auth.login({ email: 'budi@alfa.co.id', password: 'salah' }, new Headers())).rejects.toBeInstanceOf(PortalLockedError);
-		await expect(auth.login({ email: 'budi@alfa.co.id', password: 'rahasia123' }, new Headers())).rejects.toBeInstanceOf(PortalLockedError);
+		await expect(auth.login({ email: 'budi@alfa.co.id', password: FAKE_PASSWORD_3 }, new Headers())).rejects.toBeInstanceOf(PortalLockedError);
+		await expect(auth.login({ email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }, new Headers())).rejects.toBeInstanceOf(PortalLockedError);
 	});
 
 	test('a verified sign-up is signed in at once', async () => {
-		await accounts.startSignup({ accountType: 'individual', name: 'Dewi', email: 'dewi@mail.id', phone: null, password: 'Rahasia-123' });
+		await accounts.startSignup({ accountType: 'individual', name: 'Dewi', email: 'dewi@mail.id', phone: null, password: FAKE_PASSWORD_1 });
 		const code = mails.find((mail) => mail.kind === 'code')!.code!;
 		const { context } = await auth.verifySignup('dewi@mail.id', code);
 		expect(context.role).toBe('owner');
