@@ -149,7 +149,7 @@ export class BalanceRepository implements IBalanceRepository {
 				binId: key.binId,
 				// A brand-new balance opens at zero and the guarded UPDATE below
 				// applies the delta. Opening at the delta broke every outbound
-				// movement (ERP-0061 found it): Postgres checks CHECK
+				// movement (ERP-0064 found it): Postgres checks CHECK
 				// constraints on the proposed row *before* ON CONFLICT
 				// arbitration, so a negative delta failed
 				// `stock_balances_on_hand_check` even when the row existed. A

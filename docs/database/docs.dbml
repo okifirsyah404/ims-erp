@@ -2454,7 +2454,7 @@ Table procurement.purchase_returns {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Return of received goods to the supplier for replacement (ERP-0061), company-wide like goods receipts (ADR-0011). draft -> submitted -> approved -> shipped; rejection returns to draft; cancelled before shipped. One-level approval, never by the creator. Shipping posts return_out stock movements, marks the serial units returned and takes the quantity off the purchase order lines, so the replacement is received with a normal goods receipt. No credit note or refund."
+  Note: "Return of received goods to the supplier for replacement (ERP-0064), company-wide like goods receipts (ADR-0011). draft -> submitted -> approved -> shipped; rejection returns to draft; cancelled before shipped. One-level approval, never by the creator. Shipping posts return_out stock movements, marks the serial units returned and takes the quantity off the purchase order lines, so the replacement is received with a normal goods receipt. No credit note or refund."
   Indexes {
     goods_receipt_id [name: 'purchase_returns_goods_receipt_id_idx']
     purchase_order_id [name: 'purchase_returns_purchase_order_id_idx']
@@ -2886,7 +2886,7 @@ Table inventory.serial_tracked_items {
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
-  Note: "One physical, serialized instance of an item. Serves serialized products only after ERP-0036: tools are assets and never have a unit row here. `returned` (ERP-0061): sent back to the supplier on a purchase return; terminal, the replacement arrives as a new unit."
+  Note: "One physical, serialized instance of an item. Serves serialized products only after ERP-0036: tools are assets and never have a unit row here. `returned` (ERP-0064): sent back to the supplier on a purchase return; terminal, the replacement arrives as a new unit."
   Indexes {
     (organization_id, serial_number) [unique, name: 'serial_tracked_items_org_serial_uq', note: 'WHERE organization_id IS NOT NULL']
     (serial_number) [unique, name: 'serial_tracked_items_global_serial_uq', note: 'WHERE organization_id IS NULL']

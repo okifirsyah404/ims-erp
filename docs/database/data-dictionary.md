@@ -335,7 +335,7 @@ Used by `finance.payments`, `payroll.payroll_payments`, `sales.sales_returns`,
 draft → submitted → approved → executed
 ```
 
-`procurement.purchase_returns` names its executed state `shipped` (ERP-0061):
+`procurement.purchase_returns` names its executed state `shipped` (ERP-0064):
 `draft → submitted → approved → shipped`, rejection back to `draft`,
 `cancelled` before shipping.
 

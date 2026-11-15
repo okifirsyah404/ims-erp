@@ -484,7 +484,7 @@ export class ItemService {
 
 	/**
 	 * Returns serialized units to their supplier (`in_stock → returned`,
-	 * ERP-0061), inside the caller's transaction.
+	 * ERP-0064), inside the caller's transaction.
 	 *
 	 * @returns The serials that were not in stock in that warehouse (the
 	 * caller fails its transaction when any are left)

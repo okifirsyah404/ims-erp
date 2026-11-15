@@ -385,7 +385,7 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   programmer A's review; the adjustment form's warehouse list is admin-only.
 - Purchase returns (retur pembelian) from a BPB, replacement only: one-level
   approval, `return_out` stock movement and serial units `returned` on
-  shipping, the PO re-opened for the replacement — ERP-0061. Evidence:
+  shipping, the PO re-opened for the replacement — ERP-0064. Evidence:
   `procurement/services/purchase-return.service.ts`,
   `test/unit/purchase-return.service.test.ts`, `/procurement/purchase-returns`,
   `progress.md` 2026-11-15 (API e2e 34/34, browser walk-through). Gaps:

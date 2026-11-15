@@ -69,7 +69,7 @@ const toQuantity = (milli: bigint) => (Number(milli) / 1000).toFixed(3);
 const lineTotal = (quantity: string, unitCost: number) => Math.round(Number(quantity) * unitCost);
 
 /**
- * Purchase returns (ERP-0061): goods received on a BPB go back to the
+ * Purchase returns (ERP-0064): goods received on a BPB go back to the
  * supplier for replacement.
  *
  * @remarks

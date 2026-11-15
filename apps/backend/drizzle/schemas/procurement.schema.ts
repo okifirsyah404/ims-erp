@@ -2,7 +2,7 @@
  * Procurement domain schema — owns the `procurement` Postgres schema.
  *
  * Suppliers and purchase orders (ADR-0011 port step 4a), goods receipts
- * (step 4b) and purchase returns (ERP-0061).
+ * (step 4b) and purchase returns (ERP-0064).
  *
  * House rules honoured here:
  * - **Company-wide, no `organization_id`** (ADR-0011 §2, ADR-0012).
@@ -74,7 +74,7 @@ export const PURCHASE_ORDER_STATUSES = [
 export type PurchaseOrderStatus = (typeof PURCHASE_ORDER_STATUSES)[number];
 
 /**
- * Purchase returns (ERP-0061): draft → submitted → approved → shipped;
+ * Purchase returns (ERP-0064): draft → submitted → approved → shipped;
  * rejection returns to draft; cancelled before shipped.
  */
 export const PURCHASE_RETURN_STATUSES = ['draft', 'submitted', 'approved', 'shipped', 'cancelled'] as const;
@@ -334,7 +334,7 @@ export const goodsReceiptItems = procurementSchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
- * procurement.purchase_returns (ERP-0061, replacement only)
+ * procurement.purchase_returns (ERP-0064, replacement only)
  * ------------------------------------------------------------------------ */
 
 export const purchaseReturns = procurementSchema.table(

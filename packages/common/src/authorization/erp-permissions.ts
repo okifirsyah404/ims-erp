@@ -42,7 +42,7 @@ export const erpStatements = {
 	supplier: ['read', 'create', 'update', 'archive', 'read_bank'],
 	purchase_request: ['read', 'create', 'update', 'submit', 'approve', 'reject'],
 	purchase_order: ['read', 'create', 'update', 'submit', 'approve', 'send', 'cancel', 'export'],
-	/** ERP-0061: goods sent back to the supplier for replacement; `ship` posts the stock out. */
+	/** ERP-0064: goods sent back to the supplier for replacement; `ship` posts the stock out. */
 	purchase_return: ['read', 'create', 'update', 'submit', 'approve', 'ship', 'cancel'],
 
 	// Projects and technicians
@@ -574,7 +574,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		product: ['read'],
 		stock: ['read', 'receive', 'issue', 'transfer', 'export'],
 		stock_adjustment: ['read', 'create', 'submit'],
-		// ERP-0061: hands the goods to the supplier (stock out).
+		// ERP-0064: hands the goods to the supplier (stock out).
 		purchase_return: ['read', 'ship'],
 		asset_borrowing: [
 			'read',
