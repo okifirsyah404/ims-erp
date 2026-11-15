@@ -12,6 +12,23 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-16 - M05 purchase requests renumbered ERP-0060 -> ERP-0063 (PR #102), `main` merged in
+
+`main` took ERP-0060 (dashboard, #109), ERP-0061 (audit activity feed) and
+ERP-0062 (sidebar and signature actions, #110) while this branch's id was
+reserved only in an unmerged PR. Following the number-reservation rule, the
+merged ids stand. After checking `main`, every remote branch and all open
+PRs, the highest id anywhere was ERP-0062, so M05 purchase requests (#102)
+became ERP-0063, M05 purchase returns (#108) ERP-0064, and M02 sales returns
+(#111) ERP-0065.
+
+- **What was renamed.** The backlog row, `features.md`, the code comments
+  and the migration folder name (`_erp0063_`) now use the new id. Earlier
+  `progress.md` entries keep the id they were written with; read ERP-0060
+  there as ERP-0063 for this work.
+- **The merge.** `origin/main` (`9dc2373`) was merged in. It adds no
+  migration, so this branch's migration keeps its parent.
+
 ## 2026-11-15 - PR #102 brought onto main again (`aa3a7ad`), shadcn controls
 
 `origin/main` (M04, the shadcn web-admin pass #105, reports) went into

@@ -10,7 +10,7 @@ execution stays with payment/finance). v5.1 limits (M05): **no multi-level
 purchase requisitions/orders, no automatic reservations/returns** — receiving
 and approvals are manual and simple.
 
-## Purchase requests (ERP-0060, 2026-11-15, implemented)
+## Purchase requests (ERP-0063, 2026-11-15, implemented)
 
 The code lives in `apps/backend/src/app/procurement`; this file predates the
 Elysia backend. The owner's decisions of 2026-11-15:

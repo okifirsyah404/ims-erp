@@ -415,7 +415,7 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 
 ### implemented
 - Purchase requests (PR → PO by lines, free-text lines mapped on the PO,
-  one-level approval, company-wide) — T07, ERP-0060 (2026-11-15). Evidence:
+  one-level approval, company-wide) — T07, ERP-0063 (2026-11-15). Evidence:
   `procurement/services/purchase-request.service.ts`,
   `repositories/request-ordering.ts`, `test/unit/purchase-request.service.test.ts`,
   `/procurement/purchase-requests`, `progress.md` 2026-11-15 (API e2e 32/32,
