@@ -33,6 +33,16 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
   4 fail (the known `Bun.Image` tests); web-admin 100; locales 94. The API
   e2e and browser check were not re-run: the Docker engine is down on this
   machine.
+- **Live re-verification (Docker back, same day).** Disposable DB
+  `ims_erp_v102`: `drizzle:migrate` on a fresh DB, `drizzle-kit check`
+  "Everything's fine", seed run twice. Backend on `APP_PORT=3010`: the API
+  e2e (create, submit, self-approval refused, approve, PO by split lines,
+  free-text mapping, status sync, cancel guards) passed **32/32**. Browser
+  check against the built web-admin (`VITE_API_URL=http://localhost:3010`):
+  sidebar entry, PR create with `DatePicker`, approve as operations manager,
+  PO prefilled from the PR (2 lines, mapper shown, save disabled until
+  mapped), shadcn supplier `Select`, PO saved, PR shown as "Sudah dipesan";
+  no page errors and no 5xx.
 
 ## 2026-11-15 - M12 T30: statement CSV exports + monthly report archive (branch `feat/reports-surface`)
 
