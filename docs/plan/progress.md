@@ -14,7 +14,7 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 ## 2026-11-16 - ERP-0012 payables: supplier bills from purchase orders (unblocks ERP-0035)
 
-Branch `feat/m05-payables-from-receipts` from `origin/main` (`9dc2373`).
+Branch `feat/m05-payables-from-receipts` from `origin/main` (`9dc2373`), PR #112.
 ERP-0012 ("Purchasing & payables", `planned`) is the existing backlog row,
 so no new id was taken. ERP-0035 was `blocked (M09 payables)` on exactly
 this handoff.
