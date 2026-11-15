@@ -22,7 +22,7 @@ Owner choices:
 - keep the design source out of git;
 - keep the `@entragate/*` package names.
 
-Branch `chore/entragate-platform-workspace` from `origin/main` (`aa3a7ad`).
+Branch `chore/entragate-platform-workspace` (**PR #107**) from `origin/main` (`aa3a7ad`).
 
 **Found as copied (it did not work).**
 - It was a nested monorepo: its own `package.json` (workspaces), `bun.lock`
