@@ -6,6 +6,7 @@ import {
 	invoiceCreateSchema,
 	invoiceIdParamSchema,
 	invoiceListQuerySchema,
+	invoiceSummaryQuerySchema,
 	invoiceUpdateSchema,
 	createReceiptSchema,
 } from '../contracts/invoice.contract';
@@ -49,6 +50,23 @@ export class InvoiceController {
 				{
 					erp: { permission: ['invoice:read'] },
 					detail: { description: 'Paginated invoice list' },
+				},
+			)
+			.get(
+				'/invoices/summary',
+				async ({ query, erp }) =>
+					ok(
+						await invoices.summary(
+							erp.organizationId,
+							invoiceSummaryQuerySchema.parse(query),
+						),
+					),
+				{
+					erp: { permission: ['invoice:read'] },
+					detail: {
+						description:
+							'Invoiced totals per period (M01 dashboard). Draft, void and cancelled invoices never count.',
+					},
 				},
 			)
 			.get(

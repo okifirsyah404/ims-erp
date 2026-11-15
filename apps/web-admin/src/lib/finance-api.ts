@@ -4,6 +4,7 @@ import type {
 	TPaginationMeta,
 } from '@ims-erp/common';
 import { queryOptions } from '@tanstack/react-query';
+import { organizationHeaders } from './organization-store';
 
 /**
  * API client for the M09 accounting endpoints (`/accounts`, `/periods`,
@@ -11,11 +12,13 @@ import { queryOptions } from '@tanstack/react-query';
  * `/ar|ap/aging`, `/reports/*`, `/close/*`, `/bank-reconciliations*`).
  *
  * @remarks
- * Tenant scope is decided by the backend from the caller's active
- * organization. `chart_of_account:*`, `journal:*`, `accounting_period:*`,
- * `cash_bank:*`, `payment:*`, `bill:*` and `financial_report:*` permissions
- * gate every call server-side; the UI only hides controls it knows will
- * fail. Money fields are exact integer minor units (rupiah x 100).
+ * Tenant scope is decided by the backend from the `x-organization-id` header
+ * (the caller's active organization, sent by `organizationHeaders()`), falling
+ * back to the session value. `chart_of_account:*`, `journal:*`,
+ * `accounting_period:*`, `cash_bank:*`, `payment:*`, `bill:*` and
+ * `financial_report:*` permissions gate every call server-side; the UI only
+ * hides controls it knows will fail. Money fields are exact integer minor units
+ * (rupiah x 100).
  */
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
@@ -28,8 +31,10 @@ async function request<T>(
 ): Promise<TApiResponse<T>> {
 	const response = await fetch(`${API_URL}${path}`, {
 		credentials: 'include',
-		headers:
-			init?.body != null ? { 'Content-Type': 'application/json' } : undefined,
+		headers: {
+			...organizationHeaders(),
+			...(init?.body != null ? { 'Content-Type': 'application/json' } : {}),
+		},
 		...init,
 	});
 	const envelope = (await response.json()) as TApiResponse<T>;
