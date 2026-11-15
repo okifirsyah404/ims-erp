@@ -12,6 +12,35 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-15 - ERP-0020: online payments publish `receipt.recorded` (M04); DB verification on main
+
+With Docker back, the reworked branch was verified on a fresh disposable
+database: `ims_erp_v99` migrated (20 folders), `drizzle-kit check` printed
+"Everything's fine", the development seed ran twice, and an open period was
+inserted by SQL.
+
+**Found on the way.** M04 on main publishes `invoice.issued` and
+`receipt.recorded` to the n8n outbox from `InvoiceService`. A receipt that a
+paid gateway webhook records goes through the repository inside the
+checkout's row lock, so it published nothing: n8n would never hear of an
+online payment.
+
+**Fix.** `GatewayPaymentService` takes the outbox (`OUTBOX_SERVICE_TOKEN`).
+After the transaction commits, an `applied` webhook publishes
+`receipt.recorded` with the same payload as a manual receipt
+(`receiptRecordedEvent`, with the invoice after the payment). An unapplied
+payment or a replay publishes nothing. The unit test covers one event per
+applied payment and none on replays (28 pass).
+
+**Verification (live, backend on :3010, fake provider)**
+- Invoice API e2e: 19/19 in five runs. Gateway API e2e: **24/24**.
+  Concurrency: 5 identical paid webhooks gave 1 `applied` and 4
+  `duplicate`, with 1 receipt.
+- Outbox: `receipt.recorded` went 5 → 6 during the gateway run (one applied
+  payment; the unapplied one and the replays add none). `invoice.issued`
+  is published by the issue path.
+- `tsc --noEmit` (apps/backend): clean.
+
 ## 2026-11-15 - PR #99 brought onto main again (via #98, `aa3a7ad`)
 
 The updated `fix/m02-invoice-billing` (now on main with M04) went into

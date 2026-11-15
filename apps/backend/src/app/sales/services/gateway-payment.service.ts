@@ -6,6 +6,10 @@ import type { CodeNumberService } from '@app/code-number';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
 import type { DocumentService } from '@app/document';
 import { businessDateOf } from '@utils/business-date.util';
+import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
+import type { OutboxService } from '@app/automation/services/outbox.service';
+import type { TReceiptSelect } from '@drizzle/schemas/sales.schema';
+import { receiptRecordedEvent } from '../utils/invoice-events';
 import {
 	GATEWAY_PAYMENT_REPOSITORY_TOKEN,
 	INVOICE_REPOSITORY_TOKEN,
@@ -72,6 +76,9 @@ export class GatewayPaymentService {
 		private readonly numbering: Pick<CodeNumberService, 'next'>,
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register'>,
+		/** M04: an online payment is a received payment for n8n too (`receipt.recorded`). */
+		@inject(OUTBOX_SERVICE_TOKEN)
+		private readonly outbox: Pick<OutboxService, 'publish'>,
 	) {}
 
 	/** Whether new checkouts can be opened, and with which provider. */
@@ -153,6 +160,7 @@ export class GatewayPaymentService {
 		if (!event) return 'ignored';
 		if (!UUID.test(event.reference)) return 'unknown';
 
+		let recorded: TReceiptSelect | null = null;
 		const outcome = await this.repo.withLocked(event.reference, async (row, tx): Promise<TWebhookOutcome> => {
 			if (row.provider !== provider) return 'unknown';
 			if (row.receiptId) return 'duplicate';
@@ -240,8 +248,17 @@ export class GatewayPaymentService {
 				},
 				tx,
 			);
+			recorded = receipt;
 			return 'applied';
 		});
+		// After the commit, like a manual receipt: once per applied payment, never on a replay.
+		if (outcome === 'applied' && recorded) {
+			const receipt: TReceiptSelect = recorded;
+			const invoice = await this.invoices.findById(receipt.organizationId, receipt.salesInvoiceId);
+			if (invoice) {
+				await this.outbox.publish('receipt.recorded', { type: 'receipt', id: receipt.id }, receiptRecordedEvent(receipt, invoice));
+			}
+		}
 		return outcome ?? 'unknown';
 	}
 }

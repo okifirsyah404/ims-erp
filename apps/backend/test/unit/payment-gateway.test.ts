@@ -314,6 +314,7 @@ let rows: TGatewayPaymentSelect[];
 let receipts: TReceiptSelect[];
 let receiptCalls: { amount: number; capToOutstanding?: boolean; tx?: unknown }[];
 let documents: string[];
+let events: string[];
 let checkouts: TCheckoutRequest[];
 let failCheckout: boolean;
 let gateway: IPaymentGateway;
@@ -398,6 +399,11 @@ function makeService() {
 				return {} as never;
 			},
 		},
+		{
+			publish: async (topic: string, aggregate: { id: string }) => {
+				events.push(`${topic}:${aggregate.id}`);
+			},
+		} as never,
 	);
 }
 
@@ -425,6 +431,7 @@ beforeEach(() => {
 	receipts = [];
 	receiptCalls = [];
 	documents = [];
+	events = [];
 	checkouts = [];
 	failCheckout = false;
 	gateway = {
@@ -488,6 +495,8 @@ describe('webhooks', () => {
 		expect(receipts[0]).toMatchObject({ amount: 111_000_037, method: 'bank_transfer', receivedBy: null, code: 'KW-202611-00001' });
 		expect(receipts[0]!.notes).toContain('fake gateway (BCA)');
 		expect(documents).toEqual(['KW-202611-00001']);
+		// M04: the online payment reaches n8n like a manual receipt.
+		expect(events).toEqual([`receipt.recorded:${receipts[0]!.id}`]);
 		expect(invoice.status).toBe('paid');
 		// 63 minor units of rounding is below one rupiah: no note.
 		expect(rows[0]).toMatchObject({ status: 'paid', receiptId: receipts[0]!.id, paidAmount: 111_000_100, paymentChannel: 'BCA', settlementNote: null });
@@ -499,6 +508,7 @@ describe('webhooks', () => {
 		expect(await webhook({ reference: row.id, status: 'paid', amount: 1_110_001 })).toBe('duplicate');
 		expect(await webhook({ reference: row.id, status: 'expired' })).toBe('duplicate');
 		expect(receipts).toHaveLength(1);
+		expect(events).toHaveLength(1);
 	});
 
 	test('money that can no longer be applied is kept paid, without a receipt, with a note', async () => {
