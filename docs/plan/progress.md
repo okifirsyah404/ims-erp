@@ -180,6 +180,403 @@ fix needs Oki's review. `docs/database/` was updated (see above).
 Next executable task: review of the open PRs (#97, #98, #99, #100, #102,
 #104, #107 and this one), Oki's review of the stock balance fix; after each
 merge, the remaining PRs regenerate their migration on the new parent.
+## 2026-11-16 - Sidebar: Components, Materials and Signatures restored (ERP-0062)
+
+Status: **implemented**. `docs/database/` reviewed: no table, column, index,
+constraint, status vocabulary or cross-module link changed
+(`bun docs/database/validate-dbml.ts` -> OK).
+
+Cause: commit `950a7a3c` (2026-11-14, "filter sidebar and switcher by role and
+permission") switched the sidebar to deny-by-default `leafVisible()`, and the
+three items had no flag, so they silently disappeared while their routes still
+existed.
+
+- `packages/common/src/authorization/erp-permissions.ts`: the `document`
+  statement gains `signature_read`, `signature_request`, `signature_sign`
+  (vocabulary only; ERP-0048/ERP-0049 flows still unbuilt). Every role that
+  already held `document:read` (15 blocks) also gets `signature_read` +
+  `signature_sign`; `signature_request` goes to owner (blanket spread), admin,
+  operations_manager, sales_manager, project_manager, finance and hr. `member`
+  stays without document access.
+- `apps/web-admin/src/components/sidebar/nav-config.ts`: `item.components` and
+  `item.materials` gated on `product.read` (routes were already real
+  `ItemKindList` pages); `item.documentSignatures` / `item.requestSignature` /
+  `item.mySignature` gated on `document.signature_read` / `.signature_request`
+  / `.signature_sign`. No locale change needed (`nav.ts` en+id already carried
+  all three keys).
+- `apps/backend/test/authorization/authorization.test.ts`: new `document
+  signature grants` block - the three actions exist in the catalog, every
+  role holding `document:read` also holds `signature_read` + `signature_sign`,
+  and the `signature_request` holder list is exactly the seven roles above.
+- `docs/architecture/security-and-access.md`: `document` action list and the
+  signature-flow note updated.
+- Commands: `bun run build` in `packages/common` (the backend test resolves
+  `@ims-erp/common` from `dist`), then `bun test test/authorization/authorization.test.ts`
+  in `apps/backend` -> 30 pass / 0 fail. Full gates: backend `bun test`
+  2168 pass / 0 fail, web-admin 115 pass / 0 fail, `tsc -b` clean in both
+  workspaces and in `packages/common`, `bun run lint` 0 errors (200 pre-existing
+  warnings), `bun docs/database/validate-dbml.ts` -> OK (275 tables, 235 refs).
+- Browser-verified 2026-11-16 (in-app browser, Vite 5173 + backend 3001,
+  `admin` session, org `entragate`): sidebar shows `Documents > Files,
+  Signatures` with the three children (Document Signature, Request Signature,
+  My Signature) and `Items > Products, Components, Materials`; the three
+  `has-permission` POSTs for `document.signature_read|_request|_sign` return
+  `success: true`; `/documents/signatures/documents` renders its "Coming soon"
+  stub, `/inventory/components` lists 4 components and `/inventory/materials`
+  lists 4 materials, console clean.
+- **Gotcha worth remembering:** `@ims-erp/common` is consumed from `dist`, and
+  `bun run dev` (bun `--watch`) does not rebuild it or reload it into a running
+  backend. A catalog change therefore needs `bun run build` in
+  `packages/common` **and** a backend restart, otherwise `has-permission`
+  keeps answering `false` for the new actions and the nav item stays hidden
+  even though the source is correct. This is exactly what happened before the
+  browser check above.
+- Skipped on purpose: `templates`, `itemCategories`, `goodsReceipts`,
+  `deliveryNotes`, `downPayments`, `depreciation`, `bast`, `openingBalances`,
+  `documentSettings` stay hidden - they still have no catalog resource.
+
+## 2026-11-15 - Dashboard real data, slice 1: client organization context (ERP-0060)
+
+Plan: `plans/dashboard-real-data.md` (grilled 2026-11-15, 24 locked decisions).
+Slice 1 of 4. `docs/database/` reviewed: no table, column, index, constraint,
+status vocabulary or cross-module link changed.
+
+- `apps/web-admin/src/lib/organization-store.ts` (new): zustand
+  `{ activeOrganizationId, setActive, reset }` plus `getActiveOrganizationId()`
+  and `organizationHeaders()` (`x-organization-id`). No `localStorage`
+  persistence (D5). Follows `lib/realtime/realtime-store.ts`, no `src/stores/`.
+- `apps/web-admin/src/components/organization/organization-context-sync.tsx`
+  (new): mirrors `session.session.activeOrganizationId` into the store, writing
+  only when the value changes, so an optimistic switch is not clobbered (D8).
+  Mounted once in `components/layout/main-layout.tsx`.
+- `apps/web-admin/src/lib/use-active-organization.ts`: same signature, body now
+  reads the store; the "never keeps its own copy" doc-comment was rewritten
+  (D23).
+- `components/sidebar/organization-switcher.tsx`: optimistic switch with
+  rollback + toast on failure (D6), `Check` + `aria-current` on the active
+  organization, `Spinner` + `disabled` while a switch is in flight,
+  `DropdownMenuShortcut` showing the membership role, slug kept as trigger
+  sub-label, and an `Empty` state (title/description/button) instead of a bare
+  button when the user has no internal-role organization (D24).
+- `x-organization-id` is now sent by the API clients the dashboard will use:
+  `finance-api.ts`, `inventory-api.ts`, `invoice-api.ts`, `license-api.ts`,
+  `project-api.ts`, `stock-valuation-api.ts` (D7). Backend already prefers that
+  header over the session value and re-checks membership, so a stale id yields
+  403, never another organization's data.
+- `test/unit/organization-store.test.ts` (new): 5 tests - empty initial state,
+  optimistic value survives a same-value sync, a sync replaces it once the
+  server catches up, headers carry the id, `reset()` clears.
+
+Verification: `apps/web-admin` `bun test` 105 pass / 0 fail (17 files),
+`bunx tsc -b --noEmit` clean, `bunx oxlint` 0 errors (12 pre-existing warnings,
+none in the new files). Repo root `bun run typecheck` 4/4 tasks, `bun run test`
+5/5 tasks (backend 1067, locales 94, react-email 5), `bun run lint` 0 errors.
+
+Not done in slice 1: the switcher/`Empty` copy reuses existing `nav` keys, so no
+new locale keys were needed. No browser walk-through yet - deferred to slice 3,
+when the dashboard actually consumes the store.
+
+## 2026-11-15 - Dashboard real data, slice 2: two read-only aggregate endpoints (ERP-0060)
+
+Plan: `plans/dashboard-real-data.md` (D9, D10, D11, D12). No schema change:
+`docs/database/` reviewed, no table/column/index/constraint/link moved;
+`bun docs/database/validate-dbml.ts` still prints `OK` (275 tables, 0
+cross-module refs, 0 timestamp gaps, 0 parity drift).
+
+**`GET /invoices/summary?from&to&groupBy=month|day`** (module `sales`, guard
+`invoice:read`)
+
+- `invoiceSummaryQuerySchema` (`contracts/invoice.contract.ts`): two Jakarta
+  business dates, `from <= to`, `groupBy` defaults to `month`.
+- `InvoiceRepository.summary` groups on `left(issue_date::text, 7)` (month) or
+  `issue_date::text` (day), sums `grand_total` and counts rows, scoped by
+  organization, `deleted_at is null`, `issue_date` inside the window and
+  `status in (issued, partially_paid, paid)`.
+- `INVOICED_STATUSES` deliberately excludes `overdue`: that state is derived
+  from `due_date` at read time and never stored (`sales.schema.ts`).
+- `utils/invoice-summary.ts` (`periodKeys`, `fillSummary`) zero-fills every
+  period the window touches and recomputes the totals from the buckets, so the
+  6-month chart has a stable shape. Pure, unit-tested.
+- Aggregates are coerced with `Number()` because bun-sql returns
+  `bigint`/`int` results as strings.
+- `GET /invoices/summary` is registered **before** `/invoices/:id`.
+
+**`GET /projects/stats`** (module `projects`, guard `project:read`)
+
+- `ProjectRepository.stats({ involvedUserId, today })`: counts by status, by
+  stage (active only, zero-filled over `PROJECT_STAGES`) and overdue
+  (`status = 'active' and target_end_date < today`), all three in parallel.
+- `ProjectService.stats(ctx)` passes `involvedUserId: ctx.canViewAll ?
+  undefined : ctx.actorUserId` - the **same** visibility rule as `list()`, so
+  the aggregate cannot reveal a project the list would hide (this was the one
+  data-leak risk called out in the plan).
+- `today` comes from `businessDateOf()` (Asia/Jakarta).
+
+**Tests**
+
+- `test/unit/invoice-summary.test.ts` (new, 7 tests): month/day period keys
+  incl. a year boundary, zero-fill + totals, aggregate coercion, and a
+  `mockDb`-based assertion that the query binds the organization, both date
+  bounds and the three invoiced statuses while excluding
+  draft/void/cancelled.
+- `test/unit/project.service.test.ts`: the fake repository gained `stats`, plus
+  one new test proving a technician counts nothing until a task is assigned,
+  then counts exactly that project, and that overdue only counts active
+  projects.
+- `test/authorization/dashboard-aggregates.test.ts` (new, 6 tests): real
+  `erpGuard` + controllers over stubbed services - 401 without a session,
+  `technician` 403 on `/invoices/summary`, `finance` 200 with the guard's
+  organization id, an inverted window rejected with 400, `member` 403 on
+  `/projects/stats`, `technician` 200 there (`project:read`, narrow rows).
+
+**SQL proved against the real local PostgreSQL** (`ims_erp_local`, disposable
+rows inserted under a probe organization and deleted afterwards, probe script
+removed): month buckets `2026-09 = 500000/2` (issued + paid), `2026-10 =
+100000/1` (partially paid; draft and void excluded), `2026-11 = 0` (cancelled
+excluded); an invoice with a null `issue_date` and one from another
+organization never counted; day grouping zero-filled 9 days and found the
+single row; `projects.stats` returned `{active: 2, closed: 1, overdue: 1}`
+(a closed project past its target date is **not** overdue) and all zeros for a
+caller with no involvement.
+
+First run failed with `column "invoices.issue_date" must appear in the GROUP BY
+clause`: PostgreSQL does not treat `to_char(x, $1)` in the select list and
+`to_char(x, $2)` in `GROUP BY` as the same expression. Replaced with the
+parameterless `left(issue_date::text, 7)` / `issue_date::text` form.
+
+Verification: backend `bun test` 1081 pass / 0 fail (83 files), `bunx tsc
+--noEmit` clean, `bunx oxlint` 0 errors (pre-existing warnings only).
+
+Noticed, deliberately not touched: `invoiceListQuerySchema` accepts
+`status=overdue`, but no row is ever stored as `overdue` (derived at read time),
+so that filter can only return an empty list. Pre-existing, outside this
+plan's scope.
+
+Not done in slice 2: the web-admin client for `/invoices/summary` and the
+dashboard rewrite are slice 3.
+
+## 2026-11-15 - Dashboard real data, slice 3: real dashboard, mock removed (ERP-0060)
+
+Plan: `plans/dashboard-real-data.md` (D3, D13, D16–D22). The mock
+(`MOCK_SUMMARY`, `fetchDashboardSummary`) and `dashboard:banner.sampleData` are
+deleted; `/` renders only endpoint data.
+
+**Web admin**
+
+- `lib/dashboard-api.ts` rewritten: local fetchers (`getJson`, `getPage`) send
+  `organizationHeaders()`; every query key is `['dashboard', <domain>,
+  organizationId, …]` (D19) and `enabled` is false without an organization or
+  without the source permission (D16). Sources: `/invoices/summary` (sales card
+  and chart, one request), `/cash-bank/accounts`, `/reports/profit-and-loss`
+  (current month), `/items?limit=1` (count), `/stock/valuation` (`grandTotal`),
+  `/projects/stats`, `/licenses/summary`, `/invoices?limit=5` +
+  `/receipts?limit=5` (activity). `salesWindow` runs from six months back to
+  **today**, not month end, so future-dated invoices never count.
+- `project-api.ts`: `TProjectStats` + `projectStatsQueryOptions`.
+- `components/dashboard/dashboard-page.tsx` rewritten: Refresh invalidates
+  `['dashboard']`; each widget has its own skeleton / unavailable + retry; stock
+  value is withheld (`—`) without `product:read_cost`; profit is labelled
+  provisional; projects show active/closed/overdue and a bar per stage; the
+  activity feed interleaves the five newest invoices and receipts; no
+  organization → an `Empty` state pointing to `/organizations`. Project stage
+  labels reuse `projects:stage.*`.
+- `locales`: `en` + `id` `dashboard` bundle rewritten (sample banner removed,
+  keys only for rendered copy). Parity and dead-key guards green.
+- `test/unit/dashboard-api.test.ts` rewritten (Jakarta month arithmetic, window
+  shape, dashboard root prefix, organization-keyed keys, disabled without
+  organization or permission). The mock tests were retired with the mock.
+
+**Defects found while building (fixed)**
+
+- First typecheck failed: spreading another client's `queryOptions` and
+  `TApiResponse.data` (nullable) broke overload inference. Fixed with typed
+  local fetchers and keys.
+- A `Button render={<Link>}` raised a Base UI `nativeButton` warning. Replaced
+  with a plain `Link` styled as a button.
+
+**Verification**
+
+- `apps/web-admin`: `bun test` 106 pass / 0 fail; `bunx tsc -b --noEmit` clean;
+  `oxlint` 0 errors (12 pre-existing warnings, none in dashboard files).
+- Repo root: `bun run typecheck` 4/4, `bun run test` 5/5 (backend 1081,
+  web-admin 106, locales 94, react-email 5), `bun run lint` 0 errors,
+  `validate-dbml.ts` OK.
+- Browser, local dev stack, `admin@local.com` (owner, Entragate organization):
+  `/` loads; the request log shows `/invoices/summary`, `/invoices`,
+  `/receipts`, `/licenses/summary`, `/items`, `/cash-bank/accounts`,
+  `/reports/profit-and-loss`, `/stock/valuation`, `/projects/stats`, all **200**
+  with `x-organization-id` set. No console errors after reload. Items shows 12;
+  the other figures are zero because the dev database has no sales, finance or
+  project rows (`sales.invoices` 0 rows, `projects` empty).
+
+**Browser checks, same day (verification run)**
+
+- Organization switch: a second organization `Entragate Cabang Dua`
+  (`L4byXUUL27k4PuKhMiF4ONg85Rm8JrmQ`, owner `admin@local.com`) was created
+  through `POST /organizations`. A cash account created in it appeared in the
+  Cash widget only while that organization was active, and the widget went back
+  to empty on switching back. The dashboard reads the active organization, not
+  a stale copy.
+- Single-card degradation: `/projects/stats` was forced to 500 in the page.
+  Only the Projects card showed "This figure is unavailable right now. Try
+  again"; Sales and Inventory kept their figures. Try again refetched the card
+  and it recovered in the same page (the blocked endpoint was still hit twice,
+  as expected).
+- Not run: permission denial in the browser (no seeded non-admin account signs
+  in on this database). Server-side denial is covered by
+  `test/authorization/dashboard-aggregates.test.ts`. The role accounts
+  (`<role>.seed@entragate.local`) returned 401 on sign-in here; the cause was
+  not investigated, so only `admin@local.com` was used.
+- Not captured: screenshot (needs a visible desktop window).
+
+**Found, out of scope, not fixed**
+
+- `POST /cash-bank/accounts` stores `openingBalance` but sets
+  `currentBalance: 0` (`cash-bank.service.ts:113`), so a new account shows Rp 0.
+  Needs a design decision: post the opening balance as a journal, or seed the
+  running balance. Not changed here.
+- There is no DELETE route for cash accounts. The verification account was
+  deactivated with `PATCH isActive:false` and stays on the dev database.
+
+## 2026-11-16 - Dashboard real data, slice 4: docs close-out and backlog renumbering (ERP-0060)
+
+Slice 4 of `plans/dashboard-real-data.md`.
+
+- **ID collision found and fixed.** The plan was drafted as ERP-0055 with a
+  follow-up ERP-0056, but `plans/erp-0051-follow-ups.md` already assigns
+  ERP-0055 (`Plan decision 6 contradicts the shipped Administration section`)
+  and ERP-0056 (`module-ownership.md` schema inventory stale). Those are
+  separate, still-open items. This plan is now **ERP-0060** and the audit
+  activity-feed follow-up is **ERP-0061**; both were renumbered in
+  `backlog.md`, `plans/dashboard-real-data.md`, `plans/features.md` and this
+  file. The ERP-0055/ERP-0056 text still present in `progress.md` around the
+  ERP-0051 follow-up inventory is that other work and was deliberately left
+  alone.
+- `docs/plan/erp-module-plans/m01-dashboard.md`: "Current state" rewritten -
+  no backend `dashboard` module by decision, the source endpoints listed, the
+  deviation from a single `/dashboard/summary` recorded, status `in progress`,
+  and the browser gaps named.
+- `docs/plan/backlog.md`: ERP-0060 row carries the four slices and the
+  remaining checks; ERP-0061 row added for the audit feed.
+- `docs/plan/plans/features.md`: M01 rollup says the Stage-1 widgets are on
+  real data, open quotations stay out, and the audit feed is ERP-0061.
+- `plans/dashboard-real-data.md`: header status, "As built" note on slice 2,
+  and an "Open verification" section.
+- `docs/database/` reviewed: no table, column, index, constraint, status
+  vocabulary or cross-module link changed by any of the four slices.
+  `bun docs/database/validate-dbml.ts` prints `OK`.
+
+No code changed in this slice. Gates re-run 2026-11-16 anyway:
+`bun run test` 5/5 (backend 1081, web-admin 106, locales 94, react-email 5,
+0 failures) and `bun docs/database/validate-dbml.ts` → `OK` (275 tables, 0
+cross-module refs, 0 timestamp gaps, 0 parity drift).
+
+Still open, so ERP-0060 stays `in-progress`: permission denial in the browser
+(no working non-admin account on the dev database) and a screenshot.
+
+## 2026-11-16 - Dashboard auto-update every minute (ERP-0060, revises D18)
+
+Owner request: the dashboard must refresh itself instead of waiting for the
+header button.
+
+- `apps/web-admin/src/lib/dashboard-api.ts`: new `DASHBOARD_REFRESH_MS =
+  60 * 1000`; all nine dashboard queries (sales summary, cash, profit, item
+  count, stock value, projects, subscriptions, recent invoices, recent
+  receipts) now set `staleTime` **and** `refetchInterval` to it. The stale time
+  equals the interval so a remount inside the same minute never double-fetches.
+  `refetchIntervalInBackground` stays false (TanStack default), so a hidden tab
+  stops polling and catches up when focused.
+- `test/unit/dashboard-api.test.ts`: one new test pins `refetchInterval` and
+  `staleTime` to `DASHBOARD_REFRESH_MS` (60 000 ms) on every widget.
+- Plan decision **D18 revised**: it said "no polling (M01: figures computed on
+  page load)"; it now records the one-minute auto-update and why it changed.
+  The Refresh button stays for an immediate update.
+- Removed a stale doc-comment on `salesSummaryQueryOptions` that still described
+  a `select` the rewrite had dropped.
+
+Verification: `apps/web-admin` `bun test test/unit/dashboard-api.test.ts` 11
+pass / 0 fail; `bunx tsc -b --noEmit` clean; repo `bun run test` 5/5.
+
+Browser evidence (same page, no user action): consecutive GETs spaced
+`/invoices/summary` 60 656 ms, `/cash-bank/accounts` 60 229 ms,
+`/projects/stats` 60 080 ms. Polling runs; the tab was visible throughout, and
+a hidden tab stops by design.
+
+## 2026-11-16 - Invoiced-sales chart: first, full width, with a range picker (ERP-0060, revises D13)
+
+Owner request: the invoiced-sales chart leads the page at full width and can be
+read over 14 days, 1/3/6 months, 1/5 years, or a custom date range.
+
+- New `packages/ui/src/components/date-range-picker.tsx`: two-month range
+  popover, same construction as the existing `DatePicker` (Popover + Calendar +
+  Button trigger, `YYYY-MM-DD` in/out, `min`/`max`, year dropdown). `mode="range"`
+  needs care: `react-day-picker` reports `range.from` as the **anchor** and puts
+  the day just clicked in `range.to`, and it reports `to === from` for the first
+  click, so a controlled value cannot tell "one day picked" from "range done".
+  The component therefore keeps a `pendingFrom` and only emits a range on the
+  second click, then closes.
+- `lib/dashboard-api.ts`: `SALES_RANGES`, `salesChartWindow(today, range, custom)`,
+  `addDays`, `daysBetween`, `shiftMonths` (day-clamping, so 31 Mar minus a month
+  is 28 Feb, not 3 Mar). Presets are **rolling** windows ending today. Buckets
+  are daily up to a 31-day span and monthly above it, so 14 days and 1 month
+  show days while 3 months and longer show months. An incomplete or inverted
+  custom range falls back to the 6-month default instead of firing a half-open
+  request. `salesSummaryQueryOptions` now takes the resolved window and keys on
+  `groupBy` too.
+- `components/dashboard/dashboard-page.tsx`: the chart is the first card and
+  spans the grid; a `ToggleGroup` holds the presets, and the `DateRangePicker`
+  appears only for `custom`. The card subtitle shows the resolved window and the
+  window total. The Sales card keeps its own month-bucketed window, since it
+  compares the current month with the previous one.
+- Locales: `chart.range.*` presets, `chart.rangeLabel`, `chart.customPlaceholder`,
+  `chart.invoiced` in `en` + `id`; the `{{months}}` title is gone.
+
+Verification (browser, local stack, after inserting three probe invoices for the
+Entragate organization and deleting them again):
+- Chart is the first card, 977 px inside a 1025 px `main` — full width.
+- Presets resolved as: 14 days `2026-11-03..11-16` `groupBy=day` (Rp 100.000);
+  1 month `2026-10-17..11-16` (Rp 100.000); 3 months `2026-08-17..11-16`
+  (Rp 300.000); 6 months `2026-05-17..11-16` (Rp 300.000); 1 year
+  `2025-11-17..11-16` (Rp 300.000); 5 years `2021-11-17..11-16` (Rp 600.000,
+  catching the June 2024 invoice). Non-zero bars matched each total.
+- Custom range: picking 1 Nov then 15 Nov produced `2026-11-01..11-15`
+  `groupBy=day`, closed the popover, and issued exactly one request.
+- A single day shows `Nov 1, 2026 – …` while the second date is pending.
+
+Gates: repo `bun run test` 5/5 (backend 1081, web-admin 115, locales 94,
+react-email 5), `bun run typecheck` 4/4, `bun run lint` 0 errors.
+`docs/database/` reviewed: no schema change.
+
+**Follow-up the same day: "Custom" opens the calendar directly.** The picker's
+own input button is gone from this screen; clicking the Custom preset shows the
+two-month calendar straight away.
+
+- `packages/ui/src/components/popover.tsx`: `PopoverContent` forwards `anchor`
+  to the positioner, so a popover can hang off an element that is not its
+  trigger.
+- `date-range-picker.tsx`: new `showTrigger`, `anchor`, `open`, `onOpenChange`.
+  With `showTrigger={false}` no button renders and the caller drives `open`.
+  Closing is now the **controlled caller's** job: the internal close was removed
+  for the controlled case because calling it inside the popover's own select
+  handler raced with Base UI and left the calendar open.
+- `dashboard-page.tsx`: the toggle group is the popover anchor; picking Custom
+  (or clicking it again while active) sets `customOpen`, and `onChange` closes
+  once both ends exist. The card subtitle reads "Pick a date range" until the
+  range is complete.
+
+Verified in the browser: Custom opens two calendars with no input button
+(`hasInputButton: false`), picking 1 → 15 Nov closes it and shows
+`2026-11-01 to 2026-11-15`, clicking Custom again reopens with the range
+selected, Escape dismisses, and switching to a preset leaves it closed.
+
+
+
+
+
+
+
+
+
 
 ## 2026-11-15 - M12 T30: statement CSV exports + monthly report archive (branch `feat/reports-surface`)
 

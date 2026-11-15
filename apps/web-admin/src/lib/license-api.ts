@@ -1,6 +1,7 @@
 import type { TApiPaginatedResponse, TApiResponse } from '@ims-erp/common';
 import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
+import { organizationHeaders } from './organization-store';
 
 /**
  * API client for the license register (`/licenses`, M03 stage 1). Billing
@@ -151,6 +152,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<TApiRespons
 	const response = await fetch(`${API_URL}${path}`, {
 		credentials: 'include',
 		headers: {
+			...organizationHeaders(),
 			'Accept-Language': currentLanguage(),
 			...(init?.body != null ? { 'Content-Type': 'application/json' } : {}),
 		},

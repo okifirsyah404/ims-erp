@@ -115,7 +115,25 @@ export const erpStatements = {
 	asset: ['read', 'create', 'update', 'assign', 'return', 'maintain', 'dispose', 'export'],
 
 	// Documents and planning
-	document: ['read', 'create', 'update', 'submit', 'approve', 'issue', 'void', 'download'],
+	/**
+	 * Signature actions (ERP-0048/ERP-0049): `signature_read` sees the signature
+	 * register, `signature_request` asks others to sign, `signature_sign` signs
+	 * a request addressed to the caller. The flow itself is not built yet; the
+	 * vocabulary is registered so the routes can be guarded as they land.
+	 */
+	document: [
+		'read',
+		'create',
+		'update',
+		'submit',
+		'approve',
+		'issue',
+		'void',
+		'download',
+		'signature_read',
+		'signature_request',
+		'signature_sign',
+	],
 	approval_rule: ['read', 'configure'],
 	budget: ['read', 'create', 'update', 'submit', 'approve', 'revise', 'export'],
 	work_plan: ['read', 'create', 'update', 'approve'],
@@ -408,7 +426,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 			'mark_lost',
 			'export',
 		],
-		document: ['read', 'create', 'download'],
+		document: ['read', 'create', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		approval_rule: ['read'],
 		service_ticket: ['read', 'create', 'update', 'assign'],
 		asset: ['read'],
@@ -462,7 +480,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 			'mark_lost',
 			'export',
 		],
-		document: ['read', 'download'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -483,7 +501,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		license: ['read', 'create', 'activate', 'extend', 'revoke', 'read_key', 'manage_api'],
 		// Answers WhatsApp chats handed off by the assistant (M04 stage 2).
 		whatsapp: ['read', 'reply'],
-		document: ['read', 'download'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -499,7 +517,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		product: ['read'],
 		// Registers licenses sold and starts renewals (M03, decision 2026-11-06).
 		license: ['read', 'create', 'extend', 'read_key'],
-		document: ['read', 'download'],
+		document: ['read', 'download', 'signature_read', 'signature_sign'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -521,7 +539,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		settlement: ['read', 'create', 'update', 'submit'],
 		purchase_request: ['read', 'create', 'submit'],
 		work_plan: ['read', 'create', 'update'],
-		document: ['read', 'create', 'submit', 'download'],
+		document: ['read', 'create', 'submit', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		asset: ['read', 'assign'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
@@ -537,7 +555,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		advance: ['read', 'create', 'update', 'submit'],
 		settlement: ['read', 'create', 'update', 'submit'],
 		purchase_request: ['read', 'create', 'submit'],
-		document: ['read', 'download'],
+		document: ['read', 'download', 'signature_read', 'signature_sign'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -548,7 +566,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		task: ['read', 'update', 'submit'],
 		daily_report: ['read', 'create', 'update', 'submit'],
 		settlement: ['read', 'create', 'update', 'submit'],
-		document: ['read', 'download'],
+		document: ['read', 'download', 'signature_read', 'signature_sign'],
 	},
 
 	purchasing: {
@@ -565,7 +583,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		// Prepares opening stock / adjustments with costs; never approves
 		// (decision 2026-11-03).
 		stock_adjustment: ['read', 'create', 'submit'],
-		document: ['read', 'download'],
+		document: ['read', 'download', 'signature_read', 'signature_sign'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -586,7 +604,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 			'mark_lost',
 			'export',
 		],
-		document: ['read', 'download'],
+		document: ['read', 'download', 'signature_read', 'signature_sign'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -622,7 +640,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		license: ['read'],
 		investor: ['read'],
 		investor_report: ['read'],
-		document: ['read', 'download'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -643,7 +661,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		cash_bank: ['read', 'reconcile', 'export'],
 		investor: ['read'],
 		investor_report: ['read', 'create', 'publish', 'export'],
-		document: ['read', 'download'],
+		document: ['read', 'download', 'signature_read', 'signature_sign'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -663,7 +681,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		disciplinary_record: ['read', 'create', 'update', 'approve'],
 		payroll: ['read', 'create', 'calculate', 'update', 'submit', 'export'],
 		payslip: ['read', 'publish', 'download'],
-		document: ['read', 'create', 'download'],
+		document: ['read', 'create', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		// Invites org members (and creates their employee record) and sees the
 		// members tab. No `member:create|update|delete`: HR does not manage
 		// organization membership itself.
@@ -684,7 +702,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		license: ['read', 'read_key'],
 		// Answers WhatsApp chats handed off by the assistant (M04 stage 2).
 		whatsapp: ['read', 'reply'],
-		document: ['read', 'download'],
+		document: ['read', 'download', 'signature_read', 'signature_sign'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -701,7 +719,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		whatsapp: ['read', 'manage_faq'],
 		product: ['read'],
 		customer: ['read'],
-		document: ['read', 'download'],
+		document: ['read', 'download', 'signature_read', 'signature_sign'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -744,7 +762,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		financial_report: ['read', 'export'],
 		service_ticket: ['read'],
 		asset: ['read', 'export'],
-		document: ['read', 'download'],
+		document: ['read', 'download', 'signature_read', 'signature_sign'],
 		budget: ['read', 'export'],
 		license: ['read'],
 	},
