@@ -6,8 +6,10 @@ import { z } from 'zod';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
-import { Input } from '@ims-erp/ui/components/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
+import { Search } from 'lucide-react';
 import { ContractBadges } from '@/components/licensing/contract-badges';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatBusinessDate, formatIdr } from '@/lib/format';
@@ -54,23 +56,26 @@ function ContractListPage() {
 				)}
 			</div>
 			<div className='flex flex-wrap items-center gap-3'>
-				<select
-					aria-label={t('licensing:field.status')}
-					className='h-9 rounded-md border bg-transparent px-3 text-sm disabled:opacity-50'
-					value={status}
+				<Select
+					value={status || 'all'}
 					disabled={dueOnly}
-					onChange={(event) => {
-						setStatus(event.target.value as TContractStatus | '');
+					onValueChange={(value: string | null) => {
+						setStatus(value === null || value === 'all' ? '' : (value as TContractStatus));
 						setPage(1);
 					}}
 				>
-					<option value=''>{t('licensing:contracts.allStatuses')}</option>
-					{CONTRACT_STATUSES.map((value) => (
-						<option key={value} value={value}>
-							{t(`licensing:status.${value}`)}
-						</option>
-					))}
-				</select>
+					<SelectTrigger aria-label={t('licensing:field.status')}>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('licensing:contracts.allStatuses')}</SelectItem>
+						{CONTRACT_STATUSES.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`licensing:status.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 				<label className='flex items-center gap-2 text-sm'>
 					<input
 						type='checkbox'
@@ -83,17 +88,21 @@ function ContractListPage() {
 					/>
 					{t('licensing:contracts.dueOnly', { days: DUE_WITHIN_DAYS })}
 				</label>
-				<Input
-					type='search'
-					className='max-w-sm'
-					aria-label={t('licensing:contracts.search')}
-					placeholder={t('licensing:contracts.search')}
-					value={search}
-					onChange={(event) => {
-						setSearch(event.target.value);
-						setPage(1);
-					}}
-				/>
+				<InputGroup className='max-w-sm'>
+					<InputGroupAddon align='inline-start'>
+						<Search aria-hidden='true' />
+					</InputGroupAddon>
+					<InputGroupInput
+						type='search'
+						aria-label={t('licensing:contracts.search')}
+						placeholder={t('licensing:contracts.search')}
+						value={search}
+						onChange={(event) => {
+							setSearch(event.target.value);
+							setPage(1);
+						}}
+					/>
+				</InputGroup>
 			</div>
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>

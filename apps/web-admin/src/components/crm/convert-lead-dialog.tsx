@@ -14,6 +14,19 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from '@ims-erp/ui/components/input-group';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
+import { Search } from 'lucide-react';
+import {
 	CUSTOMER_TYPES,
 	customersQueryOptions,
 	type TCustomerInput,
@@ -86,15 +99,18 @@ export function ConvertLeadDialog({
 					<FieldGroup className='py-4'>
 						<Field>
 							<FieldLabel htmlFor='convert-mode'>{t('crm:convert.mode')}</FieldLabel>
-							<select
-								id='convert-mode'
-								className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
+							<Select
 								value={mode}
-								onChange={(e) => setMode(e.target.value as 'new' | 'existing')}
+								onValueChange={(value: string | null) => setMode(value as 'new' | 'existing')}
 							>
-								<option value='new'>{t('crm:convert.modeNew')}</option>
-								<option value='existing'>{t('crm:convert.modeExisting')}</option>
-							</select>
+								<SelectTrigger id='convert-mode' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='new'>{t('crm:convert.modeNew')}</SelectItem>
+									<SelectItem value='existing'>{t('crm:convert.modeExisting')}</SelectItem>
+								</SelectContent>
+							</Select>
 						</Field>
 						{mode === 'new' ? (
 							<>
@@ -113,18 +129,21 @@ export function ConvertLeadDialog({
 									</Field>
 									<Field>
 										<FieldLabel htmlFor='convert-type'>{t('crm:customer.customerType')}</FieldLabel>
-										<select
-											id='convert-type'
-											className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
+										<Select
 											value={customerType}
-											onChange={(e) => setCustomerType(e.target.value as TCustomerType)}
+											onValueChange={(value: string | null) => setCustomerType(value as TCustomerType)}
 										>
-											{CUSTOMER_TYPES.map((type) => (
-												<option key={type} value={type}>
-													{t(`crm:customerType.${type}`)}
-												</option>
-											))}
-										</select>
+											<SelectTrigger id='convert-type' className='w-full'>
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												{CUSTOMER_TYPES.map((type) => (
+													<SelectItem key={type} value={type}>
+														{t(`crm:customerType.${type}`)}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
 									</Field>
 								</div>
 								<Field>
@@ -137,30 +156,38 @@ export function ConvertLeadDialog({
 							<>
 								<Field>
 									<FieldLabel htmlFor='convert-search'>{t('crm:convert.search')}</FieldLabel>
-									<Input
-										id='convert-search'
-										type='search'
-										placeholder={t('crm:customers.search')}
-										value={search}
-										onChange={(e) => setSearch(e.target.value)}
-									/>
+									<InputGroup>
+										<InputGroupAddon align='inline-start'>
+											<Search aria-hidden='true' />
+										</InputGroupAddon>
+										<InputGroupInput
+											id='convert-search'
+											type='search'
+											placeholder={t('crm:customers.search')}
+											value={search}
+											onChange={(e) => setSearch(e.target.value)}
+										/>
+									</InputGroup>
 								</Field>
 								<Field>
 									<FieldLabel htmlFor='convert-customer'>{t('crm:convert.pick')}</FieldLabel>
-									<select
-										id='convert-customer'
+									<Select
 										required
-										className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
-										value={customerId}
-										onChange={(e) => setCustomerId(e.target.value)}
+										value={customerId === '' ? 'none' : customerId}
+										onValueChange={(value: string | null) => setCustomerId(value === 'none' || value == null ? '' : value)}
 									>
-										<option value=''>{t('crm:convert.pick')}</option>
-										{(customers.data?.rows ?? []).map((customer) => (
-											<option key={customer.id} value={customer.id}>
-												{customer.code} — {customer.name}
-											</option>
-										))}
-									</select>
+										<SelectTrigger id='convert-customer' className='w-full'>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value='none'>{t('crm:convert.pick')}</SelectItem>
+											{(customers.data?.rows ?? []).map((customer) => (
+												<SelectItem key={customer.id} value={customer.id}>
+													{customer.code} — {customer.name}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
 								</Field>
 							</>
 						)}

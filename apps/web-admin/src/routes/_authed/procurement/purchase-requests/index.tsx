@@ -6,7 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { Input } from '@ims-erp/ui/components/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatBusinessDate, formatIdr } from '@/lib/format';
@@ -62,28 +64,30 @@ function PurchaseRequestListPage() {
 						setPage(1);
 					}}
 				/>
-				<select
-					aria-label={t('procurement:po.status')}
-					className='h-9 rounded-md border bg-transparent px-3 text-sm'
-					value={status}
-					onChange={(event) => {
-						setStatus(event.target.value as TPurchaseRequestStatus | '');
+				<Select
+					value={status || 'all'}
+					onValueChange={(value: string | null) => {
+						setStatus(value === 'all' || value == null ? '' : (value as TPurchaseRequestStatus));
 						setPage(1);
 					}}
 				>
-					<option value=''>{t('procurement:pos.allStatuses')}</option>
-					{PURCHASE_REQUEST_STATUSES.map((value) => (
-						<option key={value} value={value}>
-							{t(`procurement:prStatus.${value}`)}
-						</option>
-					))}
-				</select>
+					<SelectTrigger aria-label={t('procurement:po.status')} className='w-48'>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('procurement:pos.allStatuses')}</SelectItem>
+						{PURCHASE_REQUEST_STATUSES.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`procurement:prStatus.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 				<label className='flex items-center gap-2 text-sm'>
-					<input
-						type='checkbox'
+					<Checkbox
 						checked={mine}
-						onChange={(event) => {
-							setMine(event.target.checked);
+						onCheckedChange={(checked) => {
+							setMine(checked === true);
 							setPage(1);
 						}}
 					/>

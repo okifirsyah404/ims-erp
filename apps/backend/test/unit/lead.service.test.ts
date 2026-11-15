@@ -65,7 +65,7 @@ class FakeLeads implements ILeadRepository {
 		return this.rows.find((row) => row.idempotencyKey === key) ?? null;
 	}
 	async create(data: TLeadCreateData) {
-		const row = { ...data, id: crypto.randomUUID(), status: 'new', customerId: null } as unknown as TLeadSelect;
+		const row = { ...data, id: crypto.randomUUID(), status: 'new', customerId: null, createdAt: new Date() } as unknown as TLeadSelect;
 		this.rows.push(row);
 		return row;
 	}
@@ -76,7 +76,7 @@ class FakeLeads implements ILeadRepository {
 			this.rows.push({ ...data, id: crypto.randomUUID(), reference: 'RFQ-FIRST' } as unknown as TLeadSelect);
 			throw Object.assign(new Error('duplicate'), { code: '23505' });
 		}
-		const row = { ...data, id: crypto.randomUUID(), source: 'website', status: 'new', ownerUserId: null } as unknown as TLeadSelect;
+		const row = { ...data, id: crypto.randomUUID(), source: 'website', status: 'new', ownerUserId: null, createdAt: new Date() } as unknown as TLeadSelect;
 		this.rows.push(row);
 		this.attachments.push(...files.map((file) => ({ ...file, id: crypto.randomUUID(), leadId: row.id })));
 		return row;
@@ -129,6 +129,9 @@ class FakeActivities implements ILeadActivityRepository {
 const leadInput = (extra: Record<string, unknown> = {}) =>
 	createLeadSchema.parse({ name: 'Budi', phone: '0812 3456 7890', source: 'phone', ...extra });
 
+const published: { topic: string; id: string }[] = [];
+const outbox = { publish: async (topic: string, aggregate: { id: string }) => void published.push({ topic, id: aggregate.id }) as never };
+
 describe('LeadService', () => {
 	let leads: FakeLeads;
 	let activities: FakeActivities;
@@ -157,7 +160,21 @@ describe('LeadService', () => {
 			},
 			{ getUser: async (id: string) => ({ id, name: `User ${id}` }) as never },
 			{ presignGet: (key: string) => `https://files.test/${key}` },
+			outbox,
 		);
+	});
+
+	test('a new lead is published to n8n as lead.created', async () => {
+		published.length = 0;
+		const lead = await service.create(ALICE, leadInput());
+		expect(published).toEqual([{ topic: 'lead.created', id: lead.id }]);
+	});
+
+	test('a WhatsApp chat becomes an unassigned whatsapp lead, published to n8n (M04 contract)', async () => {
+		published.length = 0;
+		const lead = await service.captureFromChat('cs-1', { name: 'Budi', whatsapp: '+6281234567890', needs: 'WhatsApp:\nSwing gate' });
+		expect(lead).toMatchObject({ name: 'Budi', whatsapp: '+6281234567890', source: 'whatsapp', ownerUserId: null, createdBy: 'cs-1', needs: 'WhatsApp:\nSwing gate' });
+		expect(published).toEqual([{ topic: 'lead.created', id: lead.id }]);
 	});
 
 	test('non-managers own what they create and only see their own leads (others answer 404)', async () => {
@@ -228,6 +245,7 @@ describe('WebsiteInquiryService', () => {
 			leads,
 			{ next: async () => `RFQ-2026-${String(++sequence).padStart(5, '0')}` },
 			{ put: async (key: string) => void stored.push(key) },
+			outbox,
 		);
 	});
 

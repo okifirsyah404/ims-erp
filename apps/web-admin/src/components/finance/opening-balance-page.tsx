@@ -4,7 +4,15 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import {
 	Table,
 	TableBody,
@@ -114,25 +122,25 @@ export function OpeningBalancePage() {
 
 			{canEdit && !hasPosted ? (
 				<div className='flex flex-wrap items-center gap-2 rounded-md border p-4'>
-					<select
-						className='h-9 w-72 rounded-md border bg-transparent px-2 text-sm'
-						value={accountId}
-						onChange={(event) => setAccountId(event.target.value)}
-					>
-						<option value='none'>{t('finance:opening.account')}</option>
-						{accounts?.rows
-							.filter((account) => account.isActive && account.isPostable)
-							.map((account) => (
-								<option key={account.id} value={account.id}>
-									{account.code} — {account.name}
-								</option>
-							))}
-					</select>
-					<Input
-						type='date'
+					<Select value={accountId} onValueChange={(value: string | null) => setAccountId(value ?? 'none')}>
+						<SelectTrigger className='w-72'>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='none'>{t('finance:opening.account')}</SelectItem>
+							{accounts?.rows
+								.filter((account) => account.isActive && account.isPostable)
+								.map((account) => (
+									<SelectItem key={account.id} value={account.id}>
+										{account.code} — {account.name}
+									</SelectItem>
+								))}
+						</SelectContent>
+					</Select>
+					<DatePicker
 						className='w-40'
 						value={asOfDate}
-						onChange={(event) => setAsOfDate(event.target.value)}
+						onChange={setAsOfDate}
 					/>
 					<Input
 						className='w-40'

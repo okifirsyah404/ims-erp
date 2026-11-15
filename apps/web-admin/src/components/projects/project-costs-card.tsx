@@ -4,8 +4,16 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import {
 	Table,
 	TableBody,
@@ -18,8 +26,6 @@ import { toast } from '@/components/toast';
 import { formatBusinessDate, formatIdr, todayBusinessDate } from '@/lib/format';
 import { addCost, COST_CATEGORIES, type TCostCategory, type TProjectDetail, voidCost } from '@/lib/project-api';
 import { usePermission } from '@/lib/use-permission';
-
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 /**
  * Direct costs (only rendered when the server returned them, i.e. with
@@ -150,17 +156,22 @@ export function ProjectCostsCard({ project }: { project: TProjectDetail & { cost
 					>
 						<Field>
 							<FieldLabel htmlFor='cost-category'>{t('projects:costs.category')}</FieldLabel>
-							<select id='cost-category' className={select} value={category} onChange={(event) => setCategory(event.target.value as TCostCategory)}>
-								{COST_CATEGORIES.map((value) => (
-									<option key={value} value={value}>
-										{t(`projects:costCategory.${value}`)}
-									</option>
-								))}
-							</select>
+							<Select value={category} onValueChange={(value: string | null) => setCategory(value as TCostCategory)}>
+								<SelectTrigger id='cost-category' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{COST_CATEGORIES.map((value) => (
+										<SelectItem key={value} value={value}>
+											{t(`projects:costCategory.${value}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='cost-date'>{t('projects:costs.date')}</FieldLabel>
-							<Input id='cost-date' type='date' required value={costDate} onChange={(event) => setCostDate(event.target.value)} />
+							<DatePicker id='cost-date' required value={costDate} onChange={setCostDate} />
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='cost-amount'>{t('projects:costs.amountRp')}</FieldLabel>

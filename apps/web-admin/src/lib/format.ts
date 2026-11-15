@@ -32,7 +32,7 @@ export function formatDateTime(value: string | number | Date | null | undefined,
 	}).format(new Date(value));
 }
 
-/** `<input type="datetime-local">` value (local time) ↔ unix ms. */
+/** `DateTimePicker` value (local time) ↔ unix ms. */
 export function toDateTimeInput(value: string | number | null): string {
 	if (value === null) return '';
 	const date = new Date(value);
@@ -64,7 +64,7 @@ export function formatBusinessDate(value: string | null | undefined, language?: 
 	}).format(new Date(`${value}T00:00:00Z`));
 }
 
-/** Today's business date in Asia/Jakarta, `YYYY-MM-DD` (for `<input type="date">`). */
+/** Today's business date in Asia/Jakarta, `YYYY-MM-DD` (for `DatePicker`). */
 export function todayBusinessDate(): string {
 	return new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
 }

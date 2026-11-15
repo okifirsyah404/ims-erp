@@ -9,6 +9,7 @@ import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { MonthPicker } from '@ims-erp/ui/components/month-picker';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { EmployeeSelect } from '@/components/hr/employee-select';
 import { ImportDialog } from '@/components/hr/import-dialog';
@@ -99,12 +100,11 @@ function SalaryPage() {
 				</div>
 			</div>
 			<div className='flex flex-wrap items-center gap-3'>
-				<Input
-					type='month'
+				<MonthPicker
 					className='w-44'
 					aria-label={t('hr:salary.period')}
 					value={period}
-					onChange={(event) => event.target.value && setPeriod(event.target.value)}
+					onChange={setPeriod}
 				/>
 				{data && <Badge variant={locked ? 'default' : 'outline'}>{t(`hr:salary.state.${data.state}`)}</Badge>}
 			</div>

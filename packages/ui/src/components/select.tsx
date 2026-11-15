@@ -5,7 +5,49 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "cn"
 import { RiArrowDownSLine, RiCheckLine, RiArrowUpSLine } from "@remixicon/react"
 
-const Select = SelectPrimitive.Root
+const SelectRoot = SelectPrimitive.Root
+
+/**
+ * Collect `{ value, label }` pairs from `SelectItem` children.
+ *
+ * Base UI reads the trigger label from the root's `items` prop, not from the
+ * item children (the popup unmounts while closed). Without `items` the trigger
+ * falls back to the raw value, so a `value='all'` filter reads "all".
+ */
+function collectSelectItems(
+  children: React.ReactNode,
+  out: Array<{ label: React.ReactNode; value: any }> = []
+) {
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child)) return
+    if (child.type === SelectItem) {
+      out.push({
+        label: (child.props as SelectPrimitive.Item.Props).children,
+        value: (child.props as SelectPrimitive.Item.Props).value,
+      })
+      return
+    }
+    const nested = (child.props as { children?: React.ReactNode }).children
+    if (nested != null) collectSelectItems(nested, out)
+  })
+  return out
+}
+
+function Select<Value, Multiple extends boolean | undefined = false>({
+  items,
+  children,
+  ...props
+}: SelectPrimitive.Root.Props<Value, Multiple>) {
+  const derived = React.useMemo(
+    () => items ?? collectSelectItems(children),
+    [items, children]
+  )
+  return (
+    <SelectRoot items={derived} {...props}>
+      {children}
+    </SelectRoot>
+  )
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (

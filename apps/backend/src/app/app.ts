@@ -8,6 +8,8 @@ import { accountingModule } from './accounting';
 import { aftersalesModule } from './aftersales';
 import { assetsModule } from './assets';
 import { auditModule } from './audit';
+import { automationModule } from './automation';
+import { catalogModule } from './catalog';
 import { codeNumberModule } from './code-number';
 import { companyModule } from './company';
 import { crmModule } from './crm';
@@ -85,6 +87,8 @@ export function createApp() {
 			.use(projectsModule())
 			.use(aftersalesModule())
 			.use(licensingModule())
+			.use(catalogModule())
+			.use(automationModule())
 			// Admin surfaces share the `/admin` prefix, so their routes no longer
 			// overlap the self-service `/users/*` routes: mount order is irrelevant
 			// here (before the split, both modules registered `GET /users` and the

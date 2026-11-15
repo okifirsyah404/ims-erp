@@ -6,7 +6,20 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from '@ims-erp/ui/components/input-group';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { Search } from 'lucide-react';
 import { formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
 import { listItems, type TItem } from '@/lib/inventory-api';
 import {
@@ -36,8 +49,6 @@ type TLineDraft = {
 	purchaseRequestItemId: string | null;
 	requestLabel: string | null;
 };
-
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 /** Item search used to map a free-text request line to an item of the master. */
 function ItemMapper({ id, onPick }: { id: string; onPick: (item: TItem) => void }) {
@@ -247,38 +258,60 @@ export function PurchaseOrderForm({
 					<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 						<Field>
 							<FieldLabel htmlFor='po-supplier-search'>{t('procurement:po.findSupplier')}</FieldLabel>
-							<Input
-								id='po-supplier-search'
-								type='search'
-								value={supplierSearch}
-								onChange={(event) => setSupplierSearch(event.target.value)}
-							/>
+							<InputGroup>
+								<InputGroupAddon align='inline-start'>
+									<Search aria-hidden='true' />
+								</InputGroupAddon>
+								<InputGroupInput
+									id='po-supplier-search'
+									type='search'
+									value={supplierSearch}
+									onChange={(event) => setSupplierSearch(event.target.value)}
+								/>
+							</InputGroup>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='po-supplier'>{t('procurement:po.supplier')}</FieldLabel>
-							<select id='po-supplier' required className={select} value={supplierId} onChange={(event) => setSupplierId(event.target.value)}>
-								<option value=''>{t('procurement:po.pickSupplier')}</option>
-								{order && !supplierOptions.some((row) => row.id === order.supplierId) && (
-									<option value={order.supplierId}>
-										{order.supplierSnapshot.code} — {order.supplierSnapshot.name}
-									</option>
-								)}
-								{supplierOptions.map((row) => (
-									<option key={row.id} value={row.id}>
-										{row.code} — {row.name}
-									</option>
-								))}
-							</select>
+							<Select
+								required
+								value={supplierId === '' ? 'none' : supplierId}
+								onValueChange={(value: string | null) => setSupplierId(value == null || value === 'none' ? '' : value)}
+							>
+								<SelectTrigger id='po-supplier' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='none'>{t('procurement:po.pickSupplier')}</SelectItem>
+									{order && !supplierOptions.some((row) => row.id === order.supplierId) && (
+										<SelectItem value={order.supplierId}>
+											{order.supplierSnapshot.code} — {order.supplierSnapshot.name}
+										</SelectItem>
+									)}
+									{supplierOptions.map((row) => (
+										<SelectItem key={row.id} value={row.id}>
+											{row.code} — {row.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='po-category'>{t('procurement:po.category')}</FieldLabel>
-							<select id='po-category' className={select} value={category} onChange={(event) => setCategory(event.target.value as TPurchaseCategory)}>
-								{PURCHASE_CATEGORIES.map((value) => (
-									<option key={value} value={value}>
-										{t(`procurement:category.${value}`)}
-									</option>
-								))}
-							</select>
+							<Select
+								value={category}
+								onValueChange={(value: string | null) => setCategory(value as TPurchaseCategory)}
+							>
+								<SelectTrigger id='po-category' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{PURCHASE_CATEGORIES.map((value) => (
+										<SelectItem key={value} value={value}>
+											{t(`procurement:category.${value}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						{input('po-subject', t('procurement:po.subject'), subject, setSubject, { required: true, maxLength: 200 })}
 						{input('po-date', t('procurement:po.orderDate'), orderDate, setOrderDate, { type: 'date', required: true })}
@@ -408,13 +441,18 @@ export function PurchaseOrderForm({
 					</div>
 					<div className='flex flex-col gap-2 rounded-md border border-dashed p-3'>
 						<FieldLabel htmlFor='po-item-search'>{t('procurement:po.addItem')}</FieldLabel>
-						<Input
-							id='po-item-search'
-							type='search'
-							placeholder={t('procurement:po.itemSearchHint')}
-							value={itemSearch}
-							onChange={(event) => setItemSearch(event.target.value)}
-						/>
+						<InputGroup>
+							<InputGroupAddon align='inline-start'>
+								<Search aria-hidden='true' />
+							</InputGroupAddon>
+							<InputGroupInput
+								id='po-item-search'
+								type='search'
+								placeholder={t('procurement:po.itemSearchHint')}
+								value={itemSearch}
+								onChange={(event) => setItemSearch(event.target.value)}
+							/>
+						</InputGroup>
 						{deferredItem !== '' && (
 							<ul className='flex max-h-56 flex-col overflow-y-auto rounded-md border'>
 								{(items.data?.rows ?? []).map((item) => (
@@ -446,13 +484,21 @@ export function PurchaseOrderForm({
 					<FieldGroup>
 						<Field>
 							<FieldLabel htmlFor='po-vat-mode'>{t('procurement:po.vatMode')}</FieldLabel>
-							<select id='po-vat-mode' className={select} value={vatMode} onChange={(event) => setVatMode(event.target.value as TPoVatMode)}>
-								{PO_VAT_MODES.map((value) => (
-									<option key={value} value={value}>
-										{t(`procurement:vatMode.${value}`)}
-									</option>
-								))}
-							</select>
+							<Select
+								value={vatMode}
+								onValueChange={(value: string | null) => setVatMode(value as TPoVatMode)}
+							>
+								<SelectTrigger id='po-vat-mode' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{PO_VAT_MODES.map((value) => (
+										<SelectItem key={value} value={value}>
+											{t(`procurement:vatMode.${value}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						{vatMode !== 'none' &&
 							input('po-vat-rate', t('procurement:po.vatRate'), vatPercent, setVatPercent, {

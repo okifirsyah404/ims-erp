@@ -63,6 +63,23 @@ export function contractTiming(contract: { status: string; endDate: string | nul
 /** Days an ended license keeps working, with a warning (owner decision 2026-11-06). */
 export const GRACE_DAYS = 7;
 
+/** Days before the end at which a `license.due` reminder goes out (M04 stage 2). */
+export const DUE_NOTICE_DAYS = [30, 7] as const;
+
+/**
+ * Which `license.due` reminder a contract is due for: `30` (ends within 30
+ * days), `7` (within 7 days, today included), `0` (ended, still in grace),
+ * or `null` (none: perpetual, further out, or past the grace period). The
+ * reminder is sent once per contract, end date and threshold, so a missed
+ * day only sends the latest one.
+ */
+export function dueNoticeThreshold(daysLeft: number | null): 30 | 7 | 0 | null {
+	if (daysLeft === null || daysLeft > DUE_NOTICE_DAYS[0]) return null;
+	if (daysLeft > DUE_NOTICE_DAYS[1]) return 30;
+	if (daysLeft >= 0) return 7;
+	return daysLeft >= -GRACE_DAYS ? 0 : null;
+}
+
 export type TLicenseResult =
 	| 'ok'
 	| 'grace'

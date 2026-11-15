@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
@@ -156,17 +157,11 @@ export function PurchaseRequestForm({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='pr-date'>{t('procurement:pr.requestDate')}</FieldLabel>
-							<Input id='pr-date' type='date' required value={requestDate} onChange={(event) => setRequestDate(event.target.value)} />
+							<DatePicker id='pr-date' required value={requestDate} onChange={setRequestDate} />
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='pr-needed-by'>{t('procurement:pr.neededBy')}</FieldLabel>
-							<Input
-								id='pr-needed-by'
-								type='date'
-								min={requestDate}
-								value={neededBy}
-								onChange={(event) => setNeededBy(event.target.value)}
-							/>
+							<DatePicker id='pr-needed-by' min={requestDate} value={neededBy} onChange={setNeededBy} />
 						</Field>
 					</FieldGroup>
 				</CardContent>

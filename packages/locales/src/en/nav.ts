@@ -141,6 +141,8 @@ const nav = {
 	'breadcrumb.purchaseOrderNew': 'New purchase order',
 	'breadcrumb.purchaseRequestNew': 'New purchase request',
 	'breadcrumb.goodsReceiptNew': 'Receive goods',
+	'breadcrumb.whatsappFaq': 'Assistant FAQ',
+	'breadcrumb.whatsappChat': 'Conversation',
 } as const;
 
 export default nav;

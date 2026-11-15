@@ -11,6 +11,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import {
 	Dialog,
 	DialogContent,
@@ -20,6 +21,13 @@ import {
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { toast } from '@/components/toast';
 import { formatIdr, rupiahToMinor } from '@/lib/format';
 import {
@@ -142,19 +150,22 @@ function CreateInvoiceDialog({ summary, onClose }: { summary: TBillingSummary; o
 					<FieldGroup className='py-4'>
 						<Field>
 							<FieldLabel htmlFor='invoice-term'>{t('finance:billing.term')}</FieldLabel>
-							<select
-								id='invoice-term'
-								className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
+							<Select
 								value={mode}
-								onChange={(e) => setMode(e.target.value as TMode)}
+								onValueChange={(value: string | null) => setMode(value as TMode)}
 							>
-								{summary.nextTerm && (
-									<option value='next'>{t('finance:billing.mode.next', { term: summary.nextTerm.description })}</option>
-								)}
-								<option value='percentage'>{t('finance:billing.mode.percentage')}</option>
-								<option value='amount'>{t('finance:billing.mode.amount')}</option>
-								<option value='remaining'>{t('finance:billing.mode.remaining')}</option>
-							</select>
+								<SelectTrigger id='invoice-term' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{summary.nextTerm && (
+										<SelectItem value='next'>{t('finance:billing.mode.next', { term: summary.nextTerm.description })}</SelectItem>
+									)}
+									<SelectItem value='percentage'>{t('finance:billing.mode.percentage')}</SelectItem>
+									<SelectItem value='amount'>{t('finance:billing.mode.amount')}</SelectItem>
+									<SelectItem value='remaining'>{t('finance:billing.mode.remaining')}</SelectItem>
+								</SelectContent>
+							</Select>
 						</Field>
 						{mode === 'percentage' && (
 							<Field>
@@ -201,7 +212,7 @@ function CreateInvoiceDialog({ summary, onClose }: { summary: TBillingSummary; o
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='invoice-due'>{t('finance:invoice.dueDate')}</FieldLabel>
-							<Input id='invoice-due' type='date' value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+							<DatePicker id='invoice-due' value={dueDate} onChange={setDueDate} />
 						</Field>
 					</FieldGroup>
 					<DialogFooter>
