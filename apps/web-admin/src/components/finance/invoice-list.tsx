@@ -6,7 +6,18 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
-import { Input } from '@ims-erp/ui/components/input';
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from '@ims-erp/ui/components/input-group';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import {
 	Table,
 	TableBody,
@@ -15,6 +26,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ims-erp/ui/components/table';
+import { Search } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatBusinessDate, formatIdr, todayBusinessDate } from '@/lib/format';
 import {
@@ -57,33 +69,40 @@ export function InvoiceList({ title, description, termKind }: { title: string; d
 			</div>
 
 			<div className='flex flex-wrap items-center gap-2'>
-				<Input
-					type='search'
-					className='max-w-sm'
-					aria-label={t('finance:invoices.search')}
-					placeholder={t('finance:invoices.search')}
-					value={search}
-					onChange={(e) => {
-						setSearch(e.target.value);
-						setPage(1);
-					}}
-				/>
-				<select
-					aria-label={t('finance:invoice.status')}
-					className='h-9 rounded-md border bg-transparent px-3 text-sm'
-					value={status}
-					onChange={(e) => {
-						setStatus(e.target.value as TInvoiceStatus | '');
+				<InputGroup className='max-w-sm'>
+					<InputGroupAddon align='inline-start'>
+						<Search aria-hidden='true' />
+					</InputGroupAddon>
+					<InputGroupInput
+						type='search'
+						aria-label={t('finance:invoices.search')}
+						placeholder={t('finance:invoices.search')}
+						value={search}
+						onChange={(e) => {
+							setSearch(e.target.value);
+							setPage(1);
+						}}
+					/>
+				</InputGroup>
+				<Select
+					value={status === '' ? 'all' : status}
+					onValueChange={(value: string | null) => {
+						setStatus(value == null || value === 'all' ? '' : (value as TInvoiceStatus));
 						setPage(1);
 					}}
 				>
-					<option value=''>{t('finance:invoices.allStatuses')}</option>
-					{INVOICE_STATUSES.map((value) => (
-						<option key={value} value={value}>
-							{t(`finance:status.${value}`)}
-						</option>
-					))}
-				</select>
+					<SelectTrigger aria-label={t('finance:invoice.status')}>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('finance:invoices.allStatuses')}</SelectItem>
+						{INVOICE_STATUSES.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`finance:status.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 				<label className='flex items-center gap-2 text-sm'>
 					<Checkbox
 						checked={overdue}

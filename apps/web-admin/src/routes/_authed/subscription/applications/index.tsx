@@ -9,6 +9,7 @@ import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { toast } from '@/components/toast';
@@ -28,8 +29,6 @@ import { usePermission } from '@/lib/use-permission';
 export const Route = createFileRoute('/_authed/subscription/applications/')({
 	component: ApplicationsPage,
 });
-
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 function ApplicationsPage() {
 	const { t } = useTranslation(['licensing', 'common']);
@@ -182,13 +181,18 @@ function ApplicationsPage() {
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='app-source'>{t('licensing:field.source')}</FieldLabel>
-								<select id='app-source' className={select} value={source} onChange={(event) => setSource(event.target.value as TApplicationSource)}>
-									{APPLICATION_SOURCES.map((value) => (
-										<option key={value} value={value}>
-											{t(`licensing:source.${value}`)}
-										</option>
-									))}
-								</select>
+								<Select value={source} onValueChange={(value: string | null) => setSource(value as TApplicationSource)}>
+									<SelectTrigger id='app-source' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{APPLICATION_SOURCES.map((value) => (
+											<SelectItem key={value} value={value}>
+												{t(`licensing:source.${value}`)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='app-description'>{t('licensing:field.description')}</FieldLabel>

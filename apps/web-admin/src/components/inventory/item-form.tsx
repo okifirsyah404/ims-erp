@@ -18,6 +18,13 @@ import {
 } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { itemCategoriesQueryOptions } from '@/lib/item-category-api';
 import {
@@ -181,58 +188,69 @@ export function ItemForm({
 								<FieldLabel htmlFor='itemKind'>
 									{t('inventory:items.kind')}
 								</FieldLabel>
-								<select
-									id='itemKind'
-									className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
+								<Select
 									value={itemKind}
 									disabled={isEdit}
-									onChange={(event) =>
-										handleKindChange(event.target.value as TItemKind)
+									onValueChange={(value: string | null) =>
+										handleKindChange(value as TItemKind)
 									}
 								>
-									{ITEM_KINDS.map((kind) => (
-										<option key={kind} value={kind}>
-											{t(`inventory:kind.${kind}`)}
-										</option>
-									))}
-								</select>
+									<SelectTrigger id='itemKind' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{ITEM_KINDS.map((kind) => (
+											<SelectItem key={kind} value={kind}>
+												{t(`inventory:kind.${kind}`)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 
 							<Field>
 								<FieldLabel htmlFor='category'>
 									{t('inventory:items.category')}
 								</FieldLabel>
-								<select
-									id='category'
-									className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
-									value={categoryId}
-									onChange={(event) => setCategoryId(event.target.value)}
+								<Select
+									value={categoryId === '' ? 'none' : categoryId}
+									onValueChange={(value: string | null) =>
+										setCategoryId(value == null || value === 'none' ? '' : value)
+									}
 								>
-									<option value=''>{t('inventory:items.noCategory')}</option>
-									{categoryOptions.map((category) => (
-										<option key={category.id} value={category.id}>
-											{category.name}
-										</option>
-									))}
-								</select>
+									<SelectTrigger id='category' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='none'>{t('inventory:items.noCategory')}</SelectItem>
+										{categoryOptions.map((category) => (
+											<SelectItem key={category.id} value={category.id}>
+												{category.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 
 							<Field>
 								<FieldLabel htmlFor='unitLabel'>
 									{t('inventory:items.unitLabel')}
 								</FieldLabel>
-								<select
-									id='unitLabel'
-									className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
+								<Select
 									value={unitLabel}
-									onChange={(event) => setUnitLabel(event.target.value as TItemUnitLabel)}
+									onValueChange={(value: string | null) => setUnitLabel(value as TItemUnitLabel)}
 								>
-									{ITEM_UNIT_LABELS.map((unit) => (
-										<option key={unit} value={unit}>
-											{unit}
-										</option>
-									))}
-								</select>
+									<SelectTrigger id='unitLabel' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{ITEM_UNIT_LABELS.map((unit) => (
+											<SelectItem key={unit} value={unit}>
+												{unit}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 
 							<Field>

@@ -21,3 +21,6 @@ export function licensingModule() {
 		.use(LicensingController.plugin())
 		.use(LicenseApiController.plugin());
 }
+
+export { registerLicenseDueSchedule } from './queues/license-due.queue';
+export { startLicenseDueWorker } from './queues/license-due.worker';

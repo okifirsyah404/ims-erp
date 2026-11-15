@@ -15,6 +15,7 @@ import {
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { toast } from '@/components/toast';
 import { authClient } from '@/lib/auth-client';
@@ -48,7 +49,6 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
 }
 
 type TDialog = 'resolve' | 'close' | null;
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 function TicketDetailPage() {
 	const { t, i18n } = useTranslation(['projects', 'common']);
@@ -114,20 +114,25 @@ function TicketDetailPage() {
 				</div>
 				<div className='flex flex-wrap items-center gap-2'>
 					{open && canAssign && (
-						<select
-							aria-label={t('projects:ticket.assignee')}
-							className={`${select} w-56`}
-							value={data.assigneeUserId ?? ''}
+						<Select
+							value={data.assigneeUserId ?? 'none'}
 							disabled={busy}
-							onChange={(event) => event.target.value && void run(() => assignTicket(ticketId, event.target.value), t('projects:tickets.assigned'))}
+							onValueChange={(value: string | null) => {
+								if (value && value !== 'none') void run(() => assignTicket(ticketId, value), t('projects:tickets.assigned'));
+							}}
 						>
-							<option value=''>{t('projects:tasks.unassigned')}</option>
-							{(technicians.data ?? []).map((person) => (
-								<option key={person.userId} value={person.userId}>
-									{person.name}
-								</option>
-							))}
-						</select>
+							<SelectTrigger aria-label={t('projects:ticket.assignee')} className='w-56'>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value='none'>{t('projects:tasks.unassigned')}</SelectItem>
+								{(technicians.data ?? []).map((person) => (
+									<SelectItem key={person.userId} value={person.userId}>
+										{person.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					)}
 					{data.status === 'new' && worker && canUpdate && (
 						<Button variant='outline' disabled={busy} onClick={() => void run(() => startTicket(ticketId), t('projects:tickets.started'))}>
@@ -247,18 +252,18 @@ function TicketDetailPage() {
 									</Field>
 									<Field>
 										<FieldLabel htmlFor='ticket-confirm-channel'>{t('projects:ticket.channel')}</FieldLabel>
-										<select
-											id='ticket-confirm-channel'
-											className={select}
-											value={confirmChannel}
-											onChange={(event) => setConfirmChannel(event.target.value as TTicketChannel)}
-										>
-											{TICKET_CHANNELS.map((value) => (
-												<option key={value} value={value}>
-													{t(`projects:channel.${value}`)}
-												</option>
-											))}
-										</select>
+										<Select value={confirmChannel} onValueChange={(value: string | null) => setConfirmChannel(value as TTicketChannel)}>
+											<SelectTrigger id='ticket-confirm-channel' className='w-full'>
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												{TICKET_CHANNELS.map((value) => (
+													<SelectItem key={value} value={value}>
+														{t(`projects:channel.${value}`)}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
 									</Field>
 								</>
 							)}

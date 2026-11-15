@@ -364,6 +364,26 @@ const finance: Record<keyof typeof en, string> = {
 	'reports.cf.investing': 'Investasi',
 	'reports.cf.financing': 'Pendanaan',
 	'reports.cf.netChange': 'Perubahan bersih kas',
+	'reports.export': 'Ekspor CSV',
+
+	/* monthly report archive (M12 T30) */
+	'archives.title': 'Arsip Laporan Bulanan',
+	'archives.description':
+		'Laporan yang dibekukan saat bulan ditutup. Angka di sini tidak berubah setelah ada posting berikutnya.',
+	'archives.empty':
+		'Belum ada bulan yang diarsipkan. Tutup periode, lalu arsipkan.',
+	'archives.archive': 'Arsipkan bulan',
+	'archives.year': 'Tahun',
+	'archives.month': 'Bulan',
+	'archives.generatedAt': 'Diarsipkan pada',
+	'archives.netIncome': 'Laba bersih',
+	'archives.totalAssets': 'Total aset',
+	'archives.netChangeInCash': 'Perubahan bersih kas',
+	'archives.archived': '{{count}} laporan diarsipkan untuk {{period}}',
+	'archives.noneCreated': 'Bulan itu sudah diarsipkan',
+	'type.profit_and_loss': 'Laba Rugi',
+	'type.balance_sheet': 'Neraca',
+	'type.cash_flow': 'Arus Kas',
 
 	/* closing (period close + checklist) */
 	'closing.title': 'Penutupan Periode',
