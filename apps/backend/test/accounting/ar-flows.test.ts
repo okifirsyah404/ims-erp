@@ -313,6 +313,8 @@ function makeHarness() {
 		},
 	} as unknown as TInvoiceRepository;
 
+	// n8n events (M04): recorded so the flows can assert on them.
+	const events: { topic: string; data: Record<string, unknown> }[] = [];
 	const invoiceService = new InvoiceService(
 		dbLike,
 		invoiceRepo,
@@ -320,6 +322,12 @@ function makeHarness() {
 		posting,
 		arResolver,
 		numbering,
+		{
+			publish: async (topic, _aggregate, data) => {
+				events.push({ topic, data });
+				return null;
+			},
+		},
 		{
 			// ERP-0044: registry side effect is asserted through `registered`.
 			register: async (input) => {
@@ -335,6 +343,7 @@ function makeHarness() {
 
 	return {
 		posting,
+		events,
 		invoiceService,
 		paymentService,
 		cashBank,
@@ -406,6 +415,9 @@ describe('InvoiceService (F4)', () => {
 		expect(h.arItems).toHaveLength(1);
 		expect(h.arItems[0].outstandingAmount).toBe(1_000_000);
 		expect(h.arItems[0].status).toBe('open');
+		// One invoice.issued event to n8n after the commit (M04).
+		expect(h.events.map((event) => event.topic)).toEqual(['invoice.issued']);
+		expect(h.events[0]!.data).toMatchObject({ invoiceId: issued.id, grandTotal: 1_000_000 });
 		// ERP-0044: issuing registers the invoice in the document registry.
 		expect(h.registered).toEqual([
 			expect.objectContaining({

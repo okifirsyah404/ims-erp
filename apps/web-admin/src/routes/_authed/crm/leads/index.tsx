@@ -7,7 +7,8 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
-import { Input } from '@ims-erp/ui/components/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import {
 	Table,
 	TableBody,
@@ -16,6 +17,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ims-erp/ui/components/table';
+import { Search } from 'lucide-react';
 import { LeadFormDialog } from '@/components/crm/lead-form-dialog';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
@@ -85,8 +87,6 @@ function LeadListPage() {
 		}
 	}
 
-	const select = 'h-9 rounded-md border bg-transparent px-3 text-sm';
-
 	return (
 		<div className='flex flex-col gap-6'>
 			<div className='flex flex-wrap items-start justify-between gap-2'>
@@ -98,51 +98,70 @@ function LeadListPage() {
 			</div>
 
 			<div className='flex flex-wrap items-center gap-2'>
-				<Input
-					type='search'
-					className='max-w-sm'
-					aria-label={t('crm:leads.search')}
-					placeholder={t('crm:leads.search')}
-					value={search}
-					onChange={(e) => reset(setSearch)(e.target.value)}
-				/>
-				<select
-					aria-label={t('crm:lead.status')}
-					className={select}
-					value={status}
-					onChange={(e) => reset(setStatus)(e.target.value as TLeadStatus | '')}
+				<InputGroup className='max-w-sm'>
+					<InputGroupAddon align='inline-start'>
+						<Search aria-hidden='true' />
+					</InputGroupAddon>
+					<InputGroupInput
+						type='search'
+						aria-label={t('crm:leads.search')}
+						placeholder={t('crm:leads.search')}
+						value={search}
+						onChange={(e) => reset(setSearch)(e.target.value)}
+					/>
+				</InputGroup>
+				<Select
+					value={status || 'all'}
+					onValueChange={(value: string | null) =>
+						reset(setStatus)(value === null || value === 'all' ? '' : (value as TLeadStatus))
+					}
 				>
-					<option value=''>{t('crm:leads.allStatuses')}</option>
-					{LEAD_STATUSES.map((value) => (
-						<option key={value} value={value}>
-							{t(`crm:leadStatus.${value}`)}
-						</option>
-					))}
-				</select>
-				<select
-					aria-label={t('crm:lead.source')}
-					className={select}
-					value={source}
-					onChange={(e) => reset(setSource)(e.target.value as TLeadSource | '')}
+					<SelectTrigger aria-label={t('crm:lead.status')}>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('crm:leads.allStatuses')}</SelectItem>
+						{LEAD_STATUSES.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`crm:leadStatus.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+				<Select
+					value={source || 'all'}
+					onValueChange={(value: string | null) =>
+						reset(setSource)(value === null || value === 'all' ? '' : (value as TLeadSource))
+					}
 				>
-					<option value=''>{t('crm:leads.allSources')}</option>
-					{LEAD_SOURCES.map((value) => (
-						<option key={value} value={value}>
-							{t(`crm:leadSource.${value}`)}
-						</option>
-					))}
-				</select>
+					<SelectTrigger aria-label={t('crm:lead.source')}>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value='all'>{t('crm:leads.allSources')}</SelectItem>
+						{LEAD_SOURCES.map((value) => (
+							<SelectItem key={value} value={value}>
+								{t(`crm:leadSource.${value}`)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 				{canManage && (
-					<select
-						aria-label={t('crm:lead.assignee')}
-						className={select}
-						value={assigned}
-						onChange={(e) => reset(setAssigned)(e.target.value as 'me' | 'unassigned' | '')}
+					<Select
+						value={assigned || 'all'}
+						onValueChange={(value: string | null) =>
+							reset(setAssigned)(value === null || value === 'all' ? '' : (value as 'me' | 'unassigned'))
+						}
 					>
-						<option value=''>{t('crm:leads.assignedAll')}</option>
-						<option value='me'>{t('crm:leads.assignedMe')}</option>
-						<option value='unassigned'>{t('crm:leads.assignedNone')}</option>
-					</select>
+						<SelectTrigger aria-label={t('crm:lead.assignee')}>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='all'>{t('crm:leads.assignedAll')}</SelectItem>
+							<SelectItem value='me'>{t('crm:leads.assignedMe')}</SelectItem>
+							<SelectItem value='unassigned'>{t('crm:leads.assignedNone')}</SelectItem>
+						</SelectContent>
+					</Select>
 				)}
 				<label className='flex items-center gap-2 text-sm'>
 					<Checkbox checked={followUpDue} onCheckedChange={(checked) => reset(setFollowUpDue)(checked === true)} />

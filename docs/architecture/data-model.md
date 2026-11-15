@@ -140,6 +140,24 @@ Schema, keys, constraints, and conventions. Current declarations:
   deductions, `CHECK`ed; `draft|approved`, approved = locked). The records
   carry no `organization_id`; they are scoped through the employee.
 
+- **`catalog`** — the item master target lives here, but `inventory` shipped
+  first (ADR-0008/ADR-0011), so this schema holds only what M04 added:
+  `web_listings` (what the public website shows of an inventory item —
+  `item_id` is a plain nullable id validated through the Inventory contract,
+  ADR-0014; one live listing per item, unique among live rows).
+
+- **`automation`** — M04 integrations. Built: `outbox_messages` (the
+  transactional outbox delivering ERP events to n8n, stages 1–2;
+  `organization_id` is nullable because the events are company-wide,
+  ADR-0012, and `dedupe_key` makes once-per-fact events idempotent),
+  `faq_entries`, `whatsapp_conversations` and `whatsapp_messages` (the
+  WhatsApp assistant: approved answers, one row per chat with the company
+  number, and the full message log). The workflow/credential tables here stay
+  target-only — n8n is the workflow engine.
+
+- **`notification`** — the caller's own inbox (ADR-0016): notification rows
+  and the seeded templates, read-through on a single realtime socket.
+
 ## Conventions (pinned decisions)
 
 - **Datetimes** — unix milliseconds in bigint columns via

@@ -5,8 +5,10 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { DocumentItemsEditor } from '@/components/projects/document-items-editor';
 import { toast } from '@/components/toast';
@@ -24,7 +26,6 @@ export const Route = createFileRoute('/_authed/projects/$projectId/warranty/')({
 	component: WarrantyPage,
 });
 
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 function WarrantyForm({ projectId, initial }: { projectId: string; initial: TWarrantyDraft }) {
 	const { t, i18n } = useTranslation(['projects', 'common']);
@@ -66,19 +67,24 @@ function WarrantyForm({ projectId, initial }: { projectId: string; initial: TWar
 					<FieldGroup className='grid gap-4 sm:grid-cols-3'>
 						<Field>
 							<FieldLabel htmlFor='warranty-bast'>{t('projects:warranty.bast')}</FieldLabel>
-							<select id='warranty-bast' required className={select} value={bastId} onChange={(event) => set({ bastId: event.target.value })}>
-								<option value=''>{t('projects:warranty.pickBast')}</option>
-								{issued.map((bast) => (
-									<option key={bast.id} value={bast.id}>
-										{bast.code} — {formatBusinessDate(bast.bastDate, i18n.language)}
-									</option>
-								))}
-							</select>
+							<Select value={bastId || 'none'} onValueChange={(value: string | null) => set({ bastId: value === null || value === 'none' ? '' : value })}>
+								<SelectTrigger id='warranty-bast' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='none'>{t('projects:warranty.pickBast')}</SelectItem>
+									{issued.map((bast) => (
+										<SelectItem key={bast.id} value={bast.id}>
+											{bast.code} — {formatBusinessDate(bast.bastDate, i18n.language)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 							<FieldDescription>{t('projects:warranty.bastHint')}</FieldDescription>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='warranty-issue'>{t('projects:warranty.issueDate')}</FieldLabel>
-							<Input id='warranty-issue' type='date' required value={value.issueDate} onChange={(event) => set({ issueDate: event.target.value })} />
+							<DatePicker id='warranty-issue' required value={value.issueDate} onChange={(issueDate) => set({ issueDate })} />
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='warranty-months'>{t('projects:warranty.months')}</FieldLabel>

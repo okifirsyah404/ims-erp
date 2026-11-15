@@ -8,6 +8,7 @@ warehouse, M07 projects and after-sales), as implemented on
 |---|---|
 | [en.md](en.md) | User guide in English |
 | [id.md](id.md) | Panduan pengguna dalam Bahasa Indonesia |
+| [whatsapp-n8n-setup.en.md](whatsapp-n8n-setup.en.md) / [.id.md](whatsapp-n8n-setup.id.md) | M04 setup: WAHA webhook, n8n flows per event, AI provider, go-live checklist (T32) |
 | [diagrams.md](diagrams.md) | UML (Mermaid): end-to-end activity, sequences, document state machines, module contracts, cost flow |
 
 Keep both languages in step: a change to one guide updates the other in the

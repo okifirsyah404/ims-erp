@@ -421,6 +421,9 @@ const api = {
 	'accounting.bankReconciliationState':
 		'That reconciliation action is not allowed for this document',
 	'accounting.reportPeriodInvalid': 'Report date range is invalid',
+	'accounting.reportArchiveNotFound': 'Report archive not found',
+	'accounting.reportArchivePeriodOpen':
+		'That period is still open; close it before archiving',
 
 	// Invoices (F4) — sales keys
 	'sales.invoiceNotFound': 'Invoice not found',
@@ -435,6 +438,21 @@ const api = {
 	'sales.receiptReversed': 'The receipt is already reversed',
 	'sales.invoiceNotPayable':
 		'Only issued or partially paid invoices can receive payments',
+	'automation.outboxNotFound': 'Event not found',
+	'automation.whatsappNotFound.conversation': 'Chat not found',
+	'automation.whatsappNotFound.message': 'Message not found',
+	'automation.whatsappNotFound.faq': 'FAQ entry not found',
+	'automation.whatsappWebhook.notConfigured': 'The WhatsApp webhook key is not configured on the server',
+	'automation.whatsappWebhook.badSignature': 'Invalid webhook signature',
+	'automation.whatsappState.resume': 'The assistant already answers this chat',
+	'automation.whatsappState.close': 'The chat is already closed',
+	'automation.whatsappRetry': 'Only a failed outgoing message can be sent again',
+	'catalog.notFound.listing': 'Listing not found',
+	'catalog.notFound.product': 'Product not found',
+	'catalog.listing.slug': 'Another listing already uses this slug',
+	'catalog.listing.item': 'This item already has a listing',
+	'catalog.listing.itemUnavailable': 'The item is archived or inactive',
+	'catalog.listing.noPrice': 'The item has no selling price; use quotation pricing',
 
 	'notification.notFound': 'Notification not found',
 } as const;

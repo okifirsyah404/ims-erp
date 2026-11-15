@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
 import { CircleAlert, Plus, Scale } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
@@ -130,11 +131,10 @@ export function TaxTypeList() {
 						value={rate}
 						onChange={(event) => setRate(event.target.value)}
 					/>
-					<input
-						type='date'
-						className='h-9 rounded-md border bg-transparent px-3 text-sm'
+					<DatePicker
+						className='w-40'
 						value={effectiveFrom}
-						onChange={(event) => setEffectiveFrom(event.target.value)}
+						onChange={setEffectiveFrom}
 						aria-label={t('tax:types.effectiveFrom')}
 					/>
 					<Button

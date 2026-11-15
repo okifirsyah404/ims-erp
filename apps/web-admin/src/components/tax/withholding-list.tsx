@@ -10,6 +10,13 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { CircleAlert, ReceiptText, Plus } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState } from '@/components/empty-state';
@@ -130,21 +137,24 @@ export function WithholdingList() {
 						value={code}
 						onChange={(event) => setCode(event.target.value)}
 					/>
-					<select
-						className='h-9 rounded-md border bg-transparent px-3 text-sm'
-						value={taxTypeId}
-						onChange={(event) => setTaxTypeId(event.target.value)}
-						aria-label={t('tax:records.taxType')}
+					<Select
+						value={taxTypeId === '' ? 'none' : taxTypeId}
+						onValueChange={(value: string | null) => setTaxTypeId(value == null || value === 'none' ? '' : value)}
 					>
-						<option value=''>{t('tax:records.taxType')}</option>
-						{(types.data?.rows ?? [])
-							.filter((row) => row.isActive)
-							.map((row) => (
-								<option key={row.id} value={row.id}>
-									{row.code} — {row.name}
-								</option>
-							))}
-					</select>
+						<SelectTrigger aria-label={t('tax:records.taxType')}>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='none'>{t('tax:records.taxType')}</SelectItem>
+							{(types.data?.rows ?? [])
+								.filter((row) => row.isActive)
+								.map((row) => (
+									<SelectItem key={row.id} value={row.id}>
+										{row.code} — {row.name}
+									</SelectItem>
+								))}
+						</SelectContent>
+					</Select>
 					<Input
 						className='w-56'
 						placeholder={t('tax:withholding.counterparty')}

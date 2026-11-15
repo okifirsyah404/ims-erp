@@ -113,4 +113,7 @@ export interface IBalanceRepository {
 
 	/** Hard-deletes a balance row (recompute cleanup for empty keys). */
 	remove(key: TBalanceKey): Promise<boolean>;
+
+	/** Available quantity per item over every warehouse (website catalog, M04). */
+	availableByItems(itemIds: string[]): Promise<{ itemId: string; available: number }[]>;
 }

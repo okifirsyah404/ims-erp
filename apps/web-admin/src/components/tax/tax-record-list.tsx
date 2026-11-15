@@ -10,6 +10,13 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { CircleAlert, FileText, Plus } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState } from '@/components/empty-state';
@@ -149,21 +156,24 @@ export function TaxRecordList() {
 			{canUpdate ? (
 				<div className='space-y-2'>
 					<div className='flex flex-wrap items-center gap-2'>
-						<select
-							className='h-9 rounded-md border bg-transparent px-3 text-sm'
-							value={taxTypeId}
-							onChange={(event) => setTaxTypeId(event.target.value)}
-							aria-label={t('tax:records.taxType')}
+						<Select
+							value={taxTypeId === '' ? 'none' : taxTypeId}
+							onValueChange={(value: string | null) => setTaxTypeId(value == null || value === 'none' ? '' : value)}
 						>
-							<option value=''>{t('tax:records.taxType')}</option>
-							{(types.data?.rows ?? [])
-								.filter((row) => row.isActive)
-								.map((row) => (
-									<option key={row.id} value={row.id}>
-										{row.code} — {row.name}
-									</option>
-								))}
-						</select>
+							<SelectTrigger aria-label={t('tax:records.taxType')}>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value='none'>{t('tax:records.taxType')}</SelectItem>
+								{(types.data?.rows ?? [])
+									.filter((row) => row.isActive)
+									.map((row) => (
+										<SelectItem key={row.id} value={row.id}>
+											{row.code} — {row.name}
+										</SelectItem>
+									))}
+							</SelectContent>
+						</Select>
 						<input
 							type='number'
 							className='h-9 w-24 rounded-md border bg-transparent px-3 text-sm'
@@ -173,20 +183,23 @@ export function TaxRecordList() {
 							onChange={(event) => setPeriodYear(Number(event.target.value))}
 							aria-label={t('tax:recap.year')}
 						/>
-						<select
-							className='h-9 rounded-md border bg-transparent px-3 text-sm'
-							value={periodMonth}
-							onChange={(event) => setPeriodMonth(Number(event.target.value))}
-							aria-label={t('tax:recap.month')}
+						<Select
+							value={String(periodMonth)}
+							onValueChange={(value: string | null) => setPeriodMonth(Number(value ?? 1))}
 						>
-							{Array.from({ length: 12 }, (_, index) => index + 1).map(
-								(value) => (
-									<option key={value} value={value}>
-										{value}
-									</option>
-								),
-							)}
-						</select>
+							<SelectTrigger aria-label={t('tax:recap.month')}>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{Array.from({ length: 12 }, (_, index) => index + 1).map(
+									(value) => (
+										<SelectItem key={value} value={String(value)}>
+											{value}
+										</SelectItem>
+									),
+								)}
+							</SelectContent>
+						</Select>
 						<Input
 							className='w-44'
 							placeholder={t('tax:records.taxableBase')}

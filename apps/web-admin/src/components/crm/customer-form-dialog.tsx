@@ -11,6 +11,13 @@ import {
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import {
 	EMPTY_LOCATION_SELECTION,
@@ -100,18 +107,21 @@ export function CustomerFormDialog({
 							</Field>
 							<Field className='sm:col-span-2'>
 								<FieldLabel htmlFor='customer-type'>{t('crm:customer.customerType')}</FieldLabel>
-								<select
-									id='customer-type'
-									className='h-9 w-full rounded-md border bg-transparent px-3 text-sm'
+								<Select
 									value={customerType}
-									onChange={(event) => setCustomerType(event.target.value as TCustomerType)}
+									onValueChange={(value: string | null) => setCustomerType(value as TCustomerType)}
 								>
-									{CUSTOMER_TYPES.map((type) => (
-										<option key={type} value={type}>
-											{t(`crm:customerType.${type}`)}
-										</option>
-									))}
-								</select>
+									<SelectTrigger id='customer-type' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{CUSTOMER_TYPES.map((type) => (
+											<SelectItem key={type} value={type}>
+												{t(`crm:customerType.${type}`)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 						</div>
 						<div className='grid gap-4 sm:grid-cols-2'>

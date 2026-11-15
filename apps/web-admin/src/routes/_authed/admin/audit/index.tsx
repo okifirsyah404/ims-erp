@@ -13,7 +13,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import { Input } from '@ims-erp/ui/components/input';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import {
 	Select,
 	SelectContent,
@@ -211,20 +211,18 @@ function AuditPage() {
 				</div>
 				<div className='flex flex-col gap-1'>
 					<span className='text-xs text-muted-foreground'>{t('audit.from')}</span>
-					<Input
-						type='date'
+					<DatePicker
 						className='w-40'
 						value={fromDraft}
-						onChange={(event) => setFromDraft(event.target.value)}
+						onChange={setFromDraft}
 					/>
 				</div>
 				<div className='flex flex-col gap-1'>
 					<span className='text-xs text-muted-foreground'>{t('audit.to')}</span>
-					<Input
-						type='date'
+					<DatePicker
 						className='w-40'
 						value={toDraft}
-						onChange={(event) => setToDraft(event.target.value)}
+						onChange={setToDraft}
 					/>
 				</div>
 				<Button

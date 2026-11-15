@@ -362,6 +362,33 @@ Menu **Projects**. Diagram:
    locks it. There is no automatic payroll calculation, payslip or journal
    yet (stage 2 needs the payroll rules from finance).
 
+### 8.7 Website catalog, n8n events and WhatsApp AI (M04)
+
+1. **Integrations → Website Catalog**: choose which items the public website
+   shows (price or "ask for a quotation", out-of-stock behaviour) and
+   **Publish**. Name, photo, price and stock always come from the item.
+2. **Integrations → Webhooks (n8n)**: every event the ERP sends to n8n — new
+   lead, invoice issued, payment received, ticket updated, license ending
+   (daily, at 30 and 7 days and after the end) and WhatsApp chat handed to
+   an admin. n8n turns them into WhatsApp or email messages. A failed event
+   is retried by itself; **Send now** sends it again by hand.
+3. **Integrations → WhatsApp AI**: chats on the company number (WAHA). The
+   assistant answers only from **Assistant FAQ** and the published catalog.
+   Discount, special price, payment or order requests, asking for a person,
+   or a question it cannot answer go to **Needs an admin** with an
+   automatic reply to the customer. Until an AI provider is set, every chat
+   goes to an admin.
+4. Open a chat, type in **Reply as admin** and **Send**: you take the chat
+   over and the assistant stays silent. **Hand back to the assistant** when
+   done, or **Close chat** (the customer's next message reopens it). A
+   message that failed to send shows **Send again**. **Create lead** turns the
+   chat into a CRM lead (name, WhatsApp number and the customer's questions;
+   source WhatsApp, unassigned so the sales manager can assign it); a chat
+   has at most one lead, shown as **Open lead** afterwards.
+5. **Assistant FAQ** (marketing, admin): add the questions and the exact
+   answers customers may read, with keywords. Only **Active** entries are
+   used. Never write discounts or promises here.
+
 ## 9. Printed documents and numbering
 
 | Document | Example number | Numbered when | Print |

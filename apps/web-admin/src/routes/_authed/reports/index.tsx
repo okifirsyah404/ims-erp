@@ -1,15 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { FileSpreadsheet } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
-import { ComingSoonPage } from '@/components/coming-soon-page';
+import { ReportsPage } from '@/components/finance/reports-page';
 
+/**
+ * `/reports` - the M12 entry point. Same component as `/finance/reports`: one
+ * implementation, two URLs, so the finance menu and the reports section cannot
+ * drift apart.
+ */
 export const Route = createFileRoute('/_authed/reports/')({
-	component: ComingSoonStubPage,
+	component: ReportsPage,
 });
-
-/** Placeholder: implemented in a later phase (docs module map). */
-function ComingSoonStubPage() {
-	const { t } = useTranslation('nav');
-	return <ComingSoonPage title={t('item.reports')} icon={FileSpreadsheet} />;
-}
