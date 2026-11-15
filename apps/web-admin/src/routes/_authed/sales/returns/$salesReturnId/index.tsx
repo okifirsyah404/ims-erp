@@ -40,7 +40,7 @@ import {
 } from '@/lib/sales-return-api';
 import { usePermission } from '@/lib/use-permission';
 
-/** `/sales/returns/$salesReturnId` — one customer return: approval and receiving (ERP-0062). */
+/** `/sales/returns/$salesReturnId` — one customer return: approval and receiving (ERP-0065). */
 export const Route = createFileRoute('/_authed/sales/returns/$salesReturnId/')({
 	component: SalesReturnDetailPage,
 });

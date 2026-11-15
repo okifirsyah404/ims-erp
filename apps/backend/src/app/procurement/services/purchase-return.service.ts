@@ -69,7 +69,7 @@ const toQuantity = (milli: bigint) => (Number(milli) / 1000).toFixed(3);
 const lineTotal = (quantity: string, unitCost: number) => Math.round(Number(quantity) * unitCost);
 
 /**
- * Purchase returns (ERP-0061): goods received on a BPB go back to the
+ * Purchase returns (ERP-0064): goods received on a BPB go back to the
  * supplier for replacement.
  *
  * @remarks
@@ -148,7 +148,7 @@ export class PurchaseReturnService {
 				const isSerialized = item?.isSerialized ?? false;
 				let serialNumbers: string[] = [];
 				if (isSerialized) {
-					// ERP-0062: units a customer returned damaged go back too.
+					// ERP-0065: units a customer returned damaged go back too.
 					const inStock = new Set(await this.items.supplierReturnableSerials(line.itemId, receipt.warehouseId));
 					const onReturns = new Set(used.serialNumbers);
 					serialNumbers = (line.serialNumbers ?? []).filter((serial) => inStock.has(serial) && !onReturns.has(serial));

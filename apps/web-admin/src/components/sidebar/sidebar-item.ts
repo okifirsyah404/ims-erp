@@ -23,7 +23,7 @@ export type SidebarItem = {
 	 */
 	permission?: Permission | Permission[];
 	/**
-	 * Shown when **any one** of these permissions holds (ERP-0062), for routes
+	 * Shown when **any one** of these permissions holds (ERP-0065), for routes
 	 * the backend opens on an either-or check, e.g. delivery notes read with
 	 * `stock:read` or `sales_order:read`.
 	 */

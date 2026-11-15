@@ -168,7 +168,7 @@ used to carry the profile, the numbering and the settings in one vocabulary.
 |---|---|---|
 | `company` | `read`, `update` | `GET /company/profile`, `PUT /company/profile`, the logo/signature uploads, `GET /company/settings`, `PUT /company/settings/:group/:key` |
 | `code_number` | `read`, `update` | `GET /code-numbers`, `PUT /code-numbers/:codeType` |
-| `document` | `read`, `create`, `update`, `submit`, `approve`, `issue`, `void`, `download` | the registry, files, signatures, shares, tags |
+| `document` | `read`, `create`, `update`, `submit`, `approve`, `issue`, `void`, `download`, `signature_read`, `signature_request`, `signature_sign` | the registry, files, signatures, shares, tags |
 
 "Company-wide" describes the **data scope**, never the authorization boundary:
 these routes still run the `erp` macro with a validated organization, and then
@@ -346,7 +346,13 @@ Company, Code Number and Document are built (ERP-0042): their routes exist and
 are guarded by the `erp` macro plus the `company:*`, `code_number:*` and
 `document:*` permissions. The document **signature request** flow (ERP-0048) is
 not built: `document.signatures` has no request rows yet, so per-signer rules
-(who may sign, in which order, and the `sign` / `request_sign` actions added to
-the `document` resource) stay documented here and must be wired when it lands.
+(who may sign, in which order) stay documented here and must be wired when it
+lands. The vocabulary is already registered (ERP-0062): `document:signature_read`
+sees the signature register, `document:signature_request` asks others to sign,
+`document:signature_sign` signs a request addressed to the caller. Every role
+that holds `document:read` also holds `signature_read` + `signature_sign`; only
+owner, admin, operations_manager, sales_manager, project_manager, finance and hr
+hold `signature_request`. The web-admin sidebar gates the three signature pages
+on those actions (UX only - the backend guards land with the flow).
 The `document.*` settings group holds only
 `document.signature_request_expiry_days`, which that flow writes.

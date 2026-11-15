@@ -83,8 +83,9 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		],
 	},
 
-	// Document registry (ERP-0042). Signatures and templates have no catalog
-	// resource yet (ERP-0048, ERP-0050): hidden.
+	// Document registry (ERP-0042). Signatures are gated by the
+	// `document.signature_*` actions (ERP-0048/ERP-0049, flow not built yet);
+	// templates have no catalog resource yet (ERP-0050): hidden.
 	{
 		labelKey: 'section.documents',
 		items: [
@@ -93,9 +94,9 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				titleKey: 'item.signatures',
 				icon: PenLine,
 				items: [
-					{ titleKey: 'item.documentSignatures', url: '/documents/signatures/documents' },
-					{ titleKey: 'item.requestSignature', url: '/documents/signatures/request' },
-					{ titleKey: 'item.mySignature', url: '/documents/signatures/mine' },
+					{ titleKey: 'item.documentSignatures', url: '/documents/signatures/documents', permission: 'document.signature_read' },
+					{ titleKey: 'item.requestSignature', url: '/documents/signatures/request', permission: 'document.signature_request' },
+					{ titleKey: 'item.mySignature', url: '/documents/signatures/mine', permission: 'document.signature_sign' },
 				],
 			},
 			{ titleKey: 'item.templates', url: '/documents/templates', icon: LayoutTemplate },
@@ -143,9 +144,8 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				icon: Package,
 				items: [
 					{ titleKey: 'item.products', url: '/inventory/products', permission: 'product.read' },
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.components', url: '/inventory/components' },
-					{ titleKey: 'item.materials', url: '/inventory/materials' },
+					{ titleKey: 'item.components', url: '/inventory/components', permission: 'product.read' },
+					{ titleKey: 'item.materials', url: '/inventory/materials', permission: 'product.read' },
 					{ titleKey: 'item.stock', url: '/inventory/stock', permission: 'stock.read' },
 					{ titleKey: 'item.stockAdjustments', url: '/inventory/stock/adjustments', permission: 'stock_adjustment.read' },
 					{ titleKey: 'item.newItem', url: '/inventory/items/new', permission: 'product.create' },
@@ -161,7 +161,7 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				items: [
 					{ titleKey: 'item.suppliers', url: '/procurement/suppliers', permission: 'supplier.read' },
 					{ titleKey: 'item.purchaseOrders', url: '/procurement/purchase-orders', permission: 'purchase_order.read' },
-					// Same grant as `GET /goods-receipts` (ERP-0061: the leaf had none, so
+					// Same grant as `GET /goods-receipts` (ERP-0064: the leaf had none, so
 					// the route guard refused the BPB pages to everyone).
 					{ titleKey: 'item.goodsReceipts', url: '/procurement/receipts', permission: 'stock.read' },
 					{ titleKey: 'item.purchaseReturns', url: '/procurement/purchase-returns', permission: 'purchase_return.read' },

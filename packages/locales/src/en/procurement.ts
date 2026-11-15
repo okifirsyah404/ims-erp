@@ -155,7 +155,7 @@ const procurement = {
 	'receipt.serialHint': 'One per unit, separated by commas or new lines.',
 	'receipt.notes': 'Notes',
 
-	// Purchase returns (ERP-0061): goods go back to the supplier for replacement.
+	// Purchase returns (ERP-0064): goods go back to the supplier for replacement.
 	'returns.title': 'Purchase returns',
 	'returns.description': 'Received goods sent back to the supplier for replacement. Shipping takes them out of stock and re-opens the purchase order, so the replacement is received with a normal goods receipt.',
 	'returns.search': 'Search return, goods receipt, PO, supplier or reason…',

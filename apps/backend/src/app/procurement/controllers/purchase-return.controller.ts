@@ -29,7 +29,7 @@ function withoutCost(detail: TPurchaseReturnDetail, canSeeCost: boolean): TPurch
 }
 
 /**
- * REST controller for purchase returns (`/purchase-returns`, ERP-0061).
+ * REST controller for purchase returns (`/purchase-returns`, ERP-0064).
  * HTTP concerns only; `purchase_return:*` is enforced by the `erp` guard and
  * every holder of `purchase_return:read` sees every return (company-wide).
  */

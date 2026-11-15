@@ -33,7 +33,7 @@ import { usePermission } from '@/lib/use-permission';
 
 const PAGE_SIZE = 20;
 
-/** `/procurement/purchase-returns` — goods sent back to suppliers (ERP-0061). */
+/** `/procurement/purchase-returns` — goods sent back to suppliers (ERP-0064). */
 export const Route = createFileRoute('/_authed/procurement/purchase-returns/')({
 	component: PurchaseReturnListPage,
 });

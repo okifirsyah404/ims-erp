@@ -24,7 +24,7 @@ function withoutCost(detail: TSalesReturnDetail, canSeeCost: boolean): TSalesRet
 }
 
 /**
- * REST controller for sales returns (`/sales-returns`, ERP-0062). HTTP
+ * REST controller for sales returns (`/sales-returns`, ERP-0065). HTTP
  * concerns only; `sales_return:*` is enforced by the `erp` guard and every
  * holder of `sales_return:read` sees every return (company-wide, like
  * delivery notes).

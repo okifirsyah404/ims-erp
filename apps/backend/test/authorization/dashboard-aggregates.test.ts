@@ -1,0 +1,111 @@
+/**
+ * Guard wiring for the two dashboard aggregates (ERP-0055).
+ *
+ * Exercises the REAL Elysia pipeline (`erpGuard` + controller) over stubbed
+ * services, so the permission strings on `GET /invoices/summary` and
+ * `GET /projects/stats` are pinned: a caller without the source module's
+ * permission is refused server-side, not merely hidden in the UI (M01).
+ */
+import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { Elysia } from 'elysia';
+import { container } from 'tsyringe';
+import { fixture, installAuthMock, installPermissionResolverMock, resetFixture } from './test-app';
+
+const ORG = fixture.orgA;
+
+let app: Elysia<any, any, any, any, any, any>;
+
+const jsonRequest = (path: string, session?: string, org = ORG): Request => {
+	const headers = new Headers({ 'content-type': 'application/json' });
+	if (session) headers.set('x-test-session', session);
+	headers.set('x-organization-id', org);
+	return new Request(`http://localhost${path}`, { method: 'GET', headers });
+};
+
+beforeAll(async () => {
+	installAuthMock();
+	installPermissionResolverMock();
+	// Import after the module mocks are installed (bun mock.module is hoist-sensitive).
+	const { INVOICE_SERVICE_TOKEN } = await import('../../src/app/sales/constants/ar-di');
+	const { InvoiceController } = await import('../../src/app/sales/controllers/invoice.controller');
+	const { PROJECT_SERVICE_TOKEN, HANDOVER_SERVICE_TOKEN } = await import(
+		'../../src/app/projects/constants/di'
+	);
+	const { ProjectController } = await import('../../src/app/projects/controllers/project.controller');
+	const { erpGuard } = await import('../../src/authorization/elysia-auth');
+
+	container.register(INVOICE_SERVICE_TOKEN, {
+		useValue: {
+			summary: async (organizationId: string) => ({
+				from: '2026-06-01',
+				to: '2026-11-30',
+				groupBy: 'month',
+				totalInvoiced: 0,
+				invoiceCount: 0,
+				buckets: [],
+				organizationId,
+			}),
+		} as never,
+	});
+	container.register(PROJECT_SERVICE_TOKEN, {
+		useValue: {
+			stats: async () => ({
+				active: 0,
+				closed: 0,
+				cancelled: 0,
+				overdue: 0,
+				byStage: [],
+			}),
+		} as never,
+	});
+	container.register(HANDOVER_SERVICE_TOKEN, { useValue: {} as never });
+
+	app = new Elysia()
+		.use(erpGuard())
+		.use(InvoiceController.plugin())
+		.use(ProjectController.plugin());
+});
+
+beforeEach(() => resetFixture());
+
+describe('dashboard aggregates authorization', () => {
+	test('invoices summary: 401 without a session', async () => {
+		const response = await app.handle(jsonRequest('/invoices/summary?from=2026-06-01&to=2026-11-30'));
+		expect(response.status).toBe(401);
+	});
+
+	test('invoices summary: 403 for a role without invoice:read', async () => {
+		// `technician` holds project:read but no invoice permission.
+		const response = await app.handle(
+			jsonRequest('/invoices/summary?from=2026-06-01&to=2026-11-30', 'technician'),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test('invoices summary: 200 for finance and the organization id comes from the guard', async () => {
+		const response = await app.handle(
+			jsonRequest('/invoices/summary?from=2026-06-01&to=2026-11-30', 'finance'),
+		);
+		expect(response.status).toBe(200);
+		const body = (await response.json()) as { data: { organizationId: string } };
+		expect(body.data.organizationId).toBe(ORG);
+	});
+
+	test('invoices summary: an inverted window is rejected', async () => {
+		const response = await app.handle(
+			jsonRequest('/invoices/summary?from=2026-11-30&to=2026-06-01', 'finance'),
+		);
+		expect(response.status).toBe(400);
+	});
+
+	test('projects stats: 403 for a role without project:read', async () => {
+		// `member` holds neither project:read nor any project grant.
+		const response = await app.handle(jsonRequest('/projects/stats', 'member'));
+		expect(response.status).toBe(403);
+	});
+
+	test('projects stats: 200 for a technician (project:read, narrow visibility)', async () => {
+		const response = await app.handle(jsonRequest('/projects/stats', 'technician'));
+		expect(response.status).toBe(200);
+	});
+});

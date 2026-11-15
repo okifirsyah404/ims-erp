@@ -90,7 +90,7 @@ export interface ISerialUnitRepository {
 	listSerialsInStatuses(itemId: string, warehouseId: string, statuses: readonly UnitStatus[]): Promise<string[]>;
 
 	/**
-	 * Takes sold units back from a customer (ERP-0062), guarded on
+	 * Takes sold units back from a customer (ERP-0065), guarded on
 	 * `status = 'sold'`: custody returns to the warehouse, `in_stock` or
 	 * `damaged`, and the customer link is cleared.
 	 *
@@ -104,7 +104,7 @@ export interface ISerialUnitRepository {
 	): Promise<string[]>;
 
 	/**
-	 * Marks the listed units returned to the supplier (ERP-0061), guarded on
+	 * Marks the listed units returned to the supplier (ERP-0064), guarded on
 	 * `status IN ('in_stock', 'damaged')` and the warehouse inside the
 	 * update; custody leaves the warehouse.
 	 *

@@ -10,7 +10,7 @@ import { createSalesReturn, returnableDeliveriesQueryOptions } from '@/lib/sales
 /** A return may start from a delivery note page. */
 const searchSchema = z.object({ deliveryNoteId: z.string().optional() });
 
-/** `/sales/returns/new` — return received goods to the supplier (ERP-0062). */
+/** `/sales/returns/new` — return received goods to the supplier (ERP-0065). */
 export const Route = createFileRoute('/_authed/sales/returns/new')({
 	validateSearch: searchSchema,
 	component: NewSalesReturnPage,

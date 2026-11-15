@@ -71,7 +71,7 @@ const lineTotal = (quantity: string, unitPrice: number) => Math.round(Number(qua
 const noon = (date: string) => new Date(`${date}T12:00:00+07:00`);
 
 /**
- * Sales returns (ERP-0062): goods a customer sends back from a shipped
+ * Sales returns (ERP-0065): goods a customer sends back from a shipped
  * delivery note, for replacement.
  *
  * @remarks

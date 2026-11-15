@@ -203,7 +203,7 @@ const sales = {
 	'deliveryStatus.delivered': 'Delivered',
 	'deliveryStatus.cancelled': 'Cancelled',
 
-	// Sales returns (ERP-0062): goods back from a customer for replacement.
+	// Sales returns (ERP-0065): goods back from a customer for replacement.
 	'returns.title': 'Sales returns',
 	'returns.description': 'Goods a customer sends back from a delivery note, for replacement. Receiving puts them back in stock (sellable or damaged) and re-opens the sales order, so the replacement leaves on a normal delivery note.',
 	'returns.search': 'Search return, delivery note, order, customer or reason…',

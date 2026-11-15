@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
 
 /**
- * API client for sales returns (`/sales-returns`, ERP-0062): goods a
+ * API client for sales returns (`/sales-returns`, ERP-0065): goods a
  * customer sends back from a shipped delivery note, for replacement.
  * Receiving books the stock back in per line condition and re-opens the
  * order. `unitCost` is 0 for callers without `product:read_cost`.

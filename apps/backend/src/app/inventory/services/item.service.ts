@@ -484,7 +484,7 @@ export class ItemService {
 
 	/**
 	 * Serials a purchase return may send back: `in_stock` or `damaged` in one
-	 * warehouse (ERP-0061 / ERP-0062).
+	 * warehouse (ERP-0064 / ERP-0065).
 	 */
 	supplierReturnableSerials(itemId: string, warehouseId: string): Promise<string[]> {
 		return this.serialUnitRepository.listSerialsInStatuses(itemId, warehouseId, ['in_stock', 'damaged']);
@@ -492,7 +492,7 @@ export class ItemService {
 
 	/**
 	 * Takes sold units back from a customer (`sold → in_stock | damaged`,
-	 * ERP-0062), inside the caller's transaction.
+	 * ERP-0065), inside the caller's transaction.
 	 *
 	 * @returns The serials that were not sold (the caller fails its
 	 * transaction when any are left)
@@ -512,7 +512,7 @@ export class ItemService {
 
 	/**
 	 * Returns serialized units to their supplier (`in_stock → returned`,
-	 * ERP-0061), inside the caller's transaction.
+	 * ERP-0064), inside the caller's transaction.
 	 *
 	 * @returns The serials that were not in stock in that warehouse (the
 	 * caller fails its transaction when any are left)

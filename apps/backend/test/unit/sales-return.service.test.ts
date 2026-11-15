@@ -1,5 +1,5 @@
 /**
- * Sales returns (ERP-0062): a return comes from one shipped delivery note,
+ * Sales returns (ERP-0065): a return comes from one shipped delivery note,
  * only for stock lines, never takes more than is left on the delivery line
  * after live returns, names that line's serials, is approved by someone
  * else, and on receiving books `return_in` at the delivery cost, brings the

@@ -1945,7 +1945,7 @@ Table sales.sales_returns {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Customer return for replacement (ERP-0062), company-wide like delivery notes (ADR-0011). draft -> submitted -> approved -> received; rejection returns to draft; cancelled before received. One-level approval, never by the creator. Receiving posts return_in stock movements at the delivery cost, puts the serial units back in stock (good) or marks them damaged, and takes the quantity off the order lines, so the replacement leaves on a normal delivery note. No credit memo or refund."
+  Note: "Customer return for replacement (ERP-0065), company-wide like delivery notes (ADR-0011). draft -> submitted -> approved -> received; rejection returns to draft; cancelled before received. One-level approval, never by the creator. Receiving posts return_in stock movements at the delivery cost, puts the serial units back in stock (good) or marks them damaged, and takes the quantity off the order lines, so the replacement leaves on a normal delivery note. No credit memo or refund."
   Indexes {
     delivery_note_id [name: 'sales_returns_delivery_note_id_idx']
     sales_order_id [name: 'sales_returns_sales_order_id_idx']
@@ -2501,7 +2501,7 @@ Table procurement.purchase_returns {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Return of received goods to the supplier for replacement (ERP-0061), company-wide like goods receipts (ADR-0011). draft -> submitted -> approved -> shipped; rejection returns to draft; cancelled before shipped. One-level approval, never by the creator. Shipping posts return_out stock movements, marks the serial units returned and takes the quantity off the purchase order lines, so the replacement is received with a normal goods receipt. No credit note or refund."
+  Note: "Return of received goods to the supplier for replacement (ERP-0064), company-wide like goods receipts (ADR-0011). draft -> submitted -> approved -> shipped; rejection returns to draft; cancelled before shipped. One-level approval, never by the creator. Shipping posts return_out stock movements, marks the serial units returned and takes the quantity off the purchase order lines, so the replacement is received with a normal goods receipt. No credit note or refund."
   Indexes {
     goods_receipt_id [name: 'purchase_returns_goods_receipt_id_idx']
     purchase_order_id [name: 'purchase_returns_purchase_order_id_idx']
@@ -2937,7 +2937,7 @@ Table inventory.serial_tracked_items {
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
-  Note: "One physical, serialized instance of an item. Serves serialized products only after ERP-0036: tools are assets and never have a unit row here. `returned` (ERP-0061): sent back to the supplier on a purchase return; terminal, the replacement arrives as a new unit. `damaged` (ERP-0062): back from a customer but not sellable; never picked for a delivery, can go back to the supplier."
+  Note: "One physical, serialized instance of an item. Serves serialized products only after ERP-0036: tools are assets and never have a unit row here. `returned` (ERP-0064): sent back to the supplier on a purchase return; terminal, the replacement arrives as a new unit. `damaged` (ERP-0065): back from a customer but not sellable; never picked for a delivery, can go back to the supplier."
   Indexes {
     (organization_id, serial_number) [unique, name: 'serial_tracked_items_org_serial_uq', note: 'WHERE organization_id IS NOT NULL']
     (serial_number) [unique, name: 'serial_tracked_items_global_serial_uq', note: 'WHERE organization_id IS NULL']

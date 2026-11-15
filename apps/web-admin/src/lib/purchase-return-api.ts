@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
 
 /**
- * API client for purchase returns (`/purchase-returns`, ERP-0061): goods
+ * API client for purchase returns (`/purchase-returns`, ERP-0064): goods
  * from a goods receipt go back to the supplier for replacement. Shipping
  * posts the stock out and re-opens the purchase order. Costs are 0 for
  * callers without `product:read_cost`.

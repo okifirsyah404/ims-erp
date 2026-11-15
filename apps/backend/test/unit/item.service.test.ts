@@ -452,7 +452,7 @@ describe('ItemService — unit transitions', () => {
 		expect(units[0]!.status).toBe('sold');
 	});
 
-	// `sold → in_stock` became legal with customer returns (ERP-0062).
+	// `sold → in_stock` became legal with customer returns (ERP-0065).
 	test('refuses an illegal edge (sold → applied_warranty)', async () => {
 		const { service, units } = makeService({
 			items: [makeItem({ itemKind: 'product' })],

@@ -7,6 +7,34 @@ import type {
 import type { TPaginationResult } from '@ims-erp/common';
 import type { TReceiptListQuery } from './invoice.contract';
 
+/**
+ * Invoice statuses that count as invoiced revenue (M01).
+ *
+ * @remarks
+ * `overdue` is deliberately absent: it is **derived from `due_date` at read
+ * time and never stored** (`sales.schema.ts`), so an overdue invoice is still
+ * `issued`/`partially_paid`/`paid` in the column. `draft`, `void` and
+ * `cancelled` never count.
+ */
+export const INVOICED_STATUSES = ['issued', 'partially_paid', 'paid'] as const;
+
+/** One bucket of {@link TInvoiceSummary}; `period` is `YYYY-MM` or `YYYY-MM-DD`. */
+export type TInvoiceSummaryBucket = {
+	period: string;
+	invoiced: number;
+	count: number;
+};
+
+/** Invoiced totals for one window, every period present (zero-filled). */
+export type TInvoiceSummary = {
+	from: string;
+	to: string;
+	groupBy: 'month' | 'day';
+	totalInvoiced: number;
+	invoiceCount: number;
+	buckets: TInvoiceSummaryBucket[];
+};
+
 /** Server-computed totals for a draft invoice (client never sends them). */
 export type TInvoiceTotals = {
 	subtotal: number;
@@ -63,6 +91,15 @@ export type TInvoiceRepository = {
 		filters: { status?: string; customerId?: string },
 		pagination: { page: number; limit: number },
 	): Promise<{ data: TInvoiceSelect[]; meta: { page: number; limit: number; total: number; totalPages: number } }>;
+	/**
+	 * Invoiced totals per period inside `[from, to]`, oldest first, every
+	 * period present. Counts only {@link INVOICED_STATUSES} and rows with an
+	 * `issue_date`.
+	 */
+	summary(
+		organizationId: string,
+		range: { from: string; to: string; groupBy: 'month' | 'day' },
+	): Promise<TInvoiceSummary>;
 	insert(
 		row: Record<string, unknown>,
 		tx?: unknown,

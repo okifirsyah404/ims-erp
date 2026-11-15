@@ -1,6 +1,7 @@
 import type { TApiPaginatedResponse, TApiResponse } from '@ims-erp/common';
 import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
+import { organizationHeaders } from './organization-store';
 import type { TQuotationCustomerSnapshot } from './quotation-api';
 import type { TSalesOrderItem } from './sales-order-api';
 
@@ -118,6 +119,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<TApiRespons
 	const response = await fetch(`${API_URL}${path}`, {
 		credentials: 'include',
 		headers: {
+			...organizationHeaders(),
 			// Server error messages come back in the UI language.
 			'Accept-Language': currentLanguage(),
 			...(init?.body != null ? { 'Content-Type': 'application/json' } : {}),

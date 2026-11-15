@@ -66,10 +66,10 @@ export const DELIVERY_NOTE_REPOSITORY_TOKEN: InjectionToken<IDeliveryNoteReposit
 /** Token resolving to the {@link DeliveryNoteService} implementation. */
 export const DELIVERY_NOTE_SERVICE_TOKEN: InjectionToken<DeliveryNoteService> = Symbol('DELIVERY_NOTE_SERVICE_TOKEN');
 
-/** Token resolving to the sales return repository implementation (ERP-0062). */
+/** Token resolving to the sales return repository implementation (ERP-0065). */
 export const SALES_RETURN_REPOSITORY_TOKEN: InjectionToken<ISalesReturnRepository> = Symbol('SALES_RETURN_REPOSITORY_TOKEN');
 
-/** Token resolving to the {@link SalesReturnService} implementation (ERP-0062). */
+/** Token resolving to the {@link SalesReturnService} implementation (ERP-0065). */
 export const SALES_RETURN_SERVICE_TOKEN: InjectionToken<SalesReturnService> = Symbol('SALES_RETURN_SERVICE_TOKEN');
 
 /** Token resolving to the {@link SalesFulfilmentService} (Sales contract for Projects). */

@@ -33,7 +33,7 @@ import { usePermission } from '@/lib/use-permission';
 
 const PAGE_SIZE = 20;
 
-/** `/sales/returns` — goods sent back to suppliers (ERP-0062). */
+/** `/sales/returns` — goods sent back to suppliers (ERP-0065). */
 export const Route = createFileRoute('/_authed/sales/returns/')({
 	component: SalesReturnListPage,
 });

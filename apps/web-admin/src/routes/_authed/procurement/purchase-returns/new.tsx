@@ -10,7 +10,7 @@ import { createPurchaseReturn, returnableReceiptsQueryOptions } from '@/lib/purc
 /** A return may start from a goods receipt page. */
 const searchSchema = z.object({ goodsReceiptId: z.string().optional() });
 
-/** `/procurement/purchase-returns/new` — return received goods to the supplier (ERP-0061). */
+/** `/procurement/purchase-returns/new` — return received goods to the supplier (ERP-0064). */
 export const Route = createFileRoute('/_authed/procurement/purchase-returns/new')({
 	validateSearch: searchSchema,
 	component: NewPurchaseReturnPage,

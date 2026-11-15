@@ -100,9 +100,9 @@ export const UNIT_STATUSES = [
 	'lost',
 	'sold',
 	'applied_warranty',
-	/** Sent back to the supplier on a purchase return (ERP-0061); terminal. */
+	/** Sent back to the supplier on a purchase return (ERP-0064); terminal. */
 	'returned',
-	/** Back from a customer but not sellable (ERP-0062); never delivered. */
+	/** Back from a customer but not sellable (ERP-0065); never delivered. */
 	'damaged',
 ] as const;
 export type UnitStatus = (typeof UNIT_STATUSES)[number];
@@ -112,7 +112,7 @@ export const UNIT_STATUS_TRANSITIONS: Record<UnitStatus, UnitStatus[]> = {
 	pre_order: ['in_stock', 'lost'],
 	in_stock: ['sold', 'applied_warranty', 'lost', 'returned', 'damaged'],
 	lost: [],
-	// ERP-0062: a customer return brings a sold unit back, sellable or not.
+	// ERP-0065: a customer return brings a sold unit back, sellable or not.
 	sold: ['in_stock', 'damaged'],
 	applied_warranty: ['in_stock', 'lost'],
 	returned: [],
