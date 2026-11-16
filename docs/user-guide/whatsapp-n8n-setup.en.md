@@ -11,6 +11,9 @@ ADR-0020; this guide is the step-by-step version. Indonesian version:
 > UAT (`docs/plan/uat/`). Use a sandbox WhatsApp number first; WAHA is
 > unofficial and a number can be banned.
 
+> **WAHA is unofficial and numbers can be banned.** For production use the official WhatsApp
+> Business (Meta Cloud API): [whatsapp-business-meta.en.md](whatsapp-business-meta.en.md).
+
 ## 1. What talks to what
 
 ```text

@@ -32,16 +32,78 @@
 			}
 		},
 		{
-			"id": "a1d5e1f0-0000-4000-8000-000000000003",
-			"name": "2. Skip duplicates",
-			"type": "n8n-nodes-base.code",
-			"typeVersion": 2,
+			"id": "a1d5e1f0-0000-4000-8000-00000000000a",
+			"name": "2a. Ensure table",
+			"type": "n8n-nodes-base.dataTable",
+			"typeVersion": 1.1,
 			"position": [
 				440,
 				0
 			],
 			"parameters": {
-				"jsCode": "// n8n Code node \"2. Skip duplicates\".\n//\n// The ERP retries a failed delivery and an admin can \"send again\" from\n// /integrations/webhooks: both re-send the same event id. Ids handled before\n// are kept in the workflow's static data (saved only for executions of the\n// ACTIVE workflow, not for manual test runs), the newest 5000.\nconst item = $input.first().json;\nif (item.httpStatus) return [{ json: item }];\n\nconst memory = $getWorkflowStaticData('global');\nconst seen = Array.isArray(memory.processedEventIds) ? memory.processedEventIds : [];\nif (seen.includes(item.eventId)) {\n\treturn [{ json: { ...item, httpStatus: 200, result: 'duplicate, already handled' } }];\n}\nreturn [{ json: item }];\n"
+				"resource": "table",
+				"operation": "create",
+				"tableName": "erp_processed_events",
+				"columns": {
+					"column": [
+						{
+							"name": "event_id",
+							"type": "string"
+						},
+						{
+							"name": "topic",
+							"type": "string"
+						}
+					]
+				},
+				"options": {
+					"createIfNotExists": true
+				}
+			}
+		},
+		{
+			"id": "a1d5e1f0-0000-4000-8000-00000000000b",
+			"name": "2b. Look up event",
+			"type": "n8n-nodes-base.dataTable",
+			"typeVersion": 1.1,
+			"position": [
+				660,
+				0
+			],
+			"alwaysOutputData": true,
+			"parameters": {
+				"resource": "row",
+				"operation": "get",
+				"dataTableId": {
+					"__rl": true,
+					"mode": "name",
+					"value": "erp_processed_events"
+				},
+				"matchType": "anyCondition",
+				"filters": {
+					"conditions": [
+						{
+							"keyName": "event_id",
+							"condition": "eq",
+							"keyValue": "={{ $('1. Verify ERP signature').first().json.eventId || 'not-an-event' }}"
+						}
+					]
+				},
+				"returnAll": false,
+				"limit": 1
+			}
+		},
+		{
+			"id": "a1d5e1f0-0000-4000-8000-000000000003",
+			"name": "2c. Skip duplicates",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [
+				880,
+				0
+			],
+			"parameters": {
+				"jsCode": "// n8n Code node \"2c. Skip duplicates\".\n//\n// The ERP retries a failed delivery and an admin can \"send again\" from\n// /integrations/webhooks: both re-send the same event id. Handled ids live in\n// the n8n data table `erp_processed_events` (created by \"2a. Ensure table\",\n// written by \"5a. Record event\" only after WhatsApp succeeded). \"2b. Look up\n// event\" returns the matching row, or an empty item when there is none.\n//\n// Why not workflow static data: it is loaded when an execution starts and\n// saved when it ends, after the ERP already got its answer, so an event\n// re-sent right away was not seen (found in testing).\nconst event = $('1. Verify ERP signature').first().json;\nif (event.httpStatus) return [{ json: event }];\n\nconst found = $input.all().some((row) => row.json && row.json.event_id === event.eventId);\nif (found) {\n\treturn [{ json: { ...event, httpStatus: 200, result: 'duplicate, already handled' } }];\n}\nreturn [{ json: event }];\n"
 			}
 		},
 		{
@@ -50,37 +112,97 @@
 			"type": "n8n-nodes-base.code",
 			"typeVersion": 2,
 			"position": [
-				660,
-				0
-			],
-			"parameters": {
-				"jsCode": "// n8n Code node \"3. Compose messages\".\n//\n// Turns one ERP event into the messages to send. Edit CONFIG below: who\n// receives what is decided here, not in the ERP (the ERP stores no\n// templates, ADR-0020). Event fields: docs/architecture/modules/automation.md,\n// \"The event contract\". Amounts arrive as integer IDR minor units (cents).\n\n// ============================== CONFIG ==================================\nconst CONFIG = {\n\tcompanyName: 'Entragate',\n\t// Internal WhatsApp numbers per role: '0812…', '62812…' or '+62 812…'.\n\t// An empty list means nobody in that role is told.\n\tteam: {\n\t\towner: [],\n\t\tsalesManager: [],\n\t\tsales: [],\n\t\toperationsManager: [],\n\t\tpurchasing: [],\n\t\twarehouse: [],\n\t\tfinance: [],\n\t\tsupport: [],\n\t\tadminOnDuty: [],\n\t},\n\t// Optional internal email per role, used only when the \"Send email\" node\n\t// is enabled (it is disabled after import).\n\tteamEmail: {\n\t\tfinance: [],\n\t\tpurchasing: [],\n\t},\n\t// Messages to customers and supplier contacts. Keep false until the owner\n\t// approved the texts below (ADR-0020); internal messages always go out.\n\tnotifyCustomers: false,\n\tnotifySuppliers: false,\n\t// ERP web address used in links, without a trailing slash; '' = no links.\n\terpUrl: '',\n};\n// ========================================================================\n\nconst item = $input.first().json;\nif (item.httpStatus) return [{ json: item }];\n\nconst rupiah = (minor) =>\n\t'Rp ' + (Math.round(Number(minor || 0)) / 100).toLocaleString('id-ID', { maximumFractionDigits: 2 });\nconst date = (value) => {\n\tif (!value) return '-';\n\tconst parsed = new Date(String(value).length === 10 ? value + 'T12:00:00+07:00' : value);\n\treturn Number.isNaN(parsed.getTime())\n\t\t? String(value)\n\t\t: parsed.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' });\n};\nconst link = (path) => (CONFIG.erpUrl ? '\\n' + CONFIG.erpUrl + path : '');\nconst lines = (list) =>\n\t(list || [])\n\t\t.map((line) => '- ' + line.name + ' ' + Number(line.quantity) + ' ' + line.unit + (line.serialNumbers && line.serialNumbers.length ? ' (SN ' + line.serialNumbers.join(', ') + ')' : ''))\n\t\t.join('\\n');\n\n/** Indonesian numbers to a WAHA chat id: 0812… / +62 812… -> 62812…@c.us. */\nfunction chatId(phone) {\n\tlet digits = String(phone || '').replace(/\\D/g, '');\n\tif (!digits) return null;\n\tif (digits.startsWith('0')) digits = '62' + digits.slice(1);\n\tif (digits.startsWith('8')) digits = '62' + digits;\n\treturn digits.length >= 10 ? digits + '@c.us' : null;\n}\n\nconst out = [];\nconst toRole = (role, text) => {\n\tfor (const phone of CONFIG.team[role] || []) {\n\t\tconst to = chatId(phone);\n\t\tif (to) out.push({ channel: 'whatsapp', audience: role, to, text });\n\t}\n};\nconst emailRole = (role, subject, text) => {\n\tfor (const address of CONFIG.teamEmail[role] || []) {\n\t\tif (address) out.push({ channel: 'email', audience: role, to: address, subject, text });\n\t}\n};\nconst toCustomer = (customer, text) => {\n\tif (!CONFIG.notifyCustomers || !customer) return;\n\tconst to = chatId(customer.whatsapp || customer.phone);\n\tif (to) out.push({ channel: 'whatsapp', audience: 'customer', to, text });\n};\nconst toSupplier = (supplier, text) => {\n\tif (!CONFIG.notifySuppliers || !supplier) return;\n\tconst to = chatId(supplier.picPhone || supplier.phone);\n\tif (to) out.push({ channel: 'whatsapp', audience: 'supplier', to, text });\n};\n\nconst d = item.data || {};\nconst handlers = {\n\t'lead.created': () => {\n\t\ttoRole(\n\t\t\t'salesManager',\n\t\t\t'Lead baru ' + (d.reference || '') + '\\n' +\n\t\t\t\t(d.name || '-') + (d.companyName ? ' (' + d.companyName + ')' : '') + '\\n' +\n\t\t\t\t'Kontak: ' + (d.whatsapp || d.phone || d.email || '-') + '\\n' +\n\t\t\t\t'Sumber: ' + (d.source || '-') + ' / ' + (d.channel || '-') + '\\n' +\n\t\t\t\t'Kebutuhan: ' + (d.needs || '-') + link('/crm/leads/' + d.leadId),\n\t\t);\n\t},\n\t'invoice.issued': () => {\n\t\tconst customer = d.customer || {};\n\t\ttoCustomer(\n\t\t\tcustomer,\n\t\t\t'Yth. ' + (customer.name || 'Pelanggan') + ',\\n' +\n\t\t\t\t'Invoice ' + d.code + ' dari ' + CONFIG.companyName + ' sebesar ' + rupiah(d.grandTotal) +\n\t\t\t\t' jatuh tempo ' + date(d.dueDate) + '. Terima kasih.',\n\t\t);\n\t\ttoRole('finance', 'Invoice ' + d.code + ' terbit untuk ' + (customer.name || '-') + ': ' + rupiah(d.grandTotal) + ', jatuh tempo ' + date(d.dueDate) + '.');\n\t},\n\t'receipt.recorded': () => {\n\t\tconst customer = d.customer || {};\n\t\tconst invoice = d.invoice || {};\n\t\ttoCustomer(\n\t\t\tcustomer,\n\t\t\t'Terima kasih, pembayaran ' + rupiah(d.amount) + ' untuk invoice ' + (invoice.code || '-') + ' sudah kami terima.' +\n\t\t\t\t(Number(invoice.outstandingTotal) > 0 ? ' Sisa tagihan: ' + rupiah(invoice.outstandingTotal) + '.' : ' Invoice sudah lunas.'),\n\t\t);\n\t},\n\t'service_ticket.updated': () => {\n\t\tconst customer = d.customer || {};\n\t\tconst texts = {\n\t\t\tcreated: 'Tiket servis ' + d.code + ' sudah kami terima: ' + (d.complaint || '') + '. Teknisi kami akan menghubungi Anda.',\n\t\t\tassigned: 'Tiket ' + d.code + ' ditangani oleh ' + ((d.assignee && d.assignee.name) || 'teknisi kami') + '.',\n\t\t\tstarted: 'Teknisi mulai menangani tiket ' + d.code + '.',\n\t\t\tresolved: 'Tiket ' + d.code + ' selesai: ' + (d.resolution || '-') + '.',\n\t\t\treopened: 'Tiket ' + d.code + ' dibuka kembali.',\n\t\t\tclosed: 'Tiket ' + d.code + ' ditutup. Terima kasih.',\n\t\t};\n\t\tif (texts[d.change]) toCustomer({ ...customer, whatsapp: customer.whatsapp || d.reporterContact }, texts[d.change]);\n\t\tif (d.change === 'created') toRole('support', 'Tiket baru ' + d.code + ' dari ' + (customer.name || d.reporterName || '-') + ': ' + (d.complaint || '-') + link('/projects/tickets/' + d.ticketId));\n\t},\n\t'whatsapp.handoff': () => {\n\t\ttoRole(\n\t\t\t'adminOnDuty',\n\t\t\t'Chat WhatsApp perlu admin (' + d.reason + ')\\n' + (d.contactName || '') + ' ' + (d.phone || '') + '\\n\"' + (d.question || '') + '\"' + link('/integrations/whatsapp-ai/' + d.conversationId),\n\t\t);\n\t},\n\t'license.due': () => {\n\t\tconst customer = d.customer || {};\n\t\tconst app = (d.application && d.application.name) || 'aplikasi';\n\t\tconst text =\n\t\t\td.stage === 'ended'\n\t\t\t\t? 'Lisensi ' + app + ' (' + d.code + ') sudah berakhir ' + date(d.endDate) + '. Masa tenggang sampai ' + date(d.graceEndsOn) + '.'\n\t\t\t\t: 'Lisensi ' + app + ' (' + d.code + ') berakhir ' + date(d.endDate) + ' (' + d.daysLeft + ' hari lagi).';\n\t\ttoCustomer(customer, 'Yth. ' + (customer.name || 'Pelanggan') + ', ' + text + ' Hubungi kami untuk perpanjangan.');\n\t\ttoRole('salesManager', text + ' Pelanggan: ' + (customer.name || '-') + '.');\n\t},\n\t'purchase_return.updated': () => {\n\t\tconst supplier = d.supplier || {};\n\t\tconst head = 'Retur pembelian ' + (d.code || '(belum bernomor)') + ' ke ' + (supplier.name || '-');\n\t\tconst detail = '\\nBPB ' + (d.goodsReceiptCode || '-') + ' / PO ' + (d.purchaseOrderCode || '-') + '\\nAlasan: ' + (d.reason || '-') + '\\n' + lines(d.lines);\n\t\tconst url = link('/procurement/purchase-returns/' + d.returnId);\n\t\tif (d.change === 'submitted') toRole('operationsManager', head + ' menunggu persetujuan Anda.' + detail + url);\n\t\tif (d.change === 'approved') {\n\t\t\ttoRole('warehouse', head + ' disetujui. Siapkan barang untuk dikirim ke pemasok.' + detail + url);\n\t\t\ttoRole('purchasing', head + ' disetujui. Hubungi pemasok untuk penggantian.' + url);\n\t\t}\n\t\tif (d.change === 'rejected') toRole('purchasing', head + ' ditolak: ' + (d.rejectionReason || '-') + url);\n\t\tif (d.change === 'shipped') {\n\t\t\ttoRole('purchasing', head + ' sudah dikirim. PO dibuka lagi untuk barang pengganti.' + url);\n\t\t\ttoSupplier(\n\t\t\t\tsupplier,\n\t\t\t\t'Yth. ' + (supplier.picName || supplier.name || 'Bapak/Ibu') + ', ' + CONFIG.companyName + ' mengirim kembali barang berikut untuk diganti (' + (d.code || '') + ', PO ' + (d.purchaseOrderCode || '-') + '):\\n' + lines(d.lines) + '\\nAlasan: ' + (d.reason || '-'),\n\t\t\t);\n\t\t}\n\t\tif (d.change === 'cancelled') {\n\t\t\ttoRole('purchasing', head + ' dibatalkan: ' + (d.cancelledReason || '-'));\n\t\t\ttoRole('warehouse', head + ' dibatalkan, barang tidak jadi dikirim.');\n\t\t}\n\t},\n\t'sales_return.updated': () => {\n\t\tconst customer = d.customer || {};\n\t\tconst head = 'Retur penjualan ' + (d.code || '(belum bernomor)') + ' dari ' + (customer.name || '-');\n\t\tconst detail = '\\nSurat jalan ' + (d.deliveryNoteCode || '-') + ' / SO ' + (d.salesOrderCode || '-') + '\\nAlasan: ' + (d.reason || '-') + '\\n' + lines(d.lines);\n\t\tconst url = link('/sales/returns/' + d.returnId);\n\t\tif (d.change === 'submitted') toRole('salesManager', head + ' menunggu persetujuan Anda.' + detail + url);\n\t\tif (d.change === 'approved') {\n\t\t\ttoRole('warehouse', head + ' disetujui. Barang akan datang, siapkan pemeriksaan kondisi.' + detail + url);\n\t\t\ttoCustomer(customer, 'Yth. ' + (customer.name || 'Pelanggan') + ', pengajuan retur ' + (d.code || '') + ' disetujui. Tim kami akan mengatur pengambilan/pengiriman barang.');\n\t\t}\n\t\tif (d.change === 'rejected') toRole('sales', head + ' ditolak: ' + (d.rejectionReason || '-') + url);\n\t\tif (d.change === 'received') {\n\t\t\tconst damaged = (d.lines || []).filter((line) => line.condition === 'damaged').length;\n\t\t\ttoRole('sales', head + ' sudah diterima gudang' + (damaged ? ' (' + damaged + ' baris rusak)' : '') + '. Siapkan surat jalan pengganti.' + url);\n\t\t\ttoCustomer(customer, 'Yth. ' + (customer.name || 'Pelanggan') + ', barang retur ' + (d.code || '') + ' sudah kami terima. Barang pengganti akan segera kami kirim.');\n\t\t}\n\t\tif (d.change === 'cancelled') toRole('sales', head + ' dibatalkan: ' + (d.cancelledReason || '-'));\n\t},\n\t'supplier_bill.recorded': () => {\n\t\tconst supplier = d.supplier || {};\n\t\tconst text = 'Tagihan pemasok ' + d.code + ' (' + (d.supplierInvoiceNumber || '-') + ') dari ' + (supplier.name || '-') + ' dicatat: ' + rupiah(d.grandTotal) + ', jatuh tempo ' + date(d.dueDate) + '.';\n\t\ttoRole('finance', text + link('/finance/payables'));\n\t\temailRole('finance', 'Tagihan pemasok ' + d.code, text);\n\t},\n\t'supplier_bill.due': () => {\n\t\tconst supplier = d.supplier || {};\n\t\tconst when = d.stage === 'upcoming' ? 'jatuh tempo ' + date(d.dueDate) + ' (' + d.daysLeft + ' hari lagi)' : d.stage === 'due' ? 'jatuh tempo HARI INI' : 'LEWAT jatuh tempo sejak ' + date(d.dueDate);\n\t\tconst text = 'Tagihan pemasok ' + d.code + ' (' + (d.supplierInvoiceNumber || '-') + ') ke ' + (supplier.name || '-') + ' ' + when + '. Sisa: ' + rupiah(d.outstandingTotal) + '.';\n\t\ttoRole('finance', text + link('/finance/payables'));\n\t\temailRole('finance', 'Pengingat tagihan ' + d.code, text);\n\t\tif (d.stage === 'overdue') toRole('owner', text);\n\t},\n};\n\nif (handlers[item.topic]) handlers[item.topic]();\nreturn [{ json: { ...item, messages: out } }];\n"
-			}
-		},
-		{
-			"id": "a1d5e1f0-0000-4000-8000-000000000005",
-			"name": "4. Send WhatsApp (WAHA)",
-			"type": "n8n-nodes-base.code",
-			"typeVersion": 2,
-			"position": [
-				880,
-				0
-			],
-			"parameters": {
-				"jsCode": "// n8n Code node \"4. Send WhatsApp (WAHA)\".\n//\n// Sends every WhatsApp message composed for the event through WAHA\n// (POST <WAHA_URL>/api/sendText with X-Api-Key). A failed send throws: the\n// execution fails, the webhook answers 500 and the ERP retries the event\n// later (the event is only remembered as handled after this node).\n// Needs on the n8n server: WAHA_URL, WAHA_API_KEY, WAHA_SESSION (default\n// \"default\").\nconst item = $input.first().json;\nif (item.httpStatus) return [{ json: item }];\n\nconst messages = (item.messages || []).filter((message) => message.channel === 'whatsapp');\nconst baseUrl = String($env.WAHA_URL || '').replace(/\\/+$/, '');\nif (messages.length > 0 && !baseUrl) throw new Error('WAHA_URL is not set on the n8n server');\n\nconst sent = [];\nfor (const message of messages) {\n\tawait this.helpers.httpRequest({\n\t\tmethod: 'POST',\n\t\turl: baseUrl + '/api/sendText',\n\t\theaders: { 'X-Api-Key': $env.WAHA_API_KEY || '' },\n\t\tbody: { session: $env.WAHA_SESSION || 'default', chatId: message.to, text: message.text },\n\t\tjson: true,\n\t});\n\tsent.push(message.to);\n}\nreturn [{ json: { ...item, sentWhatsApp: sent } }];\n"
-			}
-		},
-		{
-			"id": "a1d5e1f0-0000-4000-8000-000000000006",
-			"name": "5. Remember event",
-			"type": "n8n-nodes-base.code",
-			"typeVersion": 2,
-			"position": [
 				1100,
 				0
 			],
 			"parameters": {
-				"jsCode": "// n8n Code node \"5. Remember event and answer\".\n//\n// Marks the event as handled (only after the WhatsApp sends succeeded) and\n// sets the HTTP answer for the last node: 200 when handled or skipped.\nconst item = $input.first().json;\nif (item.httpStatus) return [{ json: item }];\n\nconst memory = $getWorkflowStaticData('global');\nconst seen = Array.isArray(memory.processedEventIds) ? memory.processedEventIds : [];\nseen.push(item.eventId);\nmemory.processedEventIds = seen.slice(-5000);\n\nconst count = (item.messages || []).length;\nreturn [\n\t{\n\t\tjson: {\n\t\t\t...item,\n\t\t\thttpStatus: 200,\n\t\t\tresult: count === 0 ? 'no message for this event' : count + ' message(s) handled',\n\t\t},\n\t},\n];\n"
+				"jsCode": "// n8n Code node \"3. Compose messages\".\n//\n// Turns one ERP event into the messages to send. Edit CONFIG below: who\n// receives what is decided here, not in the ERP (the ERP stores no\n// templates, ADR-0020). Event fields: docs/architecture/modules/automation.md,\n// \"The event contract\". Amounts arrive as integer IDR minor units (cents).\n\n// ============================== CONFIG ==================================\nconst CONFIG = {\n\tcompanyName: 'Entragate',\n\t// Internal WhatsApp numbers per role: '0812…', '62812…' or '+62 812…'.\n\t// An empty list means nobody in that role is told.\n\tteam: {\n\t\towner: [],\n\t\tsalesManager: [],\n\t\tsales: [],\n\t\toperationsManager: [],\n\t\tpurchasing: [],\n\t\twarehouse: [],\n\t\tfinance: [],\n\t\tsupport: [],\n\t\tadminOnDuty: [],\n\t},\n\t// Optional internal email per role, used only when the \"Send email\" node\n\t// is enabled (it is disabled after import).\n\tteamEmail: {\n\t\tfinance: [],\n\t\tpurchasing: [],\n\t},\n\t// Messages to customers and supplier contacts. Keep false until the owner\n\t// approved the texts below (ADR-0020); internal messages always go out.\n\tnotifyCustomers: false,\n\tnotifySuppliers: false,\n\t// ERP web address used in links, without a trailing slash; '' = no links.\n\terpUrl: '',\n};\n// ========================================================================\n\nconst item = $input.first().json;\nif (item.httpStatus) return [{ json: item }];\n\nconst rupiah = (minor) =>\n\t'Rp ' + (Math.round(Number(minor || 0)) / 100).toLocaleString('id-ID', { maximumFractionDigits: 2 });\nconst date = (value) => {\n\tif (!value) return '-';\n\tconst parsed = new Date(String(value).length === 10 ? value + 'T12:00:00+07:00' : value);\n\treturn Number.isNaN(parsed.getTime())\n\t\t? String(value)\n\t\t: parsed.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' });\n};\nconst link = (path) => (CONFIG.erpUrl ? '\\n' + CONFIG.erpUrl + path : '');\nconst lines = (list) =>\n\t(list || [])\n\t\t.map((line) => '- ' + line.name + ' ' + Number(line.quantity) + ' ' + line.unit + (line.serialNumbers && line.serialNumbers.length ? ' (SN ' + line.serialNumbers.join(', ') + ')' : ''))\n\t\t.join('\\n');\n\n/**\n * Indonesian numbers to a WAHA chat id: 0812… / +62 812… -> 62812…@c.us.\n * The Meta sender strips the `@c.us` part.\n */\nfunction chatId(phone) {\n\tlet digits = String(phone || '').replace(/\\D/g, '');\n\tif (!digits) return null;\n\tif (digits.startsWith('0')) digits = '62' + digits.slice(1);\n\tif (digits.startsWith('8')) digits = '62' + digits;\n\treturn digits.length >= 10 ? digits + '@c.us' : null;\n}\n\n// Every message carries both forms: `text` (WAHA sends it as is) and\n// `template` + `params` (the Meta Cloud API needs an approved template for a\n// message the business starts; see meta-templates.json). Meta template\n// variables may not contain new lines, so params are flattened.\nconst flat = (value) => String(value == null || value === '' ? '-' : value).replace(/\\s*\\n\\s*/g, ' / ').replace(/ {4,}/g, ' ');\nconst meta = (template, params) => ({ template, params: params.map(flat) });\n\nconst out = [];\nconst push = (audience, to, text, spec) => {\n\tif (to) out.push({ channel: 'whatsapp', audience, to, text, template: spec ? spec.template : null, params: spec ? spec.params : [] });\n};\nconst toRole = (role, text, spec) => {\n\tfor (const phone of CONFIG.team[role] || []) push(role, chatId(phone), text, spec);\n};\nconst emailRole = (role, subject, text) => {\n\tfor (const address of CONFIG.teamEmail[role] || []) {\n\t\tif (address) out.push({ channel: 'email', audience: role, to: address, subject, text });\n\t}\n};\nconst toCustomer = (customer, text, spec) => {\n\tif (!CONFIG.notifyCustomers || !customer) return;\n\tpush('customer', chatId(customer.whatsapp || customer.phone), text, spec);\n};\nconst toSupplier = (supplier, text, spec) => {\n\tif (!CONFIG.notifySuppliers || !supplier) return;\n\tpush('supplier', chatId(supplier.picPhone || supplier.phone), text, spec);\n};\nconst itemsText = (list) =>\n\t(list || [])\n\t\t.map((line) => line.name + ' ' + Number(line.quantity) + ' ' + line.unit + (line.serialNumbers && line.serialNumbers.length ? ' (SN ' + line.serialNumbers.join(', ') + ')' : ''))\n\t\t.join('; ');\n\nconst d = item.data || {};\nconst handlers = {\n\t'lead.created': () => {\n\t\tconst who = (d.name || '-') + (d.companyName ? ' (' + d.companyName + ')' : '');\n\t\tconst contact = d.whatsapp || d.phone || d.email || '-';\n\t\ttoRole(\n\t\t\t'salesManager',\n\t\t\t'Lead baru ' + (d.reference || '') + '\\n' + who + '\\n' +\n\t\t\t\t'Kontak: ' + contact + '\\n' +\n\t\t\t\t'Sumber: ' + (d.source || '-') + ' / ' + (d.channel || '-') + '\\n' +\n\t\t\t\t'Kebutuhan: ' + (d.needs || '-') + link('/crm/leads/' + d.leadId),\n\t\t\tmeta('erp_lead_baru', [d.reference, who, contact, d.needs]),\n\t\t);\n\t},\n\t'invoice.issued': () => {\n\t\tconst customer = d.customer || {};\n\t\ttoCustomer(\n\t\t\tcustomer,\n\t\t\t'Yth. ' + (customer.name || 'Pelanggan') + ',\\n' +\n\t\t\t\t'Invoice ' + d.code + ' dari ' + CONFIG.companyName + ' sebesar ' + rupiah(d.grandTotal) +\n\t\t\t\t' jatuh tempo ' + date(d.dueDate) + '. Terima kasih.',\n\t\t\tmeta('erp_invoice_terbit', [customer.name || 'Pelanggan', d.code, rupiah(d.grandTotal), date(d.dueDate)]),\n\t\t);\n\t\ttoRole(\n\t\t\t'finance',\n\t\t\t'Invoice ' + d.code + ' terbit untuk ' + (customer.name || '-') + ': ' + rupiah(d.grandTotal) + ', jatuh tempo ' + date(d.dueDate) + '.',\n\t\t\tmeta('erp_invoice_terbit_internal', [d.code, customer.name, rupiah(d.grandTotal), date(d.dueDate)]),\n\t\t);\n\t},\n\t'receipt.recorded': () => {\n\t\tconst customer = d.customer || {};\n\t\tconst invoice = d.invoice || {};\n\t\tconst rest = Number(invoice.outstandingTotal) > 0 ? rupiah(invoice.outstandingTotal) : 'lunas';\n\t\ttoCustomer(\n\t\t\tcustomer,\n\t\t\t'Terima kasih, pembayaran ' + rupiah(d.amount) + ' untuk invoice ' + (invoice.code || '-') + ' sudah kami terima.' +\n\t\t\t\t(Number(invoice.outstandingTotal) > 0 ? ' Sisa tagihan: ' + rupiah(invoice.outstandingTotal) + '.' : ' Invoice sudah lunas.'),\n\t\t\tmeta('erp_pembayaran_diterima', [rupiah(d.amount), invoice.code, rest]),\n\t\t);\n\t},\n\t'service_ticket.updated': () => {\n\t\tconst customer = d.customer || {};\n\t\tconst updates = {\n\t\t\tcreated: 'sudah kami terima, teknisi kami akan menghubungi Anda',\n\t\t\tassigned: 'ditangani oleh ' + ((d.assignee && d.assignee.name) || 'teknisi kami'),\n\t\t\tstarted: 'teknisi mulai menangani',\n\t\t\tresolved: 'selesai: ' + (d.resolution || '-'),\n\t\t\treopened: 'dibuka kembali',\n\t\t\tclosed: 'ditutup, terima kasih',\n\t\t};\n\t\tconst texts = {\n\t\t\tcreated: 'Tiket servis ' + d.code + ' sudah kami terima: ' + (d.complaint || '') + '. Teknisi kami akan menghubungi Anda.',\n\t\t\tassigned: 'Tiket ' + d.code + ' ditangani oleh ' + ((d.assignee && d.assignee.name) || 'teknisi kami') + '.',\n\t\t\tstarted: 'Teknisi mulai menangani tiket ' + d.code + '.',\n\t\t\tresolved: 'Tiket ' + d.code + ' selesai: ' + (d.resolution || '-') + '.',\n\t\t\treopened: 'Tiket ' + d.code + ' dibuka kembali.',\n\t\t\tclosed: 'Tiket ' + d.code + ' ditutup. Terima kasih.',\n\t\t};\n\t\tif (texts[d.change]) {\n\t\t\ttoCustomer({ ...customer, whatsapp: customer.whatsapp || d.reporterContact }, texts[d.change], meta('erp_tiket_servis_update', [d.code, updates[d.change]]));\n\t\t}\n\t\tif (d.change === 'created') {\n\t\t\ttoRole(\n\t\t\t\t'support',\n\t\t\t\t'Tiket baru ' + d.code + ' dari ' + (customer.name || d.reporterName || '-') + ': ' + (d.complaint || '-') + link('/projects/tickets/' + d.ticketId),\n\t\t\t\tmeta('erp_tiket_servis_baru_internal', [d.code, customer.name || d.reporterName, d.complaint]),\n\t\t\t);\n\t\t}\n\t},\n\t'whatsapp.handoff': () => {\n\t\tconst who = ((d.contactName || '') + ' ' + (d.phone || '')).trim();\n\t\ttoRole(\n\t\t\t'adminOnDuty',\n\t\t\t'Chat WhatsApp perlu admin (' + d.reason + ')\\n' + who + '\\n\"' + (d.question || '') + '\"' + link('/integrations/whatsapp-ai/' + d.conversationId),\n\t\t\tmeta('erp_chat_perlu_admin', [who, d.reason, d.question]),\n\t\t);\n\t},\n\t'license.due': () => {\n\t\tconst customer = d.customer || {};\n\t\tconst app = (d.application && d.application.name) || 'aplikasi';\n\t\tconst text =\n\t\t\td.stage === 'ended'\n\t\t\t\t? 'Lisensi ' + app + ' (' + d.code + ') sudah berakhir ' + date(d.endDate) + '. Masa tenggang sampai ' + date(d.graceEndsOn) + '.'\n\t\t\t\t: 'Lisensi ' + app + ' (' + d.code + ') berakhir ' + date(d.endDate) + ' (' + d.daysLeft + ' hari lagi).';\n\t\ttoCustomer(\n\t\t\tcustomer,\n\t\t\t'Yth. ' + (customer.name || 'Pelanggan') + ', ' + text + ' Hubungi kami untuk perpanjangan.',\n\t\t\tmeta('erp_lisensi_berakhir', [customer.name || 'Pelanggan', app, d.code, date(d.endDate)]),\n\t\t);\n\t\ttoRole('salesManager', text + ' Pelanggan: ' + (customer.name || '-') + '.', meta('erp_lisensi_berakhir_internal', [app, d.code, customer.name, date(d.endDate)]));\n\t},\n\t'purchase_return.updated': () => {\n\t\tconst supplier = d.supplier || {};\n\t\tconst code = d.code || '(belum bernomor)';\n\t\tconst head = 'Retur pembelian ' + code + ' ke ' + (supplier.name || '-');\n\t\tconst detail = '\\nBPB ' + (d.goodsReceiptCode || '-') + ' / PO ' + (d.purchaseOrderCode || '-') + '\\nAlasan: ' + (d.reason || '-') + '\\n' + lines(d.lines);\n\t\tconst url = link('/procurement/purchase-returns/' + d.returnId);\n\t\tconst team = (role, state, text) => toRole(role, text, meta('erp_retur_pembelian_internal', [code, supplier.name, state, itemsText(d.lines)]));\n\t\tif (d.change === 'submitted') team('operationsManager', 'menunggu persetujuan Anda', head + ' menunggu persetujuan Anda.' + detail + url);\n\t\tif (d.change === 'approved') {\n\t\t\tteam('warehouse', 'disetujui, siapkan barang untuk dikirim ke pemasok', head + ' disetujui. Siapkan barang untuk dikirim ke pemasok.' + detail + url);\n\t\t\tteam('purchasing', 'disetujui, hubungi pemasok untuk penggantian', head + ' disetujui. Hubungi pemasok untuk penggantian.' + url);\n\t\t}\n\t\tif (d.change === 'rejected') team('purchasing', 'ditolak: ' + (d.rejectionReason || '-'), head + ' ditolak: ' + (d.rejectionReason || '-') + url);\n\t\tif (d.change === 'shipped') {\n\t\t\tteam('purchasing', 'sudah dikirim, PO dibuka lagi untuk barang pengganti', head + ' sudah dikirim. PO dibuka lagi untuk barang pengganti.' + url);\n\t\t\ttoSupplier(\n\t\t\t\tsupplier,\n\t\t\t\t'Yth. ' + (supplier.picName || supplier.name || 'Bapak/Ibu') + ', ' + CONFIG.companyName + ' mengirim kembali barang berikut untuk diganti (' + (d.code || '') + ', PO ' + (d.purchaseOrderCode || '-') + '):\\n' + lines(d.lines) + '\\nAlasan: ' + (d.reason || '-'),\n\t\t\t\tmeta('erp_retur_pembelian_pemasok', [supplier.picName || supplier.name || 'Bapak/Ibu', CONFIG.companyName, d.code, d.purchaseOrderCode, itemsText(d.lines), d.reason]),\n\t\t\t);\n\t\t}\n\t\tif (d.change === 'cancelled') {\n\t\t\tteam('purchasing', 'dibatalkan: ' + (d.cancelledReason || '-'), head + ' dibatalkan: ' + (d.cancelledReason || '-'));\n\t\t\tteam('warehouse', 'dibatalkan, barang tidak jadi dikirim', head + ' dibatalkan, barang tidak jadi dikirim.');\n\t\t}\n\t},\n\t'sales_return.updated': () => {\n\t\tconst customer = d.customer || {};\n\t\tconst code = d.code || '(belum bernomor)';\n\t\tconst head = 'Retur penjualan ' + code + ' dari ' + (customer.name || '-');\n\t\tconst detail = '\\nSurat jalan ' + (d.deliveryNoteCode || '-') + ' / SO ' + (d.salesOrderCode || '-') + '\\nAlasan: ' + (d.reason || '-') + '\\n' + lines(d.lines);\n\t\tconst url = link('/sales/returns/' + d.returnId);\n\t\tconst team = (role, state, text) => toRole(role, text, meta('erp_retur_penjualan_internal', [code, customer.name, state, itemsText(d.lines)]));\n\t\tif (d.change === 'submitted') team('salesManager', 'menunggu persetujuan Anda', head + ' menunggu persetujuan Anda.' + detail + url);\n\t\tif (d.change === 'approved') {\n\t\t\tteam('warehouse', 'disetujui, barang akan datang, siapkan pemeriksaan kondisi', head + ' disetujui. Barang akan datang, siapkan pemeriksaan kondisi.' + detail + url);\n\t\t\ttoCustomer(\n\t\t\t\tcustomer,\n\t\t\t\t'Yth. ' + (customer.name || 'Pelanggan') + ', pengajuan retur ' + (d.code || '') + ' disetujui. Tim kami akan mengatur pengambilan/pengiriman barang.',\n\t\t\t\tmeta('erp_retur_disetujui', [customer.name || 'Pelanggan', d.code]),\n\t\t\t);\n\t\t}\n\t\tif (d.change === 'rejected') team('sales', 'ditolak: ' + (d.rejectionReason || '-'), head + ' ditolak: ' + (d.rejectionReason || '-') + url);\n\t\tif (d.change === 'received') {\n\t\t\tconst damaged = (d.lines || []).filter((line) => line.condition === 'damaged').length;\n\t\t\tconst state = 'sudah diterima gudang' + (damaged ? ' (' + damaged + ' baris rusak)' : '') + ', siapkan surat jalan pengganti';\n\t\t\tteam('sales', state, head + ' sudah diterima gudang' + (damaged ? ' (' + damaged + ' baris rusak)' : '') + '. Siapkan surat jalan pengganti.' + url);\n\t\t\ttoCustomer(\n\t\t\t\tcustomer,\n\t\t\t\t'Yth. ' + (customer.name || 'Pelanggan') + ', barang retur ' + (d.code || '') + ' sudah kami terima. Barang pengganti akan segera kami kirim.',\n\t\t\t\tmeta('erp_retur_diterima', [customer.name || 'Pelanggan', d.code]),\n\t\t\t);\n\t\t}\n\t\tif (d.change === 'cancelled') team('sales', 'dibatalkan: ' + (d.cancelledReason || '-'), head + ' dibatalkan: ' + (d.cancelledReason || '-'));\n\t},\n\t'supplier_bill.recorded': () => {\n\t\tconst supplier = d.supplier || {};\n\t\tconst text = 'Tagihan pemasok ' + d.code + ' (' + (d.supplierInvoiceNumber || '-') + ') dari ' + (supplier.name || '-') + ' dicatat: ' + rupiah(d.grandTotal) + ', jatuh tempo ' + date(d.dueDate) + '.';\n\t\ttoRole('finance', text + link('/finance/payables'), meta('erp_tagihan_pemasok_internal', [d.code, d.supplierInvoiceNumber, supplier.name, rupiah(d.grandTotal), 'dicatat, jatuh tempo ' + date(d.dueDate)]));\n\t\temailRole('finance', 'Tagihan pemasok ' + d.code, text);\n\t},\n\t'supplier_bill.due': () => {\n\t\tconst supplier = d.supplier || {};\n\t\tconst when = d.stage === 'upcoming' ? 'jatuh tempo ' + date(d.dueDate) + ' (' + d.daysLeft + ' hari lagi)' : d.stage === 'due' ? 'jatuh tempo HARI INI' : 'LEWAT jatuh tempo sejak ' + date(d.dueDate);\n\t\tconst text = 'Tagihan pemasok ' + d.code + ' (' + (d.supplierInvoiceNumber || '-') + ') ke ' + (supplier.name || '-') + ' ' + when + '. Sisa: ' + rupiah(d.outstandingTotal) + '.';\n\t\tconst spec = meta('erp_tagihan_pemasok_internal', [d.code, d.supplierInvoiceNumber, supplier.name, rupiah(d.outstandingTotal), when]);\n\t\ttoRole('finance', text + link('/finance/payables'), spec);\n\t\temailRole('finance', 'Pengingat tagihan ' + d.code, text);\n\t\tif (d.stage === 'overdue') toRole('owner', text, spec);\n\t},\n};\n\nif (handlers[item.topic]) handlers[item.topic]();\nreturn [{ json: { ...item, messages: out } }];\n"
+			}
+		},
+		{
+			"id": "a1d5e1f0-0000-4000-8000-000000000005",
+			"name": "4. Send WhatsApp (WAHA / Meta)",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [
+				1320,
+				0
+			],
+			"parameters": {
+				"jsCode": "// n8n Code node \"4. Send WhatsApp (WAHA or Meta)\".\n//\n// WHATSAPP_PROVIDER picks the sender:\n// - \"waha\" (default): POST <WAHA_URL>/api/sendText with X-Api-Key and the\n//   free text. Needs WAHA_URL, WAHA_API_KEY, WAHA_SESSION.\n// - \"meta\": the official WhatsApp Cloud API. A message the business starts\n//   must be an APPROVED template (docs/integrations/n8n/meta-templates.json):\n//   POST <META_GRAPH_URL>/<META_GRAPH_VERSION>/<META_PHONE_NUMBER_ID>/messages\n//   with Authorization: Bearer <META_ACCESS_TOKEN>. Needs\n//   META_PHONE_NUMBER_ID, META_ACCESS_TOKEN; optional META_GRAPH_VERSION\n//   (default v23.0), META_TEMPLATE_LANGUAGE (default \"id\"), META_GRAPH_URL\n//   (default https://graph.facebook.com).\n//\n// A failed send throws: the execution fails, the webhook answers 500 and the\n// ERP retries the event later (the event is only remembered as handled after\n// this node).\nconst item = $input.first().json;\nif (item.httpStatus) return [{ json: item }];\n\nconst messages = (item.messages || []).filter((message) => message.channel === 'whatsapp');\nconst provider = String($env.WHATSAPP_PROVIDER || 'waha').toLowerCase();\nconst sent = [];\nconst skipped = [];\n\nif (provider === 'meta') {\n\tconst phoneNumberId = $env.META_PHONE_NUMBER_ID;\n\tconst token = $env.META_ACCESS_TOKEN;\n\tif (messages.length > 0 && (!phoneNumberId || !token)) {\n\t\tthrow new Error('META_PHONE_NUMBER_ID / META_ACCESS_TOKEN are not set on the n8n server');\n\t}\n\tconst base = String($env.META_GRAPH_URL || 'https://graph.facebook.com').replace(/\\/+$/, '');\n\tconst version = $env.META_GRAPH_VERSION || 'v23.0';\n\tfor (const message of messages) {\n\t\tif (!message.template) {\n\t\t\t// No approved template for this message: Meta would refuse free text\n\t\t\t// outside the 24-hour customer service window.\n\t\t\tskipped.push(message.to);\n\t\t\tcontinue;\n\t\t}\n\t\tawait this.helpers.httpRequest({\n\t\t\tmethod: 'POST',\n\t\t\turl: base + '/' + version + '/' + phoneNumberId + '/messages',\n\t\t\theaders: { Authorization: 'Bearer ' + token },\n\t\t\tbody: {\n\t\t\t\tmessaging_product: 'whatsapp',\n\t\t\t\trecipient_type: 'individual',\n\t\t\t\tto: message.to.replace(/@c\\.us$/, ''),\n\t\t\t\ttype: 'template',\n\t\t\t\ttemplate: {\n\t\t\t\t\tname: message.template,\n\t\t\t\t\tlanguage: { code: $env.META_TEMPLATE_LANGUAGE || 'id' },\n\t\t\t\t\tcomponents: [{ type: 'body', parameters: (message.params || []).map((text) => ({ type: 'text', text: String(text) })) }],\n\t\t\t\t},\n\t\t\t},\n\t\t\tjson: true,\n\t\t});\n\t\tsent.push(message.to);\n\t}\n} else {\n\tconst baseUrl = String($env.WAHA_URL || '').replace(/\\/+$/, '');\n\tif (messages.length > 0 && !baseUrl) throw new Error('WAHA_URL is not set on the n8n server');\n\tfor (const message of messages) {\n\t\tawait this.helpers.httpRequest({\n\t\t\tmethod: 'POST',\n\t\t\turl: baseUrl + '/api/sendText',\n\t\t\theaders: { 'X-Api-Key': $env.WAHA_API_KEY || '' },\n\t\t\tbody: { session: $env.WAHA_SESSION || 'default', chatId: message.to, text: message.text },\n\t\t\tjson: true,\n\t\t});\n\t\tsent.push(message.to);\n\t}\n}\nreturn [{ json: { ...item, provider, sentWhatsApp: sent, skippedWithoutTemplate: skipped } }];\n"
+			}
+		},
+		{
+			"id": "a1d5e1f0-0000-4000-8000-00000000000c",
+			"name": "5a. Record event",
+			"type": "n8n-nodes-base.dataTable",
+			"typeVersion": 1.1,
+			"position": [
+				1540,
+				0
+			],
+			"parameters": {
+				"resource": "row",
+				"operation": "upsert",
+				"dataTableId": {
+					"__rl": true,
+					"mode": "name",
+					"value": "erp_processed_events"
+				},
+				"matchType": "anyCondition",
+				"filters": {
+					"conditions": [
+						{
+							"keyName": "event_id",
+							"condition": "eq",
+							"keyValue": "={{ $json.eventId || 'rejected' }}"
+						}
+					]
+				},
+				"columns": {
+					"mappingMode": "defineBelow",
+					"value": {
+						"event_id": "={{ $json.eventId || 'rejected' }}",
+						"topic": "={{ $json.topic || '' }}"
+					},
+					"matchingColumns": [],
+					"schema": [
+						{
+							"id": "event_id",
+							"displayName": "event_id",
+							"required": false,
+							"defaultMatch": false,
+							"display": true,
+							"type": "string",
+							"canBeUsedToMatch": true
+						},
+						{
+							"id": "topic",
+							"displayName": "topic",
+							"required": false,
+							"defaultMatch": false,
+							"display": true,
+							"type": "string",
+							"canBeUsedToMatch": true
+						}
+					],
+					"attemptToConvertTypes": false,
+					"convertFieldsToString": false
+				},
+				"options": {}
+			}
+		},
+		{
+			"id": "a1d5e1f0-0000-4000-8000-000000000006",
+			"name": "5b. Finish",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [
+				1760,
+				0
+			],
+			"parameters": {
+				"jsCode": "// n8n Code node \"5b. Finish\".\n//\n// \"5a. Record event\" already stored the event id in `erp_processed_events`\n// (only reached when the WhatsApp sends succeeded). This sets the HTTP answer\n// for the last node: 200 when handled or skipped, or the earlier 400/401.\nconst item = $('4. Send WhatsApp (WAHA / Meta)').first().json;\nif (item.httpStatus) return [{ json: item }];\n\nconst count = (item.messages || []).length;\nconst skipped = (item.skippedWithoutTemplate || []).length;\nreturn [\n\t{\n\t\tjson: {\n\t\t\t...item,\n\t\t\thttpStatus: 200,\n\t\t\tresult:\n\t\t\t\t(count === 0 ? 'no message for this event' : count + ' message(s) handled') +\n\t\t\t\t(skipped ? ', ' + skipped + ' skipped (no Meta template)' : ''),\n\t\t},\n\t},\n];\n"
 			}
 		},
 		{
@@ -89,7 +211,7 @@
 			"type": "n8n-nodes-base.respondToWebhook",
 			"typeVersion": 1.1,
 			"position": [
-				1320,
+				1980,
 				0
 			],
 			"parameters": {
@@ -106,7 +228,7 @@
 			"type": "n8n-nodes-base.code",
 			"typeVersion": 2,
 			"position": [
-				1320,
+				1980,
 				220
 			],
 			"parameters": {
@@ -119,7 +241,7 @@
 			"type": "n8n-nodes-base.emailSend",
 			"typeVersion": 2.1,
 			"position": [
-				1540,
+				2200,
 				220
 			],
 			"disabled": true,
@@ -150,14 +272,36 @@
 			"main": [
 				[
 					{
-						"node": "2. Skip duplicates",
+						"node": "2a. Ensure table",
 						"type": "main",
 						"index": 0
 					}
 				]
 			]
 		},
-		"2. Skip duplicates": {
+		"2a. Ensure table": {
+			"main": [
+				[
+					{
+						"node": "2b. Look up event",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"2b. Look up event": {
+			"main": [
+				[
+					{
+						"node": "2c. Skip duplicates",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"2c. Skip duplicates": {
 			"main": [
 				[
 					{
@@ -172,25 +316,36 @@
 			"main": [
 				[
 					{
-						"node": "4. Send WhatsApp (WAHA)",
+						"node": "4. Send WhatsApp (WAHA / Meta)",
 						"type": "main",
 						"index": 0
 					}
 				]
 			]
 		},
-		"4. Send WhatsApp (WAHA)": {
+		"4. Send WhatsApp (WAHA / Meta)": {
 			"main": [
 				[
 					{
-						"node": "5. Remember event",
+						"node": "5a. Record event",
 						"type": "main",
 						"index": 0
 					}
 				]
 			]
 		},
-		"5. Remember event": {
+		"5a. Record event": {
+			"main": [
+				[
+					{
+						"node": "5b. Finish",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"5b. Finish": {
 			"main": [
 				[
 					{

@@ -12,6 +12,9 @@ bersamaan).
 > menjadi bagian UAT (`docs/plan/uat/`). Pakai nomor WhatsApp sandbox dulu;
 > WAHA tidak resmi dan nomor bisa diblokir.
 
+> **WAHA tidak resmi dan nomor bisa diblokir.** Untuk produksi, pakai WhatsApp Business resmi
+> (Meta Cloud API): [whatsapp-business-meta.id.md](whatsapp-business-meta.id.md).
+
 ## 1. Alur
 
 ```text

@@ -12,6 +12,70 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-16 - ERP-0039: official WhatsApp (Meta Cloud API) option, registration guide, robust dedupe
+
+The owner asked about Meta WhatsApp Business, because WAHA numbers risk bans, and about how to
+register; documented and built into the n8n workflow (branch `docs/m04-n8n-workflows`, PR #114).
+
+**Workflow (`docs/integrations/n8n/`)**
+- **Provider switch.** "4. Send WhatsApp" now reads `WHATSAPP_PROVIDER`:
+  - `waha`: unchanged.
+  - `meta`: the Cloud API. Business-initiated messages must be approved templates, so
+    `POST /v23.0/<META_PHONE_NUMBER_ID>/messages` carries `type: template`, language `id`, and
+    body parameters.
+  - A message without a template is skipped and reported, never sent as free text.
+- **Templates.** "3. Compose messages" now gives every message both forms: the free text and a
+  template name with its parameters (new lines flattened, as Meta refuses them).
+- **Template tooling.**
+  - `meta-templates.json`: 15 Indonesian Utility templates.
+  - `create-meta-templates.ts`: submits them to the WABA.
+  - `check-meta-templates.ts`: runs the compose code for every topic and change, and checks
+    template names and parameter counts.
+  - `samples.ts`: holds the sample events shared by the scripts.
+- **Dedupe fix found by testing.**
+  - The problem: workflow static data is loaded when an execution starts and saved when it
+    ends, after the ERP already has its answer. An event re-sent right away got through: 1 of 3
+    repeats, and the Meta run's third retry attempt.
+  - The fix: dedupe now uses an n8n data table `erp_processed_events`. Node "2a" creates it if
+    missing (`createIfNotExists`), "2b" looks the id up, and "5a" upserts it only after the
+    sends succeeded, all before the answer.
+
+**Docs**
+- New `docs/user-guide/whatsapp-business-meta.id.md` / `.en.md`:
+  - WAHA vs Meta;
+  - what to prepare (legal data, documents, a dedicated number not on the app, payment method,
+    display name);
+  - step-by-step registration (portfolio, app, WABA, number, business verification, Billing Hub,
+    System User token);
+  - template rules and the catalog, limits (250 → 2,000 …, per portfolio), cost model (per
+    message since 2025-07-01, service charged from 2026-10-01) with a rate warning, opt-in;
+  - n8n config, and a migration plan.
+- These facts were checked against Meta's official docs on 2026-11-16 (pricing, messaging limits,
+  get started, templates, webhook endpoint). The Indonesian per-message rates come only from
+  third-party sources that disagree, so the guide says to verify them.
+- `n8n-workflows.*.md`: the node table (data table, provider) and env vars were updated.
+- `whatsapp-n8n-setup.*.md` warn about WAHA bans and link the Meta guide.
+
+**Verification on a real n8n 2.47.7, with a mock WAHA + Graph API on :3999**
+- `check-meta-templates.ts`: 34 messages against 15 templates, `OK`.
+- **Meta mode.**
+  - `send-test-event.ts all` returned 10× 200, giving 13 Graph calls with the right URL
+    (`/v23.0/<id>/messages`), Bearer token and template payloads.
+  - The extra changes (approved / shipped / received / overdue) also passed, including the
+    supplier template with 6 parameters.
+  - Meta answering 500 → webhook 500 → the retry succeeds → the next try is "duplicate".
+- **Dedupe:** 6/6 immediate repeats were detected (before the fix: 1/3 got through), and a bad
+  signature returned 401.
+- **WAHA mode regression:** all 10 topics returned 200 with 15 WAHA calls, and a repeat was
+  "duplicate".
+- `create-meta-templates.ts` against the mock: 15 submissions to `/<WABA>/message_templates`.
+
+**Not done**
+- The ERP's inbound assistant on Meta (webhook `hub.challenge` + `X-Hub-Signature-256`, and a
+  Meta adapter for `IWhatsappGateway`) is code work in M04 that waits for the owner's go.
+- No real Meta account or approved templates yet.
+- `docs/database/` was reviewed and is unchanged.
+
 ## 2026-11-16 - ERP-0039: importable n8n workflow for every ERP event, tested on a real n8n
 
 Branch `docs/m04-n8n-workflows` from `origin/main` (`a1be332`). The owner

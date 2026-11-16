@@ -40,7 +40,7 @@ ERP (outbox) ──POST /webhook/erp-events (HMAC)──► n8n ──► WAHA �
 | Need | Notes |
 | --- | --- |
 | n8n ≥ 2.x | Self-hosted (Docker) recommended, with a **public HTTPS** URL the ERP server can reach. |
-| WAHA | URL, API key, session name, and a **dedicated WhatsApp number** (sandbox first). |
+| WhatsApp | **WAHA** (unofficial, numbers can be banned) **or the Meta Cloud API** (official, templates required; registration in [whatsapp-business-meta.en.md](whatsapp-business-meta.en.md)). A dedicated number. |
 | Team WhatsApp numbers per role | owner, sales manager, sales, operations manager, purchasing, warehouse, finance, support/technician, admin on duty. |
 | SMTP (optional) | Only for email; today used for supplier bill notices to finance. |
 | Owner approval | Of the texts to **customers and suppliers**, before switching them on. |
@@ -53,6 +53,7 @@ ERP (outbox) ──POST /webhook/erp-events (HMAC)──► n8n ──► WAHA �
 | `WAHA_URL` | WAHA base URL, e.g. `http://waha:3000` (no `/api`). |
 | `WAHA_API_KEY` | WAHA API key. |
 | `WAHA_SESSION` | WAHA session name (default `default`). |
+| `WHATSAPP_PROVIDER` | `waha` (default) or `meta`; for Meta also `META_PHONE_NUMBER_ID`, `META_ACCESS_TOKEN` (see [whatsapp-business-meta.en.md](whatsapp-business-meta.en.md)). |
 | `NODE_FUNCTION_ALLOW_BUILTIN` | `crypto` (the signature check). |
 | `N8N_BLOCK_ENV_ACCESS_IN_NODE` | `false` (the Code nodes read the variables above). |
 | `GENERIC_TIMEZONE` | `Asia/Jakarta`. |
@@ -82,8 +83,10 @@ Restart the backend after changing `.env`.
    `N8N_WEBHOOK_URL`.
 5. Test without the ERP using the test script (section 7), then with a real ERP event.
 
-> Handled event ids are only remembered by the **active** (production) workflow. "Execute
-> workflow" runs in the editor keep no dedupe history.
+> Handled event ids live in the n8n **data table** `erp_processed_events` (*Overview → Data
+> tables*), created by node "2a. Ensure table". It grows one row per event; clear it now and then.
+> Workflow static data is deliberately not used: in testing, an event re-sent right away got
+> through, because static data is saved only after the ERP got its answer.
 
 ## 4. The nodes
 
@@ -91,10 +94,10 @@ Restart the backend after changing `.env`.
 | --- | --- | --- | --- |
 | – | **ERP webhook** | Receives the ERP's `POST` (path `erp-events`). The last node answers. | – |
 | 1 | **Verify ERP signature** | Recomputes `sha256=HMAC(ERP_WEBHOOK_SECRET, "<X-Erp-Timestamp>.<body>")`, compares it to `X-Erp-Signature` in constant time, and refuses timestamps older than ±10 minutes (replay). | Bad or expired signature → **401** (the ERP stops retrying); not an event → **400**; secret missing → **500** (the ERP retries). |
-| 2 | **Skip duplicates** | The ERP re-sends the same event id on retries and on "send again". Handled ids are kept in the workflow static data (newest 5000). | Duplicate → **200**, no message. |
+| 2a–2c | **Ensure table → Look up event → Skip duplicates** | The ERP re-sends the same event id on retries and on "send again". Handled ids live in the **n8n data table `erp_processed_events`** (created automatically on the first event). | Duplicate → **200**, no message. |
 | 3 | **Compose messages** | Builds the messages from `topic` and `data`, recipients from `CONFIG`; 0 to n messages per event. | – |
-| 4 | **Send WhatsApp (WAHA)** | `POST <WAHA_URL>/api/sendText` per message (`session`, `chatId` `62…@c.us`, `text`) with `X-Api-Key`. | WAHA error → execution fails → **500** → the ERP retries (5 attempts, backoff from 30 s). The event was not remembered yet, so the retry really sends. |
-| 5 | **Remember event** | Marks the id as handled, **only after** WhatsApp succeeded. | – |
+| 4 | **Send WhatsApp (WAHA / Meta)** | `WHATSAPP_PROVIDER=waha`: `POST <WAHA_URL>/api/sendText` per message (free text). `WHATSAPP_PROVIDER=meta`: Cloud API with **approved templates** (see [whatsapp-business-meta.en.md](whatsapp-business-meta.en.md)). | Error → execution fails → **500** → the ERP retries (5 attempts, backoff from 30 s). The event was not recorded yet, so the retry really sends. |
+| 5a–5b | **Record event → Finish** | Stores the event id in `erp_processed_events`, **only after** WhatsApp succeeded, and sets the answer. | – |
 | – | **Answer the ERP** | Answers `{ result, messages }` with the status from the previous steps. | – |
 | 6 | **Email messages** → **Send email** | Optional branch: email to the roles in `CONFIG.teamEmail`. **Send email is disabled** after import. | Runs after the ERP was answered, so a failed email is **not** retried by the ERP (WhatsApp is the primary channel). |
 

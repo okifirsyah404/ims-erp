@@ -1,27 +1,73 @@
-// n8n Code node "4. Send WhatsApp (WAHA)".
+// n8n Code node "4. Send WhatsApp (WAHA or Meta)".
 //
-// Sends every WhatsApp message composed for the event through WAHA
-// (POST <WAHA_URL>/api/sendText with X-Api-Key). A failed send throws: the
-// execution fails, the webhook answers 500 and the ERP retries the event
-// later (the event is only remembered as handled after this node).
-// Needs on the n8n server: WAHA_URL, WAHA_API_KEY, WAHA_SESSION (default
-// "default").
+// WHATSAPP_PROVIDER picks the sender:
+// - "waha" (default): POST <WAHA_URL>/api/sendText with X-Api-Key and the
+//   free text. Needs WAHA_URL, WAHA_API_KEY, WAHA_SESSION.
+// - "meta": the official WhatsApp Cloud API. A message the business starts
+//   must be an APPROVED template (docs/integrations/n8n/meta-templates.json):
+//   POST <META_GRAPH_URL>/<META_GRAPH_VERSION>/<META_PHONE_NUMBER_ID>/messages
+//   with Authorization: Bearer <META_ACCESS_TOKEN>. Needs
+//   META_PHONE_NUMBER_ID, META_ACCESS_TOKEN; optional META_GRAPH_VERSION
+//   (default v23.0), META_TEMPLATE_LANGUAGE (default "id"), META_GRAPH_URL
+//   (default https://graph.facebook.com).
+//
+// A failed send throws: the execution fails, the webhook answers 500 and the
+// ERP retries the event later (the event is only remembered as handled after
+// this node).
 const item = $input.first().json;
 if (item.httpStatus) return [{ json: item }];
 
 const messages = (item.messages || []).filter((message) => message.channel === 'whatsapp');
-const baseUrl = String($env.WAHA_URL || '').replace(/\/+$/, '');
-if (messages.length > 0 && !baseUrl) throw new Error('WAHA_URL is not set on the n8n server');
-
+const provider = String($env.WHATSAPP_PROVIDER || 'waha').toLowerCase();
 const sent = [];
-for (const message of messages) {
-	await this.helpers.httpRequest({
-		method: 'POST',
-		url: baseUrl + '/api/sendText',
-		headers: { 'X-Api-Key': $env.WAHA_API_KEY || '' },
-		body: { session: $env.WAHA_SESSION || 'default', chatId: message.to, text: message.text },
-		json: true,
-	});
-	sent.push(message.to);
+const skipped = [];
+
+if (provider === 'meta') {
+	const phoneNumberId = $env.META_PHONE_NUMBER_ID;
+	const token = $env.META_ACCESS_TOKEN;
+	if (messages.length > 0 && (!phoneNumberId || !token)) {
+		throw new Error('META_PHONE_NUMBER_ID / META_ACCESS_TOKEN are not set on the n8n server');
+	}
+	const base = String($env.META_GRAPH_URL || 'https://graph.facebook.com').replace(/\/+$/, '');
+	const version = $env.META_GRAPH_VERSION || 'v23.0';
+	for (const message of messages) {
+		if (!message.template) {
+			// No approved template for this message: Meta would refuse free text
+			// outside the 24-hour customer service window.
+			skipped.push(message.to);
+			continue;
+		}
+		await this.helpers.httpRequest({
+			method: 'POST',
+			url: base + '/' + version + '/' + phoneNumberId + '/messages',
+			headers: { Authorization: 'Bearer ' + token },
+			body: {
+				messaging_product: 'whatsapp',
+				recipient_type: 'individual',
+				to: message.to.replace(/@c\.us$/, ''),
+				type: 'template',
+				template: {
+					name: message.template,
+					language: { code: $env.META_TEMPLATE_LANGUAGE || 'id' },
+					components: [{ type: 'body', parameters: (message.params || []).map((text) => ({ type: 'text', text: String(text) })) }],
+				},
+			},
+			json: true,
+		});
+		sent.push(message.to);
+	}
+} else {
+	const baseUrl = String($env.WAHA_URL || '').replace(/\/+$/, '');
+	if (messages.length > 0 && !baseUrl) throw new Error('WAHA_URL is not set on the n8n server');
+	for (const message of messages) {
+		await this.helpers.httpRequest({
+			method: 'POST',
+			url: baseUrl + '/api/sendText',
+			headers: { 'X-Api-Key': $env.WAHA_API_KEY || '' },
+			body: { session: $env.WAHA_SESSION || 'default', chatId: message.to, text: message.text },
+			json: true,
+		});
+		sent.push(message.to);
+	}
 }
-return [{ json: { ...item, sentWhatsApp: sent } }];
+return [{ json: { ...item, provider, sentWhatsApp: sent, skippedWithoutTemplate: skipped } }];

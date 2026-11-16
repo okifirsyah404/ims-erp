@@ -1,0 +1,96 @@
+{
+	"$comment": "WhatsApp message templates for the Meta Cloud API provider (WHATSAPP_PROVIDER=meta). Submit them with create-meta-templates.ts or by hand in WhatsApp Manager. All are UTILITY (tied to a transaction the recipient is part of), language 'id'. The n8n node '3. Compose messages' fills the {{n}} variables in this order; check-meta-templates.ts verifies the counts match.",
+	"language": "id",
+	"templates": [
+		{
+			"name": "erp_lead_baru",
+			"audience": "team (sales manager)",
+			"body": "Lead baru {{1}} dari {{2}}. Kontak: {{3}}. Kebutuhan: {{4}}.",
+			"example": ["LEAD-0001", "Budi (PT Gym Sehat)", "081200000003", "Akses pintu 2 lantai"]
+		},
+		{
+			"name": "erp_invoice_terbit",
+			"audience": "customer",
+			"body": "Yth. {{1}}, invoice {{2}} sebesar {{3}} telah terbit dengan jatuh tempo {{4}}. Terima kasih.",
+			"example": ["PT Contoh Pelanggan", "0001/INV/IMS/XI/26", "Rp 11.100.000", "30 November 2026"]
+		},
+		{
+			"name": "erp_invoice_terbit_internal",
+			"audience": "team (finance)",
+			"body": "Invoice {{1}} terbit untuk {{2}} sebesar {{3}}, jatuh tempo {{4}}.",
+			"example": ["0001/INV/IMS/XI/26", "PT Contoh Pelanggan", "Rp 11.100.000", "30 November 2026"]
+		},
+		{
+			"name": "erp_pembayaran_diterima",
+			"audience": "customer",
+			"body": "Terima kasih, pembayaran {{1}} untuk invoice {{2}} sudah kami terima. Sisa tagihan: {{3}}.",
+			"example": ["Rp 3.330.000", "0001/INV/IMS/XI/26", "Rp 7.770.000"]
+		},
+		{
+			"name": "erp_tiket_servis_update",
+			"audience": "customer",
+			"body": "Update tiket servis {{1}}: {{2}}.",
+			"example": ["TKT-0001", "ditangani oleh teknisi Andi"]
+		},
+		{
+			"name": "erp_tiket_servis_baru_internal",
+			"audience": "team (support)",
+			"body": "Tiket servis baru {{1}} dari {{2}}: {{3}}.",
+			"example": ["TKT-0001", "PT Contoh Pelanggan", "Reader lobi tidak membaca kartu"]
+		},
+		{
+			"name": "erp_chat_perlu_admin",
+			"audience": "team (admin on duty)",
+			"body": "Chat WhatsApp dari {{1}} perlu ditangani admin (alasan: {{2}}). Pertanyaan: {{3}}.",
+			"example": ["Sari 081200000004", "restricted", "Bisa diskon 20%?"]
+		},
+		{
+			"name": "erp_lisensi_berakhir",
+			"audience": "customer",
+			"body": "Yth. {{1}}, lisensi {{2}} ({{3}}) berakhir pada {{4}}. Hubungi kami untuk perpanjangan.",
+			"example": ["PT Contoh Pelanggan", "Entragate Access", "LIC-0001", "23 November 2026"]
+		},
+		{
+			"name": "erp_lisensi_berakhir_internal",
+			"audience": "team (sales manager)",
+			"body": "Lisensi {{1}} ({{2}}) milik {{3}} berakhir pada {{4}}.",
+			"example": ["Entragate Access", "LIC-0001", "PT Contoh Pelanggan", "23 November 2026"]
+		},
+		{
+			"name": "erp_retur_pembelian_internal",
+			"audience": "team (operations manager, purchasing, warehouse)",
+			"body": "Retur pembelian {{1}} ke {{2}}: {{3}}. Barang: {{4}}.",
+			"example": ["0001/RTB/IMS/XI/26", "PT Contoh Pemasok", "menunggu persetujuan Anda", "Card reader 1 pcs (SN SN-0001)"]
+		},
+		{
+			"name": "erp_retur_pembelian_pemasok",
+			"audience": "supplier",
+			"body": "Yth. {{1}}, {{2}} mengirim kembali barang untuk diganti (retur {{3}}, PO {{4}}): {{5}}. Alasan: {{6}}.",
+			"example": ["Rina", "Entragate", "0001/RTB/IMS/XI/26", "PO/IMS-HIT/HW/1126/001", "Card reader 1 pcs (SN SN-0001)", "Reader mati saat dites"]
+		},
+		{
+			"name": "erp_retur_penjualan_internal",
+			"audience": "team (sales manager, sales, warehouse)",
+			"body": "Retur penjualan {{1}} dari {{2}}: {{3}}. Barang: {{4}}.",
+			"example": ["0001/RTJ/IMS/XI/26", "PT Contoh Pelanggan", "menunggu persetujuan Anda", "Card reader 1 pcs (SN SN-0001)"]
+		},
+		{
+			"name": "erp_retur_disetujui",
+			"audience": "customer",
+			"body": "Yth. {{1}}, pengajuan retur {{2}} disetujui. Tim kami akan mengatur pengambilan atau pengiriman barang.",
+			"example": ["PT Contoh Pelanggan", "0001/RTJ/IMS/XI/26"]
+		},
+		{
+			"name": "erp_retur_diterima",
+			"audience": "customer",
+			"body": "Yth. {{1}}, barang retur {{2}} sudah kami terima. Barang pengganti akan segera kami kirim.",
+			"example": ["PT Contoh Pelanggan", "0001/RTJ/IMS/XI/26"]
+		},
+		{
+			"name": "erp_tagihan_pemasok_internal",
+			"audience": "team (finance, owner)",
+			"body": "Tagihan pemasok {{1}} (faktur {{2}}) dari {{3}} sebesar {{4}}: {{5}}.",
+			"example": ["SB-0001", "INV/HIT/0099", "PT Contoh Pemasok", "Rp 1.443.000", "jatuh tempo 23 November 2026"]
+		}
+	]
+}

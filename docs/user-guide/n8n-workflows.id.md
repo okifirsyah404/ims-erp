@@ -41,7 +41,7 @@ ERP (outbox) ──POST /webhook/erp-events (HMAC)──► n8n ──► WAHA �
 | Kebutuhan | Keterangan |
 | --- | --- |
 | Server n8n ≥ 2.x | Self-host (Docker) disarankan. Butuh URL **HTTPS publik** yang bisa dijangkau server ERP. |
-| WAHA | URL, API key, nama sesi, dan **nomor WhatsApp khusus** (sandbox dulu, jangan nomor pribadi). |
+| WhatsApp | **WAHA** (URL, API key, sesi; tidak resmi, nomor rawan diblokir) **atau Meta Cloud API** (resmi, template wajib; pendaftaran di [whatsapp-business-meta.id.md](whatsapp-business-meta.id.md)). Nomor khusus, jangan nomor pribadi. |
 | Nomor WhatsApp tim per peran | owner, sales manager, sales, operations manager, purchasing, gudang, finance, support/teknisi, admin jaga. |
 | SMTP (opsional) | Hanya bila ingin email. Saat ini email dipakai untuk notifikasi tagihan pemasok ke finance. |
 | Persetujuan owner | Atas teks pesan ke **pelanggan dan pemasok** sebelum diaktifkan. |
@@ -54,6 +54,7 @@ ERP (outbox) ──POST /webhook/erp-events (HMAC)──► n8n ──► WAHA �
 | `WAHA_URL` | Base URL WAHA, mis. `http://waha:3000` (tanpa `/api`). |
 | `WAHA_API_KEY` | API key WAHA. |
 | `WAHA_SESSION` | Nama sesi WAHA (default `default`). |
+| `WHATSAPP_PROVIDER` | `waha` (default) atau `meta`. Untuk Meta isi juga `META_PHONE_NUMBER_ID`, `META_ACCESS_TOKEN` (lihat [whatsapp-business-meta.id.md](whatsapp-business-meta.id.md)). |
 | `NODE_FUNCTION_ALLOW_BUILTIN` | `crypto` (dipakai node verifikasi tanda tangan). |
 | `N8N_BLOCK_ENV_ACCESS_IN_NODE` | `false` (node Code membaca variabel di atas). |
 | `GENERIC_TIMEZONE` | `Asia/Jakarta`. |
@@ -101,8 +102,12 @@ Restart backend setelah mengubah `.env`.
    `N8N_WEBHOOK_URL` di ERP.
 5. Uji tanpa ERP memakai skrip uji (bagian 7), lalu uji dengan event nyata dari ERP.
 
-> Penanda event yang sudah diproses hanya tersimpan saat workflow **aktif** (production). Uji
-> lewat tombol "Execute workflow" di editor tidak menyimpan riwayat dedupe.
+> Id event yang sudah diproses disimpan di **data table** n8n `erp_processed_events` (menu
+> *Overview → Data tables*), yang dibuat otomatis oleh node "2a. Ensure table". Tabel ini bertambah
+> satu baris per event; kosongkan sesekali (mis. tiap beberapa bulan) lewat menu Data tables.
+>
+> Static data workflow sengaja **tidak** dipakai. Dalam uji, event yang dikirim ulang langsung
+> lolos, karena static data baru disimpan setelah ERP menerima jawaban.
 
 ## 4. Alur node satu per satu
 
@@ -110,10 +115,10 @@ Restart backend setelah mengubah `.env`.
 | --- | --- | --- | --- |
 | – | **ERP webhook** | Menerima `POST` dari ERP (path `erp-events`). Jawaban dikirim oleh node terakhir. | – |
 | 1 | **Verify ERP signature** | Menghitung ulang `sha256=HMAC(ERP_WEBHOOK_SECRET, "<X-Erp-Timestamp>.<body>")` dan membandingkannya secara aman dengan `X-Erp-Signature`. Menolak timestamp lebih lama dari ±10 menit (anti replay). | Tanda tangan salah / kedaluwarsa → **401**: ERP berhenti mencoba. Body bukan event → **400**. Secret belum diisi → **500**: ERP mencoba ulang. |
-| 2 | **Skip duplicates** | ERP mengirim ulang event yang sama (id sama) saat retry atau saat admin menekan "Kirim ulang". Id yang sudah ditangani disimpan di static data workflow (5000 terakhir). | Duplikat → **200** tanpa mengirim pesan. |
+| 2a–2c | **Ensure table → Look up event → Skip duplicates** | ERP mengirim ulang event yang sama (id sama) saat retry atau "Kirim ulang". Id yang sudah ditangani disimpan di **data table n8n `erp_processed_events`** (dibuat otomatis saat event pertama). | Duplikat → **200** tanpa mengirim pesan. |
 | 3 | **Compose messages** | Menyusun pesan dari `topic` dan `data`, lalu menentukan penerima dari `CONFIG`. Satu event bisa menghasilkan 0 sampai beberapa pesan. | – |
-| 4 | **Send WhatsApp (WAHA)** | `POST <WAHA_URL>/api/sendText` per pesan (`session`, `chatId` `62…@c.us`, `text`), dengan header `X-Api-Key`. | WAHA error → eksekusi gagal → **500** → ERP mencoba ulang (5 kali, jeda mulai 30 detik). Event belum ditandai, jadi percobaan ulang benar-benar mengirim. |
-| 5 | **Remember event** | Menandai id event sebagai sudah ditangani, **hanya setelah** WhatsApp sukses. | – |
+| 4 | **Send WhatsApp (WAHA / Meta)** | `WHATSAPP_PROVIDER=waha`: `POST <WAHA_URL>/api/sendText` per pesan (teks bebas). `WHATSAPP_PROVIDER=meta`: Cloud API dengan **template yang disetujui** (lihat [whatsapp-business-meta.id.md](whatsapp-business-meta.id.md)). | Error → eksekusi gagal → **500** → ERP mencoba ulang (5 kali, jeda mulai 30 detik). Event belum dicatat, jadi percobaan ulang benar-benar mengirim. |
+| 5a–5b | **Record event → Finish** | Mencatat id event ke `erp_processed_events`, **hanya setelah** WhatsApp sukses, lalu menyiapkan kode jawaban. | – |
 | – | **Answer the ERP** | Menjawab `{ result, messages }` dengan kode HTTP dari langkah sebelumnya. | – |
 | 6 | **Email messages** → **Send email** | Cabang opsional: email untuk peran di `CONFIG.teamEmail`. Node **Send email nonaktif** setelah import. | Berjalan setelah ERP dijawab: email yang gagal **tidak** dicoba ulang oleh ERP (WhatsApp adalah kanal utama). |
 
