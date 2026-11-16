@@ -14,12 +14,12 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 ## 2026-11-16 - ERP-0066 sales follow-up reminders (leads, quotations) to n8n
 
-Branch `feat/m02-sales-follow-ups` from `origin/main` (`a1be332`). The n8n side
+Branch `feat/m02-sales-follow-ups` from `origin/main` (`a1be332`), PR #116. The n8n side
 is on `docs/m04-n8n-workflows` (PR #114).
 
 **Number check.** Every remote branch was read: the highest id was ERP-0065.
-GitHub was unreachable at the time, so the open PRs were re-checked before
-pushing.
+GitHub was unreachable at the time; on 2026-11-17 `main`, every branch and the
+12 open PRs were re-checked before pushing, and ERP-0066 was still free.
 
 **Gate 1 (read).**
 - `docs.dbml` CRM (`leads.next_follow_up_at`, `owner_user_id`, statuses) and
