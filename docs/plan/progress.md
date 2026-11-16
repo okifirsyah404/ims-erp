@@ -14,7 +14,7 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 ## 2026-11-17 - ERP-0067 quotation (SPH) PDF on sending, linked in `quotation.sent`
 
-Branch `feat/m02-quotation-pdf`, stacked on `feat/m02-sales-follow-ups` (PR #116).
+Branch `feat/m02-quotation-pdf`, PR #117, stacked on `feat/m02-sales-follow-ups` (PR #116).
 The n8n side is on `docs/m04-n8n-workflows` (PR #114).
 
 **Number check.** `git grep ERP-0067` over every remote branch and the open PR
