@@ -338,7 +338,7 @@ function makeHarness() {
 	const arResolver = new ArAccountResolverService(repo);
 	const cashBank = new CashBankService(dbLike, repo, posting, numbering);
 	const paymentService = new PaymentService(dbLike, repo, cashBank, arResolver, numbering);
-	const billService = new SupplierBillService(dbLike, repo, posting, arResolver, numbering, {} as never);
+	const billService = new SupplierBillService(dbLike, repo, posting, arResolver, numbering, {} as never, { publish: async () => null } as never, { get: async () => null } as never);
 	const closeService = new MonthEndCloseService(dbLike, repo, cashBank);
 
 	return {

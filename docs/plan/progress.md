@@ -12,6 +12,37 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-16 - ERP-0012: supplier bills publish `supplier_bill.recorded` and a daily `supplier_bill.due`
+
+At the owner's request, the payables flow now feeds n8n:
+- **`supplier_bill.recorded`.** Published after a bill is recorded. It
+  carries the bill, the supplier's invoice number, the totals and the
+  supplier contact; never the bank details (`SupplierService.get(id, false)`).
+- **`supplier_bill.due`.** A daily BullMQ job.
+  - Queue `supplier-bill-due`, cron `SCHEDULER_BILL_DUE_CRON` (default
+    `0 8 * * *` Asia/Jakarta), behind the existing `SCHEDULER_ENABLED`
+    switch.
+  - Open bills (`approved / partially_paid / overdue`, outstanding > 0) due
+    within 7 days get threshold 7; due or overdue ones get threshold 0, with
+    `stage` `upcoming / due / overdue`.
+  - Once per bill, due date and threshold, through the outbox dedupe key, the
+    same as `license.due`.
+  - The job reads every organization (`listOpenBillsDueBy`).
+
+Changes:
+- `OUTBOX_TOPICS` gained both topics; new
+  `accounting/utils/supplier-bill-event.ts` and
+  `accounting/queues/supplier-bill-due.{queue,worker}.ts`.
+- Config `scheduler.billDueCron`; `.env.example` documents it.
+- `src/index.ts` registers the worker and the schedule.
+- `automation.md` has the new rows and the scheduler note.
+- `docs/database/` was reviewed and is unchanged.
+
+Verification: backend `tsc` clean; accounting suites 79 pass. The new tests
+cover the recorded event with the supplier contact, and a due run on
+2026-11-16 that publishes 7/upcoming, 0/due and 0/overdue with their dedupe
+keys and skips a bill 14 days out.
+
 ## 2026-11-16 - ERP-0012 payables: supplier bills from purchase orders (unblocks ERP-0035)
 
 Branch `feat/m05-payables-from-receipts` from `origin/main` (`9dc2373`), PR #112.

@@ -18,6 +18,8 @@ let order: TBillableOrder;
 let bills: Map<string, TSupplierBillSelect>;
 let items: TSupplierBillItemSelect[];
 let posted: { accountId: string; debit: number; credit: number }[];
+let events: { topic: string; data: Record<string, unknown>; dedupeKey?: string }[];
+let openBills: TSupplierBillSelect[];
 let service: SupplierBillService;
 const pricing = new PurchaseBillingService({} as never, {} as never);
 
@@ -39,6 +41,8 @@ beforeEach(() => {
 	bills = new Map();
 	items = [];
 	posted = [];
+	events = [];
+	openBills = [];
 	const repo = {
 		async billedQuantities(ids: string[]) {
 			const map = new Map<string, bigint>();
@@ -71,6 +75,9 @@ beforeEach(() => {
 			return bill ? Object.assign(bill, patch) : null;
 		},
 		async insertApOpenItem() {},
+		async listOpenBillsDueBy() {
+			return openBills;
+		},
 	};
 	service = new SupplierBillService(
 		{ transaction: async (work: (tx: never) => Promise<unknown>) => work({} as never) } as never,
@@ -90,6 +97,13 @@ beforeEach(() => {
 			listBillableOrders: async () => [order],
 			priceLines: (o: Pick<TBillableOrder, 'vatMode' | 'vatRateBps'>, lines: { quantity: string; unitPrice: number }[]) => pricing.priceLines(o, lines),
 		},
+		{
+			publish: async (topic: string, _aggregate: unknown, data: Record<string, unknown>, options?: { dedupeKey?: string }) => {
+				events.push({ topic, data, dedupeKey: options?.dedupeKey });
+				return {} as never;
+			},
+		} as never,
+		{ get: async () => ({ id: 'supplier-1', code: 'HIT', name: 'PT HIT', phone: '021', email: 'ap@hit.test', picName: 'Rina', picPhone: '0812' }) } as never,
 	);
 });
 
@@ -179,6 +193,27 @@ describe('recording a bill made from an order', () => {
 			{ accountId: 'acc-expense', debit: 500_000_00, credit: 0 },
 			{ accountId: 'acc-tax', debit: 385_000_00, credit: 0 },
 			{ accountId: 'acc-ap', debit: 0, credit: 3_885_000_00 },
+		]);
+	});
+});
+
+describe('n8n events (ERP-0012)', () => {
+	test('recording publishes supplier_bill.recorded with the supplier contact', async () => {
+		const bill = await service.createFromPurchaseOrder(ctx, input([{ purchaseOrderItemId: READER, quantity: '1' }]));
+		await service.record(ctx, bill.id);
+		expect(events.map((event) => event.topic)).toEqual(['supplier_bill.recorded']);
+		expect(events[0]?.data).toMatchObject({ code: 'SB-0001', supplierInvoiceNumber: 'INV/HIT/0099', supplier: { name: 'PT HIT', picPhone: '0812' } });
+	});
+
+	test('the daily job reminds 7 days ahead and on/after the due date, once per threshold', async () => {
+		const bill = (dueDate: string) => ({ id: `bill-${dueDate}`, supplierId: 'supplier-1', dueDate, status: 'approved', outstandingTotal: 100 }) as unknown as TSupplierBillSelect;
+		openBills = [bill('2026-11-20'), bill('2026-11-16'), bill('2026-11-10'), bill('2026-11-30')];
+		const result = await service.publishDueNotices('2026-11-16');
+		expect(result).toEqual({ processed: 3, skipped: 1 });
+		expect(events.map((event) => [event.data.threshold, event.data.stage, event.dedupeKey])).toEqual([
+			[7, 'upcoming', 'supplier_bill.due:bill-2026-11-20:2026-11-20:7'],
+			[0, 'due', 'supplier_bill.due:bill-2026-11-16:2026-11-16:0'],
+			[0, 'overdue', 'supplier_bill.due:bill-2026-11-10:2026-11-10:0'],
 		]);
 	});
 });

@@ -1419,6 +1419,25 @@ export class LedgerRepository {
 		await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`bill:${purchaseOrderId}`}, 0))`);
 	}
 
+	/**
+	 * Open bills (recorded, not fully paid) due on or before `date`, in every
+	 * organization: the daily `supplier_bill.due` job (ERP-0012).
+	 */
+	async listOpenBillsDueBy(date: string): Promise<TSupplierBillSelect[]> {
+		return this.database
+			.select()
+			.from(supplierBills)
+			.where(
+				and(
+					inArray(supplierBills.status, ['approved', 'partially_paid', 'overdue']),
+					sql`${supplierBills.outstandingTotal} > 0`,
+					sql`${supplierBills.dueDate} IS NOT NULL AND ${supplierBills.dueDate} <= ${date}`,
+					isNull(supplierBills.deletedAt),
+				),
+			)
+			.orderBy(asc(supplierBills.dueDate));
+	}
+
 	async findSupplierBillById(
 		organizationId: string,
 		id: string,

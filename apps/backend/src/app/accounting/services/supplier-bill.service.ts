@@ -3,8 +3,14 @@ import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { TSupplierBillItemSelect, TSupplierBillSelect } from '@drizzle/schemas/finance.schema';
-import { PURCHASE_BILLING_SERVICE_TOKEN } from '@app/procurement';
+import { PURCHASE_BILLING_SERVICE_TOKEN, SUPPLIER_SERVICE_TOKEN } from '@app/procurement';
 import type { PurchaseBillingService, TBillableOrder } from '@app/procurement';
+import type { SupplierService } from '@app/procurement/services/supplier.service';
+import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
+import type { OutboxService } from '@app/automation/services/outbox.service';
+import { businessDateOf } from '@utils/business-date.util';
+import { pinoLogger } from '@providers/logger/logger';
+import { billDueThreshold, supplierBillEvent, type TBillEventSupplier } from '../utils/supplier-bill-event';
 import { quantityToMilli } from '@utils/money.util';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
@@ -83,7 +89,62 @@ export class SupplierBillService {
 		/** ERP-0012: what a purchase order received and how its VAT works. */
 		@inject(PURCHASE_BILLING_SERVICE_TOKEN)
 		private readonly purchasing: Pick<PurchaseBillingService, 'getBillableOrder' | 'listBillableOrders' | 'priceLines'>,
+		/** M04: booked bills and due reminders go to n8n. */
+		@inject(OUTBOX_SERVICE_TOKEN)
+		private readonly outbox: Pick<OutboxService, 'publish'>,
+		@inject(SUPPLIER_SERVICE_TOKEN)
+		private readonly suppliers: Pick<SupplierService, 'get'>,
 	) {}
+
+	/** Supplier contact for an event, never the bank details; `null` when unknown. */
+	private async supplierOf(supplierId: string): Promise<TBillEventSupplier | null> {
+		const supplier = await this.suppliers.get(supplierId, false).catch(() => null);
+		if (!supplier) return null;
+		return {
+			id: supplier.id,
+			code: supplier.code,
+			name: supplier.name,
+			phone: supplier.phone,
+			email: supplier.email,
+			picName: supplier.picName,
+			picPhone: supplier.picPhone,
+		};
+	}
+
+	/**
+	 * Daily `supplier_bill.due` reminders (ERP-0012): open bills due within 7
+	 * days (threshold 7) and due or overdue (threshold 0). Each (bill, due
+	 * date, threshold) is published once through the outbox dedupe key, so
+	 * the job is safe to re-run.
+	 */
+	async publishDueNotices(today = businessDateOf()): Promise<{ processed: number; skipped: number }> {
+		const horizon = new Date(`${today}T00:00:00Z`);
+		horizon.setUTCDate(horizon.getUTCDate() + 7);
+		const bills = await this.repo.listOpenBillsDueBy(horizon.toISOString().slice(0, 10));
+		let processed = 0;
+		let skipped = 0;
+		for (const bill of bills) {
+			const daysLeft = Math.round((Date.parse(`${bill.dueDate}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000);
+			const threshold = billDueThreshold(daysLeft);
+			if (threshold === null) {
+				skipped += 1;
+				continue;
+			}
+			const message = await this.outbox.publish(
+				'supplier_bill.due',
+				{ type: 'supplier_bill', id: bill.id },
+				supplierBillEvent(bill, await this.supplierOf(bill.supplierId), {
+					threshold,
+					stage: daysLeft < 0 ? 'overdue' : daysLeft === 0 ? 'due' : 'upcoming',
+					daysLeft,
+				}),
+				{ dedupeKey: `supplier_bill.due:${bill.id}:${bill.dueDate}:${threshold}` },
+			);
+			if (message) processed += 1;
+			else skipped += 1;
+		}
+		return { processed, skipped };
+	}
 
 	private async withBilled(order: TBillableOrder): Promise<TBillableOrderView> {
 		const billed = await this.repo.billedQuantities(order.lines.map((line) => line.id));
@@ -256,6 +317,20 @@ export class SupplierBillService {
 	 * `ap_open_items` row. Idempotent through the JE idempotency key.
 	 */
 	async record(ctx: TBillActionContext, id: string): Promise<TSupplierBillSelect> {
+		const recorded = await this.recordInTransaction(ctx, id);
+		try {
+			await this.outbox.publish(
+				'supplier_bill.recorded',
+				{ type: 'supplier_bill', id: recorded.id },
+				supplierBillEvent(recorded, await this.supplierOf(recorded.supplierId), { recordedBy: ctx.actorUserId }),
+			);
+		} catch (error) {
+			pinoLogger.warn({ err: error, billId: recorded.id }, 'supplier_bill.recorded not published');
+		}
+		return recorded;
+	}
+
+	private async recordInTransaction(ctx: TBillActionContext, id: string): Promise<TSupplierBillSelect> {
 		return this.database.transaction(async (tx) => {
 			const bill = await this.repo.findSupplierBillById(ctx.organizationId, id, tx);
 			if (!bill) throw new BillNotFoundError();
