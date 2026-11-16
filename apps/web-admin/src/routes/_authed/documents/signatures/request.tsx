@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Send } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -13,15 +13,22 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import { Input } from '@ims-erp/ui/components/input';
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@ims-erp/ui/components/select';
+	Combobox,
+	ComboboxChip,
+	ComboboxChips,
+	ComboboxChipsInput,
+	ComboboxContent,
+	ComboboxEmpty,
+	ComboboxItem,
+	ComboboxList,
+	ComboboxValue,
+	useComboboxAnchor,
+} from '@ims-erp/ui/components/combobox';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
+import { Textarea } from '@ims-erp/ui/components/textarea';
 import { toast } from '@/components/toast';
+import { SearchableSelect } from '@/components/inventory/searchable-select';
 import { documentsQueryOptions } from '@/lib/documents-api';
 import { organizationMembersQueryOptions } from '@/lib/organization-api';
 import { useActiveOrganizationId } from '@/lib/use-active-organization';
@@ -36,8 +43,28 @@ export const Route = createFileRoute('/_authed/documents/signatures/request')({
 	component: RequestSignaturePage,
 });
 
-/** The `document.signature_request_expiry_days` default, in days. */
-const DEFAULT_EXPIRY_DAYS = 14;
+/** A signing deadline is at least tomorrow: today or earlier makes no sense. */
+function tomorrowIso(): string {
+	const date = new Date();
+	date.setDate(date.getDate() + 1);
+	const pad = (part: number) => String(part).padStart(2, '0');
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** The earliest deadline and the year range the picker offers, read once. */
+const MIN_EXPIRY = tomorrowIso();
+const FIRST_YEAR = new Date().getFullYear();
+const LAST_YEAR = FIRST_YEAR + 2;
+
+/** `YYYY-MM-DD` at the end of that day, as an instant the backend accepts. */
+function endOfDay(value: string): string | null {
+	const [year, month, day] = value.split('-').map(Number);
+	if (!year || !month || !day) return null;
+	// 23:59:59.999 local: the request stays actionable through the whole day.
+	return new Date(year, month - 1, day, 23, 59, 59, 999).toISOString();
+}
+
+type TSigner = { userId: string; name: string };
 
 /** `/documents/signatures/request` — ask internal users to sign a document. */
 function RequestSignaturePage() {
@@ -45,13 +72,18 @@ function RequestSignaturePage() {
 	const queryClient = useQueryClient();
 	const organizationId = useActiveOrganizationId();
 	const canRequest = usePermission('document.signature_request');
+	const signerAnchor = useComboboxAnchor();
 
 	const [documentId, setDocumentId] = useState('');
-	const [signerUserIds, setSignerUserIds] = useState<string[]>([]);
+	const [signers, setSigners] = useState<TSigner[]>([]);
 	const [note, setNote] = useState('');
-	const [expiryDays, setExpiryDays] = useState(String(DEFAULT_EXPIRY_DAYS));
+	const [expiresOn, setExpiresOn] = useState(MIN_EXPIRY);
+	const [documentSearch, setDocumentSearch] = useState('');
 
-	const documents = useQuery({ ...documentsQueryOptions({ page: 1, limit: 50 }), enabled: canRequest });
+	const documents = useQuery({
+		...documentsQueryOptions({ page: 1, limit: 50, search: documentSearch || undefined }),
+		enabled: canRequest,
+	});
 	const members = useQuery({
 		...organizationMembersQueryOptions(organizationId ?? '', 1, 100),
 		enabled: canRequest && Boolean(organizationId),
@@ -61,12 +93,31 @@ function RequestSignaturePage() {
 		enabled: canRequest,
 	});
 
+	const documentOptions = useMemo(
+		() =>
+			(documents.data?.rows ?? []).map((document) => ({
+				value: document.id,
+				label: `${document.code} · ${document.title}`,
+			})),
+		[documents.data],
+	);
+
+	const signerOptions = useMemo<TSigner[]>(
+		() =>
+			(members.data?.rows ?? []).map((member) => ({
+				userId: member.userId,
+				name: member.user?.name ?? member.userId,
+			})),
+		[members.data],
+	);
+
 	const createMutation = useMutation({
 		mutationFn: createSignatureRequests,
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({ queryKey: ['documents', 'signatures'] });
-			setSignerUserIds([]);
+			setSigners([]);
 			setNote('');
+			setExpiresOn(MIN_EXPIRY);
 			toast.success(t('signatures:requestCreated'));
 		},
 		onError: (error: Error) => toast.error(error.message),
@@ -81,27 +132,18 @@ function RequestSignaturePage() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
-	const toggleSigner = (userId: string) => {
-		setSignerUserIds((current) =>
-			current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId],
-		);
-	};
-
 	const submit = () => {
-		const days = Number(expiryDays);
-		const expiresAt =
-			Number.isFinite(days) && days > 0
-				? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
-				: null;
+		const deadline = endOfDay(expiresOn);
+		if (!deadline) return;
 		createMutation.mutate({
 			documentId,
-			signerUserIds,
+			signerUserIds: signers.map((signer) => signer.userId),
 			note: note.trim() || null,
-			expiresAt,
+			expiresAt: deadline,
 		});
 	};
 
-	const canSubmit = Boolean(documentId) && signerUserIds.length > 0 && !createMutation.isPending;
+	const canSubmit = Boolean(documentId) && signers.length > 0 && !createMutation.isPending;
 
 	return (
 		<div className='flex flex-col gap-4'>
@@ -119,59 +161,75 @@ function RequestSignaturePage() {
 					<CardDescription>{t('signatures:newRequestHint')}</CardDescription>
 				</CardHeader>
 				<CardContent className='flex flex-col gap-4'>
-					<div className='flex flex-col gap-1'>
+					<div className='flex max-w-xl flex-col gap-1'>
 						<span className='text-xs text-muted-foreground'>{t('signatures:document')}</span>
-						<Select value={documentId} onValueChange={(value) => setDocumentId(value ?? '')}>
-							<SelectTrigger className='w-full max-w-xl'>
-								<SelectValue placeholder={t('signatures:documentPlaceholder')} />
-							</SelectTrigger>
-							<SelectContent>
-								{(documents.data?.rows ?? []).map((document) => (
-									<SelectItem key={document.id} value={document.id}>
-										{document.code} · {document.title}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+						<SearchableSelect
+							value={documentId || null}
+							options={documentOptions}
+							loading={documents.isPending}
+							placeholder={t('signatures:documentPlaceholder')}
+							emptyLabel={t('signatures:noDocumentMatch')}
+							onSearch={setDocumentSearch}
+							onChange={(value) => setDocumentId(value ?? '')}
+						/>
 					</div>
 
-					<div className='flex flex-col gap-1'>
+					<div className='flex max-w-xl flex-col gap-1'>
 						<span className='text-xs text-muted-foreground'>{t('signatures:signers')}</span>
-						<div className='flex flex-wrap gap-2'>
-							{(members.data?.rows ?? []).map((member) => (
-								<Button
-									key={member.userId}
-									type='button'
-									size='sm'
-									variant={signerUserIds.includes(member.userId) ? 'default' : 'outline'}
-									onClick={() => toggleSigner(member.userId)}
-								>
-									{member.user?.name ?? member.userId}
-								</Button>
-							))}
-						</div>
+						<Combobox<TSigner, true>
+							multiple
+							items={signerOptions}
+							value={signers}
+							onValueChange={(next) => setSigners(next)}
+							isItemEqualToValue={(item, candidate) => item.userId === candidate.userId}
+						>
+							<ComboboxChips ref={signerAnchor} className='w-full'>
+								<ComboboxValue>
+									{(selected: TSigner[]) => (
+										<>
+											{selected.map((signer) => (
+												<ComboboxChip key={signer.userId}>{signer.name}</ComboboxChip>
+											))}
+											<ComboboxChipsInput placeholder={t('signatures:signersPlaceholder')} />
+										</>
+									)}
+								</ComboboxValue>
+							</ComboboxChips>
+							<ComboboxContent anchor={signerAnchor}>
+								<ComboboxList>
+									<ComboboxEmpty>{t('signatures:noSignerMatch')}</ComboboxEmpty>
+									{signerOptions.map((signer) => (
+										<ComboboxItem key={signer.userId} value={signer}>
+											{signer.name}
+										</ComboboxItem>
+									))}
+								</ComboboxList>
+							</ComboboxContent>
+						</Combobox>
 						<p className='text-xs text-muted-foreground'>{t('signatures:signersHint')}</p>
 					</div>
 
-					<div className='flex flex-col gap-1'>
+					<div className='flex max-w-xl flex-col gap-1'>
 						<span className='text-xs text-muted-foreground'>{t('signatures:note')}</span>
-						<Input
-							className='max-w-xl'
+						<Textarea
+							rows={3}
 							value={note}
 							placeholder={t('signatures:notePlaceholder')}
 							onChange={(event) => setNote(event.target.value)}
 						/>
 					</div>
 
-					<div className='flex flex-col gap-1'>
-						<span className='text-xs text-muted-foreground'>{t('signatures:expiryDays')}</span>
-						<Input
-							className='w-32'
-							type='number'
-							min={1}
-							value={expiryDays}
-							onChange={(event) => setExpiryDays(event.target.value)}
+					<div className='flex w-64 flex-col gap-1'>
+						<span className='text-xs text-muted-foreground'>{t('signatures:expiresOn')}</span>
+						<DatePicker
+							value={expiresOn}
+							onChange={setExpiresOn}
+							min={MIN_EXPIRY}
+							fromYear={FIRST_YEAR}
+							toYear={LAST_YEAR}
+							required
 						/>
+						<p className='text-xs text-muted-foreground'>{t('signatures:expiresOnHint')}</p>
 					</div>
 
 					<div>
