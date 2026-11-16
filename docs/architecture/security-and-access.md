@@ -344,15 +344,25 @@ and the user-management actions listed under **Audit** already append to it.
 
 Company, Code Number and Document are built (ERP-0042): their routes exist and
 are guarded by the `erp` macro plus the `company:*`, `code_number:*` and
-`document:*` permissions. The document **signature request** flow (ERP-0048) is
-not built: `document.signatures` has no request rows yet, so per-signer rules
-(who may sign, in which order) stay documented here and must be wired when it
-lands. The vocabulary is already registered (ERP-0062): `document:signature_read`
-sees the signature register, `document:signature_request` asks others to sign,
-`document:signature_sign` signs a request addressed to the caller. Every role
-that holds `document:read` also holds `signature_read` + `signature_sign`; only
-owner, admin, operations_manager, sales_manager, project_manager, finance and hr
-hold `signature_request`. The web-admin sidebar gates the three signature pages
-on those actions (UX only - the backend guards land with the flow).
-The `document.*` settings group holds only
-`document.signature_request_expiry_days`, which that flow writes.
+`document:*` permissions. The document **signature request** flow is built
+(ERP-0048/ERP-0049): `document:signature_read` sees the signature register and
+one document's signature section, `document:signature_request` creates and
+cancels requests, `document:signature_sign` acts on a request addressed to the
+caller (sign, decline) and owns that caller's signature image. Every role that
+holds `document:read` also holds `signature_read` + `signature_sign`; only owner,
+admin, operations_manager, sales_manager, project_manager, finance and hr hold
+`signature_request`. Those are the guard's first gate, never the only one: the
+service re-checks that the caller *is* the addressed signer (sign/decline) or
+*is* the requester (cancel) and that the row is still pending and unexpired, so a
+stolen permission only ever produces a 403/409. Signing writes the immutable
+evidence row in `document.signatures`; nothing else does. The `document.*`
+settings group holds only `document.signature_request_expiry_days`, which the
+request form reads as its default.
+
+Signature routes, by action:
+
+| Route | Action |
+|---|---|
+| `GET /documents/signatures`, `GET /documents/:id/signatures` | `document:signature_read` |
+| `GET /documents/signatures/requests/outgoing`, `POST /documents/signatures/requests`, `POST …/:id/cancel` | `document:signature_request` |
+| `GET /documents/signatures/requests/incoming`, `POST …/:id/sign`, `POST …/:id/decline`, `GET/PUT/DELETE /documents/signatures/my-image`, `POST /documents/signatures/user-images` | `document:signature_sign` |

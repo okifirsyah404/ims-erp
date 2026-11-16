@@ -215,6 +215,11 @@ const api = {
 	'document.fileNotFound': 'File not found',
 	'document.shareNotFound': 'This link is invalid or has expired',
 	'document.fileNotAllowed': 'A void document cannot take files',
+	'document.signatureRequestNotFound': 'Signature request not found',
+	'document.signatureRequestState': 'This signature request cannot be acted on',
+	'document.notRequestSigner': 'This request is not addressed to you',
+	'document.notRequestOwner': 'Only the requester can cancel this request',
+	'document.signatureImageNotFound': 'No signature image uploaded',
 	'numbering.pattern.length': 'The pattern must be 1-100 characters',
 	'numbering.pattern.unknownToken': 'Unknown token {{token}}',
 	'numbering.pattern.tokenNotForType':

@@ -210,6 +210,11 @@ const api: Record<keyof typeof en, string> = {
 	'document.fileNotFound': 'File tidak ditemukan',
 	'document.shareNotFound': 'Tautan ini tidak valid atau sudah kedaluwarsa',
 	'document.fileNotAllowed': 'Dokumen yang dibatalkan tidak dapat menerima file',
+	'document.signatureRequestNotFound': 'Permintaan tanda tangan tidak ditemukan',
+	'document.signatureRequestState': 'Permintaan tanda tangan ini tidak dapat ditindaklanjuti',
+	'document.notRequestSigner': 'Permintaan ini tidak ditujukan kepada Anda',
+	'document.notRequestOwner': 'Hanya pemohon yang dapat membatalkan permintaan ini',
+	'document.signatureImageNotFound': 'Belum ada gambar tanda tangan',
 	'numbering.pattern.length': 'Pola harus 1-100 karakter',
 	'numbering.pattern.unknownToken': 'Token {{token}} tidak dikenal',
 	'numbering.pattern.tokenNotForType':

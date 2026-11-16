@@ -457,3 +457,159 @@ describe('document signature grants', () => {
 		]);
 	});
 });
+
+// ---------------------------------------------------------------------------
+// 15. Document signature routes (ERP-0048/ERP-0049): the guard per route
+// ---------------------------------------------------------------------------
+describe('document signature routes', () => {
+	test('GET /documents/signatures needs a session', async () => {
+		const response = await app.handle(jsonRequest('GET', '/documents/signatures'));
+		expect(response.status).toBe(401);
+	});
+
+	test('GET /documents/signatures answers 200 for a signature_read holder', async () => {
+		const response = await app.handle(
+			jsonRequest('GET', '/documents/signatures', 'admin', undefined, fixture.orgA),
+		);
+		expect(response.status).toBe(200);
+	});
+
+	test('GET /documents/signatures answers 403 for a role without document access', async () => {
+		const response = await app.handle(
+			jsonRequest('GET', '/documents/signatures', 'member', undefined, fixture.orgA),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test('POST /documents/signatures/requests answers 403 for a signature_sign-only role', async () => {
+		// `sales` holds signature_read + signature_sign but not signature_request.
+		const response = await app.handle(
+			jsonRequest(
+				'POST',
+				'/documents/signatures/requests',
+				'sales',
+				{ documentId: '01930000-0000-7000-8000-000000000001', signerUserIds: ['user-sales'] },
+				fixture.orgA,
+			),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test('POST /documents/signatures/requests answers 200 for a signature_request holder', async () => {
+		const response = await app.handle(
+			jsonRequest(
+				'POST',
+				'/documents/signatures/requests',
+				'admin',
+				{ documentId: '01930000-0000-7000-8000-000000000001', signerUserIds: ['user-sales'] },
+				fixture.orgA,
+			),
+		);
+		expect(response.status).toBe(200);
+	});
+
+	test('POST /documents/signatures/requests/:id/sign answers 403 without signature_sign', async () => {
+		// `member` has no document access at all.
+		const response = await app.handle(
+			jsonRequest(
+				'POST',
+				'/documents/signatures/requests/01930000-0000-7000-8000-000000000009/sign',
+				'member',
+				{},
+				fixture.orgA,
+			),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test('POST /documents/signatures/requests/:id/sign answers 200 for a signature_sign holder', async () => {
+		const response = await app.handle(
+			jsonRequest(
+				'POST',
+				'/documents/signatures/requests/01930000-0000-7000-8000-000000000009/sign',
+				'sales',
+				{ method: 'electronic' },
+				fixture.orgA,
+			),
+		);
+		expect(response.status).toBe(200);
+	});
+
+	test('POST /documents/signatures/requests/:id/decline answers 200 for a signature_sign holder', async () => {
+		const response = await app.handle(
+			jsonRequest(
+				'POST',
+				'/documents/signatures/requests/01930000-0000-7000-8000-000000000009/decline',
+				'sales',
+				{ reason: 'Nominal salah' },
+				fixture.orgA,
+			),
+		);
+		expect(response.status).toBe(200);
+	});
+
+	test('POST /documents/signatures/requests/:id/cancel answers 403 without signature_request', async () => {
+		const response = await app.handle(
+			jsonRequest(
+				'POST',
+				'/documents/signatures/requests/01930000-0000-7000-8000-000000000009/cancel',
+				'sales',
+				{},
+				fixture.orgA,
+			),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test('POST /documents/signatures/requests/:id/cancel answers 200 for a signature_request holder', async () => {
+		const response = await app.handle(
+			jsonRequest(
+				'POST',
+				'/documents/signatures/requests/01930000-0000-7000-8000-000000000009/cancel',
+				'admin',
+				{},
+				fixture.orgA,
+			),
+		);
+		expect(response.status).toBe(200);
+	});
+
+	test('GET /documents/:id/signatures answers 200 for a signature_read holder', async () => {
+		const response = await app.handle(
+			jsonRequest(
+				'GET',
+				'/documents/01930000-0000-7000-8000-000000000001/signatures',
+				'sales',
+				undefined,
+				fixture.orgA,
+			),
+		);
+		expect(response.status).toBe(200);
+	});
+
+	test('GET /documents/:id/signatures answers 403 for a role without document access', async () => {
+		const response = await app.handle(
+			jsonRequest(
+				'GET',
+				'/documents/01930000-0000-7000-8000-000000000001/signatures',
+				'member',
+				undefined,
+				fixture.orgA,
+			),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test('POST /documents/signatures/user-images answers 200 for a signature_sign holder', async () => {
+		const response = await app.handle(
+			jsonRequest(
+				'POST',
+				'/documents/signatures/user-images',
+				'sales',
+				{ userIds: ['user-sales'] },
+				fixture.orgA,
+			),
+		);
+		expect(response.status).toBe(200);
+	});
+});

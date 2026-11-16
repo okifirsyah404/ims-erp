@@ -210,6 +210,14 @@ const DYNAMIC_PREFIXES = [
 	'orgDashboard.projects.status.',
 	'orgDashboard.activity.actions.',
 	'orgDashboard.cash.',
+	// Signature flow (ERP-0048/ERP-0049): the method and request status labels
+	// are composed from the server's value, so the prefix is what to match.
+	'signatures:methodOption.',
+	'signatures:status.',
+	// Notification templates are rendered from `templateCode` (server value).
+	'template.document.signatureRequested.',
+	'template.document.signatureSigned.',
+	'template.document.signatureDeclined.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {
