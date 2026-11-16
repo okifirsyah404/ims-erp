@@ -12,6 +12,195 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-17 - Signed-PDF placement: signer stamps their signature on an uploaded PDF (ERP-0048 slice 2)
+
+Status: **implemented** (live HTTP + browser verified 2026-11-17; no committed
+e2e). `docs/database/` **changed**: three columns on `document.signatures`, one
+new index, one new `access_logs.action` value;
+`bun docs/database/validate-dbml.ts` -> OK (277 tables / 237 refs, 0
+cross-module, 0 timestamp gaps, 0 Drizzle drift).
+
+Design decisions (grilled 2026-11-17, superseding D13 of the signature plan):
+
+- The PDF must already be one of the document's files; the app never generates
+  a PDF from its own HTML layouts.
+- The signature image is snapshotted onto the evidence row at signing time
+  (`signature_image_key`), so replacing the user image later never rewrites an
+  existing signature.
+- The artifact is its own column (`signed_file_key`), not a `document.files`
+  row, and placement is **final**: a second attempt answers 409.
+- The source PDF is recorded (`source_file_id`) so the artifact stays traceable.
+- Placement is recorded as a new `pdf_sign` access action, not as `print`.
+
+What landed:
+
+- **`docs.dbml` first**, then the generators, then the Drizzle schema:
+  `document.signatures` gains `signature_image_key`, `source_file_id`
+  (indexed), `signed_file_key`; `document.access_logs.action` gains `pdf_sign`.
+  Migration `20261116173810_erp0048_signed_pdf` (ALTER TABLE + CHECK swap),
+  applied via `migrate-reset`; `drizzle-kit check` -> `Everything's fine`.
+- **Backend**: `PUT /documents/signatures/requests/:id/signed-pdf` (multipart
+  `file` + `sourceFileId`, permission `document:signature_sign`) and
+  `GET …/signed-pdf` (presigned 300 s + a `download` row). `sign` now snapshots
+  the image key and the organization. `SignaturePdfInvalidError` (422) and
+  `SignaturePdfStateError` (409) added; the controller's `onError` now carries
+  the real locale key instead of the generic one.
+- **Web admin**: new route
+  `/documents/signatures/mine/$requestId/place` renders the chosen PDF page with
+  `pdfjs-dist` at a fixed 1.5x scale, overlays the signature image, and on
+  "Apply" embeds it with `pdf-lib` and uploads the result. The Mine page gained
+  "Place on PDF" (signed, no artifact yet) and "Download signed PDF".
+  `mine.tsx` moved to `mine/index.tsx` so the placement route can be a sibling
+  instead of a child of a leaf route.
+
+Commands and outcomes:
+
+- `bun docs/database/gen-logical-references.ts` -> 536 refs / 41 targets;
+  `bun docs/database/validate-dbml.ts` -> OK (277 / 237).
+- `apps/backend` `bunx tsc --noEmit` clean; `bun test` -> **1132 pass / 0 fail**
+  (84 files): 10 new placement tests in `signature.service.test.ts` (snapshot,
+  final placement, non-PDF source, foreign source, non-PDF upload, race, URL)
+  and 2 new guard tests (403 without `signature_sign`, 401 anonymous).
+- `apps/web-admin` `bunx tsc -b --noEmit` clean, `bun run build` clean,
+  `bun test` 119 pass; `packages/locales` 98 pass.
+- Root `bun run lint` 0 errors (11 backend + 14 web-admin warnings, all
+  pre-existing), `bun docs/database/validate-dbml.ts` OK.
+
+Live verification (backend 3001 + Vite 5173, `admin` session, org `entragate`):
+
+- API: uploaded a real 1-page A4 PDF to a registry document, requested a
+  signature, signed it, then `PUT …/signed-pdf` -> 200 with
+  `hasSignedPdf: true` and the source file id; a second `PUT` -> 409;
+  `GET …/signed-pdf` -> 200 presigned MinIO URL.
+- Artifact check: the downloaded object is a valid PDF (`%PDF` magic, 1 page,
+  595x842) and grew 872 -> 2089 bytes with exactly one image XObject, i.e. the
+  signature really is embedded.
+- Database: `document.signatures` shows `signed_file_key`, `source_file_id` and
+  `signature_image_key` all set on the placed row; `document.access_logs` holds
+  `pdf_sign` rows.
+- Browser: the placement page renders the PDF canvas (892x1263 at 1.5x, 3306
+  dark pixels of real text), the overlay image sits at the configured
+  position, "Apply" writes the artifact (PUT 200), and the Mine page then shows
+  "Download signed PDF" (GET 200).
+
+Three defects found by the live run and fixed in the same change:
+
+1. The route was mounted at `/:id/signed-pdf` while the client called
+   `/requests/:id/signed-pdf` -> 404; the service also treated the request id as
+   a document id. Both corrected: the route lives under `/requests/` and the
+   service resolves the request first, then re-checks the signer.
+2. `page.render({ canvas, canvasContext, viewport })` rejects in pdfjs v6 (the
+   context is the deprecated path) and the failure was swallowed -> blank canvas.
+   Now `render({ canvas, viewport })` and render errors surface as a toast.
+3. `canvas.toDataURL` threw "Tainted canvases may not be exported" because the
+   signature image comes from object storage. The export path now fetches the
+   bytes and decodes them into an `ImageBitmap` (untainted), then encodes PNG.
+
+Known limits: the placement page requires the signer to already have a signature
+image (signing without one is still allowed, the placement is simply blocked);
+re-placing is impossible by design; and the artifact is never regenerated, so a
+re-print of the app's own layout does not include the signature.
+
+Next executable task: run the queued UAT, or slice 3 (draw the signature on a
+canvas at signing time).
+
+## 2026-11-16 - Document signature flow: requests, evidence, user image (ERP-0048 / ERP-0049)
+
+Status: **implemented** (live HTTP + browser verified 2026-11-16; no committed
+e2e, so the evidence is the manual walk-through below). Plan:
+`docs/plan/plans/signature-implementation-plan.md` (13 locked decisions).
+`docs/database/` **changed**: two new tables (`document.signature_requests`,
+`document.user_signatures`), three new logical-reference columns and one
+intra-module FK; `bun docs/database/validate-dbml.ts` -> OK (277 tables / 236
+refs, 0 cross-module, 0 timestamp gaps, 0 Drizzle drift).
+
+What landed, in the plan's order:
+
+- **`docs.dbml` first.** `document.signature_requests` (status vocabulary
+  `pending/signed/declined/expired/cancelled`, `requested_by_user_id` +
+  `signer_user_id` as logical references, `signer_name` snapshot, nullable
+  `expires_at`/`responded_at`, partial unique `(document_id, signer_user_id)
+  WHERE status = 'pending' AND deleted_at IS NULL`) and
+  `document.user_signatures` (one live row per user). Then
+  `gen-logical-references.ts` (536 refs / 41 targets) and `validate-dbml.ts`.
+- **Migration** `20261116112133_erp0048_signature_requests` (custom SQL, hand
+  written because `drizzle:generate`/`migrate` stay blocked on main per
+  AGENTS.md). Its `snapshot.json` needed the real `deltas`/`footprints`:
+  a plain `generate --custom` writes an empty diff, so the deltas were produced
+  by one throwaway `drizzle-kit generate` and spliced in, which is what makes
+  `drizzle-kit check` answer `Everything's fine` instead of reporting drift.
+- **Backend** (`apps/backend/src/app/document/`): `contracts/signature.contract.ts`,
+  `contracts/signature.repository.interface.ts`, `repositories/signature.repository.ts`,
+  `services/signature.service.ts`, `errors/signature.errors.ts`,
+  `controllers/signature.controller.ts` (`SignatureController` +
+  `DocumentSignatureController`), two DI tokens, both registered in
+  `container.ts` and mounted in `documentModule()`. Routes: `GET /documents/signatures`,
+  `GET/POST /documents/signatures/requests`, `…/requests/incoming`,
+  `…/requests/outgoing`, `…/requests/:id/{sign,decline,cancel}`,
+  `GET/PUT/DELETE /documents/signatures/my-image`, `POST /documents/signatures/user-images`,
+  `GET /documents/:id/signatures`. Evidence rows are written only by `sign`;
+  expiry is lazy (a past-due pending row reads as `expired`, no job); ownership
+  and state are re-checked in the service, so the guard is the first gate only.
+- **Notifications**: `document.signature_signed` and `document.signature_declined`
+  added to `NOTIFICATION_TEMPLATE_CODES` + the seeder (copy in English, the
+  client localizes) and to the en/id `notifications` bundles;
+  `notification-text.ts` gained both cases.
+- **Web admin**: `lib/signature-api.ts`; the three stub pages replaced
+  (`documents.tsx` register with method filter + pagination, `request.tsx`
+  document picker + member multi-select + expiry days + "requests I sent" with
+  cancel, `mine.tsx` image upload/replace/remove + incoming sign/decline +
+  history) and a Signatures card on `/documents/files/$documentId`. New
+  `signatures` locale namespace (en + id, flat dot-keys) with
+  `i18next.d.ts` augmentation; `routeTree.gen.ts` regenerated by the build.
+
+Commands and outcomes:
+
+- `bun docs/database/gen-logical-references.ts` -> 536 refs / 41 targets;
+  `bun docs/database/validate-dbml.ts` -> OK (277 tables / 236 refs).
+- `apps/backend` `bunx tsc --noEmit` clean; `bun test` -> **1120 pass / 0 fail**
+  (84 files), including the new `test/unit/signature.service.test.ts` (23 tests)
+  and 13 new route-guard tests in `test/authorization/authorization.test.ts`.
+- `bun run database/migrate-reset.ts` against `ims_erp_local` -> migrations +
+  seed complete, run three times with no new rows (idempotent); `drizzle-kit check`
+  -> `Everything's fine`; `psql` confirms both tables, the partial unique
+  indexes and the cascade FK.
+- `apps/web-admin` `bunx tsc -b --noEmit` clean, `bun run build` clean
+  (`routeTree.gen.ts` regenerated), `bun test` 119 pass.
+- `packages/locales` `bun test` 98 pass (parity, no-empty, interpolation sets,
+  dead-key scan with the new `signatures` namespace).
+- Root `bun run lint` 0 errors (10 backend + 12 web-admin pre-existing warnings).
+
+Live verification (backend 3001 + Vite 5173, `admin` session, org `entragate`):
+
+- Created a real registry document (`POST /documents` -> `001/BAST/DEV/XI/2026`),
+  then the full lifecycle over HTTP: create request (200, `pending`), sign with
+  `wet_ink` (200, evidence row + request `signed`), register lists it with
+  `documentCode`/`documentTitle` resolved, decline (`Nominal salah`), re-request
+  after decline (allowed by the partial unique), cancel.
+- Signature image: `PUT my-image` with a real PNG -> 200 and a MinIO WebP;
+  `GET` presigns it (browser renders 512×288); `POST user-images` returns the
+  same URL; `DELETE` soft-deletes and `GET` then answers `null`.
+- Browser: `/documents/signatures/documents` (register row with method badge,
+  timestamp, IP), `/documents/signatures/request` (member picker, outgoing list
+  with Cancelled/Declined/Signed badges), `/documents/signatures/mine` (image
+  card, pending card with Sign/Decline, history incl. the decline reason),
+  `/documents/files/$documentId` (Signatures card: evidence + requests +
+  "Request a signature"), Indonesian locale on all of it, console clean.
+
+Two defects found by the live run and fixed in the same change: the request
+list query joined `document.signatures` without a join (500), and
+`documentCode`/`documentTitle`/`requestedByName` were hardcoded `null` (the UI
+rendered raw UUIDs). Also fixed: `requestedBy` had no `{{name}}` placeholder, so
+the Mine page printed "Requested by ·".
+
+Skipped on purpose (upgrade path in the plan): rendering the user signature
+image into the printed documents (V1.5), external signers via a public token
+link, `certificate_serial`/PKI, ordered signing, reminders, and any PDF library
+- print browser stays the PDF mechanism.
+
+Next executable task: the V1.5 slice (render `imageUrl` into the BAST and
+quotation print components), or the UAT items that were already queued.
+
 ## 2026-11-16 - Inventory & asset lists: cards, images, dialog create, URL pagination (ERP-0063)
 
 Status: **implemented** (browser-checked 2026-11-16; multi-page paging still

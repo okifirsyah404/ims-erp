@@ -247,8 +247,33 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - Payment gateway callbacks + reconciliation — T22, ERP-0020. Evidence: none
   (payment ledger is `finance.payments`, M09; `sales.payments` is scheduled
   for removal at step S7 in `docs/database/implementation-phases.md`).
+- Document renderer + template editor — T05. Evidence: `GET/POST
+  /documents/templates` exist, no render step, `documents/templates.tsx` is a
+  stub. Print stays browser-print (no PDF library); `pdfmake` is the candidate
+  only if an automatic PDF file is ever needed.
+- External signers on the signature flow (customer/partner via a public token
+  link) — `document.signatures.signer_type` and the `document.shares` token
+  pattern are the upgrade path. Evidence: internal-only V1 ships (below).
+- Drawing the signature on a canvas at signing time (slice 3 of the image
+  question): today the signer uploads an image and reuses it.
+- Generating a PDF from the app's own HTML layouts: the signed-PDF slice stamps
+  an *uploaded* PDF only; print browser stays the default.
 
 ### implemented
+- Document signature requests (ask internal users to sign, sign/decline,
+  cancel, immutable evidence), the per-user signature image, and placing that
+  signature on a PDF uploaded to the document — T05, ERP-0048 / ERP-0049.
+  Evidence: `apps/backend/src/app/document` (`signature.service.ts`,
+  `signature.controller.ts`, `repositories/signature.repository.ts`),
+  `document.signature_requests` + `document.user_signatures` + the three
+  placement columns on `document.signatures` (migrations
+  `20261116112133_erp0048_signature_requests`,
+  `20261116173810_erp0048_signed_pdf`),
+  `test/unit/signature.service.test.ts` (33 tests) + 15 route-guard tests,
+  `/documents/signatures/{documents,request,mine}` pages, the placement page
+  `…/mine/$requestId/place` and the Signatures card on
+  `/documents/files/$documentId`, `progress.md` 2026-11-16 and 2026-11-17.
+  Gaps: no committed e2e, external signers, canvas-drawn signatures.
 - Customers + contacts — T05, ERP-0004/0005. Evidence: `apps/backend/src/app/crm`,
   `test/unit/customer.service.test.ts`, `/crm/customers` pages, `progress.md`
   2026-11-05 (ADR-0011 step 3a). Gaps: real-PG integration tests, e2e.
