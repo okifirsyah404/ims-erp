@@ -24,6 +24,8 @@ import type { IDeliveryNoteRepository } from '../contracts/delivery-note.reposit
 import type { DeliveryNoteService } from '../services/delivery-note.service';
 import type { SalesFulfilmentService } from '../services/sales-fulfilment.service';
 import type { InvoiceLookupService } from '../services/invoice-lookup.service';
+import type { QuotationDeliveryService } from '../services/quotation-delivery.service';
+import type { IQuotationSentDispatcher } from '../queues/quotation-sent.queue';
 
 /**
  * Sales contract for other modules (licensing, paid totals): whether an order
@@ -66,3 +68,9 @@ export const DELIVERY_NOTE_SERVICE_TOKEN: InjectionToken<DeliveryNoteService> = 
 
 /** Token resolving to the {@link SalesFulfilmentService} (Sales contract for Projects). */
 export const SALES_FULFILMENT_SERVICE_TOKEN: InjectionToken<SalesFulfilmentService> = Symbol('SALES_FULFILMENT_SERVICE_TOKEN');
+
+/** Token resolving to the {@link QuotationDeliveryService} (SPH PDF + `quotation.sent`, ERP-0067). */
+export const QUOTATION_DELIVERY_SERVICE_TOKEN: InjectionToken<QuotationDeliveryService> = Symbol('QUOTATION_DELIVERY_SERVICE_TOKEN');
+
+/** Token resolving to the queue that delivers sent quotations (ERP-0067). */
+export const QUOTATION_SENT_DISPATCHER_TOKEN: InjectionToken<IQuotationSentDispatcher> = Symbol('QUOTATION_SENT_DISPATCHER_TOKEN');

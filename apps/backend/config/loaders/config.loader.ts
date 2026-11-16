@@ -143,6 +143,13 @@ export function loadEnvConfig(
 			aiModel: process.env.AI_MODEL || null,
 		},
 
+		pdf: {
+			// ERP-0067: headless Chromium for server-side PDFs; unset = no PDFs.
+			chromiumPath: process.env.PDF_CHROMIUM_PATH || null,
+			renderBaseUrl: process.env.PDF_RENDER_BASE_URL || process.env.APP_WEB_URL || null,
+			linkDays: process.env.PDF_LINK_DAYS == null ? 30 : Number(process.env.PDF_LINK_DAYS),
+		},
+
 		scheduler: {
 			// Off by default: a unit test or a one-off script must never open a
 			// Redis worker connection.

@@ -474,6 +474,9 @@ export async function buildTestApp() {
 	// ERP-0066: follow-up reminders publish to the outbox; not exercised here.
 	const { OUTBOX_SERVICE_TOKEN } = await import('../../src/app/automation/constants/di');
 	container.register(OUTBOX_SERVICE_TOKEN, { useValue: { publish: async () => null } as never });
+	// ERP-0067: the sent-quotation queue; not exercised here.
+	const { QUOTATION_SENT_DISPATCHER_TOKEN } = await import('../../src/app/sales/constants/di');
+	container.register(QUOTATION_SENT_DISPATCHER_TOKEN, { useValue: { enqueue: async () => {} } });
 	container.register(SALES_SERVICE_TOKEN, { useClass: SalesService });
 	container.register(QUOTATION_SERVICE_TOKEN, { useClass: QuotationService });
 

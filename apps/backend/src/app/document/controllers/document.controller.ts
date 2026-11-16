@@ -195,9 +195,14 @@ export class PublicDocumentController {
 			name: 'public-documents',
 			prefix: '/public/v1/documents',
 			tags: ['Document'],
-		}).get('/:token', async ({ params }) => ok(await service.resolvePublicShare(params.token)), {
-			params: shareTokenParamsSchema,
-			detail: { description: 'A shared document by its public token (no session)' },
-		});
+		})
+			.get('/:token', async ({ params }) => ok(await service.resolvePublicShare(params.token)), {
+				params: shareTokenParamsSchema,
+				detail: { description: 'A shared document by its public token (no session)' },
+			})
+			.get('/:token/file', async ({ params, redirect }) => redirect(await service.resolvePublicFile(params.token), 302), {
+				params: shareTokenParamsSchema,
+				detail: { description: "Redirects to a short-lived URL of the shared document's newest file (no session)" },
+			});
 	}
 }

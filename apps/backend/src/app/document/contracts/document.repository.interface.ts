@@ -43,6 +43,9 @@ export interface IDocumentRepository {
 		tx?: TTx,
 	): Promise<number>;
 
+	/** The live (not void) current registry row of one source document, if any. */
+	findLiveBySource(module: string, sourceType: string, sourceId: string): Promise<TDocumentSelect | null>;
+
 	/** Appends one access-trail row (never updated, never skipped). */
 	logAccess(entry: {
 		documentId: string;

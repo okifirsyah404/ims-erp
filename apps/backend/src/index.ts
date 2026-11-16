@@ -9,7 +9,7 @@ import { registerAftersales } from '@app/aftersales';
 import { registerHr } from '@app/hr';
 import { registerLicenseDueSchedule, registerLicensing, startLicenseDueWorker } from '@app/licensing';
 import { registerLeadFollowUpSchedule, startLeadFollowUpWorker } from '@app/crm';
-import { registerQuotationFollowUpSchedule, startQuotationFollowUpWorker } from '@app/sales';
+import { registerQuotationFollowUpSchedule, startQuotationFollowUpWorker, startQuotationSentWorker } from '@app/sales';
 import { registerCatalog } from '@app/catalog';
 import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
 import { registerAssets } from '@app/assets';
@@ -156,6 +156,8 @@ startWorkers(
 		startNotificationWorker(),
 		startOutboxWorker(),
 		startWhatsappWorker(),
+		// ERP-0067: SPH PDF + `quotation.sent` after a quotation is sent.
+		startQuotationSentWorker(),
 		...(mailWorker ? [mailWorker] : []),
 		...(licenseDueWorker ? [licenseDueWorker] : []),
 		...(leadFollowUpWorker ? [leadFollowUpWorker] : []),

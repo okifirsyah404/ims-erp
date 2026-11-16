@@ -11,6 +11,8 @@ import { SalesFulfilmentService } from './services/sales-fulfilment.service';
 import { InvoiceRepository } from './repositories/invoice.repository';
 import { InvoiceService } from './services/invoice.service';
 import { InvoiceLookupService } from './services/invoice-lookup.service';
+import { QuotationDeliveryService } from './services/quotation-delivery.service';
+import { BullQuotationSentDispatcher } from './queues/quotation-sent.queue';
 import {
 	QUOTATION_REPOSITORY_TOKEN,
 	PAYMENT_REPOSITORY_TOKEN,
@@ -23,6 +25,8 @@ import {
 	DELIVERY_NOTE_SERVICE_TOKEN,
 	SALES_FULFILMENT_SERVICE_TOKEN,
 	INVOICE_LOOKUP_SERVICE_TOKEN,
+	QUOTATION_DELIVERY_SERVICE_TOKEN,
+	QUOTATION_SENT_DISPATCHER_TOKEN,
 } from './constants/di';
 import {
 	INVOICE_REPOSITORY_TOKEN,
@@ -68,4 +72,6 @@ export function registerSales(container: DependencyContainer): void {
 	container.register(DELIVERY_NOTE_REPOSITORY_TOKEN, { useClass: DeliveryNoteRepository });
 	container.register(DELIVERY_NOTE_SERVICE_TOKEN, { useClass: DeliveryNoteService });
 	container.register(SALES_FULFILMENT_SERVICE_TOKEN, { useClass: SalesFulfilmentService });
+	container.register(QUOTATION_SENT_DISPATCHER_TOKEN, { useClass: BullQuotationSentDispatcher });
+	container.register(QUOTATION_DELIVERY_SERVICE_TOKEN, { useClass: QuotationDeliveryService });
 }

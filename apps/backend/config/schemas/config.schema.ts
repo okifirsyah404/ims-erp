@@ -152,6 +152,21 @@ export const IntegrationsConfigSchema = z.object({
 	aiModel: z.string().min(1).nullable(),
 });
 
+/**
+ * ERP-0067: server-side PDFs of print views (headless Chromium).
+ *
+ * @remarks
+ * No Chromium path or no render base URL = PDFs are off and `quotation.sent`
+ * goes out without a link. `renderBaseUrl` is where Chromium opens the web
+ * admin's public print routes (defaults to `APP_WEB_URL`).
+ */
+export const PdfConfigSchema = z.object({
+	chromiumPath: z.string().min(1).nullable(),
+	renderBaseUrl: z.url().nullable(),
+	/** Days a generated PDF's public link stays valid. */
+	linkDays: z.number().int().min(1).max(365),
+});
+
 export const EnvConfigSchema = z.object({
 	instance: InstanceConfigSchema,
 	app: AppConfigSchema,
@@ -162,6 +177,7 @@ export const EnvConfigSchema = z.object({
 	auth: AuthConfigSchema,
 	scheduler: SchedulerConfigSchema,
 	integrations: IntegrationsConfigSchema,
+	pdf: PdfConfigSchema,
 });
 
 export type TInstanceConfig = z.infer<typeof InstanceConfigSchema>;
@@ -172,4 +188,5 @@ export type TS3Config = z.infer<typeof S3ConfigSchema>;
 export type TMailConfig = z.infer<typeof MailConfigSchema>;
 export type TAuthConfig = z.infer<typeof AuthConfigSchema>;
 export type TSchedulerConfig = z.infer<typeof SchedulerConfigSchema>;
+export type TPdfConfig = z.infer<typeof PdfConfigSchema>;
 export type TEnvConfig = z.infer<typeof EnvConfigSchema>;

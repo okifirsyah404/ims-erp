@@ -16,6 +16,7 @@ import {
 	type IRealtimeHub,
 	REALTIME_HUB_TOKEN,
 } from '@providers/realtime/realtime.hub';
+import { ChromiumPdfRenderer, type IPdfRenderer, PDF_RENDERER_TOKEN } from '@providers/pdf/pdf-renderer';
 import { RedisClient } from 'bun';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { DependencyContainer } from 'tsyringe';
@@ -44,6 +45,9 @@ export function registerProvider(container: DependencyContainer) {
 	});
 	container.register<ITransactionRunner>(TRANSACTION_RUNNER_TOKEN, {
 		useValue: drizzleTransactionRunner(drizzleDB),
+	});
+	container.register<IPdfRenderer>(PDF_RENDERER_TOKEN, {
+		useValue: new ChromiumPdfRenderer(),
 	});
 	// One hub per process, shared by the gateway (which registers sockets) and
 	// every producer (which publishes frames) — `useValue`, not `useClass`, so

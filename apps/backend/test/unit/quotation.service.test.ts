@@ -164,6 +164,8 @@ function body(overrides: Record<string, unknown> = {}) {
 }
 
 let followUps: { topic: string; data: Record<string, unknown>; dedupeKey?: string }[] = [];
+/** ERP-0067: sent quotations queued for their PDF + `quotation.sent`. */
+let sentJobs: string[] = [];
 
 beforeEach(() => {
 	followUps = [];
@@ -221,7 +223,13 @@ beforeEach(() => {
 				return {} as never;
 			},
 		} as never,
+		{
+			enqueue: async (id: string) => {
+				sentJobs.push(id);
+			},
+		},
 	);
+	sentJobs = [];
 });
 
 describe('money rules', () => {
@@ -370,6 +378,7 @@ describe('workflow and separation of duties', () => {
 		expect(approved.approvedBy).toBe('manager');
 		const sent = await service.markSent(sales, quotation.id);
 		expect(sent.sentBy).toBe('sales-1');
+		expect(sentJobs).toEqual([quotation.id]);
 		const detail = await service.get(sales, quotation.id);
 		expect(detail.history.map((h) => h.toStatus)).toEqual(['draft', 'submitted', 'approved', 'sent']);
 		expect(detail.approver?.name).toBe('User manager');

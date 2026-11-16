@@ -12,6 +12,101 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-17 - ERP-0067 quotation (SPH) PDF on sending, linked in `quotation.sent`
+
+Branch `feat/m02-quotation-pdf`, stacked on `feat/m02-sales-follow-ups` (PR #116).
+The n8n side is on `docs/m04-n8n-workflows` (PR #114).
+
+**Number check.** `git grep ERP-0067` over every remote branch and the open PR
+list: unused (highest ERP-0066).
+
+**Gate 1 (read).**
+- `docs.dbml` Document (`documents` source columns, `document_files`,
+  `document_shares`; `uploaded_by_user_id` / `shared_by_user_id` nullable)
+  and Sales (`quotations.status`, `sent_at`, `sent_by`).
+- `automation.md` event contract and `document.md`.
+- No table, column or status changes, so `docs/database/` was reviewed and is
+  unchanged. `bun docs/database/validate-dbml.ts` → `drizzle parity drift: 0`,
+  `OK`.
+
+**Gate 2 (owner decisions 2026-11-17).**
+- **Which documents.** Only the quotation (SPH) for now.
+- **When.** Automatically when the quotation is sent. The PDF link travels
+  in the event; whether the customer gets it is n8n's `notifyCustomers`
+  switch (default off).
+- **Link.** Valid for 30 days and revocable.
+- **Look.** Exactly the existing print page, rendered server-side with
+  headless Chromium.
+- **Resolved in design.**
+  - The PDF is made in a queue, never in the "send" request.
+  - The render view is public, but it needs a 2-minute HMAC token per
+    quotation (`APP_SECRET`).
+  - The PDF is stored on the quotation's registry document (ERP-0044), so the
+    document screen lists it and can revoke the link.
+  - Three attempts; the last publishes with `pdf: null`.
+  - One event per sending (dedupe key = id and `sent_at`).
+
+**What changed**
+- `providers/pdf`: `ChromiumPdfRenderer` (`playwright-core`, Chromium given by
+  path; A4, `id-ID`, Asia/Jakarta, waits for `[data-render-ready="true"]`) and
+  the render token helpers. Config `pdf` (`PDF_CHROMIUM_PATH`,
+  `PDF_RENDER_BASE_URL` → falls back to `APP_WEB_URL`, `PDF_LINK_DAYS` = 30),
+  documented in `.env.example`.
+- Document module:
+  - `findLiveBySource`;
+  - `attachGeneratedFile`;
+  - `createShare` accepts a null sharer;
+  - `GET /public/v1/documents/:token/file` (302 to the newest file).
+- Sales module:
+  - `QuotationDeliveryService` (`deliver`, `renderData`);
+  - queue and worker `quotation-sent` (always on, concurrency 1);
+  - `QuotationService.markSent` enqueues;
+  - `GET /public/v1/render/quotations/:id?token=`.
+- Topic `quotation.sent`.
+- Web admin: public route `/print/quotations/$quotationId?token=`. It renders
+  `QuotationDocument` on a white page and marks itself ready once the images
+  have loaded. No new strings.
+- Docs: `automation.md` (event row, queue, Docker note), `document.md`,
+  `sales.md`, `backlog.md`, `features.md`.
+
+**Verification**
+- `bun test test/unit/quotation-delivery.service.test.ts
+  test/unit/document.service.test.ts test/unit/quotation.service.test.ts` →
+  43 pass.
+- Typecheck: `bun run typecheck` (backend) clean; `bunx tsc -b` (web-admin)
+  clean.
+- `bun run lint` → 0 errors.
+- Backend `bun test` → 1095 pass, 4 fail. The 4 fails are
+  `image.util.test.ts` `toWebp` (`Bun.Image` → `UnsupportedImageError`) and
+  `CompanyService images`. They are pre-existing on this machine: the same
+  `image.util.test.ts` fails 3 / passes 6 in the untouched main checkout.
+  None of these files were changed.
+- **Live run** on the disposable `ims_erp_v_fu`:
+  - Setup: backend on `:3010` with real Chromium
+    (`ms-playwright/chromium-1254`), the web admin build served on `:5180`,
+    S3 storage local.
+  - `pdf-e2e.ts`: create → submit → approve → send.
+  - `send` answered 200 in 47-81 ms.
+  - `quotation.sent` appeared in the outbox after ~4-7 s, with
+    `pdf.url` = `/public/v1/documents/<token>/file`, `fileName`
+    `0002-QT-DEV-XI-26.pdf` and `expiresAt` 30 days out.
+  - The link answered 302 to storage, then 200 `application/pdf`, ~75 KB,
+    magic `%PDF-`.
+  - The public view lists 1 file; a bad render token gets 404; one event per
+    quotation.
+  - The PDF was rasterised and inspected: one A4 page, identical to the print
+    page. A first run showed the app's grey page background, fixed by the
+    white page in the render route.
+- `bun build --compile` probe: `playwright-core` inside a compiled binary,
+  run outside the repo, printed a PDF. The production image is a compiled
+  binary.
+
+**Not done.** Chromium in the Docker image (documented, not built).
+Real WhatsApp delivery. Other documents (SO, invoice, delivery note).
+
+**Next executable task:** (c) after-sales follow-ups (survey, maintenance,
+warranty). Ask the owner which first.
+
 ## 2026-11-16 - ERP-0066 sales follow-up reminders (leads, quotations) to n8n
 
 Branch `feat/m02-sales-follow-ups` from `origin/main` (`a1be332`), PR #116. The n8n side

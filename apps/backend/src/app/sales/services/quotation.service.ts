@@ -24,7 +24,9 @@ import type { TPaginationResult } from '@ims-erp/common';
 import { documentImageUrl } from '@providers/s3/document-image';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import { inject, injectable } from 'tsyringe';
-import { QUOTATION_REPOSITORY_TOKEN, SALES_ORDER_REPOSITORY_TOKEN } from '../constants/di';
+import { pinoLogger } from '@providers/logger/logger';
+import type { IQuotationSentDispatcher } from '../queues/quotation-sent.queue';
+import { QUOTATION_REPOSITORY_TOKEN, QUOTATION_SENT_DISPATCHER_TOKEN, SALES_ORDER_REPOSITORY_TOKEN } from '../constants/di';
 import type { ISalesOrderRepository } from '../contracts/sales-order.repository.interface';
 import type {
 	TQuotationBodyRequest,
@@ -130,6 +132,9 @@ export class QuotationService {
 		/** ERP-0066: follow-up reminders go to n8n through the outbox. */
 		@inject(OUTBOX_SERVICE_TOKEN)
 		private readonly outbox: Pick<OutboxService, 'publish'>,
+		/** ERP-0067: a sent quotation gets its PDF and `quotation.sent` in a queue. */
+		@inject(QUOTATION_SENT_DISPATCHER_TOKEN)
+		private readonly sentDispatcher: IQuotationSentDispatcher,
 	) {}
 
 	/**
@@ -409,6 +414,13 @@ export class QuotationService {
 			{ userId: ctx.actorUserId },
 		);
 		if (!updated) throw new QuotationStateError('notApproved');
+		// ERP-0067: the PDF and the `quotation.sent` event never block or fail
+		// the transition; a queue outage is logged and the SPH stays sent.
+		if (updated.sentAt) {
+			await this.sentDispatcher.enqueue(id, updated.sentAt).catch((error: unknown) => {
+				pinoLogger.error({ err: error, quotationId: id }, 'quotation-sent job not enqueued');
+			});
+		}
 		return updated;
 	}
 
