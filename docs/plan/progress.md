@@ -97,6 +97,19 @@ list: unused (highest ERP-0066).
   - The PDF was rasterised and inspected: one A4 page, identical to the print
     page. A first run showed the app's grey page background, fixed by the
     white page in the render route.
+- **ERP → n8n → WhatsApp (mock)**:
+  - Setup: n8n 2.x container with the PR #114 workflow (`72ab147b`, `1a8f9db5`)
+    and a fake WAHA/Graph on `:3999`; the backend outbox posts to n8n.
+  - WAHA: the customer's number got `/api/sendFile` with the PDF link
+    (`0005-QT-DEV-XI-26.pdf`) and the text as caption. The fake fetched the
+    link: 200 `application/pdf`, 75,703 bytes, `%PDF-`.
+  - Fallback, hit by accident: a web build pointing at the wrong API made
+    every render time out. After 3 attempts (~2.5 min) the event was published
+    with `pdf: null`, and n8n told the salesperson to send the PDF by hand.
+  - Meta: signed sample events. With a PDF → template `erp_penawaran_terkirim`
+    with a `header` document component (link and filename). Without one →
+    `erp_penawaran_tanpa_pdf` to the salesperson.
+  - `check-meta-templates.ts` → 43 messages against 20 templates, `OK`.
 - `bun build --compile` probe: `playwright-core` inside a compiled binary,
   run outside the repo, printed a PDF. The production image is a compiled
   binary.
