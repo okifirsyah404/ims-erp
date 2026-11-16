@@ -28,6 +28,8 @@ const changes: Record<string, (string | undefined)[]> = {
 	'purchase_return.updated': ['submitted', 'approved', 'rejected', 'shipped', 'cancelled'],
 	'sales_return.updated': ['submitted', 'approved', 'rejected', 'received', 'cancelled'],
 	'supplier_bill.due': ['upcoming', 'due', 'overdue'],
+	'lead.follow_up_due': ['due', 'overdue', 'no-owner'],
+	'quotation.follow_up_due': ['sent_3d', 'sent_7d', 'expiring'],
 };
 
 const problems: string[] = [];

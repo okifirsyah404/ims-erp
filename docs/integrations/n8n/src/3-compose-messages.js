@@ -80,6 +80,16 @@ const push = (audience, to, text, spec) => {
 const toRole = (role, text, spec) => {
 	for (const phone of CONFIG.team[role] || []) push(role, chatId(phone), text, spec);
 };
+/**
+ * A message to one person (the owner of a lead or quotation, ERP-0066) by
+ * their own phone from the ERP user profile. Without an owner or a phone it
+ * goes to `fallbackRole` instead, so a reminder is never lost.
+ */
+const toPerson = (person, fallbackRole, text, spec) => {
+	const to = person && chatId(person.phone);
+	if (to) push('owner', to, text, spec);
+	else toRole(fallbackRole, text, spec);
+};
 const emailRole = (role, subject, text) => {
 	for (const address of CONFIG.teamEmail[role] || []) {
 		if (address) out.push({ channel: 'email', audience: role, to: address, subject, text });
@@ -243,6 +253,34 @@ const handlers = {
 			);
 		}
 		if (d.change === 'cancelled') team('sales', 'dibatalkan: ' + (d.cancelledReason || '-'), head + ' dibatalkan: ' + (d.cancelledReason || '-'));
+	},
+	'lead.follow_up_due': () => {
+		const who = (d.name || '-') + (d.companyName ? ' (' + d.companyName + ')' : '');
+		const contact = d.whatsapp || d.phone || d.email || '-';
+		const when = d.daysOverdue > 0 ? 'terlambat ' + d.daysOverdue + ' hari (jadwal ' + date(d.dueDate) + ')' : 'jadwalnya hari ini';
+		const ownerName = (d.owner && d.owner.name) || 'belum ada pemilik';
+		const text = 'Follow-up lead ' + who + ' ' + when + '. Kontak: ' + contact + '. Kebutuhan: ' + (d.needs || '-') + link('/crm/leads/' + d.leadId);
+		toPerson(d.owner, 'salesManager', text, meta('erp_followup_lead', [who, when, contact, d.needs]));
+		if (d.stage === 'overdue' && d.owner && d.owner.phone) {
+			toRole(
+				'salesManager',
+				'Lead ' + who + ' milik ' + ownerName + ' belum di-follow-up, ' + when + '.' + link('/crm/leads/' + d.leadId),
+				meta('erp_followup_lead_terlambat', [who, ownerName, when]),
+			);
+		}
+	},
+	'quotation.follow_up_due': () => {
+		const customer = (d.customer && d.customer.name) || '-';
+		const state =
+			d.stage === 'expiring'
+				? 'berlaku sampai ' + date(d.validUntil) + ' (' + d.daysLeft + ' hari lagi)'
+				: 'terkirim ' + d.daysSinceSent + ' hari lalu dan belum ada jawaban';
+		toPerson(
+			d.owner,
+			'salesManager',
+			'Penawaran ' + d.code + ' (' + d.title + ') untuk ' + customer + ' sebesar ' + rupiah(d.grandTotal) + ' ' + state + '. Saatnya follow-up.' + link('/sales/quotes/' + d.quotationId),
+			meta('erp_followup_penawaran', [d.code, customer, rupiah(d.grandTotal), state]),
+		);
 	},
 	'supplier_bill.recorded': () => {
 		const supplier = d.supplier || {};
