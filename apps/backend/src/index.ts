@@ -8,6 +8,8 @@ import { registerProjects } from '@app/projects';
 import { registerAftersales } from '@app/aftersales';
 import { registerHr } from '@app/hr';
 import { registerLicenseDueSchedule, registerLicensing, startLicenseDueWorker } from '@app/licensing';
+import { registerLeadFollowUpSchedule, startLeadFollowUpWorker } from '@app/crm';
+import { registerQuotationFollowUpSchedule, startQuotationFollowUpWorker } from '@app/sales';
 import { registerCatalog } from '@app/catalog';
 import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
 import { registerAssets } from '@app/assets';
@@ -144,6 +146,9 @@ const bootstrap = new Elysia()
 const mailWorker = startMailWorker();
 // `startLicenseDueWorker` is `null` unless `scheduler.enabled` (M04 reminders).
 const licenseDueWorker = startLicenseDueWorker();
+// ERP-0066: lead and quotation follow-up reminders, same switch.
+const leadFollowUpWorker = startLeadFollowUpWorker();
+const quotationFollowUpWorker = startQuotationFollowUpWorker();
 startWorkers(
 	[
 		startAvatarWorker(),
@@ -153,6 +158,8 @@ startWorkers(
 		startWhatsappWorker(),
 		...(mailWorker ? [mailWorker] : []),
 		...(licenseDueWorker ? [licenseDueWorker] : []),
+		...(leadFollowUpWorker ? [leadFollowUpWorker] : []),
+		...(quotationFollowUpWorker ? [quotationFollowUpWorker] : []),
 	],
 	(error) => pinoLogger.error({ err: error }, 'background worker error'),
 );
@@ -160,6 +167,12 @@ if (licenseDueWorker) {
 	await registerLicenseDueSchedule().then(
 		() => pinoLogger.info('license.due reminder schedule registered'),
 		(error: unknown) => pinoLogger.error({ err: error }, 'license.due schedule not registered'),
+	);
+}
+if (leadFollowUpWorker && quotationFollowUpWorker) {
+	await Promise.all([registerLeadFollowUpSchedule(), registerQuotationFollowUpSchedule()]).then(
+		() => pinoLogger.info('sales follow-up schedules registered'),
+		(error: unknown) => pinoLogger.error({ err: error }, 'sales follow-up schedules not registered'),
 	);
 }
 if (mailWorker) {

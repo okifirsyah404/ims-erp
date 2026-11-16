@@ -45,6 +45,8 @@ import {
 } from '../errors/crm.errors';
 import type { CustomerService } from './customer.service';
 import { leadCreatedEvent } from '../utils/lead-event';
+import { leadFollowUpEvent, type TLeadOwnerContact } from '../utils/lead-follow-up';
+import { businessDateOf } from '@utils/business-date.util';
 
 export type TLeadContext = {
 	/** Caller's organization (decides permissions, not which leads exist). */
@@ -102,6 +104,39 @@ export class LeadService {
 		@inject(OUTBOX_SERVICE_TOKEN)
 		private readonly outbox: Pick<OutboxService, 'publish'>,
 	) {}
+
+	/** The owner's contact for a reminder; `null` without an owner. */
+	private async ownerContact(userId: string | null): Promise<TLeadOwnerContact | null> {
+		if (!userId) return null;
+		const user = await this.users.getUser(userId).catch(() => null);
+		return { userId, name: user?.name ?? null, phone: user?.phone ?? null, email: user?.email ?? null };
+	}
+
+	/**
+	 * Daily `lead.follow_up_due` reminders (ERP-0066, weekdays): open leads
+	 * whose planned follow-up is today or past go to their owner; more than 3
+	 * days late they are published again as `overdue` (n8n adds the sales
+	 * manager). Once per (lead, planned time, stage) through the outbox
+	 * dedupe key, so re-runs and a new follow-up date behave.
+	 */
+	async publishFollowUpNotices(now = new Date()): Promise<{ processed: number; skipped: number }> {
+		const today = businessDateOf(now);
+		const endOfToday = new Date(`${today}T23:59:59.999+07:00`);
+		let processed = 0;
+		let skipped = 0;
+		for (const lead of await this.leads.listFollowUpsDue(endOfToday)) {
+			if (!lead.nextFollowUpAt) continue;
+			const dueDate = businessDateOf(lead.nextFollowUpAt);
+			const daysOverdue = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${dueDate}T00:00:00Z`)) / 86_400_000);
+			const data = leadFollowUpEvent(lead, dueDate, daysOverdue, await this.ownerContact(lead.ownerUserId));
+			const message = await this.outbox.publish('lead.follow_up_due', { type: 'lead', id: lead.id }, data, {
+				dedupeKey: `lead.follow_up_due:${lead.id}:${lead.nextFollowUpAt.getTime()}:${data.stage}`,
+			});
+			if (message) processed += 1;
+			else skipped += 1;
+		}
+		return { processed, skipped };
+	}
 
 	private async requireVisible(ctx: TLeadContext, id: string): Promise<TLeadSelect> {
 		const lead = await this.leads.findById(id);

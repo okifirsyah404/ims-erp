@@ -15,6 +15,9 @@ export const OUTBOX_TOPICS = [
 	'license.due',
 	'service_ticket.updated',
 	'whatsapp.handoff',
+	// ERP-0066: daily sales follow-up reminders (weekdays).
+	'lead.follow_up_due',
+	'quotation.follow_up_due',
 ] as const;
 export type OutboxTopic = (typeof OUTBOX_TOPICS)[number];
 

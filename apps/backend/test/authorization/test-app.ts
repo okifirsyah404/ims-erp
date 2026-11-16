@@ -304,6 +304,9 @@ export function installSalesMocks() {
 		async findById(id) {
 			return (quotationStore.get(id) ?? null) as never;
 		},
+		async listSentForFollowUp() {
+			return [...quotationStore.values()].filter((row) => row.status === 'sent') as never;
+		},
 		async findItems() {
 			return [];
 		},

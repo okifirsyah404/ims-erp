@@ -18,6 +18,8 @@ import { SalesController } from './controllers/sales.controller';
 import { SalesOrderController } from './controllers/sales-order.controller';
 
 export { registerSales } from './container';
+export { registerQuotationFollowUpSchedule } from './queues/quotation-follow-up.queue';
+export { startQuotationFollowUpWorker } from './queues/quotation-follow-up.worker';
 
 /** Elysia instance mounting every sales controller, in route order. */
 export function salesModule() {

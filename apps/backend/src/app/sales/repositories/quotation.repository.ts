@@ -100,6 +100,14 @@ export class QuotationRepository implements IQuotationRepository {
 		return row ?? null;
 	}
 
+	listSentForFollowUp(): Promise<TQuotationSelect[]> {
+		return this.database
+			.select()
+			.from(quotations)
+			.where(and(isNull(quotations.deletedAt), eq(quotations.status, 'sent')))
+			.orderBy(asc(quotations.sentAt));
+	}
+
 	findItems(quotationId: string): Promise<TQuotationItemSelect[]> {
 		return this.database
 			.select()

@@ -58,6 +58,11 @@ class FakeLeads implements ILeadRepository {
 		);
 		return { meta: { page: 1, limit: 20, total: data.length, totalPages: 1 }, data };
 	}
+	async listFollowUpsDue(until: Date) {
+		return this.rows.filter(
+			(row) => row.nextFollowUpAt && row.nextFollowUpAt <= until && !['won', 'lost'].includes(row.status),
+		);
+	}
 	async findById(id: string) {
 		return this.rows.find((row) => row.id === id) ?? null;
 	}
@@ -280,5 +285,46 @@ describe('WebsiteInquiryService', () => {
 		);
 		await expect(service.submitRfq(rfq, [file('virus.exe')], null)).rejects.toBeInstanceOf(WebsiteInquiryError);
 		expect(leads.rows).toHaveLength(0);
+	});
+});
+
+describe('LeadService follow-up reminders (ERP-0066)', () => {
+	test('due today or past goes to the owner; more than 3 days late is published again as overdue', async () => {
+		const events: { topic: string; data: Record<string, unknown>; dedupeKey?: string }[] = [];
+		const repo = new FakeLeads();
+		const lead = (id: string, at: string, status = 'contacted', owner: string | null = 'sales-1') =>
+			({ id, name: `Lead ${id}`, status, ownerUserId: owner, nextFollowUpAt: new Date(at), reference: null, companyName: null, phone: '0812', whatsapp: null, email: null, source: 'phone', needs: null, estimatedValue: null }) as unknown as TLeadSelect;
+		repo.rows = [
+			lead('today', '2026-11-16T02:00:00Z'),
+			lead('late2', '2026-11-14T02:00:00Z'),
+			lead('late5', '2026-11-11T02:00:00Z', 'new', null),
+			lead('future', '2026-11-18T02:00:00Z'),
+			lead('won', '2026-11-10T02:00:00Z', 'won'),
+		];
+		const service = new LeadService(
+			repo,
+			new FakeActivities(),
+			{} as never,
+			{} as never,
+			{} as never,
+			{ getUser: async (id: string) => ({ id, name: `User ${id}`, phone: '081100000001', email: null }) as never },
+			{} as never,
+			{
+				publish: async (topic: string, _aggregate: unknown, data: Record<string, unknown>, options?: { dedupeKey?: string }) => {
+					events.push({ topic, data, dedupeKey: options?.dedupeKey });
+					return {} as never;
+				},
+			} as never,
+		);
+		const result = await service.publishFollowUpNotices(new Date('2026-11-16T01:00:00Z'));
+		expect(result).toEqual({ processed: 3, skipped: 0 });
+		expect(events.map((event) => [event.data.leadId, event.data.stage, event.data.daysOverdue])).toEqual([
+			['today', 'due', 0],
+			['late2', 'due', 2],
+			['late5', 'overdue', 5],
+		]);
+		expect(events[0]?.data.owner).toEqual({ userId: 'sales-1', name: 'User sales-1', phone: '081100000001', email: null });
+		expect(events[2]?.data.owner).toBeNull();
+		expect(events[0]?.dedupeKey).toBe(`lead.follow_up_due:today:${new Date('2026-11-16T02:00:00Z').getTime()}:due`);
 	});
 });

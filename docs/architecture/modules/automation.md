@@ -53,12 +53,23 @@ Amounts are integer IDR minor units (divide by 100 for rupiah). Topics:
 | `service_ticket.updated` | After-sales: every ticket change | `ticketId`, `code`, `change` (`created / assigned / started / resolved / reopened / closed`), `status`, `customer{id,name,phone,whatsapp,email}`, `reporterName`, `reporterContact`, `assignee{userId,name}`, `resolution`, `serviceCost` |
 | `whatsapp.handoff` | WhatsApp assistant: chat handed to an admin | `conversationId`, `phone`, `contactName`, `reason` (`no_provider / not_found / human_requested / restricted / error`), `question` |
 | `license.due` | Licensing: daily job | `contractId`, `code`, `threshold` (30 / 7 / 0), `stage` (`ending / ended`), `daysLeft`, `endDate`, `graceEndsOn`, `application{code,name}`, `customer{…}` |
+| `lead.follow_up_due` | CRM: weekday job (ERP-0066) | `leadId`, `reference`, `name`, `companyName`, `phone`, `whatsapp`, `email`, `status`, `source`, `needs`, `estimatedValue`, `nextFollowUpAt`, `dueDate`, `daysOverdue`, `stage` (`due` / `overdue` = more than 3 days late), `owner{userId,name,phone,email}` or null |
+| `quotation.follow_up_due` | Sales: weekday job (ERP-0066) | `quotationId`, `code`, `title`, `stage` (`sent_3d` / `sent_7d` / `expiring`), `sentDate`, `daysSinceSent`, `validUntil`, `daysLeft`, `grandTotal`, `currencyCode`, `customer{id,name}`, `owner{userId,name,phone,email}` (the creator) |
 
 `license.due` runs from the BullMQ queue `licensing-due` (cron
 `SCHEDULER_LICENSE_DUE_CRON`, default `0 8 * * *` Asia/Jakarta, only with
 `SCHEDULER_ENABLED=true`). Each contract, end date and threshold is published
 once (`outbox_messages.dedupe_key`), so a re-run or a missed day never
 duplicates a reminder.
+
+`lead.follow_up_due` and `quotation.follow_up_due` run from the BullMQ queues
+`lead-follow-up` and `quotation-follow-up` (cron `SCHEDULER_SALES_FOLLOW_UP_CRON`,
+default `0 8 * * 1-5`, weekdays 08:00 Asia/Jakarta, only with
+`SCHEDULER_ENABLED=true`). Leads: open (not won/lost) with `next_follow_up_at`
+today or past, once per planned time and stage (`due`, then `overdue` after 3
+days). Quotations: still `sent` 3 and 7 days after sending (one "sent" stage per
+run, 7 wins) and 2 days before `valid_until` (`expiring`), once per stage.
+Internal only: n8n messages the owner, not the customer.
 
 ## WhatsApp assistant
 

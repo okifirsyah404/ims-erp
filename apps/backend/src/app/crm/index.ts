@@ -10,6 +10,8 @@ import { LeadController } from './controllers/lead.controller';
 import { PublicWebsiteController } from './controllers/public-website.controller';
 
 export { registerCrm } from './container';
+export { registerLeadFollowUpSchedule } from './queues/lead-follow-up.queue';
+export { startLeadFollowUpWorker } from './queues/lead-follow-up.worker';
 export { CUSTOMER_SERVICE_TOKEN } from './constants/di';
 export type { CustomerService } from './services/customer.service';
 
