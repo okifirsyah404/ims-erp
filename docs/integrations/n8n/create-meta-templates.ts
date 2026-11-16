@@ -15,7 +15,7 @@ import { join } from 'node:path';
 
 const catalog = JSON.parse(readFileSync(join(import.meta.dir, 'meta-templates.json'), 'utf8')) as {
 	language: string;
-	templates: { name: string; body: string; example: string[] }[];
+	templates: { name: string; header?: 'DOCUMENT'; body: string; example: string[] }[];
 };
 const dryRun = process.argv.includes('--dry-run');
 const waba = process.env.META_WABA_ID;
@@ -28,6 +28,12 @@ if (!dryRun && (!waba || !token)) {
 }
 
 for (const template of catalog.templates) {
+	if (template.header === 'DOCUMENT') {
+		// The API wants a sample PDF uploaded first (a media handle); WhatsApp
+		// Manager takes the same template with a file picker. See README.
+		console.log(`${template.name}: skipped - has a DOCUMENT header, create it in WhatsApp Manager (docs/user-guide/whatsapp-business-meta.*.md, section 4)`);
+		continue;
+	}
 	const payload = {
 		name: template.name,
 		language: catalog.language,

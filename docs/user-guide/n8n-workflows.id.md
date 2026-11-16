@@ -178,6 +178,7 @@ const CONFIG = {
 | `supplier_bill.due` | Harian: tagihan H-7, jatuh tempo hari ini, atau lewat jatuh tempo | finance; lewat jatuh tempo → juga owner |
 | `lead.follow_up_due` | Hari kerja 08.00: jadwal follow-up lead tiba/lewat | **sales pemilik lead** (nomor HP dari profil user ERP; tanpa pemilik → sales manager); terlambat > 3 hari → juga sales manager |
 | `quotation.follow_up_due` | Hari kerja 08.00: penawaran terkirim belum dijawab H+3 / H+7, dan H-2 sebelum masa berlaku habis | **sales pembuat penawaran** (cadangan: sales manager). Tidak ke pelanggan |
+| `quotation.sent` | Penawaran ditandai terkirim; ERP sudah membuat PDF-nya (sama persis dengan halaman cetak) | pelanggan*: pesan **dengan lampiran PDF** (WAHA `sendFile` / template Meta dengan header Document; link PDF berlaku 30 hari). Kalau PDF gagal dibuat → **sales pembuat penawaran** diminta kirim manual |
 
 \* hanya bila `notifyCustomers: true`; \*\* hanya bila `notifySuppliers: true`.
 

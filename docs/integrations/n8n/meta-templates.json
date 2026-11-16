@@ -192,6 +192,28 @@
 				"Rp 45.000.000",
 				"terkirim 3 hari lalu dan belum ada jawaban"
 			]
+		},
+		{
+			"name": "erp_penawaran_terkirim",
+			"audience": "customer (only with notifyCustomers), with the quotation PDF",
+			"header": "DOCUMENT",
+			"body": "Yth. {{1}}, berikut penawaran {{2}} ({{3}}) sebesar {{4}}, berlaku sampai {{5}}. Terima kasih.",
+			"example": [
+				"PT Kantor Maju",
+				"0007/QT/IMS/XI/26",
+				"Absensi wajah 3 cabang",
+				"Rp 45.000.000",
+				"18 Desember 2026"
+			]
+		},
+		{
+			"name": "erp_penawaran_tanpa_pdf",
+			"audience": "quotation creator (salesperson), else sales manager",
+			"body": "Penawaran {{1}} untuk {{2}} sudah terkirim, tetapi PDF-nya tidak dibuat otomatis. Kirim PDF dari halaman cetak.",
+			"example": [
+				"0007/QT/IMS/XI/26",
+				"PT Kantor Maju"
+			]
 		}
 	]
 }

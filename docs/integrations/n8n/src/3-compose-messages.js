@@ -74,8 +74,10 @@ const flat = (value) => String(value == null || value === '' ? '-' : value).repl
 const meta = (template, params) => ({ template, params: params.map(flat) });
 
 const out = [];
-const push = (audience, to, text, spec) => {
-	if (to) out.push({ channel: 'whatsapp', audience, to, text, template: spec ? spec.template : null, params: spec ? spec.params : [] });
+// `file` (optional, ERP-0067): a document sent with the message. WAHA sends
+// it with the text as caption; Meta puts it in the template's DOCUMENT header.
+const push = (audience, to, text, spec, file) => {
+	if (to) out.push({ channel: 'whatsapp', audience, to, text, template: spec ? spec.template : null, params: spec ? spec.params : [], file: file || null });
 };
 const toRole = (role, text, spec) => {
 	for (const phone of CONFIG.team[role] || []) push(role, chatId(phone), text, spec);
@@ -95,9 +97,9 @@ const emailRole = (role, subject, text) => {
 		if (address) out.push({ channel: 'email', audience: role, to: address, subject, text });
 	}
 };
-const toCustomer = (customer, text, spec) => {
+const toCustomer = (customer, text, spec, file) => {
 	if (!CONFIG.notifyCustomers || !customer) return;
-	push('customer', chatId(customer.whatsapp || customer.phone), text, spec);
+	push('customer', chatId(customer.whatsapp || customer.phone), text, spec, file);
 };
 const toSupplier = (supplier, text, spec) => {
 	if (!CONFIG.notifySuppliers || !supplier) return;
@@ -281,6 +283,31 @@ const handlers = {
 			'Penawaran ' + d.code + ' (' + d.title + ') untuk ' + customer + ' sebesar ' + rupiah(d.grandTotal) + ' ' + state + '. Saatnya follow-up.' + link('/sales/quotes/' + d.quotationId),
 			meta('erp_followup_penawaran', [d.code, customer, rupiah(d.grandTotal), state]),
 		);
+	},
+	'quotation.sent': () => {
+		const customer = d.customer || {};
+		const pdf = d.pdf;
+		if (pdf && pdf.url) {
+			// The PDF link is public for 30 days (revocable in the ERP's document
+			// screen); customers get it only when notifyCustomers is on.
+			toCustomer(
+				customer,
+				'Yth. ' + (customer.name || 'Pelanggan') + ',\n' +
+					'Berikut penawaran ' + d.code + ' (' + d.title + ') dari ' + CONFIG.companyName + ' sebesar ' + rupiah(d.grandTotal) +
+					', berlaku sampai ' + date(d.validUntil) + '. Terima kasih.',
+				meta('erp_penawaran_terkirim', [customer.name || 'Pelanggan', d.code, d.title, rupiah(d.grandTotal), date(d.validUntil)]),
+				{ url: pdf.url, filename: pdf.fileName || 'penawaran.pdf', mimetype: 'application/pdf' },
+			);
+		} else {
+			// No PDF (rendering failed, or PDFs are off in the ERP): the
+			// salesperson sends it by hand from the print page.
+			toPerson(
+				d.owner,
+				'salesManager',
+				'Penawaran ' + d.code + ' untuk ' + (customer.name || '-') + ' sudah terkirim, tetapi PDF-nya tidak dibuat otomatis. Kirim PDF dari halaman cetak.' + link('/sales/quotes/' + d.quotationId + '/print'),
+				meta('erp_penawaran_tanpa_pdf', [d.code, customer.name]),
+			);
+		}
 	},
 	'supplier_bill.recorded': () => {
 		const supplier = d.supplier || {};

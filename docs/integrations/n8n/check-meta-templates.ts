@@ -3,7 +3,8 @@
  * topics, every `change`) with every recipient switched on, and checks each
  * WhatsApp message against meta-templates.json: the template exists and gets
  * exactly as many variables as its body has, none of them empty or holding a
- * new line (Meta refuses those).
+ * new line (Meta refuses those), and a message carrying a file uses a template
+ * with a DOCUMENT header.
  *
  *   bun docs/integrations/n8n/check-meta-templates.ts
  */
@@ -13,7 +14,7 @@ import { samples } from './samples';
 
 const here = import.meta.dir;
 const catalog = JSON.parse(readFileSync(join(here, 'meta-templates.json'), 'utf8')) as {
-	templates: { name: string; body: string; example: string[] }[];
+	templates: { name: string; header?: 'DOCUMENT'; body: string; example: string[] }[];
 };
 const byName = new Map(catalog.templates.map((template) => [template.name, template]));
 const placeholders = (body: string) => new Set(body.match(/\{\{\d+\}\}/g) ?? []).size;
@@ -21,7 +22,7 @@ const placeholders = (body: string) => new Set(body.match(/\{\{\d+\}\}/g) ?? [])
 let code = readFileSync(join(here, 'src', '3-compose-messages.js'), 'utf8');
 // Every role gets a number and customers/suppliers are on, so every branch runs.
 code = code.replace(/(\t\t\w+): \[\],/g, "$1: ['081100000000'],").replace('notifyCustomers: false', 'notifyCustomers: true').replace('notifySuppliers: false', 'notifySuppliers: true');
-const compose = new Function('$input', `return (async () => {\n${code}\n})();`) as (input: unknown) => Promise<{ json: { messages: { channel: string; template: string | null; params: string[]; audience: string }[] } }[]>;
+const compose = new Function('$input', `return (async () => {\n${code}\n})();`) as (input: unknown) => Promise<{ json: { messages: { channel: string; template: string | null; params: string[]; audience: string; file: { url: string } | null }[] } }[]>;
 
 const changes: Record<string, (string | undefined)[]> = {
 	'service_ticket.updated': ['created', 'assigned', 'started', 'resolved', 'reopened', 'closed'],
@@ -30,6 +31,7 @@ const changes: Record<string, (string | undefined)[]> = {
 	'supplier_bill.due': ['upcoming', 'due', 'overdue'],
 	'lead.follow_up_due': ['due', 'overdue', 'no-owner'],
 	'quotation.follow_up_due': ['sent_3d', 'sent_7d', 'expiring'],
+	'quotation.sent': ['pdf', 'no-pdf'],
 };
 
 const problems: string[] = [];
@@ -49,6 +51,10 @@ for (const [topic, make] of Object.entries(samples)) {
 			used.add(template.name);
 			if (placeholders(template.body) !== message.params.length) {
 				problems.push(`${where}: ${template.name} needs ${placeholders(template.body)} params, got ${message.params.length}`);
+			}
+			// A message with a file needs a template with a DOCUMENT header, and back.
+			if (Boolean(message.file) !== (template.header === 'DOCUMENT')) {
+				problems.push(`${where}: ${template.name} ${message.file ? 'has no DOCUMENT header for the file' : 'expects a document, none sent'}`);
 			}
 			if (template.example.length !== placeholders(template.body)) problems.push(`${template.name}: example count does not match the body`);
 			for (const value of message.params) {

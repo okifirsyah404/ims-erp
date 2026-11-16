@@ -15,7 +15,7 @@ register.
 > - **Built and tested:**
 >   - The n8n workflow sends through Meta (`WHATSAPP_PROVIDER=meta`), tested on n8n 2.47.7
 >     against a mock Graph API: 10 topics sent as template messages in the official format.
->   - The 15-template catalog is checked against the composed messages
+>   - The 20-template catalog is checked against the composed messages
 >     (`check-meta-templates.ts`).
 >   - The template submission script (`create-meta-templates.ts`) is tested against the mock.
 > - **Not yet:**
@@ -101,7 +101,7 @@ BSP only the URL and token of the sender node change.
 - Review usually takes minutes and at most about 24 hours.
 
 Catalog: [`docs/integrations/n8n/meta-templates.json`](../integrations/n8n/meta-templates.json)
-(15 Indonesian Utility templates; the table is in the Indonesian guide). There are two ways to
+(20 Indonesian Utility templates; the table is in the Indonesian guide). There are two ways to
 submit them:
 - **With the script:**
   ```bash
@@ -109,6 +109,16 @@ submit them:
   bun docs/integrations/n8n/create-meta-templates.ts       # --dry-run prints the payloads
   ```
 - **By hand:** WhatsApp Manager → Message templates.
+
+**Template with a PDF.** `erp_penawaran_terkirim` has a **Document** header: WhatsApp sends the
+quotation PDF as an attachment and the body becomes its caption. The script **skips** it, because
+Meta's API needs a sample PDF uploaded first. Create it by hand in WhatsApp Manager:
+1. Category **Utility**, language **Indonesian**.
+2. Header → **Document**, with any sample PDF.
+3. Body and example from `meta-templates.json`.
+
+n8n fills the header with the ERP's PDF link when it sends. The link is valid for 30 days and can
+be revoked from the ERP's document screen.
 
 After editing a template, update the matching parameters in "3. Compose messages" and run
 `bun docs/integrations/n8n/check-meta-templates.ts`, which must print `OK`.
@@ -182,7 +192,7 @@ and the assistant (ERP) must move together, or use two numbers during the switch
 ## 10. Suggested migration
 
 1. Register and verify the business while WAHA stays for testing.
-2. Submit the 15 templates and wait for APPROVED.
+2. Submit the 20 templates and wait for APPROVED.
 3. Build section 9 so the assistant moves too.
 4. Test with Meta's **test number** and team numbers: `send-test-event.ts all` with
    `WHATSAPP_PROVIDER=meta`, then one real ERP event.

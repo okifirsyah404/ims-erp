@@ -16,7 +16,7 @@ cara mendaftarnya.
 > - **Sudah dibangun dan diuji:**
 >   - Workflow n8n bisa mengirim lewat Meta (`WHATSAPP_PROVIDER=meta`), diuji di n8n 2.47.7
 >     terhadap Graph API tiruan: 10 topik terkirim sebagai pesan template dengan format resmi.
->   - Katalog 15 template sudah dicek cocok dengan pesan yang disusun (`check-meta-templates.ts`).
+>   - Katalog 20 template sudah dicek cocok dengan pesan yang disusun (`check-meta-templates.ts`).
 >   - Skrip pengajuan template (`create-meta-templates.ts`) sudah diuji ke API tiruan.
 > - **Belum:**
 >   - Akun Meta sungguhan, nomor sungguhan, dan template yang benar-benar disetujui.
@@ -117,7 +117,7 @@ Aturan Meta untuk pesan yang **dimulai bisnis** (semua notifikasi ERP termasuk d
   cenderung ditolak.
 
 Katalog siap ajukan: [`docs/integrations/n8n/meta-templates.json`](../integrations/n8n/meta-templates.json)
-(15 template, bahasa `id`, Utility):
+(20 template, bahasa `id`, Utility):
 
 | Template | Untuk | Isi |
 | --- | --- | --- |
@@ -136,6 +136,11 @@ Katalog siap ajukan: [`docs/integrations/n8n/meta-templates.json`](../integratio
 | `erp_retur_disetujui` | pelanggan | Yth. {{1}}, pengajuan retur {{2}} disetujui. Tim kami akan mengatur pengambilan atau pengiriman barang. |
 | `erp_retur_diterima` | pelanggan | Yth. {{1}}, barang retur {{2}} sudah kami terima. Barang pengganti akan segera kami kirim. |
 | `erp_tagihan_pemasok_internal` | finance, owner | Tagihan pemasok {{1}} (faktur {{2}}) dari {{3}} sebesar {{4}}: {{5}}. |
+| `erp_followup_lead` | sales pemilik lead | Pengingat follow-up lead {{1}}: {{2}}. Kontak: {{3}}. Kebutuhan: {{4}}. |
+| `erp_followup_lead_terlambat` | sales manager | Lead {{1}} milik {{2}} belum di-follow-up, {{3}}. |
+| `erp_followup_penawaran` | sales pembuat penawaran | Pengingat follow-up penawaran {{1}} untuk {{2}} sebesar {{3}}: {{4}}. |
+| `erp_penawaran_terkirim` | pelanggan | [PDF] Yth. {{1}}, berikut penawaran {{2}} ({{3}}) sebesar {{4}}, berlaku sampai {{5}}. Terima kasih. |
+| `erp_penawaran_tanpa_pdf` | sales pembuat penawaran | Penawaran {{1}} untuk {{2}} sudah terkirim, tetapi PDF-nya tidak dibuat otomatis. Kirim PDF dari halaman cetak. |
 
 Ada dua cara mengajukan:
 - **Otomatis:**
@@ -145,6 +150,17 @@ Ada dua cara mengajukan:
   ```
 - **Manual:** WhatsApp Manager → *Message templates → Create template* → kategori Utility,
   bahasa Indonesian, salin isi dan contoh dari tabel/JSON.
+
+**Template dengan PDF.** `erp_penawaran_terkirim` (ditandai [PDF]) punya *header* **Document**:
+WhatsApp mengirim PDF penawaran sebagai lampiran, dan isi pesan menjadi keterangannya. Template ini
+**tidak bisa** diajukan lewat skrip (API Meta minta contoh PDF diunggah dulu), jadi skrip
+melewatinya. Buat manual di WhatsApp Manager:
+1. *Create template* → kategori **Utility**, bahasa **Indonesian**, nama `erp_penawaran_terkirim`.
+2. *Header* → **Document**, lalu unggah PDF contoh apa saja (misalnya hasil cetak satu penawaran).
+3. *Body* → salin isi dan contoh dari `meta-templates.json`.
+
+Saat dikirim, n8n mengisi header dengan link PDF dari ERP. Link berlaku 30 hari dan bisa dicabut
+dari halaman dokumen ERP.
 
 Kalau teks template diubah: ubah `meta-templates.json` **dan** parameter di node "3. Compose
 messages", lalu jalankan `bun docs/integrations/n8n/check-meta-templates.ts`. Hasilnya harus
@@ -252,7 +268,7 @@ harus pindah bersama**, atau pakai dua nomor berbeda selama transisi.
 ## 10. Rencana pindah yang disarankan
 
 1. Daftar dan verifikasi bisnis (bagian 2–3) sambil tetap memakai WAHA untuk uji.
-2. Ajukan 15 template, lalu tunggu APPROVED.
+2. Ajukan 20 template, lalu tunggu APPROVED.
 3. Bangun bagian 9 (adapter Meta di ERP) supaya asisten chat ikut pindah.
 4. Uji dengan **nomor uji Meta** dan nomor tim:
    - `send-test-event.ts all` dengan `WHATSAPP_PROVIDER=meta`;

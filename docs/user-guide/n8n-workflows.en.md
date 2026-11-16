@@ -135,6 +135,7 @@ To change a text, edit that topic's function in the `handlers` object of the sam
 | `supplier_bill.due` | Daily: 7 days ahead, due today, overdue | finance; overdue → also owner |
 | `lead.follow_up_due` | Weekdays 08:00: a lead's follow-up date arrived or passed | **the lead's owner** (phone from the ERP user profile; no owner → sales manager); more than 3 days late → also the sales manager |
 | `quotation.follow_up_due` | Weekdays 08:00: a sent quotation without an answer after 3 / 7 days, and 2 days before it expires | **the salesperson who made it** (fallback sales manager). Never the customer |
+| `quotation.sent` | A quotation is marked sent; the ERP has made its PDF (identical to the print page) | customer*: a message **with the PDF attached** (WAHA `sendFile` / Meta template with a Document header; the link lasts 30 days). No PDF → **the salesperson who made it** is asked to send it by hand |
 
 \* only with `notifyCustomers: true`; \*\* only with `notifySuppliers: true`.
 Field lists: `docs/architecture/modules/automation.md`, "The event contract".
