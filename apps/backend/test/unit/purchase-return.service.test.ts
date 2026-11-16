@@ -111,6 +111,7 @@ let movements: { movementType: string; quantity: string; warehouseId: string; it
 let unreceived: { purchaseOrderItemId: string; quantity: string }[];
 let returnedUnits: string[];
 let documents: string[];
+let events: string[];
 let service: PurchaseReturnService;
 
 beforeEach(() => {
@@ -121,6 +122,7 @@ beforeEach(() => {
 	unreceived = [];
 	returnedUnits = [];
 	documents = [];
+	events = [];
 	const lines = [receiptLine(CABLE_LINE, CABLE, '10.000', 5_000_00, null), receiptLine(READER_LINE, READER, '3.000', 1_200_000_00, ['SN-1', 'SN-2', 'SN-3'])];
 	service = new PurchaseReturnService(
 		returns,
@@ -180,6 +182,12 @@ beforeEach(() => {
 			},
 			voidBySource: async (_module: string, type: string) => {
 				documents.push(`void:${type}`);
+			},
+		} as never,
+		{
+			publish: async (topic: string, _aggregate: unknown, data: { change: string }) => {
+				events.push(`${topic}:${data.change}`);
+				return null;
 			},
 		} as never,
 	);
@@ -298,6 +306,11 @@ describe('shipping a purchase return', () => {
 			{ purchaseOrderItemId: `${READER_LINE}-po`, quantity: '1' },
 		]);
 		expect((await returns.findItems(row.id)).every((item) => item.stockMovementId)).toBe(true);
+		expect(events).toEqual([
+			'purchase_return.updated:submitted',
+			'purchase_return.updated:approved',
+			'purchase_return.updated:shipped',
+		]);
 	});
 
 	test('fails when a serial left stock after approval', async () => {

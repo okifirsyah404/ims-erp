@@ -4,6 +4,8 @@ import type { StockService } from '@app/inventory/services/stock.service';
 import type { WarehouseService } from '@app/inventory/services/warehouse.service';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
+import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
+import type { OutboxService } from '@app/automation/services/outbox.service';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
 import type { DocumentService } from '@app/document';
 import { isUniqueViolation } from '@drizzle/errors';
@@ -47,6 +49,7 @@ import {
 	SalesReturnSelfApprovalError,
 	SalesReturnStateError,
 } from '../errors/sales-return.errors';
+import { type SalesReturnChange, salesReturnUpdatedEvent } from '../utils/sales-return-event';
 
 /** Statuses whose lines still hold delivered quantity (not cancelled). */
 const LIVE_STATUSES: readonly SalesReturnStatus[] = ['draft', 'submitted', 'approved', 'received'];
@@ -95,7 +98,7 @@ export class SalesReturnService {
 		@inject(DELIVERY_NOTE_REPOSITORY_TOKEN)
 		private readonly notes: Pick<IDeliveryNoteRepository, 'findById' | 'findItems' | 'paginate'>,
 		@inject(SALES_ORDER_REPOSITORY_TOKEN)
-		private readonly orders: Pick<ISalesOrderRepository, 'allocateDelivery' | 'reopenForReplacement'>,
+		private readonly orders: Pick<ISalesOrderRepository, 'allocateDelivery' | 'reopenForReplacement' | 'findById'>,
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stock: Pick<StockService, 'postMovement' | 'resolveScope'>,
 		@inject(ITEM_SERVICE_TOKEN)
@@ -109,7 +112,26 @@ export class SalesReturnService {
 		/** ERP-0044: approved returns are recorded in the document registry. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
+		/** M04: every state change goes to n8n as `sales_return.updated`. */
+		@inject(OUTBOX_SERVICE_TOKEN)
+		private readonly outbox: Pick<OutboxService, 'publish'>,
 	) {}
+
+	/** Publishes `sales_return.updated` after a committed change; never throws. */
+	private async changed(id: string, change: SalesReturnChange, actorUserId: string): Promise<void> {
+		try {
+			const row = await this.returns.findById(id);
+			if (!row) return;
+			const [items, order] = await Promise.all([this.returns.findItems(id), this.orders.findById(row.salesOrderId)]);
+			await this.outbox.publish(
+				'sales_return.updated',
+				{ type: 'sales_return', id },
+				salesReturnUpdatedEvent(row, items, change, order?.customerSnapshot ?? null, actorUserId),
+			);
+		} catch {
+			// The outbox logs its own failures; a notification never undoes a return.
+		}
+	}
 
 	private async require(id: string): Promise<TSalesReturnRow> {
 		const row = await this.returns.findById(id);
@@ -298,6 +320,7 @@ export class SalesReturnService {
 			rejectionReason: null,
 		});
 		if (!updated) throw new SalesReturnStateError('notDraft');
+		await this.changed(id, 'submitted', actorUserId);
 		return updated;
 	}
 
@@ -309,6 +332,7 @@ export class SalesReturnService {
 		if (input.decision === 'reject') {
 			const rejected = await this.returns.transition(id, ['submitted'], 'draft', { rejectionReason: input.reason ?? null });
 			if (!rejected) throw new SalesReturnStateError('notSubmitted');
+			await this.changed(id, 'rejected', actorUserId);
 			return rejected;
 		}
 		const code = await this.numbering.next('sales_return', { date: noon(row.returnDate) });
@@ -331,6 +355,7 @@ export class SalesReturnService {
 				issuedOn: approved.returnDate,
 				issuedByUserId: actorUserId,
 			});
+			await this.changed(id, 'approved', actorUserId);
 			return approved;
 		} catch (error) {
 			if (isUniqueViolation(error)) throw new SalesReturnCodeTakenError(code);
@@ -361,11 +386,11 @@ export class SalesReturnService {
 		if (body.lines.some((line) => line.binId && !storages.has(line.binId))) throw new SalesReturnReceiveError('bin');
 		const occurredAt = noon(body.receivedDate ?? businessDateOf());
 
-		return this.transactions.run(async (tx) => {
+		const received = await this.transactions.run(async (tx) => {
 			const row = await this.returns.claimForReceive(id, tx);
 			if (!row) throw new SalesReturnStateError('notApproved');
 			const noteLines = new Map((await this.notes.findItems(row.deliveryNoteId)).map((line) => [line.id, line]));
-			const received = await this.returns.returnedOnLines(
+			const alreadyReceived = await this.returns.returnedOnLines(
 				lines.map((line) => line.deliveryNoteItemId),
 				['received'],
 				id,
@@ -373,7 +398,7 @@ export class SalesReturnService {
 			);
 			for (const [index, line] of lines.entries()) {
 				const noteLine = noteLines.get(line.deliveryNoteItemId);
-				const already = received.get(line.deliveryNoteItemId)?.quantityMilli ?? 0n;
+				const already = alreadyReceived.get(line.deliveryNoteItemId)?.quantityMilli ?? 0n;
 				if (!noteLine || already + quantityToMilli(line.quantity) > quantityToMilli(noteLine.quantity)) {
 					throw new SalesReturnLineError('over', index + 1);
 				}
@@ -433,6 +458,8 @@ export class SalesReturnService {
 			if (!updated) throw new SalesReturnStateError('notApproved');
 			return updated;
 		});
+		await this.changed(id, 'received', actor.userId);
+		return received;
 	}
 
 	async cancel(actorUserId: string, id: string, reason: string): Promise<TSalesReturnSelect> {
@@ -445,6 +472,7 @@ export class SalesReturnService {
 		if (!updated) throw new SalesReturnStateError('notCancellable');
 		// ERP-0044: an approved return that is cancelled is a dead document.
 		if (row.code) await this.documents.voidBySource('sales', 'sales_return', id);
+		await this.changed(id, 'cancelled', actorUserId);
 		return updated;
 	}
 }

@@ -4,6 +4,8 @@ import type { StockService } from '@app/inventory/services/stock.service';
 import type { WarehouseService } from '@app/inventory/services/warehouse.service';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
+import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
+import type { OutboxService } from '@app/automation/services/outbox.service';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
 import type { DocumentService } from '@app/document';
 import { isUniqueViolation } from '@drizzle/errors';
@@ -45,6 +47,7 @@ import {
 	PurchaseReturnSelfApprovalError,
 	PurchaseReturnStateError,
 } from '../errors/procurement.errors';
+import { type PurchaseReturnChange, purchaseReturnUpdatedEvent } from '../utils/purchase-return-event';
 
 /** Statuses whose lines still hold goods receipt quantity (not cancelled). */
 const LIVE_STATUSES: readonly PurchaseReturnStatus[] = ['draft', 'submitted', 'approved', 'shipped'];
@@ -106,7 +109,26 @@ export class PurchaseReturnService {
 		/** ERP-0044: approved returns are recorded in the document registry. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
+		/** M04: every state change goes to n8n as `purchase_return.updated`. */
+		@inject(OUTBOX_SERVICE_TOKEN)
+		private readonly outbox: Pick<OutboxService, 'publish'>,
 	) {}
+
+	/** Publishes `purchase_return.updated` after a committed change; never throws. */
+	private async changed(id: string, change: PurchaseReturnChange, actorUserId: string): Promise<void> {
+		try {
+			const row = await this.returns.findById(id);
+			if (!row) return;
+			const [items, order] = await Promise.all([this.returns.findItems(id), this.orders.findById(row.purchaseOrderId)]);
+			await this.outbox.publish(
+				'purchase_return.updated',
+				{ type: 'purchase_return', id },
+				purchaseReturnUpdatedEvent(row, items, change, order?.supplierSnapshot ?? null, actorUserId),
+			);
+		} catch {
+			// The outbox logs its own failures; a notification never undoes a return.
+		}
+	}
 
 	private async require(id: string): Promise<TPurchaseReturnRow> {
 		const row = await this.returns.findById(id);
@@ -287,6 +309,7 @@ export class PurchaseReturnService {
 			rejectionReason: null,
 		});
 		if (!updated) throw new PurchaseReturnStateError('notDraft');
+		await this.changed(id, 'submitted', actorUserId);
 		return updated;
 	}
 
@@ -298,6 +321,7 @@ export class PurchaseReturnService {
 		if (input.decision === 'reject') {
 			const rejected = await this.returns.transition(id, ['submitted'], 'draft', { rejectionReason: input.reason ?? null });
 			if (!rejected) throw new PurchaseReturnStateError('notSubmitted');
+			await this.changed(id, 'rejected', actorUserId);
 			return rejected;
 		}
 		const code = await this.numbering.next('purchase_return', { date: new Date(`${row.returnDate}T12:00:00+07:00`) });
@@ -320,6 +344,7 @@ export class PurchaseReturnService {
 				issuedOn: approved.returnDate,
 				issuedByUserId: actorUserId,
 			});
+			await this.changed(id, 'approved', actorUserId);
 			return approved;
 		} catch (error) {
 			if (isUniqueViolation(error)) throw new PurchaseReturnCodeTakenError(code);
@@ -341,7 +366,7 @@ export class PurchaseReturnService {
 	): Promise<TPurchaseReturnSelect> {
 		const head = await this.require(id);
 		const occurredAt = new Date(`${shipDate ?? businessDateOf()}T12:00:00+07:00`);
-		return this.transactions.run(async (tx) => {
+		const shipped = await this.transactions.run(async (tx) => {
 			const row = await this.returns.claimForShip(id, tx);
 			if (!row) throw new PurchaseReturnStateError('notApproved');
 			const lines = await this.returns.findItems(id);
@@ -408,6 +433,8 @@ export class PurchaseReturnService {
 			if (!updated) throw new PurchaseReturnStateError('notApproved');
 			return updated;
 		});
+		await this.changed(id, 'shipped', actor.userId);
+		return shipped;
 	}
 
 	async cancel(actorUserId: string, id: string, reason: string): Promise<TPurchaseReturnSelect> {
@@ -420,6 +447,7 @@ export class PurchaseReturnService {
 		if (!updated) throw new PurchaseReturnStateError('notCancellable');
 		// ERP-0044: an approved return that is cancelled is a dead document.
 		if (row.code) await this.documents.voidBySource('procurement', 'purchase_return', id);
+		await this.changed(id, 'cancelled', actorUserId);
 		return updated;
 	}
 }

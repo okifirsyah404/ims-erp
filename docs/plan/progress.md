@@ -12,6 +12,24 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-16 - ERP-0065: sales returns publish `sales_return.updated` to n8n
+
+`feat/m05-purchase-returns` (with its `purchase_return.updated` event) was
+merged in. Every committed state change of a sales return now goes to the
+M04 outbox:
+- `submitted`, `approved`, `rejected`, `received` and `cancelled`.
+- The payload carries the lines with their received condition, the delivery
+  note and SO numbers, and the customer snapshot (phone, WhatsApp, email).
+- Publishing happens after the commit and never throws.
+
+Changes:
+- `OUTBOX_TOPICS` gained the topic; new `sales/utils/sales-return-event.ts`.
+- `automation.md` has a new row.
+- `docs/database/` was reviewed and is unchanged.
+
+Verification: backend `tsc` clean; the sales and purchase return unit tests
+pass 20/20, and they assert the submitted → approved → received events.
+
 ## 2026-11-16 - M02 sales returns renumbered ERP-0062 -> ERP-0065 (PR #111), `main` merged in
 
 `main` took ERP-0060 (dashboard, #109), ERP-0061 (audit activity feed) and
@@ -174,6 +192,29 @@ this is ERP-0062. Nothing moved on `main` since 2026-11-15.
 
 **Not done.** No printed return document and no reviewer sign-off.
 `docs/database/` was updated (see above).
+## 2026-11-16 - ERP-0064: purchase returns publish `purchase_return.updated` to n8n
+
+At the owner's request ("tambahkan" the return and bill events for n8n),
+every committed state change of a purchase return now goes to the M04
+outbox:
+- `submit` publishes `submitted`, `decide` publishes `approved` or
+  `rejected`, `ship` publishes `shipped`, and `cancel` publishes
+  `cancelled`.
+- The payload carries the return, its lines and serials, the goods receipt
+  and PO numbers, and the supplier snapshot with its PIC contact.
+- Publishing happens after the commit and never throws, so a notification
+  never undoes a return.
+
+Changes:
+- `OUTBOX_TOPICS` gained the topic.
+- New `procurement/utils/purchase-return-event.ts`.
+- `docs/architecture/modules/automation.md` has a new event table row.
+- `docs/database/` was reviewed and is unchanged (`outbox_messages.topic` is
+  free text).
+
+Verification: backend `tsc` clean; `purchase-return.service.test.ts` 12/12,
+and it now asserts the submitted → approved → shipped events.
+
 ## 2026-11-16 - M05 purchase returns renumbered ERP-0061 -> ERP-0064 (PR #108), `main` merged in
 
 `main` took ERP-0060 (dashboard, #109), ERP-0061 (audit activity feed) and

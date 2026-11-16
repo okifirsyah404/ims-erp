@@ -116,6 +116,7 @@ let movements: { movementType: string; quantity: string; unitCost: number | null
 let released: { salesOrderItemId: string; quantity: string }[];
 let reopened: number;
 let units: { serial: string; status: string }[];
+let events: string[];
 let service: SalesReturnService;
 
 beforeEach(() => {
@@ -126,6 +127,7 @@ beforeEach(() => {
 	released = [];
 	reopened = 0;
 	units = [];
+	events = [];
 	const lines = [
 		noteLine(CABLE_LINE, CABLE, '10.000', 7_500_00, 5_000_00, null),
 		noteLine(READER_LINE, READER, '2.000', 2_000_000_00, 1_200_000_00, ['SN-1', 'SN-2']),
@@ -153,6 +155,9 @@ beforeEach(() => {
 			},
 			async reopenForReplacement() {
 				reopened += 1;
+			},
+			async findById() {
+				return null;
 			},
 		},
 		{
@@ -182,6 +187,12 @@ beforeEach(() => {
 		{ next: async () => '0001/RTJ/IMS/XI/26' },
 		{ run: async (work: (tx: never) => Promise<unknown>) => work({} as never) } as never,
 		{ register: async () => ({}) as never, voidBySource: async () => {} } as never,
+		{
+			publish: async (topic: string, _aggregate: unknown, data: { change: string }) => {
+				events.push(`${topic}:${data.change}`);
+				return null;
+			},
+		} as never,
 	);
 });
 
@@ -267,6 +278,7 @@ describe('approving and receiving', () => {
 		]);
 		expect(reopened).toBe(1);
 		expect((await returns.findItems(row.id)).map((item) => item.condition)).toEqual(['good', 'damaged']);
+		expect(events).toEqual(['sales_return.updated:submitted', 'sales_return.updated:approved', 'sales_return.updated:received']);
 	});
 
 	test('every line needs a condition, and storages must be the warehouse’s', async () => {
