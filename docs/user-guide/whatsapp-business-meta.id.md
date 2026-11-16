@@ -139,7 +139,7 @@ Katalog siap ajukan: [`docs/integrations/n8n/meta-templates.json`](../integratio
 | `erp_followup_lead` | sales pemilik lead | Pengingat follow-up lead {{1}}: {{2}}. Kontak: {{3}}. Kebutuhan: {{4}}. |
 | `erp_followup_lead_terlambat` | sales manager | Lead {{1}} milik {{2}} belum di-follow-up, {{3}}. |
 | `erp_followup_penawaran` | sales pembuat penawaran | Pengingat follow-up penawaran {{1}} untuk {{2}} sebesar {{3}}: {{4}}. |
-| `erp_penawaran_terkirim` | pelanggan | [PDF] Yth. {{1}}, berikut penawaran {{2}} ({{3}}) sebesar {{4}}, berlaku sampai {{5}}. Terima kasih. |
+| `erp_penawaran_terkirim` | pelanggan | [PDF] Yth. {{1}}, berikut penawaran {{2}} ({{3}}) sebesar {{4}}. Masa berlaku: {{5}}. Terima kasih. |
 | `erp_penawaran_tanpa_pdf` | sales pembuat penawaran | Penawaran {{1}} untuk {{2}} sudah terkirim, tetapi PDF-nya tidak dibuat otomatis. Kirim PDF dari halaman cetak. |
 
 Ada dua cara mengajukan:

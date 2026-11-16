@@ -197,7 +197,7 @@
 			"name": "erp_penawaran_terkirim",
 			"audience": "customer (only with notifyCustomers), with the quotation PDF",
 			"header": "DOCUMENT",
-			"body": "Yth. {{1}}, berikut penawaran {{2}} ({{3}}) sebesar {{4}}, berlaku sampai {{5}}. Terima kasih.",
+			"body": "Yth. {{1}}, berikut penawaran {{2}} ({{3}}) sebesar {{4}}. Masa berlaku: {{5}}. Terima kasih.",
 			"example": [
 				"PT Kantor Maju",
 				"0007/QT/IMS/XI/26",

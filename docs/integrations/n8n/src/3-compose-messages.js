@@ -287,6 +287,7 @@ const handlers = {
 	'quotation.sent': () => {
 		const customer = d.customer || {};
 		const pdf = d.pdf;
+		const validity = d.validUntil ? date(d.validUntil) : 'lihat dokumen';
 		if (pdf && pdf.url) {
 			// The PDF link is public for 30 days (revocable in the ERP's document
 			// screen); customers get it only when notifyCustomers is on.
@@ -294,8 +295,8 @@ const handlers = {
 				customer,
 				'Yth. ' + (customer.name || 'Pelanggan') + ',\n' +
 					'Berikut penawaran ' + d.code + ' (' + d.title + ') dari ' + CONFIG.companyName + ' sebesar ' + rupiah(d.grandTotal) +
-					', berlaku sampai ' + date(d.validUntil) + '. Terima kasih.',
-				meta('erp_penawaran_terkirim', [customer.name || 'Pelanggan', d.code, d.title, rupiah(d.grandTotal), date(d.validUntil)]),
+					'. Masa berlaku: ' + validity + '. Terima kasih.',
+				meta('erp_penawaran_terkirim', [customer.name || 'Pelanggan', d.code, d.title, rupiah(d.grandTotal), validity]),
 				{ url: pdf.url, filename: pdf.fileName || 'penawaran.pdf', mimetype: 'application/pdf' },
 			);
 		} else {
