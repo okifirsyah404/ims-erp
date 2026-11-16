@@ -612,4 +612,27 @@ describe('document signature routes', () => {
 		);
 		expect(response.status).toBe(200);
 	});
+
+	test('PUT /documents/signatures/requests/:id/signed-pdf needs signature_sign', async () => {
+		const denied = await app.handle(
+			jsonRequest(
+				'PUT',
+				'/documents/signatures/requests/01930000-0000-7000-8000-000000000009/signed-pdf',
+				'member',
+				{},
+				fixture.orgA,
+			),
+		);
+		expect(denied.status).toBe(403);
+	});
+
+	test('GET /documents/signatures/requests/:id/signed-pdf needs a session', async () => {
+		const response = await app.handle(
+			jsonRequest(
+				'GET',
+				'/documents/signatures/requests/01930000-0000-7000-8000-000000000009/signed-pdf',
+			),
+		);
+		expect(response.status).toBe(401);
+	});
 });

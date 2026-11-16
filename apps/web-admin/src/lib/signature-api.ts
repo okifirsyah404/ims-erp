@@ -60,7 +60,17 @@ export type TSignatureRequest = {
 	expiresAt: string | null;
 	respondedAt: string | null;
 	createdAt: string;
+	/** Presigned snapshot of the signer's image, set when the row exists. */
+	signatureImageUrl?: string | null;
+	/** The PDF the signature was placed on, once placement happened. */
+	sourceFileId?: string | null;
+	hasSignedPdf?: boolean;
 };
+
+/** The signature image snapshot a signed request carries, when it has one. */
+export function signatureImageFromRequest(request: TSignatureRequest): string | null {
+	return request.signatureImageUrl ?? null;
+}
 
 export type TDocumentSignatureSection = {
 	signatures: TSignature[];
@@ -192,11 +202,28 @@ export function cancelSignatureRequest(id: string) {
 	});
 }
 
+/** Records the signed PDF on the caller's signature (multipart, placement final). */
+export async function attachSignedPdf(
+	requestId: string,
+	file: File,
+	sourceFileId: string,
+): Promise<TSignature> {
+	const body = new FormData();
+	body.set('file', file);
+	body.set('sourceFileId', sourceFileId);
+	const envelope = await request<TSignature>(
+		`/documents/signatures/requests/${requestId}/signed-pdf`,
+		{ method: 'PUT', body },
+	);
+	return envelope.data as TSignature;
+}
+
 /** The caller's signature image URL, or `null`. */
 export function mySignatureImageQueryOptions() {
 	return queryOptions({
 		queryKey: ['documents', 'signatures', 'my-image'],
-		queryFn: async () => (await request<string | null>('/documents/signatures/my-image')).data ?? null,
+		queryFn: async () =>
+			(await request<string | null>('/documents/signatures/my-image')).data ?? null,
 	});
 }
 
@@ -233,4 +260,12 @@ export async function userSignatureImages(userIds: string[]): Promise<Map<string
 		if (row.imageUrl) urls.set(row.userId, row.imageUrl);
 	}
 	return urls;
+}
+
+/** A presigned URL for the signed PDF artifact, or throws when absent. */
+export async function signedPdfUrl(requestId: string): Promise<{ url: string; fileName: string }> {
+	const envelope = await request<{ url: string; fileName: string }>(
+		`/documents/signatures/requests/${requestId}/signed-pdf`,
+	);
+	return envelope.data as { url: string; fileName: string };
 }

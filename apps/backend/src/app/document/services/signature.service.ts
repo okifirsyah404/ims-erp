@@ -12,25 +12,33 @@ import { PERMISSION_RESOLVER_TOKEN } from '@authorization/permission-resolver';
 import type { UserService } from '@app/user/services/user.service';
 import { USER_SERVICE_TOKEN } from '@app/user/constants/di';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
+import { documentFileFrom, storeDocumentFile } from '@providers/s3/document-file';
 import { inject, injectable } from 'tsyringe';
 import { DOCUMENT_REPOSITORY_TOKEN, SIGNATURE_REPOSITORY_TOKEN } from '../constants/di';
 import type { IDocumentRepository } from '../contracts/document.repository.interface';
 import type { ISignatureRepository } from '../contracts/signature.repository.interface';
-import type {
-	TCreateSignatureRequestsInput,
-	TSignatureListQuery,
-	TSignatureRequestListQuery,
-	TSignatureRequestView,
-	TSignSignatureRequestInput,
-	TSignatureView,
+import {
+	createSignatureRequestsSchema,
+	attachSignedPdfSchema,
+	type TCreateSignatureRequestsInput,
+	type TSignatureListQuery,
+	type TSignatureRequestListQuery,
+	type TSignatureRequestView,
+	type TSignSignatureRequestInput,
+	type TSignatureView,
 } from '../contracts/signature.contract';
 import {
 	NotRequestOwnerError,
 	NotRequestSignerError,
 	SignatureImageNotFoundError,
+	SignaturePdfInvalidError,
+	SignaturePdfStateError,
 	SignatureRequestNotFoundError,
 	SignatureRequestStateError,
 } from '../errors/signature.errors';
+
+/** Presigned URLs for the signed PDF artifact live this long (seconds). */
+const DOWNLOAD_TTL_SECONDS = 300;
 
 /** Presigned URLs for a signer's image live this long (seconds). */
 const IMAGE_URL_SECONDS = 300;
@@ -52,8 +60,11 @@ export class SignatureService {
 	private readonly notifications: ExportedNotificationService;
 	private readonly permissions: IPermissionResolver;
 	private readonly users: Pick<UserService, 'getUser'>;
-	private readonly documents: Pick<IDocumentRepository, 'findById'>;
-	private readonly storage: Pick<IObjectStorage, 'presignGet'>;
+	private readonly documents: Pick<
+		IDocumentRepository,
+		'findById' | 'findFile' | 'logAccess'
+	>;
+	private readonly storage: Pick<IObjectStorage, 'presignGet' | 'put'>;
 
 	constructor(
 		@inject(SIGNATURE_REPOSITORY_TOKEN)
@@ -61,9 +72,9 @@ export class SignatureService {
 		@inject(EXPORTED_NOTIFICATION_SERVICE_TOKEN)
 		notifications: ExportedNotificationService,
 		@inject(DOCUMENT_REPOSITORY_TOKEN)
-		documents: Pick<IDocumentRepository, 'findById'>,
+		documents: Pick<IDocumentRepository, 'findById' | 'findFile' | 'logAccess'>,
 		@inject(OBJECT_STORAGE_TOKEN)
-		storage: Pick<IObjectStorage, 'presignGet'>,
+		storage: Pick<IObjectStorage, 'presignGet' | 'put'>,
 		@inject(PERMISSION_RESOLVER_TOKEN)
 		permissions: IPermissionResolver,
 		@inject(USER_SERVICE_TOKEN)
@@ -123,11 +134,13 @@ export class SignatureService {
 	) {
 		const documents = await this.documentMeta(result.data.map((row) => row.documentId));
 		const people = await this.people(result.data.map((row) => row.requestedByUserId));
-		const views = result.data.map((row) =>
-			this.requestView(row, {
-				document: documents.get(row.documentId) ?? null,
-				requestedByName: people.get(row.requestedByUserId) ?? null,
-			}),
+		const views = await Promise.all(
+			result.data.map((row) =>
+				this.requestView(row, {
+					document: documents.get(row.documentId) ?? null,
+					requestedByName: people.get(row.requestedByUserId) ?? null,
+				}),
+			),
 		);
 		return {
 			meta: result.meta,
@@ -238,7 +251,7 @@ export class SignatureService {
 			},
 			requestedByName: requesterName,
 		};
-		return created.map((row) => this.requestView(row, meta));
+		return Promise.all(created.map((row) => this.requestView(row, meta)));
 	}
 
 	/**
@@ -268,6 +281,9 @@ export class SignatureService {
 		});
 		if (!transitioned) throw new SignatureRequestStateError();
 
+		// Snapshot the image the signer had at this moment: replacing it later
+		// must never rewrite a signature that was already made.
+		const image = await this.repository.findUserSignature(actorUserId);
 		const evidence = await this.repository.insertSignature({
 			createdAt: now,
 			documentId: request.documentId,
@@ -277,6 +293,8 @@ export class SignatureService {
 			signatureMethod: method,
 			signedAt: now,
 			ipAddress: ipAddress ?? null,
+			signatureImageKey: image?.objectKey ?? null,
+			organizationId: request.organizationId,
 		});
 		await this.notifications.notify({
 			userIds: [request.requestedByUserId],
@@ -373,6 +391,98 @@ export class SignatureService {
 		if (!row) throw new SignatureImageNotFoundError();
 	}
 
+	/**
+	 * Records the signed PDF on the caller's signature of one request.
+	 *
+	 * @remarks
+	 * The browser does the actual work: it renders the PDF page, lets the user
+	 * place the signature image on it, and uploads the finished PDF here. The
+	 * server only enforces who, on what, and how often — once. Placement is
+	 * final: the row keeps its artifact forever, and a mistake means a new
+	 * signature, not an edit.
+	 *
+	 * @throws {SignatureRequestNotFoundError} The request or the signature row is gone
+	 * @throws {NotRequestSignerError} The caller is not the addressed signer
+	 * @throws {SignatureRequestStateError} The request is not signed yet
+	 * @throws {SignaturePdfStateError} The placement already happened
+	 * @throws {SignaturePdfInvalidError} The source file is not this document's PDF
+	 */
+	async attachSignedPdf(
+		requestId: string,
+		body: unknown,
+		actorUserId: string,
+	): Promise<TSignatureView> {
+		const input = attachSignedPdfSchema.parse(body);
+		const request = await this.repository.findRequestById(requestId);
+		if (!request) throw new SignatureRequestNotFoundError();
+		if (request.signerUserId !== actorUserId) throw new NotRequestSignerError();
+		if (request.status !== 'signed') throw new SignatureRequestStateError();
+
+		const signature = await this.repository.findLatestSignature(
+			request.documentId,
+			actorUserId,
+		);
+		if (!signature) throw new SignatureRequestNotFoundError();
+
+		const source = await this.documents.findFile(request.documentId, input.sourceFileId);
+		if (!source || source.mimeType !== 'application/pdf') {
+			throw new SignaturePdfInvalidError();
+		}
+
+		const file = documentFileFrom(body);
+		if (file.type !== 'application/pdf') throw new SignaturePdfInvalidError();
+		const key = await storeDocumentFile(
+			this.storage,
+			`documents/${request.documentId}/signed`,
+			file,
+		);
+		const updated = await this.repository.attachSignedPdf(signature.id, {
+			sourceFileId: source.id,
+			signedFileKey: key,
+		});
+		if (!updated) throw new SignaturePdfStateError();
+
+		await this.documents.logAccess({
+			documentId: request.documentId,
+			organizationId: signature.organizationId,
+			accessedByUserId: actorUserId,
+			action: 'pdf_sign',
+		});
+		const document = await this.documents.findById(request.documentId);
+		return this.signatureView(updated, document);
+	}
+
+	/** A presigned URL for the signed PDF artifact, with a download row. */
+	async signedPdfUrl(
+		requestId: string,
+		actorUserId: string,
+		meta: { ipAddress?: string | null; userAgent?: string | null } = {},
+	): Promise<{ url: string; fileName: string }> {
+		const request = await this.repository.findRequestById(requestId);
+		if (!request) throw new SignatureRequestNotFoundError();
+		if (request.signerUserId !== actorUserId) throw new NotRequestSignerError();
+		const signature = await this.repository.findLatestSignature(
+			request.documentId,
+			actorUserId,
+		);
+		if (!signature?.signedFileKey) throw new SignaturePdfStateError();
+		await this.documents.logAccess({
+			documentId: request.documentId,
+			organizationId: signature.organizationId,
+			accessedByUserId: actorUserId,
+			action: 'download',
+			ipAddress: meta.ipAddress ?? null,
+			userAgent: meta.userAgent ?? null,
+		});
+		return {
+			url: this.storage.presignGet(signature.signedFileKey, {
+				fileName: 'signed.pdf',
+				expiresIn: DOWNLOAD_TTL_SECONDS,
+			}),
+			fileName: 'signed.pdf',
+		};
+	}
+
 	private expiry(input: TCreateSignatureRequestsInput, _now: Date): Date | null {
 		// D5: an omitted `expiresAt` is "no expiry". The
 		// `document.signature_request_expiry_days` default is applied by the
@@ -404,19 +514,29 @@ export class SignatureService {
 			signedAt: row.signedAt.toISOString(),
 			method: row.signatureMethod as TSignatureView['method'],
 			ipAddress: row.ipAddress,
+			signatureImageUrl: row.signatureImageKey
+				? this.presignImage(row.signatureImageKey)
+				: null,
+			sourceFileId: row.sourceFileId,
+			hasSignedPdf: row.signedFileKey !== null,
 		};
 	}
 
-	private requestView(
+	private async requestView(
 		row: TDocumentSignatureRequestSelect,
 		meta: {
 			document: { code: string; title: string; documentType: string } | null;
 			requestedByName: string | null;
 		} = { document: null, requestedByName: null },
-	): TSignatureRequestView {
+	): Promise<TSignatureRequestView> {
 		const expired =
 			row.status === 'pending' && row.expiresAt !== null && row.expiresAt.getTime() <= Date.now();
 		const status = expired ? 'expired' : (row.status as TSignatureRequestView['status']);
+		// The image snapshot and the signed-PDF fact live on the evidence row;
+		// enrich when it exists so the UI never resolves them itself.
+		const signature = row.status === 'signed'
+			? await this.repository.findLatestSignature(row.documentId, row.signerUserId)
+			: null;
 		return {
 			id: row.id,
 			documentId: row.documentId,
@@ -434,6 +554,11 @@ export class SignatureService {
 			expiresAt: row.expiresAt?.toISOString() ?? null,
 			respondedAt: row.respondedAt?.toISOString() ?? null,
 			createdAt: row.createdAt.toISOString(),
+			signatureImageUrl: signature?.signatureImageKey
+				? this.presignImage(signature.signatureImageKey)
+				: null,
+			sourceFileId: signature?.sourceFileId ?? null,
+			hasSignedPdf: signature?.signedFileKey != null,
 		};
 	}
 

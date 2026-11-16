@@ -215,6 +215,9 @@ const api: Record<keyof typeof en, string> = {
 	'document.notRequestSigner': 'Permintaan ini tidak ditujukan kepada Anda',
 	'document.notRequestOwner': 'Hanya pemohon yang dapat membatalkan permintaan ini',
 	'document.signatureImageNotFound': 'Belum ada gambar tanda tangan',
+	'document.signaturePdfInvalid': 'Pilih PDF milik dokumen ini dan unggah berupa PDF',
+	'document.signaturePdfState':
+		'Tanda tangan ini belum punya PDF, atau penempatannya sudah final',
 	'numbering.pattern.length': 'Pola harus 1-100 karakter',
 	'numbering.pattern.unknownToken': 'Token {{token}} tidak dikenal',
 	'numbering.pattern.tokenNotForType':

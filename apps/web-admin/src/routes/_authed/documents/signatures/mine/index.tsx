@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { PenLine } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -37,12 +37,13 @@ import {
 	incomingSignatureRequestsQueryOptions,
 	mySignatureImageQueryOptions,
 	signSignatureRequest,
+	signedPdfUrl,
 	uploadMySignatureImage,
 	type TSignatureMethod,
 } from '@/lib/signature-api';
 import { usePermission } from '@/lib/use-permission';
 
-export const Route = createFileRoute('/_authed/documents/signatures/mine')({
+export const Route = createFileRoute('/_authed/documents/signatures/mine/')({
 	component: MySignaturePage,
 });
 
@@ -266,7 +267,35 @@ function MySignaturePage() {
 									<p className='text-xs text-muted-foreground'>{request.declineReason}</p>
 								)}
 							</div>
-							<Badge variant='outline'>{t(`signatures:status.${request.effectiveStatus}`)}</Badge>
+							<div className='flex flex-wrap items-center gap-2'>
+								{request.effectiveStatus === 'signed' && !request.hasSignedPdf && (
+									<Link
+										to='/documents/signatures/mine/$requestId/place'
+										params={{ requestId: request.id }}
+										className='text-sm font-medium text-primary hover:underline'
+									>
+										{t('signatures:placeAction')}
+									</Link>
+								)}
+								{request.hasSignedPdf && (
+									<Button
+										size='sm'
+										variant='outline'
+										onClick={() => {
+											void signedPdfUrl(request.id)
+												.then(({ url }) => window.open(url, '_blank', 'noopener'))
+												.catch((cause: unknown) =>
+													toast.error(
+														cause instanceof Error ? cause.message : t('common:error.failed'),
+													),
+												);
+										}}
+									>
+										{t('signatures:downloadSignedPdf')}
+									</Button>
+								)}
+								<Badge variant='outline'>{t(`signatures:status.${request.effectiveStatus}`)}</Badge>
+							</div>
 						</div>
 					))}
 				</CardContent>

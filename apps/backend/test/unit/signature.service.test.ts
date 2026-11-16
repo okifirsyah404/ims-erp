@@ -23,6 +23,8 @@ import {
 	NotRequestOwnerError,
 	NotRequestSignerError,
 	SignatureImageNotFoundError,
+	SignaturePdfInvalidError,
+	SignaturePdfStateError,
 	SignatureRequestNotFoundError,
 	SignatureRequestStateError,
 } from '../../src/app/document/errors/signature.errors';
@@ -88,6 +90,8 @@ class FakeSignatureRepository implements Partial<ISignatureRepository> {
 	signatures: TDocumentSignatureSelect[] = [];
 	images = new Map<string, TDocumentUserSignatureSelect>();
 	transitionRacedFor = new Set<string>();
+	/** Ids whose signed-PDF placement must race/fail. */
+	placementRacedFor = new Set<string>();
 	private seq = 0;
 
 	async findRequestById(id: string) {
@@ -133,6 +137,28 @@ class FakeSignatureRepository implements Partial<ISignatureRepository> {
 		row.status = patch.status;
 		row.respondedAt = patch.respondedAt;
 		row.declineReason = patch.declineReason ?? null;
+		return row;
+	}
+
+	async findLatestSignature(
+		documentId: string,
+		signerUserId: string,
+	): Promise<TDocumentSignatureSelect | null> {
+		return (
+			this.signatures.find(
+				(row) => row.documentId === documentId && row.signerUserId === signerUserId,
+			) ?? null
+		);
+	}
+
+	async attachSignedPdf(
+		signatureId: string,
+		patch: { sourceFileId: string; signedFileKey: string },
+	) {
+		const row = this.signatures.find((candidate) => candidate.id === signatureId);
+		if (!row || row.signedFileKey || this.placementRacedFor.has(signatureId)) return null;
+		row.sourceFileId = patch.sourceFileId;
+		row.signedFileKey = patch.signedFileKey;
 		return row;
 	}
 
@@ -200,9 +226,23 @@ class FakeSignatureRepository implements Partial<ISignatureRepository> {
 
 class FakeDocumentRepository {
 	document: TDocumentSelect | null = documentRow();
+	files: { id: string; documentId: string; mimeType: string | null }[] = [];
+	accessLog: { action: string; accessedByUserId: string | null }[] = [];
 
 	async findById(id: string) {
 		return this.document?.id === id ? this.document : null;
+	}
+
+	async findFile(documentId: string, fileId: string) {
+		return (
+			this.files.find(
+				(file) => file.id === fileId && file.documentId === documentId,
+			) ?? null
+		);
+	}
+
+	async logAccess(entry: { action: string; accessedByUserId: string | null }) {
+		this.accessLog.push(entry);
 	}
 }
 
@@ -210,8 +250,13 @@ const notifications: { userIds: string[]; templateCode: string; variables: Recor
 	[];
 
 const storage = {
+	put: async (key: string) => {
+		stored.push(key);
+	},
 	presignGet: (key: string) => `https://files.test/${key}`,
 };
+
+const stored: string[] = [];
 
 const users = {
 	getUser: async (id: string) =>
@@ -243,7 +288,7 @@ function serviceWith(
 				});
 			},
 		} as never,
-		documents as unknown as Pick<IDocumentRepository, 'findById'>,
+		documents as unknown as Pick<IDocumentRepository, 'findById' | 'findFile' | 'logAccess'>,
 		storage as never,
 		{} as never,
 		users as never,
@@ -528,5 +573,190 @@ describe('signature image', () => {
 		await service.uploadImage(SIGNER, `signatures/${SIGNER}/abc.webp`);
 		await service.deleteImage(SIGNER);
 		expect(await service.myImage(SIGNER)).toBeNull();
+	});
+});
+
+describe('signed PDF placement', () => {
+	function pdfFile(name = 'sig.pdf') {
+		return new File([new Uint8Array([0x25, 0x50, 0x44, 0x46])], name, {
+			type: 'application/pdf',
+		});
+	}
+
+	function attachBody(sourceFileId: string) {
+		const form = { file: pdfFile(), sourceFileId };
+		return form;
+	}
+
+	test('sign snapshots the image the signer had at that moment', async () => {
+		await service.uploadImage(SIGNER, 'signatures/siti/first.webp');
+		const [request] = await service.createRequests(
+			{ documentId: documents.document!.id, signerUserIds: [SIGNER], note: null, expiresAt: null },
+			REQUESTER,
+		);
+		await service.sign(request!.id, SIGNER, null);
+		expect(repository.signatures[0]?.signatureImageKey).toBe('signatures/siti/first.webp');
+
+		// Replacing the image afterwards must not rewrite the snapshot.
+		await service.uploadImage(SIGNER, 'signatures/siti/second.webp');
+		expect(repository.signatures[0]?.signatureImageKey).toBe('signatures/siti/first.webp');
+	});
+
+	test('sign without an image still succeeds (null snapshot)', async () => {
+		const [request] = await service.createRequests(
+			{ documentId: documents.document!.id, signerUserIds: [SIGNER], note: null, expiresAt: null },
+			REQUESTER,
+		);
+		await service.sign(request!.id, SIGNER, null);
+		expect(repository.signatures[0]?.signatureImageKey).toBeNull();
+	});
+
+	test('attaching a signed PDF records the artifact and a pdf_sign trail row', async () => {
+		documents.files.push({
+			id: 'f1e1d1c1-b1a1-4911-8111-111111111111',
+			documentId: documents.document!.id,
+			mimeType: 'application/pdf',
+		});
+		const [request] = await service.createRequests(
+			{ documentId: documents.document!.id, signerUserIds: [SIGNER], note: null, expiresAt: null },
+			REQUESTER,
+		);
+		await service.sign(request!.id, SIGNER, null);
+
+		const view = await service.attachSignedPdf(request!.id,
+			attachBody('f1e1d1c1-b1a1-4911-8111-111111111111'),
+			SIGNER,
+		);
+		expect(view.hasSignedPdf).toBe(true);
+		expect(view.sourceFileId).toBe('f1e1d1c1-b1a1-4911-8111-111111111111');
+		expect(stored.some((key) => key.includes('/signed/'))).toBe(true);
+		expect(documents.accessLog[documents.accessLog.length - 1]).toMatchObject({
+			action: 'pdf_sign',
+			accessedByUserId: SIGNER,
+		});
+	});
+
+	test('a second placement is refused (final)', async () => {
+		documents.files.push({
+			id: 'f1e1d1c1-b1a1-4911-8111-111111111111',
+			documentId: documents.document!.id,
+			mimeType: 'application/pdf',
+		});
+		const [request] = await service.createRequests(
+			{ documentId: documents.document!.id, signerUserIds: [SIGNER], note: null, expiresAt: null },
+			REQUESTER,
+		);
+		await service.sign(request!.id, SIGNER, null);
+		await service.attachSignedPdf(request!.id, attachBody('f1e1d1c1-b1a1-4911-8111-111111111111'), SIGNER);
+
+		await expect(
+			service.attachSignedPdf(request!.id, attachBody('f1e1d1c1-b1a1-4911-8111-111111111111'), SIGNER),
+		).rejects.toBeInstanceOf(SignaturePdfStateError);
+	});
+
+	test('a source file that is not the document PDF is refused', async () => {
+		documents.files.push({
+			id: 'f2e2d2c2-b2a2-4922-8222-222222222222',
+			documentId: documents.document!.id,
+			mimeType: 'image/png',
+		});
+		const [request] = await service.createRequests(
+			{ documentId: documents.document!.id, signerUserIds: [SIGNER], note: null, expiresAt: null },
+			REQUESTER,
+		);
+		await service.sign(request!.id, SIGNER, null);
+
+		await expect(
+			service.attachSignedPdf(request!.id, attachBody('f2e2d2c2-b2a2-4922-8222-222222222222'), SIGNER),
+		).rejects.toBeInstanceOf(SignaturePdfInvalidError);
+	});
+
+	test('a source file of another document is refused', async () => {
+		documents.files.push({
+			id: 'f3e3d3c3-b3a3-4933-8333-333333333333',
+			documentId: 'other-document',
+			mimeType: 'application/pdf',
+		});
+		const [request] = await service.createRequests(
+			{ documentId: documents.document!.id, signerUserIds: [SIGNER], note: null, expiresAt: null },
+			REQUESTER,
+		);
+		await service.sign(request!.id, SIGNER, null);
+
+		await expect(
+			service.attachSignedPdf(request!.id, attachBody('f3e3d3c3-b3a3-4933-8333-333333333333'), SIGNER),
+		).rejects.toBeInstanceOf(SignaturePdfInvalidError);
+	});
+
+	test('an uploaded file that is not a PDF is refused', async () => {
+		documents.files.push({
+			id: 'f1e1d1c1-b1a1-4911-8111-111111111111',
+			documentId: documents.document!.id,
+			mimeType: 'application/pdf',
+		});
+		const [request] = await service.createRequests(
+			{ documentId: documents.document!.id, signerUserIds: [SIGNER], note: null, expiresAt: null },
+			REQUESTER,
+		);
+		await service.sign(request!.id, SIGNER, null);
+
+		const body = {
+			file: new File([new Uint8Array([0x89, 0x50])], 'not.pdf', { type: 'image/png' }),
+			sourceFileId: 'f1e1d1c1-b1a1-4911-8111-111111111111',
+		};
+		await expect(
+			service.attachSignedPdf(request!.id, body, SIGNER),
+		).rejects.toBeInstanceOf(SignaturePdfInvalidError);
+	});
+
+	test('a placement race leaves the row untouched', async () => {
+		documents.files.push({
+			id: 'f1e1d1c1-b1a1-4911-8111-111111111111',
+			documentId: documents.document!.id,
+			mimeType: 'application/pdf',
+		});
+		const [request] = await service.createRequests(
+			{ documentId: documents.document!.id, signerUserIds: [SIGNER], note: null, expiresAt: null },
+			REQUESTER,
+		);
+		await service.sign(request!.id, SIGNER, null);
+		repository.placementRacedFor.add(repository.signatures[0]!.id);
+
+		await expect(
+			service.attachSignedPdf(request!.id, attachBody('f1e1d1c1-b1a1-4911-8111-111111111111'), SIGNER),
+		).rejects.toBeInstanceOf(SignaturePdfStateError);
+		expect(repository.signatures[0]?.signedFileKey ?? null).toBeNull();
+	});
+
+	test('the signed PDF URL presigns the artifact and logs a download', async () => {
+		documents.files.push({
+			id: 'f1e1d1c1-b1a1-4911-8111-111111111111',
+			documentId: documents.document!.id,
+			mimeType: 'application/pdf',
+		});
+		const [request] = await service.createRequests(
+			{ documentId: documents.document!.id, signerUserIds: [SIGNER], note: null, expiresAt: null },
+			REQUESTER,
+		);
+		await service.sign(request!.id, SIGNER, null);
+		await service.attachSignedPdf(request!.id, attachBody('f1e1d1c1-b1a1-4911-8111-111111111111'), SIGNER);
+
+		const result = await service.signedPdfUrl(request!.id, SIGNER);
+		expect(result.url).toContain('https://files.test/');
+		expect(documents.accessLog[documents.accessLog.length - 1]).toMatchObject({
+			action: 'download',
+			accessedByUserId: SIGNER,
+		});
+	});
+
+	test('the signed PDF URL without an artifact is a conflict', async () => {
+		const [request] = await service.createRequests(
+			{ documentId: documents.document!.id, signerUserIds: [SIGNER], note: null, expiresAt: null },
+			REQUESTER,
+		);
+		await service.sign(request!.id, SIGNER, null);
+		await expect(service.signedPdfUrl(request!.id, SIGNER)).rejects.toBeInstanceOf(
+			SignaturePdfStateError,
+		);
 	});
 });

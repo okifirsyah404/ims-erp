@@ -41,3 +41,17 @@ export class SignatureImageNotFoundError extends AppError {
 		super(404, 'document.signatureImageNotFound', 'No signature image uploaded');
 	}
 }
+
+/** The uploaded file is not a PDF, or the source PDF is not this document's. */
+export class SignaturePdfInvalidError extends AppError {
+	constructor() {
+		super(422, 'document.signaturePdfInvalid', 'Pick a PDF of this document and upload a PDF');
+	}
+}
+
+/** The signed PDF artifact is absent, or placement already happened. */
+export class SignaturePdfStateError extends AppError {
+	constructor() {
+		super(409, 'document.signaturePdfState', 'This signature has no signed PDF yet, or it is final');
+	}
+}

@@ -502,6 +502,8 @@ export async function buildTestApp() {
 			uploadImage: async () => ({}) as never,
 			deleteImage: async () => undefined,
 			userImages: async () => new Map(),
+			attachSignedPdf: async () => ({}) as never,
+			signedPdfUrl: async () => ({ url: '', fileName: 'signed.pdf' }),
 		} as never,
 	});
 	container.register(SALES_SERVICE_TOKEN, { useClass: SalesService });

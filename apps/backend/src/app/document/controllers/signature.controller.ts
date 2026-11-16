@@ -18,6 +18,8 @@ import {
 	NotRequestOwnerError,
 	NotRequestSignerError,
 	SignatureImageNotFoundError,
+	SignaturePdfInvalidError,
+	SignaturePdfStateError,
 	SignatureRequestNotFoundError,
 	SignatureRequestStateError,
 } from '../errors/signature.errors';
@@ -51,20 +53,27 @@ export class SignatureController {
 			.onError({ as: 'local' }, (ctx) => {
 				const { error, set } = ctx;
 				const t = translator(ctx);
+				if (error instanceof SignaturePdfInvalidError) {
+					set.status = 422;
+					return errorEnvelope(422, t(error.key), [{ message: t(error.key) }]);
+				}
 				if (
 					error instanceof SignatureRequestNotFoundError ||
 					error instanceof SignatureImageNotFoundError
 				) {
 					set.status = 404;
-					return errorEnvelope(404, t('common.notFound'), [{ message: t(error.key) }]);
+					return errorEnvelope(404, t(error.key), [{ message: t(error.key) }]);
 				}
 				if (error instanceof NotRequestSignerError || error instanceof NotRequestOwnerError) {
 					set.status = 403;
 					return errorEnvelope(403, t(error.key), [{ message: t(error.key) }]);
 				}
-				if (error instanceof SignatureRequestStateError) {
+				if (
+					error instanceof SignatureRequestStateError ||
+					error instanceof SignaturePdfStateError
+				) {
 					set.status = 409;
-					return errorEnvelope(409, t('common.conflict'), [{ message: t(error.key) }]);
+					return errorEnvelope(409, t(error.key), [{ message: t(error.key) }]);
 				}
 				return undefined;
 			})
@@ -143,6 +152,34 @@ export class SignatureController {
 					params: requestParamsSchema,
 					erp: { permission: ['document:signature_request'] },
 					detail: { description: 'Cancels a pending request the caller created' },
+				},
+			)
+			.put(
+				'/requests/:id/signed-pdf',
+				async ({ params, body, erp }) =>
+					ok(await service.attachSignedPdf(params.id, body, erp.session.user.id)),
+				{
+					params: requestParamsSchema,
+					erp: { permission: ['document:signature_sign'] },
+					detail: {
+						description:
+							'Records the signed PDF (multipart `file`) on the caller signature; placement is final',
+					},
+				},
+			)
+			.get(
+				'/requests/:id/signed-pdf',
+				async ({ params, erp, request }) =>
+					ok(
+						await service.signedPdfUrl(params.id, erp.session.user.id, {
+							ipAddress: request.headers.get('x-forwarded-for'),
+							userAgent: request.headers.get('user-agent'),
+						}),
+					),
+				{
+					params: requestParamsSchema,
+					erp: { permission: ['document:signature_sign'] },
+					detail: { description: 'A presigned URL for the signed PDF artifact' },
 				},
 			)
 			.get('/my-image', async ({ erp }) => ok(await service.myImage(erp.session.user.id)), {

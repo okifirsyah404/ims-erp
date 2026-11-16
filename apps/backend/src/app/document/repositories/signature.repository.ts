@@ -223,6 +223,47 @@ export class SignatureRepository implements ISignatureRepository {
 		return row ?? null;
 	}
 
+	async findLatestSignature(
+		documentId: string,
+		signerUserId: string,
+	): Promise<TDocumentSignatureSelect | null> {
+		const [row] = await this.database
+			.select()
+			.from(documentSignatures)
+			.where(
+				and(
+					eq(documentSignatures.documentId, documentId),
+					eq(documentSignatures.signerUserId, signerUserId),
+					isNull(documentSignatures.deletedAt),
+				),
+			)
+			.orderBy(desc(documentSignatures.signedAt), desc(documentSignatures.id))
+			.limit(1);
+		return row ?? null;
+	}
+
+	async attachSignedPdf(
+		signatureId: string,
+		patch: { sourceFileId: string; signedFileKey: string },
+	): Promise<TDocumentSignatureSelect | null> {
+		const [row] = await this.database
+			.update(documentSignatures)
+			.set({
+				sourceFileId: patch.sourceFileId,
+				signedFileKey: patch.signedFileKey,
+				updatedAt: new Date(),
+			})
+			.where(
+				and(
+					eq(documentSignatures.id, signatureId),
+					isNull(documentSignatures.signedFileKey),
+					isNull(documentSignatures.deletedAt),
+				),
+			)
+			.returning();
+		return row ?? null;
+	}
+
 	async findUserSignature(
 		userId: string,
 	): Promise<TDocumentUserSignatureSelect | null> {

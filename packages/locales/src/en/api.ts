@@ -220,6 +220,8 @@ const api = {
 	'document.notRequestSigner': 'This request is not addressed to you',
 	'document.notRequestOwner': 'Only the requester can cancel this request',
 	'document.signatureImageNotFound': 'No signature image uploaded',
+	'document.signaturePdfInvalid': 'Pick a PDF of this document and upload a PDF',
+	'document.signaturePdfState': 'This signature has no signed PDF yet, or it is final',
 	'numbering.pattern.length': 'The pattern must be 1-100 characters',
 	'numbering.pattern.unknownToken': 'Unknown token {{token}}',
 	'numbering.pattern.tokenNotForType':

@@ -1,9 +1,9 @@
 # Signature implementation plan (ERP-0048 / ERP-0049)
 
-Status: **implemented** (2026-11-16) — ERP-0048 (requests, evidence, pages) and
-ERP-0049 (user image) shipped; V1.5 (print the image) and the external-signer
-slice are still open. Evidence and commands: `docs/plan/progress.md` 2026-11-16.
-Design grilled and locked 2026-11-16 (13 decisions).
+Status: **implemented** (2026-11-16 for requests/evidence/image; 2026-11-17 for
+the signed-PDF placement). Evidence and commands: `docs/plan/progress.md`.
+Design grilled and locked 2026-11-16 (13 decisions), extended 2026-11-17 with
+the placement slice (D13 superseded).
 
 ## 1. Current state (verified 2026-11-16)
 
@@ -54,7 +54,7 @@ and `apps/web-admin/src/routes/_authed/documents/signatures`.
 | D10 | UI: three signature pages plus a Signatures tab on `/documents/$documentId`. |
 | D11 | Wet-ink/stamp recording is done by the signer themselves, never "on behalf of". |
 | D12 | V1 includes a batch lookup endpoint for signers' images; rendering `<img>` into print components is a separate V1.5 slice (BAST and quotation first). |
-| D13 | No PDF library in V1/V1.5. `pdfmake` is the candidate when automatic PDF files are needed (WhatsApp/email/portal). |
+| D13 | ~~No PDF library~~ **Superseded 2026-11-17 by the signed-PDF slice**: `pdfjs-dist` + `pdf-lib` are used *only* on the placement page, to render an uploaded PDF and embed the signature image. Print browser stays the default PDF mechanism; no server-side PDF generation. |
 
 ## 3. Database contract — canonical `docs.dbml` first
 
@@ -155,12 +155,21 @@ Service rules:
 
 ## 6. PDF / rendering
 
-Print browser (`window.print()` + print CSS) remains the PDF mechanism. V1.5
-adds `<img src={imageUrl}>` to the signatory block of BAST and quotation first,
-then other print components as needed; missing image falls back to the current
-name + blank line. No pdfmake/jsPDF/react-pdf dependency in this work. Revisit
-`pdfmake` only if a real PDF file is required server-side or without a print
-dialog (WhatsApp/email/portal).
+Print browser (`window.print()` + print CSS) remains the default PDF mechanism
+for documents whose layout the app owns. The **signed-PDF slice** (added
+2026-11-17) handles a different case: a PDF the user uploaded to
+`document.files`. There the signer places their signature on the real PDF:
+
+- Browser only: `pdfjs-dist` renders the page to a canvas at a fixed scale,
+  `pdf-lib` embeds the signature as PNG and returns the finished bytes.
+  No server-side renderer, no headless Chromium.
+- Both libraries are imported by the placement route alone.
+- The server stores the artifact and refuses a second placement; it never
+  stamps anything itself.
+
+Still out of scope: generating a PDF from the app's own HTML layouts
+(`pdfmake` remains the candidate if an automatic PDF file is ever required
+server-side, e.g. for WhatsApp or the customer portal).
 
 ## 7. Tests and gates
 
@@ -185,11 +194,15 @@ dialog (WhatsApp/email/portal).
 
 ## 9. Out of scope / upgrade path
 
-- Rendering the user signature image into printed documents = V1.5 (§6).
+- Generating a PDF from the app's own HTML layouts (the signed-PDF slice only
+  stamps an uploaded PDF).
 - External signers via public token link (portal/customer) — `signer_type` and
   the `document.shares` token pattern are the upgrade path.
-- `certificate_serial` / PKI, ordered signing, manual reminders, PDF generator
-  library — add on demand.
+- Drawing the signature on a canvas at signing time (slice 2 of the image
+  question; today the signer uploads an image and reuses it).
+- `certificate_serial` / PKI, ordered signing, manual reminders — add on demand.
+- Re-placing a signature on a PDF: placement is final by design (a second
+  attempt answers 409); a mistake means a new signature request.
 
 ## 10. Docs ledger updates (same change as the code)
 

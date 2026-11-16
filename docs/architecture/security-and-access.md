@@ -365,4 +365,10 @@ Signature routes, by action:
 |---|---|
 | `GET /documents/signatures`, `GET /documents/:id/signatures` | `document:signature_read` |
 | `GET /documents/signatures/requests/outgoing`, `POST /documents/signatures/requests`, `POST …/:id/cancel` | `document:signature_request` |
-| `GET /documents/signatures/requests/incoming`, `POST …/:id/sign`, `POST …/:id/decline`, `GET/PUT/DELETE /documents/signatures/my-image`, `POST /documents/signatures/user-images` | `document:signature_sign` |
+| `GET /documents/signatures/requests/incoming`, `POST …/:id/sign`, `POST …/:id/decline`, `PUT/GET …/:id/signed-pdf`, `GET/PUT/DELETE /documents/signatures/my-image`, `POST /documents/signatures/user-images` | `document:signature_sign` |
+
+Placing the signature on a PDF is a write the signer performs on their own
+signature: the route re-checks that the request is addressed to the caller and
+that it is already `signed`, records `pdf_sign` on the document's access trail,
+and refuses a second placement (the artifact is final). The source PDF must be
+one of that document's files — the server never renders a PDF itself.

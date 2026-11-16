@@ -84,6 +84,11 @@ export type TSignatureRequestView = {
 	expiresAt: string | null;
 	respondedAt: string | null;
 	createdAt: string;
+	/** Presigned snapshot of the signer's image, set when they signed with one. */
+	signatureImageUrl?: string | null;
+	/** The PDF the signature was placed on, once placement happened. */
+	sourceFileId?: string | null;
+	hasSignedPdf?: boolean;
 };
 
 /** One signature evidence row as the client sees it. */
@@ -98,7 +103,20 @@ export type TSignatureView = {
 	signedAt: string;
 	method: (typeof DOCUMENT_SIGNATURE_METHODS)[number];
 	ipAddress: string | null;
+	/** Presigned signature image snapshot, or null when the user had none. */
+	signatureImageUrl: string | null;
+	/** The PDF this signature was placed on, when placement happened. */
+	sourceFileId: string | null;
+	/** True once the signed PDF artifact exists; placement is final. */
+	hasSignedPdf: boolean;
 };
+
+/** Attach the signed PDF: the multipart `file` plus the source PDF id. */
+export const attachSignedPdfSchema = z.object({
+	sourceFileId: z.uuid(),
+});
+
+export type TAttachSignedPdfInput = z.output<typeof attachSignedPdfSchema>;
 
 /** The Signatures tab of the document detail screen. */
 export type TDocumentSignatureSection = {

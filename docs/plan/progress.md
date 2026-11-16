@@ -12,6 +12,98 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-17 - Signed-PDF placement: signer stamps their signature on an uploaded PDF (ERP-0048 slice 2)
+
+Status: **implemented** (live HTTP + browser verified 2026-11-17; no committed
+e2e). `docs/database/` **changed**: three columns on `document.signatures`, one
+new index, one new `access_logs.action` value;
+`bun docs/database/validate-dbml.ts` -> OK (277 tables / 237 refs, 0
+cross-module, 0 timestamp gaps, 0 Drizzle drift).
+
+Design decisions (grilled 2026-11-17, superseding D13 of the signature plan):
+
+- The PDF must already be one of the document's files; the app never generates
+  a PDF from its own HTML layouts.
+- The signature image is snapshotted onto the evidence row at signing time
+  (`signature_image_key`), so replacing the user image later never rewrites an
+  existing signature.
+- The artifact is its own column (`signed_file_key`), not a `document.files`
+  row, and placement is **final**: a second attempt answers 409.
+- The source PDF is recorded (`source_file_id`) so the artifact stays traceable.
+- Placement is recorded as a new `pdf_sign` access action, not as `print`.
+
+What landed:
+
+- **`docs.dbml` first**, then the generators, then the Drizzle schema:
+  `document.signatures` gains `signature_image_key`, `source_file_id`
+  (indexed), `signed_file_key`; `document.access_logs.action` gains `pdf_sign`.
+  Migration `20261116173810_erp0048_signed_pdf` (ALTER TABLE + CHECK swap),
+  applied via `migrate-reset`; `drizzle-kit check` -> `Everything's fine`.
+- **Backend**: `PUT /documents/signatures/requests/:id/signed-pdf` (multipart
+  `file` + `sourceFileId`, permission `document:signature_sign`) and
+  `GET …/signed-pdf` (presigned 300 s + a `download` row). `sign` now snapshots
+  the image key and the organization. `SignaturePdfInvalidError` (422) and
+  `SignaturePdfStateError` (409) added; the controller's `onError` now carries
+  the real locale key instead of the generic one.
+- **Web admin**: new route
+  `/documents/signatures/mine/$requestId/place` renders the chosen PDF page with
+  `pdfjs-dist` at a fixed 1.5x scale, overlays the signature image, and on
+  "Apply" embeds it with `pdf-lib` and uploads the result. The Mine page gained
+  "Place on PDF" (signed, no artifact yet) and "Download signed PDF".
+  `mine.tsx` moved to `mine/index.tsx` so the placement route can be a sibling
+  instead of a child of a leaf route.
+
+Commands and outcomes:
+
+- `bun docs/database/gen-logical-references.ts` -> 536 refs / 41 targets;
+  `bun docs/database/validate-dbml.ts` -> OK (277 / 237).
+- `apps/backend` `bunx tsc --noEmit` clean; `bun test` -> **1132 pass / 0 fail**
+  (84 files): 10 new placement tests in `signature.service.test.ts` (snapshot,
+  final placement, non-PDF source, foreign source, non-PDF upload, race, URL)
+  and 2 new guard tests (403 without `signature_sign`, 401 anonymous).
+- `apps/web-admin` `bunx tsc -b --noEmit` clean, `bun run build` clean,
+  `bun test` 119 pass; `packages/locales` 98 pass.
+- Root `bun run lint` 0 errors (11 backend + 14 web-admin warnings, all
+  pre-existing), `bun docs/database/validate-dbml.ts` OK.
+
+Live verification (backend 3001 + Vite 5173, `admin` session, org `entragate`):
+
+- API: uploaded a real 1-page A4 PDF to a registry document, requested a
+  signature, signed it, then `PUT …/signed-pdf` -> 200 with
+  `hasSignedPdf: true` and the source file id; a second `PUT` -> 409;
+  `GET …/signed-pdf` -> 200 presigned MinIO URL.
+- Artifact check: the downloaded object is a valid PDF (`%PDF` magic, 1 page,
+  595x842) and grew 872 -> 2089 bytes with exactly one image XObject, i.e. the
+  signature really is embedded.
+- Database: `document.signatures` shows `signed_file_key`, `source_file_id` and
+  `signature_image_key` all set on the placed row; `document.access_logs` holds
+  `pdf_sign` rows.
+- Browser: the placement page renders the PDF canvas (892x1263 at 1.5x, 3306
+  dark pixels of real text), the overlay image sits at the configured
+  position, "Apply" writes the artifact (PUT 200), and the Mine page then shows
+  "Download signed PDF" (GET 200).
+
+Three defects found by the live run and fixed in the same change:
+
+1. The route was mounted at `/:id/signed-pdf` while the client called
+   `/requests/:id/signed-pdf` -> 404; the service also treated the request id as
+   a document id. Both corrected: the route lives under `/requests/` and the
+   service resolves the request first, then re-checks the signer.
+2. `page.render({ canvas, canvasContext, viewport })` rejects in pdfjs v6 (the
+   context is the deprecated path) and the failure was swallowed -> blank canvas.
+   Now `render({ canvas, viewport })` and render errors surface as a toast.
+3. `canvas.toDataURL` threw "Tainted canvases may not be exported" because the
+   signature image comes from object storage. The export path now fetches the
+   bytes and decodes them into an `ImageBitmap` (untainted), then encodes PNG.
+
+Known limits: the placement page requires the signer to already have a signature
+image (signing without one is still allowed, the placement is simply blocked);
+re-placing is impossible by design; and the artifact is never regenerated, so a
+re-print of the app's own layout does not include the signature.
+
+Next executable task: run the queued UAT, or slice 3 (draw the signature on a
+canvas at signing time).
+
 ## 2026-11-16 - Document signature flow: requests, evidence, user image (ERP-0048 / ERP-0049)
 
 Status: **implemented** (live HTTP + browser verified 2026-11-16; no committed

@@ -77,6 +77,7 @@ export const DOCUMENT_ACCESS_ACTIONS = [
 	'print',
 	'share',
 	'delete',
+	'pdf_sign',
 ] as const;
 export type DocumentAccessAction = (typeof DOCUMENT_ACCESS_ACTIONS)[number];
 
@@ -247,10 +248,23 @@ export const documentSignatures = documentSchema.table(
 		signatureMethod: text('signature_method').notNull().default('electronic'),
 		ipAddress: text('ip_address'),
 		certificateSerial: text('certificate_serial'),
+		/**
+		 * Object-storage key of the signature image used at signing time.
+		 *
+		 * @remarks
+		 * A snapshot, not a live lookup: replacing the user's image later must
+		 * never rewrite a signature that was already made.
+		 */
+		signatureImageKey: text('signature_image_key'),
+		/** The PDF this signature was placed on; one of this document's files. */
+		sourceFileId: uuid('source_file_id'),
+		/** Object-storage key of the signed PDF. Once set, placement is final. */
+		signedFileKey: text('signed_file_key'),
 		...timestamps,
 	},
 	(table) => [
 		index('signatures_document_id_idx').on(table.documentId),
+		index('signatures_source_file_id_idx').on(table.sourceFileId),
 		check(
 			'signatures_signer_type_check',
 			sql`${table.signerType} IN ('internal', 'customer', 'partner')`,
@@ -295,7 +309,7 @@ export const documentAccessLogs = documentSchema.table(
 		index('access_logs_accessed_at_idx').on(table.accessedAt),
 		check(
 			'access_logs_action_check',
-			sql`${table.action} IN ('view', 'download', 'print', 'share', 'delete')`,
+			sql`${table.action} IN ('view', 'download', 'print', 'share', 'delete', 'pdf_sign')`,
 		),
 	],
 );

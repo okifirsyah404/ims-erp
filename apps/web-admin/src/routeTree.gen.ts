@@ -60,7 +60,6 @@ import { Route as AuthedCrmLeadsLeadIdRouteImport } from './routes/_authed/crm/l
 import { Route as AuthedDocumentsFilesIndexRouteImport } from './routes/_authed/documents/files/index'
 import { Route as AuthedDocumentsFilesDocumentIdRouteImport } from './routes/_authed/documents/files/$documentId'
 import { Route as AuthedDocumentsSignaturesDocumentsRouteImport } from './routes/_authed/documents/signatures/documents'
-import { Route as AuthedDocumentsSignaturesMineRouteImport } from './routes/_authed/documents/signatures/mine'
 import { Route as AuthedDocumentsSignaturesRequestRouteImport } from './routes/_authed/documents/signatures/request'
 import { Route as AuthedFinanceAccountsIndexRouteImport } from './routes/_authed/finance/accounts/index'
 import { Route as AuthedFinanceCashBankIndexRouteImport } from './routes/_authed/finance/cash-bank/index'
@@ -130,6 +129,7 @@ import { Route as AuthedSubscriptionContractIdEditRouteImport } from './routes/_
 import { Route as AuthedSubscriptionActivationsIndexRouteImport } from './routes/_authed/subscription/activations/index'
 import { Route as AuthedSubscriptionApiKeysIndexRouteImport } from './routes/_authed/subscription/api-keys/index'
 import { Route as AuthedSubscriptionApplicationsIndexRouteImport } from './routes/_authed/subscription/applications/index'
+import { Route as AuthedDocumentsSignaturesMineIndexRouteImport } from './routes/_authed/documents/signatures/mine/index'
 import { Route as AuthedFinanceInvestorsProfitSharingIndexRouteImport } from './routes/_authed/finance/investors/profit-sharing/index'
 import { Route as AuthedFinanceInvestorsRegistryIndexRouteImport } from './routes/_authed/finance/investors/registry/index'
 import { Route as AuthedFinanceTaxCorrectionsIndexRouteImport } from './routes/_authed/finance/tax/corrections/index'
@@ -154,6 +154,7 @@ import { Route as AuthedSalesInvoicesInvoiceIdPrintRouteImport } from './routes/
 import { Route as AuthedSalesQuotesQuotationIdIndexRouteImport } from './routes/_authed/sales/quotes/$quotationId/index'
 import { Route as AuthedSalesQuotesQuotationIdEditRouteImport } from './routes/_authed/sales/quotes/$quotationId/edit'
 import { Route as AuthedSalesQuotesQuotationIdPrintRouteImport } from './routes/_authed/sales/quotes/$quotationId/print'
+import { Route as AuthedDocumentsSignaturesMineRequestIdPlaceRouteImport } from './routes/_authed/documents/signatures/mine/$requestId/place'
 import { Route as AuthedOrganizationsOrganizationIdMembersMemberIdEditRouteImport } from './routes/_authed/organizations/$organizationId.members.$memberId.edit'
 import { Route as AuthedProjectsProjectIdBastBastIdIndexRouteImport } from './routes/_authed/projects/$projectId/bast/$bastId/index'
 import { Route as AuthedProjectsProjectIdBastBastIdPrintRouteImport } from './routes/_authed/projects/$projectId/bast/$bastId/print'
@@ -428,12 +429,6 @@ const AuthedDocumentsSignaturesDocumentsRoute =
   AuthedDocumentsSignaturesDocumentsRouteImport.update({
     id: '/documents/signatures/documents',
     path: '/documents/signatures/documents',
-    getParentRoute: () => AuthedRoute,
-  } as any)
-const AuthedDocumentsSignaturesMineRoute =
-  AuthedDocumentsSignaturesMineRouteImport.update({
-    id: '/documents/signatures/mine',
-    path: '/documents/signatures/mine',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedDocumentsSignaturesRequestRoute =
@@ -838,6 +833,12 @@ const AuthedSubscriptionApplicationsIndexRoute =
     path: '/subscription/applications/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedDocumentsSignaturesMineIndexRoute =
+  AuthedDocumentsSignaturesMineIndexRouteImport.update({
+    id: '/documents/signatures/mine/',
+    path: '/documents/signatures/mine/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedFinanceInvestorsProfitSharingIndexRoute =
   AuthedFinanceInvestorsProfitSharingIndexRouteImport.update({
     id: '/finance/investors/profit-sharing/',
@@ -982,6 +983,12 @@ const AuthedSalesQuotesQuotationIdPrintRoute =
     path: '/sales/quotes/$quotationId/print',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedDocumentsSignaturesMineRequestIdPlaceRoute =
+  AuthedDocumentsSignaturesMineRequestIdPlaceRouteImport.update({
+    id: '/documents/signatures/mine/$requestId/place',
+    path: '/documents/signatures/mine/$requestId/place',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute =
   AuthedOrganizationsOrganizationIdMembersMemberIdEditRouteImport.update({
     id: '/members/$memberId/edit',
@@ -1038,7 +1045,6 @@ export interface FileRoutesByFullPath {
   '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
   '/documents/files/$documentId': typeof AuthedDocumentsFilesDocumentIdRoute
   '/documents/signatures/documents': typeof AuthedDocumentsSignaturesDocumentsRoute
-  '/documents/signatures/mine': typeof AuthedDocumentsSignaturesMineRoute
   '/documents/signatures/request': typeof AuthedDocumentsSignaturesRequestRoute
   '/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
   '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
@@ -1133,6 +1139,7 @@ export interface FileRoutesByFullPath {
   '/sales/invoices/$invoiceId/print': typeof AuthedSalesInvoicesInvoiceIdPrintRoute
   '/sales/quotes/$quotationId/edit': typeof AuthedSalesQuotesQuotationIdEditRoute
   '/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
+  '/documents/signatures/mine/': typeof AuthedDocumentsSignaturesMineIndexRoute
   '/finance/investors/profit-sharing/': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
@@ -1146,6 +1153,7 @@ export interface FileRoutesByFullPath {
   '/sales/deliveries/$deliveryNoteId/': typeof AuthedSalesDeliveriesDeliveryNoteIdIndexRoute
   '/sales/invoices/$invoiceId/': typeof AuthedSalesInvoicesInvoiceIdIndexRoute
   '/sales/quotes/$quotationId/': typeof AuthedSalesQuotesQuotationIdIndexRoute
+  '/documents/signatures/mine/$requestId/place': typeof AuthedDocumentsSignaturesMineRequestIdPlaceRoute
   '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
   '/projects/$projectId/bast/$bastId/print': typeof AuthedProjectsProjectIdBastBastIdPrintRoute
   '/projects/$projectId/bast/$bastId/': typeof AuthedProjectsProjectIdBastBastIdIndexRoute
@@ -1185,7 +1193,6 @@ export interface FileRoutesByTo {
   '/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
   '/documents/files/$documentId': typeof AuthedDocumentsFilesDocumentIdRoute
   '/documents/signatures/documents': typeof AuthedDocumentsSignaturesDocumentsRoute
-  '/documents/signatures/mine': typeof AuthedDocumentsSignaturesMineRoute
   '/documents/signatures/request': typeof AuthedDocumentsSignaturesRequestRoute
   '/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
   '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
@@ -1280,6 +1287,7 @@ export interface FileRoutesByTo {
   '/sales/invoices/$invoiceId/print': typeof AuthedSalesInvoicesInvoiceIdPrintRoute
   '/sales/quotes/$quotationId/edit': typeof AuthedSalesQuotesQuotationIdEditRoute
   '/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
+  '/documents/signatures/mine': typeof AuthedDocumentsSignaturesMineIndexRoute
   '/finance/investors/profit-sharing': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/finance/investors/registry': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections': typeof AuthedFinanceTaxCorrectionsIndexRoute
@@ -1293,6 +1301,7 @@ export interface FileRoutesByTo {
   '/sales/deliveries/$deliveryNoteId': typeof AuthedSalesDeliveriesDeliveryNoteIdIndexRoute
   '/sales/invoices/$invoiceId': typeof AuthedSalesInvoicesInvoiceIdIndexRoute
   '/sales/quotes/$quotationId': typeof AuthedSalesQuotesQuotationIdIndexRoute
+  '/documents/signatures/mine/$requestId/place': typeof AuthedDocumentsSignaturesMineRequestIdPlaceRoute
   '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
   '/projects/$projectId/bast/$bastId/print': typeof AuthedProjectsProjectIdBastBastIdPrintRoute
   '/projects/$projectId/bast/$bastId': typeof AuthedProjectsProjectIdBastBastIdIndexRoute
@@ -1336,7 +1345,6 @@ export interface FileRoutesById {
   '/_authed/crm/leads/$leadId': typeof AuthedCrmLeadsLeadIdRoute
   '/_authed/documents/files/$documentId': typeof AuthedDocumentsFilesDocumentIdRoute
   '/_authed/documents/signatures/documents': typeof AuthedDocumentsSignaturesDocumentsRoute
-  '/_authed/documents/signatures/mine': typeof AuthedDocumentsSignaturesMineRoute
   '/_authed/documents/signatures/request': typeof AuthedDocumentsSignaturesRequestRoute
   '/_authed/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
   '/_authed/hr/employees/new': typeof AuthedHrEmployeesNewRoute
@@ -1431,6 +1439,7 @@ export interface FileRoutesById {
   '/_authed/sales/invoices/$invoiceId/print': typeof AuthedSalesInvoicesInvoiceIdPrintRoute
   '/_authed/sales/quotes/$quotationId/edit': typeof AuthedSalesQuotesQuotationIdEditRoute
   '/_authed/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
+  '/_authed/documents/signatures/mine/': typeof AuthedDocumentsSignaturesMineIndexRoute
   '/_authed/finance/investors/profit-sharing/': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/_authed/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/_authed/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
@@ -1444,6 +1453,7 @@ export interface FileRoutesById {
   '/_authed/sales/deliveries/$deliveryNoteId/': typeof AuthedSalesDeliveriesDeliveryNoteIdIndexRoute
   '/_authed/sales/invoices/$invoiceId/': typeof AuthedSalesInvoicesInvoiceIdIndexRoute
   '/_authed/sales/quotes/$quotationId/': typeof AuthedSalesQuotesQuotationIdIndexRoute
+  '/_authed/documents/signatures/mine/$requestId/place': typeof AuthedDocumentsSignaturesMineRequestIdPlaceRoute
   '/_authed/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
   '/_authed/projects/$projectId/bast/$bastId/print': typeof AuthedProjectsProjectIdBastBastIdPrintRoute
   '/_authed/projects/$projectId/bast/$bastId/': typeof AuthedProjectsProjectIdBastBastIdIndexRoute
@@ -1487,7 +1497,6 @@ export interface FileRouteTypes {
     | '/crm/leads/$leadId'
     | '/documents/files/$documentId'
     | '/documents/signatures/documents'
-    | '/documents/signatures/mine'
     | '/documents/signatures/request'
     | '/hr/employees/$employeeId'
     | '/hr/employees/new'
@@ -1582,6 +1591,7 @@ export interface FileRouteTypes {
     | '/sales/invoices/$invoiceId/print'
     | '/sales/quotes/$quotationId/edit'
     | '/sales/quotes/$quotationId/print'
+    | '/documents/signatures/mine/'
     | '/finance/investors/profit-sharing/'
     | '/finance/investors/registry/'
     | '/finance/tax/corrections/'
@@ -1595,6 +1605,7 @@ export interface FileRouteTypes {
     | '/sales/deliveries/$deliveryNoteId/'
     | '/sales/invoices/$invoiceId/'
     | '/sales/quotes/$quotationId/'
+    | '/documents/signatures/mine/$requestId/place'
     | '/organizations/$organizationId/members/$memberId/edit'
     | '/projects/$projectId/bast/$bastId/print'
     | '/projects/$projectId/bast/$bastId/'
@@ -1634,7 +1645,6 @@ export interface FileRouteTypes {
     | '/crm/leads/$leadId'
     | '/documents/files/$documentId'
     | '/documents/signatures/documents'
-    | '/documents/signatures/mine'
     | '/documents/signatures/request'
     | '/hr/employees/$employeeId'
     | '/hr/employees/new'
@@ -1729,6 +1739,7 @@ export interface FileRouteTypes {
     | '/sales/invoices/$invoiceId/print'
     | '/sales/quotes/$quotationId/edit'
     | '/sales/quotes/$quotationId/print'
+    | '/documents/signatures/mine'
     | '/finance/investors/profit-sharing'
     | '/finance/investors/registry'
     | '/finance/tax/corrections'
@@ -1742,6 +1753,7 @@ export interface FileRouteTypes {
     | '/sales/deliveries/$deliveryNoteId'
     | '/sales/invoices/$invoiceId'
     | '/sales/quotes/$quotationId'
+    | '/documents/signatures/mine/$requestId/place'
     | '/organizations/$organizationId/members/$memberId/edit'
     | '/projects/$projectId/bast/$bastId/print'
     | '/projects/$projectId/bast/$bastId'
@@ -1784,7 +1796,6 @@ export interface FileRouteTypes {
     | '/_authed/crm/leads/$leadId'
     | '/_authed/documents/files/$documentId'
     | '/_authed/documents/signatures/documents'
-    | '/_authed/documents/signatures/mine'
     | '/_authed/documents/signatures/request'
     | '/_authed/hr/employees/$employeeId'
     | '/_authed/hr/employees/new'
@@ -1879,6 +1890,7 @@ export interface FileRouteTypes {
     | '/_authed/sales/invoices/$invoiceId/print'
     | '/_authed/sales/quotes/$quotationId/edit'
     | '/_authed/sales/quotes/$quotationId/print'
+    | '/_authed/documents/signatures/mine/'
     | '/_authed/finance/investors/profit-sharing/'
     | '/_authed/finance/investors/registry/'
     | '/_authed/finance/tax/corrections/'
@@ -1892,6 +1904,7 @@ export interface FileRouteTypes {
     | '/_authed/sales/deliveries/$deliveryNoteId/'
     | '/_authed/sales/invoices/$invoiceId/'
     | '/_authed/sales/quotes/$quotationId/'
+    | '/_authed/documents/signatures/mine/$requestId/place'
     | '/_authed/organizations/$organizationId/members/$memberId/edit'
     | '/_authed/projects/$projectId/bast/$bastId/print'
     | '/_authed/projects/$projectId/bast/$bastId/'
@@ -2262,13 +2275,6 @@ declare module '@tanstack/react-router' {
       path: '/documents/signatures/documents'
       fullPath: '/documents/signatures/documents'
       preLoaderRoute: typeof AuthedDocumentsSignaturesDocumentsRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/documents/signatures/mine': {
-      id: '/_authed/documents/signatures/mine'
-      path: '/documents/signatures/mine'
-      fullPath: '/documents/signatures/mine'
-      preLoaderRoute: typeof AuthedDocumentsSignaturesMineRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/documents/signatures/request': {
@@ -2754,6 +2760,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSubscriptionApplicationsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/documents/signatures/mine/': {
+      id: '/_authed/documents/signatures/mine/'
+      path: '/documents/signatures/mine'
+      fullPath: '/documents/signatures/mine/'
+      preLoaderRoute: typeof AuthedDocumentsSignaturesMineIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/finance/investors/profit-sharing/': {
       id: '/_authed/finance/investors/profit-sharing/'
       path: '/finance/investors/profit-sharing'
@@ -2922,6 +2935,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSalesQuotesQuotationIdPrintRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/documents/signatures/mine/$requestId/place': {
+      id: '/_authed/documents/signatures/mine/$requestId/place'
+      path: '/documents/signatures/mine/$requestId/place'
+      fullPath: '/documents/signatures/mine/$requestId/place'
+      preLoaderRoute: typeof AuthedDocumentsSignaturesMineRequestIdPlaceRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/organizations/$organizationId/members/$memberId/edit': {
       id: '/_authed/organizations/$organizationId/members/$memberId/edit'
       path: '/members/$memberId/edit'
@@ -3069,7 +3089,6 @@ interface AuthedRouteChildren {
   AuthedCrmLeadsLeadIdRoute: typeof AuthedCrmLeadsLeadIdRoute
   AuthedDocumentsFilesDocumentIdRoute: typeof AuthedDocumentsFilesDocumentIdRoute
   AuthedDocumentsSignaturesDocumentsRoute: typeof AuthedDocumentsSignaturesDocumentsRoute
-  AuthedDocumentsSignaturesMineRoute: typeof AuthedDocumentsSignaturesMineRoute
   AuthedDocumentsSignaturesRequestRoute: typeof AuthedDocumentsSignaturesRequestRoute
   AuthedHrEmployeesEmployeeIdRoute: typeof AuthedHrEmployeesEmployeeIdRoute
   AuthedHrEmployeesNewRoute: typeof AuthedHrEmployeesNewRoute
@@ -3157,6 +3176,7 @@ interface AuthedRouteChildren {
   AuthedSalesInvoicesInvoiceIdPrintRoute: typeof AuthedSalesInvoicesInvoiceIdPrintRoute
   AuthedSalesQuotesQuotationIdEditRoute: typeof AuthedSalesQuotesQuotationIdEditRoute
   AuthedSalesQuotesQuotationIdPrintRoute: typeof AuthedSalesQuotesQuotationIdPrintRoute
+  AuthedDocumentsSignaturesMineIndexRoute: typeof AuthedDocumentsSignaturesMineIndexRoute
   AuthedFinanceInvestorsProfitSharingIndexRoute: typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   AuthedFinanceInvestorsRegistryIndexRoute: typeof AuthedFinanceInvestorsRegistryIndexRoute
   AuthedFinanceTaxCorrectionsIndexRoute: typeof AuthedFinanceTaxCorrectionsIndexRoute
@@ -3170,6 +3190,7 @@ interface AuthedRouteChildren {
   AuthedSalesDeliveriesDeliveryNoteIdIndexRoute: typeof AuthedSalesDeliveriesDeliveryNoteIdIndexRoute
   AuthedSalesInvoicesInvoiceIdIndexRoute: typeof AuthedSalesInvoicesInvoiceIdIndexRoute
   AuthedSalesQuotesQuotationIdIndexRoute: typeof AuthedSalesQuotesQuotationIdIndexRoute
+  AuthedDocumentsSignaturesMineRequestIdPlaceRoute: typeof AuthedDocumentsSignaturesMineRequestIdPlaceRoute
   AuthedProjectsProjectIdBastBastIdPrintRoute: typeof AuthedProjectsProjectIdBastBastIdPrintRoute
   AuthedProjectsProjectIdBastBastIdIndexRoute: typeof AuthedProjectsProjectIdBastBastIdIndexRoute
 }
@@ -3205,7 +3226,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDocumentsFilesDocumentIdRoute: AuthedDocumentsFilesDocumentIdRoute,
   AuthedDocumentsSignaturesDocumentsRoute:
     AuthedDocumentsSignaturesDocumentsRoute,
-  AuthedDocumentsSignaturesMineRoute: AuthedDocumentsSignaturesMineRoute,
   AuthedDocumentsSignaturesRequestRoute: AuthedDocumentsSignaturesRequestRoute,
   AuthedHrEmployeesEmployeeIdRoute: AuthedHrEmployeesEmployeeIdRoute,
   AuthedHrEmployeesNewRoute: AuthedHrEmployeesNewRoute,
@@ -3313,6 +3333,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSalesQuotesQuotationIdEditRoute: AuthedSalesQuotesQuotationIdEditRoute,
   AuthedSalesQuotesQuotationIdPrintRoute:
     AuthedSalesQuotesQuotationIdPrintRoute,
+  AuthedDocumentsSignaturesMineIndexRoute:
+    AuthedDocumentsSignaturesMineIndexRoute,
   AuthedFinanceInvestorsProfitSharingIndexRoute:
     AuthedFinanceInvestorsProfitSharingIndexRoute,
   AuthedFinanceInvestorsRegistryIndexRoute:
@@ -3334,6 +3356,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedSalesInvoicesInvoiceIdIndexRoute,
   AuthedSalesQuotesQuotationIdIndexRoute:
     AuthedSalesQuotesQuotationIdIndexRoute,
+  AuthedDocumentsSignaturesMineRequestIdPlaceRoute:
+    AuthedDocumentsSignaturesMineRequestIdPlaceRoute,
   AuthedProjectsProjectIdBastBastIdPrintRoute:
     AuthedProjectsProjectIdBastBastIdPrintRoute,
   AuthedProjectsProjectIdBastBastIdIndexRoute:

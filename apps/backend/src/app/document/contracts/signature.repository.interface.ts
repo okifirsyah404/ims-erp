@@ -81,6 +81,22 @@ export interface ISignatureRepository {
 		},
 	): Promise<TDocumentSignatureRequestSelect | null>;
 
+	/** The newest evidence row of one signer on one document. */
+	findLatestSignature(
+		documentId: string,
+		signerUserId: string,
+	): Promise<TDocumentSignatureSelect | null>;
+
+	/**
+	 * Records the signed PDF on an evidence row that has none yet.
+	 *
+	 * @returns `null` when the row is gone or already carries a signed PDF
+	 */
+	attachSignedPdf(
+		signatureId: string,
+		patch: { sourceFileId: string; signedFileKey: string },
+	): Promise<TDocumentSignatureSelect | null>;
+
 	/** The live signature image of one user, if any. */
 	findUserSignature(userId: string): Promise<TDocumentUserSignatureSelect | null>;
 
