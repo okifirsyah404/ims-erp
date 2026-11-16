@@ -12,6 +12,91 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-16 - ERP-0066 sales follow-up reminders (leads, quotations) to n8n
+
+Branch `feat/m02-sales-follow-ups` from `origin/main` (`a1be332`). The n8n side
+is on `docs/m04-n8n-workflows` (PR #114).
+
+**Number check.** Every remote branch was read: the highest id was ERP-0065.
+GitHub was unreachable at the time, so the open PRs were re-checked before
+pushing.
+
+**Gate 1 (read).**
+- `docs.dbml` CRM (`leads.next_follow_up_at`, `owner_user_id`, statuses) and
+  Sales (`quotations.status`, `sent_at`, `valid_until`, `created_by`).
+- `automation.md` event contract.
+- No table change, so the rest of `docs/database/` was skipped.
+
+**Gate 2 (owner decisions 2026-11-16).**
+- **Lead.** A reminder when the planned follow-up arrives, to the lead's
+  owner. More than 3 days late, the sales manager is told too. Without an
+  owner it goes to the sales manager.
+- **Quotation.** Still `sent` (no answer) after 3 and 7 days, and 2 days
+  before `valid_until`, to the salesperson who made it. Only one "sent"
+  stage per run: after a gap, 7 days wins over 3.
+- **Audience.** Internal only: no message to the customer.
+- **Schedule.** Weekdays (Mon–Fri) 08:00 Asia/Jakarta. A date that falls on
+  a weekend is reminded on Monday ("today or past").
+- **Mechanics.**
+  - Each run is safe to repeat: the outbox dedupe key is per (lead, planned
+    time, stage) and per (quotation, stage).
+  - A new follow-up date on the lead gives a new reminder.
+  - Won, lost and superseded quotations, and won or lost leads, stop.
+- **Recipient.** The event carries the owner's name, phone and email from the
+  ERP user profile (`auth.users.phone`), so n8n can message that exact
+  person.
+
+**What changed**
+- Topics `lead.follow_up_due` and `quotation.follow_up_due`.
+- `LeadService.publishFollowUpNotices` and
+  `QuotationService.publishFollowUpNotices`, with
+  `ILeadRepository.listFollowUpsDue` and
+  `IQuotationRepository.listSentForFollowUp`.
+- `QuotationService` gained the outbox.
+- BullMQ queues `lead-follow-up` and `quotation-follow-up` (worker +
+  schedule), wired in `src/index.ts` behind `SCHEDULER_ENABLED`.
+- Config `scheduler.salesFollowUpCron` (`SCHEDULER_SALES_FOLLOW_UP_CRON`,
+  default `0 8 * * 1-5`), documented in `.env.example`.
+- `automation.md` has the event rows and the scheduler note.
+- `docs/database/` was reviewed and is unchanged.
+- **n8n (PR #114).**
+  - Compose handlers for both topics: `toPerson` messages the owner's own
+    phone, with the sales manager as fallback; overdue leads also go to the
+    sales manager.
+  - Three Meta templates (`erp_followup_lead`,
+    `erp_followup_lead_terlambat`, `erp_followup_penawaran`).
+  - Samples for the test sender. `check-meta-templates.ts`: 41 messages
+    against 18 templates, `OK`.
+
+**Verification**
+- Backend `tsc` clean; `bun run lint` 0 errors.
+- Tests:
+  - Backend `bun test`: 1083 pass, 4 fail (the known `Bun.Image` / toWebp
+    tests).
+  - The authorization test app needed an outbox stub. It was found by the
+    full run: "Cannot inject outbox into QuotationService".
+  - New tests: lead stages (`due` today and 2 days late, `overdue` 5 days,
+    no owner, won excluded, dedupe key); quotation stages (3 days, 7 days,
+    expiring, nothing yet, won excluded); only 7 days after a long gap.
+- **Live run** on the disposable DB `ims_erp_v_fu`:
+  - Set-up: migrated from empty, `check` clean, seeded twice. The ERP ran on
+    `:3010` with `SCHEDULER_ENABLED=true` and a minute cron, pointing at n8n
+    2.47.7 (WAHA mode) with a fake WAHA. The sales seed user got phone
+    `081100000020`.
+  - Data, created through the API: a sales user made a lead with a follow-up
+    yesterday, and a quotation that was approved and sent. Its `sent_at` was
+    moved back 3 days in SQL.
+  - Within a minute, WhatsApp to `6281100000020` received "Penawaran
+    0001/QT/DEV/XI/26 … terkirim 3 hari lalu dan belum ada jawaban" and
+    "Follow-up lead … terlambat 1 hari". The outbox shows both `published`
+    in 1 attempt.
+  - The next cron run sent nothing new (still 3 calls, 2 events).
+  - Moving the follow-up 5 days back gave the owner "terlambat 5 hari" and
+    the sales manager "Lead … milik <owner> belum di-follow-up".
+
+**Not done.** After-sales follow-ups (survey, maintenance, warranty) and
+document PDFs are the next items the owner listed.
+
 ## 2026-11-16 - Inventory & asset lists: cards, images, dialog create, URL pagination (ERP-0063)
 
 Status: **implemented** (browser-checked 2026-11-16; multi-page paging still

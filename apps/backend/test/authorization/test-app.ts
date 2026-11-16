@@ -471,6 +471,9 @@ export async function buildTestApp() {
 			voidBySource: async () => 0,
 		} as never,
 	});
+	// ERP-0066: follow-up reminders publish to the outbox; not exercised here.
+	const { OUTBOX_SERVICE_TOKEN } = await import('../../src/app/automation/constants/di');
+	container.register(OUTBOX_SERVICE_TOKEN, { useValue: { publish: async () => null } as never });
 	container.register(SALES_SERVICE_TOKEN, { useClass: SalesService });
 	container.register(QUOTATION_SERVICE_TOKEN, { useClass: QuotationService });
 
