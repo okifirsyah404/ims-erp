@@ -12,6 +12,27 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-16 - ERP-0066 follow-ups in the n8n workflow (PR #114)
+
+The ERP side is on `feat/m02-sales-follow-ups`; see the ERP-0066 entry there.
+In the workflow:
+- **"3. Compose messages"** handles `lead.follow_up_due` and
+  `quotation.follow_up_due`.
+  - A new `toPerson` helper messages the lead's or quotation's owner on the
+    phone carried in the event (from the ERP user profile). Without an owner
+    or a phone it falls back to the sales manager.
+  - Overdue leads also go to the sales manager.
+- **Meta.** Three templates were added: `erp_followup_lead`,
+  `erp_followup_lead_terlambat` and `erp_followup_penawaran` (now 18).
+  `check-meta-templates.ts` checked 41 messages: `OK`.
+- `samples.ts` covers both topics; `n8n-workflows.*.md` has the topic rows.
+
+Verification: a live run (ERP with a minute cron → n8n 2.47.7 → fake WAHA)
+delivered both reminders to the salesperson's phone and the overdue
+escalation to the sales manager, with no duplicate on the next run. Details
+are in the ERP-0066 progress entry. `docs/database/` was reviewed and is
+unchanged.
+
 ## 2026-11-16 - ERP-0039: official WhatsApp (Meta Cloud API) option, registration guide, robust dedupe
 
 The owner asked about Meta WhatsApp Business, because WAHA numbers risk bans, and about how to

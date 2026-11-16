@@ -176,6 +176,8 @@ const CONFIG = {
 | `sales_return.updated` | Retur penjualan diajukan → sales manager; disetujui → gudang + pelanggan*; ditolak → sales; diterima → sales + pelanggan*; dibatalkan → sales | lihat kolom kiri |
 | `supplier_bill.recorded` | Tagihan pemasok dicatat | finance (WA, dan email bila aktif) |
 | `supplier_bill.due` | Harian: tagihan H-7, jatuh tempo hari ini, atau lewat jatuh tempo | finance; lewat jatuh tempo → juga owner |
+| `lead.follow_up_due` | Hari kerja 08.00: jadwal follow-up lead tiba/lewat | **sales pemilik lead** (nomor HP dari profil user ERP; tanpa pemilik → sales manager); terlambat > 3 hari → juga sales manager |
+| `quotation.follow_up_due` | Hari kerja 08.00: penawaran terkirim belum dijawab H+3 / H+7, dan H-2 sebelum masa berlaku habis | **sales pembuat penawaran** (cadangan: sales manager). Tidak ke pelanggan |
 
 \* hanya bila `notifyCustomers: true`; \*\* hanya bila `notifySuppliers: true`.
 

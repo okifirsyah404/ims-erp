@@ -133,6 +133,8 @@ To change a text, edit that topic's function in the `handlers` object of the sam
 | `sales_return.updated` | submitted → sales manager; approved → warehouse + customer*; rejected → sales; received → sales + customer*; cancelled → sales | see left |
 | `supplier_bill.recorded` | Supplier bill recorded | finance (WhatsApp, and email when enabled) |
 | `supplier_bill.due` | Daily: 7 days ahead, due today, overdue | finance; overdue → also owner |
+| `lead.follow_up_due` | Weekdays 08:00: a lead's follow-up date arrived or passed | **the lead's owner** (phone from the ERP user profile; no owner → sales manager); more than 3 days late → also the sales manager |
+| `quotation.follow_up_due` | Weekdays 08:00: a sent quotation without an answer after 3 / 7 days, and 2 days before it expires | **the salesperson who made it** (fallback sales manager). Never the customer |
 
 \* only with `notifyCustomers: true`; \*\* only with `notifySuppliers: true`.
 Field lists: `docs/architecture/modules/automation.md`, "The event contract".
