@@ -128,8 +128,14 @@ Pemecahan masalah:
 | `service_ticket.updated` | Kabari pelapor status baru (`change`). |
 | `whatsapp.handoff` | Kabari admin jaga: chat perlu orang (`reason`, `question`). |
 | `license.due` | Ingatkan pelanggan pada 30 / 7 / 0 hari (`threshold`, `stage`). Sekali per kontrak dan ambang. |
+| `purchase_return.updated` | Retur pembelian: minta persetujuan, minta gudang mengirim, kabari PIC pemasok. |
+| `sales_return.updated` | Retur penjualan: minta persetujuan, siapkan gudang, kabari pelanggan. |
+| `supplier_bill.recorded` | Kabari finance tagihan pemasok yang dicatat. |
+| `supplier_bill.due` | Ingatkan finance H-7, hari jatuh tempo, dan lewat jatuh tempo (`threshold`, `stage`). |
 
 Daftar field per topik: `notification.md`, "The event contract".
+
+Workflow siap import yang menangani semua topik ini: [n8n-workflows.id.md](n8n-workflows.id.md).
 
 ## 6. Penyedia AI (opsional)
 

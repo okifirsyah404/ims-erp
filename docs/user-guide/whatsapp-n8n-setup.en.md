@@ -126,8 +126,14 @@ Troubleshooting:
 | `service_ticket.updated` | Tell the reporter the new status (`change`). |
 | `whatsapp.handoff` | Alert the admin on duty: a chat needs a person (`reason`, `question`). |
 | `license.due` | Remind the customer at 30 / 7 / 0 days (`threshold`, `stage`). Sent once per contract and threshold. |
+| `purchase_return.updated` | Purchase returns: ask for approval, tell the warehouse to ship, tell the supplier PIC. |
+| `sales_return.updated` | Sales returns: ask for approval, prepare the warehouse, tell the customer. |
+| `supplier_bill.recorded` | Tell finance a supplier bill was recorded. |
+| `supplier_bill.due` | Remind finance 7 days ahead, on the due date and when overdue (`threshold`, `stage`). |
 
 Field lists per topic: `notification.md`, "The event contract".
+
+An importable workflow that handles all of these topics: [n8n-workflows.en.md](n8n-workflows.en.md).
 
 ## 6. AI provider (optional)
 

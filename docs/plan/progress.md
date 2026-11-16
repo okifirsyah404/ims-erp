@@ -12,6 +12,62 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-16 - ERP-0039: importable n8n workflow for every ERP event, tested on a real n8n
+
+Branch `docs/m04-n8n-workflows` from `origin/main` (`a1be332`). The owner
+asked for a workflow they can import, explained in detail.
+
+**What was added**
+- `docs/integrations/n8n/erp-event-router.workflow.json`: one workflow for
+  all topics.
+  - Nodes: webhook `erp-events` → verify the HMAC signature (±10 minutes
+    replay window) → skip duplicates (workflow static data) → compose
+    messages from one `CONFIG` block (team numbers per role,
+    `notifyCustomers` / `notifySuppliers` off by default) → send WhatsApp via
+    WAHA → remember the event → answer the ERP.
+  - An optional email branch is disabled after import.
+  - The HTTP answers match the ERP outbox retry policy: 401/400 stop the
+    retries, 500 (WAHA down) retries, 200 for handled or duplicate.
+- The Code sources live in `docs/integrations/n8n/src/`;
+  `build-workflow.ts` rebuilds the JSON from them.
+- `send-test-event.ts` sends signed sample events, the same as the ERP, with
+  `--change`, `--bad-signature` and `--repeat`.
+- Guides: `docs/user-guide/n8n-workflows.id.md` and `.en.md`. They cover
+  requirements, n8n and ERP env, import, each node, recipients, topics,
+  testing and go-live. `whatsapp-n8n-setup.*.md` lists the new topics and
+  links the guide.
+- The topics `purchase_return.updated` (#108), `sales_return.updated` (#111),
+  `supplier_bill.recorded` and `supplier_bill.due` (#112) are published by
+  their PRs. Until those merge, `main`'s ERP sends only the six older topics;
+  the workflow handles both.
+
+**Verification on a real n8n 2.47.7 (Docker), with a fake WAHA on :3999**
+- `n8n import:workflow`, then `publish:workflow` and a restart: imported and
+  active.
+- `send-test-event.ts all`, plus every `change` of the returns, bills and
+  tickets: 25 events, all 200; 34 WhatsApp calls with the right chat ids and
+  API key. Texts reviewed.
+- Negative cases:
+  - `--bad-signature` → 401.
+  - `--repeat` → the second is "duplicate"; WhatsApp is sent once.
+  - WAHA answering 500 → the webhook answers 500. The same event id
+    succeeds once WAHA is back, and a third try is "duplicate".
+- **Real ERP → n8n.** The backend of PR #112 ran on `ims_erp_v_ap` with
+  `N8N_WEBHOOK_URL` pointing at the test n8n. Recording a bill (ap-e2e,
+  16/16) made finance's WhatsApp receive "Tagihan pemasok 0008/SB/DEV/XI/26
+  … dicatat", and `automation.outbox_messages` shows
+  `supplier_bill.recorded | published | 1`.
+- The links were checked against the web-admin routes, and two were fixed
+  (`/projects/tickets/:id`, `/integrations/whatsapp-ai/:id`).
+- The n8n 2.x specifics were confirmed live: `$env` with
+  `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`, `require('crypto')` with
+  `NODE_FUNCTION_ALLOW_BUILTIN`, and `this.helpers.httpRequest` in Code
+  nodes.
+
+**Not done.** Real WAHA and real numbers (UAT). The owner still has to
+approve the customer and supplier texts. `docs/database/` was reviewed and is
+unchanged.
+
 ## 2026-11-16 - Inventory & asset lists: cards, images, dialog create, URL pagination (ERP-0063)
 
 Status: **implemented** (browser-checked 2026-11-16; multi-page paging still
