@@ -22,11 +22,12 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 - **Main merged in** (`--no-ff`): `main` (`c5f65bdf`) into the feature branch.
   No textual conflicts. `apps/backend/src/index.ts`, config loader/schema,
   `.env.example`, `bun.lock` auto-merged.
-- **GitGuardian** (PR #97, incidents 40062720, 40062721, 40063477): fixture
-  passwords in `customer-portal.test.ts` already replaced by
-  `FAKE_PASSWORD_1..4` (`4fbb73a7`). Incidents marked false positive in the
-  GitGuardian dashboard by the owner. Earlier commits `dc22cdf`, `01c94af`
-  keep the old literals; history not rewritten.
+- **GitGuardian** (PR #97, head `34938477`): check still FAILURE with 4
+  incidents: 40062720, 40062721, 40063477 (literals in `dc22cdf`, `01c94af`)
+  and 40104776 (flagged on `4fbb73a7`, the fix commit itself: the new
+  `FAKE_PASSWORD_*` constants). All four are test fixtures. Incidents marked
+  false positive in the dashboard by the owner, except where noted in the PR.
+  Git history not rewritten. The check reruns on push.
 - Verified (2026-11-17, repo root):
   - `bun install`: 1 package removed, lockfile saved.
   - `bun run typecheck`: 4/4 successful.
