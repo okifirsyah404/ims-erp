@@ -1,6 +1,8 @@
 import * as dotenv from 'dotenv';
 import * as dotenvExpand from 'dotenv-expand';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { z } from 'zod';
 
 import { EnvConfigSchema, type TEnvConfig } from '../schemas/config.schema.js';
 
@@ -10,6 +12,113 @@ import { EnvConfigSchema, type TEnvConfig } from '../schemas/config.schema.js';
  */
 function findEnvPath(): string {
 	return path.resolve(process.cwd(), '.env');
+}
+
+/**
+ * Path of the CORS allowlist file. Lives next to `.env` in the backend
+ * workspace (gitignored — the committed template is `cors.example.json`);
+ * override the location with `CORS_CONFIG_PATH` (e.g. a compose bind-mount
+ * pointing somewhere else inside the container).
+ */
+function findCorsPath(): string {
+	return path.resolve(
+		process.cwd(),
+		process.env.CORS_CONFIG_PATH || 'cors.json',
+	);
+}
+
+const CorsOriginListSchema = z
+	.array(z.string().trim())
+	// An origin is scheme + host (+ optional port) — no path, query, or hash.
+	.refine(
+		(entries) =>
+			entries
+				.filter((entry) => entry.length > 0)
+				.every((entry) => {
+					if (!z.url().safeParse(entry).success) return false;
+					const url = new URL(entry);
+					return url.pathname === '/' && !url.search && !url.hash;
+				}),
+		{
+			message:
+				'every entry must be an origin URL without path/query (e.g. https://app.example.com)',
+		},
+	)
+	.transform((entries) => [
+		...new Set(
+			entries
+				.map((entry) => entry.replace(/\/+$/, ''))
+				.filter((entry) => entry.length > 0),
+		),
+	]);
+
+/**
+ * Shape of the gitignored `cors.json`:
+ *
+ *   { "allow": ["https://app.example.com"], "blacklist": ["https://spam.example"] }
+ *
+ * Both keys are optional; `blacklist` always wins over `allow` (an origin on
+ * both lists is blocked). Every origin is scheme + host (+ optional port) —
+ * no path, query, or hash.
+ */
+const CorsFileSchema = z
+	.object({
+		allow: CorsOriginListSchema.optional(),
+		blacklist: CorsOriginListSchema.optional(),
+	})
+	.refine(
+		(file) =>
+			(file.allow != null && file.allow.length > 0) ||
+			(file.blacklist != null && file.blacklist.length > 0),
+		{ message: 'at least one of "allow" or "blacklist" must have entries' },
+	)
+	.transform((file) => {
+		const blocked = new Set(file.blacklist ?? []);
+		return (file.allow ?? []).filter((origin) => !blocked.has(origin));
+	});
+
+/**
+ * Load the CORS allowlist from `cors.json`. A missing file (or an
+ * accidentally-mounted directory) is not an error: the caller falls back to
+ * the app's own web URL. A malformed file IS an error — a typo must fail the
+ * boot loudly instead of silently loosening or dropping the allowlist.
+ */
+export function loadCorsOrigins(corsPath?: string): string[] | null {
+	const resolved = corsPath ?? findCorsPath();
+	let raw: string;
+	try {
+		raw = fs.readFileSync(resolved, 'utf8');
+	} catch (error) {
+		// ENOENT: file absent. EISDIR: compose creates a directory when the
+		// bind-mount source does not exist on the host — treat both as "unset".
+		const code = (error as NodeJS.ErrnoException).code;
+		if (code === 'ENOENT' || code === 'EISDIR') return null;
+		throw error;
+	}
+
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(raw);
+	} catch (error) {
+		throw new Error(
+			`Invalid CORS allowlist at ${resolved} — JSON parse failed: ${(error as Error).message}`,
+		);
+	}
+
+	const result = CorsFileSchema.safeParse(parsed);
+	if (!result.success) {
+		const detail = result.error.issues
+			.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`)
+			.join('; ');
+		throw new Error(
+			`Invalid CORS allowlist at ${resolved} — ${detail}. ` +
+				'Expected a JSON object like {"allow": ["https://app.example.com"], "blacklist": []}.',
+		);
+	}
+
+	// An empty effective allowlist is meaningful ("block every origin"), so
+	// only a missing/unreadable file maps to null (caller-side fallback).
+	return result.data;
 }
 
 export function loadEnvConfig(
@@ -45,11 +154,10 @@ export function loadEnvConfig(
 			webUrl: process.env.APP_WEB_URL || null,
 			portalUrl: process.env.PORTAL_URL || null,
 			logLevel: process.env.APP_LOG_LEVEL || null,
-			corsOrigins: process.env.CORS_ORIGINS
-				? process.env.CORS_ORIGINS.split(',')
-						.map((o) => o.trim())
-						.filter(Boolean)
-				: null,
+			// Allowlist of credentialed CORS origins, loaded from the
+			// gitignored `cors.json` (template: `cors.example.json`). Null =
+			// missing or empty file; callers fall back to the web URL.
+			corsOrigins: loadCorsOrigins(),
 			// Self-hosted DiceBear API by default (docker-compose `dicebear`
 			// service). Point at https://api.dicebear.com to use the public one.
 			avatarApiUrl: process.env.AVATAR_API_URL || 'https://api.dicebear.com',

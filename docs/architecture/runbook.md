@@ -26,7 +26,6 @@ Environment is loaded per-workspace from `.env` (the backend uses
 | `bun run dev` | repo root | ✅ verified 2026-10-29 — `turbo run dev`; live HTTP bring-up |
 | `bun dev` | `apps/backend` | ✅ verified 2026-10-29/30 — `bun run --watch src/index.ts` |
 | `bun run build` | repo root / `apps/web-admin` | ✅ verified 2026-10-29/30 (web-admin tsc + vite) |
-| `bun run dev` / `bun run build` | `apps/api-docs` | ✅ verified 2026-11-14 — Zudoku API reference for the website/portal API on http://localhost:3100 (build prerenders 16 routes) |
 
 ## Checks
 

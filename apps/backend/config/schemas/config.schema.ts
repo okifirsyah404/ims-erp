@@ -31,7 +31,7 @@ export const AppConfigSchema = z.object({
 	 */
 	portalUrl: z.url().nullish(),
 	logLevel: z.enum(['debug', 'info', 'warn', 'error']).nullish(),
-	/** Comma-separated list of origins allowed for credentialed CORS. */
+	/** CORS allowlist loaded from the gitignored `cors.json` file. */
 	corsOrigins: z.array(z.string()).nullish(),
 	/** Base URL of the DiceBear HTTP API used to render avatars. */
 	avatarApiUrl: z.url(),

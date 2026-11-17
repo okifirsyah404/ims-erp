@@ -1,9 +1,8 @@
 # Customer Portal Module (ERP-0022, stage 1)
 
 Decision record: [ADR-0022](../decisions/ADR-0022-customer-portal-api.md).
-Readable API reference (Zudoku): `apps/api-docs` — `bun run dev` there, then
-http://localhost:3100 (spec `apps/api-docs/openapi/website.yaml`, kept in step by
-`apps/backend/test/unit/api-docs-drift.test.ts`).
+API reference: Swagger/OpenAPI served by `@elysia/openapi` from the backend. Zudoku
+(`apps/api-docs`) was removed.
 Full gap analysis against the website repo (all 51 portal, 9 catalog and 10
 website operations, open owner decisions): `docs/plan/plans/website-integration.md`.
 

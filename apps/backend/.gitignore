@@ -32,6 +32,9 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# local CORS allowlist (template is cors.example.json)
+cors.json
+
 # vercel
 .vercel
 
