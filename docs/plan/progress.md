@@ -12,6 +12,51 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-17 - PR #98 merged main (PR #97 state) in; conflicts resolved
+
+`origin/main` (`73b2a920`, after PR #97) merged into `fix/m02-invoice-billing`.
+Four conflicts, resolved as follows:
+
+- `invoice.repository.ts`: imports merged (both `TInvoiceListFilters` and
+  `TInvoiceSummary`). `hasLiveInvoices` keeps the branch semantics — `void`
+  **and** `cancelled` invoices do not lock the order (the fix's own point);
+  `summary()` from main kept.
+- `invoice.controller.ts`: all invoice routes coexist — `/invoices/summary`
+  (main, M01 dashboard) and `/invoices/orders/:orderId/summary` +
+  `/invoices/:id/void` (branch). `/invoices/:id` keeps the branch handler
+  (billing detail + items). `/invoices/summary` is declared **before**
+  `/invoices/:id` so it is not swallowed by the id route.
+- `invoice.contract.ts`: both sides' schemas/types kept.
+- `docs/plan/progress.md`: both sides kept (branch entry above, main entry
+  below), plus this entry.
+- New `test/unit/invoice-has-live.test.ts` pins the `cancelled` exclusion in
+  `hasLiveInvoices` (2 tests, mocked Drizzle chain).
+- Fixed `test/authorization/dashboard-aggregates.test.ts`: the merged
+  controller also resolves `INVOICE_BILLING_SERVICE_TOKEN` at plugin build
+  time; registered an empty stub there.
+- Verified (2026-11-17, repo root): `bun run typecheck` 4/4; `bun run lint`
+  5/5, 0 errors; `bun run test` backend 1181 / web-admin 119 / locales 98 /
+  react-email 6, 0 fail; `bun run build` 3/3;
+  `bun docs/database/validate-dbml.ts` OK (drizzle parity drift 0).
+- Not verified here: mutation check of the new test (the mutation attempt
+  could not write the file — locked by another process), Swagger in a
+  browser, PR #98 status checks after push.
+
+## 2026-11-15 - PR #98 brought onto main again (`aa3a7ad`)
+
+`origin/main` (with the M04 merge) went into `fix/m02-invoice-billing`.
+- `InvoiceService.issue`: main split it so the `invoice.issued` event goes to
+  the outbox after the transaction (`issueInTransaction`). This branch passes
+  the issue form's dates. Combined: `issue(ctx, id, dates)` →
+  `issueInTransaction(ctx, id, dates)`, then the event.
+- `features.md`: this branch's ERP-0011 evidence is kept. Main's note that
+  the invoice API no longer matched the web is exactly what this PR fixes.
+  progress.md kept both sides.
+- Verification: `bun run typecheck` 4/4; `bun run lint` 0 errors; backend
+  `bun test` 1074 pass, 4 fail (the known `Bun.Image` tests); web-admin
+  100; `drizzle-kit check` "Everything's fine". The invoice API e2e was not
+  re-run: the Docker engine is down on this machine.
+
 ## 2026-11-17 - PR #100 conflict resolved against main (Zudoku removed, licensing docs kept as Markdown)
 
 `main` (`73b2a920`, PR #97 merged) deleted `apps/api-docs/` and
@@ -1701,6 +1746,79 @@ Built:
 > that branch; this documentation set was written there first and then copied
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
+
+## 2026-11-14 - M02 invoices: billing by terms, summary and void restored (ERP-0011 regression)
+
+Owner: "perbaiki aja" (programmer A to be told). Branch `fix/m02-invoice-billing`
+from `origin/main` (`a997778`).
+
+**Cause.** The merge `812f2b5` ("Sales owns invoice + receipt", PR #68) kept
+programmer A's accounting-aware Sales `InvoiceService` (free items, issue
+posts DR AR / CR revenue / CR VAT, receipts) and dropped the M02 billing use
+cases of `3072ccf` (ADR-0011 step 3d-2). The web admin still calls them, so on
+`main` the order's billing card (`GET /invoices/orders/:id/summary`), "create
+invoice" (`POST /invoices` with `term`), the invoice page (expects receipts,
+order and schedule), void (`POST /invoices/:id/void`), the issue dates and the
+list filters (`termKind` for the DP page, `search`, `overdue`) all failed or
+were ignored. The table `sales.invoices` still had every term column, so no
+schema change was needed.
+
+**Fix** (programmer A's service changed minimally):
+- `sales/utils/invoice-terms.ts` — the pure term rules ported back (money
+  helpers from `@utils/money.util`).
+- `sales/services/invoice-billing.service.ts` (`InvoiceBillingService`):
+  `summary`, `createFromTerm` (next planned / percentage / amount incl. VAT /
+  remaining; per-order advisory lock; DP / installment / settlement; **one
+  invoice line per term** so the existing issue posting works; numbered at
+  draft like every Sales draft), `detail` (receipts in the web shape, the
+  order and its schedule of issued terms), `void` (unpaid draft or issued;
+  for an issued invoice the journal is reversed with `PostingService.reverse`,
+  the AR open item set to `void` — amounts kept because of the
+  `outstanding = original − paid` check — and the registry copy voided, all
+  in one transaction with the invoice row locked).
+- Repository: `createTermDraftLocked`, `withLockedInvoice`, list filters;
+  `hasLiveInvoices` no longer counts `cancelled` drafts.
+- Controller: summary route, `POST /invoices` takes `term` or items,
+  `GET /invoices/:id` returns the detail plus `items`, issue accepts
+  `issueDate` / `dueDate`, void route (`invoice:void`).
+- `InvoiceService.list` passes the new filters; `issue` takes optional dates.
+- Web: status `cancelled` (a cancelled draft) labelled. en/id keys for the
+  new errors (`sales.invoiceOrderUnavailable`, `sales.invoiceTerm.*`,
+  `sales.invoiceNotVoidable`) and `finance:status.cancelled`.
+
+`docs/database/` reviewed and unchanged (no table, column or reference
+touched).
+
+**Verification**
+- `bun run typecheck` 4/4; `bun run lint` 0 errors (warning counts as on
+  main; none in the touched files); backend `bun test` 932 pass / 4 fail (the
+  same `Bun.Image` tests, Bun 1.4.1 here); new
+  `invoice-billing.service.test.ts` 11 pass; web-admin 97; locales 90.
+- API e2e on the disposable `ims_erp_inv` (development seed, role accounts),
+  calling exactly what the web calls: **19/19** — sales creates customer and
+  SPH with DP 30 / Terpasang 70, sales manager approves and creates the order;
+  billing summary (next term DP 30%); DP draft from the next term; a term above
+  what is left 422; issue with the form dates (journal posted); detail shape;
+  partial receipt; void of a partly paid invoice 409; receipt reversed; void of
+  the unpaid issued invoice with a reason; DP-list filter; search by customer
+  name; DP again after the void, then settlement; the order exactly fully
+  invoiced; an order with a live invoice cannot be cancelled. Ledger checked in
+  the DB: the invoice entry `reversed`, one `journal_reversal` entry posted, AR
+  item `void`, debits = credits.
+- Browser (Playwright, web admin on the same backend, signed in as finance):
+  order page billing card, voided invoice page (reason, struck-out reversed
+  receipt), invoices / down payments / receipts lists — no page errors, no
+  failing API calls; the raw `status.cancelled` label found here was fixed.
+
+Opened as **PR #98** to `main` for programmer A's review.
+
+**Found for programmer A (M09, not changed here):**
+- Issuing needs the chart of accounts codes `1-1300` / `4-1000` / `2-1000`
+  (created in the test through `POST /accounts` as the accountant).
+- An **open accounting period** is required, but `POST /periods` demands
+  `accounting_period:create`, which is not in the permission catalog — no role
+  can open a period through the API (the test DB got its period by SQL).
+
 
 ## 2026-11-14 - M03 license API docs for own applications (Zudoku)
 

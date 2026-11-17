@@ -481,6 +481,12 @@ const api = {
 		'That period is still open; close it before archiving',
 
 	// Invoices (F4) — sales keys
+	'sales.invoiceOrderUnavailable': 'The sales order is missing or cancelled',
+	'sales.invoiceTerm.fullyInvoiced': 'The order is fully invoiced',
+	'sales.invoiceTerm.empty': 'The term amount must be more than zero',
+	'sales.invoiceTerm.exceeds': 'The term is more than what is left to invoice',
+	'sales.invoiceTerm.noPlannedTerm': 'No planned term is left',
+	'sales.invoiceNotVoidable': 'Only an unpaid draft or issued invoice can be voided. Reverse its receipts first.',
 	'sales.invoiceNotFound': 'Invoice not found',
 	'sales.invoiceNotDraft': 'Only draft invoices can be modified or issued',
 	'sales.invoiceNoItems':

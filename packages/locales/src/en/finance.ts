@@ -81,6 +81,7 @@ const finance = {
 	'status.partially_paid': 'Partly paid',
 	'status.paid': 'Paid',
 	'status.void': 'Void',
+	'status.cancelled': 'Cancelled',
 	'termKind.down_payment': 'Down payment',
 	'termKind.installment': 'Instalment',
 	'termKind.settlement': 'Settlement',

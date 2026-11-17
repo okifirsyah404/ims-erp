@@ -303,12 +303,13 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   review of the serial-unit contract, real-PG integration tests, returns.
 - Invoices with free billing terms, DP, receipts (kwitansi), invoice print
   in the company's exact layout — T05, ERP-0011. Evidence:
-  `apps/backend/src/app/finance`, `test/unit/invoice.service.test.ts`,
+  `apps/backend/src/app/sales` (`InvoiceService` with the journal +
+  `InvoiceBillingService` for terms, restored 2026-11-14 after the PR #68
+  merge had dropped them), `test/unit/invoice-billing.service.test.ts`,
   `/sales/invoices`, `/sales/down-payments`, `/sales/receipts`,
-  `progress.md` 2026-11-06 (ADR-0011 step 3d-2). Gaps: real-PG integration
-  tests, e2e, kwitansi print (no sample), `finance.payments` ledger (S7).
-  Since the PR #68 merge the Sales invoice API on main no longer matches the
-  web billing card / void calls (`progress.md` 2026-11-12, "UAT scripts").
+  `progress.md` 2026-11-06 (ADR-0011 step 3d-2) and 2026-11-14 (fix, API
+  e2e 19/19, browser check). Gaps: kwitansi print (no sample),
+  `finance.payments` ledger (S7).
 
 ## M03 Subscription and Licensing
 
