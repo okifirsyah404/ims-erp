@@ -734,6 +734,19 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - ERP-0037 Port M02/M05/M07 onto main (ADR-0011): steps 1-2 implemented
 
 ### implemented
+- ERP-0064 Dynamic company branding + login onboarding image (2026-11-17).
+  `company.profiles.onboarding_object_key` (WebP via `storeDocumentImage`,
+  S3/MinIO); `PUT/DELETE /company/profile/onboarding`; public
+  `GET /company/branding` -> `{ name, onboardingUrl }` (no guard);
+  `ICompanyService.getDisplayName()`; emails and the tax XLSX creator take
+  `tradingName ?? legalName` over `APP_NAME` env (fallback `'ERP'`); the
+  login page subtitle and hero image come from branding
+  (`/hero.png` fallback). Upload fields live on an "Images" card on
+  `/settings/company` (user request; supersedes the ERP-0045c logo
+  placement on `/settings/documents`, which now holds the document settings
+  only and gains an `open: true` nav leaf). Evidence: `progress.md`
+  2026-11-17; backend 1133 tests, web-admin 119, locales 98; live HTTP +
+  browser verified.
 - ERP-0045c Settings section (2026-11-13). Sidebar `Settings` after
   Administration: Company, Code numbering, Document. `/settings/company`,
   `/settings/code-numbers`, `/settings/documents`; `/admin/company` and
