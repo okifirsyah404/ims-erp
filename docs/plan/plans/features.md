@@ -262,9 +262,9 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 
 ### in-progress
 - Online payment of invoices (payment gateway) — T21/T22, ERP-0020, ADR-0021.
-  Evidence: `apps/backend/src/app/sales` (`GatewayPaymentService`,
-  `adapters/` Xendit / SingaPay / fake), `sales.gateway_payments`, migration
-  `20261114120000_erp0020_gateway_payments`,
+  Evidence: `apps/backend/src/app/payment` (`GatewayPaymentService`,
+  `adapters/` Xendit / SingaPay / fake), `payment.gateway_payments`
+  (ADR-0023; migration `20261117172959_erp0020_payment_gateway`),
   `test/unit/payment-gateway.test.ts`, invoice page card, `progress.md`
   2026-11-14 (API e2e 24/24, browser). Gaps: no provider sandbox yet,
   reconciliation, portal pay button.

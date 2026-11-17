@@ -3,9 +3,9 @@
  *
  * Quotations (SPH) with their items and status history (ADR-0011 port step
  * 3c), sales orders (step 3d), delivery notes (step 5a), customer invoices
- * and their receipts (kwitansi, owned by Sales per finance plan D2), online
- * payment checkouts of invoices (`gateway_payments`, ERP-0020), plus the
- * transitional `payments` scaffold.
+ * and their receipts (kwitansi, owned by Sales per finance plan D2), plus the
+ * transitional `payments` scaffold. Online payment checkouts moved to the
+ * `payment` module (ADR-0023).
  *
  * House rules honoured here:
  * - **Company-wide, no `organization_id`** on the quotation tables
@@ -781,66 +781,11 @@ export const receipts = salesSchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
- * sales.gateway_payments — online checkouts of invoices (ERP-0020, ADR-0021)
+ * sales.gateway_payments moved to payment.gateway_payments (ADR-0023)
  * ------------------------------------------------------------------------ */
 
-export const GATEWAY_PROVIDERS = ['xendit', 'singapay', 'fake'] as const;
-export type TGatewayProvider = (typeof GATEWAY_PROVIDERS)[number];
-
-export const GATEWAY_PAYMENT_STATUSES = ['pending', 'paid', 'expired', 'failed'] as const;
-export type TGatewayPaymentStatus = (typeof GATEWAY_PAYMENT_STATUSES)[number];
-
-export const gatewayPayments = salesSchema.table(
-	'gateway_payments',
-	{
-		/** Also the merchant reference sent to the provider. */
-		id: uuid('id').primaryKey().default(sql`uuidv7()`),
-		/** Logical reference to auth.organizations.id; nullable per ADR-0014. */
-		organizationId: text('organization_id'),
-		salesInvoiceId: uuid('sales_invoice_id')
-			.notNull()
-			.references(() => invoices.id, { onDelete: 'restrict' }),
-		provider: text('provider').$type<TGatewayProvider>().notNull(),
-		providerReference: varchar('provider_reference', { length: 100 }),
-		paymentUrl: text('payment_url'),
-		/** IDR minor units, the outstanding rounded up to whole rupiah. */
-		amount: bigint('amount', { mode: 'number' }).notNull(),
-		currencyCode: varchar('currency_code', { length: 3 }).notNull().default('IDR'),
-		status: text('status').$type<TGatewayPaymentStatus>().notNull().default('pending'),
-		expiresAt: unixTimestampNullable('expires_at'),
-		paidAt: unixTimestampNullable('paid_at'),
-		paidAmount: bigint('paid_amount', { mode: 'number' }),
-		paymentChannel: text('payment_channel'),
-		providerTransactionId: varchar('provider_transaction_id', { length: 100 }),
-		receiptId: uuid('receipt_id').references(() => receipts.id, { onDelete: 'restrict' }),
-		settlementNote: text('settlement_note'),
-		lastEvent: jsonb('last_event'),
-		/** Logical reference to auth.users.id. */
-		requestedBy: text('requested_by'),
-		createdAt: unixTimestamp('created_at').notNull(),
-		updatedAt: unixTimestamp('updated_at')
-			.notNull()
-			.$onUpdate(() => new Date()),
-		deletedAt: unixTimestampNullable('deleted_at'),
-	},
-	(table) => [
-		index('gateway_payments_sales_invoice_id_idx').on(table.salesInvoiceId),
-		index('gateway_payments_status_idx').on(table.status),
-		uniqueIndex('gateway_payments_provider_reference_uq')
-			.on(table.provider, table.providerReference)
-			.where(sql`provider_reference IS NOT NULL`),
-		uniqueIndex('gateway_payments_receipt_id_uq')
-			.on(table.receiptId)
-			.where(sql`receipt_id IS NOT NULL`),
-		check('gateway_payments_provider_check', sql`provider IN ('xendit', 'singapay', 'fake')`),
-		check('gateway_payments_status_check', sql`status IN ('pending', 'paid', 'expired', 'failed')`),
-		check('gateway_payments_amount_check', sql`amount > 0`),
-		check('gateway_payments_paid_amount_check', sql`paid_amount IS NULL OR paid_amount >= 0`),
-	],
-);
-
 export const salesRelations = defineRelationsPart(
-	{ quotations, quotationItems, quotationStatusHistory, salesOrders, salesOrderItems, orderStatusHistory, deliveryNotes, deliveryNoteItems, payments, invoices, invoiceItems, receipts, gatewayPayments },
+	{ quotations, quotationItems, quotationStatusHistory, salesOrders, salesOrderItems, orderStatusHistory, deliveryNotes, deliveryNoteItems, payments, invoices, invoiceItems, receipts },
 	(r) => ({
 		quotations: {
 			items: r.many.quotationItems({
@@ -904,12 +849,6 @@ export const salesRelations = defineRelationsPart(
 				to: r.invoices.id,
 			}),
 		},
-		gatewayPayments: {
-			invoice: r.one.invoices({
-				from: r.gatewayPayments.salesInvoiceId,
-				to: r.invoices.id,
-			}),
-		},
 	}),
 );
 
@@ -936,5 +875,3 @@ export type TReceiptSelect = typeof receipts.$inferSelect;
 export type TInvoiceSelect = typeof invoices.$inferSelect;
 export type TInvoiceItemInsert = typeof invoiceItems.$inferInsert;
 export type TInvoiceItemSelect = typeof invoiceItems.$inferSelect;
-export type TGatewayPaymentInsert = typeof gatewayPayments.$inferInsert;
-export type TGatewayPaymentSelect = typeof gatewayPayments.$inferSelect;

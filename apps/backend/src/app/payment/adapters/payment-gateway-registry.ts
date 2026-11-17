@@ -1,4 +1,4 @@
-import type { TGatewayProvider } from '@drizzle/schemas/sales.schema';
+import type { TGatewayProvider } from '@drizzle/schemas/payment.schema';
 import { appConfig } from '@config/providers/config';
 import { isProdLikeEnv } from '@config/providers/env';
 import type { TPaymentGatewayConfig } from '@config/schemas/config.schema';

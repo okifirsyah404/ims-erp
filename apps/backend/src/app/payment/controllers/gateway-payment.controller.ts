@@ -1,9 +1,12 @@
 import { container } from 'tsyringe';
+import { z } from 'zod';
 import { domainPlugin } from '@http/plugin';
 import { created, ok } from '@http/response';
-import { invoiceIdParamSchema } from '../contracts/invoice.contract';
 import { gatewayProviderParamSchema } from '../contracts/payment-gateway.contract';
-import { GATEWAY_PAYMENT_SERVICE_TOKEN } from '../constants/ar-di';
+import { GATEWAY_PAYMENT_SERVICE_TOKEN } from '../constants/di';
+
+/** `:id` of the invoice being paid (uuid; a malformed id is a 400, never a 500). */
+const invoiceIdParamSchema = z.object({ id: z.string().uuid() });
 
 /**
  * Online payment of invoices for staff (ERP-0020): whether a gateway is on,

@@ -1,28 +1,28 @@
 import { inject, injectable } from 'tsyringe';
 import type { TTx } from '@drizzle/types';
-import type { TGatewayPaymentSelect, TGatewayProvider } from '@drizzle/schemas/sales.schema';
+import type { TGatewayPaymentSelect, TGatewayProvider } from '@drizzle/schemas/payment.schema';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
 import type { DocumentService } from '@app/document';
 import { businessDateOf } from '@utils/business-date.util';
-import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
-import type { OutboxService } from '@app/automation/services/outbox.service';
 import type { TReceiptSelect } from '@drizzle/schemas/sales.schema';
-import { receiptRecordedEvent } from '../utils/invoice-events';
+import {
+	INVOICE_PAYMENT_PORT_TOKEN,
+	InvoiceNotFoundError,
+	InvoiceNotPayableError,
+} from '@app/sales';
+import type { IInvoicePaymentPort } from '@app/sales';
 import {
 	GATEWAY_PAYMENT_REPOSITORY_TOKEN,
-	INVOICE_REPOSITORY_TOKEN,
 	PAYMENT_GATEWAY_REGISTRY_TOKEN,
-} from '../constants/ar-di';
-import type { TInvoiceRepository } from '../contracts/invoice.repository.interface';
+} from '../constants/di';
 import type {
 	IGatewayPaymentRepository,
 	IPaymentGatewayRegistry,
 	TWebhookOutcome,
 	TWebhookRequest,
 } from '../contracts/payment-gateway.contract';
-import { InvoiceNotFoundError, InvoiceNotPayableError } from '../errors/invoice.errors';
 import { GatewayNotConfiguredError, GatewayProviderUnknownError } from '../errors/payment-gateway.errors';
 import { minorToChargeRupiah } from '../utils/gateway-signature';
 
@@ -70,15 +70,13 @@ export class GatewayPaymentService {
 		private readonly repo: IGatewayPaymentRepository,
 		@inject(PAYMENT_GATEWAY_REGISTRY_TOKEN)
 		private readonly gateways: IPaymentGatewayRegistry,
-		@inject(INVOICE_REPOSITORY_TOKEN)
-		private readonly invoices: Pick<TInvoiceRepository, 'findById' | 'addReceipt'>,
+		/** Sales' contract (ADR-0023): invoices and receipts stay Sales'. */
+		@inject(INVOICE_PAYMENT_PORT_TOKEN)
+		private readonly invoices: IInvoicePaymentPort,
 		@inject(CODE_NUMBER_SERVICE_TOKEN)
 		private readonly numbering: Pick<CodeNumberService, 'next'>,
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register'>,
-		/** M04: an online payment is a received payment for n8n too (`receipt.recorded`). */
-		@inject(OUTBOX_SERVICE_TOKEN)
-		private readonly outbox: Pick<OutboxService, 'publish'>,
 	) {}
 
 	/** Whether new checkouts can be opened, and with which provider. */
@@ -186,9 +184,14 @@ export class GatewayPaymentService {
 
 			// Always set when the checkout is opened; nullable only per ADR-0014.
 			const organizationId = row.organizationId;
-			const invoice = organizationId ? await this.invoices.findById(organizationId, row.salesInvoiceId, tx) : null;
+			const salesInvoiceId = row.salesInvoiceId;
+			const invoice =
+				organizationId && salesInvoiceId
+					? await this.invoices.findById(organizationId, salesInvoiceId, tx)
+					: null;
 			if (
 				!organizationId ||
+				!salesInvoiceId ||
 				!invoice ||
 				(invoice.status !== 'issued' && invoice.status !== 'partially_paid') ||
 				invoice.outstandingTotal <= 0 ||
@@ -206,7 +209,7 @@ export class GatewayPaymentService {
 			const label = PROVIDER_LABEL[provider];
 			const receipt = await this.invoices.addReceipt(
 				{
-					salesInvoiceId: row.salesInvoiceId,
+					salesInvoiceId,
 					organizationId,
 					code,
 					receivedDate,
@@ -255,9 +258,7 @@ export class GatewayPaymentService {
 		if (outcome === 'applied' && recorded) {
 			const receipt: TReceiptSelect = recorded;
 			const invoice = await this.invoices.findById(receipt.organizationId, receipt.salesInvoiceId);
-			if (invoice) {
-				await this.outbox.publish('receipt.recorded', { type: 'receipt', id: receipt.id }, receiptRecordedEvent(receipt, invoice));
-			}
+			if (invoice) await this.invoices.publishReceiptRecorded(receipt, invoice);
 		}
 		return outcome ?? 'unknown';
 	}

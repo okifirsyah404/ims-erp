@@ -58,7 +58,7 @@ Table crm.customers {
 | Logical reference columns | 538 |
 | Distinct targets | 41 |
 | Cross-module `Ref:` declarations | 0 |
-| Intra-module `Ref:` declarations | 240 |
+| Intra-module `Ref:` declarations | 238 |
 
 Counts are re-derived on every run of `validate-dbml.ts`, which parses
 `docs.dbml` with `@dbml/core` and fails the run if a `Ref:` crosses a module
@@ -193,6 +193,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `notification.notifications`  ->  `user_id`
 - `organization.departments`  ->  `manager_user_id`
 - `organization.settings`  ->  `updated_by`
+- `payment.gateway_payments`  ->  `requested_by`
 - `payroll.payroll_adjustments`  ->  `approved_by`
 - `payroll.payroll_adjustments`  ->  `requested_by`
 - `payroll.payroll_inputs`  ->  `created_by`
@@ -237,7 +238,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `sales.delivery_notes`  ->  `shipped_by`
 - `sales.discount_requests`  ->  `approved_by`
 - `sales.discount_requests`  ->  `requested_by`
-- `sales.gateway_payments`  ->  `requested_by`
 - `sales.invoices`  ->  `approved_by`
 - `sales.invoices`  ->  `created_by`
 - `sales.invoices`  ->  `issued_by`

@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import type {
-	ReceiptMethod,
 	TGatewayPaymentInsert,
 	TGatewayPaymentSelect,
 	TGatewayPaymentStatus,
 	TGatewayProvider,
-} from '@drizzle/schemas/sales.schema';
-import { GATEWAY_PROVIDERS } from '@drizzle/schemas/sales.schema';
+} from '@drizzle/schemas/payment.schema';
+import type { ReceiptMethod } from '@drizzle/schemas/sales.schema';
+import { GATEWAY_PROVIDERS } from '@drizzle/schemas/payment.schema';
 
 /**
  * Payment gateway port (ERP-0020, ADR-0021).

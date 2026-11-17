@@ -36,6 +36,7 @@ import { createApp } from './app/app';
 import { registerAudit } from './app/audit';
 import { registerLocation } from './app/location/container';
 import { registerSales } from './app/sales/container';
+import { registerPayment } from './app/payment';
 import { registerUser, startAvatarWorker } from './app/user';
 import { registerOrganization, startOrgLogoWorker } from './app/organization';
 import {
@@ -52,6 +53,9 @@ import { registerAuthorization } from './authorization/container';
 registerProvider(container);
 registerLocation(container);
 registerSales(container);
+// ADR-0023: payment owns `payment.gateway_payments`; it reads invoices and
+// records receipts through sales' port, so sales must be registered first.
+registerPayment(container);
 // Company first, then code numbers: CodeNumberService reads the company
 // document code ({COMPANY}) through COMPANY_SERVICE_TOKEN. Both are injected
 // into the document services of every module.

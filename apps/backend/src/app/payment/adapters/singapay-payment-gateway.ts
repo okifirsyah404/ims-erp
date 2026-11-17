@@ -1,4 +1,4 @@
-import type { TGatewayPaymentStatus } from '@drizzle/schemas/sales.schema';
+import type { TGatewayPaymentStatus } from '@drizzle/schemas/payment.schema';
 import { pinoLogger } from '@providers/logger/logger';
 import { businessDateOf } from '@utils/business-date.util';
 import type {

@@ -19,6 +19,11 @@
      `reff_no`), so a webhook finds its row without a tenant. Intra-module FKs
      to `sales.invoices` and `sales.receipts`. No cross-module reference
      except `requested_by` (auth user, logical).
+
+     > **Superseded by [ADR-0023](ADR-0023-payment-module-owns-gateway-checkouts.md)
+     > (2026-11-18).** The table is now `payment.gateway_payments`, owned by the
+     > `payment` module, and its two references to sales are logical and nullable
+     > (ADR-0014). Everything else in this record still holds.
   2. **Port and adapters.** `IPaymentGateway` (`createCheckout`,
      `parseWebhook`) in `sales/contracts`. The adapters live in
      `sales/adapters`: Xendit (Invoice API, `x-callback-token`), SingaPay

@@ -2,155 +2,121 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "3cf2bdd1-bf39-44ff-867b-2cab8c9e6ce8",
+  "id": "4aa94b78-7bac-4dcf-b466-18ced3659149",
   "prevIds": [
-    "122be409-8c9e-4766-870e-0de0e7130e23"
+    "e0751fbf-5664-4a3e-82e0-68e8b57edce1"
   ],
   "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "payment"
+      ],
+      "writes": [
+        "s|sch|payment",
+        "n|sch|payment",
+        "e|sch|payment"
+      ]
+    },
     {
       "statementType": "create_table",
       "statementTarget": [
         "table",
-        "sales",
+        "payment",
         "gateway_payments"
       ],
       "writes": [
-        "s|tbl|sales.gateway_payments",
-        "n|tbl|sales.gateway_payments",
-        "e|tbl|sales.gateway_payments",
-        "n|rel|sales.gateway_payments",
-        "n|type|sales.gateway_payments",
-        "n|rel|sales.gateway_payments_pkey"
+        "s|tbl|payment.gateway_payments",
+        "n|tbl|payment.gateway_payments",
+        "e|tbl|payment.gateway_payments",
+        "n|rel|payment.gateway_payments",
+        "n|type|payment.gateway_payments",
+        "n|rel|payment.gateway_payments_pkey"
       ],
       "reads": [
-        "n|sch|sales"
+        "n|sch|payment"
       ]
     },
     {
       "statementType": "create_index",
       "statementTarget": [
         "index",
-        "sales",
+        "payment",
         "gateway_payments",
         "gateway_payments_sales_invoice_id_idx"
       ],
       "writes": [
-        "s|idx|sales.gateway_payments_sales_invoice_id_idx",
-        "n|idx|sales.gateway_payments_sales_invoice_id_idx",
-        "e|idx|sales.gateway_payments_sales_invoice_id_idx",
-        "n|rel|sales.gateway_payments_sales_invoice_id_idx"
+        "s|idx|payment.gateway_payments_sales_invoice_id_idx",
+        "n|idx|payment.gateway_payments_sales_invoice_id_idx",
+        "e|idx|payment.gateway_payments_sales_invoice_id_idx",
+        "n|rel|payment.gateway_payments_sales_invoice_id_idx"
       ],
       "reads": [
-        "n|tbl|sales.gateway_payments",
-        "n|sch|sales",
-        "n|col|sales.gateway_payments.sales_invoice_id"
+        "n|tbl|payment.gateway_payments",
+        "n|sch|payment",
+        "n|col|payment.gateway_payments.sales_invoice_id"
       ]
     },
     {
       "statementType": "create_index",
       "statementTarget": [
         "index",
-        "sales",
+        "payment",
         "gateway_payments",
         "gateway_payments_status_idx"
       ],
       "writes": [
-        "s|idx|sales.gateway_payments_status_idx",
-        "n|idx|sales.gateway_payments_status_idx",
-        "e|idx|sales.gateway_payments_status_idx",
-        "n|rel|sales.gateway_payments_status_idx"
+        "s|idx|payment.gateway_payments_status_idx",
+        "n|idx|payment.gateway_payments_status_idx",
+        "e|idx|payment.gateway_payments_status_idx",
+        "n|rel|payment.gateway_payments_status_idx"
       ],
       "reads": [
-        "n|tbl|sales.gateway_payments",
-        "n|sch|sales",
-        "n|col|sales.gateway_payments.status"
+        "n|tbl|payment.gateway_payments",
+        "n|sch|payment",
+        "n|col|payment.gateway_payments.status"
       ]
     },
     {
       "statementType": "create_index",
       "statementTarget": [
         "index",
-        "sales",
+        "payment",
         "gateway_payments",
         "gateway_payments_provider_reference_uq"
       ],
       "writes": [
-        "s|idx|sales.gateway_payments_provider_reference_uq",
-        "n|idx|sales.gateway_payments_provider_reference_uq",
-        "e|idx|sales.gateway_payments_provider_reference_uq",
-        "n|rel|sales.gateway_payments_provider_reference_uq"
+        "s|idx|payment.gateway_payments_provider_reference_uq",
+        "n|idx|payment.gateway_payments_provider_reference_uq",
+        "e|idx|payment.gateway_payments_provider_reference_uq",
+        "n|rel|payment.gateway_payments_provider_reference_uq"
       ],
       "reads": [
-        "n|tbl|sales.gateway_payments",
-        "n|sch|sales",
-        "n|col|sales.gateway_payments.provider",
-        "n|col|sales.gateway_payments.provider_reference"
+        "n|tbl|payment.gateway_payments",
+        "n|sch|payment",
+        "n|col|payment.gateway_payments.provider",
+        "n|col|payment.gateway_payments.provider_reference"
       ]
     },
     {
       "statementType": "create_index",
       "statementTarget": [
         "index",
-        "sales",
+        "payment",
         "gateway_payments",
         "gateway_payments_receipt_id_uq"
       ],
       "writes": [
-        "s|idx|sales.gateway_payments_receipt_id_uq",
-        "n|idx|sales.gateway_payments_receipt_id_uq",
-        "e|idx|sales.gateway_payments_receipt_id_uq",
-        "n|rel|sales.gateway_payments_receipt_id_uq"
+        "s|idx|payment.gateway_payments_receipt_id_uq",
+        "n|idx|payment.gateway_payments_receipt_id_uq",
+        "e|idx|payment.gateway_payments_receipt_id_uq",
+        "n|rel|payment.gateway_payments_receipt_id_uq"
       ],
       "reads": [
-        "n|tbl|sales.gateway_payments",
-        "n|sch|sales",
-        "n|col|sales.gateway_payments.receipt_id"
-      ]
-    },
-    {
-      "statementType": "create_fk",
-      "statementTarget": [
-        "table",
-        "sales",
-        "gateway_payments"
-      ],
-      "writes": [
-        "s|fk|sales.gateway_payments.gateway_payments_sales_invoice_id_invoices_id_fkey",
-        "n|fk|sales.gateway_payments.gateway_payments_sales_invoice_id_invoices_id_fkey",
-        "e|fk|sales.gateway_payments.gateway_payments_sales_invoice_id_invoices_id_fkey",
-        "n|con|sales.gateway_payments.gateway_payments_sales_invoice_id_invoices_id_fkey"
-      ],
-      "reads": [
-        "n|tbl|sales.gateway_payments",
-        "n|sch|sales",
-        "n|tbl|sales.invoices",
-        "n|sch|sales",
-        "n|col|sales.gateway_payments.sales_invoice_id",
-        "n|col|sales.invoices.id",
-        "e|uniqueness|sales.invoices.id"
-      ]
-    },
-    {
-      "statementType": "create_fk",
-      "statementTarget": [
-        "table",
-        "sales",
-        "gateway_payments"
-      ],
-      "writes": [
-        "s|fk|sales.gateway_payments.gateway_payments_receipt_id_receipts_id_fkey",
-        "n|fk|sales.gateway_payments.gateway_payments_receipt_id_receipts_id_fkey",
-        "e|fk|sales.gateway_payments.gateway_payments_receipt_id_receipts_id_fkey",
-        "n|con|sales.gateway_payments.gateway_payments_receipt_id_receipts_id_fkey"
-      ],
-      "reads": [
-        "n|tbl|sales.gateway_payments",
-        "n|sch|sales",
-        "n|tbl|sales.receipts",
-        "n|sch|sales",
-        "n|col|sales.gateway_payments.receipt_id",
-        "n|col|sales.receipts.id",
-        "e|uniqueness|sales.receipts.id"
+        "n|tbl|payment.gateway_payments",
+        "n|sch|payment",
+        "n|col|payment.gateway_payments.receipt_id"
       ]
     }
   ],
@@ -158,7 +124,14 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "name": "payment",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "payment",
         "name": "gateway_payments",
         "isRlsEnabled": false,
         "entityType": "tables"
@@ -167,7 +140,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "id",
         "type": "uuid",
@@ -183,7 +156,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "organization_id",
         "type": "text",
@@ -199,12 +172,12 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "sales_invoice_id",
         "type": "uuid",
         "typeSchema": null,
-        "notNull": true,
+        "notNull": false,
         "dimensions": 0,
         "default": null,
         "generated": null,
@@ -215,7 +188,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "provider",
         "type": "text",
@@ -231,7 +204,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "provider_reference",
         "type": "varchar(100)",
@@ -247,7 +220,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "payment_url",
         "type": "text",
@@ -263,7 +236,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "amount",
         "type": "bigint",
@@ -279,7 +252,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "currency_code",
         "type": "varchar(3)",
@@ -295,7 +268,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "status",
         "type": "text",
@@ -311,7 +284,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "expires_at",
         "type": "bigint",
@@ -327,7 +300,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "paid_at",
         "type": "bigint",
@@ -343,7 +316,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "paid_amount",
         "type": "bigint",
@@ -359,7 +332,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "payment_channel",
         "type": "text",
@@ -375,7 +348,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "provider_transaction_id",
         "type": "varchar(100)",
@@ -391,7 +364,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "receipt_id",
         "type": "uuid",
@@ -407,7 +380,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "settlement_note",
         "type": "text",
@@ -423,7 +396,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "last_event",
         "type": "jsonb",
@@ -439,7 +412,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "requested_by",
         "type": "text",
@@ -455,7 +428,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "created_at",
         "type": "bigint",
@@ -471,7 +444,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "updated_at",
         "type": "bigint",
@@ -487,7 +460,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "deleted_at",
         "type": "bigint",
@@ -503,7 +476,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "gateway_payments_sales_invoice_id_idx",
         "nameExplicit": true,
@@ -527,7 +500,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "gateway_payments_status_idx",
         "nameExplicit": true,
@@ -551,7 +524,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "gateway_payments_provider_reference_uq",
         "nameExplicit": true,
@@ -582,7 +555,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "gateway_payments_receipt_id_uq",
         "nameExplicit": true,
@@ -606,47 +579,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
-        "table": "gateway_payments",
-        "name": "gateway_payments_sales_invoice_id_invoices_id_fkey",
-        "nameExplicit": false,
-        "columns": [
-          "sales_invoice_id"
-        ],
-        "schemaTo": "sales",
-        "tableTo": "invoices",
-        "columnsTo": [
-          "id"
-        ],
-        "onUpdate": "NO ACTION",
-        "onDelete": "RESTRICT",
-        "entityType": "fks"
-      }
-    },
-    {
-      "op": "create",
-      "row": {
-        "schema": "sales",
-        "table": "gateway_payments",
-        "name": "gateway_payments_receipt_id_receipts_id_fkey",
-        "nameExplicit": false,
-        "columns": [
-          "receipt_id"
-        ],
-        "schemaTo": "sales",
-        "tableTo": "receipts",
-        "columnsTo": [
-          "id"
-        ],
-        "onUpdate": "NO ACTION",
-        "onDelete": "RESTRICT",
-        "entityType": "fks"
-      }
-    },
-    {
-      "op": "create",
-      "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "gateway_payments_pkey",
         "columns": [
@@ -659,7 +592,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "gateway_payments_provider_check",
         "value": "provider IN ('xendit', 'singapay', 'fake')",
@@ -669,7 +602,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "gateway_payments_status_check",
         "value": "status IN ('pending', 'paid', 'expired', 'failed')",
@@ -679,7 +612,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "gateway_payments_amount_check",
         "value": "amount > 0",
@@ -689,7 +622,7 @@
     {
       "op": "create",
       "row": {
-        "schema": "sales",
+        "schema": "payment",
         "table": "gateway_payments",
         "name": "gateway_payments_paid_amount_check",
         "value": "paid_amount IS NULL OR paid_amount >= 0",

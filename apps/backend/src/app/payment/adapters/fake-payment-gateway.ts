@@ -1,4 +1,5 @@
-import type { ReceiptMethod, TGatewayPaymentStatus } from '@drizzle/schemas/sales.schema';
+import type { TGatewayPaymentStatus } from '@drizzle/schemas/payment.schema';
+import type { ReceiptMethod } from '@drizzle/schemas/sales.schema';
 import type {
 	IPaymentGateway,
 	TCheckout,

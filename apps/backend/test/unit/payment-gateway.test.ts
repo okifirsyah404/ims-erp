@@ -8,28 +8,29 @@
  * outstanding amount, with replays, unapplicable money and status changes.
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
-import type { TGatewayPaymentSelect, TInvoiceSelect, TReceiptSelect } from '@drizzle/schemas/sales.schema';
+import type { TGatewayPaymentSelect } from '@drizzle/schemas/payment.schema';
+import type { TInvoiceSelect, TReceiptSelect } from '@drizzle/schemas/sales.schema';
 import type { TPaymentGatewayConfig } from '@config/schemas/config.schema';
-import { FakePaymentGateway } from '../../src/app/sales/adapters/fake-payment-gateway';
-import { PaymentGatewayRegistry } from '../../src/app/sales/adapters/payment-gateway-registry';
-import { SingapayPaymentGateway, type TSingapayConfig } from '../../src/app/sales/adapters/singapay-payment-gateway';
-import { XenditPaymentGateway } from '../../src/app/sales/adapters/xendit-payment-gateway';
-import type { TInvoiceRepository } from '../../src/app/sales/contracts/invoice.repository.interface';
+import { FakePaymentGateway } from '../../src/app/payment/adapters/fake-payment-gateway';
+import { PaymentGatewayRegistry } from '../../src/app/payment/adapters/payment-gateway-registry';
+import { SingapayPaymentGateway, type TSingapayConfig } from '../../src/app/payment/adapters/singapay-payment-gateway';
+import { XenditPaymentGateway } from '../../src/app/payment/adapters/xendit-payment-gateway';
+import type { IInvoicePaymentPort } from '../../src/app/sales/contracts/invoice-payment.port';
 import type {
 	IGatewayPaymentRepository,
 	IPaymentGateway,
 	IPaymentGatewayRegistry,
 	TCheckoutRequest,
-} from '../../src/app/sales/contracts/payment-gateway.contract';
+} from '../../src/app/payment/contracts/payment-gateway.contract';
 import { InvoiceNotPayableError } from '../../src/app/sales/errors/invoice.errors';
 import {
 	GatewayNotConfiguredError,
 	GatewayProviderError,
 	GatewayProviderUnknownError,
 	GatewayWebhookUnauthorizedError,
-} from '../../src/app/sales/errors/payment-gateway.errors';
-import { GatewayPaymentService } from '../../src/app/sales/services/gateway-payment.service';
-import { canonicalJson, hmacHex, minorToChargeRupiah, rupiahToMinor } from '../../src/app/sales/utils/gateway-signature';
+} from '../../src/app/payment/errors/payment-gateway.errors';
+import { GatewayPaymentService } from '../../src/app/payment/services/gateway-payment.service';
+import { canonicalJson, hmacHex, minorToChargeRupiah, rupiahToMinor } from '../../src/app/payment/utils/gateway-signature';
 import { businessDateOf } from '@utils/business-date.util';
 
 type TCall = { url: string; init: RequestInit };
@@ -368,7 +369,7 @@ function makeService() {
 			return row ? work(row, 'tx') : null;
 		},
 	};
-	const invoices: Pick<TInvoiceRepository, 'findById' | 'addReceipt'> = {
+	const invoices: IInvoicePaymentPort = {
 		findById: async (_org, id) => (id === invoice.id ? invoice : null),
 		async addReceipt(data, options = {}) {
 			receiptCalls.push({ amount: data.amount, capToOutstanding: options.capToOutstanding, tx: options.tx });
@@ -380,6 +381,9 @@ function makeService() {
 			invoice.outstandingTotal -= amount;
 			invoice.status = invoice.outstandingTotal === 0 ? 'paid' : 'partially_paid';
 			return receipt;
+		},
+		async publishReceiptRecorded(receipt) {
+			events.push(`receipt.recorded:${receipt.id}`);
 		},
 	};
 	const registry: IPaymentGatewayRegistry = {
@@ -399,11 +403,6 @@ function makeService() {
 				return {} as never;
 			},
 		},
-		{
-			publish: async (topic: string, aggregate: { id: string }) => {
-				events.push(`${topic}:${aggregate.id}`);
-			},
-		} as never,
 	);
 }
 

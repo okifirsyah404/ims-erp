@@ -64,6 +64,54 @@ The updated `fix/m02-invoice-billing` (now on main with M04) went into
   web-admin 100; locales 94. The gateway e2e was not re-run: the Docker
   engine is down on this machine.
 
+## 2026-11-18 - ERP-0020: gateway checkouts moved to a `payment` schema/module (ADR-0023)
+
+Owner request: "buat payment gateway di db menggunakan schema payment.*".
+`docs.dbml` was edited first (it is canonical), then the Drizzle schema, then
+the code.
+
+- **Contract.** `sales.gateway_payments` → `payment.gateway_payments`, in a new
+  `Payment` TableGroup and a `// MODULE: Payment (schema: payment)` section.
+  `sales_invoice_id` and `receipt_id` lost their foreign keys and became
+  nullable logical references (ADR-0014); `organization_id` and `requested_by`
+  stay logical. Header count 27 → 28 schemas/modules.
+- **Regenerated docs.** `gen-logical-references.ts` → 538 refs across 41
+  targets, 238 intra-module; `validate-dbml.ts` → 278 tables, 0 cross-module,
+  0 timestamp gaps, **OK**.
+- **Migration.** The branch-only folder `20261115090002_erp0020_gateway_payments`
+  was deleted and `bun run drizzle:generate` produced
+  `20261117172959_erp0020_payment_gateway`: `CREATE SCHEMA "payment"` +
+  `CREATE TABLE payment.gateway_payments` (no FK). No data migration: the old
+  table never reached `main`. `drizzle-kit check` → "Everything's fine".
+- **Code.** New module `apps/backend/src/app/payment/` (contracts, constants,
+  adapters ×4, errors, repositories, services, utils, controllers, container,
+  index) holding what was in `sales/`: `GatewayPaymentService`,
+  `GatewayPaymentRepository`, `PaymentGatewayRegistry` and the Xendit/SingaPay/
+  fake adapters, `gateway-signature`, the two controllers and their routes
+  (`/gateway-payments/status`, `/invoices/:id/gateway-payments`,
+  `/payments/gateway/:provider/webhook` unchanged, so the web admin needs no
+  change). `registerPayment` runs after `registerSales` in `src/index.ts`;
+  `app.ts` mounts `paymentModule()`.
+- **Boundary.** Sales now exposes `IInvoicePaymentPort`
+  (`sales/contracts/invoice-payment.port.ts`, `INVOICE_PAYMENT_PORT_TOKEN`,
+  implemented by `InvoicePaymentPortService`): `findById`, `addReceipt`,
+  `publishReceiptRecorded`. Payment never injects Sales' repository, and the
+  outbox publish of `receipt.recorded` moved back to Sales (the event shape is
+  Sales'). `InvoiceNotFoundError` / `InvoiceNotPayableError` are exported from
+  the sales entry point so the HTTP codes/keys are unchanged.
+- **Docs.** ADR-0023 added; ADR-0021 §1 marked superseded for storage;
+  `modules/payment.md`, `modules/sales.md`, `module-ownership.md` (module 28,
+  Sales profile), `data-model.md`, `backlog.md` (ERP-0020 evidence),
+  `features.md` updated.
+- Verified (2026-11-18, repo root): `bun run typecheck` 4/4; `bun run lint`
+  5/5, 0 errors (warning counts unchanged); `bun run test` backend 1209 /
+  web-admin 119 / locales 98 / react-email 6, 0 fail (payment-gateway suite
+  28/28); `bun run build` 3/3; `bun docs/database/validate-dbml.ts` OK;
+  `bunx --bun drizzle-kit check` "Everything's fine".
+- Not verified here: applying the migration to a disposable database (Docker
+  state on this machine), the gateway API e2e against a live server, and the
+  provider sandbox (no account). `docs/database/` was updated (required).
+
 ## 2026-11-18 - PR #99 merged main (PR #98 merged) in; docs conflicts resolved
 
 `origin/main` (`09a503ce`, after PR #98) merged into `feat/m02-payment-gateway`.

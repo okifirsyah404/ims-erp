@@ -20,6 +20,7 @@ import { licensingModule } from './licensing';
 import { locationModule } from './location';
 import { notificationModule } from './notification';
 import { organizationModule } from './organization';
+import { paymentModule } from './payment';
 import { portalModule } from './portal';
 import { procurementModule } from './procurement';
 import { projectsModule } from './projects';
@@ -84,6 +85,9 @@ export function createApp() {
 			.use(realtimeGateway())
 			.use(locationModule())
 			.use(salesModule())
+			// Online invoice checkout (ERP-0020). Owns `payment.*`; invoices and
+			// receipts stay Sales' (ADR-0023).
+			.use(paymentModule())
 			.use(procurementModule())
 			.use(projectsModule())
 			.use(aftersalesModule())

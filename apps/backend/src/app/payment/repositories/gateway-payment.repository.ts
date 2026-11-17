@@ -5,7 +5,7 @@ import {
 	type TGatewayPaymentInsert,
 	type TGatewayPaymentSelect,
 	type TGatewayProvider,
-} from '@drizzle/schemas/sales.schema';
+} from '@drizzle/schemas/payment.schema';
 import { and, desc, eq, gt, isNull } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
