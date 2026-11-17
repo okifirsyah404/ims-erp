@@ -152,6 +152,7 @@ export function loadEnvConfig(
 			port: Number(process.env.APP_PORT ?? 3000),
 			url: process.env.APP_URL || null,
 			webUrl: process.env.APP_WEB_URL || null,
+			portalUrl: process.env.PORTAL_URL || null,
 			logLevel: process.env.APP_LOG_LEVEL || null,
 			// Allowlist of credentialed CORS origins, loaded from the
 			// gitignored `cors.json` (template: `cors.example.json`). Null =

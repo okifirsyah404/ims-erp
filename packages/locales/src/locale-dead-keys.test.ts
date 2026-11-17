@@ -169,6 +169,12 @@ const DYNAMIC_PREFIXES = [
 	'licensing.api.',
 	'licensing.refused.',
 	'licensing.apiKey.',
+	// Customer portal (ERP-0022): stage and evidence labels are composed from
+	// the server value in `portal-presenter.ts`.
+	'portal.stage.',
+	'portal.evidence.',
+	'portal.role.',
+	'crm:portal.role.',
 	'catalog.notFound.',
 	'catalog.listing.',
 	'automation.whatsappNotFound.',

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
 	AppInvitationEmail,
+	CodeEmail,
 	OrganizationInvitationEmail,
 	ResetPasswordEmail,
 	renderEmail,
@@ -17,6 +18,15 @@ const texts = {
 const url = 'https://app.example.com/verify?token=abc123';
 
 describe('email templates render', () => {
+	test('code email shows the one-time code and the expiry (ERP-0022)', async () => {
+		const { html, text } = await renderEmail(
+			<CodeEmail code="482913" texts={{ greeting: 'Hi John,', body: 'Use this code.', expiry: 'Expires in 10 minutes.', footer: texts.footer }} />,
+		);
+		expect(html).toContain('482913');
+		expect(html).toContain('Expires in 10 minutes.');
+		expect(text).toContain('482913');
+	});
+
 	test('verification email contains CTA URL and copy', async () => {
 		const { html, text } = await renderEmail(
 			<VerificationEmail url={url} texts={texts} />,

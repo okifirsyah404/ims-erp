@@ -1,7 +1,9 @@
+import { ProjectPortalService } from './services/project-portal.service';
 import type { DependencyContainer } from 'tsyringe';
 import {
 	HANDOVER_REPOSITORY_TOKEN,
 	HANDOVER_SERVICE_TOKEN,
+	PROJECT_PORTAL_SERVICE_TOKEN,
 	PROJECT_LOOKUP_SERVICE_TOKEN,
 	PROJECT_REPOSITORY_TOKEN,
 	PROJECT_SERVICE_TOKEN,
@@ -25,4 +27,5 @@ export function registerProjects(container: DependencyContainer): void {
 	container.register(PROJECT_LOOKUP_SERVICE_TOKEN, { useClass: ProjectLookupService });
 	container.register(HANDOVER_REPOSITORY_TOKEN, { useClass: HandoverRepository });
 	container.register(HANDOVER_SERVICE_TOKEN, { useClass: HandoverService });
+	container.register(PROJECT_PORTAL_SERVICE_TOKEN, { useClass: ProjectPortalService });
 }

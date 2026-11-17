@@ -8,6 +8,7 @@ import { registerProjects } from '@app/projects';
 import { registerAftersales } from '@app/aftersales';
 import { registerHr } from '@app/hr';
 import { registerLicenseDueSchedule, registerLicensing, startLicenseDueWorker } from '@app/licensing';
+import { registerPortal } from '@app/portal';
 import { registerCatalog } from '@app/catalog';
 import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
 import { registerAssets } from '@app/assets';
@@ -73,6 +74,8 @@ registerProjects(container);
 registerAftersales(container);
 registerHr(container);
 registerLicensing(container);
+// Customer portal (ERP-0022): composes user, CRM, projects and after-sales.
+registerPortal(container);
 registerAccounting(container);
 registerCatalog(container);
 registerUser(container);

@@ -6,6 +6,7 @@ import {
 } from '@ims-erp/locales';
 import {
 	AppInvitationEmail,
+	CodeEmail,
 	OrganizationInvitationEmail,
 	ResetPasswordEmail,
 	renderEmail,
@@ -137,6 +138,46 @@ export async function renderAppInvitationEmail({
 		html,
 		text,
 	};
+}
+
+/**
+ * Customer-portal invitation (ERP-0022): the link sets the first password on
+ * the portal's `/reset-password` page. Reuses the app-invitation layout.
+ */
+export async function renderPortalInvitationEmail({
+	name,
+	url,
+	language = DEFAULT_LANGUAGE,
+}: TemplateInput): Promise<Omit<MailPayload, 'to'>> {
+	const texts = {
+		greeting: t(language, 'email:portalInvitation.greeting', { name: name ?? '' }),
+		body: t(language, 'email:portalInvitation.body', { app: appName() }),
+		action: t(language, 'email:portalInvitation.action'),
+		fallback: t(language, 'email:portalInvitation.fallback'),
+		footer: t(language, 'email:footer.noReply', { app: appName() }),
+	};
+	const { html, text } = await renderEmail(<AppInvitationEmail url={url} texts={texts} />);
+	return { subject: t(language, 'email:portalInvitation.subject', { app: appName() }), html, text };
+}
+
+/** Customer-portal sign-up code (ERP-0022, owner decision D1). */
+export async function renderPortalSignupCodeEmail({
+	name,
+	code,
+	language = DEFAULT_LANGUAGE,
+}: {
+	name: string;
+	code: string;
+	language?: LanguageCode;
+}): Promise<Omit<MailPayload, 'to'>> {
+	const texts = {
+		greeting: t(language, 'email:portalSignupCode.greeting', { name }),
+		body: t(language, 'email:portalSignupCode.body', { app: appName() }),
+		expiry: t(language, 'email:portalSignupCode.expiry'),
+		footer: t(language, 'email:footer.noReply', { app: appName() }),
+	};
+	const { html, text } = await renderEmail(<CodeEmail code={code} texts={texts} />);
+	return { subject: t(language, 'email:portalSignupCode.subject', { app: appName(), code }), html, text };
 }
 
 /** Organization-invitation input; superset of the base template input. */

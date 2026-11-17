@@ -542,10 +542,17 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 
 ## M07 Projects and After-Sales
 
-### planned
-- Portal: project/BAST status + own tickets — T26, ERP-0022. Evidence: none.
-
 ### implemented
+- Customer portal stage 1 — T26 + the account part of T25, ERP-0022
+  (ADR-0022): one login per customer contact with a role, staff invitations,
+  owners manage colleagues, individuals sign up with an emailed code, the web
+  admin refuses customer logins; `/portal/v1` sign-in (lockout), projects
+  with milestones/BASTs/files (no costs), service tickets opened, discussed
+  and confirmed by the customer (staff thread with internal notes), devices
+  and warranties. Evidence: `src/app/portal`,
+  `test/unit/customer-portal.test.ts`, `progress.md` 2026-11-14 (e2e 50/50).
+  Gaps: the website adapter routes not wired; stage 2 (orders, quotations,
+  invoices, documents, attachments) planned.
 - Projects from a deal: PIC, targets, stage, default checklist with
   assignees, testing / training / BAST evidence (closing rule), direct costs
   with receipts, shipped material value and margin (cost-restricted) — T08,

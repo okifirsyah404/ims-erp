@@ -14,6 +14,7 @@
 import { type AnyElysia, Elysia } from 'elysia';
 import { ZodError } from 'zod';
 import { erpGuard, sessionGuard, warehouseGuard } from '@authorization/elysia-auth';
+import { portalGuard } from '@authorization/portal-auth';
 import { translator } from '@providers/i18n/translator';
 import { toErrorResponse } from './errors';
 import { errorEnvelope } from './response';
@@ -25,7 +26,9 @@ export type TGuardSet =
 	| 'erp'
 	| 'erp+session'
 	/** Session guard plus the warehouse person-in-charge guard (ADR-0017). */
-	| 'session+warehouse';
+	| 'session+warehouse'
+	/** The customer-portal bearer session (ERP-0022), never combined with the ERP guards. */
+	| 'portal';
 
 /** Options describing one module's plugin. */
 export type TDomainPluginOptions = {
@@ -108,6 +111,7 @@ export function domainPlugin(
 	if (guards === 'session+warehouse') {
 		app = app.use(sessionGuard()).use(warehouseGuard());
 	}
+	if (guards === 'portal') app = app.use(portalGuard());
 
 	return app.onError({ as: 'local' }, (ctx) => {
 		const { code, error, set } = ctx;

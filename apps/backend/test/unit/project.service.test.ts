@@ -78,6 +78,7 @@ function fakeRepository(): IProjectRepository {
 			};
 		},
 		findById: async (id) => live(id),
+		listByCustomer: async (customerId) => rows.filter((row) => row.customerId === customerId && !row.deletedAt && row.status !== 'cancelled'),
 		isInvolved: async (projectId, userId) =>
 			live(projectId)?.picUserId === userId || tasks.some((task) => task.projectId === projectId && task.assigneeUserId === userId && !task.deletedAt),
 		findLiveBySalesOrder: async (salesOrderId) => rows.find((row) => row.salesOrderId === salesOrderId && row.status !== 'cancelled') ?? null,
