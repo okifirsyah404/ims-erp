@@ -53,13 +53,13 @@ describe('email templates render', () => {
 				texts={{
 					...texts,
 					action: 'Create account',
-					body: 'You have been invited to create your account on IMS ERP.',
+					body: 'You have been invited to create your account on Acme.',
 				}}
 			/>,
 		);
 		expect(html).toContain(`href="${url}"`);
 		expect(html).toContain('Create account');
-		expect(html).toContain('create your account on IMS ERP');
+		expect(html).toContain('create your account on Acme');
 		expect(html).not.toContain('join');
 		expect(text).toContain(url);
 	});

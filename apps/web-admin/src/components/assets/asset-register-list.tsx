@@ -22,9 +22,13 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Boxes, CircleAlert, PackageSearch, Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
+import { AssetForm } from '@/components/assets/asset-form';
+import { ItemThumb } from '@/components/item-thumb';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
+import { useClampPage } from '@/lib/use-clamp-page';
 import {
 	archiveAsset,
 	assetsQueryOptions,
@@ -55,7 +59,9 @@ export function AssetRegisterList() {
 	const queryClient = useQueryClient();
 	const search = routeApi.useSearch();
 	const [searchDraft, setSearchDraft] = useState(search.search ?? '');
+	const [creating, setCreating] = useState(false);
 	const canUpdate = usePermission('asset.update');
+	const canCreate = usePermission('asset.create');
 
 	const page = search.page ?? 1;
 
@@ -76,6 +82,13 @@ export function AssetRegisterList() {
 
 	const archive = useMutationSafe(archiveAsset, queryClient);
 
+	const meta = data?.pagination;
+	// A filter or a shrinking result set must not leave the list on a page that
+	// no longer exists.
+	const goToPage = (next: number) =>
+		void navigate({ search: (prev) => ({ ...prev, page: next }) });
+	useClampPage(page, meta?.totalPages, goToPage);
+
 	if (isError) {
 		return (
 			<EmptyState
@@ -85,8 +98,6 @@ export function AssetRegisterList() {
 			/>
 		);
 	}
-
-	const meta = data?.pagination;
 
 	return (
 		<div className='space-y-4'>
@@ -99,10 +110,12 @@ export function AssetRegisterList() {
 						{t('assets:register.description')}
 					</p>
 				</div>
-				<Button render={<Link to='/assets/register/new' />} className='shrink-0'>
-					<Plus className='size-4' data-icon='inline-start' />
-					{t('assets:register.new')}
-				</Button>
+				{canCreate ? (
+					<Button className='shrink-0' onClick={() => setCreating(true)}>
+						<Plus className='size-4' data-icon='inline-start' />
+						{t('assets:register.new')}
+					</Button>
+				) : null}
 			</div>
 
 			{/* Filters ------------------------------------------------------ */}
@@ -218,14 +231,8 @@ export function AssetRegisterList() {
 			) : (
 				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 					{data.rows.map((asset) => (
-						<Card key={asset.id} className='flex flex-col'>
-							{/* TODO: render `asset.imageUrl` once real image URLs exist; this is a static UI placeholder. */}
-							<img
-								src='https://picsum.photos/300/200'
-								alt={asset.name}
-								className='h-40 w-full object-cover'
-								loading='lazy'
-							/>
+						<Card key={asset.id} className='flex flex-col overflow-hidden'>
+							<ItemThumb variant='cover' src={asset.imageUrl} name={asset.name} />
 							<CardHeader className='pb-2'>
 								<div className='flex items-start justify-between gap-2'>
 									<CardTitle className='text-base'>
@@ -329,6 +336,21 @@ export function AssetRegisterList() {
 				}
 			/>
 			{data ? null : <Boxes className='hidden' />}
+
+			{creating ? (
+				<Dialog open onOpenChange={(open) => !open && setCreating(false)}>
+					<DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-xl'>
+						<DialogHeader>
+							<DialogTitle>{t('assets:form.newAsset')}</DialogTitle>
+						</DialogHeader>
+						<AssetForm
+							compact
+							onCancel={() => setCreating(false)}
+							onSuccess={() => setCreating(false)}
+						/>
+					</DialogContent>
+				</Dialog>
+			) : null}
 		</div>
 	);
 }

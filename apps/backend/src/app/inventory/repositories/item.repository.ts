@@ -221,10 +221,10 @@ export class ItemRepository implements IItemRepository {
 	/** @inheritdoc */
 	async findNamesByIds(
 		ids: string[],
-	): Promise<Array<{ id: string; name: string }>> {
+	): Promise<Array<{ id: string; name: string; imageObjectKey: string | null }>> {
 		if (ids.length === 0) return [];
 		return this.database
-			.select({ id: items.id, name: items.name })
+			.select({ id: items.id, name: items.name, imageObjectKey: items.imageObjectKey })
 			.from(items)
 			.where(and(inArray(items.id, ids), isNull(items.deletedAt)));
 	}
