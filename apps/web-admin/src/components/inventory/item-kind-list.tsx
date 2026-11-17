@@ -1,52 +1,85 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { PackageSearch, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
-import { useQuery } from '@tanstack/react-query';
-import { itemsQueryOptions, type TItemKind } from '@/lib/inventory-api';
+	Card,
+	CardContent,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from '@ims-erp/ui/components/card';
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from '@ims-erp/ui/components/dialog';
+import { EmptyState } from '@/components/empty-state';
+import { ItemThumb } from '@/components/item-thumb';
+import { PaginationControls } from '@/components/pagination/pagination-controls';
+import { toast } from '@/components/toast';
+import {
+	createItem,
+	itemsQueryOptions,
+	type TItemCreateInput,
+	type TItemKind,
+} from '@/lib/inventory-api';
 import { useItemCategoryNames } from '@/lib/item-category-api';
+import { useClampPage } from '@/lib/use-clamp-page';
+import { usePermission } from '@/lib/use-permission';
+import { ItemForm } from './item-form';
+/** Cards per page: 3 columns × 8 rows. */
+const PAGE_SIZE = 24;
 
 /**
- * The item list for one kind.
+ * The item list for one kind, as a card grid.
  *
  * @remarks
- * One component for all four kind routes rather than four near-identical
+ * One component for all three kind routes rather than three near-identical
  * pages: the kind is the only difference, and it is a filter, not a layout.
- * The sidebar exposes four separate entries (`/inventory/products`,
+ * The sidebar exposes three separate entries (`/inventory/products`,
  * `/components`, …) so the URL stays meaningful and bookmarkable.
+ *
+ * `page` is a URL search param (owned by the route) so a page survives a
+ * refresh; the page size is fixed here, so `limit` never enters the address
+ * bar. Creation happens in a dialog because the kind is already known from the
+ * page — a full route would ask the user to re-state it.
  */
 export function ItemKindList({
 	kind,
 	title,
+	page,
+	onPageChange,
 }: {
 	kind: Extract<TItemKind, 'product' | 'component' | 'material'>;
 	title: string;
+	/** Current page, owned by the route's `page` search param. */
+	page: number;
+	onPageChange: (page: number) => void;
 }) {
 	const { t } = useTranslation(['inventory', 'common']);
+	const queryClient = useQueryClient();
 	const categoryNames = useItemCategoryNames();
-	const { data, isPending, isError, error } = useQuery(
-		itemsQueryOptions({ itemKind: kind }),
-	);
+	const canCreate = usePermission('product.create');
+	const [creating, setCreating] = useState(false);
 
-	if (isPending) {
-		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{t('common:state.loading')}
-				</CardContent>
-			</Card>
-		);
-	}
+	const { data, isPending, isError, error } = useQuery({
+		...itemsQueryOptions({ itemKind: kind, page, limit: PAGE_SIZE }),
+		// Keeps the current page visible while the next one loads.
+		placeholderData: (previous) => previous,
+	});
+
+	const rows = data?.rows ?? [];
+	const pagination = data?.pagination;
+	// A filter or a shrinking result set must not leave the list on a page that
+	// no longer exists.
+	const effectivePage = Math.min(page, pagination?.totalPages ?? page);
+	useClampPage(page, pagination?.totalPages, onPageChange);
 
 	if (isError) {
 		return (
@@ -58,97 +91,183 @@ export function ItemKindList({
 		);
 	}
 
-	const rows = data?.rows ?? [];
-
 	return (
 		<div className='flex flex-col gap-6'>
-			<div>
-				<h1 className='text-2xl font-bold'>{title}</h1>
-				<p className='text-sm text-muted-foreground'>
-					{t('inventory:items.description')}
-				</p>
+			<div className='flex flex-wrap items-start justify-between gap-3'>
+				<div>
+					<h1 className='text-2xl font-bold'>{title}</h1>
+					<p className='text-sm text-muted-foreground'>
+						{t('inventory:items.description')}
+					</p>
+				</div>
+				{canCreate ? (
+					<Button className='shrink-0' onClick={() => setCreating(true)}>
+						<Plus className='size-4' data-icon='inline-start' />
+						{t('inventory:form.newItem')}
+					</Button>
+				) : null}
 			</div>
 
-			{rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-						{t('inventory:items.empty')}
-					</CardContent>
-				</Card>
+			{isPending ? (
+				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+					{Array.from({ length: 6 }, (_, index) => (
+						<Card key={index} className='animate-pulse'>
+							<div className='h-40 w-full bg-muted' />
+							<CardHeader>
+								<CardTitle className='h-5 w-1/2 rounded bg-muted' />
+							</CardHeader>
+							<CardContent className='space-y-2'>
+								<div className='h-4 w-3/4 rounded bg-muted' />
+								<div className='h-4 w-1/2 rounded bg-muted' />
+							</CardContent>
+						</Card>
+					))}
+				</div>
+			) : rows.length === 0 ? (
+				<EmptyState
+					icon={PackageSearch}
+					title={t('inventory:items.emptyTitle')}
+					description={t('inventory:items.empty')}
+				/>
 			) : (
-				<Card>
-					<CardContent className='p-0'>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t('inventory:items.code')}</TableHead>
-									<TableHead>{t('inventory:items.sku')}</TableHead>
-									<TableHead>{t('inventory:items.name')}</TableHead>
-									<TableHead>{t('inventory:items.category')}</TableHead>
-									<TableHead>{t('inventory:items.tracking')}</TableHead>
-									<TableHead className='text-right'>
-										{t('common:action.edit')}
-									</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{rows.map((row) => (
-									<TableRow key={row.id}>
-										<TableCell className='font-mono text-xs'>
-											{row.code}
-										</TableCell>
-										<TableCell className='font-mono text-xs'>
-											{row.sku}
-										</TableCell>
-										<TableCell>
-											<Link
-												to='/inventory/items/$itemId'
-												params={{ itemId: row.id }}
-												className='hover:underline'
-											>
-												{row.name}
-											</Link>
-										</TableCell>
-										<TableCell className='text-muted-foreground'>
-											{(row.categoryId && categoryNames.get(row.categoryId)) ?? '—'}
-											{!row.isActive && (
-												<Badge variant='outline' className='ml-2'>
-													{t('inventory:items.inactive')}
-												</Badge>
-											)}
-										</TableCell>
-										<TableCell>
-											{row.isSerialized ? (
-												<Badge variant='secondary'>
-													{t('inventory:items.serialized')}
-												</Badge>
-											) : (
-												<Badge variant='outline'>
-													{t('inventory:items.quantityTracked')}
-												</Badge>
-											)}
-										</TableCell>
-										<TableCell className='text-right'>
-											<Button
-												variant='ghost'
-												size='sm'
-												render={
-													<Link
-														to='/inventory/items/$itemId/edit'
-														params={{ itemId: row.id }}
-													/>
-												}
-											>
-												{t('common:action.edit')}
-											</Button>
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</CardContent>
-				</Card>
+				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+					{rows.map((row) => (
+						<Card key={row.id} className='flex flex-col overflow-hidden'>
+							<ItemThumb
+								variant='cover'
+								src={row.imageUrl}
+								name={row.name}
+							/>
+							<CardHeader className='pb-2'>
+								<div className='flex items-start justify-between gap-2'>
+									<CardTitle className='text-base'>
+										<Link
+											to='/inventory/items/$itemId'
+											params={{ itemId: row.id }}
+											className='hover:underline'
+										>
+											{row.name}
+										</Link>
+									</CardTitle>
+									{row.isActive ? null : (
+										<Badge variant='outline'>
+											{t('inventory:items.inactive')}
+										</Badge>
+									)}
+								</div>
+								<p className='font-mono text-xs text-muted-foreground'>
+									{row.code} · {row.sku}
+								</p>
+							</CardHeader>
+							<CardContent className='flex-1 space-y-2 text-sm'>
+								<p>
+									<span className='text-muted-foreground'>
+										{t('inventory:items.category')}:{' '}
+									</span>
+									{(row.categoryId && categoryNames.get(row.categoryId)) ?? '—'}
+								</p>
+								<div>
+									{row.isSerialized ? (
+										<Badge variant='secondary'>
+											{t('inventory:items.serialized')}
+										</Badge>
+									) : (
+										<Badge variant='outline'>
+											{t('inventory:items.quantityTracked')}
+										</Badge>
+									)}
+								</div>
+							</CardContent>
+							<CardFooter className='justify-end'>
+								<Button
+									variant='ghost'
+									size='sm'
+									render={
+										<Link
+											to='/inventory/items/$itemId/edit'
+											params={{ itemId: row.id }}
+										/>
+									}
+								>
+									{t('common:action.edit')}
+								</Button>
+							</CardFooter>
+						</Card>
+					))}
+				</div>
 			)}
+
+			<PaginationControls
+				page={effectivePage}
+				totalPages={pagination?.totalPages ?? 1}
+				onPageChange={onPageChange}
+			/>
+
+			{creating ? (
+				<CreateItemDialog
+					kind={kind}
+					onClose={() => setCreating(false)}
+					onCreated={() => {
+						setCreating(false);
+						void queryClient.invalidateQueries({
+							queryKey: ['inventory', 'items'],
+						});
+					}}
+				/>
+			) : null}
 		</div>
+	);
+}
+
+/**
+ * Creates an item of the page's kind.
+ *
+ * @remarks
+ * The kind is preselected but still shown, because the form is shared with the
+ * edit screen and the backend treats it as immutable afterwards.
+ */
+function CreateItemDialog({
+	kind,
+	onClose,
+	onCreated,
+}: {
+	kind: Extract<TItemKind, 'product' | 'component' | 'material'>;
+	onClose: () => void;
+	onCreated: () => void;
+}) {
+	const { t } = useTranslation(['inventory', 'common']);
+	const [submitting, setSubmitting] = useState(false);
+
+	async function handleSubmit(input: TItemCreateInput | Record<string, unknown>) {
+		setSubmitting(true);
+		try {
+			const created = await createItem(input as TItemCreateInput);
+			if (!created) throw new Error(t('common:error.failed'));
+			toast.success(t('inventory:form.created'));
+			onCreated();
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : t('common:error.failed'),
+			);
+		} finally {
+			setSubmitting(false);
+		}
+	}
+
+	return (
+		<Dialog open onOpenChange={(open) => !open && onClose()}>
+			<DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-2xl'>
+				<DialogHeader>
+					<DialogTitle>{t('inventory:form.newItem')}</DialogTitle>
+				</DialogHeader>
+				<ItemForm
+					compact
+					defaultItemKind={kind}
+					submitting={submitting}
+					onSubmit={(input) => void handleSubmit(input)}
+					onCancel={onClose}
+				/>
+			</DialogContent>
+		</Dialog>
 	);
 }

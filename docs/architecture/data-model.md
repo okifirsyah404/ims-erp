@@ -14,7 +14,12 @@ Schema, keys, constraints, and conventions. Current declarations:
 - **`auth`** — Better Auth-owned: `users`, `accounts`, `sessions`, `passkeys`,
   `organizations` (unique `slug`), `members`, `invitations`, phone/OTP/magic-link
   tables as generated. Timestamps are bigint milliseconds. FKs cascade to
-  `users.id` for auth-owned tables.
+  `users.id` for auth-owned tables. ERP-owned extension tables in the same
+  schema include `user_invitations` and `portal_identities` (ERP-0022,
+  ADR-0022): a customer-portal login → `linked_entity_id` (logical reference
+  to `crm.customers.id`) and `contact_id` (→ `crm.customer_contacts.id`),
+  both nullable per ADR-0014, `portal_role owner|approver|finance|viewer`,
+  status `active|suspended|revoked`, one live row per contact and per user.
 - **`company`** — the one legal company of the application (ADR-0011, ERP-0042):
   - `profiles` — legal and trading name, `document_code` (the `{COMPANY}`
     numbering token), tagline, tax id, letterhead logo and signature object

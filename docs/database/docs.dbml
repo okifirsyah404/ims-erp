@@ -559,18 +559,24 @@ Table auth.portal_identities {
   id uuid [pk, default: `uuidv7()`]
   user_id text [not null]
   portal_type text [not null]
-  linked_entity_id uuid [not null]
+  linked_entity_id uuid [note: "Logical reference to the portal type's master row: crm.customers.id for 'customer'. Cross-module FK intentionally omitted; nullable per ADR-0014, presence checked by the Identity service through the owning module's contract (CRM getActiveCustomer)."]
+  contact_id uuid [note: "Logical reference to crm.customer_contacts.id. Cross-module FK intentionally omitted. Validated through the CRM module contract. The person behind a 'customer' login (one login per contact, owner decision D2 2026-11-14); nullable per ADR-0014."]
+  portal_role text [not null, default: 'owner', note: "What the person may do for the customer: owner (everything, manages members), approver (accepts quotations), finance (invoices, payments), viewer (read only)."]
   status text [not null, default: 'active']
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. The staff member or customer owner who invited the person; null for an individual's own sign-up."]
+  last_login_at bigint
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Links a portal login to a business record. linked_entity_id points at the owning module master row and is never a foreign key."
+  Note: "Links a portal login to a business record (ERP-0022, customer portal, ADR-0022). For customers: one live identity per contact and per user (partial unique indexes on live rows in the Drizzle schema); several contacts of one customer may each have a login with a role. Individuals sign up themselves (email code); businesses are invited by staff, then an owner invites colleagues. The user is never an organization member, so every ERP route and the web admin refuse it; the portal routes accept only an active identity. Revoking sets status 'revoked' and deleted_at; a new invitation creates a new row."
   Indexes {
-    user_id [name: 'portal_identities_user_id_idx']
-    (portal_type, linked_entity_id) [name: 'portal_identities_entity_uq']
+    user_id [unique, name: 'portal_identities_user_id_uq']
+    (portal_type, contact_id) [unique, name: 'portal_identities_contact_uq']
+    (portal_type, linked_entity_id) [name: 'portal_identities_entity_idx']
   }
   Checks {
     `portal_type IN ('customer', 'investor', 'partner', 'technician')`
     `status IN ('active', 'suspended', 'revoked')`
+    `portal_role IN ('owner', 'approver', 'finance', 'viewer')`
   }
 }
 
@@ -765,6 +771,7 @@ Table company.profiles {
   tax_id varchar(32) [note: "NPWP number of the company."]
   logo_object_key text [note: "Object-storage key of the letterhead logo. Stored as WebP: the server re-encodes any accepted upload (PNG/JPG/WebP/GIF/BMP/TIFF/HEIC/AVIF, ≤ 2 MB) to WebP."]
   signature_object_key text [note: "Object-storage key of the signature and stamp image printed above the signatory name."]
+  onboarding_object_key text [note: "Object-storage key of the onboarding image shown on the login page. Stored as WebP like the other profile images."]
   signatory_name varchar(200)
   signatory_title varchar(100)
   default_quotation_terms text
@@ -5652,7 +5659,7 @@ Table aftersales.service_tickets {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Service ticket (tiket servis), company-wide (ADR-0011 step 6c). Stores the warranty check made when it is reported; closed only with the customer's confirmation."
+  Note: "Service ticket (tiket servis), company-wide (ADR-0011 step 6c). Stores the warranty check made when it is reported; closed only with the customer's confirmation. Channel 'portal' = opened by the customer in the customer portal (ERP-0022); confirmation_channel 'portal' = the customer confirmed the fix there (created_by / closed_by are then the portal login)."
   Indexes {
     customer_id [name: 'service_tickets_customer_id_idx']
     project_id [name: 'service_tickets_project_id_idx']
@@ -5662,30 +5669,35 @@ Table aftersales.service_tickets {
   }
   Checks {
     `status IN ('new', 'in_progress', 'resolved', 'closed')`
-    `channel IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'other')`
-    `confirmation_channel IS NULL OR confirmation_channel IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'other')`
+    `channel IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'portal', 'other')`
+    `confirmation_channel IS NULL OR confirmation_channel IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'portal', 'other')`
     `service_cost >= 0`
   }
 }
 
 Table aftersales.service_ticket_comments {
-  updated_at bigint [not null]
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   service_ticket_id uuid [not null]
+  author_type text [not null, default: 'staff']
+  author_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. A staff member, or the customer's portal login when author_type = 'customer'."]
+  author_name varchar(200) [not null, note: "Snapshot of the author's name."]
   body text [not null]
   visibility text [not null, default: 'internal']
-  author_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
-  Note: "Comment on a service ticket. Only customer visible comments reach the portal."
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Message thread of a service ticket, company-wide like the ticket (ADR-0011). Staff write internal notes or customer-visible replies; a customer writes from the portal (always customer-visible). Only customer-visible comments reach the portal (ERP-0022)."
   Indexes {
-    service_ticket_id [name: 'service_ticket_comments_ticket_id_idx']
+    (service_ticket_id, created_at) [name: 'service_ticket_comments_ticket_created_idx']
   }
   Checks {
     `visibility IN ('internal', 'customer')`
+    `author_type IN ('staff', 'customer')`
+    `author_type = 'staff' OR visibility = 'customer'`
   }
 }
+
+Ref: aftersales.service_ticket_comments.service_ticket_id > aftersales.service_tickets.id [delete: cascade]
 
 Table aftersales.service_work_orders {
   deleted_at bigint
@@ -6075,13 +6087,59 @@ Table document.signatures {
   signature_method text [not null, default: 'electronic']
   ip_address text
   certificate_serial text
-  Note: "Signature evidence of a document."
+  signature_image_key text [note: "Object-storage key of the signature image used at signing time. Snapshot, not a live lookup: replacing the user image later never rewrites an existing signature."]
+  source_file_id uuid [note: "PDF the signature was placed on; one of this document's files."]
+  signed_file_key text [note: "Object-storage key of the signed PDF artifact. Once set the placement is final and cannot be redone."]
+  Note: "Signature evidence of a document. `source_file_id` and `signed_file_key` stay NULL for a signature that was only recorded (no PDF placement)."
   Indexes {
     document_id [name: 'signatures_document_id_idx']
+    source_file_id [name: 'signatures_source_file_id_idx']
   }
   Checks {
     `signer_type IN ('internal', 'customer', 'partner')`
     `signature_method IN ('electronic', 'wet_ink', 'stamp')`
+  }
+}
+
+Table document.signature_requests {
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  document_id uuid [not null]
+  requested_by_user_id text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  signer_user_id text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  signer_name text [not null, note: "Signer display name snapshot at request time; later profile renames never rewrite history."]
+  status text [not null, default: 'pending']
+  note text
+  decline_reason text
+  expires_at bigint
+  responded_at bigint
+  Note: "Workflow state of a signature request. The immutable evidence lives in document.signatures. Expiry is evaluated at read time (a pending row past expires_at is treated as expired); no job flips the status. The unique index on (document_id, signer_user_id) is partial in the Drizzle schema: WHERE status = 'pending' AND deleted_at IS NULL, so one live pending request per document and signer, and re-requesting after a terminal state creates a new row."
+  Indexes {
+    document_id [name: 'signature_requests_document_id_idx']
+    (signer_user_id, status) [name: 'signature_requests_signer_status_idx']
+    requested_by_user_id [name: 'signature_requests_requested_by_idx']
+    (document_id, signer_user_id) [unique, name: 'signature_requests_pending_uq']
+  }
+  Checks {
+    `status IN ('pending', 'signed', 'declined', 'expired', 'cancelled')`
+  }
+}
+
+Table document.user_signatures {
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id; NULL = company-wide. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  user_id text [not null, note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  object_key text [not null, note: "Object-storage key of the WebP signature/stamp image; never a public URL."]
+  uploaded_at bigint [not null]
+  Note: "Signature image a user uploads for themselves (ERP-0049). The unique index on user_id is partial in the Drizzle schema (WHERE deleted_at IS NULL): one live image per user. Not rendered into any document layout yet."
+  Indexes {
+    user_id [unique, name: 'user_signatures_user_id_uq']
   }
 }
 
@@ -6103,7 +6161,7 @@ Table document.access_logs {
     accessed_at [name: 'access_logs_accessed_at_idx']
   }
   Checks {
-    `action IN ('view', 'download', 'print', 'share', 'delete')`
+    `action IN ('view', 'download', 'print', 'share', 'delete', 'pdf_sign')`
   }
 }
 
@@ -6167,6 +6225,8 @@ Ref: document.documents.template_id > document.templates.id [delete: set null]
 Ref: document.documents.supersedes_document_id > document.documents.id [delete: set null]
 Ref: document.files.document_id > document.documents.id [delete: cascade]
 Ref: document.signatures.document_id > document.documents.id [delete: cascade]
+Ref: document.signatures.source_file_id > document.files.id [delete: set null]
+Ref: document.signature_requests.document_id > document.documents.id [delete: cascade]
 Ref: document.access_logs.document_id > document.documents.id [delete: cascade]
 Ref: document.shares.document_id > document.documents.id [delete: cascade]
 Ref: document.tag_links.document_id > document.documents.id [delete: cascade]

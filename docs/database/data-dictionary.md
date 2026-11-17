@@ -382,6 +382,7 @@ Used by the content tables: `commerce.web_pages`, `document.documents`,
 | Term | Meaning |
 |---|---|
 | company profile | the legal identity of the company. The company is deployed once; it is not per organization. |
+| onboarding image | the picture shown on the login page (`company.profiles.onboarding_object_key`), stored in object storage as WebP like the other profile images. |
 | branch | an office or operating site. |
 | department | an internal unit, hierarchical. |
 | position | a job definition, used by HR contracts and payroll. |

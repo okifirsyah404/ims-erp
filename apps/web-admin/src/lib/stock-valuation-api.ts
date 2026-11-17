@@ -1,6 +1,7 @@
 import type { TApiResponse, TPaginationMeta } from '@ims-erp/common';
 import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
+import { organizationHeaders } from './organization-store';
 
 /**
  * API client for the inventory value view (`/stock/valuation`, ADR-0011
@@ -49,7 +50,7 @@ export function stockValuationQueryOptions(params: { page?: number; limit?: numb
 			}
 			const response = await fetch(`${API_URL}/stock/valuation${search.size ? `?${search}` : ''}`, {
 				credentials: 'include',
-				headers: { 'Accept-Language': currentLanguage() },
+				headers: { ...organizationHeaders(), 'Accept-Language': currentLanguage() },
 			});
 			const envelope = (await response.json()) as TApiResponse<TStockValuation>;
 			if (!response.ok) throw new Error(envelope.errors?.[0]?.message ?? envelope.message ?? 'Request failed');

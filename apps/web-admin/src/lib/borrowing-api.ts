@@ -101,12 +101,13 @@ export type TBorrowing = {
 	createdAt: string;
 	updatedAt: string | null;
 	deletedAt: string | null;
+	/** List projection: first borrowed asset's photo; `null` when none. */
+	imageUrl?: string | null;
 	/** Detail projection only: `true` when guest identity fields were withheld. */
 	guestIdentityRedacted?: boolean;
 };
 
-/** One borrowed unit. A line is exactly one asset. */
-export type TBorrowingLine = {
+/** One borrowed unit. A line is exactly one asset. */export type TBorrowingLine = {
 	id: string;
 	borrowingId: string;
 	assetId: string;

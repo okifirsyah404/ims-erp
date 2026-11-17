@@ -12,4 +12,10 @@ import type { TCompanyProfileSnapshot } from './company.contract';
 export interface ICompanyService {
 	/** The letterhead snapshot, or `null` before the profile was first saved. */
 	getProfile(tx?: TTx): Promise<TCompanyProfileSnapshot | null>;
+
+	/**
+	 * Display name for user-facing surfaces (emails, exports): the profile's
+	 * `tradingName ?? legalName`, or `null` before the profile was first saved.
+	 */
+	getDisplayName(): Promise<string | null>;
 }

@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "dc42424a-79d0-4366-9e46-f7043c52d442",
+  "prevIds": [
+    "9a93dbcf-ce37-410e-98ee-d07f85f0c272"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "company",
+        "profiles",
+        "onboarding_object_key"
+      ],
+      "writes": [
+        "s|col|company.profiles.onboarding_object_key",
+        "n|col|company.profiles.onboarding_object_key",
+        "e|col|company.profiles.onboarding_object_key"
+      ],
+      "reads": [
+        "n|tbl|company.profiles",
+        "n|sch|company"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "company",
+        "table": "profiles",
+        "name": "onboarding_object_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

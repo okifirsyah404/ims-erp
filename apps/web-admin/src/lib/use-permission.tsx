@@ -79,8 +79,10 @@ export function useOrganizations() {
 
 /**
  * Switches the active organization and refreshes permission queries.
- * Always call the backend (`organization.setActive`) - the active
- * organization is a server-side session fact, never client state.
+ * Always call the backend (`organization.setActive`): the session value is what
+ * the server authorizes against. The client store mirrors it — set it
+ * optimistically in the caller and roll back if this throws
+ * (`organization-store.ts`).
  */
 export async function switchOrganization(organizationId: string) {
   await organization.setActive({ organizationId })

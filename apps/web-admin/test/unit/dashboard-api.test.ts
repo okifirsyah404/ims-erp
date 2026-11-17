@@ -1,74 +1,123 @@
 import { describe, expect, test } from 'bun:test';
 
-import { dashboardQueryOptions, fetchDashboardSummary, formatIdr } from '../../src/lib/dashboard-api';
+import {
+	addMonths,
+	DASHBOARD_QUERY_ROOT,
+	DASHBOARD_REFRESH_MS,
+	dashboardCashQueryOptions,
+	dashboardItemCountQueryOptions,
+	dashboardProfitQueryOptions,
+	dashboardProjectsQueryOptions,
+	dashboardRecentInvoicesQueryOptions,
+	dashboardRecentReceiptsQueryOptions,
+	dashboardStockValueQueryOptions,
+	dashboardSubscriptionsQueryOptions,
+	daysBetween,
+	formatIdr,
+	monthKey,
+	SALES_RANGES,
+	salesChartWindow,
+	salesSummaryQueryOptions,
+	salesWindow,
+	SALES_CHART_MONTHS,
+	shiftMonths,
+	startOfMonth,
+} from '../../src/lib/dashboard-api';
 
-describe('dashboard mock summary', () => {
-	test('provides all six M01 Stage-1 widgets', async () => {
-		const summary = await fetchDashboardSummary();
-		expect(Object.keys(summary).sort()).toEqual(
-			[
-				'activity',
-				'cash',
-				'inventory',
-				'profit',
-				'projects',
-				'quickLinks',
-				'sales',
-				'salesSeries',
-				'subscriptions',
-			].sort(),
-		);
+describe('Jakarta month arithmetic', () => {
+	test('addMonths stays on the 1st and crosses year boundaries', () => {
+		expect(addMonths('2026-03-01', -1)).toBe('2026-02-01');
+		expect(addMonths('2026-01-01', -1)).toBe('2025-12-01');
+		expect(addMonths('2026-11-01', 2)).toBe('2027-01-01');
 	});
 
-	test('money values are integer minor units (even hundreds)', async () => {
-		const summary = await fetchDashboardSummary();
-		const values = [
-			summary.sales.invoicedThisMonth,
-			summary.sales.invoicedLastMonth,
-			summary.sales.openQuotesValue,
-			summary.cash.total,
-			...summary.cash.accounts.map((account) => account.balance),
-			summary.profit.monthToDate,
-			summary.inventory.stockValue,
-			...summary.salesSeries.map((point) => point.invoiced),
-		];
-		for (const value of values) {
-			expect(Number.isInteger(value)).toBe(true);
-			expect(value % 100).toBe(0); // whole rupiah, stored in cents
+	test('monthKey and startOfMonth read the business date', () => {
+		expect(monthKey('2026-11-15')).toBe('2026-11');
+		expect(startOfMonth('2026-11-15')).toBe('2026-11-01');
+	});
+});
+
+describe('salesWindow', () => {
+	test('covers the chart months ending today, not the end of the month', () => {
+		const window = salesWindow('2026-11-15');
+		expect(window.to).toBe('2026-11-15');
+		expect(window.currentFrom).toBe('2026-11-01');
+		expect(window.previousFrom).toBe('2026-10-01');
+		// Six months inclusive: Jun..Nov.
+		expect(window.from).toBe('2026-06-01');
+	});
+
+	test('the chart length constant matches the window', () => {
+		expect(SALES_CHART_MONTHS).toBe(6);
+		const window = salesWindow('2026-11-15');
+		expect(monthKey(window.from)).toBe('2026-06');
+	});
+});
+
+describe('salesChartWindow', () => {
+	const today = '2026-11-15';
+
+	test('every preset is a rolling window ending today', () => {
+		for (const range of SALES_RANGES) {
+			if (range === 'custom') continue;
+			const window = salesChartWindow(today, range);
+			expect(window.to).toBe(today);
+			expect(window.from < window.to).toBe(true);
 		}
 	});
 
-	test('profit is always provisional in the mock (M01 labelling rule)', async () => {
-		const summary = await fetchDashboardSummary();
-		expect(summary.profit.provisional).toBe(true);
+	test('14 days is exactly two weeks and uses daily buckets', () => {
+		const window = salesChartWindow(today, '14d');
+		expect(window.from).toBe('2026-11-02');
+		expect(daysBetween(window.from, window.to)).toBe(13);
+		expect(window.groupBy).toBe('day');
 	});
 
-	test('sales series covers six months ending with the current month', async () => {
-		const summary = await fetchDashboardSummary();
-		expect(summary.salesSeries).toHaveLength(6);
-		const now = new Date();
-		const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-		expect(summary.salesSeries.at(-1)?.month).toBe(currentKey);
-		const months = summary.salesSeries.map((point) => point.month);
-		expect(new Set(months).size).toBe(6);
+	test('1 month and below buckets by day, above by month', () => {
+		expect(salesChartWindow(today, '1m').groupBy).toBe('day');
+		expect(salesChartWindow(today, '3m').groupBy).toBe('month');
+		expect(salesChartWindow(today, '6m').groupBy).toBe('month');
+		expect(salesChartWindow(today, '1y').groupBy).toBe('month');
+		expect(salesChartWindow(today, '5y').groupBy).toBe('month');
 	});
 
-	test('activity entries use known kinds and carry a document code', async () => {
-		const summary = await fetchDashboardSummary();
-		const kinds = new Set(['quoted', 'invoicePaid', 'stockAdjusted', 'projectHandover']);
-		for (const entry of summary.activity) {
-			expect(kinds.has(entry.kind)).toBe(true);
-			expect(entry.code.length).toBeGreaterThan(0);
-		}
+	test('each preset has the length its label claims', () => {
+		const span = (range: Parameters<typeof salesChartWindow>[1]) => {
+			const window = salesChartWindow(today, range);
+			return daysBetween(window.from, window.to) + 1;
+		};
+		expect(span('14d')).toBe(14);
+		expect(span('1m')).toBe(31); // 16 Oct – 15 Nov
+		expect(span('3m')).toBe(92); // 16 Aug – 15 Nov
+		expect(span('6m')).toBe(184); // 16 May – 15 Nov
+		expect(span('1y')).toBe(365); // 16 Nov 2025 – 15 Nov 2026
+		expect(span('5y')).toBe(1826); // 16 Nov 2021 – 15 Nov 2026, leap day included
 	});
 
-	test('quick links point at registered routes with nav keys', async () => {
-		const summary = await fetchDashboardSummary();
-		expect(summary.quickLinks.length).toBeGreaterThan(0);
-		for (const link of summary.quickLinks) {
-			expect(link.to.startsWith('/')).toBe(true);
-			expect(link.titleKey.startsWith('nav:item.')).toBe(true);
-		}
+	test('month arithmetic clamps the day instead of overflowing', () => {
+		// 31 March minus one month must be 28 February, not 3 March.
+		expect(shiftMonths('2026-03-31', -1)).toBe('2026-02-28');
+		expect(shiftMonths('2026-05-31', -3)).toBe('2026-02-28');
+		expect(shiftMonths('2026-01-15', -1)).toBe('2025-12-15');
+	});
+
+	test('a complete custom range is used as given', () => {
+		const window = salesChartWindow(today, 'custom', { from: '2026-01-01', to: '2026-02-15' });
+		expect(window).toEqual({ from: '2026-01-01', to: '2026-02-15', groupBy: 'month' });
+	});
+
+	test('a short custom range buckets by day', () => {
+		const window = salesChartWindow(today, 'custom', { from: '2026-11-01', to: '2026-11-15' });
+		expect(window.groupBy).toBe('day');
+	});
+
+	test('an incomplete or inverted custom range falls back to six months', () => {
+		const fallback = salesChartWindow(today, '6m');
+		expect(salesChartWindow(today, 'custom', {})).toEqual(fallback);
+		expect(salesChartWindow(today, 'custom', { from: '2026-11-01' })).toEqual(fallback);
+		expect(
+			salesChartWindow(today, 'custom', { from: '2026-11-15', to: '2026-11-01' }),
+		).toEqual(fallback);
 	});
 });
 
@@ -83,10 +132,58 @@ describe('formatIdr', () => {
 	});
 });
 
-describe('dashboardQueryOptions', () => {
-	test('uses a stable query key and the mock fetcher', () => {
-		const options = dashboardQueryOptions();
-		expect(options.queryKey).toEqual(['dashboard', 'summary']);
-		expect(options.queryFn).toBe(fetchDashboardSummary);
+describe('dashboard query keys', () => {
+	test('every key starts with the dashboard root so one prefix invalidates the page', () => {
+		const keys = [
+			salesSummaryQueryOptions('org-a', salesWindow('2026-11-15')).queryKey,
+			dashboardCashQueryOptions('org-a', true).queryKey,
+			dashboardProfitQueryOptions('org-a', { from: '2026-11-01', to: '2026-11-15' }, true).queryKey,
+			dashboardItemCountQueryOptions('org-a', true).queryKey,
+			dashboardProjectsQueryOptions('org-a', true).queryKey,
+			dashboardSubscriptionsQueryOptions('org-a', true).queryKey,
+		];
+		for (const key of keys) {
+			expect(key[0]).toBe(DASHBOARD_QUERY_ROOT[0]);
+		}
+	});
+
+	test('keys carry the organization, so switching organization changes every entry', () => {
+		const a = dashboardCashQueryOptions('org-a', true).queryKey;
+		const b = dashboardCashQueryOptions('org-b', true).queryKey;
+		expect(a).not.toEqual(b);
+		expect(a).toContain('org-a');
+		expect(b).toContain('org-b');
+	});
+
+	test('no organization means no query runs', () => {
+		expect(dashboardCashQueryOptions(null, true).enabled).toBe(false);
+		expect(dashboardProjectsQueryOptions(null, true).enabled).toBe(false);
+		expect(salesSummaryQueryOptions(null, salesWindow('2026-11-15')).enabled).toBe(false);
+	});
+
+	test('a missing permission disables the query before any request', () => {
+		expect(dashboardCashQueryOptions('org-a', false).enabled).toBe(false);
+		expect(dashboardItemCountQueryOptions('org-a', false).enabled).toBe(false);
+	});
+
+	test('every widget refetches on the shared one-minute interval', () => {
+		const window = salesWindow('2026-11-15');
+		const options = [
+			salesSummaryQueryOptions('org-a', window),
+			dashboardCashQueryOptions('org-a', true),
+			dashboardProfitQueryOptions('org-a', { from: '2026-11-01', to: '2026-11-15' }, true),
+			dashboardItemCountQueryOptions('org-a', true),
+			dashboardStockValueQueryOptions('org-a', true),
+			dashboardProjectsQueryOptions('org-a', true),
+			dashboardSubscriptionsQueryOptions('org-a', true),
+			dashboardRecentInvoicesQueryOptions('org-a', true),
+			dashboardRecentReceiptsQueryOptions('org-a', true),
+		];
+		for (const entry of options) {
+			expect(entry.refetchInterval).toBe(DASHBOARD_REFRESH_MS);
+			// Same value as the stale time, so a remount never double-fetches.
+			expect(entry.staleTime).toBe(DASHBOARD_REFRESH_MS);
+		}
+		expect(DASHBOARD_REFRESH_MS).toBe(60_000);
 	});
 });

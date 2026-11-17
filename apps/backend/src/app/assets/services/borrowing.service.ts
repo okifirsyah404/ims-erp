@@ -2,6 +2,7 @@ import { inject, injectable } from 'tsyringe';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type { TTx } from '@drizzle/types';
+import type { TPaginationResult } from '@ims-erp/common';
 import type {
 	BorrowingStatus,
 	TAssetSelect,
@@ -101,6 +102,12 @@ export type TBorrowingCreateInput = {
 	lines: TBorrowingLineInput[];
 };
 
+/** One borrowing list row: the header plus the card's display photo. */
+export type TBorrowingListItem = TBorrowingSelect & {
+	/** First borrowed asset's image URL; `null` when nothing to show. */
+	imageUrl: string | null;
+};
+
 /** A borrowing as returned to a client, with the PII projection applied. */
 export type TBorrowingView = TBorrowingSelect & {
 	lines: TBorrowingLineSelect[];
@@ -166,11 +173,22 @@ export class BorrowingService {
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 	) {}
 
-	/** Fetches one page of borrowings for a tenant. */
-	paginate(
+	/** Fetches one page of borrowings for a tenant, each with a display photo. */
+	async paginate(
 		request: TBorrowingPaginationRequest,
-	): ReturnType<IBorrowingRepository['paginate']> {
-		return this.borrowingRepository.paginate(request);
+	): Promise<TPaginationResult<TBorrowingListItem>> {
+		const result = await this.borrowingRepository.paginate(request);
+		const images = await this.borrowingRepository.listFirstAssetImages(
+			result.data.map((row) => row.id),
+		);
+		const byBorrowing = new Map(images.map((row) => [row.borrowingId, row.imageUrl]));
+		return {
+			...result,
+			data: result.data.map((row) => ({
+				...row,
+				imageUrl: byBorrowing.get(row.id) ?? null,
+			})),
+		};
 	}
 
 	/**

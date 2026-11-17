@@ -15,8 +15,14 @@ import {
 } from '@ims-erp/ui/components/table';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
+import { PaginationControls } from '@/components/pagination/pagination-controls';
+import { ItemThumb } from '@/components/item-thumb';
 import { balancesQueryOptions, recomputeBalances } from '@/lib/stock-api';
+import { useClampPage } from '@/lib/use-clamp-page';
 import { usePermission } from '@/lib/use-permission';
+
+/** Rows per page: 24 keeps a full-height page without endless scrolling. */
+const PAGE_SIZE = 24;
 
 /**
  * The stock balance list: what is on hand, per warehouse.
@@ -32,14 +38,23 @@ import { usePermission } from '@/lib/use-permission';
  * Postgres `CHECK` (`available = on_hand - reserved`), so the UI must not
  * recompute it and risk disagreeing.
  */
-export function StockList() {
+export function StockList({
+	page,
+	onPageChange,
+}: {
+	/** Current page, owned by the route's `page` search param. */
+	page: number;
+	onPageChange: (page: number) => void;
+}) {
 	const { t } = useTranslation(['inventory', 'common']);
 	const queryClient = useQueryClient();
 	const canSeeCost = usePermission('product.read_cost');
 	const [inStockOnly, setInStockOnly] = useState(false);
-	const { data, isPending, isError, error } = useQuery(
-		balancesQueryOptions({ limit: 100, inStockOnly }),
-	);
+	const { data, isPending, isError, error } = useQuery({
+		...balancesQueryOptions({ page, limit: PAGE_SIZE, inStockOnly }),
+		// Keeps the current page visible while the next one loads.
+		placeholderData: (previous) => previous,
+	});
 
 	const recompute = useMutation({
 		mutationFn: () => recomputeBalances(),
@@ -48,6 +63,12 @@ export function StockList() {
 			void queryClient.invalidateQueries({ queryKey: ['stock'] });
 		},
 	});
+
+	// A filter or a shrinking result set must not leave the list on a page that
+	// no longer exists.
+	const pagination = data?.pagination;
+	useClampPage(page, pagination?.totalPages, onPageChange);
+	const effectivePage = Math.min(page, pagination?.totalPages ?? page);
 
 	if (isPending) {
 		return (
@@ -84,7 +105,12 @@ export function StockList() {
 					<label className='flex items-center gap-2 text-sm'>
 						<Checkbox
 							checked={inStockOnly}
-							onCheckedChange={(checked) => setInStockOnly(checked === true)}
+							onCheckedChange={(checked) => {
+								setInStockOnly(checked === true);
+								// The filter changes the result set, so page 1 is the
+								// only page that is guaranteed to exist.
+								onPageChange(1);
+							}}
 						/>
 						{t('inventory:stock.inStockOnly')}
 					</label>
@@ -172,17 +198,23 @@ export function StockList() {
 								{rows.map((row) => (
 									<TableRow key={row.id}>
 										<TableCell>
-											<Link
-												to='/inventory/items/$itemId'
-												params={{ itemId: row.itemId }}
-												className='hover:underline'
-											>
-												{row.itemName ?? (
-													<span className='font-mono text-xs text-muted-foreground'>
-														{row.itemId}
-													</span>
-												)}
-											</Link>
+											<div className='flex items-center gap-2'>
+												<ItemThumb
+													src={row.imageUrl}
+													name={row.itemName ?? row.itemId}
+												/>
+												<Link
+													to='/inventory/items/$itemId'
+													params={{ itemId: row.itemId }}
+													className='hover:underline'
+												>
+													{row.itemName ?? (
+														<span className='font-mono text-xs text-muted-foreground'>
+															{row.itemId}
+														</span>
+													)}
+												</Link>
+											</div>
 										</TableCell>
 										<TableCell>
 											<Link
@@ -238,6 +270,12 @@ export function StockList() {
 					</CardContent>
 				</Card>
 			)}
+
+			<PaginationControls
+				page={effectivePage}
+				totalPages={pagination?.totalPages ?? 1}
+				onPageChange={onPageChange}
+			/>
 		</div>
 	);
 }

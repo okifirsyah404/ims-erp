@@ -19,7 +19,10 @@ import {
 	AR_ACCOUNT_RESOLVER_TOKEN,
 } from '../../accounting/constants/ar-di';
 import { INVOICE_REPOSITORY_TOKEN } from '../constants/ar-di';
-import type { TInvoiceRepository } from '../contracts/invoice.repository.interface';
+import type {
+	TInvoiceRepository,
+	TInvoiceSummary,
+} from '../contracts/invoice.repository.interface';
 import type {
 	TCreateInvoiceInput,
 	TInvoiceItemInput,
@@ -89,6 +92,14 @@ export class InvoiceService {
 	): Promise<TPaginationResult<TInvoiceSelect>> {
 		const { overdue, ...rest } = filters;
 		return this.repo.list(organizationId, { ...rest, ...(overdue ? { overdueOn: businessDateOf() } : {}) }, pagination);
+	}
+
+	/** Invoiced totals for one window (M01 dashboard); zero-filled per period. */
+	summary(
+		organizationId: string,
+		range: { from: string; to: string; groupBy: 'month' | 'day' },
+	): Promise<TInvoiceSummary> {
+		return this.repo.summary(organizationId, range);
 	}
 
 	async get(organizationId: string, id: string): Promise<{
