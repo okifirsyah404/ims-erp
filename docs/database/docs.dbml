@@ -765,6 +765,7 @@ Table company.profiles {
   tax_id varchar(32) [note: "NPWP number of the company."]
   logo_object_key text [note: "Object-storage key of the letterhead logo. Stored as WebP: the server re-encodes any accepted upload (PNG/JPG/WebP/GIF/BMP/TIFF/HEIC/AVIF, ≤ 2 MB) to WebP."]
   signature_object_key text [note: "Object-storage key of the signature and stamp image printed above the signatory name."]
+  onboarding_object_key text [note: "Object-storage key of the onboarding image shown on the login page. Stored as WebP like the other profile images."]
   signatory_name varchar(200)
   signatory_title varchar(100)
   default_quotation_terms text

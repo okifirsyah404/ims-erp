@@ -290,8 +290,10 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		items: [
 			{ titleKey: 'item.companyProfile', url: '/settings/company', icon: Settings, permission: 'company.read' },
 			{ titleKey: 'item.codeNumbers', url: '/settings/code-numbers', icon: Hash, permission: 'code_number.read' },
-			// No catalog resource yet: hidden.
-			{ titleKey: 'item.documentSettings', url: '/settings/documents', icon: FileText },
+			// No catalog resource yet: hidden. The document settings page carries
+			// no permission of its own (its values are edited per group), so it
+			// stays open like the settings section itself.
+			{ titleKey: 'item.documentSettings', url: '/settings/documents', icon: FileText, open: true },
 		],
 	},
 ];

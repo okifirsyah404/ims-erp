@@ -12,6 +12,92 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-17 - Dynamic company branding + login onboarding image (user request)
+
+Status: **implemented** (live HTTP + browser verified 2026-11-17). `docs/database/`
+**changed**: one new column `company.profiles.onboarding_object_key`;
+`bun docs/database/validate-dbml.ts` -> OK (277 tables / 237 refs, 0
+cross-module, 0 timestamp gaps, 0 Drizzle drift).
+
+What landed:
+
+- **`docs.dbml` first**, then the Drizzle schema: `company.profiles` gains
+  `onboarding_object_key text` (nullable, WebP like the other profile
+  images). Migration `20261117120000_erp0050_onboarding_image` (single
+  ALTER TABLE, hand written — `drizzle:generate`/`migrate` stay blocked on
+  main), applied via `migrate-reset` twice (idempotent seed, 0 new rows on
+  the second run). The hand-written migration shipped without its
+  `snapshot.json` at first, which made `drizzle-kit check` report schema
+  drift; the real diff snapshot was produced by one throwaway
+  `drizzle-kit generate` (same `ALTER TABLE`, `prevIds` =
+  `9a93dbcf…` from `20261116173810_erp0048_signed_pdf`), moved in, and the
+  probe folder deleted — `drizzle-kit check` now answers
+  `Everything's fine`.
+- **Company module**: `TCompanyImageKind` gains `'onboarding'` (contract,
+  controller `kind` enum, repository `setImage` third branch, service
+  `toView`/snapshot + `onboardingUrl`/`onboardingObjectKey`). New public
+  endpoint `GET /company/branding` (`guards` left at the plugin default
+  `none`, no `erp` macro) returning `{ name, onboardingUrl }` where
+  `name = tradingName ?? legalName`; only non-sensitive fields.
+- **New `ICompanyService.getDisplayName()`** so other modules read the
+  company name through the contract (no `company.*` table access).
+- **Emails**: `mailer.templates.tsx` `appName()` now resolves the company
+  display name via `COMPANY_SERVICE_TOKEN` (repository cache makes it
+  cheap), falling back to `APP_NAME` env, then `'ERP'`. All four templates
+  (verification, reset, app + org invitation) interpolate it.
+- **XLSX**: `recapToXlsx` takes the company profile; `workbook.creator`
+  becomes `tradingName ?? legalName ?? 'IMS ERP'`; the tax controller
+  resolves the snapshot via `COMPANY_SERVICE_TOKEN`.
+- **Web admin**: `login-form.tsx` fetches the public branding — subtitle
+  `t('login.subtitle', { app })`, hero image
+  `src={branding?.onboardingUrl ?? '/hero.png'}`, `alt={name ?? 'Entragate'}`.
+  **Logo + onboarding upload live on `/settings/company`** (an "Images" card
+  under the profile form — this moves the logo off `/settings/documents`,
+  superseding the ERP-0045c placement, now that there are two images to
+  manage); `/settings/documents` holds the document settings card only. The
+  `/settings/documents` nav leaf gains `open: true` — it declares no
+  permission, and ERP-0051's deny-by-default guard redirected it to `/`.
+  Locales: `login.subtitle` interpolated (`{{app}}`) in en + id; new
+  `settings:companyProfile.image.onboarding`; `document.description` no
+  longer mentions the logo.
+- **UI consistency (2026-11-17, user request):** `/settings/company` now
+  uses the `Card` family from `@ims-erp/ui` throughout. The profile form is
+  one `Card` (`CardContent` with two `FieldSet`s, `FieldLegend variant=label`,
+  `FieldSeparator`, Save in `CardFooter`) instead of hand-rolled bordered
+  boxes; the images card is a `Card` with `CardHeader`/`CardContent`.
+  `DocumentImageField` wraps its label/hint in `Field`/`FieldLabel`/
+  `FieldDescription` from `@ims-erp/ui`. Section title "Logo" -> "Images"
+  (en) / "Gambar" (id), since the card holds two images.
+- Fallback chain everywhere: profile name -> `APP_NAME` env -> literal
+  (login image falls back to the bundled `/hero.png`).
+
+Commands and outcomes:
+
+- `bun docs/database/gen-logical-references.ts` -> 536 refs / 41 targets;
+  `bun docs/database/validate-dbml.ts` -> OK (277 / 237).
+- `apps/backend`: `bunx tsc --noEmit` clean; `bun test` -> **1133 pass /
+  0 fail** (84 files), incl. new onboarding/branding service tests.
+- `apps/web-admin`: `bunx tsc -b` clean; `bun test` 119 pass.
+  `packages/locales` 98 pass; `packages/react-email` 5 pass.
+- Root `bun run lint` 0 errors (warnings pre-existing, none in changed
+  files).
+- Live (backend 3001, Vite 5173): `GET /company/branding` unauthenticated
+  -> 200 `{ name: "Entragate", onboardingUrl: null }`; `PUT
+  /company/profile/onboarding` (1x1 PNG, admin session) -> 200 with a
+  presigned MinIO WebP URL; branding then carries it; `DELETE` -> null.
+- Browser: login page subtitle "Login to your Entragate account" /
+  "Masuk ke akun Entragate Anda" (name from the profile, not hardcode);
+  with an image uploaded the `<img>` loads the S3 URL
+  (`naturalWidth: 1`); after delete it falls back to `/hero.png`.
+  Console clean. Follow-up move (same day, user request): the logo and
+  onboarding upload fields relocated to `/settings/company` ("Images" card);
+  `/settings/documents` re-checked in the browser (renders the document
+  settings card only) after giving its nav leaf `open: true` — without it
+  the ERP-0051 deny-by-default guard redirected the page to `/`.
+
+Next executable task: run the queued UAT, or slice 3 (draw the signature on a
+canvas at signing time).
+
 ## 2026-11-17 - Signed-PDF placement: signer stamps their signature on an uploaded PDF (ERP-0048 slice 2)
 
 Status: **implemented** (live HTTP + browser verified 2026-11-17; no committed
@@ -9604,6 +9690,11 @@ nothing) and a browser pass with a real attendance write and both NIK-masking
 directions — evidence in the 2026-11-15 entry. ERP-0053 stays `implemented`
 until the owner signs off; the only gate still unrun is
 `drizzle-kit push --explain`, which this merge does not need.
+
+The 2026-11-17 branding entry (dynamic company name + login onboarding image)
+is implemented and live-verified; it is unclaimed in `backlog.md` (no `ERP-*`
+covered company branding), so it needs a backlog row or fold into ERP-0008's
+company-profile line on the next pass.
 
 **ERP-0047 is verified** (2026-11-14, see the Phase 8 complete entry above). Nothing open in its plan. The docs changes for this step are uncommitted. The original Phase 8 scope, for reference:
 `bunx tsc -b --noEmit` in both apps, `bun run test`, `bun run lint`,
