@@ -39,6 +39,14 @@ design interview; see **Feature module lifecycle** in `../AGENTS.md`.
 
 ## Decision records (ADR index)
 
+**Numbering.** Two programmers write ADRs in parallel. Before taking a number,
+check `origin/main`, every remote branch and the open pull requests, and take
+the next number above the highest found. Reserve it here (status `reserved`)
+in the same change. ADR-0018 / ADR-0019 were taken twice on 2026-11-14 and ADR-0020 again on
+2026-11-15 (the M04 outbox record took it on its merge), so the customer
+portal record is ADR-0022 and the payment gateway record ADR-0021. The same rule
+applies to backlog `ERP-*` IDs.
+
 | ADR | Title | Status |
 |---|---|---|
 | [ADR-0010](decisions/ADR-0010-department-orgs-warehouse-links.md) | Department Organizations and Warehouse Links | proposed |
@@ -49,3 +57,4 @@ design interview; see **Feature module lifecycle** in `../AGENTS.md`.
 | [ADR-0019](decisions/ADR-0019-squashed-per-schema-migration-baseline.md) | Squashed per-Schema Migration Baseline | accepted (2026-11-14) |
 | [ADR-0020](decisions/ADR-0020-outbox-events-and-whatsapp.md) | ERP Events Through an Outbox to n8n; WhatsApp Through WAHA | proposed (2026-11-12; renumbered from ADR-0015 on the M04 merge) |
 | [ADR-0021](decisions/ADR-0021-provider-neutral-payment-gateway.md) | Provider-Neutral Payment Gateway for Invoices | proposed (2026-11-14) |
+| [ADR-0022](decisions/ADR-0022-customer-portal-api.md) | Customer Portal: Portal Identities and the `/portal/v1` API | proposed (2026-11-14; renumbered from 0018, then 0020) |

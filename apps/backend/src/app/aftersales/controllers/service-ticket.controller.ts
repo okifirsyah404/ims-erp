@@ -9,6 +9,7 @@ import {
 	closeTicketSchema,
 	createTicketSchema,
 	resolveTicketSchema,
+	ticketCommentSchema,
 	ticketIdParamSchema,
 	ticketListQuerySchema,
 	warrantyCheckQuerySchema,
@@ -52,6 +53,19 @@ export class ServiceTicketController {
 				erp: { permission: ['service_ticket:read'] },
 				detail: { description: 'One service ticket' },
 			})
+			.get('/:id/comments', async ({ params, erp }) => ok(await service.listComments(await context(erp), id(params))), {
+				erp: { permission: ['service_ticket:read'] },
+				detail: { description: 'The message thread: internal notes, replies and customer messages (ERP-0022)' },
+			})
+			.post(
+				'/:id/comments',
+				async ({ params, body, erp, status }) =>
+					status(201, created(await service.addComment(await context(erp), id(params), ticketCommentSchema.parse(body)))),
+				{
+					erp: { permission: ['service_ticket:update'] },
+					detail: { description: 'Adds an internal note or a reply the customer sees in the portal (ERP-0022)' },
+				},
+			)
 			.post(
 				'',
 				async ({ body, erp, status }) => status(201, created(await service.create(await context(erp), createTicketSchema.parse(body)))),

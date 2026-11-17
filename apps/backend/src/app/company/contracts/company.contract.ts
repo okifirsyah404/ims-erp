@@ -87,9 +87,10 @@ export type TInvoiceBankAccount = NonNullable<TInvoiceBankAccounts['vat']>;
 /** What clients get; `bankAccounts` is `null` for callers without access. */
 export type TCompanyProfileView = Omit<TCompanyProfileInput, 'bankAccounts'> & {
 	bankAccounts: TInvoiceBankAccounts | null;
-	/** Short-lived inline URLs of the letterhead logo and the signature image. */
+	/** Short-lived inline URLs of the letterhead logo, signature and onboarding image. */
 	logoUrl: string | null;
 	signatureUrl: string | null;
+	onboardingUrl: string | null;
 };
 
 /**
@@ -101,14 +102,26 @@ export type TCompanyProfileView = Omit<TCompanyProfileInput, 'bankAccounts'> & {
  */
 export type TCompanyProfileSnapshot = Omit<
 	TCompanyProfileView,
-	'bankAccounts' | 'logoUrl' | 'signatureUrl'
+	'bankAccounts' | 'logoUrl' | 'signatureUrl' | 'onboardingUrl'
 > & {
 	logoObjectKey: string | null;
 	signatureObjectKey: string | null;
+	onboardingObjectKey: string | null;
 };
 
-/** Images on the profile: the letterhead logo and the signature with stamp. */
-export type TCompanyImageKind = 'logo' | 'signature';
+/** Images on the profile: the letterhead logo, signature and onboarding image. */
+export type TCompanyImageKind = 'logo' | 'signature' | 'onboarding';
+
+/**
+ * Public branding for unauthenticated surfaces (the login page). Only the
+ * display name and the onboarding image URL — no legal, tax or contact data.
+ */
+export type TCompanyBranding = {
+	/** `tradingName ?? legalName`, or `null` before the profile was first saved. */
+	name: string | null;
+	/** Short-lived inline URL of the onboarding image; `null` when absent. */
+	onboardingUrl: string | null;
+};
 
 /** Must match the `settings_value_type_check` constraint in `company.settings`. */
 export const COMPANY_SETTING_VALUE_TYPES = ['string', 'number', 'boolean', 'json', 'date'] as const;

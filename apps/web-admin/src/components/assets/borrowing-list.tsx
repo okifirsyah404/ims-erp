@@ -19,7 +19,13 @@ import {
 	type TBorrowing,
 	type TBorrowingStatus,
 } from '@/lib/borrowing-api';
+import { ItemThumb } from '@/components/item-thumb';
+import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
+import { useClampPage } from '@/lib/use-clamp-page';
+
+/** Rows per page: 24 keeps a full-height page without endless scrolling. */
+const PAGE_SIZE = 24;
 
 /**
  * Badge emphasis per status.
@@ -61,12 +67,21 @@ type TListAction = 'approve' | 'reject' | 'issue' | 'cancel' | 'close';
  * *this* caller may skip it, and a caller who may not gets a 422 with an
  * explanation rather than a hidden button.
  */
-export function BorrowingList() {
+export function BorrowingList({
+	page,
+	onPageChange,
+}: {
+	/** Current page, owned by the route's `page` search param. */
+	page: number;
+	onPageChange: (page: number) => void;
+}) {
 	const { t } = useTranslation(['assets', 'common']);
 	const queryClient = useQueryClient();
-	const { data, isPending, isError, error } = useQuery(
-		borrowingsQueryOptions({ limit: 100 }),
-	);
+	const { data, isPending, isError, error } = useQuery({
+		...borrowingsQueryOptions({ page, limit: PAGE_SIZE }),
+		// Keeps the current page visible while the next one loads.
+		placeholderData: (previous) => previous,
+	});
 
 	const transition = useMutation({
 		mutationFn: ({ id, action }: { id: string; action: TListAction }) =>
@@ -97,6 +112,12 @@ export function BorrowingList() {
 			toast.error(mutationError.message);
 		},
 	});
+
+	// A shrinking result set must not leave the list on a page that no longer
+	// exists.
+	const pagination = data?.pagination;
+	useClampPage(page, pagination?.totalPages, onPageChange);
+	const effectivePage = Math.min(page, pagination?.totalPages ?? page);
 
 	if (isPending) {
 		return (
@@ -172,6 +193,12 @@ export function BorrowingList() {
 						</TableBody>
 					</Table>
 				)}
+
+				<PaginationControls
+					page={effectivePage}
+					totalPages={pagination?.totalPages ?? 1}
+					onPageChange={onPageChange}
+				/>
 			</CardContent>
 		</Card>
 	);
@@ -206,14 +233,17 @@ function BorrowingRow({
 
 	return (
 		<TableRow>
-			<TableCell className='font-mono text-xs'>
-				<Link
-					to='/assets/borrowings/$borrowingId'
-					params={{ borrowingId: row.id }}
-					className='underline-offset-4 hover:underline'
-				>
-					{row.code}
-				</Link>
+			<TableCell>
+				<div className='flex items-center gap-2'>
+					<ItemThumb src={row.imageUrl} name={row.code} />
+					<Link
+						to='/assets/borrowings/$borrowingId'
+						params={{ borrowingId: row.id }}
+						className='font-mono text-xs underline-offset-4 hover:underline'
+					>
+						{row.code}
+					</Link>
+				</div>
 			</TableCell>
 			<TableCell>{borrower}</TableCell>
 			<TableCell className='text-xs text-muted-foreground'>

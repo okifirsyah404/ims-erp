@@ -78,7 +78,8 @@ export const warrantyCertificates = aftersalesSchema.table(
 export const TICKET_STATUSES = ['new', 'in_progress', 'resolved', 'closed'] as const;
 export type TicketStatus = (typeof TICKET_STATUSES)[number];
 
-export const TICKET_CHANNELS = ['phone', 'whatsapp', 'email', 'web', 'onsite', 'other'] as const;
+/** `portal` = opened (or confirmed) by the customer in the customer portal (ERP-0022). */
+export const TICKET_CHANNELS = ['phone', 'whatsapp', 'email', 'web', 'onsite', 'portal', 'other'] as const;
 export type TicketChannel = (typeof TICKET_CHANNELS)[number];
 
 /**
@@ -133,15 +134,56 @@ export const serviceTickets = aftersalesSchema.table(
 		index('service_tickets_status_idx').on(table.status),
 		index('service_tickets_serial_number_idx').on(table.serialNumber),
 		check('service_tickets_status_check', sql`${table.status} IN ('new', 'in_progress', 'resolved', 'closed')`),
-		check('service_tickets_channel_check', sql`${table.channel} IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'other')`),
+		check('service_tickets_channel_check', sql`${table.channel} IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'portal', 'other')`),
 		check(
 			'service_tickets_confirmation_channel_check',
-			sql`${table.confirmationChannel} IS NULL OR ${table.confirmationChannel} IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'other')`,
+			sql`${table.confirmationChannel} IS NULL OR ${table.confirmationChannel} IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'portal', 'other')`,
 		),
 		check('service_tickets_service_cost_check', sql`${table.serviceCost} >= 0`),
 	],
 );
 
+/* ------------------------------------------------------------------------ *
+ * aftersales.service_ticket_comments
+ * ------------------------------------------------------------------------ */
+
+export const COMMENT_VISIBILITIES = ['internal', 'customer'] as const;
+export type CommentVisibility = (typeof COMMENT_VISIBILITIES)[number];
+export const COMMENT_AUTHOR_TYPES = ['staff', 'customer'] as const;
+export type CommentAuthorType = (typeof COMMENT_AUTHOR_TYPES)[number];
+
+/**
+ * Message thread of a service ticket (ERP-0022). Staff write internal notes
+ * or customer-visible replies; the customer writes from the portal, always
+ * customer-visible. Only `visibility = 'customer'` rows reach the portal.
+ */
+export const serviceTicketComments = aftersalesSchema.table(
+	'service_ticket_comments',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		serviceTicketId: uuid('service_ticket_id')
+			.notNull()
+			.references(() => serviceTickets.id, { onDelete: 'cascade' }),
+		authorType: text('author_type').$type<CommentAuthorType>().notNull().default('staff'),
+		/** Logical reference to auth.users.id (staff, or the customer's portal login). */
+		authorUserId: text('author_user_id'),
+		authorName: varchar('author_name', { length: 200 }).notNull(),
+		body: text('body').notNull(),
+		visibility: text('visibility').$type<CommentVisibility>().notNull().default('internal'),
+		...timestamps,
+	},
+	(table) => [
+		index('service_ticket_comments_ticket_created_idx').on(table.serviceTicketId, table.createdAt),
+		check('service_ticket_comments_visibility_check', sql`${table.visibility} IN ('internal', 'customer')`),
+		check('service_ticket_comments_author_type_check', sql`${table.authorType} IN ('staff', 'customer')`),
+		check('service_ticket_comments_customer_visible_check', sql`${table.authorType} = 'staff' OR ${table.visibility} = 'customer'`),
+	],
+);
+
+export type TServiceTicketCommentInsert = typeof serviceTicketComments.$inferInsert;
+export type TServiceTicketCommentSelect = typeof serviceTicketComments.$inferSelect;
 export type TWarrantyCertificateInsert = typeof warrantyCertificates.$inferInsert;
 export type TWarrantyCertificateSelect = typeof warrantyCertificates.$inferSelect;
 export type TServiceTicketInsert = typeof serviceTickets.$inferInsert;

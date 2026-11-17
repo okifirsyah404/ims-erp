@@ -64,6 +64,66 @@ The updated `fix/m02-invoice-billing` (now on main with M04) went into
   web-admin 100; locales 94. The gateway e2e was not re-run: the Docker
   engine is down on this machine.
 
+## 2026-11-18 - PR #99 merged main (PR #98 merged) in; docs conflicts resolved
+
+`origin/main` (`09a503ce`, after PR #98) merged into `feat/m02-payment-gateway`.
+All five conflicts were documentation; no code conflict (the gateway service,
+adapters, migration and invoice contract auto-merged).
+
+- `docs/architecture/README.md`: ADR index keeps ADR-0021 as a link row
+  (`proposed`) and adds ADR-0022 (customer portal, main). The duplicate
+  `reserved` placeholder row from main is dropped; both ADR files exist.
+- `docs/database/logical-references.md`: generated file — resolved by taking
+  main's side and re-running `bun docs/database/gen-logical-references.ts`
+  (538 refs across 41 targets, 240 intra-module).
+- `docs/plan/backlog.md`: the duplicate ERP-0019 / ERP-0020 rows were merged
+  into one row each. ERP-0019 keeps main's licensing-docs note, corrected:
+  the docs now live in `docs/architecture/modules/licensing-integration.md` +
+  `docs/architecture/api/licensing.yaml` (Zudoku was removed by PR #97 /
+  #100). ERP-0020 keeps this branch's `in-progress` evidence, not main's
+  `planned`.
+- `docs/plan/plans/features.md`: M02 planned/in-progress sections merged —
+  gateway work listed under `in-progress`, remaining gaps (reconciliation,
+  document renderer, external signers, PDF from HTML) under `planned`.
+- `docs/plan/progress.md`: both sides kept.
+- Verified (2026-11-18, repo root): `bun install --frozen-lockfile` no
+  changes; `bun run typecheck` 4/4; `bun run lint` 5/5, 0 errors;
+  `bun run test` backend 1209 / web-admin 119 / locales 98 / react-email 6,
+  0 fail; `bun run build` 3/3; `bun docs/database/validate-dbml.ts` OK
+  (538 refs, 0 cross-module, drizzle parity drift 0).
+- Not verified here: gateway API e2e on a live server (Docker state on this
+  machine), provider sandbox (no account), PR #99 checks after push.
+
+## 2026-11-17 - PR #98 merged main (PR #97 state) in; conflicts resolved
+
+`origin/main` (`73b2a920`, after PR #97) merged into `fix/m02-invoice-billing`.
+Four conflicts, resolved as follows:
+
+- `invoice.repository.ts`: imports merged (both `TInvoiceListFilters` and
+  `TInvoiceSummary`). `hasLiveInvoices` keeps the branch semantics — `void`
+  **and** `cancelled` invoices do not lock the order (the fix's own point);
+  `summary()` from main kept.
+- `invoice.controller.ts`: all invoice routes coexist — `/invoices/summary`
+  (main, M01 dashboard) and `/invoices/orders/:orderId/summary` +
+  `/invoices/:id/void` (branch). `/invoices/:id` keeps the branch handler
+  (billing detail + items). `/invoices/summary` is declared **before**
+  `/invoices/:id` so it is not swallowed by the id route.
+- `invoice.contract.ts`: both sides' schemas/types kept.
+- `docs/plan/progress.md`: both sides kept (branch entry above, main entry
+  below), plus this entry.
+- New `test/unit/invoice-has-live.test.ts` pins the `cancelled` exclusion in
+  `hasLiveInvoices` (2 tests, mocked Drizzle chain).
+- Fixed `test/authorization/dashboard-aggregates.test.ts`: the merged
+  controller also resolves `INVOICE_BILLING_SERVICE_TOKEN` at plugin build
+  time; registered an empty stub there.
+- Verified (2026-11-17, repo root): `bun run typecheck` 4/4; `bun run lint`
+  5/5, 0 errors; `bun run test` backend 1181 / web-admin 119 / locales 98 /
+  react-email 6, 0 fail; `bun run build` 3/3;
+  `bun docs/database/validate-dbml.ts` OK (drizzle parity drift 0).
+- Not verified here: mutation check of the new test (the mutation attempt
+  could not write the file — locked by another process), Swagger in a
+  browser, PR #98 status checks after push.
+
 ## 2026-11-15 - PR #98 brought onto main again (`aa3a7ad`)
 
 `origin/main` (with the M04 merge) went into `fix/m02-invoice-billing`.
@@ -78,6 +138,887 @@ The updated `fix/m02-invoice-billing` (now on main with M04) went into
   `bun test` 1074 pass, 4 fail (the known `Bun.Image` tests); web-admin
   100; `drizzle-kit check` "Everything's fine". The invoice API e2e was not
   re-run: the Docker engine is down on this machine.
+
+## 2026-11-17 - PR #100 conflict resolved against main (Zudoku removed, licensing docs kept as Markdown)
+
+`main` (`73b2a920`, PR #97 merged) deleted `apps/api-docs/` and
+`api-docs-drift.test.ts`. PR #100 still modified them, so the merge conflicted.
+Resolution:
+
+- Deleted the Zudoku files (take `main`).
+- Kept the licensing content as plain docs, not as a Zudoku site:
+  `docs/architecture/api/licensing.yaml` (OpenAPI for `/licensing/v1`) and
+  `docs/architecture/modules/licensing-integration.md` (own-app integration
+  guide). The API reference itself is `@elysia/openapi` in the backend.
+- `progress.md`: both sides kept (this entry above, PR #97 entry below).
+
+## 2026-11-17 - PR #100 takes the portal branch after its third move onto main
+
+`feat/m07-customer-portal` (`9823619`, PR #97 re-merged with `origin/main`
+`c5f65bd`, portal migration now `20261117130000_erp0022_customer_portal`)
+merged into `docs/m03-licensing-api` without conflicts. The PR's own diff
+against the portal branch is unchanged (api-docs licensing reference and
+guide, `api-docs-drift.test.ts`, plan docs). `docs/database/` reviewed and
+unchanged by this PR.
+
+- `bun install --frozen-lockfile` ok; `bun run --cwd apps/api-docs build`
+  exit 0 (20 routes prerendered).
+- With an official Bun 1.4.4 binary (CI version): `bun run typecheck` 4/4,
+  `bun run lint` exit 0, `bun run test` exit 0 (backend 1160/1160, web-admin
+  119, locales 98, react-email 6); `bun test ./test/unit` 697/697.
+- Backlog unchanged (status moves belong to #97 / #100 as already recorded).
+
+## 2026-11-17 - Zudoku removed; GitGuardian follow-up (feat/m07-customer-portal)
+
+- **Zudoku removed.** `apps/api-docs/` and `apps/backend/test/unit/api-docs-drift.test.ts`
+  deleted. The API reference is `@elysia/openapi` (already mounted in
+  `src/app/app.ts`). `bun.lock` regenerated by `bun install` (zudoku tree gone).
+  `docs/architecture/modules/customer-portal.md` and `runbook.md` updated; old
+  entries in this file left as written.
+- **Main merged in** (`--no-ff`): `main` (`c5f65bdf`) into the feature branch.
+  No textual conflicts. `apps/backend/src/index.ts`, config loader/schema,
+  `.env.example`, `bun.lock` auto-merged.
+- **GitGuardian** (PR #97, head `34938477`): check still FAILURE with 4
+  incidents: 40062720, 40062721, 40063477 (literals in `dc22cdf`, `01c94af`)
+  and 40104776 (flagged on `4fbb73a7`, the fix commit itself: the new
+  `FAKE_PASSWORD_*` constants). All four are test fixtures. Incidents marked
+  false positive in the dashboard by the owner, except where noted in the PR.
+  Git history not rewritten. The check reruns on push.
+- Verified (2026-11-17, repo root):
+  - `bun install`: 1 package removed, lockfile saved.
+  - `bun run typecheck`: 4/4 successful.
+  - `bun run lint`: 5/5 successful, 0 errors (warnings pre-existing).
+  - `bun run test`: backend 1168 pass / 0 fail (86 files).
+- Not verified here: the Swagger page in a browser; PR status checks on GitHub.
+- `docs/database/` reviewed: unchanged by this step.
+
+## 2026-11-17 - PR #97 brought onto main a third time (`c5f65bd`): portal migration moved after ERP-0048/0050
+
+`origin/main` gained ERP-0048 (signature requests, signed PDF), ERP-0050
+(onboarding image) and the reports surface since the last merge. Merged into
+`feat/m07-customer-portal` so the PR merges cleanly again.
+
+- **Conflicts:** `docs/plan/progress.md` (both sides kept, main's newer
+  entries first), `docs/database/logical-references.md` (regenerated with
+  `bun docs/database/gen-logical-references.ts`), `bun.lock` (main's side,
+  then `bun install`; `bun install --frozen-lockfile` -> no changes).
+- **Migration chain repaired:** the portal migration and
+  `20261116112133_erp0048_signature_requests` both had `prevIds` =
+  `122be409…` (a branching chain). The portal migration moved from
+  `20261115090002_erp0022_customer_portal` to
+  `20261117130000_erp0022_customer_portal`, its snapshot `prevIds` set to
+  `dc42424a…` (`20261117120000_erp0050_onboarding_image`). The snapshots
+  are `diff` type and the footprints of the portal migration and the three
+  main migrations do not overlap, so only the parent link changed; the SQL
+  is unchanged.
+- `docs/database/`: `docs.dbml` auto-merged; `validate-dbml.ts` -> OK (277
+  tables / 238 refs, 0 cross-module, 0 timestamp gaps, 0 Drizzle drift).
+- `bun run typecheck` 4/4; `bun run --cwd apps/backend lint` and
+  `bun run --cwd apps/web-admin lint` exit 0 (warnings only, pre-existing).
+- Tests: web-admin 119/119, locales 98/98, react-email 6/6; backend
+  `bun test ./test/unit` 691 pass / 5 fail — all 5 are `Bun.Image`
+  (`toWebp` x3, `CompanyService images` x2), the known local Bun 1.4.1 on
+  Windows gap (CI runs Bun 1.4.4). Re-run with an official Bun 1.4.4
+  binary (temp folder, global Bun left at 1.4.1): `bun test ./test/unit`
+  696/696; the pre-commit hook (lint, test, build) ran under it.
+- Disposable DB `ims_erp_pr97`: `bun run database/migrate-reset.ts` exit 0
+  (`auth.portal_identities`, `aftersales.service_ticket_comments` and
+  `document.signature_requests` present), second
+  `bun run database/seeders/index.ts` inserted 0 rows,
+  `bunx --bun drizzle-kit check` -> "Everything's fine".
+- Backlog ERP-0022 status unchanged (implemented — stage 1); evidence line
+  updated.
+
+## 2026-11-17 - Dynamic company branding + login onboarding image (user request)
+
+Status: **implemented** (live HTTP + browser verified 2026-11-17). `docs/database/`
+**changed**: one new column `company.profiles.onboarding_object_key`;
+`bun docs/database/validate-dbml.ts` -> OK (277 tables / 237 refs, 0
+cross-module, 0 timestamp gaps, 0 Drizzle drift).
+
+What landed:
+
+- **`docs.dbml` first**, then the Drizzle schema: `company.profiles` gains
+  `onboarding_object_key text` (nullable, WebP like the other profile
+  images). Migration `20261117120000_erp0050_onboarding_image` (single
+  ALTER TABLE, hand written — `drizzle:generate`/`migrate` stay blocked on
+  main), applied via `migrate-reset` twice (idempotent seed, 0 new rows on
+  the second run). The hand-written migration shipped without its
+  `snapshot.json` at first, which made `drizzle-kit check` report schema
+  drift; the real diff snapshot was produced by one throwaway
+  `drizzle-kit generate` (same `ALTER TABLE`, `prevIds` =
+  `9a93dbcf…` from `20261116173810_erp0048_signed_pdf`), moved in, and the
+  probe folder deleted — `drizzle-kit check` now answers
+  `Everything's fine`.
+- **Company module**: `TCompanyImageKind` gains `'onboarding'` (contract,
+  controller `kind` enum, repository `setImage` third branch, service
+  `toView`/snapshot + `onboardingUrl`/`onboardingObjectKey`). New public
+  endpoint `GET /company/branding` (`guards` left at the plugin default
+  `none`, no `erp` macro) returning `{ name, onboardingUrl }` where
+  `name = tradingName ?? legalName`; only non-sensitive fields.
+- **New `ICompanyService.getDisplayName()`** so other modules read the
+  company name through the contract (no `company.*` table access).
+- **Emails**: `mailer.templates.tsx` `appName()` now resolves the company
+  display name via `COMPANY_SERVICE_TOKEN` (repository cache makes it
+  cheap), falling back to `APP_NAME` env, then `'ERP'`. All four templates
+  (verification, reset, app + org invitation) interpolate it.
+- **XLSX**: `recapToXlsx` takes the company profile; `workbook.creator`
+  becomes `tradingName ?? legalName ?? 'IMS ERP'`; the tax controller
+  resolves the snapshot via `COMPANY_SERVICE_TOKEN`.
+- **Web admin**: `login-form.tsx` fetches the public branding — subtitle
+  `t('login.subtitle', { app })`, hero image
+  `src={branding?.onboardingUrl ?? '/hero.png'}`, `alt={name ?? 'Entragate'}`.
+  **Logo + onboarding upload live on `/settings/company`** (an "Images" card
+  under the profile form — this moves the logo off `/settings/documents`,
+  superseding the ERP-0045c placement, now that there are two images to
+  manage); `/settings/documents` holds the document settings card only. The
+  `/settings/documents` nav leaf gains `open: true` — it declares no
+  permission, and ERP-0051's deny-by-default guard redirected it to `/`.
+  Locales: `login.subtitle` interpolated (`{{app}}`) in en + id; new
+  `settings:companyProfile.image.onboarding`; `document.description` no
+  longer mentions the logo.
+- **UI consistency (2026-11-17, user request):** `/settings/company` now
+  uses the `Card` family from `@ims-erp/ui` throughout. The profile form is
+  one `Card` (`CardContent` with two `FieldSet`s, `FieldLegend variant=label`,
+  `FieldSeparator`, Save in `CardFooter`) instead of hand-rolled bordered
+  boxes; the images card is a `Card` with `CardHeader`/`CardContent`.
+  `DocumentImageField` wraps its label/hint in `Field`/`FieldLabel`/
+  `FieldDescription` from `@ims-erp/ui`. Section title "Logo" -> "Images"
+  (en) / "Gambar" (id), since the card holds two images.
+- Fallback chain everywhere: profile name -> `APP_NAME` env -> literal
+  (login image falls back to the bundled `/hero.png`).
+
+Commands and outcomes:
+
+- `bun docs/database/gen-logical-references.ts` -> 536 refs / 41 targets;
+  `bun docs/database/validate-dbml.ts` -> OK (277 / 237).
+- `apps/backend`: `bunx tsc --noEmit` clean; `bun test` -> **1133 pass /
+  0 fail** (84 files), incl. new onboarding/branding service tests.
+- `apps/web-admin`: `bunx tsc -b` clean; `bun test` 119 pass.
+  `packages/locales` 98 pass; `packages/react-email` 5 pass.
+- Root `bun run lint` 0 errors (warnings pre-existing, none in changed
+  files).
+- Live (backend 3001, Vite 5173): `GET /company/branding` unauthenticated
+  -> 200 `{ name: "Entragate", onboardingUrl: null }`; `PUT
+  /company/profile/onboarding` (1x1 PNG, admin session) -> 200 with a
+  presigned MinIO WebP URL; branding then carries it; `DELETE` -> null.
+- Browser: login page subtitle "Login to your Entragate account" /
+  "Masuk ke akun Entragate Anda" (name from the profile, not hardcode);
+  with an image uploaded the `<img>` loads the S3 URL
+  (`naturalWidth: 1`); after delete it falls back to `/hero.png`.
+  Console clean. Follow-up move (same day, user request): the logo and
+  onboarding upload fields relocated to `/settings/company` ("Images" card);
+  `/settings/documents` re-checked in the browser (renders the document
+  settings card only) after giving its nav leaf `open: true` — without it
+  the ERP-0051 deny-by-default guard redirected the page to `/`.
+
+Next executable task: run the queued UAT, or slice 3 (draw the signature on a
+canvas at signing time).
+
+## 2026-11-17 - Signed-PDF placement: signer stamps their signature on an uploaded PDF (ERP-0048 slice 2)
+
+Status: **implemented** (live HTTP + browser verified 2026-11-17; no committed
+e2e). `docs/database/` **changed**: three columns on `document.signatures`, one
+new index, one new `access_logs.action` value;
+`bun docs/database/validate-dbml.ts` -> OK (277 tables / 237 refs, 0
+cross-module, 0 timestamp gaps, 0 Drizzle drift).
+
+Design decisions (grilled 2026-11-17, superseding D13 of the signature plan):
+
+- The PDF must already be one of the document's files; the app never generates
+  a PDF from its own HTML layouts.
+- The signature image is snapshotted onto the evidence row at signing time
+  (`signature_image_key`), so replacing the user image later never rewrites an
+  existing signature.
+- The artifact is its own column (`signed_file_key`), not a `document.files`
+  row, and placement is **final**: a second attempt answers 409.
+- The source PDF is recorded (`source_file_id`) so the artifact stays traceable.
+- Placement is recorded as a new `pdf_sign` access action, not as `print`.
+
+What landed:
+
+- **`docs.dbml` first**, then the generators, then the Drizzle schema:
+  `document.signatures` gains `signature_image_key`, `source_file_id`
+  (indexed), `signed_file_key`; `document.access_logs.action` gains `pdf_sign`.
+  Migration `20261116173810_erp0048_signed_pdf` (ALTER TABLE + CHECK swap),
+  applied via `migrate-reset`; `drizzle-kit check` -> `Everything's fine`.
+- **Backend**: `PUT /documents/signatures/requests/:id/signed-pdf` (multipart
+  `file` + `sourceFileId`, permission `document:signature_sign`) and
+  `GET …/signed-pdf` (presigned 300 s + a `download` row). `sign` now snapshots
+  the image key and the organization. `SignaturePdfInvalidError` (422) and
+  `SignaturePdfStateError` (409) added; the controller's `onError` now carries
+  the real locale key instead of the generic one.
+- **Web admin**: new route
+  `/documents/signatures/mine/$requestId/place` renders the chosen PDF page with
+  `pdfjs-dist` at a fixed 1.5x scale, overlays the signature image, and on
+  "Apply" embeds it with `pdf-lib` and uploads the result. The Mine page gained
+  "Place on PDF" (signed, no artifact yet) and "Download signed PDF".
+  `mine.tsx` moved to `mine/index.tsx` so the placement route can be a sibling
+  instead of a child of a leaf route.
+
+Commands and outcomes:
+
+- `bun docs/database/gen-logical-references.ts` -> 536 refs / 41 targets;
+  `bun docs/database/validate-dbml.ts` -> OK (277 / 237).
+- `apps/backend` `bunx tsc --noEmit` clean; `bun test` -> **1132 pass / 0 fail**
+  (84 files): 10 new placement tests in `signature.service.test.ts` (snapshot,
+  final placement, non-PDF source, foreign source, non-PDF upload, race, URL)
+  and 2 new guard tests (403 without `signature_sign`, 401 anonymous).
+- `apps/web-admin` `bunx tsc -b --noEmit` clean, `bun run build` clean,
+  `bun test` 119 pass; `packages/locales` 98 pass.
+- Root `bun run lint` 0 errors (11 backend + 14 web-admin warnings, all
+  pre-existing), `bun docs/database/validate-dbml.ts` OK.
+
+Live verification (backend 3001 + Vite 5173, `admin` session, org `entragate`):
+
+- API: uploaded a real 1-page A4 PDF to a registry document, requested a
+  signature, signed it, then `PUT …/signed-pdf` -> 200 with
+  `hasSignedPdf: true` and the source file id; a second `PUT` -> 409;
+  `GET …/signed-pdf` -> 200 presigned MinIO URL.
+- Artifact check: the downloaded object is a valid PDF (`%PDF` magic, 1 page,
+  595x842) and grew 872 -> 2089 bytes with exactly one image XObject, i.e. the
+  signature really is embedded.
+- Database: `document.signatures` shows `signed_file_key`, `source_file_id` and
+  `signature_image_key` all set on the placed row; `document.access_logs` holds
+  `pdf_sign` rows.
+- Browser: the placement page renders the PDF canvas (892x1263 at 1.5x, 3306
+  dark pixels of real text), the overlay image sits at the configured
+  position, "Apply" writes the artifact (PUT 200), and the Mine page then shows
+  "Download signed PDF" (GET 200).
+
+Three defects found by the live run and fixed in the same change:
+
+1. The route was mounted at `/:id/signed-pdf` while the client called
+   `/requests/:id/signed-pdf` -> 404; the service also treated the request id as
+   a document id. Both corrected: the route lives under `/requests/` and the
+   service resolves the request first, then re-checks the signer.
+2. `page.render({ canvas, canvasContext, viewport })` rejects in pdfjs v6 (the
+   context is the deprecated path) and the failure was swallowed -> blank canvas.
+   Now `render({ canvas, viewport })` and render errors surface as a toast.
+3. `canvas.toDataURL` threw "Tainted canvases may not be exported" because the
+   signature image comes from object storage. The export path now fetches the
+   bytes and decodes them into an `ImageBitmap` (untainted), then encodes PNG.
+
+Known limits: the placement page requires the signer to already have a signature
+image (signing without one is still allowed, the placement is simply blocked);
+re-placing is impossible by design; and the artifact is never regenerated, so a
+re-print of the app's own layout does not include the signature.
+
+Next executable task: run the queued UAT, or slice 3 (draw the signature on a
+canvas at signing time).
+
+## 2026-11-16 - Document signature flow: requests, evidence, user image (ERP-0048 / ERP-0049)
+
+Status: **implemented** (live HTTP + browser verified 2026-11-16; no committed
+e2e, so the evidence is the manual walk-through below). Plan:
+`docs/plan/plans/signature-implementation-plan.md` (13 locked decisions).
+`docs/database/` **changed**: two new tables (`document.signature_requests`,
+`document.user_signatures`), three new logical-reference columns and one
+intra-module FK; `bun docs/database/validate-dbml.ts` -> OK (277 tables / 236
+refs, 0 cross-module, 0 timestamp gaps, 0 Drizzle drift).
+
+What landed, in the plan's order:
+
+- **`docs.dbml` first.** `document.signature_requests` (status vocabulary
+  `pending/signed/declined/expired/cancelled`, `requested_by_user_id` +
+  `signer_user_id` as logical references, `signer_name` snapshot, nullable
+  `expires_at`/`responded_at`, partial unique `(document_id, signer_user_id)
+  WHERE status = 'pending' AND deleted_at IS NULL`) and
+  `document.user_signatures` (one live row per user). Then
+  `gen-logical-references.ts` (536 refs / 41 targets) and `validate-dbml.ts`.
+- **Migration** `20261116112133_erp0048_signature_requests` (custom SQL, hand
+  written because `drizzle:generate`/`migrate` stay blocked on main per
+  AGENTS.md). Its `snapshot.json` needed the real `deltas`/`footprints`:
+  a plain `generate --custom` writes an empty diff, so the deltas were produced
+  by one throwaway `drizzle-kit generate` and spliced in, which is what makes
+  `drizzle-kit check` answer `Everything's fine` instead of reporting drift.
+- **Backend** (`apps/backend/src/app/document/`): `contracts/signature.contract.ts`,
+  `contracts/signature.repository.interface.ts`, `repositories/signature.repository.ts`,
+  `services/signature.service.ts`, `errors/signature.errors.ts`,
+  `controllers/signature.controller.ts` (`SignatureController` +
+  `DocumentSignatureController`), two DI tokens, both registered in
+  `container.ts` and mounted in `documentModule()`. Routes: `GET /documents/signatures`,
+  `GET/POST /documents/signatures/requests`, `…/requests/incoming`,
+  `…/requests/outgoing`, `…/requests/:id/{sign,decline,cancel}`,
+  `GET/PUT/DELETE /documents/signatures/my-image`, `POST /documents/signatures/user-images`,
+  `GET /documents/:id/signatures`. Evidence rows are written only by `sign`;
+  expiry is lazy (a past-due pending row reads as `expired`, no job); ownership
+  and state are re-checked in the service, so the guard is the first gate only.
+- **Notifications**: `document.signature_signed` and `document.signature_declined`
+  added to `NOTIFICATION_TEMPLATE_CODES` + the seeder (copy in English, the
+  client localizes) and to the en/id `notifications` bundles;
+  `notification-text.ts` gained both cases.
+- **Web admin**: `lib/signature-api.ts`; the three stub pages replaced
+  (`documents.tsx` register with method filter + pagination, `request.tsx`
+  document picker + member multi-select + expiry days + "requests I sent" with
+  cancel, `mine.tsx` image upload/replace/remove + incoming sign/decline +
+  history) and a Signatures card on `/documents/files/$documentId`. New
+  `signatures` locale namespace (en + id, flat dot-keys) with
+  `i18next.d.ts` augmentation; `routeTree.gen.ts` regenerated by the build.
+
+Commands and outcomes:
+
+- `bun docs/database/gen-logical-references.ts` -> 536 refs / 41 targets;
+  `bun docs/database/validate-dbml.ts` -> OK (277 tables / 236 refs).
+- `apps/backend` `bunx tsc --noEmit` clean; `bun test` -> **1120 pass / 0 fail**
+  (84 files), including the new `test/unit/signature.service.test.ts` (23 tests)
+  and 13 new route-guard tests in `test/authorization/authorization.test.ts`.
+- `bun run database/migrate-reset.ts` against `ims_erp_local` -> migrations +
+  seed complete, run three times with no new rows (idempotent); `drizzle-kit check`
+  -> `Everything's fine`; `psql` confirms both tables, the partial unique
+  indexes and the cascade FK.
+- `apps/web-admin` `bunx tsc -b --noEmit` clean, `bun run build` clean
+  (`routeTree.gen.ts` regenerated), `bun test` 119 pass.
+- `packages/locales` `bun test` 98 pass (parity, no-empty, interpolation sets,
+  dead-key scan with the new `signatures` namespace).
+- Root `bun run lint` 0 errors (10 backend + 12 web-admin pre-existing warnings).
+
+Live verification (backend 3001 + Vite 5173, `admin` session, org `entragate`):
+
+- Created a real registry document (`POST /documents` -> `001/BAST/DEV/XI/2026`),
+  then the full lifecycle over HTTP: create request (200, `pending`), sign with
+  `wet_ink` (200, evidence row + request `signed`), register lists it with
+  `documentCode`/`documentTitle` resolved, decline (`Nominal salah`), re-request
+  after decline (allowed by the partial unique), cancel.
+- Signature image: `PUT my-image` with a real PNG -> 200 and a MinIO WebP;
+  `GET` presigns it (browser renders 512×288); `POST user-images` returns the
+  same URL; `DELETE` soft-deletes and `GET` then answers `null`.
+- Browser: `/documents/signatures/documents` (register row with method badge,
+  timestamp, IP), `/documents/signatures/request` (member picker, outgoing list
+  with Cancelled/Declined/Signed badges), `/documents/signatures/mine` (image
+  card, pending card with Sign/Decline, history incl. the decline reason),
+  `/documents/files/$documentId` (Signatures card: evidence + requests +
+  "Request a signature"), Indonesian locale on all of it, console clean.
+
+Two defects found by the live run and fixed in the same change: the request
+list query joined `document.signatures` without a join (500), and
+`documentCode`/`documentTitle`/`requestedByName` were hardcoded `null` (the UI
+rendered raw UUIDs). Also fixed: `requestedBy` had no `{{name}}` placeholder, so
+the Mine page printed "Requested by ·".
+
+Skipped on purpose (upgrade path in the plan): rendering the user signature
+image into the printed documents (V1.5), external signers via a public token
+link, `certificate_serial`/PKI, ordered signing, reminders, and any PDF library
+- print browser stays the PDF mechanism.
+
+Next executable task: the V1.5 slice (render `imageUrl` into the BAST and
+quotation print components), or the UAT items that were already queued.
+
+## 2026-11-16 - Inventory & asset lists: cards, images, dialog create, URL pagination (ERP-0063)
+
+Status: **implemented** (browser-checked 2026-11-16; multi-page paging still
+unverified because the seeded lists fit one page). `docs/database/` reviewed: no
+table, column, index, constraint, status vocabulary or cross-module link changed
+(`bun docs/database/validate-dbml.ts` -> OK, 275 tables / 235 refs).
+
+Scope, in the order it landed:
+
+- **Backend projections only (no schema change).**
+  `inventory/contracts/item.repository.interface.ts` +
+  `repositories/item.repository.ts`: `findNamesByIds` now returns
+  `{ id, name, imageObjectKey }` instead of `{ id, name }`, so the stock lists
+  can resolve a photo in the same query that resolves the name.
+  `services/item-image.service.ts`: new `urlFor(objectKey)` (the body
+  `withImageUrl` already used), injected into `StockService`;
+  `TStockBalanceWithNames` / `TStockMovementWithNames` gained `imageUrl`.
+  `assets/contracts/borrowing.repository.interface.ts` +
+  `repositories/borrowing.repository.ts`: new `listFirstAssetImages(ids)` (one
+  `borrowing_lines` x `assets` join per page, ordered by line `created_at`), and
+  `BorrowingService.paginate` decorates each row with `imageUrl`
+  (`TBorrowingListItem`).
+- **Card layout + images.** New `apps/web-admin/src/components/item-thumb.tsx`
+  (photo, or a two-letter initials tile) used by both card grids and the three
+  tables. `components/inventory/item-kind-list.tsx` is a card grid
+  (`sm:grid-cols-2 lg:grid-cols-3`) showing the photo, name link, code · sku,
+  category, inactive and tracking badges; `components/assets/asset-register-list.tsx`
+  replaced the `https://picsum.photos/300/200` placeholder with
+  `ItemThumb src={asset.imageUrl}`. `stock-list`, `movement-list` and
+  `borrowing-list` keep their tables and gained a 40px thumb beside the item /
+  borrowing code.
+- **Create in a dialog.** `ItemForm` gained `defaultItemKind` (the kind page
+  pre-selects its own kind) and `compact` (drops the page heading);
+  `AssetForm` gained `onSuccess`, `onCancel` and `compact`. Each of
+  `/inventory/products`, `/inventory/components`, `/inventory/materials` and
+  `/assets/register` now opens the form in a `Dialog` behind `product.create` /
+  `asset.create`. Deleted `routes/_authed/inventory/items/new.tsx` and
+  `routes/_authed/assets/register/new.tsx`, plus the `nav:item.newItem` sidebar
+  entry and its `nav.ts` key in **both** locales (the dead-key scan would fail
+  otherwise). `routeTree.gen.ts` regenerated by `bun run build`.
+- **Pagination.** `page` is a URL search param on all six lists
+  (`validateSearch` + `Route.useSearch()`/`useNavigate()`, house pattern); the
+  page size is a frontend constant `PAGE_SIZE = 24` passed as `limit`, so the
+  address bar carries `page` but never `limit`. Components take `page` /
+  `onPageChange` props (shared `ItemKindList` cannot use one `getRouteApi` id);
+  each query uses `placeholderData: previous` and clamps the rendered page to
+  `totalPages`. The stock `inStockOnly` toggle resets to page 1. Previously every
+  list hardcoded `limit: 100` and had no pager.
+
+Commands and outcomes:
+
+- `apps/backend`: `bunx tsc --noEmit -p tsconfig.json` clean after adding the
+  `urlFor`/`listFirstAssetImages` doubles to
+  `test/authorization/stock-test-doubles.ts` and
+  `test/unit/asset-borrowing.service.test.ts`, and `imageObjectKey` to the
+  `findNamesByIds` double in `test/unit/item.service.test.ts`; `bun test`
+  -> **1084 pass / 0 fail** (83 files).
+- `apps/web-admin`: `bun run build` (`tsc -b && vite build`) clean.
+- Root: `bun run lint` 0 errors (12 pre-existing warnings, none in the touched
+  files); `bun run test` green (web-admin 119 pass - the new `clampPage` cases
+  included - plus `packages/locales` parity/dead-key).
+- `bun docs/database/validate-dbml.ts` -> OK.
+
+Browser-verified 2026-11-16 (in-app browser, Vite 5173 + backend 3001, `admin`
+session): `/inventory/products` renders 12 cards with the initials fallback
+(seeded items carry no photo), code · sku, category and tracking badge, and the
+"New item" dialog opens with Kind pre-selected to `Product`; `/assets/register`
+renders 6 cards with the same fallback, no `picsum` request, and its "Register
+asset" dialog opens; `/inventory/stock` (4 rows), `/inventory/stock/movements`
+(4 rows) and `/assets/borrowings` (3 rows) show the 40px thumb beside the
+item/borrowing code; console clean on all five pages. `?page=9` on a 1-page list
+is rewritten to `?page=1` by `useClampPage` (`lib/use-clamp-page.ts`), which is
+what the manual `Math.min` clamp alone could not do. The pager itself does not
+render because every seeded list fits one page (`PaginationControls` returns
+`null` at `totalPages <= 1`), so a real second page is still unverified.
+
+## 2026-11-16 - Sidebar: Components, Materials and Signatures restored (ERP-0062)
+
+Status: **implemented**. `docs/database/` reviewed: no table, column, index,
+constraint, status vocabulary or cross-module link changed
+(`bun docs/database/validate-dbml.ts` -> OK).
+
+Cause: commit `950a7a3c` (2026-11-14, "filter sidebar and switcher by role and
+permission") switched the sidebar to deny-by-default `leafVisible()`, and the
+three items had no flag, so they silently disappeared while their routes still
+existed.
+
+- `packages/common/src/authorization/erp-permissions.ts`: the `document`
+  statement gains `signature_read`, `signature_request`, `signature_sign`
+  (vocabulary only; ERP-0048/ERP-0049 flows still unbuilt). Every role that
+  already held `document:read` (15 blocks) also gets `signature_read` +
+  `signature_sign`; `signature_request` goes to owner (blanket spread), admin,
+  operations_manager, sales_manager, project_manager, finance and hr. `member`
+  stays without document access.
+- `apps/web-admin/src/components/sidebar/nav-config.ts`: `item.components` and
+  `item.materials` gated on `product.read` (routes were already real
+  `ItemKindList` pages); `item.documentSignatures` / `item.requestSignature` /
+  `item.mySignature` gated on `document.signature_read` / `.signature_request`
+  / `.signature_sign`. No locale change needed (`nav.ts` en+id already carried
+  all three keys).
+- `apps/backend/test/authorization/authorization.test.ts`: new `document
+  signature grants` block - the three actions exist in the catalog, every
+  role holding `document:read` also holds `signature_read` + `signature_sign`,
+  and the `signature_request` holder list is exactly the seven roles above.
+- `docs/architecture/security-and-access.md`: `document` action list and the
+  signature-flow note updated.
+- Commands: `bun run build` in `packages/common` (the backend test resolves
+  `@ims-erp/common` from `dist`), then `bun test test/authorization/authorization.test.ts`
+  in `apps/backend` -> 30 pass / 0 fail. Full gates: backend `bun test`
+  2168 pass / 0 fail, web-admin 115 pass / 0 fail, `tsc -b` clean in both
+  workspaces and in `packages/common`, `bun run lint` 0 errors (200 pre-existing
+  warnings), `bun docs/database/validate-dbml.ts` -> OK (275 tables, 235 refs).
+- Browser-verified 2026-11-16 (in-app browser, Vite 5173 + backend 3001,
+  `admin` session, org `entragate`): sidebar shows `Documents > Files,
+  Signatures` with the three children (Document Signature, Request Signature,
+  My Signature) and `Items > Products, Components, Materials`; the three
+  `has-permission` POSTs for `document.signature_read|_request|_sign` return
+  `success: true`; `/documents/signatures/documents` renders its "Coming soon"
+  stub, `/inventory/components` lists 4 components and `/inventory/materials`
+  lists 4 materials, console clean.
+- **Gotcha worth remembering:** `@ims-erp/common` is consumed from `dist`, and
+  `bun run dev` (bun `--watch`) does not rebuild it or reload it into a running
+  backend. A catalog change therefore needs `bun run build` in
+  `packages/common` **and** a backend restart, otherwise `has-permission`
+  keeps answering `false` for the new actions and the nav item stays hidden
+  even though the source is correct. This is exactly what happened before the
+  browser check above.
+- Skipped on purpose: `templates`, `itemCategories`, `goodsReceipts`,
+  `deliveryNotes`, `downPayments`, `depreciation`, `bast`, `openingBalances`,
+  `documentSettings` stay hidden - they still have no catalog resource.
+
+## 2026-11-15 - Dashboard real data, slice 1: client organization context (ERP-0060)
+
+Plan: `plans/dashboard-real-data.md` (grilled 2026-11-15, 24 locked decisions).
+Slice 1 of 4. `docs/database/` reviewed: no table, column, index, constraint,
+status vocabulary or cross-module link changed.
+
+- `apps/web-admin/src/lib/organization-store.ts` (new): zustand
+  `{ activeOrganizationId, setActive, reset }` plus `getActiveOrganizationId()`
+  and `organizationHeaders()` (`x-organization-id`). No `localStorage`
+  persistence (D5). Follows `lib/realtime/realtime-store.ts`, no `src/stores/`.
+- `apps/web-admin/src/components/organization/organization-context-sync.tsx`
+  (new): mirrors `session.session.activeOrganizationId` into the store, writing
+  only when the value changes, so an optimistic switch is not clobbered (D8).
+  Mounted once in `components/layout/main-layout.tsx`.
+- `apps/web-admin/src/lib/use-active-organization.ts`: same signature, body now
+  reads the store; the "never keeps its own copy" doc-comment was rewritten
+  (D23).
+- `components/sidebar/organization-switcher.tsx`: optimistic switch with
+  rollback + toast on failure (D6), `Check` + `aria-current` on the active
+  organization, `Spinner` + `disabled` while a switch is in flight,
+  `DropdownMenuShortcut` showing the membership role, slug kept as trigger
+  sub-label, and an `Empty` state (title/description/button) instead of a bare
+  button when the user has no internal-role organization (D24).
+- `x-organization-id` is now sent by the API clients the dashboard will use:
+  `finance-api.ts`, `inventory-api.ts`, `invoice-api.ts`, `license-api.ts`,
+  `project-api.ts`, `stock-valuation-api.ts` (D7). Backend already prefers that
+  header over the session value and re-checks membership, so a stale id yields
+  403, never another organization's data.
+- `test/unit/organization-store.test.ts` (new): 5 tests - empty initial state,
+  optimistic value survives a same-value sync, a sync replaces it once the
+  server catches up, headers carry the id, `reset()` clears.
+
+Verification: `apps/web-admin` `bun test` 105 pass / 0 fail (17 files),
+`bunx tsc -b --noEmit` clean, `bunx oxlint` 0 errors (12 pre-existing warnings,
+none in the new files). Repo root `bun run typecheck` 4/4 tasks, `bun run test`
+5/5 tasks (backend 1067, locales 94, react-email 5), `bun run lint` 0 errors.
+
+Not done in slice 1: the switcher/`Empty` copy reuses existing `nav` keys, so no
+new locale keys were needed. No browser walk-through yet - deferred to slice 3,
+when the dashboard actually consumes the store.
+
+## 2026-11-15 - Dashboard real data, slice 2: two read-only aggregate endpoints (ERP-0060)
+
+Plan: `plans/dashboard-real-data.md` (D9, D10, D11, D12). No schema change:
+`docs/database/` reviewed, no table/column/index/constraint/link moved;
+`bun docs/database/validate-dbml.ts` still prints `OK` (275 tables, 0
+cross-module refs, 0 timestamp gaps, 0 parity drift).
+
+**`GET /invoices/summary?from&to&groupBy=month|day`** (module `sales`, guard
+`invoice:read`)
+
+- `invoiceSummaryQuerySchema` (`contracts/invoice.contract.ts`): two Jakarta
+  business dates, `from <= to`, `groupBy` defaults to `month`.
+- `InvoiceRepository.summary` groups on `left(issue_date::text, 7)` (month) or
+  `issue_date::text` (day), sums `grand_total` and counts rows, scoped by
+  organization, `deleted_at is null`, `issue_date` inside the window and
+  `status in (issued, partially_paid, paid)`.
+- `INVOICED_STATUSES` deliberately excludes `overdue`: that state is derived
+  from `due_date` at read time and never stored (`sales.schema.ts`).
+- `utils/invoice-summary.ts` (`periodKeys`, `fillSummary`) zero-fills every
+  period the window touches and recomputes the totals from the buckets, so the
+  6-month chart has a stable shape. Pure, unit-tested.
+- Aggregates are coerced with `Number()` because bun-sql returns
+  `bigint`/`int` results as strings.
+- `GET /invoices/summary` is registered **before** `/invoices/:id`.
+
+**`GET /projects/stats`** (module `projects`, guard `project:read`)
+
+- `ProjectRepository.stats({ involvedUserId, today })`: counts by status, by
+  stage (active only, zero-filled over `PROJECT_STAGES`) and overdue
+  (`status = 'active' and target_end_date < today`), all three in parallel.
+- `ProjectService.stats(ctx)` passes `involvedUserId: ctx.canViewAll ?
+  undefined : ctx.actorUserId` - the **same** visibility rule as `list()`, so
+  the aggregate cannot reveal a project the list would hide (this was the one
+  data-leak risk called out in the plan).
+- `today` comes from `businessDateOf()` (Asia/Jakarta).
+
+**Tests**
+
+- `test/unit/invoice-summary.test.ts` (new, 7 tests): month/day period keys
+  incl. a year boundary, zero-fill + totals, aggregate coercion, and a
+  `mockDb`-based assertion that the query binds the organization, both date
+  bounds and the three invoiced statuses while excluding
+  draft/void/cancelled.
+- `test/unit/project.service.test.ts`: the fake repository gained `stats`, plus
+  one new test proving a technician counts nothing until a task is assigned,
+  then counts exactly that project, and that overdue only counts active
+  projects.
+- `test/authorization/dashboard-aggregates.test.ts` (new, 6 tests): real
+  `erpGuard` + controllers over stubbed services - 401 without a session,
+  `technician` 403 on `/invoices/summary`, `finance` 200 with the guard's
+  organization id, an inverted window rejected with 400, `member` 403 on
+  `/projects/stats`, `technician` 200 there (`project:read`, narrow rows).
+
+**SQL proved against the real local PostgreSQL** (`ims_erp_local`, disposable
+rows inserted under a probe organization and deleted afterwards, probe script
+removed): month buckets `2026-09 = 500000/2` (issued + paid), `2026-10 =
+100000/1` (partially paid; draft and void excluded), `2026-11 = 0` (cancelled
+excluded); an invoice with a null `issue_date` and one from another
+organization never counted; day grouping zero-filled 9 days and found the
+single row; `projects.stats` returned `{active: 2, closed: 1, overdue: 1}`
+(a closed project past its target date is **not** overdue) and all zeros for a
+caller with no involvement.
+
+First run failed with `column "invoices.issue_date" must appear in the GROUP BY
+clause`: PostgreSQL does not treat `to_char(x, $1)` in the select list and
+`to_char(x, $2)` in `GROUP BY` as the same expression. Replaced with the
+parameterless `left(issue_date::text, 7)` / `issue_date::text` form.
+
+Verification: backend `bun test` 1081 pass / 0 fail (83 files), `bunx tsc
+--noEmit` clean, `bunx oxlint` 0 errors (pre-existing warnings only).
+
+Noticed, deliberately not touched: `invoiceListQuerySchema` accepts
+`status=overdue`, but no row is ever stored as `overdue` (derived at read time),
+so that filter can only return an empty list. Pre-existing, outside this
+plan's scope.
+
+Not done in slice 2: the web-admin client for `/invoices/summary` and the
+dashboard rewrite are slice 3.
+
+## 2026-11-15 - Dashboard real data, slice 3: real dashboard, mock removed (ERP-0060)
+
+Plan: `plans/dashboard-real-data.md` (D3, D13, D16–D22). The mock
+(`MOCK_SUMMARY`, `fetchDashboardSummary`) and `dashboard:banner.sampleData` are
+deleted; `/` renders only endpoint data.
+
+**Web admin**
+
+- `lib/dashboard-api.ts` rewritten: local fetchers (`getJson`, `getPage`) send
+  `organizationHeaders()`; every query key is `['dashboard', <domain>,
+  organizationId, …]` (D19) and `enabled` is false without an organization or
+  without the source permission (D16). Sources: `/invoices/summary` (sales card
+  and chart, one request), `/cash-bank/accounts`, `/reports/profit-and-loss`
+  (current month), `/items?limit=1` (count), `/stock/valuation` (`grandTotal`),
+  `/projects/stats`, `/licenses/summary`, `/invoices?limit=5` +
+  `/receipts?limit=5` (activity). `salesWindow` runs from six months back to
+  **today**, not month end, so future-dated invoices never count.
+- `project-api.ts`: `TProjectStats` + `projectStatsQueryOptions`.
+- `components/dashboard/dashboard-page.tsx` rewritten: Refresh invalidates
+  `['dashboard']`; each widget has its own skeleton / unavailable + retry; stock
+  value is withheld (`—`) without `product:read_cost`; profit is labelled
+  provisional; projects show active/closed/overdue and a bar per stage; the
+  activity feed interleaves the five newest invoices and receipts; no
+  organization → an `Empty` state pointing to `/organizations`. Project stage
+  labels reuse `projects:stage.*`.
+- `locales`: `en` + `id` `dashboard` bundle rewritten (sample banner removed,
+  keys only for rendered copy). Parity and dead-key guards green.
+- `test/unit/dashboard-api.test.ts` rewritten (Jakarta month arithmetic, window
+  shape, dashboard root prefix, organization-keyed keys, disabled without
+  organization or permission). The mock tests were retired with the mock.
+
+**Defects found while building (fixed)**
+
+- First typecheck failed: spreading another client's `queryOptions` and
+  `TApiResponse.data` (nullable) broke overload inference. Fixed with typed
+  local fetchers and keys.
+- A `Button render={<Link>}` raised a Base UI `nativeButton` warning. Replaced
+  with a plain `Link` styled as a button.
+
+**Verification**
+
+- `apps/web-admin`: `bun test` 106 pass / 0 fail; `bunx tsc -b --noEmit` clean;
+  `oxlint` 0 errors (12 pre-existing warnings, none in dashboard files).
+- Repo root: `bun run typecheck` 4/4, `bun run test` 5/5 (backend 1081,
+  web-admin 106, locales 94, react-email 5), `bun run lint` 0 errors,
+  `validate-dbml.ts` OK.
+- Browser, local dev stack, `admin@local.com` (owner, Entragate organization):
+  `/` loads; the request log shows `/invoices/summary`, `/invoices`,
+  `/receipts`, `/licenses/summary`, `/items`, `/cash-bank/accounts`,
+  `/reports/profit-and-loss`, `/stock/valuation`, `/projects/stats`, all **200**
+  with `x-organization-id` set. No console errors after reload. Items shows 12;
+  the other figures are zero because the dev database has no sales, finance or
+  project rows (`sales.invoices` 0 rows, `projects` empty).
+
+**Browser checks, same day (verification run)**
+
+- Organization switch: a second organization `Entragate Cabang Dua`
+  (`L4byXUUL27k4PuKhMiF4ONg85Rm8JrmQ`, owner `admin@local.com`) was created
+  through `POST /organizations`. A cash account created in it appeared in the
+  Cash widget only while that organization was active, and the widget went back
+  to empty on switching back. The dashboard reads the active organization, not
+  a stale copy.
+- Single-card degradation: `/projects/stats` was forced to 500 in the page.
+  Only the Projects card showed "This figure is unavailable right now. Try
+  again"; Sales and Inventory kept their figures. Try again refetched the card
+  and it recovered in the same page (the blocked endpoint was still hit twice,
+  as expected).
+- Not run: permission denial in the browser (no seeded non-admin account signs
+  in on this database). Server-side denial is covered by
+  `test/authorization/dashboard-aggregates.test.ts`. The role accounts
+  (`<role>.seed@entragate.local`) returned 401 on sign-in here; the cause was
+  not investigated, so only `admin@local.com` was used.
+- Not captured: screenshot (needs a visible desktop window).
+
+**Found, out of scope, not fixed**
+
+- `POST /cash-bank/accounts` stores `openingBalance` but sets
+  `currentBalance: 0` (`cash-bank.service.ts:113`), so a new account shows Rp 0.
+  Needs a design decision: post the opening balance as a journal, or seed the
+  running balance. Not changed here.
+- There is no DELETE route for cash accounts. The verification account was
+  deactivated with `PATCH isActive:false` and stays on the dev database.
+
+## 2026-11-16 - Dashboard real data, slice 4: docs close-out and backlog renumbering (ERP-0060)
+
+Slice 4 of `plans/dashboard-real-data.md`.
+
+- **ID collision found and fixed.** The plan was drafted as ERP-0055 with a
+  follow-up ERP-0056, but `plans/erp-0051-follow-ups.md` already assigns
+  ERP-0055 (`Plan decision 6 contradicts the shipped Administration section`)
+  and ERP-0056 (`module-ownership.md` schema inventory stale). Those are
+  separate, still-open items. This plan is now **ERP-0060** and the audit
+  activity-feed follow-up is **ERP-0061**; both were renumbered in
+  `backlog.md`, `plans/dashboard-real-data.md`, `plans/features.md` and this
+  file. The ERP-0055/ERP-0056 text still present in `progress.md` around the
+  ERP-0051 follow-up inventory is that other work and was deliberately left
+  alone.
+- `docs/plan/erp-module-plans/m01-dashboard.md`: "Current state" rewritten -
+  no backend `dashboard` module by decision, the source endpoints listed, the
+  deviation from a single `/dashboard/summary` recorded, status `in progress`,
+  and the browser gaps named.
+- `docs/plan/backlog.md`: ERP-0060 row carries the four slices and the
+  remaining checks; ERP-0061 row added for the audit feed.
+- `docs/plan/plans/features.md`: M01 rollup says the Stage-1 widgets are on
+  real data, open quotations stay out, and the audit feed is ERP-0061.
+- `plans/dashboard-real-data.md`: header status, "As built" note on slice 2,
+  and an "Open verification" section.
+- `docs/database/` reviewed: no table, column, index, constraint, status
+  vocabulary or cross-module link changed by any of the four slices.
+  `bun docs/database/validate-dbml.ts` prints `OK`.
+
+No code changed in this slice. Gates re-run 2026-11-16 anyway:
+`bun run test` 5/5 (backend 1081, web-admin 106, locales 94, react-email 5,
+0 failures) and `bun docs/database/validate-dbml.ts` → `OK` (275 tables, 0
+cross-module refs, 0 timestamp gaps, 0 parity drift).
+
+Still open, so ERP-0060 stays `in-progress`: permission denial in the browser
+(no working non-admin account on the dev database) and a screenshot.
+
+## 2026-11-16 - Dashboard auto-update every minute (ERP-0060, revises D18)
+
+Owner request: the dashboard must refresh itself instead of waiting for the
+header button.
+
+- `apps/web-admin/src/lib/dashboard-api.ts`: new `DASHBOARD_REFRESH_MS =
+  60 * 1000`; all nine dashboard queries (sales summary, cash, profit, item
+  count, stock value, projects, subscriptions, recent invoices, recent
+  receipts) now set `staleTime` **and** `refetchInterval` to it. The stale time
+  equals the interval so a remount inside the same minute never double-fetches.
+  `refetchIntervalInBackground` stays false (TanStack default), so a hidden tab
+  stops polling and catches up when focused.
+- `test/unit/dashboard-api.test.ts`: one new test pins `refetchInterval` and
+  `staleTime` to `DASHBOARD_REFRESH_MS` (60 000 ms) on every widget.
+- Plan decision **D18 revised**: it said "no polling (M01: figures computed on
+  page load)"; it now records the one-minute auto-update and why it changed.
+  The Refresh button stays for an immediate update.
+- Removed a stale doc-comment on `salesSummaryQueryOptions` that still described
+  a `select` the rewrite had dropped.
+
+Verification: `apps/web-admin` `bun test test/unit/dashboard-api.test.ts` 11
+pass / 0 fail; `bunx tsc -b --noEmit` clean; repo `bun run test` 5/5.
+
+Browser evidence (same page, no user action): consecutive GETs spaced
+`/invoices/summary` 60 656 ms, `/cash-bank/accounts` 60 229 ms,
+`/projects/stats` 60 080 ms. Polling runs; the tab was visible throughout, and
+a hidden tab stops by design.
+
+## 2026-11-16 - Invoiced-sales chart: first, full width, with a range picker (ERP-0060, revises D13)
+
+Owner request: the invoiced-sales chart leads the page at full width and can be
+read over 14 days, 1/3/6 months, 1/5 years, or a custom date range.
+
+- New `packages/ui/src/components/date-range-picker.tsx`: two-month range
+  popover, same construction as the existing `DatePicker` (Popover + Calendar +
+  Button trigger, `YYYY-MM-DD` in/out, `min`/`max`, year dropdown). `mode="range"`
+  needs care: `react-day-picker` reports `range.from` as the **anchor** and puts
+  the day just clicked in `range.to`, and it reports `to === from` for the first
+  click, so a controlled value cannot tell "one day picked" from "range done".
+  The component therefore keeps a `pendingFrom` and only emits a range on the
+  second click, then closes.
+- `lib/dashboard-api.ts`: `SALES_RANGES`, `salesChartWindow(today, range, custom)`,
+  `addDays`, `daysBetween`, `shiftMonths` (day-clamping, so 31 Mar minus a month
+  is 28 Feb, not 3 Mar). Presets are **rolling** windows ending today. Buckets
+  are daily up to a 31-day span and monthly above it, so 14 days and 1 month
+  show days while 3 months and longer show months. An incomplete or inverted
+  custom range falls back to the 6-month default instead of firing a half-open
+  request. `salesSummaryQueryOptions` now takes the resolved window and keys on
+  `groupBy` too.
+- `components/dashboard/dashboard-page.tsx`: the chart is the first card and
+  spans the grid; a `ToggleGroup` holds the presets, and the `DateRangePicker`
+  appears only for `custom`. The card subtitle shows the resolved window and the
+  window total. The Sales card keeps its own month-bucketed window, since it
+  compares the current month with the previous one.
+- Locales: `chart.range.*` presets, `chart.rangeLabel`, `chart.customPlaceholder`,
+  `chart.invoiced` in `en` + `id`; the `{{months}}` title is gone.
+
+Verification (browser, local stack, after inserting three probe invoices for the
+Entragate organization and deleting them again):
+- Chart is the first card, 977 px inside a 1025 px `main` — full width.
+- Presets resolved as: 14 days `2026-11-03..11-16` `groupBy=day` (Rp 100.000);
+  1 month `2026-10-17..11-16` (Rp 100.000); 3 months `2026-08-17..11-16`
+  (Rp 300.000); 6 months `2026-05-17..11-16` (Rp 300.000); 1 year
+  `2025-11-17..11-16` (Rp 300.000); 5 years `2021-11-17..11-16` (Rp 600.000,
+  catching the June 2024 invoice). Non-zero bars matched each total.
+- Custom range: picking 1 Nov then 15 Nov produced `2026-11-01..11-15`
+  `groupBy=day`, closed the popover, and issued exactly one request.
+- A single day shows `Nov 1, 2026 – …` while the second date is pending.
+
+Gates: repo `bun run test` 5/5 (backend 1081, web-admin 115, locales 94,
+react-email 5), `bun run typecheck` 4/4, `bun run lint` 0 errors.
+`docs/database/` reviewed: no schema change.
+
+**Follow-up the same day: "Custom" opens the calendar directly.** The picker's
+own input button is gone from this screen; clicking the Custom preset shows the
+two-month calendar straight away.
+
+- `packages/ui/src/components/popover.tsx`: `PopoverContent` forwards `anchor`
+  to the positioner, so a popover can hang off an element that is not its
+  trigger.
+- `date-range-picker.tsx`: new `showTrigger`, `anchor`, `open`, `onOpenChange`.
+  With `showTrigger={false}` no button renders and the caller drives `open`.
+  Closing is now the **controlled caller's** job: the internal close was removed
+  for the controlled case because calling it inside the popover's own select
+  handler raced with Base UI and left the calendar open.
+- `dashboard-page.tsx`: the toggle group is the popover anchor; picking Custom
+  (or clicking it again while active) sets `customOpen`, and `onChange` closes
+  once both ends exist. The card subtitle reads "Pick a date range" until the
+  range is complete.
+
+Verified in the browser: Custom opens two calendars with no input button
+(`hasInputButton: false`), picking 1 → 15 Nov closes it and shows
+`2026-11-01 to 2026-11-15`, clicking Custom again reopens with the range
+selected, Escape dismisses, and switching to a preset leaves it closed.
+
+## 2026-11-15 - PR #97 brought onto main again (`aa3a7ad`): ADR-0022, migration after M04
+
+`origin/main` moved on after this morning's merge: the M04 merge (#84), the
+web-admin shadcn work (#105) and the reports surface (#106). It was merged
+into `feat/m07-customer-portal`.
+
+- **ADR clash again.** The M04 outbox record took **ADR-0020** on its merge,
+  while this branch's reservation (README index) was not on main yet. All
+  branches were checked: the highest number in use is ADR-0021 (payment
+  gateway, PR #99). The customer portal record is now **ADR-0022**: the file
+  was renamed and only the portal's references changed (README index,
+  `modules/customer-portal.md`, `data-model.md`, `docs.dbml` note,
+  `website.yaml`, the `session.auth.ts` comments, backlog ERP-0022,
+  features, and this branch's portal entries). The M04 references to
+  ADR-0020 are untouched.
+- **Migration regenerated after M04's.** `20261114182159_erp0022_customer_portal`
+  sat on the same parent snapshot as main's
+  `20261115090000_m04_catalog_automation_schemas`; a later `generate` would
+  have re-created the portal tables. It was removed and generated again:
+  `20261115090002_erp0022_customer_portal`, the same DDL (the two tables and
+  the ticket channel checks). `drizzle-kit check`: "Everything's fine".
+- **Code conflicts.**
+  - `service-ticket.service.ts`: main's `this.changed(ticket, 'created')`
+    (ticket events) is kept.
+  - `index.ts`: the imports are combined (licensing due worker, catalog,
+    automation, portal).
+  - The ticket pages keep main's shadcn `Select` with this branch's
+    `STAFF_TICKET_CHANNELS` (staff cannot pick `portal`).
+  - The dead-key prefixes of both sides are kept.
+  - `customer-portal.test.ts` passes the new outbox argument of
+    `ServiceTicketService`.
+- **Docs.** The user guide puts M04 at 8.7 and the portal at 8.8. Backlog
+  rows: ERP-0021 and ERP-0039 from main, ERP-0022 from this branch.
+  `logical-references.md` was regenerated; `validate-dbml.ts` prints OK.
+
+**Verification**
+- `bun run typecheck`: 4/4. `bun run lint`: 0 errors.
+- Backend `bun test`: 1089 pass, 4 fail (the known `Bun.Image` tests).
+  Portal + ticket suites: 28. web-admin 100; locales 94; API-docs drift 2/2.
+  `apps/api-docs` build: 16 routes.
+- **Not run:** the regenerated migration was not applied to a disposable
+  database, and the portal e2e was not re-run. Docker Desktop's engine is down
+  on this machine (`dockerDesktopLinuxEngine` pipe missing, Redis closed).
+  Both are to be repeated when Docker is back.
+- **Done later the same day (Docker back).** Disposable DB `ims_erp_v97`:
+  `drizzle:migrate` on a fresh DB applied the regenerated migration,
+  `drizzle-kit check` "Everything's fine", seed run twice. Backend on
+  `APP_PORT=3010` with `PORTAL_URL` set: the portal e2e (signup code,
+  invitation claim, sign-in gate, contacts, tickets and thread, staff
+  replies) passed **50/50**.
 
 ## 2026-11-15 - M12 T30: statement CSV exports + monthly report archive (branch `feat/reports-surface`)
 
@@ -1122,6 +2063,428 @@ Opened as **PR #98** to `main` for programmer A's review.
 - An **open accounting period** is required, but `POST /periods` demands
   `accounting_period:create`, which is not in the permission catalog — no role
   can open a period through the API (the test DB got its period by SQL).
+
+
+## 2026-11-14 - M03 license API docs for own applications (Zudoku)
+
+Owner: M03 means license codes the ERP generates so each own application
+(gym, e-ticketing, visitor, …) can be activated. The API itself exists on
+`main` since 2026-11-06 (ERP-0019 stage 2). This change adds the
+documentation application teams need. Branch `docs/m03-licensing-api`,
+stacked on `feat/m07-customer-portal` as **PR #100**, because `apps/api-docs` lives in
+PR #97.
+
+- `apps/api-docs/openapi/licensing.yaml`: `validate` / `activate` /
+  `deactivate`, the `elk_` bearer, 120 calls a minute, the envelope, the
+  status vocabulary (`ok`, `grace`, `expired`, `not_started`, `suspended`,
+  `terminated`, `revoked`, `unknown`, `not_activated`) and the refusal codes
+  (404 / 403 / 409). Everything is taken from `license-api.service.ts`,
+  `licensing.errors.ts` and `utils/license.ts`.
+- `pages/licensing-integration.md`: what the ERP does (application, contract,
+  API key, activations log) and what the app does (activate at setup,
+  validate on start-up and every few hours, deactivate on uninstall). It also
+  covers a stable `instanceId`, offline caching up to `graceEndsOn`, the
+  grace period, the rate limit and secrets, with TypeScript and curl
+  examples.
+- `zudoku.config.tsx`: a second API (`/licensing-api`) and an "Own
+  applications" navigation group. The introduction links the guide.
+- `api-docs-drift.test.ts`: also checks `/licensing/v1` against
+  `LicenseApiController`, and requires an operationId and a summary in both
+  specs.
+- `licensing-subscription.md`: the envelope was described as
+  `{ success, message, data }` and is now corrected. The doc links the
+  Zudoku pages.
+- No code behaviour, schema or locale changed. `docs/database/` was
+  reviewed and is unchanged.
+
+**Verification**
+- Drift test: `bun test test/unit/api-docs-drift.test.ts` passes 3/3.
+  Renaming a documented path makes it fail (2 pass / 1 fail); after the
+  revert it passes 3/3 again.
+- `bunx tsc --noEmit` (apps/backend): clean.
+- `bun run build` (apps/api-docs): 20 routes prerendered, including
+  `licensing-api` and `licensing-integration`.
+- Browser (Playwright, the static `dist` served by request interception):
+  both pages render, with no page errors.
+## 2026-11-15 - PR #97: GitGuardian findings in a unit test (no real secret)
+
+GitGuardian reported 8 "Generic Password" occurrences on PR #97, all in
+`apps/backend/test/unit/customer-portal.test.ts` (commits `dc22cdf`,
+`01c94af`). They were fake fixture passwords of the in-memory test doubles;
+no real credential was involved.
+
+- The 4 password literals are now `FAKE_PASSWORD_1..4`, generated per run
+  with `crypto.randomUUID()`, so the source holds no credential-like
+  strings.
+- The findings stay in the earlier commits. Programmer A, as the
+  GitGuardian workspace owner, should mark incidents 40062720, 40062721 and
+  40063477 as false positives (test credentials).
+- `bun test test/unit/customer-portal.test.ts`: 24 pass. `tsc --noEmit`
+  (apps/backend): clean. No code behaviour changed; `docs/database/` was
+  reviewed and is unchanged.
+
+## 2026-11-15 - ERP-0022 (PR #97) brought onto main: ADR-0020, regenerated migration, login-gate portal exception
+
+`origin/main` (`41e3a96`) merged into `feat/m07-customer-portal`. Main had
+taken ADR-0018 (investor/customer app roles, login gate) and ADR-0019
+(squashed per-schema migration baseline) in parallel (PR #101).
+
+- **ADR renumbered.** The customer portal record is now **ADR-0020**
+  (`git mv`). Only the portal's references changed: the ADR, the
+  architecture README index, `modules/customer-portal.md`, `data-model.md`,
+  the `docs.dbml` note, `website.yaml`, backlog ERP-0022, features, and this
+  branch's own progress entries. Main's ADR-0018 references are untouched.
+- **Numbering rule.** The ADR index now reserves ADR-0021 for the payment
+  gateway (PR #99) and records the rule: check main, every remote branch and
+  the open PRs before taking an ADR or ERP number.
+- **Migration regenerated.** The two hand-written folders
+  (`20261114100000` / `20261114110000`, no snapshots) were removed, and
+  `bun run drizzle:generate` produced
+  `20261114182159_erp0022_customer_portal`. It is the same DDL:
+  `auth.portal_identities` with `contact_id` / `portal_role`,
+  `aftersales.service_ticket_comments`, and the `portal` ticket channel
+  checks.
+- **Login gate.** Main's `session.create.before` rejects users without an
+  internal organization role, which would also have rejected the portal's
+  own sign-in. Main's version is kept, plus one exception
+  (`isPortalSignIn`): the request carries the portal module's nonce **and**
+  the user holds an active portal identity. Such a session gets no
+  organization, and the gate keeps refusing it on every web-admin route. The
+  old "portal user without the nonce → false" branch is gone: the gate
+  covers it.
+- **Other merges.**
+  - `http/plugin.ts`: guard sets `session+warehouse` (main) and `portal`
+    (this branch).
+  - User guide: the portal section is now 8.7, after main's 8.6 (M08).
+  - `logical-references.md`: regenerated.
+
+**Verification**
+- `bun docs/database/gen-logical-references.ts` and `validate-dbml.ts`: OK
+  (272 tables, 0 cross-module refs, 0 timestamp gaps).
+- Fresh disposable `ims_erp_portal2`: `drizzle:migrate` applied the 20
+  folders; `drizzle-kit check` printed "Everything's fine"; the development
+  seed ran (after rebuilding `packages/common`).
+- `bun run typecheck`: 4/4 clean. Backend `bun test`: 1043 pass, 4 fail (the
+  known `Bun.Image` tests, Bun 1.4.1 here). Locales 90; web-admin 100.
+- Portal API e2e: **50/50** on `ims_erp_portal2`, including staff sign-in
+  through the gate and "a customer login on the web-admin sign-in is
+  refused". The backend ran with `PORTAL_URL` set: invitations need it, and
+  the first run returned 503 without it.
+
+## 2026-11-14 - PR #97 opened for the customer portal
+
+`feat/m07-customer-portal` merged with `origin/main` (`a997778`, conflict
+only in this file, both sides kept), re-verified (`tsc` clean; backend 947
+pass / 4 pre-existing `Bun.Image` fails; web-admin 97; locales 90) and opened
+as **PR #97** to `main` for programmer A's review. Owner direction recorded
+for the next work: portal ordering with an ERP check, a provider-neutral
+payment gateway (Xendit / SingaPay), payroll rules left to programmer A, M03 =
+activation keys for the company's own apps.
+
+## 2026-11-14 - API reference with Zudoku (`apps/api-docs`) for the website and portal API
+
+Owner asked what the ERP gained for the portal (answered in the session: the
+portal branch's DB, modules, security, web admin and docs) and for readable
+API docs with https://zudoku.dev. Owner choices: a new workspace
+`apps/api-docs` in this repo; scope = what the website uses (`/portal/v1`
+and `/public/v1`), not the ~400 internal web-admin routes.
+
+Why a curated spec: the ERP's generated `/docs/json` lists the routes (406,
+22 portal) but has no request or response schemas, because the controllers
+validate with zod inside the handlers — Zudoku would render empty pages.
+
+Built (branch `feat/m07-customer-portal`):
+- `apps/api-docs/openapi/website.yaml` — OpenAPI 3.1, 26 operations
+  (23 portal incl. `/me` and ticket `confirm`, 3 public website), envelope and
+  error schemas, `portalBearer` / `websiteApiKey` security, the portal view
+  shapes (from `portal-presenter.ts`), limits and examples.
+- `apps/api-docs` (Zudoku 0.93.2, React 19): `zudoku.config.tsx`, guide pages
+  `introduction`, `authentication`, `conventions`, `website-setup`;
+  `dev` on port 3100 (3000 is the backend).
+- Drift guard `apps/backend/test/unit/api-docs-drift.test.ts`: builds the
+  portal and public-website controllers (services faked) and compares their
+  mounted routes with the spec; every operation needs an `operationId` and a
+  summary. Negative check done: renaming `/portal/v1/badges` in the spec made
+  the test fail; restored.
+- Corrections found while writing it: the envelope is `{ requestId, status,
+  message, timestamp, data }` (+ `errors`), not `{ success, message, data }`
+  as written earlier in `modules/customer-portal.md`, the gap analysis and the
+  website's `erp-routes.ts` comment — fixed; the default response language
+  without `Accept-Language` is English (`DEFAULT_LANGUAGE = 'en'`).
+
+Verification: `bun install` (375 packages; `bun.lock` updated for zudoku);
+drift test 2 pass; YAML validated (PyYAML and `Bun.YAML`); `bun run build`
+in `apps/api-docs` → built, prerendered 16 routes; `bun run dev` → `/introduction`,
+`/api`, `/api/portal-support` 200, screenshots checked (guide page, endpoint
+page with schema, example response and cURL). The catalog API (`/public/v1/
+catalog/*`) is added to the spec once PR #84 lands. Runbook command row added.
+
+## 2026-11-14 - Customer portal: every screen checked, stage-2 screens show "Coming soon"
+
+Owner reported `PortalNotConfiguredError … "listQuotations"` and asked to check
+the whole portal. A crawler (Playwright, signed in as the test individual)
+opened all 37 portal screens plus fake-id detail URLs: 8 answered 500 —
+orders, tracking, payments, quotations, book service, documents,
+notifications, wishlist — because their data comes only from stage-2
+operations. Astro renders page errors as a 500 response (they never reach the
+middleware), so the website now checks before rendering.
+
+Website repo (working tree, still uncommitted there):
+- `src/pages/coming-soon.astro` (signed-in layout, "Coming soon", back to home
+  / contact support);
+- `src/middleware.ts` `SCREEN_OPERATIONS`: a screen whose operations are not
+  in `erp-routes.ts` is rewritten to `/coming-soon`;
+  `src/services/portal/index.ts` `isConnected(operation)` (always true in
+  demo mode);
+- `src/pages/search.astro`: orders/quotations/invoices empty when not
+  connected (`unlessNotConnected`).
+
+ERP: a malformed id on a portal route answered 400, which the portal shows as
+an error page; now 404 (`PortalNotFoundError`, `common.notFound`), which the
+portal shows as "We couldn't find that". `tsc` clean;
+`customer-portal.test.ts` 24 pass.
+
+Re-crawl after restarting both dev servers: all 37 screens 200 (the 8 stage-2
+screens show "Coming soon", screenshot checked); `/projects/x`,
+`/warranty/x`, `/support/x`, `/sites/x` → 404 page; a real ticket detail
+200. Form actions that need unconnected operations already answer "This
+feature isn't connected yet" (unchanged).
+
+## 2026-11-14 - ERP-0022 website portal wired to the ERP and tried in a browser
+
+Owner: "lanjut menyambungkan router di repo website dulu agar bisa dicoba
+langsung". Website repo `entragate-platform` (its `master` has no commits
+yet, so nothing was committed there; changes are in its working tree):
+- `apps/customer/src/services/portal/erp-routes.ts`: the 21 built operations
+  (`refreshSession` left out on purpose: 7-day Better Auth sessions, no
+  refresh token; stage-2 operations left out).
+- `apps/customer/.env.example`: `ERP_RESPONSE_ENVELOPE=data`; a local
+  gitignored `.env` (`ERP_API_BASE_URL=http://localhost:3000`,
+  `PORTAL_DATA_SOURCE=erp`).
+- `apps/customer/src/services/errors.ts` `unlessNotConnected`; home
+  (orders, invoices, quotations) and profile (counters) use it — before, both
+  pages answered 500 because they call stage-2 operations.
+
+ERP fix found by the walk-through: the portal sends tickets as multipart and
+Elysia already parses the `payload` field into an object, so
+`POST /portal/v1/tickets` answered 400. `formPayload` moved to
+`src/app/portal/utils/form-payload.ts` and accepts a parsed object; unit test
+added (`customer-portal.test.ts` → 24 pass); `bunx tsc --noEmit` clean.
+
+Browser walk-through (Playwright with the installed Chromium; ERP backend on
+the disposable `ims_erp_portal`, `PORTAL_URL=http://localhost:4322`; portal
+`astro dev --background` on port 4322 because 4321 was taken): all steps
+pass — individual sign-up → `/verify-email` → code (read from the backend's
+"mail disabled" log: SMTP is off) → signed in → `/`, `/projects`,
+`/warranty`, `/support` 200 → new ticket → `/support/submitted`, listed as
+`0005/TKT/IMS/XI/26` with the message → `/profile` 200 → `POST /logout` →
+sign in again with the password. Screenshots checked (home, support).
+`astro check` cannot run in the website repo (it does not support the
+installed TypeScript 7) — pre-existing tooling gap there.
+Seen, not ours: the support page shows static copy ("average first reply 12
+min", "SLA reply < 4 hours") and the desktop home quick-actions card overflows.
+
+Next executable task: owner tries the portal (`docs/architecture/modules/
+customer-portal.md`), then the PR for `feat/m07-customer-portal`; the
+website repo needs its first commit by its owner.
+
+## 2026-11-14 - ERP-0022 portal logins per contact with roles, individual sign-up (D1/D2)
+
+Owner decisions after the gap analysis below (`docs/plan/plans/website-integration.md`):
+**D1** individuals sign up themselves, businesses are invited; **D2** one login
+per person (customer contact) with a role `owner | approver | finance |
+viewer`, owners manage colleagues, and the web admin refuses customer logins.
+The owner asked for a recommendation on D2 because "the current login is for
+internal users": explained that customers use the same Better Auth (AGENTS.md:
+no second auth system) but are separated by `portal_identities` (never
+organization members, only `/portal/v1`), then the owner chose the
+recommendation. Recorded in ADR-0022 (decision 2 rewritten, 2a added) and the
+gap analysis.
+
+Gate 1: `docs.dbml` Identity (`portal_identities`) and CRM
+(`customer_contacts`, `customers`), `logical-references.md` format (the
+generator only reads the standard note), `module-ownership.md` (CRM owns
+contacts → contract methods). Gate 2 (manual, on top of the stage-1 record):
+tenant company-wide; new cross-module reference `contact_id` → CRM, nullable,
+checked through `CustomerService.getContact`; role vocabulary as above;
+self-sign-up customer code `PRT-<base36 time><4 hex>` generated in CRM (no
+`code_number` change — that module is programmer A's); pending sign-ups live
+in Redis (code hashed, 10 min, 5 attempts); an unverified user without an
+identity can never sign in.
+
+**docs.dbml first**: `contact_id` (standard logical-reference note),
+`portal_role` + check, unique live index moved to `(portal_type,
+contact_id)`, `created_by` note. `gen-logical-references.ts` → `525 refs across
+41 targets, 232 intra-module refs`; `validate-dbml.ts` → OK.
+
+**Built** (branch `feat/m07-customer-portal`): Drizzle `portal.schema.ts`
+(+ `contactId`, `portalRole`), append-only migration
+`20261114110000_erp0022_portal_contacts_roles`; CRM
+`CustomerService.createFromPortalSignup`; Identity `PortalAccountService`
+rewritten (per-contact invitations with role, `listForCustomer`, `members`,
+`inviteMember`, `removeMember`, `startSignup`, `resendSignupCode`,
+`verifySignup`), adapter `setPassword` / `markEmailVerified`, mail
+`sendSignupCode` + `renderPortalSignupCodeEmail` + new `CodeEmail`
+(`packages/react-email`); `session.create.before` refuses sessions of portal
+users without the portal sign-in nonce (`providers/better-auth/portal-signin.ts`);
+portal `register`, `verify-email`, `verify-email/resend`, `GET /account`,
+`POST/DELETE /account/members`; web admin card lists all logins with roles and
+invites with a role. en/id keys (api, crm, email; `ALLOWED`/dynamic prefixes
+updated). Docs: ADR-0022, `modules/customer-portal.md`, gap analysis
+(22/51 operations), `data-model.md`, user guide 8.8 (en, id).
+
+**Verification**
+- `bun run typecheck` → 4/4 clean; `bun run lint` → 0 errors, warning counts
+  unchanged (none in the touched files).
+- Backend `bun test` → 942 pass, 4 fail (the same `Bun.Image` tests, Bun 1.4.1
+  on this machine); `customer-portal.test.ts` 23 pass (accounts, members,
+  sign-up incl. 5 wrong codes, sign-in, tickets, projects, devices, guard);
+  web-admin 74 pass; locales 90 pass; react-email 6 pass (new code email test).
+- Disposable `ims_erp_portal`: `migrate-reset.ts` → complete; `drizzle-kit
+  push --explain` → only main's `sales.receipts` FK drift.
+- E2E (backend alone, `PORTAL_URL` on the process, `.env` untouched): **50/50**
+  — stage-1 checks plus: account lists 1 owner; owner invites finance (201,
+  invited); staff sees 2 logins; finance signs in and gets 403 inviting; owner
+  removing self 422; owner removes finance → finance token 401; **the customer's
+  password on the web admin sign-in is refused with no session cookie**;
+  business sign-up 403; individual sign-up 200; unverified sign-in 401; wrong
+  code 400; right code signs in as `individual`; staff sees the new `PRT-`
+  individual customer; later password sign-in 200; signing up again with the
+  verified email answers 200 and leaves the password unchanged. SMTP is off on
+  this stack, so the code was read from the backend's "mail disabled" log line
+  (same behaviour as the existing reset/invitation mails).
+- Not done: website adapter wiring; browser check of the web admin card.
+
+`docs/database/` updated (above). Next executable task: owner review, then the
+PR for `feat/m07-customer-portal`; then wire the website routes.
+
+## 2026-11-14 - Website / customer portal integration gap analysis (ERP-0022, ERP-0020)
+
+Owner asked whether the portal is "full API" and whether the website repo's
+needs were analysed. Honest answer: stage 1 covers 16 of the 51 `PortalSource`
+operations, and the website repo had only been read for the portal contract.
+Docs only, on `feat/m07-customer-portal`: `docs/plan/plans/website-integration.md`
+maps every operation of `PortalSource` (51), `CatalogSource` (9, all on PR
+#84) and `WebsiteSource` (10, 3 on main) to an ERP route, status and owner
+module, and lists 11 owner decisions. Two conflict with the 2026-11-14
+choices and would change the portal schema before its PR: **D1** the
+website assumes open sign-up (and checkout needs a portal sign-in), **D2**
+it assumes several members per company. Also found: the website's
+signed-in RFQ/cart/checkout calls send only the customer token, so those
+ERP routes must be `portal`-guarded. Counts re-checked from the interfaces.
+No code changed; `docs/database/` reviewed and unchanged.
+
+Next executable task: owner decides D1 and D2 (then adjust the branch), the
+rest of the decisions as each step starts (order in the document).
+
+## 2026-11-14 - ERP-0022 customer portal, stage 1 (M07 T26 + M12 T25 account part)
+
+Branch `feat/m07-customer-portal` from `origin/main` (`f64788d`). Owner asked
+to leave the #83/#84 conflicts to programmer A and continue with another
+module; picked the customer portal. ERP-0022 was listed under owner A while
+the module plans give T25/T26 to B: the owner chose to take it and inform
+programmer A (backlog owner updated with that note).
+
+**Gate 1** (`erp-database-schema` order): `docs.dbml` module headers, Identity
+(`auth.portal_identities`), CRM (`crm.customers.portal_identity_id`),
+Projects, After-Sales (`service_tickets`, `service_ticket_comments`),
+Ticketing (`ticket.*`, target only); `module-ownership.md` (Identity contract
+`resolvePortalIdentity`), `integrity-and-consistency.md`,
+`data-dictionary.md`, `logical-references.md`. Skipped
+`implementation-phases.md` (no dependency on an unlanded step). Also read the
+website repo's `PortalSource` contract (`entragate-platform/packages/
+api-client/src/services/portal.ts`) and `apps/customer` reset page.
+
+**Gate 2** (owner, 2026-11-14; `grilling` skill not installed, manual pass):
+portal UI = the website repo (ERP gives the API); login = staff invitation +
+password set from the email (no sign-up); one login per customer; portal
+tickets = after-sales service tickets (not the `ticket.*` module); stage 1 =
+account + projects + tickets + warranty. Resolved by me and recorded in
+ADR-0022: a portal user is never an organization member (the unused
+`customer` role stays unused); no Better Auth `bearer` plugin (token valid
+only on `/portal/v1`); lockout in Redis (5 failures, 15 min); separate portal
+DTOs (no money, no internal notes); responses in the portal's `PortalSource`
+shapes (labels id/en). Tenant: company-wide like the tickets/projects
+(ADR-0011/0012), no `organization_id`. Soft delete: revoked identities get
+`deleted_at`; comments carry `deleted_at`. Status vocabularies: identity
+`active|suspended|revoked`; ticket channel + confirmation channel gain
+`portal`; comment `visibility internal|customer`, `author_type
+staff|customer`. Cross-module links: `portal_identities.linked_entity_id`
+(→ CRM, nullable, checked by `CustomerService.getActiveCustomer`).
+`crm.customers.portal_identity_id` is left unused (the identity row is the
+source of truth; writing it would be a second cross-module write).
+
+**docs.dbml first**: `auth.portal_identities` (nullable logical reference,
+`created_by`, `last_login_at`, unique live indexes), `aftersales.
+service_ticket_comments` rewritten company-wide (+ `author_type`,
+`author_name`, FK to the ticket), ticket channel checks + `portal`.
+`bun docs/database/gen-logical-references.ts` → `524 refs across 41 targets,
+232 intra-module refs`; `bun docs/database/validate-dbml.ts` → `cross-module
+refs: 0, timestamp gaps: 0, OK`.
+
+**Built**
+- Drizzle `drizzle/schemas/portal.schema.ts` (auth extension) and
+  `service_ticket_comments`; hand-written migration
+  `20261114100000_erp0022_customer_portal` (no snapshot, main's convention).
+- Identity (`src/app/user`): `PortalAccountService` (invite / resend /
+  revoke / `resolveCustomer` / `requestPasswordReset`), repository, Better
+  Auth adapter (internal adapter; the token is Better Auth's own
+  `reset-password:` verification), queue mailer + `renderPortalInvitationEmail`,
+  `/admin/portal-accounts`, permission `portal_account:read|invite|revoke`
+  (admin, sales manager, customer service; owner via all). Config `PORTAL_URL`
+  (trusted origin).
+- Authorization: `src/authorization/portal-auth.ts` (`portal` macro) and
+  `domainPlugin({ guards: 'portal' })`.
+- Portal module `src/app/portal` (no tables): sign-in/logout/reset/change
+  password with lockout, `/portal/v1` me, home, badges, projects, tickets
+  (create, messages, confirm), products/warranty; pure presenter to the
+  `PortalSource` shapes.
+- Projects: `ProjectPortalService` (+ `listByCustomer`). After-sales:
+  `ServiceTicketService` portal + thread methods, comment repository,
+  `/service-tickets/:id/comments`, `WarrantyService.listForCustomer /
+  getForCustomer`.
+- Web admin: customer page **Customer portal** card; ticket page **Messages**
+  thread; `portal` channel shown, not selectable by staff. en/id keys (crm,
+  projects, api, email).
+- Docs: ADR-0022, `modules/customer-portal.md` (route map for the website's
+  `PortalRoutes`), `data-model.md`, module and ADR indexes, user guide 8.4 +
+  8.8 (en, id), `.env.example`.
+
+**Verification**
+- Baseline on `origin/main` before any change: backend `bun test` → 919 pass,
+  4 fail. The 4 (`toWebp` ×3, `CompanyService images`) need `Bun.Image`
+  from Bun 1.4.2; this machine runs 1.4.1 (`bun upgrade` failed: ENOENT) —
+  environment, not code. `tsc` needed `packages/common` rebuilt first
+  (`bun run build`), then clean.
+- After: `bun run typecheck` → clean (all workspaces); `bun run lint` → 0
+  errors, no warnings in the new files; backend `bun test` → 936 pass, 4 fail
+  (the same 4); `test/unit/customer-portal.test.ts` 17 pass (rejections
+  awaited); locales `bun test` → 90 pass.
+- Disposable DB `ims_erp_portal`: `bun run database/migrate-reset.ts` →
+  migrations and seed complete; `drizzle-kit push --explain` → only main's
+  pre-existing `sales.receipts` FK drift, no portal/aftersales difference.
+- E2E (backend alone on `ims_erp_portal`, `PORTAL_URL` set on the process,
+  `.env` untouched; script outside the repo): **32/32** — invite 201, second
+  invite 409, staff email 409, token from Better Auth's Redis storage, short
+  password 400, first password set, token reuse 400, register 403, staff
+  login on the portal 401, portal login with the `PortalSource` shape, `/me`,
+  portal token on an ERP route refused, staff cookie on a portal route 401,
+  projects `[]`, portal ticket 201 (channel `portal`), staff internal note +
+  reply, portal sees the reply but not the note (`awaiting_you`), customer
+  message, staff thread 3, list/badges, another customer's ticket 404 (read
+  and write), confirm before resolved 422 then closed via portal, wrong
+  current password 400, lockout 423, revoke → token 401. The first runs
+  failed on test setup only (untrusted origin in the script, stale
+  `packages/common` dist, empty company profile needed for numbering — a
+  pre-existing rule, token in Redis not in the table); one run locked the
+  admin's email on the portal after 5 runs, which is the lockout working.
+- Not done: the website's `PortalRoutes` / adapter wiring (website repo);
+  a browser check of the two web-admin cards; UAT M07-09 (UAT scripts live
+  on `feat/m04-on-main` and will move from N/T when both land).
+
+`docs/database/` updated (above). Next executable task: owner review and PR
+for `feat/m07-customer-portal`; then wire the website adapter routes
+(`modules/customer-portal.md`) and run the portal against this API.
 ## 2026-11-15 - ERP-0054 `docs.dbml` vs Drizzle parity (branch `docs/dbml-schema-parity`)
 
 Question that started it: does `apps/backend/drizzle/schemas/` match
@@ -9242,6 +10605,11 @@ nothing) and a browser pass with a real attendance write and both NIK-masking
 directions — evidence in the 2026-11-15 entry. ERP-0053 stays `implemented`
 until the owner signs off; the only gate still unrun is
 `drizzle-kit push --explain`, which this merge does not need.
+
+The 2026-11-17 branding entry (dynamic company name + login onboarding image)
+is implemented and live-verified; it is unclaimed in `backlog.md` (no `ERP-*`
+covered company branding), so it needs a backlog row or fold into ERP-0008's
+company-profile line on the next pass.
 
 **ERP-0047 is verified** (2026-11-14, see the Phase 8 complete entry above). Nothing open in its plan. The docs changes for this step are uncommitted. The original Phase 8 scope, for reference:
 `bunx tsc -b --noEmit` in both apps, `bun run test`, `bun run lint`,

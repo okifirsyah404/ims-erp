@@ -64,7 +64,13 @@ the installed application; every request sends
 `Authorization: Bearer elk_…` (issued under **Subscription & Licensing →
 API Keys**, shown once). Rate limit: 120 calls per minute per key (429). A
 key only reaches licenses of its own application; others look unknown.
-JSON bodies; responses use the ERP envelope `{ success, message, data }`.
+JSON bodies; responses use the ERP envelope `{ requestId, status, message,
+timestamp, data }`, plus `errors[]` on an error (corrected 2026-11-14).
+
+The published reference for application teams is the Zudoku site
+(`apps/api-docs`): the guide `pages/licensing-integration.md` and the spec
+`openapi/licensing.yaml`, kept in step with the routes by
+`apps/backend/test/unit/api-docs-drift.test.ts`.
 
 | Call | Body | Answer |
 |---|---|---|

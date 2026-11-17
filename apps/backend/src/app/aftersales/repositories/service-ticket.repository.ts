@@ -47,6 +47,15 @@ export class ServiceTicketRepository implements IServiceTicketRepository {
 		return row ?? null;
 	}
 
+	async listByCustomer(customerId: string) {
+		return this.database
+			.select()
+			.from(serviceTickets)
+			.where(and(eq(serviceTickets.customerId, customerId), isNull(serviceTickets.deletedAt)))
+			.orderBy(desc(serviceTickets.reportedAt), desc(serviceTickets.id))
+			.limit(200);
+	}
+
 	async create(data: TTicketCreateData) {
 		const now = new Date();
 		const [row] = await this.database
