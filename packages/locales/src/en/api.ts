@@ -499,6 +499,10 @@ const api = {
 	'sales.receiptReversed': 'The receipt is already reversed',
 	'sales.invoiceNotPayable':
 		'Only issued or partially paid invoices can receive payments',
+	'sales.gatewayNotConfigured': 'Online payment is not configured',
+	'sales.gatewayProviderUnknown': 'Unknown payment provider',
+	'sales.gatewayProvider': 'The payment provider did not accept the request',
+	'sales.gatewayWebhookUnauthorized': 'Invalid webhook signature',
 	'automation.outboxNotFound': 'Event not found',
 	'automation.whatsappNotFound.conversation': 'Chat not found',
 	'automation.whatsappNotFound.message': 'Message not found',

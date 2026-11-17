@@ -424,8 +424,11 @@ export class InvoiceRepository implements TInvoiceRepository {
 		};
 	}
 
-	addReceipt(data: TReceiptData): Promise<TReceiptSelect | null> {
-		return this.database.transaction(async (tx) => {
+	addReceipt(
+		data: TReceiptData,
+		options: { tx?: unknown; capToOutstanding?: boolean } = {},
+	): Promise<TReceiptSelect | null> {
+		const run = async (tx: TTx): Promise<TReceiptSelect | null> => {
 			const [invoice] = await tx
 				.select()
 				.from(invoices)
@@ -442,13 +445,16 @@ export class InvoiceRepository implements TInvoiceRepository {
 				(invoice.status !== 'issued' && invoice.status !== 'partially_paid')
 			)
 				return null;
-			if (data.amount > invoice.outstandingTotal) return null;
+			const amount = options.capToOutstanding
+				? Math.min(data.amount, invoice.outstandingTotal)
+				: data.amount;
+			if (amount <= 0 || amount > invoice.outstandingTotal) return null;
 			const now = new Date();
 			const [receipt] = await tx
 				.insert(receipts)
-				.values({ ...data, status: 'posted', createdAt: now, updatedAt: now })
+				.values({ ...data, amount, status: 'posted', createdAt: now, updatedAt: now })
 				.returning();
-			const paid = invoice.paidTotal + data.amount;
+			const paid = invoice.paidTotal + amount;
 			await tx
 				.update(invoices)
 				.set({
@@ -458,8 +464,11 @@ export class InvoiceRepository implements TInvoiceRepository {
 					updatedAt: now,
 				})
 				.where(eq(invoices.id, invoice.id));
-			return receipt;
-		});
+			return receipt ?? null;
+		};
+		return options.tx
+			? run(options.tx as TTx)
+			: this.database.transaction((tx) => run(tx));
 	}
 
 	reverseReceipt(

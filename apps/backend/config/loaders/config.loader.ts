@@ -275,5 +275,41 @@ export function loadEnvConfig(
 					? 90
 					: Number(process.env.NOTIFICATION_RETENTION_DAYS),
 		},
+
+		paymentGateway: {
+			provider: process.env.PAYMENT_GATEWAY_PROVIDER || null,
+			expiryHours:
+				process.env.PAYMENT_GATEWAY_EXPIRY_HOURS == null
+					? 24
+					: Number(process.env.PAYMENT_GATEWAY_EXPIRY_HOURS),
+			successRedirectUrl: process.env.PAYMENT_GATEWAY_SUCCESS_URL || null,
+			// A provider block is only populated when its key vars are present.
+			xendit:
+				process.env.XENDIT_SECRET_KEY && process.env.XENDIT_CALLBACK_TOKEN
+					? {
+							baseUrl: process.env.XENDIT_BASE_URL || 'https://api.xendit.co',
+							secretKey: process.env.XENDIT_SECRET_KEY,
+							callbackToken: process.env.XENDIT_CALLBACK_TOKEN,
+						}
+					: null,
+			singapay:
+				process.env.SINGAPAY_PARTNER_ID && process.env.SINGAPAY_CLIENT_SECRET
+					? {
+							baseUrl:
+								process.env.SINGAPAY_BASE_URL ||
+								'https://sandbox-payment-b2b.singapay.id',
+							partnerId: process.env.SINGAPAY_PARTNER_ID,
+							clientId: process.env.SINGAPAY_CLIENT_ID ?? '',
+							clientSecret: process.env.SINGAPAY_CLIENT_SECRET,
+							accountId: process.env.SINGAPAY_ACCOUNT_ID ?? '',
+							webhookPath:
+								process.env.SINGAPAY_WEBHOOK_PATH ||
+								'/payments/gateway/singapay/webhook',
+						}
+					: null,
+			fake: process.env.PAYMENT_GATEWAY_FAKE_SECRET
+				? { secret: process.env.PAYMENT_GATEWAY_FAKE_SECRET }
+				: null,
+		},
 	});
 }

@@ -503,6 +503,10 @@ const api: Record<keyof typeof en, string> = {
 	'sales.receiptReversed': 'Kwitansi sudah dibatalkan',
 	'sales.invoiceNotPayable':
 		'Hanya faktur berstatus terbit atau sebagian dibayar yang dapat menerima pembayaran',
+	'sales.gatewayNotConfigured': 'Pembayaran online belum dikonfigurasi',
+	'sales.gatewayProviderUnknown': 'Penyedia pembayaran tidak dikenal',
+	'sales.gatewayProvider': 'Penyedia pembayaran tidak menerima permintaan',
+	'sales.gatewayWebhookUnauthorized': 'Tanda tangan webhook tidak valid',
 	'automation.outboxNotFound': 'Event tidak ditemukan',
 	'automation.whatsappNotFound.conversation': 'Chat tidak ditemukan',
 	'automation.whatsappNotFound.message': 'Pesan tidak ditemukan',

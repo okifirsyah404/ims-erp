@@ -56,5 +56,6 @@ applies to backlog `ERP-*` IDs.
 | [ADR-0016](decisions/ADR-0016-notification-module-and-single-realtime-socket.md) | Notification Module and the Single Realtime Socket | accepted (2026-11-13) |
 | [ADR-0019](decisions/ADR-0019-squashed-per-schema-migration-baseline.md) | Squashed per-Schema Migration Baseline | accepted (2026-11-14) |
 | [ADR-0020](decisions/ADR-0020-outbox-events-and-whatsapp.md) | ERP Events Through an Outbox to n8n; WhatsApp Through WAHA | proposed (2026-11-12; renumbered from ADR-0015 on the M04 merge) |
-| ADR-0021 | Provider-Neutral Payment Gateway for Invoices (PR #99) | reserved (2026-11-15) |
+| [ADR-0021](decisions/ADR-0021-provider-neutral-payment-gateway.md) | Provider-Neutral Payment Gateway for Invoices | proposed (2026-11-14) |
 | [ADR-0022](decisions/ADR-0022-customer-portal-api.md) | Customer Portal: Portal Identities and the `/portal/v1` API | proposed (2026-11-14; renumbered from 0018, then 0020) |
+| [ADR-0023](decisions/ADR-0023-payment-module-owns-gateway-checkouts.md) | Payment Module Owns Gateway Checkouts | accepted (2026-11-18) |

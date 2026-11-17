@@ -1,4 +1,5 @@
 import { InvoiceBillingService } from './services/invoice-billing.service';
+import { InvoicePaymentPortService } from './services/invoice-payment.port.service';
 import { QuotationRepository } from './repositories/quotation.repository';
 import { PaymentRepository } from './repositories/payment.repository';
 import { QuotationService } from './services/quotation.service';
@@ -29,6 +30,7 @@ import {
 	INVOICE_REPOSITORY_TOKEN,
 	INVOICE_SERVICE_TOKEN,
 	INVOICE_BILLING_SERVICE_TOKEN,
+	INVOICE_PAYMENT_PORT_TOKEN,
 } from './constants/ar-di';
 
 import type { DependencyContainer } from 'tsyringe';
@@ -56,6 +58,8 @@ export function registerSales(container: DependencyContainer): void {
 	});
 	container.register(INVOICE_SERVICE_TOKEN, { useClass: InvoiceService });
 	container.register(INVOICE_BILLING_SERVICE_TOKEN, { useClass: InvoiceBillingService });
+	// ADR-0023: the payment module records online receipts through this port.
+	container.register(INVOICE_PAYMENT_PORT_TOKEN, { useClass: InvoicePaymentPortService });
 	container.register(INVOICE_LOOKUP_SERVICE_TOKEN, {
 		useClass: InvoiceLookupService,
 	});

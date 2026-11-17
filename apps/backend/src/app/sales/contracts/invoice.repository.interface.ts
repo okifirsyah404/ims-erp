@@ -172,8 +172,15 @@ export type TInvoiceRepository = {
 	 * in ONE transaction. The invoice must belong to the same organization as
 	 * the receipt. Returns null when the invoice is not payable or the amount
 	 * exceeds the outstanding total.
+	 *
+	 * `tx` joins the caller's transaction (gateway settlement, ERP-0020);
+	 * `capToOutstanding` records at most what is still owed instead of
+	 * refusing an overpayment (money already received online).
 	 */
-	addReceipt(data: TReceiptData): Promise<TReceiptSelect | null>;
+	addReceipt(
+		data: TReceiptData,
+		options?: { tx?: unknown; capToOutstanding?: boolean },
+	): Promise<TReceiptSelect | null>;
 	/**
 	 * Reverses a posted receipt (status `posted` only) and restores the
 	 * invoice's paid / outstanding / status in ONE transaction. Returns null

@@ -208,6 +208,57 @@ export const addReceipt = (
 ) => send<TReceipt>(`/invoices/${id}/receipts`, 'POST', input);
 export const reverseReceipt = (id: string, reason: string) => send<TReceipt>(`/receipts/${id}/reverse`, 'POST', { reason });
 
+/* ------------------------- online payment (ERP-0020) ------------------------- */
+
+export const GATEWAY_PAYMENT_STATUSES = ['pending', 'paid', 'expired', 'failed'] as const;
+export type TGatewayPaymentStatus = (typeof GATEWAY_PAYMENT_STATUSES)[number];
+export const GATEWAY_STATUS_VARIANT: Record<TGatewayPaymentStatus, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+	pending: 'secondary',
+	paid: 'default',
+	expired: 'outline',
+	failed: 'destructive',
+};
+
+/** A hosted checkout of an invoice at the payment gateway; amounts in IDR minor units. */
+export type TGatewayPayment = {
+	id: string;
+	salesInvoiceId: string;
+	provider: 'xendit' | 'singapay' | 'fake';
+	providerReference: string | null;
+	paymentUrl: string | null;
+	amount: number;
+	status: TGatewayPaymentStatus;
+	expiresAt: string | null;
+	paidAt: string | null;
+	paidAmount: number | null;
+	paymentChannel: string | null;
+	receiptId: string | null;
+	settlementNote: string | null;
+	createdAt: string;
+};
+
+export function gatewayStatusQueryOptions() {
+	return queryOptions({
+		queryKey: ['finance', 'gateway-status'] as const,
+		queryFn: async () =>
+			(await request<{ enabled: boolean; provider: string | null }>('/gateway-payments/status')).data as {
+				enabled: boolean;
+				provider: string | null;
+			},
+		staleTime: 5 * 60 * 1000,
+	});
+}
+
+export function gatewayPaymentsQueryOptions(invoiceId: string) {
+	return queryOptions({
+		queryKey: ['finance', 'invoices', invoiceId, 'gateway-payments'] as const,
+		queryFn: async () => (await request<TGatewayPayment[]>(`/invoices/${invoiceId}/gateway-payments`)).data as TGatewayPayment[],
+	});
+}
+
+/** Opens (or reuses) a checkout of the outstanding amount. */
+export const openGatewayPayment = (invoiceId: string) => send<TGatewayPayment>(`/invoices/${invoiceId}/gateway-payments`, 'POST');
+
 /** Overdue: issued and unpaid with a due date before today (shown, never stored). */
 export function isOverdue(invoice: Pick<TInvoice, 'status' | 'dueDate'>, today: string): boolean {
 	return (invoice.status === 'issued' || invoice.status === 'partially_paid') && !!invoice.dueDate && invoice.dueDate < today;

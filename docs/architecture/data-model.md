@@ -5,9 +5,9 @@ Schema, keys, constraints, and conventions. Current declarations:
 `apps/backend/drizzle/datatypes/unix-timestamp.ts`.
 
 > 2026-11-13: `apps/backend-elysia` is now `apps/backend`. The schema list
-> below matches `docs/database/docs.dbml`: 27 modules, one Postgres schema each
-> (ERP-0042, ADR-0015; `notification` added by ADR-0016). `docs.dbml` is
-> canonical if the two disagree.
+> below matches `docs/database/docs.dbml`: 28 modules, one Postgres schema each
+> (ERP-0042, ADR-0015; `notification` added by ADR-0016; `payment` added by
+> ADR-0023). `docs.dbml` is canonical if the two disagree.
 
 ## PostgreSQL schemas
 
@@ -162,6 +162,10 @@ Schema, keys, constraints, and conventions. Current declarations:
 
 - **`notification`** — the caller's own inbox (ADR-0016): notification rows
   and the seeded templates, read-through on a single realtime socket.
+
+- **`payment`** — online checkout of a sales invoice through a
+  provider-neutral gateway (ERP-0020, ADR-0023): `gateway_payments`, with the
+  invoice and receipt as nullable logical references to `sales`.
 
 ## Conventions (pinned decisions)
 

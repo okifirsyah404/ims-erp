@@ -155,6 +155,43 @@ export const IntegrationsConfigSchema = z.object({
 	aiModel: z.string().min(1).nullable(),
 });
 
+/**
+ * Payment gateway (ERP-0020, ADR-0021). `provider` picks where new checkouts
+ * are opened; every provider whose credentials are present can still receive
+ * webhooks, so checkouts opened before a switch settle. Null provider = online
+ * payment off. Values are secrets and never logged.
+ */
+export const PaymentGatewayConfigSchema = z.object({
+	provider: z.enum(['xendit', 'singapay', 'fake']).nullish(),
+	/** Checkout lifetime at the provider. */
+	expiryHours: z.number().int().min(1).max(24 * 30),
+	/** Where the provider sends the customer after paying (optional). */
+	successRedirectUrl: z.string().url().nullish(),
+	xendit: z
+		.object({
+			baseUrl: z.string().url(),
+			secretKey: z.string().min(1),
+			/** Dashboard "webhook verification token" (x-callback-token). */
+			callbackToken: z.string().min(1),
+		})
+		.nullish(),
+	singapay: z
+		.object({
+			baseUrl: z.string().url(),
+			/** Merchant API key, sent as X-PARTNER-ID. */
+			partnerId: z.string().min(1),
+			clientId: z.string().min(1),
+			clientSecret: z.string().min(1),
+			/** The merchant account (ULID) that receives the money. */
+			accountId: z.string().min(1),
+			/** Path + query of the webhook URL as configured at SingaPay (signed). */
+			webhookPath: z.string().startsWith('/'),
+		})
+		.nullish(),
+	/** Local only: HMAC secret of the fake provider's webhook. */
+	fake: z.object({ secret: z.string().min(16) }).nullish(),
+});
+
 export const EnvConfigSchema = z.object({
 	instance: InstanceConfigSchema,
 	app: AppConfigSchema,
@@ -164,6 +201,7 @@ export const EnvConfigSchema = z.object({
 	mail: MailConfigSchema,
 	auth: AuthConfigSchema,
 	scheduler: SchedulerConfigSchema,
+	paymentGateway: PaymentGatewayConfigSchema,
 	integrations: IntegrationsConfigSchema,
 });
 
@@ -175,4 +213,5 @@ export type TS3Config = z.infer<typeof S3ConfigSchema>;
 export type TMailConfig = z.infer<typeof MailConfigSchema>;
 export type TAuthConfig = z.infer<typeof AuthConfigSchema>;
 export type TSchedulerConfig = z.infer<typeof SchedulerConfigSchema>;
+export type TPaymentGatewayConfig = z.infer<typeof PaymentGatewayConfigSchema>;
 export type TEnvConfig = z.infer<typeof EnvConfigSchema>;

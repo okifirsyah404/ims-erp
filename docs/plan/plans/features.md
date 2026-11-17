@@ -244,9 +244,10 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 ### planned
 - One template per document — T05. Evidence: dbml `documents` only.
 - Checkout / online orders — T21, ERP-0020. Evidence: dbml `commerce` only.
-- Payment gateway callbacks + reconciliation — T22, ERP-0020. Evidence: none
-  (payment ledger is `finance.payments`, M09; `sales.payments` is scheduled
-  for removal at step S7 in `docs/database/implementation-phases.md`).
+- Gateway reconciliation (fees, gross / net settlement) — T22, ERP-0020.
+  Evidence: none (payment ledger is `finance.payments`, M09; `sales.payments`
+  is scheduled for removal at step S7 in
+  `docs/database/implementation-phases.md`).
 - Document renderer + template editor — T05. Evidence: `GET/POST
   /documents/templates` exist, no render step, `documents/templates.tsx` is a
   stub. Print stays browser-print (no PDF library); `pdfmake` is the candidate
@@ -258,6 +259,15 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   question): today the signer uploads an image and reuses it.
 - Generating a PDF from the app's own HTML layouts: the signed-PDF slice stamps
   an *uploaded* PDF only; print browser stays the default.
+
+### in-progress
+- Online payment of invoices (payment gateway) — T21/T22, ERP-0020, ADR-0021.
+  Evidence: `apps/backend/src/app/payment` (`GatewayPaymentService`,
+  `adapters/` Xendit / SingaPay / fake), `payment.gateway_payments`
+  (ADR-0023; migration `20261117172959_erp0020_payment_gateway`),
+  `test/unit/payment-gateway.test.ts`, invoice page card, `progress.md`
+  2026-11-14 (API e2e 24/24, browser). Gaps: no provider sandbox yet,
+  reconciliation, portal pay button.
 
 ### implemented
 - Document signature requests (ask internal users to sign, sign/decline,

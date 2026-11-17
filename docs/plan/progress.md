@@ -12,6 +12,136 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-15 - ERP-0020: online payments publish `receipt.recorded` (M04); DB verification on main
+
+With Docker back, the reworked branch was verified on a fresh disposable
+database: `ims_erp_v99` migrated (20 folders), `drizzle-kit check` printed
+"Everything's fine", the development seed ran twice, and an open period was
+inserted by SQL.
+
+**Found on the way.** M04 on main publishes `invoice.issued` and
+`receipt.recorded` to the n8n outbox from `InvoiceService`. A receipt that a
+paid gateway webhook records goes through the repository inside the
+checkout's row lock, so it published nothing: n8n would never hear of an
+online payment.
+
+**Fix.** `GatewayPaymentService` takes the outbox (`OUTBOX_SERVICE_TOKEN`).
+After the transaction commits, an `applied` webhook publishes
+`receipt.recorded` with the same payload as a manual receipt
+(`receiptRecordedEvent`, with the invoice after the payment). An unapplied
+payment or a replay publishes nothing. The unit test covers one event per
+applied payment and none on replays (28 pass).
+
+**Verification (live, backend on :3010, fake provider)**
+- Invoice API e2e: 19/19 in five runs. Gateway API e2e: **24/24**.
+  Concurrency: 5 identical paid webhooks gave 1 `applied` and 4
+  `duplicate`, with 1 receipt.
+- Outbox: `receipt.recorded` went 5 → 6 during the gateway run (one applied
+  payment; the unapplied one and the replays add none). `invoice.issued`
+  is published by the issue path.
+- `tsc --noEmit` (apps/backend): clean.
+
+## 2026-11-15 - PR #99 brought onto main again (via #98, `aa3a7ad`)
+
+The updated `fix/m02-invoice-billing` (now on main with M04) went into
+`feat/m02-payment-gateway`.
+- **Combined config.** M04 and the gateway each add a config block:
+  `.env.example` has the M04 integrations, then the gateway; `config.schema.ts`
+  has `IntegrationsConfigSchema` and `PaymentGatewayConfigSchema`, both in
+  `EnvConfigSchema`; the API error keys of both sides are kept (en/id).
+- **ADR index.** ADR-0020 (M04 outbox, main) and ADR-0021 (this gateway).
+  The customer portal record is ADR-0022 (PR #97).
+- **Backlog.** The ERP-0020 row is from this branch; ERP-0021 and ERP-0039
+  are from main. `logical-references.md` was regenerated; `validate-dbml.ts`
+  prints OK.
+- **Migration.** Regenerated after main's M04 migrations:
+  `20261115090002_erp0020_gateway_payments` (`sales.gateway_payments`,
+  `organization_id` nullable). `drizzle-kit check`: "Everything's fine".
+  PR #97 also adds one migration on the same parent: whichever merges second
+  re-runs `drizzle:generate`.
+- **Verification.** `bun run typecheck` 4/4; `bun run lint` 0 errors;
+  backend `bun test` 1102 pass, 4 fail (the known `Bun.Image` tests);
+  web-admin 100; locales 94. The gateway e2e was not re-run: the Docker
+  engine is down on this machine.
+
+## 2026-11-18 - ERP-0020: gateway checkouts moved to a `payment` schema/module (ADR-0023)
+
+Owner request: "buat payment gateway di db menggunakan schema payment.*".
+`docs.dbml` was edited first (it is canonical), then the Drizzle schema, then
+the code.
+
+- **Contract.** `sales.gateway_payments` → `payment.gateway_payments`, in a new
+  `Payment` TableGroup and a `// MODULE: Payment (schema: payment)` section.
+  `sales_invoice_id` and `receipt_id` lost their foreign keys and became
+  nullable logical references (ADR-0014); `organization_id` and `requested_by`
+  stay logical. Header count 27 → 28 schemas/modules.
+- **Regenerated docs.** `gen-logical-references.ts` → 538 refs across 41
+  targets, 238 intra-module; `validate-dbml.ts` → 278 tables, 0 cross-module,
+  0 timestamp gaps, **OK**.
+- **Migration.** The branch-only folder `20261115090002_erp0020_gateway_payments`
+  was deleted and `bun run drizzle:generate` produced
+  `20261117172959_erp0020_payment_gateway`: `CREATE SCHEMA "payment"` +
+  `CREATE TABLE payment.gateway_payments` (no FK). No data migration: the old
+  table never reached `main`. `drizzle-kit check` → "Everything's fine".
+- **Code.** New module `apps/backend/src/app/payment/` (contracts, constants,
+  adapters ×4, errors, repositories, services, utils, controllers, container,
+  index) holding what was in `sales/`: `GatewayPaymentService`,
+  `GatewayPaymentRepository`, `PaymentGatewayRegistry` and the Xendit/SingaPay/
+  fake adapters, `gateway-signature`, the two controllers and their routes
+  (`/gateway-payments/status`, `/invoices/:id/gateway-payments`,
+  `/payments/gateway/:provider/webhook` unchanged, so the web admin needs no
+  change). `registerPayment` runs after `registerSales` in `src/index.ts`;
+  `app.ts` mounts `paymentModule()`.
+- **Boundary.** Sales now exposes `IInvoicePaymentPort`
+  (`sales/contracts/invoice-payment.port.ts`, `INVOICE_PAYMENT_PORT_TOKEN`,
+  implemented by `InvoicePaymentPortService`): `findById`, `addReceipt`,
+  `publishReceiptRecorded`. Payment never injects Sales' repository, and the
+  outbox publish of `receipt.recorded` moved back to Sales (the event shape is
+  Sales'). `InvoiceNotFoundError` / `InvoiceNotPayableError` are exported from
+  the sales entry point so the HTTP codes/keys are unchanged.
+- **Docs.** ADR-0023 added; ADR-0021 §1 marked superseded for storage;
+  `modules/payment.md`, `modules/sales.md`, `module-ownership.md` (module 28,
+  Sales profile), `data-model.md`, `backlog.md` (ERP-0020 evidence),
+  `features.md` updated.
+- Verified (2026-11-18, repo root): `bun run typecheck` 4/4; `bun run lint`
+  5/5, 0 errors (warning counts unchanged); `bun run test` backend 1209 /
+  web-admin 119 / locales 98 / react-email 6, 0 fail (payment-gateway suite
+  28/28); `bun run build` 3/3; `bun docs/database/validate-dbml.ts` OK;
+  `bunx --bun drizzle-kit check` "Everything's fine".
+- Not verified here: applying the migration to a disposable database (Docker
+  state on this machine), the gateway API e2e against a live server, and the
+  provider sandbox (no account). `docs/database/` was updated (required).
+
+## 2026-11-18 - PR #99 merged main (PR #98 merged) in; docs conflicts resolved
+
+`origin/main` (`09a503ce`, after PR #98) merged into `feat/m02-payment-gateway`.
+All five conflicts were documentation; no code conflict (the gateway service,
+adapters, migration and invoice contract auto-merged).
+
+- `docs/architecture/README.md`: ADR index keeps ADR-0021 as a link row
+  (`proposed`) and adds ADR-0022 (customer portal, main). The duplicate
+  `reserved` placeholder row from main is dropped; both ADR files exist.
+- `docs/database/logical-references.md`: generated file — resolved by taking
+  main's side and re-running `bun docs/database/gen-logical-references.ts`
+  (538 refs across 41 targets, 240 intra-module).
+- `docs/plan/backlog.md`: the duplicate ERP-0019 / ERP-0020 rows were merged
+  into one row each. ERP-0019 keeps main's licensing-docs note, corrected:
+  the docs now live in `docs/architecture/modules/licensing-integration.md` +
+  `docs/architecture/api/licensing.yaml` (Zudoku was removed by PR #97 /
+  #100). ERP-0020 keeps this branch's `in-progress` evidence, not main's
+  `planned`.
+- `docs/plan/plans/features.md`: M02 planned/in-progress sections merged —
+  gateway work listed under `in-progress`, remaining gaps (reconciliation,
+  document renderer, external signers, PDF from HTML) under `planned`.
+- `docs/plan/progress.md`: both sides kept.
+- Verified (2026-11-18, repo root): `bun install --frozen-lockfile` no
+  changes; `bun run typecheck` 4/4; `bun run lint` 5/5, 0 errors;
+  `bun run test` backend 1209 / web-admin 119 / locales 98 / react-email 6,
+  0 fail; `bun run build` 3/3; `bun docs/database/validate-dbml.ts` OK
+  (538 refs, 0 cross-module, drizzle parity drift 0).
+- Not verified here: gateway API e2e on a live server (Docker state on this
+  machine), provider sandbox (no account), PR #99 checks after push.
+
 ## 2026-11-17 - PR #98 merged main (PR #97 state) in; conflicts resolved
 
 `origin/main` (`73b2a920`, after PR #97) merged into `fix/m02-invoice-billing`.
@@ -1746,6 +1876,169 @@ Built:
 > that branch; this documentation set was written there first and then copied
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
+
+## 2026-11-15 - ERP-0020 (PR #99) brought onto main: ADR-0021, regenerated migration, nullable organization_id
+
+`origin/main` (`41e3a96`) went into `fix/m02-invoice-billing` (PR #98; only
+progress.md conflicted, kept both), and that branch went into
+`feat/m02-payment-gateway`. `logical-references.md` was regenerated.
+
+- **ADR renumbered.** The payment gateway record is now **ADR-0021**
+  (`git mv`). It was reserved in the ADR index by PR #97, and main's
+  ADR-0019 is the migration baseline. Every gateway reference was updated
+  (code comments, config schema, `.env.example`, `docs.dbml`, module docs,
+  backlog ERP-0020, features, this branch's entry); main's ADR-0019
+  references are untouched.
+- **Migration regenerated.** The hand-written
+  `20261114120000_erp0020_gateway_payments` (no snapshot) was removed, and
+  `bun run drizzle:generate` produced `20261114182643_erp0020_gateway_payments`.
+- **Fixed: my own rule violation.** `sales.gateway_payments.organization_id`
+  was `NOT NULL`, against the ADR-0014 hard rule (cross-module references are
+  nullable).
+  - Now nullable in `docs.dbml` first, then Drizzle, then the migration.
+  - The webhook treats a row without an organization as unapplied; the
+    service always sets it when opening a checkout.
+
+**Verification**
+- `validate-dbml.ts`: OK. `bun run typecheck`: 4/4.
+- Backend `bun test`: 1056 pass, 4 fail (the known `Bun.Image` tests).
+  Gateway and billing units: 39. Locales 90; web-admin 100.
+- Fresh disposable `ims_erp_gw2`: `drizzle:migrate` applied the 20 folders;
+  `drizzle-kit check` printed "Everything's fine"; development seed; an open
+  2026-11 period inserted by SQL (still no catalog permission for periods).
+- Invoice API e2e (#98): **19/19**, run three times to create invoices.
+- Gateway API e2e with the fake provider: **24/24**.
+- Concurrency: 5 identical paid webhooks gave 1 `applied` and 4
+  `duplicate`, with 1 posted receipt.
+
+## 2026-11-14 - ERP-0020 payment gateway: online payment of invoices (Xendit / SingaPay, provider neutral)
+
+Owner: "Payment gateway dibikin dinamis karna ada 2 kemungkinan menggunakan
+xendit/singapay"; customers pay after staff confirmation; no sandbox account
+yet, so build with faked responses. Branch `feat/m02-payment-gateway`,
+stacked on `fix/m02-invoice-billing` (PR #98) as **PR #99**, because the invoice page it
+extends is broken on `main` until #98 merges. Decisions: ADR-0021 (proposed).
+
+**Gate 1.** Read `docs/database/docs.dbml` (Sales, Finance, Automation,
+Commerce), `module-ownership.md` (Sales owns invoices and receipts, Finance
+owns `finance.payments`), `integrity-and-consistency.md` (FK policy,
+soft delete), `data-dictionary.md` (money and datetimes). No gateway
+transaction table existed (only `finance.payments`,
+`automation.integration_credentials` and `commerce.commerce_orders`
+`payment_status`). `logical-references.md` was regenerated; the only new
+logical reference is `requested_by` → auth users. `implementation-phases.md`
+was skipped: no pending step is involved.
+
+**Gate 2 (manual fallback; the `grilling` skill is not installed).**
+- **Owner:** Sales, because it owns invoices and receipts. `finance.payments`
+  is M09 and stays untouched.
+- **Tenant:** `organization_id` on every row. The webhook finds a row by its
+  id, which is the merchant reference.
+- **Soft delete:** `deleted_at`. Rows are never deleted.
+- **Money:** bigint IDR minor units. Gateways charge whole rupiah, rounded
+  up; the receipt is capped at the outstanding amount.
+- **Datetimes:** unix ms.
+- **Status vocabulary:** `pending | paid | expired | failed`.
+- **Cross-module:** none except `requested_by`.
+- **Permissions:** existing `receipt:create` / `invoice:read`.
+- **Idempotency:** row lock plus a partial unique `receipt_id`.
+- **Redirect:** never trusted.
+
+**Provider research (official docs, read 2026-11-14).**
+- **Xendit:** Invoice API `POST /v2/invoices` with Basic auth (secret key).
+  Callback authenticated by `x-callback-token`. Status `PAID` / `SETTLED` /
+  `EXPIRED`.
+- **SingaPay** (docs.singapay.id): `POST /api/v1.1/access-token/b2b`, signed
+  HMAC-SHA512 over `client_id_client_secret_YYYYMMDD`; Payment Link v2
+  `POST /api/v2.0/payment-link/{account_id}`; webhook `X-Signature`
+  HMAC-SHA512 over `METHOD:path:token:sha256(key-sorted body):timestamp`,
+  with a 5-minute window.
+- **Unverified until a sandbox exists:** the SingaPay `expired_at` format,
+  and number serialization in the signed body.
+
+**Change**
+- **Schema.**
+  - `docs.dbml` first: `sales.gateway_payments` plus two intra-module refs
+    and the Sales group.
+  - Then `bun docs/database/gen-logical-references.ts`, which printed
+    "526 refs across 41 targets, 233 intra-module refs".
+  - Then `bun docs/database/validate-dbml.ts`, which printed "269 tables,
+    cross-module refs: 0, timestamp gaps: 0, OK".
+  - Drizzle `gatewayPayments` in `sales.schema.ts`.
+  - Hand-written append-only migration
+    `20261114120000_erp0020_gateway_payments`.
+- **Config:** `paymentGateway` block, with env names in `.env.example` only
+  (`PAYMENT_GATEWAY_PROVIDER`, `..._EXPIRY_HOURS`, `..._SUCCESS_URL`,
+  `XENDIT_*`, `SINGAPAY_*`, `PAYMENT_GATEWAY_FAKE_SECRET`).
+- **Backend (sales module):**
+  - Port in `contracts/payment-gateway.contract.ts`.
+  - `adapters/` for Xendit, SingaPay and fake, plus a registry (fake is
+    never built in production).
+  - `GatewayPaymentRepository` and `GatewayPaymentService` (`open`, `list`,
+    `status`, `handleWebhook`).
+  - `GatewayPaymentController` (erp guard) and `GatewayWebhookController`
+    (public).
+  - Errors in `errors/payment-gateway.errors.ts`.
+  - `InvoiceRepository.addReceipt` can now join the caller's transaction and
+    cap the amount at the outstanding total. Existing callers are unchanged.
+- **Web:** `GatewayPaymentsCard` on the invoice page: create the link (copied
+  to the clipboard), status, expiry, copy/open, an "automatic receipt" note
+  and an "unapplied" note.
+- **Locales (en + id):** `finance:gateway.*` and the four `sales.gateway*`
+  API errors. Dead-key prefix `finance:gateway.status.`.
+
+**Verification**
+- **Typecheck and lint:**
+  - `bun run typecheck`: 4/4 clean.
+  - `bun run lint`: 0 errors, and no warning in the touched files.
+- **Unit tests:**
+  - Backend `bun test`: 960 pass, 4 fail. The 4 are the same `Bun.Image` /
+    WebP tests as before (Bun 1.4.1 here, the repo pins 1.4.2).
+  - New `test/unit/payment-gateway.test.ts`: **28 pass**. It covers the wire
+    formats with faked HTTP, the token cache, signature tampering / path /
+    token / stale timestamp, the registry, the service, and the webhook
+    outcomes.
+  - web-admin 97; locales 90.
+- **Migration:** applied with `psql -v ON_ERROR_STOP=1` to the disposable
+  `ims_erp_inv`, twice. The second run is idempotent: `IF NOT EXISTS`
+  notices only.
+  - `bun run drizzle:migrate` refuses on this database with "Conflicting
+    migrations detected" (`20261106103434_add_asset_image_url` against the
+    `20261106110000..` chain). That conflict is pre-existing on `main` and
+    unrelated to this change.
+- **API e2e: 24/24** on `ims_erp_inv` (development seed). The backend ran
+  with `PAYMENT_GATEWAY_PROVIDER=fake` and a local secret.
+  - Status: enabled.
+  - Open: 201, pending, whole-rupiah amount, link. `lastEvent` is hidden.
+  - Opening again reuses the pending checkout.
+  - Forged webhook: 401. A provider without credentials: 404. An unsupported
+    provider: 400.
+  - Paid webhook without a session: 200, `applied`. The invoice is `paid`,
+    with one posted receipt for the outstanding amount, the gateway
+    reference and the note.
+  - Replay: `duplicate`, still one receipt.
+  - The paid invoice refuses a new checkout (409).
+  - Second invoice: issue → open → `expired` webhook (`updated`) → void →
+    paid webhook → `unapplied`, no receipt, a note.
+  - The sales role cannot open a checkout (403). No session: 401.
+  - DB check: the receipt has a null `received_by` and is registered in
+    `document.documents`.
+- **Concurrency:** 5 identical paid webhooks sent at once gave 1 `applied`
+  and 4 `duplicate`; the invoice is `paid` with exactly 1 posted receipt.
+- **Browser (Playwright, signed in as finance, Indonesian):**
+  - Setup: the static web-admin build was served from `dist` by request
+    interception (no dev server started), with
+    `VITE_API_URL=http://localhost:3000`.
+  - The card is shown; "Buat link pembayaran" creates the link and copies
+    it to the clipboard.
+  - Pending, paid ("Kwitansi tercatat otomatis") and unapplied rows render.
+  - No page errors and no failing API calls.
+
+**Open:**
+- Live sandbox runs (no Xendit / SingaPay account yet).
+- Gateway fees and net-settlement reconciliation, and the `finance.payments`
+  row behind each receipt (M09, for programmer A).
+- The portal pay button (ERP-0022 stage C, after #97).
 
 ## 2026-11-14 - M02 invoices: billing by terms, summary and void restored (ERP-0011 regression)
 
