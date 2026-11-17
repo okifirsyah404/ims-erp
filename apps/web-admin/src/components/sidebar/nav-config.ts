@@ -81,8 +81,9 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		],
 	},
 
-	// Document registry (ERP-0042). Signatures and templates have no catalog
-	// resource yet (ERP-0048, ERP-0050): hidden.
+	// Document registry (ERP-0042). Signatures are gated by the
+	// `document.signature_*` actions (ERP-0048/ERP-0049, flow not built yet);
+	// templates have no catalog resource yet (ERP-0050): hidden.
 	{
 		labelKey: 'section.documents',
 		items: [
@@ -91,9 +92,9 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				titleKey: 'item.signatures',
 				icon: PenLine,
 				items: [
-					{ titleKey: 'item.documentSignatures', url: '/documents/signatures/documents' },
-					{ titleKey: 'item.requestSignature', url: '/documents/signatures/request' },
-					{ titleKey: 'item.mySignature', url: '/documents/signatures/mine' },
+					{ titleKey: 'item.documentSignatures', url: '/documents/signatures/documents', permission: 'document.signature_read' },
+					{ titleKey: 'item.requestSignature', url: '/documents/signatures/request', permission: 'document.signature_request' },
+					{ titleKey: 'item.mySignature', url: '/documents/signatures/mine', permission: 'document.signature_sign' },
 				],
 			},
 			{ titleKey: 'item.templates', url: '/documents/templates', icon: LayoutTemplate },
@@ -141,12 +142,10 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				icon: Package,
 				items: [
 					{ titleKey: 'item.products', url: '/inventory/products', permission: 'product.read' },
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.components', url: '/inventory/components' },
-					{ titleKey: 'item.materials', url: '/inventory/materials' },
+					{ titleKey: 'item.components', url: '/inventory/components', permission: 'product.read' },
+					{ titleKey: 'item.materials', url: '/inventory/materials', permission: 'product.read' },
 					{ titleKey: 'item.stock', url: '/inventory/stock', permission: 'stock.read' },
 					{ titleKey: 'item.stockAdjustments', url: '/inventory/stock/adjustments', permission: 'stock_adjustment.read' },
-					{ titleKey: 'item.newItem', url: '/inventory/items/new', permission: 'product.create' },
 					// No catalog resource yet: hidden.
 					{ titleKey: 'item.itemCategories', url: '/inventory/categories' },
 					{ titleKey: 'item.itemMovements', url: '/inventory/stock/movements', permission: 'stock.read' },
@@ -291,8 +290,10 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		items: [
 			{ titleKey: 'item.companyProfile', url: '/settings/company', icon: Settings, permission: 'company.read' },
 			{ titleKey: 'item.codeNumbers', url: '/settings/code-numbers', icon: Hash, permission: 'code_number.read' },
-			// No catalog resource yet: hidden.
-			{ titleKey: 'item.documentSettings', url: '/settings/documents', icon: FileText },
+			// No catalog resource yet: hidden. The document settings page carries
+			// no permission of its own (its values are edited per group), so it
+			// stays open like the settings section itself.
+			{ titleKey: 'item.documentSettings', url: '/settings/documents', icon: FileText, open: true },
 		],
 	},
 ];

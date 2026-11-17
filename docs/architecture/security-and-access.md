@@ -168,7 +168,7 @@ used to carry the profile, the numbering and the settings in one vocabulary.
 |---|---|---|
 | `company` | `read`, `update` | `GET /company/profile`, `PUT /company/profile`, the logo/signature uploads, `GET /company/settings`, `PUT /company/settings/:group/:key` |
 | `code_number` | `read`, `update` | `GET /code-numbers`, `PUT /code-numbers/:codeType` |
-| `document` | `read`, `create`, `update`, `submit`, `approve`, `issue`, `void`, `download` | the registry, files, signatures, shares, tags |
+| `document` | `read`, `create`, `update`, `submit`, `approve`, `issue`, `void`, `download`, `signature_read`, `signature_request`, `signature_sign` | the registry, files, signatures, shares, tags |
 
 "Company-wide" describes the **data scope**, never the authorization boundary:
 these routes still run the `erp` macro with a validated organization, and then
@@ -344,9 +344,31 @@ and the user-management actions listed under **Audit** already append to it.
 
 Company, Code Number and Document are built (ERP-0042): their routes exist and
 are guarded by the `erp` macro plus the `company:*`, `code_number:*` and
-`document:*` permissions. The document **signature request** flow (ERP-0048) is
-not built: `document.signatures` has no request rows yet, so per-signer rules
-(who may sign, in which order, and the `sign` / `request_sign` actions added to
-the `document` resource) stay documented here and must be wired when it lands.
-The `document.*` settings group holds only
-`document.signature_request_expiry_days`, which that flow writes.
+`document:*` permissions. The document **signature request** flow is built
+(ERP-0048/ERP-0049): `document:signature_read` sees the signature register and
+one document's signature section, `document:signature_request` creates and
+cancels requests, `document:signature_sign` acts on a request addressed to the
+caller (sign, decline) and owns that caller's signature image. Every role that
+holds `document:read` also holds `signature_read` + `signature_sign`; only owner,
+admin, operations_manager, sales_manager, project_manager, finance and hr hold
+`signature_request`. Those are the guard's first gate, never the only one: the
+service re-checks that the caller *is* the addressed signer (sign/decline) or
+*is* the requester (cancel) and that the row is still pending and unexpired, so a
+stolen permission only ever produces a 403/409. Signing writes the immutable
+evidence row in `document.signatures`; nothing else does. The `document.*`
+settings group holds only `document.signature_request_expiry_days`, which the
+request form reads as its default.
+
+Signature routes, by action:
+
+| Route | Action |
+|---|---|
+| `GET /documents/signatures`, `GET /documents/:id/signatures` | `document:signature_read` |
+| `GET /documents/signatures/requests/outgoing`, `POST /documents/signatures/requests`, `POST …/:id/cancel` | `document:signature_request` |
+| `GET /documents/signatures/requests/incoming`, `POST …/:id/sign`, `POST …/:id/decline`, `PUT/GET …/:id/signed-pdf`, `GET/PUT/DELETE /documents/signatures/my-image`, `POST /documents/signatures/user-images` | `document:signature_sign` |
+
+Placing the signature on a PDF is a write the signer performs on their own
+signature: the route re-checks that the request is addressed to the caller and
+that it is already `signed`, records `pdf_sign` on the document's access trail,
+and refuses a second placement (the artifact is final). The source PDF must be
+one of that document's files — the server never renders a PDF itself.

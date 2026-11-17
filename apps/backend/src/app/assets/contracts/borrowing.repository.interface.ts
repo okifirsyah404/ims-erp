@@ -86,6 +86,17 @@ export interface IBorrowingRepository {
 	): Promise<TPaginationResult<TBorrowingSelect>>;
 
 	/**
+	 * Resolves one display photo per borrowing — the first line's asset image.
+	 *
+	 * @remarks
+	 * The list card shows a single picture, so the earliest line wins. Batched
+	 * for the whole page rather than queried per row.
+	 */
+	listFirstAssetImages(
+		borrowingIds: string[],
+	): Promise<Array<{ borrowingId: string; imageUrl: string | null }>>;
+
+	/**
 	 * Counts unreturned borrowing lines originating in one warehouse for one
 	 * organization (ERP-0031 unlink guard).
 	 *

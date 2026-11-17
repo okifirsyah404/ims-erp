@@ -5,6 +5,7 @@ import {
 	SidebarTrigger,
 } from '@ims-erp/ui/components/sidebar';
 import { NotificationBell } from '@/components/notification/notification-bell';
+import { OrganizationContextSync } from '@/components/organization/organization-context-sync';
 import { useRealtime } from '@/lib/realtime/use-realtime';
 import { AppBreadcrumb } from './app-breadcrumb';
 import { AppSidebar } from '../sidebar/main-sidebar';
@@ -17,6 +18,8 @@ export default function MainLayout({ children }: React.ComponentProps<'div'>) {
 
 	return (
 		<SidebarProvider>
+			{/* Mirrors session.activeOrganizationId into the client store. */}
+			<OrganizationContextSync />
 			{/* Printed documents show only the page content. */}
 			<div className='contents print:hidden'>
 				<AppSidebar />

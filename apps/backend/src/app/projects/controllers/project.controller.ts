@@ -55,6 +55,10 @@ export class ProjectController {
 				erp: { permission: ['project:read'] },
 				detail: { description: 'Members who can lead projects and members who can work tasks' },
 			})
+			.get('/stats', async ({ erp }) => ok(await service.stats(await context(erp))), {
+				erp: { permission: ['project:read'] },
+				detail: { description: 'Dashboard counts over the projects this caller may see (M01)' },
+			})
 			.get('/:id', async ({ params, erp }) => ok(await service.get(await context(erp), id(params))), {
 				erp: { permission: ['project:read'] },
 				detail: { description: 'One project with tasks, evidence and (with project:read_cost) costs' },

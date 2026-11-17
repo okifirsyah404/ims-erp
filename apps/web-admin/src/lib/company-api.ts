@@ -41,9 +41,10 @@ export type TCompanyProfile = {
 	warrantyCoverage: string | null;
 	warrantyExclusions: string | null;
 	warrantyServiceTerms: string | null;
-	/** Short-lived inline URLs of the letterhead logo and the signature image. */
+	/** Short-lived inline URLs of the letterhead logo, signature and onboarding image. */
 	logoUrl: string | null;
 	signatureUrl: string | null;
+	onboardingUrl: string | null;
 	/** `null` when the caller may not see bank accounts. */
 	bankAccounts: { vat: TInvoiceBankAccount | null; nonVat: TInvoiceBankAccount | null } | null;
 };
@@ -127,6 +128,19 @@ export function companyProfileQueryOptions() {
 	return queryOptions({
 		queryKey: ['company-profile'],
 		queryFn: () => request<TCompanyProfile | null>('/company/profile'),
+	});
+}
+
+/** Public branding for the login page (`GET /company/branding`, no session). */
+export type TCompanyBranding = {
+	name: string | null;
+	onboardingUrl: string | null;
+};
+
+export function companyBrandingQueryOptions() {
+	return queryOptions({
+		queryKey: ['company-branding'],
+		queryFn: () => request<TCompanyBranding>('/company/branding'),
 	});
 }
 

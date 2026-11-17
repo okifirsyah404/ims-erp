@@ -74,13 +74,14 @@ const settings = {
 	'numbering.type.item_product': 'Product',
 	'numbering.type.item_material': 'Material',
 	'numbering.type.item_component': 'Component',
-	'companyProfile.section.images': 'Logo',
-	'companyProfile.imagesHint': 'Printed in the letterhead of every document.',
+	'companyProfile.section.images': 'Images',
+	'companyProfile.imagesHint': 'The letterhead logo is printed on every document; the login page image is the picture shown on /login.',
 	'companyProfile.image.logo': 'Letterhead logo',
+	'companyProfile.image.onboarding': 'Login page image',
 	'companyProfile.imageSaved': 'Image saved',
 
 	'document.title': 'Document settings',
-	'document.description': 'Logo, signature and the values used when documents are printed and signed.',
+	'document.description': 'The values used when documents are printed and signed.',
 	'document.settingsTitle': 'Document settings',
 	'document.settingsDescription': 'Values used by the document module (group `document`).',
 	'document.settingsEmpty':

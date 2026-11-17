@@ -22,6 +22,7 @@ import type { IItemRepository } from '../contracts/item.repository.interface';
 import type { IWarehouseRepository } from '../contracts/warehouse.repository.interface';
 import {
 	BALANCE_REPOSITORY_TOKEN,
+	ITEM_IMAGE_SERVICE_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
@@ -35,6 +36,7 @@ import type { TTx } from '@drizzle/types';
 import { applyMovementCost, type TCostState } from '../utils/moving-average';
 import type { CodeNumberService } from '@app/code-number';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import type { ItemImageService } from './item-image.service';
 import { InventoryAuditWriter } from './inventory-audit.writer';
 
 /** One balance row decorated with readable item and warehouse names. */
@@ -43,12 +45,16 @@ export type TStockBalanceWithNames = TStockBalanceSelect & {
 	itemName: string | null;
 	/** Resolved warehouse name; `null` when the warehouse is archived or unknown. */
 	warehouseName: string | null;
+	/** Item photo URL; `null` when the item has no photo or is unknown. */
+	imageUrl: string | null;
 };
 
 /** One movement row decorated with readable item and warehouse names. */
 export type TStockMovementWithNames = TStockMovementSelect & {
 	itemName: string | null;
 	warehouseName: string | null;
+	/** Item photo URL; `null` when the item has no photo or is unknown. */
+	imageUrl: string | null;
 };
 
 /** Movement types that decrease stock. Every other type increases it. */
@@ -123,6 +129,9 @@ export class StockService {
 		/** Name resolution for stock-row decoration (items and warehouses). */
 		@inject(ITEM_REPOSITORY_TOKEN)
 		private readonly itemRepository: IItemRepository,
+		/** Turns an item's stored photo key into a URL for the same rows. */
+		@inject(ITEM_IMAGE_SERVICE_TOKEN)
+		private readonly itemImages: Pick<ItemImageService, 'urlFor'>,
 		/**
 		 * ERP-0009 numbering authority: movement codes are sequence-allocated
 		 * inside the posting transaction (hardening plan D4), replacing the
@@ -155,8 +164,11 @@ export class StockService {
 			...result,
 			data: result.data.map((row) => ({
 				...row,
-				itemName: names.items.get(row.itemId) ?? null,
+				itemName: names.items.get(row.itemId)?.name ?? null,
 				warehouseName: names.warehouses.get(row.warehouseId) ?? null,
+				imageUrl: this.itemImages.urlFor(
+					names.items.get(row.itemId)?.imageObjectKey ?? null,
+				),
 			})),
 		};
 	}
@@ -173,8 +185,11 @@ export class StockService {
 			...result,
 			data: result.data.map((row) => ({
 				...row,
-				itemName: names.items.get(row.itemId) ?? null,
+				itemName: names.items.get(row.itemId)?.name ?? null,
 				warehouseName: names.warehouses.get(row.warehouseId) ?? null,
+				imageUrl: this.itemImages.urlFor(
+					names.items.get(row.itemId)?.imageObjectKey ?? null,
+				),
 			})),
 		};
 	}
@@ -184,7 +199,7 @@ export class StockService {
 	 * queries regardless of page size. Unknown ids are absent from the maps.
 	 */
 	private async resolveNames(ids: string[]): Promise<{
-		items: Map<string, string>;
+		items: Map<string, { name: string; imageObjectKey: string | null }>;
 		warehouses: Map<string, string>;
 	}> {
 		const unique = [...new Set(ids)];
@@ -196,7 +211,12 @@ export class StockService {
 			this.warehouseRepository.findNamesByIds(unique),
 		]);
 		return {
-			items: new Map(itemRows.map((row) => [row.id, row.name])),
+			items: new Map(
+				itemRows.map((row) => [
+					row.id,
+					{ name: row.name, imageObjectKey: row.imageObjectKey },
+				]),
+			),
 			warehouses: new Map(warehouseRows.map((row) => [row.id, row.name])),
 		};
 	}

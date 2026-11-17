@@ -65,6 +65,26 @@ export function notificationText(
 					documentName: variables.documentName ?? '',
 				}),
 			};
+		case 'document.signature_signed':
+			return {
+				title: t('template.document.signatureSigned.title', {
+					documentName: variables.documentName ?? '',
+				}),
+				body: t('template.document.signatureSigned.body', {
+					signerName: variables.signerName ?? '',
+					documentName: variables.documentName ?? '',
+				}),
+			};
+		case 'document.signature_declined':
+			return {
+				title: t('template.document.signatureDeclined.title', {
+					documentName: variables.documentName ?? '',
+				}),
+				body: t('template.document.signatureDeclined.body', {
+					signerName: variables.signerName ?? '',
+					documentName: variables.documentName ?? '',
+				}),
+			};
 		default:
 			return fallback;
 	}
