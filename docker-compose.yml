@@ -86,6 +86,10 @@ services:
       APP_PORT: 3000
       APP_URL: ${APP_URL:-}
       APP_LOG_LEVEL: ${APP_LOG_LEVEL:-}
+      # CORS allowlist file (JSON array of origins). The gitignored
+      # apps/backend/cors.json is mounted read-only below — create it from
+      # cors.example.json first, or the API runs with the web-URL fallback.
+      CORS_CONFIG_PATH: ${CORS_CONFIG_PATH:-cors.json}
       # Avatar rendering goes through the internal DiceBear service; override
       # with https://api.dicebear.com to use the public API instead.
       AVATAR_API_URL: http://dicebear:3000
@@ -117,6 +121,11 @@ services:
       # Host 3001 by default: host port 3000 is commonly taken by a local dev
       # server. Override with APP_PORT in .env.
       - "${APP_PORT:-3001}:3000"
+    volumes:
+      # Host-specific CORS allowlist lives outside the image. If the file is
+      # missing, Compose creates a directory at this path — the loader treats
+      # that as "unset" and falls back to APP_WEB_URL/APP_URL.
+      - ./apps/backend/cors.json:/app/apps/backend/cors.json:ro
     depends_on:
       postgres:
         condition: service_healthy
