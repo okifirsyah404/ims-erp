@@ -12,6 +12,35 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-17 - PR #100 conflict resolved against main (Zudoku removed, licensing docs kept as Markdown)
+
+`main` (`73b2a920`, PR #97 merged) deleted `apps/api-docs/` and
+`api-docs-drift.test.ts`. PR #100 still modified them, so the merge conflicted.
+Resolution:
+
+- Deleted the Zudoku files (take `main`).
+- Kept the licensing content as plain docs, not as a Zudoku site:
+  `docs/architecture/api/licensing.yaml` (OpenAPI for `/licensing/v1`) and
+  `docs/architecture/modules/licensing-integration.md` (own-app integration
+  guide). The API reference itself is `@elysia/openapi` in the backend.
+- `progress.md`: both sides kept (this entry above, PR #97 entry below).
+
+## 2026-11-17 - PR #100 takes the portal branch after its third move onto main
+
+`feat/m07-customer-portal` (`9823619`, PR #97 re-merged with `origin/main`
+`c5f65bd`, portal migration now `20261117130000_erp0022_customer_portal`)
+merged into `docs/m03-licensing-api` without conflicts. The PR's own diff
+against the portal branch is unchanged (api-docs licensing reference and
+guide, `api-docs-drift.test.ts`, plan docs). `docs/database/` reviewed and
+unchanged by this PR.
+
+- `bun install --frozen-lockfile` ok; `bun run --cwd apps/api-docs build`
+  exit 0 (20 routes prerendered).
+- With an official Bun 1.4.4 binary (CI version): `bun run typecheck` 4/4,
+  `bun run lint` exit 0, `bun run test` exit 0 (backend 1160/1160, web-admin
+  119, locales 98, react-email 6); `bun test ./test/unit` 697/697.
+- Backlog unchanged (status moves belong to #97 / #100 as already recorded).
+
 ## 2026-11-17 - Zudoku removed; GitGuardian follow-up (feat/m07-customer-portal)
 
 - **Zudoku removed.** `apps/api-docs/` and `apps/backend/test/unit/api-docs-drift.test.ts`
@@ -1673,6 +1702,47 @@ Built:
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-14 - M03 license API docs for own applications (Zudoku)
+
+Owner: M03 means license codes the ERP generates so each own application
+(gym, e-ticketing, visitor, …) can be activated. The API itself exists on
+`main` since 2026-11-06 (ERP-0019 stage 2). This change adds the
+documentation application teams need. Branch `docs/m03-licensing-api`,
+stacked on `feat/m07-customer-portal` as **PR #100**, because `apps/api-docs` lives in
+PR #97.
+
+- `apps/api-docs/openapi/licensing.yaml`: `validate` / `activate` /
+  `deactivate`, the `elk_` bearer, 120 calls a minute, the envelope, the
+  status vocabulary (`ok`, `grace`, `expired`, `not_started`, `suspended`,
+  `terminated`, `revoked`, `unknown`, `not_activated`) and the refusal codes
+  (404 / 403 / 409). Everything is taken from `license-api.service.ts`,
+  `licensing.errors.ts` and `utils/license.ts`.
+- `pages/licensing-integration.md`: what the ERP does (application, contract,
+  API key, activations log) and what the app does (activate at setup,
+  validate on start-up and every few hours, deactivate on uninstall). It also
+  covers a stable `instanceId`, offline caching up to `graceEndsOn`, the
+  grace period, the rate limit and secrets, with TypeScript and curl
+  examples.
+- `zudoku.config.tsx`: a second API (`/licensing-api`) and an "Own
+  applications" navigation group. The introduction links the guide.
+- `api-docs-drift.test.ts`: also checks `/licensing/v1` against
+  `LicenseApiController`, and requires an operationId and a summary in both
+  specs.
+- `licensing-subscription.md`: the envelope was described as
+  `{ success, message, data }` and is now corrected. The doc links the
+  Zudoku pages.
+- No code behaviour, schema or locale changed. `docs/database/` was
+  reviewed and is unchanged.
+
+**Verification**
+- Drift test: `bun test test/unit/api-docs-drift.test.ts` passes 3/3.
+  Renaming a documented path makes it fail (2 pass / 1 fail); after the
+  revert it passes 3/3 again.
+- `bunx tsc --noEmit` (apps/backend): clean.
+- `bun run build` (apps/api-docs): 20 routes prerendered, including
+  `licensing-api` and `licensing-integration`.
+- Browser (Playwright, the static `dist` served by request interception):
+  both pages render, with no page errors.
 ## 2026-11-15 - PR #97: GitGuardian findings in a unit test (no real secret)
 
 GitGuardian reported 8 "Generic Password" occurrences on PR #97, all in

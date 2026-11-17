@@ -322,6 +322,11 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   `/subscription/api-keys`, `/subscription/activations`; 12 + 11 unit tests,
   e2e. Not yet accepted by the owner.
 
+- License API docs for own applications (gym, e-ticketing, visitor, …) —
+  T24 groundwork, ERP-0019. Evidence: `apps/api-docs` (Zudoku) guide
+  `licensing-integration` + `openapi/licensing.yaml`, drift test,
+  `progress.md` 2026-11-14.
+
 ### blocked
 - Pilot application licensing integration — T24. Needs pilot app source access.
 
