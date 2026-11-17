@@ -2,7 +2,16 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Card, CardContent, CardFooter } from '@ims-erp/ui/components/card';
+import {
+	Field,
+	FieldDescription,
+	FieldGroup,
+	FieldLabel,
+	FieldLegend,
+	FieldSeparator,
+	FieldSet,
+} from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import type { TCompanyProfile, TCompanyProfileInput } from '@/lib/company-api';
@@ -24,10 +33,10 @@ type TTextKey =
  * The company profile form: legal identity and letterhead contact only.
  *
  * @remarks
- * Signatory, bank accounts, default terms, warranty texts and the logo /
- * signature images are not edited here any more. They still exist in storage
- * and are still printed on documents; `PUT /company/profile` is a patch, so
- * omitting them leaves the stored values untouched.
+ * Signatory, bank accounts, default terms, warranty texts and the images are
+ * not edited here — the images have their own card on the page. They still
+ * exist in storage and are still printed on documents; `PUT /company/profile`
+ * is a patch, so omitting them leaves the stored values untouched.
  *
  * `readOnly` renders the same fields disabled for members without
  * `company:update`.
@@ -104,75 +113,91 @@ export function CompanyProfileForm({
 	}
 
 	const section = (title: string, fields: React.ReactNode) => (
-		<FieldGroup className='rounded-lg border p-4'>
-			<h2 className='text-sm font-semibold'>{title}</h2>
-			{fields}
-		</FieldGroup>
+		<FieldSet>
+			<FieldLegend variant='label'>{title}</FieldLegend>
+			<FieldGroup>{fields}</FieldGroup>
+		</FieldSet>
 	);
 
 	return (
-		<form onSubmit={handleSubmit} className='flex flex-col gap-6'>
-			{section(
-				t('settings:companyProfile.section.identity'),
-				<>
-					{textField('legalName', t('settings:companyProfile.legalName'), {
-						type: 'text',
-						required: true,
-						maxLength: 200,
-					})}
-					{textField('tradingName', t('settings:companyProfile.tradingName'), {
-						type: 'text',
-						maxLength: 200,
-					})}
-					{textField('documentCode', t('settings:companyProfile.documentCode'), {
-						type: 'text',
-						required: true,
-						maxLength: 16,
-						className: 'font-mono uppercase',
-						hint: t('settings:companyProfile.documentCodeHint'),
-					})}
-					{textField('taxId', t('settings:companyProfile.taxId'), { type: 'text', maxLength: 32 })}
-					{textField('tagline', t('settings:companyProfile.tagline'), { type: 'text', maxLength: 300 })}
-				</>,
-			)}
-			{section(
-				t('settings:companyProfile.section.contact'),
-				<>
-					<Field>
-						<FieldLabel htmlFor='company-addressLine'>{t('settings:companyProfile.addressLine')}</FieldLabel>
-						<Textarea
-							id='company-addressLine'
-							rows={3}
-							maxLength={1000}
-							value={values.addressLine}
-							onChange={set('addressLine')}
-							disabled={readOnly}
-						/>
-					</Field>
-					<div className='grid gap-3 sm:grid-cols-2'>
-						{textField('postalCode', t('settings:companyProfile.postalCode'), {
-							type: 'text',
-							maxLength: 10,
-						})}
-						{textField('phone', t('settings:companyProfile.phone'), { type: 'tel', maxLength: 100 })}
-					</div>
-					<div className='grid gap-3 sm:grid-cols-2'>
-						{textField('email', t('settings:companyProfile.email'), { type: 'email', maxLength: 200 })}
-						{textField('website', t('settings:companyProfile.website'), {
-							type: 'url',
-							maxLength: 200,
-							placeholder: 'https://',
-						})}
-					</div>
-				</>,
-			)}
-			{!readOnly && (
-				<div className='flex justify-end'>
-					<Button type='submit' disabled={submitting}>
-						{submitting ? t('common:action.saving') : t('common:action.save')}
-					</Button>
-				</div>
-			)}
+		<form onSubmit={handleSubmit}>
+			<Card>
+				<CardContent className='flex flex-col gap-6'>
+					{section(
+						t('settings:companyProfile.section.identity'),
+						<>
+							{textField('legalName', t('settings:companyProfile.legalName'), {
+								type: 'text',
+								required: true,
+								maxLength: 200,
+							})}
+							{textField('tradingName', t('settings:companyProfile.tradingName'), {
+								type: 'text',
+								maxLength: 200,
+							})}
+							{textField('documentCode', t('settings:companyProfile.documentCode'), {
+								type: 'text',
+								required: true,
+								maxLength: 16,
+								className: 'font-mono uppercase',
+								hint: t('settings:companyProfile.documentCodeHint'),
+							})}
+							{textField('taxId', t('settings:companyProfile.taxId'), { type: 'text', maxLength: 32 })}
+							{textField('tagline', t('settings:companyProfile.tagline'), {
+								type: 'text',
+								maxLength: 300,
+							})}
+						</>,
+					)}
+					<FieldSeparator />
+					{section(
+						t('settings:companyProfile.section.contact'),
+						<>
+							<Field>
+								<FieldLabel htmlFor='company-addressLine'>
+									{t('settings:companyProfile.addressLine')}
+								</FieldLabel>
+								<Textarea
+									id='company-addressLine'
+									rows={3}
+									maxLength={1000}
+									value={values.addressLine}
+									onChange={set('addressLine')}
+									disabled={readOnly}
+								/>
+							</Field>
+							<div className='grid gap-5 sm:grid-cols-2'>
+								{textField('postalCode', t('settings:companyProfile.postalCode'), {
+									type: 'text',
+									maxLength: 10,
+								})}
+								{textField('phone', t('settings:companyProfile.phone'), {
+									type: 'tel',
+									maxLength: 100,
+								})}
+							</div>
+							<div className='grid gap-5 sm:grid-cols-2'>
+								{textField('email', t('settings:companyProfile.email'), {
+									type: 'email',
+									maxLength: 200,
+								})}
+								{textField('website', t('settings:companyProfile.website'), {
+									type: 'url',
+									maxLength: 200,
+									placeholder: 'https://',
+								})}
+							</div>
+						</>,
+					)}
+				</CardContent>
+				{!readOnly && (
+					<CardFooter className='justify-end'>
+						<Button type='submit' disabled={submitting}>
+							{submitting ? t('common:action.saving') : t('common:action.save')}
+						</Button>
+					</CardFooter>
+				)}
+			</Card>
 		</form>
 	);
 }

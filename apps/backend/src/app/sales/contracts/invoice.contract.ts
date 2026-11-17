@@ -39,6 +39,37 @@ export const invoiceUpdateSchema = z
 		message: 'At least one field is required',
 	});
 
+/**
+ * One billing term of a sales order (M02 web billing card, ADR-0011 step
+ * 3d-2): the next planned term, a percentage of the order's tax base, an
+ * amount incl. VAT, or whatever is left.
+ */
+export const termInputSchema = z.discriminatedUnion('mode', [
+	z.object({ mode: z.literal('next') }),
+	z.object({ mode: z.literal('percentage'), bps: z.number().int().min(1).max(10_000) }),
+	z.object({ mode: z.literal('amount'), total: minorAmount.refine((value) => value > 0) }),
+	z.object({ mode: z.literal('remaining') }),
+]);
+
+/** `POST /invoices` from the web: a draft for one term of an order. */
+export const invoiceTermCreateSchema = z.object({
+	salesOrderId: z.string().uuid(),
+	term: termInputSchema,
+	description: z.string().trim().max(200).nullish().transform((v) => (v ? v : null)),
+	dueDate: isoDate.nullish().transform((v) => v ?? null),
+	notes: z.string().trim().max(2000).nullish().transform((v) => (v ? v : null)),
+});
+
+/** `POST /invoices/:id/issue`: the dates the issuer confirms (both optional). */
+export const invoiceIssueSchema = z
+	.object({
+		issueDate: isoDate.nullish().transform((v) => v ?? null),
+		dueDate: isoDate.nullish().transform((v) => v ?? null),
+	})
+	.default({ issueDate: null, dueDate: null });
+
+export const salesOrderIdParamSchema = z.object({ orderId: z.string().uuid() });
+
 export const invoiceListQuerySchema = z.object({
 	page: z.coerce.number().int().positive().default(1),
 	limit: z.coerce.number().int().positive().max(100).default(20),
@@ -54,7 +85,19 @@ export const invoiceListQuerySchema = z.object({
 		])
 		.optional(),
 	customerId: z.string().uuid().optional(),
+	/** The web's down-payment list (`termKind=down_payment`). */
+	termKind: z.enum(['down_payment', 'installment', 'settlement']).optional(),
+	/** Code, title, order code or customer name. */
+	search: z.string().trim().max(100).optional(),
+	/** Issued or partly paid with a due date before today (Jakarta). */
+	overdue: z
+		.enum(['true', 'false'])
+		.optional()
+		.transform((v) => v === 'true'),
 });
+
+export type TInvoiceTermCreateInput = z.output<typeof invoiceTermCreateSchema>;
+export type TInvoiceIssueInput = z.output<typeof invoiceIssueSchema>;
 
 /**
  * Window for the dashboard's invoiced-sales aggregate (M01).

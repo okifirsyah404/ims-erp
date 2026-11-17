@@ -4,7 +4,8 @@
  * Quotations (SPH) with their items and status history (ADR-0011 port step
  * 3c), sales orders (step 3d), delivery notes (step 5a), customer invoices
  * and their receipts (kwitansi, owned by Sales per finance plan D2), plus the
- * transitional `payments` scaffold.
+ * transitional `payments` scaffold. Online payment checkouts moved to the
+ * `payment` module (ADR-0023).
  *
  * House rules honoured here:
  * - **Company-wide, no `organization_id`** on the quotation tables
@@ -778,6 +779,10 @@ export const receipts = salesSchema.table(
 		),
 	],
 );
+
+/* ------------------------------------------------------------------------ *
+ * sales.gateway_payments moved to payment.gateway_payments (ADR-0023)
+ * ------------------------------------------------------------------------ */
 
 export const salesRelations = defineRelationsPart(
 	{ quotations, quotationItems, quotationStatusHistory, salesOrders, salesOrderItems, orderStatusHistory, deliveryNotes, deliveryNoteItems, payments, invoices, invoiceItems, receipts },

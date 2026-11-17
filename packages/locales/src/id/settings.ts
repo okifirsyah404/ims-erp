@@ -80,13 +80,14 @@ const settings: Record<keyof typeof en, string> = {
 	'numbering.type.item_product': 'Produk',
 	'numbering.type.item_material': 'Material',
 	'numbering.type.item_component': 'Komponen',
-	'companyProfile.section.images': 'Logo',
-	'companyProfile.imagesHint': 'Dicetak di kop surat setiap dokumen.',
+	'companyProfile.section.images': 'Gambar',
+	'companyProfile.imagesHint': 'Logo kop surat dicetak di setiap dokumen; gambar halaman login adalah foto yang tampil di /login.',
 	'companyProfile.image.logo': 'Logo kop surat',
+	'companyProfile.image.onboarding': 'Gambar halaman login',
 	'companyProfile.imageSaved': 'Gambar disimpan',
 
 	'document.title': 'Pengaturan Dokumen',
-	'document.description': 'Logo, tanda tangan, dan nilai yang dipakai saat dokumen dicetak dan ditandatangani.',
+	'document.description': 'Nilai yang dipakai saat dokumen dicetak dan ditandatangani.',
 	'document.settingsTitle': 'Pengaturan dokumen',
 	'document.settingsDescription': 'Nilai yang dipakai modul dokumen (grup `document`).',
 	'document.settingsEmpty':

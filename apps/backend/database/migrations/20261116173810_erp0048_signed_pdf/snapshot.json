@@ -1,0 +1,184 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "9a93dbcf-ce37-410e-98ee-d07f85f0c272",
+  "prevIds": [
+    "f9387da9-98a4-4f5d-9afb-dd6969fa7033"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "document",
+        "signatures",
+        "signature_image_key"
+      ],
+      "writes": [
+        "s|col|document.signatures.signature_image_key",
+        "n|col|document.signatures.signature_image_key",
+        "e|col|document.signatures.signature_image_key"
+      ],
+      "reads": [
+        "n|tbl|document.signatures",
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "document",
+        "signatures",
+        "source_file_id"
+      ],
+      "writes": [
+        "s|col|document.signatures.source_file_id",
+        "n|col|document.signatures.source_file_id",
+        "e|col|document.signatures.source_file_id"
+      ],
+      "reads": [
+        "n|tbl|document.signatures",
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "document",
+        "signatures",
+        "signed_file_key"
+      ],
+      "writes": [
+        "s|col|document.signatures.signed_file_key",
+        "n|col|document.signatures.signed_file_key",
+        "e|col|document.signatures.signed_file_key"
+      ],
+      "reads": [
+        "n|tbl|document.signatures",
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "signatures",
+        "signatures_source_file_id_idx"
+      ],
+      "writes": [
+        "s|idx|document.signatures_source_file_id_idx",
+        "n|idx|document.signatures_source_file_id_idx",
+        "e|idx|document.signatures_source_file_id_idx",
+        "n|rel|document.signatures_source_file_id_idx"
+      ],
+      "reads": [
+        "n|tbl|document.signatures",
+        "n|sch|document",
+        "n|col|document.signatures.source_file_id"
+      ]
+    },
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "document",
+        "access_logs"
+      ],
+      "writes": [
+        "s|ck|document.access_logs.access_logs_action_check"
+      ],
+      "reads": [
+        "n|tbl|document.access_logs",
+        "n|sch|document",
+        "n|col|document.access_logs.action",
+        "e|col|document.access_logs.action"
+      ],
+      "sqlHash": "5e6b5b9f04e41a7f"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signature_image_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "source_file_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signed_file_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signatures_source_file_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "source_file_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"document\",\"access_logs\",\"access_logs_action_check\"]",
+      "set": {
+        "value": "\"action\" IN ('view', 'download', 'print', 'share', 'delete', 'pdf_sign')"
+      }
+    }
+  ]
+}

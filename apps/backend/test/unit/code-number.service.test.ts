@@ -85,6 +85,7 @@ function company(documentCode: string | null): ICompanyService {
 	return {
 		getProfile: async () =>
 			documentCode ? ({ documentCode } as TCompanyProfileSnapshot) : null,
+		getDisplayName: async () => null,
 	};
 }
 

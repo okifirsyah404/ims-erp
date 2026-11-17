@@ -26,7 +26,9 @@ beforeAll(async () => {
 	installAuthMock();
 	installPermissionResolverMock();
 	// Import after the module mocks are installed (bun mock.module is hoist-sensitive).
-	const { INVOICE_SERVICE_TOKEN } = await import('../../src/app/sales/constants/ar-di');
+	const { INVOICE_SERVICE_TOKEN, INVOICE_BILLING_SERVICE_TOKEN } = await import(
+		'../../src/app/sales/constants/ar-di'
+	);
 	const { InvoiceController } = await import('../../src/app/sales/controllers/invoice.controller');
 	const { PROJECT_SERVICE_TOKEN, HANDOVER_SERVICE_TOKEN } = await import(
 		'../../src/app/projects/constants/di'
@@ -47,6 +49,10 @@ beforeAll(async () => {
 			}),
 		} as never,
 	});
+	// The merged controller also resolves the billing service at plugin build
+	// time (for /invoices/orders/:orderId/summary); this suite only exercises
+	// the summary guard, so an empty stub is enough.
+	container.register(INVOICE_BILLING_SERVICE_TOKEN, { useValue: {} as never });
 	container.register(PROJECT_SERVICE_TOKEN, {
 		useValue: {
 			stats: async () => ({

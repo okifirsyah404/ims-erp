@@ -51,12 +51,18 @@ import {
  */
 export function ItemForm({
 	item,
+	defaultItemKind,
+	compact,
 	submitting,
 	onSubmit,
 	onCancel,
 }: {
 	/** Existing item when editing; absent when creating. */
 	item?: TItem;
+	/** Preselects the kind on create, so a kind page creates its own kind. */
+	defaultItemKind?: TItemKind;
+	/** Hides the page heading — the dialog wrapper supplies its own. */
+	compact?: boolean;
 	submitting: boolean;
 	onSubmit: (input: TItemCreateInput | TItemUpdateInput) => void;
 	onCancel: () => void;
@@ -67,7 +73,9 @@ export function ItemForm({
 	const [sku, setSku] = useState(item?.sku ?? '');
 	const [serialNumber, setSerialNumber] = useState(item?.serialNumber ?? '');
 	const [name, setName] = useState(item?.name ?? '');
-	const [itemKind, setItemKind] = useState<TItemKind>(item?.itemKind ?? 'product');
+	const [itemKind, setItemKind] = useState<TItemKind>(
+		item?.itemKind ?? defaultItemKind ?? 'product',
+	);
 	const [categoryId, setCategoryId] = useState(item?.categoryId ?? '');
 	const [unitLabel, setUnitLabel] = useState<TItemUnitLabel>(item?.unitLabel ?? 'pcs');
 	const [brand, setBrand] = useState(item?.brand ?? '');
@@ -120,16 +128,18 @@ export function ItemForm({
 
 	return (
 		<div className='flex flex-col gap-6'>
-			<div>
-				<h1 className='text-2xl font-bold'>
-					{isEdit ? t('inventory:form.editItem') : t('inventory:form.newItem')}
-				</h1>
-				<p className='text-sm text-muted-foreground'>
-					{isEdit
-						? t('inventory:form.editItemDescription')
-						: t('inventory:form.newItemDescription')}
-				</p>
-			</div>
+			{compact ? null : (
+				<div>
+					<h1 className='text-2xl font-bold'>
+						{isEdit ? t('inventory:form.editItem') : t('inventory:form.newItem')}
+					</h1>
+					<p className='text-sm text-muted-foreground'>
+						{isEdit
+							? t('inventory:form.editItemDescription')
+							: t('inventory:form.newItemDescription')}
+					</p>
+				</div>
+			)}
 
 			<Card>
 				<CardHeader>

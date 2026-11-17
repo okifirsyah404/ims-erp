@@ -58,6 +58,8 @@ const CONCATENATED = SOURCES.map((file) => readFileSync(file, 'utf8')).join('\n'
  */
 const DYNAMIC_PREFIXES = [
 	'common:status.',
+	// Online payment status labels come from server values (ERP-0020).
+	'finance:gateway.status.',
 	'status.',
 	// Company setting value types, rendered from the stored `valueType`.
 	'settings:settings.type.',
@@ -158,6 +160,7 @@ const DYNAMIC_PREFIXES = [
 	'projects.forbidden.',
 	'projects.file.',
 	'aftersales.ticketRef.',
+	'sales.invoiceTerm.',
 	'aftersales.ticketState.',
 	'hr.notFound.',
 	'hr.employeeState.',
@@ -172,6 +175,12 @@ const DYNAMIC_PREFIXES = [
 	'licensing.api.',
 	'licensing.refused.',
 	'licensing.apiKey.',
+	// Customer portal (ERP-0022): stage and evidence labels are composed from
+	// the server value in `portal-presenter.ts`.
+	'portal.stage.',
+	'portal.evidence.',
+	'portal.role.',
+	'crm:portal.role.',
 	'catalog.notFound.',
 	'catalog.listing.',
 	'automation.whatsappNotFound.',
@@ -213,6 +222,14 @@ const DYNAMIC_PREFIXES = [
 	'orgDashboard.projects.status.',
 	'orgDashboard.activity.actions.',
 	'orgDashboard.cash.',
+	// Signature flow (ERP-0048/ERP-0049): the method and request status labels
+	// are composed from the server's value, so the prefix is what to match.
+	'signatures:methodOption.',
+	'signatures:status.',
+	// Notification templates are rendered from `templateCode` (server value).
+	'template.document.signatureRequested.',
+	'template.document.signatureSigned.',
+	'template.document.signatureDeclined.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

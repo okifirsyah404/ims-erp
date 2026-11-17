@@ -6,6 +6,17 @@ import type {
 } from '@drizzle/schemas/sales.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { TReceiptListQuery } from './invoice.contract';
+import type { TTermAmounts } from '../utils/invoice-terms';
+
+/** Invoice list filters (web: status, down payments, search, overdue). */
+export type TInvoiceListFilters = {
+	status?: string;
+	customerId?: string;
+	termKind?: string;
+	search?: string;
+	/** `today` (Jakarta) when only overdue invoices are wanted. */
+	overdueOn?: string;
+};
 
 /**
  * Invoice statuses that count as invoiced revenue (M01).
@@ -88,7 +99,7 @@ export type TInvoiceRepository = {
 	): Promise<TInvoiceSelect | null>;
 	list(
 		organizationId: string,
-		filters: { status?: string; customerId?: string },
+		filters: TInvoiceListFilters,
 		pagination: { page: number; limit: number },
 	): Promise<{ data: TInvoiceSelect[]; meta: { page: number; limit: number; total: number; totalPages: number } }>;
 	/**
@@ -123,8 +134,23 @@ export type TInvoiceRepository = {
 	): Promise<TInvoiceItemSelect[]>;
 	/** Every non-deleted invoice of a sales order, oldest first (includes void). */
 	listByOrder(salesOrderId: string): Promise<TInvoiceSelect[]>;
-	/** True when the order has any non-deleted invoice that is not void. */
+	/** True while the order has an invoice that is neither void nor cancelled. */
 	hasLiveInvoices(salesOrderId: string): Promise<boolean>;
+	/**
+	 * Drafts one billing term of an order under a per-order lock (two clicks
+	 * never bill the same term twice). `build` sees what the order's live
+	 * invoices already bill and returns the invoice row and its lines; it
+	 * runs inside the transaction (numbering may use `tx`).
+	 */
+	/**
+	 * Runs `work` in one transaction with the invoice row locked
+	 * (`SELECT … FOR UPDATE`); `null` when the invoice is missing.
+	 */
+	withLockedInvoice<T>(organizationId: string, id: string, work: (invoice: TInvoiceSelect, tx: unknown) => Promise<T>): Promise<T | null>;
+	createTermDraftLocked(
+		salesOrderId: string,
+		build: (billed: TTermAmounts, liveCount: number, tx: unknown) => Promise<{ row: Record<string, unknown>; items: Array<Record<string, unknown>> }>,
+	): Promise<TInvoiceSelect>;
 	/** One live receipt of this organization by id. */
 	findReceipt(organizationId: string, id: string): Promise<TReceiptSelect | null>;
 	/** All live receipts of an invoice, oldest first. */
@@ -146,8 +172,15 @@ export type TInvoiceRepository = {
 	 * in ONE transaction. The invoice must belong to the same organization as
 	 * the receipt. Returns null when the invoice is not payable or the amount
 	 * exceeds the outstanding total.
+	 *
+	 * `tx` joins the caller's transaction (gateway settlement, ERP-0020);
+	 * `capToOutstanding` records at most what is still owed instead of
+	 * refusing an overpayment (money already received online).
 	 */
-	addReceipt(data: TReceiptData): Promise<TReceiptSelect | null>;
+	addReceipt(
+		data: TReceiptData,
+		options?: { tx?: unknown; capToOutstanding?: boolean },
+	): Promise<TReceiptSelect | null>;
 	/**
 	 * Reverses a posted receipt (status `posted` only) and restores the
 	 * invoice's paid / outstanding / status in ONE transaction. Returns null

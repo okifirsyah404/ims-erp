@@ -446,6 +446,8 @@ beforeEach(() => {
 		container.resolve(BALANCE_REPOSITORY_TOKEN),
 		container.resolve(WAREHOUSE_REPOSITORY_TOKEN),
 		container.resolve(ITEM_REPOSITORY_TOKEN),
+		// Photo URLs are decoration only; the ledger tests do not assert them.
+		{ urlFor: () => null } as never,
 		createNumberingDouble(),
 		new AuditWriterDouble(),
 		database,

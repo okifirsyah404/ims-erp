@@ -1,0 +1,325 @@
+openapi: 3.1.0
+info:
+  title: Entragate ERP ΓÇö License API
+  version: 1.0.0
+  description: |
+    The license API for the company's **own applications** (gym, e-ticketing,
+    visitor management and more, M03 / ERP-0019). The ERP generates license
+    keys on a customer's contract; each installed application checks its key
+    here.
+
+    - **Server to server or app backend**: the application's API key (`elk_ΓÇª`)
+      must never ship inside a browser bundle or a mobile app that customers
+      can unpack.
+    - An API key belongs to **one application**: it can only see that
+      application's license keys. A key of another application answers like
+      an unknown key.
+    - **120 calls per minute** per API key (`429` above).
+    - Every call is written to the ERP's license log (key, installation, IP).
+    - Responses use the ERP envelope; dates are `YYYY-MM-DD` on the
+      Asia/Jakarta clock, timestamps are ISO 8601.
+
+    This file is curated by hand and checked against the routes by
+    `apps/backend/test/unit/api-docs-drift.test.ts`.
+servers:
+  - url: http://localhost:3000
+    description: Local ERP backend
+security:
+  - licenseApiKey: []
+tags:
+  - name: License
+    description: Validate a key, take a seat for an installation, release it.
+
+paths:
+  /licensing/v1/validate:
+    post:
+      tags: [License]
+      operationId: validateLicense
+      summary: Validate a license key
+      description: |
+        Whether the application may run. **Always answers `200`**: read
+        `data.valid` and `data.status`. `grace` is still valid; show the user
+        a renewal warning (`data.warning` is `true`).
+
+        Send `instanceId` to also check that this installation holds an
+        active seat. Without a seat the answer is `valid: false`,
+        `status: "not_activated"`. A valid call refreshes the seat's
+        `lastSeenAt`.
+
+        A renewal that was paid but is not active yet is activated before the
+        key is judged, so a customer who paid is never locked out.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [licenseKey]
+              properties:
+                licenseKey: { $ref: '#/components/schemas/LicenseKey' }
+                instanceId: { $ref: '#/components/schemas/InstanceId' }
+            example: { licenseKey: 'ABCDE-FGHJK-LMNPQ-RS234', instanceId: 'gym-jakarta-pc01' }
+      responses:
+        '200':
+          description: The verdict (also for unknown, expired or revoked keys).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { $ref: '#/components/schemas/Validation' } }
+              examples:
+                ok:
+                  summary: Valid
+                  value:
+                    requestId: 0190f1c2-0000-7000-8000-000000000001
+                    status: 200
+                    message: OK
+                    timestamp: 1794672000000
+                    data:
+                      valid: true
+                      status: ok
+                      warning: false
+                      licenseKey: 'ΓÇóΓÇóΓÇóΓÇó-S234'
+                      application: { code: GYM, name: Entragate Gym }
+                      customerName: PT Sehat Selalu
+                      packageName: Pro
+                      endsOn: '2027-11-04'
+                      graceEndsOn: '2027-11-11'
+                      daysLeft: 355
+                      maxActivations: 2
+                      activation: { instanceId: gym-jakarta-pc01, activatedAt: '2026-11-14T03:00:00.000Z', lastSeenAt: '2026-11-14T08:00:00.000Z' }
+                grace:
+                  summary: Ended, inside the 7-day grace
+                  value:
+                    requestId: 0190f1c2-0000-7000-8000-000000000002
+                    status: 200
+                    message: OK
+                    timestamp: 1794672000000
+                    data:
+                      valid: true
+                      status: grace
+                      warning: true
+                      licenseKey: 'ΓÇóΓÇóΓÇóΓÇó-S234'
+                      application: { code: GYM, name: Entragate Gym }
+                      customerName: PT Sehat Selalu
+                      packageName: Pro
+                      endsOn: '2026-11-11'
+                      graceEndsOn: '2026-11-18'
+                      daysLeft: -4
+                      maxActivations: 2
+                      activation: null
+                unknown:
+                  summary: Unknown key (or another application's key)
+                  value:
+                    requestId: 0190f1c2-0000-7000-8000-000000000003
+                    status: 200
+                    message: OK
+                    timestamp: 1794672000000
+                    data:
+                      valid: false
+                      status: unknown
+                      warning: false
+                      licenseKey: 'ΓÇóΓÇóΓÇóΓÇó-XXXX'
+                      application: null
+                      customerName: null
+                      packageName: null
+                      endsOn: null
+                      graceEndsOn: null
+                      daysLeft: null
+                      maxActivations: null
+                      activation: null
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/ApiKeyRejected' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /licensing/v1/activate:
+    post:
+      tags: [License]
+      operationId: activateLicense
+      summary: Activate an installation (take a seat)
+      description: |
+        Takes one of the key's seats (`maxActivations`) for this
+        installation. **Idempotent per `instanceId`**: activating the same
+        installation again returns its existing seat. Call it once at setup,
+        or whenever `validate` says `not_activated`.
+
+        Refusals carry the reason in `errors[0].message`:
+
+        | HTTP | Reason |
+        | --- | --- |
+        | `404` | unknown key (or another application's key) |
+        | `403` | expired, not started yet, suspended, terminated or revoked |
+        | `409` | every seat is in use: release one (`deactivate`, or staff release it in the ERP) |
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [licenseKey, instanceId]
+              properties:
+                licenseKey: { $ref: '#/components/schemas/LicenseKey' }
+                instanceId: { $ref: '#/components/schemas/InstanceId' }
+                deviceName: { type: string, maxLength: 200, description: 'Shown to staff on the contract, e.g. "Front desk PC".' }
+            example: { licenseKey: 'ABCDE-FGHJK-LMNPQ-RS234', instanceId: 'gym-jakarta-pc01', deviceName: 'Front desk PC' }
+      responses:
+        '200':
+          description: The installation holds a seat; same shape as `validate`.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties: { data: { $ref: '#/components/schemas/Validation' } }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/ApiKeyRejected' }
+        '403': { $ref: '#/components/responses/Refused' }
+        '404': { $ref: '#/components/responses/UnknownKey' }
+        '409': { $ref: '#/components/responses/SeatLimit' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /licensing/v1/deactivate:
+    post:
+      tags: [License]
+      operationId: deactivateLicense
+      summary: Release an installation's seat
+      description: |
+        Frees the seat so another installation can activate, e.g. on
+        uninstall or when moving to a new device. `404` when the key is
+        unknown or this installation holds no seat.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [licenseKey, instanceId]
+              properties:
+                licenseKey: { $ref: '#/components/schemas/LicenseKey' }
+                instanceId: { $ref: '#/components/schemas/InstanceId' }
+      responses:
+        '200':
+          description: Released.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - properties:
+                      data:
+                        type: object
+                        required: [released]
+                        properties: { released: { type: boolean, const: true } }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/ApiKeyRejected' }
+        '404': { $ref: '#/components/responses/UnknownKey' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+components:
+  securitySchemes:
+    licenseApiKey:
+      type: http
+      scheme: bearer
+      description: |
+        The application's license API key (`elk_ΓÇª`), issued in the ERP under
+        **Subscription ΓåÆ API keys** for an own application. The secret is
+        shown once; revoking it in the ERP stops it at once.
+
+  responses:
+    ValidationFailed:
+      description: The body failed validation (`errors[].field` / `message`).
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    ApiKeyRejected:
+      description: Missing, invalid or revoked API key.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    RateLimited:
+      description: More than 120 calls in a minute with this API key.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    Refused:
+      description: The license may not run (expired, not started, suspended, terminated or revoked).
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    UnknownKey:
+      description: Unknown key, another application's key, or (deactivate) no seat for this installation.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+    SeatLimit:
+      description: Every activation of this key is in use.
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+
+  schemas:
+    Envelope:
+      type: object
+      required: [requestId, status, message, timestamp, data]
+      properties:
+        requestId: { type: string, format: uuid }
+        status: { type: integer, example: 200 }
+        message: { type: string, example: OK }
+        timestamp: { type: integer, description: Unix milliseconds }
+        data: {}
+    ErrorEnvelope:
+      type: object
+      required: [requestId, status, message, timestamp, data, errors]
+      properties:
+        requestId: { type: string, format: uuid }
+        status: { type: integer, example: 403 }
+        message: { type: string, description: In the caller's language (`Accept-Language` `id` or `en`). }
+        timestamp: { type: integer }
+        data: { type: 'null' }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: [string, 'null'] }
+              message: { type: string }
+    LicenseKey:
+      type: string
+      minLength: 1
+      maxLength: 500
+      description: The key on the customer's contract, `XXXXX-XXXXX-XXXXX-XXXXX` (letters and digits without 0, 1, I, O).
+      example: ABCDE-FGHJK-LMNPQ-RS234
+    InstanceId:
+      type: string
+      minLength: 1
+      maxLength: 200
+      description: |
+        A stable id of this installation, chosen by the application and kept
+        across restarts and updates (e.g. a UUID stored on first run, or a
+        server name). One seat per `instanceId`.
+    Validation:
+      type: object
+      required: [valid, status, warning, licenseKey, application, customerName, packageName, endsOn, graceEndsOn, daysLeft, maxActivations, activation]
+      properties:
+        valid: { type: boolean, description: 'The application may run (`ok` or `grace`).' }
+        status:
+          type: string
+          enum: [ok, grace, expired, not_started, suspended, terminated, revoked, unknown, not_activated]
+          description: |
+            - `ok` ΓÇö active.
+            - `grace` ΓÇö the end date has passed, still valid for 7 days; warn the user.
+            - `expired` ΓÇö past the grace period (or the contract was renewed onto a new key).
+            - `not_started` ΓÇö the contract has not started (or is still a draft).
+            - `suspended` / `terminated` ΓÇö set by staff.
+            - `revoked` ΓÇö this key was revoked.
+            - `unknown` ΓÇö no such key for this application.
+            - `not_activated` ΓÇö valid key, but this `instanceId` holds no seat.
+        warning: { type: boolean, description: '`true` in `grace`.' }
+        licenseKey: { type: string, description: 'Masked: only the last four characters.', example: 'ΓÇóΓÇóΓÇóΓÇó-S234' }
+        application:
+          type: [object, 'null']
+          properties:
+            code: { type: string }
+            name: { type: string }
+        customerName: { type: [string, 'null'] }
+        packageName: { type: [string, 'null'] }
+        endsOn: { type: [string, 'null'], format: date, description: 'Last valid day (contract end or key expiry, whichever is first); null = perpetual.' }
+        graceEndsOn: { type: [string, 'null'], format: date }
+        daysLeft: { type: [integer, 'null'], description: 'Days until `endsOn` (negative inside the grace).' }
+        maxActivations: { type: [integer, 'null'], description: Seats of the key. }
+        activation:
+          type: [object, 'null']
+          description: This installation's seat, when `instanceId` was sent and holds one.
+          properties:
+            instanceId: { type: string }
+            activatedAt: { type: string, format: date-time }
+            lastSeenAt: { type: string, format: date-time }

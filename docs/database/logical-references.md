@@ -55,10 +55,10 @@ Table crm.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 530 |
+| Logical reference columns | 535 |
 | Distinct targets | 41 |
 | Cross-module `Ref:` declarations | 0 |
-| Intra-module `Ref:` declarations | 236 |
+| Intra-module `Ref:` declarations | 239 |
 
 Counts are re-derived on every run of `validate-dbml.ts`, which parses
 `docs.dbml` with `@dbml/core` and fails the run if a `Ref:` crosses a module
@@ -68,10 +68,10 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 | Target | Owner | Referring columns |
 |---|---|---|
-| `auth.users.id` | Identity | 184 || `auth.organizations.id` | Identity | 181 || `hr.employees.id` | HR | 19 || `crm.customers.id` | CRM | 18 || `document.documents.id` | Document | 17 || `catalog.items.id` | Catalog | 10 || `location.villages.id` | Location | 9 || `projects.projects.id` | Projects | 8 || `inventory.items.id` | Inventory | 7 || `inventory.warehouses.id` | Inventory | 7 || `inventory.warehouse_storages.id` | Inventory | 6 || `location.districts.id` | Location | 5 || `location.provinces.id` | Location | 5 || `location.regencies.id` | Location | 5 || `organization.departments.id` | Organization | 5 || `procurement.suppliers.id` | Procurement | 4 || `crm.customer_contacts.id` | CRM | 3 || `organization.positions.id` | Organization | 3 || `sales.invoices.id` | Sales | 3 || `sales.sales_orders.id` | Sales | 3 || `auth.portal_identities.id` | Identity | 2 || `crm.leads.id` | CRM | 2 || `finance.payments.id` | Finance | 2 || `inventory.stock_movements.id` | Inventory | 2 || `organization.branches.id` | Organization | 2 || `organization.cost_centers.id` | Organization | 2 || `procurement.purchase_orders.id` | Procurement | 2 || `accounting.chart_of_accounts.id` | Accounting | 1 || `accounting.journal_entries.id` | Accounting | 1 || `aftersales.service_tickets.id` | After-Sales | 1 || `assets.assets.id` | Assets | 1 || `catalog.item_categories.id` | Catalog | 1 || `catalog.item_variants.id` | Catalog | 1 || `catalog.units.id` | Catalog | 1 || `crm.customer_groups.id` | CRM | 1 || `finance.cash_bank_accounts.id` | Finance | 1 || `finance.cash_bank_transactions.id` | Finance | 1 || `finance.payment_terms.id` | Finance | 1 || `hr.bank_accounts.id` | HR | 1 || `payroll.salary_components.id` | Payroll | 1 || `projects.project_handover.id` | Projects | 1 |
+| `auth.users.id` | Identity | 189 || `auth.organizations.id` | Identity | 180 || `hr.employees.id` | HR | 19 || `crm.customers.id` | CRM | 18 || `document.documents.id` | Document | 17 || `catalog.items.id` | Catalog | 10 || `location.villages.id` | Location | 9 || `projects.projects.id` | Projects | 8 || `inventory.items.id` | Inventory | 7 || `inventory.warehouses.id` | Inventory | 7 || `inventory.warehouse_storages.id` | Inventory | 6 || `location.districts.id` | Location | 5 || `location.provinces.id` | Location | 5 || `location.regencies.id` | Location | 5 || `organization.departments.id` | Organization | 5 || `crm.customer_contacts.id` | CRM | 4 || `procurement.suppliers.id` | Procurement | 4 || `organization.positions.id` | Organization | 3 || `sales.invoices.id` | Sales | 3 || `sales.sales_orders.id` | Sales | 3 || `auth.portal_identities.id` | Identity | 2 || `crm.leads.id` | CRM | 2 || `finance.payments.id` | Finance | 2 || `inventory.stock_movements.id` | Inventory | 2 || `organization.branches.id` | Organization | 2 || `organization.cost_centers.id` | Organization | 2 || `procurement.purchase_orders.id` | Procurement | 2 || `accounting.chart_of_accounts.id` | Accounting | 1 || `accounting.journal_entries.id` | Accounting | 1 || `aftersales.service_tickets.id` | After-Sales | 1 || `assets.assets.id` | Assets | 1 || `catalog.item_categories.id` | Catalog | 1 || `catalog.item_variants.id` | Catalog | 1 || `catalog.units.id` | Catalog | 1 || `crm.customer_groups.id` | CRM | 1 || `finance.cash_bank_accounts.id` | Finance | 1 || `finance.cash_bank_transactions.id` | Finance | 1 || `finance.payment_terms.id` | Finance | 1 || `hr.bank_accounts.id` | HR | 1 || `payroll.salary_components.id` | Payroll | 1 || `projects.project_handover.id` | Projects | 1 |
 ## The 41 targets in full
 
-### `auth.users.id` - owner Identity, 184 referring columns
+### `auth.users.id` - owner Identity, 189 referring columns
 
 - `accounting.accounting_periods`  ->  `closed_by`
 - `accounting.accounting_periods`  ->  `reopened_by`
@@ -101,6 +101,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `assets.asset_movements`  ->  `moved_by_user_id`
 - `assets.borrowings`  ->  `borrower_user_id`
 - `audit.audit_logs`  ->  `actor_user_id`
+- `auth.portal_identities`  ->  `created_by`
 - `automation.faq_entries`  ->  `created_by`
 - `automation.faq_entries`  ->  `updated_by`
 - `automation.integrations`  ->  `created_by_user_id`
@@ -131,7 +132,10 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `document.documents`  ->  `issued_by_user_id`
 - `document.files`  ->  `uploaded_by_user_id`
 - `document.shares`  ->  `shared_by_user_id`
+- `document.signature_requests`  ->  `requested_by_user_id`
+- `document.signature_requests`  ->  `signer_user_id`
 - `document.signatures`  ->  `signer_user_id`
+- `document.user_signatures`  ->  `user_id`
 - `finance.bank_reconciliations`  ->  `reconciled_by`
 - `finance.cash_bank_transactions`  ->  `posted_by`
 - `finance.credit_memos`  ->  `issued_by`
@@ -189,6 +193,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `notification.notifications`  ->  `user_id`
 - `organization.departments`  ->  `manager_user_id`
 - `organization.settings`  ->  `updated_by`
+- `payment.gateway_payments`  ->  `requested_by`
 - `payroll.payroll_adjustments`  ->  `approved_by`
 - `payroll.payroll_adjustments`  ->  `requested_by`
 - `payroll.payroll_inputs`  ->  `created_by`
@@ -258,7 +263,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `ticket.tickets`  ->  `assignee_user_id`
 - `ticket.tickets`  ->  `created_by`
 
-### `auth.organizations.id` - owner Identity, 181 referring columns
+### `auth.organizations.id` - owner Identity, 180 referring columns
 
 - `accounting.account_balances`  ->  `organization_id`
 - `accounting.accounting_periods`  ->  `organization_id`
@@ -282,7 +287,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `aftersales.service_contracts`  ->  `organization_id`
 - `aftersales.service_parts_usage`  ->  `organization_id`
 - `aftersales.service_technicians`  ->  `organization_id`
-- `aftersales.service_ticket_comments`  ->  `organization_id`
 - `aftersales.service_work_orders`  ->  `organization_id`
 - `aftersales.sla_policies`  ->  `organization_id`
 - `aftersales.spare_parts`  ->  `organization_id`
@@ -602,18 +606,19 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `hr.employee_transfers`  ->  `to_department_id`
 - `hr.employees`  ->  `department_id`
 
+### `crm.customer_contacts.id` - owner CRM, 4 referring columns
+
+- `auth.portal_identities`  ->  `contact_id`
+- `sales.quotations`  ->  `customer_contact_id`
+- `ticket.ticket_messages`  ->  `author_contact_id`
+- `ticket.tickets`  ->  `contact_id`
+
 ### `procurement.suppliers.id` - owner Procurement, 4 referring columns
 
 - `assets.assets`  ->  `supplier_id`
 - `catalog.item_suppliers`  ->  `supplier_id`
 - `finance.ap_open_items`  ->  `supplier_id`
 - `finance.supplier_bills`  ->  `supplier_id`
-
-### `crm.customer_contacts.id` - owner CRM, 3 referring columns
-
-- `sales.quotations`  ->  `customer_contact_id`
-- `ticket.ticket_messages`  ->  `author_contact_id`
-- `ticket.tickets`  ->  `contact_id`
 
 ### `organization.positions.id` - owner Organization, 3 referring columns
 

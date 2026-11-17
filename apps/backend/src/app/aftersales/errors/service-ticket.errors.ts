@@ -21,8 +21,9 @@ export class TicketReferenceError extends AppError {
 
 /** The ticket is not in the state the action needs. */
 export class TicketStateError extends AppError {
-	constructor(action: 'assign' | 'start' | 'resolve' | 'reopen' | 'close') {
+	constructor(action: 'assign' | 'start' | 'resolve' | 'reopen' | 'close' | 'comment') {
 		const messages = {
+			comment: 'A closed ticket takes no new messages',
 			assign: 'Only a new or in-progress ticket can be assigned',
 			start: 'Only a new ticket can be started',
 			resolve: 'Only a new or in-progress ticket can be resolved',
