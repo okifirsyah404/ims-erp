@@ -85,9 +85,29 @@ At minimum, set in `apps/backend/.env`:
 | ------------------------------------- | ------------------------------------------------------------------------------ |
 | `APP_SECRET`                          | App secret; also used as `BETTER_AUTH_SECRET`                                  |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` | Database credentials                                                           |
-| `CORS_ORIGINS`                        | Browser origins allowed with credentials (defaults to `http://localhost:5173`) |
 | `S3_*`                                | Object storage for avatars/file uploads (optional locally)                     |
 | `SMTP_*`                              | Email sending (optional locally)                                               |
+
+Browser origins allowed for credentialed CORS live in the gitignored
+`apps/backend/cors.json` (not in env) — copy the template and edit:
+
+```sh
+cp apps/backend/cors.example.json apps/backend/cors.json
+```
+
+It is a JSON object with `allow` and `blacklist` origin arrays (both optional,
+blacklist wins over allow):
+
+```json
+{
+	"allow": ["https://app.example.com", "http://localhost:5173"],
+	"blacklist": []
+}
+```
+
+A missing file falls back to `APP_WEB_URL`/`APP_URL`; a malformed one fails the
+boot. Override its location with `CORS_CONFIG_PATH` (docker-compose mounts
+`apps/backend/cors.json` read-only into the container).
 
 In `apps/web-admin/.env`, set `VITE_API_URL` to the backend URL (must match the backend's `APP_PORT`).
 
