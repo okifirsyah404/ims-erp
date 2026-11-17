@@ -124,9 +124,19 @@ const bootstrap = new Elysia()
 		cors({
 			// Browser cross-origin requests from the web-admin dev server need
 			// credentialed CORS; never use a wildcard alongside credentials.
+			// Origins come from the gitignored `cors.json` (template:
+			// `cors.example.json`) with `allow`/`blacklist` lists. Without a
+			// file, only the web app's own origin is allowed; an empty
+			// effective allowlist (blacklist-only file) blocks every origin.
 			origin: appConfig.app.corsOrigins?.length
 				? appConfig.app.corsOrigins
-				: [appConfig.app.url ?? 'http://localhost:5173'],
+				: appConfig.app.corsOrigins != null
+					? [] // blacklist-only file: allow nothing
+					: [
+							appConfig.app.webUrl ??
+								appConfig.app.url ??
+								'http://localhost:5173',
+						],
 			credentials: true,
 			allowedHeaders: ['Content-Type', 'x-organization-id', 'Accept-Language'],
 			methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
