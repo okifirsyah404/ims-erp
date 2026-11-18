@@ -147,17 +147,13 @@ export class BalanceRepository implements IBalanceRepository {
 				itemId: key.itemId,
 				warehouseId: key.warehouseId,
 				binId: key.binId,
-				// A brand-new balance opens at zero and the guarded UPDATE below
-				// applies the delta. Opening at the delta broke every outbound
-				// movement (ERP-0068 found it): Postgres checks CHECK
-				// constraints on the proposed row *before* ON CONFLICT
-				// arbitration, so a negative delta failed
-				// `stock_balances_on_hand_check` even when the row existed. A
-				// negative delta on a missing balance is still refused, by the
-				// UPDATE guard (InsufficientStockError).
-				quantityOnHand: '0',
+				// A brand-new balance starts at the delta; available mirrors it
+				// because nothing can be reserved yet. A negative opening delta
+				// is refused by the CHECK constraints, which is correct: stock
+				// cannot start below zero either.
+				quantityOnHand: delta.quantity,
 				quantityReserved: '0',
-				quantityAvailable: '0',
+				quantityAvailable: delta.quantity,
 				lastMovementAt: delta.occurredAt,
 				createdAt: now,
 			})

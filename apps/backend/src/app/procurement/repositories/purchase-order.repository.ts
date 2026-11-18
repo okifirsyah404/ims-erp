@@ -27,7 +27,6 @@ import type {
 	IPurchaseOrderReceiving,
 	TReceivedQuantity,
 	TReceiveResult,
-	TUnreceiveResult,
 } from '../contracts/goods-receipt.repository.interface';
 import { quantityToMilli } from '@utils/money.util';
 
@@ -189,46 +188,6 @@ export class PurchaseOrderRepository implements IPurchaseOrderRepository, IPurch
 		const [updated] = await tx
 			.update(purchaseOrders)
 			.set({ status: complete ? 'received' : 'partially_received', updatedAt: now })
-			.where(eq(purchaseOrders.id, purchaseOrderId))
-			.returning();
-		return { ok: true, order: updated };
-	}
-
-	async unreceive(purchaseOrderId: string, lines: TReceivedQuantity[], tx: TTx): Promise<TUnreceiveResult> {
-		const [order] = await tx
-			.select()
-			.from(purchaseOrders)
-			.where(this.live(purchaseOrderId))
-			.for('update');
-		if (!order || (order.status !== 'partially_received' && order.status !== 'received')) {
-			return { ok: false, reason: 'notReturnable' };
-		}
-		const items = await tx
-			.select()
-			.from(purchaseOrderItems)
-			.where(and(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId), isNull(purchaseOrderItems.deletedAt)))
-			.for('update');
-		const now = new Date();
-		const received = new Map(items.map((item) => [item.id, quantityToMilli(item.quantityReceived)]));
-		for (const [index, line] of lines.entries()) {
-			const current = received.get(line.purchaseOrderItemId);
-			if (current === undefined) return { ok: false, reason: 'notReturnable', line: index + 1 };
-			const total = current - quantityToMilli(line.quantity);
-			if (total < 0n) return { ok: false, reason: 'overReturned', line: index + 1 };
-			received.set(line.purchaseOrderItemId, total);
-		}
-		for (const item of items) {
-			const total = received.get(item.id)!;
-			if (total === quantityToMilli(item.quantityReceived)) continue;
-			await tx
-				.update(purchaseOrderItems)
-				.set({ quantityReceived: (Number(total) / 1000).toFixed(3), updatedAt: now })
-				.where(eq(purchaseOrderItems.id, item.id));
-		}
-		const anyReceived = items.some((item) => received.get(item.id)! > 0n);
-		const [updated] = await tx
-			.update(purchaseOrders)
-			.set({ status: anyReceived ? 'partially_received' : 'sent', updatedAt: now })
 			.where(eq(purchaseOrders.id, purchaseOrderId))
 			.returning();
 		return { ok: true, order: updated };

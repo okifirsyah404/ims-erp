@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
-import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import {
 	Table,
@@ -34,7 +33,6 @@ function GoodsReceiptDetailPage() {
 	const { t, i18n } = useTranslation(['procurement', 'common']);
 	const { receiptId } = Route.useParams();
 	const canSeeCost = usePermission('product.read_cost');
-	const canReturn = usePermission('purchase_return.create');
 	const { data, isPending, isError, error } = useQuery(goodsReceiptQueryOptions(receiptId));
 	const language = i18n.language === 'en' ? 'en-GB' : 'id-ID';
 
@@ -46,20 +44,9 @@ function GoodsReceiptDetailPage() {
 			<Link to='/procurement/receipts' className='text-sm text-muted-foreground hover:underline'>
 				{t('procurement:receipts.back')}
 			</Link>
-			<div className='flex flex-wrap items-start justify-between gap-4'>
-				<div>
-					<h1 className='text-2xl font-bold'>{data.code}</h1>
-					<p className='text-sm text-muted-foreground'>{t('procurement:receipts.posted')}</p>
-				</div>
-				{canReturn && (
-					<Button
-						variant='outline'
-						render={<Link to='/procurement/purchase-returns/new' search={{ goodsReceiptId: receiptId }} />}
-						nativeButton={false}
-					>
-						{t('procurement:returns.returnGoods')}
-					</Button>
-				)}
+			<div>
+				<h1 className='text-2xl font-bold'>{data.code}</h1>
+				<p className='text-sm text-muted-foreground'>{t('procurement:receipts.posted')}</p>
 			</div>
 			<Card>
 				<CardHeader>

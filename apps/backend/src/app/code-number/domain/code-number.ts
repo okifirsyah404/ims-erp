@@ -49,7 +49,6 @@ export const CODE_TYPE_CODES: Record<CodeType, string> = {
 	item_product: 'PRD',
 	item_material: 'MAT',
 	item_component: 'CMP',
-	purchase_return: 'RTB',
 	purchase_request: 'PR',
 };
 
@@ -87,7 +86,6 @@ export const CODE_TYPE_MODULES: Record<CodeType, string> = {
 	item_product: 'inventory',
 	item_material: 'inventory',
 	item_component: 'inventory',
-	purchase_return: 'procurement',
 	purchase_request: 'procurement',
 };
 

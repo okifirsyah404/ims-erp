@@ -85,18 +85,4 @@ export interface ISerialUnitRepository {
 		data: { warehouseId: string; customerId: string | null; stockMovementId: string | null },
 		tx: TTx,
 	): Promise<string[]>;
-
-	/**
-	 * Marks the listed units returned to the supplier (ERP-0068), guarded on
-	 * `status = 'in_stock'` and the warehouse inside the update; custody
-	 * leaves the warehouse.
-	 *
-	 * @returns The serial numbers actually returned
-	 */
-	returnToSupplier(
-		itemId: string,
-		serialNumbers: readonly string[],
-		data: { warehouseId: string; stockMovementId: string | null },
-		tx: TTx,
-	): Promise<string[]>;
 }

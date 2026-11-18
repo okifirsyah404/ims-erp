@@ -159,9 +159,6 @@ beforeAll(async () => {
 		async sell() {
 			return [];
 		},
-		async returnToSupplier() {
-			return [];
-		},
 	};
 
 	// Import after mocks are installed (bun mock.module is hoist-sensitive).

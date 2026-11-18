@@ -15,8 +15,6 @@ export const OUTBOX_TOPICS = [
 	'license.due',
 	'service_ticket.updated',
 	'whatsapp.handoff',
-	// ERP-0068: purchase return approvals, shipping and cancellations.
-	'purchase_return.updated',
 ] as const;
 export type OutboxTopic = (typeof OUTBOX_TOPICS)[number];
 
