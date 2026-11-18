@@ -334,9 +334,16 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   e2e. Not yet accepted by the owner.
 
 - License API docs for own applications (gym, e-ticketing, visitor, …) —
-  T24 groundwork, ERP-0019. Evidence: `apps/api-docs` (Zudoku) guide
-  `licensing-integration` + `openapi/licensing.yaml`, drift test,
-  `progress.md` 2026-11-14.
+  T24 groundwork, ERP-0019. Evidence: `docs/architecture/modules/licensing-integration.md`
+  + `docs/architecture/api/licensing.yaml` (moved out of the removed Zudoku
+  site), `progress.md` 2026-11-14.
+
+- License API keys issued as the acting member — ERP-0019, PR #104. Evidence:
+  `progress.md` 2026-11-15; keys stay organization-owned but Better Auth is
+  called as the signing member (`issuedBy` in metadata, "Issued by" /
+  "Revoked by" on `/subscription/api-keys`), Better Auth `/api-key/*` HTTP
+  routes closed, refusals map to `403 licensing.apiKey.notPermitted`. Not yet
+  accepted by the owner.
 
 ### blocked
 - Pilot application licensing integration — T24. Needs pilot app source access.

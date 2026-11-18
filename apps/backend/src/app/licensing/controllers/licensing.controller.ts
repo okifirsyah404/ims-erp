@@ -67,7 +67,7 @@ export class LicensingController {
 			})
 			.get(
 				'/applications/:id/api-keys',
-				async ({ params }) => ok(await api.listApiKeys(id(params))),
+				async ({ params, erp }) => ok(await api.listApiKeys(erp.organizationId, id(params))),
 				{ erp: { permission: ['license:manage_api'] }, detail: { description: "An own application's machine keys (secrets never returned)" } },
 			)
 			.post(

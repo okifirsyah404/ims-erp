@@ -169,6 +169,8 @@ const licensing: Record<keyof typeof en, string> = {
 	'apiKeys.empty': 'Belum ada kunci API.',
 	'apiKeys.start': 'Diawali',
 	'apiKeys.created': 'Dibuat',
+	'apiKeys.issuedBy': 'Diterbitkan oleh',
+	'apiKeys.revokedBy': 'Dicabut oleh {{name}}',
 	'apiKeys.lastUsed': 'Terakhir dipakai',
 	'apiKeys.revoked': 'Kunci API dicabut',
 };

@@ -368,7 +368,7 @@ const api = {
 	'licensing.refused.seat_limit': 'Every activation of this key is in use',
 	'licensing.refused.not_activated': 'This installation is not activated',
 	'licensing.apiKey.ownOnly': 'API keys are only for the company’s own, active applications',
-	'licensing.apiKey.noOwner': 'The organization has no owner to issue the key',
+	'licensing.apiKey.notPermitted': 'Your role cannot issue or revoke license API keys',
 	'licensing.apiKey.notFound': 'API key not found',
 	'licensing.activationNotFound': 'Activation not found or already released',
 

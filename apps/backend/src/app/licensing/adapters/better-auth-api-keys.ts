@@ -7,14 +7,18 @@ import { LICENSING_API_KEY_CONFIG_ID } from '@providers/better-auth/plugins/api-
  * (config `licensing`, prefix `elk_`); licensing keeps only the key id.
  */
 export interface IApiKeyIssuer {
-	/** Creates an organization-owned key; the plaintext is returned once. */
-	issue(input: { organizationId: string; ownerUserId: string; name: string; applicationId: string }): Promise<{
+	/**
+	 * Creates an organization-owned key as the acting member (`issuerUserId`):
+	 * Better Auth checks that member's `apiKey:create`, and the issuer is kept
+	 * in the key metadata. The plaintext is returned once.
+	 */
+	issue(input: { organizationId: string; issuerUserId: string; name: string; applicationId: string }): Promise<{
 		id: string;
 		key: string;
 		start: string | null;
 	}>;
-	/** Disables a key for good. */
-	disable(input: { apiKeyId: string; ownerUserId: string }): Promise<void>;
+	/** Disables a key for good, as the acting member (`apiKey:update`). */
+	disable(input: { apiKeyId: string; actorUserId: string }): Promise<void>;
 	/** The key's id, `null` when invalid or disabled, or `rateLimited`. */
 	verify(key: string): Promise<{ id: string } | null | 'rateLimited'>;
 }
@@ -39,26 +43,28 @@ const apiKeyApi = auth.api as unknown as {
  * Better Auth implementation of {@link IApiKeyIssuer}.
  *
  * @remarks
- * Better Auth checks the creating member's organization permission, so the
- * calls run as the organization owner; who actually asked is checked by the
- * ERP (`license:manage_api`) and recorded on the licensing row.
+ * Every call runs as the member who acts (reviewer request on PR #100): Better
+ * Auth checks that member's organization `apiKey` permission, granted together
+ * with `license:manage_api`, and the issuer is stored in the key metadata
+ * (`issuedBy`) as well as on the licensing row (`created_by` / `revoked_by`).
+ * Organization-owned keys stay valid when the issuing member leaves.
  */
 export class BetterAuthApiKeyIssuer implements IApiKeyIssuer {
-	issue(input: { organizationId: string; ownerUserId: string; name: string; applicationId: string }) {
+	issue(input: { organizationId: string; issuerUserId: string; name: string; applicationId: string }) {
 		return apiKeyApi.createApiKey({
 			body: {
 				configId: LICENSING_API_KEY_CONFIG_ID,
 				organizationId: input.organizationId,
-				userId: input.ownerUserId,
+				userId: input.issuerUserId,
 				name: input.name,
-				metadata: { purpose: 'license-api', applicationId: input.applicationId },
+				metadata: { purpose: 'license-api', applicationId: input.applicationId, issuedBy: input.issuerUserId },
 			},
 		});
 	}
 
-	async disable(input: { apiKeyId: string; ownerUserId: string }) {
+	async disable(input: { apiKeyId: string; actorUserId: string }) {
 		await apiKeyApi.updateApiKey({
-			body: { configId: LICENSING_API_KEY_CONFIG_ID, keyId: input.apiKeyId, userId: input.ownerUserId, enabled: false },
+			body: { configId: LICENSING_API_KEY_CONFIG_ID, keyId: input.apiKeyId, userId: input.actorUserId, enabled: false },
 		});
 	}
 
