@@ -11,7 +11,8 @@ import {
 	BankReconciliationStateError,
 	CashBankAccountNotFoundError,
 } from '../errors/ledger.errors';
-import type { IBankReconciliationRepository, ICashBankRepository } from '../contracts/ledger.repositories';
+import type { IBankReconciliationRepository } from '../contracts/bank-reconciliation.repository.interface';
+import type { ICashBankRepository } from '../contracts/cash-bank.repository.interface';
 
 export type TReconciliationActionContext = {
 	organizationId: string;

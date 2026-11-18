@@ -1,7 +1,8 @@
 import { inject, injectable } from 'tsyringe';
 import { JOURNAL_REPOSITORY_TOKEN, CHART_OF_ACCOUNT_REPOSITORY_TOKEN } from '../constants/di';
 import type { TChartOfAccountSelect } from '@drizzle/schemas/accounting.schema';
-import type { IJournalRepository, IChartOfAccountRepository } from '../contracts/ledger.repositories';
+import type { IJournalRepository } from '../contracts/journal.repository.interface';
+import type { IChartOfAccountRepository } from '../contracts/chart-of-account.repository.interface';
 
 export type TReportContext = {
 	organizationId: string;

@@ -145,6 +145,40 @@ The updated `fix/m02-invoice-billing` (now on main with M04) went into
 - Not verified here: applying the regenerated migration to a disposable
   database, and the PR #102 API e2e after the merge.
 
+## 2026-11-18 - Accounting contracts split one file per table
+
+- `accounting/contracts/ledger.repositories.ts` (one barrel, 12 interfaces) is
+  replaced by 12 files `contracts/<table>.repository.interface.ts`, matching
+  the existing `tax.repository.interface.ts` naming. Interface bodies moved
+  verbatim; the aggregate join scope stays in each file's doc comment.
+- 28 consumer imports rewritten to the per-table file. The barrel is deleted.
+- Verified (2026-11-18): typecheck 4/4; accounting + invoice-billing +
+  payment-gateway tests 109 pass; `bun run lint` 0 errors (backend 9 pre-existing
+  warnings); `bun run test` backend 1219 / web-admin 119 / locales 98 /
+  react-email 6, 0 fail; `validate-dbml.ts` OK.
+
+## 2026-11-18 - Accounting reaches sales.invoices only through Sales' exported service
+
+- Sales publishes `IExportedInvoiceService` (`findById`, `updateTotals`,
+  `countDraftsInWindow`) via `EXPORTED_INVOICE_SERVICE_TOKEN`, following the
+  `Exported<Module>Service` pattern (`assets/services/exported-asset.service.ts`).
+  It depends only on Sales' own invoice repository.
+- Accounting no longer has an invoice repository. Deleted
+  `accounting/repositories/invoice-mirror.repository.ts`,
+  `IInvoiceMirrorRepository`, `INVOICE_MIRROR_REPOSITORY_TOKEN` and its
+  registration. `LedgerSettlementPortService` and `MonthEndCloseService` inject
+  the facade.
+- The draft-invoice count left `close-checklist.repository.ts` (it read
+  `sales.invoices`) and is answered by `countDraftsInWindow`.
+- `docs/database/`: no table, column or ref change; `validate-dbml.ts` OK.
+- Verified (2026-11-18, repo root): `bun run typecheck` 4/4; `bun run lint`
+  0 errors, backend 9 pre-existing warnings; `bun run test` backend 1219,
+  web-admin 119, locales 98, react-email 6, 0 fail; accounting + invoice-billing
+  + payment-gateway tests 109 pass; `validate-dbml.ts` OK.
+- Not verified: accounting API e2e against a live server.
+- Known remaining: `payment` still reads `sales.invoices` totals through
+  `InvoicePaymentPort` (Sales side, unchanged here).
+
 ## 2026-11-18 - LedgerRepository split per table; payment owns the ledger; Sales freed of accounting repositories
 
 Owner request: "pecah lagi ledger.repository.ts, harusnya 1 repository representasi 1 tabel

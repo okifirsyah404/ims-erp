@@ -22,11 +22,9 @@ import {
 	PeriodNotFoundError,
 	ReversalPeriodLockedError,
 } from '../errors/ledger.errors';
-import type {
-	IAccountingPeriodRepository,
-	IChartOfAccountRepository,
-	IJournalRepository,
-} from '../contracts/ledger.repositories';
+import type { IAccountingPeriodRepository } from '../contracts/accounting-period.repository.interface';
+import type { IChartOfAccountRepository } from '../contracts/chart-of-account.repository.interface';
+import type { IJournalRepository } from '../contracts/journal.repository.interface';
 import type { TChartOfAccountSelect } from '@drizzle/schemas/accounting.schema';
 
 /**

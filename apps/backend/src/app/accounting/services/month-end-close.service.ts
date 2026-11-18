@@ -2,8 +2,11 @@ import { inject, injectable } from 'tsyringe';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type { TTx } from '@drizzle/types';
 import { DRIZZLE_TOKEN } from '@di/provider';
-import { CLOSE_CHECKLIST_REPOSITORY_TOKEN, AR_OPEN_ITEM_REPOSITORY_TOKEN, AP_OPEN_ITEM_REPOSITORY_TOKEN, SUPPLIER_BILL_REPOSITORY_TOKEN, BANK_ACCOUNT_LINK_REPOSITORY_TOKEN, JOURNAL_REPOSITORY_TOKEN, INVOICE_MIRROR_REPOSITORY_TOKEN } from '../constants/di';
+import { CLOSE_CHECKLIST_REPOSITORY_TOKEN, AR_OPEN_ITEM_REPOSITORY_TOKEN, AP_OPEN_ITEM_REPOSITORY_TOKEN, SUPPLIER_BILL_REPOSITORY_TOKEN, BANK_ACCOUNT_LINK_REPOSITORY_TOKEN, JOURNAL_REPOSITORY_TOKEN } from '../constants/di';
 import { CASH_BANK_SERVICE_TOKEN } from '../constants/ar-di';
+// elysia-module rule 3.4: token and contract type only, never Sales' services or repositories.
+import { EXPORTED_INVOICE_SERVICE_TOKEN } from '@app/sales/constants/ar-di';
+import type { IExportedInvoiceService } from '@app/sales/contracts/exported-invoice.contract';
 import type { CashBankService } from './cash-bank.service';
 import type { TPaymentSelect } from '@drizzle/schemas/payment.schema';
 // elysia-module rule 3.4: cross-module imports are the DI token and the contract
@@ -17,7 +20,12 @@ import {
 	OpenItemNotFoundError,
 	ReportPeriodInvalidError,
 } from '../errors/ledger.errors';
-import type { ICloseChecklistRepository, IArOpenItemRepository, IApOpenItemRepository, ISupplierBillRepository, IBankAccountLinkRepository, IJournalRepository, IInvoiceMirrorRepository } from '../contracts/ledger.repositories';
+import type { ICloseChecklistRepository } from '../contracts/close-checklist.repository.interface';
+import type { IArOpenItemRepository } from '../contracts/ar-open-item.repository.interface';
+import type { IApOpenItemRepository } from '../contracts/ap-open-item.repository.interface';
+import type { ISupplierBillRepository } from '../contracts/supplier-bill.repository.interface';
+import type { IBankAccountLinkRepository } from '../contracts/bank-account-link.repository.interface';
+import type { IJournalRepository } from '../contracts/journal.repository.interface';
 
 export type TCloseActionContext = {
 	organizationId: string;
@@ -77,7 +85,7 @@ export class MonthEndCloseService {
 		@inject(SUPPLIER_BILL_REPOSITORY_TOKEN) private readonly bills: ISupplierBillRepository,
 		@inject(BANK_ACCOUNT_LINK_REPOSITORY_TOKEN) private readonly links: IBankAccountLinkRepository,
 		@inject(JOURNAL_REPOSITORY_TOKEN) private readonly journal: IJournalRepository,
-		@inject(INVOICE_MIRROR_REPOSITORY_TOKEN) private readonly invoices: IInvoiceMirrorRepository,
+		@inject(EXPORTED_INVOICE_SERVICE_TOKEN) private readonly invoices: IExportedInvoiceService,
 		@inject(CASH_BANK_SERVICE_TOKEN) private readonly cashBank: CashBankService,
 		/** ADR-0024: payment owns payment.payments; F7 reads/stamps it through this. */
 		@inject(PAYMENT_LEDGER_GATEWAY_TOKEN) private readonly payments: IPaymentLedgerGateway,
@@ -97,6 +105,11 @@ export class MonthEndCloseService {
 			.toISOString()
 			.slice(0, 10);
 		const pendingPayments = await this.payments.countOpen(organizationId);
+		const draftInvoices = await this.invoices.countDraftsInWindow(
+			organizationId,
+			startDate,
+			endDate,
+		);
 		const counts = await this.closeChecks.closeChecklistCounts(
 			organizationId,
 			startDate,
@@ -106,8 +119,8 @@ export class MonthEndCloseService {
 			{
 				key: 'draft_invoices',
 				label: 'Draft invoices in range must be issued or voided',
-				pass: counts.draftInvoicesInRange === 0,
-				count: counts.draftInvoicesInRange,
+				pass: draftInvoices === 0,
+				count: draftInvoices,
 			},
 			{
 				key: 'pending_payments',
@@ -236,7 +249,7 @@ export class MonthEndCloseService {
 
 	/* ----------------------------- internals ----------------------------- */
 
-	/** Rolls paid/outstanding back on `ar_open_items` + `sales.invoices`. */
+	/** Rolls paid/outstanding back on `ar_open_items` + the Sales invoice (via its export). */
 	private async rollbackInvoiceAllocation(
 		organizationId: string,
 		invoiceId: string,
@@ -261,7 +274,7 @@ export class MonthEndCloseService {
 		}, tx);
 		// The invoice itself returns to `issued` with rolled-back totals; the
 		// original invoice status check only allows issued/partially_paid/paid.
-		await this.invoices.updateSalesInvoiceTotals(organizationId, invoiceId, {
+		await this.invoices.updateTotals(organizationId, invoiceId, {
 			paidTotal: paidAmount,
 			outstandingTotal: outstandingAmount,
 			status: paidAmount === 0 ? 'issued' : 'partially_paid',

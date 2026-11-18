@@ -10,7 +10,7 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, desc, eq, isNull, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { IJournalRepository, TAccountActivity } from '../contracts/ledger.repositories';
+import type { IJournalRepository, TAccountActivity } from '../contracts/journal.repository.interface';
 
 /**
  * Drizzle queries of `accounting.journal_entries` and `accounting.journal_lines`.

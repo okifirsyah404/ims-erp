@@ -9,7 +9,7 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { IAccountingPeriodRepository } from '../contracts/ledger.repositories';
+import type { IAccountingPeriodRepository } from '../contracts/accounting-period.repository.interface';
 
 /**
  * Drizzle queries of `accounting.accounting_periods`.

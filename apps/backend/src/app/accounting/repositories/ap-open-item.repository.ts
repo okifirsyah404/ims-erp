@@ -4,7 +4,7 @@ import { apOpenItems, type TApOpenItemSelect } from '@drizzle/schemas/finance.sc
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { IApOpenItemRepository } from '../contracts/ledger.repositories';
+import type { IApOpenItemRepository } from '../contracts/ap-open-item.repository.interface';
 
 /**
  * Drizzle queries of `finance.ap_open_items` — the Accounts Payable sub-ledger

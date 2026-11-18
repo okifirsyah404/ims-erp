@@ -313,7 +313,6 @@ function makeHarness() {
 			if (row) (row as { updatedAt?: Date }).updatedAt = now();
 		},
 		closeChecklistCounts: async () => ({
-			draftInvoicesInRange: draftInvoiceCount,
 			postedInPeriod: entries.size,
 			draftPayments: [...paymentsRows.values()].filter((p) =>
 				['draft', 'submitted', 'approved'].includes(p.status as string),
@@ -463,6 +462,13 @@ function makeHarness() {
 		numbering,
 	);
 	const billService = new SupplierBillService(dbLike, repo as never, repo as never, posting, arResolver, numbering);
+	// Sales facade (EXPORTED_INVOICE_SERVICE_TOKEN): the invoice reads/writes and
+	// the draft count come from Sales, not from an Accounting repository.
+	const invoiceFacade = {
+		findById: repo.findSalesInvoiceById,
+		updateTotals: repo.updateSalesInvoiceTotals,
+		countDraftsInWindow: async () => draftInvoiceCount,
+	};
 	const closeService = new MonthEndCloseService(
 		dbLike,
 		repo as never,
@@ -471,7 +477,7 @@ function makeHarness() {
 		repo as never,
 		repo as never,
 		repo as never,
-		repo as never,
+		invoiceFacade as never,
 		cashBank,
 		paymentLedger as never,
 	);

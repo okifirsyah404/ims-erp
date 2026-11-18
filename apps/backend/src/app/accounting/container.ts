@@ -13,7 +13,6 @@ import {
 	CASH_BANK_SERVICE_TOKEN,
 	CHART_OF_ACCOUNT_REPOSITORY_TOKEN,
 	CLOSE_CHECKLIST_REPOSITORY_TOKEN,
-	INVOICE_MIRROR_REPOSITORY_TOKEN,
 	JOURNAL_REPOSITORY_TOKEN,
 	OPENING_BALANCE_REPOSITORY_TOKEN,
 	OPENING_BALANCE_SERVICE_TOKEN,
@@ -34,7 +33,6 @@ import { ApOpenItemRepository } from './repositories/ap-open-item.repository';
 import { SupplierBillRepository } from './repositories/supplier-bill.repository';
 import { BankReconciliationRepository } from './repositories/bank-reconciliation.repository';
 import { AccountBalanceRepository } from './repositories/account-balance.repository';
-import { InvoiceMirrorRepository } from './repositories/invoice-mirror.repository';
 import { CloseChecklistRepository } from './repositories/close-checklist.repository';
 import { TaxRepository } from './repositories/tax.repository';
 import { AccountService } from './services/account.service';
@@ -72,7 +70,7 @@ import {
  * module (`CODE_NUMBER_SERVICE_TOKEN`); accounting only consumes it.
  *
  * One registration per table repository (see
- * `contracts/ledger.repositories.ts`); services inject the two or three they
+ * `contracts/*.repository.interface.ts`); services inject the two or three they
  * actually use.
  */
 export function registerAccounting(container: DependencyContainer): void {
@@ -100,7 +98,6 @@ export function registerAccounting(container: DependencyContainer): void {
 		useClass: BankReconciliationRepository,
 	});
 	container.register(ACCOUNT_BALANCE_REPOSITORY_TOKEN, { useClass: AccountBalanceRepository });
-	container.register(INVOICE_MIRROR_REPOSITORY_TOKEN, { useClass: InvoiceMirrorRepository });
 	container.register(CLOSE_CHECKLIST_REPOSITORY_TOKEN, { useClass: CloseChecklistRepository });
 
 	container.register(POSTING_SERVICE_TOKEN, { useClass: PostingService });

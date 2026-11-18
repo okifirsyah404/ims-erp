@@ -10,7 +10,7 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, desc, eq, isNull, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { ICashBankRepository } from '../contracts/ledger.repositories';
+import type { ICashBankRepository } from '../contracts/cash-bank.repository.interface';
 
 /**
  * Drizzle queries of `finance.cash_bank_accounts` and

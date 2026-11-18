@@ -4,14 +4,10 @@ import {
 	bankReconciliations,
 	supplierBills,
 } from '@drizzle/schemas/finance.schema';
-import { invoices } from '@drizzle/schemas/sales.schema';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, count, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, count, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type {
-	ICloseChecklistRepository,
-	TCloseChecklistCounts,
-} from '../contracts/ledger.repositories';
+import type { ICloseChecklistRepository, TCloseChecklistCounts } from '../contracts/close-checklist.repository.interface';
 
 /**
  * Read model behind the month-end close checklist (F7).
@@ -31,18 +27,6 @@ export class CloseChecklistRepository implements ICloseChecklistRepository {
 		startDate: string,
 		endDate: string,
 	): Promise<TCloseChecklistCounts> {
-		const [draftInvoices] = await this.database
-			.select({ value: count() })
-			.from(invoices)
-			.where(
-				and(
-					eq(invoices.organizationId, organizationId),
-					isNull(invoices.deletedAt),
-					eq(invoices.status, 'draft'),
-					gte(invoices.createdAt, new Date(`${startDate}T00:00:00Z`)),
-					lte(invoices.createdAt, new Date(`${endDate}T23:59:59Z`)),
-				),
-			);
 		const [posted] = await this.database
 			.select({ value: count() })
 			.from(journalEntries)
@@ -76,7 +60,6 @@ export class CloseChecklistRepository implements ICloseChecklistRepository {
 				),
 			);
 		return {
-			draftInvoicesInRange: Number(draftInvoices?.value ?? 0),
 			postedInPeriod: Number(posted?.value ?? 0),
 			draftBills: Number(draftBills?.value ?? 0),
 			unreconciledReconciliations: Number(openReconciliations?.value ?? 0),

@@ -4,7 +4,7 @@ import { openingBalances, type TOpeningBalanceSelect } from '@drizzle/schemas/ac
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { IOpeningBalanceRepository } from '../contracts/ledger.repositories';
+import type { IOpeningBalanceRepository } from '../contracts/opening-balance.repository.interface';
 
 /** Drizzle queries of `accounting.opening_balances`. Tenant scoped, soft-delete aware. */
 @injectable()

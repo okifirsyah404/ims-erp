@@ -40,7 +40,8 @@ import type { ReportArchiveService } from '../services/report-archive.service';
 import type { BankReconciliationService } from '../services/bank-reconciliation.service';
 import type { MonthEndCloseService } from '../services/month-end-close.service';
 import { AR_OPEN_ITEM_REPOSITORY_TOKEN, AP_OPEN_ITEM_REPOSITORY_TOKEN } from '../constants/di';
-import type { IArOpenItemRepository, IApOpenItemRepository } from '../contracts/ledger.repositories';
+import type { IArOpenItemRepository } from '../contracts/ar-open-item.repository.interface';
+import type { IApOpenItemRepository } from '../contracts/ap-open-item.repository.interface';
 
 /** Sets the CSV download headers and returns the body unchanged. */
 function csvResponse(

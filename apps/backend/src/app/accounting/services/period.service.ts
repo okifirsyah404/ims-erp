@@ -6,7 +6,9 @@ import {
 	PeriodNotFoundError,
 	PeriodTransitionError,
 } from '../errors/ledger.errors';
-import type { IAccountingPeriodRepository, IJournalRepository, IAccountBalanceRepository } from '../contracts/ledger.repositories';
+import type { IAccountingPeriodRepository } from '../contracts/accounting-period.repository.interface';
+import type { IJournalRepository } from '../contracts/journal.repository.interface';
+import type { IAccountBalanceRepository } from '../contracts/account-balance.repository.interface';
 
 export type TPeriodTransitionContext = {
 	organizationId: string;

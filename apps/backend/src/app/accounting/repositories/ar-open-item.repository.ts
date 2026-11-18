@@ -4,7 +4,7 @@ import { arOpenItems, type TArOpenItemSelect } from '@drizzle/schemas/finance.sc
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { IArOpenItemRepository } from '../contracts/ledger.repositories';
+import type { IArOpenItemRepository } from '../contracts/ar-open-item.repository.interface';
 
 /**
  * Drizzle queries of `finance.ar_open_items` — the Accounts Receivable

@@ -7,7 +7,7 @@ import {
 } from '@drizzle/schemas/accounting.schema';
 import { REPORT_ARCHIVE_REPOSITORY_TOKEN, REPORT_SERVICE_TOKEN } from '../constants/ar-di';
 import { ACCOUNTING_PERIOD_REPOSITORY_TOKEN } from '../constants/di';
-import type { IAccountingPeriodRepository } from '../contracts/ledger.repositories';
+import type { IAccountingPeriodRepository } from '../contracts/accounting-period.repository.interface';
 import type { ReportArchiveRepository } from '../repositories/report-archive.repository';
 import type { ReportService } from './report.service';
 import {

@@ -7,7 +7,7 @@ import {
 	AccountInUseError,
 	AccountNotFoundError,
 } from '../errors/ledger.errors';
-import type { IChartOfAccountRepository } from '../contracts/ledger.repositories';
+import type { IChartOfAccountRepository } from '../contracts/chart-of-account.repository.interface';
 
 export type TCreateAccountInput = {
 	code: string;

@@ -19,7 +19,8 @@ import {
 	BillNotDraftError,
 	BillNotFoundError,
 } from '../errors/ledger.errors';
-import type { ISupplierBillRepository, IApOpenItemRepository } from '../contracts/ledger.repositories';
+import type { ISupplierBillRepository } from '../contracts/supplier-bill.repository.interface';
+import type { IApOpenItemRepository } from '../contracts/ap-open-item.repository.interface';
 
 export type TBillActionContext = {
 	organizationId: string;

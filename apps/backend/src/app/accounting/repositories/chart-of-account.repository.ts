@@ -9,7 +9,7 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { IChartOfAccountRepository } from '../contracts/ledger.repositories';
+import type { IChartOfAccountRepository } from '../contracts/chart-of-account.repository.interface';
 
 /**
  * Drizzle queries of `accounting.chart_of_accounts`.

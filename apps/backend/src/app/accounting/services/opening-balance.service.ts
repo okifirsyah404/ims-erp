@@ -15,7 +15,8 @@ import {
 	OpeningBalanceAlreadyPostedError,
 	OpeningBalanceLockedError,
 } from '../errors/ledger.errors';
-import type { IOpeningBalanceRepository, IChartOfAccountRepository } from '../contracts/ledger.repositories';
+import type { IOpeningBalanceRepository } from '../contracts/opening-balance.repository.interface';
+import type { IChartOfAccountRepository } from '../contracts/chart-of-account.repository.interface';
 
 export type TOpeningBalanceActionContext = {
 	organizationId: string;

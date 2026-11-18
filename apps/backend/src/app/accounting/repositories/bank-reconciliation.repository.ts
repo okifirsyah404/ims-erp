@@ -8,7 +8,7 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { IBankReconciliationRepository } from '../contracts/ledger.repositories';
+import type { IBankReconciliationRepository } from '../contracts/bank-reconciliation.repository.interface';
 
 /**
  * Drizzle queries of `finance.bank_reconciliations` and

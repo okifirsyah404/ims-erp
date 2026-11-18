@@ -2,7 +2,7 @@ import { inject, injectable } from 'tsyringe';
 import { CHART_OF_ACCOUNT_REPOSITORY_TOKEN } from '../constants/di';
 import { AR_POSTING_DEFAULT_CODES, type TArPostingRole } from '../constants/ar-posting';
 import { ArAccountNotConfiguredError } from '../errors/ledger.errors';
-import type { IChartOfAccountRepository } from '../contracts/ledger.repositories';
+import type { IChartOfAccountRepository } from '../contracts/chart-of-account.repository.interface';
 
 /**
  * Resolves the GL accounts the invoice/payment flows post against (F4, 1c).

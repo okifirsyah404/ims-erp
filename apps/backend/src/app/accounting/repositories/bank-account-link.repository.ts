@@ -4,7 +4,7 @@ import { bankAccountLinks, type TBankAccountLinkSelect } from '@drizzle/schemas/
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, eq, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { IBankAccountLinkRepository } from '../contracts/ledger.repositories';
+import type { IBankAccountLinkRepository } from '../contracts/bank-account-link.repository.interface';
 
 /**
  * Drizzle queries of `accounting.bank_account_links` — the mapping between a

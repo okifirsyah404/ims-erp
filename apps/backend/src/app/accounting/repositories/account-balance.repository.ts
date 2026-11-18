@@ -3,7 +3,7 @@ import type { TTx } from '@drizzle/types';
 import { accountBalances, type TAccountBalanceSelect } from '@drizzle/schemas/accounting.schema';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
-import type { IAccountBalanceRepository } from '../contracts/ledger.repositories';
+import type { IAccountBalanceRepository } from '../contracts/account-balance.repository.interface';
 
 /**
  * Drizzle queries of `accounting.account_balances` — the per-period balance

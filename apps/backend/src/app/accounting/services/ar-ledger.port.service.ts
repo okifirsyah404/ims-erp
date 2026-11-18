@@ -2,7 +2,8 @@ import { inject, injectable } from 'tsyringe';
 import type { TTx } from '@drizzle/types';
 import type { TJournalEntrySelect } from '@drizzle/schemas/accounting.schema';
 import { AR_OPEN_ITEM_REPOSITORY_TOKEN, JOURNAL_REPOSITORY_TOKEN } from '../constants/di';
-import type { IArOpenItemRepository, IJournalRepository } from '../contracts/ledger.repositories';
+import type { IArOpenItemRepository } from '../contracts/ar-open-item.repository.interface';
+import type { IJournalRepository } from '../contracts/journal.repository.interface';
 import type { IArLedgerPort } from '../contracts/ar-ledger.port';
 
 /**

@@ -4,9 +4,11 @@ import { AR_ACCOUNT_RESOLVER_TOKEN, CASH_BANK_SERVICE_TOKEN } from '../constants
 import {
 	AP_OPEN_ITEM_REPOSITORY_TOKEN,
 	AR_OPEN_ITEM_REPOSITORY_TOKEN,
-	INVOICE_MIRROR_REPOSITORY_TOKEN,
 	SUPPLIER_BILL_REPOSITORY_TOKEN,
 } from '../constants/di';
+// elysia-module rule 3.4: token and contract type only, never Sales' services or repositories.
+import { EXPORTED_INVOICE_SERVICE_TOKEN } from '@app/sales/constants/ar-di';
+import type { IExportedInvoiceService } from '@app/sales/contracts/exported-invoice.contract';
 import type { CashBankService } from '../services/cash-bank.service';
 import type { ArAccountResolverService } from '../services/ar-account-resolver.service';
 import type {
@@ -14,7 +16,9 @@ import type {
 	TSettlementDocument,
 	TSettlementOpenItem,
 } from '../contracts/ledger-settlement.port';
-import type { IArOpenItemRepository, IApOpenItemRepository, ISupplierBillRepository, IInvoiceMirrorRepository } from '../contracts/ledger.repositories';
+import type { IArOpenItemRepository } from '../contracts/ar-open-item.repository.interface';
+import type { IApOpenItemRepository } from '../contracts/ap-open-item.repository.interface';
+import type { ISupplierBillRepository } from '../contracts/supplier-bill.repository.interface';
 
 /**
  * Accounting/Finance side of the payment module's settlement (ADR-0024).
@@ -27,8 +31,8 @@ import type { IArOpenItemRepository, IApOpenItemRepository, ISupplierBillReposit
 @injectable()
 export class LedgerSettlementPortService implements ILedgerSettlementPort {
 	constructor(
-		@inject(INVOICE_MIRROR_REPOSITORY_TOKEN)
-		private readonly invoices: IInvoiceMirrorRepository,
+		@inject(EXPORTED_INVOICE_SERVICE_TOKEN)
+		private readonly invoices: IExportedInvoiceService,
 		@inject(AR_OPEN_ITEM_REPOSITORY_TOKEN)
 		private readonly ar: IArOpenItemRepository,
 		@inject(AP_OPEN_ITEM_REPOSITORY_TOKEN)
@@ -46,7 +50,7 @@ export class LedgerSettlementPortService implements ILedgerSettlementPort {
 		invoiceId: string,
 		tx?: unknown,
 	): Promise<TSettlementDocument | null> {
-		const invoice = await this.invoices.findSalesInvoiceById(organizationId, invoiceId, tx as TTx | undefined);
+		const invoice = await this.invoices.findById(organizationId, invoiceId, tx);
 		if (!invoice) return null;
 		return {
 			id: invoice.id,
@@ -73,7 +77,7 @@ export class LedgerSettlementPortService implements ILedgerSettlementPort {
 		tx: TTx,
 	): Promise<void> {
 		await this.ar.updateArOpenItem(organizationId, invoiceId, patch, tx);
-		await this.invoices.updateSalesInvoiceTotals(
+		await this.invoices.updateTotals(
 			organizationId,
 			invoiceId,
 			{

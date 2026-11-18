@@ -5,7 +5,7 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { ISupplierBillRepository } from '../contracts/ledger.repositories';
+import type { ISupplierBillRepository } from '../contracts/supplier-bill.repository.interface';
 
 /** Drizzle queries of `finance.supplier_bills`. Tenant scoped, soft-delete aware. */
 @injectable()

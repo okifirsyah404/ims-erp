@@ -22,7 +22,8 @@ import {
 	CashBankInsufficientFundsError,
 	CashBankLinkRequiredError,
 } from '../errors/ledger.errors';
-import type { ICashBankRepository, IBankAccountLinkRepository } from '../contracts/ledger.repositories';
+import type { ICashBankRepository } from '../contracts/cash-bank.repository.interface';
+import type { IBankAccountLinkRepository } from '../contracts/bank-account-link.repository.interface';
 
 export type TCashBankActionContext = {
 	organizationId: string;
