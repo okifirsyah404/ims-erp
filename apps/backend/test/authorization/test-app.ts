@@ -304,6 +304,9 @@ export function installSalesMocks() {
 		async findById(id) {
 			return (quotationStore.get(id) ?? null) as never;
 		},
+		async listSentForFollowUp() {
+			return [...quotationStore.values()].filter((row) => row.status === 'sent') as never;
+		},
 		async findItems() {
 			return [];
 		},
@@ -506,6 +509,9 @@ export async function buildTestApp() {
 			signedPdfUrl: async () => ({ url: '', fileName: 'signed.pdf' }),
 		} as never,
 	});
+	// ERP-0066: follow-up reminders publish to the outbox; not exercised here.
+	const { OUTBOX_SERVICE_TOKEN } = await import('../../src/app/automation/constants/di');
+	container.register(OUTBOX_SERVICE_TOKEN, { useValue: { publish: async () => null } as never });
 	container.register(SALES_SERVICE_TOKEN, { useClass: SalesService });
 	container.register(QUOTATION_SERVICE_TOKEN, { useClass: QuotationService });
 

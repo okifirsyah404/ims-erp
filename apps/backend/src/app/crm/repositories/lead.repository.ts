@@ -77,6 +77,20 @@ export class LeadRepository implements ILeadRepository {
 		return row ?? null;
 	}
 
+	listFollowUpsDue(until: Date): Promise<TLeadSelect[]> {
+		return this.database
+			.select()
+			.from(leads)
+			.where(
+				and(
+					isNull(leads.deletedAt),
+					inArray(leads.status, ['new', 'contacted', 'survey', 'quotation']),
+					lte(leads.nextFollowUpAt, until),
+				),
+			)
+			.orderBy(asc(leads.nextFollowUpAt));
+	}
+
 	async findByIdempotencyKey(idempotencyKey: string): Promise<TLeadSelect | null> {
 		const [row] = await this.database.select().from(leads).where(eq(leads.idempotencyKey, idempotencyKey)).limit(1);
 		return row ?? null;

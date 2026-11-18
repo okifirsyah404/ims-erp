@@ -65,6 +65,11 @@ export interface ILeadRepository {
 	paginate(request: TLeadPaginationRequest): Promise<TPaginationResult<TLeadSelect>>;
 
 	findById(id: string): Promise<TLeadSelect | null>;
+	/**
+	 * Open leads (not won or lost) whose next follow-up is at or before
+	 * `until` (ERP-0066), oldest first.
+	 */
+	listFollowUpsDue(until: Date): Promise<TLeadSelect[]>;
 
 	findByIdempotencyKey(idempotencyKey: string): Promise<TLeadSelect | null>;
 

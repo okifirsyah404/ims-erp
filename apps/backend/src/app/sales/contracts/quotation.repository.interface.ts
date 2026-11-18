@@ -74,6 +74,8 @@ export interface IQuotationRepository {
 	paginate(request: TQuotationPaginationRequest): Promise<TPaginationResult<TQuotationSelect>>;
 
 	findById(id: string): Promise<TQuotationSelect | null>;
+	/** Live quotations in status `sent` (ERP-0066 follow-ups), oldest sent first. */
+	listSentForFollowUp(): Promise<TQuotationSelect[]>;
 
 	findItems(quotationId: string): Promise<TQuotationItemSelect[]>;
 

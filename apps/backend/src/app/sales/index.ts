@@ -19,6 +19,8 @@ import { SalesOrderController } from './controllers/sales-order.controller';
 import { SalesReturnController } from './controllers/sales-return.controller';
 
 export { registerSales } from './container';
+export { registerQuotationFollowUpSchedule } from './queues/quotation-follow-up.queue';
+export { startQuotationFollowUpWorker } from './queues/quotation-follow-up.worker';
 
 /** Contract the payment module uses for invoices and receipts (ADR-0023). */
 export { INVOICE_PAYMENT_PORT_TOKEN, EXPORTED_INVOICE_SERVICE_TOKEN } from './constants/ar-di';

@@ -17,6 +17,9 @@ import {
 	type TQuotationStatusHistorySelect,
 } from '@drizzle/schemas/sales.schema';
 import { businessDateOf } from '@utils/business-date.util';
+import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
+import type { OutboxService } from '@app/automation/services/outbox.service';
+import { quotationFollowUpEvent, quotationFollowUpStages } from '../utils/quotation-follow-up';
 import type { TPaginationResult } from '@ims-erp/common';
 import { documentImageUrl } from '@providers/s3/document-image';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
@@ -124,7 +127,44 @@ export class QuotationService {
 		/** ERP-0044: the issued quotation is recorded in the document registry. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
+		/** ERP-0066: follow-up reminders go to n8n through the outbox. */
+		@inject(OUTBOX_SERVICE_TOKEN)
+		private readonly outbox: Pick<OutboxService, 'publish'>,
 	) {}
+
+	/**
+	 * Daily `quotation.follow_up_due` reminders (ERP-0066, weekdays): a
+	 * quotation still `sent` (no answer) 3 and 7 days after sending, and 2
+	 * days before it stops being valid, goes to the salesperson who made it.
+	 * Internal only (no message to the customer). Once per (quotation, stage)
+	 * through the outbox dedupe key; won / lost / superseded quotations stop.
+	 */
+	async publishFollowUpNotices(now = new Date()): Promise<{ processed: number; skipped: number }> {
+		const today = businessDateOf(now);
+		let processed = 0;
+		let skipped = 0;
+		for (const quotation of await this.quotations.listSentForFollowUp()) {
+			if (!quotation.sentAt) continue;
+			const sentDate = businessDateOf(quotation.sentAt);
+			const stages = quotationFollowUpStages(sentDate, quotation.validUntil, today);
+			if (stages.length === 0) continue;
+			const user = quotation.createdBy ? await this.users.getUser(quotation.createdBy).catch(() => null) : null;
+			const owner = quotation.createdBy
+				? { userId: quotation.createdBy, name: user?.name ?? null, phone: user?.phone ?? null, email: user?.email ?? null }
+				: null;
+			for (const stage of stages) {
+				const message = await this.outbox.publish(
+					'quotation.follow_up_due',
+					{ type: 'quotation', id: quotation.id },
+					quotationFollowUpEvent(quotation, stage, sentDate, today, owner),
+					{ dedupeKey: `quotation.follow_up_due:${quotation.id}:${stage}` },
+				);
+				if (message) processed += 1;
+				else skipped += 1;
+			}
+		}
+		return { processed, skipped };
+	}
 
 	private async requireVisible(ctx: TQuotationContext, id: string): Promise<TQuotationSelect> {
 		const quotation = await this.quotations.findById(id);

@@ -241,6 +241,17 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 
 ## M02 CRM and Sales
 
+### implemented (follow-ups)
+- Before-sales follow-up reminders to WhatsApp through n8n: a lead whose
+  follow-up date arrived goes to its owner (overdue > 3 days also to the
+  sales manager); a sent quotation without an answer after 3 and 7 days, and
+  2 days before it expires, goes to its creator. Weekdays 08:00, internal
+  only — ERP-0066. Evidence: `crm/services/lead.service.ts`
+  (`publishFollowUpNotices`), `sales/services/quotation.service.ts`,
+  `test/unit/lead.service.test.ts`, `test/unit/quotation.service.test.ts`,
+  `progress.md` 2026-11-16 (live ERP → n8n run). Gaps: after-sales
+  follow-ups (survey, maintenance, warranty) and document PDFs are next.
+
 ### planned
 - One template per document — T05. Evidence: dbml `documents` only.
 - Checkout / online orders — T21, ERP-0020. Evidence: dbml `commerce` only.
