@@ -8,7 +8,7 @@ import {
 	erpRoles,
 	organizationStatements,
 } from '../../src/providers/better-auth/ac/organization-ac';
-import { erpRoleNames } from '@ims-erp/common';
+import { erpRoleGrants, erpRoleNames } from '@ims-erp/common';
 
 describe('organization access control', () => {
 	test('defines every organization role (ADR-0018: no investor/customer)', () => {
@@ -134,6 +134,17 @@ describe('organization access control', () => {
 });
 
 // Grants ported from the M02/M05/M07 branch (ADR-0011).
+describe('license API keys (PR #100 review)', () => {
+	test('every role that manages license API keys can issue and revoke them in Better Auth, and only those', () => {
+		for (const role of erpRoleNames) {
+			const grants = erpRoleGrants[role] as Record<string, readonly string[] | undefined>;
+			const manages = grants.license?.includes('manage_api') ?? false;
+			const apiKey = grants.apiKey ?? [];
+			expect({ role, issue: apiKey.includes('create') && apiKey.includes('update') }).toEqual({ role, issue: manages });
+		}
+	});
+});
+
 describe('sales, procurement and project grants (ADR-0011)', () => {
 	test('cost and bank fields are limited to the roles that need them', () => {
 		for (const role of ['owner', 'finance', 'purchasing'] as const) {

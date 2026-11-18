@@ -20,6 +20,7 @@ import type {
 	IPurchaseOrderRepository,
 	TPurchaseOrderHeaderData,
 	TPurchaseOrderItemData,
+	TPurchaseOrderWrite,
 } from '../contracts/procurement.repository.interface';
 import type {
 	TPurchaseOrderBody,
@@ -33,12 +34,13 @@ import {
 	PurchaseOrderSelfApprovalError,
 	PurchaseOrderStateError,
 	PurchaseOrderSupplierUnavailableError,
+	PurchaseRequestLineUnavailableError,
 } from '../errors/procurement.errors';
 import { computePoTotals, DEFAULT_PO_VAT_RATE_BPS, poLineTotal } from '../utils/po-totals';
 import type { SupplierService } from './supplier.service';
 
 export type TPurchaseOrderDetail = TPurchaseOrderSelect & {
-	items: TPurchaseOrderItemSelect[];
+	items: (TPurchaseOrderItemSelect & { purchaseRequestId: string | null; purchaseRequestCode: string | null })[];
 	/** Tax base (DPP), derived for `included`. */
 	taxBase: number;
 };
@@ -109,6 +111,7 @@ export class PurchaseOrderService {
 				quantity: line.quantity,
 				unitPrice,
 				lineTotal: poLineTotal({ quantity: line.quantity, unitPrice }),
+				purchaseRequestItemId: line.purchaseRequestItemId,
 			};
 		});
 		const vatRateBps = body.vatMode === 'none' ? 0 : (body.vatRateBps ?? DEFAULT_PO_VAT_RATE_BPS);
@@ -145,23 +148,38 @@ export class PurchaseOrderService {
 
 	async get(id: string): Promise<TPurchaseOrderDetail> {
 		const order = await this.require(id);
-		const items = await this.orders.findItems(id);
+		const [items, requests] = await Promise.all([this.orders.findItems(id), this.orders.findItemRequests(id)]);
+		const byLine = new Map(requests.map((request) => [request.purchaseOrderItemId, request]));
 		const { taxBase } = computePoTotals(items.map((item) => item.lineTotal), order.vatMode, order.vatRateBps);
-		return { ...order, items, taxBase };
+		return {
+			...order,
+			items: items.map((item) => ({
+				...item,
+				purchaseRequestId: byLine.get(item.id)?.purchaseRequestId ?? null,
+				purchaseRequestCode: byLine.get(item.id)?.purchaseRequestCode ?? null,
+			})),
+			taxBase,
+		};
 	}
 
+	/** A failed write: not a draft, or a purchase request line that is not open. */
+	private written(result: TPurchaseOrderWrite): TPurchaseOrderSelect {
+		if (result.ok) return result.order;
+		if (result.reason === 'requestLine') throw new PurchaseRequestLineUnavailableError(result.line);
+		throw new PurchaseOrderStateError('notDraft');
+	}
+
+	/** Lines may order approved purchase request lines (`purchaseRequestItemId`), each on one live PO only. */
 	async create(actorUserId: string, body: TPurchaseOrderBody): Promise<TPurchaseOrderSelect> {
 		const { header, items } = await this.build(body);
-		return this.orders.create({ ...header, createdBy: actorUserId }, items);
+		return this.written(await this.orders.create({ ...header, createdBy: actorUserId }, items));
 	}
 
 	async update(id: string, body: TPurchaseOrderBody): Promise<TPurchaseOrderSelect> {
 		const order = await this.require(id);
 		if (order.status !== 'draft') throw new PurchaseOrderStateError('notDraft');
 		const { header, items } = await this.build(body);
-		const updated = await this.orders.replaceDraft(id, header, items);
-		if (!updated) throw new PurchaseOrderStateError('notDraft');
-		return updated;
+		return this.written(await this.orders.replaceDraft(id, header, items));
 	}
 
 	async submit(actorUserId: string, id: string): Promise<TPurchaseOrderSelect> {
@@ -233,6 +251,8 @@ export class PurchaseOrderService {
 			cancelledReason: reason,
 		});
 		if (!updated) throw new PurchaseOrderStateError('notCancellable');
+		// Its purchase request lines are open for ordering again.
+		await this.orders.syncRequestsOfOrder(id);
 		// ERP-0044: a cancelled PO is a dead document in the registry.
 		await this.documents.voidBySource('procurement', 'purchase_order', id);
 		return updated;

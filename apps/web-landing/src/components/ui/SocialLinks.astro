@@ -1,0 +1,38 @@
+---
+import SocialIcon from "./SocialIcon.astro";
+import { socials, type SocialKey } from "../../data/site";
+
+/** Row of social icon buttons. Entries without a URL render as non-interactive icons. */
+interface Props {
+  only?: SocialKey[];
+  itemClass: string;
+  class?: string;
+}
+
+const { only, itemClass, class: className } = Astro.props;
+const items = only ? socials.filter((s) => only.includes(s.key)) : socials;
+---
+
+<ul class:list={["flex", className]}>
+  {
+    items.map((social) => (
+      <li>
+        {social.href ? (
+          <a
+            href={social.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={social.label}
+            class:list={["flex items-center justify-center", itemClass]}
+          >
+            <SocialIcon name={social.key} />
+          </a>
+        ) : (
+          <span role="img" aria-label={social.label} class:list={["flex items-center justify-center", itemClass]}>
+            <SocialIcon name={social.key} />
+          </span>
+        )}
+      </li>
+    ))
+  }
+</ul>

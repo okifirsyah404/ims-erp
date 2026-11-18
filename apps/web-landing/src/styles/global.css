@@ -1,0 +1,181 @@
+@import "tailwindcss";
+@import "@ims-erp/design-tokens/theme.css";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/plus-jakarta-sans";
+
+@theme {
+  /* Desktop navigation needs ~1340px at the design's 64px gutters (01.01 Header). */
+  --breakpoint-nav: 84rem;
+}
+
+@layer base {
+  html {
+    @apply bg-white font-body text-fg antialiased;
+    /* The design uses font-native "normal" line-height unless a value is specified. */
+    line-height: normal;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply min-h-dvh;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-blue-600;
+  }
+}
+
+@utility container-page {
+  @apply mx-auto w-full max-w-[1440px] px-5 md:px-8 xl:px-16;
+}
+
+@utility text-gradient-accent {
+  background-image: linear-gradient(90deg, var(--eg-blue-600) 0%, var(--eg-gradient-accent-end) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Dual-thumb range (02.01 · Price range): two stacked inputs, only thumbs are interactive. */
+@utility range-thumb {
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    pointer-events: auto;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--eg-white);
+    box-shadow: 0 0 0 2px var(--eg-blue-600);
+    cursor: grab;
+  }
+
+  &::-moz-range-thumb {
+    pointer-events: auto;
+    width: 16px;
+    height: 16px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--eg-white);
+    box-shadow: 0 0 0 2px var(--eg-blue-600);
+    cursor: grab;
+  }
+
+  &::-webkit-slider-runnable-track {
+    background: transparent;
+  }
+
+  &::-moz-range-track {
+    background: transparent;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 2px var(--eg-blue-600), 0 0 0 5px var(--eg-blue-100);
+  }
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────────
+ * Subtle and opt-out: everything below only runs without prefers-reduced-motion.
+ */
+@layer base {
+  html {
+    /* Anchor targets land below the sticky header (63px mobile / 75px desktop). */
+    scroll-padding-top: 88px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+    interpolate-size: allow-keywords;
+  }
+
+  /* Cross-document page transitions (Chromium); other browsers navigate normally. */
+  @view-transition {
+    navigation: auto;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 220ms;
+  }
+
+  /* Scroll reveal: `[data-reveal]` fades in and rises 16px the first time it enters
+   * the viewport. Only applied once site.ts marks the document as `motion-ready`, so
+   * content is never hidden without JavaScript. */
+  .motion-ready [data-reveal]:not([data-revealed]) {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  .motion-ready [data-reveal] {
+    transition:
+      opacity 600ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: calc(var(--reveal-index, 0) * 70ms);
+  }
+
+  /* Accordions (FAQ, filters, specs): animate <details> height where supported. */
+  details::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition:
+      block-size 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      content-visibility 280ms allow-discrete;
+  }
+
+  details[open]::details-content {
+    block-size: auto;
+  }
+
+  /* Dropdowns / mega menus / palette panels opened via [data-open]. */
+  [data-pop] {
+    transition:
+      opacity 160ms ease-out,
+      transform 160ms ease-out,
+      display 160ms allow-discrete;
+  }
+
+  [data-pop]:not([hidden]) {
+    @starting-style {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+}
+
+@keyframes eg-shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+/* Loading skeleton block (catalog results, search). */
+@utility skeleton {
+  background: linear-gradient(90deg, var(--eg-surface) 0%, var(--eg-surface-2) 50%, var(--eg-surface) 100%);
+  background-size: 200% 100%;
+  animation: eg-shimmer 1.4s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

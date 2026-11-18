@@ -56,6 +56,10 @@ Amounts are integer IDR minor units (divide by 100 for rupiah). Topics:
 | `lead.follow_up_due` | CRM: weekday job (ERP-0066) | `leadId`, `reference`, `name`, `companyName`, `phone`, `whatsapp`, `email`, `status`, `source`, `needs`, `estimatedValue`, `nextFollowUpAt`, `dueDate`, `daysOverdue`, `stage` (`due` / `overdue` = more than 3 days late), `owner{userId,name,phone,email}` or null |
 | `quotation.sent` | Sales: quotation sent (ERP-0067) | `quotationId`, `code`, `title`, `sentAt`, `validUntil`, `grandTotal`, `currencyCode`, `customer{id,name,email,phone,whatsapp}`, `owner{userId,name,phone,email}` (the creator), `pdf{url,fileName,expiresAt}` or null |
 | `quotation.follow_up_due` | Sales: weekday job (ERP-0066) | `quotationId`, `code`, `title`, `stage` (`sent_3d` / `sent_7d` / `expiring`), `sentDate`, `daysSinceSent`, `validUntil`, `daysLeft`, `grandTotal`, `currencyCode`, `customer{id,name}`, `owner{userId,name,phone,email}` (the creator) |
+| `supplier_bill.recorded` | Finance: supplier bill recorded (ERP-0012) | `billId`, `organizationId`, `code`, `supplierInvoiceNumber`, `purchaseOrderId`, `status`, `billDate`, `dueDate`, `grandTotal`, `paidTotal`, `outstandingTotal`, `supplier{id,code,name,phone,email,picName,picPhone}` (never bank details), `recordedBy` |
+| `supplier_bill.due` | Finance: daily job (ERP-0012) | same as `supplier_bill.recorded` plus `threshold` (7 / 0), `stage` (`upcoming / due / overdue`), `daysLeft` |
+| `purchase_return.updated` | Procurement: purchase return submitted, approved, rejected, shipped or cancelled (ERP-0068) | `returnId`, `code`, `change` (`submitted / approved / rejected / shipped / cancelled`), `status`, `returnDate`, `reason`, `rejectionReason`, `cancelledReason`, `goodsReceiptCode`, `purchaseOrderCode`, `supplier{id,code,name,phone,email,picName,picPhone,picEmail}`, `lines[{sku,name,unit,quantity,serialNumbers}]`, `totalAmount`, `actorUserId` |
+| `sales_return.updated` | Sales: customer return submitted, approved, rejected, received or cancelled (ERP-0065) | `returnId`, `code`, `change` (`submitted / approved / rejected / received / cancelled`), `status`, `returnDate`, `reason`, `rejectionReason`, `cancelledReason`, `deliveryNoteCode`, `salesOrderCode`, `customer{id,code,name,email,phone,whatsapp}`, `lines[{sku,name,unit,quantity,serialNumbers,condition}]`, `totalAmount`, `actorUserId` |
 
 `license.due` runs from the BullMQ queue `licensing-due` (cron
 `SCHEDULER_LICENSE_DUE_CRON`, default `0 8 * * *` Asia/Jakarta, only with
@@ -92,6 +96,12 @@ runtime stage and set `PDF_CHROMIUM_PATH=/usr/bin/chromium`;
 `PDF_RENDER_BASE_URL` must reach the web admin from the backend container.
 `playwright-core` survives `bun build --compile` (probed 2026-11-17 on
 Windows: a compiled binary run outside the repo printed a PDF).
+
+`supplier_bill.due` works the same way from the BullMQ queue
+`supplier-bill-due` (cron `SCHEDULER_BILL_DUE_CRON`, default `0 8 * * *`
+Asia/Jakarta, only with `SCHEDULER_ENABLED=true`): open bills (recorded, not
+fully paid) due within 7 days get threshold 7, due or overdue ones threshold 0,
+once per bill, due date and threshold.
 
 ## WhatsApp assistant
 

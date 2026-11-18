@@ -186,4 +186,19 @@ export class WarrantyService {
 			warrantyCode: certificate?.code ?? null,
 		};
 	}
+
+	/**
+	 * The customer's warranty certificates (portal, ERP-0022). The
+	 * certificate is a document the customer already holds on paper, so it is
+	 * returned whole; nothing internal is on it.
+	 */
+	listForCustomer(customerId: string): Promise<TWarrantyCertificateSelect[]> {
+		return this.certificates.listByCustomer(customerId);
+	}
+
+	/** One of the customer's certificates, or `null` for anyone else's. */
+	async getForCustomer(customerId: string, id: string): Promise<TWarrantyCertificateSelect | null> {
+		const certificates = await this.certificates.listByCustomer(customerId);
+		return certificates.find((certificate) => certificate.id === id) ?? null;
+	}
 }

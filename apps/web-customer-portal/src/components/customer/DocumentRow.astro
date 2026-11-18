@@ -1,0 +1,35 @@
+---
+import FileText from "@lucide/astro/icons/file-text";
+import Download from "@lucide/astro/icons/download";
+import IconTile from "./IconTile.astro";
+import { type PortalDocument } from "@/api/portal";
+import { safeHref } from "../../lib/safe-url";
+
+/** Document row with download affordance (05.04 · Documents, 07.03 · Project documents). */
+interface Props {
+  document: PortalDocument;
+}
+
+const { document } = Astro.props;
+const url = safeHref(document.url);
+---
+
+<div class="flex items-center gap-3.5 px-4 py-3.5">
+  <IconTile tone="neutral"><FileText size={20} /></IconTile>
+  <span class="flex min-w-0 flex-1 flex-col gap-[3px]">
+    <span class="truncate text-[15px] font-semibold text-fg">{document.name}</span>
+    <span class="text-[13px] text-fg-muted">{document.meta}</span>
+  </span>
+  {
+    url ? (
+      <a href={url} download class="flex size-9 items-center justify-center text-blue-600" aria-label={`Download ${document.name}`}>
+        <Download size={18} aria-hidden="true" />
+      </a>
+    ) : (
+      <span class="flex size-9 items-center justify-center text-blue-600/40" title="File not available yet">
+        <Download size={18} aria-hidden="true" />
+        <span class="sr-only">Download unavailable</span>
+      </span>
+    )
+  }
+</div>

@@ -1,0 +1,57 @@
+---
+import Clock from "@lucide/astro/icons/clock";
+import ArrowLeft from "@lucide/astro/icons/arrow-left";
+import PublicLayout from "../../../layouts/PublicLayout.astro";
+import KnowledgeTabs from "../../../components/knowledge/KnowledgeTabs.astro";
+import Breadcrumb from "../../../components/ui/Breadcrumb.astro";
+import CustomerBand from "../../../components/contact/CustomerBand.astro";
+import { helpArticles, helpTopics } from "../../../data/knowledge";
+import { routes } from "../../../data/site";
+
+/** Help article page (linked from 01.03 topics, search and FAQ answers). */
+export function getStaticPaths() {
+  return helpArticles.map((article) => ({ params: { slug: article.slug } }));
+}
+
+const article = helpArticles.find((a) => a.slug === Astro.params.slug)!;
+const topic = helpTopics.find((t) => t.slug === article.topic)!;
+const related = helpArticles.filter((a) => a.topic === article.topic && a.slug !== article.slug);
+const topicHref = `${routes.help}/topics/${topic.slug}`;
+---
+
+<PublicLayout title={`${article.title} | Entragate Help Center`} description={article.summary}>
+  <KnowledgeTabs active="help" />
+  <article class="container-page flex flex-col gap-6 py-6 xl:max-w-[920px] xl:gap-8 xl:py-14">
+    <Breadcrumb items={[{ label: "Help Center", href: routes.help }, { label: topic.title, href: topicHref }, { label: article.title }]} />
+    <header class="flex flex-col gap-3">
+      <p class="text-[13px] font-bold tracking-[1.6px] text-blue-600 uppercase">{topic.title}</p>
+      <h1 class="font-heading text-[30px] leading-[36px] font-extrabold tracking-[-1px] text-navy-900 xl:text-[44px] xl:leading-[50px] xl:tracking-[-1.4px]">
+        {article.title}
+      </h1>
+      <p class="flex items-center gap-1.5 text-[13px] text-fg-muted">
+        <Clock size={14} aria-hidden="true" />{article.minutes} min read · Updated {article.updated}
+      </p>
+    </header>
+    <div class="flex flex-col gap-5 border-t border-border pt-6 text-[16px] leading-[28px] text-fg-secondary xl:text-[17px] xl:leading-[30px]">
+      {article.body.map((paragraph) => <p>{paragraph}</p>)}
+    </div>
+    {
+      related.length > 0 && (
+        <aside class="flex flex-col gap-3 rounded-card bg-surface p-6">
+          <h2 class="font-heading text-[17px] font-bold text-navy-900">Related articles</h2>
+          <ul class="flex flex-col gap-2">
+            {related.map((a) => (
+              <li>
+                <a href={`${routes.help}/articles/${a.slug}`} class="text-[15px] font-semibold text-blue-600 hover:underline">{a.title}</a>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )
+    }
+    <a href={topicHref} class="flex w-fit items-center gap-2 text-[14px] font-semibold text-fg hover:text-blue-600">
+      <ArrowLeft size={16} aria-hidden="true" />Back to {topic.title}
+    </a>
+  </article>
+  <CustomerBand class="pb-10 xl:pb-24" />
+</PublicLayout>

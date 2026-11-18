@@ -100,6 +100,7 @@ beforeEach(() => {
 	warranty = new WarrantyService(
 		{
 			findByProject: async (projectId) => certificates.find((row) => row.projectId === projectId) ?? null,
+			listByCustomer: async (customerId) => certificates.filter((row) => row.customerId === customerId),
 			async create(code, actor, data) {
 				const row = { ...data, id: crypto.randomUUID(), code, createdBy: actor } as TWarrantyCertificateSelect;
 				certificates.push(row);

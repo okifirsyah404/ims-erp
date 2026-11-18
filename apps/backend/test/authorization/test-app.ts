@@ -469,6 +469,44 @@ export async function buildTestApp() {
 		useValue: {
 			register: async () => ({}) as never,
 			voidBySource: async () => 0,
+			findById: async () => null,
+		} as never,
+	});
+	// ERP-0048: the signature controller resolves its service from the
+	// container; this suite only proves the route guards, so the service is a
+	// double that never touches a database.
+	const { SIGNATURE_SERVICE_TOKEN } = await import(
+		'../../src/app/document/constants/di'
+	);
+	const { SIGNATURE_REPOSITORY_TOKEN } = await import(
+		'../../src/app/document/constants/di'
+	);
+	container.register(SIGNATURE_REPOSITORY_TOKEN, { useValue: {} as never });
+	container.register(SIGNATURE_SERVICE_TOKEN, {
+		useValue: {
+			listSignatures: async () => ({
+				meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
+				data: [],
+			}),
+			listIncoming: async () => ({
+				meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
+				data: [],
+			}),
+			listOutgoing: async () => ({
+				meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
+				data: [],
+			}),
+			createRequests: async () => [],
+			sign: async () => ({}) as never,
+			decline: async () => ({}) as never,
+			cancel: async () => ({}) as never,
+			documentSection: async () => ({ signatures: [], requests: [] }),
+			myImage: async () => null,
+			uploadImage: async () => ({}) as never,
+			deleteImage: async () => undefined,
+			userImages: async () => new Map(),
+			attachSignedPdf: async () => ({}) as never,
+			signedPdfUrl: async () => ({ url: '', fileName: 'signed.pdf' }),
 		} as never,
 	});
 	// ERP-0066: follow-up reminders publish to the outbox; not exercised here.
@@ -480,8 +518,14 @@ export async function buildTestApp() {
 	container.register(SALES_SERVICE_TOKEN, { useClass: SalesService });
 	container.register(QUOTATION_SERVICE_TOKEN, { useClass: QuotationService });
 
+	const { SignatureController, DocumentSignatureController } = await import(
+		'../../src/app/document/controllers/signature.controller'
+	);
+
 	return new Elysia()
 		.use(erpGuard())
 		.use(QuotationController.plugin())
-		.use(SalesController.plugin());
+		.use(SalesController.plugin())
+		.use(SignatureController.plugin())
+		.use(DocumentSignatureController.plugin());
 }

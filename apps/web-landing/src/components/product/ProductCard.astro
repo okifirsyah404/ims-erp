@@ -1,0 +1,106 @@
+---
+import Heart from "@lucide/astro/icons/heart";
+import Star from "@lucide/astro/icons/star";
+import ShoppingCart from "@lucide/astro/icons/shopping-cart";
+import FileText from "@lucide/astro/icons/file-text";
+import Bell from "@lucide/astro/icons/bell";
+import Media from "../ui/Media.astro";
+import { stockBadges } from "./stock";
+import { routes } from "../../data/site";
+import { formatRupiah } from "../../lib/format";
+import type { ProductSummary } from "../../types/catalog";
+
+/** Product Card (Ya0I5) — incl. the Request Price and Out of Stock states from 02.01. */
+interface Props {
+  product: ProductSummary;
+  class?: string;
+}
+
+const { product, class: className } = Astro.props;
+const href = `${routes.products}/${product.slug}`;
+const quoteHref = `${routes.quote}?product=${product.slug}`;
+const onRequest = product.price === null;
+const notifyHref = `${routes.contact}?topic=restock&product=${product.slug}`;
+const badge = stockBadges[product.stock];
+---
+
+<article
+  class:list={["group/card relative flex flex-col rounded-lg bg-white p-2 shadow-card ring-1 ring-border transition-[box-shadow,translate] duration-300 ring-inset hover:-translate-y-1 hover:shadow-[0_18px_40px_#0A1A3F1A] motion-reduce:hover:translate-y-0", className]}
+  data-reveal
+>
+  <div class="relative h-60 overflow-hidden rounded-md">
+    <Media src={product.image} alt={product.name} class="absolute inset-0 size-full transition-transform duration-500 ease-out group-hover/card:scale-[1.04] motion-reduce:transition-none" />
+    <div class="relative flex items-start justify-between p-3">
+      <span class="flex items-center gap-1.5 rounded-pill bg-white/90 px-2.5 py-[5px]">
+        <span class:list={["size-1.5 rounded-full", badge.dot]}></span>
+        <span class:list={["text-[12px] font-semibold", badge.text]}>{badge.label}</span>
+      </span>
+      <button
+        type="button"
+        class="flex size-8 items-center justify-center rounded-pill bg-white/90 text-fg-secondary transition-colors hover:text-danger aria-pressed:text-danger [&[aria-pressed=true]_svg]:fill-current"
+        aria-label={`Save ${product.name} to wishlist`}
+        aria-pressed="false"
+        data-wishlist={product.slug}
+      >
+        <Heart size={15} aria-hidden="true" />
+      </button>
+    </div>
+  </div>
+  <div class="flex flex-1 flex-col gap-1.5 px-2.5 pt-4 pb-2.5">
+    <p class="text-[11px] font-semibold tracking-[1px] text-blue-600 uppercase">{product.category}</p>
+    <h3 class="font-heading text-[17px] font-bold text-fg">
+      <a href={href} class="hover:text-blue-600">{product.name}</a>
+    </h3>
+    <p class="text-[13px] text-fg-muted">{product.specs}</p>
+    <div class="mt-auto flex items-end justify-between pt-2.5 pb-1">
+      <div class="flex flex-col gap-0.5">
+        <span class="text-[11px] text-fg-muted">{product.priceCaption}</span>
+        <span class:list={["font-heading text-[18px] font-extrabold", onRequest ? "text-blue-600" : "text-navy-900"]}>
+          {product.price === null ? "Request Price" : formatRupiah(product.price)}
+        </span>
+      </div>
+      <span class="flex items-center gap-1 text-[12px] font-semibold text-fg-secondary">
+        <Star size={13} class="text-rating" aria-hidden="true" />
+        <span><span class="sr-only">Rated </span>{product.rating.toFixed(1)}</span>
+      </span>
+    </div>
+    <div class="flex gap-2 pt-2">
+      {
+        onRequest ? (
+          <a
+            href={quoteHref}
+            class="flex flex-1 items-center justify-center gap-2 rounded-md bg-blue-600 px-3.5 py-[11px] text-[14px] font-semibold text-white hover:bg-blue-700"
+          >
+            Request Quote
+            <FileText size={15} aria-hidden="true" />
+          </a>
+        ) : product.stock === "out" ? (
+          <a
+            href={notifyHref}
+            class="flex flex-1 items-center justify-center gap-2 rounded-md bg-surface-2 px-3.5 py-[11px] text-[14px] font-semibold text-fg-secondary hover:text-fg"
+          >
+            Notify Me
+            <Bell size={15} aria-hidden="true" />
+          </a>
+        ) : (
+          <button
+            type="button"
+            class="flex flex-1 items-center justify-center gap-2 rounded-md bg-navy-900 px-3.5 py-[11px] text-[14px] font-semibold text-white hover:bg-navy-800"
+            data-add-to-cart={product.slug}
+            data-product-name={product.name}
+          >
+            Add to Cart
+            <ShoppingCart size={15} aria-hidden="true" />
+          </button>
+        )
+      }
+      <a
+        href={quoteHref}
+        class="flex size-[42px] shrink-0 items-center justify-center rounded-md bg-white text-fg ring-1 ring-border ring-inset hover:bg-surface"
+        aria-label={`Request a quotation for ${product.name}`}
+      >
+        <FileText size={18} aria-hidden="true" />
+      </a>
+    </div>
+  </div>
+</article>

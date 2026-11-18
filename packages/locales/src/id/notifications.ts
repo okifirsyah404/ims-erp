@@ -24,6 +24,14 @@ const notifications = {
 		'Tanda tangan diminta: {{documentName}}',
 	'template.document.signatureRequested.body':
 		'{{requesterName}} meminta tanda tangan Anda pada {{documentName}}.',
+	'template.document.signatureSigned.title':
+		'Dokumen ditandatangani: {{documentName}}',
+	'template.document.signatureSigned.body':
+		'{{signerName}} menandatangani {{documentName}}.',
+	'template.document.signatureDeclined.title':
+		'Tanda tangan ditolak: {{documentName}}',
+	'template.document.signatureDeclined.body':
+		'{{signerName}} menolak menandatangani {{documentName}}.',
 } as const;
 
 export default notifications;

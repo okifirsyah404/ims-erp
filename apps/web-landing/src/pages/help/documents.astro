@@ -1,0 +1,447 @@
+---
+import Search from "@lucide/astro/icons/search";
+import Link2 from "@lucide/astro/icons/link-2";
+import RefreshCw from "@lucide/astro/icons/refresh-cw";
+import BadgeCheck from "@lucide/astro/icons/badge-check";
+import LayoutGrid from "@lucide/astro/icons/layout-grid";
+import SlidersHorizontal from "@lucide/astro/icons/sliders-horizontal";
+import Download from "@lucide/astro/icons/download";
+import Eye from "@lucide/astro/icons/eye";
+import Lock from "@lucide/astro/icons/lock";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import MessageCircle from "@lucide/astro/icons/message-circle";
+import X from "@lucide/astro/icons/x";
+import Box from "@lucide/astro/icons/box";
+import ChevronDown from "@lucide/astro/icons/chevron-down";
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import KnowledgeTabs from "../../components/knowledge/KnowledgeTabs.astro";
+import Breadcrumb from "../../components/ui/Breadcrumb.astro";
+import Media from "../../components/ui/Media.astro";
+import EmptyState from "../../components/ui/EmptyState.astro";
+import { docCategories, docFormats, docKits, docLanguages, docSortOptions, docTypes, documents, type DocumentRecord, type DocType } from "../../data/knowledge";
+import { company, customerPortal, routes } from "../../data/site";
+import { icons } from "../../lib/icons";
+
+/** 01.04 Knowledge Center · Documents & Downloads (desktop kwgKE / mobile d2wQu). Filters are query params. */
+export const prerender = false;
+
+const PAGE_SIZE = 8;
+const params = Astro.url.searchParams;
+const pick = <T extends string>(values: readonly T[], key: string) => params.getAll(key).filter((v): v is T => values.includes(v as T));
+const type = docTypes.find((t) => t.value === params.get("type"))?.value;
+const categories = pick(docCategories.map((c) => c.slug), "category");
+const languages = pick(docLanguages.map((l) => l.value), "lang");
+const formats = pick(docFormats.map((f) => f.value), "format");
+const sort = docSortOptions.find((s) => s.value === params.get("sort"))?.value ?? "updated";
+const q = (params.get("q") ?? "").trim().slice(0, 80);
+const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+
+const matchesBase = (d: DocumentRecord) =>
+  (!categories.length || categories.includes(d.category)) &&
+  (!languages.length || d.languages.some((l) => languages.includes(l))) &&
+  (!formats.length || formats.includes(d.format)) &&
+  terms.every((t) => `${d.title} ${d.product} ${d.version}`.toLowerCase().includes(t));
+const base = documents.filter(matchesBase);
+const filtered = base
+  .filter((d) => !type || d.type === type)
+  .sort((a, b) => (sort === "title" ? a.title.localeCompare(b.title) : sort === "type" ? a.type.localeCompare(b.type) : b.updated.localeCompare(a.updated)));
+const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+const page = Math.min(Math.max(1, Number(params.get("page")) || 1), pageCount);
+const rows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+const typeCount = (value?: DocType) => (value ? base.filter((d) => d.type === value).length : base.length);
+const countBy = (predicate: (d: DocumentRecord) => boolean) => documents.filter(predicate).length;
+
+/** Builds a URL keeping current filters; `patch` overrides (null removes). Resets to page 1. */
+const href = (patch: Record<string, string | string[] | null>) => {
+  const next = new URLSearchParams();
+  const state: Record<string, string | string[] | null> = { q: q || null, type: type ?? null, category: categories, lang: languages, format: formats, sort: sort === "updated" ? null : sort, ...patch };
+  for (const [key, value] of Object.entries(state)) {
+    if (Array.isArray(value)) value.forEach((v) => next.append(key, v));
+    else if (value) next.set(key, value);
+  }
+  const query = next.toString();
+  return `${routes.documents}${query ? `?${query}` : ""}`;
+};
+const pageHref = (n: number) => `${href({})}${href({}).includes("?") ? "&" : "?"}page=${n}`;
+const activeFilters = categories.length + languages.length + formats.length;
+
+const typeStyle: Record<DocType, { box: string; dot: string; text: string; label: string }> = {
+  datasheet: { box: "bg-blue-50 text-blue-600", dot: "bg-blue-600", text: "text-blue-600", label: "Datasheet" },
+  manual: { box: "bg-[#E7FAFD] text-[#0E8FA6]", dot: "bg-[#0E8FA6]", text: "text-[#0E8FA6]", label: "Manual" },
+  driver: { box: "bg-surface text-fg-secondary", dot: "bg-fg-secondary", text: "text-fg-secondary", label: "Driver" },
+  certificate: { box: "bg-success-bg text-success", dot: "bg-success", text: "text-success", label: "Certificate" },
+  cad: { box: "bg-warning-bg text-warning", dot: "bg-warning", text: "text-warning", label: "CAD" },
+  firmware: { box: "bg-surface text-fg-secondary", dot: "bg-fg-secondary", text: "text-fg-secondary", label: "Firmware" },
+};
+const typeIcon = (t: DocType) => icons[docTypes.find((d) => d.value === t)!.icon];
+const date = (iso: string) => new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
+/** Files aren't published yet: downloads open a pre-filled document request. */
+const requestHref = (title: string) => `${routes.contact}?topic=support&document=${encodeURIComponent(title)}`;
+const kit = categories.length === 1 ? docKits.find((k) => k.category === categories[0]) : docKits[0];
+const filterGroups = [
+  { title: "Product category", key: "category", selected: categories as string[], options: docCategories.map((c) => ({ value: c.slug, label: c.label, count: countBy((d) => d.category === c.slug) })) },
+  { title: "Language", key: "lang", selected: languages as string[], options: docLanguages.map((l) => ({ value: l.value, label: l.label, count: countBy((d) => d.languages.includes(l.value as "en" | "id")) })) },
+  { title: "File format", key: "format", selected: formats as string[], options: docFormats.map((f) => ({ value: f.value, label: f.label, count: countBy((d) => d.format === f.value) })) },
+];
+---
+
+<PublicLayout title="Documents & Downloads | Entragate Knowledge Center" description="Datasheets, installation manuals, drivers & SDKs, certificates and CAD for every Entragate product.">
+  <KnowledgeTabs active="documents" />
+
+  <section class="border-b border-border bg-surface xl:bg-[radial-gradient(ellipse_45%_100%_at_90%_0%,#DCE6FFCC_0%,#F5F7FB00_100%)]">
+    <div class="container-page flex flex-col gap-4 py-5 xl:gap-8 xl:py-10">
+      <Breadcrumb items={[{ label: "Home", href: routes.home }, { label: "Support", href: routes.help }, { label: "Documents & Downloads" }]} />
+      <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div class="flex flex-col gap-1.5 xl:w-[640px] xl:gap-3">
+          <h1 class="font-heading text-[26px] font-extrabold tracking-[-0.8px] text-navy-900 xl:text-[52px] xl:tracking-[-1.8px]">Documents &amp; Downloads</h1>
+          <p class="text-[13px] text-fg-secondary xl:text-[17px] xl:leading-[27px]">
+            <span class="xl:hidden">{documents.length} files · datasheets, manuals, drivers, certificates</span>
+            <span class="hidden xl:inline">Datasheets, installation manuals, drivers &amp; SDKs and certifications for every Entragate product — always the latest revision.</span>
+          </p>
+        </div>
+        <div class="flex flex-col gap-3 xl:items-end">
+          <div class="flex gap-2">
+            <form method="get" action={routes.documents} role="search" class="flex-1">
+              {type && <input type="hidden" name="type" value={type} />}
+              <label class="flex h-12 items-center gap-3 rounded-md bg-white pr-2 pl-4 ring-1 ring-border ring-inset focus-within:ring-2 focus-within:ring-blue-600 xl:h-14 xl:w-[480px] xl:pl-[18px] xl:shadow-[0_4px_14px_#0A1A3F0A]">
+                <Search size={18} class="shrink-0 text-fg-muted" aria-hidden="true" />
+                <span class="sr-only">Search documents</span>
+                <input type="search" name="q" value={q} maxlength="80" placeholder="Search model or document…" data-kbd-search data-desktop-placeholder="Search by model, serial prefix or document…" class="min-w-0 flex-1 bg-transparent text-[14px] text-fg outline-none placeholder:text-fg-muted xl:text-[15px]" />
+                <kbd class="hidden rounded-sm bg-surface px-2 py-1 text-[12px] font-semibold text-fg-muted ring-1 ring-border ring-inset xl:block">⌘ K</kbd>
+              </label>
+            </form>
+            <button type="button" class="relative flex size-12 items-center justify-center rounded-md bg-navy-900 text-white xl:hidden" aria-label="Filters" data-open-doc-filters>
+              <SlidersHorizontal size={18} aria-hidden="true" />
+              {activeFilters > 0 && <span class="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-pill bg-blue-600 text-[11px] font-bold">{activeFilters}</span>}
+            </button>
+          </div>
+          <ul class="hidden gap-4 text-[13px] font-semibold text-fg-secondary xl:flex">
+            <li class="flex items-center gap-1.5"><Link2 size={14} class="text-blue-600" aria-hidden="true" />{documents.length} documents</li>
+            <li class="flex items-center gap-1.5"><RefreshCw size={14} class="text-blue-600" aria-hidden="true" />Updated weekly</li>
+            <li class="flex items-center gap-1.5"><BadgeCheck size={14} class="text-blue-600" aria-hidden="true" />SNI · CE · ISO 9001</li>
+          </ul>
+        </div>
+      </div>
+      <nav aria-label="Document type" class="scrollbar-none -mx-5 flex gap-1.5 overflow-x-auto px-5 md:mx-0 md:px-0">
+        {
+          [{ value: undefined, label: "All documents", mobileLabel: "All", icon: LayoutGrid }, ...docTypes.map((t) => ({ ...t, icon: icons[t.icon] }))].map(({ value, label, mobileLabel, icon: Icon }) => {
+            const active = value === type;
+            return (
+              <a
+                href={href({ type: value ?? null })}
+                aria-current={active ? "page" : undefined}
+                class:list={[
+                  "flex shrink-0 items-center gap-[7px] rounded-pill px-3.5 py-2 text-[13px] font-semibold xl:py-[9px]",
+                  active ? "bg-navy-900 text-white" : "bg-white text-fg ring-1 ring-border ring-inset hover:bg-surface",
+                ]}
+              >
+                <Icon size={14} class="hidden xl:block" aria-hidden="true" />
+                <span class="xl:hidden">{mobileLabel}</span>
+                <span class="hidden xl:inline">{label}</span>
+                <span class:list={["hidden text-[12px] xl:inline", active ? "text-fg-on-dark-muted" : "text-fg-muted"]}>{typeCount(value)}</span>
+              </a>
+            );
+          })
+        }
+      </nav>
+    </div>
+  </section>
+
+  <div class="container-page flex flex-col gap-6 py-5 xl:flex-row xl:gap-10 xl:pt-10 xl:pb-16">
+    <!-- Filters: sidebar on desktop, dialog on mobile -->
+    <dialog
+      class="m-0 h-dvh max-h-none w-full max-w-none bg-white p-5 backdrop:bg-navy-950/40 xl:static xl:block xl:h-auto xl:w-[280px] xl:shrink-0 xl:p-0"
+      aria-label="Document filters"
+      data-doc-filters
+    >
+      <form method="get" action={routes.documents} class="flex flex-col">
+        {q && <input type="hidden" name="q" value={q} />}
+        {type && <input type="hidden" name="type" value={type} />}
+        <div class="flex items-center justify-between pb-5">
+          <span class="flex items-center gap-2 font-heading text-[16px] font-bold text-fg">
+            <SlidersHorizontal size={16} aria-hidden="true" />Filters
+          </span>
+          <span class="flex items-center gap-3">
+            <a href={href({ category: [], lang: [], format: [] })} class="text-[13px] font-semibold text-blue-600 hover:underline">Clear all</a>
+            <button type="button" class="flex size-9 items-center justify-center rounded-md bg-surface xl:hidden" aria-label="Close filters" data-close-doc-filters><X size={18} aria-hidden="true" /></button>
+          </span>
+        </div>
+        {
+          filterGroups.map((group) => (
+            <fieldset class="flex flex-col gap-3.5 border-t border-border py-5">
+              <legend class="float-left mb-3.5 w-full text-[14px] font-bold text-fg">{group.title}</legend>
+              {group.options.map((option) => (
+                <label class="flex cursor-pointer items-center gap-2.5 text-[14px] text-fg">
+                  <input
+                    type="checkbox"
+                    name={group.key}
+                    value={option.value}
+                    checked={group.selected.includes(option.value)}
+                    class="size-[18px] rounded-[4px] accent-blue-600"
+                    data-autosubmit
+                  />
+                  <span class="flex-1">{option.label}</span>
+                  <span class="text-[12px] text-fg-muted">{option.count}</span>
+                </label>
+              ))}
+            </fieldset>
+          ))
+        }
+        <button type="submit" class="mt-2 rounded-md bg-blue-600 py-3 text-[15px] font-semibold text-white xl:hidden" data-filters-apply>Show results</button>
+        <noscript><button type="submit" class="mt-2 hidden w-full rounded-md bg-blue-600 py-3 text-[14px] font-semibold text-white xl:block">Apply filters</button></noscript>
+      </form>
+      <div class="mt-2 hidden flex-col gap-2.5 rounded-lg bg-navy-900 p-5 xl:flex">
+        <Lock size={18} class="text-cyan-400" aria-hidden="true" />
+        <p class="font-heading text-[15px] font-bold text-white">Partner &amp; customer files</p>
+        <p class="text-[13px] leading-5 text-fg-on-dark-muted">Sign in to access SDKs, wiring diagrams and firmware for devices registered to your company.</p>
+        <a href={customerPortal.login} class="mt-1 flex items-center justify-center gap-2 rounded-md bg-blue-600 px-3.5 py-2.5 text-[13px] font-semibold text-white shadow-cta hover:bg-blue-700">
+          Sign in <ArrowRight size={14} aria-hidden="true" />
+        </a>
+      </div>
+    </dialog>
+
+    <div class="flex min-w-0 flex-1 flex-col gap-4 xl:gap-6">
+      <!-- Mobile product selector -->
+      <form method="get" action={routes.documents} class="xl:hidden">
+        {type && <input type="hidden" name="type" value={type} />}
+        <label class="flex h-12 items-center gap-2 rounded-md bg-white px-4 ring-1 ring-border ring-inset">
+          <Box size={16} class="text-fg-muted" aria-hidden="true" />
+          <span class="text-[13px] text-fg-muted">Product:</span>
+          <select name="category" class="min-w-0 flex-1 appearance-none bg-transparent text-[14px] font-semibold text-fg outline-none" data-autosubmit>
+            <option value="">All products</option>
+            {docCategories.map((c) => <option value={c.slug} selected={categories.length === 1 && categories[0] === c.slug}>{c.label}</option>)}
+          </select>
+          <ChevronDown size={16} class="text-fg-muted" aria-hidden="true" />
+        </label>
+      </form>
+
+      <!-- Popular kits -->
+      <ul class="hidden gap-4 xl:flex">
+        {
+          docKits.map((k) => (
+            <li class="flex-1 overflow-hidden rounded-lg bg-white ring-1 ring-border ring-inset">
+              <div class="relative flex h-[120px] items-start justify-end p-3">
+                <Media src={k.image} alt="" class="absolute inset-0 size-full bg-surface" />
+                <span class="relative flex items-center gap-1.5 rounded-pill bg-white px-2.5 py-[5px] text-[12px] font-semibold text-blue-600"><span class="size-1.5 rounded-full bg-blue-600" />Popular</span>
+              </div>
+              <div class="flex flex-col gap-1.5 p-4">
+                <p class="text-[15px] font-bold text-fg">{k.title}</p>
+                <p class="text-[12px] font-semibold text-blue-600">Complete kit · {k.files} files</p>
+                <p class="text-[12px] leading-[17px] text-fg-muted">{k.contents}</p>
+                <a href={requestHref(`${k.title} complete kit`)} class="flex items-center gap-1.5 pt-1.5 text-[13px] font-bold text-navy-900 hover:text-blue-600">
+                  <Download size={14} aria-hidden="true" />Download all ({k.size})
+                </a>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+      {
+        kit && (
+          <a href={requestHref(`${kit.title} complete kit`)} class="flex items-center gap-3.5 rounded-card bg-navy-900 p-3 xl:hidden">
+            <Media src={kit.image} alt="" class="size-[60px] shrink-0 rounded-md bg-white" />
+            <span class="flex flex-1 flex-col gap-0.5">
+              <span class="text-[11px] font-bold tracking-[1px] text-cyan-400 uppercase">Complete kit · {kit.files} files</span>
+              <span class="text-[15px] font-bold text-white">{kit.title}</span>
+              <span class="text-[12px] text-fg-on-dark-muted">{kit.size}</span>
+            </span>
+            <span class="flex size-10 items-center justify-center rounded-md bg-blue-600 text-white"><Download size={18} aria-hidden="true" /></span>
+          </a>
+        )
+      }
+
+      <div class="flex items-center justify-between">
+        <p class="flex items-baseline gap-2.5">
+          <span class="font-heading text-[16px] font-bold text-fg xl:text-[18px] xl:text-navy-900">
+            <span class="xl:hidden">{filtered.length} documents</span>
+            <span class="hidden xl:inline">{type ? docTypes.find((t) => t.value === type)?.label : "All documents"}</span>
+          </span>
+          <span class="hidden text-[13px] text-fg-muted xl:inline">
+            {filtered.length ? `Showing ${(page - 1) * PAGE_SIZE + 1}–${(page - 1) * PAGE_SIZE + rows.length} of ${filtered.length}` : "No results"}
+          </span>
+        </p>
+        <form method="get" action={routes.documents}>
+          {q && <input type="hidden" name="q" value={q} />}
+          {type && <input type="hidden" name="type" value={type} />}
+          {categories.map((c) => <input type="hidden" name="category" value={c} />)}
+          {languages.map((l) => <input type="hidden" name="lang" value={l} />)}
+          {formats.map((f) => <input type="hidden" name="format" value={f} />)}
+          <label class="flex h-10 items-center gap-1.5 rounded-md px-3 text-[13px] xl:ring-1 xl:ring-border xl:ring-inset">
+            <span class="hidden text-fg-muted xl:inline">Sort:</span>
+            <select name="sort" class="appearance-none bg-transparent font-semibold text-fg outline-none" data-autosubmit aria-label="Sort documents">
+              {docSortOptions.map((o) => <option value={o.value} selected={o.value === sort}>{o.label}</option>)}
+            </select>
+            <ChevronDown size={14} class="text-fg-muted" aria-hidden="true" />
+          </label>
+          <noscript><button type="submit" class="ml-2 text-[13px] font-semibold text-blue-600">Sort</button></noscript>
+        </form>
+      </div>
+
+      {
+        rows.length === 0 ? (
+          <EmptyState title="No documents match" description="Try removing a filter, or ask our pre-sales engineers for the file you need.">
+            <a href={href({ q: null, type: null, category: [], lang: [], format: [] })} class="font-semibold text-blue-600 hover:underline">Clear all filters</a>
+          </EmptyState>
+        ) : (
+          <>
+            <!-- Desktop table -->
+            <div class="hidden overflow-hidden rounded-lg bg-white ring-1 ring-border ring-inset xl:block">
+              <table class="w-full text-left">
+                <thead class="border-b border-border bg-surface">
+                  <tr class="text-[11px] font-bold tracking-[1px] text-fg-muted uppercase">
+                    <th scope="col" class="px-5 py-[11px]">Document</th>
+                    <th scope="col" class="w-[124px] py-[11px]">Type</th>
+                    <th scope="col" class="w-[82px] py-[11px]">Version</th>
+                    <th scope="col" class="w-[100px] py-[11px]">Size</th>
+                    <th scope="col" class="w-[112px] py-[11px]">Updated</th>
+                    <th scope="col" class="w-[112px] py-[11px] pr-5"><span class="sr-only">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((doc) => {
+                    const style = typeStyle[doc.type];
+                    const Icon = typeIcon(doc.type);
+                    const locked = doc.partner;
+                    const fileHref = doc.url ?? (locked ? customerPortal.login : requestHref(doc.title));
+                    return (
+                      <tr class="border-b border-border last:border-0">
+                        <td class="px-5 py-3.5">
+                          <div class="flex items-center gap-3">
+                            <span class:list={["flex size-10 shrink-0 items-center justify-center rounded-md", style.box]}><Icon size={18} aria-hidden="true" /></span>
+                            <div class="flex min-w-0 flex-col gap-[3px]">
+                              <p class="flex items-center gap-2 text-[14px] font-bold text-fg">
+                                {doc.title}
+                                {locked && <span class="flex shrink-0 items-center gap-1 rounded-pill bg-surface px-1.5 py-0.5 text-[10.5px] font-semibold text-fg-muted"><Lock size={10} aria-hidden="true" />Partner</span>}
+                              </p>
+                              <p class="text-[12px] text-fg-muted">{doc.product} · {doc.languages.map((l) => l.toUpperCase()).join(" / ")}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span class:list={["inline-flex items-center gap-1.5 rounded-pill px-2 py-[3px] text-[12px] font-semibold", style.box]}>
+                            <span class:list={["size-1.5 rounded-full", style.dot]} />{style.label}
+                          </span>
+                        </td>
+                        <td class="text-[13px] font-semibold text-fg-secondary">{doc.version}</td>
+                        <td class="text-[13px] text-fg-secondary">{doc.size}</td>
+                        <td class="text-[13px] text-fg-secondary">{date(doc.updated)}</td>
+                        <td class="pr-5">
+                          <div class="flex justify-end gap-1.5">
+                            <a href={fileHref} class="flex size-9 items-center justify-center rounded-md bg-white text-fg ring-1 ring-border ring-inset hover:bg-surface" aria-label={`Preview ${doc.title}`}>
+                              <Eye size={16} aria-hidden="true" />
+                            </a>
+                            {locked ? (
+                              <a href={customerPortal.login} class="flex size-9 items-center justify-center rounded-md bg-white text-fg-muted ring-1 ring-border ring-inset hover:bg-surface" aria-label={`Sign in to download ${doc.title}`}>
+                                <Lock size={16} aria-hidden="true" />
+                              </a>
+                            ) : (
+                              <a href={fileHref} class="flex size-9 items-center justify-center rounded-md bg-navy-900 text-white hover:bg-navy-800" aria-label={`Download ${doc.title}`}>
+                                <Download size={16} aria-hidden="true" />
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Mobile cards -->
+            <ul class="flex flex-col gap-2.5 xl:hidden">
+              {rows.map((doc) => {
+                const style = typeStyle[doc.type];
+                const Icon = typeIcon(doc.type);
+                const locked = doc.partner;
+                return (
+                  <li class="flex items-center gap-3 rounded-lg bg-white p-3.5 ring-1 ring-border ring-inset">
+                    <span class:list={["flex size-10 shrink-0 items-center justify-center rounded-md", style.box]}><Icon size={18} aria-hidden="true" /></span>
+                    <span class="flex min-w-0 flex-1 flex-col gap-1">
+                      <span class="flex gap-1.5">
+                        <span class:list={["inline-flex items-center gap-1 rounded-pill px-1.5 py-px text-[10.5px] font-semibold", style.box]}><span class:list={["size-1.5 rounded-full", style.dot]} />{style.label}</span>
+                        {locked && <span class="inline-flex items-center gap-1 rounded-pill bg-surface px-1.5 py-px text-[10.5px] font-semibold text-fg-muted"><Lock size={9} aria-hidden="true" />Partner</span>}
+                      </span>
+                      <span class="text-[14px] leading-[19px] font-bold text-fg">{doc.title}</span>
+                      <span class="text-[12px] text-fg-muted">{doc.version} · {doc.size} · {doc.languages.map((l) => l.toUpperCase()).join(" / ")}</span>
+                    </span>
+                    <a
+                      href={doc.url ?? (locked ? customerPortal.login : requestHref(doc.title))}
+                      class="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface text-blue-600"
+                      aria-label={locked ? `Sign in to download ${doc.title}` : `Download ${doc.title}`}
+                    >
+                      {locked ? <Lock size={16} class="text-fg-muted" aria-hidden="true" /> : <Download size={16} aria-hidden="true" />}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )
+      }
+
+      {
+        pageCount > 1 && (
+          <nav aria-label="Pagination" class="flex items-center justify-between">
+            {page < pageCount ? (
+              <a href={pageHref(page + 1)} class="flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-3 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface xl:w-auto">
+                Load more documents <RefreshCw size={15} aria-hidden="true" />
+              </a>
+            ) : <span />}
+            <ul class="hidden gap-2 xl:flex">
+              {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
+                <li>
+                  <a href={pageHref(n)} aria-current={n === page ? "page" : undefined} class:list={["flex size-9 items-center justify-center rounded-md text-[13px] font-semibold", n === page ? "bg-navy-900 text-white" : "bg-white text-fg ring-1 ring-border ring-inset hover:bg-surface"]}>
+                    {n}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )
+      }
+
+      <!-- Mobile partner card -->
+      <div class="flex flex-col gap-2.5 rounded-lg bg-blue-50 p-5 xl:hidden">
+        <Lock size={18} class="text-blue-600" aria-hidden="true" />
+        <p class="font-heading text-[15px] font-bold text-fg">Partner &amp; customer files</p>
+        <p class="text-[13px] leading-5 text-fg-secondary">Sign in to access SDKs, wiring diagrams and firmware for devices registered to your company.</p>
+        <a href={customerPortal.login} class="mt-1 flex items-center justify-center gap-2 rounded-md bg-blue-600 py-3 text-[14px] font-semibold text-white">Sign in <ArrowRight size={14} aria-hidden="true" /></a>
+      </div>
+    </div>
+  </div>
+
+  <section class="container-page hidden pb-24 xl:block" aria-labelledby="doc-request-title">
+    <div class="flex items-center justify-between gap-8 rounded-xl bg-blue-50 px-10 py-10 ring-1 ring-blue-100 ring-inset">
+      <div class="flex max-w-[620px] flex-col gap-2">
+        <h2 id="doc-request-title" class="font-heading text-[24px] font-extrabold tracking-[-0.6px] text-navy-900">Can't find the document you need?</h2>
+        <p class="text-[15px] leading-6 text-fg-secondary">Our pre-sales engineers can send project-specific drawings, BOQ templates and tender specifications within one business day.</p>
+      </div>
+      <div class="flex gap-3">
+        <a href={company.whatsappHref} target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 rounded-md bg-white px-[22px] py-3.5 text-[15px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface">
+          WhatsApp an engineer <MessageCircle size={16} aria-hidden="true" />
+        </a>
+        <a href={requestHref("project documents")} class="flex items-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700">
+          Request a document <ArrowRight size={16} aria-hidden="true" />
+        </a>
+      </div>
+    </div>
+  </section>
+</PublicLayout>
+
+<script>
+  import { initKnowledgeSearchShortcut } from "../../scripts/knowledge";
+
+  initKnowledgeSearchShortcut();
+  const desktop = window.matchMedia("(min-width: 80rem)");
+  // Desktop: filters apply as soon as a box is ticked. Mobile: applied with "Show results".
+  document.querySelectorAll<HTMLInputElement | HTMLSelectElement>("[data-autosubmit]").forEach((control) =>
+    control.addEventListener("change", () => {
+      if (control instanceof HTMLSelectElement || desktop.matches) control.form?.requestSubmit();
+    }),
+  );
+  const dialog = document.querySelector<HTMLDialogElement>("[data-doc-filters]");
+  document.querySelector("[data-open-doc-filters]")?.addEventListener("click", () => dialog?.showModal());
+  document.querySelector("[data-close-doc-filters]")?.addEventListener("click", () => dialog?.close());
+</script>

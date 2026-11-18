@@ -1,0 +1,37 @@
+---
+import Route from "@lucide/astro/icons/route";
+import Headset from "@lucide/astro/icons/headset";
+import CircleUserRound from "@lucide/astro/icons/circle-user-round";
+import { customerPortal, routes } from "../../data/site";
+
+/** 09.02 · "Already an Entragate customer?" band (desktop) / card (mobile). */
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+const glass = "flex items-center gap-2 rounded-md bg-white/8 px-[18px] py-3.5 text-[14px] font-bold text-white hover:bg-white/14";
+---
+
+<section class:list={["container-page", className]} aria-label="Existing customers">
+  <div class="hidden items-center gap-6 rounded-xl bg-navy-900 px-10 py-8 xl:flex">
+    <div class="flex flex-1 flex-col gap-1.5">
+      <h2 class="font-heading text-[24px] font-extrabold text-white">Already an Entragate customer?</h2>
+      <p class="text-[15px] text-fg-on-dark-muted">
+        Track orders, open support tickets and book service visits in the Customer Portal — usually faster than email.
+      </p>
+    </div>
+    <a href={routes.track} class={glass}><Route size={16} class="text-cyan-400" aria-hidden="true" />Track order</a>
+    <a href={customerPortal.newTicket} class={glass}><Headset size={16} class="text-cyan-400" aria-hidden="true" />Open a ticket</a>
+    <a href={customerPortal.home} class="flex items-center gap-2 rounded-md bg-white px-[18px] py-3.5 text-[14px] font-bold text-navy-900 hover:bg-surface">
+      <CircleUserRound size={16} aria-hidden="true" />Customer Portal
+    </a>
+  </div>
+  <div class="flex flex-col gap-2.5 rounded-lg bg-navy-900 p-5 xl:hidden">
+    <h2 class="font-heading text-[17px] font-extrabold text-white">Already a customer?</h2>
+    <p class="text-[13.5px] text-fg-on-dark-muted">Get faster help in the Customer Portal.</p>
+    <a href={customerPortal.home} class="flex items-center gap-1.5 text-[14px] font-bold text-cyan-400">
+      <CircleUserRound size={16} aria-hidden="true" />Open Customer Portal
+    </a>
+  </div>
+</section>

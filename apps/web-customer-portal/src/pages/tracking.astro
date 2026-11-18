@@ -1,0 +1,141 @@
+---
+import ScanLine from "@lucide/astro/icons/scan-line";
+import LocateFixed from "@lucide/astro/icons/locate-fixed";
+import Truck from "@lucide/astro/icons/truck";
+import MessageCircle from "@lucide/astro/icons/message-circle";
+import Phone from "@lucide/astro/icons/phone";
+import CalendarDays from "@lucide/astro/icons/calendar-days";
+import Timer from "@lucide/astro/icons/timer";
+import Headset from "@lucide/astro/icons/headset";
+import Share2 from "@lucide/astro/icons/share-2";
+import Route from "@lucide/astro/icons/route";
+import CustomerLayout from "../layouts/CustomerLayout.astro";
+import LargeHeader from "../components/customer/LargeHeader.astro";
+import IconButton from "../components/customer/IconButton.astro";
+import StatusChip from "../components/customer/StatusChip.astro";
+import SectionHeader from "../components/customer/SectionHeader.astro";
+import Timeline from "../components/customer/Timeline.astro";
+import Media from "../components/customer/Media.astro";
+import TrackingDesktop from "../features/orders/TrackingDesktop.astro";
+import { ordersService } from "../services";
+
+/** 07.01 Order Tracking — active shipments as pills, live courier card and journey timeline. */
+const tokens = Astro.locals.tokens!;
+const orders = (await ordersService.list(tokens)).filter((o) => o.status !== "delivered" && o.status !== "cancelled");
+const selectedId = Astro.url.searchParams.get("order") ?? orders[0]?.id;
+const order = selectedId ? await ordersService.get(tokens, selectedId) : null;
+const onTheWay = orders.filter((o) => o.status === "shipped" || o.status === "installing").length;
+const shortNumber = (number: string) => number.replace("-2026-", "-");
+const [etaDay, etaWindow] = order ? [order.arrivalLabel.replace(/^Arriving /, ""), order.arrivalWindow.match(/\d{2}:\d{2} – \d{2}:\d{2}/)?.[0] ?? "—"] : [];
+---
+
+<CustomerLayout title="Tracking" tab="tracking" desktop={order ? "full" : "narrow"}>
+  {order && <div class="hidden xl:block"><TrackingDesktop order={order} orders={orders} /></div>}
+  <div class:list={[order && "xl:hidden"]}>
+  <LargeHeader eyebrow={`${onTheWay} shipment${onTheWay === 1 ? "" : "s"} on the way`} title="Tracking">
+    <IconButton slot="action" label="Scan delivery note" href="/products/register"><ScanLine size={20} aria-hidden="true" /></IconButton>
+  </LargeHeader>
+
+  <div class="flex flex-col gap-5 px-5 pt-3 pb-6">
+    {
+      orders.length === 0 || !order ? (
+        <div class="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-10 text-center">
+          <Route size={28} class="text-blue-600" aria-hidden="true" />
+          <p class="font-heading text-[17px] font-bold text-fg">Nothing on the way</p>
+          <p class="text-[14px] text-fg-secondary">Active deliveries and installations will appear here with live status.</p>
+        </div>
+      ) : (
+        <>
+          <nav aria-label="Shipments" class="scrollbar-none -mx-5 flex gap-2 overflow-x-auto px-5">
+            {orders.map((o) => {
+              const active = o.id === order.id;
+              return (
+                <a
+                  href={`/tracking?order=${o.id}`}
+                  aria-current={active ? "page" : undefined}
+                  class:list={["flex shrink-0 items-center gap-1.5 rounded-pill px-3.5 py-[9px] text-[13px] font-semibold", active ? "bg-navy-900 text-white" : "bg-surface text-fg-secondary"]}
+                >
+                  {active && <span class="size-[7px] rounded-full bg-cyan-400" aria-hidden="true" />}
+                  {shortNumber(o.number)}
+                </a>
+              );
+            })}
+          </nav>
+
+          <section aria-label="Live location" class="relative isolate flex h-[300px] flex-col justify-between overflow-hidden rounded-xl p-3.5">
+            <Media alt="Map showing the courier's current position" class="absolute inset-0 -z-10 size-full" />
+            <div class="flex items-center justify-between gap-2.5">
+              {order.courier ? <StatusChip tone="success" label={order.courier.updatedLabel} class="!bg-white" /> : <StatusChip tone="neutral" label={order.stepLabel} class="!bg-white" />}
+              <IconButton label="Centre map" tone="white"><LocateFixed size={20} aria-hidden="true" /></IconButton>
+            </div>
+            {
+              order.courier ? (
+                <div class="flex items-center gap-3 rounded-lg bg-white/95 p-3 shadow-[0_8px_24px_#0A1A3F26] backdrop-blur-[8px]">
+                  <span class="flex size-11 shrink-0 items-center justify-center rounded-md bg-navy-900 text-white" aria-hidden="true"><Truck size={20} /></span>
+                  <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span class="text-[14px] font-bold text-fg">{order.courier.name}</span>
+                    <span class="text-[12.5px] text-fg-muted">{order.courier.vehicle} · {order.courier.distanceLabel}</span>
+                  </span>
+                  <a href={`/support/new?order=${order.id}`} class="flex size-10 items-center justify-center rounded-pill bg-blue-50 text-blue-600" aria-label="Message about this delivery">
+                    <MessageCircle size={20} aria-hidden="true" />
+                  </a>
+                  <a href={`tel:${order.courier.phone ?? "+622188992020"}`} class="flex size-10 items-center justify-center rounded-pill bg-blue-600 text-white" aria-label="Call courier">
+                    <Phone size={20} aria-hidden="true" />
+                  </a>
+                </div>
+              ) : (
+                <p class="rounded-lg bg-white/95 p-3 text-[13px] text-fg-secondary">Live courier location appears once the order ships.</p>
+              )
+            }
+          </section>
+
+          <dl class="flex gap-3">
+            <div class="flex flex-1 flex-col gap-1.5 rounded-lg bg-surface p-4">
+              <dt class="flex items-center gap-1.5 text-[12px] font-semibold text-fg-muted"><CalendarDays size={14} aria-hidden="true" />Estimated arrival</dt>
+              <dd class="font-heading text-[17px] font-extrabold text-fg">{etaDay}</dd>
+            </div>
+            <div class="flex flex-1 flex-col gap-1.5 rounded-lg bg-surface p-4">
+              <dt class="flex items-center gap-1.5 text-[12px] font-semibold text-fg-muted"><Timer size={14} aria-hidden="true" />Time window</dt>
+              <dd class="font-heading text-[17px] font-extrabold text-fg">{etaWindow}</dd>
+            </div>
+          </dl>
+
+          <SectionHeader title="Shipment journey" linkLabel="Details" href={`/orders/${order.id}`} />
+          <Timeline steps={order.timeline} />
+
+          <div class="flex gap-2.5">
+            <a href={`/support/new?order=${order.id}`} class="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-control bg-white text-[16px] font-semibold text-fg ring-1 ring-border ring-inset">
+              <Headset size={18} aria-hidden="true" />
+              Contact support
+            </a>
+            <button type="button" class="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-control bg-blue-50 text-[16px] font-semibold text-blue-700" data-share={`/track?order=${encodeURIComponent(order.number.replace("#", ""))}`}>
+              <Share2 size={18} aria-hidden="true" />
+              Share
+            </button>
+          </div>
+        </>
+      )
+    }
+  </div>
+  </div>
+</CustomerLayout>
+
+<script>
+  // Shares the sign-in-free status link (07.05), never the private tracking page.
+  document.querySelectorAll<HTMLElement>("[data-share]").forEach((button) =>
+    button.addEventListener("click", async () => {
+      const url = new URL(button.dataset.share || "/track", location.origin).href;
+      const data = { title: "Entragate delivery tracking", url };
+      if (navigator.share) await navigator.share(data).catch(() => {});
+      else {
+        await navigator.clipboard?.writeText(url);
+        const label = button.lastChild;
+        if (label?.nodeType === Node.TEXT_NODE) {
+          const original = label.textContent;
+          label.textContent = "Link copied";
+          setTimeout(() => (label.textContent = original), 2000);
+        }
+      }
+    }),
+  );
+</script>

@@ -1,0 +1,67 @@
+---
+import Check from "@lucide/astro/icons/check";
+
+/**
+ * Pill stepper from 03.01 Build Your Solution / 03.03 Checkout: done steps in blue-50 with
+ * a check, the current step in navy with a cyan number, upcoming steps on surface.
+ * Mobile collapses to progress bars + "Step n of N · label". Completed steps can be links.
+ */
+interface Props {
+  steps: { label: string; href?: string }[];
+  /** 0-based index of the current step. */
+  current: number;
+  mobileLabel?: string;
+  class?: string;
+}
+
+const { steps, current, mobileLabel, class: className } = Astro.props;
+---
+
+<nav aria-label="Progress" class={className}>
+  <ol class="hidden items-center gap-2.5 xl:flex">
+    {
+      steps.map((step, index) => {
+        const done = index < current;
+        const active = index === current;
+        const Tag = step.href && done ? "a" : "span";
+        return (
+          <>
+            {index > 0 && <li aria-hidden="true" class:list={["h-0.5 w-6", index <= current ? "bg-blue-600" : "bg-border"]} />}
+            <li aria-current={active ? "step" : undefined}>
+              <Tag
+                href={Tag === "a" ? step.href : undefined}
+                class:list={[
+                  "group flex items-center gap-2.5 rounded-pill py-2.5 pr-4 pl-2.5 text-[14px] font-semibold",
+                  done && "bg-blue-50 text-blue-700",
+                  active && "bg-navy-900 text-white",
+                  !done && !active && "bg-surface text-fg-muted",
+                ]}
+              >
+                <span
+                  class:list={[
+                    "flex size-7 items-center justify-center rounded-pill text-[13px] font-bold",
+                    done && "bg-blue-600 text-white",
+                    active && "bg-cyan-400 text-navy-900",
+                    !done && !active && "bg-white text-fg-muted",
+                  ]}
+                >
+                  {done ? <Check size={14} stroke-width={3} aria-hidden="true" /> : index + 1}
+                </span>
+                {step.label}
+                {done && <span class="sr-only">(completed)</span>}
+              </Tag>
+            </li>
+          </>
+        );
+      })
+    }
+  </ol>
+  <div class="flex flex-col gap-2 xl:hidden">
+    <div class="flex gap-1.5" aria-hidden="true">
+      {steps.map((_, index) => <span class:list={["h-1 flex-1 rounded-pill", index <= current ? "bg-blue-600" : "bg-surface-2"]} />)}
+    </div>
+    <p class="text-[12.5px] font-medium text-fg-muted">
+      Step {current + 1} of {steps.length} · {mobileLabel ?? steps[current]?.label}
+    </p>
+  </div>
+</nav>

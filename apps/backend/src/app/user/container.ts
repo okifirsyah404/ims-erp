@@ -12,6 +12,10 @@ import {
 	INVITATION_MAILER_TOKEN,
 	INVITATION_REPOSITORY_TOKEN,
 	INVITATION_SERVICE_TOKEN,
+	PORTAL_ACCOUNT_SERVICE_TOKEN,
+	PORTAL_AUTH_GATEWAY_TOKEN,
+	PORTAL_IDENTITY_REPOSITORY_TOKEN,
+	PORTAL_MAILER_TOKEN,
 	USER_ADMIN_SERVICE_TOKEN,
 	USER_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
@@ -21,6 +25,10 @@ import {
 	USER_SERVICE_TOKEN,
 } from './constants/di';
 import { UserPersonalFieldsAdapter } from './adapters/user-personal-fields';
+import { BetterAuthPortalGateway } from './adapters/better-auth-portal';
+import { QueuePortalMailer } from './adapters/queue-portal-mailer';
+import { PortalIdentityRepository } from './repositories/portal-identity.repository';
+import { PortalAccountService } from './services/portal-account.service';
 
 export * from './constants/di';
 
@@ -71,4 +79,9 @@ export function registerUser(container: DependencyContainer): void {
 	container.register(USER_PERSONAL_FIELDS_PORT_TOKEN, {
 		useClass: UserPersonalFieldsAdapter,
 	});
+	// Customer-portal logins (ERP-0022).
+	container.register(PORTAL_IDENTITY_REPOSITORY_TOKEN, { useClass: PortalIdentityRepository });
+	container.register(PORTAL_AUTH_GATEWAY_TOKEN, { useClass: BetterAuthPortalGateway });
+	container.register(PORTAL_MAILER_TOKEN, { useClass: QueuePortalMailer });
+	container.register(PORTAL_ACCOUNT_SERVICE_TOKEN, { useClass: PortalAccountService });
 }

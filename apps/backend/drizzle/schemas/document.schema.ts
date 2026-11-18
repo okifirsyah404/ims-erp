@@ -60,12 +60,24 @@ export const DOCUMENT_SIGNATURE_METHODS = [
 export type DocumentSignatureMethod =
 	(typeof DOCUMENT_SIGNATURE_METHODS)[number];
 
+/** Lifecycle of a signature request (ERP-0048). */
+export const SIGNATURE_REQUEST_STATUSES = [
+	'pending',
+	'signed',
+	'declined',
+	'expired',
+	'cancelled',
+] as const;
+export type SignatureRequestStatus =
+	(typeof SIGNATURE_REQUEST_STATUSES)[number];
+
 export const DOCUMENT_ACCESS_ACTIONS = [
 	'view',
 	'download',
 	'print',
 	'share',
 	'delete',
+	'pdf_sign',
 ] as const;
 export type DocumentAccessAction = (typeof DOCUMENT_ACCESS_ACTIONS)[number];
 
@@ -236,10 +248,23 @@ export const documentSignatures = documentSchema.table(
 		signatureMethod: text('signature_method').notNull().default('electronic'),
 		ipAddress: text('ip_address'),
 		certificateSerial: text('certificate_serial'),
+		/**
+		 * Object-storage key of the signature image used at signing time.
+		 *
+		 * @remarks
+		 * A snapshot, not a live lookup: replacing the user's image later must
+		 * never rewrite a signature that was already made.
+		 */
+		signatureImageKey: text('signature_image_key'),
+		/** The PDF this signature was placed on; one of this document's files. */
+		sourceFileId: uuid('source_file_id'),
+		/** Object-storage key of the signed PDF. Once set, placement is final. */
+		signedFileKey: text('signed_file_key'),
 		...timestamps,
 	},
 	(table) => [
 		index('signatures_document_id_idx').on(table.documentId),
+		index('signatures_source_file_id_idx').on(table.sourceFileId),
 		check(
 			'signatures_signer_type_check',
 			sql`${table.signerType} IN ('internal', 'customer', 'partner')`,
@@ -284,7 +309,7 @@ export const documentAccessLogs = documentSchema.table(
 		index('access_logs_accessed_at_idx').on(table.accessedAt),
 		check(
 			'access_logs_action_check',
-			sql`${table.action} IN ('view', 'download', 'print', 'share', 'delete')`,
+			sql`${table.action} IN ('view', 'download', 'print', 'share', 'delete', 'pdf_sign')`,
 		),
 	],
 );
@@ -388,8 +413,98 @@ export const documentTagLinks = documentSchema.table(
 	],
 );
 
-export type TDocumentTemplateSelect = typeof documentTemplates.$inferSelect;
+/* ------------------------------------------------------------------------ *
+ * document.signature_requests
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Workflow state of a signature request.
+ *
+ * @remarks
+ * The immutable evidence lives in {@link documentSignatures}; this table owns
+ * the ask. Expiry is evaluated at read time — a pending row past `expires_at`
+ * is treated as expired — so no job ever flips the status. The pending-unique
+ * index is partial: one live pending request per document and signer, and
+ * re-requesting after a terminal state creates a new row.
+ */
+export const documentSignatureRequests = documentSchema.table(
+	'signature_requests',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		/** Logical reference to auth.organizations.id; NULL = company-wide. */
+		organizationId: text('organization_id'),
+		documentId: uuid('document_id').notNull(),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		requestedByUserId: text('requested_by_user_id').notNull(),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		signerUserId: text('signer_user_id').notNull(),
+		/** Signer display name snapshot at request time. */
+		signerName: text('signer_name').notNull(),
+		status: text('status').notNull().default('pending'),
+		/** Requester message to the signer. */
+		note: text('note'),
+		declineReason: text('decline_reason'),
+		expiresAt: unixTimestampNullable('expires_at'),
+		respondedAt: unixTimestampNullable('responded_at'),
+		...timestamps,
+	},
+	(table) => [
+		index('signature_requests_document_id_idx').on(table.documentId),
+		index('signature_requests_signer_status_idx').on(
+			table.signerUserId,
+			table.status,
+		),
+		index('signature_requests_requested_by_idx').on(table.requestedByUserId),
+		uniqueIndex('signature_requests_pending_uq')
+			.on(table.documentId, table.signerUserId)
+			.where(sql`status = 'pending' AND deleted_at IS NULL`),
+		check(
+			'signature_requests_status_check',
+			sql`${table.status} IN ('pending', 'signed', 'declined', 'expired', 'cancelled')`,
+		),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * document.user_signatures
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Signature image a user uploads for themselves (ERP-0049).
+ *
+ * @remarks
+ * One live image per user (partial unique on `user_id`). Not rendered into
+ * any document layout yet — V1.5 wires it into the print components.
+ */
+export const documentUserSignatures = documentSchema.table(
+	'user_signatures',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		/** Logical reference to auth.organizations.id; NULL = company-wide. */
+		organizationId: text('organization_id'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		userId: text('user_id').notNull(),
+		/** Object-storage key of the WebP signature/stamp image; never a public URL. */
+		objectKey: text('object_key').notNull(),
+		uploadedAt: unixTimestamp('uploaded_at').notNull(),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('user_signatures_user_id_uq')
+			.on(table.userId)
+			.where(sql`deleted_at IS NULL`),
+	],
+);
 export type TDocumentTemplateInsert = typeof documentTemplates.$inferInsert;
+export type TDocumentTemplateSelect = typeof documentTemplates.$inferSelect;
+export type TDocumentSignatureRequestSelect = typeof documentSignatureRequests.$inferSelect;
+export type TDocumentSignatureRequestInsert = typeof documentSignatureRequests.$inferInsert;
+export type TDocumentUserSignatureSelect = typeof documentUserSignatures.$inferSelect;
+export type TDocumentUserSignatureInsert = typeof documentUserSignatures.$inferInsert;
 export type TDocumentSelect = typeof documents.$inferSelect;
 export type TDocumentInsert = typeof documents.$inferInsert;
 export type TDocumentFileSelect = typeof documentFiles.$inferSelect;

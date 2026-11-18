@@ -1,0 +1,165 @@
+---
+import Download from "@lucide/astro/icons/download";
+import { icons } from "../../lib/icons";
+import type { ProductDetail } from "../../types/catalog";
+
+/**
+ * Product Info (02.02): tab bar, overview copy, feature highlights and the
+ * specification card. Tabs without designed content are shown disabled.
+ */
+interface Props {
+  detail: Pick<ProductDetail, "overviewTitle" | "overview" | "mobileOverview" | "features" | "specs" | "datasheetUrl" | "reviewCount">;
+}
+
+const { detail } = Astro.props;
+const desktopTabs = [
+  { label: "Overview", href: "#overview", active: true },
+  { label: "Specifications", href: "#specifications" },
+  { label: "Downloads (4)" },
+  { label: `Reviews (${detail.reviewCount})` },
+  { label: "Installation" },
+];
+const mobileTabs = [
+  { label: "Overview", href: "#overview", active: true },
+  { label: "Specs", href: "#specifications" },
+  { label: "Reviews" },
+];
+const mobileSpecs = detail.specs.filter((s) => s.mobile);
+---
+
+<section class="bg-white">
+  <div class="container-page flex flex-col gap-6 pt-2 pb-10 xl:gap-10 xl:pt-0 xl:pb-24">
+    <nav aria-label="Product sections">
+      <ul class="hidden gap-8 border-b border-border xl:flex">
+        {
+          desktopTabs.map((tab) => (
+            <li>
+              {tab.href ? (
+                <a
+                  href={tab.href}
+                  aria-current={tab.active ? "true" : undefined}
+                  class:list={[
+                    "-mb-px block pb-4 text-[15px]",
+                    tab.active ? "border-b-2 border-blue-600 font-bold text-fg" : "font-medium text-fg-muted hover:text-fg",
+                  ]}
+                >
+                  {tab.label}
+                </a>
+              ) : (
+                <span class="block pb-4 text-[15px] font-medium text-fg-muted" aria-disabled="true" title="Coming soon">
+                  {tab.label}
+                </span>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+      <ul class="flex gap-0.5 rounded-md bg-surface-2 p-1 xl:hidden">
+        {
+          mobileTabs.map((tab) => (
+            <li class="flex-1">
+              {tab.href ? (
+                <a
+                  href={tab.href}
+                  aria-current={tab.active ? "true" : undefined}
+                  class:list={[
+                    "flex justify-center rounded-md px-4 py-[9px] text-[14px]",
+                    tab.active ? "bg-white font-semibold text-fg shadow-tab" : "font-medium text-fg-secondary",
+                  ]}
+                >
+                  {tab.label}
+                </a>
+              ) : (
+                <span class="flex justify-center px-4 py-[9px] text-[14px] font-medium text-fg-secondary" aria-disabled="true">
+                  {tab.label}
+                </span>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div class="flex flex-col gap-6 xl:flex-row xl:gap-16">
+      <div id="overview" class="flex flex-1 scroll-mt-28 flex-col gap-6 xl:gap-5">
+        <h2
+          class="font-heading text-[22px] leading-[26px] font-extrabold tracking-[-0.5px] text-navy-900 xl:text-[30px] xl:leading-[normal] xl:tracking-[-0.8px]"
+        >
+          {detail.overviewTitle}
+        </h2>
+        <p class="text-[15px] leading-[25px] text-fg-secondary xl:text-[16px] xl:leading-[27px]">
+          <span class="xl:hidden">{detail.mobileOverview}</span>
+          <span class="hidden xl:inline">{detail.overview}</span>
+        </p>
+        {
+          detail.features.length > 0 && (
+            <ul class="grid grid-cols-2 gap-x-2.5 gap-y-6 xl:gap-3 xl:pt-3">
+              {detail.features.map((feature) => {
+                const Icon = icons[feature.icon];
+                return (
+                  <li class="flex flex-col gap-2.5 rounded-control p-4 ring-1 ring-border ring-inset xl:flex-row xl:gap-3.5 xl:rounded-lg xl:p-5">
+                    <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600 xl:size-10">
+                      <Icon size={19} class="size-[17px] xl:size-[19px]" aria-hidden="true" />
+                    </span>
+                    <span class="flex flex-1 flex-col gap-0.5 xl:gap-1">
+                      <span class="text-[14px] font-bold text-fg xl:text-[15px]">
+                        <span class="xl:hidden">{feature.mobileTitle}</span>
+                        <span class="hidden xl:inline">{feature.title}</span>
+                      </span>
+                      <span class="text-[12px] text-fg-muted xl:text-[13px] xl:leading-5 xl:text-fg-secondary">
+                        <span class="xl:hidden">{feature.mobileDescription}</span>
+                        <span class="hidden xl:inline">{feature.description}</span>
+                      </span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )
+        }
+      </div>
+
+      {
+        detail.specs.length > 0 && (
+          <div
+            id="specifications"
+            class="flex scroll-mt-28 flex-col rounded-lg bg-surface p-[18px] xl:w-[520px] xl:shrink-0 xl:gap-1 xl:self-start xl:rounded-card xl:p-7"
+          >
+            <div class="flex items-center justify-between pb-2 xl:pb-3">
+              <h2 class="font-heading text-[16px] font-bold text-fg xl:text-[18px]">Main specifications</h2>
+              {detail.datasheetUrl ? (
+                <a href={detail.datasheetUrl} class="flex items-center gap-1 text-[12px] font-semibold text-blue-600 xl:gap-1.5 xl:text-[13px]">
+                  <Download size={14} class="size-[13px] xl:size-3.5" aria-hidden="true" />
+                  <span class="xl:hidden">PDF</span>
+                  <span class="hidden xl:inline">Datasheet PDF</span>
+                </a>
+              ) : (
+                <span class="flex items-center gap-1 text-[12px] font-semibold text-blue-600/50 xl:gap-1.5 xl:text-[13px]" title="Datasheet coming soon">
+                  <Download size={14} class="size-[13px] xl:size-3.5" aria-hidden="true" />
+                  <span class="xl:hidden">PDF</span>
+                  <span class="hidden xl:inline">Datasheet PDF</span>
+                </span>
+              )}
+            </div>
+            <dl class="hidden flex-col gap-1 xl:flex">
+              {detail.specs.map((spec) => (
+                <div class="flex justify-between gap-4 border-b border-border py-3 text-[14px]">
+                  <dt class="text-fg-secondary">{spec.label}</dt>
+                  <dd class="text-right font-semibold text-fg">{spec.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <dl class="flex flex-col xl:hidden">
+              {mobileSpecs.map((spec) => (
+                <div class="flex justify-between gap-4 border-b border-border py-[11px] text-[13px] last:border-b-0">
+                  <dt class="text-fg-secondary">{spec.mobileLabel ?? spec.label}</dt>
+                  <dd class="text-right font-semibold text-fg">{spec.mobileValue ?? spec.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )
+      }
+    </div>
+  </div>
+</section>

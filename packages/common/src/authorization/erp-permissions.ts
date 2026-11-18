@@ -36,12 +36,16 @@ export const erpStatements = {
 	quotation: ['read', 'create', 'update', 'submit', 'approve', 'reject', 'send', 'export'],
 	sales_discount: ['request', 'approve'],
 	sales_order: ['read', 'create', 'update', 'submit', 'approve', 'cancel', 'export'],
+	/** ERP-0065: goods back from a customer for replacement; `receive` posts the stock in. */
+	sales_return: ['read', 'create', 'update', 'submit', 'approve', 'receive', 'cancel'],
 
 	// Purchasing
 	/** `read_bank`: see/edit supplier bank accounts (owner, finance, purchasing). */
 	supplier: ['read', 'create', 'update', 'archive', 'read_bank'],
 	purchase_request: ['read', 'create', 'update', 'submit', 'approve', 'reject'],
 	purchase_order: ['read', 'create', 'update', 'submit', 'approve', 'send', 'cancel', 'export'],
+	/** ERP-0068: goods sent back to the supplier for replacement; `ship` posts the stock out. */
+	purchase_return: ['read', 'create', 'update', 'submit', 'approve', 'ship', 'cancel'],
 
 	// Projects and technicians
 	/** `read_cost`: see/record project direct costs (owner, finance, project manager). */
@@ -109,6 +113,8 @@ export const erpStatements = {
 
 	// After-sales and assets
 	service_ticket: ['read', 'create', 'update', 'assign', 'resolve', 'close'],
+	// Customer portal logins (ERP-0022): invite a customer, resend, revoke.
+	portal_account: ['read', 'invite', 'revoke'],
 	warranty_claim: ['read', 'create', 'update', 'approve', 'reject', 'close'],
 	asset: ['read', 'create', 'update', 'assign', 'return', 'maintain', 'dispose', 'export'],
 
@@ -183,6 +189,11 @@ export const builtInOrgStatements = {
 	member: ['create', 'read', 'update', 'delete'],
 	invitation: ['create', 'cancel'],
 	ac: ['create', 'read', 'update', 'delete'],
+	// Better Auth `apiKey` plugin, organization-owned keys: the key is issued
+	// and revoked as the acting member, so Better Auth checks (and the ERP
+	// records) the real issuer. Granted with `license:manage_api` only; the
+	// plugin's own HTTP routes are disabled (`auth.options.ts`).
+	apiKey: ['create', 'read', 'update', 'delete'],
 } as const satisfies Record<string, readonly string[]>;
 
 /** Restricted portal statement vocabularies (not internal back-office). */export const portalStatements = {
@@ -389,11 +400,13 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		organization: ['create', 'read', 'update', 'delete'],
 		member: ['create', 'read', 'update', 'delete'],
 		invitation: ['create', 'cancel'],
+		apiKey: ['create', 'read', 'update', 'delete'],
 	},
 
 	// Organization administration + non-sensitive master data. No payroll,
 	// payment execution, accounting, investor-finance, or integration secrets.
 	admin: {
+		portal_account: ['read', 'invite', 'revoke'],
 		organization: ['read', 'update'],
 		member: ['create', 'read', 'update', 'delete'],
 		invitation: ['create', 'cancel'],
@@ -460,6 +473,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		settlement: ['read', 'verify', 'approve', 'reject'],
 		purchase_request: ['read', 'approve', 'reject'],
 		purchase_order: ['read', 'approve'],
+		purchase_return: ['read', 'approve'],
 		// Approves stock adjustments like POs (decision 2026-11-03, ADR-0011).
 		stock: ['read'],
 		stock_adjustment: ['read', 'approve', 'post'],
@@ -482,6 +496,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 	},
 
 	sales_manager: {
+		portal_account: ['read', 'invite', 'revoke'],
 		ac: ['read'],
 		asset_borrowing: ['read', 'create'],
 		dashboard: ['read'],
@@ -491,11 +506,14 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		quotation: ['read', 'create', 'update', 'submit', 'approve', 'reject', 'send', 'export'],
 		sales_discount: ['request', 'approve'],
 		sales_order: ['read', 'create', 'update', 'submit', 'approve', 'cancel', 'export'],
+		sales_return: ['read', 'create', 'update', 'submit', 'approve', 'cancel'],
 		product: ['read'],
 		// Website catalog listings with marketing (M04, decision 2026-11-07).
 		catalog: ['read', 'create', 'update', 'publish', 'archive'],
 		// M03 license register and its API keys (decisions 2026-11-06).
 		license: ['read', 'create', 'activate', 'extend', 'revoke', 'read_key', 'manage_api'],
+		// Issues the license API keys as themselves (pairs with `manage_api`).
+		apiKey: ['create', 'read', 'update'],
 		// Answers WhatsApp chats handed off by the assistant (M04 stage 2).
 		whatsapp: ['read', 'reply'],
 		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
@@ -511,6 +529,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		quotation: ['read', 'create', 'update', 'submit', 'send'],
 		sales_discount: ['request'],
 		sales_order: ['read', 'create', 'update', 'submit'],
+		sales_return: ['read', 'create', 'update', 'submit', 'cancel'],
 		product: ['read'],
 		// Registers licenses sold and starts renewals (M03, decision 2026-11-06).
 		license: ['read', 'create', 'extend', 'read_key'],
@@ -573,6 +592,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		supplier: ['read', 'create', 'update', 'archive', 'read_bank'],
 		purchase_request: ['read', 'create', 'update', 'submit'],
 		purchase_order: ['read', 'create', 'update', 'submit', 'send', 'export'],
+		purchase_return: ['read', 'create', 'update', 'submit', 'cancel'],
 		// Maintains the item master incl. purchase price (decision 2026-11-02).
 		product: ['read', 'create', 'update', 'read_cost'],
 		stock: ['read'],
@@ -588,6 +608,10 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		product: ['read'],
 		stock: ['read', 'receive', 'issue', 'transfer', 'export'],
 		stock_adjustment: ['read', 'create', 'submit'],
+		// ERP-0068: hands the goods to the supplier (stock out).
+		purchase_return: ['read', 'ship'],
+		// ERP-0065: takes customer returns back in (stock in, condition).
+		sales_return: ['read', 'receive'],
 		asset_borrowing: [
 			'read',
 			'update',
@@ -616,6 +640,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		// limit SPHs to deals (decision 2026-11-04).
 		quotation: ['read'],
 		sales_order: ['read'],
+		sales_return: ['read'],
 		// Project direct costs, read only (decision 2026-11-04).
 		project: ['read', 'read_cost'],
 		bill: ['read', 'create', 'record'],
@@ -685,6 +710,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 	},
 
 	customer_service: {
+		portal_account: ['read', 'invite', 'revoke'],
 		ac: ['read'],
 		asset_borrowing: ['read', 'create'],
 		dashboard: ['read'],
@@ -733,9 +759,11 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		lead: ['read', 'export'],
 		quotation: ['read', 'export'],
 		sales_order: ['read', 'export'],
+		sales_return: ['read'],
 		supplier: ['read'],
 		purchase_request: ['read'],
 		purchase_order: ['read', 'export'],
+		purchase_return: ['read'],
 		project: ['read', 'export'],
 		task: ['read'],
 		daily_report: ['read', 'export'],

@@ -1,0 +1,88 @@
+---
+import ProductCard from "../product/ProductCard.astro";
+import SectionHeading from "../ui/SectionHeading.astro";
+import { routes } from "../../data/site";
+import { featuredProductSlugs, mobileFeaturedSlugs, productTabs } from "../../data/home";
+import { getProductsBySlugs } from "../../lib/catalog";
+
+/**
+ * 01.01 Home · Featured Products (desktop RMVZw / mobile jgwKJ).
+ * Tabs link to catalog filters until catalog data comes from the ERP API.
+ */
+const tabHref: Record<string, string> = {
+  "Best Sellers": `${routes.products}?sort=best-sellers`,
+  "New Arrivals": `${routes.products}?sort=newest`,
+  Parking: `${routes.products}?category=parking`,
+  Biometrics: `${routes.products}?category=biometrics`,
+};
+const activeTab = productTabs[0];
+const featuredProducts = await getProductsBySlugs(featuredProductSlugs);
+const mobileProducts = await getProductsBySlugs(mobileFeaturedSlugs);
+---
+
+<section class="bg-white xl:bg-surface">
+  <!-- Desktop -->
+  <div class="container-page hidden flex-col gap-10 py-24 xl:flex">
+    <div class="flex items-end justify-between">
+      <SectionHeading class="w-[640px]" eyebrow="Featured Hardware" title="Best-selling access hardware." />
+      <nav aria-label="Product collections" class="flex gap-0.5 rounded-md bg-surface-2 p-1">
+        {
+          productTabs.map((tab) => (
+            <a
+              href={tabHref[tab]}
+              aria-current={tab === activeTab ? "true" : undefined}
+              class:list={[
+                "rounded-md px-4 py-[9px] text-[14px]",
+                tab === activeTab ? "bg-white font-semibold text-fg shadow-tab" : "font-medium text-fg-secondary hover:text-fg",
+              ]}
+            >
+              {tab}
+            </a>
+          ))
+        }
+      </nav>
+    </div>
+    <div class="grid grid-cols-4 gap-5">
+      {featuredProducts.map((product) => <ProductCard product={product} />)}
+    </div>
+  </div>
+
+  <!-- Mobile -->
+  <div class="container-page flex flex-col gap-6 py-12 xl:hidden">
+    <div class="flex items-end justify-between">
+      <SectionHeading eyebrow="Featured Hardware" title="Best sellers" />
+      <a href={tabHref["Best Sellers"]} class="text-[14px] font-semibold text-blue-600">See all</a>
+    </div>
+    <div class="flex flex-col gap-6" data-carousel>
+    <ul
+      data-carousel-track
+      class="scrollbar-none -mx-5 flex snap-x snap-mandatory scroll-px-5 gap-3.5 overflow-x-auto px-5 md:-mx-8 md:scroll-px-8 md:px-8"
+    >
+      {
+        mobileProducts.map((product) => (
+          <li class="w-[264px] shrink-0 snap-start">
+            <ProductCard product={product} class="h-full" />
+          </li>
+        ))
+      }
+    </ul>
+    <div class="flex justify-center gap-1.5" aria-hidden="true">
+      {
+        mobileProducts.map((_, index) => (
+          <span
+            data-carousel-dot
+            data-on="w-5 bg-blue-600"
+            data-off="w-1.5 bg-border"
+            class:list={["h-1.5 rounded-pill transition-all", index === 0 ? "w-5 bg-blue-600" : "w-1.5 bg-border"]}
+          />
+        ))
+      }
+    </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { initCarouselDots } from "../../scripts/carousel-dots";
+  initCarouselDots();
+</script>

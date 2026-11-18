@@ -1,0 +1,52 @@
+---
+import CirclePlay from "@lucide/astro/icons/circle-play";
+import Lock from "@lucide/astro/icons/lock";
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import KnowledgeTabs from "../../components/knowledge/KnowledgeTabs.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import Media from "../../components/ui/Media.astro";
+import CustomerBand from "../../components/contact/CustomerBand.astro";
+import { videoGuides } from "../../data/knowledge";
+import { customerPortal, routes } from "../../data/site";
+
+/**
+ * Knowledge Center · Video Guides (tab shown in 01.03/01.04). Videos are streamed to
+ * signed-in customers from the Customer Portal, so each card opens the portal.
+ */
+---
+
+<PublicLayout title="Video Guides | Entragate Knowledge Center" description="Step-by-step installation, enrolment and platform videos from the IMS engineering team.">
+  <KnowledgeTabs active="videos" />
+  <PageHero
+    title="Video Guides"
+    description="Step-by-step installation, enrolment and platform walkthroughs recorded by the IMS engineering team."
+    mobileDescription="Installation and platform walkthroughs."
+    breadcrumb={[{ label: "Home", href: routes.home }, { label: "Support", href: routes.help }, { label: "Video Guides" }]}
+  />
+  <section class="container-page flex flex-col gap-6 py-8 xl:py-16">
+    <ul class="grid gap-5 md:grid-cols-2 xl:grid-cols-3 xl:gap-6">
+      {
+        videoGuides.map((video) => (
+          <li>
+            <a href={customerPortal.login} class="group flex h-full flex-col overflow-hidden rounded-lg bg-white shadow-[0_8px_24px_#0A1A3F0D] ring-1 ring-border ring-inset">
+              <span class="relative flex h-[200px] items-center justify-center">
+                <Media src={video.image} alt="" class="absolute inset-0 size-full" />
+                <span class="absolute inset-0 bg-navy-950/30" aria-hidden="true" />
+                <CirclePlay size={52} stroke-width={1.5} class="relative text-white transition-transform group-hover:scale-110" aria-hidden="true" />
+                <span class="absolute right-3 bottom-3 rounded-sm bg-navy-950/80 px-2 py-0.5 text-[12px] font-semibold text-white">{video.duration}</span>
+              </span>
+              <span class="flex flex-1 flex-col gap-1.5 p-5">
+                <span class="text-[11.5px] font-bold tracking-[1.2px] text-blue-600 uppercase">{video.topic}</span>
+                <span class="font-heading text-[18px] font-bold text-fg">{video.title}</span>
+                <span class="mt-auto flex items-center gap-1.5 pt-2 text-[13px] font-semibold text-fg-muted">
+                  <Lock size={13} aria-hidden="true" />Watch in the Customer Portal
+                </span>
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+  <CustomerBand class="pb-10 xl:pb-24" />
+</PublicLayout>

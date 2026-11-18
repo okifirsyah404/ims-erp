@@ -1,0 +1,71 @@
+---
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+import Clock from "@lucide/astro/icons/clock";
+import PublicLayout from "../../../layouts/PublicLayout.astro";
+import KnowledgeTabs from "../../../components/knowledge/KnowledgeTabs.astro";
+import PageHero from "../../../components/ui/PageHero.astro";
+import CustomerBand from "../../../components/contact/CustomerBand.astro";
+import { helpArticles, helpTopics } from "../../../data/knowledge";
+import { routes } from "../../../data/site";
+import { icons } from "../../../lib/icons";
+
+/** Help topic: article list for one card of 01.03 · Browse by topic. */
+export function getStaticPaths() {
+  return helpTopics.map((topic) => ({ params: { topic: topic.slug } }));
+}
+
+const topic = helpTopics.find((t) => t.slug === Astro.params.topic)!;
+const articles = helpArticles.filter((a) => a.topic === topic.slug);
+const others = helpTopics.filter((t) => t.slug !== topic.slug);
+---
+
+<PublicLayout title={`${topic.title} — Help Center | Entragate`} description={topic.description}>
+  <KnowledgeTabs active="help" />
+  <PageHero
+    title={topic.title}
+    description={topic.description}
+    breadcrumb={[{ label: "Home", href: routes.home }, { label: "Help Center", href: routes.help }, { label: topic.title }]}
+  />
+  <section class="container-page grid gap-8 py-8 xl:grid-cols-[1fr_340px] xl:gap-16 xl:py-16">
+    <ul class="flex flex-col divide-y divide-border rounded-card ring-1 ring-border ring-inset">
+      {
+        articles.map((article) => (
+          <li>
+            <a href={`${routes.help}/articles/${article.slug}`} class="group flex items-center gap-4 p-5 hover:bg-surface xl:p-6">
+              <span class="flex flex-1 flex-col gap-1.5">
+                <span class="font-heading text-[17px] font-bold text-navy-900 group-hover:text-blue-600 xl:text-[19px]">{article.title}</span>
+                <span class="text-[14px] leading-[22px] text-fg-secondary">{article.summary}</span>
+                <span class="flex items-center gap-1.5 text-[12.5px] text-fg-muted">
+                  <Clock size={13} aria-hidden="true" />
+                  {article.minutes} min read · Updated {article.updated}
+                </span>
+              </span>
+              <ChevronRight size={18} class="text-fg-muted" aria-hidden="true" />
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    <aside class="flex flex-col gap-3">
+      <h2 class="text-[13px] font-bold tracking-[1.6px] text-blue-600 uppercase">Other topics</h2>
+      <ul class="flex flex-col gap-1">
+        {
+          others.map((t) => {
+            const Icon = icons[t.icon];
+            return (
+              <li>
+                <a href={`${routes.help}/topics/${t.slug}`} class="flex items-center gap-3 rounded-md p-2.5 text-[14px] font-semibold text-fg hover:bg-surface">
+                  <span class="flex size-9 items-center justify-center rounded-md bg-surface text-fg">
+                    <Icon size={18} aria-hidden="true" />
+                  </span>
+                  {t.title}
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </aside>
+  </section>
+  <CustomerBand class="pb-10 xl:pb-24" />
+</PublicLayout>

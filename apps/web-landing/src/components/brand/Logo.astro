@@ -1,0 +1,38 @@
+---
+import LogoMark from "./LogoMark.astro";
+import { company, routes } from "../../data/site";
+
+/** Logo component (njODZ). `tone="light"` is the footer variant on navy backgrounds. */
+interface Props {
+  tone?: "dark" | "light";
+  size?: "md" | "sm";
+  href?: string | null;
+  class?: string;
+}
+
+const { tone = "dark", size = "md", href = routes.home, class: className } = Astro.props;
+const Tag = href ? "a" : "div";
+---
+
+<Tag
+  href={href ?? undefined}
+  class:list={["inline-flex shrink-0 items-center gap-2.5", className]}
+  aria-label={href ? `${company.brand} home` : undefined}
+>
+  <LogoMark />
+  <span class="flex flex-col gap-px">
+    <span
+      class:list={[
+        "font-heading font-extrabold tracking-[1.6px]",
+        size === "md" ? "text-[19px]" : "text-[16px]",
+        tone === "dark" ? "text-navy-900" : "text-white",
+      ]}>{company.brand}</span
+    >
+    <span
+      class:list={[
+        "text-[10.5px] font-medium tracking-[0.2px]",
+        tone === "dark" ? "text-fg-muted" : "text-fg-on-dark-muted",
+      ]}>{company.tagline}</span
+    >
+  </span>
+</Tag>
