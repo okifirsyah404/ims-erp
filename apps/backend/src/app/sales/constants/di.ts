@@ -18,6 +18,8 @@ import type { IQuotationRepository } from '../contracts/quotation.repository.int
 import type { QuotationService } from '../services/quotation.service';
 import type { ISalesOrderRepository } from '../contracts/sales-order.repository.interface';
 import type { SalesOrderService } from '../services/sales-order.service';
+import type { ISalesReturnRepository } from '../contracts/sales-return.repository.interface';
+import type { SalesReturnService } from '../services/sales-return.service';
 import type { SalesBillingService } from '../services/sales-billing.service';
 import type { TPaymentRepository } from '../contracts/payment.repository.interface';
 import type { IDeliveryNoteRepository } from '../contracts/delivery-note.repository.interface';
@@ -63,6 +65,12 @@ export const DELIVERY_NOTE_REPOSITORY_TOKEN: InjectionToken<IDeliveryNoteReposit
 
 /** Token resolving to the {@link DeliveryNoteService} implementation. */
 export const DELIVERY_NOTE_SERVICE_TOKEN: InjectionToken<DeliveryNoteService> = Symbol('DELIVERY_NOTE_SERVICE_TOKEN');
+
+/** Token resolving to the sales return repository implementation (ERP-0065). */
+export const SALES_RETURN_REPOSITORY_TOKEN: InjectionToken<ISalesReturnRepository> = Symbol('SALES_RETURN_REPOSITORY_TOKEN');
+
+/** Token resolving to the {@link SalesReturnService} implementation (ERP-0065). */
+export const SALES_RETURN_SERVICE_TOKEN: InjectionToken<SalesReturnService> = Symbol('SALES_RETURN_SERVICE_TOKEN');
 
 /** Token resolving to the {@link SalesFulfilmentService} (Sales contract for Projects). */
 export const SALES_FULFILMENT_SERVICE_TOKEN: InjectionToken<SalesFulfilmentService> = Symbol('SALES_FULFILMENT_SERVICE_TOKEN');

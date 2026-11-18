@@ -538,6 +538,122 @@ export const deliveryNoteItems = salesSchema.table(
  * sales.payments (transitional scaffold, dropped in S7)
  * ------------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------------ *
+ * sales.sales_returns (ERP-0065, replacement only)
+ * ------------------------------------------------------------------------ */
+
+/**
+ * draft → submitted → approved → received; rejection returns to draft;
+ * cancelled before received.
+ */
+export const SALES_RETURN_STATUSES = ['draft', 'submitted', 'approved', 'received', 'cancelled'] as const;
+export type SalesReturnStatus = (typeof SALES_RETURN_STATUSES)[number];
+
+/** Set per line when the warehouse receives the goods. */
+export const SALES_RETURN_CONDITIONS = ['good', 'damaged'] as const;
+export type SalesReturnCondition = (typeof SALES_RETURN_CONDITIONS)[number];
+
+export const salesReturns = salesSchema.table(
+	'sales_returns',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		/** e.g. 0001/RTJ/IMS/XI/26; null until approved. */
+		code: varchar('code', { length: 32 }),
+		deliveryNoteId: uuid('delivery_note_id')
+			.notNull()
+			.references(() => deliveryNotes.id, { onDelete: 'restrict' }),
+		salesOrderId: uuid('sales_order_id')
+			.notNull()
+			.references(() => salesOrders.id, { onDelete: 'restrict' }),
+		/** Logical reference to crm.customers.id — cross-module FK omitted. */
+		customerId: uuid('customer_id'),
+		/** Logical reference to inventory.warehouses.id — cross-module FK omitted. */
+		warehouseId: uuid('warehouse_id').notNull(),
+		status: text('status').$type<SalesReturnStatus>().notNull().default('draft'),
+		returnDate: date('return_date').notNull(),
+		reason: text('reason').notNull(),
+		notes: text('notes'),
+		/** Sum of the line totals at the order unit price; informative. */
+		totalAmount: bigint('total_amount', { mode: 'number' }).notNull().default(0),
+		currencyCode: varchar('currency_code', { length: 3 }).notNull().default('IDR'),
+		rejectionReason: text('rejection_reason'),
+		/** Logical references to auth.users.id — cross-module FK omitted. */
+		createdBy: text('created_by'),
+		submittedBy: text('submitted_by'),
+		submittedAt: unixTimestampNullable('submitted_at'),
+		approvedBy: text('approved_by'),
+		approvedAt: unixTimestampNullable('approved_at'),
+		receivedBy: text('received_by'),
+		receivedAt: unixTimestampNullable('received_at'),
+		cancelledBy: text('cancelled_by'),
+		cancelledAt: unixTimestampNullable('cancelled_at'),
+		cancelledReason: text('cancelled_reason'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('sales_returns_code_uq')
+			.on(table.code)
+			.where(sql`deleted_at IS NULL AND code IS NOT NULL`),
+		index('sales_returns_delivery_note_id_idx').on(table.deliveryNoteId),
+		index('sales_returns_sales_order_id_idx').on(table.salesOrderId),
+		index('sales_returns_status_idx').on(table.status),
+		check(
+			'sales_returns_status_check',
+			sql`${table.status} IN ('draft', 'submitted', 'approved', 'received', 'cancelled')`,
+		),
+		check('sales_returns_total_check', sql`${table.totalAmount} >= 0`),
+	],
+);
+
+export const salesReturnItems = salesSchema.table(
+	'sales_return_items',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		salesReturnId: uuid('sales_return_id')
+			.notNull()
+			.references(() => salesReturns.id, { onDelete: 'cascade' }),
+		deliveryNoteItemId: uuid('delivery_note_item_id')
+			.notNull()
+			.references(() => deliveryNoteItems.id, { onDelete: 'restrict' }),
+		salesOrderItemId: uuid('sales_order_item_id')
+			.notNull()
+			.references(() => salesOrderItems.id, { onDelete: 'restrict' }),
+		/** Logical reference to inventory.items.id — cross-module FK omitted. */
+		itemId: uuid('item_id').notNull(),
+		sku: varchar('sku', { length: 64 }),
+		name: text('name').notNull(),
+		unit: varchar('unit', { length: 32 }).notNull(),
+		quantity: numeric('quantity', { precision: 18, scale: 3 }).notNull(),
+		unitPrice: bigint('unit_price', { mode: 'number' }).notNull().default(0),
+		/** The delivery line's issue cost, booked back by the return_in movement. */
+		unitCost: bigint('unit_cost', { mode: 'number' }).notNull().default(0),
+		/** round(quantity × unit_price). */
+		lineTotal: bigint('line_total', { mode: 'number' }).notNull().default(0),
+		serialNumbers: jsonb('serial_numbers').$type<string[]>(),
+		/** Set on receiving. */
+		condition: text('condition').$type<SalesReturnCondition>(),
+		/** Logical reference to inventory.warehouse_storages.id — cross-module FK omitted. */
+		binId: uuid('bin_id'),
+		/** Logical reference to inventory.stock_movements.id — cross-module FK omitted. */
+		stockMovementId: uuid('stock_movement_id'),
+		sortOrder: integer('sort_order').notNull().default(0),
+		...timestamps,
+	},
+	(table) => [
+		index('sales_return_items_sales_return_id_idx').on(table.salesReturnId),
+		index('sales_return_items_delivery_note_item_id_idx').on(table.deliveryNoteItemId),
+		check(
+			'sales_return_items_amounts_check',
+			sql`${table.quantity} > 0 AND ${table.unitPrice} >= 0 AND ${table.unitCost} >= 0 AND ${table.lineTotal} >= 0`,
+		),
+		check('sales_return_items_condition_check', sql`${table.condition} IS NULL OR ${table.condition} IN ('good', 'damaged')`),
+	],
+);
+
 export const payments = salesSchema.table(
 	'payments',
 	{
@@ -785,7 +901,7 @@ export const receipts = salesSchema.table(
  * ------------------------------------------------------------------------ */
 
 export const salesRelations = defineRelationsPart(
-	{ quotations, quotationItems, quotationStatusHistory, salesOrders, salesOrderItems, orderStatusHistory, deliveryNotes, deliveryNoteItems, payments, invoices, invoiceItems, receipts },
+	{ quotations, quotationItems, quotationStatusHistory, salesOrders, salesOrderItems, orderStatusHistory, deliveryNotes, deliveryNoteItems, salesReturns, salesReturnItems, payments, invoices, invoiceItems, receipts },
 	(r) => ({
 		quotations: {
 			items: r.many.quotationItems({
@@ -866,6 +982,10 @@ export type TDeliveryNoteInsert = typeof deliveryNotes.$inferInsert;
 export type TDeliveryNoteSelect = typeof deliveryNotes.$inferSelect;
 export type TDeliveryNoteItemInsert = typeof deliveryNoteItems.$inferInsert;
 export type TDeliveryNoteItemSelect = typeof deliveryNoteItems.$inferSelect;
+export type TSalesReturnInsert = typeof salesReturns.$inferInsert;
+export type TSalesReturnSelect = typeof salesReturns.$inferSelect;
+export type TSalesReturnItemInsert = typeof salesReturnItems.$inferInsert;
+export type TSalesReturnItemSelect = typeof salesReturnItems.$inferSelect;
 export type TPaymentInsert = typeof payments.$inferInsert;
 export type TPaymentSelect = typeof payments.$inferSelect;
 export type TInvoiceInsert = typeof invoices.$inferInsert;

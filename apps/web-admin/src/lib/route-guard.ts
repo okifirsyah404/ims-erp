@@ -49,11 +49,10 @@ export async function canOpenPath(
 		const orgs = await queryClient.ensureQueryData(myOrganizationsQueryOptions);
 		const activeOrgId = session.session.activeOrganizationId ?? '';
 
-		const permissions = Array.isArray(leaf.permission)
-			? leaf.permission
-			: leaf.permission
-				? [leaf.permission]
-				: [];
+		const permissions = [
+			...(Array.isArray(leaf.permission) ? leaf.permission : leaf.permission ? [leaf.permission] : []),
+			...(leaf.anyPermission ?? []),
+		];
 		const granted = new Set<Permission>();
 		if (activeOrgId) {
 			await Promise.all(

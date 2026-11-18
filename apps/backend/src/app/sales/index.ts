@@ -16,6 +16,7 @@ import { QuotationController } from './controllers/quotation.controller';
 import { ReceiptController } from './controllers/receipt.controller';
 import { SalesController } from './controllers/sales.controller';
 import { SalesOrderController } from './controllers/sales-order.controller';
+import { SalesReturnController } from './controllers/sales-return.controller';
 
 export { registerSales } from './container';
 
@@ -31,6 +32,7 @@ export function salesModule() {
 		.use(QuotationController.plugin())
 		.use(SalesOrderController.plugin())
 		.use(DeliveryNoteController.plugin())
+		.use(SalesReturnController.plugin())
 		.use(InvoiceController.plugin())
 		.use(ReceiptController.plugin())
 		.use(SalesController.plugin());

@@ -107,6 +107,8 @@ const DYNAMIC_PREFIXES = [
 	'procurement:vatMode.',
 	'procurement:status.',
 	'procurement:returnStatus.',
+	'sales:returnStatus.',
+	'sales:returnCondition.',
 	// Purchase request status labels come from server values (M05).
 	'procurement:prStatus.',
 	'doc.statusText.',
@@ -155,6 +157,9 @@ const DYNAMIC_PREFIXES = [
 	'procurement.receiptLine.',
 	'procurement.returnLine.',
 	'procurement.returnState.',
+	'sales.returnLine.',
+	'sales.returnState.',
+	'sales.returnReceive.',
 	'sales.deliveryLine.',
 	'sales.deliveryState.',
 	'projects.deal.',

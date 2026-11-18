@@ -22,6 +22,12 @@ export type SidebarItem = {
 	 * no `open`, and no `appAdminOnly` are hidden (deny by default).
 	 */
 	permission?: Permission | Permission[];
+	/**
+	 * Shown when **any one** of these permissions holds (ERP-0065), for routes
+	 * the backend opens on an either-or check, e.g. delivery notes read with
+	 * `stock:read` or `sales_order:read`.
+	 */
+	anyPermission?: Permission[];
 	/** Shown to every logged-in user with an internal role in some organization. */
 	internalRole?: true;
 	/** Shown to any logged-in user, no role check (e.g. Notifications). */

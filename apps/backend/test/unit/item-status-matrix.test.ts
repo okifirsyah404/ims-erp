@@ -27,9 +27,9 @@ import { InventoryRuleViolationError } from '../../src/app/inventory/errors/inve
 /** Statuses a kind may hold, per ADR-0008. Source of truth for the assertions. */
 const EXPECTED: Record<ItemKind, readonly UnitStatus[]> = {
 	// ERP-0068: any stocked unit can go back to its supplier.
-	product: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned'],
-	component: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned'],
-	material: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned'],
+	product: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
+	component: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
+	material: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
 };
 
 describe('item kind × status matrix', () => {
@@ -79,9 +79,21 @@ describe('item kind × status matrix', () => {
 			}
 		});
 
-		it('treats sold as terminal', () => {
+		it('lets a sold unit only come back from a customer (ERP-0065)', () => {
 			for (const to of UNIT_STATUSES) {
-				expect(() => assertTransitionAllowed('product', 'sold', to)).toThrow(
+				if (to === 'in_stock' || to === 'damaged') {
+					expect(() => assertTransitionAllowed('product', 'sold', to)).not.toThrow();
+				} else {
+					expect(() => assertTransitionAllowed('product', 'sold', to)).toThrow(
+						InventoryRuleViolationError,
+					);
+				}
+			}
+		});
+
+		it('treats returned as terminal (ERP-0068)', () => {
+			for (const to of UNIT_STATUSES) {
+				expect(() => assertTransitionAllowed('product', 'returned', to)).toThrow(
 					InventoryRuleViolationError,
 				);
 			}

@@ -54,6 +54,7 @@ Amounts are integer IDR minor units (divide by 100 for rupiah). Topics:
 | `whatsapp.handoff` | WhatsApp assistant: chat handed to an admin | `conversationId`, `phone`, `contactName`, `reason` (`no_provider / not_found / human_requested / restricted / error`), `question` |
 | `license.due` | Licensing: daily job | `contractId`, `code`, `threshold` (30 / 7 / 0), `stage` (`ending / ended`), `daysLeft`, `endDate`, `graceEndsOn`, `application{code,name}`, `customer{…}` |
 | `purchase_return.updated` | Procurement: purchase return submitted, approved, rejected, shipped or cancelled (ERP-0068) | `returnId`, `code`, `change` (`submitted / approved / rejected / shipped / cancelled`), `status`, `returnDate`, `reason`, `rejectionReason`, `cancelledReason`, `goodsReceiptCode`, `purchaseOrderCode`, `supplier{id,code,name,phone,email,picName,picPhone,picEmail}`, `lines[{sku,name,unit,quantity,serialNumbers}]`, `totalAmount`, `actorUserId` |
+| `sales_return.updated` | Sales: customer return submitted, approved, rejected, received or cancelled (ERP-0065) | `returnId`, `code`, `change` (`submitted / approved / rejected / received / cancelled`), `status`, `returnDate`, `reason`, `rejectionReason`, `cancelledReason`, `deliveryNoteCode`, `salesOrderCode`, `customer{id,code,name,email,phone,whatsapp}`, `lines[{sku,name,unit,quantity,serialNumbers,condition}]`, `totalAmount`, `actorUserId` |
 
 `license.due` runs from the BullMQ queue `licensing-due` (cron
 `SCHEDULER_LICENSE_DUE_CRON`, default `0 8 * * *` Asia/Jakarta, only with

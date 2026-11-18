@@ -159,7 +159,7 @@ beforeEach(() => {
 			async getItem(id: string) {
 				return { id, isSerialized: id === READER } as never;
 			},
-			async inStockSerials() {
+			async supplierReturnableSerials() {
 				return inStock;
 			},
 			async returnUnits(_itemId: string, serials: readonly string[]) {
