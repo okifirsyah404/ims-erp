@@ -29,6 +29,20 @@ assets operations surface). §7 item 3 (statement exports + monthly archive +
 
 ---
 
+## Cross-cutting: database schema and table normalization (ERP-0070..ERP-0088)
+
+Plan: `docs/plan/database-refactor/`. Decision: ADR-0024 (`proposed`).
+
+### planned
+- ERP-0070 P0 (ADR, numbering helper, dbml + Drizzle rewrite); ERP-0071..0087
+  per-module refactor (location, auth, company, customer, supplier, inventory,
+  sale, procurement, finance, tax, payment, project, ticket, human-resource,
+  document, notification, audit + automation); ERP-0088 cutover (baseline
+  migrations, seeders, URL aliases). Evidence: plan only (`progress.md`
+  2026-11-19); no code.
+
+---
+
 ## Cross-cutting: role-based nav, login gate, warehouse PIC (ERP-0051)
 
 Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`accepted` 2026-11-14).

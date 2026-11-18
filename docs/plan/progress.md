@@ -12,6 +12,44 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-19 - Database normalization plan written (ERP-0070..ERP-0088, planned)
+
+Branch `refactor(db)/schema-and-table-normalization` (from `main` `929209c6`).
+Docs only - **no code, schema, migration or seed changed**.
+
+**What was done.**
+- Grill session with the owner (36 decisions, Q1-Q36) on the requested schema
+  normalization: one module per schema (`auth` shared by `user` +
+  `organization`), no cross-schema FK, polymorph only for "one of more than
+  three targets", one repository per table, service-to-service through
+  exported services, per-schema `code_numberings`, squash to a new baseline,
+  plural module URL prefixes with aliases for external callers.
+- Plan written to `docs/plan/database-refactor/` (`00-overview.md`,
+  `01-target-schema.md`, `02-shared-patterns.md`, 15 `modules/*.md`,
+  `99-cutover.md`); `ADR-0024-database-normalization-baseline-v2.md`
+  (**proposed**); backlog rows ERP-0070..ERP-0088 (`planned`).
+- Facts gathered read-only for the plan: 140 Drizzle tables vs 280 in
+  `docs.dbml` (140 target-only); no production database (ADR-0011/0018/0019);
+  `drizzle:generate` still blocked (runbook); boundary violations found:
+  `accounting` repositories import `finance.schema` (7 files),
+  `organization/repositories/organization.repository.ts:8` imports the
+  `inventory` schema, `user` reads `portal.schema.ts`.
+
+**Gate 1 / Gate 2.** `docs/database/docs.dbml` was read (module sections of
+every affected schema); `module-ownership.md`, `integrity-and-consistency.md`,
+`data-dictionary.md`, `logical-references.md` were not re-read in this session
+because no schema is edited yet - each module phase must read them before
+step 1. The grill pass is recorded in `00-overview.md` (decision table + open
+items).
+
+**`docs/database/` reviewed and unchanged** (plan only; the dbml rewrite is
+ERP-0070 step 1). No commands beyond read-only `git`/file inspection were run;
+lint/test/typecheck were not run because no code changed.
+
+**Next executable task:** ERP-0070 - owner reviews the open items in
+`docs/plan/database-refactor/00-overview.md` and ADR-0024, then P0 starts with
+the `docs.dbml` rewrite.
+
 ## 2026-11-19 - PR #114 merged `main` in (ERP-0039 n8n workflow); the dependency notes are now obsolete
 
 `origin/main` (`5bd6fc9d`, #116 and #117 merged) was merged into
