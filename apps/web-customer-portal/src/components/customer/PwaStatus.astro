@@ -1,0 +1,76 @@
+---
+import RefreshCw from "@lucide/astro/icons/refresh-cw";
+import WifiOff from "@lucide/astro/icons/wifi-off";
+import X from "@lucide/astro/icons/x";
+
+/**
+ * Service-worker registration plus two status toasts:
+ * - "Update available": a new version is installed and waiting. The user picks when to
+ *   reload, so a half-filled form is never lost (registerType "prompt").
+ * - "You're offline": shown while the device has no connection.
+ */
+interface Props {
+  /** Hide the offline toast (the offline page already says so). */
+  connection?: boolean;
+}
+
+const { connection = true } = Astro.props;
+const toast =
+  "pointer-events-auto flex items-center gap-3 rounded-lg bg-navy-900 py-2.5 pr-2.5 pl-4 text-[13.5px] font-medium text-white shadow-[0_12px_28px_#0A1A3F40]";
+---
+
+<div
+  class="pointer-events-none fixed inset-x-0 top-0 z-50 flex flex-col items-center gap-2 px-4 pt-[max(12px,env(safe-area-inset-top))]"
+  aria-live="polite"
+>
+  <div class:list={[toast, "w-full max-w-[448px]"]} role="status" hidden data-pwa-update>
+    <RefreshCw size={18} class="shrink-0 text-cyan-400" aria-hidden="true" />
+    <span class="flex-1">A new version of the portal is ready.</span>
+    <button type="button" class="rounded-pill bg-white px-3.5 py-1.5 text-[13px] font-bold text-navy-900" data-pwa-reload>Reload</button>
+    <button type="button" class="flex size-8 items-center justify-center rounded-pill text-white/70" aria-label="Dismiss" data-pwa-dismiss>
+      <X size={16} aria-hidden="true" />
+    </button>
+  </div>
+  <div class:list={[toast, "pr-4"]} role="status" hidden data-pwa-offline={connection ? "" : "off"}>
+    <WifiOff size={16} class="shrink-0 text-warning" aria-hidden="true" />
+    You're offline. Changes can't be saved right now.
+  </div>
+</div>
+
+<script>
+  import { registerSW } from "virtual:pwa-register";
+
+  const UPDATE_CHECK_MS = 60 * 60 * 1000;
+  const updateToast = document.querySelector<HTMLElement>("[data-pwa-update]")!;
+  const offlineToast = document.querySelector<HTMLElement>("[data-pwa-offline]")!;
+
+  const updateSW = registerSW({
+    immediate: true,
+    onNeedRefresh() {
+      updateToast.hidden = false;
+    },
+    onRegisteredSW(swUrl, registration) {
+      if (!registration) return;
+      // Long-lived installed apps rarely reload, so look for new versions hourly and on resume.
+      const check = async () => {
+        if (registration.installing || !navigator.onLine) return;
+        const response = await fetch(swUrl, { cache: "no-store", headers: { "cache-control": "no-cache" } }).catch(() => null);
+        if (response?.status === 200) await registration.update();
+      };
+      setInterval(check, UPDATE_CHECK_MS);
+      document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && check());
+    },
+  });
+
+  document.querySelector("[data-pwa-reload]")?.addEventListener("click", (event) => {
+    (event.currentTarget as HTMLButtonElement).disabled = true;
+    // Activates the waiting worker, then reloads every open tab onto the new version.
+    updateSW(true);
+  });
+  document.querySelector("[data-pwa-dismiss]")?.addEventListener("click", () => (updateToast.hidden = true));
+
+  const syncConnection = () => (offlineToast.hidden = navigator.onLine || offlineToast.dataset.pwaOffline === "off");
+  window.addEventListener("online", syncConnection);
+  window.addEventListener("offline", syncConnection);
+  syncConnection();
+</script>

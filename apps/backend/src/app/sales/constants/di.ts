@@ -18,12 +18,16 @@ import type { IQuotationRepository } from '../contracts/quotation.repository.int
 import type { QuotationService } from '../services/quotation.service';
 import type { ISalesOrderRepository } from '../contracts/sales-order.repository.interface';
 import type { SalesOrderService } from '../services/sales-order.service';
+import type { ISalesReturnRepository } from '../contracts/sales-return.repository.interface';
+import type { SalesReturnService } from '../services/sales-return.service';
 import type { SalesBillingService } from '../services/sales-billing.service';
 import type { TPaymentRepository } from '../contracts/payment.repository.interface';
 import type { IDeliveryNoteRepository } from '../contracts/delivery-note.repository.interface';
 import type { DeliveryNoteService } from '../services/delivery-note.service';
 import type { SalesFulfilmentService } from '../services/sales-fulfilment.service';
 import type { InvoiceLookupService } from '../services/invoice-lookup.service';
+import type { QuotationDeliveryService } from '../services/quotation-delivery.service';
+import type { IQuotationSentDispatcher } from '../queues/quotation-sent.queue';
 
 /**
  * Sales contract for other modules (licensing, paid totals): whether an order
@@ -64,5 +68,17 @@ export const DELIVERY_NOTE_REPOSITORY_TOKEN: InjectionToken<IDeliveryNoteReposit
 /** Token resolving to the {@link DeliveryNoteService} implementation. */
 export const DELIVERY_NOTE_SERVICE_TOKEN: InjectionToken<DeliveryNoteService> = Symbol('DELIVERY_NOTE_SERVICE_TOKEN');
 
+/** Token resolving to the sales return repository implementation (ERP-0065). */
+export const SALES_RETURN_REPOSITORY_TOKEN: InjectionToken<ISalesReturnRepository> = Symbol('SALES_RETURN_REPOSITORY_TOKEN');
+
+/** Token resolving to the {@link SalesReturnService} implementation (ERP-0065). */
+export const SALES_RETURN_SERVICE_TOKEN: InjectionToken<SalesReturnService> = Symbol('SALES_RETURN_SERVICE_TOKEN');
+
 /** Token resolving to the {@link SalesFulfilmentService} (Sales contract for Projects). */
 export const SALES_FULFILMENT_SERVICE_TOKEN: InjectionToken<SalesFulfilmentService> = Symbol('SALES_FULFILMENT_SERVICE_TOKEN');
+
+/** Token resolving to the {@link QuotationDeliveryService} (SPH PDF + `quotation.sent`, ERP-0067). */
+export const QUOTATION_DELIVERY_SERVICE_TOKEN: InjectionToken<QuotationDeliveryService> = Symbol('QUOTATION_DELIVERY_SERVICE_TOKEN');
+
+/** Token resolving to the queue that delivers sent quotations (ERP-0067). */
+export const QUOTATION_SENT_DISPATCHER_TOKEN: InjectionToken<IQuotationSentDispatcher> = Symbol('QUOTATION_SENT_DISPATCHER_TOKEN');

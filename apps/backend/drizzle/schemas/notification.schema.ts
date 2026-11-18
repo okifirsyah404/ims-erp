@@ -46,7 +46,19 @@ export const NOTIFICATION_TEMPLATE_CODES = [
 	'org.org_created',
 	'sales.invoice_issued',
 	'document.signature_requested',
+	'document.signature_signed',
+	'document.signature_declined',
 ] as const;
+
+/** CamelCase aliases the notification producer uses (i18next-safe keys). */
+export const NOTIFICATION_TEMPLATE_KEYS = {
+	'org.member_added': 'org.memberAdded',
+	'org.org_created': 'org.orgCreated',
+	'sales.invoice_issued': 'sales.invoiceIssued',
+	'document.signature_requested': 'document.signatureRequested',
+	'document.signature_signed': 'document.signatureSigned',
+	'document.signature_declined': 'document.signatureDeclined',
+} as const;
 export type NotificationTemplateCode = (typeof NOTIFICATION_TEMPLATE_CODES)[number];
 
 const timestamps = {

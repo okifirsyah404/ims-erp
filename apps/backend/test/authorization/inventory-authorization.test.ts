@@ -159,6 +159,15 @@ beforeAll(async () => {
 		async sell() {
 			return [];
 		},
+		async returnToSupplier() {
+			return [];
+		},
+		async listSerialsInStatuses() {
+			return [];
+		},
+		async receiveFromCustomer() {
+			return [];
+		},
 	};
 
 	// Import after mocks are installed (bun mock.module is hoist-sensitive).

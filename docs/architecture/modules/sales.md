@@ -42,6 +42,28 @@ approvals or fully automated CRM.
   `sales.order.*`, `sales.invoice.*`).
 - Stage 2: checkout connects orders/invoices to gateway payment status and
   customer-portal document visibility (T21/T25).
+- **Online payment of invoices (ERP-0020, ADR-0021, 2026-11-14, in-progress).**
+  Moved to the `payment` module by ADR-0023: `payment.gateway_payments` holds
+  hosted checkouts of an issued invoice, and Sales serves the invoice/receipt
+  side through `IInvoicePaymentPort`. `IPaymentGateway` (`payment/contracts/`)
+  has adapters in `payment/adapters/` (Xendit, SingaPay, local `fake`), chosen
+  by `PAYMENT_GATEWAY_PROVIDER`. Staff: `GET /gateway-payments/status`,
+  `GET|POST /invoices/:id/gateway-payments` (`invoice:read` /
+  `receipt:create`). Public: `POST /payments/gateway/:provider/webhook`,
+  verified by the adapter. A paid event posts exactly one receipt, capped at
+  the outstanding amount, in one transaction with the checkout row locked.
+  Money that cannot be applied is kept `paid` with a note.
+
+## Quotation PDF (ERP-0067)
+
+Sending an approved SPH enqueues `quotation-sent`: the
+`QuotationDeliveryService` renders the web admin's public print view
+(`/print/quotations/:id`, the same `QuotationDocument` as the print page) to a
+PDF with headless Chromium, files it on the quotation's registry document,
+shares it for 30 days and publishes `quotation.sent` with the link
+(`automation.md`). The print view reads
+`GET /public/v1/render/quotations/:id?token=`; the token is a 2-minute HMAC
+over the quotation id, signed with `APP_SECRET`, and anything else answers 404.
 
 ## Dependencies and rules
 

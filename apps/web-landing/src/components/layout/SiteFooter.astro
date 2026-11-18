@@ -1,0 +1,104 @@
+---
+import MapPin from "@lucide/astro/icons/map-pin";
+import Phone from "@lucide/astro/icons/phone";
+import Mail from "@lucide/astro/icons/mail";
+import Logo from "../brand/Logo.astro";
+import SocialLinks from "../ui/SocialLinks.astro";
+import { routes, company, footerColumns, mobileFooterColumns } from "../../data/site";
+
+/** Footer (FbYPG) from xl up, Mobile Footer (r1UR5t) below. */
+interface Props {
+  /** Some flows (03.02 RFQ mobile) replace the mobile footer with a sticky action bar. */
+  mobile?: boolean;
+}
+
+const { mobile = true } = Astro.props;
+const year = new Date().getFullYear();
+const contacts = [
+  { icon: MapPin, label: company.address },
+  { icon: Phone, label: company.phone, href: company.phoneHref },
+  { icon: Mail, label: company.email, href: `mailto:${company.email}` },
+];
+---
+
+<footer class:list={["bg-navy-950 text-fg-on-dark-soft", !mobile && "hidden xl:block"]}>
+  <!-- Desktop · Footer -->
+  <div class="mx-auto hidden max-w-[1440px] flex-col gap-14 px-16 pt-20 pb-10 xl:flex">
+    <div class="flex gap-16">
+      <div class="flex w-[360px] shrink-0 flex-col gap-5">
+        <Logo tone="light" />
+        <p class="text-[14px] leading-[22px] text-fg-on-dark-muted">
+          Smart access systems, automation hardware and integrated business software — engineered in Indonesia for
+          modern businesses.
+        </p>
+        <ul class="flex flex-col gap-2.5">
+          {
+            contacts.map(({ icon: Icon, label, href }) => (
+              <li class="flex items-center gap-2.5 text-[14px] text-white">
+                <Icon size={16} class="shrink-0 text-cyan-400" aria-hidden="true" />
+                {href ? <a href={href} class="hover:underline">{label}</a> : <span>{label}</span>}
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      {
+        footerColumns.map((column) => (
+          <nav class="flex flex-1 flex-col gap-3.5" aria-label={column.title}>
+            <h2 class="text-[12px] font-bold tracking-[1.4px] text-fg-on-dark-muted uppercase">{column.title}</h2>
+            <ul class="flex flex-col gap-3.5">
+              {column.links.map((link) => (
+                <li>
+                  <a href={link.href} class="block text-[14px] text-fg-on-dark-soft hover:text-white">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))
+      }
+    </div>
+    <div class="h-px w-full bg-white/10"></div>
+    <div class="flex items-center justify-between">
+      <p class="text-[13px] text-fg-on-dark-muted">
+        © {year} {company.legalName}. ENTRAGATE is a registered brand of IMS. All rights reserved.
+        <a href={routes.privacy} class="ml-3 hover:text-white">Privacy</a>
+        <a href={routes.terms} class="ml-3 hover:text-white">Terms</a>
+      </p>
+      <SocialLinks itemClass="size-9 rounded-md bg-white/6 text-white ring-1 ring-white/12 ring-inset" class="gap-2.5" />
+    </div>
+  </div>
+
+  <!-- Mobile · Mobile Footer -->
+  <div class="flex flex-col gap-7 px-6 pt-12 pb-8 md:px-8 xl:hidden">
+    <Logo tone="light" />
+    <p class="text-[14px] leading-[22px] text-fg-on-dark-muted">
+      Smart access systems, automation hardware and integrated business software for modern businesses.
+    </p>
+    <div class="flex gap-4">
+      {
+        mobileFooterColumns.map((column) => (
+          <nav class="flex flex-1 flex-col gap-3" aria-label={column.title}>
+            <h2 class="text-[11px] font-bold tracking-[1.2px] text-fg-on-dark-muted uppercase">{column.title}</h2>
+            <ul class="flex flex-col gap-3">
+              {column.links.map((link) => (
+                <li>
+                  <a href={link.href} class="block text-[14px] text-fg-on-dark-soft">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))
+      }
+    </div>
+    <div class="h-px w-full bg-white/10"></div>
+    <p class="text-[12px] text-fg-on-dark-muted">
+      © {year} {company.legalName}. All rights reserved.
+      <a href={routes.privacy} class="ml-2 underline">Privacy</a>
+      <a href={routes.terms} class="ml-2 underline">Terms</a>
+    </p>
+  </div>
+</footer>

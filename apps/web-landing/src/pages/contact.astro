@@ -1,0 +1,171 @@
+---
+import { actions, isInputError } from "astro:actions";
+import Phone from "@lucide/astro/icons/phone";
+import MessageCircle from "@lucide/astro/icons/message-circle";
+import Mail from "@lucide/astro/icons/mail";
+import Send from "@lucide/astro/icons/send";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import PublicLayout from "../layouts/PublicLayout.astro";
+import PageHero from "../components/ui/PageHero.astro";
+import FormField from "../components/ui/FormField.astro";
+import Alert from "../components/ui/Alert.astro";
+import Media from "../components/ui/Media.astro";
+import ChannelCard from "../components/contact/ChannelCard.astro";
+import CustomerBand from "../components/contact/CustomerBand.astro";
+import { company, routes } from "../data/site";
+import { images } from "../lib/images";
+
+/** 09.02 Contact (desktop bGyCw / mobile AJA0e). Rendered on demand for the form result. */
+export const prerender = false;
+
+const topics = [
+  { value: "sales", label: "Sales & quotation" },
+  { value: "support", label: "Technical support" },
+  { value: "partnership", label: "Partnership" },
+  { value: "careers", label: "Careers" },
+] as const;
+const requested = Astro.url.searchParams.get("topic");
+const initialTopic = topics.some((t) => t.value === requested) ? requested : "sales";
+// Product pages (restock notices) and the document library (file requests) prefill the message.
+const product = Astro.url.searchParams.get("product")?.slice(0, 80);
+const documentName = Astro.url.searchParams.get("document")?.slice(0, 120);
+const subject = Astro.url.searchParams.get("subject")?.slice(0, 120);
+const prefill = documentName
+  ? `Please send me the latest version of: ${documentName}.`
+  : subject
+    ? `I'd like to know more about: ${subject}.`
+    : product
+    ? `Please let me know when ${product} is back in stock.`
+    : "";
+
+const result = Astro.getActionResult(actions.contact.send);
+const fieldErrors = result?.error && isInputError(result.error) ? result.error.fields : {};
+const formError = result?.error && !isInputError(result.error) ? result.error.message : undefined;
+const sent = result && !result.error ? result.data : undefined;
+
+const channels = [
+  { icon: Phone, label: "Sales hotline", value: company.phone, note: company.hotlineHours, href: company.phoneHref },
+  { icon: MessageCircle, label: "WhatsApp", value: company.whatsapp, note: "Replies in ~10 min", href: company.whatsappHref, tone: "success" as const, external: true },
+  { icon: Mail, label: "Email", value: company.email, note: "Quotation within 1 working day", href: `mailto:${company.email}` },
+];
+---
+
+<PublicLayout
+  title="Contact CV. Inti Multi Solusi | Entragate"
+  description="Talk to sales, request a site survey or reach the Entragate technical team by phone, WhatsApp or email."
+>
+  <PageHero
+    title="Contact CV. Inti Multi Solusi"
+    mobileTitle="Contact us"
+    titleWidth="wide"
+    description="Talk to sales, request a site survey or reach our technical team. Existing customers get faster help in the Customer Portal."
+    mobileDescription="Sales, site surveys and technical support."
+    breadcrumb={[{ label: "Home", href: routes.home }, { label: "Contact" }]}
+  />
+
+  <section class="container-page flex flex-col gap-4 pt-5 pb-7 xl:flex-row xl:items-start xl:gap-8 xl:pt-12 xl:pb-16">
+    <!-- Channels: first on mobile, right column on desktop -->
+    <div class="flex flex-col gap-4 xl:order-2 xl:w-[460px] xl:shrink-0">
+      {channels.map((channel) => <ChannelCard {...channel} />)}
+      <div class="hidden flex-col overflow-hidden rounded-lg bg-white shadow-[0_8px_24px_#0A1A3F0D] ring-1 ring-border ring-inset xl:flex">
+        <a href={`https://maps.google.com/?q=${encodeURIComponent(company.headOffice.address)}`} target="_blank" rel="noopener noreferrer" aria-label="Open the head office in Google Maps">
+          <Media src={images.trackingMap} alt="Map showing the Entragate head office in Bekasi" class="h-[180px] w-full" />
+        </a>
+        <div class="flex flex-col gap-1.5 p-5">
+          <h2 class="text-[15px] font-bold text-fg">{company.headOffice.title}</h2>
+          <p class="text-[14px] leading-[21px] text-fg-secondary">{company.headOffice.address}</p>
+          <p class="text-[13px] text-fg-muted">{company.headOffice.note}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="flex flex-1 flex-col xl:order-1 xl:rounded-lg xl:bg-white xl:p-8 xl:shadow-[0_8px_24px_#0A1A3F0D] xl:ring-1 xl:ring-border xl:ring-inset">
+      <div id="contact-success" tabindex="-1" class="flex flex-col items-start gap-4 rounded-lg bg-success-bg p-6 ring-1 ring-success-border ring-inset outline-none" hidden={!sent}>
+        <CircleCheck size={28} class="text-success" aria-hidden="true" />
+        <div class="flex flex-col gap-1.5">
+          <h2 class="font-heading text-[22px] font-extrabold text-fg">Message sent — thank you!</h2>
+          <p class="text-[15px] leading-6 text-fg-secondary">
+            Our team will reply within 1 working day. Your reference is <strong class="text-fg" data-success-ref>{sent?.reference}</strong>.
+          </p>
+        </div>
+        {(sent as { demo?: boolean } | undefined)?.demo && <p class="rounded-md bg-warning-bg px-3 py-2 text-[13px] font-semibold text-warning" data-demo-notice>Demo mode — nothing was sent to Entragate. This reference is a sample.</p>}
+        <a href={company.whatsappHref} target="_blank" rel="noopener noreferrer" class="text-[14px] font-bold text-blue-600 hover:underline">Need it faster? WhatsApp us →</a>
+      </div>
+
+      <form
+        method="POST"
+        action={actions.contact.send}
+        data-action-form="contact.send"
+        data-success-target="contact-success"
+        class="flex flex-col gap-4 xl:gap-5"
+        hidden={Boolean(sent)}
+        novalidate
+      >
+        <div class="flex flex-col gap-2.5 pt-1 xl:hidden">
+          <p class="text-[12px] font-bold tracking-[1.6px] text-blue-600 uppercase">Message</p>
+          <h2 class="font-heading text-[26px] leading-[29px] font-extrabold tracking-[-0.8px] text-navy-900">Send us a message</h2>
+        </div>
+        <h2 class="hidden font-heading text-[24px] font-extrabold text-fg xl:block">Send us a message</h2>
+
+        <Alert tone="danger" title="We couldn't send your message" description={formError ?? ""} hidden={!formError} data-form-error />
+
+        <fieldset class="hidden flex-col gap-2.5 xl:flex">
+          <legend class="mb-2.5 text-[13px] font-semibold text-fg">Topic</legend>
+          <div class="flex flex-wrap gap-2">
+            {
+              topics.map((topic) => (
+                <label class="cursor-pointer">
+                  <input type="radio" name="topic" value={topic.value} checked={topic.value === initialTopic} class="peer sr-only" />
+                  <span class="block rounded-pill bg-white px-3.5 py-[9px] text-[13.5px] font-semibold text-fg ring-1 ring-border ring-inset peer-checked:bg-navy-900 peer-checked:text-white peer-checked:ring-navy-900 peer-focus-visible:outline-2 peer-focus-visible:outline-blue-600">
+                    {topic.label}
+                  </span>
+                </label>
+              ))
+            }
+          </div>
+        </fieldset>
+
+        <div class="grid gap-4 xl:grid-cols-2">
+          <FormField label="Full name" name="name" required autocomplete="name" maxlength={120} placeholder="Your full name" error={fieldErrors.name?.[0]} />
+          <FormField label="Company" name="company" autocomplete="organization" maxlength={160} placeholder="Company or institution" class="hidden xl:flex" error={fieldErrors.company?.[0]} />
+          <FormField label="Business email" name="email" type="email" required autocomplete="email" maxlength={160} placeholder="name@company.co.id" error={fieldErrors.email?.[0]} />
+          <FormField label="Phone / WhatsApp" name="phone" type="tel" autocomplete="tel" maxlength={24} placeholder="+62 812 3456 7890" class="hidden xl:flex" error={fieldErrors.phone?.[0]} />
+        </div>
+        <FormField
+          label="How can we help?"
+          name="message"
+          multiline
+          required
+          rows={4}
+          maxlength={3000}
+          value={prefill}
+          placeholder="Tell us about your site, the entrances you need to secure and your timeline…"
+          inputClass="xl:min-h-[120px]"
+          error={fieldErrors.message?.[0]}
+        />
+
+        <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <p class="order-2 text-[13px] text-fg-muted xl:order-1">
+            By sending, you agree to our <a href={routes.privacy} class="underline hover:text-fg">privacy policy</a>.
+          </p>
+          <button
+            type="submit"
+            data-busy-label="Sending…"
+            class="order-1 inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700 disabled:opacity-60 xl:order-2"
+          >
+            <span data-label>Send message</span>
+            <Send size={16} aria-hidden="true" />
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <CustomerBand class="pb-7 xl:pb-24" />
+</PublicLayout>
+
+<script>
+  import { initActionForms } from "../scripts/action-form";
+  initActionForms();
+</script>

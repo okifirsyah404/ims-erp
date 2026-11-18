@@ -25,8 +25,13 @@ export const AppConfigSchema = z.object({
 	 * Falls back to `url` when unset (single-origin deployments).
 	 */
 	webUrl: z.url().nullish(),
+	/**
+	 * Base URL of the customer portal (website repo, ERP-0022) — where the
+	 * portal's "set your password" links point; trusted by Better Auth.
+	 */
+	portalUrl: z.url().nullish(),
 	logLevel: z.enum(['debug', 'info', 'warn', 'error']).nullish(),
-	/** Comma-separated list of origins allowed for credentialed CORS. */
+	/** CORS allowlist loaded from the gitignored `cors.json` file. */
 	corsOrigins: z.array(z.string()).nullish(),
 	/** Base URL of the DiceBear HTTP API used to render avatars. */
 	avatarApiUrl: z.url(),
@@ -126,6 +131,10 @@ export const SchedulerConfigSchema = z.object({
 	retentionSweepCron: z.string().min(1),
 	/** Cron (Asia/Jakarta) for the `license.due` reminders to n8n; daily 08:00 by default (M04). */
 	licenseDueCron: z.string().min(1),
+	/** ERP-0066: lead and quotation follow-up reminders (Asia/Jakarta, weekdays). */
+	salesFollowUpCron: z.string().min(1),
+	/** ERP-0012: daily `supplier_bill.due` reminders (Asia/Jakarta). */
+	billDueCron: z.string().min(1),
 	/** Guest PII is nulled this many months after `closed_at`. */
 	guestPiiRetentionMonths: z.number().int().min(1),
 	/** Cron for the read-notification prune; daily by default. */
@@ -150,6 +159,58 @@ export const IntegrationsConfigSchema = z.object({
 	aiModel: z.string().min(1).nullable(),
 });
 
+/**
+ * ERP-0067: server-side PDFs of print views (headless Chromium).
+ *
+ * @remarks
+ * No Chromium path or no render base URL = PDFs are off and `quotation.sent`
+ * goes out without a link. `renderBaseUrl` is where Chromium opens the web
+ * admin's public print routes (defaults to `APP_WEB_URL`).
+ */
+export const PdfConfigSchema = z.object({
+	chromiumPath: z.string().min(1).nullable(),
+	renderBaseUrl: z.url().nullable(),
+	/** Days a generated PDF's public link stays valid. */
+	linkDays: z.number().int().min(1).max(365),
+});
+
+/**
+ * Payment gateway (ERP-0020, ADR-0021). `provider` picks where new checkouts
+ * are opened; every provider whose credentials are present can still receive
+ * webhooks, so checkouts opened before a switch settle. Null provider = online
+ * payment off. Values are secrets and never logged.
+ */
+export const PaymentGatewayConfigSchema = z.object({
+	provider: z.enum(['xendit', 'singapay', 'fake']).nullish(),
+	/** Checkout lifetime at the provider. */
+	expiryHours: z.number().int().min(1).max(24 * 30),
+	/** Where the provider sends the customer after paying (optional). */
+	successRedirectUrl: z.string().url().nullish(),
+	xendit: z
+		.object({
+			baseUrl: z.string().url(),
+			secretKey: z.string().min(1),
+			/** Dashboard "webhook verification token" (x-callback-token). */
+			callbackToken: z.string().min(1),
+		})
+		.nullish(),
+	singapay: z
+		.object({
+			baseUrl: z.string().url(),
+			/** Merchant API key, sent as X-PARTNER-ID. */
+			partnerId: z.string().min(1),
+			clientId: z.string().min(1),
+			clientSecret: z.string().min(1),
+			/** The merchant account (ULID) that receives the money. */
+			accountId: z.string().min(1),
+			/** Path + query of the webhook URL as configured at SingaPay (signed). */
+			webhookPath: z.string().startsWith('/'),
+		})
+		.nullish(),
+	/** Local only: HMAC secret of the fake provider's webhook. */
+	fake: z.object({ secret: z.string().min(16) }).nullish(),
+});
+
 export const EnvConfigSchema = z.object({
 	instance: InstanceConfigSchema,
 	app: AppConfigSchema,
@@ -159,7 +220,9 @@ export const EnvConfigSchema = z.object({
 	mail: MailConfigSchema,
 	auth: AuthConfigSchema,
 	scheduler: SchedulerConfigSchema,
+	paymentGateway: PaymentGatewayConfigSchema,
 	integrations: IntegrationsConfigSchema,
+	pdf: PdfConfigSchema,
 });
 
 export type TInstanceConfig = z.infer<typeof InstanceConfigSchema>;
@@ -170,4 +233,6 @@ export type TS3Config = z.infer<typeof S3ConfigSchema>;
 export type TMailConfig = z.infer<typeof MailConfigSchema>;
 export type TAuthConfig = z.infer<typeof AuthConfigSchema>;
 export type TSchedulerConfig = z.infer<typeof SchedulerConfigSchema>;
+export type TPdfConfig = z.infer<typeof PdfConfigSchema>;
+export type TPaymentGatewayConfig = z.infer<typeof PaymentGatewayConfigSchema>;
 export type TEnvConfig = z.infer<typeof EnvConfigSchema>;

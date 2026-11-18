@@ -1,0 +1,130 @@
+---
+import ArrowUpRight from "@lucide/astro/icons/arrow-up-right";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+import Button from "../ui/Button.astro";
+import Media from "../ui/Media.astro";
+import SectionHeading from "../ui/SectionHeading.astro";
+import { routes } from "../../data/site";
+import { categories, featuredCategories, mobileCategories, type FeatureCategory } from "../../data/home";
+import type { CategorySummary } from "../../types/catalog";
+
+/** 01.01 Home · Product Categories (desktop iK7MG bento / mobile QnEIl grid). */
+const href = (slug: string) => `${routes.products}?category=${slug}`;
+
+const rows: { kind: "feature" | "card"; item: FeatureCategory | CategorySummary }[][] = [
+  [
+    { kind: "feature", item: featuredCategories.swing },
+    { kind: "card", item: categories.faceRecognition },
+    { kind: "card", item: categories.flapBarrier },
+  ],
+  [
+    { kind: "card", item: categories.tripod },
+    { kind: "card", item: categories.parkingBarrier },
+    { kind: "feature", item: featuredCategories.parking },
+  ],
+];
+const tiles = [categories.rfid, categories.controllers, categories.accessories];
+---
+
+<section class="bg-surface xl:bg-white">
+  <!-- Desktop -->
+  <div class="container-page hidden flex-col gap-12 pt-28 pb-24 xl:flex">
+    <div class="flex items-end justify-between">
+      <SectionHeading
+        class="w-[640px]"
+        eyebrow="Product Categories"
+        title="Hardware built for every entrance."
+        description="Precision-engineered gates, barriers and readers — designed to look as good as they perform."
+      />
+      <Button href={routes.products} variant="secondary" icon={ArrowUpRight}>View all products</Button>
+    </div>
+
+    <div class="flex flex-col gap-4">
+      {
+        rows.map((row) => (
+          <div class="flex gap-4">
+            {row.map(({ kind, item }) =>
+              kind === "feature" ? (
+                <a
+                  href={href(item.slug)}
+                  class="group flex h-[400px] w-[640px] shrink gap-4 overflow-hidden rounded-card bg-navy-900 p-8"
+                >
+                  <div class="flex flex-1 flex-col justify-between gap-3">
+                    <div class="flex flex-col gap-2.5">
+                      <h3 class="font-heading text-[30px] font-bold tracking-[-0.8px] text-white">{item.name}</h3>
+                      <p class="text-[13px] font-semibold text-cyan-400">{(item as FeatureCategory).highlight}</p>
+                      <p class="text-[15px] leading-6 text-fg-on-dark-muted">{(item as FeatureCategory).description}</p>
+                    </div>
+                    <span class="flex size-12 items-center justify-center rounded-pill bg-blue-600 text-white transition-colors group-hover:bg-blue-700">
+                      <ArrowUpRight size={20} aria-hidden="true" />
+                    </span>
+                  </div>
+                  <Media src={item.image} alt={item.name} tone="dark" class="h-full w-[300px] shrink-0 rounded-control" />
+                </a>
+              ) : (
+                <a
+                  href={href(item.slug)}
+                  class="group flex h-[400px] min-w-0 flex-1 flex-col gap-4 overflow-hidden rounded-card bg-surface p-6"
+                >
+                  <div class="flex justify-between gap-3">
+                    <div class="flex flex-1 flex-col gap-1">
+                      <h3 class="font-heading text-[20px] font-bold text-fg">{item.name}</h3>
+                      <p class="text-[13px] text-fg-muted">{item.productCount}</p>
+                    </div>
+                    <span class="flex size-9 shrink-0 items-center justify-center rounded-pill bg-white text-fg transition-colors group-hover:text-blue-600">
+                      <ArrowUpRight size={16} aria-hidden="true" />
+                    </span>
+                  </div>
+                  <Media src={item.image} alt={item.name} class="w-full flex-1 rounded-control" />
+                </a>
+              ),
+            )}
+          </div>
+        ))
+      }
+      <div class="flex gap-4">
+        {
+          tiles.map((tile) => (
+            <a
+              href={href(tile.slug)}
+              class="group flex flex-1 items-center gap-[18px] rounded-lg bg-white p-3 ring-1 ring-border ring-inset hover:ring-border-strong"
+            >
+              <Media src={tile.image} alt={tile.name} class="size-[88px] shrink-0 rounded-md" />
+              <span class="flex flex-1 flex-col gap-1">
+                <span class="font-heading text-[17px] font-bold text-fg">{tile.name}</span>
+                <span class="text-[13px] text-fg-muted">{tile.productCount}</span>
+              </span>
+              <ChevronRight size={20} class="text-fg-muted group-hover:text-fg" aria-hidden="true" />
+              <span class="size-1"></span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile -->
+  <div class="container-page flex flex-col gap-6 py-12 xl:hidden">
+    <SectionHeading eyebrow="Product Categories" title="Hardware built for every entrance." />
+    <ul class="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3">
+      {
+        mobileCategories.map((category) => (
+          <li>
+            <a
+              href={href(category.slug)}
+              class="flex flex-col gap-2.5 rounded-lg bg-white p-2 ring-1 ring-border ring-inset"
+            >
+              <Media src={category.image} alt={category.name} class="h-[130px] w-full rounded-md" />
+              <span class="flex flex-col gap-0.5 px-1.5 pb-1.5">
+                <span class="font-heading text-[14px] font-bold text-fg">{category.name}</span>
+                <span class="text-[12px] text-fg-muted">{category.productCount}</span>
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    <Button href={routes.products} variant="secondary" block icon={ArrowRight}>View all 9 categories</Button>
+  </div>
+</section>

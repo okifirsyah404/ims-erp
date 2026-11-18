@@ -1,0 +1,55 @@
+---
+import MockStatus from "./MockStatus.astro";
+
+/** Entragate Visitor window body (02.04). */
+interface Props {
+  variant: "desktop" | "mobile";
+}
+
+const { variant } = Astro.props;
+type Tone = "success" | "info" | "warning" | "neutral";
+const visitors: { name: string; short?: string; host: string; time: string; status: string; mobileStatus?: string; tone: Tone }[] = [
+  { name: "Dewi Lestari", host: "PT Astra · Lt 21", time: "08:42", status: "Checked in", tone: "success" },
+  { name: "Michael Tan", host: "Legal · Lt 12", time: "09:05", status: "Checked in", tone: "success" },
+  { name: "Rahmat Hidayat", short: "Rahmat H.", host: "HR · Lt 8", time: "10:30", status: "Pre-registered", tone: "info" },
+  { name: "Yuki Sato", host: "Finance · Lt 15", time: "11:15", status: "Awaiting host", mobileStatus: "Awaiting", tone: "warning" },
+  { name: "Fajar Nugroho", host: "IT · Lt 3", time: "07:58", status: "Checked out", tone: "neutral" },
+];
+---
+
+{
+  variant === "desktop" ? (
+    <div class="flex flex-1 flex-col overflow-hidden rounded-sm bg-white ring-1 ring-border ring-inset">
+      <div class="flex gap-2 bg-surface px-3 py-[9px] text-[9px] font-semibold text-fg-muted">
+        <span class="flex-1">Visitor</span>
+        <span class="flex-1">Host</span>
+        <span class="w-[72px]">Time in</span>
+        <span class="w-24">Status</span>
+      </div>
+      {visitors.map((v) => (
+        <div class="flex items-center gap-2 border-t border-border px-3 py-2">
+          <span class="flex flex-1 items-center gap-1.5">
+            <span class="size-[18px] rounded-full bg-blue-100" />
+            <span class="text-[10px] font-semibold text-fg">{v.name}</span>
+          </span>
+          <span class="flex-1 text-[9.5px] text-fg-secondary">{v.host}</span>
+          <span class="w-[72px] text-[9.5px] text-fg-secondary">{v.time}</span>
+          <span class="w-24">
+            <MockStatus label={v.status} tone={v.tone} />
+          </span>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div class="flex flex-1 flex-col overflow-hidden rounded-sm bg-white ring-1 ring-border ring-inset">
+      {visitors.slice(0, 4).map((v, i) => (
+        <div class:list={["flex items-center gap-2 px-2.5 py-[7px]", i > 0 && "border-t border-border"]}>
+          <span class="size-4 rounded-full bg-blue-100" />
+          <span class="flex-1 text-[9.5px] font-semibold text-fg">{v.short ?? v.name}</span>
+          <span class="text-[9px] text-fg-muted">{v.time}</span>
+          <MockStatus variant="mobile" label={v.mobileStatus ?? v.status} tone={v.tone} />
+        </div>
+      ))}
+    </div>
+  )
+}

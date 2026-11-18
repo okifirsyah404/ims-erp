@@ -1,0 +1,329 @@
+---
+import { actions } from "astro:actions";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Plus from "@lucide/astro/icons/plus";
+import CloudUpload from "@lucide/astro/icons/cloud-upload";
+import Paperclip from "@lucide/astro/icons/paperclip";
+import Check from "@lucide/astro/icons/check";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import PublicLayout from "../layouts/PublicLayout.astro";
+import PageHero from "../components/ui/PageHero.astro";
+import FormField from "../components/ui/FormField.astro";
+import Alert from "../components/ui/Alert.astro";
+import Button from "../components/ui/Button.astro";
+import EmptyState from "../components/ui/EmptyState.astro";
+import RfqStepper from "../components/rfq/RfqStepper.astro";
+import RfqItemRow from "../components/rfq/RfqItemRow.astro";
+import PricingPanel from "../components/rfq/PricingPanel.astro";
+import { projectTypes } from "../data/rfq";
+import { indicativeQuote } from "../data/pricing";
+import { authRoutes, customerPortal, routes } from "../data/site";
+import { platforms } from "../data/solutions";
+import { getCustomer } from "../lib/server/auth";
+import { products } from "../data/catalog";
+import { getProduct } from "../lib/catalog";
+import { formatRupiah } from "../lib/format";
+
+/** 03.02 RFQ & Pricing — on demand so it can prefill from ?product= and handle the action result. */
+export const prerender = false;
+
+const params = Astro.url.searchParams;
+const initial = params.get("product") ? await getProduct(params.get("product")!) : null;
+const initialQty = Math.min(999, Math.max(1, Number.parseInt(params.get("qty") ?? "1", 10) || 1));
+const initialOptions = Object.fromEntries([...params.entries()].filter(([key]) => key.startsWith("opt_")));
+const initialItems = initial ? [{ product: initial.summary, quantity: initialQty }] : [];
+const quote = indicativeQuote(initialItems.map((i) => ({ unitPrice: i.product.price, quantity: i.quantity })));
+
+const result = Astro.getActionResult(actions.rfq.submit);
+const sent = result?.data as { reference: string; linkedToAccount?: boolean; demo?: boolean } | undefined;
+const customer = await getCustomer(Astro.session);
+const preselectedSolutions = params.getAll("solution");
+
+/** Minimal catalog snapshot for the client-side item list. */
+const clientProducts = products.map(({ slug, name, category, specs, price, image }) => ({ slug, name, category, specs, price, image }));
+// Escape "<" so the JSON can never close the surrounding <script> tag.
+const productsJson = JSON.stringify(clientProducts).replaceAll("<", "\\u003c");
+
+const card =
+  "flex flex-col gap-[22px] xl:gap-5 xl:rounded-lg xl:bg-white xl:p-7 xl:shadow-card xl:ring-1 xl:ring-border xl:ring-inset";
+const chip =
+  "block rounded-pill bg-white px-3.5 py-2 text-[13px] font-semibold text-fg ring-1 ring-border ring-inset peer-checked:bg-navy-900 peer-checked:text-white peer-checked:ring-navy-900 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue-600 xl:py-[9px] xl:text-[13.5px]";
+const currentMonth = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" }).slice(0, 7);
+---
+
+<PublicLayout
+  title="Request a Quotation — Entragate"
+  description="Business pricing within 1 working day. Volume discounts, installation and multi-site rollouts — prepared by our solution engineers."
+  mobileFooter={false}
+>
+  <PageHero
+    title="Request a Quotation"
+    description="Business pricing within 1 working day. Volume discounts, installation and multi-site rollouts — prepared by our solution engineers."
+    mobileDescription="Business pricing within 1 working day."
+    breadcrumb={[{ label: "Home", href: "/" }, { label: "Request a Quotation" }]}
+  />
+
+  <div class="container-page flex gap-8 pt-5 pb-[200px] xl:pt-10 xl:pb-24">
+    {
+      sent ? (
+        <EmptyState
+          icon={CircleCheck}
+          title={sent.demo ? "Request recorded (demo)" : "Quotation request sent"}
+          description={`Reference ${sent.reference}. Our solution engineers will reply within 1 working day.`}
+          class="w-full"
+        >
+          {sent.demo && <p class="rounded-md bg-warning-bg px-3 py-2 text-[13px] font-semibold text-warning" data-demo-notice>Demo mode — nothing was sent to Entragate. This reference is a sample.</p>}
+          {sent.linkedToAccount ? (
+            <Button href={customerPortal.quotations}>View in Customer Portal</Button>
+          ) : (
+            <div class="flex flex-col items-center gap-2">
+              <Button href={customerPortal.claimRfq(sent.reference)}>Add it to my portal account</Button>
+              <p class="max-w-[420px] text-[13px] text-fg-muted">We'll email a verification code to the address on the request before it's linked to an account.</p>
+            </div>
+          )}
+        </EmptyState>
+      ) : (
+        <form
+          method="POST"
+          action={actions.rfq.submit}
+          enctype="multipart/form-data"
+          class="flex min-w-0 flex-1 flex-col gap-[22px] xl:gap-6"
+          novalidate
+          data-rfq-form
+          data-portal-quotations={customerPortal.quotations}
+          data-portal-claim={customerPortal.claimRfq("__REF__")}
+        >
+          <RfqStepper current={1} />
+
+          {result?.error && (
+            <Alert tone="danger" title="We couldn't send your request" description={result.error.message} />
+          )}
+          <Alert tone="danger" title="We couldn't send your request" description="" hidden data-rfq-error />
+
+          <!-- Step 1 · Company (composed from the design's card + field components) -->
+          <fieldset class={card} data-step="1">
+            <legend class="sr-only">Company</legend>
+            <div class="hidden flex-col gap-1 xl:flex">
+              <h2 class="font-heading text-[20px] font-bold text-fg">Company details</h2>
+              <p class="text-[14px] text-fg-muted">Who should we send the quotation to?</p>
+            </div>
+            <div class="flex flex-col gap-2.5 xl:hidden">
+              <p class="text-[12px] font-bold tracking-[1.6px] text-blue-600 uppercase">Company</p>
+              <h2 class="font-heading text-[26px] leading-[29px] font-extrabold tracking-[-0.8px] text-navy-900">Who's requesting?</h2>
+            </div>
+            <div class="grid gap-[22px] xl:grid-cols-2 xl:gap-4">
+              <FormField label="Company (optional)" name="company_name" autocomplete="organization" maxlength={160} value={customer?.company} />
+              <FormField label="Your name" name="contact_name" required autocomplete="name" maxlength={120} value={customer?.name} />
+              <FormField label="Email" name="email" type="email" required autocomplete="email" maxlength={160} value={customer?.email} />
+              <FormField
+                label="WhatsApp"
+                name="phone"
+                type="tel"
+                required
+                autocomplete="tel"
+                maxlength={24}
+                placeholder="+62 812 3456 7890"
+                data-phone="mobile"
+                value={customer?.phone}
+              />
+            </div>
+          </fieldset>
+
+          <!-- Step 2 · Project & items (03.02) -->
+          <fieldset class={card} data-step="2">
+            <legend class="sr-only">Project details</legend>
+            <div class="hidden flex-col gap-1 xl:flex">
+              <h2 class="font-heading text-[20px] font-bold text-fg">Project details</h2>
+              <p class="text-[14px] text-fg-muted">Tell us where and when — we’ll match the right engineer.</p>
+            </div>
+            <div class="flex flex-col gap-2.5 xl:hidden">
+              <p class="text-[12px] font-bold tracking-[1.6px] text-blue-600 uppercase">Project</p>
+              <h2 class="font-heading text-[26px] leading-[29px] font-extrabold tracking-[-0.8px] text-navy-900">Where are we installing?</h2>
+            </div>
+            <div class="grid gap-[22px] xl:grid-cols-2 xl:gap-4">
+              <FormField label="Site name (optional)" name="site_name" maxlength={160} placeholder="e.g. Grand Indonesia Tower B" />
+              <FormField label="Project location" name="site_location" required maxlength={160} placeholder="City, province" />
+              <FormField label="Target installation" name="target_installation" type="month" min={currentMonth} maxlength={80} placeholder="e.g. 2026-12" hint="Month you’d like the system live" />
+              <FormField
+                class="hidden xl:flex"
+                label="Budget range (optional)"
+                name="budget_range"
+                maxlength={120}
+                placeholder="e.g. Rp 250.000.000 – Rp 400.000.000"
+              />
+            </div>
+            <div class="flex flex-col gap-2.5" role="radiogroup" aria-labelledby="project-type-label">
+              <p id="project-type-label" class="text-[13px] font-semibold text-fg">Project type</p>
+              <div class="flex flex-wrap items-center gap-2">
+                {projectTypes.map((type, index) => (
+                  <label class:list={["cursor-pointer", "desktopOnly" in type && "hidden xl:block"]}>
+                    <input type="radio" name="project_type" value={type.value} checked={index === 0} class="peer sr-only" />
+                    <span class={chip}>
+                      {"mobileLabel" in type ? (
+                        <>
+                          <span class="xl:hidden">{type.mobileLabel}</span>
+                          <span class="hidden xl:inline">{type.label}</span>
+                        </>
+                      ) : (
+                        type.label
+                      )}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <fieldset class="flex flex-col gap-2.5">
+              <legend class="mb-2.5 text-[13px] font-semibold text-fg">Software solutions (optional)</legend>
+              <div class="flex flex-wrap items-center gap-2">
+                {platforms.map((platform) => (
+                  <label class="cursor-pointer">
+                    <input type="checkbox" name="solutions" value={platform.slug} checked={preselectedSolutions.includes(platform.slug)} class="peer sr-only" data-solution-option />
+                    <span class={chip}>{platform.chipLabel}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </fieldset>
+
+          <fieldset class={card} data-step="2">
+            <legend class="sr-only">Items to quote</legend>
+            <div class="hidden flex-col gap-1 xl:flex">
+              <h2 class="font-heading text-[20px] font-bold text-fg">Items to quote</h2>
+              <p class="text-[14px] text-fg-muted">Added from your configuration. Adjust quantities or add more products.</p>
+            </div>
+            <div class="flex flex-col gap-2.5 xl:hidden">
+              <p class="text-[12px] font-bold tracking-[1.6px] text-blue-600 uppercase">
+                Items · <span data-items-count>{initialItems.length}</span>
+              </p>
+              <h2 class="font-heading text-[26px] leading-[29px] font-extrabold tracking-[-0.8px] text-navy-900">Products to quote</h2>
+            </div>
+            <ul class="flex flex-col gap-[22px] xl:gap-0 xl:divide-y xl:divide-border" data-rfq-items>
+              {initialItems.map((item) => <RfqItemRow product={item.product} quantity={item.quantity} options={initialOptions} />)}
+            </ul>
+            <p class="text-[14px] text-fg-muted" data-items-empty hidden={initialItems.length > 0}>
+              No products yet — add items from the catalog, or choose a software solution above.
+            </p>
+            <a
+              href={routes.products}
+              class="flex items-center justify-center gap-2 rounded-md px-4 py-3.5 text-[14px] font-semibold text-blue-600 ring-[1.5px] ring-border-strong ring-inset hover:bg-blue-50"
+            >
+              <Plus size={16} aria-hidden="true" />
+              <span class="xl:hidden">Add product</span>
+              <span class="hidden xl:inline">Add product from catalog</span>
+            </a>
+            <label
+              for="rfq-attachments"
+              class="flex cursor-pointer items-center gap-3 rounded-md bg-surface p-4 text-[14px] font-semibold text-fg xl:hidden"
+            >
+              <Paperclip size={18} class="text-blue-600" aria-hidden="true" />
+              <span class="flex-1">Attach floor plan or site photos</span>
+            </label>
+          </fieldset>
+
+          <fieldset class="flex flex-col gap-5 xl:rounded-lg xl:bg-white xl:p-7 xl:shadow-card xl:ring-1 xl:ring-border xl:ring-inset" data-step="2">
+            <legend class="sr-only">Attachments and requirements</legend>
+            <h2 class="hidden font-heading text-[20px] font-bold text-fg xl:block">Attachments &amp; notes</h2>
+            <label
+              for="rfq-attachments"
+              class="hidden cursor-pointer flex-col items-center gap-2 rounded-md bg-surface p-7 text-center ring-[1.5px] ring-border-strong ring-inset hover:ring-blue-600 xl:flex"
+              data-dropzone
+            >
+              <CloudUpload size={26} class="text-blue-600" aria-hidden="true" />
+              <span class="text-[15px] font-semibold text-fg">Drop floor plans, site photos or BOQ here</span>
+              <span class="text-[13px] text-fg-muted">PDF, DWG, JPG · up to 25 MB each</span>
+            </label>
+            <FormField label="Requirements" name="notes" multiline required minlength={10} maxlength={2000} placeholder="Entrances to secure, daily traffic, existing equipment, site constraints, access hours…" />
+          </fieldset>
+          <input
+            id="rfq-attachments"
+            type="file"
+            name="attachments"
+            multiple
+            accept=".pdf,.dwg,.jpg,.jpeg,.png"
+            class="sr-only"
+            data-attachments
+          />
+          <ul class="flex flex-col gap-1 text-[13px] text-fg-secondary empty:hidden" data-attachment-list></ul>
+
+          <!-- Step 3 · Review & send (composed from the design's card pattern) -->
+          <fieldset class={card} data-step="3">
+            <legend class="sr-only">Review and send</legend>
+            <div class="hidden flex-col gap-1 xl:flex">
+              <h2 class="font-heading text-[20px] font-bold text-fg">Review &amp; send</h2>
+              <p class="text-[14px] text-fg-muted">Check the details below — our engineers reply within 1 working day.</p>
+            </div>
+            <div class="flex flex-col gap-2.5 xl:hidden">
+              <p class="text-[12px] font-bold tracking-[1.6px] text-blue-600 uppercase">Review</p>
+              <h2 class="font-heading text-[26px] leading-[29px] font-extrabold tracking-[-0.8px] text-navy-900">Ready to send?</h2>
+            </div>
+            <dl class="grid gap-4 text-[14px] xl:grid-cols-2" data-review></dl>
+          </fieldset>
+
+          <div class="hidden items-center justify-between gap-2.5 xl:flex">
+            {customer ? (
+              <label class="flex cursor-pointer items-center gap-2.5 text-[14px] font-medium text-fg-secondary">
+                <input type="checkbox" name="send_copy" checked class="peer sr-only" />
+                <span class="flex size-[22px] items-center justify-center rounded-sm bg-white text-transparent ring-[1.5px] ring-border-strong ring-inset peer-checked:bg-blue-600 peer-checked:text-white peer-checked:ring-blue-600 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue-600">
+                  <Check size={14} stroke-width={3} aria-hidden="true" />
+                </span>
+                Send a copy to my Customer Portal account
+              </label>
+            ) : (
+              <p class="text-[14px] text-fg-secondary">
+                No account needed. <a href={authRoutes.login("/quote")} class="font-semibold text-blue-600 hover:underline">Sign in</a> to track this request in the Customer Portal.
+              </p>
+            )}
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                class="rounded-md bg-white px-[22px] py-3.5 text-[15px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface"
+                data-save-draft
+              >
+                Save draft
+              </button>
+              <button
+                type="submit"
+                class="flex items-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700 disabled:opacity-60"
+                data-rfq-next
+              >
+                <span data-next-label>Review &amp; send RFQ</span>
+                <ArrowRight size={16} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Mobile · Sticky Action Bar -->
+          <div class="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-3 border-t border-border bg-white/96 px-5 pt-3.5 pb-[max(14px,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_#0A1A3F14] xl:hidden">
+            <div class="flex items-center justify-between gap-2.5">
+              <div class="flex flex-col gap-0.5">
+                <span class="text-[12px] font-semibold text-fg-muted">Indicative subtotal · excl. PPN</span>
+                <span class="font-heading text-[20px] font-extrabold text-navy-900" data-quote="subtotal">{formatRupiah(quote.subtotal)}</span>
+              </div>
+              <span class="flex items-center gap-1.5 rounded-pill bg-success-bg px-2.5 py-[5px] text-[12px] font-semibold text-success">
+                <span class="size-1.5 rounded-full bg-success"></span>
+                Reply &lt; 1 day
+              </span>
+            </div>
+            <button
+              type="submit"
+              class="flex items-center justify-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta disabled:opacity-60"
+              data-rfq-next
+            >
+              <span data-next-label>Review &amp; send RFQ</span>
+              <ArrowRight size={16} aria-hidden="true" />
+            </button>
+          </div>
+        </form>
+      )
+    }
+    {!sent && <PricingPanel quote={quote} />}
+  </div>
+
+  <template id="rfq-item-template"><RfqItemRow /></template>
+  <script type="application/json" id="rfq-products" set:html={productsJson} />
+</PublicLayout>
+
+<script>
+  import { initRfqForm } from "../scripts/rfq-form";
+  initRfqForm();
+</script>

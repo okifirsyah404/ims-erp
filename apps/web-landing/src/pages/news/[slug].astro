@@ -1,0 +1,41 @@
+---
+import ArrowLeft from "@lucide/astro/icons/arrow-left";
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import Breadcrumb from "../../components/ui/Breadcrumb.astro";
+import Media from "../../components/ui/Media.astro";
+import ContactCta from "../../components/home/ContactCta.astro";
+import { newsArticles } from "../../data/company-pages";
+import { routes } from "../../data/site";
+
+/** News article. */
+export function getStaticPaths() {
+  return newsArticles.map((article) => ({ params: { slug: article.slug } }));
+}
+
+const article = newsArticles.find((a) => a.slug === Astro.params.slug)!;
+const more = newsArticles.filter((a) => a.slug !== article.slug).slice(0, 2);
+const date = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${article.date}T00:00:00Z`));
+---
+
+<PublicLayout title={`${article.title} | Entragate News`} description={article.excerpt}>
+  <article class="container-page flex flex-col gap-6 py-6 xl:max-w-[920px] xl:gap-8 xl:py-14">
+    <Breadcrumb items={[{ label: "Home", href: routes.home }, { label: "News & Insights", href: routes.news }, { label: article.category }]} />
+    <header class="flex flex-col gap-3">
+      <p class="text-[13px] font-bold tracking-[1.6px] text-blue-600 uppercase">{article.category} · <time datetime={article.date}>{date}</time></p>
+      <h1 class="font-heading text-[30px] leading-[36px] font-extrabold tracking-[-1px] text-navy-900 xl:text-[44px] xl:leading-[50px] xl:tracking-[-1.4px]">{article.title}</h1>
+      <p class="text-[17px] leading-[27px] text-fg-secondary">{article.excerpt}</p>
+    </header>
+    <Media src={article.image} alt="" loading="eager" class="h-[220px] w-full rounded-card md:h-[420px]" />
+    <div class="flex flex-col gap-5 text-[16px] leading-[28px] text-fg-secondary xl:text-[17px] xl:leading-[30px]">
+      {article.body.map((paragraph) => <p>{paragraph}</p>)}
+    </div>
+    <aside class="flex flex-col gap-3 border-t border-border pt-6">
+      <h2 class="font-heading text-[18px] font-bold text-navy-900">More from Entragate</h2>
+      <ul class="flex flex-col gap-2">
+        {more.map((a) => <li><a href={`${routes.news}/${a.slug}`} class="text-[15px] font-semibold text-blue-600 hover:underline">{a.title}</a></li>)}
+      </ul>
+    </aside>
+    <a href={routes.news} class="flex w-fit items-center gap-2 text-[14px] font-semibold text-fg hover:text-blue-600"><ArrowLeft size={16} aria-hidden="true" />All news</a>
+  </article>
+  <ContactCta />
+</PublicLayout>

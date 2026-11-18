@@ -1,0 +1,122 @@
+---
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import ShieldX from "@lucide/astro/icons/shield-x";
+import QrCode from "@lucide/astro/icons/qr-code";
+import Headset from "@lucide/astro/icons/headset";
+import Wrench from "@lucide/astro/icons/wrench";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Check from "@lucide/astro/icons/check";
+import PublicLayout from "../layouts/PublicLayout.astro";
+import PageHero from "../components/ui/PageHero.astro";
+import SectionHeading from "../components/ui/SectionHeading.astro";
+import Button from "../components/ui/Button.astro";
+import CustomerBand from "../components/contact/CustomerBand.astro";
+import { customerPortal, routes } from "../data/site";
+
+/**
+ * Warranty & claims (footer · Support → Warranty Claim). Coverage copy mirrors the
+ * customer app's 08.07 Warranty screen; claims are filed in the Customer Portal.
+ */
+const coverage = [
+  { title: "Parts & components", detail: "Motors, controllers, arms, sensors and readers", covered: true },
+  { title: "Labour & on-site visits", detail: "Within Jabodetabek, response < 24h", covered: true },
+  { title: "Firmware updates", detail: "Over-the-air, for the life of the product", covered: true },
+  { title: "Remote diagnostics", detail: "Engineers connect to your controller securely", covered: true },
+  { title: "Power surge & vandalism", detail: "Not covered · optional protection add-on", covered: false },
+  { title: "Consumables", detail: "Cards, fobs, printer paper and batteries", covered: false },
+];
+const steps = [
+  { icon: QrCode, title: "Register your device", text: "Scan the QR label in the Customer Portal to activate warranty." },
+  { icon: Headset, title: "Open a claim", text: "Describe the fault and add photos or a video — urgent tickets get a reply within 1 hour." },
+  { icon: Wrench, title: "We fix it", text: "Remote diagnosis first; on-site repair or replacement when needed." },
+];
+const plans = [
+  { name: "Standard", term: "2 years", price: "Included", features: ["Parts & labour in Jabodetabek", "Next-business-day response", "Lifetime firmware updates"] },
+  { name: "Extended", term: "5 years", price: "From 6% of hardware value", features: ["Everything in Standard", "Nationwide on-site labour", "Same-day urgent response", "Preventive visits twice a year"], highlight: true },
+];
+---
+
+<PublicLayout title="Warranty & claims | Entragate" description="What the Entragate warranty covers, how to register devices and how to raise a claim.">
+  <PageHero
+    title="Warranty & claims"
+    description="Every Entragate product carries a two-year warranty on parts and on-site labour, with lifetime firmware updates. Register devices and raise claims in the Customer Portal."
+    mobileDescription="Two years on parts and labour, claims in the Customer Portal."
+    breadcrumb={[{ label: "Home", href: routes.home }, { label: "Support", href: routes.help }, { label: "Warranty" }]}
+  >
+    <div slot="aside" class="flex flex-col gap-3 sm:flex-row">
+      <Button href={customerPortal.login} icon={ArrowRight}>Claim warranty</Button>
+      <Button href={routes.track} variant="secondary">Track a repair</Button>
+    </div>
+  </PageHero>
+
+  <section class="container-page grid gap-8 py-12 xl:grid-cols-[400px_1fr] xl:gap-20 xl:py-24" aria-labelledby="coverage-title">
+    <SectionHeading eyebrow="Coverage" title="What's covered" description="The standard warranty starts on the installation date shown on your certificate." />
+    <ul class="grid gap-px overflow-hidden rounded-card bg-border ring-1 ring-border md:grid-cols-2">
+      {
+        coverage.map((item) => (
+          <li class="flex gap-3.5 bg-white p-5">
+            <span class:list={["flex size-10 shrink-0 items-center justify-center rounded-md", item.covered ? "bg-success-bg text-success" : "bg-danger-bg text-danger"]} aria-hidden="true">
+              {item.covered ? <ShieldCheck size={18} /> : <ShieldX size={18} />}
+            </span>
+            <span class="flex flex-col gap-1">
+              <span class="text-[15px] font-semibold text-fg">{item.title}<span class="sr-only">{item.covered ? " (covered)" : " (not covered)"}</span></span>
+              <span class="text-[13.5px] text-fg-secondary">{item.detail}</span>
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section class="bg-surface" aria-labelledby="claim-title">
+    <div class="container-page flex flex-col gap-8 py-12 xl:gap-12 xl:py-24">
+      <SectionHeading eyebrow="How to claim" title="Three steps to a repair" />
+      <ol class="grid gap-4 md:grid-cols-3 xl:gap-6">
+        {
+          steps.map(({ icon: Icon, title, text }, index) => (
+            <li class="flex flex-col gap-3.5 rounded-card bg-white p-6 ring-1 ring-border ring-inset xl:p-8">
+              <span class="flex items-center justify-between">
+                <span class="flex size-12 items-center justify-center rounded-md bg-blue-50 text-blue-600"><Icon size={22} aria-hidden="true" /></span>
+                <span class="font-heading text-[14px] font-bold text-fg-muted">0{index + 1}</span>
+              </span>
+              <h3 class="font-heading text-[19px] font-bold text-navy-900">{title}</h3>
+              <p class="text-[14px] leading-[22px] text-fg-secondary">{text}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+
+  <section class="container-page flex flex-col gap-8 py-12 xl:gap-12 xl:py-24" aria-labelledby="plans-title">
+    <SectionHeading eyebrow="Plans" title="Standard or extended" />
+    <ul class="grid gap-5 md:grid-cols-2">
+      {
+        plans.map((plan) => (
+          <li class:list={["flex flex-col gap-5 rounded-xl p-7 xl:p-9", plan.highlight ? "bg-navy-900 text-white" : "bg-white ring-1 ring-border ring-inset"]}>
+            <div class="flex items-baseline justify-between gap-3">
+              <h3 class:list={["font-heading text-[24px] font-extrabold", plan.highlight ? "text-white" : "text-navy-900"]}>{plan.name}</h3>
+              <span class:list={["text-[15px] font-semibold", plan.highlight ? "text-cyan-400" : "text-blue-600"]}>{plan.term}</span>
+            </div>
+            <p class:list={["text-[15px]", plan.highlight ? "text-fg-on-dark-muted" : "text-fg-secondary"]}>{plan.price}</p>
+            <ul class="flex flex-col gap-2.5">
+              {plan.features.map((feature) => (
+                <li class:list={["flex items-center gap-2.5 text-[14px]", plan.highlight ? "text-white" : "text-fg"]}>
+                  <Check size={16} class={plan.highlight ? "text-cyan-400" : "text-success"} aria-hidden="true" />{feature}
+                </li>
+              ))}
+            </ul>
+            <a
+              href={plan.highlight ? `${routes.contact}?topic=sales&subject=${encodeURIComponent("Extended warranty")}` : routes.help + "/articles/warranty-coverage"}
+              class:list={["mt-auto flex w-fit items-center gap-2 text-[14px] font-bold", plan.highlight ? "text-cyan-400" : "text-blue-600"]}
+            >
+              {plan.highlight ? "Ask about extended cover" : "Read the warranty terms"} <ArrowRight size={15} aria-hidden="true" />
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <CustomerBand class="pb-10 xl:pb-24" />
+</PublicLayout>

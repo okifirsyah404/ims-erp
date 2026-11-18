@@ -1,0 +1,287 @@
+---
+import X from "@lucide/astro/icons/x";
+import Plus from "@lucide/astro/icons/plus";
+import ShoppingCart from "@lucide/astro/icons/shopping-cart";
+import Heart from "@lucide/astro/icons/heart";
+import Share2 from "@lucide/astro/icons/share-2";
+import FileText from "@lucide/astro/icons/file-text";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import Minus from "@lucide/astro/icons/minus";
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import Breadcrumb from "../../components/ui/Breadcrumb.astro";
+import Media from "../../components/ui/Media.astro";
+import EmptyState from "../../components/ui/EmptyState.astro";
+import { stockBadges } from "../../components/product/stock";
+import { MAX_COMPARE, compareGroups, comparePitch, compareValues, defaultCompare, type CompareValue } from "../../data/compare";
+import { products } from "../../data/catalog";
+import { routes } from "../../data/site";
+import { formatRupiah } from "../../lib/format";
+
+/** 02.03 Product Comparison (desktop Bui1D / mobile xmhvl). `?p=slug` (repeatable, max 4). */
+export const prerender = false;
+
+const requested = Astro.url.searchParams.getAll("p");
+const slugs = [...new Set(requested.length ? requested : defaultCompare)].filter((slug) => products.some((p) => p.slug === slug)).slice(0, MAX_COMPARE);
+const selected = slugs.map((slug) => products.find((p) => p.slug === slug)!);
+const values = selected.map((p) => compareValues(p.slug, p.categorySlug));
+const candidates = products.filter((p) => !slugs.includes(p.slug));
+const compareHref = (list: string[]) => `${routes.compare}?${list.map((s) => `p=${encodeURIComponent(s)}`).join("&")}`;
+const rowCount = compareGroups.reduce((n, g) => n + g.rows.length, 0);
+const differs = (key: string) => new Set(values.map((v) => JSON.stringify(v[key] ?? null))).size > 1;
+const text = (value: CompareValue | undefined) => (value === true ? "Yes" : value === false || value == null ? "—" : value);
+const mobileSelected = selected.slice(0, 2);
+const quoteItems = JSON.stringify(selected.map((p) => ({ slug: p.slug, qty: 1 })));
+const allLabel = selected.length === 2 ? "both" : `all ${selected.length}`;
+---
+
+<PublicLayout title="Compare products | Entragate" description="Compare Entragate barrier gates, turnstiles and readers side by side.">
+  <section class="bg-surface">
+    <div class="container-page flex flex-col gap-4 pt-5 pb-10 xl:gap-8 xl:pt-9 xl:pb-24" data-compare data-quote-items={quoteItems}>
+      <Breadcrumb items={[{ label: "Home", href: routes.home }, { label: "Products", href: routes.products }, { label: "Compare" }]} />
+      <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div class="flex flex-col gap-1.5">
+          <h1 class="font-heading text-[30px] font-extrabold tracking-[-1px] text-navy-900 xl:text-[44px] xl:tracking-[-1.4px]">Compare products</h1>
+          <p class="hidden text-[16px] text-fg-secondary xl:block">
+            {selected.map((p) => p.shortCategory.split(" ")[0].toLowerCase()).join(" vs. ")} — side by side for your next project.
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="flex flex-1 cursor-pointer items-center justify-between gap-3 text-[14px] font-semibold text-fg xl:flex-none xl:flex-row-reverse">
+            Highlight differences
+            <input type="checkbox" checked class="peer sr-only" data-highlight-toggle />
+            <span class="relative h-6 w-[42px] rounded-pill bg-border-strong transition-colors peer-checked:bg-blue-600 peer-focus-visible:outline-2 peer-focus-visible:outline-blue-600 after:absolute after:top-[3px] after:left-[3px] after:size-[18px] after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-[18px]" aria-hidden="true"></span>
+          </label>
+          <button type="button" class="hidden items-center gap-2 rounded-md bg-white px-3.5 py-2.5 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface xl:flex" data-share>
+            Share <Share2 size={15} aria-hidden="true" />
+          </button>
+          <button type="button" class="hidden items-center gap-2 rounded-md bg-blue-600 px-3.5 py-2.5 text-[14px] font-semibold text-white shadow-cta hover:bg-blue-700 xl:flex" data-quote-all>
+            Request quote for {allLabel} <FileText size={15} aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+
+      {
+        selected.length === 0 ? (
+          <EmptyState title="Nothing to compare yet" description="Pick up to four products from the catalog to see them side by side.">
+            <a href={compareHref(defaultCompare)} class="font-semibold text-blue-600 hover:underline">Compare our popular gates</a>
+          </EmptyState>
+        ) : (
+          <>
+            <!-- Desktop table -->
+            <div class="hidden overflow-hidden rounded-card bg-white ring-1 ring-border ring-inset xl:block" data-compare-table>
+              <table class="w-full table-fixed border-collapse text-left">
+                <colgroup>
+                  <col class="w-[228px]" />
+                  {selected.map(() => <col />)}
+                  {selected.length < MAX_COMPARE && <col class="w-[192px]" />}
+                </colgroup>
+                <thead>
+                  <tr class="align-bottom">
+                    <th scope="col" class="p-5 font-normal">
+                      <p class="text-[14px] font-bold text-fg">{selected.length} products selected</p>
+                      <p class="mt-2 text-[13px] leading-5 text-fg-secondary">Compare up to {MAX_COMPARE} products across {rowCount} specifications.</p>
+                    </th>
+                    {selected.map((product, index) => {
+                      const badge = stockBadges[product.stock];
+                      const purchasable = product.price !== null && product.stock !== "out";
+                      return (
+                        <th scope="col" class="border-l border-border p-4 font-normal">
+                          <div class="flex flex-col gap-2">
+                            <div class="relative mb-2">
+                              <a href={`${routes.products}/${product.slug}`}>
+                                <Media src={product.image} alt={product.name} class="h-[176px] w-full rounded-md bg-surface ring-1 ring-border" />
+                              </a>
+                              {index === 0 && <span class="absolute top-2.5 left-2.5 flex items-center gap-1.5 rounded-pill bg-white px-2 py-1 text-[11px] font-semibold text-blue-600"><span class="size-1.5 rounded-full bg-blue-600" />Recommended</span>}
+                              <a href={compareHref(slugs.filter((s) => s !== product.slug))} class="absolute top-2.5 right-2.5 flex size-6 items-center justify-center rounded-sm bg-white text-fg-secondary hover:text-fg" aria-label={`Remove ${product.name}`}>
+                                <X size={14} aria-hidden="true" />
+                              </a>
+                            </div>
+                            <p class="text-[11px] font-bold tracking-[1px] text-blue-600 uppercase">{product.category}</p>
+                            <a href={`${routes.products}/${product.slug}`} class="font-heading text-[18px] font-bold text-navy-900 hover:text-blue-600">{product.name}</a>
+                            <p class="text-[12.5px] text-fg-muted">{comparePitch[product.slug] ?? product.specs}</p>
+                            <p class="font-heading text-[18px] font-bold text-navy-900">{product.price === null ? "Project pricing" : formatRupiah(product.price)}</p>
+                            <span class:list={["flex w-fit items-center gap-1.5 rounded-pill bg-success-bg px-2 py-0.5 text-[12px] font-semibold", badge.text]}><span class:list={["size-1.5 rounded-full", badge.dot]} />{badge.label}</span>
+                            <div class="mt-2 flex gap-2">
+                              {purchasable ? (
+                                <button type="button" class="flex flex-1 items-center justify-center gap-2 rounded-md bg-navy-900 py-2.5 text-[13px] font-semibold text-white hover:bg-navy-800" data-add-cart={product.slug} data-name={product.name}>
+                                  Add to cart <ShoppingCart size={14} aria-hidden="true" />
+                                </button>
+                              ) : (
+                                <a href={`${routes.quote}?product=${product.slug}`} class="flex flex-1 items-center justify-center gap-2 rounded-md bg-navy-900 py-2.5 text-[13px] font-semibold text-white hover:bg-navy-800">
+                                  Request price
+                                </a>
+                              )}
+                              <button type="button" class="group flex size-[38px] items-center justify-center rounded-md bg-white text-fg ring-1 ring-border ring-inset hover:bg-surface aria-pressed:text-danger" aria-pressed="false" aria-label={`Save ${product.name}`} data-wishlist={product.slug} data-wishlist-local>
+                                <Heart size={16} class="group-aria-pressed:fill-current" aria-hidden="true" />
+                              </button>
+                            </div>
+                          </div>
+                        </th>
+                      );
+                    })}
+                    {selected.length < MAX_COMPARE && (
+                      <th scope="col" class="border-l border-border p-4 font-normal">
+                        <details class="group relative">
+                          <summary class="flex h-[176px] cursor-pointer list-none flex-col items-center justify-center gap-2 rounded-md bg-surface ring-1 ring-border-strong ring-inset [&::-webkit-details-marker]:hidden">
+                            <span class="flex size-9 items-center justify-center rounded-md bg-white text-blue-600"><Plus size={18} aria-hidden="true" /></span>
+                            <span class="text-[13px] font-bold text-fg">Add product</span>
+                            <span class="text-[11.5px] text-fg-muted">Search catalog</span>
+                          </summary>
+                          <ul class="absolute top-full right-0 z-10 mt-2 max-h-80 w-64 overflow-y-auto rounded-md bg-white p-1.5 shadow-[0_16px_40px_#0A1A3F26] ring-1 ring-border">
+                            {candidates.map((p) => (
+                              <li><a href={compareHref([...slugs, p.slug])} class="block rounded-sm px-3 py-2 text-[13px] text-fg hover:bg-surface">{p.name}</a></li>
+                            ))}
+                          </ul>
+                        </details>
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                {compareGroups.map((group) => (
+                  <tbody>
+                    <tr class="border-t border-border bg-surface">
+                      <th scope="colgroup" colspan={selected.length + 2} class="px-5 py-3 text-[11px] font-bold tracking-[1.2px] text-fg-muted uppercase">{group.title}</th>
+                    </tr>
+                    {group.rows.map((row) => {
+                      const diff = differs(row.key);
+                      return (
+                        <tr class="border-t border-border" data-differs={diff ? "" : undefined}>
+                          <th scope="row" class="px-5 py-3.5 text-[13.5px] font-semibold text-fg">
+                            {row.label}
+                            {diff && <span class="ml-2 inline-block size-1.5 rounded-full bg-cyan-400 align-middle in-[.no-highlight]:hidden" aria-label="differs" />}
+                          </th>
+                          {values.map((v, index) => (
+                            <td class:list={["border-l border-border px-4 py-3.5 text-[13.5px]", index === 0 && diff ? "font-bold text-fg in-[.no-highlight]:font-normal" : "text-fg-secondary"]}>
+                              {typeof v[row.key] === "boolean" ? (
+                                v[row.key] ? <CircleCheck size={16} class="text-success" aria-label="Yes" /> : <Minus size={16} class="text-fg-muted" aria-label="No" />
+                              ) : (
+                                text(v[row.key])
+                              )}
+                            </td>
+                          ))}
+                          {selected.length < MAX_COMPARE && <td class="border-l border-border" />}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                ))}
+              </table>
+            </div>
+
+            <!-- Mobile: first two products, stacked rows -->
+            <div class="flex flex-col gap-4 xl:hidden" data-compare-mobile>
+              <div class="grid grid-cols-2 gap-2.5">
+                {mobileSelected.map((product) => (
+                  <div class="flex flex-col gap-2 rounded-lg bg-white p-2.5 ring-1 ring-border ring-inset">
+                    <div class="relative">
+                      <Media src={product.image} alt={product.name} class="h-[130px] w-full rounded-md bg-surface ring-1 ring-border" />
+                      <a href={compareHref(slugs.filter((s) => s !== product.slug))} class="absolute top-2 right-2 flex size-6 items-center justify-center rounded-sm bg-white text-fg-secondary" aria-label={`Remove ${product.name}`}><X size={13} aria-hidden="true" /></a>
+                    </div>
+                    <p class="text-[13px] font-bold text-fg">{product.name}</p>
+                    <p class="font-heading text-[16px] font-bold text-navy-900">{product.price === null ? "On request" : formatRupiah(product.price)}</p>
+                    {product.price !== null && product.stock !== "out" ? (
+                      <button type="button" class="flex items-center justify-center gap-2 rounded-md bg-navy-900 py-2.5 text-[13px] font-semibold text-white" data-add-cart={product.slug} data-name={product.name}>Add <ShoppingCart size={14} aria-hidden="true" /></button>
+                    ) : (
+                      <a href={`${routes.quote}?product=${product.slug}`} class="flex items-center justify-center rounded-md bg-navy-900 py-2.5 text-[13px] font-semibold text-white">Quote</a>
+                    )}
+                  </div>
+                ))}
+                {mobileSelected.length < 2 && (
+                  <a href={compareHref([...slugs, candidates[0].slug])} class="flex flex-col items-center justify-center gap-2 rounded-lg bg-white p-4 text-[13px] font-bold text-fg ring-1 ring-border-strong ring-inset"><Plus size={18} class="text-blue-600" aria-hidden="true" />Add product</a>
+                )}
+              </div>
+              {compareGroups.map((group) => {
+                const rows = group.rows.filter((r) => r.mobile);
+                return (
+                  <section class="flex flex-col gap-2.5">
+                    <h2 class="text-[11px] font-bold tracking-[1.2px] text-fg-muted uppercase">{group.mobileTitle ?? group.title}</h2>
+                    <dl class="divide-y divide-border rounded-lg bg-white ring-1 ring-border ring-inset">
+                      {rows.map((row) => {
+                        const diff = new Set(mobileSelected.map((_, i) => JSON.stringify(values[i][row.key] ?? null))).size > 1;
+                        return (
+                          <div class="flex flex-col gap-1.5 p-3.5">
+                            <dt class="flex items-center gap-1.5 text-[12px] text-fg-muted">{row.mobileLabel ?? row.label}{diff && <span class="size-1.5 rounded-full bg-cyan-400 in-[.no-highlight]:hidden" />}</dt>
+                            <dd class="grid grid-cols-2 gap-3 text-[14px]">
+                              {mobileSelected.map((_, i) => (
+                                <span class:list={[i === 0 && diff ? "font-bold text-fg in-[.no-highlight]:font-normal" : "text-fg-secondary"]}>{text(values[i][row.key])}</span>
+                              ))}
+                            </dd>
+                          </div>
+                        );
+                      })}
+                    </dl>
+                  </section>
+                );
+              })}
+              <button type="button" class="flex items-center justify-center gap-2 rounded-md bg-blue-600 py-3.5 text-[15px] font-semibold text-white shadow-cta" data-quote-all data-quote-count={mobileSelected.length}>
+                Request quote for {mobileSelected.length === 2 ? "both" : "this product"} <FileText size={16} aria-hidden="true" />
+              </button>
+            </div>
+          </>
+        )
+      }
+      <p class="sr-only" role="status" aria-live="polite" data-compare-status></p>
+    </div>
+  </section>
+</PublicLayout>
+
+<script>
+  import { addToCart } from "../../lib/client/cart";
+  import { readRfqItems, writeRfqItems } from "../../lib/client/rfq-items";
+  import { toggleWishlist, isWishlisted } from "../../lib/client/wishlist";
+
+  const root = document.querySelector<HTMLElement>("[data-compare]");
+  const status = root?.querySelector<HTMLElement>("[data-compare-status]");
+  const say = (message: string) => status && (status.textContent = message);
+
+  root?.querySelector<HTMLInputElement>("[data-highlight-toggle]")?.addEventListener("change", (event) => {
+    root.classList.toggle("no-highlight", !(event.currentTarget as HTMLInputElement).checked);
+  });
+
+  root?.querySelectorAll<HTMLButtonElement>("[data-add-cart]").forEach((button) =>
+    button.addEventListener("click", () => {
+      addToCart(button.dataset.addCart!);
+      const label = button.firstChild;
+      button.disabled = true;
+      say(`${button.dataset.name} added to cart`);
+      if (label) label.textContent = "Added ";
+      setTimeout(() => {
+        button.disabled = false;
+        if (label) label.textContent = button.closest("[data-compare-mobile]") ? "Add " : "Add to cart ";
+      }, 1600);
+    }),
+  );
+
+  root?.querySelectorAll<HTMLButtonElement>("[data-wishlist]").forEach((button) => {
+    const slug = button.dataset.wishlist!;
+    button.setAttribute("aria-pressed", String(isWishlisted(slug)));
+    button.addEventListener("click", () => {
+      const saved = toggleWishlist(slug);
+      button.setAttribute("aria-pressed", String(saved));
+      say(saved ? "Saved to your list" : "Removed from your list");
+    });
+  });
+
+  root?.querySelectorAll<HTMLButtonElement>("[data-quote-all]").forEach((button) =>
+    button.addEventListener("click", () => {
+      const items: { slug: string; qty: number }[] = JSON.parse(root.dataset.quoteItems ?? "[]");
+      const chosen = button.dataset.quoteCount ? items.slice(0, Number(button.dataset.quoteCount)) : items;
+      const existing = readRfqItems();
+      for (const item of chosen) if (!existing.some((l) => l.slug === item.slug)) existing.push(item);
+      writeRfqItems(existing);
+      location.assign("/quote");
+    }),
+  );
+
+  root?.querySelector<HTMLButtonElement>("[data-share]")?.addEventListener("click", async () => {
+    try {
+      if (navigator.share) await navigator.share({ title: document.title, url: location.href });
+      else {
+        await navigator.clipboard.writeText(location.href);
+        say("Comparison link copied");
+      }
+    } catch {
+      /* share dismissed */
+    }
+  });
+</script>

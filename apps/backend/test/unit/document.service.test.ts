@@ -65,6 +65,13 @@ class FakeRepository {
 		return this.document?.id === id ? this.document : null;
 	}
 
+	async findLiveBySource(module: string, sourceType: string, sourceId: string) {
+		const doc = this.document;
+		return doc && doc.status !== 'void' && doc.module === module && doc.sourceType === sourceType && doc.sourceId === sourceId
+			? doc
+			: null;
+	}
+
 	async logAccess(entry: { action: string; accessedByUserId: string | null }) {
 		this.trail.push(entry);
 	}
@@ -264,5 +271,40 @@ describe('document detail', () => {
 		expect(detail.files).toHaveLength(1);
 		expect(detail.shares).toHaveLength(1);
 		expect(lastTrail()).toMatchObject({ action: 'view', accessedByUserId: USER });
+	});
+});
+
+describe('generated files (ERP-0067)', () => {
+	const source = { module: 'accounting', sourceType: 'sales_invoice', sourceId: 'inv_1' };
+	const pdf = () => new File([new Uint8Array([37, 80, 68, 70])], 'INV-00001.pdf', { type: 'application/pdf' });
+
+	test('attaches to the live registry row of the source, without a user', async () => {
+		const id = await service.attachGeneratedFile(source, pdf(), null);
+		expect(id).toBe(repository.document!.id);
+		expect(repository.files[0]).toMatchObject({ fileName: 'INV-00001.pdf', mimeType: 'application/pdf', uploadedByUserId: null });
+		expect(stored[0]).toStartWith(`documents/${repository.document!.id}/`);
+	});
+
+	test('a source that was never registered, or is void, gets nothing', async () => {
+		expect(await service.attachGeneratedFile({ ...source, sourceId: 'other' }, pdf(), null)).toBeNull();
+		repository.document!.status = 'void';
+		expect(await service.attachGeneratedFile(source, pdf(), null)).toBeNull();
+		expect(repository.files).toHaveLength(0);
+	});
+
+	test('a public link resolves to the newest file and logs an anonymous download', async () => {
+		await service.attachGeneratedFile(source, pdf(), null);
+		const share = await service.createShare(repository.document!.id, 30, null);
+		const url = await service.resolvePublicFile(share.token);
+		expect(url).toStartWith(`https://files.test/documents/${repository.document!.id}/`);
+		expect(lastTrail()).toMatchObject({ action: 'download', accessedByUserId: null });
+	});
+
+	test('a link to a document with no file, or a revoked link, answers not found', async () => {
+		const share = await service.createShare(repository.document!.id, 30, null);
+		await expect(service.resolvePublicFile(share.token)).rejects.toBeInstanceOf(DocumentFileNotFoundError);
+		await service.attachGeneratedFile(source, pdf(), null);
+		repository.shares[0].isRevoked = true;
+		await expect(service.resolvePublicFile(share.token)).rejects.toBeInstanceOf(DocumentShareNotFoundError);
 	});
 });

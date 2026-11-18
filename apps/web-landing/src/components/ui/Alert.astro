@@ -1,0 +1,39 @@
+---
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import CircleAlert from "@lucide/astro/icons/circle-alert";
+import TriangleAlert from "@lucide/astro/icons/triangle-alert";
+import Info from "@lucide/astro/icons/info";
+
+/** Alert (kABOQ) with the success / info / warning / danger tones used across the design. */
+interface Props {
+  tone?: "success" | "info" | "warning" | "danger";
+  title: string;
+  description?: string;
+  class?: string;
+  hidden?: boolean;
+  [key: `data-${string}`]: unknown;
+}
+
+const { tone = "info", title, description, class: className, hidden, ...rest } = Astro.props;
+const tones = {
+  success: { box: "bg-success-bg ring-success-border", icon: CircleCheck, color: "text-success" },
+  info: { box: "bg-blue-50 ring-blue-100", icon: Info, color: "text-blue-600" },
+  warning: { box: "bg-warning-bg ring-warning-border", icon: TriangleAlert, color: "text-warning" },
+  danger: { box: "bg-danger-bg ring-danger-border", icon: CircleAlert, color: "text-danger" },
+}[tone];
+const Icon = tones.icon;
+---
+
+<div
+  role={tone === "danger" || tone === "warning" ? "alert" : "status"}
+  class:list={["flex gap-3 rounded-md p-4 ring-1 ring-inset", tones.box, className]}
+  hidden={hidden}
+  {...rest}
+>
+  <Icon size={20} class:list={["shrink-0", tones.color]} aria-hidden="true" />
+  <div class="flex flex-1 flex-col gap-[3px]">
+    <p class="text-[14px] font-bold text-fg" data-alert-title>{title}</p>
+    {description && <p class="text-[13px] leading-[1.5] text-fg-secondary" data-alert-desc>{description}</p>}
+    <slot />
+  </div>
+</div>

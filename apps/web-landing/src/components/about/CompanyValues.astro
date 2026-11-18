@@ -1,0 +1,46 @@
+---
+import { values } from "../../data/about";
+import { icons } from "../../lib/icons";
+
+/** 09.01 · Company Values. */
+---
+
+<section class="bg-white" aria-labelledby="values-title">
+  <div class="container-page flex flex-col gap-5 py-12 xl:gap-14 xl:py-28">
+    <div class="flex flex-col gap-2.5 xl:gap-3.5">
+      <p class="text-[12px] font-bold tracking-[1.4px] text-blue-600 uppercase xl:text-[13px] xl:tracking-[1.6px]">Company values</p>
+      <h2
+        id="values-title"
+        class="font-heading text-[28px] leading-8 font-bold tracking-[-0.7px] text-navy-900 xl:text-[44px] xl:leading-[48px] xl:tracking-[-1.2px]"
+      >
+        What we stand for
+      </h2>
+    </div>
+    <ul class="grid grid-cols-2 gap-3 xl:grid-cols-4 xl:gap-0 xl:border-t-2 xl:border-navy-900">
+      {
+        values.map((value, index) => {
+          const Icon = icons[value.icon];
+          return (
+            <li
+              class:list={[
+                "flex flex-col gap-2.5 rounded-control bg-surface p-4 ring-1 ring-border ring-inset",
+                "xl:gap-4 xl:rounded-none xl:bg-transparent xl:p-0 xl:pt-8 xl:ring-0",
+                index === 0 ? "xl:pr-8" : "xl:border-l xl:border-border xl:px-8",
+              ]}
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-[12px] font-bold text-fg-muted xl:font-heading xl:text-[14px]">{String(index + 1).padStart(2, "0")}</span>
+                <Icon size={22} class="size-[18px] text-blue-600 xl:size-[22px]" aria-hidden="true" />
+              </div>
+              <h3 class="font-heading text-[18px] font-bold text-navy-900 xl:text-[26px] xl:tracking-[-0.5px]">{value.title}</h3>
+              <p class="text-[13px] leading-5 text-fg-secondary xl:text-[15px] xl:leading-6">
+                <span class="xl:hidden">{value.mobileDescription}</span>
+                <span class="hidden xl:inline">{value.description}</span>
+              </p>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</section>

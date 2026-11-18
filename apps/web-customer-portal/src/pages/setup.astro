@@ -1,0 +1,87 @@
+---
+import { actions, isInputError } from "astro:actions";
+import MapPin from "@lucide/astro/icons/map-pin";
+import UserPlus from "@lucide/astro/icons/user-plus";
+import X from "@lucide/astro/icons/x";
+import AuthLayout from "../layouts/AuthLayout.astro";
+import TopBar from "../components/customer/TopBar.astro";
+import StepBars from "../components/customer/StepBars.astro";
+import AppField from "../components/customer/AppField.astro";
+
+/** 04.07 Account setup · Workspace (business accounts, right after verification). */
+const result = Astro.getActionResult(actions.auth.completeSetup);
+const returnTo = await Astro.session?.get("returnTo");
+if (result?.data) {
+  Astro.session?.delete("returnTo");
+  return Astro.redirect(returnTo ?? "/", 303);
+}
+const errors = result?.error && isInputError(result.error) ? result.error.fields : {};
+const formError = result?.error && !isInputError(result.error) ? result.error.message : undefined;
+const roles = [
+  { value: "approver", label: "Approver", note: "Approves quotations" },
+  { value: "finance", label: "Finance", note: "Invoices & payments" },
+  { value: "viewer", label: "Viewer", note: "Tracks deliveries" },
+];
+---
+
+<AuthLayout title="Set up account">
+  <TopBar title="Set up account" back="/" closeIcon />
+  <form method="POST" action={actions.auth.completeSetup} class="flex flex-1 flex-col" novalidate data-setup-form>
+    <div class="flex flex-col gap-[22px] px-6 pt-2 pb-[140px]">
+      <StepBars step={3} total={3} label="Workspace" />
+      <div class="flex flex-col gap-2">
+        <h1 class="font-heading text-[26px] leading-[31px] font-extrabold tracking-[-0.6px] text-fg">Set up your company workspace</h1>
+        <p class="text-[15px] leading-[22px] text-fg-secondary">
+          Add your main site and invite teammates who approve quotations or track deliveries.
+        </p>
+      </div>
+      {formError && <p role="alert" class="text-[13px] font-semibold text-danger">{formError}</p>}
+      <AppField label="Main site / delivery address" name="site" autocomplete="street-address" required placeholder="Street, city" error={errors.site?.[0]}>
+        <MapPin slot="icon" />
+      </AppField>
+
+      <fieldset class="flex flex-col gap-2.5">
+        <legend class="mb-2.5 text-[13px] font-semibold text-fg-secondary">Invite teammates (optional)</legend>
+        <ul class="flex flex-col gap-2.5" data-invites></ul>
+        <template data-invite-template>
+          <li class="flex items-center gap-2 rounded-md bg-surface p-2 pl-3">
+            <label class="sr-only">Teammate email</label>
+            <input type="email" name="invite_email" required placeholder="name@company.co.id" class="h-10 min-w-0 flex-1 bg-transparent text-[14px] text-fg outline-none placeholder:text-fg-muted" />
+            <label class="sr-only">Role</label>
+            <select name="invite_role" class="h-8 rounded-pill bg-white px-2.5 text-[12px] font-semibold text-blue-700 outline-none">
+              {roles.map((role) => <option value={role.value}>{role.label}</option>)}
+            </select>
+            <button type="button" class="flex size-8 items-center justify-center text-fg-muted" aria-label="Remove teammate" data-remove>
+              <X size={16} aria-hidden="true" />
+            </button>
+          </li>
+        </template>
+        <button type="button" class="flex items-center justify-center gap-2 rounded-md px-3.5 py-3 text-[14px] font-semibold text-blue-600 ring-[1.5px] ring-border-strong ring-inset" data-add-invite>
+          <UserPlus size={16} aria-hidden="true" />
+          Add another teammate
+        </button>
+      </fieldset>
+    </div>
+
+    <div class="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white/96 shadow-[0_-8px_24px_#0A1A3F14] backdrop-blur-[10px]">
+      <div class="app-column flex gap-2.5 px-5 pt-3.5 pb-safe">
+        <a href={returnTo ?? "/"} class="flex h-[54px] flex-1 items-center justify-center rounded-control bg-white text-[16px] font-semibold text-fg ring-1 ring-border ring-inset">Skip</a>
+        <button type="submit" class="flex h-[54px] flex-1 items-center justify-center rounded-control bg-blue-600 text-[16px] font-semibold text-white hover:bg-blue-700">Finish setup</button>
+      </div>
+    </div>
+  </form>
+</AuthLayout>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>("[data-setup-form]");
+  const list = form?.querySelector<HTMLUListElement>("[data-invites]");
+  const template = form?.querySelector<HTMLTemplateElement>("[data-invite-template]");
+  const add = () => {
+    if (!list || !template || list.children.length >= 10) return;
+    const row = template.content.firstElementChild!.cloneNode(true) as HTMLElement;
+    row.querySelector("[data-remove]")?.addEventListener("click", () => row.remove());
+    list.append(row);
+    row.querySelector("input")?.focus();
+  };
+  form?.querySelector("[data-add-invite]")?.addEventListener("click", add);
+</script>

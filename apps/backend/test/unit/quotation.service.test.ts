@@ -54,6 +54,9 @@ class FakeQuotations implements IQuotationRepository {
 		);
 		return { meta: { page: 1, limit: 20, total: data.length, totalPages: 1 }, data };
 	}
+	async listSentForFollowUp() {
+		return this.rows.filter((row) => row.status === 'sent');
+	}
 	async findById(id: string) {
 		return this.rows.find((row) => row.id === id) ?? null;
 	}
@@ -160,7 +163,12 @@ function body(overrides: Record<string, unknown> = {}) {
 	});
 }
 
+let followUps: { topic: string; data: Record<string, unknown>; dedupeKey?: string }[] = [];
+/** ERP-0067: sent quotations queued for their PDF + `quotation.sent`. */
+let sentJobs: string[] = [];
+
 beforeEach(() => {
+	followUps = [];
 	repo = new FakeQuotations();
 	leadNoted = [];
 	registered = [];
@@ -209,7 +217,19 @@ beforeEach(() => {
 				return 1;
 			},
 		},
+		{
+			publish: async (topic: string, _aggregate: unknown, data: Record<string, unknown>, options?: { dedupeKey?: string }) => {
+				followUps.push({ topic, data, dedupeKey: options?.dedupeKey });
+				return {} as never;
+			},
+		} as never,
+		{
+			enqueue: async (id: string) => {
+				sentJobs.push(id);
+			},
+		},
 	);
+	sentJobs = [];
 });
 
 describe('money rules', () => {
@@ -358,6 +378,7 @@ describe('workflow and separation of duties', () => {
 		expect(approved.approvedBy).toBe('manager');
 		const sent = await service.markSent(sales, quotation.id);
 		expect(sent.sentBy).toBe('sales-1');
+		expect(sentJobs).toEqual([quotation.id]);
 		const detail = await service.get(sales, quotation.id);
 		expect(detail.history.map((h) => h.toStatus)).toEqual(['draft', 'submitted', 'approved', 'sent']);
 		expect(detail.approver?.name).toBe('User manager');
@@ -430,5 +451,34 @@ describe('validity (expiry is shown, never a status)', () => {
 		const detail = await service.get(sales, quotation.id);
 		expect(detail.expired).toBe(true);
 		expect(detail.status).toBe('draft');
+	});
+});
+
+describe('follow-up reminders (ERP-0066)', () => {
+	const sent = (code: string, sentAt: string, validUntil: string | null, status = 'sent') =>
+		({ id: `q-${code}`, code, title: 'Swing gate', status, sentAt: new Date(sentAt), validUntil, createdBy: 'sales-1', customerId: CUSTOMER, customerSnapshot: { name: 'PT Contoh' }, grandTotal: 100, currencyCode: 'IDR' }) as unknown as TQuotationSelect;
+
+	test('3 and 7 days after sending, and 2 days before validity ends; to the creator', async () => {
+		repo.rows = [
+			sent('A', '2026-11-13T03:00:00Z', '2026-12-31'), // 3 days
+			sent('B', '2026-11-09T03:00:00Z', null), // 7 days
+			sent('C', '2026-11-15T03:00:00Z', '2026-11-18'), // 1 day, expiring in 2
+			sent('D', '2026-11-15T03:00:00Z', '2026-12-31'), // nothing yet
+			sent('E', '2026-11-01T03:00:00Z', '2026-11-17', 'won'), // answered: never listed
+		];
+		const result = await service.publishFollowUpNotices(new Date('2026-11-16T01:00:00Z'));
+		expect(result).toEqual({ processed: 3, skipped: 0 });
+		expect(followUps.map((event) => [event.data.code, event.data.stage, event.dedupeKey])).toEqual([
+			['A', 'sent_3d', 'quotation.follow_up_due:q-A:sent_3d'],
+			['B', 'sent_7d', 'quotation.follow_up_due:q-B:sent_7d'],
+			['C', 'expiring', 'quotation.follow_up_due:q-C:expiring'],
+		]);
+		expect(followUps[0]?.data.owner).toMatchObject({ userId: 'sales-1', name: 'User sales-1' });
+	});
+
+	test('a run after a long gap sends only the 7-day stage, not both', async () => {
+		repo.rows = [sent('F', '2026-11-01T03:00:00Z', null)];
+		await service.publishFollowUpNotices(new Date('2026-11-16T01:00:00Z'));
+		expect(followUps.map((event) => event.data.stage)).toEqual(['sent_7d']);
 	});
 });

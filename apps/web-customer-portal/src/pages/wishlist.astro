@@ -1,0 +1,73 @@
+---
+import { webUrl } from "../lib/urls";
+import Heart from "@lucide/astro/icons/heart";
+import ArrowUpRight from "@lucide/astro/icons/arrow-up-right";
+import CustomerLayout from "../layouts/CustomerLayout.astro";
+import TopBar from "../components/customer/TopBar.astro";
+import StatusChip from "../components/customer/StatusChip.astro";
+import Media from "../components/customer/Media.astro";
+import AppButton from "../components/customer/AppButton.astro";
+import ConfirmAction from "../features/account/ConfirmAction";
+import { customerService } from "../services";
+
+/** Wishlist — products saved from entragate.com; quotes are requested on the public site. */
+const items = await customerService.wishlist(Astro.locals.tokens!);
+const stock = {
+  ready: { label: "Ready stock", tone: "success" },
+  preorder: { label: "Pre-order", tone: "warning" },
+  request: { label: "On request", tone: "neutral" },
+} as const;
+const productUrl = (slug: string) => `${webUrl}/products/${encodeURIComponent(slug)}`;
+---
+
+<CustomerLayout title="Wishlist" tab="profile">
+  <TopBar title="Wishlist" back="/profile" />
+  <div class="flex flex-col gap-4 px-5 pt-1 pb-6">
+    {
+      items.length === 0 ? (
+        <div class="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-10 text-center">
+          <span class="flex size-14 items-center justify-center rounded-pill bg-white text-blue-600" aria-hidden="true"><Heart size={26} /></span>
+          <p class="font-heading text-[17px] font-bold text-fg">Nothing saved yet</p>
+          <p class="text-[14px] text-fg-secondary">Tap the heart on any product at entragate.com to keep it here for later.</p>
+          <AppButton variant="outline" href={`${webUrl}/products`} class="mt-1">Browse catalog</AppButton>
+        </div>
+      ) : (
+        <>
+          <p class="text-[13.5px] text-fg-secondary">{items.length} saved product{items.length === 1 ? "" : "s"}</p>
+          <ul class="grid gap-3.5 md:grid-cols-2">
+            {items.map((item) => (
+              <li class="app-card flex flex-col gap-3 p-3.5">
+                <div class="flex gap-3.5">
+                  <Media src={item.image} alt="" class="size-[72px] shrink-0 rounded-control bg-surface" />
+                  <div class="flex min-w-0 flex-1 flex-col gap-1">
+                    <span class="text-[12px] font-semibold text-fg-muted">{item.category}</span>
+                    <a href={productUrl(item.productSlug)} class="text-[15px] leading-[21px] font-bold text-fg hover:text-blue-600">{item.name}</a>
+                    <span class="font-heading text-[16px] font-extrabold text-navy-900">{item.priceLabel}</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between gap-2.5">
+                  <StatusChip size="sm" label={stock[item.stock].label} tone={stock[item.stock].tone} />
+                  <span class="text-[12px] text-fg-muted">{item.addedLabel}</span>
+                </div>
+                <div class="flex items-center gap-2.5 border-t border-border pt-3">
+                  <ConfirmAction
+                    client:visible
+                    operation="removeWishlistItem"
+                    id={item.id}
+                    triggerLabel="Remove"
+                    title={`Remove ${item.name}?`}
+                    description="It will be removed from your wishlist on every device."
+                    confirmLabel="Remove"
+                  />
+                  <a href={`${webUrl}/quote?product=${encodeURIComponent(item.productSlug)}`} class="ml-auto flex items-center gap-1 text-[13.5px] font-semibold text-blue-600">
+                    Request quote<ArrowUpRight size={15} aria-hidden="true" />
+                  </a>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )
+    }
+  </div>
+</CustomerLayout>

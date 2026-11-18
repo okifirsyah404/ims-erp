@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { container } from 'tsyringe';
 import type { ErpContext } from '@authorization/elysia-auth';
 import { domainPlugin } from '@http/plugin';
@@ -8,9 +9,6 @@ import {
 	arAgingQuerySchema,
 	balanceSheetQuerySchema,
 	cashFlowQuerySchema,
-	paymentAllocationsSchema,
-	paymentCreateSchema,
-	paymentListQuerySchema,
 	paymentVoidSchema,
 	profitAndLossQuerySchema,
 	reconciliationCreateSchema,
@@ -21,6 +19,7 @@ import {
 	reportArchiveCreateSchema,
 	reportArchiveListQuerySchema,
 	supplierBillCreateSchema,
+	supplierBillFromOrderSchema,
 	supplierBillListQuerySchema,
 	type TAgingBucket,
 } from '../contracts/payment.contract';
@@ -33,19 +32,18 @@ import {
 import {
 	BANK_RECONCILIATION_SERVICE_TOKEN,
 	MONTH_END_CLOSE_SERVICE_TOKEN,
-	PAYMENT_SERVICE_TOKEN,
 	REPORT_ARCHIVE_SERVICE_TOKEN,
 	REPORT_SERVICE_TOKEN,
 	SUPPLIER_BILL_SERVICE_TOKEN,
 } from '../constants/ar-di';
-import type { PaymentService } from '../services/payment.service';
 import type { SupplierBillService } from '../services/supplier-bill.service';
 import type { ReportService } from '../services/report.service';
 import type { ReportArchiveService } from '../services/report-archive.service';
 import type { BankReconciliationService } from '../services/bank-reconciliation.service';
 import type { MonthEndCloseService } from '../services/month-end-close.service';
-import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
-import type { LedgerRepository } from '../repositories/ledger.repository';
+import { AR_OPEN_ITEM_REPOSITORY_TOKEN, AP_OPEN_ITEM_REPOSITORY_TOKEN } from '../constants/di';
+import type { IArOpenItemRepository } from '../contracts/ar-open-item.repository.interface';
+import type { IApOpenItemRepository } from '../contracts/ap-open-item.repository.interface';
 
 /** Sets the CSV download headers and returns the body unchanged. */
 function csvResponse(
@@ -70,7 +68,6 @@ function csvResponse(
 export class PaymentController {
 	/** Builds the Elysia plugin mounting `/payments` and `/ar`. */
 	static plugin() {
-		const payments = container.resolve<PaymentService>(PAYMENT_SERVICE_TOKEN);
 		const bills = container.resolve<SupplierBillService>(
 			SUPPLIER_BILL_SERVICE_TOKEN,
 		);
@@ -85,8 +82,11 @@ export class PaymentController {
 		const archives = container.resolve<ReportArchiveService>(
 			REPORT_ARCHIVE_SERVICE_TOKEN,
 		);
-		const ledgerRepo = container.resolve<LedgerRepository>(
-			LEDGER_REPOSITORY_TOKEN,
+		const arOpenItems = container.resolve<IArOpenItemRepository>(
+			AR_OPEN_ITEM_REPOSITORY_TOKEN,
+		);
+		const apOpenItems = container.resolve<IApOpenItemRepository>(
+			AP_OPEN_ITEM_REPOSITORY_TOKEN,
 		);
 
 		const ctxOf = (erp: ErpContext) => ({
@@ -112,134 +112,6 @@ export class PaymentController {
 			tags: ['Accounting'],
 			guards: 'erp',
 		})
-			.get(
-				'/payments',
-				async ({ query, erp }) =>
-					okPaginated(
-						await payments.list(
-							erp.organizationId,
-							paymentListQuerySchema.parse(query),
-							paymentListQuerySchema.parse(query),
-						),
-					),
-				{
-					erp: { permission: ['payment:read'] },
-					detail: { description: 'Paginated payment ledger' },
-				},
-			)
-			.get(
-				'/payments/:id',
-				async ({ params, erp }) =>
-					ok(
-						await payments.get(
-							erp.organizationId,
-							ledgerIdParamSchema.parse(params).id,
-						),
-					),
-				{
-					erp: { permission: ['payment:read'] },
-					detail: { description: 'One payment document' },
-				},
-			)
-			.post(
-				'/payments',
-				async ({ body, erp, status }) => {
-					const input = paymentCreateSchema.parse(body);
-					const payment = await payments.create(ctxOf(erp), input, input.allocations);
-					if (input.allocations.length > 0) {
-						await payments.setAllocations(
-							ctxOf(erp),
-							payment.id,
-							input.allocations,
-						);
-					}
-					return status(201, created(payment));
-				},
-				{
-					erp: { permission: ['payment:create'] },
-					detail: { description: 'Creates a draft customer payment' },
-				},
-			)
-			.put(
-				'/payments/:id/allocations',
-				async ({ params, body, erp }) => {
-					const { allocations } = paymentAllocationsSchema.parse(body);
-					return ok(
-						await payments.setAllocations(
-							ctxOf(erp),
-							ledgerIdParamSchema.parse(params).id,
-							allocations,
-						),
-					);
-				},
-				{
-					erp: { permission: ['payment:create'] },
-					detail: { description: 'Replaces the allocation set of a draft payment' },
-				},
-			)
-			.post(
-				'/payments/:id/submit',
-				async ({ params, erp }) =>
-					ok(
-						await payments.submit(
-							ctxOf(erp),
-							ledgerIdParamSchema.parse(params).id,
-						),
-					),
-				{
-					erp: { permission: ['payment:submit'] },
-					detail: { description: 'draft → submitted' },
-				},
-			)
-			.post(
-				'/payments/:id/approve',
-				async ({ params, erp }) =>
-					ok(
-						await payments.approve(
-							ctxOf(erp),
-							ledgerIdParamSchema.parse(params).id,
-						),
-					),
-				{
-					erp: { permission: ['payment:approve'] },
-					detail: { description: 'submitted → approved (single approver role, D5)' },
-				},
-			)
-			.post(
-				'/payments/:id/execute',
-				async ({ params, erp }) =>
-					ok(
-						await payments.execute(
-							ctxOf(erp),
-							ledgerIdParamSchema.parse(params).id,
-						),
-					),
-				{
-					erp: { permission: ['payment:execute'] },
-					detail: {
-						description:
-							'approved → executed: allocates to invoices, updates the AR mirrors and posts the cash movement with its journal',
-					},
-				},
-			)
-			.post(
-				'/payments/:id/void',
-				async ({ params, body, erp }) =>
-					ok(
-						await payments.void(
-							ctxOf(erp),
-							ledgerIdParamSchema.parse(params).id,
-							paymentVoidSchema.parse(body).reason,
-						),
-					),
-				{
-					erp: { permission: ['payment:approve'] },
-					detail: {
-						description:
-							'Voids a not-yet-executed payment; executed payments go through /close/payment-void (F7 reversal)',
-					},
-				},
-			)
 			.post(
 				'/payments/:id/void-executed',
 				async ({ params, body, erp }) =>
@@ -263,7 +135,7 @@ export class PaymentController {
 				async ({ query, erp }) => {
 					const { asOfDate, customerId } = arAgingQuerySchema.parse(query);
 					const asOf = asOfDate ?? new Date().toISOString().slice(0, 10);
-					const items = await ledgerRepo.listArOpenItemsForAging(
+					const items = await arOpenItems.listArOpenItemsForAging(
 						erp.organizationId,
 						customerId,
 					);
@@ -326,10 +198,28 @@ export class PaymentController {
 				},
 			)
 			.get(
+				'/bills/billable-orders',
+				async ({ query }) =>
+					ok(await bills.billableOrders(z.object({ search: z.string().trim().max(100).optional() }).parse(query).search)),
+				{
+					erp: { permission: ['bill:create'] },
+					detail: { description: 'Purchase orders with received goods that are not billed yet (ERP-0012)' },
+				},
+			)
+			.post(
+				'/bills/from-purchase-order',
+				async ({ body, erp, status }) =>
+					status(201, created(await bills.createFromPurchaseOrder(ctxOf(erp), supplierBillFromOrderSchema.parse(body)))),
+				{
+					erp: { permission: ['bill:create'] },
+					detail: { description: 'Drafts a supplier bill from received purchase order lines (ERP-0012)' },
+				},
+			)
+			.get(
 				'/bills/:id',
 				async ({ params, erp }) =>
 					ok(
-						await bills.get(
+						await bills.detail(
 							erp.organizationId,
 							ledgerIdParamSchema.parse(params).id,
 						),
@@ -383,7 +273,7 @@ export class PaymentController {
 					erp: { permission: ['bill:record'] },
 					detail: {
 						description:
-							'draft → approved: posts DR expense / DR input tax / CR AP and opens the AP sub-ledger row',
+							'draft → approved: posts DR inventory (stock lines) / DR expense / DR input tax / CR AP and opens the AP sub-ledger row',
 					},
 				},
 			)
@@ -392,7 +282,7 @@ export class PaymentController {
 				async ({ query, erp }) => {
 					const { asOfDate, supplierId } = apAgingQuerySchema.parse(query);
 					const asOf = asOfDate ?? new Date().toISOString().slice(0, 10);
-					const items = (await ledgerRepo.listApOpenItemsForAging(
+					const items = (await apOpenItems.listApOpenItemsForAging(
 						erp.organizationId,
 						supplierId,
 					)) as Array<{

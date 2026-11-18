@@ -53,9 +53,9 @@ import {
  * with the borrowing engine to `assets` (Slice 3).
  */
 const STATUSES_BY_KIND: Record<ItemKind, readonly UnitStatus[]> = {
-	product: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
-	component: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
-	material: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty'],
+	product: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
+	component: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
+	material: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
 };
 
 /**
@@ -480,6 +480,54 @@ export class ItemService {
 		assertTransitionAllowed(item.itemKind as ItemKind, 'in_stock', 'sold');
 		const sold = await this.serialUnitRepository.sell(itemId, serialNumbers, data, tx);
 		return serialNumbers.filter((serial) => !sold.includes(serial));
+	}
+
+	/**
+	 * Serials a purchase return may send back: `in_stock` or `damaged` in one
+	 * warehouse (ERP-0068 / ERP-0065).
+	 */
+	supplierReturnableSerials(itemId: string, warehouseId: string): Promise<string[]> {
+		return this.serialUnitRepository.listSerialsInStatuses(itemId, warehouseId, ['in_stock', 'damaged']);
+	}
+
+	/**
+	 * Takes sold units back from a customer (`sold → in_stock | damaged`,
+	 * ERP-0065), inside the caller's transaction.
+	 *
+	 * @returns The serials that were not sold (the caller fails its
+	 * transaction when any are left)
+	 * @throws {InventoryRuleViolationError} When the item's kind cannot take that status
+	 */
+	async receiveCustomerUnits(
+		itemId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; binId: string | null; status: 'in_stock' | 'damaged'; stockMovementId: string | null },
+		tx: TTx,
+	): Promise<string[]> {
+		const item = await this.getItem(itemId);
+		assertTransitionAllowed(item.itemKind as ItemKind, 'sold', data.status);
+		const received = await this.serialUnitRepository.receiveFromCustomer(itemId, serialNumbers, data, tx);
+		return serialNumbers.filter((serial) => !received.includes(serial));
+	}
+
+	/**
+	 * Returns serialized units to their supplier (`in_stock → returned`,
+	 * ERP-0068), inside the caller's transaction.
+	 *
+	 * @returns The serials that were not in stock in that warehouse (the
+	 * caller fails its transaction when any are left)
+	 * @throws {InventoryRuleViolationError} When the item's kind cannot be returned
+	 */
+	async returnUnits(
+		itemId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; stockMovementId: string | null },
+		tx: TTx,
+	): Promise<string[]> {
+		const item = await this.getItem(itemId);
+		assertTransitionAllowed(item.itemKind as ItemKind, 'in_stock', 'returned');
+		const returned = await this.serialUnitRepository.returnToSupplier(itemId, serialNumbers, data, tx);
+		return serialNumbers.filter((serial) => !returned.includes(serial));
 	}
 
 	/**

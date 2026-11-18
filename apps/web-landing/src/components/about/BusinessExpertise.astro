@@ -1,0 +1,69 @@
+---
+import Check from "@lucide/astro/icons/check";
+import Media from "../ui/Media.astro";
+import { pillars } from "../../data/about";
+import { icons } from "../../lib/icons";
+import { images } from "../../lib/images";
+
+/** Pillar photos from the approved frame: swing gate, face terminal, access controller. */
+const pillarImages = [images.swingBarrierDouble, images.faceTerminal, images.accessController];
+
+/** 09.01 · Business Expertise: three disciplines. */
+---
+
+<section class="bg-white" aria-labelledby="expertise-title">
+  <div class="container-page flex flex-col gap-5 py-12 xl:gap-14 xl:py-28">
+    <div class="flex flex-col gap-2.5 xl:flex-row xl:items-end xl:justify-between">
+      <div class="flex flex-col gap-2.5 xl:w-[760px] xl:gap-3.5">
+        <p class="text-[12px] font-bold tracking-[1.4px] text-blue-600 uppercase xl:text-[13px] xl:tracking-[1.6px]">Business expertise</p>
+        <h2
+          id="expertise-title"
+          class="font-heading text-[28px] leading-8 font-bold tracking-[-0.7px] text-navy-900 xl:text-[44px] xl:leading-[48px] xl:tracking-[-1.2px]"
+        >
+          <span class="xl:hidden">Three disciplines, one roof.</span>
+          <span class="hidden xl:inline">Three disciplines under one roof.</span>
+        </h2>
+      </div>
+      <p class="hidden w-[380px] text-[16px] leading-[26px] text-fg-secondary xl:block">
+        From factory floor to cloud, IMS owns every stage of the access lifecycle.
+      </p>
+    </div>
+    <ul class="grid gap-5 xl:grid-cols-3 xl:gap-6">
+      {
+        pillars.map((pillar, index) => {
+          const Icon = icons[pillar.icon];
+          return (
+            <li class="flex flex-col overflow-hidden rounded-lg bg-surface xl:rounded-card">
+              <div class="relative isolate h-[170px] p-3.5 xl:h-60 xl:p-5">
+                <Media src={pillarImages[index]} alt="" class="absolute inset-0 -z-10 size-full bg-surface-2" />
+                <span class="rounded-pill bg-white px-2.5 py-[5px] text-[11px] font-bold text-navy-900 xl:px-3 xl:py-1.5 xl:text-[12px]">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+              </div>
+              <div class="flex flex-col gap-2.5 p-5 xl:gap-3.5 xl:p-8">
+                <div class="flex items-center gap-2.5 xl:gap-3">
+                  <span class="flex shrink-0 items-center justify-center text-blue-600 xl:size-10 xl:rounded-md xl:bg-white xl:ring-1 xl:ring-border xl:ring-inset">
+                    <Icon size={20} class="size-[18px] xl:size-5" aria-hidden="true" />
+                  </span>
+                  <h3 class="flex-1 font-heading text-[17px] font-bold text-navy-900 xl:text-[20px] xl:whitespace-nowrap">{pillar.title}</h3>
+                </div>
+                <p class="text-[14px] leading-[22px] text-fg-secondary xl:text-[15px] xl:leading-6">
+                  <span class="xl:hidden">{pillar.mobileDescription}</span>
+                  <span class="hidden xl:inline">{pillar.description}</span>
+                </p>
+                <ul class="hidden flex-col gap-2.5 pt-2 xl:flex">
+                  {pillar.bullets.map((bullet) => (
+                    <li class="flex items-center gap-2.5 text-[14px] font-medium text-fg">
+                      <Check size={16} class="text-blue-600" aria-hidden="true" />
+                      {bullet}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</section>

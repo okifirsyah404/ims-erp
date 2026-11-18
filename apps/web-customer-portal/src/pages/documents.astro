@@ -1,0 +1,137 @@
+---
+import Search from "@lucide/astro/icons/search";
+import Receipt from "@lucide/astro/icons/receipt";
+import FileText from "@lucide/astro/icons/file-text";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import PencilRuler from "@lucide/astro/icons/pencil-ruler";
+import Ellipsis from "@lucide/astro/icons/ellipsis";
+import Upload from "@lucide/astro/icons/upload";
+import Download from "@lucide/astro/icons/download";
+import CloudCheck from "@lucide/astro/icons/cloud-check";
+import FolderOpen from "@lucide/astro/icons/folder-open";
+import CustomerLayout from "../layouts/CustomerLayout.astro";
+import TopBar from "../components/customer/TopBar.astro";
+import LargeHeader from "../components/customer/LargeHeader.astro";
+import IconButton from "../components/customer/IconButton.astro";
+import SectionHeader from "../components/customer/SectionHeader.astro";
+import { customerService } from "../services";
+import { type DocumentFolder } from "@/api/portal";
+import { safeHref } from "../lib/safe-url";
+
+/** 05.08 Documents. `?folder=` narrows to one folder, `?q=` searches file names, `?sort=name` sorts A–Z. */
+const folderKeys: DocumentFolder[] = ["invoices", "quotations", "warranty", "drawings"];
+const folder = folderKeys.find((f) => f === Astro.url.searchParams.get("folder"));
+const library = await customerService.documents(Astro.locals.tokens!, folder);
+const q = (Astro.url.searchParams.get("q") ?? "").trim().slice(0, 80);
+const sort = Astro.url.searchParams.get("sort") === "name" ? "name" : "recent";
+const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+const files = library.files
+  .filter((f) => terms.every((t) => `${f.name} ${f.meta}`.toLowerCase().includes(t)))
+  .sort((a, b) => (sort === "name" ? a.name.localeCompare(b.name) : 0));
+const withParams = (changes: Record<string, string | undefined>) => {
+  const url = new URL(Astro.url);
+  for (const [key, value] of Object.entries(changes)) value ? url.searchParams.set(key, value) : url.searchParams.delete(key);
+  return `${url.pathname}${url.search}`;
+};
+const folderStyle = {
+  invoices: { icon: Receipt, card: "bg-blue-50", type: "bg-blue-50 text-blue-600", iconTone: "text-blue-600" },
+  quotations: { icon: FileText, card: "bg-warning-bg", type: "bg-warning-bg text-warning", iconTone: "text-warning" },
+  warranty: { icon: ShieldCheck, card: "bg-success-bg", type: "bg-success-bg text-success", iconTone: "text-success" },
+  drawings: { icon: PencilRuler, card: "bg-surface-2", type: "bg-surface-2 text-fg-muted", iconTone: "text-fg-secondary" },
+};
+const typeStyle = (file: (typeof library.files)[number]) =>
+  // Reports (PDFs among drawings) use the red PDF tile; everything else takes its folder colour.
+  file.kind === "pdf" && file.folder === "drawings" ? "bg-danger-bg text-danger" : folderStyle[file.folder].type;
+const current = library.folders.find((f) => f.key === folder);
+---
+
+<CustomerLayout title="Documents" tab="profile">
+  <TopBar back={folder ? "/documents" : "/profile"}>
+    <IconButton slot="action" label="Upload a document" disabled title="Uploading is coming soon" class="opacity-60"><Upload size={20} aria-hidden="true" /></IconButton>
+  </TopBar>
+  <LargeHeader eyebrow={`${library.total} files · synced with your account`} title={current?.label ?? "Documents"} class="!pt-0">
+    <IconButton slot="action" label="Search documents" href="#doc-search"><Search size={20} aria-hidden="true" /></IconButton>
+  </LargeHeader>
+
+  <div class="flex flex-col gap-5 px-5 pt-3 pb-6">
+    <form id="doc-search" method="get" action="/documents" role="search" class:list={["target:flex", q ? "flex" : "hidden"]}>
+      {folder && <input type="hidden" name="folder" value={folder} />}
+      {sort === "name" && <input type="hidden" name="sort" value="name" />}
+      <label class="flex h-12 flex-1 items-center gap-2.5 rounded-md bg-surface px-4 focus-within:bg-white focus-within:ring-[1.5px] focus-within:ring-blue-600 focus-within:ring-inset">
+        <Search size={18} class="text-fg-muted" aria-hidden="true" />
+        <span class="sr-only">Search documents</span>
+        <input type="search" name="q" value={q} maxlength="80" placeholder="Search file names" class="h-full min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-muted" />
+      </label>
+    </form>
+    {
+      !folder && !q && (
+        <ul class="grid grid-cols-2 gap-3">
+          {library.folders.map((f) => {
+            const style = folderStyle[f.key];
+            return (
+              <li>
+                <a href={`/documents?folder=${f.key}`} class:list={["flex h-[142px] flex-col justify-between gap-3.5 rounded-card p-4", style.card]}>
+                  <span class="flex items-center justify-between gap-2.5">
+                    <span class:list={["flex size-10 items-center justify-center rounded-md bg-white", style.iconTone]} aria-hidden="true">
+                      <style.icon size={19} />
+                    </span>
+                    <Ellipsis size={16} class="text-fg-muted" aria-hidden="true" />
+                  </span>
+                  <span class="flex flex-col gap-0.5">
+                    <span class="text-[14px] font-bold text-fg">{f.label}</span>
+                    <span class="text-[12px] font-medium text-fg-muted">{f.count} files</span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+
+    <SectionHeader
+      title={q ? `${files.length} result${files.length === 1 ? "" : "s"}` : folder ? `${current?.count ?? files.length} files` : "Recent files"}
+      linkLabel={sort === "name" ? "Sort: A–Z" : "Sort: Recent"}
+      href={withParams({ sort: sort === "name" ? undefined : "name" })}
+    />
+    {
+      files.length === 0 ? (
+        <div class="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-10 text-center">
+          <FolderOpen size={28} class="text-blue-600" aria-hidden="true" />
+          <p class="font-heading text-[17px] font-bold text-fg">{q ? "No matching files" : "No files yet"}</p>
+          <p class="text-[14px] text-fg-secondary">{q ? "Try part of the document number, e.g. INV-0431." : "Invoices, quotations and certificates appear here as they're issued."}</p>
+        </div>
+      ) : (
+        <ul class="flex flex-col rounded-card bg-white py-1 ring-1 ring-border ring-inset">
+          {files.map((file, index) => (
+            <li class:list={["flex items-center gap-3.5 px-4 py-3", index > 0 && "border-t border-border"]}>
+              <span class:list={["flex size-11 shrink-0 items-center justify-center rounded-md text-[11px] font-extrabold tracking-[0.5px] uppercase", typeStyle(file)]} aria-hidden="true">
+                {file.kind === "file" ? "FILE" : file.kind}
+              </span>
+              <span class="flex min-w-0 flex-1 flex-col gap-[3px]">
+                <span class="truncate text-[14px] font-semibold text-fg">{file.name}</span>
+                <span class="text-[12px] text-fg-muted">{file.meta}</span>
+              </span>
+              {
+                safeHref(file.url) ? (
+                  <a href={safeHref(file.url)} download class="flex size-9 shrink-0 items-center justify-center rounded-pill bg-surface text-fg" aria-label={`Download ${file.name}`}>
+                    <Download size={20} aria-hidden="true" />
+                  </a>
+                ) : (
+                  <span class="flex size-9 shrink-0 items-center justify-center rounded-pill bg-surface text-fg-muted/60" title="Downloads are available once connected to the ERP">
+                    <Download size={20} aria-hidden="true" />
+                  </span>
+                )
+              }
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    <p class="flex items-center gap-2.5 rounded-control bg-surface p-3.5 text-[12.5px] leading-[18px] text-fg-secondary">
+      <CloudCheck size={18} class="shrink-0 text-blue-600" aria-hidden="true" />
+      Files are available offline once downloaded and shared securely with your team.
+    </p>
+  </div>
+</CustomerLayout>

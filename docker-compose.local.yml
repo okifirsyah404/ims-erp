@@ -17,3 +17,25 @@ services:
       context: .
       dockerfile: apps/web-admin/Dockerfile
     image: ims-erp-web-admin:local
+
+  # PUBLIC_* values are inlined into the client bundle at build time, so they are
+  # build args here. Empty = the app's built-in production defaults.
+  web-landing:
+    build:
+      context: .
+      dockerfile: apps/web-landing/Dockerfile
+      args:
+        PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-}
+        PUBLIC_CUSTOMER_URL: ${PUBLIC_CUSTOMER_URL:-}
+        PUBLIC_WHATSAPP_NUMBER: ${PUBLIC_WHATSAPP_NUMBER:-6281280002020}
+    image: ims-erp-web-landing:local
+
+  web-customer-portal:
+    build:
+      context: .
+      dockerfile: apps/web-customer-portal/Dockerfile
+      args:
+        PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-}
+        PUBLIC_SUPPORT_WHATSAPP: ${PUBLIC_SUPPORT_WHATSAPP:-}
+        PUBLIC_SUPPORT_PHONE: ${PUBLIC_SUPPORT_PHONE:-}
+    image: ims-erp-web-customer-portal:local

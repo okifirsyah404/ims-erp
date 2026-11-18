@@ -1,0 +1,210 @@
+---
+import Lock from "@lucide/astro/icons/lock";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import ShoppingBag from "@lucide/astro/icons/shopping-bag";
+import Trash from "@lucide/astro/icons/trash";
+import Minus from "@lucide/astro/icons/minus";
+import Plus from "@lucide/astro/icons/plus";
+import Truck from "@lucide/astro/icons/truck";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import Headset from "@lucide/astro/icons/headset";
+import PublicLayout from "../layouts/PublicLayout.astro";
+import Stepper from "../components/ui/Stepper.astro";
+import { checkoutSteps } from "../data/checkout";
+import { routes } from "../data/site";
+import { getClientCatalog } from "../lib/catalog";
+
+/**
+ * 03.03 Checkout · step 1 (Cart). The frame designs steps 2–3; the cart uses the same head,
+ * stepper and summary card. Lines live in localStorage and render client-side; prices
+ * come from the server catalog and are re-checked when the order is placed.
+ */
+export const prerender = false;
+
+const catalog = await getClientCatalog();
+const steps = checkoutSteps.map((label) => ({ label }));
+const perks = [
+  { icon: Truck, title: "Ships in 3–5 days", text: "From our Bekasi warehouse" },
+  { icon: ShieldCheck, title: "2-year warranty", text: "Parts & on-site labour" },
+  { icon: Headset, title: "Local support", text: "Jakarta · Surabaya · Medan" },
+];
+---
+
+<PublicLayout title="Your cart | Entragate" description="Review the Entragate products in your cart before checkout.">
+  <section class="border-b border-border bg-surface">
+    <div class="container-page flex flex-col gap-4 pt-6 pb-5 xl:gap-6 xl:pt-10 xl:pb-8">
+      <div class="flex items-end justify-between gap-3">
+        <div class="flex flex-col gap-2">
+          <h1 class="font-heading text-[30px] font-extrabold tracking-[-1px] text-navy-900 xl:text-[44px] xl:tracking-[-1.4px]">Your cart</h1>
+          <p class="hidden text-[16px] text-fg-secondary xl:block">Ready-stock items · ships from our Bekasi warehouse</p>
+        </div>
+        <p class="flex items-center gap-2 text-[14px] font-semibold text-success"><Lock size={16} aria-hidden="true" /><span class="xl:hidden">Secure</span><span class="hidden xl:inline">Secure checkout · SSL encrypted</span></p>
+      </div>
+      <Stepper steps={steps} current={0} mobileLabel="Review your cart" />
+    </div>
+  </section>
+
+  <div class="container-page flex flex-col gap-6 py-6 xl:flex-row xl:items-start xl:gap-8 xl:pt-10 xl:pb-24" data-cart>
+    <div class="flex min-w-0 flex-1 flex-col gap-4">
+      <noscript>
+        <p class="rounded-lg bg-warning-bg p-4 text-[14px] text-fg ring-1 ring-warning-border ring-inset">
+          Your cart needs JavaScript. You can still <a href={routes.quote} class="font-semibold underline">request a quotation</a>.
+        </p>
+      </noscript>
+      <div class="flex flex-col items-center gap-4 rounded-card bg-white px-6 py-12 text-center ring-1 ring-border ring-inset" data-cart-empty hidden>
+        <span class="flex size-16 items-center justify-center rounded-pill bg-blue-50 text-blue-600"><ShoppingBag size={28} aria-hidden="true" /></span>
+        <h2 class="font-heading text-[20px] font-bold text-navy-900">Your cart is empty</h2>
+        <p class="max-w-[420px] text-[14px] text-fg-secondary">Browse ready-stock gates, readers and accessories — or build a complete system and get a formal quotation.</p>
+        <div class="flex flex-wrap justify-center gap-3">
+          <a href={routes.products} class="rounded-md bg-blue-600 px-5 py-3 text-[14px] font-semibold text-white shadow-cta hover:bg-blue-700">Browse products</a>
+          <a href={routes.build} class="rounded-md bg-white px-5 py-3 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface">Build your solution</a>
+        </div>
+      </div>
+      <ul class="flex flex-col gap-3" data-cart-lines></ul>
+      <div class="flex flex-col gap-3 rounded-lg bg-warning-bg p-4 ring-1 ring-warning-border ring-inset" data-quote-only hidden>
+        <p class="text-[14px] text-fg"><strong>Some items need a project quotation</strong> — they're priced after a site survey and can't be paid online.</p>
+        <button type="button" class="flex w-fit items-center gap-2 text-[14px] font-bold text-blue-600 hover:underline" data-move-to-quote>
+          Move them to a quotation request <ArrowRight size={15} aria-hidden="true" />
+        </button>
+      </div>
+      <ul class="grid gap-3 sm:grid-cols-3">
+        {
+          perks.map(({ icon: Icon, title, text }) => (
+            <li class="flex items-center gap-3 rounded-md bg-surface p-3.5">
+              <Icon size={18} class="shrink-0 text-blue-600" aria-hidden="true" />
+              <span class="flex flex-col"><span class="text-[13px] font-semibold text-fg">{title}</span><span class="text-[12px] text-fg-muted">{text}</span></span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <aside class="flex flex-col gap-4 xl:sticky xl:top-24 xl:w-[440px] xl:shrink-0" data-cart-summary hidden>
+      <div class="flex flex-col gap-[18px] rounded-lg bg-white p-6 shadow-[0_16px_40px_#0A1A3F14] ring-1 ring-border ring-inset xl:p-7">
+        <h2 class="font-heading text-[20px] font-extrabold text-fg xl:text-[22px]">Order summary</h2>
+        <dl class="flex flex-col gap-3 text-[14px]">
+          <div class="flex justify-between"><dt class="text-fg-muted">Subtotal (<span data-cart-units>0</span> items)</dt><dd class="font-semibold text-fg" data-cart-subtotal></dd></div>
+          <div class="flex justify-between"><dt class="text-fg-muted">Shipping &amp; installation</dt><dd class="text-fg-muted">Next step</dd></div>
+          <div class="flex justify-between"><dt class="text-fg-muted">PPN 11%</dt><dd class="text-fg-muted">At checkout</dd></div>
+        </dl>
+        <a href={routes.checkout} class="flex items-center justify-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700 aria-disabled:pointer-events-none aria-disabled:opacity-50" data-to-checkout>
+          Continue to shipping <ArrowRight size={16} aria-hidden="true" />
+        </a>
+        <p class="text-center text-[13px] text-fg-muted">Your order appears instantly in the Customer Portal for tracking.</p>
+      </div>
+      <div class="flex flex-col gap-2 rounded-lg bg-surface p-[22px]">
+        <p class="text-[16px] font-bold text-fg">Buying for a project?</p>
+        <p class="text-[13.5px] leading-5 text-fg-secondary">Request a formal quotation for volume pricing and installation.</p>
+        <button type="button" class="flex w-fit items-center gap-1.5 text-[14px] font-bold text-blue-600 hover:underline" data-cart-to-quote>
+          Request a quotation <ArrowRight size={15} aria-hidden="true" />
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <template id="cart-line-template">
+    <li class="flex gap-3.5 rounded-lg bg-white p-3.5 ring-1 ring-border ring-inset xl:items-center xl:gap-5 xl:p-4">
+      <a data-href class="size-[72px] shrink-0 overflow-hidden rounded-md bg-surface xl:size-[88px]"><img data-image alt="" class="size-full object-cover" loading="lazy" /></a>
+      <div class="flex min-w-0 flex-1 flex-col gap-2 xl:flex-row xl:items-center xl:gap-6">
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+          <p class="text-[11px] font-bold tracking-[1px] text-blue-600 uppercase" data-category></p>
+          <a data-href class="text-[15px] font-bold text-fg hover:text-blue-600" data-name></a>
+          <p class="text-[12.5px] text-fg-muted" data-meta></p>
+        </div>
+        <div class="flex items-center justify-between gap-4 xl:justify-end">
+          <div class="flex items-center gap-1 rounded-md p-1 ring-1 ring-border ring-inset">
+            <button type="button" class="flex size-8 items-center justify-center rounded-sm text-fg hover:bg-surface" data-dec aria-label="Decrease quantity"><Minus size={14} aria-hidden="true" /></button>
+            <input type="number" min="1" max="999" inputmode="numeric" class="w-10 bg-transparent text-center text-[14px] font-bold text-fg outline-none" data-qty aria-label="Quantity" />
+            <button type="button" class="flex size-8 items-center justify-center rounded-sm text-fg hover:bg-surface" data-inc aria-label="Increase quantity"><Plus size={14} aria-hidden="true" /></button>
+          </div>
+          <p class="w-[130px] text-right text-[15px] font-bold text-fg" data-line-total></p>
+          <button type="button" class="flex size-9 items-center justify-center rounded-md text-fg-muted hover:bg-danger-bg hover:text-danger" data-remove aria-label="Remove"><Trash size={16} aria-hidden="true" /></button>
+        </div>
+      </div>
+    </li>
+  </template>
+  <script type="application/json" id="cart-catalog" set:html={JSON.stringify(catalog)} />
+</PublicLayout>
+
+<script>
+  import { CART_EVENT, getCart, removeFromCart, setCartQty, type CartLine } from "../lib/client/cart";
+  import { readRfqItems, writeRfqItems } from "../lib/client/rfq-items";
+  import { formatRupiah } from "../lib/format";
+
+  type Product = { slug: string; name: string; category: string; specs: string; price: number | null; stock: string; image?: string };
+  const catalog = new Map<string, Product>(
+    (JSON.parse(document.getElementById("cart-catalog")?.textContent ?? "[]") as Product[]).map((p) => [p.slug, p]),
+  );
+  const root = document.querySelector<HTMLElement>("[data-cart]")!;
+  const list = root.querySelector<HTMLUListElement>("[data-cart-lines]")!;
+  const template = document.getElementById("cart-line-template") as HTMLTemplateElement;
+  const purchasable = (p?: Product) => Boolean(p && p.price !== null && p.stock !== "out");
+
+  const moveToQuote = (lines: CartLine[]) => {
+    const items = readRfqItems();
+    for (const line of lines) {
+      const existing = items.find((i) => i.slug === line.slug && JSON.stringify(i.options ?? {}) === JSON.stringify(line.options ?? {}));
+      if (existing) existing.qty += line.qty;
+      else items.push({ ...line });
+    }
+    writeRfqItems(items);
+  };
+
+  const render = () => {
+    const lines = getCart().filter((l) => catalog.has(l.slug));
+    root.querySelector<HTMLElement>("[data-cart-empty]")!.hidden = lines.length > 0;
+    root.querySelector<HTMLElement>("[data-cart-summary]")!.hidden = lines.length === 0;
+    const quoteOnly = lines.filter((l) => !purchasable(catalog.get(l.slug)));
+    root.querySelector<HTMLElement>("[data-quote-only]")!.hidden = quoteOnly.length === 0;
+
+    list.replaceChildren(
+      ...getCart().flatMap((line, index) => {
+        const product = catalog.get(line.slug);
+        if (!product) return [];
+        const row = template.content.firstElementChild!.cloneNode(true) as HTMLElement;
+        row.querySelectorAll<HTMLAnchorElement>("[data-href]").forEach((a) => (a.href = `/products/${product.slug}`));
+        const img = row.querySelector<HTMLImageElement>("[data-image]")!;
+        if (product.image) img.src = product.image;
+        else img.remove();
+        row.querySelector("[data-category]")!.textContent = product.category;
+        row.querySelector("[data-name]")!.textContent = product.name;
+        const options = line.options ? Object.values(line.options).join(" · ") : product.specs;
+        row.querySelector("[data-meta]")!.textContent = purchasable(product) ? `${options} · ${formatRupiah(product.price!)} each` : `${options} · Project pricing`;
+        const qty = row.querySelector<HTMLInputElement>("[data-qty]")!;
+        qty.value = String(line.qty);
+        row.querySelector("[data-line-total]")!.textContent = purchasable(product) ? formatRupiah(product.price! * line.qty) : "Quote";
+        row.querySelector("[data-dec]")!.addEventListener("click", () => setCartQty(index, line.qty - 1));
+        row.querySelector("[data-inc]")!.addEventListener("click", () => setCartQty(index, line.qty + 1));
+        qty.addEventListener("change", () => setCartQty(index, Number(qty.value) || 1));
+        row.querySelector("[data-remove]")!.addEventListener("click", () => removeFromCart(index));
+        row.querySelector("[data-remove]")!.setAttribute("aria-label", `Remove ${product.name}`);
+        return [row];
+      }),
+    );
+
+    const buyable = lines.filter((l) => purchasable(catalog.get(l.slug)));
+    const subtotal = buyable.reduce((sum, l) => sum + catalog.get(l.slug)!.price! * l.qty, 0);
+    root.querySelector("[data-cart-subtotal]")!.textContent = formatRupiah(subtotal);
+    root.querySelector("[data-cart-units]")!.textContent = String(buyable.reduce((n, l) => n + l.qty, 0));
+    const toCheckout = root.querySelector<HTMLAnchorElement>("[data-to-checkout]")!;
+    if (buyable.length) toCheckout.removeAttribute("aria-disabled");
+    else toCheckout.setAttribute("aria-disabled", "true");
+  };
+
+  root.querySelector("[data-move-to-quote]")?.addEventListener("click", () => {
+    const cart = getCart();
+    const quoteOnly = cart.filter((l) => !purchasable(catalog.get(l.slug)));
+    moveToQuote(quoteOnly);
+    // Remove from the end so indexes stay valid.
+    cart.map((l, i) => [l, i] as const).filter(([l]) => quoteOnly.includes(l)).reverse().forEach(([, i]) => removeFromCart(i));
+    location.assign("/quote");
+  });
+  root.querySelector("[data-cart-to-quote]")?.addEventListener("click", () => {
+    moveToQuote(getCart());
+    location.assign("/quote");
+  });
+
+  window.addEventListener(CART_EVENT, render);
+  window.addEventListener("storage", render);
+  render();
+</script>

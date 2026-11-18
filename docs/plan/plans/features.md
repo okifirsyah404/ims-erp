@@ -241,14 +241,71 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 
 ## M02 CRM and Sales
 
+### implemented (follow-ups)
+- Before-sales follow-up reminders to WhatsApp through n8n: a lead whose
+  follow-up date arrived goes to its owner (overdue > 3 days also to the
+  sales manager); a sent quotation without an answer after 3 and 7 days, and
+  2 days before it expires, goes to its creator. Weekdays 08:00, internal
+  only — ERP-0066. Evidence: `crm/services/lead.service.ts`
+  (`publishFollowUpNotices`), `sales/services/quotation.service.ts`,
+  `test/unit/lead.service.test.ts`, `test/unit/quotation.service.test.ts`,
+  `progress.md` 2026-11-16 (live ERP → n8n run). Gaps: after-sales
+  follow-ups (survey, maintenance, warranty) are next.
+
+### implemented (document PDFs)
+- Quotation (SPH) PDF on sending: rendered server-side from the print page
+  (headless Chromium), kept on the registry document with a 30-day revocable
+  link, carried by `quotation.sent` so n8n can send it to the customer
+  (customer messages off by default) — ERP-0067. Evidence:
+  `sales/services/quotation-delivery.service.ts`,
+  `test/unit/quotation-delivery.service.test.ts`,
+  `test/unit/document.service.test.ts`, `progress.md` 2026-11-17 (live
+  Chromium render). Gaps: other documents (SO, invoice, delivery note),
+  Chromium in the Docker image.
+
 ### planned
 - One template per document — T05. Evidence: dbml `documents` only.
 - Checkout / online orders — T21, ERP-0020. Evidence: dbml `commerce` only.
-- Payment gateway callbacks + reconciliation — T22, ERP-0020. Evidence: none
-  (payment ledger is `finance.payments`, M09; `sales.payments` is scheduled
-  for removal at step S7 in `docs/database/implementation-phases.md`).
+- Gateway reconciliation (fees, gross / net settlement) — T22, ERP-0020.
+  Evidence: none (payment ledger is `finance.payments`, M09; `sales.payments`
+  is scheduled for removal at step S7 in
+  `docs/database/implementation-phases.md`).
+- Document renderer + template editor — T05. Evidence: `GET/POST
+  /documents/templates` exist, no render step, `documents/templates.tsx` is a
+  stub. Print stays browser-print (no PDF library); `pdfmake` is the candidate
+  only if an automatic PDF file is ever needed.
+- External signers on the signature flow (customer/partner via a public token
+  link) — `document.signatures.signer_type` and the `document.shares` token
+  pattern are the upgrade path. Evidence: internal-only V1 ships (below).
+- Drawing the signature on a canvas at signing time (slice 3 of the image
+  question): today the signer uploads an image and reuses it.
+- Generating a PDF from the app's own HTML layouts: the signed-PDF slice stamps
+  an *uploaded* PDF only; print browser stays the default.
+
+### in-progress
+- Online payment of invoices (payment gateway) — T21/T22, ERP-0020, ADR-0021.
+  Evidence: `apps/backend/src/app/payment` (`GatewayPaymentService`,
+  `adapters/` Xendit / SingaPay / fake), `payment.gateway_payments`
+  (ADR-0023; migration `20261117172959_erp0020_payment_gateway`),
+  `test/unit/payment-gateway.test.ts`, invoice page card, `progress.md`
+  2026-11-14 (API e2e 24/24, browser). Gaps: no provider sandbox yet,
+  reconciliation, portal pay button.
 
 ### implemented
+- Document signature requests (ask internal users to sign, sign/decline,
+  cancel, immutable evidence), the per-user signature image, and placing that
+  signature on a PDF uploaded to the document — T05, ERP-0048 / ERP-0049.
+  Evidence: `apps/backend/src/app/document` (`signature.service.ts`,
+  `signature.controller.ts`, `repositories/signature.repository.ts`),
+  `document.signature_requests` + `document.user_signatures` + the three
+  placement columns on `document.signatures` (migrations
+  `20261116112133_erp0048_signature_requests`,
+  `20261116173810_erp0048_signed_pdf`),
+  `test/unit/signature.service.test.ts` (33 tests) + 15 route-guard tests,
+  `/documents/signatures/{documents,request,mine}` pages, the placement page
+  `…/mine/$requestId/place` and the Signatures card on
+  `/documents/files/$documentId`, `progress.md` 2026-11-16 and 2026-11-17.
+  Gaps: no committed e2e, external signers, canvas-drawn signatures.
 - Customers + contacts — T05, ERP-0004/0005. Evidence: `apps/backend/src/app/crm`,
   `test/unit/customer.service.test.ts`, `/crm/customers` pages, `progress.md`
   2026-11-05 (ADR-0011 step 3a). Gaps: real-PG integration tests, e2e.
@@ -278,12 +335,13 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   review of the serial-unit contract, real-PG integration tests, returns.
 - Invoices with free billing terms, DP, receipts (kwitansi), invoice print
   in the company's exact layout — T05, ERP-0011. Evidence:
-  `apps/backend/src/app/finance`, `test/unit/invoice.service.test.ts`,
+  `apps/backend/src/app/sales` (`InvoiceService` with the journal +
+  `InvoiceBillingService` for terms, restored 2026-11-14 after the PR #68
+  merge had dropped them), `test/unit/invoice-billing.service.test.ts`,
   `/sales/invoices`, `/sales/down-payments`, `/sales/receipts`,
-  `progress.md` 2026-11-06 (ADR-0011 step 3d-2). Gaps: real-PG integration
-  tests, e2e, kwitansi print (no sample), `finance.payments` ledger (S7).
-  Since the PR #68 merge the Sales invoice API on main no longer matches the
-  web billing card / void calls (`progress.md` 2026-11-12, "UAT scripts").
+  `progress.md` 2026-11-06 (ADR-0011 step 3d-2) and 2026-11-14 (fix, API
+  e2e 19/19, browser check). Gaps: kwitansi print (no sample),
+  `finance.payments` ledger (S7).
 
 ## M03 Subscription and Licensing
 
@@ -296,6 +354,18 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   Evidence: `progress.md` 2026-11-06 (M03 stage 2): `/licensing/v1`,
   `/subscription/api-keys`, `/subscription/activations`; 12 + 11 unit tests,
   e2e. Not yet accepted by the owner.
+
+- License API docs for own applications (gym, e-ticketing, visitor, …) —
+  T24 groundwork, ERP-0019. Evidence: `docs/architecture/modules/licensing-integration.md`
+  + `docs/architecture/api/licensing.yaml` (moved into `docs/architecture/` from a separate docs site
+  site), `progress.md` 2026-11-14.
+
+- License API keys issued as the acting member — ERP-0019, PR #104. Evidence:
+  `progress.md` 2026-11-15; keys stay organization-owned but Better Auth is
+  called as the signing member (`issuedBy` in metadata, "Issued by" /
+  "Revoked by" on `/subscription/api-keys`), Better Auth `/api-key/*` HTTP
+  routes closed, refusals map to `403 licensing.apiKey.notPermitted`. Not yet
+  accepted by the owner.
 
 ### blocked
 - Pilot application licensing integration — T24. Needs pilot app source access.
@@ -383,16 +453,36 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   green, WS smoke test committed, live HTTP inbox and browser live badge verified;
   second-user live arrival verified in two runs (see `progress.md`). Verified.
 
+## M02 sales returns (ERP-0065)
+
+### implemented
+- Sales returns (retur penjualan) from a shipped delivery note, replacement
+  only: one-level approval, condition per line on receiving (`good` back to
+  stock, `damaged` serial units flagged), `return_in` at the delivery cost,
+  the order re-opened for the replacement delivery — ERP-0065. Evidence:
+  `sales/services/sales-return.service.ts`,
+  `test/unit/sales-return.service.test.ts`, `/sales/returns`, `progress.md`
+  2026-11-16 (API e2e 28/28, browser walk-through). Gaps: reviewer sign-off,
+  a printed return document, real-PG integration tests.
+
 ## M05 Inventory and Purchasing
 
 ### planned
 - Inventory movement boundaries / valuation + GL reconciliation — ERP-0014
   (re-scoped into S1–S4; valuation deferred, OPEN-3).
-- Payables (supplier invoices) — T07, ERP-0012 / ERP-0035. Evidence: none.
 - Stock value in the GL (journals) — T07, ERP-0014. Evidence: none (the
   value view exists, see implemented).
 
 ### implemented
+- Payables from goods receipts: finance bills a purchase order for what was
+  received and not billed yet (order price and VAT, supplier invoice number),
+  recording debits Persediaan for stock lines — T07, ERP-0012 / ERP-0035.
+  Evidence: `accounting/services/supplier-bill.service.ts`,
+  `procurement/services/purchase-billing.service.ts`,
+  `test/accounting/bill-from-order.test.ts`, `/finance/payables`,
+  `progress.md` 2026-11-16 (API e2e 16/16). Gaps: the Persediaan account
+  code `1-1400` is provisional (finance gate); no credit note when goods are
+  returned after billing; reviewer sign-off.
 - Suppliers (bank details restricted) and purchase orders with one-level
   approval and the company's PO print — T07, ERP-0035. Evidence:
   `apps/backend/src/app/procurement`, `test/unit/procurement.service.test.ts`,
@@ -412,6 +502,13 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   `test/unit/adjustment.service.test.ts`, `test/unit/stock-valuation.service.test.ts`,
   `/inventory/stock/value`, `progress.md` 2026-11-06 (step 5b). Gaps:
   programmer A's review; the adjustment form's warehouse list is admin-only.
+- Purchase returns (retur pembelian) from a BPB, replacement only: one-level
+  approval, `return_out` stock movement and serial units `returned` on
+  shipping, the PO re-opened for the replacement — ERP-0068. Evidence:
+  `procurement/services/purchase-return.service.ts`,
+  `test/unit/purchase-return.service.test.ts`, `/procurement/purchase-returns`,
+  `progress.md` 2026-11-15 (API e2e 34/34, browser walk-through). Gaps:
+  reviewer sign-off, a printed return document, real-PG integration tests.
 - Stock ledger S3 — ERP-0028. Evidence:
   `apps/backend/src/app/inventory/services/stock.service.ts`,
   `test/unit/stock.service.test.ts` (22 tests), UI
@@ -455,6 +552,12 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   to implemented 2026-11-10 (see above).
 
 ### implemented
+- Purchase requests (PR → PO by lines, free-text lines mapped on the PO,
+  one-level approval, company-wide) — T07, ERP-0063 (2026-11-15). Evidence:
+  `procurement/services/purchase-request.service.ts`,
+  `repositories/request-ordering.ts`, `test/unit/purchase-request.service.test.ts`,
+  `/procurement/purchase-requests`, `progress.md` 2026-11-15 (API e2e 32/32,
+  browser). Not yet accepted by the owner.
 - Minimal HR employees + warehouse PIC — ERP-0034 (2026-11-10). Invite-first
   employee CRUD (`/hr/employees`: list/detail/create/patch/archive + picker),
   `hr.employees` with nullable organization (company-level rows) and
@@ -517,10 +620,24 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 
 ## M07 Projects and After-Sales
 
-### planned
-- Portal: project/BAST status + own tickets — T26, ERP-0022. Evidence: none.
-
 ### implemented
+- Customer portal stage 1 — T26 + the account part of T25, ERP-0022
+  (ADR-0022): one login per customer contact with a role, staff invitations,
+  owners manage colleagues, individuals sign up with an emailed code, the web
+  admin refuses customer logins; `/portal/v1` sign-in (lockout), projects
+  with milestones/BASTs/files (no costs), service tickets opened, discussed
+  and confirmed by the customer (staff thread with internal notes), devices
+  and warranties. Evidence: `src/app/portal`,
+  `test/unit/customer-portal.test.ts`, `progress.md` 2026-11-14 (e2e 50/50).
+  Gaps: the website adapter routes not wired; stage 2 (orders, quotations,
+  invoices, documents, attachments) planned.
+- Customer-facing UI in the monorepo: the public website and the customer
+  portal (Astro) moved from the separate `entragate-platform` repository into
+  `apps/` as root workspaces — `@ims-erp/web-landing` (:4321),
+  `@ims-erp/web-customer-portal` (:4322), `@ims-erp/design-tokens`; one
+  `bun.lock`, `astro check`/`astro build` wired into turbo. The ERP contract
+  clients live in each app (`src/api/`), not in a shared package. Evidence: `progress.md` 2026-11-15 (astro check 0 errors, astro
+  build passes) and 2026-11-18 (rename to `@ims-erp/*`, merge onto main).
 - Projects from a deal: PIC, targets, stage, default checklist with
   assignees, testing / training / BAST evidence (closing rule), direct costs
   with receipts, shipped material value and margin (cost-restricted) — T08,
@@ -709,6 +826,19 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - ERP-0037 Port M02/M05/M07 onto main (ADR-0011): steps 1-2 implemented
 
 ### implemented
+- ERP-0064 Dynamic company branding + login onboarding image (2026-11-17).
+  `company.profiles.onboarding_object_key` (WebP via `storeDocumentImage`,
+  S3/MinIO); `PUT/DELETE /company/profile/onboarding`; public
+  `GET /company/branding` -> `{ name, onboardingUrl }` (no guard);
+  `ICompanyService.getDisplayName()`; emails and the tax XLSX creator take
+  `tradingName ?? legalName` over `APP_NAME` env (fallback `'ERP'`); the
+  login page subtitle and hero image come from branding
+  (`/hero.png` fallback). Upload fields live on an "Images" card on
+  `/settings/company` (user request; supersedes the ERP-0045c logo
+  placement on `/settings/documents`, which now holds the document settings
+  only and gains an `open: true` nav leaf). Evidence: `progress.md`
+  2026-11-17; backend 1133 tests, web-admin 119, locales 98; live HTTP +
+  browser verified.
 - ERP-0045c Settings section (2026-11-13). Sidebar `Settings` after
   Administration: Company, Code numbering, Document. `/settings/company`,
   `/settings/code-numbers`, `/settings/documents`; `/admin/company` and

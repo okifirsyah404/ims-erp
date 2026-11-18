@@ -1,0 +1,10 @@
+---
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import RegisterDevice from "../../features/products/RegisterDevice";
+
+/** 08.06 Register Device (camera scanner + manual serial entry). */
+---
+
+<CustomerLayout title="Register device" section="profile" mainClass="!pb-0 bg-[#060F26]">
+  <RegisterDevice client:load />
+</CustomerLayout>

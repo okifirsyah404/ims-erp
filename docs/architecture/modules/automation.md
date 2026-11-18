@@ -53,12 +53,55 @@ Amounts are integer IDR minor units (divide by 100 for rupiah). Topics:
 | `service_ticket.updated` | After-sales: every ticket change | `ticketId`, `code`, `change` (`created / assigned / started / resolved / reopened / closed`), `status`, `customer{id,name,phone,whatsapp,email}`, `reporterName`, `reporterContact`, `assignee{userId,name}`, `resolution`, `serviceCost` |
 | `whatsapp.handoff` | WhatsApp assistant: chat handed to an admin | `conversationId`, `phone`, `contactName`, `reason` (`no_provider / not_found / human_requested / restricted / error`), `question` |
 | `license.due` | Licensing: daily job | `contractId`, `code`, `threshold` (30 / 7 / 0), `stage` (`ending / ended`), `daysLeft`, `endDate`, `graceEndsOn`, `application{code,name}`, `customer{…}` |
+| `lead.follow_up_due` | CRM: weekday job (ERP-0066) | `leadId`, `reference`, `name`, `companyName`, `phone`, `whatsapp`, `email`, `status`, `source`, `needs`, `estimatedValue`, `nextFollowUpAt`, `dueDate`, `daysOverdue`, `stage` (`due` / `overdue` = more than 3 days late), `owner{userId,name,phone,email}` or null |
+| `quotation.sent` | Sales: quotation sent (ERP-0067) | `quotationId`, `code`, `title`, `sentAt`, `validUntil`, `grandTotal`, `currencyCode`, `customer{id,name,email,phone,whatsapp}`, `owner{userId,name,phone,email}` (the creator), `pdf{url,fileName,expiresAt}` or null |
+| `quotation.follow_up_due` | Sales: weekday job (ERP-0066) | `quotationId`, `code`, `title`, `stage` (`sent_3d` / `sent_7d` / `expiring`), `sentDate`, `daysSinceSent`, `validUntil`, `daysLeft`, `grandTotal`, `currencyCode`, `customer{id,name}`, `owner{userId,name,phone,email}` (the creator) |
+| `supplier_bill.recorded` | Finance: supplier bill recorded (ERP-0012) | `billId`, `organizationId`, `code`, `supplierInvoiceNumber`, `purchaseOrderId`, `status`, `billDate`, `dueDate`, `grandTotal`, `paidTotal`, `outstandingTotal`, `supplier{id,code,name,phone,email,picName,picPhone}` (never bank details), `recordedBy` |
+| `supplier_bill.due` | Finance: daily job (ERP-0012) | same as `supplier_bill.recorded` plus `threshold` (7 / 0), `stage` (`upcoming / due / overdue`), `daysLeft` |
+| `purchase_return.updated` | Procurement: purchase return submitted, approved, rejected, shipped or cancelled (ERP-0068) | `returnId`, `code`, `change` (`submitted / approved / rejected / shipped / cancelled`), `status`, `returnDate`, `reason`, `rejectionReason`, `cancelledReason`, `goodsReceiptCode`, `purchaseOrderCode`, `supplier{id,code,name,phone,email,picName,picPhone,picEmail}`, `lines[{sku,name,unit,quantity,serialNumbers}]`, `totalAmount`, `actorUserId` |
+| `sales_return.updated` | Sales: customer return submitted, approved, rejected, received or cancelled (ERP-0065) | `returnId`, `code`, `change` (`submitted / approved / rejected / received / cancelled`), `status`, `returnDate`, `reason`, `rejectionReason`, `cancelledReason`, `deliveryNoteCode`, `salesOrderCode`, `customer{id,code,name,email,phone,whatsapp}`, `lines[{sku,name,unit,quantity,serialNumbers,condition}]`, `totalAmount`, `actorUserId` |
 
 `license.due` runs from the BullMQ queue `licensing-due` (cron
 `SCHEDULER_LICENSE_DUE_CRON`, default `0 8 * * *` Asia/Jakarta, only with
 `SCHEDULER_ENABLED=true`). Each contract, end date and threshold is published
 once (`outbox_messages.dedupe_key`), so a re-run or a missed day never
 duplicates a reminder.
+
+`lead.follow_up_due` and `quotation.follow_up_due` run from the BullMQ queues
+`lead-follow-up` and `quotation-follow-up` (cron `SCHEDULER_SALES_FOLLOW_UP_CRON`,
+default `0 8 * * 1-5`, weekdays 08:00 Asia/Jakarta, only with
+`SCHEDULER_ENABLED=true`). Leads: open (not won/lost) with `next_follow_up_at`
+today or past, once per planned time and stage (`due`, then `overdue` after 3
+days). Quotations: still `sent` 3 and 7 days after sending (one "sent" stage per
+run, 7 wins) and 2 days before `valid_until` (`expiring`), once per stage.
+Internal only: n8n messages the owner, not the customer.
+
+`quotation.sent` is published by the BullMQ queue `quotation-sent` (ERP-0067),
+not in the "send" request: marking a quotation sent only enqueues a job (a
+queue outage is logged, the quotation stays sent). The job renders the SPH
+print view (`/print/quotations/:id?token=` on the web admin, a 2-minute HMAC
+render token, no session) with headless Chromium to an A4 PDF, stores it on the
+quotation's registry document, opens a public link for `PDF_LINK_DAYS`
+(default 30, revocable from the document screen) and publishes the event with
+`pdf.url` = `/public/v1/documents/<token>/file`. Three attempts (30 s, then
+1 min); the last one publishes with `pdf: null` instead of not at all. One
+event per sending (`dedupe_key` = quotation and `sent_at`). No Chromium
+configured (`PDF_CHROMIUM_PATH` empty) = the event goes out without a PDF.
+Whether n8n sends the PDF to the customer is n8n's `notifyCustomers` switch
+(default off).
+
+**Chromium in Docker (not verified).** The runtime image has no browser. To
+turn PDFs on, add `chromium` (and a font package such as `font-noto`) to the
+runtime stage and set `PDF_CHROMIUM_PATH=/usr/bin/chromium`;
+`PDF_RENDER_BASE_URL` must reach the web admin from the backend container.
+`playwright-core` survives `bun build --compile` (probed 2026-11-17 on
+Windows: a compiled binary run outside the repo printed a PDF).
+
+`supplier_bill.due` works the same way from the BullMQ queue
+`supplier-bill-due` (cron `SCHEDULER_BILL_DUE_CRON`, default `0 8 * * *`
+Asia/Jakarta, only with `SCHEDULER_ENABLED=true`): open bills (recorded, not
+fully paid) due within 7 days get threshold 7, due or overdue ones threshold 0,
+once per bill, due date and threshold.
 
 ## WhatsApp assistant
 

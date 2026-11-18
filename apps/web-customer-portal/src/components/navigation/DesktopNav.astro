@@ -1,0 +1,153 @@
+---
+import House from "@lucide/astro/icons/house";
+import Package from "@lucide/astro/icons/package";
+import Route from "@lucide/astro/icons/route";
+import Headset from "@lucide/astro/icons/headset";
+import UserRound from "@lucide/astro/icons/user-round";
+import Search from "@lucide/astro/icons/search";
+import Bell from "@lucide/astro/icons/bell";
+import ChevronDown from "@lucide/astro/icons/chevron-down";
+import LayoutGrid from "@lucide/astro/icons/layout-grid";
+import FileText from "@lucide/astro/icons/file-text";
+import Heart from "@lucide/astro/icons/heart";
+import Settings from "@lucide/astro/icons/settings";
+import LogOut from "@lucide/astro/icons/log-out";
+import Logo from "../customer/Logo.astro";
+import type { TabKey } from "./TabBar.astro";
+import { type NavBadges } from "@/api/portal";
+
+/**
+ * 06.x Desktop Top Nav (10.3 Desktop Workspace Nav): logo, primary-destination capsule,
+ * search, notifications and the account menu (10.5 header states). Shown from `xl`.
+ */
+interface Props {
+  active?: TabKey;
+  badges?: NavBadges;
+}
+
+const { active, badges } = Astro.props;
+const user = Astro.locals.user;
+const tabs = [
+  { key: "home", label: "Home", href: "/", icon: House },
+  { key: "orders", label: "Orders", href: "/orders", icon: Package },
+  { key: "tracking", label: "Tracking", href: "/tracking", icon: Route },
+  { key: "support", label: "Support", href: "/support", icon: Headset },
+  { key: "profile", label: "Profile", href: "/profile", icon: UserRound },
+] as const;
+const menu = [
+  { label: "Dashboard", href: "/", icon: LayoutGrid },
+  { label: "My Orders", href: "/orders", icon: Package, count: badges?.activeOrders },
+  { label: "Track Orders", href: "/tracking", icon: Route },
+  { label: "Quotations", href: "/quotations", icon: FileText, count: badges?.quotationsAwaiting },
+  { label: "Support Tickets", href: "/support", icon: Headset, count: badges?.openTickets },
+  { label: "Notifications", href: "/notifications", icon: Bell, count: badges?.unreadNotifications },
+  { label: "Wishlist", href: "/wishlist", icon: Heart },
+  { label: "Account Settings", href: "/settings", icon: Settings },
+];
+const firstName = user?.name.split(" ")[0] ?? "Account";
+---
+
+<header class="sticky top-0 z-40 hidden border-b border-border bg-white/95 backdrop-blur-[10px] xl:block">
+  <div class="mx-auto flex h-[83px] max-w-[1440px] items-center justify-between px-16">
+    <div class="w-[260px]"><a href="/" aria-label="Entragate home"><Logo /></a></div>
+    <nav aria-label="Primary">
+      <ul class="flex h-[52px] gap-1 rounded-pill bg-surface p-[5px]">
+        {
+          tabs.map(({ key, label, href, icon: Icon }) => {
+            const current = key === active;
+            return (
+              <li>
+                <a
+                  href={href}
+                  aria-current={current ? "page" : undefined}
+                  class:list={[
+                    "flex h-full items-center gap-2 rounded-pill px-[18px] text-[14px] transition-colors",
+                    current ? "bg-white font-bold text-fg shadow-[0_2px_8px_#0A1A3F14]" : "font-medium text-fg-secondary hover:text-fg",
+                  ]}
+                >
+                  <Icon size={18} class={current ? "text-blue-600" : undefined} aria-hidden="true" />
+                  {label}
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </nav>
+    <div class="flex w-[260px] items-center justify-end gap-2.5">
+      <a href="/search" class="flex size-10 items-center justify-center rounded-pill bg-surface text-fg hover:bg-surface-2" aria-label="Search">
+        <Search size={18} aria-hidden="true" />
+      </a>
+      <a
+        href="/notifications"
+        class="relative flex size-10 items-center justify-center rounded-pill bg-surface text-fg hover:bg-surface-2"
+        aria-label={badges?.unreadNotifications ? `Notifications, ${badges.unreadNotifications} unread` : "Notifications"}
+      >
+        <Bell size={18} aria-hidden="true" />
+        {badges && badges.unreadNotifications > 0 && <span class="absolute top-2 left-6 size-[9px] rounded-full bg-danger ring-2 ring-surface" />}
+      </a>
+      <div class="relative" data-account-menu>
+        <button
+          type="button"
+          class="flex items-center gap-2.5 rounded-pill py-1 pr-3 pl-1 ring-1 ring-border ring-inset hover:bg-surface aria-expanded:bg-surface"
+          aria-expanded="false"
+          aria-controls="account-menu"
+          data-account-trigger
+        >
+          <span class="flex size-9 items-center justify-center rounded-pill bg-[linear-gradient(135deg,var(--eg-blue-600)_14.6%,var(--eg-cyan-400)_85.4%)] font-heading text-[13px] font-extrabold text-white">{user?.initials}</span>
+          <span class="text-[14px] font-semibold text-fg">{firstName}</span>
+          <ChevronDown size={16} class="text-fg-muted" aria-hidden="true" />
+        </button>
+        <div id="account-menu" class="absolute top-[calc(100%+10px)] right-0 z-50 w-[248px] rounded-lg bg-white p-1.5 shadow-[0_24px_60px_#0A1A3F33] ring-1 ring-border" hidden data-account-panel>
+          <div class="flex items-center gap-3 rounded-md bg-surface p-3">
+            <span class="flex size-10 items-center justify-center rounded-pill bg-blue-600 font-heading text-[13px] font-extrabold text-white">{user?.initials}</span>
+            <span class="flex min-w-0 flex-col">
+              <span class="truncate text-[14px] font-bold text-fg">{user?.name}</span>
+              <span class="truncate text-[12px] text-fg-muted">{user?.company?.name ?? user?.email}</span>
+            </span>
+          </div>
+          <ul class="flex flex-col py-1.5">
+            {
+              menu.map(({ label, href, icon: Icon, count }) => (
+                <li>
+                  <a href={href} class="flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] font-medium text-fg hover:bg-surface">
+                    <Icon size={17} class="text-fg-secondary" aria-hidden="true" />
+                    <span class="flex-1">{label}</span>
+                    {count ? <span class="flex min-w-5 items-center justify-center rounded-pill bg-blue-600 px-1.5 text-[11px] font-bold text-white">{count}</span> : null}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+          <form method="post" action="/logout" class="border-t border-border pt-1.5">
+            <button type="submit" class="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-[14px] font-medium text-danger hover:bg-danger-bg">
+              <LogOut size={17} aria-hidden="true" />Log out
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<script>
+  const root = document.querySelector<HTMLElement>("[data-account-menu]");
+  const trigger = root?.querySelector<HTMLButtonElement>("[data-account-trigger]");
+  const panel = root?.querySelector<HTMLElement>("[data-account-panel]");
+  if (root && trigger && panel) {
+    const setOpen = (open: boolean) => {
+      panel.hidden = !open;
+      trigger.setAttribute("aria-expanded", String(open));
+    };
+    trigger.addEventListener("click", () => setOpen(Boolean(panel.hidden)));
+    document.addEventListener("click", (event) => {
+      if (!panel.hidden && !root.contains(event.target as Node)) setOpen(false);
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !panel.hidden) {
+        setOpen(false);
+        trigger.focus();
+      }
+    });
+  }
+</script>

@@ -219,7 +219,7 @@ export class CompanyRepository implements ICompanyRepository {
 	}
 
 	async setImage(
-		kind: 'logo' | 'signature',
+		kind: 'logo' | 'signature' | 'onboarding',
 		key: string | null,
 	): Promise<TCompanyProfileRecord | null> {
 		const [existing] = await this.database
@@ -234,7 +234,9 @@ export class CompanyRepository implements ICompanyRepository {
 			.set(
 				kind === 'logo'
 					? { logoObjectKey: key, updatedAt: new Date() }
-					: { signatureObjectKey: key, updatedAt: new Date() },
+					: kind === 'signature'
+						? { signatureObjectKey: key, updatedAt: new Date() }
+						: { onboardingObjectKey: key, updatedAt: new Date() },
 			)
 			.where(eq(companyProfiles.id, existing.id));
 

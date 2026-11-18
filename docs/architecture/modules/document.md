@@ -101,6 +101,18 @@ actually happened.
   issue date, the file list, and the company letterhead. **Never** the
   organization, the access trail, or internal ids.
 
+## Generated files (ERP-0067)
+
+`attachGeneratedFile(source, file, actorUserId | null)` stores a
+system-made file (today the SPH PDF) on the **live registry row of a source
+document**, found by `(module, source_type, source_id)`. It returns `null`
+when the source was never registered (seeded or pre-ERP-0044 data) or is
+void, and the caller then goes on without a file. The uploader may be null
+(`uploaded_by_user_id` is nullable). A share is opened with the normal
+`createShare` (the sharer may be null too), and
+`GET /public/v1/documents/:token/file` sends the reader straight to the
+newest file, so a chat message can carry one link to a PDF.
+
 ## API
 
 Prefix `/documents`, guard `erp`:
@@ -119,6 +131,7 @@ Prefix `/documents`, guard `erp`:
 | `POST /documents/:id/shares` | `document:update` | a revocable public link with a mandatory expiry |
 | `DELETE /documents/:id/shares/:shareId` | `document:update` | revokes (the row is kept) |
 | `GET /public/v1/documents/:token` | none | the anonymous public read; no `erp` guard |
+| `GET /public/v1/documents/:token/file` | none | ERP-0067: 302 to a 5-minute URL of the newest file; appends an anonymous download row |
 
 Permissions are `document:read` / `document:create` / `document:update` /
 `document:submit` / `document:approve` / `document:issue` / `document:void` /

@@ -47,8 +47,14 @@ export interface ICompanyRepository {
 		accounts?: TInvoiceAccountsData,
 	): Promise<{ record: TCompanyProfileRecord; accounts: TBankAccountSelect[] }>;
 
-	/** Sets (or clears) the logo or signature key of the live profile; `null` when there is none. */
-	setImage(kind: 'logo' | 'signature', key: string | null): Promise<TCompanyProfileRecord | null>;
+	/**
+	 * Sets (or clears) one profile image key of the live profile; `null` when
+	 * there is none.
+	 */
+	setImage(
+		kind: 'logo' | 'signature' | 'onboarding',
+		key: string | null,
+	): Promise<TCompanyProfileRecord | null>;
 
 	/** Every live company setting. */
 	findSettings(): Promise<TCompanySettingSelect[]>;

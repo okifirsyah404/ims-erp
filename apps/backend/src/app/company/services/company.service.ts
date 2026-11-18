@@ -7,6 +7,7 @@ import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-
 import { inject, injectable } from 'tsyringe';
 import { COMPANY_REPOSITORY_TOKEN } from '../constants/di';
 import type {
+	TCompanyBranding,
 	TCompanyImageKind,
 	TCompanyProfileInput,
 	TCompanyProfilePatch,
@@ -53,7 +54,9 @@ function toAccount(row: TBankAccountSelect | undefined): TInvoiceBankAccount | n
 }
 
 /** Flat view of the split storage (profile + primary address + contacts). */
-function toFlat(record: TCompanyProfileRecord): Omit<TCompanyProfileSnapshot, 'logoObjectKey' | 'signatureObjectKey'> {
+function toFlat(
+	record: TCompanyProfileRecord,
+): Omit<TCompanyProfileSnapshot, 'logoObjectKey' | 'signatureObjectKey' | 'onboardingObjectKey'> {
 	const { profile, address, contacts } = record;
 	const contact = (type: string) => contacts.find((c) => c.contactType === type)?.value ?? null;
 	return {
@@ -82,6 +85,7 @@ function toSnapshot(record: TCompanyProfileRecord): TCompanyProfileSnapshot {
 		...toFlat(record),
 		logoObjectKey: record.profile.logoObjectKey,
 		signatureObjectKey: record.profile.signatureObjectKey,
+		onboardingObjectKey: record.profile.onboardingObjectKey,
 	};
 }
 
@@ -94,6 +98,7 @@ function toView(
 		...toFlat(record),
 		logoUrl: documentImageUrl(storage, record.profile.logoObjectKey),
 		signatureUrl: documentImageUrl(storage, record.profile.signatureObjectKey),
+		onboardingUrl: documentImageUrl(storage, record.profile.onboardingObjectKey),
 		bankAccounts: accounts
 			? {
 					vat: toAccount(accounts.find((a) => a.invoiceUsage === 'vat')),
@@ -134,11 +139,34 @@ export class CompanyService {
 		return record ? toSnapshot(record) : null;
 	}
 
+	/** Display name for user-facing surfaces: `tradingName ?? legalName`. */
+	async getDisplayName(): Promise<string | null> {
+		const record = await this.repository.findProfile();
+		return record ? (record.profile.tradingName ?? record.profile.legalName) : null;
+	}
+
 	/** The profile, or `null` before it was first saved. */
 	async get(includeBanks: boolean): Promise<TCompanyProfileView | null> {
 		const record = await this.repository.findProfile();
 		if (!record) return null;
 		return toView(record, includeBanks ? await this.repository.findInvoiceAccounts() : null, this.storage);
+	}
+
+	/**
+	 * Public branding for unauthenticated surfaces (the login page): display
+	 * name and the onboarding image URL. Only non-sensitive fields.
+	 */
+	async getBranding(): Promise<TCompanyBranding> {
+		const record = await this.repository.findProfile();
+		const name = record
+			? (record.profile.tradingName ?? record.profile.legalName)
+			: null;
+		return {
+			name,
+			onboardingUrl: record
+				? documentImageUrl(this.storage, record.profile.onboardingObjectKey)
+				: null,
+		};
 	}
 
 	async save(
@@ -161,8 +189,8 @@ export class CompanyService {
 	}
 
 	/**
-	 * Replaces (or, with `null`, removes) the logo or signature image. A new
-	 * key every time, so nothing already printed changes.
+	 * Replaces (or, with `null`, removes) one profile image. A new key every
+	 * time, so nothing already printed changes.
 	 *
 	 * @throws {CompanyProfileRequiredError} Before the profile was first saved
 	 */
@@ -201,6 +229,12 @@ export class CompanyService {
 		};
 	}
 
+	/**
+	 * Replaces (or, with `null`, removes) one profile image (logo, signature,
+	 * onboarding). A new key every time, so nothing already printed changes.
+	 *
+	 * @throws {CompanyProfileRequiredError} Before the profile was first saved
+	 */
 	async setImage(
 		kind: TCompanyImageKind,
 		file: File | null,

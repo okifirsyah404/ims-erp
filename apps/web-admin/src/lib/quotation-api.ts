@@ -1,6 +1,7 @@
 import type { TApiPaginatedResponse, TApiResponse } from '@ims-erp/common';
 import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
+import type { TCompanyProfile } from './company-api';
 import type { TItemUnitLabel } from './inventory-api';
 import type { TPerson } from './lead-api';
 
@@ -211,6 +212,21 @@ export function quotationQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['sales', 'quotations', id] as const,
 		queryFn: async () => (await request<TQuotationDetail>(`/sales/quotations/${id}`)).data as TQuotationDetail,
+		retry: false,
+	});
+}
+
+/**
+ * What the public SPH print view shows (ERP-0067): opened by the backend's
+ * headless Chromium with a short-lived render token, no session.
+ */
+export function quotationRenderQueryOptions(id: string, token: string) {
+	return queryOptions({
+		queryKey: ['sales', 'quotations', id, 'render'] as const,
+		queryFn: async () =>
+			(await request<{ quotation: TQuotationDetail; profile: TCompanyProfile | null }>(
+				`/public/v1/render/quotations/${id}?token=${encodeURIComponent(token)}`,
+			)).data!,
 		retry: false,
 	});
 }

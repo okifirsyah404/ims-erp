@@ -1,0 +1,28 @@
+---
+/** Status pill used inside the product-UI mockups. */
+interface Props {
+  label: string;
+  tone: "success" | "info" | "warning" | "danger" | "neutral";
+  variant?: "desktop" | "mobile";
+}
+
+const { label, tone, variant = "desktop" } = Astro.props;
+const tones = {
+  success: "bg-success-bg text-success",
+  info: "bg-blue-50 text-blue-600",
+  warning: "bg-warning-bg text-warning",
+  danger: "bg-danger-bg text-danger",
+  neutral: "bg-surface-2 text-fg-muted",
+}[tone];
+---
+
+<span
+  class:list={[
+    "inline-flex items-center gap-1 rounded-pill py-[3px] font-semibold whitespace-nowrap",
+    variant === "desktop" ? "px-2 text-[9.5px]" : "px-[7px] text-[9px]",
+    tones,
+  ]}
+>
+  <span class="size-[5px] rounded-full bg-current"></span>
+  {label}
+</span>

@@ -29,8 +29,17 @@ delivery).
   unique posting reference, journal ref (via finance posting), status.
 - Gateway (stage 2): gateway transaction refs, gross amount / fees /
   pending-settlement / net-cash received (v5.1 reconciliation requirement),
-  callback event log with idempotency keys.
+  callback event log with idempotency keys. **Implemented 2026-11-18** as
+  `payment.gateway_payments` (ADR-0023); the fee/settlement split and the
+  callback event log beyond `last_event` are still open.
 - Refunds are **administrator-handled** (v5.1 limit), not self-service.
+
+> **2026-11-18 (ADR-0023).** Online invoice checkout lives in the `payment`
+> module: `payment.gateway_payments` (schema `payment`), the provider-neutral
+> port and adapters in `apps/backend/src/app/payment/`. The receipt it produces
+> stays `sales.receipts`, reached through Sales' `IInvoicePaymentPort`. Still
+> open for this module and M09: gateway fees / gross / net reconciliation, and
+> the `finance.payments` row behind each receipt.
 
 ## Behavior targets
 

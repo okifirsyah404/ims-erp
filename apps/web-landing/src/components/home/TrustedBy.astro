@@ -1,0 +1,22 @@
+---
+import { trustedClients } from "../../data/home";
+
+/** 01.01 Home · Trusted By (desktop only; not present in the 390 frame). */
+---
+
+<section class="hidden border-y border-border xl:block" aria-label="Trusted by">
+  <div class="container-page flex h-[102px] items-center justify-between gap-12">
+    <p class="shrink-0 text-[13px] leading-5 font-medium text-fg-muted">
+      Trusted by leading organizations<br />across Indonesia
+    </p>
+    <ul class="flex flex-1 items-center justify-between gap-8">
+      {
+        trustedClients.map((client) => (
+          <li class:list={["text-[20px] tracking-[-0.3px] whitespace-nowrap text-fg-muted", client.className]}>
+            {client.name}
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

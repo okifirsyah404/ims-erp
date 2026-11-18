@@ -28,7 +28,7 @@ async function canSeeBanks(permissions: IPermissionResolver, erp: ErpContext): P
 	);
 }
 
-const imageKindSchema = z.object({ kind: z.enum(['logo', 'signature']) });
+const imageKindSchema = z.object({ kind: z.enum(['logo', 'signature', 'onboarding']) });
 const imageKind = (params: unknown): TCompanyImageKind => imageKindSchema.parse(params).kind;
 
 /**
@@ -50,6 +50,16 @@ export class CompanyController {
 			tags: ['Company'],
 			guards: 'erp',
 		})
+			.get(
+				'/branding',
+				async () => ok(await service.getBranding()),
+				{
+					detail: {
+						description:
+							'Public branding for unauthenticated surfaces (the login page): display name and the onboarding image URL',
+					},
+				},
+			)
 			.get('/profile', async ({ erp }) => ok(await service.get(await canSeeBanks(permissions, erp))), {
 				erp: { permission: [] },
 				detail: { description: 'The company profile (null before it is first saved)' },
@@ -81,7 +91,10 @@ export class CompanyController {
 					),
 				{
 					erp: { permission: ['company:update'] },
-					detail: { description: 'Uploads the letterhead logo or the signature image (multipart `file`)' },
+					detail: {
+						description:
+							'Uploads the letterhead logo, signature or onboarding image (multipart `file`)',
+					},
 				},
 			)
 			.delete(
@@ -90,7 +103,7 @@ export class CompanyController {
 					ok(await service.setImage(imageKind(params), null, await canSeeBanks(permissions, erp))),
 				{
 					erp: { permission: ['company:update'] },
-					detail: { description: 'Removes the letterhead logo or the signature image' },
+					detail: { description: 'Removes the letterhead logo, signature or onboarding image' },
 				},
 			)
 			.get('/settings', async () => ok(await service.listSettings()), {
