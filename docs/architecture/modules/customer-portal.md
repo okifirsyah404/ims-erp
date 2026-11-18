@@ -1,15 +1,13 @@
 # Customer Portal Module (ERP-0022, stage 1)
 
 Decision record: [ADR-0022](../decisions/ADR-0022-customer-portal-api.md).
-API reference: Swagger/OpenAPI served by `@elysia/openapi` from the backend. Zudoku
-(`apps/api-docs`) was removed.
+API reference: Swagger/OpenAPI served by `@elysia/openapi` from the backend at `/docs`.
 Full gap analysis against the website repo (all 51 portal, 9 catalog and 10
 website operations, open owner decisions): `docs/plan/plans/website-integration.md`.
 
 ## Purpose and boundary
 
-The API the customer portal (website repo `entragate-platform`,
-`apps/customer`) calls **from its server**. Stage 1 = M07 T26 (projects, BAST,
+The API the customer portal (`apps/web-customer-portal`) calls **from its server**. Stage 1 = M07 T26 (projects, BAST,
 own tickets) + the account part of M12 T25 + warranties.
 
 | Piece | Owner | Where |
@@ -35,7 +33,7 @@ internal notes or staff ids in any response.
 emails link to `<PORTAL_URL>/reset-password?token=…`; without it invitations
 answer 503. The portal sets `ERP_API_BASE_URL` to the ERP and these routes.
 
-## Route map for `PortalRoutes` (website `packages/api-client`)
+## Route map for `PortalRoutes` (`apps/web-customer-portal/src/api/portal.ts`)
 
 Responses use the ERP envelope `{ requestId, status, message, timestamp, data }`
 (errors add `errors[]`) — configure the

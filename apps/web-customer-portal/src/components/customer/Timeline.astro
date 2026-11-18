@@ -1,0 +1,52 @@
+---
+import Check from "@lucide/astro/icons/check";
+
+/** App / Timeline Step (x0eDxL), rendered as a vertical list. */
+interface Props {
+  steps: { title: string; description?: string; dateLabel: string; state: "done" | "current" | "upcoming" }[];
+  tone?: "success" | "blue";
+  class?: string;
+}
+
+const { steps, tone = "success", class: className } = Astro.props;
+const doneColor = tone === "success" ? "bg-success" : "bg-blue-600";
+---
+
+<ol class:list={["flex flex-col", className]}>
+  {
+    steps.map((step, index) => {
+      const last = index === steps.length - 1;
+      const next = steps[index + 1];
+      return (
+        <li class="flex gap-3.5">
+          <div class="flex w-6 shrink-0 flex-col items-center">
+            {step.state === "done" ? (
+              <span class:list={["flex size-6 items-center justify-center rounded-pill text-white", doneColor]}>
+                <Check size={14} stroke-width={3} aria-hidden="true" />
+              </span>
+            ) : step.state === "current" ? (
+              <span class="flex size-6 items-center justify-center rounded-pill bg-blue-600 ring-4 ring-blue-100">
+                <span class="size-2 rounded-full bg-white" />
+              </span>
+            ) : (
+              <span class="size-6 rounded-pill bg-white ring-2 ring-border ring-inset" />
+            )}
+            {!last && (
+              <span class:list={["w-0.5 flex-1", step.state === "done" && next?.state !== "upcoming" ? doneColor : "bg-[#D5DCE8]"]} />
+            )}
+          </div>
+          <div class:list={["flex min-w-0 flex-1 flex-col gap-1 pt-0.5", !last && "pb-[22px]"]}>
+            <div class="flex items-center justify-between gap-3">
+              <span class:list={["text-[15px] font-semibold", step.state === "upcoming" ? "text-fg-muted" : "text-fg"]}>{step.title}</span>
+              <span class:list={["shrink-0 text-[12px] font-medium", step.state === "current" ? "text-blue-600" : "text-fg-muted"]}>
+                {step.dateLabel}
+              </span>
+            </div>
+            {step.description && <p class="text-[13px] leading-[1.45] text-fg-secondary">{step.description}</p>}
+            <span class="sr-only">{step.state === "done" ? "Completed" : step.state === "current" ? "In progress" : "Upcoming"}</span>
+          </div>
+        </li>
+      );
+    })
+  }
+</ol>

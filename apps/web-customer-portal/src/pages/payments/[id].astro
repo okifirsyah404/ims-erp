@@ -1,0 +1,145 @@
+---
+import Receipt from "@lucide/astro/icons/receipt";
+import Wallet from "@lucide/astro/icons/wallet";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import Headset from "@lucide/astro/icons/headset";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import SectionHeader from "../../components/customer/SectionHeader.astro";
+import DocumentRow from "../../components/customer/DocumentRow.astro";
+import BottomActionBar from "../../components/customer/BottomActionBar.astro";
+import PayInvoiceSheet from "../../features/payments/PayInvoiceSheet";
+import { invoicesService, ordersService, paymentsService } from "../../services";
+import { formatRupiah } from "../../lib/format";
+
+/** Invoice detail — lines, PPN, payment milestones, payments received and the PDF. */
+const tokens = Astro.locals.tokens!;
+const invoice = await invoicesService.get(tokens, Astro.params.id ?? "");
+if (!invoice) return Astro.rewrite("/404");
+const payable = invoice.status !== "paid";
+const [methods, orders] = await Promise.all([payable ? paymentsService.methods(tokens) : Promise.resolve([]), ordersService.list(tokens)]);
+const order = orders.find((o) => o.number.replace("#", "") === invoice.orderNumber || o.id === invoice.orderNumber);
+const chip = invoice.status === "paid" ? { label: "Paid", tone: "success" as const } : { label: invoice.dueLabel ?? "Unpaid", tone: invoice.status === "overdue" ? ("danger" as const) : ("warning" as const) };
+const milestoneTone = { paid: "success", due: "warning", upcoming: "neutral" } as const;
+const milestoneLabel = { paid: "Paid", due: "Due", upcoming: "Upcoming" };
+---
+
+<CustomerLayout title={invoice.number} actionBar={payable} section="profile">
+  <TopBar title={invoice.number} back="/payments" />
+
+  <div class="flex flex-col gap-5 px-5 pt-2 pb-6">
+    <section class="flex flex-col gap-3.5 rounded-card bg-surface p-5">
+      <div class="flex items-center justify-between gap-2.5">
+        <StatusChip label={chip.label} tone={chip.tone} />
+        <span class="text-[12.5px] font-medium text-fg-muted">{invoice.issuedLabel}</span>
+      </div>
+      <div class="flex flex-col gap-0.5">
+        <h1 class="text-[14px] font-semibold text-fg-secondary">{invoice.description}</h1>
+        <p class="font-heading text-[30px] font-extrabold tracking-[-0.8px] text-navy-900">{formatRupiah(invoice.total)}</p>
+      </div>
+      <p class="text-[13px] text-fg-muted">
+        Order {order ? <a href={`/orders/${order.id}`} class="font-semibold text-blue-600">{invoice.orderNumber}</a> : invoice.orderNumber}
+      </p>
+    </section>
+
+    <SectionHeader title="Invoice lines" />
+    <dl class="flex flex-col gap-3 rounded-card bg-white p-[18px] text-[14px] ring-1 ring-border ring-inset">
+      {
+        invoice.lines.map((line) => (
+          <div class="flex justify-between gap-3">
+            <dt class="flex flex-col gap-0.5">
+              <span class="font-semibold text-fg">{line.label}</span>
+              {line.detail && <span class="text-[12.5px] text-fg-muted">{line.detail}</span>}
+            </dt>
+            <dd class="font-semibold whitespace-nowrap text-fg">{formatRupiah(line.amount)}</dd>
+          </div>
+        ))
+      }
+      <span class="h-px bg-border" aria-hidden="true"></span>
+      <div class="flex justify-between gap-3"><dt class="text-fg-muted">Subtotal (DPP)</dt><dd class="font-semibold text-fg">{formatRupiah(invoice.subtotal)}</dd></div>
+      <div class="flex justify-between gap-3"><dt class="text-fg-muted">PPN 11%</dt><dd class="font-semibold text-fg">{formatRupiah(invoice.tax)}</dd></div>
+      <div class="flex items-center justify-between gap-3">
+        <dt class="text-[15px] font-bold text-fg">Total</dt>
+        <dd class="font-heading text-[19px] font-extrabold text-navy-900">{formatRupiah(invoice.total)}</dd>
+      </div>
+    </dl>
+
+    {
+      invoice.milestones.length > 0 && (
+        <>
+          <SectionHeader title="Payment milestones" />
+          <ol class="flex flex-col divide-y divide-border rounded-card bg-white ring-1 ring-border ring-inset">
+            {invoice.milestones.map((m) => (
+              <li class="flex items-center gap-3.5 px-4 py-3.5">
+                <span class:list={["flex size-10 shrink-0 items-center justify-center rounded-pill", m.status === "paid" ? "bg-success-bg text-success" : m.status === "due" ? "bg-warning-bg text-warning" : "bg-surface text-fg-muted"]} aria-hidden="true">
+                  {m.status === "paid" ? <CircleCheck size={18} /> : <Wallet size={18} />}
+                </span>
+                <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span class="text-[14.5px] font-semibold text-fg">{m.label}</span>
+                  <span class="text-[12.5px] text-fg-muted">{m.dateLabel}</span>
+                </span>
+                <span class="flex flex-col items-end gap-1">
+                  <span class="text-[14px] font-bold whitespace-nowrap text-fg">{formatRupiah(m.amount)}</span>
+                  <StatusChip size="sm" label={milestoneLabel[m.status]} tone={milestoneTone[m.status]} />
+                </span>
+              </li>
+            ))}
+          </ol>
+        </>
+      )
+    }
+
+    <SectionHeader title="Payments received" />
+    {
+      invoice.payments.length === 0 ? (
+        <p class="rounded-card bg-surface p-5 text-center text-[13.5px] text-fg-secondary">No payments recorded for this invoice yet.</p>
+      ) : (
+        <ul class="flex flex-col divide-y divide-border rounded-card bg-white ring-1 ring-border ring-inset">
+          {invoice.payments.map((p) => (
+            <li class="flex items-center gap-3.5 px-4 py-3.5">
+              <span class="flex size-10 shrink-0 items-center justify-center rounded-pill bg-success-bg text-success" aria-hidden="true"><Receipt size={18} /></span>
+              <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span class="text-[14.5px] font-semibold text-fg">{p.label}</span>
+                <span class="text-[12.5px] text-fg-muted">{p.method} · {p.dateLabel}</span>
+              </span>
+              <span class="text-[14px] font-bold whitespace-nowrap text-success">{formatRupiah(p.amount)}</span>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    {
+      invoice.document && (
+        <>
+          <SectionHeader title="Document" />
+          <div class="rounded-card bg-white ring-1 ring-border ring-inset"><DocumentRow document={invoice.document} /></div>
+        </>
+      )
+    }
+
+    <a href={`/support/new?category=billing&subject=${encodeURIComponent(`Question about invoice ${invoice.number}`)}`} class="flex items-center justify-center gap-2 text-[14px] font-semibold text-blue-600">
+      <Headset size={16} aria-hidden="true" />Question about this invoice?
+    </a>
+  </div>
+
+  {
+    payable && (
+      <>
+        <BottomActionBar slot="overlay" summaryLabel="Amount due" summaryValue={formatRupiah(invoice.amount)}>
+          <a href={`#pay-${invoice.id}`} class="flex h-[54px] flex-1 items-center justify-center rounded-control bg-blue-600 text-[16px] font-semibold text-white hover:bg-blue-700">Pay now</a>
+        </BottomActionBar>
+        <PayInvoiceSheet
+          slot="overlay"
+          client:idle
+          invoiceId={invoice.id}
+          number={invoice.number}
+          amount={invoice.amount}
+          dueLabel={invoice.dueLabel}
+          methods={methods.map(({ id, kind, name, detail }) => ({ id, kind, name, detail }))}
+        />
+      </>
+    )
+  }
+</CustomerLayout>

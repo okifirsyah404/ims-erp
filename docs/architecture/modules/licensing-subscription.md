@@ -86,7 +86,7 @@ timestamp, data }`, plus `errors[]` on an error (corrected 2026-11-14).
 
 The published reference for application teams is the guide
 `docs/architecture/modules/licensing-integration.md` plus the spec
-`docs/architecture/api/licensing.yaml` (both moved there when the Zudoku site
+`docs/architecture/api/licensing.yaml` (both moved there when the separate docs site
 was removed in favour of `@elysia/openapi`, which serves the Better Auth schema
 at `/docs` — not these licensing routes).
 

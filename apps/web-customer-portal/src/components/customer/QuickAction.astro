@@ -1,0 +1,23 @@
+---
+/** App / Quick Action (y58Xs): 56px tile (20px radius) + 12px label. */
+interface Props {
+  label: string;
+  href: string;
+  dark?: boolean;
+}
+
+const { label, href, dark = false } = Astro.props;
+---
+
+<a href={href} class="group flex w-[76px] flex-col items-center gap-2">
+  <span
+    class:list={[
+      "flex size-14 items-center justify-center rounded-lg transition-colors [&>svg]:size-6",
+      dark ? "bg-navy-900 text-white" : "bg-blue-50 text-blue-600 group-hover:bg-blue-100",
+    ]}
+    aria-hidden="true"
+  >
+    <slot />
+  </span>
+  <span class="text-center text-[12px] font-medium text-fg-secondary">{label}</span>
+</a>

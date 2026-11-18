@@ -1,0 +1,64 @@
+---
+import ChevronLeft from "@lucide/astro/icons/chevron-left";
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+
+/** Previous / page numbers / next for server-paginated lists. Hidden for a single page. */
+interface Props {
+  page: number;
+  pageCount: number;
+  from: number;
+  to: number;
+  total: number;
+  hrefFor: (page: number) => string;
+  noun?: string;
+  class?: string;
+}
+
+const { page, pageCount, from, to, total, hrefFor, noun = "items", class: className } = Astro.props;
+const pages = Array.from({ length: pageCount }, (_, i) => i + 1).filter((p) => p === 1 || p === pageCount || Math.abs(p - page) <= 1);
+const control = "flex size-10 items-center justify-center rounded-md text-[14px] font-semibold transition-colors";
+---
+
+{
+  pageCount > 1 && (
+    <nav aria-label="Pagination" class:list={["flex items-center justify-between gap-3", className]}>
+      <p class="text-[13px] text-fg-muted">
+        {from}–{to} of {total} {noun}
+      </p>
+      <ul class="flex items-center gap-1">
+        <li>
+          {page > 1 ? (
+            <a href={hrefFor(page - 1)} class:list={[control, "bg-white text-fg ring-1 ring-border ring-inset hover:bg-surface"]} aria-label="Previous page">
+              <ChevronLeft size={18} aria-hidden="true" />
+            </a>
+          ) : (
+            <span class:list={[control, "bg-surface text-fg-muted/60"]} aria-hidden="true"><ChevronLeft size={18} /></span>
+          )}
+        </li>
+        {pages.map((p, index) => (
+          <>
+            {index > 0 && p - pages[index - 1]! > 1 && <li class="px-1 text-fg-muted" aria-hidden="true">…</li>}
+            <li>
+              <a
+                href={hrefFor(p)}
+                aria-current={p === page ? "page" : undefined}
+                class:list={[control, p === page ? "bg-navy-900 text-white" : "text-fg-secondary hover:bg-surface"]}
+              >
+                {p}
+              </a>
+            </li>
+          </>
+        ))}
+        <li>
+          {page < pageCount ? (
+            <a href={hrefFor(page + 1)} class:list={[control, "bg-white text-fg ring-1 ring-border ring-inset hover:bg-surface"]} aria-label="Next page">
+              <ChevronRight size={18} aria-hidden="true" />
+            </a>
+          ) : (
+            <span class:list={[control, "bg-surface text-fg-muted/60"]} aria-hidden="true"><ChevronRight size={18} /></span>
+          )}
+        </li>
+      </ul>
+    </nav>
+  )
+}

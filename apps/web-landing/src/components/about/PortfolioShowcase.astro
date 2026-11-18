@@ -1,0 +1,95 @@
+---
+import ArrowUpRight from "@lucide/astro/icons/arrow-up-right";
+import Button from "../ui/Button.astro";
+import Media from "../ui/Media.astro";
+import { portfolio } from "../../data/about";
+import { routes } from "../../data/site";
+
+/** 09.01 · Project Portfolio: feature + 2×2 grid on desktop, swipeable cards on mobile. */
+const [feature, ...rest] = portfolio;
+const overlay = "absolute inset-0 -z-10 bg-[linear-gradient(180deg,#060F2600_35%,#060F26D9_100%)]";
+const tag = "w-fit rounded-pill bg-white/90 font-semibold text-navy-900";
+---
+
+<section class="bg-surface" aria-labelledby="portfolio-title">
+  <div class="flex flex-col gap-5 py-12 xl:container-page xl:gap-12 xl:py-28">
+    <div class="container-page flex flex-col gap-2.5 xl:max-w-none xl:flex-row xl:items-end xl:justify-between xl:px-0">
+      <div class="flex flex-col gap-2.5 xl:w-[700px] xl:gap-3.5">
+        <p class="text-[12px] font-bold tracking-[1.4px] text-blue-600 uppercase xl:text-[13px] xl:tracking-[1.6px]">Project portfolio</p>
+        <h2
+          id="portfolio-title"
+          class="font-heading text-[28px] leading-8 font-bold tracking-[-0.7px] text-navy-900 xl:text-[44px] xl:leading-[48px] xl:tracking-[-1.2px]"
+        >
+          Trusted at Indonesia’s busiest entrances
+        </h2>
+      </div>
+      <div class="hidden xl:block">
+        <Button href={routes.projects} variant="secondary" icon={ArrowUpRight}>View All Projects</Button>
+      </div>
+    </div>
+
+    <!-- Desktop grid -->
+    <div class="hidden h-[640px] gap-6 xl:flex">
+      <article class="relative isolate flex w-[640px] shrink flex-col justify-between overflow-hidden rounded-card p-9">
+        <Media src={feature.image} alt={feature.title} class="absolute inset-0 -z-10 size-full" />
+        <span class={overlay} aria-hidden="true"></span>
+        <span class:list={[tag, "px-3 py-1.5 text-[12px]"]}>{feature.tag}</span>
+        <div class="flex flex-col gap-1.5">
+          <h3 class="font-heading text-[30px] font-bold tracking-[-0.4px] text-white">{feature.title}</h3>
+          <p class="text-[15px] text-white/80">{feature.meta}</p>
+        </div>
+      </article>
+      <div class="grid min-w-0 flex-1 grid-cols-2 grid-rows-2 gap-6">
+        {
+          rest.map((project) => (
+            <article class="relative isolate flex flex-col justify-between overflow-hidden rounded-card p-6">
+              <Media src={project.image} alt={project.title} class="absolute inset-0 -z-10 size-full" />
+              <span class={overlay} aria-hidden="true" />
+              <span class:list={[tag, "px-3 py-1.5 text-[12px]"]}>{project.tag}</span>
+              <div class="flex flex-col gap-1.5">
+                <h3 class="font-heading text-[20px] font-bold tracking-[-0.4px] text-white">{project.title}</h3>
+                <p class="text-[13px] text-white/80">{project.meta}</p>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+
+    <!-- Mobile carousel -->
+    <div class="flex flex-col gap-5 xl:hidden" data-carousel>
+      <ul class="scrollbar-none flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 md:scroll-px-8 md:px-8" data-carousel-track>
+        {
+          portfolio.map((project) => (
+            <li class="relative isolate flex h-[340px] w-[290px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-lg p-5">
+              <Media src={project.image} alt={project.title} class="absolute inset-0 -z-10 size-full" />
+              <span class={overlay} aria-hidden="true" />
+              <span class:list={[tag, "px-2.5 py-[5px] text-[11px]"]}>{project.tag}</span>
+              <div class="flex flex-col gap-1">
+                <h3 class="font-heading text-[20px] font-bold text-white">{project.mobileTitle ?? project.title}</h3>
+                <p class="text-[13px] text-white/80">{project.mobileMeta}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+      <div class="flex justify-center gap-1.5" aria-hidden="true">
+        {
+          portfolio.map((_, index) => (
+            <span
+              data-carousel-dot
+              data-on="w-5 bg-navy-900"
+              data-off="w-1.5 bg-border"
+              class:list={["h-1.5 rounded-pill transition-all", index === 0 ? "w-5 bg-navy-900" : "w-1.5 bg-border"]}
+            />
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { initCarouselDots } from "../../scripts/carousel-dots";
+  initCarouselDots();
+</script>

@@ -13,10 +13,10 @@ commits yet on `master`):
 
 | Path | What it is |
 | --- | --- |
-| `packages/api-client/src/client.ts` | HTTP client: bearer `token`, `unwrap`, retries, `Idempotency-Key`, errors read `message` |
-| `packages/api-client/src/services/portal.ts` (+ `portal-schemas.ts`) | `PortalSource` — 51 operations of the customer portal; login/tokens validated with zod |
-| `packages/api-client/src/services/catalog.ts` | `CatalogSource` — 9 read operations, website service token |
-| `packages/api-client/src/services/website.ts` (+ `rfq.ts`) | `WebsiteSource` — 10 operations: forms (service token) and checkout (customer token) |
+| `apps/web-landing/src/api/client.ts` (+ the portal's copy) | HTTP client: bearer `token`, `unwrap`, retries, `Idempotency-Key`, errors read `message` |
+| `apps/web-customer-portal/src/api/portal.ts` (+ `portal-schemas.ts`) | `PortalSource` — 51 operations of the customer portal; login/tokens validated with zod |
+| `apps/web-landing/src/api/catalog.ts` | `CatalogSource` — 9 read operations, website service token |
+| `apps/web-landing/src/api/website.ts` (+ `rfq.ts`) | `WebsiteSource` — 10 operations: forms (service token) and checkout (customer token) |
 | `apps/customer/src/services/portal/{index,erp-routes}.ts` | demo/erp switch; **`erpRoutes` is empty** |
 | `apps/customer/src/pages/connect/web.ts`, `apps/web/src/lib/server/auth.ts` | website sign-in hand-off: the portal gives the website the customer's ERP access token |
 | `apps/web/src/actions/index.ts`, `apps/web/src/lib/server/website/erp-routes.ts` | checkout/RFQ calls; only `submitRfq` can be mapped (`ERP_RFQ_PATH`) |

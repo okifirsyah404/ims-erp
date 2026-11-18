@@ -1,0 +1,165 @@
+---
+import Lock from "@lucide/astro/icons/lock";
+import LayoutDashboard from "@lucide/astro/icons/layout-dashboard";
+import UsersRound from "@lucide/astro/icons/users-round";
+import CalendarCheck from "@lucide/astro/icons/calendar-check";
+import DoorOpen from "@lucide/astro/icons/door-open";
+import ChartColumn from "@lucide/astro/icons/chart-column";
+import Settings from "@lucide/astro/icons/settings";
+import LogoMark from "../brand/LogoMark.astro";
+
+/**
+ * Decorative VMS dashboard illustration (Software Showcase · Dashboard Mockup).
+ * `variant="mini"` is the compact card from the mobile frame.
+ */
+interface Props {
+  variant?: "full" | "mini";
+  class?: string;
+}
+
+const { variant = "full", class: className } = Astro.props;
+
+const sidebar = [LayoutDashboard, UsersRound, CalendarCheck, DoorOpen, ChartColumn, Settings];
+const kpis = [
+  { label: "Visitors today", short: "Visitors", value: "482", delta: "+12.4%", tone: "text-success" },
+  { label: "Checked in", short: "Checked in", value: "356", delta: "74% of expected", tone: "text-fg-muted" },
+  { label: "Avg. check-in", short: "Avg. time", value: "6.2s", delta: "−1.8s faster", tone: "text-success" },
+];
+const hourly = [30, 62, 96, 120, 84, 58, 70, 104, 76, 40];
+const hourlyMini = [20, 36, 56, 70, 48, 34, 42, 60, 44, 24];
+const checkins = [
+  { initials: "RW", name: "Rina Wijaya", org: "PT Nusantara", status: "In" },
+  { initials: "BS", name: "Budi Santoso", org: "Bank Sentosa", status: "In" },
+  { initials: "DL", name: "Dewi Lestari", org: "Courier", status: "Pending" },
+  { initials: "AP", name: "Andi Pratama", org: "Contractor", status: "Out" },
+];
+const statusTone: Record<string, string> = {
+  In: "bg-success-bg text-success",
+  Pending: "bg-warning-bg text-warning",
+  Out: "bg-surface-2 text-fg-secondary",
+};
+const statusDot: Record<string, string> = { In: "bg-success", Pending: "bg-warning", Out: "bg-fg-secondary" };
+---
+
+{
+  variant === "full" ? (
+    <div
+      aria-hidden="true"
+      class:list={[
+        "flex flex-col overflow-hidden rounded-lg bg-white shadow-[0_40px_80px_#00000066] outline-6 -outline-offset-3 outline-white/20",
+        className,
+      ]}
+    >
+      <div class="flex h-[46px] items-center gap-2 border-b border-border bg-surface px-4">
+        <span class="size-2.5 rounded-full bg-[#FF5F57]" />
+        <span class="size-2.5 rounded-full bg-[#FEBC2E]" />
+        <span class="size-2.5 rounded-full bg-[#28C840]" />
+        <span class="ml-2 flex items-center gap-1.5 rounded-sm bg-white px-3 py-[5px] text-[11px] font-medium text-fg-secondary ring-1 ring-border ring-inset">
+          <Lock size={11} />
+          vms.entragate.cloud/dashboard
+        </span>
+      </div>
+      <div class="flex h-[440px]">
+        <div class="flex w-16 shrink-0 flex-col items-center gap-2.5 bg-navy-900 py-[18px]">
+          <LogoMark size={28} />
+          {sidebar.map((Icon, index) => (
+            <span
+              class:list={[
+                "flex size-10 items-center justify-center rounded-md",
+                index === 0 ? "bg-white/10 text-white" : "text-fg-on-dark-muted",
+              ]}
+            >
+              <Icon size={18} />
+            </span>
+          ))}
+        </div>
+        <div class="flex min-w-0 flex-1 flex-col gap-4 bg-surface p-[22px]">
+          <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-0.5">
+              <span class="font-heading text-[17px] font-bold text-fg">Visitor Overview</span>
+              <span class="text-[11px] text-fg-muted">Graha Tower · Monday, 19 Oct</span>
+            </div>
+            <span class="rounded-md bg-blue-600 px-3 py-2 text-[12px] font-semibold text-white shadow-cta">+ Invite visitor</span>
+          </div>
+          <div class="flex gap-3">
+            {kpis.map((kpi) => (
+              <div class="flex flex-1 flex-col gap-1 rounded-md bg-white p-3.5 ring-1 ring-border ring-inset">
+                <span class="text-[11px] font-medium text-fg-muted">{kpi.label}</span>
+                <span class="font-heading text-[22px] font-extrabold text-fg">{kpi.value}</span>
+                <span class:list={["text-[11px] font-semibold", kpi.tone]}>{kpi.delta}</span>
+              </div>
+            ))}
+          </div>
+          <div class="flex min-h-0 flex-1 gap-3">
+            <div class="flex flex-1 flex-col gap-2.5 rounded-md bg-white p-3.5 ring-1 ring-border ring-inset">
+              <span class="text-[12px] font-semibold text-fg">Hourly arrivals</span>
+              <div class="flex flex-1 items-end gap-2">
+                {hourly.map((height, index) => (
+                  <span
+                    class:list={["flex-1 rounded-xs", index === 3 ? "bg-blue-600" : "bg-blue-100"]}
+                    style={`height:${height}px`}
+                  />
+                ))}
+              </div>
+            </div>
+            <div class="flex w-[250px] shrink-0 flex-col gap-2.5 rounded-md bg-white p-3.5 ring-1 ring-border ring-inset">
+              <span class="text-[12px] font-semibold text-fg">Recent check-ins</span>
+              {checkins.map((row) => (
+                <div class="flex items-center gap-2.5">
+                  <span class="flex size-7 items-center justify-center rounded-pill bg-blue-50 text-[10px] font-bold text-blue-600">
+                    {row.initials}
+                  </span>
+                  <span class="flex min-w-0 flex-1 flex-col">
+                    <span class="text-[12px] font-semibold text-fg">{row.name}</span>
+                    <span class="text-[10px] text-fg-muted">{row.org}</span>
+                  </span>
+                  <span
+                    class:list={[
+                      "flex items-center gap-1.5 rounded-pill px-2 py-[3px] text-[10px] font-semibold",
+                      statusTone[row.status],
+                    ]}
+                  >
+                    <span class:list={["size-1.5 rounded-full", statusDot[row.status]]} />
+                    {row.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div
+      aria-hidden="true"
+      class:list={["flex flex-col gap-3 rounded-lg bg-white p-4 outline-4 -outline-offset-2 outline-white/20", className]}
+    >
+      <div class="flex items-center justify-between">
+        <div class="flex flex-col gap-0.5">
+          <span class="font-heading text-[15px] font-bold text-fg">Visitor Overview</span>
+          <span class="text-[11px] text-fg-muted">Graha Tower · Today</span>
+        </div>
+        <span class="flex items-center gap-1.5 rounded-pill bg-success-bg px-2 py-[3px] text-[11px] font-semibold text-success">
+          <span class="size-1.5 rounded-full bg-success" />
+          Live
+        </span>
+      </div>
+      <div class="flex gap-2">
+        {kpis.map((kpi) => (
+          <div class="flex flex-1 flex-col gap-0.5 rounded-md bg-surface p-2.5">
+            <span class="text-[10px] font-medium text-fg-muted">{kpi.short}</span>
+            <span class="font-heading text-[18px] font-extrabold text-fg">{kpi.value}</span>
+          </div>
+        ))}
+      </div>
+      <div class="flex h-[70px] items-end gap-1.5">
+        {hourlyMini.map((height, index) => (
+          <span
+            class:list={["flex-1 rounded-xs", index === 3 ? "bg-blue-600" : "bg-blue-100"]}
+            style={`height:${height}px`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}

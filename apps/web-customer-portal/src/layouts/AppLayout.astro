@@ -1,0 +1,40 @@
+---
+import { pwaInfo } from "virtual:pwa-info";
+import PwaStatus from "../components/customer/PwaStatus.astro";
+import "../styles/global.css";
+
+/** Base document for the customer PWA (replaces the starter CusomerLayout). */
+export interface Props {
+  title: string;
+  /** Status-bar colour for dark full-bleed screens (welcome, scanner). */
+  themeColor?: string;
+  bodyClass?: string;
+  /** Show the offline toast (off on the offline page itself). */
+  connectionStatus?: boolean;
+}
+
+const { title, themeColor = "#FFFFFF", bodyClass, connectionStatus = true } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content={themeColor} />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Entragate" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <title>{title} · Entragate</title>
+    {pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} />}
+  </head>
+  <body class={bodyClass}>
+    <slot />
+    <PwaStatus connection={connectionStatus} />
+  </body>
+</html>

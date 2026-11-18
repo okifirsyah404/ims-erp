@@ -1,0 +1,79 @@
+---
+import MockKpi from "./MockKpi.astro";
+import MockStatus from "./MockStatus.astro";
+
+/** Entragate Gym window body (02.04). */
+interface Props {
+  variant: "desktop" | "mobile";
+}
+
+const { variant } = Astro.props;
+const week = [
+  { day: "M", h: 52 },
+  { day: "T", h: 68 },
+  { day: "W", h: 60 },
+  { day: "T", h: 84 },
+  { day: "F", h: 96, active: true },
+  { day: "S", h: 74 },
+  { day: "S", h: 40 },
+];
+const members = [
+  { name: "Andi P.", plan: "Premium", avatar: "#C7D6FF", status: "Active", tone: "success" as const },
+  { name: "Sari W.", plan: "Monthly", avatar: "#BDEFF7", status: "Active", tone: "success" as const },
+  { name: "Budi H.", plan: "Student", avatar: "#FFE2B8", status: "Expiring", tone: "warning" as const },
+];
+---
+
+{
+  variant === "desktop" ? (
+    <>
+      <div class="flex gap-2">
+        <MockKpi label="Check-ins today" value="642" delta="+9%" />
+        <MockKpi label="Active members" value="1,236" delta="+3%" />
+        <MockKpi label="Renewals due" value="38" delta="7 today" tone="warning" />
+      </div>
+      <div class="flex min-h-0 flex-1 gap-2.5">
+        <div class="flex flex-1 flex-col gap-2 rounded-sm bg-white p-2.5 ring-1 ring-border ring-inset">
+          <span class="text-[10px] font-semibold text-fg">Weekly check-ins</span>
+          <div class="flex flex-1 items-end gap-1.5">
+            {week.map((d) => (
+              <div class="flex flex-1 flex-col items-center gap-1">
+                <span class:list={["w-full rounded-xs", d.active ? "bg-blue-600" : "bg-blue-100"]} style={`height:${d.h}px`} />
+                <span class="text-[8.5px] text-fg-muted">{d.day}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div class="flex w-[210px] shrink-0 flex-col gap-[7px] rounded-sm bg-white p-2.5 ring-1 ring-border ring-inset">
+          <span class="text-[10px] font-semibold text-fg">Recent check-ins</span>
+          {members.map((m) => (
+            <div class="flex items-center gap-[7px]">
+              <span class="size-5 shrink-0 rounded-full" style={`background:${m.avatar}`} />
+              <span class="flex flex-1 flex-col gap-px">
+                <span class="text-[10px] font-semibold text-fg">{m.name}</span>
+                <span class="text-[8.5px] text-fg-muted">{m.plan}</span>
+              </span>
+              <MockStatus label={m.status} tone={m.tone} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  ) : (
+    <>
+      <div class="flex gap-1.5">
+        <MockKpi variant="mobile" label="Check-ins" value="642" />
+        <MockKpi variant="mobile" label="Members" value="1,236" />
+        <MockKpi variant="mobile" label="Renewals" value="38" />
+      </div>
+      <div class="flex flex-1 flex-col gap-[7px] rounded-sm bg-white p-2.5 ring-1 ring-border ring-inset">
+        <span class="text-[9.5px] font-semibold text-fg">Weekly check-ins</span>
+        <div class="flex flex-1 items-end gap-1.5">
+          {week.map((d) => (
+            <span class:list={["flex-1 rounded-xs", d.active ? "bg-blue-600" : "bg-blue-100"]} style={`height:${d.h * 0.583}px`} />
+          ))}
+        </div>
+      </div>
+    </>
+  )
+}

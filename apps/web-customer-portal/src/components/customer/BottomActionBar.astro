@@ -1,0 +1,32 @@
+---
+/**
+ * App / Bottom Action Bar (re0jk): sticky footer for detail screens without the tab bar.
+ * Optional summary row (label/value) above the actions slot.
+ */
+interface Props {
+  summaryLabel?: string;
+  summaryValue?: string;
+  class?: string;
+}
+
+const { summaryLabel, summaryValue, class: className } = Astro.props;
+---
+
+<div
+  class:list={[
+    "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white/96 shadow-[0_-8px_24px_#0A1A3F14] backdrop-blur-[20px]",
+    className,
+  ]}
+>
+  <div class="app-column flex flex-col gap-2.5 px-5 pt-3.5 pb-safe md:max-w-[640px] xl:max-w-[760px]">
+    {
+      summaryLabel && (
+        <div class="flex items-center justify-between">
+          <span class="text-[13px] text-fg-muted">{summaryLabel}</span>
+          <span class="font-heading text-[17px] font-extrabold text-fg">{summaryValue}</span>
+        </div>
+      )
+    }
+    <div class="flex gap-2.5"><slot /></div>
+  </div>
+</div>

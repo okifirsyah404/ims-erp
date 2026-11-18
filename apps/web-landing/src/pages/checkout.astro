@@ -1,0 +1,377 @@
+---
+import Lock from "@lucide/astro/icons/lock";
+import Truck from "@lucide/astro/icons/truck";
+import Zap from "@lucide/astro/icons/zap";
+import Warehouse from "@lucide/astro/icons/warehouse";
+import HardHat from "@lucide/astro/icons/hard-hat";
+import Landmark from "@lucide/astro/icons/landmark";
+import QrCode from "@lucide/astro/icons/qr-code";
+import CreditCard from "@lucide/astro/icons/credit-card";
+import FileClock from "@lucide/astro/icons/file-clock";
+import ReceiptText from "@lucide/astro/icons/receipt-text";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import ArrowLeft from "@lucide/astro/icons/arrow-left";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import Clock from "@lucide/astro/icons/clock";
+import Copy from "@lucide/astro/icons/copy";
+import UserRound from "@lucide/astro/icons/user-round";
+import LogIn from "@lucide/astro/icons/log-in";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import PublicLayout from "../layouts/PublicLayout.astro";
+import Stepper from "../components/ui/Stepper.astro";
+import FormField from "../components/ui/FormField.astro";
+import Alert from "../components/ui/Alert.astro";
+import { INSTALLATION_FEE, TAX_RATE, checkoutSteps, deliveryOptions, paymentOptions } from "../data/checkout";
+import { authRoutes, customerPortal, routes } from "../data/site";
+import { formatRupiah } from "../lib/format";
+import { getClientCatalog } from "../lib/catalog";
+import { getCustomer } from "../lib/server/auth";
+import { websiteMode } from "../lib/server/website";
+import { DEMO_PROMO } from "../lib/server/website/demo";
+
+/**
+ * 03.03 Checkout (desktop psbkF / mobile Z3HDv0), login-gated.
+ *
+ * Guests see their cart summary and sign in (or register) in the Customer Portal; the
+ * portal hands them back here with the cart intact. Signed-in customers go through six
+ * steps: details → address → delivery → payment → review (server-validated ERP quote) →
+ * payment status. The browser total is only an estimate; the server re-prices everything.
+ */
+export const prerender = false;
+
+const customer = await getCustomer(Astro.session);
+const authError = Astro.url.searchParams.get("auth");
+const authMessages: Record<string, string> = {
+  state: "Your sign-in link expired or was opened in another browser. Please sign in again.",
+  expired: "Your sign-in took too long. Please sign in again.",
+  exchange: "We couldn't confirm your sign-in with the Customer Portal. Please try again.",
+  config: "Checkout sign-in isn't configured on this server yet.",
+};
+const catalog = await getClientCatalog();
+const steps = checkoutSteps.map((label, index) => ({ label, href: index === 0 ? routes.cart : undefined }));
+const wizard = checkoutSteps.slice(1);
+const deliveryIcons = { truck: Truck, zap: Zap, warehouse: Warehouse };
+const paymentIcons = { landmark: Landmark, "qr-code": QrCode, "credit-card": CreditCard, "file-clock": FileClock };
+const pricing = { taxRate: TAX_RATE, installationFee: INSTALLATION_FEE, delivery: Object.fromEntries(deliveryOptions.map((d) => [d.value, d.fee])) };
+const radio = "flex size-[22px] shrink-0 items-center justify-center rounded-pill bg-white ring-2 ring-border-strong ring-inset group-has-checked:bg-blue-600 group-has-checked:ring-blue-600 after:size-2 after:rounded-full after:bg-white after:opacity-0 group-has-checked:after:opacity-100";
+const option = "group flex cursor-pointer rounded-md bg-white ring-1 ring-border ring-inset has-checked:bg-blue-50 has-checked:ring-[1.5px] has-checked:ring-blue-600 has-focus-visible:outline-2 has-focus-visible:outline-blue-600";
+const toggle = "relative h-7 w-[46px] shrink-0 cursor-pointer appearance-none rounded-pill bg-border-strong transition-colors checked:bg-blue-600 after:absolute after:top-[3px] after:left-[3px] after:size-[22px] after:rounded-full after:bg-white after:transition-transform checked:after:translate-x-[18px] focus-visible:outline-2 focus-visible:outline-blue-600";
+const card = "flex flex-col gap-[18px] xl:rounded-lg xl:bg-white xl:p-7 xl:shadow-[0_8px_24px_#0A1A3F0D] xl:ring-1 xl:ring-border xl:ring-inset";
+const title = "font-heading text-[17px] font-bold text-fg xl:text-[20px]";
+const back = "hidden items-center gap-2 rounded-md bg-white px-[22px] py-3.5 text-[15px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface xl:flex";
+const next = "hidden items-center justify-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700 disabled:opacity-60 xl:flex";
+---
+
+<PublicLayout title="Checkout | Entragate" description="Secure checkout for Entragate ready-stock products." mobileFooter={false} noindex>
+  <section class="border-b border-border bg-surface max-xl:border-0 max-xl:bg-white" data-checkout-head>
+    <div class="container-page flex flex-col gap-4 pt-6 pb-2 xl:gap-6 xl:pt-10 xl:pb-8">
+      <div class="flex items-end justify-between gap-3">
+        <div class="flex flex-col gap-2">
+          <h1 class="font-heading text-[30px] font-extrabold tracking-[-1px] text-navy-900 xl:text-[44px] xl:tracking-[-1.4px]" data-checkout-title>Checkout</h1>
+          <p class="hidden text-[16px] text-fg-secondary xl:block">Ready-stock items · ships from our Bekasi warehouse</p>
+        </div>
+        <p class="flex items-center gap-2 text-[14px] font-semibold text-success"><Lock size={16} aria-hidden="true" /><span class="xl:hidden">Secure</span><span class="hidden xl:inline">Secure checkout · SSL encrypted</span></p>
+      </div>
+      {
+        wizard.map((label, index) => (
+          <div data-stepper={index + 1} hidden={index !== 0}>
+            <Stepper steps={steps} current={customer ? index + 1 : 0} mobileLabel={customer ? label : "Sign in to check out"} />
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <noscript>
+    <div class="container-page py-8">
+      <p class="rounded-lg bg-warning-bg p-4 text-[14px] text-fg ring-1 ring-warning-border ring-inset">
+        Checkout needs JavaScript to read your cart. You can still <a href={routes.quote} class="font-semibold underline">request a quotation</a> and our sales team will invoice you.
+      </p>
+    </div>
+  </noscript>
+
+  <!-- Empty cart -->
+  <div class="container-page py-16 text-center" data-checkout-empty hidden>
+    <h2 class="font-heading text-[22px] font-bold text-navy-900">There's nothing to check out</h2>
+    <p class="mt-2 text-[15px] text-fg-secondary">Add ready-stock products to your cart first.</p>
+    <a href={routes.products} class="mt-6 inline-flex rounded-md bg-blue-600 px-5 py-3 text-[14px] font-semibold text-white shadow-cta">Browse products</a>
+  </div>
+
+  <!-- Step 6 · Payment status -->
+  <section class="container-page flex flex-col items-center gap-6 py-12 text-center xl:py-20" data-checkout-done tabindex="-1" hidden>
+    <span class="flex size-[104px] items-center justify-center rounded-pill bg-success-bg/60" data-done-icon-wrap>
+      <span class="flex size-[84px] items-center justify-center rounded-pill bg-success text-white" data-done-icon-ok><CircleCheck size={40} aria-hidden="true" /></span>
+      <span class="hidden size-[84px] items-center justify-center rounded-pill bg-warning text-white" data-done-icon-wait><Clock size={40} aria-hidden="true" /></span>
+    </span>
+    <div class="flex max-w-[560px] flex-col gap-2">
+      <h2 class="font-heading text-[28px] font-extrabold tracking-[-0.8px] text-navy-900 xl:text-[36px]" data-done-title>Order placed — thank you!</h2>
+      <p class="text-[15px] leading-6 text-fg-secondary">
+        Order <strong class="text-fg" data-done-number></strong> <span data-done-sentence>is in your account. We've emailed the details to <strong class="text-fg" data-done-email></strong>.</span>
+      </p>
+    </div>
+    <div class="flex w-full max-w-[520px] flex-col gap-3 rounded-card bg-white p-6 text-left ring-1 ring-border ring-inset">
+      <div class="flex justify-between text-[14px]"><span class="text-fg-muted">Order total</span><strong class="font-heading text-[20px] text-navy-900" data-done-total></strong></div>
+      <div class="flex items-center justify-between text-[14px]">
+        <span class="text-fg-muted">Payment status</span>
+        <span class="flex items-center gap-1.5 rounded-pill bg-warning-bg px-2.5 py-[5px] text-[12px] font-semibold text-warning" data-done-status-chip>
+          <span class="size-1.5 rounded-full bg-current"></span><span data-done-status-label>Awaiting payment</span>
+        </span>
+      </div>
+      <div class="flex flex-col gap-1 rounded-md bg-blue-50 p-4" data-done-instruction hidden>
+        <span class="text-[13px] font-semibold text-blue-700" data-done-instruction-label></span>
+        <span class="flex items-center justify-between gap-3">
+          <span class="font-heading text-[20px] font-bold tracking-[1px] text-navy-900" data-done-instruction-value></span>
+          <button type="button" class="flex items-center gap-1.5 text-[13px] font-semibold text-blue-600" data-copy-instruction><Copy size={14} aria-hidden="true" />Copy</button>
+        </span>
+      </div>
+      <a class="flex items-center justify-center gap-2 rounded-md bg-blue-600 py-3 text-[14px] font-semibold text-white hover:bg-blue-700" data-done-pay hidden>Continue to payment <ArrowRight size={15} aria-hidden="true" /></a>
+      <p class="text-[13px] text-fg-secondary" data-done-status></p>
+      <button type="button" class="self-start text-[13px] font-semibold text-blue-600 hover:underline" data-refresh-status>Refresh status</button>
+    </div>
+    <div class="flex flex-col gap-3 sm:flex-row">
+      <a href={customerPortal.orders} class="rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700">View in Customer Portal</a>
+      <a href={routes.products} class="rounded-md bg-white px-[22px] py-3.5 text-[15px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface">Continue shopping</a>
+    </div>
+  </section>
+
+  <form
+    class="container-page flex flex-col gap-6 pt-4 pb-40 xl:flex-row xl:items-start xl:gap-8 xl:pt-10 xl:pb-24"
+    data-checkout-form
+    data-mode={customer ? "customer" : "guest"}
+    data-customer-id={customer?.id}
+    data-signed-in={Astro.url.searchParams.has("signed_in") ? "" : undefined}
+    novalidate
+    hidden
+  >
+    <div class="flex min-w-0 flex-1 flex-col gap-6">
+      {authError && <Alert tone="danger" title="Sign-in didn't complete" description={authMessages[authError] ?? authMessages.exchange} />}
+
+      {
+        customer ? (
+          <>
+            <div class="flex items-center justify-between gap-3 rounded-md bg-surface px-4 py-3 text-[14px]">
+              <span class="flex min-w-0 items-center gap-2.5 text-fg-secondary">
+                <UserRound size={17} class="shrink-0 text-blue-600" aria-hidden="true" />
+                <span class="truncate">Signed in as <strong class="text-fg">{customer.name}</strong> · {customer.email}</span>
+              </span>
+              <button type="submit" form="checkout-sign-out" class="shrink-0 font-semibold text-blue-600 hover:underline">Not you?</button>
+            </div>
+            <Alert tone="danger" title="We couldn't continue" hidden data-form-error />
+
+            {/* Step 1 · Customer information */}
+            <section class={card} aria-labelledby="customer-title" data-step="1">
+              <h2 id="customer-title" class={title}>Customer information</h2>
+              <div class="grid gap-4 md:grid-cols-2">
+                <FormField label="Company (optional)" name="company" autocomplete="organization" maxlength={160} placeholder="PT …" value={customer.company} />
+                <FormField label="Your name" name="name" required autocomplete="name" maxlength={120} value={customer.name} />
+                <FormField label="Email" name="email" type="email" required autocomplete="email" maxlength={160} value={customer.email} hint="We send the order confirmation here." />
+                <FormField label="Phone / WhatsApp" name="phone" type="tel" required autocomplete="tel" maxlength={24} value={customer.phone} />
+              </div>
+            </section>
+
+            {/* Step 2 · Shipping address */}
+            <section class={card} aria-labelledby="ship-title" data-step="2" hidden>
+              <h2 id="ship-title" class={title}><span class="xl:hidden">Ship to</span><span class="hidden xl:inline">Shipping address</span></h2>
+              <div class="grid gap-4 md:grid-cols-2">
+                <FormField label="Recipient on site" name="recipient" required maxlength={120} placeholder="e.g. Andi (Facility)" />
+                <FormField label="Site phone" name="ship_phone" type="tel" required maxlength={24} />
+                <FormField label="Street address" name="address" required autocomplete="street-address" maxlength={300} class="md:col-span-2" />
+                <FormField label="City" name="city" required autocomplete="address-level2" maxlength={80} />
+                <FormField label="Postal code" name="postal_code" required autocomplete="postal-code" inputmode="numeric" maxlength={5} pattern="\d{5}" title="5-digit postal code" />
+                <FormField label="Delivery notes (optional)" name="ship_notes" maxlength={300} placeholder="Loading dock, access hours…" class="md:col-span-2" />
+              </div>
+            </section>
+
+            {/* Step 3 · Shipping / installation */}
+            <section class={card} aria-labelledby="delivery-title" data-step="3" hidden>
+              <h2 id="delivery-title" class={title}><span class="xl:hidden">Delivery</span><span class="hidden xl:inline">Delivery method</span></h2>
+              <div class="flex flex-col gap-3 xl:flex-row">
+                {deliveryOptions.map((d, index) => {
+                  const Icon = deliveryIcons[d.icon];
+                  return (
+                    <label class:list={[option, "items-center gap-3.5 p-4 xl:flex-1 xl:flex-col xl:items-stretch xl:gap-2.5"]}>
+                      <input type="radio" name="delivery" value={d.value} checked={index === 0} class="sr-only" />
+                      <span class="flex items-center justify-between xl:order-first">
+                        <Icon size={20} class="text-fg group-has-checked:text-blue-600" aria-hidden="true" />
+                        <span class:list={[radio, "hidden xl:flex"]} aria-hidden="true" />
+                      </span>
+                      <span class="flex flex-1 flex-col gap-0.5">
+                        <span class="text-[15px] font-bold text-fg">{d.label}</span>
+                        <span class="text-[13px] text-fg-muted">{d.eta}</span>
+                      </span>
+                      <span class="text-[14px] font-bold text-navy-900">{d.fee ? formatRupiah(d.fee) : "Free"}</span>
+                      <span class:list={[radio, "xl:hidden"]} aria-hidden="true" />
+                    </label>
+                  );
+                })}
+              </div>
+              <label class="flex cursor-pointer items-center gap-3.5 rounded-md bg-surface p-4">
+                <HardHat size={20} class="shrink-0 text-blue-600" aria-hidden="true" />
+                <span class="flex flex-1 flex-col gap-0.5">
+                  <span class="text-[15px] font-semibold text-fg">Add professional installation</span>
+                  <span class="text-[13px] text-fg-muted">Certified IMS technicians · scheduled after delivery</span>
+                </span>
+                <span class="hidden text-[14px] font-bold text-fg sm:inline">+ {formatRupiah(INSTALLATION_FEE)}</span>
+                <input type="checkbox" name="installation" checked class={toggle} aria-label={`Add professional installation for ${formatRupiah(INSTALLATION_FEE)}`} />
+              </label>
+            </section>
+
+            {/* Step 4 · Payment method */}
+            <section class={card} aria-labelledby="payment-title" data-payment data-step="4" hidden>
+              <div class="flex items-center justify-between">
+                <h2 id="payment-title" class={title}><span class="xl:hidden">Payment</span><span class="hidden xl:inline">Payment method</span></h2>
+                <button type="button" class="text-[14px] font-semibold text-blue-600 hover:underline xl:hidden" data-show-payments aria-expanded="false">All methods</button>
+              </div>
+              <div class="flex flex-col gap-3">
+                {paymentOptions.map((p, index) => {
+                  const Icon = paymentIcons[p.icon];
+                  return (
+                    <label class:list={[option, "items-center gap-3.5 px-4 py-3.5", index > 0 && "max-xl:hidden max-xl:has-checked:flex in-[.payments-open]:flex"]} data-payment-option>
+                      <input type="radio" name="payment" value={p.value} checked={index === 0} class="sr-only" data-payment-label={p.label} />
+                      <span class="flex size-10 shrink-0 items-center justify-center rounded-md bg-surface text-fg group-has-checked:bg-white" aria-hidden="true"><Icon size={18} /></span>
+                      <span class="flex flex-1 flex-col gap-0.5">
+                        <span class="text-[15px] font-semibold text-fg">{p.label}</span>
+                        <span class="text-[13px] text-fg-muted">{p.description}</span>
+                      </span>
+                      <span class={radio} aria-hidden="true" />
+                    </label>
+                  );
+                })}
+              </div>
+              <label class="flex cursor-pointer items-center gap-3 rounded-md bg-surface p-4">
+                <ReceiptText size={18} class="shrink-0 text-blue-600" aria-hidden="true" />
+                <span class="flex-1 text-[14px] font-semibold text-fg">Issue Faktur Pajak to my company NPWP</span>
+                <input type="checkbox" name="tax_invoice" class={toggle} data-tax-toggle aria-label="Issue Faktur Pajak" />
+              </label>
+              <FormField label="Company NPWP" name="npwp" maxlength={20} placeholder="01.234.567.8-901.000" hint="Required for a Faktur Pajak." disabled class="hidden" />
+            </section>
+
+            {/* Step 5 · Review & confirm (server-validated quote) */}
+            <section class={card} aria-labelledby="review-title" data-step="5" hidden>
+              <div class="flex items-center justify-between gap-3">
+                <h2 id="review-title" class={title}>Review &amp; confirm</h2>
+                <span class="flex items-center gap-1.5 text-[13px] font-semibold text-success"><ShieldCheck size={15} aria-hidden="true" />Prices confirmed</span>
+              </div>
+              <div class="flex flex-col gap-3" data-review-loading hidden>
+                <div class="skeleton h-14 rounded-md"></div>
+                <div class="skeleton h-14 rounded-md"></div>
+                <p class="sr-only" role="status">Checking live prices and stock…</p>
+              </div>
+              <ul class="flex flex-col divide-y divide-border rounded-md ring-1 ring-border ring-inset" data-review-lines></ul>
+              <dl class="grid gap-3 text-[14px] md:grid-cols-2" data-review-details></dl>
+              <p class="rounded-md bg-warning-bg px-3.5 py-2.5 text-[13px] font-semibold text-warning" data-review-demo hidden>
+                Demo mode — sample prices. Placing this order creates no real order or payment.
+              </p>
+              <label class="flex cursor-pointer items-start gap-2.5">
+                <input type="checkbox" name="terms" required class="mt-px size-[18px] shrink-0 rounded-[4px] accent-blue-600" data-required-message="Please accept the terms of sale" />
+                <span class="text-[13px] leading-5 text-fg-secondary">I agree to the <a href={routes.terms} class="underline hover:text-fg">terms of sale</a> and <a href={routes.privacy} class="underline hover:text-fg">privacy policy</a>.</span>
+              </label>
+              <p class="-mt-3 text-[12.5px] font-semibold text-danger" data-error-for="terms" hidden></p>
+            </section>
+
+            <div class="flex items-center justify-between gap-3">
+              <button type="button" class={back} data-wizard-back hidden><ArrowLeft size={16} aria-hidden="true" />Back</button>
+              <span></span>
+              <button type="submit" class={next} data-wizard-next><span data-label>Continue</span><ArrowRight size={16} aria-hidden="true" /></button>
+            </div>
+          </>
+        ) : (
+          <section class={card} aria-labelledby="gate-title" data-guest-gate aria-description="Guest: cart summary and sign-in">
+            <div class="flex items-start gap-3.5">
+              <span class="flex size-11 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600"><LogIn size={20} aria-hidden="true" /></span>
+              <div class="flex flex-col gap-1">
+                <h2 id="gate-title" class={title}>Sign in to check out</h2>
+                <p class="text-[14px] leading-[21px] text-fg-secondary">
+                  Orders and payments are tied to your Entragate account, so you can track delivery, invoices and warranty in the Customer Portal. Your cart stays on this device and comes with you.
+                </p>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2.5 sm:flex-row">
+              <a href={authRoutes.login("/checkout")} class="flex flex-1 items-center justify-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700" data-auth-link>
+                Sign in &amp; continue <ArrowRight size={16} aria-hidden="true" />
+              </a>
+              <a href={authRoutes.register("/checkout")} class="flex flex-1 items-center justify-center rounded-md bg-white px-[22px] py-3.5 text-[15px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface" data-auth-link>
+                Create an account
+              </a>
+            </div>
+            <p class="text-[13px] text-fg-muted">
+              Buying for a project or need an invoice first? <a href={routes.quote} class="font-semibold text-blue-600 hover:underline">Request a quotation</a> — no account needed.
+            </p>
+          </section>
+        )
+      }
+    </div>
+
+    <!-- Summary -->
+    <aside class="flex flex-col gap-4 xl:sticky xl:top-24 xl:w-[440px] xl:shrink-0">
+      <div class="flex flex-col gap-[18px] rounded-lg bg-surface p-4 xl:bg-white xl:p-7 xl:shadow-[0_16px_40px_#0A1A3F14] xl:ring-1 xl:ring-border xl:ring-inset">
+        <h2 class="hidden font-heading text-[22px] font-extrabold text-fg xl:block">Order summary</h2>
+        <ul class="hidden flex-col gap-3 xl:flex" data-summary-lines></ul>
+        {
+          customer && (
+            <div class="hidden gap-2.5 xl:flex">
+              <div class="flex flex-1 flex-col gap-2">
+                <label for="promo" class="text-[13px] font-semibold text-fg">Promo code</label>
+                <div class="flex gap-2">
+                  <input id="promo" name="promo" maxlength="40" autocomplete="off" placeholder={websiteMode === "demo" ? DEMO_PROMO.code : "Enter code"} class="h-11 min-w-0 flex-1 rounded-md bg-white px-3.5 text-[15px] text-fg uppercase ring-1 ring-border ring-inset outline-none placeholder:normal-case focus:ring-2 focus:ring-blue-600" />
+                  <button type="button" class="rounded-md bg-white px-4 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface" data-apply-promo>Apply</button>
+                </div>
+                <p class="text-[12.5px] font-semibold" data-promo-status hidden></p>
+              </div>
+            </div>
+          )
+        }
+        <dl class="flex flex-col gap-2.5 text-[14px] xl:border-t xl:border-border xl:pt-[18px]">
+          <div class="flex justify-between"><dt class="text-fg-muted">Subtotal<span class="xl:hidden"> (<span data-units></span> items)</span></dt><dd class="font-semibold text-fg" data-subtotal></dd></div>
+          <div class="flex justify-between" data-discount-row hidden><dt class="text-fg-muted" data-discount-label>Promo</dt><dd class="font-semibold text-success" data-discount></dd></div>
+          <div class="flex justify-between"><dt class="text-fg-muted">Shipping · <span data-delivery-label></span></dt><dd class="font-semibold text-fg" data-shipping></dd></div>
+          <div class="flex justify-between" data-installation-row><dt class="text-fg-muted">Installation</dt><dd class="font-semibold text-fg" data-installation></dd></div>
+          <div class="flex justify-between"><dt class="text-fg-muted">PPN 11%</dt><dd class="font-semibold text-fg" data-tax></dd></div>
+        </dl>
+        <div class="hidden items-center justify-between border-t border-border pt-[18px] xl:flex">
+          <span class="flex flex-col">
+            <span class="font-heading text-[17px] font-bold text-fg">Total</span>
+            <span class="text-[12px] text-fg-muted" data-total-note>Estimate · confirmed at review</span>
+          </span>
+          <span class="font-heading text-[26px] font-extrabold tracking-[-0.6px] text-navy-900" data-total></span>
+        </div>
+        <p class="hidden text-center text-[13px] text-fg-muted xl:block">Your order appears instantly in the Customer Portal for tracking.</p>
+      </div>
+      <div class="hidden flex-col gap-2 rounded-lg bg-surface p-[22px] xl:flex">
+        <p class="text-[16px] font-bold text-fg">Buying for a project?</p>
+        <p class="text-[13.5px] leading-5 text-fg-secondary">Request a formal quotation for volume pricing and installation.</p>
+        <a href={routes.quote} class="flex w-fit items-center gap-1.5 text-[14px] font-bold text-blue-600 hover:underline">Request a quotation <ArrowRight size={15} aria-hidden="true" /></a>
+      </div>
+    </aside>
+
+    <!-- Mobile sticky bar -->
+    <div class="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white/96 px-5 pt-3.5 pb-[max(16px,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_#0A1A3F14] backdrop-blur-[10px] xl:hidden">
+      <div class="flex items-center justify-between pb-2.5">
+        <span class="text-[13px] text-fg-muted" data-total-note-mobile>Estimated total incl. PPN</span>
+        <span class="font-heading text-[22px] font-extrabold text-navy-900" data-total-mobile></span>
+      </div>
+      {
+        customer ? (
+          <div class="flex gap-2.5">
+            <button type="button" class="flex size-[50px] shrink-0 items-center justify-center rounded-md bg-surface text-fg" aria-label="Back" data-wizard-back hidden><ArrowLeft size={18} aria-hidden="true" /></button>
+            <button type="submit" class="flex flex-1 items-center justify-center gap-2 rounded-md bg-blue-600 py-3.5 text-[15px] font-semibold text-white shadow-cta disabled:opacity-60" data-wizard-next>
+              <span data-label>Continue</span><ArrowRight size={16} aria-hidden="true" />
+            </button>
+          </div>
+        ) : (
+          <a href={authRoutes.login("/checkout")} class="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 py-3.5 text-[15px] font-semibold text-white shadow-cta" data-auth-link>
+            Sign in to check out <Lock size={16} aria-hidden="true" />
+          </a>
+        )
+      }
+    </div>
+  </form>
+
+  <form id="checkout-sign-out" method="post" action={authRoutes.logout} hidden></form>
+  <script type="application/json" id="checkout-data" set:html={JSON.stringify({ catalog, pricing, steps: wizard, demo: websiteMode === "demo", delivery: deliveryOptions.map(({ value, label }) => ({ value, label })) }).replaceAll("<", "\\u003c")} />
+</PublicLayout>
+
+<script>
+  import { initCheckout } from "../scripts/checkout";
+  initCheckout();
+</script>

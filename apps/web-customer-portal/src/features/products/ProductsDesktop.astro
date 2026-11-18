@@ -1,0 +1,114 @@
+---
+import CalendarClock from "@lucide/astro/icons/calendar-clock";
+import QrCode from "@lucide/astro/icons/qr-code";
+import TriangleAlert from "@lucide/astro/icons/triangle-alert";
+import MapPin from "@lucide/astro/icons/map-pin";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import Wrench from "@lucide/astro/icons/wrench";
+import Package from "@lucide/astro/icons/package";
+import { type RegisteredProduct } from "@/api/portal";
+import AppButton from "../../components/customer/AppButton.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import Media from "../../components/customer/Media.astro";
+import { warrantyChip } from "../../lib/status";
+
+/** 06.05 Products & Warranty — Desktop 1440. */
+interface Props {
+  products: RegisteredProduct[];
+  list: RegisteredProduct[];
+  sites: { key: string; label: string }[];
+  site: string;
+}
+
+const { products, list, sites, site } = Astro.props;
+const expiring = products.find((p) => p.warrantyStatus === "expiring");
+const count = (key: string) => (key === "all" ? products.length : products.filter((p) => p.siteKey === key).length);
+const leftLabel = (p: RegisteredProduct) =>
+  p.warrantyStatus === "expired" ? "Expired" : p.daysLeft !== undefined ? `${p.daysLeft} days left` : `${p.monthsLeft} months left`;
+const fill = { active: "bg-success", expiring: "bg-warning", expired: "bg-danger" };
+const leftTone = { active: "text-fg-secondary", expiring: "text-warning", expired: "text-danger" };
+---
+
+<div class="flex flex-col gap-7">
+  <div class="flex items-end justify-between gap-2.5">
+    <div class="flex flex-col gap-1">
+      <h1 class="font-heading text-[34px] font-extrabold tracking-[-1px] text-fg">Products &amp; warranty</h1>
+      <p class="text-[14px] text-fg-muted">{products.length} registered product{products.length === 1 ? "" : "s"} across {sites.length - 1} site{sites.length === 2 ? "" : "s"}</p>
+    </div>
+    <div class="flex gap-2.5">
+      <AppButton variant="outline" href="/support/book" class="h-12"><CalendarClock slot="icon" size={18} aria-hidden="true" />Book service</AppButton>
+      <AppButton href="/products/register" class="h-12"><QrCode slot="icon" size={18} aria-hidden="true" />Register device</AppButton>
+    </div>
+  </div>
+
+  {
+    expiring && (
+      <div class="flex items-center gap-3.5 rounded-lg bg-warning-bg px-5 py-4 ring-1 ring-[#F3DDB0] ring-inset" role="status">
+        <TriangleAlert size={20} class="shrink-0 text-warning" aria-hidden="true" />
+        <div class="flex flex-1 flex-col gap-0.5">
+          <p class="text-[15px] font-bold text-fg">Warranty expiring soon · {expiring.name} ({expiring.site})</p>
+          <p class="text-[13.5px] text-fg-secondary">Ends in {leftLabel(expiring).replace(" left", "")}. Extend cover before it lapses to keep on-site service included.</p>
+        </div>
+        <AppButton href={`/warranty/${expiring.id}`} class="h-[42px]">Extend warranty</AppButton>
+      </div>
+    )
+  }
+
+  {
+    sites.length > 2 && (
+      <nav aria-label="Filter by site" class="flex flex-wrap gap-2">
+        {sites.map((s) => (
+          <a
+            href={s.key === "all" ? "/products" : `/products?site=${s.key}`}
+            aria-current={s.key === site ? "true" : undefined}
+            class:list={[
+              "rounded-pill px-4 py-[9px] text-[13.5px] font-semibold",
+              s.key === site ? "bg-navy-900 text-white" : "bg-white text-fg ring-1 ring-border ring-inset hover:bg-surface",
+            ]}
+          >
+            {s.label} · {count(s.key)}
+          </a>
+        ))}
+      </nav>
+    )
+  }
+
+  {
+    list.length === 0 ? (
+      <div class="flex flex-col items-center gap-3 rounded-card bg-white px-6 py-14 text-center ring-1 ring-border ring-inset">
+        <Package size={28} class="text-blue-600" aria-hidden="true" />
+        <p class="font-heading text-[17px] font-bold text-fg">No registered devices yet</p>
+        <p class="text-[14px] text-fg-secondary">Register a device to activate its warranty and book service visits.</p>
+      </div>
+    ) : (
+      <ul class="grid grid-cols-3 gap-5">
+        {list.map((product) => {
+          const chip = warrantyChip[product.warrantyStatus];
+          return (
+            <li class="flex flex-col gap-3.5 rounded-card bg-white p-4 shadow-[0_6px_18px_#0A1A3F0A] ring-1 ring-border ring-inset">
+              <Media src={product.image} alt="" class="h-[170px] w-full rounded-lg bg-surface" />
+              <div class="flex flex-col gap-1 px-1">
+                <h2 class="text-[16px] font-bold text-fg">{product.name}</h2>
+                <p class="text-[12.5px] text-fg-muted">{product.serialLabel}</p>
+                <p class="flex items-center gap-[5px] text-[12.5px] font-medium text-fg-secondary"><MapPin size={12} aria-hidden="true" />{product.site}</p>
+              </div>
+              <div class="flex flex-col gap-2 rounded-md bg-surface p-3">
+                <span class="flex items-center justify-between gap-2.5">
+                  <StatusChip label={chip.label} tone={chip.tone} class="!bg-white" />
+                  <span class:list={["text-[12.5px] font-semibold", leftTone[product.warrantyStatus]]}>{leftLabel(product)}</span>
+                </span>
+                <span class="h-2 overflow-hidden rounded-pill bg-surface-2" role="progressbar" aria-label={`Warranty remaining for ${product.name}`} aria-valuenow={Math.round(product.progress * 100)} aria-valuemin="0" aria-valuemax="100">
+                  <span class:list={["block h-full rounded-pill", fill[product.warrantyStatus]]} style={`width:${product.progress * 100}%`} />
+                </span>
+              </div>
+              <div class="flex gap-2">
+                <AppButton variant="outline" href={`/warranty/${product.id}`} class="h-10 flex-1"><ShieldCheck slot="icon" size={18} aria-hidden="true" />Warranty</AppButton>
+                <AppButton variant="soft" href={`/support/book?product=${product.id}`} class="h-10 flex-1"><Wrench slot="icon" size={18} aria-hidden="true" />Service</AppButton>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    )
+  }
+</div>

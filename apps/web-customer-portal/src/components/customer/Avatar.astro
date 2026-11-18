@@ -1,0 +1,25 @@
+---
+/** App / Avatar (vAYDh): gradient circle with initials. */
+interface Props {
+  initials: string;
+  size?: number;
+  tone?: "gradient" | "navy" | "blue" | "muted";
+  class?: string;
+}
+
+const { initials, size = 44, tone = "gradient", class: className } = Astro.props;
+const tones = {
+  gradient: "bg-[linear-gradient(135deg,var(--eg-blue-600)_14.6%,var(--eg-cyan-400)_85.4%)] text-white",
+  navy: "bg-navy-900 text-white",
+  blue: "bg-blue-600 text-white",
+  muted: "bg-surface-2 text-fg-muted",
+};
+---
+
+<span
+  class:list={["flex shrink-0 items-center justify-center rounded-pill font-heading font-extrabold", tones[tone], className]}
+  style={`width:${size}px;height:${size}px;font-size:${Math.round(size * 0.3)}px`}
+  aria-hidden="true"
+>
+  {initials}
+</span>

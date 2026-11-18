@@ -1,0 +1,94 @@
+---
+import Download from "@lucide/astro/icons/download";
+import ArrowUpRight from "@lucide/astro/icons/arrow-up-right";
+import Media from "../ui/Media.astro";
+import { aboutStats } from "../../data/about";
+import { routes } from "../../data/site";
+import { images } from "../../lib/images";
+
+/** 09.01 · Corporate Hero: headline, intro, CTAs, hero photo with stats bar. */
+const eyebrow = "About CV. Inti Multi Solusi";
+---
+
+<section class="bg-white">
+  <div class="container-page flex flex-col gap-5 pt-9 pb-10 xl:gap-14 xl:pt-[88px] xl:pb-0">
+    <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:gap-20">
+      <div class="flex flex-col gap-5 xl:flex-1 xl:gap-6">
+        <p class="flex items-center gap-2 text-[12px] font-bold tracking-[1.4px] text-blue-600 uppercase xl:gap-2.5 xl:text-[13px] xl:tracking-[1.6px]">
+          <span class="h-0.5 w-5 bg-blue-600 xl:w-7" aria-hidden="true"></span>
+          {eyebrow}
+        </p>
+        <h1
+          class="font-heading text-[34px] leading-[37px] font-bold tracking-[-1px] text-navy-900 xl:text-[58px] xl:leading-[61px] xl:tracking-[-1.8px]"
+        >
+          Engineering secure, intelligent access for Indonesia since 2012.
+        </h1>
+      </div>
+      <div class="flex flex-col gap-5 xl:w-[440px] xl:shrink-0 xl:gap-6 xl:pb-2">
+        <p class="text-[15px] leading-[25px] text-fg-secondary xl:text-[17px] xl:leading-7">
+          <span class="xl:hidden">
+            IMS is a Jakarta-based technology company delivering smart access hardware, integrated software and system
+            integration — the company behind Entragate.
+          </span>
+          <span class="hidden xl:inline">
+            CV. Inti Multi Solusi (IMS) is a Jakarta-based technology company delivering smart access hardware, integrated
+            business software and end-to-end system integration — the company behind the Entragate brand.
+          </span>
+        </p>
+        <div class="flex gap-2.5 xl:gap-3">
+          <a
+            href={routes.documents}
+            class="flex flex-1 items-center justify-center gap-2 rounded-md bg-navy-900 px-4 py-3.5 text-[14px] font-semibold text-white hover:bg-navy-800 xl:flex-none xl:px-[22px] xl:text-[15px]"
+          >
+            <span class="xl:hidden">Profile</span>
+            <span class="hidden xl:inline">Company Profile</span>
+            <Download size={16} aria-hidden="true" />
+          </a>
+          <a
+            href={routes.contact}
+            class="flex flex-1 items-center justify-center gap-2 rounded-md bg-white px-4 py-3.5 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface xl:flex-none xl:px-[22px] xl:text-[15px]"
+          >
+            <span class="xl:hidden">Contact</span>
+            <span class="hidden xl:inline">Contact Us</span>
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop photo + stats bar -->
+    <div class="relative isolate hidden h-[560px] flex-col justify-end overflow-hidden rounded-xl p-8 xl:flex">
+      <Media src={images.officeLobby} alt="Entragate installation in a corporate lobby" loading="eager" class="absolute inset-0 -z-10 size-full" />
+      <span class="absolute inset-0 -z-10 bg-[linear-gradient(180deg,#060F2600_45%,#060F26B3_100%)]" aria-hidden="true"></span>
+      <dl class="flex rounded-lg bg-white/95 px-2 py-7 backdrop-blur-[10px]">
+        {
+          aboutStats.map((stat, index) => (
+            <div class:list={["flex flex-1 flex-col-reverse gap-1.5 px-8", index > 0 && "border-l border-border"]}>
+              <dt class="text-[14px] text-fg-secondary">{stat.label}</dt>
+              <dd class="font-heading text-[40px] font-bold tracking-[-1px] text-navy-900">{stat.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+
+    <!-- Mobile photo + stats grid -->
+    <Media src={images.officeLobby} alt="Entragate installation in a corporate lobby" loading="eager" class="h-60 w-full rounded-lg xl:hidden" />
+    <dl class="grid grid-cols-2 overflow-hidden rounded-lg ring-1 ring-border ring-inset xl:hidden">
+      {
+        aboutStats.map((stat, index) => (
+          <div
+            class:list={[
+              "flex flex-col-reverse gap-1 p-[18px]",
+              index % 2 === 1 && "border-l border-border",
+              index > 1 && "border-t border-border",
+            ]}
+          >
+            <dt class="text-[12px] text-fg-secondary">{stat.mobileLabel ?? stat.label}</dt>
+            <dd class="font-heading text-[28px] font-bold tracking-[-0.6px] text-navy-900">{stat.value}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+</section>

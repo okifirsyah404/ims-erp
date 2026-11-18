@@ -1,0 +1,54 @@
+---
+import House from "@lucide/astro/icons/house";
+import Package from "@lucide/astro/icons/package";
+import Route from "@lucide/astro/icons/route";
+import Headset from "@lucide/astro/icons/headset";
+import UserRound from "@lucide/astro/icons/user-round";
+
+/** App / Tab Bar (j31rBb): fixed floating capsule with the five primary destinations. */
+export type TabKey = "home" | "orders" | "tracking" | "support" | "profile";
+
+interface Props {
+  active?: TabKey;
+}
+
+const { active } = Astro.props;
+const tabs = [
+  { key: "home", label: "Home", href: "/", icon: House },
+  { key: "orders", label: "Orders", href: "/orders", icon: Package },
+  { key: "tracking", label: "Tracking", href: "/tracking", icon: Route },
+  { key: "support", label: "Support", href: "/support", icon: Headset },
+  { key: "profile", label: "Profile", href: "/profile", icon: UserRound },
+] as const;
+---
+
+<nav
+  aria-label="Primary"
+  class="fixed inset-x-0 bottom-0 z-40 px-4 pt-2.5 xl:hidden"
+  style="padding-bottom: max(12px, env(safe-area-inset-bottom));"
+>
+  <ul
+    class="app-column flex h-[66px] gap-0.5 rounded-pill bg-white/92 p-1.5 shadow-[0_10px_30px_#0A1A3F1F] ring-1 ring-border backdrop-blur-[24px] ring-inset"
+  >
+    {
+      tabs.map(({ key, label, href, icon: Icon }) => {
+        const current = key === active;
+        return (
+          <li class="flex-1">
+            <a
+              href={href}
+              aria-current={current ? "page" : undefined}
+              class:list={[
+                "flex h-full flex-col items-center justify-center gap-[3px] rounded-pill text-[10.5px] transition-colors",
+                current ? "bg-blue-50 font-bold text-blue-600" : "font-medium text-fg-muted hover:text-fg-secondary",
+              ]}
+            >
+              <Icon size={22} aria-hidden="true" />
+              {label}
+            </a>
+          </li>
+        );
+      })
+    }
+  </ul>
+</nav>

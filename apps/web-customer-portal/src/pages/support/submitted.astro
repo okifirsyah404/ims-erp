@@ -1,0 +1,55 @@
+---
+import Check from "@lucide/astro/icons/check";
+import BellRing from "@lucide/astro/icons/bell-ring";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import BottomActionBar from "../../components/customer/BottomActionBar.astro";
+import { firstReply, priorityLabel } from "../../lib/support";
+
+/** 08.02b Ticket Submitted · Success. One-shot: the summary is read from the session once. */
+const ticket = await Astro.session?.get("ticketSubmitted");
+if (!ticket || ticket.id !== Astro.url.searchParams.get("id")) return Astro.redirect("/support");
+Astro.session?.delete("ticketSubmitted");
+
+const rows = [
+  { label: "Ticket", value: ticket.number },
+  ...(ticket.device ? [{ label: "Device", value: ticket.device }] : []),
+  { label: "Priority", value: priorityLabel[ticket.priority], tone: ticket.priority === "urgent" ? "text-danger" : "text-fg" },
+  { label: "First reply", value: firstReply[ticket.priority] },
+];
+const reply = firstReply[ticket.priority].replace("< ", "");
+---
+
+<CustomerLayout title="Ticket submitted" actionBar section="support">
+  <TopBar back="/support" closeIcon />
+  <div class="flex flex-col items-center gap-6 p-6">
+    <span class="flex size-[104px] items-center justify-center rounded-pill bg-success-bg/60" aria-hidden="true">
+      <span class="flex size-[84px] items-center justify-center rounded-pill bg-success text-white"><Check size={40} /></span>
+    </span>
+    <div class="flex flex-col items-center gap-2 text-center">
+      <h1 class="font-heading text-[26px] font-extrabold tracking-[-0.6px] text-fg">Ticket submitted</h1>
+      <p class="text-[15px] leading-[22px] text-fg-secondary">
+        We’ve received {ticket.number}. An engineer will reply within {reply} ({priorityLabel[ticket.priority]} priority).
+      </p>
+    </div>
+    <dl class="flex w-full flex-col gap-3 rounded-card bg-white p-[18px] text-[14px] ring-1 ring-border ring-inset">
+      {
+        rows.map((row) => (
+          <div class="flex items-center justify-between gap-2.5">
+            <dt class="text-fg-muted">{row.label}</dt>
+            <dd class:list={["font-semibold", row.tone ?? "text-fg"]}>{row.value}</dd>
+          </div>
+        ))
+      }
+    </dl>
+    <p class="flex w-full items-center gap-2.5 rounded-md bg-surface p-3.5 text-[13px] leading-[19px] text-fg-secondary">
+      <BellRing size={16} class="shrink-0 text-blue-600" aria-hidden="true" />
+      You’ll get push &amp; WhatsApp updates for every reply.
+    </p>
+  </div>
+
+  <BottomActionBar slot="overlay">
+    <a href="/support" class="flex h-[54px] flex-1 items-center justify-center rounded-control bg-white text-[16px] font-semibold text-fg ring-1 ring-border ring-inset">Back to support</a>
+    <a href={`/support/${ticket.id}`} class="flex h-[54px] flex-1 items-center justify-center rounded-control bg-blue-600 text-[16px] font-semibold text-white">Open ticket</a>
+  </BottomActionBar>
+</CustomerLayout>

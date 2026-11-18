@@ -1,0 +1,121 @@
+---
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import LayoutGrid from "@lucide/astro/icons/layout-grid";
+import Columns3 from "@lucide/astro/icons/columns-3";
+import FileText from "@lucide/astro/icons/file-text";
+import Boxes from "@lucide/astro/icons/boxes";
+import MonitorPlay from "@lucide/astro/icons/monitor-play";
+import { catalogCategories } from "../../data/catalog";
+import { platforms } from "../../data/solutions";
+import { routes, solutionHref } from "../../data/site";
+import { icons } from "../../lib/icons";
+
+/**
+ * Header dropdowns for "Products" and "Software Solutions". Not drawn in the .pen file;
+ * composed from the Customer Portal menu panel (01.06: 24px radius, card shadow, list
+ * rows with tinted icon tiles) and the navy CTA card pattern. Static (no live counts), as
+ * the header is part of prerendered pages.
+ */
+interface Props {
+  menu: "products" | "solutions";
+  id: string;
+}
+
+const { menu, id } = Astro.props;
+const row = "flex items-center gap-3 rounded-md p-2.5 transition-colors hover:bg-surface focus-visible:bg-surface";
+const tile = "flex size-9 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600";
+---
+
+<div
+  id={id}
+  class="absolute top-[calc(100%+12px)] left-1/2 z-50 w-[720px] -translate-x-1/2 overflow-hidden rounded-card bg-white shadow-[0_24px_60px_#0A1A3F33] ring-1 ring-border"
+  hidden
+  data-pop
+  data-mega-panel
+>
+  {
+    menu === "products" ? (
+      <div class="flex">
+        <div class="flex flex-1 flex-col gap-1 p-3">
+          <p class="px-2.5 pt-1.5 pb-1 text-[11px] font-bold tracking-[1.2px] text-fg-muted uppercase">Hardware categories</p>
+          <ul class="grid grid-cols-2 gap-0.5">
+            {catalogCategories.map((category) => {
+              const Icon = icons[category.icon];
+              return (
+                <li>
+                  <a href={`${routes.products}?category=${category.slug}`} class={row}>
+                    <span class={tile}><Icon size={17} aria-hidden="true" /></span>
+                    <span class="truncate text-[13.5px] font-semibold text-fg">{category.name}</span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+          <div class="mt-1 flex gap-1 border-t border-border pt-2">
+            <a href={routes.products} class:list={[row, "flex-1"]}>
+              <LayoutGrid size={16} class="text-blue-600" aria-hidden="true" />
+              <span class="text-[13px] font-semibold text-fg">All products</span>
+            </a>
+            <a href={routes.compare} class:list={[row, "flex-1"]}>
+              <Columns3 size={16} class="text-blue-600" aria-hidden="true" />
+              <span class="text-[13px] font-semibold text-fg">Compare products</span>
+            </a>
+          </div>
+        </div>
+        <div class="flex w-[240px] shrink-0 flex-col justify-between gap-4 bg-navy-900 bg-[radial-gradient(ellipse_80%_100%_at_100%_100%,#1F5BFF80_0%,#0A1A3F00_100%)] p-5">
+          <div class="flex flex-col gap-2">
+            <span class="flex size-9 items-center justify-center rounded-md bg-white/10 text-cyan-400"><Boxes size={18} aria-hidden="true" /></span>
+            <p class="font-heading text-[16px] font-bold text-white">Not sure what you need?</p>
+            <p class="text-[12.5px] leading-[1.5] text-fg-on-dark-muted">Build your solution in 5 steps — hardware, software and installation in one quote.</p>
+          </div>
+          <div class="flex flex-col gap-2">
+            <a href={routes.build} class="flex items-center justify-center gap-1.5 rounded-md bg-blue-600 py-2.5 text-[13px] font-bold text-white hover:bg-blue-700">
+              Build your solution <ArrowRight size={14} aria-hidden="true" />
+            </a>
+            <a href={routes.quote} class="flex items-center justify-center gap-1.5 rounded-md bg-white/10 py-2.5 text-[13px] font-bold text-white ring-1 ring-white/20 ring-inset hover:bg-white/15">
+              <FileText size={14} aria-hidden="true" /> Request a quote
+            </a>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div class="flex">
+        <div class="flex flex-1 flex-col gap-1 p-3">
+          <p class="px-2.5 pt-1.5 pb-1 text-[11px] font-bold tracking-[1.2px] text-fg-muted uppercase">Entragate software</p>
+          <ul class="grid grid-cols-2 gap-0.5">
+            {platforms.map((platform) => {
+              const Icon = icons[platform.icon];
+              return (
+                <li>
+                  <a href={solutionHref(platform.slug)} class:list={[row, "items-start"]}>
+                    <span class={tile}><Icon size={17} aria-hidden="true" /></span>
+                    <span class="flex min-w-0 flex-col gap-0.5">
+                      <span class="text-[13.5px] font-semibold text-fg">{platform.name}</span>
+                      <span class="line-clamp-2 text-[12px] leading-[1.4] text-fg-muted">{platform.tags.join(" · ")}</span>
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+          <div class="mt-1 border-t border-border pt-2">
+            <a href={routes.solutions} class={row}>
+              <LayoutGrid size={16} class="text-blue-600" aria-hidden="true" />
+              <span class="text-[13px] font-semibold text-fg">All software solutions</span>
+            </a>
+          </div>
+        </div>
+        <div class="flex w-[240px] shrink-0 flex-col justify-between gap-4 bg-navy-900 bg-[radial-gradient(ellipse_80%_100%_at_100%_100%,#1F5BFF80_0%,#0A1A3F00_100%)] p-5">
+          <div class="flex flex-col gap-2">
+            <span class="flex size-9 items-center justify-center rounded-md bg-white/10 text-cyan-400"><MonitorPlay size={18} aria-hidden="true" /></span>
+            <p class="font-heading text-[16px] font-bold text-white">See it live</p>
+            <p class="text-[12.5px] leading-[1.5] text-fg-on-dark-muted">A 30-minute guided demo with your gates, readers and workflows.</p>
+          </div>
+          <a href={routes.demo} class="flex items-center justify-center gap-1.5 rounded-md bg-blue-600 py-2.5 text-[13px] font-bold text-white hover:bg-blue-700">
+            Request a demo <ArrowRight size={14} aria-hidden="true" />
+          </a>
+        </div>
+      </div>
+    )
+  }
+</div>

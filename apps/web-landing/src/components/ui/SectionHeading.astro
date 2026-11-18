@@ -1,0 +1,49 @@
+---
+/**
+ * Section header pattern shared by the home sections:
+ * eyebrow (13px/700/1.6 tracking) + title (44/49 PJS 800) + optional description.
+ * Mobile (390 frames) uses 12px eyebrow and 30/35 title.
+ */
+interface Props {
+  eyebrow: string;
+  title: string;
+  description?: string;
+  tone?: "light" | "dark";
+  as?: "h1" | "h2" | "h3";
+  class?: string;
+  titleClass?: string;
+  id?: string;
+}
+
+const { eyebrow, title, description, tone = "light", as: Heading = "h2", class: className, titleClass, id } =
+  Astro.props;
+const dark = tone === "dark";
+---
+
+<div class:list={["flex flex-col gap-2.5 xl:gap-3.5", className]} data-reveal>
+  <p
+    class:list={[
+      "text-[12px] font-bold uppercase tracking-[1.4px] xl:text-[13px] xl:tracking-[1.6px]",
+      dark ? "text-cyan-400" : "text-blue-600",
+    ]}
+  >
+    {eyebrow}
+  </p>
+  <Heading
+    id={id}
+    class:list={[
+      "font-heading text-[30px] leading-[35px] font-extrabold tracking-[-1px] xl:text-[44px] xl:leading-[49px] xl:tracking-[-1.4px]",
+      dark ? "text-white" : "text-navy-900",
+      titleClass,
+    ]}
+  >
+    {title}
+  </Heading>
+  {
+    description && (
+      <p class:list={["text-[17px] leading-[27px]", dark ? "text-fg-on-dark-muted" : "text-fg-secondary"]}>
+        {description}
+      </p>
+    )
+  }
+</div>

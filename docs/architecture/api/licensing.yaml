@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Entragate ERP ΓÇö License API
+  title: Entragate ERP — License API
   version: 1.0.0
   description: |
     The license API for the company's **own applications** (gym, e-ticketing,
@@ -8,7 +8,7 @@ info:
     keys on a customer's contract; each installed application checks its key
     here.
 
-    - **Server to server or app backend**: the application's API key (`elk_ΓÇª`)
+    - **Server to server or app backend**: the application's API key (`elk_…`)
       must never ship inside a browser bundle or a mobile app that customers
       can unpack.
     - An API key belongs to **one application**: it can only see that
@@ -19,8 +19,9 @@ info:
     - Responses use the ERP envelope; dates are `YYYY-MM-DD` on the
       Asia/Jakarta clock, timestamps are ISO 8601.
 
-    This file is curated by hand and checked against the routes by
-    `apps/backend/test/unit/api-docs-drift.test.ts`.
+    This file is curated by hand and is not checked against the routes by a
+    test. Keep it in step with
+    `src/app/licensing/controllers/license-api.controller.ts` when routes change.
 servers:
   - url: http://localhost:3000
     description: Local ERP backend
@@ -80,7 +81,7 @@ paths:
                       valid: true
                       status: ok
                       warning: false
-                      licenseKey: 'ΓÇóΓÇóΓÇóΓÇó-S234'
+                      licenseKey: '••••-S234'
                       application: { code: GYM, name: Entragate Gym }
                       customerName: PT Sehat Selalu
                       packageName: Pro
@@ -100,7 +101,7 @@ paths:
                       valid: true
                       status: grace
                       warning: true
-                      licenseKey: 'ΓÇóΓÇóΓÇóΓÇó-S234'
+                      licenseKey: '••••-S234'
                       application: { code: GYM, name: Entragate Gym }
                       customerName: PT Sehat Selalu
                       packageName: Pro
@@ -120,7 +121,7 @@ paths:
                       valid: false
                       status: unknown
                       warning: false
-                      licenseKey: 'ΓÇóΓÇóΓÇóΓÇó-XXXX'
+                      licenseKey: '••••-XXXX'
                       application: null
                       customerName: null
                       packageName: null
@@ -222,8 +223,8 @@ components:
       type: http
       scheme: bearer
       description: |
-        The application's license API key (`elk_ΓÇª`), issued in the ERP under
-        **Subscription ΓåÆ API keys** for an own application. The secret is
+        The application's license API key (`elk_…`), issued in the ERP under
+        **Subscription → API keys** for an own application. The secret is
         shown once; revoking it in the ERP stops it at once.
 
   responses:
@@ -295,16 +296,16 @@ components:
           type: string
           enum: [ok, grace, expired, not_started, suspended, terminated, revoked, unknown, not_activated]
           description: |
-            - `ok` ΓÇö active.
-            - `grace` ΓÇö the end date has passed, still valid for 7 days; warn the user.
-            - `expired` ΓÇö past the grace period (or the contract was renewed onto a new key).
-            - `not_started` ΓÇö the contract has not started (or is still a draft).
-            - `suspended` / `terminated` ΓÇö set by staff.
-            - `revoked` ΓÇö this key was revoked.
-            - `unknown` ΓÇö no such key for this application.
-            - `not_activated` ΓÇö valid key, but this `instanceId` holds no seat.
+            - `ok` — active.
+            - `grace` — the end date has passed, still valid for 7 days; warn the user.
+            - `expired` — past the grace period (or the contract was renewed onto a new key).
+            - `not_started` — the contract has not started (or is still a draft).
+            - `suspended` / `terminated` — set by staff.
+            - `revoked` — this key was revoked.
+            - `unknown` — no such key for this application.
+            - `not_activated` — valid key, but this `instanceId` holds no seat.
         warning: { type: boolean, description: '`true` in `grace`.' }
-        licenseKey: { type: string, description: 'Masked: only the last four characters.', example: 'ΓÇóΓÇóΓÇóΓÇó-S234' }
+        licenseKey: { type: string, description: 'Masked: only the last four characters.', example: '••••-S234' }
         application:
           type: [object, 'null']
           properties:

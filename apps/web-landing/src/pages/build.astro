@@ -1,0 +1,334 @@
+---
+import ArrowLeft from "@lucide/astro/icons/arrow-left";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Minus from "@lucide/astro/icons/minus";
+import Plus from "@lucide/astro/icons/plus";
+import Trash from "@lucide/astro/icons/trash";
+import Share2 from "@lucide/astro/icons/share-2";
+import Headset from "@lucide/astro/icons/headset";
+import Check from "@lucide/astro/icons/check";
+import ChevronUp from "@lucide/astro/icons/chevron-up";
+import DoorOpen from "@lucide/astro/icons/door-open";
+import Car from "@lucide/astro/icons/car";
+import PublicLayout from "../layouts/PublicLayout.astro";
+import PageHero from "../components/ui/PageHero.astro";
+import Stepper from "../components/ui/Stepper.astro";
+import { addOns, defaultConfig, estimate, siteTypes, softwareOptions, subscriptionTerms } from "../data/build";
+import { routes } from "../data/site";
+import { formatRupiah } from "../lib/format";
+import { icons } from "../lib/icons";
+
+/**
+ * 03.01 Build Your Solution (desktop fbQJl / mobile O4nHxI). Step 3 (Hardware) is the
+ * designed frame; Site, Entry points, Software and Review use the same card, chip and
+ * stepper patterns. All state lives in the browser (auto-saved, shareable via URL).
+ */
+const stepLabels = ["Site", "Entry points", "Hardware", "Software", "Review"];
+const steps = stepLabels.map((label) => ({ label }));
+const initial = estimate(defaultConfig);
+const headings = [
+  { eyebrow: "Step 1 of 5", title: "Tell us about your site", description: "We use this to recommend hardware sized for your traffic." },
+  { eyebrow: "Step 2 of 5", title: "Where do people and vehicles enter?", description: "Add each entrance and how many lanes it needs. You can change this any time." },
+  { eyebrow: "Step 3 of 5", title: "Choose hardware for each entry point", description: "We pre-selected the best fit for your site. Swap any option — your budget updates instantly." },
+  { eyebrow: "Step 4 of 5", title: "Add the software that runs it", description: "Every module works with your hardware out of the box. Billed monthly, prepaid per term." },
+  { eyebrow: "Step 5 of 5", title: "Review your solution", description: "Send it to our engineers for a formal quotation, or save it to share with your team." },
+];
+const addOnIcons = { "scan-face": icons["scan-face"], "qr-code": icons["qr-code"], "user-check": icons["user-check"], "shield-check": icons["shield-check"] };
+const card = "flex flex-col gap-[18px] rounded-lg bg-white p-5 shadow-[0_8px_24px_#0A1A3F0D] ring-1 ring-border ring-inset xl:p-7";
+const radioDot = "flex size-[22px] shrink-0 items-center justify-center rounded-pill bg-white ring-2 ring-border-strong ring-inset after:size-2 after:rounded-full after:bg-white after:opacity-0 group-has-checked:bg-blue-600 group-has-checked:ring-blue-600 group-has-checked:after:opacity-100";
+---
+
+<PublicLayout title="Build Your Solution | Entragate" description="Configure an access or parking system for your site and get an instant budget estimate." mobileFooter={false}>
+  <PageHero
+    title="Build Your Solution"
+    description="Configure an access or parking system for your site. Get a recommended bill of materials and an instant budget estimate — then turn it into a formal quotation."
+    mobileDescription="Configure your site and get an instant budget estimate."
+    breadcrumb={[{ label: "Home", href: routes.home }, { label: "Build Your Solution" }]}
+  />
+
+  <noscript>
+    <div class="container-page pt-8">
+      <p class="rounded-lg bg-warning-bg p-4 text-[14px] text-fg ring-1 ring-warning-border ring-inset">
+        The configurator needs JavaScript. You can still <a href={routes.quote} class="font-semibold underline">request a quotation</a> or <a href={routes.contact} class="font-semibold underline">talk to a solution engineer</a>.
+      </p>
+    </div>
+  </noscript>
+
+  <div class="container-page flex flex-col gap-6 pt-5 pb-44 xl:flex-row xl:items-start xl:gap-8 xl:pt-10 xl:pb-24" data-build>
+    <div class="flex min-w-0 flex-1 flex-col gap-7">
+      {
+        headings.map((heading, index) => (
+          <section class="flex flex-col gap-6 xl:gap-7" data-step-panel={index} hidden={index !== 0} aria-labelledby={`step-title-${index}`}>
+            <Stepper steps={steps} current={index} />
+            <div class="flex flex-col gap-2.5 xl:gap-3.5">
+              <p class="text-[12px] font-bold tracking-[1.6px] text-blue-600 uppercase xl:text-[13px]">{heading.eyebrow}</p>
+              <h2 id={`step-title-${index}`} class="font-heading text-[26px] leading-[30px] font-extrabold tracking-[-0.8px] text-navy-900 xl:text-[36px] xl:leading-[40px] xl:tracking-[-1.2px]">{heading.title}</h2>
+              <p class="text-[14px] leading-[22px] text-fg-secondary xl:text-[16px] xl:leading-[26px]" data-step-description={index}>{heading.description}</p>
+            </div>
+
+            {index === 0 && (
+              <div class={card}>
+                <fieldset class="flex flex-col gap-3">
+                  <legend class="mb-3 text-[13px] font-semibold text-fg">Site type</legend>
+                  <div class="grid grid-cols-2 gap-2.5 md:grid-cols-3">
+                    {siteTypes.map((type) => {
+                      const Icon = icons[type.icon];
+                      return (
+                        <label class="group cursor-pointer">
+                          <input type="radio" name="siteType" value={type.id} checked={type.id === defaultConfig.siteType} class="peer sr-only" />
+                          <span class="flex items-center gap-3 rounded-md bg-white p-3.5 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset peer-checked:bg-blue-50 peer-checked:ring-[1.5px] peer-checked:ring-blue-600 peer-focus-visible:outline-2 peer-focus-visible:outline-blue-600">
+                            <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface text-fg group-has-checked:bg-white group-has-checked:text-blue-600"><Icon size={18} aria-hidden="true" /></span>
+                            {type.label}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+                <div class="grid gap-4 md:grid-cols-3">
+                  <label class="flex flex-col gap-2 text-[13px] font-semibold text-fg md:col-span-1">Site name
+                    <input name="siteName" value={defaultConfig.siteName} maxlength="80" class="h-12 rounded-md bg-white px-3.5 text-[15px] font-normal ring-1 ring-border ring-inset outline-none focus:ring-2 focus:ring-blue-600" />
+                  </label>
+                  <label class="flex flex-col gap-2 text-[13px] font-semibold text-fg">City
+                    <input name="city" value={defaultConfig.city} maxlength="60" class="h-12 rounded-md bg-white px-3.5 text-[15px] font-normal ring-1 ring-border ring-inset outline-none focus:ring-2 focus:ring-blue-600" />
+                  </label>
+                  <label class="flex flex-col gap-2 text-[13px] font-semibold text-fg">Daily visitors
+                    <input name="dailyVisitors" type="number" min="0" max="500000" step="100" value={defaultConfig.dailyVisitors} class="h-12 rounded-md bg-white px-3.5 text-[15px] font-normal ring-1 ring-border ring-inset outline-none focus:ring-2 focus:ring-blue-600" />
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {index === 1 && (
+              <>
+                <ul class="flex flex-col gap-4" data-entry-list></ul>
+                <div class="flex flex-wrap gap-2.5">
+                  <button type="button" class="flex items-center gap-2 rounded-md bg-white px-4 py-3 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface" data-add-entry="pedestrian">
+                    <DoorOpen size={16} class="text-blue-600" aria-hidden="true" />Add pedestrian entrance
+                  </button>
+                  <button type="button" class="flex items-center gap-2 rounded-md bg-white px-4 py-3 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface" data-add-entry="vehicle">
+                    <Car size={16} class="text-blue-600" aria-hidden="true" />Add vehicle entrance
+                  </button>
+                </div>
+              </>
+            )}
+
+            {index === 2 && (
+              <>
+                <div class="flex flex-col gap-5" data-lane-list></div>
+                <div class:list={[card, "gap-4"]}>
+                  <h3 class="font-heading text-[18px] font-bold text-fg xl:text-[20px]">Recommended add-ons</h3>
+                  <div class="flex flex-wrap gap-2.5">
+                    {addOns.map((addOn) => {
+                      const Icon = addOnIcons[addOn.icon];
+                      return (
+                        <label class="group cursor-pointer">
+                          <input type="checkbox" name="addOns" value={addOn.id} checked={defaultConfig.addOns.includes(addOn.id)} class="peer sr-only" />
+                          <span class="flex items-center gap-2 rounded-pill bg-white px-4 py-2.5 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset peer-checked:bg-navy-900 peer-checked:text-white peer-checked:ring-navy-900 peer-focus-visible:outline-2 peer-focus-visible:outline-blue-600">
+                            <Check size={16} class="hidden group-has-checked:block" aria-hidden="true" />
+                            <Icon size={16} class="group-has-checked:hidden" aria-hidden="true" />
+                            {addOn.name}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <label class="flex items-center justify-between gap-3 rounded-md bg-surface p-3.5 text-[14px] font-semibold text-fg" data-kiosk-row hidden>
+                    Visitor kiosks
+                    <input type="number" name="kiosks" min="1" max="20" value={defaultConfig.kiosks} class="h-10 w-20 rounded-md bg-white px-3 text-center ring-1 ring-border ring-inset outline-none focus:ring-2 focus:ring-blue-600" />
+                  </label>
+                </div>
+              </>
+            )}
+
+            {index === 3 && (
+              <div class={card}>
+                <div class="grid gap-3 md:grid-cols-2">
+                  {softwareOptions.map((software) => (
+                    <label class="group flex cursor-pointer gap-3.5 rounded-md bg-white p-4 ring-1 ring-border ring-inset has-checked:bg-blue-50 has-checked:ring-[1.5px] has-checked:ring-blue-600 has-focus-visible:outline-2 has-focus-visible:outline-blue-600">
+                      <input type="checkbox" name="software" value={software.id} checked={defaultConfig.software.includes(software.id)} class="sr-only" />
+                      <span class="flex flex-1 flex-col gap-1">
+                        <span class="text-[15px] font-bold text-fg">{software.name}</span>
+                        <span class="text-[13px] text-fg-muted">{software.description}</span>
+                        <span class="text-[14px] font-bold text-navy-900">{formatRupiah(software.monthly)} / month</span>
+                      </span>
+                      <span class="flex size-[22px] shrink-0 items-center justify-center rounded-[6px] bg-white text-white ring-2 ring-border-strong ring-inset group-has-checked:bg-blue-600 group-has-checked:ring-blue-600" aria-hidden="true"><Check size={14} stroke-width={3} /></span>
+                    </label>
+                  ))}
+                </div>
+                <fieldset class="flex flex-col gap-2.5">
+                  <legend class="mb-2.5 text-[13px] font-semibold text-fg">Subscription term</legend>
+                  <div class="flex gap-1 rounded-md bg-surface p-1 ring-1 ring-border ring-inset">
+                    {subscriptionTerms.map((term) => (
+                      <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="term" value={term} checked={term === defaultConfig.term} class="peer sr-only" />
+                        <span class="block rounded-[9px] py-[9px] text-center text-[13.5px] font-medium text-fg-secondary peer-checked:bg-white peer-checked:font-semibold peer-checked:text-navy-900 peer-checked:shadow-[0_2px_6px_#0A1A3F14] peer-focus-visible:outline-2 peer-focus-visible:outline-blue-600">{term} months</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              </div>
+            )}
+
+            {index === 4 && (
+              <div class={card}>
+                <dl class="grid gap-4 md:grid-cols-2" data-review></dl>
+                <p class="rounded-md bg-blue-50 p-4 text-[14px] leading-[22px] text-fg-secondary">
+                  Your configuration is sent with the quotation request. An IMS solution engineer reviews it, schedules a free site survey in Jabodetabek and replies within one working day.
+                </p>
+              </div>
+            )}
+
+            <div class="hidden items-center justify-between gap-3 xl:flex">
+              {index > 0 ? (
+                <button type="button" class="flex items-center gap-2 rounded-md bg-white px-[22px] py-3.5 text-[15px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface" data-go={index - 1}>
+                  <ArrowLeft size={16} aria-hidden="true" />Back · {stepLabels[index - 1]}
+                </button>
+              ) : <span />}
+              {index < stepLabels.length - 1 ? (
+                <button type="button" class="flex items-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700" data-go={index + 1}>
+                  Next · {stepLabels[index + 1]}<ArrowRight size={16} aria-hidden="true" />
+                </button>
+              ) : (
+                <button type="button" class="flex items-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700" data-request-quote>
+                  Request formal quotation<ArrowRight size={16} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+          </section>
+        ))
+      }
+    </div>
+
+    <!-- Summary -->
+    <aside class="flex flex-col gap-4 max-xl:hidden max-xl:[&.open]:flex xl:sticky xl:top-24 xl:w-[420px] xl:shrink-0" data-summary id="build-summary">
+      <div class="flex flex-col gap-[18px] rounded-lg bg-white p-6 shadow-[0_16px_40px_#0A1A3F14] ring-1 ring-border ring-inset xl:p-7">
+        <div class="flex items-center justify-between gap-2.5">
+          <h2 class="font-heading text-[20px] font-extrabold text-fg xl:text-[22px]">Your solution</h2>
+          <span class="flex items-center gap-1.5 rounded-pill bg-success-bg px-2.5 py-[5px] text-[12px] font-semibold text-success" data-saved-chip><span class="size-1.5 rounded-full bg-success" />Auto-saved</span>
+        </div>
+        <p class="text-[13.5px] text-fg-muted" data-summary-site></p>
+        <ul class="flex flex-col gap-3" data-summary-lines>
+          {initial.lines.map((line) => (
+            <li class="flex items-center gap-2.5 text-[14px]"><span class="flex-1 font-medium text-fg">{line.label}</span><span class="text-[13px] font-semibold text-fg-muted">{line.qty}</span><span class="font-bold text-fg">{formatRupiah(line.amount)}</span></li>
+          ))}
+        </ul>
+        <span class="h-px bg-border" aria-hidden="true"></span>
+        <dl class="flex flex-col gap-2.5 text-[14px]">
+          <div class="flex justify-between"><dt class="text-fg-muted">Installation &amp; commissioning</dt><dd class="font-semibold text-fg" data-summary-installation>{formatRupiah(initial.installation)}</dd></div>
+          <div class="flex justify-between" data-summary-discount-row><dt class="text-fg-muted">Project discount (est. 8%)</dt><dd class="font-semibold text-success" data-summary-discount>– {formatRupiah(initial.discount)}</dd></div>
+        </dl>
+        <div class="flex flex-col gap-1 rounded-md bg-surface p-[18px]">
+          <span class="text-[13px] font-semibold text-fg-muted">Estimated budget · excl. PPN 11%</span>
+          <span class="font-heading text-[32px] font-extrabold tracking-[-1px] text-navy-900" data-summary-total>{formatRupiah(initial.total)}</span>
+          <span class="text-[12.5px] text-fg-muted">Final price is confirmed in your formal quotation.</span>
+        </div>
+        <button type="button" class="flex items-center justify-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700" data-request-quote>
+          Request formal quotation <ArrowRight size={16} aria-hidden="true" />
+        </button>
+        <button type="button" class="flex items-center justify-center gap-2 rounded-md bg-white px-[22px] py-3.5 text-[15px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface" data-share-config>
+          <span data-share-label>Save &amp; share configuration</span> <Share2 size={16} aria-hidden="true" />
+        </button>
+      </div>
+      <a href={`${routes.contact}?topic=sales&subject=${encodeURIComponent("Build Your Solution — site survey")}`} class="flex items-center gap-3 rounded-lg bg-navy-900 p-5 shadow-[0_8px_24px_#0A1A3F0D] hover:bg-navy-800">
+        <span class="flex size-11 shrink-0 items-center justify-center rounded-md bg-cyan-400/15 text-cyan-400"><Headset size={20} aria-hidden="true" /></span>
+        <span class="flex flex-col gap-0.5"><span class="text-[15px] font-bold text-white">Talk to a solution engineer</span><span class="text-[13px] text-fg-on-dark-muted">Free site survey in Jabodetabek</span></span>
+      </a>
+    </aside>
+
+    <!-- Mobile sticky bar -->
+    <div class="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white/96 px-5 pt-3.5 pb-[max(16px,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_#0A1A3F14] backdrop-blur-[10px] xl:hidden">
+      <div class="flex items-end justify-between pb-2.5">
+        <span class="flex flex-col"><span class="text-[12px] text-fg-muted">Estimated budget · excl. PPN</span><span class="font-heading text-[20px] font-extrabold text-navy-900" data-summary-total>{formatRupiah(initial.total)}</span></span>
+        <button type="button" class="flex items-center gap-1.5 text-[13px] font-semibold text-blue-600" aria-controls="build-summary" aria-expanded="false" data-toggle-summary>
+          <span data-summary-count>{initial.lines.length} items</span><ChevronUp size={15} aria-hidden="true" />
+        </button>
+      </div>
+      <button type="button" class="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 py-3.5 text-[15px] font-semibold text-white shadow-cta" data-mobile-next>
+        <span data-mobile-next-label>Next · Entry points</span><ArrowRight size={16} aria-hidden="true" />
+      </button>
+    </div>
+  </div>
+
+  <template id="entry-template">
+    <li class="flex flex-col gap-4 rounded-lg bg-white p-5 shadow-[0_8px_24px_#0A1A3F0D] ring-1 ring-border ring-inset xl:flex-row xl:items-end xl:p-6">
+      <label class="flex flex-1 flex-col gap-2 text-[13px] font-semibold text-fg">Entrance name
+        <input data-entry-name maxlength="60" class="h-12 rounded-md bg-white px-3.5 text-[15px] font-normal ring-1 ring-border ring-inset outline-none focus:ring-2 focus:ring-blue-600" />
+      </label>
+      <label class="flex flex-col gap-2 text-[13px] font-semibold text-fg xl:w-[190px]">Type
+        <select data-entry-kind class="h-12 rounded-md bg-white px-3 text-[15px] font-normal ring-1 ring-border ring-inset outline-none focus:ring-2 focus:ring-blue-600">
+          <option value="pedestrian">Pedestrian</option>
+          <option value="vehicle">Vehicle</option>
+        </select>
+      </label>
+      <div class="flex items-end justify-between gap-3">
+        <div class="flex flex-col gap-2 text-[13px] font-semibold text-fg">Lanes
+          <div class="flex h-12 items-center gap-3.5 rounded-md px-2 ring-1 ring-border ring-inset">
+            <button type="button" data-entry-dec class="flex size-8 items-center justify-center rounded-sm hover:bg-surface" aria-label="Fewer lanes"><Minus size={16} aria-hidden="true" /></button>
+            <span class="w-6 text-center text-[15px] font-bold" data-entry-lanes></span>
+            <button type="button" data-entry-inc class="flex size-8 items-center justify-center rounded-sm text-blue-600 hover:bg-surface" aria-label="More lanes"><Plus size={16} aria-hidden="true" /></button>
+          </div>
+        </div>
+        <button type="button" data-entry-remove class="flex size-12 items-center justify-center rounded-md text-fg-muted ring-1 ring-border ring-inset hover:bg-danger-bg hover:text-danger" aria-label="Remove entrance"><Trash size={16} aria-hidden="true" /></button>
+      </div>
+    </li>
+  </template>
+
+  <template id="lane-template">
+    <section class="flex flex-col gap-[18px] rounded-lg bg-white p-5 shadow-[0_8px_24px_#0A1A3F0D] ring-1 ring-border ring-inset xl:p-7">
+      <div class="flex items-center justify-between gap-2.5">
+        <div class="flex items-center gap-3">
+          <span class="hidden size-11 items-center justify-center rounded-md bg-blue-50 text-blue-600 xl:flex" data-lane-icon></span>
+          <div class="flex flex-col gap-0.5">
+            <p class="text-[12px] font-bold tracking-[1.6px] text-blue-600 uppercase xl:hidden" data-lane-eyebrow></p>
+            <h3 class="font-heading text-[22px] font-extrabold tracking-[-0.6px] text-navy-900 xl:text-[20px] xl:font-bold xl:tracking-normal xl:text-fg" data-lane-title></h3>
+            <p class="hidden text-[13.5px] text-fg-muted xl:block" data-lane-meta></p>
+          </div>
+        </div>
+        <div class="hidden h-11 items-center gap-3.5 rounded-md px-2 ring-1 ring-border ring-inset xl:flex">
+          <button type="button" data-lane-dec class="flex size-7 items-center justify-center rounded-sm hover:bg-surface" aria-label="Fewer lanes"><Minus size={16} aria-hidden="true" /></button>
+          <span class="w-5 text-center text-[15px] font-bold" data-lane-count></span>
+          <button type="button" data-lane-inc class="flex size-7 items-center justify-center rounded-sm text-blue-600 hover:bg-surface" aria-label="More lanes"><Plus size={16} aria-hidden="true" /></button>
+        </div>
+      </div>
+      <div class="flex flex-col gap-3.5 xl:flex-row" role="radiogroup" data-lane-options></div>
+      <div class="flex items-center justify-between rounded-md bg-surface p-4 xl:hidden">
+        <span class="text-[14px] font-semibold text-fg">Number of lanes</span>
+        <div class="flex h-10 items-center gap-3.5 rounded-md bg-white px-2 ring-1 ring-border ring-inset">
+          <button type="button" data-lane-dec class="flex size-7 items-center justify-center" aria-label="Fewer lanes"><Minus size={16} aria-hidden="true" /></button>
+          <span class="w-5 text-center text-[15px] font-bold" data-lane-count></span>
+          <button type="button" data-lane-inc class="flex size-7 items-center justify-center text-blue-600" aria-label="More lanes"><Plus size={16} aria-hidden="true" /></button>
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <template id="option-template">
+    <label class="group relative flex flex-1 cursor-pointer items-center gap-3.5 rounded-lg bg-white p-3 ring-1 ring-border ring-inset has-checked:bg-blue-50 has-checked:ring-2 has-checked:ring-blue-600 has-focus-visible:outline-2 has-focus-visible:outline-blue-600 xl:flex-col xl:items-stretch xl:gap-3">
+      <input type="radio" class="sr-only" data-option-input />
+      <span class="relative size-[84px] shrink-0 overflow-hidden rounded-md bg-surface xl:h-[150px] xl:w-full">
+        <img alt="" class="size-full object-cover" loading="lazy" data-option-image />
+        <span class="absolute top-2.5 left-2.5 hidden rounded-pill bg-white px-2.5 py-1 text-[11.5px] font-bold text-blue-700 xl:block" data-option-tag hidden>Recommended</span>
+      </span>
+      <span class="flex flex-1 items-center gap-2.5 xl:px-1">
+        <span class="flex flex-1 flex-col gap-[3px]">
+          <span class="w-fit rounded-pill bg-white px-2 py-0.5 text-[11px] font-bold text-blue-700 xl:hidden" data-option-tag-mobile hidden>Recommended</span>
+          <span class="text-[15px] font-bold text-fg" data-option-name></span>
+          <span class="text-[12.5px] text-fg-muted" data-option-detail></span>
+          <span class="text-[14px] font-bold text-navy-900" data-option-price></span>
+        </span>
+        <span class={radioDot} aria-hidden="true"></span>
+      </span>
+    </label>
+  </template>
+
+  <template id="lane-icons">
+    <span data-kind="pedestrian"><DoorOpen size={20} aria-hidden="true" /></span>
+    <span data-kind="vehicle"><Car size={20} aria-hidden="true" /></span>
+  </template>
+</PublicLayout>
+
+<script>
+  import { initBuild } from "../scripts/build";
+  initBuild();
+</script>

@@ -1,0 +1,51 @@
+---
+import WifiOff from "@lucide/astro/icons/wifi-off";
+import RotateCw from "@lucide/astro/icons/rotate-cw";
+import AppLayout from "../layouts/AppLayout.astro";
+import LogoMark from "../components/customer/LogoMark.astro";
+
+/**
+ * Offline fallback served by the service worker when a navigation fails without a network.
+ * Prerendered and precached, so it must stay static: no session, no personal data.
+ */
+export const prerender = true;
+---
+
+<AppLayout title="Offline" connectionStatus={false}>
+  <main id="main" class="app-column flex min-h-dvh flex-col px-6 pt-[max(24px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))]">
+    <span class="size-[52px]"><LogoMark size={40} /></span>
+    <div class="flex flex-1 flex-col items-center justify-center gap-6 text-center">
+      <span class="flex size-[104px] items-center justify-center rounded-pill bg-blue-50/70" aria-hidden="true">
+        <span class="flex size-[84px] items-center justify-center rounded-pill bg-blue-50 text-blue-600"><WifiOff size={36} /></span>
+      </span>
+      <div class="flex flex-col gap-2">
+        <h1 class="font-heading text-[26px] font-extrabold tracking-[-0.6px] text-fg">You're offline</h1>
+        <p class="text-[15px] leading-[22px] text-fg-secondary">
+          Orders, payments and tickets need a connection so you always see the latest from Entragate. We'll reload as soon as you're back online.
+        </p>
+      </div>
+      <p class="hidden items-center gap-2 text-[13px] font-semibold text-fg-muted" data-status role="status">
+        <span class="size-2 animate-pulse rounded-full bg-warning"></span>
+        Waiting for network…
+      </p>
+    </div>
+    <button
+      type="button"
+      data-retry
+      class="flex h-[54px] w-full items-center justify-center gap-2 rounded-control bg-blue-600 px-5 text-[16px] font-semibold text-white transition-colors hover:bg-blue-700"
+    >
+      <RotateCw size={18} aria-hidden="true" />
+      Try again
+    </button>
+  </main>
+</AppLayout>
+
+<script>
+  // The SW serves this page in place of the URL the user asked for, so reloading retries it.
+  // Opened directly (/offline) there is nothing to retry, so go home instead.
+  const status = document.querySelector<HTMLElement>("[data-status]");
+  const reload = () => (location.pathname === "/offline" ? location.assign("/") : location.reload());
+  const retry = () => (navigator.onLine ? reload() : status?.classList.replace("hidden", "flex"));
+  document.querySelector("[data-retry]")?.addEventListener("click", retry);
+  window.addEventListener("online", reload);
+</script>
