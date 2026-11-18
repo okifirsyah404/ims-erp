@@ -12,6 +12,187 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-19 - PR #114 merged `main` in (ERP-0039 n8n workflow); the dependency notes are now obsolete
+
+`origin/main` (`5bd6fc9d`, #116 and #117 merged) was merged into
+`docs/m04-n8n-workflows` (`1a8f9db5`): 106 main commits. This branch only adds
+docs and n8n code, so nothing was regenerated and no package rename was needed.
+
+**Conflicts (2).**
+- `docs/plan/backlog.md`: the ERP-0039 row (this branch adds the workflow, the
+  test sender and the guides, verified on a real n8n 2.47.7) plus main's ERP-0022
+  row. The branch row keeps its text; a dated clause records that the workflow
+  now handles 13 topics and that every one of them is published by `main`.
+- `docs/plan/progress.md`: main as base, this branch's three sections on top.
+
+**The dependency warnings were wrong once #116 and #117 landed, and are fixed.**
+- The ERP-0066 section said "The ERP side is on `feat/m02-sales-follow-ups`";
+  it now says `main` (PR #116).
+- The ERP-0039 section said the return/bill topics wait for their PRs and that
+  "`main`'s ERP sends only the six older topics". Every topic is published now,
+  so that paragraph states the PRs are merged.
+- The n8n guide (en/id), the Meta guide, `whatsapp-n8n-setup` and the composer
+  were checked for the same claim; they carry none.
+
+**Workflow consistency checks (read-only plus one regeneration).**
+- The six inline `jsCode` nodes match `docs/integrations/n8n/src/` byte for byte
+  (`1`, `2c`, `3`, `4`, `5b`, `6`).
+- `build-workflow.ts` regenerates the JSON with the same content; the only
+  difference is `\r\n` versus `\n` inside the code strings, so the committed
+  file was left untouched rather than committing an EOL-only diff.
+- `node --check` passes for all six sources; `check-meta-templates.ts` reports
+  43 messages against 20 templates, `OK`.
+
+**Verification.** `bun install --frozen-lockfile` clean; `lint` 0 errors (19 ui,
+14 web-admin, 9 backend pre-existing warnings); `test` backend 1274, web-admin
+119, locales 98, react-email 6, 0 fail; `typecheck` 6/6; `validate-dbml.ts` OK
+(280 tables, 241 refs). No schema or migration change.
+
+**Not verified here.** The branch's own live runs on n8n 2.47.7 (all topics, bad
+signature 401, duplicate skipped, WAHA outage retried) date from 2026-11-16 and
+were not repeated; no real WAHA number or Meta account exists yet, which the
+guides state.
+
+## 2026-11-16 - ERP-0066 follow-ups in the n8n workflow (PR #114)
+
+The ERP side is on `main` (PR #116); see the ERP-0066 entry there.
+In the workflow:
+- **"3. Compose messages"** handles `lead.follow_up_due` and
+  `quotation.follow_up_due`.
+  - A new `toPerson` helper messages the lead's or quotation's owner on the
+    phone carried in the event (from the ERP user profile). Without an owner
+    or a phone it falls back to the sales manager.
+  - Overdue leads also go to the sales manager.
+- **Meta.** Three templates were added: `erp_followup_lead`,
+  `erp_followup_lead_terlambat` and `erp_followup_penawaran` (now 18).
+  `check-meta-templates.ts` checked 41 messages: `OK`.
+- `samples.ts` covers both topics; `n8n-workflows.*.md` has the topic rows.
+
+Verification: a live run (ERP with a minute cron → n8n 2.47.7 → fake WAHA)
+delivered both reminders to the salesperson's phone and the overdue
+escalation to the sales manager, with no duplicate on the next run. Details
+are in the ERP-0066 progress entry. `docs/database/` was reviewed and is
+unchanged.
+
+## 2026-11-16 - ERP-0039: official WhatsApp (Meta Cloud API) option, registration guide, robust dedupe
+
+The owner asked about Meta WhatsApp Business, because WAHA numbers risk bans, and about how to
+register; documented and built into the n8n workflow (branch `docs/m04-n8n-workflows`, PR #114).
+
+**Workflow (`docs/integrations/n8n/`)**
+- **Provider switch.** "4. Send WhatsApp" now reads `WHATSAPP_PROVIDER`:
+  - `waha`: unchanged.
+  - `meta`: the Cloud API. Business-initiated messages must be approved templates, so
+    `POST /v23.0/<META_PHONE_NUMBER_ID>/messages` carries `type: template`, language `id`, and
+    body parameters.
+  - A message without a template is skipped and reported, never sent as free text.
+- **Templates.** "3. Compose messages" now gives every message both forms: the free text and a
+  template name with its parameters (new lines flattened, as Meta refuses them).
+- **Template tooling.**
+  - `meta-templates.json`: 15 Indonesian Utility templates.
+  - `create-meta-templates.ts`: submits them to the WABA.
+  - `check-meta-templates.ts`: runs the compose code for every topic and change, and checks
+    template names and parameter counts.
+  - `samples.ts`: holds the sample events shared by the scripts.
+- **Dedupe fix found by testing.**
+  - The problem: workflow static data is loaded when an execution starts and saved when it
+    ends, after the ERP already has its answer. An event re-sent right away got through: 1 of 3
+    repeats, and the Meta run's third retry attempt.
+  - The fix: dedupe now uses an n8n data table `erp_processed_events`. Node "2a" creates it if
+    missing (`createIfNotExists`), "2b" looks the id up, and "5a" upserts it only after the
+    sends succeeded, all before the answer.
+
+**Docs**
+- New `docs/user-guide/whatsapp-business-meta.id.md` / `.en.md`:
+  - WAHA vs Meta;
+  - what to prepare (legal data, documents, a dedicated number not on the app, payment method,
+    display name);
+  - step-by-step registration (portfolio, app, WABA, number, business verification, Billing Hub,
+    System User token);
+  - template rules and the catalog, limits (250 → 2,000 …, per portfolio), cost model (per
+    message since 2025-07-01, service charged from 2026-10-01) with a rate warning, opt-in;
+  - n8n config, and a migration plan.
+- These facts were checked against Meta's official docs on 2026-11-16 (pricing, messaging limits,
+  get started, templates, webhook endpoint). The Indonesian per-message rates come only from
+  third-party sources that disagree, so the guide says to verify them.
+- `n8n-workflows.*.md`: the node table (data table, provider) and env vars were updated.
+- `whatsapp-n8n-setup.*.md` warn about WAHA bans and link the Meta guide.
+
+**Verification on a real n8n 2.47.7, with a mock WAHA + Graph API on :3999**
+- `check-meta-templates.ts`: 34 messages against 15 templates, `OK`.
+- **Meta mode.**
+  - `send-test-event.ts all` returned 10× 200, giving 13 Graph calls with the right URL
+    (`/v23.0/<id>/messages`), Bearer token and template payloads.
+  - The extra changes (approved / shipped / received / overdue) also passed, including the
+    supplier template with 6 parameters.
+  - Meta answering 500 → webhook 500 → the retry succeeds → the next try is "duplicate".
+- **Dedupe:** 6/6 immediate repeats were detected (before the fix: 1/3 got through), and a bad
+  signature returned 401.
+- **WAHA mode regression:** all 10 topics returned 200 with 15 WAHA calls, and a repeat was
+  "duplicate".
+- `create-meta-templates.ts` against the mock: 15 submissions to `/<WABA>/message_templates`.
+
+**Not done**
+- The ERP's inbound assistant on Meta (webhook `hub.challenge` + `X-Hub-Signature-256`, and a
+  Meta adapter for `IWhatsappGateway`) is code work in M04 that waits for the owner's go.
+- No real Meta account or approved templates yet.
+- `docs/database/` was reviewed and is unchanged.
+
+## 2026-11-16 - ERP-0039: importable n8n workflow for every ERP event, tested on a real n8n
+
+Branch `docs/m04-n8n-workflows` from `origin/main` (`a1be332`). The owner
+asked for a workflow they can import, explained in detail.
+
+**What was added**
+- `docs/integrations/n8n/erp-event-router.workflow.json`: one workflow for
+  all topics.
+  - Nodes: webhook `erp-events` → verify the HMAC signature (±10 minutes
+    replay window) → skip duplicates (workflow static data) → compose
+    messages from one `CONFIG` block (team numbers per role,
+    `notifyCustomers` / `notifySuppliers` off by default) → send WhatsApp via
+    WAHA → remember the event → answer the ERP.
+  - An optional email branch is disabled after import.
+  - The HTTP answers match the ERP outbox retry policy: 401/400 stop the
+    retries, 500 (WAHA down) retries, 200 for handled or duplicate.
+- The Code sources live in `docs/integrations/n8n/src/`;
+  `build-workflow.ts` rebuilds the JSON from them.
+- `send-test-event.ts` sends signed sample events, the same as the ERP, with
+  `--change`, `--bad-signature` and `--repeat`.
+- Guides: `docs/user-guide/n8n-workflows.id.md` and `.en.md`. They cover
+  requirements, n8n and ERP env, import, each node, recipients, topics,
+  testing and go-live. `whatsapp-n8n-setup.*.md` lists the new topics and
+  links the guide.
+- The topics `purchase_return.updated` (#108), `sales_return.updated` (#111),
+  `supplier_bill.recorded` and `supplier_bill.due` (#112) were published by
+  their PRs, which are now merged into `main`; the workflow handles all of them.
+
+**Verification on a real n8n 2.47.7 (Docker), with a fake WAHA on :3999**
+- `n8n import:workflow`, then `publish:workflow` and a restart: imported and
+  active.
+- `send-test-event.ts all`, plus every `change` of the returns, bills and
+  tickets: 25 events, all 200; 34 WhatsApp calls with the right chat ids and
+  API key. Texts reviewed.
+- Negative cases:
+  - `--bad-signature` → 401.
+  - `--repeat` → the second is "duplicate"; WhatsApp is sent once.
+  - WAHA answering 500 → the webhook answers 500. The same event id
+    succeeds once WAHA is back, and a third try is "duplicate".
+- **Real ERP → n8n.** The backend of PR #112 ran on `ims_erp_v_ap` with
+  `N8N_WEBHOOK_URL` pointing at the test n8n. Recording a bill (ap-e2e,
+  16/16) made finance's WhatsApp receive "Tagihan pemasok 0008/SB/DEV/XI/26
+  … dicatat", and `automation.outbox_messages` shows
+  `supplier_bill.recorded | published | 1`.
+- The links were checked against the web-admin routes, and two were fixed
+  (`/projects/tickets/:id`, `/integrations/whatsapp-ai/:id`).
+- The n8n 2.x specifics were confirmed live: `$env` with
+  `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`, `require('crypto')` with
+  `NODE_FUNCTION_ALLOW_BUILTIN`, and `this.helpers.httpRequest` in Code
+  nodes.
+
+**Not done.** Real WAHA and real numbers (UAT). The owner still has to
+approve the customer and supplier texts. `docs/database/` was reviewed and is
+unchanged.
+
 ## 2026-11-18 - PR #117 merged `main` in (ERP-0067 quotation PDF); #116 already on main
 
 `origin/main` (`19e5a264`, #116 merged) was merged into `feat/m02-quotation-pdf`
