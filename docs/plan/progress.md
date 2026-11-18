@@ -12,6 +12,55 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-16 - M05 purchase requests renumbered ERP-0060 -> ERP-0063 (PR #102), `main` merged in
+
+`main` took ERP-0060 (dashboard, #109), ERP-0061 (audit activity feed) and
+ERP-0062 (sidebar and signature actions, #110) while this branch's id was
+reserved only in an unmerged PR. Following the number-reservation rule, the
+merged ids stand. After checking `main`, every remote branch and all open
+PRs, the highest id anywhere was ERP-0062, so M05 purchase requests (#102)
+became ERP-0063, M05 purchase returns (#108) ERP-0064, and M02 sales returns
+(#111) ERP-0065.
+
+- **What was renamed.** The backlog row, `features.md`, the code comments
+  and the migration folder name (`_erp0063_`) now use the new id. Earlier
+  `progress.md` entries keep the id they were written with; read ERP-0060
+  there as ERP-0063 for this work.
+- **The merge.** `origin/main` (`9dc2373`) was merged in. It adds no
+  migration, so this branch's migration keeps its parent.
+
+## 2026-11-15 - PR #102 brought onto main again (`aa3a7ad`), shadcn controls
+
+`origin/main` (M04, the shadcn web-admin pass #105, reports) went into
+`feat/m05-purchase-requests`.
+- **PO form conflict.** Main moved the PO form to shadcn `Select` and dropped
+  the native `select` class constant. This branch's item mapper and
+  purchase-request prefill are kept, without the dropped constant.
+- **Migration.** Regenerated after main's M04 migrations:
+  `20261115090002_erp0060_purchase_requests` (the same DDL).
+  `drizzle-kit check`: "Everything's fine". PR #97 and PR #99 also add one
+  migration each on the same parent: whichever merges later re-runs
+  `drizzle:generate`.
+- **Main's new convention, followed.** The purchase request form now uses
+  `DatePicker` (request date, needed by), and the list uses the shadcn
+  `Select` (status) and `Checkbox` ("only mine") instead of native controls.
+- `logical-references.md` was regenerated; `validate-dbml.ts` prints OK.
+- **Verification.** `bun run typecheck` 4/4; `bun run lint` 0 errors (no
+  warning in the purchase request files); backend `bun test` 1073 pass,
+  4 fail (the known `Bun.Image` tests); web-admin 100; locales 94. The API
+  e2e and browser check were not re-run: the Docker engine is down on this
+  machine.
+- **Live re-verification (Docker back, same day).** Disposable DB
+  `ims_erp_v102`: `drizzle:migrate` on a fresh DB, `drizzle-kit check`
+  "Everything's fine", seed run twice. Backend on `APP_PORT=3010`: the API
+  e2e (create, submit, self-approval refused, approve, PO by split lines,
+  free-text mapping, status sync, cancel guards) passed **32/32**. Browser
+  check against the built web-admin (`VITE_API_URL=http://localhost:3010`):
+  sidebar entry, PR create with `DatePicker`, approve as operations manager,
+  PO prefilled from the PR (2 lines, mapper shown, save disabled until
+  mapped), shadcn supplier `Select`, PO saved, PR shown as "Sudah dipesan";
+  no page errors and no 5xx.
+
 ## 2026-11-15 - ERP-0020: online payments publish `receipt.recorded` (M04); DB verification on main
 
 With Docker back, the reworked branch was verified on a fresh disposable
@@ -63,6 +112,123 @@ The updated `fix/m02-invoice-billing` (now on main with M04) went into
   backend `bun test` 1102 pass, 4 fail (the known `Bun.Image` tests);
   web-admin 100; locales 94. The gateway e2e was not re-run: the Docker
   engine is down on this machine.
+
+## 2026-11-18 - PR #102 merged main (PR #99 state) in; migration regenerated on top of main
+
+`origin/main` (`3f749a59`, after PR #99 payment module) merged into
+`feat/m05-purchase-requests`.
+
+- **Conflicts: two, both documentation.** `docs/database/logical-references.md`
+  (generated: took main's side and re-ran `gen-logical-references.ts` → 535
+  refs across 41 targets, 239 intra-module) and `docs/plan/progress.md` (both
+  sides kept). No code conflict: the procurement module, its controllers,
+  repositories and the web-admin screens auto-merged.
+- **Migration ordered after main.** The branch's
+  `20261115090002_erp0063_purchase_requests` was stamped *before* main's
+  `20261116112133_erp0048_signature_requests` and later work, so a database
+  migrated from main would have run it out of order. The folder was deleted and
+  `bun run drizzle:generate` produced
+  `20261117175149_erp0063_purchase_requests` (same DDL: the two tables, the
+  `purchase_order_items.purchase_request_item_id` column, its FK and the
+  partial unique code index). No data migration: no environment had the old
+  one applied.
+- **Ref count note.** The regenerated file reports 535 refs, three fewer than
+  main's 538, because this PR drops `purchase_requests.department_id` and
+  `.project_id` (replaced by free-text `project_name`), matching the owner's
+  decision recorded in `docs.dbml`. Table count stays 278.
+- Verified (2026-11-18, repo root): `bun install --frozen-lockfile` no
+  changes; `bun run typecheck` 4/4; `bun run lint` 5/5, 0 errors;
+  `bun run test` backend 1219 / web-admin 119 / locales 98 / react-email 6,
+  0 fail; `bun run build` 3/3; `bun docs/database/validate-dbml.ts` OK
+  (278 tables, 0 cross-module, drizzle parity 0);
+  `bunx --bun drizzle-kit check` "Everything's fine".
+- Not verified here: applying the regenerated migration to a disposable
+  database, and the PR #102 API e2e after the merge.
+
+## 2026-11-18 - Accounting contracts split one file per table
+
+- `accounting/contracts/ledger.repositories.ts` (one barrel, 12 interfaces) is
+  replaced by 12 files `contracts/<table>.repository.interface.ts`, matching
+  the existing `tax.repository.interface.ts` naming. Interface bodies moved
+  verbatim; the aggregate join scope stays in each file's doc comment.
+- 28 consumer imports rewritten to the per-table file. The barrel is deleted.
+- Verified (2026-11-18): typecheck 4/4; accounting + invoice-billing +
+  payment-gateway tests 109 pass; `bun run lint` 0 errors (backend 9 pre-existing
+  warnings); `bun run test` backend 1219 / web-admin 119 / locales 98 /
+  react-email 6, 0 fail; `validate-dbml.ts` OK.
+
+## 2026-11-18 - Accounting reaches sales.invoices only through Sales' exported service
+
+- Sales publishes `IExportedInvoiceService` (`findById`, `updateTotals`,
+  `countDraftsInWindow`) via `EXPORTED_INVOICE_SERVICE_TOKEN`, following the
+  `Exported<Module>Service` pattern (`assets/services/exported-asset.service.ts`).
+  It depends only on Sales' own invoice repository.
+- Accounting no longer has an invoice repository. Deleted
+  `accounting/repositories/invoice-mirror.repository.ts`,
+  `IInvoiceMirrorRepository`, `INVOICE_MIRROR_REPOSITORY_TOKEN` and its
+  registration. `LedgerSettlementPortService` and `MonthEndCloseService` inject
+  the facade.
+- The draft-invoice count left `close-checklist.repository.ts` (it read
+  `sales.invoices`) and is answered by `countDraftsInWindow`.
+- `docs/database/`: no table, column or ref change; `validate-dbml.ts` OK.
+- Verified (2026-11-18, repo root): `bun run typecheck` 4/4; `bun run lint`
+  0 errors, backend 9 pre-existing warnings; `bun run test` backend 1219,
+  web-admin 119, locales 98, react-email 6, 0 fail; accounting + invoice-billing
+  + payment-gateway tests 109 pass; `validate-dbml.ts` OK.
+- Not verified: accounting API e2e against a live server.
+- Known remaining: `payment` still reads `sales.invoices` totals through
+  `InvoicePaymentPort` (Sales side, unchanged here).
+
+## 2026-11-18 - LedgerRepository split per table; payment owns the ledger; Sales freed of accounting repositories
+
+Owner request: "pecah lagi ledger.repository.ts, harusnya 1 repository representasi 1 tabel
+(bisa join)". Follow-up to ADR-0024 (payment ledger moved to `payment.*`).
+
+- **`docs.dbml` first** (canonical): `finance.payments` and
+  `finance.payment_allocations` moved to `payment.payments` /
+  `payment.payment_allocations`, in the Payment TableGroup and module section.
+  `sales_invoice_id` / `receipt_id` became nullable logical references
+  (ADR-0014) and the 3 `payments.* -> finance.*` FKs became logical too, so no
+  cross-schema ref remains. The 7 intra-module Finance refs that an earlier edit
+  had removed were restored; `validate-dbml.ts` → 278 tables, 234 refs,
+  0 cross-module, **OK** (the 5 fewer than main are exactly the 2
+  `gateway_payments` and 3 `payments` refs that became logical).
+- **One repository per table** (`accounting/repositories/`):
+  `chart-of-account`, `accounting-period`, `journal` (entries+lines aggregate),
+  `opening-balance`, `bank-account-link`, `cash-bank` (accounts+transactions),
+  `ar-open-item`, `ap-open-item`, `supplier-bill`, `bank-reconciliation`
+  (parents+items), `account-balance`, plus two documented non-entity
+  repositories: `invoice-mirror` (the AR mirror write path into
+  `sales.invoices`, the one known rule 3.2/3.4 deviation, isolated so it can be
+  replaced by a Sales contract) and `close-checklist` (a 4-table read model).
+  `ledger.repository.ts` (1574 lines, 65 methods, 14 tables) is deleted.
+- **Contracts** in `accounting/contracts/ledger.repositories.ts`, one interface
+  per repository, with the join scope documented per aggregate. Tokens in
+  `constants/di.ts`; `registerAccounting` registers all thirteen.
+- **Services inject only what they query** — e.g. `PostingService` takes
+  accounts + journal + periods instead of the whole ledger; `AccountService`
+  takes only the chart of accounts.
+- **Sales no longer imports an accounting repository** (it did, in
+  `invoice.service` and `invoice-billing.service` — a rule 3.4 violation).
+  Accounting now publishes `IArLedgerPort`
+  (`openItem`, `setOpenItemStatus`, `findPostedEntryForSource`) via
+  `AR_LEDGER_PORT_TOKEN`; Sales injects the token and the interface only.
+- **Payment integration follows ADR-0024**: `payment` owns the ledger
+  (`payment.repository.ts`), reaches Sales through `IInvoicePaymentPort` and
+  Accounting through `ILedgerSettlementPort`, and exposes
+  `IPaymentLedgerGateway` (`countOpen`, `listAllocations`, `requireExecuted`,
+  `markVoided`) so Accounting's F7 reversal needs no payment repository. The
+  `payment` errors are the only class identity (`accounting/errors` re-exports
+  nothing from payment); `OpenItemNotFoundError` was added for ledger drift.
+- **Migration** `20261117172959_erp0020_payment_gateway` (regenerated, not
+  copied): `CREATE SCHEMA "payment"` + the table. `drizzle-kit check`:
+  "Everything's fine".
+- Verified (2026-11-18, repo root): `bun run typecheck` 4/4; `bun run lint`
+  5/5, 0 errors, backend warnings back to the 9 pre-existing; `bun run test`
+  backend 1219 / web-admin 119 / locales 98 / react-email 6, 0 fail;
+  `bun run build` 3/3; `bun docs/database/validate-dbml.ts` OK.
+- Not verified: applying the migration to a disposable database, and the
+  accounting API e2e against a live server.
 
 ## 2026-11-18 - ERP-0020: gateway checkouts moved to a `payment` schema/module (ADR-0023)
 
@@ -1876,6 +2042,166 @@ Built:
 > that branch; this documentation set was written there first and then copied
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
+
+## 2026-11-15 - ERP-0060 (PR #102) brought onto main: renumbered, migration regenerated after M08
+
+`origin/main` (`41e3a96`, with the M08 merge and its migration
+`20261114173050_lush_darkstar`) was merged into
+`feat/m05-purchase-requests`. `progress.md` kept both sides;
+`logical-references.md` was regenerated.
+
+- **Renumbered ERP-0053 → ERP-0060.** Main gave ERP-0053 to M08 and
+  ERP-0053…0059 to `plans/erp-0051-follow-ups.md` in parallel. ERP-0060 is
+  the first number free on main, every remote branch and the open PRs.
+- **Migration regenerated.** The M05 migration had been generated on the
+  same parent snapshot as M08's (`create_sales_schema`), so the two would
+  collide in drizzle's chain. It was removed and generated again after M08:
+  `20261114183120_erp0060_purchase_requests`, the same DDL.
+
+**Verification**
+- `validate-dbml.ts`: OK. `bun run typecheck`: 4/4.
+- Backend `bun test`: 1027 pass, 4 fail (the known `Bun.Image` tests).
+  Locales 90; web-admin 100.
+- Fresh disposable `ims_erp_m05b`: migrate applied the 20 folders;
+  `drizzle-kit check` printed "Everything's fine"; development seed.
+- PR → PO API e2e: **32/32**.
+
+## 2026-11-15 - ERP-0060 M05 purchase requests (PR → PO by lines)
+
+> Renumbered 2026-11-15 from ERP-0053: main assigned ERP-0053 to the M08 merge
+> and ERP-0053…0059 in `plans/erp-0051-follow-ups.md` in parallel; ERP-0060 is the
+> first free number on main, every remote branch and the open PRs.
+
+Owner's choice for the next M05 slice, made while #97–#100 wait for review.
+Branch `feat/m05-purchase-requests` (**PR #102**), from `origin/main` (`2b28fc4`, with the
+squashed migration baseline of ADR-0019 / ERP-0052).
+
+**Gate 1.**
+- `docs.dbml` MODULE Procurement + Inventory items, read.
+  `module-ownership.md`, `integrity-and-consistency.md` and
+  `data-dictionary.md` (codes, money, quantity) were also read.
+  `implementation-phases.md` was skipped: no pending step is involved.
+- The PR tables in `docs.dbml` were the old scaffold:
+  - tenant-scoped;
+  - `catalog.items` / `catalog.units` refs, although the item master is now
+    `inventory.items` (OPEN-1);
+  - `department_id` / `project_id` cross-module references;
+  - `requested_by NOT NULL`, against ADR-0014;
+  - no link to purchase orders.
+- They were rewritten **before** the Drizzle schema.
+
+**Gate 2.** The owner answered four questions; all four recommended options
+were chosen:
+- lines split across POs;
+- free-text lines allowed and mapped on the PO;
+- one-level approval;
+- company-wide.
+
+The rest was resolved from existing rules:
+- **Ownership:** Procurement.
+- **Tenant:** company-wide; `organization_id` is a nullable informational
+  logical reference.
+- **Soft delete:** `deleted_at` on both tables.
+- **Column types:** money is bigint minor units, quantity is
+  `numeric(18,3)`, dates are Jakarta `date`.
+- **Cross-module references:** `requested_by`, `approved_by`,
+  `cancelled_by`, `organization_id`, `item_id`, all nullable logical
+  references. The intra-module FK is `purchase_order_items.purchase_request_item_id`.
+- **Status vocabulary:** `draft | submitted | approved | ordered | cancelled`.
+- **Rejection** returns the request to draft (same as POs).
+- **Permissions:** the existing catalog (`purchase_request:*`), unchanged.
+
+**Change**
+- **Schema and migration.**
+  - `docs.dbml` first: 2 tables rewritten, PO line column, ref and index.
+    `bun docs/database/gen-logical-references.ts` printed "521 refs across
+    41 targets"; `bun docs/database/validate-dbml.ts` printed "269 tables,
+    cross-module refs: 0, timestamp gaps: 0, OK"; Refs went from 232 to 233.
+  - Drizzle schema, then **`bun run drizzle:generate`**, which produced a
+    normal diff on the new baseline. The migration was renamed to
+    `20261114183120_erp0060_purchase_requests` and inspected: 2 `CREATE TABLE`,
+    `ALTER TABLE ... ADD COLUMN purchase_request_item_id`, indexes, and
+    2 FKs with drizzle's auto names.
+  - Numbering type `purchase_request` (`PR`), plus the web settings list and
+    locales.
+- **Backend.**
+  - `PurchaseRequestRepository` and `PurchaseRequestService`;
+    `PurchaseRequestController` at `/purchase-requests`.
+  - `repositories/request-ordering.ts`: the claim under `FOR UPDATE` and the
+    `approved ↔ ordered` sync.
+  - The PO repository's `create` / `replaceDraft` now claim request lines
+    and return `TPurchaseOrderWrite`.
+  - PO cancel syncs the requests. The PO detail shows the request per line.
+  - Errors `procurement.pr*`, en + id.
+- **Found in the browser check.** A technician (requester) gets **403 on
+  `GET /items`**: no `product:read`. Rather than widen the role catalog, a
+  narrow `GET /purchase-requests/items` (`purchase_request:create`) searches
+  active items through the `ItemService.paginate` contract and returns only
+  id / SKU / name / unit / specification / purchase price.
+- **Web.**
+  - `/procurement/purchase-requests`: list with search, status and "only
+    mine"; new / edit / detail with submit, approve, reject, cancel and
+    "Buat purchase order".
+  - PO form: "Dari permintaan pembelian" picker, prefill from
+    `?fromRequest=`, an item mapper for free-text lines, and save blocked
+    while a line is unmapped.
+  - Fixed while doing this: the PO edit form kept no request link, so saving
+    an edit would have dropped it. It now carries `purchaseRequestItemId`.
+  - Sidebar entry, breadcrumbs, en + id keys; dead-key prefixes
+    `procurement:prStatus.` and `procurement.prState.`.
+
+**Verification**
+- **Typecheck and lint.** `bun run typecheck`: 4/4 clean. `bun run lint`:
+  0 errors, no warning in the touched files.
+- **Unit tests.**
+  - Backend `bun test`: 1010 pass, 4 fail. The 4 are the known `Bun.Image` /
+    WebP tests (Bun 1.4.1 here, the repo pins 1.4.2).
+  - New `purchase-request.service.test.ts` passes 9. `procurement.service.test.ts`
+    passes 8, including the request-line claim mapping and the cancel sync.
+  - web-admin 100; locales 90.
+- **Disposable database `ims_erp_m05`.** It was created fresh.
+  `drizzle:migrate` applied the 19 baseline folders plus the new one.
+  `drizzle-kit check` printed "Everything's fine". The development seed ran
+  after a rebuild of `packages/common`, whose `dist` was stale and lacked
+  `appRoleNames`.
+- **API e2e: 32/32.**
+  - Drafting: item and free-text lines; another role or another user
+    cannot edit (403).
+  - Approval: submit numbers the request (`…/PR/…`); a technician cannot
+    approve; ops rejects to draft and the number is kept on resubmit; ops
+    approves.
+  - Ordering:
+    - open lines are listed;
+    - PO 1 orders the item line and the request stays approved;
+    - the same line on a second PO gets 422; the same line twice on one PO
+      gets 422 on line 2;
+    - **3 concurrent POs for one line: exactly one 201**;
+    - the request becomes `ordered` and the PO detail shows the request
+      code;
+    - an ordered request cannot be cancelled (422).
+  - Freeing lines: the owner cancels PO 2, the request goes back to
+    `approved` and the line is open again; editing PO 1 without the link
+    frees its line.
+  - Refusals: an unapproved request cannot be ordered; a cancelled request
+    cannot be ordered.
+  - Lists: `mine` and the company-wide list; search.
+  - No session: 401.
+- **Browser (Playwright, Indonesian).**
+  - Setup: the static build was served by request interception.
+  - The technician creates a request with a master item and a free-text
+    line, then submits it (`0004/PR/DEV/XI/26`).
+  - The operations manager approves it.
+  - Purchasing opens "Buat purchase order": both lines are prefilled, the
+    subject and project come from the request, the mapper shows for the
+    free-text line, and save stays disabled until it is mapped. The PO is
+    saved.
+  - The request shows "Sudah dipesan" with the PO per line.
+  - No page errors and no failing API calls.
+- **Environment note.** The first API run returned 404. Two old backend
+  processes were still holding port 3000, one of them the payment-gateway
+  backend of 2026-11-14 on `ims_erp_inv`. Both were stopped and the backend
+  was started again.
+- **`docs/database/`** was updated in this change (above).
 
 ## 2026-11-15 - ERP-0020 (PR #99) brought onto main: ADR-0021, regenerated migration, nullable organization_id
 

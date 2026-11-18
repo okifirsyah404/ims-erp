@@ -30,6 +30,14 @@ const api = {
 	'procurement.supplierAlreadyActive': 'The supplier is already active',
 	'procurement.supplierAlreadyInactive': 'The supplier is already inactive',
 	'procurement.villageNotFound': 'Village (kelurahan/desa) not found',
+	'procurement.purchaseRequestNotFound': 'Purchase request not found',
+	'procurement.prState.notDraft': 'Only a draft purchase request can be changed or submitted',
+	'procurement.prState.notSubmitted': 'Only a submitted purchase request can be approved or rejected',
+	'procurement.prState.notCancellable': 'This purchase request can no longer be cancelled (a line is already on a purchase order)',
+	'procurement.prNotOwner': 'Only the requester can change this purchase request',
+	'procurement.prSelfApproval': 'You cannot approve or reject your own purchase request',
+	'procurement.prCodeTaken': 'PR number {{code}} is already used',
+	'procurement.prLineUnavailable': 'Line {{line}}: the purchase request line is not open for ordering',
 	'procurement.purchaseOrderNotFound': 'Purchase order not found',
 	'procurement.supplierUnavailable': 'Supplier not found or inactive',
 	'procurement.itemUnavailable': 'Line {{line}}: item not found or inactive',
@@ -456,6 +464,7 @@ const api = {
 	// Invoices & AR (F4)
 	'accounting.arAccountNotConfigured':
 		'No active general-ledger account is configured for this posting role; set up the chart of accounts first',
+	'accounting.openItemNotFound': 'The open-item sub-ledger row for this document is missing',
 	'accounting.paymentNotFound': 'Payment not found',
 	'accounting.paymentInvalidTransition':
 		'That status change is not allowed for this payment',

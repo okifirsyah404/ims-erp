@@ -7,7 +7,7 @@
 //      (documented exceptions: append-only ledgers, projections, Better Auth
 //      core tables, transitional sales scaffold)
 //   4. unique table names across schemas ("payments" is whitelisted:
-//      finance.payments is the target; sales.payments is the transitional
+//      payment.payments is the target; sales.payments is the transitional
 //      scaffold dropped in phase step S7)
 // Exits non-zero on any violation. No SQL export: docs.dbml is a design
 // reference for the hand-written Drizzle schemas, not a DDL source.
@@ -90,7 +90,7 @@ const TIMESTAMP_EXEMPT = new Set([
   "inventory.serial_tracked_items", "inventory.lot_batches",
   // allocation line of a payment: cascade-deleted with the payment, never
   // soft-deleted on its own
-  "finance.payment_allocations",
+  "payment.payment_allocations",
   // open-item sub-ledgers: running balances cleared by status, not soft-deleted
   "finance.ar_open_items", "finance.ap_open_items",
 ]);

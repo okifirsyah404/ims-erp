@@ -7,17 +7,20 @@ import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
 import {
 	AR_ACCOUNT_RESOLVER_TOKEN,
-	LEDGER_REPOSITORY_TOKEN,
 	POSTING_SERVICE_TOKEN,
 } from '../constants/ar-di';
-import type { LedgerRepository } from '../repositories/ledger.repository';
+import {
+	AP_OPEN_ITEM_REPOSITORY_TOKEN,
+	SUPPLIER_BILL_REPOSITORY_TOKEN,
+} from '../constants/di';
 import type { PostingService } from './posting.service';
 import type { ArAccountResolverService } from './ar-account-resolver.service';
 import {
 	BillNotDraftError,
 	BillNotFoundError,
-	PaymentTargetNotIssuedError,
 } from '../errors/ledger.errors';
+import type { ISupplierBillRepository } from '../contracts/supplier-bill.repository.interface';
+import type { IApOpenItemRepository } from '../contracts/ap-open-item.repository.interface';
 
 export type TBillActionContext = {
 	organizationId: string;
@@ -51,7 +54,8 @@ export type TCreateSupplierBillInput = {
 export class SupplierBillService {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
-		@inject(LEDGER_REPOSITORY_TOKEN) private readonly repo: LedgerRepository,
+		@inject(SUPPLIER_BILL_REPOSITORY_TOKEN) private readonly bills: ISupplierBillRepository,
+		@inject(AP_OPEN_ITEM_REPOSITORY_TOKEN) private readonly ap: IApOpenItemRepository,
 		@inject(POSTING_SERVICE_TOKEN) private readonly posting: PostingService,
 		@inject(AR_ACCOUNT_RESOLVER_TOKEN)
 		private readonly accountResolver: ArAccountResolverService,
@@ -64,11 +68,11 @@ export class SupplierBillService {
 		filters: { status?: string; supplierId?: string },
 		pagination: { page: number; limit: number },
 	): Promise<TPaginationResult<TSupplierBillSelect>> {
-		return this.repo.listSupplierBills(organizationId, filters, pagination);
+		return this.bills.listSupplierBills(organizationId, filters, pagination);
 	}
 
 	async get(organizationId: string, id: string): Promise<TSupplierBillSelect> {
-		const bill = await this.repo.findSupplierBillById(organizationId, id);
+		const bill = await this.bills.findSupplierBillById(organizationId, id);
 		if (!bill) throw new BillNotFoundError();
 		return bill;
 	}
@@ -83,7 +87,7 @@ export class SupplierBillService {
 				date: new Date(`${input.billDate}T12:00:00+07:00`),
 				tx,
 			});
-			return this.repo.insertSupplierBill(
+			return this.bills.insertSupplierBill(
 				{
 					organizationId: ctx.organizationId,
 					code,
@@ -108,10 +112,10 @@ export class SupplierBillService {
 
 	/** Draft → void. No journal impact (nothing was posted). */
 	async cancel(ctx: TBillActionContext, id: string): Promise<TSupplierBillSelect> {
-		const bill = await this.repo.findSupplierBillById(ctx.organizationId, id);
+		const bill = await this.bills.findSupplierBillById(ctx.organizationId, id);
 		if (!bill) throw new BillNotFoundError();
 		if (bill.status !== 'draft') throw new BillNotDraftError();
-		const updated = await this.repo.updateSupplierBill(ctx.organizationId, id, {
+		const updated = await this.bills.updateSupplierBill(ctx.organizationId, id, {
 			status: 'void',
 		});
 		return updated ?? bill;
@@ -124,7 +128,7 @@ export class SupplierBillService {
 	 */
 	async record(ctx: TBillActionContext, id: string): Promise<TSupplierBillSelect> {
 		return this.database.transaction(async (tx) => {
-			const bill = await this.repo.findSupplierBillById(ctx.organizationId, id, tx);
+			const bill = await this.bills.findSupplierBillById(ctx.organizationId, id, tx);
 			if (!bill) throw new BillNotFoundError();
 			if (bill.status !== 'draft') throw new BillNotDraftError();
 
@@ -166,7 +170,7 @@ export class SupplierBillService {
 				lines,
 			});
 
-			await this.repo.insertApOpenItem(
+			await this.ap.insertApOpenItem(
 				{
 					organizationId: ctx.organizationId,
 					supplierBillId: bill.id,
@@ -182,7 +186,7 @@ export class SupplierBillService {
 				tx,
 			);
 
-			return this.repo.updateSupplierBill(
+			return this.bills.updateSupplierBill(
 				ctx.organizationId,
 				id,
 				{
@@ -197,5 +201,4 @@ export class SupplierBillService {
 	}
 }
 
-// Kept so the payment side can refuse bills that were never recorded.
-export { PaymentTargetNotIssuedError };
+

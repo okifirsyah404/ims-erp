@@ -111,6 +111,19 @@ export type TInvoiceRepository = {
 		organizationId: string,
 		range: { from: string; to: string; groupBy: 'month' | 'day' },
 	): Promise<TInvoiceSummary>;
+	/**
+	 * How many invoices are still `draft` and were created inside a window.
+	 *
+	 * @remarks
+	 * Consumed by Accounting's month-end close checklist through
+	 * `ExportedInvoiceService`: the count belongs to this module, so it is
+	 * answered here instead of another module reading `sales.invoices`.
+	 */
+	countDraftsInWindow(
+		organizationId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<number>;
 	insert(
 		row: Record<string, unknown>,
 		tx?: unknown,

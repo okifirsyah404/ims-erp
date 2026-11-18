@@ -111,11 +111,10 @@ beforeEach(() => {
 			},
 		},
 		{
-			findPostedEntryBySourceTypeAndId: async (_org: string, sourceType: string, sourceId: string) =>
+			findPostedEntryForSource: async (_org: string, sourceType: string, sourceId: string) =>
 				sourceType === 'invoice' ? ({ id: `je-${sourceId}`, status: 'posted', reversedByEntryId: null, entryDate: '2026-11-01' } as never) : null,
-			updateArOpenItem: async (_org: string, invoiceId: string, patch: Record<string, unknown>) => {
+			setOpenItemStatus: async (_org: string, invoiceId: string, patch: Record<string, unknown>) => {
 				arUpdates.push({ invoiceId, patch });
-				return null;
 			},
 		},
 		{

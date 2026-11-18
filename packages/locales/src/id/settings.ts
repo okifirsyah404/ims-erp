@@ -55,6 +55,7 @@ const settings: Record<keyof typeof en, string> = {
 	'numbering.type.web_contact': 'Website: pesan kontak',
 	'numbering.type.web_demo': 'Website: permintaan demo',
 	'numbering.type.purchase_order': 'Purchase order',
+	'numbering.type.purchase_request': 'Permintaan pembelian',
 	'numbering.type.goods_receipt': 'Penerimaan barang',
 	'numbering.type.stock_adjustment': 'Penyesuaian stok',
 	'numbering.type.delivery_note': 'Surat jalan',

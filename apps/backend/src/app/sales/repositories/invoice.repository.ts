@@ -150,11 +150,30 @@ export class InvoiceRepository implements TInvoiceRepository {
 		};
 	}
 
+	async countDraftsInWindow(
+		organizationId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<number> {
+		const [row] = await this.database
+			.select({ value: count() })
+			.from(invoices)
+			.where(
+				and(
+					eq(invoices.organizationId, organizationId),
+					isNull(invoices.deletedAt),
+					eq(invoices.status, 'draft'),
+					gte(invoices.createdAt, new Date(`${startDate}T00:00:00Z`)),
+					lte(invoices.createdAt, new Date(`${endDate}T23:59:59Z`)),
+				),
+			);
+		return Number(row?.value ?? 0);
+	}
+
 	async summary(
 		organizationId: string,
 		range: { from: string; to: string; groupBy: 'month' | 'day' },
-	): Promise<TInvoiceSummary> {
-		// Bucket key straight from `issue_date` (`YYYY-MM-DD` as text): `YYYY-MM`
+	): Promise<TInvoiceSummary> {		// Bucket key straight from `issue_date` (`YYYY-MM-DD` as text): `YYYY-MM`
 		// for months, the full date for days. No format parameter - PostgreSQL
 		// does not treat `to_char(x, $1)` in the select and `to_char(x, $2)` in
 		// the group by as the same expression.

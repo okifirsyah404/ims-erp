@@ -1,7 +1,8 @@
 import { inject, injectable } from 'tsyringe';
-import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
-import type { LedgerRepository } from '../repositories/ledger.repository';
+import { JOURNAL_REPOSITORY_TOKEN, CHART_OF_ACCOUNT_REPOSITORY_TOKEN } from '../constants/di';
 import type { TChartOfAccountSelect } from '@drizzle/schemas/accounting.schema';
+import type { IJournalRepository } from '../contracts/journal.repository.interface';
+import type { IChartOfAccountRepository } from '../contracts/chart-of-account.repository.interface';
 
 export type TReportContext = {
 	organizationId: string;
@@ -78,8 +79,8 @@ const REPORT_ACCOUNT_TYPES = {
 @injectable()
 export class ReportService {
 	constructor(
-		@inject(LEDGER_REPOSITORY_TOKEN)
-		private readonly repo: LedgerRepository,
+				@inject(JOURNAL_REPOSITORY_TOKEN) private readonly journal: IJournalRepository,
+		@inject(CHART_OF_ACCOUNT_REPOSITORY_TOKEN) private readonly accounts: IChartOfAccountRepository,
 	) {}
 
 	/** Income statement: revenue − expenses over a date range. */
@@ -88,8 +89,8 @@ export class ReportService {
 		startDate: string,
 		endDate: string,
 	): Promise<TProfitAndLoss> {
-		const accounts = await this.repo.listAccountsMap(ctx.organizationId);
-		const activity = await this.repo.listAccountActivity(
+		const accounts = await this.accounts.listAccountsMap(ctx.organizationId);
+		const activity = await this.journal.listAccountActivity(
 			ctx.organizationId,
 			startDate,
 			endDate,
@@ -134,8 +135,8 @@ export class ReportService {
 		ctx: TReportContext,
 		asOfDate: string,
 	): Promise<TBalanceSheet> {
-		const accounts = await this.repo.listAccountsMap(ctx.organizationId);
-		const activity = await this.repo.listAccountActivity(
+		const accounts = await this.accounts.listAccountsMap(ctx.organizationId);
+		const activity = await this.journal.listAccountActivity(
 			ctx.organizationId,
 			'0001-01-01',
 			asOfDate,
@@ -203,8 +204,8 @@ export class ReportService {
 		startDate: string,
 		endDate: string,
 	): Promise<TCashFlowStatement> {
-		const accounts = await this.repo.listAccountsMap(ctx.organizationId);
-		const activity = await this.repo.listAccountActivity(
+		const accounts = await this.accounts.listAccountsMap(ctx.organizationId);
+		const activity = await this.journal.listAccountActivity(
 			ctx.organizationId,
 			startDate,
 			endDate,

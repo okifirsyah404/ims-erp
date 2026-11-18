@@ -6,7 +6,11 @@ import {
 	SUPPLIER_SERVICE_TOKEN,
 	GOODS_RECEIPT_REPOSITORY_TOKEN,
 	GOODS_RECEIPT_SERVICE_TOKEN,
+	PURCHASE_REQUEST_REPOSITORY_TOKEN,
+	PURCHASE_REQUEST_SERVICE_TOKEN,
 } from './constants/di';
+import { PurchaseRequestRepository } from './repositories/purchase-request.repository';
+import { PurchaseRequestService } from './services/purchase-request.service';
 import { PurchaseOrderRepository } from './repositories/purchase-order.repository';
 import { SupplierRepository } from './repositories/supplier.repository';
 import { PurchaseOrderService } from './services/purchase-order.service';
@@ -24,4 +28,6 @@ export function registerProcurement(container: DependencyContainer): void {
 	container.register(PURCHASE_ORDER_SERVICE_TOKEN, { useClass: PurchaseOrderService });
 	container.register(GOODS_RECEIPT_REPOSITORY_TOKEN, { useClass: GoodsReceiptRepository });
 	container.register(GOODS_RECEIPT_SERVICE_TOKEN, { useClass: GoodsReceiptService });
+	container.register(PURCHASE_REQUEST_REPOSITORY_TOKEN, { useClass: PurchaseRequestRepository });
+	container.register(PURCHASE_REQUEST_SERVICE_TOKEN, { useClass: PurchaseRequestService });
 }

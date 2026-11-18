@@ -4,12 +4,13 @@ import { COMPANY_SERVICE_TOKEN } from '@app/company';
 import type { CompanyService } from '@app/company';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
 import type { DocumentService } from '@app/document';
-import { LEDGER_REPOSITORY_TOKEN, POSTING_SERVICE_TOKEN } from '@app/accounting/constants/di';
+import { AR_LEDGER_PORT_TOKEN } from '@app/accounting/constants/ar-di';
+import { POSTING_SERVICE_TOKEN } from '@app/accounting/constants/di';
 import type { TTx } from '@drizzle/types';
 import type { TInvoiceSelect, TReceiptSelect, TSalesOrderItemSelect, TSalesOrderSelect } from '@drizzle/schemas/sales.schema';
 import { businessDateOf } from '@utils/business-date.util';
 import { inject, injectable } from 'tsyringe';
-import type { LedgerRepository } from '../../accounting/repositories/ledger.repository';
+import type { IArLedgerPort } from '../../accounting/contracts/ar-ledger.port';
 import type { PostingService } from '../../accounting/services/posting.service';
 import { INVOICE_REPOSITORY_TOKEN } from '../constants/ar-di';
 import { SALES_BILLING_SERVICE_TOKEN } from '../constants/di';
@@ -117,8 +118,8 @@ export class InvoiceBillingService {
 		@inject(CODE_NUMBER_SERVICE_TOKEN) private readonly numbering: Pick<CodeNumberService, 'next'>,
 		@inject(COMPANY_SERVICE_TOKEN) private readonly company: Pick<CompanyService, 'get'>,
 		@inject(POSTING_SERVICE_TOKEN) private readonly posting: Pick<PostingService, 'reverse'>,
-		@inject(LEDGER_REPOSITORY_TOKEN)
-		private readonly ledger: Pick<LedgerRepository, 'findPostedEntryBySourceTypeAndId' | 'updateArOpenItem'>,
+		@inject(AR_LEDGER_PORT_TOKEN)
+		private readonly arLedger: Pick<IArLedgerPort, 'findPostedEntryForSource' | 'setOpenItemStatus'>,
 		@inject(DOCUMENT_SERVICE_TOKEN) private readonly documents: Pick<DocumentService, 'voidBySource'>,
 	) {}
 
@@ -281,7 +282,7 @@ export class InvoiceBillingService {
 		const result = await this.invoices.withLockedInvoice(ctx.organizationId, id, async (invoice, tx) => {
 			if ((invoice.status !== 'draft' && invoice.status !== 'issued') || invoice.paidTotal > 0) throw new InvoiceNotVoidableError();
 			if (invoice.status === 'issued') {
-				const entry = await this.ledger.findPostedEntryBySourceTypeAndId(ctx.organizationId, 'invoice', invoice.id, tx as TTx);
+				const entry = await this.arLedger.findPostedEntryForSource(ctx.organizationId, 'invoice', invoice.id, tx as TTx);
 				if (entry && entry.status === 'posted' && !entry.reversedByEntryId) {
 					const today = businessDateOf();
 					await this.posting.reverse(tx as TTx, ctx.organizationId, entry.id, ctx.actorUserId, {
@@ -291,7 +292,7 @@ export class InvoiceBillingService {
 				}
 				// Amounts stay (outstanding = original − paid is a DB check); `void`
 				// takes the item out of the aging (open / partially paid only).
-				await this.ledger.updateArOpenItem(ctx.organizationId, invoice.id, { status: 'void' }, tx as TTx);
+				await this.arLedger.setOpenItemStatus(ctx.organizationId, invoice.id, { status: 'void' }, tx as TTx);
 				await this.documents.voidBySource('sales', 'invoice', invoice.id, tx as TTx);
 			}
 			const updated = await this.invoices.update(
