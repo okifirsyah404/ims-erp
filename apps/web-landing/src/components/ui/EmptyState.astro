@@ -1,0 +1,30 @@
+---
+import type { AstroComponent } from "@lucide/astro";
+import Inbox from "@lucide/astro/icons/inbox";
+
+/** Empty State (Hnd90). Pass a CTA through the default slot. */
+interface Props {
+  title: string;
+  description: string;
+  icon?: AstroComponent;
+  class?: string;
+}
+
+const { title, description, icon: Icon = Inbox, class: className } = Astro.props;
+---
+
+<div
+  class:list={[
+    "flex flex-col items-center gap-4 rounded-card bg-white px-10 py-12 text-center ring-1 ring-border ring-inset",
+    className,
+  ]}
+>
+  <span class="flex size-[88px] items-center justify-center rounded-pill bg-blue-50">
+    <span class="flex size-[60px] items-center justify-center rounded-pill bg-white text-blue-600 ring-1 ring-blue-100 ring-inset">
+      <Icon size={26} aria-hidden="true" />
+    </span>
+  </span>
+  <h2 class="font-heading text-[20px] font-extrabold text-navy-900">{title}</h2>
+  <p class="max-w-[360px] text-[14px] leading-[1.55] text-fg-secondary">{description}</p>
+  <slot />
+</div>

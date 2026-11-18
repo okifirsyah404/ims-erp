@@ -250,6 +250,17 @@ export class SalesOrderRepository implements ISalesOrderRepository {
 		return { ok: true };
 	}
 
+	async reopenForReplacement(salesOrderId: string, actorUserId: string, note: string, tx: TTx): Promise<void> {
+		const [current] = await tx.select({ status: salesOrders.status }).from(salesOrders).where(this.live(salesOrderId));
+		if (!current || (current.status !== 'delivered' && current.status !== 'completed')) return;
+		const now = new Date();
+		await tx
+			.update(salesOrders)
+			.set({ status: 'in_progress', updatedAt: now })
+			.where(and(this.live(salesOrderId), eq(salesOrders.status, current.status)));
+		await this.logOrder(tx, salesOrderId, current.status, 'in_progress', actorUserId, now, note);
+	}
+
 	async markInProgress(salesOrderId: string, actorUserId: string, note: string, tx: TTx): Promise<void> {
 		const now = new Date();
 		const [order] = await tx

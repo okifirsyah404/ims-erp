@@ -1,0 +1,121 @@
+---
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import Media from "../../components/ui/Media.astro";
+import EmptyState from "../../components/ui/EmptyState.astro";
+import ProjectCard from "../../components/projects/ProjectCard.astro";
+import ContactCta from "../../components/home/ContactCta.astro";
+import { industryFilters, portfolioGrid, portfolioStats, projects, type Industry } from "../../data/projects";
+import { routes } from "../../data/site";
+
+/** 01.02 Project Portfolio (desktop d9ygCl / mobile qIbSA). `?industry=` filters server-side. */
+export const prerender = false;
+
+const requested = Astro.url.searchParams.get("industry");
+const industry = industryFilters.some((f) => f.value === requested && f.value !== "all") ? (requested as Industry) : "all";
+const featured = industry === "all" ? projects.find((p) => p.featured) : undefined;
+const list =
+  industry === "all"
+    ? portfolioGrid.map((slug) => projects.find((p) => p.slug === slug)!)
+    : projects.filter((p) => p.industry === industry);
+const filterHref = (value: string) => (value === "all" ? routes.projects : `${routes.projects}?industry=${value}`);
+---
+
+<PublicLayout
+  title="Project Portfolio | Entragate by CV. Inti Multi Solusi"
+  description="1,200+ Entragate installations across 34 cities — offices, campuses, parking, venues and government sites."
+>
+  <PageHero
+    title="Project Portfolio"
+    description="1,200+ installations across 34 cities — offices, campuses, parking, venues and government sites delivered by CV. Inti Multi Solusi."
+    mobileDescription="1,200+ installations across 34 cities."
+    breadcrumb={[{ label: "Home", href: routes.home }, { label: "Portfolio" }]}
+  />
+
+  <div class="container-page flex flex-col gap-[18px] pt-5 pb-8 xl:gap-10 xl:pt-12 xl:pb-24">
+    <nav aria-label="Filter by industry" class="scrollbar-none -mx-5 flex gap-2 overflow-x-auto px-5 md:mx-0 md:px-0">
+      {
+        industryFilters.map((filter) => (
+          <a
+            href={filterHref(filter.value)}
+            aria-current={filter.value === industry ? "page" : undefined}
+            class:list={[
+              "shrink-0 rounded-pill px-3.5 py-2 text-[13px] font-semibold xl:px-4 xl:py-[9px] xl:text-[13.5px]",
+              filter.value === industry ? "bg-navy-900 text-white" : "bg-white text-fg ring-1 ring-border ring-inset hover:bg-surface",
+              !filter.mobile && "hidden xl:block",
+            ]}
+          >
+            <span class="xl:hidden">{filter.mobileLabel ?? filter.label}</span>
+            <span class="hidden xl:inline">{filter.label}</span>
+          </a>
+        ))
+      }
+    </nav>
+
+    {
+      featured && (
+        <>
+          <article class="hidden h-[460px] overflow-hidden rounded-xl bg-navy-900 xl:flex">
+            <Media src={featured.image} alt={`${featured.title} at ${featured.client}`} loading="eager" class="h-full w-[760px] shrink-0" />
+            <div class="flex flex-1 flex-col justify-between p-11">
+              <div class="flex flex-col items-start gap-3">
+                <span class="flex items-center gap-1.5 rounded-pill bg-cyan-400/15 px-2.5 py-[5px] text-[12px] font-semibold text-cyan-400 uppercase">
+                  <span class="size-1.5 rounded-full bg-cyan-400" />
+                  Featured · {featured.eyebrow}
+                </span>
+                <h2 class="font-heading text-[36px] font-extrabold tracking-[-1px] text-white">{featured.title}</h2>
+                <p class="text-[16px] leading-[26px] text-fg-on-dark-muted">{featured.summary}</p>
+              </div>
+              <dl class="flex gap-7">
+                {featured.metrics.map((metric) => (
+                  <div class="flex flex-col-reverse gap-1">
+                    <dt class="text-[13px] font-medium text-fg-on-dark-muted">{metric.label}</dt>
+                    <dd class="font-heading text-[28px] font-extrabold text-cyan-400">{metric.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <a
+                href={`${routes.projects}/${featured.slug}`}
+                class="inline-flex w-fit items-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700"
+              >
+                Read case study
+                <ArrowRight size={16} aria-hidden="true" />
+              </a>
+            </div>
+          </article>
+          <ProjectCard project={featured} class="xl:hidden" />
+        </>
+      )
+    }
+
+    {
+      list.length > 0 ? (
+        <ul class="grid gap-[18px] md:grid-cols-2 xl:grid-cols-3 xl:gap-6">
+          {list.map((project, index) => (
+            <li class:list={[industry === "all" && index >= 3 && "hidden md:block"]}>
+              <ProjectCard project={project} class="h-full" />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <EmptyState title="No projects in this industry yet" description="We're adding new case studies every month — talk to us about your site.">
+          <a href={routes.projects} class="font-semibold text-blue-600 hover:underline">See all projects</a>
+        </EmptyState>
+      )
+    }
+
+    <dl class="hidden justify-between rounded-xl bg-surface px-10 py-8 xl:flex">
+      {
+        portfolioStats.map((stat) => (
+          <div class="flex flex-col-reverse gap-1">
+            <dt class="text-[14px] font-medium text-fg-muted">{stat.label}</dt>
+            <dd class="font-heading text-[36px] font-extrabold tracking-[-1px] text-navy-900">{stat.value}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+
+  <ContactCta />
+</PublicLayout>

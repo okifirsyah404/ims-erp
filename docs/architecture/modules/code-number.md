@@ -38,7 +38,7 @@ Unique on `(code_type)` for the whole company - there is no `organization_id`,
 so two departments cannot end up with two independent invoice sequences. That
 is the whole point of ADR-0013.
 
-The 32 code types and their type tokens live in code, not in a table
+The 33 code types (`purchase_request → PR` added 2026-11-15) and their type tokens live in code, not in a table
 (`domain/code-number.ts`): `CODE_TYPE_CODES` maps `quotation → QT`,
 `sales_invoice → INV`, `bast → BAST`, `item_product → PRD`, `item_material →
 MAT`, `item_component → CMP`, `warehouse → WH`, and so on. `CODE_TYPE_MODULES`

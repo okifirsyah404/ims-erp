@@ -50,4 +50,15 @@ export interface IPurchaseOrderReceiving {
 	 * `partially_received` or `received`.
 	 */
 	receive(purchaseOrderId: string, lines: TReceivedQuantity[], tx: TTx): Promise<TReceiveResult>;
+	/**
+	 * Purchase returns (ERP-0068): locks the PO, takes the returned
+	 * quantities off `quantity_received` and moves a `received` or
+	 * `partially_received` PO back to `partially_received` (or `sent` when
+	 * nothing stays received), so the replacement is received normally.
+	 */
+	unreceive(purchaseOrderId: string, lines: TReceivedQuantity[], tx: TTx): Promise<TUnreceiveResult>;
 }
+
+export type TUnreceiveResult =
+	| { ok: true; order: TPurchaseOrderSelect }
+	| { ok: false; reason: 'notReturnable' | 'overReturned'; line?: number };

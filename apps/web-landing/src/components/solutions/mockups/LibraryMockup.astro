@@ -1,0 +1,76 @@
+---
+import MockKpi from "./MockKpi.astro";
+
+/** Entragate Library window body (02.04). */
+interface Props {
+  variant: "desktop" | "mobile";
+}
+
+const { variant } = Astro.props;
+const categories = [
+  { label: "Science & Tech", mobileLabel: "Science", pct: 100 },
+  { label: "Literature", pct: 80 },
+  { label: "Business", pct: 63 },
+  { label: "History", pct: 39 },
+];
+const due = [
+  { book: "Clean Code", member: "Rizky A." },
+  { book: "Laskar Pelangi", member: "Nadia F." },
+  { book: "Atomic Habits", member: "Kevin L." },
+];
+---
+
+{
+  variant === "desktop" ? (
+    <>
+      <div class="flex gap-2">
+        <MockKpi label="Loans this week" value="2,184" delta="+6%" />
+        <MockKpi label="Returns" value="1,932" />
+        <MockKpi label="Overdue" value="47" delta="-12%" tone="danger" />
+      </div>
+      <div class="flex min-h-0 flex-1 gap-2.5">
+        <div class="flex flex-1 flex-col gap-[9px] rounded-sm bg-white p-3 ring-1 ring-border ring-inset">
+          <span class="text-[10px] font-semibold text-fg">Loans by category</span>
+          {categories.map((c) => (
+            <div class="flex items-center gap-2">
+              <span class="w-[70px] shrink-0 text-[9px] text-fg-secondary">{c.label}</span>
+              <span class="h-2 flex-1 rounded-pill bg-surface-2">
+                <span class="block h-2 rounded-pill bg-blue-600" style={`width:${c.pct * 0.49}%`} />
+              </span>
+            </div>
+          ))}
+        </div>
+        <div class="flex w-[190px] shrink-0 flex-col gap-[7px] rounded-sm bg-white p-3 ring-1 ring-border ring-inset">
+          <span class="text-[10px] font-semibold text-fg">Due today</span>
+          {due.map((d) => (
+            <div class="flex items-center gap-2">
+              <span class="h-[22px] w-4 rounded-xs bg-navy-800" />
+              <span class="flex flex-col gap-px">
+                <span class="text-[9.5px] font-semibold text-fg">{d.book}</span>
+                <span class="text-[8.5px] text-fg-muted">{d.member}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  ) : (
+    <>
+      <div class="flex gap-1.5">
+        <MockKpi variant="mobile" label="Loans" value="2,184" />
+        <MockKpi variant="mobile" label="Returns" value="1,932" />
+        <MockKpi variant="mobile" label="Overdue" value="47" />
+      </div>
+      <div class="flex flex-1 flex-col gap-[7px] rounded-sm bg-white p-2.5 ring-1 ring-border ring-inset">
+        {categories.slice(0, 3).map((c) => (
+          <div class="flex items-center gap-2">
+            <span class="w-14 shrink-0 text-[9px] text-fg-secondary">{c.mobileLabel ?? c.label}</span>
+            <span class="h-[7px] flex-1 rounded-pill bg-surface-2">
+              <span class="block h-[7px] rounded-pill bg-blue-600" style={`width:${c.pct * 0.94}%`} />
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}

@@ -1,0 +1,73 @@
+---
+import { actions, isInputError } from "astro:actions";
+import FileSearch from "@lucide/astro/icons/file-search";
+import MailCheck from "@lucide/astro/icons/mail-check";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import AppField from "../../components/customer/AppField.astro";
+import AppButton from "../../components/customer/AppButton.astro";
+import IconBadge from "../../components/customer/IconBadge.astro";
+import OtpField from "../../features/auth/OtpField";
+import { portalMode } from "../../services/portal";
+import { DEMO_OTP_CODE } from "../../services/portal/demo";
+
+/**
+ * Add a guest RFQ (sent from entragate.com without signing in) to this account. Ownership
+ * is verified with a one-time code the ERP emails to the address on the RFQ.
+ */
+const requested = Astro.getActionResult(actions.rfq.requestClaim);
+const confirmed = Astro.getActionResult(actions.rfq.confirmClaim);
+if (confirmed?.data) return Astro.redirect("/quotations", 303);
+
+const pending = await Astro.session?.get("rfqClaim");
+const restart = Astro.url.searchParams.has("restart");
+if (restart) Astro.session?.delete("rfqClaim");
+const step = pending && !restart ? "code" : "reference";
+const referenceErrors = requested?.error && isInputError(requested.error) ? requested.error.fields : {};
+const referenceError = referenceErrors.reference?.[0] ?? (requested?.error && !isInputError(requested.error) ? requested.error.message : undefined);
+const codeError = confirmed?.error ? (isInputError(confirmed.error) ? confirmed.error.fields.code?.[0] : confirmed.error.message) : undefined;
+const prefill = Astro.url.searchParams.get("reference")?.slice(0, 40) ?? "";
+---
+
+<CustomerLayout title="Add a guest request" section="orders">
+  <TopBar title="Add a guest request" back="/quotations" />
+  <div class="flex flex-col gap-6 px-5 pt-2 pb-8">
+    {
+      step === "reference" ? (
+        <form method="POST" action={actions.rfq.requestClaim} class="flex flex-col gap-5" novalidate>
+          <IconBadge><FileSearch /></IconBadge>
+          <div class="flex flex-col gap-2">
+            <h1 class="font-heading text-[24px] font-extrabold tracking-[-0.5px] text-fg">Link a request you sent as a guest</h1>
+            <p class="text-[14.5px] leading-[22px] text-fg-secondary">
+              Enter the RFQ reference from your confirmation email. We'll send a one-time code to the email address used on the request to confirm it's yours.
+            </p>
+          </div>
+          <AppField label="RFQ reference" name="reference" value={prefill} required autocomplete="off" autocapitalize="characters" placeholder="RFQ-2026-00123" error={referenceError}>
+            <FileSearch slot="icon" />
+          </AppField>
+          <AppButton type="submit" block>Send verification code</AppButton>
+        </form>
+      ) : (
+        <form method="POST" action={actions.rfq.confirmClaim} class="flex flex-col gap-5" id="otp-form">
+          <IconBadge><MailCheck /></IconBadge>
+          <div class="flex flex-col gap-2">
+            <h1 class="font-heading text-[24px] font-extrabold tracking-[-0.5px] text-fg">Check your email</h1>
+            <p class="text-[14.5px] leading-[22px] text-fg-secondary">
+              Enter the 6-digit code we sent to <strong class="text-fg">{pending!.maskedEmail}</strong> for <strong class="text-fg">{pending!.reference}</strong>.
+            </p>
+          </div>
+          <OtpField client:load name="code" invalid={Boolean(codeError)} />
+          {codeError && <p role="alert" class="text-[13px] font-semibold text-danger">{codeError}</p>}
+          {portalMode === "demo" && <p class="rounded-md bg-surface p-3 text-center text-[12px] text-fg-muted">Demo mode · code <strong class="text-fg">{DEMO_OTP_CODE}</strong></p>}
+          <AppButton type="submit" block>Verify &amp; add to my account</AppButton>
+          <a href="/quotations/claim?restart=1" class="text-center text-[14px] font-semibold text-blue-600">Use a different reference</a>
+        </form>
+      )
+    }
+    <p class="flex gap-2.5 rounded-md bg-surface p-3.5 text-[13px] leading-[19px] text-fg-secondary">
+      <ShieldCheck size={16} class="mt-0.5 shrink-0 text-blue-600" aria-hidden="true" />
+      Requests are only linked after this check, so nobody can add someone else's quotation to their account.
+    </p>
+  </div>
+</CustomerLayout>

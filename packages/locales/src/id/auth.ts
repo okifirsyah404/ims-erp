@@ -3,7 +3,7 @@ import type auth from '../en/auth';
 /** Indonesian — mirrors `en/auth` keys exactly (values are free-form). */
 const auth_: Record<keyof typeof auth, string> = {
 	'login.title': 'Selamat datang kembali',
-	'login.subtitle': 'Masuk ke akun Entragate ERP Anda',
+	'login.subtitle': 'Masuk ke akun {{app}} Anda',
 	'login.identifier': 'Email atau username',
 	'login.identifierPlaceholder': 'm@example.com atau johndoe',
 	// Still used by the forgot-password form (email-only flow).

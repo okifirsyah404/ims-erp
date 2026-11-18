@@ -6,18 +6,24 @@ import Elysia from 'elysia';
 
 import { GoodsReceiptController } from './controllers/goods-receipt.controller';
 import { PurchaseOrderController } from './controllers/purchase-order.controller';
+import { PurchaseReturnController } from './controllers/purchase-return.controller';
+import { PurchaseRequestController } from './controllers/purchase-request.controller';
 import { SupplierController } from './controllers/supplier.controller';
 
 export { registerProcurement } from './container';
 export {
+	PURCHASE_BILLING_SERVICE_TOKEN,
 	PURCHASE_ORDER_SERVICE_TOKEN,
 	SUPPLIER_SERVICE_TOKEN,
 } from './constants/di';
+export type { PurchaseBillingService, TBillableOrder } from './services/purchase-billing.service';
 
 /** Elysia instance mounting every procurement controller, in route order. */
 export function procurementModule() {
 	return new Elysia({ name: 'procurement' })
 		.use(SupplierController.plugin())
+		.use(PurchaseRequestController.plugin())
 		.use(PurchaseOrderController.plugin())
-		.use(GoodsReceiptController.plugin());
+		.use(GoodsReceiptController.plugin())
+		.use(PurchaseReturnController.plugin());
 }

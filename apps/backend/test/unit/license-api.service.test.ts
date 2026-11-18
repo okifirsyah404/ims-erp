@@ -22,6 +22,8 @@ let activations: TLicenseActivationSelect[];
 let events: { eventType: string; result: string; licenseKeyId?: string | null }[];
 let apiKeys: TApplicationApiKeySelect[];
 let renewalsActivated: number;
+let issuerCalls: { kind: 'issue' | 'disable'; userId: string }[];
+let refuseIssuer: boolean;
 let service: LicenseApiService;
 const client: TApiClient = { applicationApiKeyId: 'ak-1', applicationId: APP };
 
@@ -56,6 +58,8 @@ beforeEach(() => {
 	events = [];
 	apiKeys = [{ id: 'ak-1', apiKeyId: 'ba-1', licensableApplicationId: APP, status: 'active' } as TApplicationApiKeySelect];
 	renewalsActivated = 0;
+	issuerCalls = [];
+	refuseIssuer = false;
 	service = new LicenseApiService(
 		{
 			listApiKeys: async () => apiKeys,
@@ -90,12 +94,25 @@ beforeEach(() => {
 			contractKeyIds: async (id: string) => Object.values(found).filter((item) => item.contract.id === id).map((item) => item.key.id),
 		},
 		{
-			issue: async () => ({ id: 'ba-new', key: 'elk_secret', start: 'elk_se' }),
-			disable: async () => {},
+			issue: async (input) => {
+				issuerCalls.push({ kind: 'issue', userId: input.issuerUserId });
+				if (refuseIssuer) throw Object.assign(new Error('forbidden'), { body: { code: 'INSUFFICIENT_API_KEY_PERMISSIONS' } });
+				return { id: 'ba-new', key: 'elk_secret', start: 'elk_se' };
+			},
+			disable: async (input) => {
+				issuerCalls.push({ kind: 'disable', userId: input.actorUserId });
+			},
 			verify: async (key) => (key === 'elk_good' ? { id: 'ba-1' } : key === 'elk_busy' ? 'rateLimited' : null),
 		},
 		{
-			listMembers: async () => ({ meta: { page: 1, limit: 100, total: 1, totalPages: 1 }, data: [{ userId: 'owner-1', role: 'owner' }] }) as never,
+			listMembers: async () =>
+				({
+					meta: { page: 1, limit: 100, total: 2, totalPages: 1 },
+					data: [
+						{ userId: 'owner-1', role: 'owner', user: { name: 'Owner' } },
+						{ userId: 'u1', role: 'sales_manager', user: { name: 'Sari Sales' } },
+					],
+				}) as never,
 		},
 	);
 });
@@ -200,6 +217,28 @@ describe('application keys', () => {
 		await expect(service.issueApiKey({ actorUserId: 'u1', organizationId: 'org' }, OTHER_APP, 'x')).rejects.toBeInstanceOf(ApiKeyIssueError);
 		expect((await service.revokeApiKey({ actorUserId: 'u1', organizationId: 'org' }, APP, 'ak-1')).status).toBe('revoked');
 		await expect(service.revokeApiKey({ actorUserId: 'u1', organizationId: 'org' }, APP, 'ak-1')).rejects.toBeInstanceOf(ApiKeyIssueError);
+	});
+
+	test('issued and revoked as the acting member, never as the owner (PR #100 review)', async () => {
+		await service.issueApiKey({ actorUserId: 'u1', organizationId: 'org' }, APP, 'Pilot server');
+		await service.revokeApiKey({ actorUserId: 'u1', organizationId: 'org' }, APP, 'ak-1');
+		expect(issuerCalls).toEqual([
+			{ kind: 'issue', userId: 'u1' },
+			{ kind: 'disable', userId: 'u1' },
+		]);
+	});
+
+	test('a member Better Auth refuses gets a 403, not a 500', async () => {
+		refuseIssuer = true;
+		const refused = service.issueApiKey({ actorUserId: 'u9', organizationId: 'org' }, APP, 'x');
+		await expect(refused).rejects.toBeInstanceOf(ApiKeyIssueError);
+		await expect(refused).rejects.toMatchObject({ status: 403 });
+	});
+
+	test('the list names who issued and who revoked each key', async () => {
+		apiKeys[0] = { ...apiKeys[0]!, createdBy: 'u1', revokedBy: 'owner-1' } as TApplicationApiKeySelect;
+		const [row] = await service.listApiKeys('org', APP);
+		expect(row).toMatchObject({ createdByName: 'Sari Sales', revokedByName: 'Owner' });
 	});
 });
 

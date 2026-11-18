@@ -1,0 +1,47 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+/**
+ * App / Button Primary (iLkLh), Soft (cvg57), Outline (mSiD6), Dark (f8EnF):
+ * 54px tall, 16px radius, 16px semibold label. Icons go in the "icon" slot.
+ */
+type Variant = "primary" | "soft" | "outline" | "dark" | "danger" | "white";
+
+type Props = {
+  variant?: Variant;
+  href?: string;
+  block?: boolean;
+  size?: "lg" | "md";
+  class?: string;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
+} & Omit<HTMLAttributes<"a">, "class" | "type">;
+
+const { variant = "primary", href, block = false, size = "lg", class: className, type = "button", ...rest } = Astro.props;
+const Tag = href ? "a" : "button";
+const variants: Record<Variant, string> = {
+  primary: "bg-blue-600 text-white hover:bg-blue-700",
+  soft: "bg-blue-50 text-blue-700 hover:bg-blue-100",
+  outline: "bg-white text-fg ring-1 ring-border ring-inset hover:bg-surface",
+  dark: "bg-navy-900 text-white hover:bg-navy-800",
+  danger: "bg-danger-bg text-danger hover:bg-danger-border/40",
+  white: "bg-white text-navy-900 hover:bg-blue-50",
+};
+---
+
+<Tag
+  href={href}
+  type={Tag === "button" ? type : undefined}
+  class:list={[
+    "inline-flex items-center justify-center gap-2 rounded-control font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-60",
+    size === "lg" ? "h-[54px] px-5 text-[16px]" : "h-11 px-4 text-[14px]",
+    variants[variant],
+    block && "w-full",
+    className,
+  ]}
+  {...rest}
+>
+  <slot name="icon" />
+  <slot />
+  <slot name="trailing" />
+</Tag>

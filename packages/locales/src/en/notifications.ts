@@ -24,6 +24,12 @@ const notifications = {
 		'Signature requested: {{documentName}}',
 	'template.document.signatureRequested.body':
 		'{{requesterName}} requested your signature on {{documentName}}.',
+	'template.document.signatureSigned.title': 'Document signed: {{documentName}}',
+	'template.document.signatureSigned.body': '{{signerName}} signed {{documentName}}.',
+	'template.document.signatureDeclined.title':
+		'Signature declined: {{documentName}}',
+	'template.document.signatureDeclined.body':
+		'{{signerName}} declined to sign {{documentName}}.',
 } as const;
 
 export default notifications;

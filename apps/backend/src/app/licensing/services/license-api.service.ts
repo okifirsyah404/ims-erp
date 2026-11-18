@@ -49,6 +49,9 @@ export type TValidation = {
 
 export type TIssuedApiKey = { apiKey: TApplicationApiKeySelect; secret: string };
 
+/** A key as staff see it: who issued and who revoked it. */
+export type TApiKeyView = TApplicationApiKeySelect & { createdByName: string | null; revokedByName: string | null };
+
 /**
  * The license API (M03 stage 2, decisions of 2026-11-06).
  *
@@ -71,22 +74,39 @@ export class LicenseApiService {
 
 	// Application keys (staff) -----------------------------------------------
 
-	listApiKeys(applicationId: string): Promise<TApplicationApiKeySelect[]> {
-		return this.repository.listApiKeys(applicationId);
+	/** The keys with who issued and who revoked them (members of the organization). */
+	async listApiKeys(organizationId: string, applicationId: string): Promise<TApiKeyView[]> {
+		const [rows, members] = await Promise.all([
+			this.repository.listApiKeys(applicationId),
+			this.organizations.listMembers(organizationId, { page: 1, limit: 100 }),
+		]);
+		const names = new Map(members.data.map((member) => [member.userId, member.user?.name ?? null]));
+		return rows.map((row) => ({
+			...row,
+			createdByName: row.createdBy ? (names.get(row.createdBy) ?? null) : null,
+			revokedByName: row.revokedBy ? (names.get(row.revokedBy) ?? null) : null,
+		}));
 	}
 
-	private async ownerOf(organizationId: string): Promise<string> {
-		const members = await this.organizations.listMembers(organizationId, { page: 1, limit: 100 });
-		const owner = members.data.find((member) => member.role.split(',').some((role) => role.trim() === 'owner'));
-		if (!owner) throw new ApiKeyIssueError('noOwner');
-		return owner.userId;
+	/** Better Auth refuses a member without `apiKey` permission: a clear 403 instead of a 500. */
+	private async asMember<T>(work: () => Promise<T>): Promise<T> {
+		try {
+			return await work();
+		} catch (error) {
+			const code = (error as { body?: { code?: string } } | null)?.body?.code;
+			if (code === 'INSUFFICIENT_API_KEY_PERMISSIONS' || code === 'USER_NOT_MEMBER_OF_ORGANIZATION') {
+				throw new ApiKeyIssueError('notPermitted');
+			}
+			throw error;
+		}
 	}
 
 	async issueApiKey(ctx: TApiKeyContext, applicationId: string, name: string): Promise<TIssuedApiKey> {
 		const application = await this.licensing.getApplication(applicationId);
 		if (application.source !== 'own' || application.status !== 'active') throw new ApiKeyIssueError('ownOnly');
-		const ownerUserId = await this.ownerOf(ctx.organizationId);
-		const created = await this.issuer.issue({ organizationId: ctx.organizationId, ownerUserId, name, applicationId });
+		const created = await this.asMember(() =>
+			this.issuer.issue({ organizationId: ctx.organizationId, issuerUserId: ctx.actorUserId, name, applicationId }),
+		);
 		const apiKey = await this.repository.createApiKey({
 			licensableApplicationId: applicationId,
 			apiKeyId: created.id,
@@ -100,7 +120,7 @@ export class LicenseApiService {
 	async revokeApiKey(ctx: TApiKeyContext, applicationId: string, id: string): Promise<TApplicationApiKeySelect> {
 		const row = await this.repository.findApiKey(id);
 		if (!row || row.licensableApplicationId !== applicationId || row.status !== 'active') throw new ApiKeyIssueError('notFound');
-		await this.issuer.disable({ apiKeyId: row.apiKeyId, ownerUserId: await this.ownerOf(ctx.organizationId) });
+		await this.asMember(() => this.issuer.disable({ apiKeyId: row.apiKeyId, actorUserId: ctx.actorUserId }));
 		const revoked = await this.repository.revokeApiKey(id, ctx.actorUserId);
 		if (!revoked) throw new ApiKeyIssueError('notFound');
 		return revoked;

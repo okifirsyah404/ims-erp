@@ -33,7 +33,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 - Cross-module reads and writes go through the owning module's exported
   service contract. Another module's repository is never imported.
 
-## The 27 modules
+## The 28 modules
 
 | # | Module | Schema(s) | Tables | Intra-module FKs | Logical refs out |
 |---|---|---|---|---|---|
@@ -64,7 +64,8 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 | 25 | Ticketing | `ticket` | 5 | 5 | 14 |
 | 26 | Audit | `audit` | 1 | 0 | 1 |
 | 27 | Notification | `notification` | 2 | 1 | 1 |
-| | **Total** | **27 schemas** | **275** | **231** | **524** |
+| 28 | Payment | `payment` | 1 | 0 | 4 |
+| | **Total** | **28 schemas** | **278** | **231** | **524** |
 
 Counts are re-derived from `docs.dbml` on every validation run. The parser
 also reports an empty `public` schema (0 tables); it is not a module.
@@ -188,7 +189,12 @@ tenant-scoped schema.
 - `sales.payments` is a **transitional scaffold scheduled for removal**; it is
   grouped separately in `docs.dbml` and dropped in step S7. The single
   payment ledger of the ERP is `finance.payments`.
-- **Contract**: `assertQuotationBelongsToOrganization`, `resolveOrder`.
+- **No longer owns online checkouts.** `gateway_payments` moved to
+  `payment.gateway_payments` (ADR-0023); Sales serves the invoice and receipt
+  side through `INVOICE_PAYMENT_PORT_TOKEN`.
+- **Contract**: `assertQuotationBelongsToOrganization`, `resolveOrder`,
+  `IInvoicePaymentPort` (payment module only).
+
 
 ### 9. Procurement — `procurement`
 
@@ -402,6 +408,20 @@ tenant-scoped schema.
   sourceId })` via `ExportedNotificationService`, the single cross-module entry
   point (enqueue-only). `resolveNotificationRecipient(userId)` and
   `assertNotificationOwnedBy(notificationId, userId)` guard reads.
+
+### 28. Payment - `payment`
+
+- **Owns** `payment.gateway_payments`: online checkout of a sales invoice
+  through a provider-neutral gateway (ERP-0020, ADR-0021, moved here by
+  ADR-0023). Provider adapters and the verified webhook state live with it.
+- **Does not own** the receipt (kwitansi, `sales.receipts`) or the payment
+  ledger (`finance.payments`). A paid webhook records a receipt through Sales'
+  `IInvoicePaymentPort`; the `finance.payments` row behind it is still open
+  (M09).
+- Cross-module references are all logical and nullable: `sales_invoice_id` ->
+  sales.invoices, `receipt_id` -> sales.receipts, `organization_id` ->
+  auth.organizations, `requested_by` -> auth.users (ADR-0014).
+- **Contract**: consumes `IInvoicePaymentPort` from Sales; exposes none yet.
 
 ## Why there is no `erp` schema
 

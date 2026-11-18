@@ -1,0 +1,31 @@
+---
+/**
+ * App / Segmented Control (LQ5eB). Server-driven: each segment is a link (usually a
+ * query parameter), so filtering works without JavaScript.
+ */
+interface Props {
+  items: { key: string; label: string; href: string }[];
+  active: string;
+  label: string;
+  class?: string;
+}
+
+const { items, active, label, class: className } = Astro.props;
+---
+
+<nav aria-label={label} class:list={["flex h-11 gap-1 rounded-md bg-surface-2 p-1", className]}>
+  {
+    items.map((item) => (
+      <a
+        href={item.href}
+        aria-current={item.key === active ? "true" : undefined}
+        class:list={[
+          "flex flex-1 items-center justify-center rounded-md text-[14px] transition-colors",
+          item.key === active ? "bg-white font-semibold text-fg shadow-[0_2px_6px_#0A1A3F14]" : "font-medium text-fg-muted hover:text-fg-secondary",
+        ]}
+      >
+        {item.label}
+      </a>
+    ))
+  }
+</nav>

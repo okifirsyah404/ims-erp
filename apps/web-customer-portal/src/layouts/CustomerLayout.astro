@@ -1,0 +1,69 @@
+---
+import AppLayout from "./AppLayout.astro";
+import TabBar, { type TabKey } from "../components/navigation/TabBar.astro";
+import DesktopNav from "../components/navigation/DesktopNav.astro";
+import NavigationLoading from "../components/navigation/NavigationLoading.astro";
+import Flash from "../components/customer/Flash.astro";
+import { customerService } from "../services";
+import { SessionExpiredError, logUpstreamError } from "../services/errors";
+import { portalMode } from "../services/portal";
+
+/**
+ * Signed-in screen. `tab` shows the fixed bottom navigation (top-level screens);
+ * detail screens omit it and usually render a BottomActionBar instead.
+ *
+ * From `xl` the bottom navigation is replaced by the desktop workspace nav (06.x).
+ * `desktop="full"` pages render their own 06.x desktop workspace (wide container);
+ * every other screen stays a centred, slightly wider column.
+ */
+interface Props {
+  title: string;
+  tab?: TabKey;
+  /** Desktop-nav highlight for detail screens that have no bottom tab bar. */
+  section?: TabKey;
+  /** Extra bottom padding for screens with a BottomActionBar. */
+  actionBar?: boolean;
+  mainClass?: string;
+  desktop?: "full" | "narrow";
+}
+
+const { title, tab, section = tab, actionBar = false, mainClass, desktop = "narrow" } = Astro.props;
+const flash = await Astro.session?.get("flash");
+if (flash) Astro.session?.delete("flash");
+
+let badges;
+try {
+  badges = await customerService.badges(Astro.locals.tokens!);
+} catch (error) {
+  if (error instanceof SessionExpiredError) throw error;
+  logUpstreamError("layout.badges", error);
+}
+---
+
+<AppLayout title={title} bodyClass="xl:bg-surface">
+  {
+    portalMode === "demo" && (
+      <p class="bg-navy-900 px-4 pt-[max(4px,env(safe-area-inset-top))] pb-1 text-center text-[11px] font-semibold tracking-[0.2px] text-fg-on-dark-muted">
+        Demo mode · sample data, actions are not sent to the ERP
+      </p>
+    )
+  }
+  <DesktopNav active={section} badges={badges} />
+  <main
+    id="main"
+    class:list={[
+      "app-column min-h-dvh pt-[env(safe-area-inset-top)] md:max-w-[640px]",
+      tab ? "pb-tabbar" : actionBar ? "pb-[150px]" : "pb-safe",
+      desktop === "full"
+        ? "xl:max-w-[1440px] xl:px-[120px] xl:pt-10 xl:pb-16"
+        : ["xl:my-8 xl:min-h-0 xl:max-w-[760px] xl:rounded-xl xl:bg-white xl:pt-4 xl:ring-1 xl:ring-border", actionBar ? "xl:pb-[150px]" : "xl:pb-8"],
+      mainClass,
+    ]}
+  >
+    {flash && <Flash {...flash} />}
+    <slot />
+  </main>
+  <NavigationLoading />
+  {tab && <TabBar active={tab} />}
+  <slot name="overlay" />
+</AppLayout>

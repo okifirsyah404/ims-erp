@@ -21,6 +21,12 @@ export const AR_POSTING_DEFAULT_CODES = {
 	expense: '5-1000',
 	/** Input tax receivable (asset, debit) — F5. */
 	taxInput: '1-1800',
+	/**
+	 * Inventory (Persediaan, asset, debit) for stock lines of a bill made from
+	 * a purchase order (ERP-0012). Provisional like the others: finance
+	 * confirms the code with the final COA.
+	 */
+	inventory: '1-1400',
 } as const;
 
 export type TArPostingRole = keyof typeof AR_POSTING_DEFAULT_CODES;

@@ -1,0 +1,43 @@
+---
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import PageHero from "./PageHero.astro";
+import { company, routes } from "../../data/site";
+
+/** Shared layout for policy pages (privacy, terms of sale): hero + numbered sections + contact. */
+interface Props {
+  title: string;
+  description: string;
+  updated: string;
+  sections: { title: string; body: string[] }[];
+}
+
+const { title, description, updated, sections } = Astro.props;
+const slug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+---
+
+<PublicLayout title={`${title} | Entragate`} description={description}>
+  <PageHero title={title} description={description} breadcrumb={[{ label: "Home", href: routes.home }, { label: title }]} />
+  <div class="container-page grid gap-10 py-10 xl:grid-cols-[260px_1fr] xl:gap-20 xl:py-20">
+    <nav aria-label="On this page" class="hidden xl:block">
+      <ol class="sticky top-24 flex flex-col gap-2 text-[14px]">
+        {sections.map((s, i) => <li><a href={`#${slug(s.title)}`} class="text-fg-secondary hover:text-blue-600">{i + 1}. {s.title}</a></li>)}
+      </ol>
+    </nav>
+    <article class="flex max-w-[760px] flex-col gap-10">
+      <p class="rounded-md bg-surface p-4 text-[13px] text-fg-secondary">
+        Last updated {updated}. This document is a working draft pending review by {company.legalName}'s legal counsel.
+      </p>
+      {
+        sections.map((section, index) => (
+          <section id={slug(section.title)} class="flex scroll-mt-24 flex-col gap-3">
+            <h2 class="font-heading text-[22px] font-bold tracking-[-0.5px] text-navy-900">{index + 1}. {section.title}</h2>
+            {section.body.map((p) => <p class="text-[15.5px] leading-[27px] text-fg-secondary">{p}</p>)}
+          </section>
+        ))
+      }
+      <p class="border-t border-border pt-6 text-[15px] text-fg-secondary">
+        Questions? Email <a href={`mailto:${company.email}`} class="font-semibold text-blue-600 hover:underline">{company.email}</a> or write to {company.legalName}, {company.address}.
+      </p>
+    </article>
+  </div>
+</PublicLayout>

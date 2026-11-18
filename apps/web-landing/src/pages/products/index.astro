@@ -1,0 +1,77 @@
+---
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import CatalogSearch from "../../components/catalog/CatalogSearch.astro";
+import CategoryChips from "../../components/catalog/CategoryChips.astro";
+import CatalogFilters from "../../components/catalog/CatalogFilters.astro";
+import FilterSheet from "../../components/catalog/FilterSheet.astro";
+import HelpCard from "../../components/catalog/HelpCard.astro";
+import PerksBand from "../../components/catalog/PerksBand.astro";
+import CatalogResults from "../../components/catalog/CatalogResults.astro";
+import { getCatalogFacets, listProducts, parseCatalogQuery } from "../../lib/catalog";
+import { catalogIsSample } from "../../lib/server/catalog";
+
+/** 02.01 Product Catalog — rendered on demand so filters, sort and paging read the URL. */
+export const prerender = false;
+
+const query = parseCatalogQuery(Astro.url.searchParams);
+const [result, facets] = await Promise.all([
+  listProducts(query).catch((error) => {
+    console.error("[catalog] listProducts failed", error);
+    return null;
+  }),
+  getCatalogFacets().catch(() => ({ total: 0, categories: {}, availability: {} })),
+]);
+const hasFilters =
+  query.q !== "" ||
+  query.categories.length > 0 ||
+  query.availability.length > 0 ||
+  query.applications.length > 0 ||
+  query.minPrice !== null ||
+  query.maxPrice !== null;
+---
+
+<PublicLayout
+  title="Product Catalog — Entragate"
+  description="Swing and flap barrier gates, turnstiles, parking barriers, face recognition and access controllers — ready for nationwide installation."
+  noindex={hasFilters || query.page > 1 || !result}
+>
+  <PageHero
+    title="Product Catalog"
+    description={`${facets.total} access & automation products — in stock in our Bekasi warehouse and ready for nationwide installation.`}
+    mobileDescription={`${facets.total} products · ready for nationwide installation`}
+    mobileLeading="normal"
+    breadcrumb={[{ label: "Home", href: "/" }, { label: "Products" }]}
+  >
+    <Fragment slot="aside">
+      <div class="hidden xl:block"><CatalogSearch query={query} variant="desktop" /></div>
+      <div class="xl:hidden"><CatalogSearch query={query} variant="mobile" /></div>
+    </Fragment>
+    <div data-catalog-region="chips"><CategoryChips query={query} /></div>
+  </PageHero>
+
+  <div class="container-page flex gap-10 pt-5 pb-10 xl:pt-10 xl:pb-24" data-catalog>
+    <div class="hidden w-[280px] shrink-0 flex-col xl:flex">
+      <CatalogFilters query={query} facets={facets} idPrefix="sidebar" />
+      <HelpCard variant="sidebar" />
+    </div>
+
+    <section
+      id="catalog-results"
+      class="flex min-w-0 flex-1 scroll-mt-[96px] flex-col gap-3.5 transition-opacity duration-200 aria-busy:opacity-60 xl:gap-6"
+      aria-label="Products"
+      data-catalog-region="results"
+    >
+      <CatalogResults query={query} result={result} catalogTotal={facets.total} sample={catalogIsSample} />
+    </section>
+  </div>
+
+  <PerksBand />
+  <FilterSheet query={query} facets={facets} />
+</PublicLayout>
+
+<script>
+  import { initCatalog } from "../../scripts/catalog";
+
+  initCatalog();
+</script>

@@ -1,0 +1,294 @@
+---
+import ChevronDown from "@lucide/astro/icons/chevron-down";
+import Search from "@lucide/astro/icons/search";
+import ShoppingBag from "@lucide/astro/icons/shopping-bag";
+import CircleUserRound from "@lucide/astro/icons/circle-user-round";
+import Menu from "@lucide/astro/icons/menu";
+import X from "@lucide/astro/icons/x";
+import Logo from "../brand/Logo.astro";
+import Button from "../ui/Button.astro";
+import MobileMenu from "./MobileMenu.astro";
+import PortalMenu from "./PortalMenu.astro";
+import MegaMenu from "./MegaMenu.astro";
+import CommandPalette from "./CommandPalette.astro";
+import { customerPortal, mainNav, routes } from "../../data/site";
+import { isActivePath } from "../../lib/nav";
+
+/**
+ * Nav Header (OocRi) on desktop, Mobile Header (yzg4r) + Guest Menu (01.05) below the
+ * `nav` breakpoint. Logged-in variants (CUam4 / Account Menu) arrive with sessions.
+ */
+interface Props {
+  cartCount?: number;
+}
+
+const { cartCount = 0 } = Astro.props;
+const pathname = Astro.url.pathname;
+const cartLabel = cartCount > 0 ? `Cart, ${cartCount} items` : "Cart";
+---
+
+<header class="sticky top-0 z-40 border-b border-border bg-white/95 backdrop-blur-[10px]">
+  <!-- Desktop · Nav Header -->
+  <div class="mx-auto hidden h-[75px] max-w-[1440px] items-center justify-between px-16 nav:flex">
+    <Logo />
+    <nav aria-label="Main">
+      <ul class="flex items-center">
+        {
+          mainNav.map((item) => {
+            const active = isActivePath(pathname, item.href);
+            const menu = item.href === routes.products ? "products" : item.href === routes.solutions ? "solutions" : undefined;
+            const pill = active ? "bg-blue-50 font-semibold text-blue-600" : "font-medium text-fg-secondary hover:text-fg";
+            return menu ? (
+              <li class="relative" data-mega={menu}>
+                <span class:list={["flex items-center rounded-pill text-[14px] transition-colors", pill]}>
+                  <a href={item.href} aria-current={active ? "page" : undefined} class="rounded-l-pill py-2 pl-[11px]" data-mega-link>
+                    {item.label}
+                  </a>
+                  <button
+                    type="button"
+                    class="group/chev flex items-center rounded-r-pill py-2 pr-[11px] pl-1"
+                    aria-expanded="false"
+                    aria-controls={`mega-${menu}`}
+                    aria-label={`Show ${item.label} menu`}
+                    data-mega-toggle
+                  >
+                    <ChevronDown size={14} class="text-fg-muted transition-transform duration-200 group-aria-expanded/chev:rotate-180" aria-hidden="true" />
+                  </button>
+                </span>
+                <MegaMenu menu={menu} id={`mega-${menu}`} />
+              </li>
+            ) : (
+              <li>
+                <a
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  class:list={["flex items-center gap-1 rounded-pill px-[11px] py-2 text-[14px] transition-colors", pill]}
+                >
+                  {item.label}
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </nav>
+    <div class="flex items-center gap-2">
+      <a
+        href={routes.search}
+        class="flex size-[42px] items-center justify-center rounded-md bg-white text-fg transition-colors hover:bg-surface"
+        aria-label="Search (Ctrl K)"
+        aria-haspopup="dialog"
+        data-open-search
+      >
+        <Search size={18} aria-hidden="true" />
+      </a>
+      <a
+        href={routes.cart}
+        class="relative flex size-[42px] items-center justify-center rounded-md text-fg hover:bg-surface"
+        aria-label={cartLabel}
+      >
+        <ShoppingBag size={20} aria-hidden="true" />
+        <span
+          class="absolute top-1 left-6 flex size-4 items-center justify-center rounded-pill bg-blue-600 text-[10px] font-bold text-white"
+          hidden={cartCount === 0}
+          data-cart-count>{cartCount}</span
+        >
+      </a>
+      <div class="relative" data-portal-menu>
+        <a
+          href={customerPortal.home}
+          class="flex items-center gap-1.5 rounded-pill bg-blue-50 px-3.5 py-2 text-[14px] font-bold text-blue-700 ring-1 ring-blue-100 ring-inset hover:bg-blue-100 aria-expanded:bg-white aria-expanded:ring-[1.5px] aria-expanded:ring-blue-600"
+          aria-controls="portal-menu"
+          data-portal-trigger
+        >
+          <CircleUserRound size={17} aria-hidden="true" />
+          Customer Portal
+        </a>
+        <PortalMenu variant="panel" />
+      </div>
+      <Button href={routes.quote} size="sm">Get a Quote</Button>
+    </div>
+  </div>
+
+  <!-- Mobile · Mobile Header -->
+  <div class="container-page flex h-[63px] items-center justify-between nav:hidden">
+    <Logo size="sm" />
+    <div class="flex items-center gap-1">
+      <a href={routes.search} class="flex size-10 items-center justify-center rounded-md text-fg" aria-label="Search" aria-haspopup="dialog" data-open-search>
+        <Search size={20} aria-hidden="true" />
+      </a>
+      <a href={routes.cart} class="relative flex size-10 items-center justify-center rounded-md text-fg" aria-label={cartLabel}>
+        <ShoppingBag size={20} aria-hidden="true" />
+        <span
+          class="absolute top-0.5 right-0.5 flex size-4 items-center justify-center rounded-pill bg-blue-600 text-[10px] font-bold text-white"
+          hidden={cartCount === 0}
+          data-cart-count>{cartCount}</span
+        >
+      </a>
+      <a
+        href={customerPortal.home}
+        class="flex size-10 items-center justify-center rounded-pill bg-blue-50 text-blue-600"
+        aria-label="Customer Portal"
+        aria-haspopup="dialog"
+        data-portal-sheet-trigger
+      >
+        <CircleUserRound size={20} aria-hidden="true" />
+      </a>
+      <button
+        type="button"
+        class="group flex size-10 items-center justify-center rounded-md bg-surface text-fg"
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+        data-menu-toggle
+      >
+        <Menu size={20} class="group-aria-expanded:hidden" aria-hidden="true" />
+        <X size={20} class="hidden group-aria-expanded:block" aria-hidden="true" />
+      </button>
+    </div>
+  </div>
+
+</header>
+
+<!-- Outside <header>: its backdrop-filter would otherwise contain the fixed panel. -->
+<MobileMenu id="mobile-menu" pathname={pathname} />
+<PortalMenu variant="sheet" />
+<CommandPalette />
+
+<script>
+  function initMobileMenu() {
+    const toggle = document.querySelector<HTMLButtonElement>("[data-menu-toggle]");
+    const menu = document.getElementById("mobile-menu");
+    if (!toggle || !menu) return;
+
+    const setOpen = (open: boolean) => {
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      menu.hidden = !open;
+      document.documentElement.classList.toggle("overflow-hidden", open);
+    };
+
+    toggle.addEventListener("click", () => setOpen(toggle.getAttribute("aria-expanded") !== "true"));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !menu.hidden) {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+    // Close when the viewport crosses into the desktop header layout.
+    window.matchMedia("(min-width: 84rem)").addEventListener("change", (event) => {
+      if (event.matches) setOpen(false);
+    });
+  }
+
+  initMobileMenu();
+
+  // 01.06 Customer Portal menu (desktop dropdown) and Portal Entry Sheet (mobile dialog).
+  function initPortalMenu() {
+    const wrapper = document.querySelector<HTMLElement>("[data-portal-menu]");
+    const trigger = wrapper?.querySelector<HTMLAnchorElement>("[data-portal-trigger]");
+    const panel = wrapper?.querySelector<HTMLElement>("[data-portal-panel]");
+    if (wrapper && trigger && panel) {
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.setAttribute("aria-haspopup", "true");
+      const setOpen = (open: boolean) => {
+        panel.hidden = !open;
+        trigger.setAttribute("aria-expanded", String(open));
+      };
+      trigger.addEventListener("click", (event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+        event.preventDefault();
+        setOpen(Boolean(panel.hidden));
+      });
+      document.addEventListener("click", (event) => {
+        if (!panel.hidden && !wrapper.contains(event.target as Node)) setOpen(false);
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !panel.hidden) {
+          setOpen(false);
+          trigger.focus();
+        }
+      });
+    }
+    const sheet = document.querySelector<HTMLDialogElement>("[data-portal-sheet]");
+    document.querySelector<HTMLAnchorElement>("[data-portal-sheet-trigger]")?.addEventListener("click", (event) => {
+      if (!sheet) return;
+      event.preventDefault();
+      sheet.showModal();
+    });
+    // Tap on the backdrop closes the sheet.
+    sheet?.addEventListener("click", (event) => {
+      if (event.target === sheet) sheet.close();
+    });
+  }
+
+  initPortalMenu();
+
+  // Products / Software Solutions mega menus: hover intent for pointers, the chevron
+  // button for keyboard and touch. Escape or an outside click closes them.
+  function initMegaMenus() {
+    const items = [...document.querySelectorAll<HTMLElement>("[data-mega]")];
+    const close = (except?: HTMLElement) =>
+      items.forEach((item) => {
+        if (item === except) return;
+        item.querySelector<HTMLElement>("[data-mega-panel]")!.hidden = true;
+        item.querySelector("[data-mega-toggle]")!.setAttribute("aria-expanded", "false");
+      });
+    const open = (item: HTMLElement) => {
+      close(item);
+      item.querySelector<HTMLElement>("[data-mega-panel]")!.hidden = false;
+      item.querySelector("[data-mega-toggle]")!.setAttribute("aria-expanded", "true");
+    };
+    for (const item of items) {
+      const toggle = item.querySelector<HTMLButtonElement>("[data-mega-toggle]")!;
+      const panel = item.querySelector<HTMLElement>("[data-mega-panel]")!;
+      let timer = 0;
+      item.addEventListener("pointerenter", (event) => {
+        if (event.pointerType !== "mouse") return;
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => open(item), 90);
+      });
+      item.addEventListener("pointerleave", (event) => {
+        if (event.pointerType !== "mouse") return;
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => close(), 180);
+      });
+      toggle.addEventListener("click", () => (panel.hidden ? open(item) : close()));
+      item.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowDown" && (event.target as HTMLElement).matches("[data-mega-link],[data-mega-toggle]")) {
+          event.preventDefault();
+          open(item);
+          panel.querySelector<HTMLElement>("a")?.focus();
+        }
+        if (event.key === "Escape" && !panel.hidden) {
+          close();
+          toggle.focus();
+        }
+      });
+      item.addEventListener("focusout", (event) => {
+        if (!item.contains(event.relatedTarget as Node)) close();
+      });
+    }
+    document.addEventListener("click", (event) => {
+      if (!items.some((item) => item.contains(event.target as Node))) close();
+    });
+  }
+
+  initMegaMenus();
+
+  // Cart badge (delegated "Add to Cart" buttons live in scripts/site.ts).
+  import { cartCount, CART_EVENT } from "../../lib/client/cart";
+
+  const renderCount = () => {
+    const count = cartCount();
+    for (const badge of document.querySelectorAll<HTMLElement>("[data-cart-count]")) {
+      badge.textContent = count > 9 ? "9+" : String(count);
+      badge.hidden = count === 0;
+      badge.closest("a")?.setAttribute("aria-label", count > 0 ? `Cart, ${count} items` : "Cart");
+    }
+  };
+
+  window.addEventListener(CART_EVENT, renderCount);
+  window.addEventListener("storage", renderCount);
+  renderCount();
+</script>

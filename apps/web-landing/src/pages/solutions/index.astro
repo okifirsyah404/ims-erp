@@ -1,0 +1,96 @@
+---
+import LayoutGrid from "@lucide/astro/icons/layout-grid";
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import SolutionsHero from "../../components/solutions/SolutionsHero.astro";
+import SolutionCard from "../../components/solutions/SolutionCard.astro";
+import IntegrationBand from "../../components/solutions/IntegrationBand.astro";
+import SolutionsCta from "../../components/solutions/SolutionsCta.astro";
+import { platforms } from "../../data/solutions";
+import { routes } from "../../data/site";
+import { icons } from "../../lib/icons";
+
+/** 02.04 Software Solutions. */
+const chipPlatforms = platforms.filter((p) => p.key !== "access");
+---
+
+<PublicLayout
+  title="Software Solutions — Entragate"
+  description="Gym, e-ticketing, visitor, library, parking and access control software — natively integrated with Entragate hardware."
+>
+  <SolutionsHero demoHref={routes.demo} />
+
+  <section id="solutions" class="scroll-mt-20 bg-surface" aria-labelledby="solutions-title">
+    <div class="flex flex-col gap-5 py-14 xl:container-page xl:gap-14 xl:py-28">
+      <div class="container-page flex flex-col gap-2.5 xl:w-auto xl:max-w-none xl:flex-row xl:items-end xl:justify-between xl:px-0">
+        <div class="flex flex-col gap-2.5 xl:w-[640px] xl:gap-3.5">
+          <p class="text-[12px] font-bold tracking-[1.4px] text-blue-600 uppercase xl:text-[13px] xl:tracking-[1.6px]">Solutions</p>
+          <h2
+            id="solutions-title"
+            class="font-heading text-[28px] leading-8 font-bold tracking-[-0.7px] text-navy-900 xl:text-[44px] xl:leading-[48px] xl:tracking-[-1.2px]"
+          >
+            <span class="xl:hidden">Six platforms. One operating layer.</span>
+            <span class="hidden xl:inline">Six platforms. One operating layer for your facility.</span>
+          </h2>
+        </div>
+        <p class="hidden w-[420px] text-[16px] leading-[26px] text-fg-secondary xl:block">
+          Every module ships with live dashboards, role-based access and native drivers for Entragate hardware — deploy one
+          or run the full suite.
+        </p>
+      </div>
+
+      <div class="scrollbar-none flex gap-2 overflow-x-auto px-5 py-1 md:px-8 xl:hidden" role="toolbar" aria-label="Filter solutions">
+        <button
+          type="button"
+          class="flex shrink-0 items-center gap-1.5 rounded-pill bg-white px-3.5 py-2.5 text-[13px] font-semibold text-fg ring-1 ring-border ring-inset aria-pressed:bg-navy-900 aria-pressed:text-white aria-pressed:ring-navy-900"
+          aria-pressed="true"
+          data-platform-filter="all"
+        >
+          <LayoutGrid size={14} aria-hidden="true" />
+          All
+        </button>
+        {
+          chipPlatforms.map((platform) => {
+            const Icon = icons[platform.icon];
+            return (
+              <button
+                type="button"
+                class="group flex shrink-0 items-center gap-1.5 rounded-pill bg-white px-3.5 py-2.5 text-[13px] font-semibold text-fg ring-1 ring-border ring-inset aria-pressed:bg-navy-900 aria-pressed:text-white aria-pressed:ring-navy-900"
+                aria-pressed="false"
+                data-platform-filter={platform.key}
+              >
+                <Icon size={14} class="text-fg-secondary group-aria-pressed:text-white" aria-hidden="true" />
+                {platform.chipLabel}
+              </button>
+            );
+          })
+        }
+      </div>
+
+      <div class="container-page grid gap-4 pt-1 xl:grid-cols-2 xl:gap-x-6 xl:gap-y-14 xl:px-0 xl:pt-0" data-platform-list>
+        {platforms.map((platform) => <SolutionCard platform={platform} />)}
+      </div>
+    </div>
+  </section>
+
+  <IntegrationBand />
+  <SolutionsCta demoHref={routes.demo} />
+</PublicLayout>
+
+<script>
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>("[data-platform-filter]")];
+  const cards = [...document.querySelectorAll<HTMLElement>("[data-platform-list] [data-platform]")];
+  buttons.forEach((button) =>
+    button.addEventListener("click", () => {
+      const key = button.dataset.platformFilter;
+      buttons.forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+      cards.forEach((card) => (card.hidden = key !== "all" && card.dataset.platform !== key));
+    }),
+  );
+  // Filtering is a mobile-only affordance; always show every card on desktop.
+  window.matchMedia("(min-width: 80rem)").addEventListener("change", (event) => {
+    if (event.matches) {
+      cards.forEach((card) => (card.hidden = false));
+      buttons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.platformFilter === "all")));
+    }
+  });
+</script>

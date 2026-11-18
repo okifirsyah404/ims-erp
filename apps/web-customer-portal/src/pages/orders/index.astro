@@ -1,0 +1,112 @@
+---
+import SlidersHorizontal from "@lucide/astro/icons/sliders-horizontal";
+import Search from "@lucide/astro/icons/search";
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+import PackageOpen from "@lucide/astro/icons/package-open";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import LargeHeader from "../../components/customer/LargeHeader.astro";
+import IconButton from "../../components/customer/IconButton.astro";
+import Segmented from "../../components/customer/Segmented.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import ProgressBar from "../../components/customer/ProgressBar.astro";
+import Media from "../../components/customer/Media.astro";
+import Pagination from "../../components/customer/Pagination.astro";
+import OrdersDesktop from "../../features/orders/OrdersDesktop.astro";
+import { ordersService, projectsService } from "../../services";
+import { paginate } from "../../lib/paginate";
+import { formatRupiah } from "../../lib/format";
+import { orderChip } from "../../lib/status";
+
+/** 05.03 My Orders: search + Active / Completed / All. */
+const params = Astro.url.searchParams;
+const tab = ["active", "completed", "all"].includes(params.get("tab") ?? "") ? params.get("tab")! : "active";
+const q = (params.get("q") ?? "").trim().slice(0, 80);
+
+const [all, projects] = await Promise.all([ordersService.list(Astro.locals.tokens!), projectsService.list(Astro.locals.tokens!)]);
+const isDone = (status: string) => status === "delivered" || status === "cancelled";
+const active = all.filter((o) => !isDone(o.status));
+const byTab = tab === "active" ? active : tab === "completed" ? all.filter((o) => isDone(o.status)) : all;
+const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+const matches = byTab.filter((o) => terms.every((t) => `${o.number} ${o.title} ${o.statusLabel}`.toLowerCase().includes(t)));
+const page = paginate(matches, Astro.url, 8);
+const orders = page.items;
+const href = (key: string) => `/orders?tab=${key}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+const tabs = [
+  { key: "active", label: `Active · ${active.length}`, href: href("active") },
+  { key: "completed", label: "Completed", href: href("completed") },
+  { key: "all", label: "All", href: href("all") },
+];
+---
+
+<CustomerLayout title="My Orders" tab="orders" desktop="full">
+  <div class="hidden xl:block">
+    <OrdersDesktop page={page} all={all} projects={projects} tab={tab} q={q} tabs={tabs.map((t) => (t.key === "all" ? { ...t, label: "All orders" } : t))} />
+  </div>
+  <div class="xl:hidden">
+  <LargeHeader eyebrow={`${active.length} active · ${all.length} total`} title="My Orders">
+    <IconButton slot="action" label="Filter orders" href="#filters"><SlidersHorizontal size={20} aria-hidden="true" /></IconButton>
+  </LargeHeader>
+
+  <div class="flex flex-col gap-[18px] px-5 pt-3 pb-6">
+    <form method="get" action="/orders" role="search" id="filters">
+      <input type="hidden" name="tab" value={tab} />
+      <label class="flex h-12 items-center gap-2.5 rounded-md bg-surface px-4 focus-within:ring-[1.5px] focus-within:ring-blue-600 focus-within:ring-inset">
+        <Search size={18} class="text-fg-muted" aria-hidden="true" />
+        <span class="sr-only">Search orders</span>
+        <input type="search" name="q" value={q} placeholder="Search orders, products, SKU" class="h-full min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-muted" />
+      </label>
+    </form>
+
+    <Segmented label="Order status" active={tab} items={tabs} />
+
+    {
+      orders.length === 0 ? (
+        <div class="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-10 text-center">
+          <PackageOpen size={28} class="text-blue-600" aria-hidden="true" />
+          <p class="font-heading text-[17px] font-bold text-fg">{q ? "No matching orders" : "No orders here yet"}</p>
+          <p class="text-[14px] text-fg-secondary">{q ? "Try another order number or product name." : "Orders appear here as soon as a quotation is accepted."}</p>
+        </div>
+      ) : (
+        <ul class="flex flex-col gap-[18px]">
+          {orders.map((order) => {
+            const chip = orderChip(order.status, order.statusLabel);
+            const delivered = order.status === "delivered";
+            return (
+              <li>
+                <a href={`/orders/${order.id}`} class="app-card flex flex-col gap-3.5 p-4">
+                  <span class="flex gap-3.5">
+                    <Media src={order.image} alt="" class="size-16 shrink-0 rounded-control bg-surface" />
+                    <span class="flex min-w-0 flex-1 flex-col gap-1">
+                      <span class="flex items-center justify-between gap-2.5">
+                        <span class="text-[12px] font-semibold text-fg-muted">{order.number}</span>
+                        <StatusChip label={chip.label} tone={chip.tone} />
+                      </span>
+                      <span class="text-[15px] leading-[22px] font-bold text-fg">{order.title}</span>
+                    </span>
+                  </span>
+                  <span class="flex flex-col gap-2">
+                    <ProgressBar value={order.progress} tone={delivered ? "success" : "gradient"} label={`${order.title} progress`} />
+                    <span class="flex justify-between gap-2.5 text-[12.5px]">
+                      <span class="font-medium text-fg-secondary">{delivered ? order.stepLabel : `Step ${order.step} of ${order.stepCount} · ${order.stepLabel}`}</span>
+                      <span class:list={["font-semibold", delivered ? "text-success" : "text-blue-600"]}>{order.etaLabel}</span>
+                    </span>
+                  </span>
+                  <span class="h-px bg-border" aria-hidden="true" />
+                  <span class="flex items-center justify-between gap-2.5">
+                    <span class="font-heading text-[17px] font-extrabold text-navy-900">{formatRupiah(order.total)}</span>
+                    <span class="flex items-center gap-1 text-[13.5px] font-semibold text-blue-600">
+                      Details
+                      <ChevronRight size={16} aria-hidden="true" />
+                    </span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+    <Pagination {...page} noun="orders" />
+  </div>
+  </div>
+</CustomerLayout>

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Alert, AlertDescription } from '@ims-erp/ui/components/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { DocumentImageField } from '@/components/documents/document-image-field';
 import { CompanyProfileForm } from '@/components/settings/company-profile-form';
 import { CompanySettingsCard } from '@/components/settings/company-settings-card';
 import { toast } from '@/components/toast';
@@ -11,8 +13,10 @@ import {
 	companyProfileQueryOptions,
 	numberingQueryOptions,
 	saveCompanyProfile,
+	type TCompanyProfile,
 	type TCompanyProfileInput,
 } from '@/lib/company-api';
+import { removeDocumentImage, uploadDocumentImage } from '@/lib/document-image-api';
 import { usePermission } from '@/lib/use-permission';
 
 /** `/settings/company` — the company profile (one for the whole company). */
@@ -27,8 +31,25 @@ function CompanyProfilePage() {
 	const [submitting, setSubmitting] = useState(false);
 	const { data: profile, isPending, isError, error } = useQuery(companyProfileQueryOptions());
 
+	const setProfile = (saved: TCompanyProfile) =>
+		queryClient.setQueryData(companyProfileQueryOptions().queryKey, saved);
+
 	// Image URLs are re-signed on every read; they must not re-mount the form.
 	const formKey = profile ? JSON.stringify({ ...profile, logoUrl: null, signatureUrl: null }) : 'new';
+
+	async function handleImage(kind: 'logo' | 'onboarding', action: 'upload' | 'remove', file?: File) {
+		try {
+			const path = kind === 'logo' ? 'logo' : 'onboarding';
+			const saved =
+				action === 'upload'
+					? await uploadDocumentImage<TCompanyProfile>(`/company/profile/${path}`, file!)
+					: await removeDocumentImage<TCompanyProfile>(`/company/profile/${path}`);
+			setProfile(saved);
+			toast.success(t('settings:companyProfile.imageSaved'));
+		} catch (cause) {
+			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
+		}
+	}
 
 	async function handleSubmit(input: TCompanyProfileInput) {
 		setSubmitting(true);
@@ -75,6 +96,28 @@ function CompanyProfilePage() {
 						submitting={submitting}
 						onSubmit={(input) => void handleSubmit(input)}
 					/>
+					<Card>
+						<CardHeader>
+							<CardTitle>{t('settings:companyProfile.section.images')}</CardTitle>
+							<CardDescription>{t('settings:companyProfile.imagesHint')}</CardDescription>
+						</CardHeader>
+						<CardContent className='flex flex-col gap-6'>
+							<DocumentImageField
+								label={t('settings:companyProfile.image.logo')}
+								imageUrl={profile?.logoUrl ?? null}
+								disabled={!canEdit}
+								onUpload={(file) => handleImage('logo', 'upload', file)}
+								onRemove={() => handleImage('logo', 'remove')}
+							/>
+							<DocumentImageField
+								label={t('settings:companyProfile.image.onboarding')}
+								imageUrl={profile?.onboardingUrl ?? null}
+								disabled={!canEdit}
+								onUpload={(file) => handleImage('onboarding', 'upload', file)}
+								onRemove={() => handleImage('onboarding', 'remove')}
+							/>
+						</CardContent>
+					</Card>
 					<CompanySettingsCard canEdit={canEdit} excludeGroups={['document']} />
 				</>
 			)}

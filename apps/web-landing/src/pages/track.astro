@@ -1,0 +1,423 @@
+---
+import { actions, isInputError } from "astro:actions";
+import Search from "@lucide/astro/icons/search";
+import PackageSearch from "@lucide/astro/icons/package-search";
+import Smartphone from "@lucide/astro/icons/smartphone";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import Clock from "@lucide/astro/icons/clock";
+import LogIn from "@lucide/astro/icons/log-in";
+import LayoutDashboard from "@lucide/astro/icons/layout-dashboard";
+import Check from "@lucide/astro/icons/check";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import Loader from "@lucide/astro/icons/loader";
+import Circle from "@lucide/astro/icons/circle";
+import Factory from "@lucide/astro/icons/factory";
+import BadgeCheck from "@lucide/astro/icons/badge-check";
+import Truck from "@lucide/astro/icons/truck";
+import Wrench from "@lucide/astro/icons/wrench";
+import Flag from "@lucide/astro/icons/flag";
+import Timer from "@lucide/astro/icons/timer";
+import MapPin from "@lucide/astro/icons/map-pin";
+import RefreshCw from "@lucide/astro/icons/refresh-cw";
+import FileText from "@lucide/astro/icons/file-text";
+import Image from "@lucide/astro/icons/image";
+import Ruler from "@lucide/astro/icons/ruler";
+import UserRound from "@lucide/astro/icons/user-round";
+import MessageCircle from "@lucide/astro/icons/message-circle";
+import Phone from "@lucide/astro/icons/phone";
+import { type TrackingStage } from "@/api/website";
+import PublicLayout from "../layouts/PublicLayout.astro";
+import Breadcrumb from "../components/ui/Breadcrumb.astro";
+import Alert from "../components/ui/Alert.astro";
+import Media from "../components/ui/Media.astro";
+import { customerPortal, routes } from "../data/site";
+import { formatRupiah } from "../lib/format";
+import { websiteMode } from "../lib/server/website";
+import { DEMO_TRACKING } from "../lib/server/website/demo";
+
+/** 07.04 Public Tracking Entry (desktop RIws7 / mobile QJ0ak). Lookup is a POST action. */
+export const prerender = false;
+
+const result = Astro.getActionResult(actions.tracking.lookup);
+const order = result && !result.error ? result.data : undefined;
+const fieldErrors = result?.error && isInputError(result.error) ? result.error.fields : {};
+const lookupError = result?.error && !isInputError(result.error) ? result.error.message : undefined;
+const demo = websiteMode === "demo";
+
+const stages: { stage: TrackingStage; label: string; icon: typeof Check }[] = [
+  { stage: "received", label: "Received", icon: Check },
+  { stage: "paid", label: "Paid", icon: Check },
+  { stage: "production", label: "Production", icon: Factory },
+  { stage: "qc", label: "QC", icon: BadgeCheck },
+  { stage: "shipped", label: "Shipped", icon: Truck },
+  { stage: "installation", label: "Installation", icon: Wrench },
+  { stage: "completed", label: "Completed", icon: Flag },
+];
+const currentIndex = order ? stages.findIndex((s) => s.stage === order.status) : -1;
+const docIcons = { pdf: FileText, image: Image, dwg: Ruler };
+---
+
+<PublicLayout title="Track your order | Entragate" description="Follow every step of your Entragate order — from production to on-site installation.">
+  <section class="border-b border-border bg-surface bg-[radial-gradient(ellipse_60%_80%_at_50%_0%,#DCE6FFCC_0%,#F5F7FB00_100%)]">
+    <div class="container-page flex flex-col gap-4 pt-7 pb-6 xl:items-center xl:gap-5 xl:py-16 xl:text-center">
+      <Breadcrumb class="hidden xl:block" items={[{ label: "Home", href: routes.home }, { label: "Order Tracking" }]} />
+      <p class="text-[12px] font-bold tracking-[1.6px] text-blue-600 uppercase xl:hidden">Order tracking</p>
+      <h1 class="font-heading text-[30px] font-bold tracking-[-1px] text-navy-900 xl:text-[52px] xl:tracking-[-1.5px]">Track your order</h1>
+      <p class="text-[14px] leading-[21px] text-fg-secondary xl:w-[600px] xl:text-[17px] xl:leading-[27px]">
+        <span class="xl:hidden">Follow every step from production to on-site installation.</span>
+        <span class="hidden xl:inline">Follow every step from production to on-site installation. Enter the order number from your confirmation email or invoice.</span>
+      </p>
+
+      <form
+        method="POST"
+        action={actions.tracking.lookup}
+        class="flex flex-col gap-2.5 rounded-lg bg-white p-2.5 shadow-[0_16px_40px_#0A1A3F14] ring-1 ring-border ring-inset xl:w-[720px] xl:flex-row xl:items-center xl:gap-3 xl:rounded-control xl:p-2 xl:pl-5"
+      >
+        <label class="flex items-center gap-3 rounded-md bg-surface px-3.5 py-2 ring-1 ring-border ring-inset xl:flex-1 xl:bg-transparent xl:p-0 xl:ring-0">
+          <PackageSearch size={20} class="shrink-0 text-blue-600 xl:hidden" aria-hidden="true" />
+          <span class="flex flex-1 flex-col gap-0.5 text-left">
+            <span class="text-[11px] font-semibold tracking-[0.3px] text-fg-muted">Order number</span>
+            <input
+              name="order_number"
+              required
+              maxlength="40"
+              autocomplete="off"
+              placeholder="ENT-2026-10-04817"
+              value={order?.orderNumber}
+              aria-invalid={fieldErrors.order_number ? "true" : undefined}
+              class="w-full bg-transparent text-[15px] font-semibold tracking-[0.4px] text-fg uppercase outline-none placeholder:font-normal placeholder:text-fg-muted placeholder:normal-case xl:text-[17px]"
+            />
+          </span>
+        </label>
+        <label class="flex items-center gap-3 rounded-md bg-surface px-3.5 py-2 ring-1 ring-border ring-inset xl:w-[190px] xl:rounded-none xl:border-l xl:border-border xl:bg-transparent xl:px-5 xl:py-0 xl:ring-0">
+          <Smartphone size={20} class="shrink-0 text-fg-muted xl:hidden" aria-hidden="true" />
+          <span class="flex flex-1 flex-col gap-0.5 text-left">
+            <span class="text-[11px] font-semibold tracking-[0.3px] text-fg-muted">Phone / email</span>
+            <input
+              name="contact"
+              required
+              maxlength="160"
+              autocomplete="tel"
+              placeholder="Last 4 digits or email"
+              aria-invalid={fieldErrors.contact ? "true" : undefined}
+              class="w-full bg-transparent text-[15px] font-semibold text-fg outline-none placeholder:font-normal placeholder:text-fg-muted xl:text-[17px]"
+            />
+          </span>
+        </label>
+        <button type="submit" class="flex items-center justify-center gap-2 rounded-md bg-blue-600 px-[26px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700 xl:py-4">
+          Track Order <Search size={16} aria-hidden="true" />
+        </button>
+      </form>
+
+      {(fieldErrors.order_number || fieldErrors.contact) && <p class="text-[13px] font-semibold text-danger" role="alert">{fieldErrors.order_number?.[0] ?? fieldErrors.contact?.[0]}</p>}
+      {lookupError && <Alert tone="warning" title="Order not found" description={lookupError} class="text-left xl:w-[720px]" />}
+      {
+        demo && !order && (
+          <p class="text-[13px] text-fg-muted">
+            Sample data: try order <strong class="text-fg">{DEMO_TRACKING.orderNumber}</strong> with phone ending <strong class="text-fg">{DEMO_TRACKING.contact}</strong>.
+          </p>
+        )
+      }
+
+      <ul class="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] xl:justify-center">
+        <li class="hidden items-center gap-1.5 font-medium text-fg-muted xl:flex"><ShieldCheck size={14} aria-hidden="true" />Secure lookup</li>
+        <li class="hidden items-center gap-1.5 font-medium text-fg-muted xl:flex"><Clock size={14} aria-hidden="true" />Updated every 30 min</li>
+        <li><a href={customerPortal.login} class="flex items-center gap-1.5 font-semibold text-blue-600 hover:underline"><LogIn size={14} aria-hidden="true" />Sign in to see all orders</a></li>
+      </ul>
+
+      <div class="flex flex-col gap-3 rounded-lg bg-white p-4 text-left shadow-[0_8px_24px_#1F5BFF14] ring-1 ring-blue-100 ring-inset xl:w-[880px] xl:flex-row xl:items-center xl:gap-3.5 xl:rounded-control xl:py-3.5 xl:pr-3.5 xl:pl-[18px]">
+        <div class="flex items-center gap-3.5 xl:flex-1">
+          <span class="flex size-10 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600"><LayoutDashboard size={18} aria-hidden="true" /></span>
+          <span class="flex flex-col gap-0.5">
+            <span class="text-[14px] font-bold text-fg">
+              <span class="xl:hidden">Have an account?</span><span class="hidden xl:inline">Have an Entragate account?</span>
+            </span>
+            <span class="text-[13px] text-fg-secondary">
+              <span class="xl:hidden">Log in to see all orders &amp; invoices.</span>
+              <span class="hidden xl:inline">Log in to track every order, download invoices &amp; Faktur Pajak, and book installation — no order number needed.</span>
+            </span>
+          </span>
+        </div>
+        <a href={customerPortal.register} class="hidden rounded-md bg-white px-3.5 py-2.5 text-[13px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface xl:block">Register</a>
+        <a href={customerPortal.login} class="flex items-center justify-center gap-2 rounded-md bg-navy-900 px-3.5 py-2.5 text-[13px] font-semibold text-white hover:bg-navy-800">
+          Log in to portal <LogIn size={14} aria-hidden="true" />
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {
+    order ? (
+      <div class="container-page flex flex-col gap-4 pt-5 pb-10 xl:flex-row xl:items-start xl:gap-8 xl:pt-12 xl:pb-28">
+        <div class="flex min-w-0 flex-1 flex-col gap-4 xl:gap-6">
+          <!-- Status overview -->
+          <section class="flex flex-col gap-5 rounded-lg bg-white p-5 ring-1 ring-border ring-inset xl:gap-7 xl:p-8" aria-labelledby="order-title">
+            <div class="flex flex-col gap-2 xl:flex-row xl:items-start xl:justify-between">
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between xl:hidden">
+                  <span class="text-[11px] font-bold tracking-[1px] text-fg-muted uppercase">Order</span>
+                  <span class="flex items-center gap-1.5 rounded-pill bg-blue-50 px-2.5 py-[5px] text-[12px] font-semibold text-blue-600"><span class="size-1.5 rounded-full bg-blue-600" />{order.statusLabel}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <h2 id="order-title" class="font-heading text-[20px] font-bold text-navy-900 xl:text-[24px]">
+                    <span class="max-xl:sr-only">Order </span>#{order.orderNumber}
+                  </h2>
+                  <span class="hidden items-center gap-1.5 rounded-pill bg-blue-50 px-2.5 py-[5px] text-[12px] font-semibold text-blue-600 xl:flex"><span class="size-1.5 rounded-full bg-blue-600" />{order.statusLabel}</span>
+                </div>
+                <p class="text-[13px] text-fg-secondary xl:text-[14px]">{order.placedLabel} · <span class="hidden xl:inline">{order.customerName} · </span>{order.itemCount} items</p>
+              </div>
+              <div class="hidden flex-col items-end gap-1 xl:flex">
+                <p class="text-[11px] font-bold tracking-[1px] text-fg-muted uppercase">Estimated completion</p>
+                <p class="font-heading text-[24px] font-bold text-blue-600">{order.estimatedCompletionLabel}</p>
+              </div>
+            </div>
+            <ol class="flex" aria-label="Order progress">
+              {stages.map(({ label, icon: Icon }, index) => {
+                const done = index < currentIndex;
+                const current = index === currentIndex;
+                return (
+                  <li class="flex flex-1 flex-col items-center gap-2.5" aria-current={current ? "step" : undefined}>
+                    <span class="flex w-full items-center">
+                      <span class:list={["h-[3px] flex-1", index === 0 ? "bg-transparent" : index <= currentIndex ? "bg-blue-600" : "bg-surface-2"]} />
+                      <span
+                        class:list={[
+                          "flex size-6 items-center justify-center rounded-pill xl:size-10",
+                          done && "bg-blue-600 text-white",
+                          current && "bg-white text-blue-600 shadow-[0_0_14px_#1F5BFF59] ring-2 ring-blue-600",
+                          !done && !current && "bg-surface text-fg-muted ring-1 ring-border",
+                        ]}
+                      >
+                        <Icon size={16} class="size-3 xl:size-4" aria-hidden="true" />
+                      </span>
+                      <span class:list={["h-[3px] flex-1", index === stages.length - 1 ? "bg-transparent" : index < currentIndex ? "bg-blue-600" : "bg-surface-2"]} />
+                    </span>
+                    <span class:list={["hidden text-[13px] xl:block", current ? "font-semibold text-blue-600" : done ? "font-semibold text-fg" : "font-medium text-fg-muted"]}>{label}</span>
+                    <span class="sr-only xl:hidden">{label}{done ? " (done)" : current ? " (current)" : ""}</span>
+                  </li>
+                );
+              })}
+            </ol>
+            <div class="flex flex-col gap-2 border-t border-border pt-4 xl:flex-row xl:items-center xl:gap-6 xl:pt-5">
+              <div class="flex flex-1 flex-col gap-2">
+                <div class="flex justify-between text-[13px]">
+                  <span class="font-semibold text-blue-600 xl:text-fg">
+                    <span class="xl:hidden">Step {currentIndex + 1} of {stages.length} · {order.statusLabel}</span>
+                    <span class="hidden xl:inline">Overall progress · Step {currentIndex + 1} of {stages.length}</span>
+                  </span>
+                  <span class="font-bold text-fg xl:text-blue-600">{Math.round(order.progress * 100)}%</span>
+                </div>
+                <span class="hidden h-2 rounded-pill bg-surface-2 xl:block">
+                  <span class="block h-2 rounded-pill bg-[linear-gradient(90deg,var(--eg-blue-600),var(--eg-cyan-400))]" style={`width:${Math.round(order.progress * 100)}%`} />
+                </span>
+              </div>
+              <div class="hidden items-center gap-2.5 border-l border-border pl-6 xl:flex">
+                <span class="flex size-9 items-center justify-center rounded-md bg-blue-50 text-blue-600"><Timer size={16} aria-hidden="true" /></span>
+                <span class="flex flex-col"><span class="text-[14px] font-bold text-fg">{order.daysToCompletion} days</span><span class="text-[12px] text-fg-muted">to completion</span></span>
+              </div>
+              <div class="hidden items-center gap-2.5 border-l border-border pl-6 xl:flex">
+                <span class="flex size-9 items-center justify-center rounded-md bg-blue-50 text-blue-600"><MapPin size={16} aria-hidden="true" /></span>
+                <span class="flex flex-col"><span class="text-[14px] font-bold text-fg">{order.siteLabel}</span><span class="text-[12px] text-fg-muted">delivery site</span></span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Delivery panel (mobile position) -->
+          <section class="flex flex-col gap-4 rounded-lg bg-navy-900 p-5 xl:hidden" aria-label="Estimated delivery">
+            <div class="flex items-center justify-between">
+              <span class="text-[13px] text-fg-on-dark-muted">Estimated delivery</span>
+              {order.delivery.onSchedule && <span class="rounded-pill bg-cyan-400/15 px-2 py-0.5 text-[11px] font-semibold text-cyan-400">On schedule</span>}
+            </div>
+            <div>
+              <p class="font-heading text-[26px] font-bold tracking-[-0.6px] text-white">{order.delivery.windowLabel}</p>
+              <p class="text-[13px] text-fg-on-dark-muted">{order.delivery.installationLabel} · Completion {order.estimatedCompletionLabel}</p>
+            </div>
+            <dl class="grid grid-cols-3 gap-2">
+              {[[order.delivery.daysToShip, "to ship"], [order.delivery.daysToFinish, "to finish"], [`${currentIndex + 1}/${stages.length}`, "steps"]].map(([v, l]) => (
+                <div class="flex flex-col-reverse rounded-md bg-white/8 p-3"><dt class="text-[11px] text-fg-on-dark-muted">{l}</dt><dd class="font-heading text-[18px] font-bold text-white">{v}</dd></div>
+              ))}
+            </dl>
+          </section>
+
+          <!-- Timeline -->
+          <section class="flex flex-col gap-5 rounded-lg bg-white p-5 ring-1 ring-border ring-inset xl:gap-6 xl:p-8" aria-labelledby="timeline-title">
+            <div class="flex flex-col gap-1 xl:flex-row xl:items-center xl:justify-between">
+              <h2 id="timeline-title" class="font-heading text-[17px] font-bold text-navy-900 xl:text-[20px]">Tracking timeline</h2>
+              <p class="flex items-center gap-1.5 text-[12px] text-fg-muted"><RefreshCw size={12} class="hidden xl:block" aria-hidden="true" />{order.lastUpdatedLabel}</p>
+            </div>
+            <ol class="flex flex-col">
+              {order.timeline.map((step, index) => {
+                const last = index === order.timeline.length - 1;
+                return (
+                  <li class="flex gap-3.5 xl:gap-5">
+                    <span class="flex w-6 shrink-0 flex-col items-center xl:w-8">
+                      {step.state === "done" ? (
+                        <span class="flex size-6 items-center justify-center rounded-pill bg-blue-600 text-white xl:size-8"><Check size={14} stroke-width={3} aria-hidden="true" /></span>
+                      ) : step.state === "current" ? (
+                        <span class="flex size-6 items-center justify-center rounded-pill bg-blue-50 ring-2 ring-blue-600 xl:size-8"><span class="size-2.5 rounded-full bg-blue-600 xl:size-3" /></span>
+                      ) : (
+                        <span class="size-6 rounded-pill bg-white ring-2 ring-border xl:size-8" />
+                      )}
+                      {!last && <span class:list={["w-0.5 flex-1", step.state === "done" ? "bg-blue-600" : "bg-border"]} />}
+                    </span>
+                    <div class:list={["flex min-w-0 flex-1 flex-col gap-1.5 pt-0.5 xl:pt-1", !last && "pb-6 xl:pb-8"]}>
+                      <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                        <span class="flex items-center gap-2.5">
+                          <span class:list={["font-heading text-[14.5px] font-bold xl:text-[17px]", step.state === "upcoming" ? "text-fg-secondary" : "text-navy-900"]}>{step.title}</span>
+                          {step.state === "done" && <span class="hidden items-center gap-1.5 rounded-pill bg-success-bg px-2.5 py-[5px] text-[12px] font-semibold text-success xl:flex"><span class="size-1.5 rounded-full bg-success" />Completed</span>}
+                          {step.state === "current" && <span class="hidden items-center gap-1.5 rounded-pill bg-blue-50 px-2.5 py-[5px] text-[12px] font-semibold text-blue-600 xl:flex"><span class="size-1.5 rounded-full bg-blue-600" />In progress</span>}
+                        </span>
+                        <span class="text-[12px] font-medium text-fg-secondary xl:text-[13px]">{step.dateLabel}</span>
+                      </div>
+                      <p class:list={["text-[13px] leading-5 xl:text-[14px] xl:leading-[22px]", step.state === "upcoming" ? "text-fg-muted" : "text-fg-secondary"]}>{step.description}</p>
+                      {step.progress && (
+                        <div class="mt-2 flex flex-col gap-3.5 rounded-md bg-surface p-3.5 ring-1 ring-border ring-inset xl:p-5">
+                          <div class="flex flex-col gap-2">
+                            <div class="flex justify-between text-[13px]"><span class="font-semibold text-fg">Production progress</span><span class="font-bold text-blue-600">{Math.round(step.progress.value * 100)}%</span></div>
+                            <span class="h-1.5 rounded-pill bg-surface-2"><span class="block h-1.5 rounded-pill bg-blue-600" style={`width:${Math.round(step.progress.value * 100)}%`} /></span>
+                          </div>
+                          <ul class="flex flex-col gap-2 xl:flex-row xl:gap-3">
+                            {step.progress.tasks.map((task) => (
+                              <li class="flex items-center gap-2 text-[12px] font-medium xl:flex-1 xl:rounded-md xl:bg-white xl:px-3 xl:py-2.5 xl:ring-1 xl:ring-border xl:ring-inset">
+                                {task.state === "done" ? <CircleCheck size={15} class="shrink-0 text-success" aria-hidden="true" /> : task.state === "current" ? <Loader size={15} class="shrink-0 text-blue-600" aria-hidden="true" /> : <Circle size={15} class="shrink-0 text-fg-muted" aria-hidden="true" />}
+                                <span class={task.state === "pending" ? "text-fg-muted" : "text-fg"}>{task.label}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+
+          <!-- Documents (desktop) -->
+          <section class="hidden flex-col gap-4 rounded-lg bg-white p-6 ring-1 ring-border ring-inset xl:flex" aria-labelledby="docs-title">
+            <div class="flex items-center justify-between">
+              <h2 id="docs-title" class="font-heading text-[18px] font-bold text-navy-900">Order documents</h2>
+              <span class="text-[13px] text-fg-muted">{order.documents.length} files</span>
+            </div>
+            <ul class="grid grid-cols-4 gap-3">
+              {order.documents.map((doc) => {
+                const Icon = docIcons[doc.kind];
+                return (
+                  <li>
+                    <a href={customerPortal.login} class="flex items-center gap-3 rounded-md bg-surface p-3 ring-1 ring-border ring-inset hover:bg-blue-50" title="Sign in to the Customer Portal to download">
+                      <span class="flex size-9 items-center justify-center rounded-md bg-white text-blue-600"><Icon size={16} aria-hidden="true" /></span>
+                      <span class="flex min-w-0 flex-col"><span class="truncate text-[13px] font-semibold text-fg">{doc.name}</span><span class="text-[11.5px] text-fg-muted">{doc.meta}</span></span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        </div>
+
+        <aside class="flex flex-col gap-4 xl:w-[400px] xl:shrink-0 xl:gap-6">
+          <section class="hidden flex-col gap-5 rounded-lg bg-navy-900 p-6 xl:flex" aria-label="Estimated delivery">
+            <div class="flex items-center justify-between">
+              <span class="text-[13px] text-fg-on-dark-muted">Estimated delivery</span>
+              {order.delivery.onSchedule && <span class="rounded-pill bg-cyan-400/15 px-2 py-0.5 text-[11px] font-semibold text-cyan-400">On schedule</span>}
+            </div>
+            <div class="flex flex-col gap-1">
+              <p class="font-heading text-[30px] font-bold tracking-[-0.8px] text-white">{order.delivery.windowLabel}</p>
+              <p class="text-[14px] text-fg-on-dark-muted">{order.delivery.installationLabel}</p>
+            </div>
+            <dl class="grid grid-cols-3 gap-2.5">
+              {[[order.delivery.daysToShip, "days to ship"], [order.delivery.daysToFinish, "days to finish"], [currentIndex + 1, `of ${stages.length} steps`]].map(([v, l]) => (
+                <div class="flex flex-col-reverse gap-0.5 rounded-md bg-white/8 p-3"><dt class="text-[11px] text-fg-on-dark-muted">{l}</dt><dd class="font-heading text-[20px] font-bold text-white">{v}</dd></div>
+              ))}
+            </dl>
+          </section>
+
+          <section class="flex flex-col gap-4 rounded-lg bg-white p-5 ring-1 ring-border ring-inset xl:p-6" aria-labelledby="summary-title">
+            <div class="flex items-center justify-between">
+              <h2 id="summary-title" class="font-heading text-[17px] font-bold text-navy-900 xl:text-[18px]">Order summary</h2>
+              <a href={customerPortal.login} class="text-[13px] font-semibold text-blue-600 hover:underline"><span class="xl:hidden">Invoice</span><span class="hidden xl:inline">View invoice</span></a>
+            </div>
+            <ul class="flex flex-col gap-3">
+              {order.items.map((item) => (
+                <li class="flex items-center gap-3">
+                  <Media src={item.image} alt="" class="size-12 shrink-0 rounded-md bg-surface" />
+                  <span class="flex flex-col gap-0.5">
+                    <span class="text-[13.5px] font-semibold text-fg">{item.name}</span>
+                    <span class="text-[12px] text-fg-muted">Qty {item.quantity} · {formatRupiah(item.amount)}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <dl class="flex flex-col gap-2 border-t border-border pt-4 text-[13px]">
+              <div class="flex justify-between"><dt class="text-fg-secondary">Subtotal</dt><dd class="font-semibold text-fg">{formatRupiah(order.totals.subtotal)}</dd></div>
+              <div class="flex justify-between"><dt class="text-fg-secondary">Installation<span class="hidden xl:inline"> &amp; commissioning</span></dt><dd class="font-semibold text-fg">{formatRupiah(order.totals.installation)}</dd></div>
+              <div class="flex justify-between"><dt class="text-fg-secondary">PPN 11%</dt><dd class="font-semibold text-fg">{formatRupiah(order.totals.tax)}</dd></div>
+              <div class="flex justify-between pt-1"><dt class="text-[14px] font-bold text-fg">Total</dt><dd class="font-heading text-[17px] font-bold text-navy-900">{formatRupiah(order.totals.total)}</dd></div>
+            </dl>
+            <p class="flex items-center gap-2 rounded-md bg-success-bg px-3 py-2.5 text-[12.5px] font-semibold text-success ring-1 ring-success-border ring-inset">
+              <CircleCheck size={15} aria-hidden="true" />{order.totals.paymentNote}
+            </p>
+          </section>
+
+          <section class="flex flex-col gap-4 rounded-lg bg-white p-5 ring-1 ring-border ring-inset xl:p-6" aria-labelledby="shipping-title">
+            <h2 id="shipping-title" class="font-heading text-[17px] font-bold text-navy-900 xl:text-[18px]">Shipping details</h2>
+            <dl class="flex flex-col gap-4">
+              {[
+                { icon: MapPin, label: "Delivery address", value: order.shipping.address },
+                { icon: Truck, label: "Courier", value: order.shipping.courier },
+                { icon: UserRound, label: "Site contact", value: order.shipping.siteContact },
+                { icon: Wrench, label: "Installation team", value: order.shipping.installationTeam },
+              ].map(({ icon: Icon, label, value }) => (
+                <div class="flex gap-3">
+                  <Icon size={16} class="mt-0.5 shrink-0 text-fg-muted" aria-hidden="true" />
+                  <div class="flex flex-col gap-0.5"><dt class="text-[11.5px] text-fg-muted">{label}</dt><dd class="text-[13.5px] leading-5 font-medium text-fg">{value}</dd></div>
+                </div>
+              ))}
+            </dl>
+          </section>
+
+          <section class="flex flex-col gap-4 rounded-lg bg-surface p-5 ring-1 ring-border ring-inset" aria-labelledby="pm-title">
+            <div class="flex items-center gap-3">
+              <span class="flex size-10 items-center justify-center rounded-pill bg-blue-600 font-heading text-[13px] font-bold text-white">
+                {order.projectManager.name.split(" ").map((p) => p[0]).join("").slice(0, 2)}
+              </span>
+              <div class="flex flex-col">
+                <h2 id="pm-title" class="text-[14px] font-bold text-fg">Questions about this order?</h2>
+                <p class="text-[12.5px] text-fg-secondary">Your project manager: {order.projectManager.name}</p>
+              </div>
+            </div>
+            <div class="flex gap-2.5">
+              {order.projectManager.whatsapp && (
+                <a href={`https://wa.me/${order.projectManager.whatsapp}?text=${encodeURIComponent(`Order ${order.orderNumber}`)}`} target="_blank" rel="noopener noreferrer" class="flex flex-1 items-center justify-center gap-2 rounded-md bg-[#25A244] py-3 text-[14px] font-bold text-white">
+                  WhatsApp <MessageCircle size={15} aria-hidden="true" />
+                </a>
+              )}
+              {order.projectManager.phone && (
+                <a href={`tel:${order.projectManager.phone}`} class="flex flex-1 items-center justify-center gap-2 rounded-md bg-white py-3 text-[14px] font-bold text-fg ring-1 ring-border ring-inset">
+                  Call us <Phone size={15} aria-hidden="true" />
+                </a>
+              )}
+            </div>
+          </section>
+        </aside>
+      </div>
+    ) : (
+      <section class="container-page flex flex-col gap-6 py-10 xl:gap-10 xl:py-24" aria-labelledby="how-title">
+        <div class="flex flex-col gap-2 xl:items-center xl:text-center">
+          <p class="text-[12px] font-bold tracking-[1.6px] text-blue-600 uppercase xl:text-[13px]">How tracking works</p>
+          <h2 id="how-title" class="font-heading text-[26px] font-bold tracking-[-0.8px] text-navy-900 xl:text-[36px]">Seven steps from order to handover</h2>
+        </div>
+        <ol class="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
+          {stages.map(({ label, icon: Icon }, index) => (
+            <li class="flex items-center gap-3 rounded-lg bg-surface p-4 xl:flex-col xl:text-center">
+              <span class="flex size-10 shrink-0 items-center justify-center rounded-pill bg-white text-blue-600 ring-1 ring-border ring-inset"><Icon size={18} aria-hidden="true" /></span>
+              <span class="flex flex-col">
+                <span class="text-[11px] font-bold tracking-[1px] text-fg-muted uppercase">Step {index + 1}</span>
+                <span class="text-[14px] font-semibold text-fg">{label}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )
+  }
+</PublicLayout>

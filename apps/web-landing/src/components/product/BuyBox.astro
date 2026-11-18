@@ -1,0 +1,248 @@
+---
+import Star from "@lucide/astro/icons/star";
+import BadgePercent from "@lucide/astro/icons/badge-percent";
+import Minus from "@lucide/astro/icons/minus";
+import Plus from "@lucide/astro/icons/plus";
+import ShoppingCart from "@lucide/astro/icons/shopping-cart";
+import FileText from "@lucide/astro/icons/file-text";
+import MessageCircle from "@lucide/astro/icons/message-circle";
+import Truck from "@lucide/astro/icons/truck";
+import Wrench from "@lucide/astro/icons/wrench";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import { company, routes } from "../../data/site";
+import { formatRupiah } from "../../lib/format";
+import type { ProductDetail, ProductSummary } from "../../types/catalog";
+
+/**
+ * Buy Box (02.02). One form serves both layouts: "Request Quotation" submits the
+ * selected options to the RFQ page; "Add to Cart" stores them in the guest cart.
+ */
+interface Props {
+  product: ProductSummary;
+  detail: Pick<
+    ProductDetail,
+    "eyebrow" | "model" | "reviewCount" | "summary" | "priceUnit" | "mobilePriceUnit" | "priceNote" | "mobilePriceNote" | "options"
+  >;
+  class?: string;
+}
+
+const { product, detail, class: className } = Astro.props;
+const optionKey = (name: string) => `opt_${name.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
+const whatsappHref = `${company.whatsappHref}?text=${encodeURIComponent(`Hi Entragate, I'd like to consult an engineer about the ${product.name} (${detail.model}).`)}`;
+const fullStars = Math.round(product.rating);
+const priceText = product.price === null ? "Request Price" : formatRupiah(product.price);
+
+const assurance = [
+  { icon: Truck, title: "Ships in 3–5 days", short: "Ships 3–5 days", note: "From Bekasi warehouse" },
+  { icon: Wrench, title: "Installation available", short: "Installation", note: "Nationwide technicians" },
+  { icon: ShieldCheck, title: "2-year warranty", short: "2-yr warranty", note: "Extendable to 3 years" },
+];
+---
+
+<form action={routes.quote} method="get" class:list={["flex flex-col gap-[18px] xl:gap-6", className]} data-buy-box>
+  <input type="hidden" name="product" value={product.slug} />
+
+  <div class="flex flex-col gap-2 xl:gap-2.5">
+    <p class="text-[11px] font-bold tracking-[1.2px] text-blue-600 uppercase xl:text-[12px] xl:tracking-[1.4px]">
+      {detail.eyebrow}
+    </p>
+    <h1
+      class="font-heading text-[28px] font-extrabold tracking-[-0.8px] text-navy-900 xl:text-[44px] xl:tracking-[-1.4px]"
+    >
+      {product.name}
+    </h1>
+    <div class="flex flex-wrap items-center gap-2.5 xl:gap-4">
+      <span class="text-[13px] font-medium text-fg-secondary xl:text-[14px]">
+        <span class="hidden xl:inline">Model </span>{detail.model}
+      </span>
+      <span class="size-1 rounded-full bg-fg-muted" aria-hidden="true"></span>
+      <span class="flex items-center gap-[3px]" aria-label={`Rated ${product.rating.toFixed(1)} out of 5`}>
+        {
+          Array.from({ length: 5 }, (_, i) => (
+            <Star
+              size={14}
+              class:list={["text-rating", i >= 1 && "hidden xl:block", i < fullStars ? "" : "opacity-40"]}
+              aria-hidden="true"
+            />
+          ))
+        }
+        <span class="ml-px text-[13px] font-semibold text-fg xl:text-[14px] xl:font-bold">
+          {product.rating.toFixed(1)}<span class="font-semibold xl:hidden"> ({detail.reviewCount} reviews)</span>
+        </span>
+      </span>
+      <span class="hidden text-[14px] text-fg-muted xl:inline">({detail.reviewCount} reviews)</span>
+    </div>
+  </div>
+
+  <p class="hidden text-[16px] leading-[26px] text-fg-secondary xl:block">{detail.summary}</p>
+
+  <div class="flex flex-col gap-1 rounded-control bg-surface p-4 xl:gap-1.5 xl:rounded-lg xl:p-[22px]">
+    <p class="flex flex-wrap items-end gap-2 xl:gap-3">
+      <span
+        class:list={[
+          "font-heading text-[26px] font-extrabold tracking-[-0.6px] xl:text-[36px] xl:tracking-[-1px]",
+          product.price === null ? "text-blue-600" : "text-navy-900",
+        ]}
+      >
+        {priceText}
+      </span>
+      <span class="pb-1 text-[13px] text-fg-muted xl:pb-1.5 xl:text-[14px]">
+        <span class="xl:hidden">{detail.mobilePriceUnit}</span>
+        <span class="hidden xl:inline">{detail.priceUnit}</span>
+      </span>
+    </p>
+    <p class="flex items-center gap-2 text-[12px] font-medium text-success xl:text-[13px]">
+      <BadgePercent size={16} class="hidden shrink-0 xl:block" aria-hidden="true" />
+      <span class="xl:hidden">{detail.mobilePriceNote}</span>
+      <span class="hidden xl:inline">{detail.priceNote}</span>
+    </p>
+  </div>
+
+  {
+    detail.options.map((option) => (
+      <fieldset class="flex flex-col gap-2 xl:gap-2.5">
+        <legend class="mb-2 text-[13px] font-bold text-fg xl:mb-2.5">{option.name}</legend>
+        <div class="flex gap-2">
+          {option.choices.map((choice) => (
+            <label class="flex-1 cursor-pointer xl:flex-none">
+              <input
+                type="radio"
+                name={optionKey(option.name)}
+                value={choice.value}
+                checked={choice.value === option.defaultValue}
+                class="peer sr-only"
+                data-option-label={option.name}
+              />
+              <span class="flex justify-center rounded-md bg-white py-2.5 text-[13px] font-medium text-fg ring-1 ring-border ring-inset peer-checked:bg-blue-50 peer-checked:font-semibold peer-checked:text-blue-600 peer-checked:ring-[1.5px] peer-checked:ring-blue-600 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue-600 xl:px-4 xl:text-[14px]">
+                <span class="xl:hidden">{choice.mobileLabel ?? choice.label}</span>
+                <span class="hidden xl:inline">{choice.label}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+    ))
+  }
+
+  <div class="flex flex-col gap-[18px] xl:flex-row xl:gap-3">
+    <div class="flex items-center justify-between">
+      <label for={`qty-${product.slug}`} class="text-[13px] font-bold text-fg xl:sr-only">Quantity</label>
+      <div class="flex h-11 items-center gap-1 rounded-md px-1 ring-1 ring-border ring-inset xl:h-[52px] xl:px-1.5">
+        <button
+          type="button"
+          class="flex size-9 items-center justify-center rounded-sm bg-surface text-fg xl:size-10 xl:rounded-md"
+          aria-label="Decrease quantity"
+          data-qty-step="-1"
+        >
+          <Minus size={16} class="size-[15px] xl:size-4" aria-hidden="true" />
+        </button>
+        <input
+          id={`qty-${product.slug}`}
+          type="number"
+          name="qty"
+          min="1"
+          max="999"
+          value="2"
+          inputmode="numeric"
+          class="w-9 appearance-none bg-transparent text-center text-[15px] font-bold text-fg outline-none [-moz-appearance:textfield] xl:w-11 xl:text-[16px] [&::-webkit-inner-spin-button]:appearance-none"
+          data-qty-input
+        />
+        <button
+          type="button"
+          class="flex size-9 items-center justify-center rounded-sm bg-surface text-fg xl:size-10 xl:rounded-md"
+          aria-label="Increase quantity"
+          data-qty-step="1"
+        >
+          <Plus size={16} class="size-[15px] xl:size-4" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+    <div class="flex flex-col gap-2.5 xl:contents">
+      {
+        product.stock === "out" ? (
+          <a
+            href={`${routes.contact}?topic=restock&product=${product.slug}`}
+            class="flex items-center justify-center gap-2 rounded-md bg-surface-2 px-5 py-4 text-[15px] font-semibold text-fg-secondary xl:h-[52px] xl:flex-1 xl:px-[22px] xl:py-3.5"
+          >
+            Notify Me
+          </a>
+        ) : (
+          product.price !== null && (
+            <button
+              type="button"
+              class="flex items-center justify-center gap-2 rounded-md bg-navy-900 px-5 py-4 text-[15px] font-semibold whitespace-nowrap text-white hover:bg-navy-800 xl:h-[52px] xl:flex-1 xl:px-2 xl:py-3.5"
+              data-add-to-cart={product.slug}
+            >
+              Add to Cart
+              <ShoppingCart size={16} aria-hidden="true" />
+            </button>
+          )
+        )
+      }
+      <button
+        type="submit"
+        class="flex items-center justify-center gap-2 rounded-md bg-blue-600 px-5 py-4 text-[15px] font-semibold whitespace-nowrap text-white shadow-cta hover:bg-blue-700 xl:h-[52px] xl:flex-1 xl:px-2 xl:py-3.5"
+      >
+        Request Quotation
+        <FileText size={16} aria-hidden="true" />
+      </button>
+    </div>
+  </div>
+
+  <a
+    href={whatsappHref}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="-mt-2 flex items-center justify-center gap-2 rounded-md bg-success-bg px-5 py-4 text-[15px] font-semibold text-whatsapp ring-1 ring-success-border ring-inset xl:mt-0 xl:h-[52px] xl:py-3.5"
+  >
+    <span class="xl:hidden">WhatsApp Consultation</span>
+    <span class="hidden xl:inline">WhatsApp Consultation with an Engineer</span>
+    <MessageCircle size={16} aria-hidden="true" />
+  </a>
+
+  <ul class="flex justify-between rounded-md p-3.5 ring-1 ring-border ring-inset xl:gap-4 xl:rounded-none xl:border-t xl:border-border xl:p-0 xl:pt-[18px] xl:ring-0">
+    {
+      assurance.map(({ icon: Icon, title, short, note }) => (
+        <li class="flex flex-col items-center gap-1.5 xl:flex-1 xl:flex-row xl:items-start xl:gap-2.5">
+          <Icon size={18} class="shrink-0 text-blue-600" aria-hidden="true" />
+          <span class="text-[11px] font-semibold text-fg xl:hidden">{short}</span>
+          <span class="hidden flex-col gap-0.5 xl:flex">
+            <span class="text-[13px] font-bold text-fg">{title}</span>
+            <span class="text-[12px] text-fg-muted">{note}</span>
+          </span>
+        </li>
+      ))
+    }
+  </ul>
+</form>
+
+<script>
+  import { addToCart } from "../../lib/client/cart";
+
+  for (const form of document.querySelectorAll<HTMLFormElement>("[data-buy-box]")) {
+    const qty = form.querySelector<HTMLInputElement>("[data-qty-input]");
+    const clamp = (value: number) => Math.min(999, Math.max(1, Number.isFinite(value) ? Math.round(value) : 1));
+
+    form.querySelectorAll<HTMLButtonElement>("[data-qty-step]").forEach((button) =>
+      button.addEventListener("click", () => {
+        if (qty) qty.value = String(clamp(Number(qty.value) + Number(button.dataset.qtyStep)));
+      }),
+    );
+    qty?.addEventListener("change", () => (qty.value = String(clamp(Number(qty.value)))));
+
+    form.querySelector<HTMLButtonElement>("[data-add-to-cart]")?.addEventListener("click", (event) => {
+      const button = event.currentTarget as HTMLButtonElement;
+      const options: Record<string, string> = {};
+      form.querySelectorAll<HTMLInputElement>("input[type=radio]:checked").forEach((input) => {
+        options[input.dataset.optionLabel ?? input.name] = input.value;
+      });
+      addToCart(button.dataset.addToCart!, clamp(Number(qty?.value ?? 1)), options);
+      const label = button.firstChild;
+      if (label) {
+        const original = label.textContent;
+        label.textContent = "Added to Cart ";
+        setTimeout(() => (label.textContent = original), 1600);
+      }
+    });
+  }
+</script>

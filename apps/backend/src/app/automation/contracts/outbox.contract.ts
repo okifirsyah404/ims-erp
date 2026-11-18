@@ -18,6 +18,13 @@ export const OUTBOX_TOPICS = [
 	// ERP-0066: daily sales follow-up reminders (weekdays).
 	'lead.follow_up_due',
 	'quotation.follow_up_due',
+	// ERP-0012: supplier bills booked, and the daily due reminders.
+	'supplier_bill.recorded',
+	'supplier_bill.due',
+	// ERP-0068: purchase return approvals, shipping and cancellations.
+	'purchase_return.updated',
+	// ERP-0065: sales return approvals, receipts and cancellations.
+	'sales_return.updated',
 ] as const;
 export type OutboxTopic = (typeof OUTBOX_TOPICS)[number];
 

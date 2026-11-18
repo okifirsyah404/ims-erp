@@ -1,0 +1,16 @@
+---
+/** App / Section Header (zliR8). */
+interface Props {
+  title: string;
+  linkLabel?: string;
+  href?: string;
+  class?: string;
+}
+
+const { title, linkLabel, href, class: className } = Astro.props;
+---
+
+<div class:list={["flex items-center justify-between gap-3", className]}>
+  <h2 class="font-heading text-[17px] font-bold text-fg">{title}</h2>
+  {linkLabel && (href ? <a href={href} class="text-[14px] font-semibold text-blue-600">{linkLabel}</a> : <span class="text-[14px] font-semibold text-blue-600">{linkLabel}</span>)}
+</div>

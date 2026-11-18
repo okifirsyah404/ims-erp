@@ -20,7 +20,6 @@ import type {
 	TCashBankAccountSelect,
 	TCashBankTransactionSelect,
 } from '@drizzle/schemas/finance.schema';
-import { LedgerRepository } from '../../src/app/accounting/repositories/ledger.repository';
 import { PostingService } from '../../src/app/accounting/services/posting.service';
 import { OpeningBalanceService } from '../../src/app/accounting/services/opening-balance.service';
 import { CashBankService } from '../../src/app/accounting/services/cash-bank.service';
@@ -263,7 +262,7 @@ function makeHarness() {
 				totalPages: 1,
 			},
 		}),
-	} as unknown as LedgerRepository;
+	};
 
 	const numbering = {
 		next: async (type: string) => `${type}-${String(++allocSeq).padStart(6, '0')}`,
@@ -274,17 +273,21 @@ function makeHarness() {
 
 	const posting = new PostingService(
 		{} as unknown as BunSQLDatabase,
-		repo,
+		repo as never,
+		repo as never,
+		repo as never,
 		numbering,
 	);
 	const opening = new OpeningBalanceService(
 		{ transaction: async (fn: (tx: never) => unknown) => fn(tx) } as unknown as BunSQLDatabase,
-		repo,
+		repo as never,
+		repo as never,
 		posting,
 	);
 	const cashBank = new CashBankService(
 		{ transaction: async (fn: (tx: never) => unknown) => fn(tx) } as unknown as BunSQLDatabase,
-		repo,
+		repo as never,
+		repo as never,
 		posting,
 		numbering,
 	);

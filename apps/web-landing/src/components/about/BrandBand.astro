@@ -1,0 +1,51 @@
+---
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Logo from "../brand/Logo.astro";
+import Button from "../ui/Button.astro";
+import Media from "../ui/Media.astro";
+import { brandChips } from "../../data/about";
+import { routes } from "../../data/site";
+import { images } from "../../lib/images";
+
+/** 09.01 · Entragate Brand card. */
+---
+
+<section class="bg-white" aria-labelledby="brand-title">
+  <div class="container-page py-12 xl:py-28">
+    <div class="flex flex-col overflow-hidden rounded-card bg-navy-900 xl:h-[520px] xl:flex-row xl:rounded-sheet">
+      <Media src={images.flapBarrier} alt="Entragate flap barrier gate" class="h-[200px] w-full bg-white xl:hidden" />
+      <div class="flex flex-col gap-4 p-6 xl:flex-1 xl:justify-center xl:gap-6 xl:px-16 xl:py-0">
+        <span class="w-fit rounded-md bg-white px-3.5 py-2.5 xl:px-4 xl:py-3">
+          <Logo href={null} />
+        </span>
+        <h2
+          id="brand-title"
+          class="font-heading text-[24px] leading-[29px] font-bold tracking-[-0.5px] text-white xl:text-[40px] xl:leading-[45px] xl:tracking-[-1px]"
+        >
+          Entragate is our product brand for smart access.
+        </h2>
+        <p class="text-[14px] leading-[22px] text-fg-on-dark-muted xl:text-[16px] xl:leading-[26px]">
+          <span class="xl:hidden">
+            Every gate, terminal and software platform IMS builds carries the Entragate name — backed by a nationwide service
+            network.
+          </span>
+          <span class="hidden xl:inline">
+            Every barrier gate, turnstile, terminal and software platform IMS builds carries the Entragate name — designed in
+            Jakarta, backed by IMS engineering and a nationwide service network.
+          </span>
+        </p>
+        <ul class="hidden flex-wrap gap-2 xl:flex">
+          {
+            brandChips.map((chip) => (
+              <li class="rounded-pill px-3.5 py-[7px] text-[13px] font-medium text-white ring-1 ring-white/20 ring-inset">{chip}</li>
+            ))
+          }
+        </ul>
+        <Button href={routes.products} icon={ArrowRight} size="adaptive" class="w-full xl:w-fit">Explore Entragate Products</Button>
+      </div>
+      <div class="hidden w-[560px] shrink-0 flex-col justify-center bg-navy-800 p-10 xl:flex">
+        <Media src={images.flapBarrier} alt="Entragate flap barrier gate" class="w-full flex-1 rounded-card bg-white" />
+      </div>
+    </div>
+  </div>
+</section>

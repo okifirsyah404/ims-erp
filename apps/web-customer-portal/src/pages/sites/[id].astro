@@ -1,0 +1,49 @@
+---
+import { actions, isInputError } from "astro:actions";
+import Building from "@lucide/astro/icons/building";
+import MapPin from "@lucide/astro/icons/map-pin";
+import UserRound from "@lucide/astro/icons/user-round";
+import Phone from "@lucide/astro/icons/phone";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import AppField from "../../components/customer/AppField.astro";
+import AppButton from "../../components/customer/AppButton.astro";
+import { customerService } from "../../services";
+
+/** Sites › Add (`/sites/new`) or edit a site. */
+const result = Astro.getActionResult(actions.account.saveSite);
+if (result && !result.error) return Astro.redirect("/sites", 303);
+const fields = result?.error && isInputError(result.error) ? result.error.fields : {};
+const formError = result?.error && !isInputError(result.error) ? result.error.message : undefined;
+
+const isNew = Astro.params.id === "new";
+const { sites } = await customerService.account(Astro.locals.tokens!);
+const site = isNew ? undefined : sites.find((s) => s.id === Astro.params.id);
+if (!isNew && !site) return Astro.rewrite("/404");
+const title = isNew ? "Add a site" : "Edit site";
+---
+
+<CustomerLayout title={title} section="profile">
+  <TopBar title={title} back="/sites" />
+  <form method="POST" action={actions.account.saveSite} class="flex flex-col gap-5 px-5 pt-2 pb-8" novalidate>
+    {site && <input type="hidden" name="id" value={site.id} />}
+    {formError && <p role="alert" class="rounded-md bg-danger-bg p-3.5 text-[13.5px] font-semibold text-danger ring-1 ring-danger-border ring-inset">{formError}</p>}
+    <AppField label="Site name" name="name" value={site?.name} placeholder="e.g. Warehouse Cikarang" required maxlength={80} error={fields.name?.[0]}>
+      <Building slot="icon" />
+    </AppField>
+    <AppField label="Full address" name="address" value={site?.address} multiline required maxlength={240} placeholder="Street, building, floor, city, postcode" error={fields.address?.[0]}>
+      <MapPin slot="icon" />
+    </AppField>
+    <AppField label="On-site PIC" name="pic_name" value={site?.picName} required maxlength={80} error={fields.pic_name?.[0]}>
+      <UserRound slot="icon" />
+    </AppField>
+    <AppField label="PIC phone" name="pic_phone" type="tel" inputmode="tel" value={site?.picPhone?.includes("•") ? undefined : site?.picPhone} required error={fields.pic_phone?.[0]}>
+      <Phone slot="icon" />
+    </AppField>
+    <label class="flex items-center gap-3 rounded-md bg-surface px-4 py-3.5 text-[14px] font-medium text-fg">
+      <input type="checkbox" name="primary" checked={site?.primary} class="size-5 accent-blue-600" />
+      Use as primary site for deliveries
+    </label>
+    <AppButton type="submit" block>{isNew ? "Add site" : "Save site"}</AppButton>
+  </form>
+</CustomerLayout>

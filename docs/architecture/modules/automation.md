@@ -55,6 +55,10 @@ Amounts are integer IDR minor units (divide by 100 for rupiah). Topics:
 | `license.due` | Licensing: daily job | `contractId`, `code`, `threshold` (30 / 7 / 0), `stage` (`ending / ended`), `daysLeft`, `endDate`, `graceEndsOn`, `application{code,name}`, `customer{…}` |
 | `lead.follow_up_due` | CRM: weekday job (ERP-0066) | `leadId`, `reference`, `name`, `companyName`, `phone`, `whatsapp`, `email`, `status`, `source`, `needs`, `estimatedValue`, `nextFollowUpAt`, `dueDate`, `daysOverdue`, `stage` (`due` / `overdue` = more than 3 days late), `owner{userId,name,phone,email}` or null |
 | `quotation.follow_up_due` | Sales: weekday job (ERP-0066) | `quotationId`, `code`, `title`, `stage` (`sent_3d` / `sent_7d` / `expiring`), `sentDate`, `daysSinceSent`, `validUntil`, `daysLeft`, `grandTotal`, `currencyCode`, `customer{id,name}`, `owner{userId,name,phone,email}` (the creator) |
+| `supplier_bill.recorded` | Finance: supplier bill recorded (ERP-0012) | `billId`, `organizationId`, `code`, `supplierInvoiceNumber`, `purchaseOrderId`, `status`, `billDate`, `dueDate`, `grandTotal`, `paidTotal`, `outstandingTotal`, `supplier{id,code,name,phone,email,picName,picPhone}` (never bank details), `recordedBy` |
+| `supplier_bill.due` | Finance: daily job (ERP-0012) | same as `supplier_bill.recorded` plus `threshold` (7 / 0), `stage` (`upcoming / due / overdue`), `daysLeft` |
+| `purchase_return.updated` | Procurement: purchase return submitted, approved, rejected, shipped or cancelled (ERP-0068) | `returnId`, `code`, `change` (`submitted / approved / rejected / shipped / cancelled`), `status`, `returnDate`, `reason`, `rejectionReason`, `cancelledReason`, `goodsReceiptCode`, `purchaseOrderCode`, `supplier{id,code,name,phone,email,picName,picPhone,picEmail}`, `lines[{sku,name,unit,quantity,serialNumbers}]`, `totalAmount`, `actorUserId` |
+| `sales_return.updated` | Sales: customer return submitted, approved, rejected, received or cancelled (ERP-0065) | `returnId`, `code`, `change` (`submitted / approved / rejected / received / cancelled`), `status`, `returnDate`, `reason`, `rejectionReason`, `cancelledReason`, `deliveryNoteCode`, `salesOrderCode`, `customer{id,code,name,email,phone,whatsapp}`, `lines[{sku,name,unit,quantity,serialNumbers,condition}]`, `totalAmount`, `actorUserId` |
 
 `license.due` runs from the BullMQ queue `licensing-due` (cron
 `SCHEDULER_LICENSE_DUE_CRON`, default `0 8 * * *` Asia/Jakarta, only with
@@ -70,6 +74,12 @@ today or past, once per planned time and stage (`due`, then `overdue` after 3
 days). Quotations: still `sent` 3 and 7 days after sending (one "sent" stage per
 run, 7 wins) and 2 days before `valid_until` (`expiring`), once per stage.
 Internal only: n8n messages the owner, not the customer.
+
+`supplier_bill.due` works the same way from the BullMQ queue
+`supplier-bill-due` (cron `SCHEDULER_BILL_DUE_CRON`, default `0 8 * * *`
+Asia/Jakarta, only with `SCHEDULER_ENABLED=true`): open bills (recorded, not
+fully paid) due within 7 days get threshold 7, due or overdue ones threshold 0,
+once per bill, due date and threshold.
 
 ## WhatsApp assistant
 

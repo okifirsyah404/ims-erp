@@ -1,0 +1,186 @@
+---
+import Lock from "@lucide/astro/icons/lock";
+import LayoutDashboard from "@lucide/astro/icons/layout-dashboard";
+import Dumbbell from "@lucide/astro/icons/dumbbell";
+import Ticket from "@lucide/astro/icons/ticket";
+import UserCheck from "@lucide/astro/icons/user-check";
+import BookOpen from "@lucide/astro/icons/book-open";
+import Car from "@lucide/astro/icons/car";
+import KeyRound from "@lucide/astro/icons/key-round";
+import ScanFace from "@lucide/astro/icons/scan-face";
+import RefreshCw from "@lucide/astro/icons/refresh-cw";
+import LogoMark from "../brand/LogoMark.astro";
+import MockKpi from "./mockups/MockKpi.astro";
+
+/** Hero app window for 02.04 (desktop: full suite UI; mobile: compact overview). Decorative. */
+interface Props {
+  variant: "desktop" | "mobile";
+}
+
+const { variant } = Astro.props;
+const nav = [
+  { icon: LayoutDashboard, label: "Overview", active: true },
+  { icon: Dumbbell, label: "Gym" },
+  { icon: Ticket, label: "E-Ticketing" },
+  { icon: UserCheck, label: "Visitors" },
+  { icon: BookOpen, label: "Library" },
+  { icon: Car, label: "Parking" },
+  { icon: KeyRound, label: "Access" },
+];
+const hours = [
+  [65, 36],
+  [101, 49],
+  [143, 75],
+  [195, 114],
+  [156, 94],
+  [114, 72],
+  [104, 85],
+  [130, 98],
+  [169, 143],
+  [215, 179],
+  [147, 121],
+  [91, 65],
+];
+const mobileHours = [
+  [30, 18],
+  [44, 26],
+  [62, 38],
+  [78, 50],
+  [58, 40],
+  [46, 34],
+  [54, 42],
+  [70, 58],
+  [80, 66],
+  [50, 36],
+];
+---
+
+{
+  variant === "desktop" ? (
+    <div class="relative flex h-[540px] min-w-0 flex-1 flex-col justify-center" aria-hidden="true">
+      <div class="flex flex-col overflow-hidden rounded-lg bg-white shadow-[0_30px_60px_#0A1A3F1F,0_2px_6px_#0A1A3F0D] ring-1 ring-border ring-inset">
+        <div class="flex h-[39px] items-center gap-1.5 border-b border-border bg-surface px-4">
+          <span class="size-2.5 rounded-full bg-[#FF5F57]" />
+          <span class="size-2.5 rounded-full bg-[#FEBC2E]" />
+          <span class="size-2.5 rounded-full bg-[#28C840]" />
+          <span class="flex flex-1 justify-center">
+            <span class="flex items-center gap-1.5 rounded-sm bg-white px-3 py-1 text-[11px] text-fg-muted ring-1 ring-border ring-inset">
+              <Lock size={10} />
+              app.entragate.id/overview
+            </span>
+          </span>
+        </div>
+        <div class="flex h-[440px]">
+          <div class="flex w-[168px] shrink-0 flex-col gap-1 bg-navy-900 px-3 py-[18px]">
+            <span class="flex items-center gap-2 px-1.5 pb-3.5 font-heading text-[13px] font-bold text-white">
+              <LogoMark size={24} />
+              Entragate
+            </span>
+            {nav.map(({ icon: Icon, label, active }) => (
+              <span
+                class:list={[
+                  "flex items-center gap-2.5 rounded-sm px-2.5 py-2 text-[12px]",
+                  active ? "bg-blue-600 font-semibold text-white" : "font-medium text-fg-on-dark-muted",
+                ]}
+              >
+                <Icon size={14} />
+                {label}
+              </span>
+            ))}
+          </div>
+          <div class="flex min-w-0 flex-1 flex-col gap-3.5 bg-surface p-5">
+            <div class="flex items-center justify-between">
+              <span class="flex flex-col gap-0.5">
+                <span class="font-heading text-[16px] font-bold text-fg">Site overview</span>
+                <span class="text-[11px] text-fg-muted">Grand Indonesia Tower · Today</span>
+              </span>
+              <span class="flex items-center gap-1.5 rounded-pill bg-success-bg px-2.5 py-1 text-[11px] font-semibold text-success">
+                <span class="size-1.5 rounded-full bg-success" />
+                All gates online
+              </span>
+            </div>
+            <div class="flex gap-2.5">
+              <MockKpi variant="hero" label="Entries today" value="4,812" delta="+12.4%" />
+              <MockKpi variant="hero" label="Active members" value="1,236" delta="+3.1%" />
+              <MockKpi variant="hero" label="Visitors" value="187" delta="+8.0%" />
+            </div>
+            <div class="flex min-h-0 flex-1 flex-col gap-2.5 rounded-md bg-white p-3.5 ring-1 ring-border ring-inset">
+              <div class="flex items-center justify-between">
+                <span class="text-[12px] font-semibold text-fg">Gate traffic by hour</span>
+                <span class="flex gap-3 text-[10px] text-fg-muted">
+                  <span class="flex items-center gap-[5px]"><span class="size-2 rounded-xs bg-blue-600" />Entry</span>
+                  <span class="flex items-center gap-[5px]"><span class="size-2 rounded-xs bg-cyan-400" />Exit</span>
+                </span>
+              </div>
+              <div class="flex flex-1 items-end gap-2">
+                {hours.map(([entry, exit]) => (
+                  <span class="flex flex-1 items-end gap-0.5">
+                    <span class="flex-1 rounded-t-xs bg-blue-600" style={`height:${entry}px`} />
+                    <span class="flex-1 rounded-t-xs bg-cyan-400" style={`height:${exit}px`} />
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="absolute top-[400px] -left-12 flex w-[280px] items-center gap-3 rounded-control bg-white p-3.5 shadow-[0_18px_40px_#0A1A3F26] ring-1 ring-border ring-inset">
+        <span class="flex size-10 items-center justify-center rounded-md bg-success-bg text-success">
+          <ScanFace size={20} />
+        </span>
+        <span class="flex flex-1 flex-col gap-0.5">
+          <span class="text-[13px] font-semibold text-fg">Access granted · Rina S.</span>
+          <span class="text-[11px] text-fg-muted">Flap Gate 03 · Face ID · 08:42</span>
+        </span>
+      </div>
+      <div class="absolute -top-1.5 right-0 flex items-center gap-2 rounded-md bg-navy-900 px-3.5 py-2.5 text-[12px] font-semibold text-white shadow-[0_14px_30px_#0A1A3F33]">
+        <RefreshCw size={14} class="text-cyan-400" />
+        Synced 6 devices
+      </div>
+    </div>
+  ) : (
+    <div class="relative pt-2 pb-7" aria-hidden="true">
+      <div class="flex flex-col overflow-hidden rounded-lg bg-white shadow-[0_20px_40px_#0A1A3F1F] ring-1 ring-border ring-inset">
+        <div class="flex h-[31px] items-center gap-[5px] border-b border-border bg-surface px-3.5">
+          <span class="size-2 rounded-full bg-[#FF5F57]" />
+          <span class="size-2 rounded-full bg-[#FEBC2E]" />
+          <span class="size-2 rounded-full bg-[#28C840]" />
+          <span class="ml-1 text-[10px] text-fg-muted">app.entragate.id</span>
+        </div>
+        <div class="flex flex-col gap-2.5 bg-surface p-3.5">
+          <div class="flex items-center justify-between">
+            <span class="font-heading text-[13px] font-bold text-fg">Site overview</span>
+            <span class="flex items-center gap-1 rounded-pill bg-success-bg px-2 py-[3px] text-[10px] font-semibold text-success">
+              <span class="size-[5px] rounded-full bg-success" />
+              Online
+            </span>
+          </div>
+          <div class="flex gap-2">
+            <MockKpi label="Entries today" value="4,812" delta="+12%" />
+            <MockKpi label="Members" value="1,236" delta="+3%" />
+          </div>
+          <div class="flex h-[120px] flex-col gap-2 rounded-sm bg-white p-2.5 ring-1 ring-border ring-inset">
+            <span class="text-[10px] font-semibold text-fg">Gate traffic by hour</span>
+            <div class="flex flex-1 items-end gap-[5px]">
+              {mobileHours.map(([entry, exit]) => (
+                <span class="flex flex-1 items-end gap-px">
+                  <span class="flex-1 rounded-t-xs bg-blue-600" style={`height:${entry}px`} />
+                  <span class="flex-1 rounded-t-xs bg-cyan-400" style={`height:${exit}px`} />
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="absolute top-[239px] left-4 flex w-[250px] items-center gap-2.5 rounded-md bg-white p-3 shadow-[0_14px_30px_#0A1A3F26] ring-1 ring-border ring-inset">
+        <span class="flex size-[34px] items-center justify-center rounded-md bg-success-bg text-success">
+          <ScanFace size={17} />
+        </span>
+        <span class="flex flex-col gap-px">
+          <span class="text-[12px] font-semibold text-fg">Access granted · Rina S.</span>
+          <span class="text-[10px] text-fg-muted">Flap Gate 03 · Face ID · 08:42</span>
+        </span>
+      </div>
+    </div>
+  )
+}

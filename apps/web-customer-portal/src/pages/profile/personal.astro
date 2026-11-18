@@ -1,0 +1,48 @@
+---
+import { actions, isInputError } from "astro:actions";
+import UserRound from "@lucide/astro/icons/user-round";
+import Mail from "@lucide/astro/icons/mail";
+import Phone from "@lucide/astro/icons/phone";
+import BriefcaseBusiness from "@lucide/astro/icons/briefcase-business";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import AppField from "../../components/customer/AppField.astro";
+import AppButton from "../../components/customer/AppButton.astro";
+import Avatar from "../../components/customer/Avatar.astro";
+import { customerService } from "../../services";
+
+/** Profile › Personal details (edit profile). Email changes go through support (identity check). */
+const result = Astro.getActionResult(actions.account.updatePersonal);
+if (result && !result.error) return Astro.redirect("/profile", 303);
+const fields = result?.error && isInputError(result.error) ? result.error.fields : {};
+const formError = result?.error && !isInputError(result.error) ? result.error.message : undefined;
+const { personal } = await customerService.account(Astro.locals.tokens!);
+const user = Astro.locals.user!;
+---
+
+<CustomerLayout title="Personal details" section="profile">
+  <TopBar title="Personal details" back="/profile" />
+  <form method="POST" action={actions.account.updatePersonal} class="flex flex-col gap-5 px-5 pt-2 pb-8" novalidate>
+    <div class="flex items-center gap-3.5 rounded-card bg-surface p-4">
+      <Avatar initials={user.initials} size={56} class="!text-[18px]" />
+      <div class="flex min-w-0 flex-col gap-0.5">
+        <p class="truncate font-heading text-[17px] font-extrabold text-fg">{personal.name}</p>
+        <p class="truncate text-[13px] text-fg-muted">{personal.email}</p>
+      </div>
+    </div>
+    {formError && <p role="alert" class="rounded-md bg-danger-bg p-3.5 text-[13.5px] font-semibold text-danger ring-1 ring-danger-border ring-inset">{formError}</p>}
+    <AppField label="Full name" name="name" value={personal.name} autocomplete="name" required minlength={2} maxlength={80} error={fields.name?.[0]}>
+      <UserRound slot="icon" />
+    </AppField>
+    <AppField label="Email" name="email_display" value={personal.email} readonly hint="To change your sign-in email, contact support for an identity check." aria-readonly="true" class="opacity-80">
+      <Mail slot="icon" />
+    </AppField>
+    <AppField label="Mobile number" name="phone" type="tel" value={personal.phone} autocomplete="tel" inputmode="tel" required error={fields.phone?.[0]}>
+      <Phone slot="icon" />
+    </AppField>
+    <AppField label="Job title" name="job_title" value={personal.jobTitle} autocomplete="organization-title" maxlength={80} error={fields.job_title?.[0]}>
+      <BriefcaseBusiness slot="icon" />
+    </AppField>
+    <AppButton type="submit" block>Save changes</AppButton>
+  </form>
+</CustomerLayout>

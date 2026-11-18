@@ -1,0 +1,169 @@
+---
+import { webUrl } from "../../lib/urls";
+import Search from "@lucide/astro/icons/search";
+import Plus from "@lucide/astro/icons/plus";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Download from "@lucide/astro/icons/download";
+import FilePen from "@lucide/astro/icons/file-pen";
+import FileCheck from "@lucide/astro/icons/file-check";
+import FileX from "@lucide/astro/icons/file-x";
+import FileText from "@lucide/astro/icons/file-text";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import LargeHeader from "../../components/customer/LargeHeader.astro";
+import IconButton from "../../components/customer/IconButton.astro";
+import Segmented from "../../components/customer/Segmented.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import IconTile from "../../components/customer/IconTile.astro";
+import { portal } from "../../services/portal";
+import { formatRupiah } from "../../lib/format";
+import { quotationChip } from "../../lib/status";
+import { type QuotationStatus } from "@/api/portal";
+
+/** 05.05 My Quotations. The first quotation awaiting approval is promoted to a hero card. */
+const tab = ["open", "accepted", "all"].includes(Astro.url.searchParams.get("tab") ?? "") ? Astro.url.searchParams.get("tab")! : "open";
+const [all, rfqs] = await Promise.all([
+  portal.listQuotations(Astro.locals.tokens!),
+  portal.listRfqs(Astro.locals.tokens!).catch(() => null),
+]);
+const rfqChip = { received: "info", in_review: "warning", quoted: "success", closed: "neutral" } as const;
+const isOpen = (s: QuotationStatus) => s === "needs_approval" || s === "revised";
+const open = all.filter((q) => isOpen(q.status));
+const needsApproval = all.filter((q) => q.status === "needs_approval");
+const list = tab === "open" ? open : tab === "accepted" ? all.filter((q) => q.status === "accepted") : all;
+const hero = tab !== "accepted" ? list.find((q) => q.status === "needs_approval") : undefined;
+const rest = list.filter((q) => q !== hero);
+const tile = {
+  revised: { icon: FilePen, tone: "info" },
+  accepted: { icon: FileCheck, tone: "success" },
+  expired: { icon: FileX, tone: "neutral" },
+  rejected: { icon: FileX, tone: "danger" },
+  needs_approval: { icon: FileText, tone: "warning" },
+} as const;
+---
+
+<CustomerLayout title="Quotations" tab="home">
+  <TopBar back="/">
+    <IconButton slot="action" label="Search quotations" href="/quotations?tab=all"><Search size={20} aria-hidden="true" /></IconButton>
+  </TopBar>
+  <LargeHeader eyebrow={`${needsApproval.length} needs your approval`} title="Quotations" class="!pt-0">
+    <IconButton slot="action" label="Request a new quotation" href={`${webUrl}/quote`}><Plus size={20} aria-hidden="true" /></IconButton>
+  </LargeHeader>
+
+  <div class="flex flex-col gap-[18px] px-5 pt-3 pb-6">
+    <Segmented
+      label="Quotation status"
+      active={tab}
+      items={[
+        { key: "open", label: `Open · ${open.length}`, href: "/quotations" },
+        { key: "accepted", label: "Accepted", href: "/quotations?tab=accepted" },
+        { key: "all", label: "All", href: "/quotations?tab=all" },
+      ]}
+    />
+
+    {
+      hero && (
+        <section class="flex flex-col gap-4 rounded-card bg-[linear-gradient(141deg,var(--eg-navy-900)_16.5%,var(--eg-navy-800)_63.4%,var(--eg-blue-700)_83.5%)] p-5 shadow-[0_12px_28px_#0A1A3F33]">
+          <div class="flex items-center justify-between gap-2.5">
+            <StatusChip tone="warning" label="Needs approval" />
+            <span class="text-[12.5px] font-semibold text-fg-on-dark-muted">{hero.number}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <h2 class="font-heading text-[18px] leading-[23px] font-extrabold text-white">{hero.title}</h2>
+            <p class="text-[13px] text-fg-on-dark-muted">{hero.lineCount} line items · Prepared by {hero.preparedBy}</p>
+          </div>
+          <div class="flex items-end justify-between gap-2.5">
+            <span class="flex flex-col gap-0.5">
+              <span class="text-[12px] font-medium text-fg-on-dark-muted">Total incl. PPN</span>
+              <span class="font-heading text-[24px] font-extrabold tracking-[-0.5px] text-white">{formatRupiah(hero.total)}</span>
+            </span>
+            {hero.expiresInDays !== undefined && (
+              <span class="flex flex-col items-end gap-0.5">
+                <span class="text-[11.5px] font-medium text-fg-on-dark-muted">Expires in</span>
+                <span class="text-[15px] font-extrabold text-cyan-400">{hero.expiresInDays} days</span>
+              </span>
+            )}
+          </div>
+          <div class="flex gap-2.5">
+            <a href={`/quotations/${hero.id}`} class="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-md bg-white text-[14.5px] font-bold text-navy-900">
+              Review &amp; approve
+              <ArrowRight size={16} aria-hidden="true" />
+            </a>
+            <span class="flex size-[46px] items-center justify-center rounded-md bg-white/12 text-white/60" title="PDF available from the quotation page">
+              <Download size={20} aria-hidden="true" />
+              <span class="sr-only">Download PDF</span>
+            </span>
+          </div>
+        </section>
+      )
+    }
+
+    {
+      list.length === 0 ? (
+        <div class="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-10 text-center">
+          <FileText size={28} class="text-blue-600" aria-hidden="true" />
+          <p class="font-heading text-[17px] font-bold text-fg">No quotations here</p>
+          <p class="text-[14px] text-fg-secondary">Request a quotation from the Entragate website and it will appear here.</p>
+        </div>
+      ) : (
+        <ul class="flex flex-col gap-[18px]">
+          {rest.map((quote) => {
+            const chip = quote.status === "revised" ? { label: `Revised v${quote.version}`, tone: "info" as const } : quotationChip[quote.status];
+            const { icon: Icon, tone } = tile[quote.status];
+            return (
+              <li>
+                <a href={`/quotations/${quote.id}`} class="app-card flex flex-col gap-3 p-4">
+                  <span class="flex items-center gap-3">
+                    <IconTile tone={tone}><Icon size={20} /></IconTile>
+                    <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span class="text-[12px] font-semibold text-fg-muted">{quote.number}</span>
+                      <span class="text-[14.5px] leading-[21px] font-bold text-fg">{quote.title}</span>
+                    </span>
+                    <StatusChip label={chip.label} tone={chip.tone} />
+                  </span>
+                  <span class="h-px bg-border" aria-hidden="true" />
+                  <span class="flex items-center justify-between gap-2.5">
+                    <span class="text-[16px] font-extrabold text-navy-900">{formatRupiah(quote.total)}</span>
+                    <span class="text-[12.5px] font-medium text-fg-muted">{quote.meta}</span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+
+    <section class="flex flex-col gap-3 pt-2" aria-labelledby="rfq-title">
+      <div class="flex items-center justify-between">
+        <h2 id="rfq-title" class="font-heading text-[17px] font-bold text-fg">Your requests (RFQ)</h2>
+        <a href="/quotations/claim" class="text-[14px] font-semibold text-blue-600">Add a guest request</a>
+      </div>
+      {
+        rfqs === null ? (
+          <p class="rounded-card bg-surface p-4 text-[13.5px] text-fg-secondary">Requests can't be loaded right now.</p>
+        ) : rfqs.length === 0 ? (
+          <p class="rounded-card bg-surface p-4 text-[13.5px] text-fg-secondary">
+            Requests you send from the website while signed in appear here. Sent one as a guest? <a href="/quotations/claim" class="font-semibold text-blue-600">Add it with its reference</a>.
+          </p>
+        ) : (
+          <ul class="flex flex-col divide-y divide-border rounded-card bg-white ring-1 ring-border ring-inset">
+            {rfqs.map((rfq) => (
+              <li>
+                <a href={rfq.quotationId ? `/quotations/${rfq.quotationId}` : undefined} class="flex items-center gap-3 px-4 py-3.5">
+                  <IconTile tone="neutral"><FileText size={20} /></IconTile>
+                  <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span class="text-[12px] font-semibold text-fg-muted">{rfq.reference}{rfq.origin === "claimed_guest" ? " · verified guest request" : ""}</span>
+                    <span class="truncate text-[14.5px] font-bold text-fg">{rfq.title}</span>
+                    <span class="text-[12.5px] text-fg-muted">{rfq.siteLocation} · {rfq.submittedLabel}</span>
+                  </span>
+                  <StatusChip label={rfq.quotationId ? "Quoted · view" : rfq.statusLabel} tone={rfqChip[rfq.status]} />
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </section>
+  </div>
+</CustomerLayout>

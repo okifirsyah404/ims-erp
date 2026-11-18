@@ -24,6 +24,7 @@ import {
 	toMinor,
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
+import { BillFromOrderForm } from './bill-from-order-form';
 
 const formatMoney = (minor: number) => (minor / 100).toLocaleString();
 
@@ -39,6 +40,7 @@ export function BillsTable() {
 
 	const [page, setPage] = useState(1);
 	const [showForm, setShowForm] = useState(false);
+	const [showFromOrder, setShowFromOrder] = useState(false);
 	const [supplierId, setSupplierId] = useState('');
 	const [billDate, setBillDate] = useState(today());
 	const [dueDate, setDueDate] = useState('');
@@ -98,12 +100,20 @@ export function BillsTable() {
 			<div className='flex items-center justify-between pt-2'>
 				<h2 className='font-semibold'>{t('finance:bills.title')}</h2>
 				{canCreate ? (
-					<Button size='sm' variant='outline' onClick={() => setShowForm((v) => !v)}>
-						<Plus className='mr-1 size-4' />
-						{t('finance:bills.create')}
-					</Button>
+					<div className='flex gap-2'>
+						<Button size='sm' onClick={() => setShowFromOrder((v) => !v)}>
+							<Plus className='mr-1 size-4' />
+							{t('finance:bills.fromOrder.open')}
+						</Button>
+						<Button size='sm' variant='outline' onClick={() => setShowForm((v) => !v)}>
+							<Plus className='mr-1 size-4' />
+							{t('finance:bills.create')}
+						</Button>
+					</div>
 				) : null}
 			</div>
+
+			{canCreate && showFromOrder ? <BillFromOrderForm onDone={() => setShowFromOrder(false)} /> : null}
 
 			{canCreate && showForm ? (
 				<div className='flex flex-wrap items-center gap-2 rounded-md border p-4'>
@@ -168,7 +178,12 @@ export function BillsTable() {
 							<TableBody>
 								{data?.rows.map((bill) => (
 									<TableRow key={bill.id}>
-										<TableCell className='font-mono text-xs'>{bill.code}</TableCell>
+										<TableCell className='font-mono text-xs'>
+											{bill.code}
+											{bill.supplierInvoiceNumber ? (
+												<div className='font-sans text-muted-foreground'>{bill.supplierInvoiceNumber}</div>
+											) : null}
+										</TableCell>
 										<TableCell>{bill.billDate}</TableCell>
 										<TableCell>{bill.dueDate}</TableCell>
 										<TableCell className='text-right'>

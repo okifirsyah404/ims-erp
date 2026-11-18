@@ -1,0 +1,51 @@
+---
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import Media from "../../components/ui/Media.astro";
+import ContactCta from "../../components/home/ContactCta.astro";
+import { newsArticles } from "../../data/company-pages";
+import { routes } from "../../data/site";
+
+/** News & Insights (footer · Company). Cards follow the 01.02 project-card pattern. */
+const [lead, ...rest] = newsArticles;
+const date = (iso: string) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
+---
+
+<PublicLayout title="News & Insights | Entragate" description="Product launches, project stories and practical guides from the Entragate team.">
+  <PageHero
+    title="News & Insights"
+    description="Product launches, project stories and practical guides from the team behind Entragate."
+    mobileDescription="Launches, project stories and guides."
+    breadcrumb={[{ label: "Home", href: routes.home }, { label: "News & Insights" }]}
+  />
+  <div class="container-page flex flex-col gap-8 py-10 xl:gap-12 xl:py-20">
+    <a href={`${routes.news}/${lead.slug}`} class="group grid overflow-hidden rounded-xl bg-navy-900 xl:grid-cols-[1.2fr_1fr]">
+      <Media src={lead.image} alt="" loading="eager" class="h-[220px] w-full xl:h-[420px]" />
+      <span class="flex flex-col justify-center gap-4 p-6 xl:p-11">
+        <span class="text-[12px] font-bold tracking-[1.4px] text-cyan-400 uppercase">{lead.category} · {date(lead.date)}</span>
+        <span class="font-heading text-[26px] leading-[32px] font-extrabold tracking-[-0.8px] text-white xl:text-[36px] xl:leading-[42px]">{lead.title}</span>
+        <span class="text-[15px] leading-6 text-fg-on-dark-muted">{lead.excerpt}</span>
+        <span class="flex items-center gap-2 text-[15px] font-semibold text-white group-hover:underline">Read article <ArrowRight size={16} aria-hidden="true" /></span>
+      </span>
+    </a>
+    <ul class="grid gap-[18px] md:grid-cols-2 xl:grid-cols-3 xl:gap-6">
+      {
+        rest.map((article) => (
+          <li>
+            <a href={`${routes.news}/${article.slug}`} class="group flex h-full flex-col overflow-hidden rounded-lg bg-white shadow-[0_8px_24px_#0A1A3F0D] ring-1 ring-border ring-inset">
+              <Media src={article.image} alt="" class="h-[200px] w-full" />
+              <span class="flex flex-1 flex-col gap-2 p-[22px]">
+                <span class="text-[11.5px] font-bold tracking-[1.2px] text-blue-600 uppercase">{article.category} · {date(article.date)}</span>
+                <span class="font-heading text-[19px] leading-[25px] font-bold text-fg group-hover:text-blue-600">{article.title}</span>
+                <span class="text-[14px] leading-[22px] text-fg-secondary">{article.excerpt}</span>
+                <span class="mt-auto pt-2 text-[13px] text-fg-muted">{article.minutes} min read</span>
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+  <ContactCta />
+</PublicLayout>

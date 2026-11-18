@@ -1,0 +1,52 @@
+---
+import Breadcrumb from "./Breadcrumb.astro";
+
+/**
+ * Inner-page hero used by Catalog (02.01 · Catalog Hero) and RFQ (03.02 · Page Hero):
+ * breadcrumb, 52px title, lead copy and an optional right-hand slot. Mobile (390) uses
+ * the compact "Page Head" variant: 32px title on a plain surface background.
+ */
+interface Props {
+  title: string;
+  /** Shorter title for the 390 "Page Head" variant. */
+  mobileTitle?: string;
+  description: string;
+  mobileDescription?: string;
+  /** Mobile lead line-height: RFQ uses 21px, the catalog uses the font's normal value. */
+  mobileLeading?: "normal" | "relaxed";
+  breadcrumb: { label: string; href?: string }[];
+  /** Desktop title column width (catalog/RFQ 620px, Contact 900px). */
+  titleWidth?: "default" | "wide";
+}
+
+const { titleWidth = "default", title, mobileTitle = title, description, mobileDescription = description, mobileLeading = "relaxed", breadcrumb } = Astro.props;
+---
+
+<section
+  class="border-b border-border bg-surface xl:bg-[radial-gradient(ellipse_45%_100%_at_90%_0%,#DCE6FFCC_0%,#F5F7FB00_100%)]"
+>
+  <div class="container-page flex flex-col gap-4 py-5 xl:gap-8 xl:py-10">
+    <Breadcrumb items={breadcrumb} />
+    <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+      <div class:list={["flex flex-col gap-1.5 xl:gap-3", titleWidth === "wide" ? "xl:w-[900px]" : "xl:w-[620px]"]}>
+        <h1
+          class="font-heading text-[32px] font-extrabold tracking-[-1px] text-navy-900 xl:text-[52px] xl:tracking-[-1.8px]"
+        >
+          <span class="xl:hidden">{mobileTitle}</span>
+          <span class="hidden xl:inline">{title}</span>
+        </h1>
+        <p
+          class:list={[
+            "text-[14px] text-fg-secondary xl:text-[17px] xl:leading-[27px]",
+            mobileLeading === "relaxed" ? "leading-[21px]" : "leading-[normal]",
+          ]}
+        >
+          <span class="xl:hidden">{mobileDescription}</span>
+          <span class="hidden xl:inline">{description}</span>
+        </p>
+      </div>
+      <slot name="aside" />
+    </div>
+    <slot />
+  </div>
+</section>

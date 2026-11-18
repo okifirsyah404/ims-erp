@@ -1,0 +1,55 @@
+---
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import MessageCircle from "@lucide/astro/icons/message-circle";
+import Button from "../ui/Button.astro";
+import Media from "../ui/Media.astro";
+import { company } from "../../data/site";
+import { images } from "../../lib/images";
+
+/** 02.04 · CTA card: demo request + talk to sales. */
+interface Props {
+  demoHref: string;
+}
+
+const { demoHref } = Astro.props;
+---
+
+<section class="bg-white">
+  <div class="container-page py-12 xl:py-28">
+    <div
+      class="flex flex-col overflow-hidden rounded-card bg-blue-50 ring-1 ring-blue-100 ring-inset xl:h-[400px] xl:flex-row xl:rounded-sheet"
+    >
+      <Media src={images.engineeringTeam} alt="Entragate solution engineers presenting a live demo" class="h-[180px] w-full xl:order-2 xl:h-full xl:w-[560px] xl:shrink-0" />
+      <div class="flex flex-1 flex-col gap-4 p-6 xl:justify-center xl:gap-6 xl:px-16 xl:py-0">
+        <h2
+          class="font-heading text-[24px] leading-[29px] font-bold tracking-[-0.5px] text-navy-900 xl:text-[40px] xl:leading-[45px] xl:tracking-[-1px]"
+        >
+          See your facility running on Entragate in 30 minutes.
+        </h2>
+        <p class="text-[14px] leading-[22px] text-fg-secondary xl:text-[16px] xl:leading-[26px]">
+          <span class="xl:hidden">A tailored live demo plus a free hardware &amp; software assessment.</span>
+          <span class="hidden xl:inline">
+            Our solution engineers will tailor a live demo to your site — gym, campus, tower or venue — with a free hardware
+            &amp; software assessment.
+          </span>
+        </p>
+        <div class="flex flex-col gap-2.5 xl:flex-row xl:gap-3">
+          <Button href={demoHref} icon={ArrowRight} size="adaptive" class="w-full xl:w-auto">
+            <span class="xl:hidden">Book a Live Demo</span>
+            <span class="hidden xl:inline">Request Demo</span>
+          </Button>
+          <Button
+            href={company.whatsappHref}
+            variant="secondary"
+            icon={MessageCircle}
+            target="_blank"
+            rel="noopener noreferrer"
+            size="adaptive" class="w-full xl:w-auto"
+          >
+            Talk to Sales
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

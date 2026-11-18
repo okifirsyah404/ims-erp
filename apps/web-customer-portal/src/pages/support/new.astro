@@ -1,0 +1,32 @@
+---
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import NewTicketForm from "../../features/support/NewTicketForm";
+import { portal } from "../../services/portal";
+
+/**
+ * 08.02 Create Ticket. `?product=` preselects a device (from warranty pages) and
+ * `?quotation=` prefills a sales question (from quotation details); `?category=` preselects a category;
+ * `?subject=` prefills the subject (settings privacy requests, reorders).
+ */
+const tokens = Astro.locals.tokens!;
+const products = await portal.listProducts(tokens);
+const productParam = Astro.url.searchParams.get("product") ?? undefined;
+const quotation = Astro.url.searchParams.get("quotation")?.slice(0, 40);
+const categories = ["hardware", "software", "installation", "billing", "warranty", "other"] as const;
+const categoryParam = categories.find((c) => c === Astro.url.searchParams.get("category"));
+const subjectParam = Astro.url.searchParams.get("subject")?.trim().slice(0, 120) || undefined;
+const orderParam = Astro.url.searchParams.get("order")?.slice(0, 40);
+const initialProduct = quotation ? "" : products.some((p) => p.id === productParam) ? productParam : undefined;
+---
+
+<CustomerLayout title="New ticket" actionBar section="support">
+  <TopBar title="New ticket" back="/support" closeIcon />
+  <NewTicketForm
+    client:load
+    products={products.map((p) => ({ id: p.id, name: p.name, detail: `${p.serialLabel} · ${p.site}` }))}
+    initialProduct={initialProduct}
+    initialCategory={quotation ? "other" : categoryParam}
+    initialSubject={quotation ? `Question about quotation ${quotation}` : (subjectParam ?? (orderParam ? `Question about order ${orderParam}` : undefined))}
+  />
+</CustomerLayout>

@@ -1,6 +1,6 @@
 /**
  * Public website inquiry payloads. Shapes follow the website's fixed
- * contracts (`entragate-platform/packages/api-client/src/services/
+ * contracts (`packages/api-client/src/services/
  * website.ts` and `rfq.ts`); the ERP adapts to them, not the reverse (ported unchanged in ADR-0011
  * step 3b).
  * Limits mirror the website's own form validation, so a valid website

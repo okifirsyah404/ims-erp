@@ -1,0 +1,102 @@
+---
+import CheckCheck from "@lucide/astro/icons/check-check";
+import MessageCircle from "@lucide/astro/icons/message-circle";
+import FileText from "@lucide/astro/icons/file-text";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import Truck from "@lucide/astro/icons/truck";
+import Flag from "@lucide/astro/icons/flag";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import Bell from "@lucide/astro/icons/bell";
+import CustomerLayout from "../layouts/CustomerLayout.astro";
+import TopBar from "../components/customer/TopBar.astro";
+import IconButton from "../components/customer/IconButton.astro";
+import Segmented from "../components/customer/Segmented.astro";
+import { portal } from "../services/portal";
+import { type PortalNotification } from "@/api/portal";
+import { safePath } from "../lib/safe-url";
+
+/** 05.02 Notifications. "Orders" covers commerce events; "Support" covers tickets and warranty. */
+const all = await portal.listNotifications(Astro.locals.tokens!);
+const filters = {
+  orders: ["order", "payment", "quotation", "project"],
+  support: ["support", "warranty"],
+} as Record<string, PortalNotification["kind"][]>;
+const filter = Object.keys(filters).includes(Astro.url.searchParams.get("filter") ?? "") ? Astro.url.searchParams.get("filter")! : "all";
+const list = filter === "all" ? all : all.filter((n) => filters[filter].includes(n.kind));
+const groups = [
+  { key: "today", label: "Today", items: list.filter((n) => n.group === "today") },
+  { key: "earlier", label: "Earlier", items: list.filter((n) => n.group === "earlier") },
+].filter((g) => g.items.length > 0);
+const kinds = {
+  support: { icon: MessageCircle, tile: "bg-white text-warning" },
+  quotation: { icon: FileText, tile: "bg-white text-warning" },
+  payment: { icon: CircleCheck, tile: "bg-success-bg text-success" },
+  order: { icon: Truck, tile: "bg-blue-50 text-blue-600" },
+  project: { icon: Flag, tile: "bg-blue-50 text-blue-600" },
+  warranty: { icon: ShieldCheck, tile: "bg-success-bg text-success" },
+};
+---
+
+<CustomerLayout title="Notifications" tab="home">
+  <TopBar title="Notifications" back="/">
+    <IconButton slot="action" label="Mark all as read" disabled title="Available once connected to the ERP" class="opacity-60"><CheckCheck size={20} aria-hidden="true" /></IconButton>
+  </TopBar>
+
+  <div class="flex flex-col gap-5 px-5 pt-2 pb-7">
+    <Segmented
+      label="Notification type"
+      active={filter}
+      items={[
+        { key: "all", label: "All", href: "/notifications" },
+        { key: "orders", label: "Orders", href: "/notifications?filter=orders" },
+        { key: "support", label: "Support", href: "/notifications?filter=support" },
+      ]}
+    />
+
+    {
+      groups.length === 0 && (
+        <div class="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-10 text-center">
+          <Bell size={28} class="text-blue-600" aria-hidden="true" />
+          <p class="font-heading text-[17px] font-bold text-fg">You're all caught up</p>
+          <p class="text-[14px] text-fg-secondary">Updates on orders, payments and tickets will appear here.</p>
+        </div>
+      )
+    }
+
+    {
+      groups.map((group) => (
+        <section class="flex flex-col gap-1.5" aria-labelledby={`group-${group.key}`}>
+          <h2 id={`group-${group.key}`} class="text-[11.5px] font-bold tracking-[1px] text-fg-muted uppercase">{group.label}</h2>
+          <ul class="flex flex-col gap-1.5">
+            {group.items.map((n) => {
+              const { icon: Icon, tile } = kinds[n.kind];
+              const href = safePath(n.href);
+              const Tag = href ? "a" : "div";
+              return (
+                <li>
+                  <Tag href={href} class:list={["flex gap-3.5 rounded-lg p-3.5", n.unread && "bg-blue-50"]}>
+                    <span class:list={["flex size-11 shrink-0 items-center justify-center rounded-pill", tile]} aria-hidden="true">
+                      <Icon size={20} />
+                    </span>
+                    <span class="flex min-w-0 flex-1 flex-col gap-1">
+                      <span class="flex items-center justify-between gap-2.5">
+                        <span class:list={["text-[14.5px] text-fg", n.unread ? "font-bold" : "font-semibold"]}>{n.title}</span>
+                        <span class="shrink-0 text-[12px] font-medium text-fg-muted">{n.ago}</span>
+                      </span>
+                      <span class="text-[13px] leading-[19px] text-fg-secondary">{n.body}</span>
+                    </span>
+                    {n.unread && (
+                      <span class="mt-1.5 size-2 shrink-0 rounded-full bg-blue-600">
+                        <span class="sr-only">Unread</span>
+                      </span>
+                    )}
+                  </Tag>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+</CustomerLayout>

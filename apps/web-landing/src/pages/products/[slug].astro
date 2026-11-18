@@ -1,0 +1,81 @@
+---
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import Breadcrumb from "../../components/ui/Breadcrumb.astro";
+import ProductGallery from "../../components/product/ProductGallery.astro";
+import BuyBox from "../../components/product/BuyBox.astro";
+import ProductInfo from "../../components/product/ProductInfo.astro";
+import EngineeringBand from "../../components/product/EngineeringBand.astro";
+import RelatedProducts from "../../components/product/RelatedProducts.astro";
+import { stockBadges } from "../../components/product/stock";
+import { catalogCategories, getProduct, getRelatedProducts } from "../../lib/catalog";
+import type { ProductDetail } from "../../types/catalog";
+
+/** 02.02 Product Details — on demand so price/stock stay live once backed by the ERP. */
+export const prerender = false;
+
+const result = await getProduct(Astro.params.slug ?? "");
+if (!result) return Astro.rewrite("/404");
+
+const { summary: product } = result;
+const category = catalogCategories.find((c) => c.slug === product.categorySlug);
+const model = product.specs.split("·")[0]?.trim() ?? product.name;
+
+/** Products without designed rich content fall back to their catalog summary. */
+const detail: ProductDetail = result.detail ?? {
+  slug: product.slug,
+  eyebrow: product.category,
+  model,
+  reviewCount: 0,
+  summary: product.specs,
+  stockLabel: stockBadges[product.stock].label,
+  priceUnit: product.price === null ? "· project pricing" : "· excl. PPN 11%",
+  mobilePriceUnit: product.price === null ? "" : "excl. PPN",
+  priceNote: "Volume pricing available with a project quotation",
+  mobilePriceNote: "Volume pricing with a project quotation",
+  options: [],
+  gallery: [product.image],
+  overviewTitle: product.name,
+  overview: product.specs,
+  mobileOverview: product.specs,
+  features: [],
+  specs: [],
+  related: [],
+};
+const related = await getRelatedProducts(product, detail.related);
+const categoryHref = `/products?category=${product.categorySlug}`;
+const compareHref = `/products/compare?${[product.slug, ...related.slice(0, 2).map((p) => p.slug)].map((s) => `p=${s}`).join("&")}`;
+---
+
+<PublicLayout title={`${product.name} — ${product.category} | Entragate`} description={detail.summary}>
+  <section class="bg-white">
+    <div class="container-page flex flex-col gap-3 pt-3 xl:gap-7 xl:pt-7 xl:pb-20">
+      <Breadcrumb
+        class="hidden xl:block"
+        items={[{ label: "Home", href: "/" }, { label: "Products", href: "/products" }, { label: category?.name ?? product.category }]}
+      />
+      <Breadcrumb
+        class="xl:hidden"
+        items={[
+          { label: "Products", href: "/products" },
+          { label: product.shortCategory, href: categoryHref },
+          { label: detail.shortName ?? product.name },
+        ]}
+      />
+      <div class="flex flex-col xl:flex-row xl:gap-16">
+        <ProductGallery
+          class="xl:min-w-0 xl:flex-[720_1_0%]"
+          product={product}
+          images={detail.gallery}
+          stockLabel={detail.stockLabel}
+          bestSeller={detail.bestSeller}
+          hasVideo={detail.hasVideo}
+        />
+        <BuyBox class="pt-6 pb-7 xl:min-w-0 xl:flex-[528_1_0%] xl:p-0" product={product} detail={detail} />
+      </div>
+    </div>
+  </section>
+
+  {(detail.features.length > 0 || detail.specs.length > 0) && <ProductInfo detail={detail} />}
+  {detail.band && <EngineeringBand band={detail.band} />}
+  <RelatedProducts products={related} seeAllHref={categoryHref} compareHref={compareHref} />
+</PublicLayout>
