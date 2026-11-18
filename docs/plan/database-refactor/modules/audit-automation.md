@@ -22,8 +22,10 @@ Built tables unchanged: `outbox_messages`, `faq_entries`,
 - Remove target-only tables from dbml: integrations, integration_credentials,
   workflows, workflow_steps, workflow_runs, workflow_step_runs,
   scheduled_jobs, job_executions.
-- Webhook `/integrations/whatsapp` -> `/automation/webhooks/whatsapp` (+ alias,
-  Q34). Repositories already one per table (faq, outbox, whatsapp: split
+- WhatsApp inbound leaves `whatsapp-webhook.controller.ts`: automation
+  publishes `ExportedWhatsappWebhookService.handle(provider, headers, rawBody)`
+  and the `webhook` module owns `/webhooks/whatsapp` plus the
+  `/integrations/whatsapp` alias (Q38, `webhook.md`). Repositories already one per table (faq, outbox, whatsapp: split
   whatsapp into conversation + message).
 
 Consumers: web-admin `automation-api.ts`, `whatsapp-api.ts` paths.

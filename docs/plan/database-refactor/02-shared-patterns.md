@@ -110,6 +110,12 @@ repository-only `Exported<X>Service` facade that exists to break a cycle.
 | project | x | x | x | x | | x | E (`ExportedOrderService`) | | | | | | | x | x | x |
 | ticket | | x | x | x | | x | | | | | | x | | x | | x |
 | human-resource | x | x | | | | | | | | | | | | | x | x |
+| webhook (no schema) | | | | | | | | | | | x (`ExportedPaymentWebhookService`) | | | | | |
+
+`webhook` also calls `ExportedWhatsappWebhookService` (automation). It is a
+leaf: no module calls it, so it may use any exported service without creating
+a cycle. Salary payables (`employee_salary_record`) are resolved through
+`ExportedEmployeeService` (human-resource, Q39).
 
 Cycles broken by `E` facades (each depends only on its own repositories):
 
@@ -138,16 +144,16 @@ injected only by modules it never calls back.
 | Customer portal | `/customers/portal/v1/...` | `/customers/portal/v1/invoices` |
 | Public (no session) | `/<prefix>/public/v1/...` *(open item)* | `/inventory/public/v1/catalog`, `/projects/public/v1/inquiries` |
 | Machine API (API key) | `/<prefix>/api/v1/...` *(open item)* | `/projects/api/v1/licenses/validate` |
-| Webhooks | `/<prefix>/webhooks/<provider>` *(open item)* | `/payments/webhooks/xendit`, `/automation/webhooks/whatsapp` |
+| Webhooks | `/webhooks/<provider>` (module `webhook`, Q38) | `/webhooks/xendit`, `/webhooks/singapay`, `/webhooks/whatsapp` |
 
 Prefixes: `/users`, `/organizations`, `/locations`, `/companies`,
 `/customers`, `/suppliers`, `/inventory`, `/sales`, `/procurement`
 (`/purchase-orders` etc. become `/procurement/purchase-orders`), `/finance`,
 `/taxes`, `/payments`, `/projects`, `/tickets`, `/human-resources`,
-`/documents`, `/notifications`, `/audit`, `/automation`.
+`/documents`, `/notifications`, `/audit`, `/automation`, `/webhooks`.
 
 Aliases (Q34): only for callers outside this repository - payment gateway
-webhooks, license API (`/licensing/v1/*`), website public API
+webhooks (old paths mounted on the `webhook` module), license API (`/licensing/v1/*`), website public API
 (`/public/v1/*` used by web-landing builds already deployed and by n8n),
 WhatsApp/n8n webhooks (`/integrations/whatsapp/*`). The alias is a second
 mount of the same handler (POST bodies cannot rely on a 308 for every client),

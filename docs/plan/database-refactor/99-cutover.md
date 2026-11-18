@@ -33,10 +33,10 @@ Phase P8. Runs once every module phase (P1-P7) is green on the branch
 
 | Old URL | New URL | Caller |
 |---|---|---|
-| `/payments/gateway/*` webhooks | `/payments/webhooks/<provider>` | Xendit / SingaPay dashboards |
+| `/payments/gateway/*` webhooks | `/webhooks/xendit`, `/webhooks/singapay` (module `webhook`) | Xendit / SingaPay dashboards |
 | `/licensing/v1/*` | `/projects/api/v1/licenses/*` | customer applications |
 | `/public/v1/*` inquiries, catalog, render, documents | `/projects/public/v1/inquiries`, `/inventory/public/v1/catalog`, `/sales/public/v1/render/quotations`, `/documents/public/v1/shares` | web-landing deployments, sent links, n8n |
-| `/integrations/whatsapp/*` | `/automation/webhooks/whatsapp` | WAHA / Meta / n8n |
+| `/integrations/whatsapp/*` | `/webhooks/whatsapp` (module `webhook`) | WAHA / Meta / n8n |
 
 Each alias mounts the same handler, is marked deprecated in OpenAPI and logs a
 warning with the caller. Removal task: new backlog row after providers and

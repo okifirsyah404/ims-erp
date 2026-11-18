@@ -9,10 +9,10 @@ URL `/finance` · phase P5
   ledger, payment, tax) owns `accounting.*` and, in violation, the `finance.*`
   tables through `ap-open-item`, `ar-open-item`, `bank-reconciliation`,
   `cash-bank`, `close-checklist`, `supplier-bill-item`, `supplier-bill`.
-- `hr.salary_summaries`, `hr.bank_accounts` (hr `task-salary` repository,
-  `/hr/salary`), `company.bank_accounts`, `assets.asset_depreciations`.
+- `company.bank_accounts`, `assets.asset_depreciations`. Salary data stays
+  in HR (Q39) and is not part of this module.
 - Consumers: web-admin `finance-api.ts` (~20 accounting/finance routes),
-  `hr-records-api.ts` salary calls, company settings bank tab.
+  company settings bank tab.
 
 ## Target tables (Q19)
 
@@ -21,8 +21,6 @@ URL `/finance` · phase P5
 | chart_of_accounts, accounting_periods, journal_entries, journal_lines, opening_balances, account_balances, bank_account_links, report_archives | `accounting.*` |
 | supplier_bills, supplier_bill_items, ap_open_items, ar_open_items, payment_terms, cash_bank_transactions, bank_reconciliations, bank_reconciliation_items | `finance.*` (re-pointed: supplier -> supplier.companies, item -> inventory.products, invoice -> sale.invoices, customer -> customer.customers/companies) |
 | cash_bank_accounts | `finance.cash_bank_accounts` + `company.bank_accounts` (adds `bank_code`, `branch_name`, `invoice_usage`, `is_primary`) |
-| employee_salaries | new: employee_id (logical -> human_resource.employees), base_salary, fixed allowances, bank_name, bank_account_number (masked without `employee:read_private`), bank_account_holder, effective_from/to |
-| employee_salary_records | `hr.salary_summaries` |
 | asset_depreciations | `assets.asset_depreciations` (`asset_id` -> `item_id`, logical -> inventory.items) |
 | settings | accounting settings, close-checklist state if persisted |
 | code_numberings | journal, bill, cash-bank, reconciliation codes |
@@ -42,21 +40,19 @@ URL `/finance` · phase P5
    cash-bank-transaction, `journal` -> journal-entry + journal-line).
 4. **Services** - `FinancePostingService` (single journal writer, idempotency
    key), ledger, supplier bill, cash/bank, reconciliation, period close,
-   reports, `EmployeeSalaryService`, `DepreciationService` (calls
+   reports, `DepreciationService` (calls
    `ItemService.applyDepreciation` in inventory). Reads from other modules via
    `ExportedInvoiceService`, `ExportedPurchaseOrderService`,
    `ExportedPaymentService`, `ExportedInventoryService`,
-   `ExportedEmployeeService`. Publish `ExportedFinanceService`
+   `ExportedEmployeeService` (approved salary records for the payroll
+   journal, Q39). Publish `ExportedFinanceService`
    (repository-only: payment terms, cash/bank account assertion, bill and
    advance payables for payment allocations) and `ExportedJournalService`
    (for tax).
 5. **Controllers** - `/finance/ledger/*`, `/finance/supplier-bills`,
    `/finance/cash-bank-accounts`, `/finance/reconciliations`,
-   `/finance/periods`, `/finance/reports`, `/finance/employee-salaries`,
-   `/finance/salary-records` (was `/hr/salary`), `/finance/depreciations`.
-6. **Consumers** - `finance-api.ts` paths; salary pages move from HR menu to
-   finance (or stay in HR menu calling finance URLs - **owner to pick in the
-   UI review**); company bank tab -> cash/bank accounts with invoice usage.
+   `/finance/periods`, `/finance/reports`, `/finance/depreciations`.
+6. **Consumers** - `finance-api.ts` paths; company bank tab -> cash/bank accounts with invoice usage.
 
 ## Exit
 

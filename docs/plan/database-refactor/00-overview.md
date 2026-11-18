@@ -31,7 +31,9 @@ without reading the rest:
    schema; it never imports another module's schema file.
 4. **One module per Postgres schema.** The only exception is `auth`, shared by
    the `user` and `organization` modules because Better Auth owns it
-   (`elysia-module` rule 3.3, Q9).
+   (`elysia-module` rule 3.3, Q9). A module with **no** schema is allowed when
+   it owns no data: `webhook` (Q38) only routes provider calls to other
+   modules' exported services.
 5. **Cross-module calls are service to service** through the owner's DI token.
    Cycles are broken with repository-only `Exported<X>Service` facades
    (`elysia-module` rule 3.5). See `02-shared-patterns.md` for the matrix.
@@ -57,11 +59,11 @@ without reading the rest:
 | Q12 | Leads move to `project.leads` / `lead_activities` / `lead_attachments` (one customer, many leads and projects). |
 | Q13 | Added beyond the owner's list: `ticket.ticket_messages`, `project.warranties`. |
 | Q14 | Inventory option (a): `products` = stocked/sold SKU (was `inventory.items`), `items` = tool/asset, one row per physical unit (was `assets.assets`), `item_serials` = serial units of products (was `serial_tracked_items`). |
-| Q15 | `asset_movements` merge into `inventory.movements`; `borrowing_lines` -> `inventory.borrowing_items`; `asset_documents` -> `inventory.documents`; `asset_types` -> `items.item_kind`; `asset_depreciations` -> `finance.asset_depreciations`; `tool_sets` dropped. |
+| Q15 | `asset_movements` merge into `inventory.movements`; `borrowing_lines` -> `inventory.borrowing_items`; `asset_documents` -> `inventory.documents`; `asset_types` -> `items.item_kind`; `asset_depreciations` -> `finance.asset_depreciations`. **`tool_sets` + `tool_set_items` are kept** as `inventory.tool_sets` / `inventory.tool_set_items` (revised by Q37). |
 | Q16 | `customer.companies` = B2B entity; `customer.customers` = a person (individual or company PIC, `company_id` and `user_id` nullable). `crm.customer_contacts` merges into `customers`. |
 | Q17 | Same split for suppliers: `supplier.companies` + `supplier.suppliers` (PIC). |
 | Q18 | `payment.payment_allocations` kept with polymorph `payable_type`/`payable_id` (staged settlement). `gateway_payments` merges into `payment.payments` (`channel`, `gateway_id`). `payment.gateways` holds AES-256-GCM-encrypted secrets, write-only API. |
-| Q19 | `accounting.*` -> `finance.*` except tax tables -> `tax.taxes/records/corrections/withholding_tax_records`. `accounting_settings` -> `finance.settings`; `hr.salary_summaries` -> `finance.employee_salary_records`; `hr.bank_accounts` -> columns of `finance.employee_salaries`; `company.bank_accounts` -> `finance.cash_bank_accounts`. |
+| Q19 | `accounting.*` -> `finance.*` except tax tables -> `tax.taxes/records/corrections/withholding_tax_records`. `accounting_settings` -> `finance.settings`; `company.bank_accounts` -> `finance.cash_bank_accounts`. **Salary stays in HR** (revised by Q39): `human_resource.employee_salaries` (absorbs `hr.bank_accounts`) and `human_resource.employee_salary_records` (was `hr.salary_summaries`). |
 | Q20 | `human_resource` keeps `leave_types` and `employee_tasks`; `schedules` = per-employee work shift per date. |
 | Q21 | `audit`, `automation` (built tables), `company` kept; `company.head_office_addresses` -> `company.addresses`. |
 | Q22 | Unbuilt target tables are defined in `docs.dbml` only (`status: target`); steps 2-6 cover built tables. |
@@ -73,23 +75,24 @@ without reading the rest:
 | Q28 | Portal routes move to the `customer` module under `/customers/portal/*`. |
 | Q29 | Ticket templates spawn sub-tickets; ticket relations are separate columns (not polymorph). |
 | Q30 / Q35 | One long branch, phase per module, each phase green before the next. |
-| Q31 | Folder `human-resource`; ADR-0024; epic ERP-0070..ERP-0088; existing `organization_id` scope kept per table. |
+| Q31 | Folder `human-resource`; ADR-0024; epic ERP-0070..ERP-0089; existing `organization_id` scope kept per table. |
 | Q32 | `notification.push_notifications` / `push_notification_templates`; `document` gains `settings` + `code_numberings`. |
 | Q34 | External endpoints (gateway webhooks, license API, website RFQ/catalog, WhatsApp/n8n webhooks) move to the new URLs and keep the old URL as an alias during a transition window. |
+| Q37 | (review 2026-11-19) Do not delete tool sets: `inventory.tool_sets` + `tool_set_items` (items = tool units); a borrowing may lend a whole kit (`borrowing_requests.tool_set_id`). |
+| Q38 | (review 2026-11-19) Webhooks get their own module `webhook` with **no database**: it receives provider calls under `/webhooks/<provider>` and hands them to exported services of the owning modules (payment, automation). |
+| Q39 | (review 2026-11-19) Salary stays in HR: `employee_salaries` and `employee_salary_records` live in `human_resource`; finance and payment read them through `ExportedEmployeeService`. |
 
 ### Open items (not grilled; confirm in review before the phase that needs them)
 
 - **Public / machine URL shape.** Proposed in `02-shared-patterns.md` §5:
-  `/<prefix>/public/v1/...`, `/<prefix>/api/v1/...`, `/<prefix>/webhooks/<provider>`.
+  `/<prefix>/public/v1/...`, `/<prefix>/api/v1/...` (webhooks are settled by
+  Q38: `/webhooks/<provider>`).
 - **Other uncountable prefixes.** Q33 exempted `/inventory` and `/finance`;
   the plan applies the same exemption to `/procurement`, `/audit` and
   `/automation`. Confirm or switch to strict plurals.
 - **`procurement` and `tax` settings tables.** The owner's list has none; the
   plan adds only `code_numberings` to them. Add `settings` only when a setting
   appears.
-- **Salary screens' menu.** Salary data moves to finance (Q19); whether the
-  screens sit in the Finance or the HR menu is a UI choice for review
-  (`modules/finance.md` step 6).
 - **`payment.payments` direct payable columns.** With allocations carrying
   every payable (Q18), the plan removes `sales_invoice_id`,
   `supplier_bill_id`, `employee_advance_id` from `payments`.
@@ -128,7 +131,7 @@ green (`bun run lint`, `bun run test`, `bun run typecheck`).
 | P4 | sale, procurement | ERP-0077..0078 |
 | P5 | finance, tax, payment | ERP-0079..0081 |
 | P6 | project, ticket, human-resource | ERP-0082..0084 |
-| P7 | document, notification, audit + automation | ERP-0085..0087 |
+| P7 | document, notification, audit + automation, webhook (no schema) | ERP-0085..0087, ERP-0089 |
 | P8 | cutover: baseline migrations, seeders, aliases, docs | ERP-0088 |
 
 Between phases the app does not run against a database (the schema is being

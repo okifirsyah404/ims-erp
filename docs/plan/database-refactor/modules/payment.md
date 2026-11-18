@@ -15,7 +15,7 @@ credentials come from env. Consumers: web-admin `finance-api.ts` payment calls,
 | Table | Notes |
 |---|---|
 | payments | ledger row; + `channel` (manual/gateway), `gateway_id` (FK -> gateways), provider columns from `gateway_payments` (provider_reference, payment_url, expires_at, paid_at, paid_amount, payment_channel, provider_transaction_id, last_event); status vocabulary = ledger statuses + gateway pending/expired/failed mapped explicitly; counterparty polymorph kept; `sales_invoice_id`/`supplier_bill_id`/`employee_advance_id` columns **removed** (allocations carry them) |
-| payment_allocations | payment_id FK, `payable_type` (sale_invoice, supplier_bill, employee_advance, expense_claim, expense_settlement, employee_salary_record), `payable_id`, amount, allocated_at, deleted_at; one payment may settle several payables and one payable may receive several payments (staged settlement) |
+| payment_allocations | payment_id FK, `payable_type` (sale_invoice, supplier_bill, employee_advance, expense_claim, expense_settlement, employee_salary_record), `payable_id`, amount, allocated_at, deleted_at; one payment may settle several payables and one payable may receive several payments (staged settlement); `employee_salary_record` resolves through `ExportedEmployeeService` (human-resource, Q39) |
 | gateways | provider (xendit/singapay/fake), code, name, is_active, is_default, mode (sandbox/live), `config` jsonb (non-secret), `secret_ciphertext`, `secret_iv`, `secret_tag`, `key_version`, `secret_last4`, `webhook_token_ciphertext` (+ iv/tag), rotated_at; secrets AES-256-GCM with `PAYMENT_SECRET_KEY` (env, never in DB); API never returns ciphertext or plaintext |
 | settings | default gateway, rounding rules |
 | code_numberings | payment codes |
@@ -34,8 +34,12 @@ credentials come from env. Consumers: web-admin `finance-api.ts` payment calls,
    Settlement of a paid checkout: lock the payment row, allocate to the
    invoice, call sale to post the receipt (unchanged idempotency rule).
 5. **Controllers** - `/payments`, `/payments/allocations`,
-   `/admin/payments/gateways` (write-only secrets), `/payments/checkouts`,
-   `/payments/webhooks/<provider>` (+ alias of today's webhook paths, Q34).
+   `/admin/payments/gateways` (write-only secrets), `/payments/checkouts`.
+   Provider webhooks leave this module: publish
+   `ExportedPaymentWebhookService.handle(provider, headers, rawBody)` (token
+   check against `gateways`, idempotent settlement) and let the `webhook`
+   module own `/webhooks/<provider>` and the old-path alias (Q38,
+   `modules/webhook.md`).
 6. **Consumers** - web-admin payment screens (allocation editor for staged
    settlement), gateway settings page (new), invoice checkout link;
    web-customer-portal checkout call.

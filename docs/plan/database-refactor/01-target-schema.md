@@ -83,13 +83,14 @@ target-only `customer_groups`, `customer_segments`, `customer_segment_members`,
 | maintenances | `assets.asset_maintenances` | built (moved) |
 | condition_checks | `assets.asset_condition_checks` | built (moved) |
 | disposals | `assets.asset_disposals` | built (moved) |
+| tool_sets | `assets.tool_sets` (kit of tool units, Q37) | built (moved) |
+| tool_set_items | `assets.tool_set_items` (`asset_id` -> `item_id`) | built (moved) |
 | warehouses, warehouse_addresses, warehouse_storages, warehouse_managers, warehouse_organizations | `inventory.*` | built |
 | warehouse_settings | new (per warehouse) | new |
 | settings | new | new |
 | code_numberings | `code_number.series` inventory + assets rows | new |
 
-Removed: `assets.tool_sets`, `assets.tool_set_items` (Q15),
-`assets.asset_types` (vocabulary), `assets.asset_depreciations` (-> finance),
+Removed: `assets.asset_types` (vocabulary), `assets.asset_depreciations` (-> finance),
 target-only `stock_transfers(+items)`, `stock_reservations`; all `catalog.*`.
 
 ## sale (module `sale`, was `sales`)
@@ -123,8 +124,6 @@ target-only `supplier_contacts`, `supplier_addresses`.
 | chart_of_accounts, journal_entries, journal_lines, accounting_periods, opening_balances, account_balances, bank_account_links, report_archives | `accounting.*` | built (moved) |
 | supplier_bills, supplier_bill_items, ap_open_items, ar_open_items, payment_terms, cash_bank_accounts, cash_bank_transactions, bank_reconciliations, bank_reconciliation_items | `finance.*` | built |
 | cash_bank_accounts | + `company.bank_accounts` (`invoice_usage`, `is_primary`, bank columns) | built (merged) |
-| employee_salaries | new; absorbs `hr.bank_accounts` columns | new |
-| employee_salary_records | `hr.salary_summaries` | built (moved) |
 | asset_depreciations | `assets.asset_depreciations` (`asset_id` -> `item_id`) | built (moved) |
 | settings | planned `accounting.accounting_settings` + close-checklist state if stored | new |
 | journal_templates | `accounting.journal_templates` | target |
@@ -193,11 +192,13 @@ target-only `aftersales.*` table.
 | attendances | `hr.attendance_records` | built (renamed) |
 | leave_types, leave_requests, overtime_requests | `hr.*` | built |
 | employee_tasks | `hr.employee_tasks` | built |
+| employee_salaries | new (Q39): base salary, fixed allowances, salary bank account (absorbs `hr.bank_accounts`), effective_from/to | built (reshaped) |
+| employee_salary_records | `hr.salary_summaries` (Q39) | built (renamed) |
 | schedules | new (shift per employee per date) | target |
 | settings | new | new |
 | code_numberings | `code_number.series` hr rows | new |
 
-Removed: `hr.bank_accounts`, `hr.salary_summaries` (-> finance); all other
+Removed: `hr.bank_accounts` (folded into `employee_salaries`); all other
 target-only `hr.*`.
 
 ## document (module `document`)
@@ -212,6 +213,11 @@ access_logs, shares, tags, tag_links - built, unchanged. `settings`,
 |---|---|---|
 | push_notifications | `notification.notifications` | built (renamed) |
 | push_notification_templates | `notification.notification_templates` | built (renamed) |
+
+## webhook (module `webhook`, no schema - Q38)
+
+No tables. Receives provider callbacks under `/webhooks/<provider>` and hands
+them to the owning modules' exported services. See `modules/webhook.md`.
 
 ## audit, automation (unchanged modules)
 
@@ -241,7 +247,7 @@ scheduled jobs) are removed from `docs.dbml`.
 | `aftersales.warranty_certificates.id` | `project.warranties.id` |
 | `licensing.*` | `project.license_*` |
 | `hr.employees.id` | `human_resource.employees.id` |
-| `hr.bank_accounts.id` | `finance.employee_salaries.id` |
+| `hr.bank_accounts.id` | `human_resource.employee_salaries.id` |
 | `organization.departments/positions/branches/cost_centers.id` | dropped (columns removed) |
 | `auth.portal_identities.id` | `customer.customers.id` |
 | `payment.gateway_payments.id` | `payment.payments.id` |

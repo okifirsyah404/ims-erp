@@ -1,7 +1,7 @@
 # ADR-0024: Database normalization and baseline v2
 
 Status: **proposed** (2026-11-19). Plan: `docs/plan/database-refactor/`
-(ERP-0070..ERP-0088).
+(ERP-0070..ERP-0089).
 
 ## Context
 
@@ -17,7 +17,9 @@ branching snapshot chain. No production database exists (ADR-0011, 0018, 0019).
 
 1. Rebuild the schema set to the owner's target (`01-target-schema.md`):
    18 schemas, one module per schema, `auth` shared by `user` and
-   `organization` as the only exception.
+   `organization` as the only exception. A module may own **no** schema when it
+   holds no data: `webhook` receives provider callbacks and delegates to the
+   owning modules' exported services.
 2. No cross-schema foreign keys; cross-module links are nullable logical ids
    validated through exported services (ADR-0014 unchanged).
 3. Polymorph `<role>_type` + `<role>_id` only for "exactly one of more than

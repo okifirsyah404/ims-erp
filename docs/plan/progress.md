@@ -12,6 +12,25 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-19 - Database normalization plan revised after owner review (Q37-Q39)
+
+Docs only on `refactor(db)/schema-and-table-normalization`; no code changed.
+- **Q37** tool sets are kept: `inventory.tool_sets` + `tool_set_items`
+  (`item_id`), `borrowing_requests.tool_set_id` for lending a whole kit.
+- **Q38** webhooks get their own module `webhook` with no schema
+  (`/webhooks/<provider>`); payment and automation publish
+  `ExportedPaymentWebhookService` / `ExportedWhatsappWebhookService`; old paths
+  stay as aliases. New `modules/webhook.md`, backlog ERP-0089 (`planned`),
+  ADR-0024 notes the no-schema module.
+- **Q39** salary stays in HR: `human_resource.employee_salaries` (absorbs
+  `hr.bank_accounts`) and `human_resource.employee_salary_records` (was
+  `salary_summaries`); finance/payment read them via `ExportedEmployeeService`.
+  The "salary menu" open item is closed.
+- Updated: `00-overview.md`, `01-target-schema.md`, `02-shared-patterns.md`,
+  `99-cutover.md`, `modules/{inventory,finance,human-resource,payment,audit-automation}.md`,
+  `backlog.md` (ERP-0076/0079/0081/0084/0088 text, ERP-0089 added),
+  `features.md`. `docs/database/` reviewed and unchanged.
+
 ## 2026-11-19 - Database normalization plan written (ERP-0070..ERP-0088, planned)
 
 Branch `refactor(db)/schema-and-table-normalization` (from `main` `929209c6`).

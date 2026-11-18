@@ -37,11 +37,13 @@ Schema `inventory` · folder `src/app/inventory` (absorbs `assets` and
 | movements | product movements (quantity, unit_cost, bin) and item movements (quantity = 1, from/to warehouse+storage, from/to free-text location); CHECK exactly one of product_id/item_id; vocabulary = union of both, minus the superseded `borrowing_out/in` |
 | stocks | was `stock_balances` (products only) |
 | stock_adjustments, stock_adjustment_items | `item_id` -> `product_id` |
-| borrowing_requests | draft -> requested -> approved / rejected / cancelled; purpose, borrower (user/customer/guest), due_at, requested/approved by |
+| borrowing_requests | draft -> requested -> approved / rejected / cancelled; purpose, borrower (user/customer/guest), due_at, requested/approved by; `tool_set_id` (nullable FK) when a whole kit is requested - its items become the request's `borrowing_items` |
 | borrowings | issued -> partially_returned -> returned / closed; borrowing_request_id FK (unique, Q26); borrower snapshot copied from the request |
 | borrowing_items | was `borrowing_lines` (`asset_id` -> `item_id`); borrowing_request_id FK (not null, the requested unit) + borrowing_id FK (null until issued) - no separate request-lines table |
 | borrowing_events | unchanged, `asset_movement_id` -> `movement_id` |
 | maintenances, condition_checks, disposals | was `asset_*`, `asset_id` -> `item_id` |
+| tool_sets | was `assets.tool_sets` (Q37): code, name, custodian_employee_id, status (available/lent/maintenance/retired) |
+| tool_set_items | was `assets.tool_set_items`: tool_set_id FK, `item_id` FK (was `asset_id`); unique (tool_set_id, item_id) |
 | warehouses, warehouse_addresses, warehouse_storages, warehouse_managers, warehouse_organizations | unchanged (address Q10) |
 | warehouse_settings | warehouse_id FK, key, value, value_type |
 | settings | module key-value |
