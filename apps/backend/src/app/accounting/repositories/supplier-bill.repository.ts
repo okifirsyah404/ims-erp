@@ -3,7 +3,7 @@ import type { TTx } from '@drizzle/types';
 import { supplierBills, type TSupplierBillSelect } from '@drizzle/schemas/finance.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, count, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import type { ISupplierBillRepository } from '../contracts/supplier-bill.repository.interface';
 
@@ -18,6 +18,7 @@ export class SupplierBillRepository implements ISupplierBillRepository {
 			code: string;
 			supplierId: string;
 			purchaseOrderId: string | null;
+			supplierInvoiceNumber?: string | null;
 			billDate: string | null;
 			dueDate: string | null;
 			subtotal: number;
@@ -80,6 +81,25 @@ export class SupplierBillRepository implements ISupplierBillRepository {
 			)
 			.returning();
 		return updated ?? null;
+	}
+
+	/**
+	 * Open bills (recorded, not fully paid) due on or before `date`, in every
+	 * organization: the daily `supplier_bill.due` job (ERP-0012).
+	 */
+	async listOpenBillsDueBy(date: string): Promise<TSupplierBillSelect[]> {
+		return this.database
+			.select()
+			.from(supplierBills)
+			.where(
+				and(
+					inArray(supplierBills.status, ['approved', 'partially_paid', 'overdue']),
+					sql`${supplierBills.outstandingTotal} > 0`,
+					sql`${supplierBills.dueDate} IS NOT NULL AND ${supplierBills.dueDate} <= ${date}`,
+					isNull(supplierBills.deletedAt),
+				),
+			)
+			.orderBy(asc(supplierBills.dueDate));
 	}
 
 	async listSupplierBills(

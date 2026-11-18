@@ -193,7 +193,7 @@ export class CashBankRepository implements ICashBankRepository {
 	async cashBankAccountBalance(organizationId: string, id: string): Promise<number> {
 		const [row] = await this.database
 			.select({
-				sum: sql<number>`coalesce(sum(CASE WHEN ${cashBankTransactions.direction} = 'in' THEN ${cashBankTransactions.amount} ELSE -${cashBankTransactions.amount} END), 0)::bigint`,
+				sum: sql<number>`coalesce(sum(CASE WHEN ${cashBankTransactions.direction} = 'in' THEN ${cashBankTransactions.amount} ELSE -${cashBankTransactions.amount} END), 0)::bigint`.mapWith(Number),
 			})
 			.from(cashBankTransactions)
 			.where(

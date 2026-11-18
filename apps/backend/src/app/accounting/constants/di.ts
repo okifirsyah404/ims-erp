@@ -22,6 +22,7 @@ import type { ICloseChecklistRepository } from '../contracts/close-checklist.rep
 import type { IJournalRepository } from '../contracts/journal.repository.interface';
 import type { IOpeningBalanceRepository } from '../contracts/opening-balance.repository.interface';
 import type { ISupplierBillRepository } from '../contracts/supplier-bill.repository.interface';
+import type { ISupplierBillItemRepository } from '../contracts/supplier-bill-item.repository.interface';
 import type { TaxService } from '../services/tax.service';
 import type { PostingService } from '../services/posting.service';
 import type { AccountService } from '../services/account.service';
@@ -54,6 +55,9 @@ export const AR_OPEN_ITEM_REPOSITORY_TOKEN: InjectionToken<IArOpenItemRepository
 );
 export const AP_OPEN_ITEM_REPOSITORY_TOKEN: InjectionToken<IApOpenItemRepository> = Symbol(
 	'AP_OPEN_ITEM_REPOSITORY',
+);
+export const SUPPLIER_BILL_ITEM_REPOSITORY_TOKEN: InjectionToken<ISupplierBillItemRepository> = Symbol(
+	'SUPPLIER_BILL_ITEM_REPOSITORY',
 );
 export const SUPPLIER_BILL_REPOSITORY_TOKEN: InjectionToken<ISupplierBillRepository> = Symbol(
 	'SUPPLIER_BILL_REPOSITORY',

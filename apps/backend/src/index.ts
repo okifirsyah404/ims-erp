@@ -8,6 +8,7 @@ import { registerProjects } from '@app/projects';
 import { registerAftersales } from '@app/aftersales';
 import { registerHr } from '@app/hr';
 import { registerLicenseDueSchedule, registerLicensing, startLicenseDueWorker } from '@app/licensing';
+import { registerSupplierBillDueSchedule, startSupplierBillDueWorker } from '@app/accounting';
 import { registerPortal } from '@app/portal';
 import { registerCatalog } from '@app/catalog';
 import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
@@ -161,6 +162,8 @@ const bootstrap = new Elysia()
 const mailWorker = startMailWorker();
 // `startLicenseDueWorker` is `null` unless `scheduler.enabled` (M04 reminders).
 const licenseDueWorker = startLicenseDueWorker();
+// ERP-0012: `supplier_bill.due` reminders, same switch.
+const billDueWorker = startSupplierBillDueWorker();
 startWorkers(
 	[
 		startAvatarWorker(),
@@ -170,6 +173,7 @@ startWorkers(
 		startWhatsappWorker(),
 		...(mailWorker ? [mailWorker] : []),
 		...(licenseDueWorker ? [licenseDueWorker] : []),
+		...(billDueWorker ? [billDueWorker] : []),
 	],
 	(error) => pinoLogger.error({ err: error }, 'background worker error'),
 );
@@ -177,6 +181,12 @@ if (licenseDueWorker) {
 	await registerLicenseDueSchedule().then(
 		() => pinoLogger.info('license.due reminder schedule registered'),
 		(error: unknown) => pinoLogger.error({ err: error }, 'license.due schedule not registered'),
+	);
+}
+if (billDueWorker) {
+	await registerSupplierBillDueSchedule().then(
+		() => pinoLogger.info('supplier_bill.due reminder schedule registered'),
+		(error: unknown) => pinoLogger.error({ err: error }, 'supplier_bill.due schedule not registered'),
 	);
 }
 if (mailWorker) {

@@ -286,6 +286,20 @@ export class BillNotDraftError extends AppError {
 	}
 }
 
+/** The purchase order has nothing received to bill (ERP-0012). */
+export class BillOrderNotBillableError extends AppError {
+	constructor() {
+		super(422, 'accounting.billOrderNotBillable', 'Only a purchase order that received goods can be billed');
+	}
+}
+
+/** A bill line that is unknown, repeated, or over what was received and not yet billed (ERP-0012). */
+export class BillLineError extends AppError {
+	constructor(kind: 'unknown' | 'duplicate' | 'over', line: number) {
+		super(422, `accounting.billLine.${kind}` as const, `Line ${line}: ${kind}`, { line });
+	}
+}
+
 /* ----------------------------- bank reconciliation (F6) ----------------------------- */
 
 export class BankReconciliationNotFoundError extends AppError {

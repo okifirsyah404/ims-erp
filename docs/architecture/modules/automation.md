@@ -53,6 +53,8 @@ Amounts are integer IDR minor units (divide by 100 for rupiah). Topics:
 | `service_ticket.updated` | After-sales: every ticket change | `ticketId`, `code`, `change` (`created / assigned / started / resolved / reopened / closed`), `status`, `customer{id,name,phone,whatsapp,email}`, `reporterName`, `reporterContact`, `assignee{userId,name}`, `resolution`, `serviceCost` |
 | `whatsapp.handoff` | WhatsApp assistant: chat handed to an admin | `conversationId`, `phone`, `contactName`, `reason` (`no_provider / not_found / human_requested / restricted / error`), `question` |
 | `license.due` | Licensing: daily job | `contractId`, `code`, `threshold` (30 / 7 / 0), `stage` (`ending / ended`), `daysLeft`, `endDate`, `graceEndsOn`, `application{code,name}`, `customer{…}` |
+| `supplier_bill.recorded` | Finance: supplier bill recorded (ERP-0012) | `billId`, `organizationId`, `code`, `supplierInvoiceNumber`, `purchaseOrderId`, `status`, `billDate`, `dueDate`, `grandTotal`, `paidTotal`, `outstandingTotal`, `supplier{id,code,name,phone,email,picName,picPhone}` (never bank details), `recordedBy` |
+| `supplier_bill.due` | Finance: daily job (ERP-0012) | same as `supplier_bill.recorded` plus `threshold` (7 / 0), `stage` (`upcoming / due / overdue`), `daysLeft` |
 | `purchase_return.updated` | Procurement: purchase return submitted, approved, rejected, shipped or cancelled (ERP-0068) | `returnId`, `code`, `change` (`submitted / approved / rejected / shipped / cancelled`), `status`, `returnDate`, `reason`, `rejectionReason`, `cancelledReason`, `goodsReceiptCode`, `purchaseOrderCode`, `supplier{id,code,name,phone,email,picName,picPhone,picEmail}`, `lines[{sku,name,unit,quantity,serialNumbers}]`, `totalAmount`, `actorUserId` |
 | `sales_return.updated` | Sales: customer return submitted, approved, rejected, received or cancelled (ERP-0065) | `returnId`, `code`, `change` (`submitted / approved / rejected / received / cancelled`), `status`, `returnDate`, `reason`, `rejectionReason`, `cancelledReason`, `deliveryNoteCode`, `salesOrderCode`, `customer{id,code,name,email,phone,whatsapp}`, `lines[{sku,name,unit,quantity,serialNumbers,condition}]`, `totalAmount`, `actorUserId` |
 
@@ -61,6 +63,12 @@ Amounts are integer IDR minor units (divide by 100 for rupiah). Topics:
 `SCHEDULER_ENABLED=true`). Each contract, end date and threshold is published
 once (`outbox_messages.dedupe_key`), so a re-run or a missed day never
 duplicates a reminder.
+
+`supplier_bill.due` works the same way from the BullMQ queue
+`supplier-bill-due` (cron `SCHEDULER_BILL_DUE_CRON`, default `0 8 * * *`
+Asia/Jakarta, only with `SCHEDULER_ENABLED=true`): open bills (recorded, not
+fully paid) due within 7 days get threshold 7, due or overdue ones threshold 0,
+once per bill, due date and threshold.
 
 ## WhatsApp assistant
 

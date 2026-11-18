@@ -131,6 +131,8 @@ export const SchedulerConfigSchema = z.object({
 	retentionSweepCron: z.string().min(1),
 	/** Cron (Asia/Jakarta) for the `license.due` reminders to n8n; daily 08:00 by default (M04). */
 	licenseDueCron: z.string().min(1),
+	/** ERP-0012: daily `supplier_bill.due` reminders (Asia/Jakarta). */
+	billDueCron: z.string().min(1),
 	/** Guest PII is nulled this many months after `closed_at`. */
 	guestPiiRetentionMonths: z.number().int().min(1),
 	/** Cron for the read-notification prune; daily by default. */

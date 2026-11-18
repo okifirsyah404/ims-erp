@@ -18,6 +18,7 @@ import {
 	OPENING_BALANCE_SERVICE_TOKEN,
 	PERIOD_SERVICE_TOKEN,
 	POSTING_SERVICE_TOKEN,
+	SUPPLIER_BILL_ITEM_REPOSITORY_TOKEN,
 	SUPPLIER_BILL_REPOSITORY_TOKEN,
 	TAX_REPOSITORY_TOKEN,
 	TAX_SERVICE_TOKEN,
@@ -30,6 +31,7 @@ import { BankAccountLinkRepository } from './repositories/bank-account-link.repo
 import { CashBankRepository } from './repositories/cash-bank.repository';
 import { ArOpenItemRepository } from './repositories/ar-open-item.repository';
 import { ApOpenItemRepository } from './repositories/ap-open-item.repository';
+import { SupplierBillItemRepository } from './repositories/supplier-bill-item.repository';
 import { SupplierBillRepository } from './repositories/supplier-bill.repository';
 import { BankReconciliationRepository } from './repositories/bank-reconciliation.repository';
 import { AccountBalanceRepository } from './repositories/account-balance.repository';
@@ -94,6 +96,7 @@ export function registerAccounting(container: DependencyContainer): void {
 	container.register(AR_OPEN_ITEM_REPOSITORY_TOKEN, { useClass: ArOpenItemRepository });
 	container.register(AP_OPEN_ITEM_REPOSITORY_TOKEN, { useClass: ApOpenItemRepository });
 	container.register(SUPPLIER_BILL_REPOSITORY_TOKEN, { useClass: SupplierBillRepository });
+	container.register(SUPPLIER_BILL_ITEM_REPOSITORY_TOKEN, { useClass: SupplierBillItemRepository });
 	container.register(BANK_RECONCILIATION_REPOSITORY_TOKEN, {
 		useClass: BankReconciliationRepository,
 	});

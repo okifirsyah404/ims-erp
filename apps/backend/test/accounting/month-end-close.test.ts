@@ -244,6 +244,7 @@ function makeHarness() {
 			bills.set(created.id, created);
 			return created;
 		},
+		findSupplierBillItems: async () => [],
 		findSupplierBillById: async (_o: string, id: string) => bills.get(id) ?? null,
 		updateSupplierBill: async (_o: string, id: string, patch: Record<string, unknown>) => {
 			const row = bills.get(id);
@@ -461,7 +462,18 @@ function makeHarness() {
 		settlement as never,
 		numbering,
 	);
-	const billService = new SupplierBillService(dbLike, repo as never, repo as never, posting, arResolver, numbering);
+	const billService = new SupplierBillService(
+		dbLike,
+		repo as never,
+		repo as never,
+		repo as never,
+		posting,
+		arResolver,
+		numbering,
+		{} as never,
+		{ publish: async () => null } as never,
+		{ get: async () => null } as never,
+	);
 	// Sales facade (EXPORTED_INVOICE_SERVICE_TOKEN): the invoice reads/writes and
 	// the draft count come from Sales, not from an Accounting repository.
 	const invoiceFacade = {

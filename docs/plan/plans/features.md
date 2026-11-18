@@ -448,11 +448,19 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 ### planned
 - Inventory movement boundaries / valuation + GL reconciliation — ERP-0014
   (re-scoped into S1–S4; valuation deferred, OPEN-3).
-- Payables (supplier invoices) — T07, ERP-0012 / ERP-0035. Evidence: none.
 - Stock value in the GL (journals) — T07, ERP-0014. Evidence: none (the
   value view exists, see implemented).
 
 ### implemented
+- Payables from goods receipts: finance bills a purchase order for what was
+  received and not billed yet (order price and VAT, supplier invoice number),
+  recording debits Persediaan for stock lines — T07, ERP-0012 / ERP-0035.
+  Evidence: `accounting/services/supplier-bill.service.ts`,
+  `procurement/services/purchase-billing.service.ts`,
+  `test/accounting/bill-from-order.test.ts`, `/finance/payables`,
+  `progress.md` 2026-11-16 (API e2e 16/16). Gaps: the Persediaan account
+  code `1-1400` is provisional (finance gate); no credit note when goods are
+  returned after billing; reviewer sign-off.
 - Suppliers (bank details restricted) and purchase orders with one-level
   approval and the company's PO print — T07, ERP-0035. Evidence:
   `apps/backend/src/app/procurement`, `test/unit/procurement.service.test.ts`,

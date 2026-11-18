@@ -249,8 +249,8 @@ export class JournalRepository implements IJournalRepository {
 		return db
 			.select({
 				accountId: journalLines.accountId,
-				debit: sql<number>`coalesce(sum(${journalLines.debit}), 0)::bigint`,
-				credit: sql<number>`coalesce(sum(${journalLines.credit}), 0)::bigint`,
+				debit: sql<number>`coalesce(sum(${journalLines.debit}), 0)::bigint`.mapWith(Number),
+				credit: sql<number>`coalesce(sum(${journalLines.credit}), 0)::bigint`.mapWith(Number),
 			})
 			.from(journalLines)
 			.innerJoin(journalEntries, eq(journalLines.journalEntryId, journalEntries.id))
@@ -273,8 +273,8 @@ export class JournalRepository implements IJournalRepository {
 		return this.database
 			.select({
 				accountId: journalLines.accountId,
-				debit: sql<number>`coalesce(sum(${journalLines.debit}), 0)::bigint`,
-				credit: sql<number>`coalesce(sum(${journalLines.credit}), 0)::bigint`,
+				debit: sql<number>`coalesce(sum(${journalLines.debit}), 0)::bigint`.mapWith(Number),
+				credit: sql<number>`coalesce(sum(${journalLines.credit}), 0)::bigint`.mapWith(Number),
 			})
 			.from(journalLines)
 			.innerJoin(journalEntries, eq(journalLines.journalEntryId, journalEntries.id))

@@ -15,6 +15,9 @@ export const OUTBOX_TOPICS = [
 	'license.due',
 	'service_ticket.updated',
 	'whatsapp.handoff',
+	// ERP-0012: supplier bills booked, and the daily due reminders.
+	'supplier_bill.recorded',
+	'supplier_bill.due',
 	// ERP-0068: purchase return approvals, shipping and cancellations.
 	'purchase_return.updated',
 	// ERP-0065: sales return approvals, receipts and cancellations.

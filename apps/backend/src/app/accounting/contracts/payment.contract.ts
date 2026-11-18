@@ -15,6 +15,26 @@ export const supplierBillCreateSchema = z.object({
 	notes: z.string().nullish().transform((v) => v ?? null),
 });
 
+/** A bill made from a purchase order (ERP-0012): only received, unbilled quantities. */
+export const supplierBillFromOrderSchema = z.object({
+	purchaseOrderId: z.string().uuid(),
+	supplierInvoiceNumber: z.string().trim().min(1).max(100),
+	billDate: isoDate,
+	dueDate: isoDate.nullish().transform((v) => v ?? null),
+	lines: z
+		.array(
+			z.object({
+				purchaseOrderItemId: z.string().uuid(),
+				quantity: z
+					.union([z.number(), z.string().trim()])
+					.transform(String)
+					.refine((value) => /^\d+(\.\d{1,3})?$/.test(value) && Number(value) > 0, 'Quantity must be above 0 with at most three decimals'),
+			}),
+		)
+		.min(1)
+		.max(200),
+});
+
 export const supplierBillListQuerySchema = z.object({
 	page: z.coerce.number().int().positive().default(1),
 	limit: z.coerce.number().int().positive().max(100).default(20),
