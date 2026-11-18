@@ -48,18 +48,35 @@ rest of the repo already has for backend and web-admin.
    2.0.2, `elysia` keeps its nested `cookie@1.1.1` (`elysia/cookie` in the
    lock), and the backend suite is unchanged at 1223 pass.
 
-**How the runtime was proven without a Docker daemon.** Docker is not running
-on this machine, so no image was built. Instead the exact image layout was
-reproduced on the host: `bun install --frozen-lockfile --production` with only
-the Astro manifests (the same set the Dockerfile copies), that `node_modules`
-copied beside `dist`, then `node dist/server/entry.mjs` with
-`NODE_ENV=production`. Both apps answered `HTTP 200` on `/`. Before the two
-fixes above the same harness failed with `ERR_MODULE_NOT_FOUND`
-(`piccolore`, then `cookie`) - the failures are what drove the design.
+**How the runtime was proven without a Docker daemon (superseded, see below).** Docker
+was not running at first, so the exact image layout was reproduced on the host:
+`bun install --frozen-lockfile --production` with only the Astro manifests (the
+same set the Dockerfile copies), that `node_modules` copied beside `dist`, then
+`node dist/server/entry.mjs` with `NODE_ENV=production`. Both apps answered
+`HTTP 200` on `/`. Before the two fixes above the same harness failed with
+`ERR_MODULE_NOT_FOUND` (`piccolore`, then `cookie`) - the failures are what
+drove the design.
 
-**Compose validated without a daemon:** `docker compose config` exits 0 for
-the base file and for the local override; the two new services resolve with
-ports 4321/4322, their build args, and `portal-sessions:/app/.astro/session`.
+**Real Docker verification (2026-11-18, daemon 29.8.1).**
+- `docker build -f apps/{web-landing,web-customer-portal}/Dockerfile .` both
+  succeed: 611 MB and 833 MB images.
+- `docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+  --no-deps web-landing web-customer-portal` starts both; `web-landing` :4321
+  answers 200 (274 kB, `/products` 200) and `web-customer-portal` :4322
+  answers 200 (`/offline` 200). `docker run` of the same images behaves
+  identically.
+- Runtime user is non-root `app` (uid 100); `/app/.astro/session` is owned by
+  it; `portal-sessions` mounts at that path; a marker file survives
+  `docker restart` and the portal answers 200 again.
+- `PUBLIC_*` build args are inlined into the bundle as documented: rebuilding
+  with `--build-arg PUBLIC_WEB_URL=https://probe-web.example.test` puts that
+  string in `dist/server` and `dist/client`.
+- Teardown: `docker compose down -v`, probe image removed; no containers,
+  volumes or images left behind.
+
+**Compose validated:** `docker compose config` exits 0 for the base file and
+the local override; the two services resolve with ports 4321/4322, their build
+args, and `portal-sessions:/app/.astro/session`.
 
 **Verification.** `bun run typecheck` 6/6 (`astro check` 173 + 150 files, 0
 errors); `bun run lint` 0 errors; `bun run test` backend 1223, web-admin 119,
@@ -67,12 +84,13 @@ locales 98, react-email 6; `bun run build` 5/5; `validate-dbml.ts` OK. No
 schema change.
 
 **Still open.**
-- No image was actually built (`docker build`) or run (`docker compose up`):
-  the Docker daemon is not available here. First real build is unverified.
-- Live session persistence across a container restart (`portal-sessions`).
 - No CI workflow publishes these two images yet; `main-deploy-*.yml` covers
   backend and web-admin only.
-- Dev servers and a browser walkthrough of either app remain unrun.
+- Dev servers and a browser walkthrough of either app remain unrun (the
+  containers were checked over HTTP, not in a browser).
+- The containers were started with `--no-deps`: the full stack (backend +
+  postgres + redis + dicebear + both web apps) has not been run together, so
+  server-to-server ERP calls from the Astro apps are unverified.
 
 ## 2026-11-18 - `packages/api-client` removed: contracts live in each app's `src/api/`
 
