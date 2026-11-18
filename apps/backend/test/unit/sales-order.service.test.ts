@@ -79,6 +79,7 @@ class FakeOrders implements ISalesOrderRepository {
 		return { ok: true as const };
 	}
 	async markInProgress() {}
+	async reopenForReplacement() {}
 }
 
 function quotation(status: QuotationStatus, overrides: Partial<TQuotationSelect> = {}): TQuotationSelect {

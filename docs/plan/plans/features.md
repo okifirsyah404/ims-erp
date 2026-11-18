@@ -431,6 +431,18 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   green, WS smoke test committed, live HTTP inbox and browser live badge verified;
   second-user live arrival verified in two runs (see `progress.md`). Verified.
 
+## M02 sales returns (ERP-0065)
+
+### implemented
+- Sales returns (retur penjualan) from a shipped delivery note, replacement
+  only: one-level approval, condition per line on receiving (`good` back to
+  stock, `damaged` serial units flagged), `return_in` at the delivery cost,
+  the order re-opened for the replacement delivery — ERP-0065. Evidence:
+  `sales/services/sales-return.service.ts`,
+  `test/unit/sales-return.service.test.ts`, `/sales/returns`, `progress.md`
+  2026-11-16 (API e2e 28/28, browser walk-through). Gaps: reviewer sign-off,
+  a printed return document, real-PG integration tests.
+
 ## M05 Inventory and Purchasing
 
 ### planned

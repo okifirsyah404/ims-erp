@@ -17,6 +17,8 @@ export const OUTBOX_TOPICS = [
 	'whatsapp.handoff',
 	// ERP-0068: purchase return approvals, shipping and cancellations.
 	'purchase_return.updated',
+	// ERP-0065: sales return approvals, receipts and cancellations.
+	'sales_return.updated',
 ] as const;
 export type OutboxTopic = (typeof OUTBOX_TOPICS)[number];
 

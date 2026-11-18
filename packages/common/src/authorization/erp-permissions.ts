@@ -36,6 +36,8 @@ export const erpStatements = {
 	quotation: ['read', 'create', 'update', 'submit', 'approve', 'reject', 'send', 'export'],
 	sales_discount: ['request', 'approve'],
 	sales_order: ['read', 'create', 'update', 'submit', 'approve', 'cancel', 'export'],
+	/** ERP-0065: goods back from a customer for replacement; `receive` posts the stock in. */
+	sales_return: ['read', 'create', 'update', 'submit', 'approve', 'receive', 'cancel'],
 
 	// Purchasing
 	/** `read_bank`: see/edit supplier bank accounts (owner, finance, purchasing). */
@@ -504,6 +506,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		quotation: ['read', 'create', 'update', 'submit', 'approve', 'reject', 'send', 'export'],
 		sales_discount: ['request', 'approve'],
 		sales_order: ['read', 'create', 'update', 'submit', 'approve', 'cancel', 'export'],
+		sales_return: ['read', 'create', 'update', 'submit', 'approve', 'cancel'],
 		product: ['read'],
 		// Website catalog listings with marketing (M04, decision 2026-11-07).
 		catalog: ['read', 'create', 'update', 'publish', 'archive'],
@@ -526,6 +529,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		quotation: ['read', 'create', 'update', 'submit', 'send'],
 		sales_discount: ['request'],
 		sales_order: ['read', 'create', 'update', 'submit'],
+		sales_return: ['read', 'create', 'update', 'submit', 'cancel'],
 		product: ['read'],
 		// Registers licenses sold and starts renewals (M03, decision 2026-11-06).
 		license: ['read', 'create', 'extend', 'read_key'],
@@ -606,6 +610,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		stock_adjustment: ['read', 'create', 'submit'],
 		// ERP-0068: hands the goods to the supplier (stock out).
 		purchase_return: ['read', 'ship'],
+		// ERP-0065: takes customer returns back in (stock in, condition).
+		sales_return: ['read', 'receive'],
 		asset_borrowing: [
 			'read',
 			'update',
@@ -634,6 +640,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		// limit SPHs to deals (decision 2026-11-04).
 		quotation: ['read'],
 		sales_order: ['read'],
+		sales_return: ['read'],
 		// Project direct costs, read only (decision 2026-11-04).
 		project: ['read', 'read_cost'],
 		bill: ['read', 'create', 'record'],
@@ -752,6 +759,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		lead: ['read', 'export'],
 		quotation: ['read', 'export'],
 		sales_order: ['read', 'export'],
+		sales_return: ['read'],
 		supplier: ['read'],
 		purchase_request: ['read'],
 		purchase_order: ['read', 'export'],

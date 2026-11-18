@@ -109,6 +109,7 @@ const inventory = {
 	'status.sold': 'Sold',
 	'status.applied_warranty': 'Applied to warranty',
 	'status.returned': 'Returned to supplier',
+	'status.damaged': 'Damaged',
 
 	// Unit registration.
 	'unit.new': 'Register unit',

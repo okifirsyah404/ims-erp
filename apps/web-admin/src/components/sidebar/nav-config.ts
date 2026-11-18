@@ -70,8 +70,10 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				items: [
 					{ titleKey: 'item.quotes', url: '/sales/quotes', permission: 'quotation.read' },
 					{ titleKey: 'item.salesOrders', url: '/sales/orders', permission: 'sales_order.read' },
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.deliveryNotes', url: '/sales/deliveries' },
+					// Same either-or as `GET /delivery-notes` (the leaf had no permission,
+					// so the route guard refused the pages to everyone).
+					{ titleKey: 'item.deliveryNotes', url: '/sales/deliveries', anyPermission: ['stock.read', 'sales_order.read'] },
+					{ titleKey: 'item.salesReturns', url: '/sales/returns', permission: 'sales_return.read' },
 					{ titleKey: 'item.invoices', url: '/sales/invoices', permission: 'invoice.read' },
 					// No catalog resource yet: hidden.
 					{ titleKey: 'item.downPayments', url: '/sales/down-payments' },

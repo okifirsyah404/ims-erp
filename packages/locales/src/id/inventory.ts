@@ -99,6 +99,7 @@ const inventory = {
 	'status.sold': 'Terjual',
 	'status.applied_warranty': 'Dipakai garansi',
 	'status.returned': 'Diretur ke pemasok',
+	'status.damaged': 'Rusak',
 
 	'unit.new': 'Daftarkan unit',
 	'unit.newDescription':

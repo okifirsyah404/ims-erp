@@ -49,6 +49,7 @@ export const UNIT_STATUSES = [
 	'sold',
 	'applied_warranty',
 	'returned',
+	'damaged',
 ] as const;
 export type TUnitStatus = (typeof UNIT_STATUSES)[number];
 

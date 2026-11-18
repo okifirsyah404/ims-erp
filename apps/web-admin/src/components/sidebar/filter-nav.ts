@@ -32,6 +32,7 @@ export function leafVisible(item: SidebarItem, ctx: NavContext): boolean {
 		const list = Array.isArray(item.permission) ? item.permission : [item.permission];
 		return ctx.can(list);
 	}
+	if (item.anyPermission) return item.anyPermission.some((permission) => ctx.can([permission]));
 	return false;
 }
 
@@ -45,6 +46,7 @@ export function collectPermissions(sections: { items: SidebarItem[] }[]): Permis
 					found.add(p);
 				}
 			}
+			for (const p of item.anyPermission ?? []) found.add(p);
 			if (item.items) visit(item.items);
 		}
 	};

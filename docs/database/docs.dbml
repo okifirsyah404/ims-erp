@@ -89,6 +89,7 @@ TableGroup "Sales" {
   sales.quotation_status_history
   sales.order_status_history
   sales.sales_returns
+  sales.sales_return_items
   sales.delivery_notes
   sales.delivery_note_items
   sales.invoices
@@ -1931,30 +1932,76 @@ Table sales.order_status_history {
 }
 
 Table sales.sales_returns {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  sales_order_id uuid [not null]
-  customer_id uuid [not null, note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
-  status text [not null, default: 'requested']
-  return_date date
-  reason text
-  total_amount bigint [not null, default: 0]
+  code varchar(32) [note: "Assigned on approval, e.g. 0001/RTJ/IMS/XI/26; null before. Unique among live rows (partial index in the Drizzle schema)."]
+  delivery_note_id uuid [not null, note: "The shipped delivery note the goods left on; every line returns one of its lines."]
+  sales_order_id uuid [not null, note: "The delivery note's order, copied for listing and re-opening."]
+  customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract."]
+  warehouse_id uuid [not null, note: "Where the goods come back to; defaults to the delivery note's warehouse. Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  status text [not null, default: 'draft']
+  return_date date [not null]
+  reason text [not null, note: "What the customer reports (defect, wrong item...)."]
+  notes text
+  total_amount bigint [not null, default: 0, note: "Sum of the line totals at the order unit price (IDR minor units); informative, no credit memo."]
   currency_code varchar(3) [not null, default: 'IDR']
+  rejection_reason text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  submitted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  submitted_at bigint
   approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   approved_at bigint
+  received_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  received_at bigint
+  cancelled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancelled_at bigint
+  cancelled_reason text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Goods return request against a sales order. Stock is returned by the Inventory module."
+  deleted_at bigint
+  Note: "Customer return for replacement (ERP-0065), company-wide like delivery notes (ADR-0011). draft -> submitted -> approved -> received; rejection returns to draft; cancelled before received. One-level approval, never by the creator. Receiving posts return_in stock movements at the delivery cost, puts the serial units back in stock (good) or marks them damaged, and takes the quantity off the order lines, so the replacement leaves on a normal delivery note. No credit memo or refund."
   Indexes {
-    (organization_id, code) [unique, name: 'sales_returns_org_code_uq']
+    delivery_note_id [name: 'sales_returns_delivery_note_id_idx']
     sales_order_id [name: 'sales_returns_sales_order_id_idx']
     status [name: 'sales_returns_status_idx']
   }
   Checks {
-    `status IN ('requested', 'approved', 'rejected', 'received', 'cancelled')`
+    `status IN ('draft', 'submitted', 'approved', 'received', 'cancelled')`
     `total_amount >= 0`
+  }
+}
+
+Table sales.sales_return_items {
+  id uuid [pk, default: `uuidv7()`]
+  sales_return_id uuid [not null]
+  delivery_note_item_id uuid [not null]
+  sales_order_item_id uuid [not null]
+  item_id uuid [not null, note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  sku varchar(64)
+  name text [not null]
+  unit varchar(32) [not null]
+  quantity numeric(18,3) [not null]
+  unit_price bigint [not null, default: 0, note: "Order unit price (IDR minor units)."]
+  unit_cost bigint [not null, default: 0, note: "The delivery line's issue cost; the return_in movement books it back (IDR minor units)."]
+  line_total bigint [not null, default: 0, note: "round(quantity x unit_price)."]
+  serial_numbers jsonb [note: "The returned units of a serialized item, from the delivery line."]
+  condition text [note: "Set on receiving: good (sellable again) or damaged (serial units marked damaged)."]
+  bin_id uuid [note: "Storage the line was received into, e.g. a damaged-goods storage. Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  stock_movement_id uuid [note: "The return_in movement posted on receiving. Logical reference to inventory.stock_movements.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  sort_order integer [not null, default: 0]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Line of a sales return. The quantity never exceeds the delivery line minus what live (not cancelled) returns already take."
+  Indexes {
+    sales_return_id [name: 'sales_return_items_sales_return_id_idx']
+    delivery_note_item_id [name: 'sales_return_items_delivery_note_item_id_idx']
+  }
+  Checks {
+    `quantity > 0`
+    `unit_price >= 0`
+    `unit_cost >= 0`
+    `line_total >= 0`
+    `condition IS NULL OR condition IN ('good', 'damaged')`
   }
 }
 
@@ -2975,7 +3022,11 @@ Ref: sales.discount_requests.sales_order_id > sales.sales_orders.id [delete: cas
 Ref: sales.contracts.sales_order_id > sales.sales_orders.id [delete: set null]
 Ref: sales.quotation_status_history.quotation_id > sales.quotations.id [delete: cascade]
 Ref: sales.order_status_history.sales_order_id > sales.sales_orders.id [delete: cascade]
-Ref: sales.sales_returns.sales_order_id > sales.sales_orders.id [delete: cascade]
+Ref: sales.sales_returns.sales_order_id > sales.sales_orders.id [delete: restrict]
+Ref: sales.sales_returns.delivery_note_id > sales.delivery_notes.id [delete: restrict]
+Ref: sales.sales_return_items.sales_return_id > sales.sales_returns.id [delete: cascade]
+Ref: sales.sales_return_items.delivery_note_item_id > sales.delivery_note_items.id [delete: restrict]
+Ref: sales.sales_return_items.sales_order_item_id > sales.sales_order_items.id [delete: restrict]
 Ref: sales.delivery_notes.sales_order_id > sales.sales_orders.id [delete: restrict]
 Ref: sales.delivery_note_items.delivery_note_id > sales.delivery_notes.id [delete: cascade]
 Ref: sales.delivery_note_items.sales_order_item_id > sales.sales_order_items.id [delete: restrict]
@@ -3356,7 +3407,7 @@ Table inventory.serial_tracked_items {
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
-  Note: "One physical, serialized instance of an item. Serves serialized products only after ERP-0036: tools are assets and never have a unit row here. `returned` (ERP-0068): sent back to the supplier on a purchase return; terminal, the replacement arrives as a new unit."
+  Note: "One physical, serialized instance of an item. Serves serialized products only after ERP-0036: tools are assets and never have a unit row here. `returned` (ERP-0068): sent back to the supplier on a purchase return; terminal, the replacement arrives as a new unit. `damaged` (ERP-0065): back from a customer but not sellable; never picked for a delivery, can go back to the supplier."
   Indexes {
     (organization_id, serial_number) [unique, name: 'serial_tracked_items_org_serial_uq', note: 'WHERE organization_id IS NOT NULL']
     (serial_number) [unique, name: 'serial_tracked_items_global_serial_uq', note: 'WHERE organization_id IS NULL']
@@ -3367,7 +3418,7 @@ Table inventory.serial_tracked_items {
     current_borrowing_line_id [name: 'serial_tracked_items_current_borrowing_line_id_idx']
   }
   Checks {
-    `status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned')`
+    `status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged')`
     `is_provisional_serial = false OR status = 'pre_order'`
     `warranty_expires_on IS NULL OR acquired_on IS NULL OR warranty_expires_on >= acquired_on`
   }
