@@ -100,16 +100,19 @@ export const UNIT_STATUSES = [
 	'lost',
 	'sold',
 	'applied_warranty',
+	/** Sent back to the supplier on a purchase return (ERP-0068); terminal. */
+	'returned',
 ] as const;
 export type UnitStatus = (typeof UNIT_STATUSES)[number];
 
 /** Universal transitions allowed for every kind. */
 export const UNIT_STATUS_TRANSITIONS: Record<UnitStatus, UnitStatus[]> = {
 	pre_order: ['in_stock', 'lost'],
-	in_stock: ['sold', 'applied_warranty', 'lost'],
+	in_stock: ['sold', 'applied_warranty', 'lost', 'returned'],
 	lost: [],
 	sold: [],
 	applied_warranty: ['in_stock', 'lost'],
+	returned: [],
 };
 
 /**
@@ -942,7 +945,7 @@ export const serialTrackedItems = inventorySchema.table(
 		),
 		check(
 			'serial_tracked_items_status_check',
-			sql`status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty')`,
+			sql`status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned')`,
 		),
 		// A provisional serial only ever exists on a not-yet-received unit.
 		check(

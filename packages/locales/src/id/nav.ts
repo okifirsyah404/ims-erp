@@ -46,6 +46,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.purchaseOrders': 'Pesanan Pembelian',
 	'item.purchaseRequests': 'Permintaan Pembelian',
 	'item.goodsReceipts': 'Penerimaan Barang',
+	'item.purchaseReturns': 'Retur Pembelian',
 	'item.deliveryNotes': 'Surat Jalan',
 	'breadcrumb.deliveryNoteNew': 'Buat surat jalan',
 	'item.assets': 'Aset & Peralatan',
@@ -139,6 +140,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'breadcrumb.purchaseOrderNew': 'Purchase order baru',
 	'breadcrumb.purchaseRequestNew': 'Permintaan pembelian baru',
 	'breadcrumb.goodsReceiptNew': 'Terima barang',
+	'breadcrumb.purchaseReturnNew': 'Retur barang',
 	'breadcrumb.whatsappFaq': 'FAQ asisten',
 	'breadcrumb.whatsappChat': 'Percakapan',
 };

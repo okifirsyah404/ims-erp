@@ -92,6 +92,7 @@ export const CODE_TYPES = [
 	'supplier_bill',
 	'employee',
 	'warehouse',
+	'purchase_return',
 ] as const;
 export type TCodeType = (typeof CODE_TYPES)[number];
 

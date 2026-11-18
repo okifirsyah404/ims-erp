@@ -2,6 +2,12 @@
 
 # Purchasing Module
 
+> 2026-11-15: purchase returns are implemented in `apps/backend/src/app/procurement`
+> (ERP-0068): created from a goods receipt, approved by one manager, shipped by
+> the warehouse (stock out, serial units `returned`, PO re-opened for the
+> replacement). Manual and approval-gated, so the "no automatic returns" limit
+> below still holds. No credit note or refund: replacement only.
+
 ## Purpose and boundary
 
 Procure-to-pay for the single company: purchase bills against supplier

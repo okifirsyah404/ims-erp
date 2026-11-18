@@ -2606,8 +2606,8 @@ Table payment.payment_allocations {
 // MODULE: Procurement  (schema: procurement)
 // Supplier master, purchase requests, purchase orders, goods receipts and
 // purchase returns. Tenant scoped, except suppliers, purchase requests,
-// purchase orders and goods receipts, which are company-wide (ADR-0011;
-// purchase requests since 2026-11-15, owner decision).
+// purchase orders, goods receipts and purchase returns, which are company-wide
+// (ADR-0011; purchase requests since 2026-11-15, owner decision).
 // ---------------------------------------------------------------------------
 
 Table procurement.suppliers {
@@ -2896,53 +2896,71 @@ Table procurement.goods_receipt_items {
 }
 
 Table procurement.purchase_returns {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  purchase_order_id uuid [not null]
+  code varchar(32) [note: "Assigned on approval, e.g. 0001/RTB/IMS/XI/26; null before. Unique among live rows (partial index in the Drizzle schema)."]
+  goods_receipt_id uuid [not null, note: "The BPB the goods came in on; every line returns one of its lines."]
+  purchase_order_id uuid [not null, note: "The goods receipt's purchase order, copied for listing and re-opening."]
   supplier_id uuid [not null]
-  status text [not null, default: 'requested']
-  return_date date
-  reason text
-  total_amount bigint [not null, default: 0]
+  warehouse_id uuid [not null, note: "The goods receipt's warehouse; stock leaves from here. Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  bin_id uuid [note: "The goods receipt's storage. Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  status text [not null, default: 'draft']
+  return_date date [not null]
+  reason text [not null, note: "Why the goods go back (defect, wrong item...)."]
+  notes text
+  total_amount bigint [not null, default: 0, note: "Sum of the line totals at receipt cost (IDR minor units); informative, no journal."]
   currency_code varchar(3) [not null, default: 'IDR']
+  rejection_reason text
+  created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  submitted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  submitted_at bigint
   approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   approved_at bigint
+  shipped_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  shipped_at bigint
+  cancelled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  cancelled_at bigint
+  cancelled_reason text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Return of purchased goods to a supplier."
+  deleted_at bigint
+  Note: "Return of received goods to the supplier for replacement (ERP-0068), company-wide like goods receipts (ADR-0011). draft -> submitted -> approved -> shipped; rejection returns to draft; cancelled before shipped. One-level approval, never by the creator. Shipping posts return_out stock movements, marks the serial units returned and takes the quantity off the purchase order lines, so the replacement is received with a normal goods receipt. No credit note or refund."
   Indexes {
-    (organization_id, code) [unique, name: 'purchase_returns_org_code_uq']
+    goods_receipt_id [name: 'purchase_returns_goods_receipt_id_idx']
     purchase_order_id [name: 'purchase_returns_purchase_order_id_idx']
     status [name: 'purchase_returns_status_idx']
   }
   Checks {
-    `status IN ('requested', 'approved', 'rejected', 'shipped', 'completed')`
+    `status IN ('draft', 'submitted', 'approved', 'shipped', 'cancelled')`
     `total_amount >= 0`
   }
 }
 
 Table procurement.purchase_return_items {
-  deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   purchase_return_id uuid [not null]
-  purchase_order_item_id uuid
-  item_id uuid [note: "Logical reference to catalog.items.id. Cross-module FK intentionally omitted. Validated through the Catalog module contract."]
-  quantity numeric(18,3) [not null, default: 0]
-  unit_price bigint [not null, default: 0]
-  line_total bigint [not null, default: 0]
-  reason text
+  goods_receipt_item_id uuid [not null]
+  purchase_order_item_id uuid [not null]
+  item_id uuid [not null, note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  sku varchar(64) [not null]
+  name text [not null]
+  unit varchar(32) [not null]
+  quantity numeric(18,3) [not null]
+  unit_cost bigint [not null, default: 0, note: "The goods receipt line's unit cost (IDR minor units)."]
+  line_total bigint [not null, default: 0, note: "round(quantity x unit_cost)."]
+  serial_numbers jsonb [note: "The returned units of a serialized item, from the goods receipt line."]
+  stock_movement_id uuid [note: "The return_out movement posted on shipping. Logical reference to inventory.stock_movements.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  sort_order integer [not null, default: 0]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Line of a purchase return."
+  deleted_at bigint
+  Note: "Line of a purchase return. The quantity never exceeds the goods receipt line minus what live (not cancelled) returns already take."
   Indexes {
     purchase_return_id [name: 'purchase_return_items_purchase_return_id_idx']
+    goods_receipt_item_id [name: 'purchase_return_items_goods_receipt_item_id_idx']
   }
   Checks {
     `quantity > 0`
-    `unit_price >= 0`
+    `unit_cost >= 0`
     `line_total >= 0`
   }
 }
@@ -2970,10 +2988,12 @@ Ref: procurement.purchase_order_items.purchase_order_id > procurement.purchase_o
 Ref: procurement.goods_receipts.purchase_order_id > procurement.purchase_orders.id [delete: restrict]
 Ref: procurement.goods_receipt_items.goods_receipt_id > procurement.goods_receipts.id [delete: cascade]
 Ref: procurement.goods_receipt_items.purchase_order_item_id > procurement.purchase_order_items.id [delete: restrict]
+Ref: procurement.purchase_returns.goods_receipt_id > procurement.goods_receipts.id [delete: restrict]
 Ref: procurement.purchase_returns.purchase_order_id > procurement.purchase_orders.id [delete: restrict]
 Ref: procurement.purchase_returns.supplier_id > procurement.suppliers.id [delete: restrict]
 Ref: procurement.purchase_return_items.purchase_return_id > procurement.purchase_returns.id [delete: cascade]
-Ref: procurement.purchase_return_items.purchase_order_item_id > procurement.purchase_order_items.id [delete: set null]
+Ref: procurement.purchase_return_items.goods_receipt_item_id > procurement.goods_receipt_items.id [delete: restrict]
+Ref: procurement.purchase_return_items.purchase_order_item_id > procurement.purchase_order_items.id [delete: restrict]
 
 
 // MODULE: Inventory  (schema: inventory)
@@ -3336,7 +3356,7 @@ Table inventory.serial_tracked_items {
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
-  Note: "One physical, serialized instance of an item. Serves serialized products only after ERP-0036: tools are assets and never have a unit row here."
+  Note: "One physical, serialized instance of an item. Serves serialized products only after ERP-0036: tools are assets and never have a unit row here. `returned` (ERP-0068): sent back to the supplier on a purchase return; terminal, the replacement arrives as a new unit."
   Indexes {
     (organization_id, serial_number) [unique, name: 'serial_tracked_items_org_serial_uq', note: 'WHERE organization_id IS NOT NULL']
     (serial_number) [unique, name: 'serial_tracked_items_global_serial_uq', note: 'WHERE organization_id IS NULL']
@@ -3347,7 +3367,7 @@ Table inventory.serial_tracked_items {
     current_borrowing_line_id [name: 'serial_tracked_items_current_borrowing_line_id_idx']
   }
   Checks {
-    `status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty')`
+    `status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned')`
     `is_provisional_serial = false OR status = 'pre_order'`
     `warranty_expires_on IS NULL OR acquired_on IS NULL OR warranty_expires_on >= acquired_on`
   }

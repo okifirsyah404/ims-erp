@@ -193,4 +193,27 @@ export class SerialUnitRepository implements ISerialUnitRepository {
 			.returning({ serialNumber: serialTrackedItems.serialNumber });
 		return rows.map((row) => row.serialNumber);
 	}
+
+	async returnToSupplier(
+		itemId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; stockMovementId: string | null },
+		tx: TTx,
+	): Promise<string[]> {
+		if (serialNumbers.length === 0) return [];
+		const rows = await tx
+			.update(serialTrackedItems)
+			.set({ status: 'returned', warehouseId: null, binId: null, stockMovementId: data.stockMovementId })
+			.where(
+				and(
+					eq(serialTrackedItems.itemId, itemId),
+					inArray(serialTrackedItems.serialNumber, [...serialNumbers]),
+					eq(serialTrackedItems.warehouseId, data.warehouseId),
+					eq(serialTrackedItems.status, 'in_stock'),
+					isNull(serialTrackedItems.deletedAt),
+				),
+			)
+			.returning({ serialNumber: serialTrackedItems.serialNumber });
+		return rows.map((row) => row.serialNumber);
+	}
 }

@@ -93,6 +93,48 @@ export class GoodsReceiptBinError extends AppError {
 	}
 }
 
+export class PurchaseReturnNotFoundError extends AppError {
+	constructor() {
+		super(404, 'procurement.purchaseReturnNotFound', 'Purchase return not found');
+	}
+}
+
+/** The goods receipt is missing, or its PO can no longer take a return. */
+export class PurchaseReturnReceiptError extends AppError {
+	constructor() {
+		super(422, 'procurement.returnReceipt', 'Goods can only be returned from a goods receipt of a received purchase order');
+	}
+}
+
+/**
+ * A return line that is unknown, more than is still returnable, repeated,
+ * or whose serials are wrong or no longer in stock.
+ */
+export class PurchaseReturnLineError extends AppError {
+	constructor(kind: 'unknown' | 'over' | 'duplicate' | 'serials' | 'notInStock', line: number) {
+		super(422, `procurement.returnLine.${kind}` as const, `Line ${line}: ${kind}`, { line });
+	}
+}
+
+/** A transition that does not start from the return's status (also races). */
+export class PurchaseReturnStateError extends AppError {
+	constructor(kind: 'notDraft' | 'notSubmitted' | 'notApproved' | 'notCancellable') {
+		super(422, `procurement.returnState.${kind}` as const, `Purchase return state: ${kind}`);
+	}
+}
+
+export class PurchaseReturnSelfApprovalError extends AppError {
+	constructor() {
+		super(403, 'procurement.returnSelfApproval', 'You cannot approve or reject your own purchase return');
+	}
+}
+
+export class PurchaseReturnCodeTakenError extends AppError {
+	constructor(code: string) {
+		super(409, 'procurement.returnCodeTaken', `Return number ${code} is already used`, { code });
+	}
+}
+
 export class PurchaseRequestNotFoundError extends AppError {
 	constructor() {
 		super(404, 'procurement.purchaseRequestNotFound', 'Purchase request not found');

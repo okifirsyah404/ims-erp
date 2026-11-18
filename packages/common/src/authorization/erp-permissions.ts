@@ -42,6 +42,8 @@ export const erpStatements = {
 	supplier: ['read', 'create', 'update', 'archive', 'read_bank'],
 	purchase_request: ['read', 'create', 'update', 'submit', 'approve', 'reject'],
 	purchase_order: ['read', 'create', 'update', 'submit', 'approve', 'send', 'cancel', 'export'],
+	/** ERP-0068: goods sent back to the supplier for replacement; `ship` posts the stock out. */
+	purchase_return: ['read', 'create', 'update', 'submit', 'approve', 'ship', 'cancel'],
 
 	// Projects and technicians
 	/** `read_cost`: see/record project direct costs (owner, finance, project manager). */
@@ -469,6 +471,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		settlement: ['read', 'verify', 'approve', 'reject'],
 		purchase_request: ['read', 'approve', 'reject'],
 		purchase_order: ['read', 'approve'],
+		purchase_return: ['read', 'approve'],
 		// Approves stock adjustments like POs (decision 2026-11-03, ADR-0011).
 		stock: ['read'],
 		stock_adjustment: ['read', 'approve', 'post'],
@@ -585,6 +588,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		supplier: ['read', 'create', 'update', 'archive', 'read_bank'],
 		purchase_request: ['read', 'create', 'update', 'submit'],
 		purchase_order: ['read', 'create', 'update', 'submit', 'send', 'export'],
+		purchase_return: ['read', 'create', 'update', 'submit', 'cancel'],
 		// Maintains the item master incl. purchase price (decision 2026-11-02).
 		product: ['read', 'create', 'update', 'read_cost'],
 		stock: ['read'],
@@ -600,6 +604,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		product: ['read'],
 		stock: ['read', 'receive', 'issue', 'transfer', 'export'],
 		stock_adjustment: ['read', 'create', 'submit'],
+		// ERP-0068: hands the goods to the supplier (stock out).
+		purchase_return: ['read', 'ship'],
 		asset_borrowing: [
 			'read',
 			'update',
@@ -749,6 +755,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		supplier: ['read'],
 		purchase_request: ['read'],
 		purchase_order: ['read', 'export'],
+		purchase_return: ['read'],
 		project: ['read', 'export'],
 		task: ['read'],
 		daily_report: ['read', 'export'],

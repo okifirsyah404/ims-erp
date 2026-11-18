@@ -52,6 +52,7 @@ const settings = {
 	'numbering.type.purchase_order': 'Purchase order',
 	'numbering.type.purchase_request': 'Purchase request',
 	'numbering.type.goods_receipt': 'Goods receipt',
+	'numbering.type.purchase_return': 'Purchase return',
 	'numbering.type.stock_adjustment': 'Stock adjustment',
 	'numbering.type.delivery_note': 'Delivery note (surat jalan)',
 	'numbering.type.project': 'Project',
