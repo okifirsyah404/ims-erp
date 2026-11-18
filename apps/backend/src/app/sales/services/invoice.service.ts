@@ -14,7 +14,7 @@ import type { CodeNumberService } from '@app/code-number';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
 import type { DocumentService } from '@app/document';
 import {
-	LEDGER_REPOSITORY_TOKEN,
+	AR_LEDGER_PORT_TOKEN,
 	POSTING_SERVICE_TOKEN,
 	AR_ACCOUNT_RESOLVER_TOKEN,
 } from '../../accounting/constants/ar-di';
@@ -28,7 +28,7 @@ import type {
 	TInvoiceItemInput,
 	TUpdateInvoiceInput,
 } from '../contracts/invoice.repository.interface';
-import type { LedgerRepository } from '../../accounting/repositories/ledger.repository';
+import type { IArLedgerPort } from '../../accounting/contracts/ar-ledger.port';
 import type { PostingService } from '../../accounting/services/posting.service';
 import type { ArAccountResolverService } from '../../accounting/services/ar-account-resolver.service';
 import {
@@ -71,8 +71,8 @@ export class InvoiceService {
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 		@inject(INVOICE_REPOSITORY_TOKEN)
 		private readonly repo: TInvoiceRepository,
-		@inject(LEDGER_REPOSITORY_TOKEN)
-		private readonly ledgerRepo: LedgerRepository,
+		@inject(AR_LEDGER_PORT_TOKEN)
+		private readonly arLedger: IArLedgerPort,
 		@inject(POSTING_SERVICE_TOKEN) private readonly posting: PostingService,
 		@inject(AR_ACCOUNT_RESOLVER_TOKEN)
 		private readonly arResolver: ArAccountResolverService,
@@ -279,9 +279,9 @@ export class InvoiceService {
 				lines,
 			});
 
-			await this.ledgerRepo.insertArOpenItem(
+			await this.arLedger.openItem(
+				ctx.organizationId,
 				{
-					organizationId: ctx.organizationId,
 					salesInvoiceId: invoice.id,
 					customerId: invoice.customerId,
 					invoiceDate: issueDate,

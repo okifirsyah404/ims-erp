@@ -9,8 +9,11 @@ import { inject, injectable } from 'tsyringe';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
-import { LEDGER_REPOSITORY_TOKEN, POSTING_SERVICE_TOKEN } from '../constants/di';
-import type { LedgerRepository } from '../repositories/ledger.repository';
+import {
+	BANK_ACCOUNT_LINK_REPOSITORY_TOKEN,
+	CASH_BANK_REPOSITORY_TOKEN,
+	POSTING_SERVICE_TOKEN,
+} from '../constants/di';
 import type { PostingService } from '../services/posting.service';
 import {
 	CashBankAccountCodeTakenError,
@@ -19,6 +22,7 @@ import {
 	CashBankInsufficientFundsError,
 	CashBankLinkRequiredError,
 } from '../errors/ledger.errors';
+import type { ICashBankRepository, IBankAccountLinkRepository } from '../contracts/ledger.repositories';
 
 export type TCashBankActionContext = {
 	organizationId: string;
@@ -83,7 +87,8 @@ export type TCashBankMovementInput = {
 export class CashBankService {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
-		@inject(LEDGER_REPOSITORY_TOKEN) private readonly repo: LedgerRepository,
+		@inject(CASH_BANK_REPOSITORY_TOKEN) private readonly cashAccounts: ICashBankRepository,
+		@inject(BANK_ACCOUNT_LINK_REPOSITORY_TOKEN) private readonly links: IBankAccountLinkRepository,
 		@inject(POSTING_SERVICE_TOKEN) private readonly posting: PostingService,
 		@inject(CODE_NUMBER_SERVICE_TOKEN)
 		private readonly numbering: CodeNumberService,
@@ -95,13 +100,13 @@ export class CashBankService {
 		ctx: TCashBankActionContext,
 		input: TCreateCashBankAccountInput,
 	): Promise<TCashBankAccountSelect> {
-		const existing = await this.repo.findCashBankAccountByCode(
+		const existing = await this.cashAccounts.findCashBankAccountByCode(
 			ctx.organizationId,
 			input.code,
 		);
 		if (existing) throw new CashBankAccountCodeTakenError();
 
-		const account = await this.repo.insertCashBankAccount({
+		const account = await this.cashAccounts.insertCashBankAccount({
 			organizationId: ctx.organizationId,
 			code: input.code,
 			name: input.name,
@@ -114,7 +119,7 @@ export class CashBankService {
 		});
 
 		if (input.glAccountId) {
-			await this.repo.upsertBankAccountLink({
+			await this.links.upsertBankAccountLink({
 				organizationId: ctx.organizationId,
 				cashBankAccountId: account.id,
 				chartOfAccountId: input.glAccountId,
@@ -127,14 +132,14 @@ export class CashBankService {
 	async listAccounts(
 		organizationId: string,
 	): Promise<TCashBankAccountSelect[]> {
-		return this.repo.listCashBankAccounts(organizationId);
+		return this.cashAccounts.listCashBankAccounts(organizationId);
 	}
 
 	async getAccount(
 		organizationId: string,
 		id: string,
 	): Promise<TCashBankAccountSelect> {
-		const account = await this.repo.findCashBankAccountById(organizationId, id);
+		const account = await this.cashAccounts.findCashBankAccountById(organizationId, id);
 		if (!account) throw new CashBankAccountNotFoundError();
 		return account;
 	}
@@ -145,7 +150,7 @@ export class CashBankService {
 		patch: TUpdateCashBankAccountInput,
 	): Promise<TCashBankAccountSelect> {
 		await this.getAccount(ctx.organizationId, id);
-		const updated = await this.repo.updateCashBankAccount(
+		const updated = await this.cashAccounts.updateCashBankAccount(
 			ctx.organizationId,
 			id,
 			patch,
@@ -154,9 +159,9 @@ export class CashBankService {
 
 		if (patch.glAccountId !== undefined) {
 			if (patch.glAccountId === null) {
-				await this.repo.deactivateBankAccountLink(ctx.organizationId, id);
+				await this.links.deactivateBankAccountLink(ctx.organizationId, id);
 			} else {
-				await this.repo.upsertBankAccountLink({
+				await this.links.upsertBankAccountLink({
 					organizationId: ctx.organizationId,
 					cashBankAccountId: id,
 					chartOfAccountId: patch.glAccountId,
@@ -181,7 +186,7 @@ export class CashBankService {
 		outerTx?: TTx,
 	): Promise<TCashBankTransactionSelect> {
 		const run = async (tx: TTx): Promise<TCashBankTransactionSelect> => {
-			const account = await this.repo.findCashBankAccountById(
+			const account = await this.cashAccounts.findCashBankAccountById(
 				ctx.organizationId,
 				input.cashBankAccountId,
 				tx,
@@ -190,7 +195,7 @@ export class CashBankService {
 			if (!account.isActive) throw new CashBankAccountInactiveError();
 
 			// Q4: GL link becomes mandatory at posting time, not at create.
-			const link = await this.repo.findBankAccountLinkByCashAccount(
+			const link = await this.links.findBankAccountLinkByCashAccount(
 				ctx.organizationId,
 				account.id,
 			);
@@ -232,7 +237,7 @@ export class CashBankService {
 				],
 			});
 
-			const movement = await this.repo.insertCashBankTransaction(
+			const movement = await this.cashAccounts.insertCashBankTransaction(
 				{
 					organizationId: ctx.organizationId,
 					code,
@@ -250,7 +255,7 @@ export class CashBankService {
 				tx,
 			);
 
-			await this.repo.updateCashBankAccount(
+			await this.cashAccounts.updateCashBankAccount(
 				ctx.organizationId,
 				account.id,
 				{ currentBalance: balanceAfter },
@@ -266,7 +271,7 @@ export class CashBankService {
 		cashBankAccountId: string | undefined,
 		pagination: { page: number; limit: number },
 	): Promise<TPaginationResult<TCashBankTransactionSelect>> {
-		return this.repo.listCashBankTransactions(
+		return this.cashAccounts.listCashBankTransactions(
 			organizationId,
 			cashBankAccountId,
 			pagination,

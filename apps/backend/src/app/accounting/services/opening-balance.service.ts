@@ -1,8 +1,11 @@
 import type { TTx } from '@drizzle/types';
 import type { TOpeningBalanceSelect } from '@drizzle/schemas/accounting.schema';
 import { inject, injectable } from 'tsyringe';
-import { LEDGER_REPOSITORY_TOKEN, POSTING_SERVICE_TOKEN } from '../constants/di';
-import type { LedgerRepository } from '../repositories/ledger.repository';
+import {
+	CHART_OF_ACCOUNT_REPOSITORY_TOKEN,
+	OPENING_BALANCE_REPOSITORY_TOKEN,
+	POSTING_SERVICE_TOKEN,
+} from '../constants/di';
 import type { PostingService } from '../services/posting.service';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { DRIZZLE_TOKEN } from '@di/provider';
@@ -12,6 +15,7 @@ import {
 	OpeningBalanceAlreadyPostedError,
 	OpeningBalanceLockedError,
 } from '../errors/ledger.errors';
+import type { IOpeningBalanceRepository, IChartOfAccountRepository } from '../contracts/ledger.repositories';
 
 export type TOpeningBalanceActionContext = {
 	organizationId: string;
@@ -41,12 +45,13 @@ export type TOpeningBalanceRowInput = {
 export class OpeningBalanceService {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
-		@inject(LEDGER_REPOSITORY_TOKEN) private readonly repo: LedgerRepository,
+		@inject(OPENING_BALANCE_REPOSITORY_TOKEN) private readonly balances: IOpeningBalanceRepository,
+		@inject(CHART_OF_ACCOUNT_REPOSITORY_TOKEN) private readonly accounts: IChartOfAccountRepository,
 		@inject(POSTING_SERVICE_TOKEN) private readonly posting: PostingService,
 	) {}
 
 	async list(organizationId: string): Promise<TOpeningBalanceSelect[]> {
-		return this.repo.listOpeningBalances(organizationId);
+		return this.balances.listOpeningBalances(organizationId);
 	}
 
 	/** Adds (or merges into) a draft row for `(account, asOfDate)`. */
@@ -54,13 +59,13 @@ export class OpeningBalanceService {
 		ctx: TOpeningBalanceActionContext,
 		input: TOpeningBalanceRowInput,
 	): Promise<TOpeningBalanceSelect> {
-		const account = await this.repo.findAccountById(
+		const account = await this.accounts.findAccountById(
 			ctx.organizationId,
 			input.accountId,
 		);
 		if (!account) throw new AccountNotFoundError();
 
-		const existing = await this.repo.findOpeningBalanceByAccountAndDate(
+		const existing = await this.balances.findOpeningBalanceByAccountAndDate(
 			ctx.organizationId,
 			input.accountId,
 			input.asOfDate,
@@ -68,14 +73,14 @@ export class OpeningBalanceService {
 		if (existing) {
 			if (existing.postedAt) throw new OpeningBalanceAlreadyPostedError();
 			return (
-				(await this.repo.updateOpeningBalance(ctx.organizationId, existing.id, {
+				(await this.balances.updateOpeningBalance(ctx.organizationId, existing.id, {
 					debitBalance: input.debitBalance,
 					creditBalance: input.creditBalance,
 					description: input.description ?? existing.description,
 				})) ?? existing
 			);
 		}
-		return this.repo.insertOpeningBalance({
+		return this.balances.insertOpeningBalance({
 			organizationId: ctx.organizationId,
 			accountId: input.accountId,
 			asOfDate: input.asOfDate,
@@ -96,11 +101,11 @@ export class OpeningBalanceService {
 			description?: string | null;
 		},
 	): Promise<TOpeningBalanceSelect> {
-		const rows = await this.repo.listOpeningBalances(ctx.organizationId);
+		const rows = await this.balances.listOpeningBalances(ctx.organizationId);
 		const row = rows.find((r) => r.id === id);
 		if (!row) throw new OpeningBalanceLockedError();
 		if (row.postedAt) throw new OpeningBalanceAlreadyPostedError();
-		const updated = await this.repo.updateOpeningBalance(
+		const updated = await this.balances.updateOpeningBalance(
 			ctx.organizationId,
 			id,
 			patch,
@@ -110,11 +115,11 @@ export class OpeningBalanceService {
 	}
 
 	async removeRow(ctx: TOpeningBalanceActionContext, id: string): Promise<void> {
-		const rows = await this.repo.listOpeningBalances(ctx.organizationId);
+		const rows = await this.balances.listOpeningBalances(ctx.organizationId);
 		const row = rows.find((r) => r.id === id);
 		if (!row) throw new OpeningBalanceLockedError();
 		if (row.postedAt) throw new OpeningBalanceAlreadyPostedError();
-		await this.repo.deleteOpeningBalance(ctx.organizationId, id);
+		await this.balances.deleteOpeningBalance(ctx.organizationId, id);
 	}
 
 	/**
@@ -129,7 +134,7 @@ export class OpeningBalanceService {
 		ctx: TOpeningBalanceActionContext,
 	): Promise<{ entryId: string; rows: number }> {
 		const rows = (
-			await this.repo.listOpeningBalances(ctx.organizationId)
+			await this.balances.listOpeningBalances(ctx.organizationId)
 		).filter((r) => !r.postedAt);
 		if (rows.length === 0) {
 			throw new OpeningBalanceLockedError();
@@ -164,13 +169,13 @@ export class OpeningBalanceService {
 			});
 
 			for (const row of rows) {
-				await this.repo.updateOpeningBalance(
+				await this.balances.updateOpeningBalance(
 					ctx.organizationId,
 					row.id,
 					{},
 					tx,
 				);
-				await this.repo.stampOpeningBalancePosted(
+				await this.balances.stampOpeningBalancePosted(
 					ctx.organizationId,
 					row.id,
 					tx,

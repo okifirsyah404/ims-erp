@@ -19,14 +19,16 @@ import type {
 	TCashBankTransactionSelect,
 	TSupplierBillSelect,
 } from '@drizzle/schemas/finance.schema';
-import type { LedgerRepository } from '../../src/app/accounting/repositories/ledger.repository';
 import { PostingService } from '../../src/app/accounting/services/posting.service';
 import { ArAccountResolverService } from '../../src/app/accounting/services/ar-account-resolver.service';
 import { CashBankService } from '../../src/app/accounting/services/cash-bank.service';
-import { PaymentService } from '../../src/app/accounting/services/payment.service';
+import { PaymentService } from '../../src/app/payment/services/payment.service';
 import { SupplierBillService } from '../../src/app/accounting/services/supplier-bill.service';
 import { MonthEndCloseService } from '../../src/app/accounting/services/month-end-close.service';
-import { PaymentInvalidTransitionError } from '../../src/app/accounting/errors/ledger.errors';
+import {
+	PaymentInvalidTransitionError,
+	PaymentNotFoundError,
+} from '../../src/app/payment/errors/payment.errors';
 
 const ORG = 'org-1';
 const ACTOR = 'user-1';
@@ -147,7 +149,7 @@ function makeHarness() {
 			[...periods.values()].find((p) => p.periodYear === y && p.periodMonth === m) ?? null,
 		findPostedEntryByIdempotencyKey: async (_o: string, key: string) =>
 			[...entries.values()].find((e) => e.idempotencyKey === key) ?? null,
-		findPostedEntryBySourceTypeAndId: async (
+		findEntryBySource: async (
 			_o: string,
 			sourceType: string,
 			sourceId: string,
@@ -319,7 +321,7 @@ function makeHarness() {
 			draftBills: [...bills.values()].filter((b) => b.status === 'draft').length,
 			unreconciledReconciliations: unreconciledCount,
 		}),
-	} as unknown as LedgerRepository;
+	};
 
 	let draftInvoiceCount = 0;
 	let unreconciledCount = 0;
@@ -333,12 +335,146 @@ function makeHarness() {
 		transaction: async (fn: (tx: never) => unknown) => fn(tx),
 	} as unknown as BunSQLDatabase;
 
-	const posting = new PostingService({} as unknown as BunSQLDatabase, repo, numbering);
-	const arResolver = new ArAccountResolverService(repo);
-	const cashBank = new CashBankService(dbLike, repo, posting, numbering);
-	const paymentService = new PaymentService(dbLike, repo, cashBank, arResolver, numbering);
-	const billService = new SupplierBillService(dbLike, repo, posting, arResolver, numbering);
-	const closeService = new MonthEndCloseService(dbLike, repo, cashBank);
+	const posting = new PostingService({} as unknown as BunSQLDatabase, repo as never, repo as never, repo as never, numbering);
+	const arResolver = new ArAccountResolverService(repo as never);
+	const cashBank = new CashBankService(dbLike, repo as never, repo as never, posting, numbering);
+
+	// ADR-0024: the ledger moved to the payment module. Two fakes keep this
+	// harness honest — the payment module's own repository and operations, and
+	// Accounting's settlement port — both backed by the same in-memory rows.
+	const paymentLedger = {
+		countOpen: async () =>
+			[...paymentsRows.values()].filter((p) =>
+				['draft', 'submitted', 'approved'].includes(p.status as string),
+			).length,
+		listAllocations: async (_o: string, paymentId: string) =>
+			allocations.filter((a) => a.paymentId === paymentId),
+		requireExecuted: async (_o: string, id: string) => {
+			const row = paymentsRows.get(id);
+			if (!row) throw new PaymentNotFoundError();
+			if (row.status !== 'executed') throw new PaymentInvalidTransitionError();
+			return row;
+		},
+		markVoided: async (_o: string, id: string, reason: string) => {
+			const row = paymentsRows.get(id)!;
+			Object.assign(row, { status: 'void', voidedAt: now(), voidReason: reason });
+			return row;
+		},
+		update: async (_o: string, id: string, patch: Record<string, unknown>) => {
+			const row = paymentsRows.get(id);
+			if (!row) return null;
+			Object.assign(row, patch);
+			return row;
+		},
+		findById: async (_o: string, id: string) => paymentsRows.get(id) ?? null,
+		list: async () => ({
+			data: [...paymentsRows.values()],
+			meta: { page: 1, limit: 20, total: paymentsRows.size, totalPages: 1 },
+		}),
+		insert: async (row: Record<string, unknown>) => {
+			const created = {
+				id: id('pay'),
+				createdAt: now(),
+				updatedAt: now(),
+				deletedAt: null,
+				voidedAt: null,
+				voidReason: null,
+				...row,
+			};
+			paymentsRows.set(created.id as string, created);
+			return created;
+		},
+		insertAllocations: async (rows: Array<Record<string, unknown>>) =>
+			rows.map((row) => {
+				const created = { id: id('alloc'), createdAt: now(), updatedAt: now(), ...row };
+				allocations.push(created as never);
+				return created;
+			}),
+		markAllocationExecuted: async (_o: string, allocId: string) => {
+			const row = allocations.find((a) => a.id === allocId);
+			if (row) (row as { updatedAt?: Date }).updatedAt = now();
+		},
+	};
+
+	const settlement = {
+		findSalesInvoice: repo.findSalesInvoiceById,
+		findArOpenItem: repo.findArOpenItemByInvoice,
+		applyArSettlement: async (
+			org: string,
+			invoiceId: string,
+			patch: { paidAmount: number; outstandingAmount: number; status: string },
+			_txIn: never,
+		) => {
+			void org;
+			void invoiceId;
+			void patch;
+			await repo.updateArOpenItem();
+			await repo.updateSalesInvoiceTotals();
+		},
+		findSupplierBill: repo.findSupplierBillById,
+		findApOpenItem: repo.findApOpenItemByBill,
+		applyApSettlement: async (
+			org: string,
+			billId: string,
+			patch: { paidAmount: number; outstandingAmount: number; status: string },
+			_txIn: never,
+		) => {
+			await repo.updateApOpenItem(org, billId, patch);
+			await repo.updateSupplierBill(
+				org,
+				billId,
+				{
+					paidTotal: patch.paidAmount,
+					outstandingTotal: patch.outstandingAmount,
+					status: patch.status,
+				},
+			);
+		},
+		postCashMovement: async (input: Record<string, unknown>, txIn: never) => {
+			const counterpartAccountId = await arResolver.resolve(
+				input.organizationId as string,
+				input.side === 'payable' ? 'ap' : 'ar',
+			);
+			await cashBank.postMovement(
+				{
+					organizationId: input.organizationId as string,
+					actorUserId: input.actorUserId as string,
+				},
+				{
+					cashBankAccountId: input.cashBankAccountId as string,
+					transactionDate: input.businessDate as string,
+					direction: input.direction as 'in' | 'out',
+					amount: input.amount as number,
+					description: input.description as string,
+					referenceNumber: input.referenceNumber as string,
+					counterpartAccountId,
+					sourceType: input.sourceType as string,
+					sourceId: input.sourceId as string,
+				},
+				txIn,
+			);
+		},
+	};
+
+	const paymentService = new PaymentService(
+		dbLike,
+		paymentLedger as never,
+		settlement as never,
+		numbering,
+	);
+	const billService = new SupplierBillService(dbLike, repo as never, repo as never, posting, arResolver, numbering);
+	const closeService = new MonthEndCloseService(
+		dbLike,
+		repo as never,
+		repo as never,
+		repo as never,
+		repo as never,
+		repo as never,
+		repo as never,
+		repo as never,
+		cashBank,
+		paymentLedger as never,
+	);
 
 	return {
 		billService,

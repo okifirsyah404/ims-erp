@@ -145,6 +145,57 @@ The updated `fix/m02-invoice-billing` (now on main with M04) went into
 - Not verified here: applying the regenerated migration to a disposable
   database, and the PR #102 API e2e after the merge.
 
+## 2026-11-18 - LedgerRepository split per table; payment owns the ledger; Sales freed of accounting repositories
+
+Owner request: "pecah lagi ledger.repository.ts, harusnya 1 repository representasi 1 tabel
+(bisa join)". Follow-up to ADR-0024 (payment ledger moved to `payment.*`).
+
+- **`docs.dbml` first** (canonical): `finance.payments` and
+  `finance.payment_allocations` moved to `payment.payments` /
+  `payment.payment_allocations`, in the Payment TableGroup and module section.
+  `sales_invoice_id` / `receipt_id` became nullable logical references
+  (ADR-0014) and the 3 `payments.* -> finance.*` FKs became logical too, so no
+  cross-schema ref remains. The 7 intra-module Finance refs that an earlier edit
+  had removed were restored; `validate-dbml.ts` → 278 tables, 234 refs,
+  0 cross-module, **OK** (the 5 fewer than main are exactly the 2
+  `gateway_payments` and 3 `payments` refs that became logical).
+- **One repository per table** (`accounting/repositories/`):
+  `chart-of-account`, `accounting-period`, `journal` (entries+lines aggregate),
+  `opening-balance`, `bank-account-link`, `cash-bank` (accounts+transactions),
+  `ar-open-item`, `ap-open-item`, `supplier-bill`, `bank-reconciliation`
+  (parents+items), `account-balance`, plus two documented non-entity
+  repositories: `invoice-mirror` (the AR mirror write path into
+  `sales.invoices`, the one known rule 3.2/3.4 deviation, isolated so it can be
+  replaced by a Sales contract) and `close-checklist` (a 4-table read model).
+  `ledger.repository.ts` (1574 lines, 65 methods, 14 tables) is deleted.
+- **Contracts** in `accounting/contracts/ledger.repositories.ts`, one interface
+  per repository, with the join scope documented per aggregate. Tokens in
+  `constants/di.ts`; `registerAccounting` registers all thirteen.
+- **Services inject only what they query** — e.g. `PostingService` takes
+  accounts + journal + periods instead of the whole ledger; `AccountService`
+  takes only the chart of accounts.
+- **Sales no longer imports an accounting repository** (it did, in
+  `invoice.service` and `invoice-billing.service` — a rule 3.4 violation).
+  Accounting now publishes `IArLedgerPort`
+  (`openItem`, `setOpenItemStatus`, `findPostedEntryForSource`) via
+  `AR_LEDGER_PORT_TOKEN`; Sales injects the token and the interface only.
+- **Payment integration follows ADR-0024**: `payment` owns the ledger
+  (`payment.repository.ts`), reaches Sales through `IInvoicePaymentPort` and
+  Accounting through `ILedgerSettlementPort`, and exposes
+  `IPaymentLedgerGateway` (`countOpen`, `listAllocations`, `requireExecuted`,
+  `markVoided`) so Accounting's F7 reversal needs no payment repository. The
+  `payment` errors are the only class identity (`accounting/errors` re-exports
+  nothing from payment); `OpenItemNotFoundError` was added for ledger drift.
+- **Migration** `20261117172959_erp0020_payment_gateway` (regenerated, not
+  copied): `CREATE SCHEMA "payment"` + the table. `drizzle-kit check`:
+  "Everything's fine".
+- Verified (2026-11-18, repo root): `bun run typecheck` 4/4; `bun run lint`
+  5/5, 0 errors, backend warnings back to the 9 pre-existing; `bun run test`
+  backend 1219 / web-admin 119 / locales 98 / react-email 6, 0 fail;
+  `bun run build` 3/3; `bun docs/database/validate-dbml.ts` OK.
+- Not verified: applying the migration to a disposable database, and the
+  accounting API e2e against a live server.
+
 ## 2026-11-18 - ERP-0020: gateway checkouts moved to a `payment` schema/module (ADR-0023)
 
 Owner request: "buat payment gateway di db menggunakan schema payment.*".

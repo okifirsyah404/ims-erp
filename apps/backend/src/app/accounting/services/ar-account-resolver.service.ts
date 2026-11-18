@@ -1,8 +1,8 @@
 import { inject, injectable } from 'tsyringe';
-import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
+import { CHART_OF_ACCOUNT_REPOSITORY_TOKEN } from '../constants/di';
 import { AR_POSTING_DEFAULT_CODES, type TArPostingRole } from '../constants/ar-posting';
-import type { LedgerRepository } from '../repositories/ledger.repository';
 import { ArAccountNotConfiguredError } from '../errors/ledger.errors';
+import type { IChartOfAccountRepository } from '../contracts/ledger.repositories';
 
 /**
  * Resolves the GL accounts the invoice/payment flows post against (F4, 1c).
@@ -16,8 +16,7 @@ import { ArAccountNotConfiguredError } from '../errors/ledger.errors';
 @injectable()
 export class ArAccountResolverService {
 	constructor(
-		@inject(LEDGER_REPOSITORY_TOKEN)
-		private readonly repo: LedgerRepository,
+				@inject(CHART_OF_ACCOUNT_REPOSITORY_TOKEN) private readonly accounts: IChartOfAccountRepository,
 	) {}
 
 	/** Resolves one role to a postable, active COA account id. */
@@ -26,7 +25,7 @@ export class ArAccountResolverService {
 		role: TArPostingRole,
 	): Promise<string> {
 		const code = AR_POSTING_DEFAULT_CODES[role];
-		const account = await this.repo.findAccountByCode(organizationId, code);
+		const account = await this.accounts.findAccountByCode(organizationId, code);
 		if (!account || !account.isActive || !account.isPostable) {
 			throw new ArAccountNotConfiguredError(code, role);
 		}

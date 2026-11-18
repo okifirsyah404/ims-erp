@@ -9,6 +9,7 @@ import { inventoryRelations } from './schemas/inventory.schema';
 import { locationRelations } from './schemas/location.schema';
 import { roleRelations } from './schemas/role.schema';
 import { salesRelations } from './schemas/sales.schema';
+import { paymentRelations } from './schemas/payment.schema';
 
 const client = new SQL(appConfig.database.url!);
 
@@ -20,6 +21,7 @@ export const drizzleDB = drizzle({
 		...roleRelations,
 		...auditLogRelations,
 		...salesRelations,
+		...paymentRelations,
 		...inventoryRelations,
 		...crmRelations,
 			...procurementRelations,

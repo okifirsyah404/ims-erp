@@ -16,6 +16,8 @@ import { TaxController } from './controllers/tax.controller';
 
 export { registerAccounting } from './container';
 export { POSTING_SERVICE_TOKEN } from './constants/di';
+export { LEDGER_SETTLEMENT_PORT_TOKEN } from './constants/ar-di';
+export type { ILedgerSettlementPort } from './contracts/ledger-settlement.port';
 export type { TPostingInput, TPostingLine, TPostingResult } from './services/posting.service';
 export { PostingService } from './services/posting.service';
 

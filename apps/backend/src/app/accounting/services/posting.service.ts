@@ -9,8 +9,7 @@ import { inject, injectable } from 'tsyringe';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
-import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
-import type { LedgerRepository } from '../repositories/ledger.repository';
+import { CHART_OF_ACCOUNT_REPOSITORY_TOKEN, JOURNAL_REPOSITORY_TOKEN, ACCOUNTING_PERIOD_REPOSITORY_TOKEN } from '../constants/di';
 import {
 	AccountInactiveError,
 	AccountNotPostableError,
@@ -23,6 +22,12 @@ import {
 	PeriodNotFoundError,
 	ReversalPeriodLockedError,
 } from '../errors/ledger.errors';
+import type {
+	IAccountingPeriodRepository,
+	IChartOfAccountRepository,
+	IJournalRepository,
+} from '../contracts/ledger.repositories';
+import type { TChartOfAccountSelect } from '@drizzle/schemas/accounting.schema';
 
 /**
  * One journal line as accepted by the posting service.
@@ -88,8 +93,9 @@ export type TPostingResult = {
 export class PostingService {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
-		@inject(LEDGER_REPOSITORY_TOKEN)
-		private readonly repo: LedgerRepository,
+				@inject(CHART_OF_ACCOUNT_REPOSITORY_TOKEN) private readonly accounts: IChartOfAccountRepository,
+		@inject(JOURNAL_REPOSITORY_TOKEN) private readonly journal: IJournalRepository,
+		@inject(ACCOUNTING_PERIOD_REPOSITORY_TOKEN) private readonly periods: IAccountingPeriodRepository,
 		@inject(CODE_NUMBER_SERVICE_TOKEN)
 		private readonly numbering: CodeNumberService,
 	) {}
@@ -116,13 +122,13 @@ export class PostingService {
 		// Idempotency: an identical already-posted entry short-circuits. The
 		// partial unique index is the backstop if two callers race.
 		if (input.idempotencyKey) {
-			const existing = await this.repo.findPostedEntryByIdempotencyKey(
+			const existing = await this.journal.findPostedEntryByIdempotencyKey(
 				input.organizationId,
 				input.idempotencyKey,
 				tx,
 			);
 			if (existing) {
-				const lines = await this.repo.findLinesByEntryId(
+				const lines = await this.journal.findLinesByEntryId(
 					input.organizationId,
 					existing.id,
 					tx,
@@ -154,7 +160,7 @@ export class PostingService {
 			tx,
 		});
 
-		const entry = await this.repo.insertEntry(
+		const entry = await this.journal.insertEntry(
 			{
 				organizationId: input.organizationId,
 				code,
@@ -175,7 +181,7 @@ export class PostingService {
 			tx,
 		);
 
-		const lines = await this.repo.insertLines(
+		const lines = await this.journal.insertLines(
 			resolvedLines.map((line, index) => ({
 				organizationId: input.organizationId,
 				journalEntryId: entry.id,
@@ -206,16 +212,16 @@ export class PostingService {
 		pagination: { page: number; limit: number },
 		filters: { year?: number; month?: number; status?: string } = {},
 	) {
-		return this.repo.listEntries(organizationId, pagination, filters);
+		return this.journal.listEntries(organizationId, pagination, filters);
 	}
 
 	/** One journal entry with its lines. */
 	async getEntry(organizationId: string, entryId: string) {
-		const entry = await this.repo.findEntryById(organizationId, entryId);
+		const entry = await this.journal.findEntryById(organizationId, entryId);
 		if (!entry) {
 			throw new JournalTransitionError();
 		}
-		const lines = await this.repo.findLinesByEntryId(
+		const lines = await this.journal.findLinesByEntryId(
 			organizationId,
 			entryId,
 		);
@@ -237,7 +243,7 @@ export class PostingService {
 				sourceModule: 'accounting',
 			});
 			if (!result.replayed) {
-				await this.repo.stampPostedBy(
+				await this.journal.stampPostedBy(
 					ctx.organizationId,
 					result.entry.id,
 					ctx.actorUserId,
@@ -273,7 +279,7 @@ export class PostingService {
 		actorUserId: string,
 		options: { entryDate?: string; description?: string | null } = {},
 	): Promise<TPostingResult> {
-		const original = await this.repo.findEntryById(
+		const original = await this.journal.findEntryById(
 			organizationId,
 			entryId,
 			tx,
@@ -288,7 +294,7 @@ export class PostingService {
 			throw new JournalTransitionError();
 		}
 
-		const originalLines = await this.repo.findLinesByEntryId(
+		const originalLines = await this.journal.findLinesByEntryId(
 			organizationId,
 			entryId,
 			tx,
@@ -321,7 +327,7 @@ export class PostingService {
 		});
 		void actorUserId;
 
-		await this.repo.markReversed(organizationId, entryId, result.entry.id, tx);
+		await this.journal.markReversed(organizationId, entryId, result.entry.id, tx);
 		return result;
 	}
 
@@ -337,7 +343,7 @@ export class PostingService {
 		tx?: TTx,
 	) {
 		const [year, month] = entryDate.split('-').map(Number);
-		const period = await this.repo.findPeriodByMonth(
+		const period = await this.periods.findPeriodByMonth(
 			organizationId,
 			year,
 			month,
@@ -369,8 +375,8 @@ export class PostingService {
 			.map((line) => line.accountCode)
 			.filter((code): code is string => Boolean(code));
 		const byCode = codes.length
-			? await this.repo.findAccountsByCodes(organizationId, codes, tx)
-			: new Map<string, Awaited<ReturnType<LedgerRepository['findAccountById']>>>();
+			? await this.accounts.findAccountsByCodes(organizationId, codes, tx)
+			: new Map<string, TChartOfAccountSelect>();
 
 		const resolved: Array<TPostingLine & { accountId: string }> = [];
 		for (const line of lines) {
@@ -379,7 +385,7 @@ export class PostingService {
 			}
 			let account = null;
 			if (line.accountId) {
-				account = await this.repo.findAccountById(
+				account = await this.accounts.findAccountById(
 					organizationId,
 					line.accountId,
 					tx,

@@ -1,13 +1,13 @@
 import type { TChartOfAccountSelect } from '@drizzle/schemas/accounting.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
-import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
-import type { LedgerRepository } from '../repositories/ledger.repository';
+import { CHART_OF_ACCOUNT_REPOSITORY_TOKEN } from '../constants/di';
 import {
 	AccountCodeTakenError,
 	AccountInUseError,
 	AccountNotFoundError,
 } from '../errors/ledger.errors';
+import type { IChartOfAccountRepository } from '../contracts/ledger.repositories';
 
 export type TCreateAccountInput = {
 	code: string;
@@ -41,7 +41,7 @@ export type TUpdateAccountInput = {
 @injectable()
 export class AccountService {
 	constructor(
-		@inject(LEDGER_REPOSITORY_TOKEN) private readonly repo: LedgerRepository,
+		@inject(CHART_OF_ACCOUNT_REPOSITORY_TOKEN) private readonly accounts: IChartOfAccountRepository,
 	) {}
 
 	async listAccounts(
@@ -49,14 +49,14 @@ export class AccountService {
 		pagination: { page: number; limit: number },
 		filters: { accountType?: string; isActive?: boolean } = {},
 	): Promise<TPaginationResult<TChartOfAccountSelect>> {
-		return this.repo.listAccounts(organizationId, pagination, filters);
+		return this.accounts.listAccounts(organizationId, pagination, filters);
 	}
 
 	async getAccount(
 		organizationId: string,
 		id: string,
 	): Promise<TChartOfAccountSelect> {
-		const row = await this.repo.findAccountById(organizationId, id);
+		const row = await this.accounts.findAccountById(organizationId, id);
 		if (!row) throw new AccountNotFoundError();
 		return row;
 	}
@@ -65,7 +65,7 @@ export class AccountService {
 		organizationId: string,
 		input: TCreateAccountInput,
 	): Promise<TChartOfAccountSelect> {
-		const existing = await this.repo.findAccountByCode(
+		const existing = await this.accounts.findAccountByCode(
 			organizationId,
 			input.code,
 		);
@@ -73,7 +73,7 @@ export class AccountService {
 
 		let level = 1;
 		if (input.parentAccountId) {
-			const parent = await this.repo.findAccountById(
+			const parent = await this.accounts.findAccountById(
 				organizationId,
 				input.parentAccountId,
 			);
@@ -81,7 +81,7 @@ export class AccountService {
 			level = parent.level + 1;
 		}
 
-		return this.repo.insertAccount({
+		return this.accounts.insertAccount({
 			organizationId,
 			code: input.code,
 			name: input.name,
@@ -102,7 +102,7 @@ export class AccountService {
 		id: string,
 		patch: TUpdateAccountInput,
 	): Promise<TChartOfAccountSelect> {
-		const account = await this.repo.findAccountById(organizationId, id);
+		const account = await this.accounts.findAccountById(organizationId, id);
 		if (!account) throw new AccountNotFoundError();
 
 		// Deactivating (or un-postable-ing) an account that has journal history
@@ -111,7 +111,7 @@ export class AccountService {
 			throw new AccountInUseError();
 		}
 
-		const updated = await this.repo.updateAccount(organizationId, id, patch);
+		const updated = await this.accounts.updateAccount(organizationId, id, patch);
 		if (!updated) throw new AccountNotFoundError();
 		return updated;
 	}
@@ -121,13 +121,13 @@ export class AccountService {
 		organizationId: string,
 		id: string,
 	): Promise<TChartOfAccountSelect> {
-		const account = await this.repo.findAccountById(organizationId, id);
+		const account = await this.accounts.findAccountById(organizationId, id);
 		if (!account) throw new AccountNotFoundError();
 		if (account.isSystem) throw new AccountInUseError();
-		if (await this.repo.accountHasJournalLines(organizationId, id)) {
+		if (await this.accounts.accountHasJournalLines(organizationId, id)) {
 			throw new AccountInUseError();
 		}
-		const updated = await this.repo.updateAccount(
+		const updated = await this.accounts.updateAccount(
 			organizationId,
 			id,
 			{ isActive: false, isPostable: false },

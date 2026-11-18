@@ -464,6 +464,7 @@ const api = {
 	// Invoices & AR (F4)
 	'accounting.arAccountNotConfigured':
 		'No active general-ledger account is configured for this posting role; set up the chart of accounts first',
+	'accounting.openItemNotFound': 'The open-item sub-ledger row for this document is missing',
 	'accounting.paymentNotFound': 'Payment not found',
 	'accounting.paymentInvalidTransition':
 		'That status change is not allowed for this payment',

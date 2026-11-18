@@ -465,6 +465,7 @@ const api: Record<keyof typeof en, string> = {
 	// Faktur & Piutang (F4)
 	'accounting.arAccountNotConfigured':
 		'Belum ada akun buku besar aktif untuk peran posting ini; lengkapi bagan akun terlebih dahulu',
+	'accounting.openItemNotFound': 'Baris sub-buku besar untuk dokumen ini tidak ditemukan',
 	'accounting.paymentNotFound': 'Pembayaran tidak ditemukan',
 	'accounting.paymentInvalidTransition':
 		'Perubahan status tersebut tidak diizinkan untuk pembayaran ini',

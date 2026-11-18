@@ -98,6 +98,8 @@ TableGroup "Sales" {
 
 TableGroup "Payment" {
   payment.gateway_payments
+  payment.payments
+  payment.payment_allocations
 }
 
 TableGroup "Procurement" {
@@ -183,7 +185,6 @@ TableGroup "Payroll" {
 }
 
 TableGroup "Finance" {
-  finance.payments
   finance.expense_settlements
   finance.expense_settlement_items
   finance.employee_advances
@@ -195,7 +196,6 @@ TableGroup "Finance" {
   finance.payment_terms
   finance.expense_claims
   finance.expense_claim_items
-  finance.payment_allocations
   finance.credit_memos
   finance.ar_open_items
   finance.ap_open_items
@@ -2127,7 +2127,7 @@ Table sales.receipts {
   organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
   sales_invoice_id uuid [not null, note: "Plain id of a row in sales.invoices (same module)."]
-  payment_id uuid [note: "Logical reference to finance.payments.id. Cross-module FK intentionally omitted. Validated through the Finance module contract."]
+  payment_id uuid [note: "Logical reference to payment.payments.id. Cross-module FK intentionally omitted. Validated through the Finance module contract."]
   received_date date
   amount bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
@@ -2142,7 +2142,7 @@ Table sales.receipts {
   reversal_reason text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Cash receipt register, kwitansi. It is the customer facing proof of a payment, the money movement stays in finance.payments. Owned by Sales (moved from finance.receipts, 2026-11-08). Issued against a sales invoice; never more than the invoice's outstanding amount."
+  Note: "Cash receipt register, kwitansi. It is the customer facing proof of a payment, the money movement stays in payment.payments. Owned by Sales (moved from finance.receipts, 2026-11-08). Issued against a sales invoice; never more than the invoice's outstanding amount."
   Indexes {
     (organization_id, code) [unique, name: 'receipts_org_code_uq']
     sales_invoice_id [name: 'receipts_sales_invoice_id_idx']
@@ -2159,13 +2159,16 @@ Table sales.receipts {
 // ---------------------------------------------------------------------------
 // MODULE: Payment  (schema: payment)
 //
-// Money movement against sales documents: the online checkout of an invoice
-// through a provider-neutral gateway (ERP-0020). This module owns the checkout
-// row and its verified webhook state only; the receipt (kwitansi) it produces
-// stays sales.receipts, and the single payment ledger stays finance.payments.
-// Cross-module references (sales invoices/receipts, auth organizations/users)
-// are nullable logical references checked through the owning module's contract
-// (ADR-0014, ADR-0023).
+// All money movement of the ERP: the single payment ledger
+// (`payment.payments`, receipts and disbursements) with its allocations to
+// sales invoices and supplier bills, plus the online checkout of an invoice
+// through a provider-neutral gateway (ERP-0020, ADR-0020/0021/0023/0024).
+// Finance keeps the cash/bank master, supplier bills and the AR/AP open-item
+// sub-ledgers; a payment settles them through Finance's contract. This module
+// owns no receipt (kwitansi): that stays `sales.receipts`. Cross-module
+// references (sales invoices, supplier bills, employee advances, cash/bank
+// accounts, auth organizations/users) are logical references checked through
+// the owning module's contract (ADR-0014).
 // ---------------------------------------------------------------------------
 
 Table payment.gateway_payments {
@@ -2204,6 +2207,400 @@ Table payment.gateway_payments {
     `paid_amount IS NULL OR paid_amount >= 0`
   }
 }
+
+Table payment.payments {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [not null]
+  payment_type text [not null]
+  direction text [not null]
+  counterparty_type text
+  counterparty_id text
+  sales_invoice_id uuid [note: "Logical reference to sales.invoices.id. Cross-module FK intentionally omitted. Validated through the Sales module contract."]
+  supplier_bill_id uuid
+  employee_advance_id uuid
+  amount bigint [not null, default: 0]
+  currency_code varchar(3) [not null, default: 'IDR']
+  payment_method text [not null, default: 'bank_transfer']
+  payment_date date
+  status text [not null, default: 'draft']
+  requested_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  requested_at bigint
+  submitted_at bigint
+  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  approved_at bigint
+  executed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  executed_at bigint
+  cash_bank_account_id uuid
+  reference_number text
+  notes text
+  voided_at bigint
+  void_reason text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "THE single payment ledger of the ERP. Receipts and disbursements both live here. A payment can settle at most one invoice, one supplier bill and one employee advance. Execution requires approval and is not allowed by the requester."
+  Indexes {
+    (organization_id, code) [unique, name: 'payments_org_code_uq']
+    sales_invoice_id [name: 'payments_sales_invoice_id_idx']
+    supplier_bill_id [name: 'payments_supplier_bill_id_idx']
+    employee_advance_id [name: 'payments_employee_advance_id_idx']
+    status [name: 'payments_status_idx']
+    (organization_id, counterparty_type, counterparty_id) [name: 'payments_counterparty_idx']
+    cash_bank_account_id [name: 'payments_cash_bank_account_id_idx']
+  }
+  Checks {
+    `payment_type IN ('receipt', 'disbursement', 'refund', 'advance_disbursement', 'payroll', 'profit_distribution', 'investment')`
+    `direction IN ('in', 'out')`
+    `status IN ('draft', 'submitted', 'approved', 'executed', 'reversed', 'void', 'cancelled')`
+    `amount > 0`
+    `payment_method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque', 'offset')`
+  }
+}
+
+Table finance.expense_settlements {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [not null]
+  employee_id uuid [not null, note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
+  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract."]
+  settlement_type text [not null, default: 'expense']
+  employee_advance_id uuid
+  total_amount bigint [not null, default: 0]
+  currency_code varchar(3) [not null, default: 'IDR']
+  settlement_date date
+  status text [not null, default: 'draft']
+  submitted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  submitted_at bigint
+  verified_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  verified_at bigint
+  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  approved_at bigint
+  notes text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Settlement of a project advance and of the operational expenses of an employee. Verification and approval are separate steps."
+  Indexes {
+    (organization_id, code) [unique, name: 'expense_settlements_org_code_uq']
+    employee_id [name: 'expense_settlements_employee_id_idx']
+    employee_advance_id [name: 'expense_settlements_advance_id_idx']
+    status [name: 'expense_settlements_status_idx']
+  }
+  Checks {
+    `settlement_type IN ('expense', 'advance')`
+    `status IN ('draft', 'submitted', 'verified', 'approved', 'rejected', 'paid', 'cancelled')`
+    `total_amount >= 0`
+  }
+}
+
+Table finance.expense_settlement_items {
+  updated_at bigint [not null]
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  expense_settlement_id uuid [not null]
+  expense_date date
+  category_code text
+  description text
+  amount bigint [not null, default: 0]
+  tax_amount bigint [not null, default: 0]
+  currency_code varchar(3) [not null, default: 'IDR']
+  is_advance_offset boolean [not null, default: false]
+  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract."]
+  receipt_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  created_at bigint [not null]
+  Note: "Line of an expense settlement."
+  Indexes {
+    expense_settlement_id [name: 'expense_settlement_items_settlement_id_idx']
+  }
+  Checks {
+    `amount >= 0`
+    `tax_amount >= 0`
+  }
+}
+
+Table finance.employee_advances {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [not null]
+  employee_id uuid [not null, note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
+  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract."]
+  amount bigint [not null, default: 0]
+  settled_amount bigint [not null, default: 0]
+  currency_code varchar(3) [not null, default: 'IDR']
+  request_date date
+  purpose text
+  status text [not null, default: 'draft']
+  requested_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  submitted_at bigint
+  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  approved_at bigint
+  disbursed_at bigint
+  payment_id uuid
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Cash advance to an employee. Disbursement is a payment.payments row, the advance is never a payment ledger of its own."
+  Indexes {
+    (organization_id, code) [unique, name: 'employee_advances_org_code_uq']
+    employee_id [name: 'employee_advances_employee_id_idx']
+    project_id [name: 'employee_advances_project_id_idx']
+    status [name: 'employee_advances_status_idx']
+  }
+  Checks {
+    `status IN ('draft', 'submitted', 'approved', 'disbursed', 'settled', 'cancelled')`
+    `amount > 0`
+    `settled_amount >= 0`
+    `settled_amount <= amount`
+  }
+}
+
+Table finance.cash_bank_accounts {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [not null]
+  name text [not null]
+  account_type text [not null, default: 'bank']
+  bank_name text
+  account_number text
+  account_holder text
+  currency_code varchar(3) [not null, default: 'IDR']
+  opening_balance bigint [not null, default: 0]
+  current_balance bigint [not null, default: 0]
+  is_active boolean [not null, default: true]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Operational cash and bank account used by the payment ledger and by reconciliation."
+  Indexes {
+    (organization_id, code) [unique, name: 'cash_bank_accounts_org_code_uq']
+    account_number [name: 'cash_bank_accounts_account_number_idx']
+  }
+  Checks {
+    `account_type IN ('cash', 'bank', 'ewallet', 'clearing')`
+    `opening_balance >= 0`
+  }
+}
+
+Table finance.cash_bank_transactions {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [not null]
+  cash_bank_account_id uuid [not null]
+  transaction_date date [not null]
+  direction text [not null]
+  amount bigint [not null]
+  currency_code varchar(3) [not null, default: 'IDR']
+  source_type text
+  source_id text
+  description text
+  reference_number text
+  status text [not null, default: 'posted']
+  balance_after bigint [not null, default: 0]
+  posted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  posted_at bigint
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Movement on a cash or bank account, produced by a posted payment. Reconciliation works on this ledger."
+  Indexes {
+    (organization_id, code) [unique, name: 'cash_bank_transactions_org_code_uq']
+    cash_bank_account_id [name: 'cash_bank_transactions_account_id_idx']
+    transaction_date [name: 'cash_bank_transactions_date_idx']
+    (source_type, source_id) [name: 'cash_bank_transactions_source_idx']
+  }
+  Checks {
+    `direction IN ('in', 'out')`
+    `status IN ('draft', 'posted', 'reversed')`
+    `amount > 0`
+  }
+}
+
+Table finance.bank_reconciliations {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [not null]
+  cash_bank_account_id uuid [not null]
+  reconciliation_date date [not null]
+  statement_balance bigint [not null, default: 0]
+  book_balance bigint [not null, default: 0]
+  difference bigint [not null, default: 0]
+  status text [not null, default: 'draft']
+  reconciled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  reconciled_at bigint
+  notes text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Reconciliation of one bank statement against the book balance."
+  Indexes {
+    (organization_id, code) [unique, name: 'bank_reconciliations_org_code_uq']
+    cash_bank_account_id [name: 'bank_reconciliations_account_id_idx']
+    reconciliation_date [name: 'bank_reconciliations_date_idx']
+  }
+  Checks {
+    `status IN ('draft', 'in_progress', 'reconciled', 'closed')`
+  }
+}
+
+Table finance.bank_reconciliation_items {
+  updated_at bigint [not null]
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  bank_reconciliation_id uuid [not null]
+  cash_bank_transaction_id uuid
+  statement_reference text
+  statement_amount bigint
+  is_matched boolean [not null, default: false]
+  notes text
+  created_at bigint [not null]
+  Note: "Line of a reconciliation, matched against a book transaction."
+  Indexes {
+    bank_reconciliation_id [name: 'bank_reconciliation_items_reconciliation_id_idx']
+    cash_bank_transaction_id [name: 'bank_reconciliation_items_transaction_id_idx']
+  }
+}
+
+Table finance.supplier_bills {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [not null]
+  supplier_id uuid [not null, note: "Logical reference to procurement.suppliers.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
+  purchase_order_id uuid [note: "Logical reference to procurement.purchase_orders.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
+  bill_date date
+  due_date date
+  subtotal bigint [not null, default: 0]
+  tax_total bigint [not null, default: 0]
+  grand_total bigint [not null, default: 0]
+  paid_total bigint [not null, default: 0]
+  outstanding_total bigint [not null, default: 0]
+  currency_code varchar(3) [not null, default: 'IDR']
+  status text [not null, default: 'draft']
+  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  approved_at bigint
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Accounts payable document of a supplier. Payments are rows of payment.payments."
+  Indexes {
+    (organization_id, code) [unique, name: 'supplier_bills_org_code_uq']
+    supplier_id [name: 'supplier_bills_supplier_id_idx']
+    purchase_order_id [name: 'supplier_bills_purchase_order_id_idx']
+    status [name: 'supplier_bills_status_idx']
+    due_date [name: 'supplier_bills_due_date_idx']
+  }
+  Checks {
+    `status IN ('draft', 'approved', 'partially_paid', 'paid', 'overdue', 'void')`
+    `subtotal >= 0`
+    `tax_total >= 0`
+    `grand_total >= 0`
+    `paid_total >= 0`
+    `outstanding_total >= 0`
+  }
+}
+
+Table finance.payment_terms {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [not null]
+  name text [not null]
+  days integer [not null, default: 0]
+  discount_percent numeric(5,2)
+  discount_days integer
+  is_active boolean [not null, default: true]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Payment terms, for example cash on delivery or 30 days net."
+  Indexes {
+    (organization_id, code) [unique, name: 'payment_terms_org_code_uq']
+  }
+  Checks {
+    `days >= 0`
+    `discount_percent IS NULL OR (discount_percent >= 0 AND discount_percent <= 100)`
+  }
+}
+
+Table finance.expense_claims {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [not null]
+  employee_id uuid [not null, note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  department_id uuid [note: "Logical reference to organization.departments.id. Cross-module FK intentionally omitted. Validated through the Organization module contract."]
+  claim_date date
+  total_amount bigint [not null, default: 0]
+  currency_code varchar(3) [not null, default: 'IDR']
+  status text [not null, default: 'draft']
+  submitted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  submitted_at bigint
+  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  approved_at bigint
+  payment_id uuid
+  notes text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Operational expense claim of an employee, settled by a payment.payments disbursement."
+  Indexes {
+    (organization_id, code) [unique, name: 'expense_claims_org_code_uq']
+    employee_id [name: 'expense_claims_employee_id_idx']
+    status [name: 'expense_claims_status_idx']
+  }
+  Checks {
+    `status IN ('draft', 'submitted', 'approved', 'rejected', 'paid', 'cancelled')`
+    `total_amount >= 0`
+  }
+}
+
+Table finance.expense_claim_items {
+  updated_at bigint [not null]
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  expense_claim_id uuid [not null]
+  expense_date date
+  category_code text
+  description text
+  amount bigint [not null, default: 0]
+  tax_amount bigint [not null, default: 0]
+  currency_code varchar(3) [not null, default: 'IDR']
+  receipt_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
+  created_at bigint [not null]
+  Note: "Line of an expense claim."
+  Indexes {
+    expense_claim_id [name: 'expense_claim_items_claim_id_idx']
+  }
+  Checks {
+    `amount >= 0`
+    `tax_amount >= 0`
+  }
+}
+
+Table payment.payment_allocations {
+  updated_at bigint [not null]
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  payment_id uuid [not null]
+  target_type text [not null]
+  sales_invoice_id uuid
+  supplier_bill_id uuid
+  amount bigint [not null]
+  created_at bigint [not null]
+  Note: "Allocation of one payment to one target document (a sales invoice or a supplier bill), for documents settled in several instalments. DEVIATION (shipped): the column is `amount` (not allocated_amount) and there is no currency_code, allocated_at or deleted_at - the row inherits the payment's currency and instant, and is cascade-deleted with the payment. Changing this needs a new migration."
+  Indexes {
+    (payment_id, target_type, sales_invoice_id, supplier_bill_id) [unique, name: 'payment_allocations_uq']
+    sales_invoice_id [name: 'payment_allocations_sales_invoice_id_idx']
+    supplier_bill_id [name: 'payment_allocations_supplier_bill_id_idx']
+  }
+  Checks {
+    `target_type IN ('sales_invoice', 'supplier_bill')`
+    `(target_type = 'sales_invoice' AND sales_invoice_id IS NOT NULL) OR (target_type = 'supplier_bill' AND supplier_bill_id IS NOT NULL)`
+    `amount > 0`
+  }
+}
+
 
 // ---------------------------------------------------------------------------
 // MODULE: Procurement  (schema: procurement)
@@ -4248,7 +4645,7 @@ Ref: payroll.payslip_acknowledgements.payslip_id > payroll.payslips.id [delete: 
 
 // ---------------------------------------------------------------------------
 // MODULE: Finance  (schema: finance)
-// Single payment ledger (finance.payments), credit memos, receipts, supplier
+// Single payment ledger (payment.payments), credit memos, receipts, supplier
 // bills, expense claims, employee advances and expense settlements, cash and
 // bank accounts, reconciliation, payment terms.
 // Customer invoices moved to sales.invoices (finance plan D2).
@@ -4258,399 +4655,6 @@ Ref: payroll.payslip_acknowledgements.payslip_id > payroll.payslips.id [delete: 
 // Finance plan D6: finance.expense_settlements(_items),
 // finance.expense_claims(_items), finance.employee_advances and
 // finance.credit_memos are DEFERRED (not built in Stage 1).
-
-Table finance.payments {
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  payment_type text [not null]
-  direction text [not null]
-  counterparty_type text
-  counterparty_id text
-  sales_invoice_id uuid [note: "Logical reference to sales.invoices.id. Cross-module FK intentionally omitted. Validated through the Sales module contract."]
-  supplier_bill_id uuid
-  employee_advance_id uuid
-  amount bigint [not null, default: 0]
-  currency_code varchar(3) [not null, default: 'IDR']
-  payment_method text [not null, default: 'bank_transfer']
-  payment_date date
-  status text [not null, default: 'draft']
-  requested_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  requested_at bigint
-  submitted_at bigint
-  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  approved_at bigint
-  executed_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  executed_at bigint
-  cash_bank_account_id uuid
-  reference_number text
-  notes text
-  voided_at bigint
-  void_reason text
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  Note: "THE single payment ledger of the ERP. Receipts and disbursements both live here. A payment can settle at most one invoice, one supplier bill and one employee advance. Execution requires approval and is not allowed by the requester."
-  Indexes {
-    (organization_id, code) [unique, name: 'payments_org_code_uq']
-    sales_invoice_id [name: 'payments_sales_invoice_id_idx']
-    supplier_bill_id [name: 'payments_supplier_bill_id_idx']
-    employee_advance_id [name: 'payments_employee_advance_id_idx']
-    status [name: 'payments_status_idx']
-    (organization_id, counterparty_type, counterparty_id) [name: 'payments_counterparty_idx']
-    cash_bank_account_id [name: 'payments_cash_bank_account_id_idx']
-  }
-  Checks {
-    `payment_type IN ('receipt', 'disbursement', 'refund', 'advance_disbursement', 'payroll', 'profit_distribution', 'investment')`
-    `direction IN ('in', 'out')`
-    `status IN ('draft', 'submitted', 'approved', 'executed', 'reversed', 'void', 'cancelled')`
-    `amount > 0`
-    `payment_method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque', 'offset')`
-  }
-}
-
-Table finance.expense_settlements {
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  employee_id uuid [not null, note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
-  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract."]
-  settlement_type text [not null, default: 'expense']
-  employee_advance_id uuid
-  total_amount bigint [not null, default: 0]
-  currency_code varchar(3) [not null, default: 'IDR']
-  settlement_date date
-  status text [not null, default: 'draft']
-  submitted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  submitted_at bigint
-  verified_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  verified_at bigint
-  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  approved_at bigint
-  notes text
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  Note: "Settlement of a project advance and of the operational expenses of an employee. Verification and approval are separate steps."
-  Indexes {
-    (organization_id, code) [unique, name: 'expense_settlements_org_code_uq']
-    employee_id [name: 'expense_settlements_employee_id_idx']
-    employee_advance_id [name: 'expense_settlements_advance_id_idx']
-    status [name: 'expense_settlements_status_idx']
-  }
-  Checks {
-    `settlement_type IN ('expense', 'advance')`
-    `status IN ('draft', 'submitted', 'verified', 'approved', 'rejected', 'paid', 'cancelled')`
-    `total_amount >= 0`
-  }
-}
-
-Table finance.expense_settlement_items {
-  updated_at bigint [not null]
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  expense_settlement_id uuid [not null]
-  expense_date date
-  category_code text
-  description text
-  amount bigint [not null, default: 0]
-  tax_amount bigint [not null, default: 0]
-  currency_code varchar(3) [not null, default: 'IDR']
-  is_advance_offset boolean [not null, default: false]
-  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract."]
-  receipt_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
-  created_at bigint [not null]
-  Note: "Line of an expense settlement."
-  Indexes {
-    expense_settlement_id [name: 'expense_settlement_items_settlement_id_idx']
-  }
-  Checks {
-    `amount >= 0`
-    `tax_amount >= 0`
-  }
-}
-
-Table finance.employee_advances {
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  employee_id uuid [not null, note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the HR module contract."]
-  project_id uuid [note: "Logical reference to projects.projects.id. Cross-module FK intentionally omitted. Validated through the Projects module contract."]
-  amount bigint [not null, default: 0]
-  settled_amount bigint [not null, default: 0]
-  currency_code varchar(3) [not null, default: 'IDR']
-  request_date date
-  purpose text
-  status text [not null, default: 'draft']
-  requested_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  submitted_at bigint
-  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  approved_at bigint
-  disbursed_at bigint
-  payment_id uuid
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  Note: "Cash advance to an employee. Disbursement is a finance.payments row, the advance is never a payment ledger of its own."
-  Indexes {
-    (organization_id, code) [unique, name: 'employee_advances_org_code_uq']
-    employee_id [name: 'employee_advances_employee_id_idx']
-    project_id [name: 'employee_advances_project_id_idx']
-    status [name: 'employee_advances_status_idx']
-  }
-  Checks {
-    `status IN ('draft', 'submitted', 'approved', 'disbursed', 'settled', 'cancelled')`
-    `amount > 0`
-    `settled_amount >= 0`
-    `settled_amount <= amount`
-  }
-}
-
-Table finance.cash_bank_accounts {
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  name text [not null]
-  account_type text [not null, default: 'bank']
-  bank_name text
-  account_number text
-  account_holder text
-  currency_code varchar(3) [not null, default: 'IDR']
-  opening_balance bigint [not null, default: 0]
-  current_balance bigint [not null, default: 0]
-  is_active boolean [not null, default: true]
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
-  Note: "Operational cash and bank account used by the payment ledger and by reconciliation."
-  Indexes {
-    (organization_id, code) [unique, name: 'cash_bank_accounts_org_code_uq']
-    account_number [name: 'cash_bank_accounts_account_number_idx']
-  }
-  Checks {
-    `account_type IN ('cash', 'bank', 'ewallet', 'clearing')`
-    `opening_balance >= 0`
-  }
-}
-
-Table finance.cash_bank_transactions {
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  cash_bank_account_id uuid [not null]
-  transaction_date date [not null]
-  direction text [not null]
-  amount bigint [not null]
-  currency_code varchar(3) [not null, default: 'IDR']
-  source_type text
-  source_id text
-  description text
-  reference_number text
-  status text [not null, default: 'posted']
-  balance_after bigint [not null, default: 0]
-  posted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  posted_at bigint
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  Note: "Movement on a cash or bank account, produced by a posted payment. Reconciliation works on this ledger."
-  Indexes {
-    (organization_id, code) [unique, name: 'cash_bank_transactions_org_code_uq']
-    cash_bank_account_id [name: 'cash_bank_transactions_account_id_idx']
-    transaction_date [name: 'cash_bank_transactions_date_idx']
-    (source_type, source_id) [name: 'cash_bank_transactions_source_idx']
-  }
-  Checks {
-    `direction IN ('in', 'out')`
-    `status IN ('draft', 'posted', 'reversed')`
-    `amount > 0`
-  }
-}
-
-Table finance.bank_reconciliations {
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  cash_bank_account_id uuid [not null]
-  reconciliation_date date [not null]
-  statement_balance bigint [not null, default: 0]
-  book_balance bigint [not null, default: 0]
-  difference bigint [not null, default: 0]
-  status text [not null, default: 'draft']
-  reconciled_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  reconciled_at bigint
-  notes text
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  Note: "Reconciliation of one bank statement against the book balance."
-  Indexes {
-    (organization_id, code) [unique, name: 'bank_reconciliations_org_code_uq']
-    cash_bank_account_id [name: 'bank_reconciliations_account_id_idx']
-    reconciliation_date [name: 'bank_reconciliations_date_idx']
-  }
-  Checks {
-    `status IN ('draft', 'in_progress', 'reconciled', 'closed')`
-  }
-}
-
-Table finance.bank_reconciliation_items {
-  updated_at bigint [not null]
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  bank_reconciliation_id uuid [not null]
-  cash_bank_transaction_id uuid
-  statement_reference text
-  statement_amount bigint
-  is_matched boolean [not null, default: false]
-  notes text
-  created_at bigint [not null]
-  Note: "Line of a reconciliation, matched against a book transaction."
-  Indexes {
-    bank_reconciliation_id [name: 'bank_reconciliation_items_reconciliation_id_idx']
-    cash_bank_transaction_id [name: 'bank_reconciliation_items_transaction_id_idx']
-  }
-}
-
-Table finance.supplier_bills {
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  supplier_id uuid [not null, note: "Logical reference to procurement.suppliers.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
-  purchase_order_id uuid [note: "Logical reference to procurement.purchase_orders.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
-  bill_date date
-  due_date date
-  subtotal bigint [not null, default: 0]
-  tax_total bigint [not null, default: 0]
-  grand_total bigint [not null, default: 0]
-  paid_total bigint [not null, default: 0]
-  outstanding_total bigint [not null, default: 0]
-  currency_code varchar(3) [not null, default: 'IDR']
-  status text [not null, default: 'draft']
-  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  approved_at bigint
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  Note: "Accounts payable document of a supplier. Payments are rows of finance.payments."
-  Indexes {
-    (organization_id, code) [unique, name: 'supplier_bills_org_code_uq']
-    supplier_id [name: 'supplier_bills_supplier_id_idx']
-    purchase_order_id [name: 'supplier_bills_purchase_order_id_idx']
-    status [name: 'supplier_bills_status_idx']
-    due_date [name: 'supplier_bills_due_date_idx']
-  }
-  Checks {
-    `status IN ('draft', 'approved', 'partially_paid', 'paid', 'overdue', 'void')`
-    `subtotal >= 0`
-    `tax_total >= 0`
-    `grand_total >= 0`
-    `paid_total >= 0`
-    `outstanding_total >= 0`
-  }
-}
-
-Table finance.payment_terms {
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  name text [not null]
-  days integer [not null, default: 0]
-  discount_percent numeric(5,2)
-  discount_days integer
-  is_active boolean [not null, default: true]
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  deleted_at bigint
-  Note: "Payment terms, for example cash on delivery or 30 days net."
-  Indexes {
-    (organization_id, code) [unique, name: 'payment_terms_org_code_uq']
-  }
-  Checks {
-    `days >= 0`
-    `discount_percent IS NULL OR (discount_percent >= 0 AND discount_percent <= 100)`
-  }
-}
-
-Table finance.expense_claims {
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
-  employee_id uuid [not null, note: "Logical reference to hr.employees.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  department_id uuid [note: "Logical reference to organization.departments.id. Cross-module FK intentionally omitted. Validated through the Organization module contract."]
-  claim_date date
-  total_amount bigint [not null, default: 0]
-  currency_code varchar(3) [not null, default: 'IDR']
-  status text [not null, default: 'draft']
-  submitted_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  submitted_at bigint
-  approved_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  approved_at bigint
-  payment_id uuid
-  notes text
-  created_at bigint [not null]
-  updated_at bigint [not null]
-  Note: "Operational expense claim of an employee, settled by a finance.payments disbursement."
-  Indexes {
-    (organization_id, code) [unique, name: 'expense_claims_org_code_uq']
-    employee_id [name: 'expense_claims_employee_id_idx']
-    status [name: 'expense_claims_status_idx']
-  }
-  Checks {
-    `status IN ('draft', 'submitted', 'approved', 'rejected', 'paid', 'cancelled')`
-    `total_amount >= 0`
-  }
-}
-
-Table finance.expense_claim_items {
-  updated_at bigint [not null]
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  expense_claim_id uuid [not null]
-  expense_date date
-  category_code text
-  description text
-  amount bigint [not null, default: 0]
-  tax_amount bigint [not null, default: 0]
-  currency_code varchar(3) [not null, default: 'IDR']
-  receipt_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Documents module contract."]
-  created_at bigint [not null]
-  Note: "Line of an expense claim."
-  Indexes {
-    expense_claim_id [name: 'expense_claim_items_claim_id_idx']
-  }
-  Checks {
-    `amount >= 0`
-    `tax_amount >= 0`
-  }
-}
-
-Table finance.payment_allocations {
-  updated_at bigint [not null]
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  payment_id uuid [not null]
-  target_type text [not null]
-  sales_invoice_id uuid
-  supplier_bill_id uuid
-  amount bigint [not null]
-  created_at bigint [not null]
-  Note: "Allocation of one payment to one target document (a sales invoice or a supplier bill), for documents settled in several instalments. DEVIATION (shipped): the column is `amount` (not allocated_amount) and there is no currency_code, allocated_at or deleted_at - the row inherits the payment's currency and instant, and is cascade-deleted with the payment. Changing this needs a new migration."
-  Indexes {
-    (payment_id, target_type, sales_invoice_id, supplier_bill_id) [unique, name: 'payment_allocations_uq']
-    sales_invoice_id [name: 'payment_allocations_sales_invoice_id_idx']
-    supplier_bill_id [name: 'payment_allocations_supplier_bill_id_idx']
-  }
-  Checks {
-    `target_type IN ('sales_invoice', 'supplier_bill')`
-    `(target_type = 'sales_invoice' AND sales_invoice_id IS NOT NULL) OR (target_type = 'supplier_bill' AND supplier_bill_id IS NOT NULL)`
-    `amount > 0`
-  }
-}
 
 Table finance.ar_open_items {
   id uuid [pk, default: `uuidv7()`]
@@ -4742,24 +4746,26 @@ Table finance.credit_memos {
 
 Ref: sales.invoice_items.invoice_id > sales.invoices.id [delete: cascade]
 // payment.gateway_payments.sales_invoice_id and .receipt_id are logical
-// references to sales.invoices.id / sales.receipts.id — cross-module refs are
+// references to sales.invoices.id / sales.receipts.id - cross-module refs are
 // intentionally FK-free (ADR-0014, ADR-0023).
-// finance.payments.sales_invoice_id, finance.payment_allocations.sales_invoice_id and
+// payment.payments.sales_invoice_id, payment.payment_allocations.sales_invoice_id and
 // finance.credit_memos.sales_invoice_id are logical references to
-// sales.invoices.id — cross-module refs are intentionally FK-free.
-Ref: finance.payments.supplier_bill_id > finance.supplier_bills.id [delete: restrict]
-Ref: finance.payments.employee_advance_id > finance.employee_advances.id [delete: restrict]
-Ref: finance.payments.cash_bank_account_id > finance.cash_bank_accounts.id [delete: restrict]
+// sales.invoices.id - cross-module refs are intentionally FK-free.
+// payment.payments.supplier_bill_id, .employee_advance_id and .cash_bank_account_id
+// are logical references to finance.supplier_bills.id, finance.employee_advances.id
+// and finance.cash_bank_accounts.id - cross-module refs are intentionally
+// FK-free (ADR-0014), validated through the Finance module contract.
+// finance.employee_advances.payment_id and finance.expense_claims.payment_id are
+// logical references to payment.payments.id, validated through the Payment
+// module contract.
+Ref: payment.payment_allocations.payment_id > payment.payments.id [delete: cascade]
 Ref: finance.expense_settlements.employee_advance_id > finance.employee_advances.id [delete: set null]
 Ref: finance.expense_settlement_items.expense_settlement_id > finance.expense_settlements.id [delete: cascade]
-Ref: finance.employee_advances.payment_id > finance.payments.id [delete: set null]
 Ref: finance.cash_bank_transactions.cash_bank_account_id > finance.cash_bank_accounts.id [delete: restrict]
 Ref: finance.bank_reconciliations.cash_bank_account_id > finance.cash_bank_accounts.id [delete: restrict]
 Ref: finance.bank_reconciliation_items.bank_reconciliation_id > finance.bank_reconciliations.id [delete: cascade]
 Ref: finance.bank_reconciliation_items.cash_bank_transaction_id > finance.cash_bank_transactions.id [delete: set null]
-Ref: finance.expense_claims.payment_id > finance.payments.id [delete: set null]
 Ref: finance.expense_claim_items.expense_claim_id > finance.expense_claims.id [delete: cascade]
-Ref: finance.payment_allocations.payment_id > finance.payments.id [delete: cascade]
 Ref: finance.ap_open_items.supplier_bill_id > finance.supplier_bills.id [delete: restrict]
 // finance.ar_open_items.sales_invoice_id is a logical reference to
 // sales.invoices.id — cross-module refs are intentionally FK-free.
@@ -7003,7 +7009,7 @@ Table investor.profit_shares {
   net_amount bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   paid_at bigint
-  payment_id uuid [note: "Logical reference to finance.payments.id. Cross-module FK intentionally omitted. Validated through the Finance module contract."]
+  payment_id uuid [note: "Logical reference to payment.payments.id. Cross-module FK intentionally omitted. Validated through the Finance module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Share of one investor inside a profit distribution run. The payment is a Finance module row."
@@ -8184,7 +8190,7 @@ Table sales.payments {
   executed_at bigint
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "TRANSITIONAL SCAFFOLD, SCHEDULED FOR REMOVAL. Shape is exactly what migration 20261029044823_dear_living_lightning created. It is superseded by finance.payments, the single payment ledger of the ERP. amount is an integer column, which overflows at about 21.4 million rupiah, this is a known defect. Removed by the step S7 of implementation-phases.md. Do not extend it."
+  Note: "TRANSITIONAL SCAFFOLD, SCHEDULED FOR REMOVAL. Shape is exactly what migration 20261029044823_dear_living_lightning created. It is superseded by payment.payments, the single payment ledger of the ERP. amount is an integer column, which overflows at about 21.4 million rupiah, this is a known defect. Removed by the step S7 of implementation-phases.md. Do not extend it."
   Indexes {
     organization_id [name: 'payments_org_idx']
     quotation_id [name: 'payments_quotation_idx']
